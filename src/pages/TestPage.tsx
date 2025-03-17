@@ -1,3 +1,4 @@
+import { DatePicker } from '@mui/x-date-pickers'
 import { useState } from 'react'
 
 import api from '@/lib/axios'
@@ -69,6 +70,7 @@ const TestPage = () => {
           <button onClick={handleCancel}>Cancel Upload</button>
         </div>
       )}
+      <DatePicker format="YYYY-MM-DD" />
     </div>
   )
 }

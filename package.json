@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "mock": "npm-run-all --parallel mock-server mock-api dev",
+    "mock": "npm-run-all --parallel mock-server mock-api mock-dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "mock-dev": "vite --host --mode mock",
     "mock-server": "prism mock mock/mock-api.oas3.yml",
     "mock-api": "http-server ./mock -p 9000",
     "prepare": "husky install"
@@ -25,9 +26,11 @@
     "@mui/icons-material": "^6.4.7",
     "@mui/material": "^6.4.7",
     "@mui/x-data-grid": "^7.27.3",
+    "@mui/x-date-pickers": "^7.27.3",
     "@tanstack/react-query": "^5.67.2",
     "axios": "^1.8.2",
     "chart.js": "^4.4.8",
+    "dayjs": "^1.11.13",
     "i18next": "^24.2.2",
     "i18next-http-backend": "^3.0.2",
     "lodash-es": "^4.17.21",
@@ -36,7 +39,8 @@
     "react-dom": "^19.0.0",
     "react-i18next": "^15.4.1",
     "react-router-dom": "^7.3.0",
-    "react-virtuoso": "^4.12.5"
+    "react-virtuoso": "^4.12.5",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
