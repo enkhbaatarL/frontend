@@ -167,3 +167,119 @@ paths:
                       createDt: '2025-01-10 12:35:00'
                       modifyUserId: 'USER05'
                       modifyDt: '2025-01-10 12:35:00'
+  /api/v1/admin/company-management/companies:
+    get:
+      summary: 회사 관리 목록 조회
+      parameters:
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 페이지 번호
+        - name: size
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 페이지당 항목 수
+      responses:
+        '200':
+          description: 회사 관리 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      totalPages:
+                        type: integer
+                      totalElements:
+                        type: integer
+                      currentPage:
+                        type: integer
+                      numberOfElements:
+                        type: integer
+                      size:
+                        type: integer
+                      isFirst:
+                        type: boolean
+                      isLast:
+                        type: boolean
+                      hasPrevious:
+                        type: boolean
+                      hasNext:
+                        type: boolean
+                      detail:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            companyNo:
+                              type: integer
+                            companyCd:
+                              type: string
+                            companyNm:
+                              type: string
+                            usageBeginDate:
+                              type: string
+                            usageEndDate:
+                              type: string
+                            createUserId:
+                              type: string
+                            createDt:
+                              type: string
+                            modifyUserId:
+                              type: string
+                            modifyDt:
+                              type: string
+              example:
+                status: true
+                code: 'SUC-000'
+                message: 'Success.'
+                data:
+                  totalPages: 1
+                  totalElements: 3
+                  currentPage: 1
+                  numberOfElements: 3
+                  size: 10
+                  isFirst: true
+                  isLast: true
+                  hasPrevious: false
+                  hasNext: false
+                  detail:
+                    - companyNo: 2007
+                      companyCd: "T001"
+                      companyNm: "T001회사"
+                      usageBeginDate: "20250101"
+                      usageEndDate: "20251231"
+                      createUserId: "SYSTEM"
+                      createDt: "2025-03-13 13:01:11"
+                      modifyUserId: "SYSTEM"
+                      modifyDt: "2025-03-13 13:01:11"
+                    - companyNo: 2005
+                      companyCd: "TC001"
+                      companyNm: "TEST_COMPANY1"
+                      usageBeginDate: "20250101"
+                      usageEndDate: "20251231"
+                      createUserId: "SYSTEM"
+                      createDt: "2025-03-12 15:55:06"
+                      modifyUserId: "SYSTEM"
+                      modifyDt: "2025-03-12 15:55:06"
+                    - companyNo: 2006
+                      companyCd: "TC002"
+                      companyNm: "TEST_COMPANY2"
+                      usageBeginDate: "20250101"
+                      usageEndDate: "20251231"
+                      createUserId: "SYSTEM"
+                      createDt: "2025-03-12 15:55:06"
+                      modifyUserId: "SYSTEM"
+                      modifyDt: "2025-03-12 15:55:06"

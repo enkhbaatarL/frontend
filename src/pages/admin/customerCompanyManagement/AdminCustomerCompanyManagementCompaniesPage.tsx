@@ -1,57 +1,59 @@
-import { Button } from '@mui/material'
+import { MoreVert } from '@mui/icons-material'
+import { IconButton, MenuItem } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useEffect, useMemo, useState } from 'react'
 
+import AdminButton from '@/components/admin/AdminButton.tsx'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
+import AdminSelect from '@/components/admin/AdminSelect.tsx'
 import AdminTable from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
-import sampleService from '@/service/sampleService.ts'
+import companiesService from '@/service/admin/companies.ts'
 
-const CustomHeaderSample = () => {
-  const { i18n } = useTranslation()
-
-  const changeLanguage = async (lng: string) => {
-    await i18n.changeLanguage(lng)
-  }
-
+const AdminCustomerCompanyManagementCompaniesPageHeader = () => {
   return (
     <Flex gap={4}>
-      <div>{i18n.language}</div>
-      <Button
-        variant="contained"
-        color="secondary"
-        size="small"
-        onClick={() => {
-          changeLanguage('ko')
-        }}
-      >
-        {t('ko')}
-      </Button>
-      <Button
+      <AdminButton
         variant="contained"
         color="primary"
         size="small"
         onClick={() => {
-          changeLanguage('en')
+          console.log('고객사 등록')
         }}
       >
-        {t('en')}
-      </Button>
+        {t('고객사 등록')}
+      </AdminButton>
     </Flex>
   )
 }
 
 const AdminCustomerCompanyManagementCompaniesPage = () => {
   const { setCustomComponent } = useAdminHeader()
-  const [size, setSize] = useState('')
+  const [searchFilter, setSearchFilter] = useState({
+    companyNm: '',
+    status: 'all',
+  })
+  const [paginationFilter] = useState({
+    page: 1,
+    size: 10,
+  })
+
+  const filter = useMemo(() => {
+    return {
+      ...searchFilter,
+      ...paginationFilter,
+      companyNm: searchFilter.companyNm === '' ? undefined : searchFilter.companyNm,
+      status: searchFilter.status === 'all' ? undefined : searchFilter.status,
+    }
+  }, [searchFilter, paginationFilter])
 
   useEffect(() => {
-    setCustomComponent(<CustomHeaderSample />)
+    setCustomComponent(<AdminCustomerCompanyManagementCompaniesPageHeader />)
 
     return () => {
       setCustomComponent(null)
@@ -59,17 +61,33 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
   }, [setCustomComponent])
 
   const columns: GridColDef[] = [
-    { field: 'companyName', headerName: '회사 이름', width: 200, align: 'center' },
-    { field: 'companyEngName', headerName: '회사 영문 이름', width: 200, align: 'center' },
-    { field: 'createUserId', headerName: '생성자 ID', width: 150, align: 'right' },
-    { field: 'createDt', headerName: '생성 날짜', width: 150, align: 'right' },
-    { field: 'modifyUserId', headerName: '수정자 ID', width: 150, align: 'right' },
-    { field: 'modifyDt', headerName: '수정 날짜', width: 150, align: 'right' },
+    { field: 'companyNm', headerName: '회사명', minWidth: 150, flex: 1 },
+    { field: 'companyNo', headerName: '상태', width: 120, align: 'center' },
+    { field: 'companyCd', headerName: '회사 코드', width: 120, align: 'center' },
+    { field: 'createUserId', headerName: '등록자', width: 120 },
+    {
+      field: 'createDt',
+      headerName: '등록일',
+      width: 150,
+      align: 'center',
+      valueFormatter: ({ value }) => dayjs(value).format('YYYY-MM-DD'),
+    },
+    {
+      field: 'menu',
+      headerName: '',
+      width: 52,
+      align: 'center',
+      renderCell: (param) => (
+        <IconButton onClick={() => console.log(param)}>
+          <MoreVert />
+        </IconButton>
+      ),
+    },
   ]
 
   const { data, refetch } = useQuery({
-    queryKey: ['search', size],
-    queryFn: async () => await sampleService.getSampleCompanies(size),
+    queryKey: [filter],
+    queryFn: async () => await companiesService.getCompanies(filter),
     enabled: false,
   })
 
@@ -85,9 +103,26 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
           console.log('onReset')
         }}
       >
-        <AdminTextField value={size} onChange={(e) => setSize(e.target.value)} />
+        <AdminTextField
+          label={t('회사명')}
+          value={searchFilter.companyNm}
+          onChange={(e) => {
+            setSearchFilter({ ...searchFilter, companyNm: e.target.value })
+          }}
+        />
+        <AdminSelect
+          label={t('상태')}
+          value={searchFilter.status}
+          onChange={(e) => {
+            setSearchFilter({ ...searchFilter, status: String(e.target.value) })
+          }}
+        >
+          <MenuItem value={'all'}>{t('전체')}</MenuItem>
+          <MenuItem value={'Active'}>{t('Active')}</MenuItem>
+          <MenuItem value={'Inactive'}>{t('Inactive')}</MenuItem>
+        </AdminSelect>
       </AdminSearchFilter>
-      <AdminTable columns={columns} data={data ?? []} />
+      <AdminTable getRowId={(row) => row.companyCd} columns={columns} rows={data?.detail ?? []} />
     </>
   )
 }

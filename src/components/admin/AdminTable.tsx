@@ -1,69 +1,28 @@
-import Paper from '@mui/material/Paper'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import { GridColDef, GridRowModel } from '@mui/x-data-grid'
-import { forwardRef } from 'react'
-import { TableVirtuoso, TableComponents } from 'react-virtuoso'
-
-import styles from './AdminTable.module.scss'
+import { DataGrid, GridColDef, GridRowModel } from '@mui/x-data-grid'
+import { useMemo } from 'react'
 
 import AdminPagination from '@/components/admin/AdminPagination'
+import { adminTableBaseProps } from '@/constants/admin.ts'
 
 interface AdminTableProps<T extends GridRowModel> {
+  getRowId?: (row: T) => string | number
   columns: GridColDef[]
-  data: T[]
-  height?: number
+  rows?: T[]
 }
 
-const VirtuosoTableComponents = <T,>(): TableComponents<T> => ({
-  Scroller: forwardRef<HTMLDivElement>(function Scroller (props, ref) {
-    return <TableContainer component={Paper} {...props} ref={ref} />
-  }),
-  Table: (props) => <Table {...props} sx={{ borderCollapse: 'separate', tableLayout: 'fixed' }} />,
-  TableHead: forwardRef<HTMLTableSectionElement>(function TableHeadComponent (props, ref) {
-    return <TableHead {...props} ref={ref} className={styles.header} />
-  }),
-  TableRow,
-  TableBody: forwardRef<HTMLTableSectionElement>(function TableBodyComponent (props, ref) {
-    return <TableBody {...props} ref={ref} />
-  }),
-})
-
-const AdminTable = <T extends GridRowModel>({ columns, data, height = 400 }: AdminTableProps<T>) => {
-  const fixedHeaderContent = () => (
-    <TableRow className={styles.header}>
-      {columns.map((column) => (
-        <TableCell key={column.field} variant="head" align={column.align} style={{ width: column.width }}>
-          {column.headerName}
-        </TableCell>
-      ))}
-    </TableRow>
-  )
-
-  const rowContent = (_index: number, row: T) => (
-    <>
-      {columns.map((column) => (
-        <TableCell key={column.field} align={column.align}>
-          {row[column.field]}
-        </TableCell>
-      ))}
-    </>
+const AdminTable = <T extends GridRowModel>({ getRowId, columns, rows }: AdminTableProps<T>) => {
+  const memoizedColumns = useMemo(
+    () =>
+      columns.map((column) => ({
+        ...column,
+        headerAlign: column.align,
+      })),
+    [columns],
   )
 
   return (
     <>
-      <Paper style={{ height, width: '100%' }}>
-        <TableVirtuoso
-          data={data}
-          components={VirtuosoTableComponents<T>()}
-          fixedHeaderContent={fixedHeaderContent}
-          itemContent={rowContent}
-        />
-      </Paper>
+      <DataGrid getRowId={getRowId} rows={rows ?? []} columns={memoizedColumns} {...adminTableBaseProps} />
       <AdminPagination />
     </>
   )
