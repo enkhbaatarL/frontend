@@ -1,0 +1,23 @@
+.dividerScroll {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  flex-grow: 1;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 12px 40px;
+  border-top: none;
+  border-bottom: none;
+
+  &.noPadding {
+    padding: 0;
+  }
+
+  &.showTopBorder {
+    border-top: 1px solid #dde1eb;
+  }
+
+  &.showBottomBorder {
+    border-bottom: 1px solid #dde1eb;
+  }
+}

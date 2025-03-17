@@ -1,0 +1,168 @@
+openapi: 3.0.0
+info:
+  title: Sample API
+  version: 1.0.0
+paths:
+  /api/v1/sample/user-info:
+    get:
+      summary: Get a list of users
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+              example:
+                - name: John Doe
+                  email: john.doe@example.com
+                - name: Jane Smith
+                  email: jane.smith@example.com
+  /api/v1/companies:
+    post:
+      summary: 회사 목록 조회
+      parameters:
+        - name: size
+          in: query
+          schema:
+            type: integer
+          description: 페이지당 항목 수
+        - name: page
+          in: query
+          schema:
+            type: integer
+          description: 페이지 번호
+      responses:
+        '200':
+          description: 회사 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      totalPages:
+                        type: integer
+                      totalElements:
+                        type: integer
+                      currentPage:
+                        type: integer
+                      numberOfElements:
+                        type: integer
+                      size:
+                        type: integer
+                      isFirst:
+                        type: boolean
+                      isLast:
+                        type: boolean
+                      hasPrevious:
+                        type: boolean
+                      hasNext:
+                        type: boolean
+                      detail:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            companyName:
+                              type: string
+                            companyEngName:
+                              type: string
+                            createUserId:
+                              type: string
+                            createDt:
+                              type: string
+                            modifyUserId:
+                              type: string
+                            modifyDt:
+                              type: string
+              example:
+                status: true
+                code: 'SUC-000'
+                message: 'Success.'
+                data:
+                  totalPages: 2
+                  totalElements: 15
+                  currentPage: 1
+                  numberOfElements: 10
+                  size: 10
+                  isFirst: true
+                  isLast: false
+                  hasPrevious: false
+                  hasNext: true
+                  detail:
+                    - companyName: '삼성전자'
+                      companyEngName: 'Samsung Electronics'
+                      createUserId: 'SYSTEM'
+                      createDt: '2025-01-01 09:00:00'
+                      modifyUserId: 'SYSTEM'
+                      modifyDt: '2025-01-01 09:00:00'
+                    - companyName: '현대자동차'
+                      companyEngName: 'Hyundai Motor Company'
+                      createUserId: 'USER01'
+                      createDt: '2025-01-02 14:30:00'
+                      modifyUserId: 'USER01'
+                      modifyDt: '2025-01-02 14:30:00'
+                    - companyName: 'LG화학'
+                      companyEngName: 'LG Chem'
+                      createUserId: 'SYSTEM'
+                      createDt: '2025-01-03 10:15:00'
+                      modifyUserId: 'SYSTEM'
+                      modifyDt: '2025-01-03 10:15:00'
+                    - companyName: 'SK하이닉스'
+                      companyEngName: 'SK Hynix'
+                      createUserId: 'USER02'
+                      createDt: '2025-01-04 16:45:00'
+                      modifyUserId: 'USER02'
+                      modifyDt: '2025-01-04 16:45:00'
+                    - companyName: '카카오'
+                      companyEngName: 'Kakao Corp'
+                      createUserId: 'SYSTEM'
+                      createDt: '2025-01-05 11:20:00'
+                      modifyUserId: 'SYSTEM'
+                      modifyDt: '2025-01-05 11:20:00'
+                    - companyName: '네이버'
+                      companyEngName: 'Naver Corporation'
+                      createUserId: 'USER03'
+                      createDt: '2025-01-06 13:10:00'
+                      modifyUserId: 'USER03'
+                      modifyDt: '2025-01-06 13:10:00'
+                    - companyName: '포스코'
+                      companyEngName: 'POSCO'
+                      createUserId: 'SYSTEM'
+                      createDt: '2025-01-07 09:50:00'
+                      modifyUserId: 'SYSTEM'
+                      modifyDt: '2025-01-07 09:50:00'
+                    - companyName: '한화솔루션'
+                      companyEngName: 'Hanwha Solutions'
+                      createUserId: 'USER04'
+                      createDt: '2025-01-08 15:25:00'
+                      modifyUserId: 'USER04'
+                      modifyDt: '2025-01-08 15:25:00'
+                    - companyName: '롯데케미칼'
+                      companyEngName: 'Lotte Chemical'
+                      createUserId: 'SYSTEM'
+                      createDt: '2025-01-09 10:00:00'
+                      modifyUserId: 'SYSTEM'
+                      modifyDt: '2025-01-09 10:00:00'
+                    - companyName: '신한금융지주'
+                      companyEngName: 'Shinhan Financial Group'
+                      createUserId: 'USER05'
+                      createDt: '2025-01-10 12:35:00'
+                      modifyUserId: 'USER05'
+                      modifyDt: '2025-01-10 12:35:00'

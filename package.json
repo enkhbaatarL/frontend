@@ -1,0 +1,66 @@
+{
+  "name": "mi-platform-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "mock": "npm-run-all --parallel mock-server mock-api dev",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "mock-server": "prism mock mock/mock-api.oas3.yml",
+    "mock-api": "http-server ./mock -p 9000",
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx}": [
+      "prettier --write --ignore-unknown",
+      "eslint --fix"
+    ]
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.4.7",
+    "@mui/material": "^6.4.7",
+    "@mui/x-data-grid": "^7.27.3",
+    "@tanstack/react-query": "^5.67.2",
+    "axios": "^1.8.2",
+    "chart.js": "^4.4.8",
+    "i18next": "^24.2.2",
+    "i18next-http-backend": "^3.0.2",
+    "lodash-es": "^4.17.21",
+    "react": "^19.0.0",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^19.0.0",
+    "react-i18next": "^15.4.1",
+    "react-router-dom": "^7.3.0",
+    "react-virtuoso": "^4.12.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@stoplight/prism-cli": "^5.12.0",
+    "@types/lodash-es": "^4.17.12",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.21.0",
+    "eslint-import-resolver-typescript": "^3.8.6",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "http-server": "^14.1.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "npm-run-all": "^4.1.5",
+    "sass-embedded": "^1.85.1",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.24.1",
+    "vite": "^6.2.0"
+  }
+}

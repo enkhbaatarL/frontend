@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Swagger UI</title>
+    <link rel="stylesheet" type="text/css" href="swagger/swagger-ui.css" />
+  </head>
+
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="swagger/swagger-ui.js"></script>
+    <script type="text/javascript">
+      window.onload = () => {
+        SwaggerUIBundle({
+          deepLinking: true,
+          dom_id: '#swagger-ui',
+          showExtensions: true,
+          showCommonExtensions: true,
+          url: './mock-api.oas3.yml',
+        })
+      }
+    </script>
+  </body>
+</html>
