@@ -1,5 +1,5 @@
 # build stage
-FROM node:23.5 AS build-stage
+FROM node:22.14 AS build-stage
 
 RUN npm install typescript -g
 
