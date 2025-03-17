@@ -38,14 +38,14 @@ You need to set up ESLint in your IDE. For detailed instructions, please refer t
 
 ## 📦 Tech Stack
 
-- **Node 23.5**: Latest LTS version
+- **Node 22.14**: Latest LTS version
 - **React 19**: Latest version
 - **TypeScript**: Type checking
-- **MUI**: Styling
+- **MUI 6.4**: UI Framework
 - **Zustand / React Query**: State management
 - **Axios**: API requests
 - **i18next**: Multilingual (planned for future enhancement)
-- **Chart.js & react-chartjs-2**: Charts
+- **Chart.js (4.4.8) & react-chartjs-2**: Charts
 - **ESLint & Prettier**: Code style
 - **Husky & lint-staged**: Git Hooks
 

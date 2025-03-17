@@ -38,14 +38,14 @@ IDE에 ESLint를 설정해야 합니다. 자세한 지침은 [IDE_SETTING.md](..
 
 ## 📦 기술 스택
 
-- **Node 23.5**: 최신 LTS 버전
+- **Node 22.14**: 최신 LTS 버전
 - **React 19**: 최신 버전
 - **TypeScript**: 타입 검사
-- **MUI**: 스타일링
+- **MUI 6.4**: UI 프레임워크
 - **Zustand / React Query**: 상태 관리
 - **Axios**: API 요청
 - **i18next**: 다국어 지원 (향후 지원 예정)
-- **Chart.js & react-chartjs-2**: 차트
+- **Chart.js (4.4.8) & react-chartjs-2**: 차트
 - **ESLint & Prettier**: 코드 스타일
 - **Husky & lint-staged**: Git Hooks
 
