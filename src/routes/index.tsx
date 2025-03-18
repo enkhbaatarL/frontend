@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
 
+import ComponentTestPage from '@/pages/ComponentTestPage.tsx'
 import TempLoginPassPage from '@/pages/TempLoginPassPage'
 import TestPage from '@/pages/TestPage'
 import AdminRoutes from '@/routes/AdminRoutes'
@@ -17,8 +18,13 @@ const commonRoutes: RouteObject[] = [
   { ...UserRoutes },
   { ...ErrorRoutes },
   {
+    // TODO: 테스트 페이지 제거 필요
     path: 'test',
     element: <TestPage />,
+  },
+  {
+    path: 'component-test',
+    element: <ComponentTestPage />,
   },
   {
     path: '/*',

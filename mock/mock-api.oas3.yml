@@ -283,3 +283,147 @@ paths:
                       createDt: "2025-03-12 15:55:06"
                       modifyUserId: "SYSTEM"
                       modifyDt: "2025-03-12 15:55:06"
+  /api/v1/admin/company-management/group-companies:
+    get:
+      summary: 그룹사 목록 조회 
+      responses:
+        '200':
+          description: 그룹사 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        companyCd:
+                          type: string
+                        companyNm:
+                          type: string
+                        companyEngNm:
+                          type: string
+              example:
+                status: true
+                code: 'SUC-000'
+                message: 'Success.'
+                data:
+                  - companyCd: "TEST003"
+                    companyNm: "1가나다"
+                    companyEngNm: "testnm3"
+                  - companyCd: "SKENS"
+                    companyNm: "SK E&S"
+                    companyEngNm: "SKENS"
+                  - companyCd: "SKSL"
+                    companyNm: "SK 실트론"
+                    companyEngNm: "SKSL"
+                  - companyCd: "SKI"
+                    companyNm: "SK 이노베이션"
+                    companyEngNm: "SKI"
+                  - companyCd: "SKCC"
+                    companyNm: "SK 주식회사 C&C"
+                    companyEngNm: "SKCC"
+                  - companyCd: "SKT"
+                    companyNm: "SK 텔레콤"
+                    companyEngNm: "SKT"
+                  - companyCd: "SKHY"
+                    companyNm: "SK 하이닉스"
+                    companyEngNm: "SKHY"
+                  - companyCd: "SKGAS"
+                    companyNm: "SK가스"
+                    companyEngNm: "SKGAS"
+                  - companyCd: "T001"
+                    companyNm: "T001회사"
+                    companyEngNm: "T001COMPANY"
+                  - companyCd: "T002"
+                    companyNm: "T002회사"
+                    companyEngNm: "T002COMPANY"
+                  - companyCd: "T003"
+                    companyNm: "T003회사"
+                    companyEngNm: "T003COMPANY"
+                  - companyCd: "TC001"
+                    companyNm: "TEST_COMPANY1"
+                    companyEngNm: "TEST_COMPANY1"
+                  - companyCd: "TC002"
+                    companyNm: "TEST_COMPANY2"
+                    companyEngNm: "TEST_COMPANY2"
+                  - companyCd: "TEST002"
+                    companyNm: "abc"
+                    companyEngNm: "testnm2"
+                  - companyCd: "TEST001"
+                    companyNm: "가나다"
+                    companyEngNm: "testnm1"
+                  - companyCd: "TEST004"
+                    companyNm: "마바사"
+                    companyEngNm: "testnm4"
+  /api/v1/admin/company-management/company:
+    post:
+      summary: 고객사 등록
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyCd:
+                  type: string
+                  description: 회사 코드
+                companyNm:
+                  type: string
+                  description: 회사 이름
+                usageBeginDate:
+                  type: string
+                  description: 사용 시작 날짜
+                usageEndDate:
+                  type: string
+                  description: 사용 종료 날짜
+              required:
+                - companyCd
+                - companyNm
+                - usageBeginDate
+                - usageEndDate
+      responses:
+        '200':
+          description: 고객사 등록 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      companyNo:
+                        type: integer
+                      companyCd:
+                        type: string
+                      companyNm:
+                        type: string
+                      usageBeginDate:
+                        type: string
+                      usageEndDate:
+                        type: string
+                      createUserId:
+                        type: string
+                      createDt:
+                        type: string
+                      modifyUserId:
+                        type: string
+                      modifyDt:
+                        type: string
+                      auditInfo:
+                        type: string

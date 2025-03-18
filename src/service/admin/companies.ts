@@ -21,6 +21,19 @@ interface ICompanyInfo {
   auditInfo: string
 }
 
+interface IGroupCompanyInfo {
+  companyCd: string
+  companyNm: string
+  companyEngNm: string
+}
+
+interface IRegisterCompanyRequest {
+  companyCd: string
+  companyNm: string
+  usageBeginDate: string
+  usageEndDate: string
+}
+
 /**
  * 고객사 서비스
  */
@@ -38,6 +51,24 @@ const companiesService = {
     )
 
     return response.data.data
+  },
+  /**
+   * 그룹사 목록을 조회합니다.
+   * @returns 그룹사 목록
+   */
+  async getGroupCompanies (): Promise<IGroupCompanyInfo[]> {
+    const response: AxiosResponse<ICommonResponse<IGroupCompanyInfo[]>> = await api.get('/admin/company-management/group-companies')
+
+    return response.data.data
+  },
+  /**
+   * 고객사를 등록합니다.
+   * @param body - { companyCd: 고객사 코드, companyNm: 고객사 명, usageBeginDate: 사용 시작일, usageEndDate: 사용 종료일 }
+   */
+  async registerCompany (body: IRegisterCompanyRequest): Promise<ICommonResponse<null>> {
+    const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/company-management/company', body)
+
+    return response.data
   },
 }
 

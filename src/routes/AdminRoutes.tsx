@@ -6,7 +6,7 @@ import AdminAnalyticsTablePage from '@/pages/admin/analytics/AdminAnalyticsTable
 import AdminBoardsFaqPage from '@/pages/admin/boards/AdminBoardsFaqPage'
 import AdminBoardsNoticesPage from '@/pages/admin/boards/AdminBoardsNoticesPage'
 import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesPage'
-import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage.tsx'
+import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
 import AdminMemberManagementManagersPage from '@/pages/admin/memberManagement/AdminMemberManagementManagersPage'

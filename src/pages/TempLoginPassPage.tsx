@@ -9,43 +9,52 @@ const TempLoginPassPage = () => {
   const [customerCompany, setCustomerCompany] = useState('실트론')
 
   return (
-    <Flex className="full-height" justify="center" align="center" gap={52}>
-      <Flex gap={10}>
-        <Select
-          labelId="customer-company-select-label"
-          size="small"
-          value={customerCompany}
-          onChange={(e) => {
-            setCustomerCompany(e.target.value)
-          }}
-          sx={{
-            width: '140px',
-          }}
-        >
-          <MenuItem value="실트론">실트론</MenuItem>
-          <MenuItem value="하이닉스">하이닉스</MenuItem>
-          <MenuItem value="온">온</MenuItem>
-          <MenuItem value="이노베이션">이노베이션</MenuItem>
-          <MenuItem value="에너지">에너지</MenuItem>
-          <MenuItem value="E&S">E&S</MenuItem>
-          <MenuItem value="gas">gas</MenuItem>
-        </Select>
+    <Flex direction="column" gap={20} className="full-height" justify="center" align="center">
+      <Flex gap={52}>
+        <Flex gap={10}>
+          <Select
+            labelId="customer-company-select-label"
+            size="small"
+            value={customerCompany}
+            onChange={(e) => {
+              setCustomerCompany(e.target.value)
+            }}
+            sx={{
+              width: '140px',
+            }}
+          >
+            <MenuItem value="실트론">실트론</MenuItem>
+            <MenuItem value="하이닉스">하이닉스</MenuItem>
+            <MenuItem value="온">온</MenuItem>
+            <MenuItem value="이노베이션">이노베이션</MenuItem>
+            <MenuItem value="에너지">에너지</MenuItem>
+            <MenuItem value="E&S">E&S</MenuItem>
+            <MenuItem value="gas">gas</MenuItem>
+          </Select>
+          <Button
+            variant="contained"
+            onClick={() => {
+              navigate('user/')
+            }}
+          >
+            사용자 로그인
+          </Button>
+        </Flex>
         <Button
           variant="contained"
           onClick={() => {
-            navigate('user/')
+            navigate('admin')
           }}
         >
-          사용자 로그인
+          관리자 로그인
         </Button>
       </Flex>
       <Button
-        variant="contained"
         onClick={() => {
-          navigate('admin')
+          navigate('/component-test')
         }}
       >
-        관리자 로그인
+        Component Test
       </Button>
     </Flex>
   )

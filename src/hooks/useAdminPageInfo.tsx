@@ -1,13 +1,7 @@
 import { useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 
-import useAdminMenuItems from '@/hooks/useAdminMenuItems'
-
-export interface IAdminPageInfo {
-  key: string
-  label: string
-  path: string
-}
+import useAdminMenuItems, { IMenuItem } from '@/hooks/useAdminMenuItems'
 
 const useAdminPageInfo = () => {
   const location = useLocation()
@@ -15,13 +9,26 @@ const useAdminPageInfo = () => {
 
   const adminPageInfo = useMemo(() => {
     const currentPath = location.pathname
-    const menuItem = adminMenuItems.find((item) => item.children?.some((child) => child.path === currentPath))
-    const childItem = menuItem?.children?.find((child) => child.path === currentPath)
+
+    const findMenuItem = (items: IMenuItem[], path: string): IMenuItem | null => {
+      for (const item of items) {
+        if (item.path === path) return item
+        if (item.children) {
+          const found: IMenuItem | null = findMenuItem(item.children, path)
+
+          if (found) return found
+        }
+      }
+
+      return null
+    }
+
+    const menuItem = findMenuItem(adminMenuItems, currentPath)
 
     return {
-      key: childItem?.key ?? '',
-      label: childItem?.label ?? '',
-      path: currentPath,
+      key: menuItem?.key ?? '',
+      label: menuItem?.label ?? '',
+      path: menuItem?.path ?? currentPath,
     }
   }, [adminMenuItems, location.pathname])
 
