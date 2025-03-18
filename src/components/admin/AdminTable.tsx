@@ -2,7 +2,7 @@ import { DataGrid, GridColDef, GridRowModel } from '@mui/x-data-grid'
 import { useMemo } from 'react'
 
 import AdminPagination from '@/components/admin/AdminPagination'
-import { adminTableBaseProps } from '@/constants/admin.ts'
+import { adminTableBaseProps } from '@/constants/admin'
 
 interface AdminTableProps<T extends GridRowModel> {
   getRowId?: (row: T) => string | number

@@ -5,27 +5,25 @@ import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-import AdminButton from '@/components/admin/AdminButton.tsx'
+import AdminButton from '@/components/admin/AdminButton'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
-import AdminSelect from '@/components/admin/AdminSelect.tsx'
+import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
-import companiesService from '@/service/admin/companies.ts'
+import useAdminMenuItems from '@/hooks/useAdminMenuItems'
+import companiesService from '@/service/admin/companies'
 
 const AdminCustomerCompanyManagementCompaniesPageHeader = () => {
+  const navigate = useNavigate()
+  const { getPath } = useAdminMenuItems()
+
   return (
     <Flex gap={4}>
-      <AdminButton
-        variant="contained"
-        color="primary"
-        size="small"
-        onClick={() => {
-          console.log('고객사 등록')
-        }}
-      >
+      <AdminButton variant="contained" color="primary" size="small" onClick={() => navigate(getPath('customer-company-registration'))}>
         {t('고객사 등록')}
       </AdminButton>
     </Flex>

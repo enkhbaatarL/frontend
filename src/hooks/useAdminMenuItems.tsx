@@ -8,6 +8,24 @@ export interface IMenuItem {
   icon?: ReactNode
   path?: string
   children?: IMenuItem[]
+  hidden?: boolean
+}
+
+const getPathFromKey = (key: string, items: IMenuItem[]): string | undefined => {
+  for (const item of items) {
+    if (item.key === key) {
+      return item.path
+    }
+    if (item.children) {
+      const childPath = getPathFromKey(key, item.children)
+
+      if (childPath) {
+        return childPath
+      }
+    }
+  }
+
+  return undefined
 }
 
 const useAdminMenuItems = () => {
@@ -24,11 +42,14 @@ const useAdminMenuItems = () => {
           key: 'customer-companies',
           label: t('고객사 목록'),
           path: '/admin/customer-company/companies',
-        },
-        {
-          key: 'customer-company-data-list',
-          label: t('데이터 목록'),
-          path: '/admin/customer-company/data',
+          children: [
+            {
+              key: 'customer-company-registration',
+              label: t('고객사 등록'),
+              path: '/admin/customer-company/companies/registration',
+              hidden: true,
+            },
+          ],
         },
       ],
     },
@@ -119,7 +140,9 @@ const useAdminMenuItems = () => {
     },
   ]
 
-  return adminMenuItems
+  const getPath = (key: string) => getPathFromKey(key, adminMenuItems) ?? '/admin'
+
+  return { adminMenuItems, getPath }
 }
 
 export default useAdminMenuItems

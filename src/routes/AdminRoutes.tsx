@@ -6,7 +6,7 @@ import AdminAnalyticsTablePage from '@/pages/admin/analytics/AdminAnalyticsTable
 import AdminBoardsFaqPage from '@/pages/admin/boards/AdminBoardsFaqPage'
 import AdminBoardsNoticesPage from '@/pages/admin/boards/AdminBoardsNoticesPage'
 import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesPage'
-import AdminCustomerCompanyManagementDataPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementDataPage'
+import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage.tsx'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
 import AdminMemberManagementManagersPage from '@/pages/admin/memberManagement/AdminMemberManagementManagersPage'
@@ -30,11 +30,16 @@ const AdminRoutes: RouteObject = {
         },
         {
           path: 'companies',
-          element: <AdminCustomerCompanyManagementCompaniesPage />,
-        },
-        {
-          path: 'data',
-          element: <AdminCustomerCompanyManagementDataPage />,
+          children: [
+            {
+              index: true,
+              element: <AdminCustomerCompanyManagementCompaniesPage />,
+            },
+            {
+              path: 'registration',
+              element: <AdminCustomerCompanyManagementCompaniesRegistrationPage />,
+            },
+          ],
         },
       ],
     },

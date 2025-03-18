@@ -17,17 +17,21 @@ interface MenuItemProps {
 
 const MenuItem = ({ drawerOpen, item, depth = 0, className }: MenuItemProps) => {
   const [open, setOpen] = useState<boolean>(false)
-  const hasChildren = !isEmpty(item.children)
+  const children = item.children?.filter(({ hidden }) => !hidden)
+
+  const hasChildren = !isEmpty(children)
   const navigate = useNavigate()
   const { adminPageInfo } = useAdminPageInfo()
-  const isActive = item.path === adminPageInfo.path
-  const hasActiveChild = item.children?.some((child) => child.path === adminPageInfo.path)
+  const isActive = depth !== 0 && adminPageInfo.path.startsWith(item.path ?? '')
+  const hasActiveChild = item.children?.some((child) => adminPageInfo.path.startsWith(child.path ?? ''))
 
   useEffect(() => {
     if (hasActiveChild || isActive) {
       setOpen(true)
     }
   }, [hasActiveChild, isActive])
+
+  if (item.hidden) return null
 
   return (
     <>
@@ -62,7 +66,7 @@ const MenuItem = ({ drawerOpen, item, depth = 0, className }: MenuItemProps) => 
 }
 
 const AdminMenu = ({ drawerOpen }: { drawerOpen: boolean }) => {
-  const adminMenuItems = useAdminMenuItems()
+  const { adminMenuItems } = useAdminMenuItems()
 
   return (
     <>

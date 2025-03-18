@@ -1,8 +1,8 @@
 import { AxiosResponse } from 'axios'
 
-import { sampleCompaniesAdapter } from '@/adapter/sampleAdapter.ts'
-import api from '@/lib/axios.ts'
-import { ICommonResponse, ISampleCompaniesResData, ISamplePagination } from '@/types/sample.ts'
+import { sampleCompaniesAdapter } from '@/adapter/sampleAdapter'
+import api from '@/lib/axios'
+import { ICommonResponse, ISampleCompaniesResData, ISamplePagination } from '@/types/sample'
 
 const sampleService = {
   async getSampleCompanies (size: string): Promise<ISampleCompaniesResData[]> {

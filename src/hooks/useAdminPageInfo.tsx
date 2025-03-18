@@ -11,7 +11,7 @@ export interface IAdminPageInfo {
 
 const useAdminPageInfo = () => {
   const location = useLocation()
-  const adminMenuItems = useAdminMenuItems()
+  const { adminMenuItems } = useAdminMenuItems()
 
   const adminPageInfo = useMemo(() => {
     const currentPath = location.pathname
