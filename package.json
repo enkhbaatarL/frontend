@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "mock-dev": "vite --host --mode mock",
-    "mock-server": "prism mock mock/mock-api.oas3.yml",
+    "mock-server": "prism mock mock/mock-api.json",
     "mock-api": "http-server ./mock -p 9000",
     "prepare": "husky install"
   },

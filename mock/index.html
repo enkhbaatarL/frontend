@@ -1,24 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Swagger UI</title>
-    <link rel="stylesheet" type="text/css" href="swagger/swagger-ui.css" />
-  </head>
-
-  <body>
-    <div id="swagger-ui"></div>
-    <script src="swagger/swagger-ui.js"></script>
-    <script type="text/javascript">
-      window.onload = () => {
-        SwaggerUIBundle({
-          deepLinking: true,
-          dom_id: '#swagger-ui',
-          showExtensions: true,
-          showCommonExtensions: true,
-          url: './mock-api.oas3.yml',
-        })
-      }
-    </script>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="SwaggerUI" />
+  <title>SwaggerUI</title>
+  <link rel="stylesheet" href="./swagger/swagger-ui.css" />
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="./swagger/swagger-ui-bundle.js" crossorigin></script>
+<script>
+  window.onload = () => {
+    window.ui = SwaggerUIBundle({
+      url: './mock-api.json',
+      dom_id: '#swagger-ui',
+    });
+  };
+</script>
+</body>
 </html>
