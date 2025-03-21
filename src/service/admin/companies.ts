@@ -34,6 +34,78 @@ interface IRegisterCompanyRequest {
   usageEndDate: string
 }
 
+interface IDepartmentInfo {
+  companyNo: number
+  companyCd: string
+  companyNm: string
+  departmentNm: string[]
+}
+
+enum UserRole {
+  USER = 'USER',
+  ADMIN = 'ADMIN',
+}
+
+export interface IUserRequest extends IPaginationRequest {
+  userRoleCd: UserRole.USER
+  companyNo?: number | string
+  departmentNm?: string
+  userNm?: string
+  emailAddress?: string
+}
+
+export interface CustomerCompanyNo {
+  createDt: string
+  modifyDt: string
+  createUserId: string
+  modifyUserId: string
+  isDeleted: boolean
+  customerCompanyNo: number
+  customerCompanyNm: string
+  customerCompanyCd: string
+  useBeginDt: string
+  useEndDt: string
+  isUsed: boolean
+}
+
+export interface CreatorCompanyNo {
+  createDt: string
+  modifyDt: string
+  createUserId: string
+  modifyUserId: string
+  isDeleted: boolean
+  customerCompanyNo: number
+  customerCompanyNm: string
+  customerCompanyCd: string
+  useBeginDt: string
+  useEndDt: string
+  isUsed: boolean
+}
+
+export interface IUserInfo {
+  userNo: number
+  userNm: string
+  userLoginId: string
+  userRoleCd: string
+  onDutyNm: string
+  departmentNm: string
+  isOtherServiceAccessPossible: boolean
+  isIndividualInfoAgreement: boolean
+  individualInfoAgreementDtm: string
+  customerCompanyNo: CustomerCompanyNo
+  customerCompanyNm: string
+  creatorUserNm: string
+  creatorDepartmentNm: string
+  creatorOnDutyNm: string
+  creatorCompanyNo: CreatorCompanyNo
+  creatorCompanyNm: string
+  createUserId: string
+  createDt: string
+  modifyUserId: string
+  modifyDt: string
+  auditInfo: string
+}
+
 /**
  * 고객사 서비스
  */
@@ -69,6 +141,29 @@ const companiesService = {
     const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/company-management/company', body)
 
     return response.data
+  },
+  /**
+   * 드랍다운 메뉴 필터에 쓰일 테이블 고객사, 부서 목록을 조회합니다.
+   * @returns 테이블 고객사, 부서 목록
+   */
+  async getDepartmentAll (): Promise<IDepartmentInfo[]> {
+    const response: AxiosResponse<ICommonResponse<IDepartmentInfo[]>> = await api.get('/admin/company-management/company/department/all')
+
+    return response.data.data
+  },
+  /**
+   * 사용자 목록을 조회합니다.
+   * @param params - { page: 페이지 번호, size: 페이지당 항목 수, companyCode: 회사 코드, departmentNm: 부서 명, userName: 사용자 명, emailAddress: 이메일 주소 }
+   */
+  async getUsers (params: Partial<Omit<IUserRequest, 'userRoleCd'>>): Promise<IPaginationResponse<IUserInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IUserInfo>>> = await api.get('admin/user-management/users', {
+      params: {
+        ...params,
+        userRoleCd: UserRole.USER,
+      },
+    })
+
+    return response.data.data
   },
 }
 

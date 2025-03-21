@@ -8,9 +8,10 @@ interface AdminTableProps<T extends GridRowModel> {
   getRowId?: (row: T) => string | number
   columns: GridColDef[]
   rows?: T[]
+  isLoading?: boolean
 }
 
-const AdminTable = <T extends GridRowModel>({ getRowId, columns, rows }: AdminTableProps<T>) => {
+const AdminTable = <T extends GridRowModel>({ getRowId, columns, rows, isLoading }: AdminTableProps<T>) => {
   const memoizedColumns = useMemo(
     () =>
       columns.map((column) => ({
@@ -22,7 +23,9 @@ const AdminTable = <T extends GridRowModel>({ getRowId, columns, rows }: AdminTa
 
   return (
     <>
-      <DataGrid getRowId={getRowId} rows={rows ?? []} columns={memoizedColumns} {...adminTableBaseProps} />
+      <div className="full-width">
+        <DataGrid getRowId={getRowId} rows={rows ?? []} columns={memoizedColumns} {...adminTableBaseProps} loading={isLoading} />
+      </div>
       <AdminPagination />
     </>
   )

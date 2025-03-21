@@ -1,25 +1,24 @@
-import { ReactNode, CSSProperties } from 'react'
+import { ReactNode, CSSProperties, HTMLAttributes } from 'react'
 
-interface Props {
+interface Props extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
   align?: 'start' | 'end' | 'center' | 'baseline'
   direction?: 'column' | 'row' | 'column-reverse' | 'row-reverse'
   justify?: 'flex-start' | 'flex-end' | 'center' | 'space-between' | 'space-around'
   wrap?: 'nowrap' | 'wrap' | 'wrap-reverse'
   gap?: number
-  className?: string
-  style?: CSSProperties
+  fullWidth?: true
   onClick?: () => void
 }
 
 const Flex = ({
   children,
-  align = 'center',
+  align = 'start',
   direction = 'row',
   justify = 'flex-start',
   wrap = 'nowrap',
   gap = 0,
-  className,
+  fullWidth,
   style,
   ...Props
 }: Partial<Props>) => {
@@ -30,11 +29,12 @@ const Flex = ({
     justifyContent: justify,
     flexWrap: wrap,
     gap: gap,
+    width: fullWidth ? '100%' : 'auto',
     ...style,
   }
 
   return (
-    <div style={flexStyle} className={className} {...Props}>
+    <div style={flexStyle} {...Props}>
       {children}
     </div>
   )
