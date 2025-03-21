@@ -63,7 +63,10 @@ const AdminMemberManagementUsersPage = () => {
   const departmentOptions = useMemo(() => {
     updateFilter('departmentNm', '')
 
-    return filterOptions?.find(({ companyNo }) => companyNo === filter.companyNo)?.departmentNm ?? []
+    return (filterOptions?.find(({ companyNo }) => companyNo === filter.companyNo)?.departmentNm ?? []).map((departmentNm) => ({
+      label: departmentNm,
+      value: departmentNm,
+    }))
   }, [filter.companyNo, filterOptions, updateFilter])
 
   const columns: GridColDef[] = [
@@ -132,14 +135,8 @@ const AdminMemberManagementUsersPage = () => {
             onChange={(e) => {
               updateFilter('companyNo', e.target.value as string)
             }}
-          >
-            <MenuItem value={''}>{t('전체')}</MenuItem>
-            {filterOptions?.map(({ companyNo, companyNm }) => (
-              <MenuItem key={companyNo} value={companyNo}>
-                {companyNm}
-              </MenuItem>
-            ))}
-          </AdminSelect>
+            options={filterOptions?.map(({ companyNo, companyNm }) => ({ label: companyNm, value: companyNo })) ?? []}
+          />
           <AdminSelect
             label={t('소속')}
             value={filter.departmentNm}
@@ -147,14 +144,8 @@ const AdminMemberManagementUsersPage = () => {
               updateFilter('departmentNm', e.target.value as string)
             }}
             disabled={isEmpty(departmentOptions)}
-          >
-            <MenuItem value={''}>{t('전체')}</MenuItem>
-            {departmentOptions.map((departmentNm) => (
-              <MenuItem key={`${filter.companyNo}-${departmentNm}`} value={departmentNm}>
-                {departmentNm}
-              </MenuItem>
-            ))}
-          </AdminSelect>
+            options={departmentOptions}
+          />
           <AdminTextField
             label={t('이름')}
             value={filter.userNm}

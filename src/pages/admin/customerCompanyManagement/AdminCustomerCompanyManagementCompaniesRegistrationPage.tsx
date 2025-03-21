@@ -12,7 +12,7 @@ import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useAdminMenuItems from '@/hooks/useAdminMenuItems'
-import useAdminSnackbar from '@/hooks/useAdminSnackbar'
+import useSnackbar from '@/hooks/useSnackbar'
 import companiesService from '@/service/admin/companies'
 import { Nullable, ICommonOptions } from '@/types/common'
 
@@ -41,7 +41,7 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
   const { setCustomComponent } = useAdminHeader()
   const navigate = useNavigate()
   const { getPath } = useAdminMenuItems()
-  const { showSnackbar } = useAdminSnackbar()
+  const { showSnackbar } = useSnackbar()
 
   const today = dayjs()
 

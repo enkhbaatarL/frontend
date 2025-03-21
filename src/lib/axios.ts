@@ -1,5 +1,7 @@
 import Axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 
+import useSnackbar, { ISnackbarOptions } from '@/hooks/useSnackbar'
+
 export interface HttpResponse<T> {
   status: number
   code: string
@@ -25,17 +27,18 @@ api.interceptors.request.use((req) => {
   return req
 })
 
-const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
+const errorHandler = (error: AxiosError<HttpResponse<unknown>>, showSnackbar: (message: string, options?: ISnackbarOptions) => void) => {
   const status = error.response?.status
 
   if (status) {
     if (status > 400) {
       if (status === 401) {
         // TODO: logout
-        console.error('Unauthorized')
+        showSnackbar('Unauthorized access', { variant: 'warning' })
       } else {
-        // TODO: toast 처리
-        console.error('Default Error')
+        const statusText = error.response?.statusText
+
+        showSnackbar(`Error: ${statusText}`, { variant: 'error' })
       }
     }
   }
@@ -43,6 +46,13 @@ const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
   return Promise.reject(error)
 }
 
-api.interceptors.response.use((res: AxiosResponse) => res, errorHandler)
+api.interceptors.response.use(
+  (res: AxiosResponse) => res,
+  (error: AxiosError<HttpResponse<unknown>>) => {
+    const { showSnackbar } = useSnackbar()
+
+    return errorHandler(error, showSnackbar)
+  },
+)
 
 export default api

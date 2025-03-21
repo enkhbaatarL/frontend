@@ -9,7 +9,8 @@ import AdminSelect from '@/components/admin/AdminSelect.tsx'
 import AdminSnackbar from '@/components/admin/AdminSnackbar'
 import AdminTable from '@/components/admin/AdminTable.tsx'
 import Flex from '@/components/common/display/Flex.tsx'
-import useAdminSnackbar from '@/hooks/useAdminSnackbar'
+import useSnackbar from '@/hooks/useSnackbar'
+
 const columns: GridColDef[] = [
   { field: 'companyNm', headerName: '회사명', minWidth: 150, flex: 1 },
   { field: 'companyNo', headerName: '상태', width: 120, align: 'center' },
@@ -42,7 +43,7 @@ const rows = [
 const ComponentTestPage = () => {
   const [select, setSelect] = useState<string>('all')
   const [showConfirm, setShowConfirm] = useState(false)
-  const { showSnackbar } = useAdminSnackbar()
+  const { showSnackbar } = useSnackbar()
 
   return (
     <>
