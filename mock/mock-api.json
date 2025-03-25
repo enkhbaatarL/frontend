@@ -1,14 +1,137 @@
 {
   "openapi": "3.1.0",
-  "info": { "title": "Backend API Docs", "description": "MI Platform API Docs", "version": "1.0" },
-  "servers": [{ "url": "http://localhost:4010", "description": "Generated server url" }],
+  "info": {
+    "title": "Backend API Docs",
+    "description": "MI Platform API Docs",
+    "version": "1.0"
+  },
+  "servers": [
+    { "url": "http://localhost:4010", "description": "Generated server url" }
+  ],
   "tags": [
-    { "name": "10. 클라이언트 접근권한 API", "description": "클라이언트 접근권한 API 입니다." },
-    { "name": "01. 사용자 API", "description": "사용자 API 입니다." },
-    { "name": "03. 데이타 프로바이더 관리 API", "description": "데이타 프로바이더 관리 API 입니다." },
+    {
+      "name": "10. 클라이언트 접근권한 API",
+      "description": "클라이언트 접근권한 API 입니다."
+    },
+    { "name": "09. 파일 관리 API", "description": "파일 관리 API 입니다." },
+    { "name": "04. 게시판 관리 API", "description": "게시판 관리 API 입니다." },
+    {
+      "name": "03. 데이타 프로바이더 관리 API",
+      "description": "데이타 프로바이더 관리 API 입니다."
+    },
+    { "name": "02. 사용자 API", "description": "사용자 API 입니다." },
+    { "name": "05. 알림 API", "description": "알림 API 입니다." },
     { "name": "01. 고객사 API", "description": "고객사 API 입니다." }
   ],
   "paths": {
+    "/api/v1/admin/file-manangement/": {
+      "post": {
+        "tags": ["09. 파일 관리 API"],
+        "summary": "파일 업로드",
+        "description": "파일을 업로드합니다.",
+        "operationId": "uploadFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseFileUploadRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 1
+      }
+    },
+    "/api/v1/admin/user-management/group-users": {
+      "get": {
+        "tags": ["02. 사용자 API"],
+        "summary": "그룹사 사용자 목록 인터페이스 테이블 조회 API",
+        "description": "사용자 목록을 인터페이스 테이블에서 조회합니다.",
+        "operationId": "getUserInfos",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호 (기본값: 1)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "페이지당 항목 수 (기본값: 10)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "userRoleCd",
+            "in": "query",
+            "description": "사용자 역할",
+            "required": true,
+            "schema": { "type": "string", "enum": ["USER", "ADMIN"] }
+          },
+          {
+            "name": "companyCd",
+            "in": "query",
+            "description": "검색할 고객사 코드",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "userNm",
+            "in": "query",
+            "description": "검색할 사용자 이름",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "emailAddress",
+            "in": "query",
+            "description": "검색할 이메일 주소",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResUserInfoRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 1
+      }
+    },
     "/api/v1/admin/provider-manangement/provider/all": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
@@ -18,7 +141,60 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseListProviderNameRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListProviderNameRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 1
+      }
+    },
+    "/api/v1/admin/notification-management/notifications": {
+      "get": {
+        "tags": ["05. 알림 API"],
+        "summary": "알림 조회 API",
+        "description": "알림 조회 API 입니다.",
+        "operationId": "getNotifications",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호 (기본값: 1)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "페이지당 항목 수 (기본값: 10)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResNotificationRes"
+                }
+              }
+            }
           }
         },
         "x-order": 1
@@ -33,10 +209,69 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseListGroupCompanyRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListGroupCompanyRes"
+                }
+              }
+            }
           }
         },
         "x-order": 1
+      }
+    },
+    "/api/v1/admin/bulletinboard-manangement/notice/filter": {
+      "get": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "공지사항 필터 조회",
+        "description": "공지사항 필터를 조회합니다.",
+        "operationId": "getNoticeFilter",
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseNoticeFilterRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 1
+      }
+    },
+    "/api/v1/admin/user-management/user": {
+      "post": {
+        "tags": ["02. 사용자 API"],
+        "summary": "사용자 등록 API",
+        "description": "사용자 정보를 등록합니다.",
+        "operationId": "postUserInfo",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/userInsert" }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListUserRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 2
       }
     },
     "/api/v1/admin/provider-manangement/provider": {
@@ -51,20 +286,36 @@
             "in": "query",
             "description": "페이지 번호 (기본값: 1)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
           },
           {
             "name": "size",
             "in": "query",
             "description": "페이지당 항목 수 (기본값: 20)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 20, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20,
+              "minimum": 1
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponsePaginationResProviderRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResProviderRes"
+                }
+              }
+            }
           }
         },
         "x-order": 2
@@ -75,13 +326,194 @@
         "description": "데이타 프로바이더를 등록합니다",
         "operationId": "createProvider",
         "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProviderCreateReq" } } },
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProviderCreateReq" }
+            }
+          },
           "required": true
         },
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseProviderCreateRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseProviderCreateRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 3
+      }
+    },
+    "/api/v1/admin/notification-management/notification": {
+      "post": {
+        "tags": ["05. 알림 API"],
+        "summary": "알림 발송 API",
+        "description": "배치에 쓰일 API로 임계치 확인 후 해당 유저에게 알림(이메일) 발송 API 입니다.",
+        "operationId": "createNotification",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseBoolean" }
+              }
+            }
+          }
+        },
+        "x-order": 2
+      }
+    },
+    "/api/v1/admin/bulletinboard-manangement/notice": {
+      "get": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "공지사항 목록 조회 - with pagination",
+        "description": "공지사항 목록을 조회합니다.",
+        "operationId": "getAllNotices",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호 (기본값: 1)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "페이지당 항목 수 (기본값: 20)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "카테고리",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "게시여부",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "description": "게시대상",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "제목 또는 내용",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResNoticeRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 2
+      },
+      "post": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "공지사항 등록",
+        "description": "공지사항을 등록합니다",
+        "operationId": "createNotice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NoticeCreateReq" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseBulletinBoard"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 3
+      }
+    },
+    "/api/v1/admin/file-manangement/{fileNo}": {
+      "get": {
+        "tags": ["09. 파일 관리 API"],
+        "summary": "파일 다운로드",
+        "description": "파일을 다운로드합니다.",
+        "operationId": "downloadFile_1",
+        "parameters": [
+          {
+            "name": "fileNo",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": { "schema": { "type": "string", "format": "byte" } }
+            }
+          }
+        },
+        "x-order": 2
+      },
+      "delete": {
+        "tags": ["09. 파일 관리 API"],
+        "summary": "파일 삭제",
+        "description": "파일을 삭제합니다.",
+        "operationId": "deleteFile",
+        "parameters": [
+          {
+            "name": "fileNo",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseString" }
+              }
+            }
           }
         },
         "x-order": 3
@@ -99,14 +531,24 @@
             "in": "query",
             "description": "페이지 번호 (default: 1)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
           },
           {
             "name": "size",
             "in": "query",
             "description": "페이지당 항목 수 (default: 10)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 10, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10,
+              "minimum": 1
+            }
           },
           {
             "name": "companyNm",
@@ -119,7 +561,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponsePaginationResCompanyRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResCompanyRes"
+                }
+              }
+            }
           }
         },
         "x-order": 2
@@ -132,13 +580,105 @@
         "description": "고객사를 등록합니다.",
         "operationId": "postCompany",
         "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/companyInsert" } } },
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/companyInsert" }
+            }
+          },
           "required": true
         },
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseCompanyRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseCompanyRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 3
+      }
+    },
+    "/api/v1/admin/user-management/users": {
+      "get": {
+        "tags": ["02. 사용자 API"],
+        "summary": "사용자 목록 조회 API",
+        "description": "사용자 목록을 조회합니다.",
+        "operationId": "getUsers",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호 (기본값: 1)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "페이지당 항목 수 (기본값: 10)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "userRoleCd",
+            "in": "query",
+            "description": "사용자 역할 코드",
+            "required": true,
+            "schema": { "type": "string", "enum": ["USER", "ADMIN"] }
+          },
+          {
+            "name": "companyNo",
+            "in": "query",
+            "description": "검색할 고객사 번호",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "name": "departmentNm",
+            "in": "query",
+            "description": "검색할 부서 이름",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "userNm",
+            "in": "query",
+            "description": "검색할 사용자 이름",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "emailAddress",
+            "in": "query",
+            "description": "검색할 이메일 주소",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResUserWithCreatorRes"
+                }
+              }
+            }
           }
         },
         "x-order": 3
@@ -162,7 +702,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseCompanyRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseCompanyRes"
+                }
+              }
+            }
           }
         },
         "x-order": 4
@@ -182,13 +728,23 @@
           }
         ],
         "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/companyUpdate" } } },
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/companyUpdate" }
+            }
+          },
           "required": true
         },
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseCompanyRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseCompanyRes"
+                }
+              }
+            }
           }
         },
         "x-order": 5
@@ -212,7 +768,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseProviderDetailRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseProviderDetailRes"
+                }
+              }
+            }
           }
         },
         "x-order": 4
@@ -221,7 +783,7 @@
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "데이타 프로바이더 삭제",
         "description": "데이타 프로바이더를 삭제합니다.",
-        "operationId": "delete",
+        "operationId": "deleteProvider",
         "parameters": [
           {
             "name": "providerNo",
@@ -234,7 +796,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseProviderDeleteRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseProviderDeleteRes"
+                }
+              }
+            }
           }
         },
         "x-order": 6
@@ -243,7 +811,7 @@
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "데이타 프로바이더 수정",
         "description": "데이타 프로바이더를 수정합니다.",
-        "operationId": "update",
+        "operationId": "updateProvider",
         "parameters": [
           {
             "name": "providerNo",
@@ -254,16 +822,230 @@
           }
         ],
         "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProviderUpdateReq" } } },
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProviderUpdateReq" }
+            }
+          },
           "required": true
         },
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseProviderUpdateRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseProviderUpdateRes"
+                }
+              }
+            }
           }
         },
         "x-order": 5
+      }
+    },
+    "/api/v1/admin/bulletinboard-manangement/notices/{noticeNo}": {
+      "get": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "공지사항 상세 조회",
+        "description": "공지사항 1개를 조회합니다.",
+        "operationId": "getNotice",
+        "parameters": [
+          {
+            "name": "noticeNo",
+            "in": "path",
+            "description": "공지사항번호 (기본값: 1)",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseNoticeDetailRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 4
+      },
+      "delete": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "공지사항 삭제",
+        "description": "공지사항을 삭제합니다.",
+        "operationId": "deleteNotice",
+        "parameters": [
+          {
+            "name": "noticeNo",
+            "in": "path",
+            "description": "공지사항번호 (기본값: 1)",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseBulletinBoard"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 6
+      },
+      "patch": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "공지사항 수정",
+        "description": "공지사항을 수정합니다.",
+        "operationId": "updateNotice",
+        "parameters": [
+          {
+            "name": "noticeNo",
+            "in": "path",
+            "description": "공지사항번호 (기본값: 1)",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32", "minimum": 1 }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NoticeUpdateReq" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseBulletinBoard"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 5
+      }
+    },
+    "/api/v1/admin/user-management/users/{userNo}": {
+      "get": {
+        "tags": ["02. 사용자 API"],
+        "summary": "사용자 상세 조회 API",
+        "description": "사용자 상세 정보를 조회합니다.",
+        "operationId": "getUser",
+        "parameters": [
+          {
+            "name": "userNo",
+            "in": "path",
+            "description": "사용자 번호",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseUserWithCompanyRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 4
+      },
+      "delete": {
+        "tags": ["02. 사용자 API"],
+        "summary": "사용자 등록 삭제 API",
+        "description": "사용자 정보를 삭제합니다.",
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "userNo",
+            "in": "path",
+            "description": "사용자 번호",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseUserRes" }
+              }
+            }
+          }
+        },
+        "x-order": 5
+      }
+    },
+    "/api/v1/admin/file-manangement/presigned-url/{fileNo}": {
+      "get": {
+        "tags": ["09. 파일 관리 API"],
+        "summary": "presigned URL 생성",
+        "description": "presigned URL 생성합니다.",
+        "operationId": "getPresignedUrl",
+        "parameters": [
+          {
+            "name": "fileNo",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseString" }
+              }
+            }
+          }
+        },
+        "x-order": 4
+      }
+    },
+    "/api/v1/admin/user-management/admin-user": {
+      "post": {
+        "tags": ["02. 사용자 API"],
+        "summary": "어드민 관리자 등록 API",
+        "description": "어드민 관리자 정보를 등록합니다.",
+        "operationId": "postAdminUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/adminInsert" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseUserRes" }
+              }
+            }
+          }
+        },
+        "x-order": 6
       }
     },
     "/api/v1/admin/company-management/companies/{companyNo}/latest-updated": {
@@ -284,10 +1066,139 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseLatestUpdatedRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseLatestUpdatedRes"
+                }
+              }
+            }
           }
         },
         "x-order": 6
+      }
+    },
+    "/api/v1/admin/bulletinboard-manangement/notice/upload-file": {
+      "post": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "공지사항 첨부 파일 업로드",
+        "description": "공지사항 첨부 파일을 업로드합니다. 20MB 이하의 jpg, png만 허용",
+        "operationId": "uploadFile_1",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseFileUploadRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 7
+      }
+    },
+    "/api/v1/admin/user-management/admin-users/{userNo}": {
+      "get": {
+        "tags": ["02. 사용자 API"],
+        "summary": "어드민 관리자 상세 조회 API",
+        "description": "어드민 관리자 상세 정보를 조회합니다.",
+        "operationId": "getAdminUser",
+        "parameters": [
+          {
+            "name": "userNo",
+            "in": "path",
+            "description": "사용자 번호",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseAdminRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 7
+      },
+      "delete": {
+        "tags": ["02. 사용자 API"],
+        "summary": "어드민 관리자 삭제 API",
+        "description": "어드민 관리자 정보를 삭제합니다.",
+        "operationId": "deleteAdminUser",
+        "parameters": [
+          {
+            "name": "userNo",
+            "in": "path",
+            "description": "사용자 번호",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseUserRes" }
+              }
+            }
+          }
+        },
+        "x-order": 9
+      },
+      "patch": {
+        "tags": ["02. 사용자 API"],
+        "summary": "어드민 관리자 수정 API",
+        "description": "어드민 관리자 정보를 수정합니다. (접근 허용 IP는 수정되는 값이 아닌 적용 되는 값 모두 필요)",
+        "operationId": "patchAdminUser",
+        "parameters": [
+          {
+            "name": "userNo",
+            "in": "path",
+            "description": "사용자 번호",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/adminUpdate" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseUserRes" }
+              }
+            }
+          }
+        },
+        "x-order": 8
       }
     },
     "/api/v1/admin/provider-manangement/providers/{providerNo}/latest-updated/": {
@@ -308,7 +1219,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseProviderLatestUpdatedRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseProviderLatestUpdatedRes"
+                }
+              }
+            }
           }
         },
         "x-order": 7
@@ -332,7 +1249,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseListProviderWithGoodsCntRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListProviderWithGoodsCntRes"
+                }
+              }
+            }
           }
         },
         "x-order": 7
@@ -353,11 +1276,49 @@
             "schema": { "type": "integer", "format": "int32", "minimum": 1 }
           }
         ],
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Insert" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Insert" }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseCompanyProviderMapRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseCompanyProviderMapRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 8
+      }
+    },
+    "/api/v1/admin/bulletinboard-manangement/notice/download-file/{fileNo}": {
+      "post": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "공지사항 첨부 파일 다운로드",
+        "description": "공지사항 첨부 파일을 다운로드합니다.",
+        "operationId": "downloadFile",
+        "parameters": [
+          {
+            "name": "fileNo",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": { "schema": { "type": "string", "format": "byte" } }
+            }
           }
         },
         "x-order": 8
@@ -375,21 +1336,31 @@
             "in": "query",
             "description": "페이지 번호 (기본값: 1)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
           },
           {
             "name": "size",
             "in": "query",
             "description": "페이지당 항목 수 (기본값: 20)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 20, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20,
+              "minimum": 1
+            }
           },
           {
-            "name": "searchText",
+            "name": "keyword",
             "in": "query",
             "description": "상품명 또는 상품설명 검색",
             "required": false,
-            "schema": { "type": "string", "default": "" }
+            "schema": { "type": "string" }
           },
           {
             "name": "providerNo",
@@ -402,7 +1373,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponsePaginationResGoodsRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResGoodsRes"
+                }
+              }
+            }
           }
         },
         "x-order": 8
@@ -433,7 +1410,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseGoodsDetailRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseGoodsDetailRes"
+                }
+              }
+            }
           }
         },
         "x-order": 9
@@ -462,7 +1445,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseGoodsDeleteRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseGoodsDeleteRes"
+                }
+              }
+            }
           }
         },
         "x-order": 11
@@ -489,13 +1478,23 @@
           }
         ],
         "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GoodsUpdateReq" } } },
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GoodsUpdateReq" }
+            }
+          },
           "required": true
         },
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseGoodsUpdateRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseGoodsUpdateRes"
+                }
+              }
+            }
           }
         },
         "x-order": 10
@@ -526,7 +1525,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseCompanyProviderMapDetailRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseCompanyProviderMapDetailRes"
+                }
+              }
+            }
           }
         },
         "x-order": 9
@@ -552,14 +1557,136 @@
             "schema": { "type": "integer", "format": "int32", "minimum": 1 }
           }
         ],
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Update" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Update" }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseCompanyProviderMapRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseCompanyProviderMapRes"
+                }
+              }
+            }
           }
         },
         "x-order": 10
+      }
+    },
+    "/api/v1/admin/bulletinboard-manangement/faq/filter": {
+      "get": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "FAQ 필터 조회",
+        "description": "FAQ 필터를 조회합니다.",
+        "operationId": "getFaqFilter",
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseFaqFilterRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 9
+      }
+    },
+    "/api/v1/admin/bulletinboard-manangement/faq": {
+      "get": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "FAQ 목록 조회 - with pagination",
+        "description": "FAQ 목록을 조회합니다.",
+        "operationId": "getAllFaq",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호 (기본값: 1)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "페이지당 항목 수 (기본값: 20)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "카테고리",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "제목 또는 내용",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResBulletinBoard"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 10
+      },
+      "post": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "FAQ 등록",
+        "description": "FAQ를 등록합니다",
+        "operationId": "createFaq",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FaqCreateReq" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseBulletinBoard"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 11
       }
     },
     "/api/v1/admin/company-management/companies/{companyNo}/providers/{providerNo}/latest-updated": {
@@ -587,7 +1714,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseLatestUpdatedRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseLatestUpdatedRes"
+                }
+              }
+            }
           }
         },
         "x-order": 11
@@ -605,14 +1738,24 @@
             "in": "query",
             "description": "페이지 번호 (default: 1)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
           },
           {
             "name": "size",
             "in": "query",
             "description": "페이지당 항목 수 (default: 10)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 10, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10,
+              "minimum": 1
+            }
           },
           {
             "name": "companyNo",
@@ -632,7 +1775,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponsePaginationResGoodsWithDataCntRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResGoodsWithDataCntRes"
+                }
+              }
+            }
           }
         },
         "x-order": 12
@@ -659,13 +1808,117 @@
           }
         ],
         "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CompanyGoodsMapReq" } } },
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CompanyGoodsMapReq" }
+            }
+          },
           "required": true
         },
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseCompanyGoodsMapRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseCompanyGoodsMapRes"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 13
+      }
+    },
+    "/api/v1/admin/bulletinboard-manangement/faq/{faqNo}": {
+      "get": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "FAQ 상세 조회",
+        "description": "FAQ 1개를 조회합니다.",
+        "operationId": "getFaq",
+        "parameters": [
+          {
+            "name": "faqNo",
+            "in": "path",
+            "description": "FAQ 번호 (기본값: 1)",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseBulletinBoard"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 12
+      },
+      "delete": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "FAQ 삭제",
+        "description": "FAQ를 삭제합니다.",
+        "operationId": "deleteFaq",
+        "parameters": [
+          {
+            "name": "faqNo",
+            "in": "path",
+            "description": "FAQ 번호 (기본값: 1)",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseBulletinBoard"
+                }
+              }
+            }
+          }
+        },
+        "x-order": 14
+      },
+      "patch": {
+        "tags": ["04. 게시판 관리 API"],
+        "summary": "FAQ 수정",
+        "description": "FAQ를 수정합니다.",
+        "operationId": "updateFaq",
+        "parameters": [
+          {
+            "name": "faqNo",
+            "in": "path",
+            "description": "FAQ 번호 (기본값: 1)",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32", "minimum": 1 }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FaqUpdateReq" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "HTTP Status Code is 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseBulletinBoard"
+                }
+              }
+            }
           }
         },
         "x-order": 13
@@ -683,21 +1936,31 @@
             "in": "query",
             "description": "페이지 번호 (기본값: 1)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
           },
           {
             "name": "size",
             "in": "query",
             "description": "페이지당 항목 수 (기본값: 20)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 20, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20,
+              "minimum": 1
+            }
           },
           {
-            "name": "searchText",
+            "name": "keyword",
             "in": "query",
             "description": "데이타명 또는 데이타설명 검색",
             "required": false,
-            "schema": { "type": "string", "default": "" }
+            "schema": { "type": "string" }
           },
           {
             "name": "providerNo",
@@ -717,7 +1980,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponsePaginationResGoodsDataSourceRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResGoodsDataSourceRes"
+                }
+              }
+            }
           }
         },
         "x-order": 12
@@ -755,7 +2024,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseCompanyGoodsMapDetailRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseCompanyGoodsMapDetailRes"
+                }
+              }
+            }
           }
         },
         "x-order": 14
@@ -793,7 +2068,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseLatestUpdatedRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseLatestUpdatedRes"
+                }
+              }
+            }
           }
         },
         "x-order": 15
@@ -811,14 +2092,24 @@
             "in": "query",
             "description": "페이지 번호 (default: 1)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            }
           },
           {
             "name": "size",
             "in": "query",
             "description": "페이지당 항목 수 (default: 10)",
             "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 10, "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10,
+              "minimum": 1
+            }
           },
           {
             "name": "companyNo",
@@ -845,7 +2136,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponsePaginationResAuthGoodsMapRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponsePaginationResAuthGoodsMapRes"
+                }
+              }
+            }
           }
         },
         "x-order": 16
@@ -879,35 +2176,47 @@
           }
         ],
         "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthGoodsMapReq" } } },
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AuthGoodsMapReq" }
+            }
+          },
           "required": true
         },
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseAuthGoodsMapSettingRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseAuthGoodsMapSettingRes"
+                }
+              }
+            }
           }
         },
         "x-order": 17
       }
     },
-    "/api/v1/admin/user-management/user": {
-      "post": {
-        "tags": ["01. 사용자 API"],
-        "summary": "사용자 등록 API",
-        "description": "사용자 정보를 등록합니다.",
-        "operationId": "postUserInfo",
-        "requestBody": {
-          "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Insert" } } } },
-          "required": true
-        },
+    "/api/v1/admin/company-management/company/department/all": {
+      "get": {
+        "tags": ["01. 고객사 API"],
+        "summary": "고객사, 부서 목록 조회 API",
+        "description": "드랍다운 메뉴 필터에 쓰일 테이블 고객사, 부서 목록을 조회합니다.",
+        "operationId": "getCompaniesAndDepartments",
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseListUserRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListCompanyDepartmentRes"
+                }
+              }
+            }
           }
         },
-        "x-order": 2147483647
+        "x-order": 18
       }
     },
     "/api/v1/admin/client-management/client-access": {
@@ -919,7 +2228,13 @@
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseListClientAccessInfoRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListClientAccessInfoRes"
+                }
+              }
+            }
           }
         },
         "x-order": 2147483647
@@ -929,11 +2244,24 @@
         "summary": "클라이언트 접근권한 등록 API",
         "description": "클라이언트 접근권한을 등록합니다.",
         "operationId": "postClientAccessInfo",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Insert" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Insert" }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseClientAccessInfoRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseClientAccessInfoRes"
+                }
+              }
+            }
           }
         },
         "x-order": 2147483647
@@ -943,106 +2271,24 @@
         "summary": "클라이언트 접근권한 수정 API",
         "description": "클라이언트 접근권한을 수정합니다.",
         "operationId": "patchClientAccessInfo",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Update" } } }, "required": true },
-        "responses": {
-          "200": {
-            "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseClientAccessInfoRes" } } }
-          }
-        },
-        "x-order": 2147483647
-      }
-    },
-    "/api/v1/admin/user-management/users": {
-      "get": {
-        "tags": ["01. 사용자 API"],
-        "summary": "사용자 목록 조회 API",
-        "description": "사용자 목록을 조회합니다.",
-        "operationId": "getUsers",
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Update" }
+            }
           },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 10, "minimum": 1 }
-          },
-          { "name": "companyCode", "in": "query", "required": false, "schema": { "type": "integer", "format": "int32" } },
-          { "name": "departmentNm", "in": "query", "required": false, "schema": { "type": "string" } },
-          { "name": "userName", "in": "query", "required": false, "schema": { "type": "string" } },
-          { "name": "emailAddress", "in": "query", "required": false, "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": {
-            "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponsePaginationResUserWithCreatorRes" } } }
-          }
+          "required": true
         },
-        "x-order": 2147483647
-      }
-    },
-    "/api/v1/admin/user-management/user/{userNo}": {
-      "get": {
-        "tags": ["01. 사용자 API"],
-        "summary": "사용자 상세 조회 API",
-        "description": "사용자 상세 정보를 조회합니다.",
-        "operationId": "getUser",
-        "parameters": [{ "name": "userNo", "in": "path", "required": true, "schema": { "type": "integer", "format": "int32" } }],
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseUserWithCompanyRes" } } }
-          }
-        },
-        "x-order": 2147483647
-      },
-      "delete": {
-        "tags": ["01. 사용자 API"],
-        "summary": "사용자 등록 삭제 API",
-        "description": "사용자 정보를 삭제합니다.",
-        "operationId": "deleteUser",
-        "parameters": [{ "name": "userNo", "in": "path", "required": true, "schema": { "type": "integer", "format": "int32" } }],
-        "responses": {
-          "200": {
-            "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseUserRes" } } }
-          }
-        },
-        "x-order": 2147483647
-      }
-    },
-    "/api/v1/admin/user-management/user-infos": {
-      "get": {
-        "tags": ["01. 사용자 API"],
-        "summary": "사용자 목록 원장테이블 조회 API",
-        "description": "사용자 목록을 원장 테이블에서 조회합니다.",
-        "operationId": "getUserInfos",
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "integer", "format": "int32", "default": 10, "minimum": 1 }
-          },
-          { "name": "companyCode", "in": "query", "required": true, "schema": { "type": "string" } },
-          { "name": "userName", "in": "query", "required": false, "schema": { "type": "string" } },
-          { "name": "emailAddress", "in": "query", "required": false, "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": {
-            "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponsePaginationResUserInfoRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseClientAccessInfoRes"
+                }
+              }
+            }
           }
         },
         "x-order": 2147483647
@@ -1054,11 +2300,24 @@
         "summary": "클라이언트 접근권한 삭제 API",
         "description": "클라이언트 접근권한을 삭제합니다.",
         "operationId": "postClientAccessInfo_1",
-        "parameters": [{ "name": "clientAccessRegNo", "in": "path", "required": true, "schema": { "type": "integer", "format": "int32" } }],
+        "parameters": [
+          {
+            "name": "clientAccessRegNo",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32" }
+          }
+        ],
         "responses": {
           "200": {
             "description": "HTTP Status Code is 200",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BaseResponseClientAccessInfoRes" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseClientAccessInfoRes"
+                }
+              }
+            }
           }
         },
         "x-order": 2147483647
@@ -1067,14 +2326,27 @@
   },
   "components": {
     "schemas": {
-      "Insert": { "type": "object", "properties": { "imCd": { "type": "string", "description": "IM코드" } }, "required": ["imCd"] },
+      "userInsert": {
+        "type": "object",
+        "properties": {
+          "imCd": {
+            "type": "string",
+            "description": "IM코드",
+            "example": "NO07"
+          }
+        },
+        "required": ["imCd"]
+      },
       "BaseResponseListUserRes": {
         "type": "object",
         "properties": {
           "status": { "type": "boolean" },
           "code": { "type": "string" },
           "message": { "type": "string" },
-          "data": { "type": "array", "items": { "$ref": "#/components/schemas/UserRes" } }
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserRes" }
+          }
         }
       },
       "CustomerCompany": {
@@ -1090,34 +2362,145 @@
           "customerCompanyCd": { "type": "string" },
           "useBeginDt": { "type": "string" },
           "useEndDt": { "type": "string" },
-          "isUsed": { "type": "boolean" }
+          "isUsed": { "type": "boolean" },
+          "users": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/User" }
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "createDt": { "type": "string", "format": "date-time" },
+          "modifyDt": { "type": "string", "format": "date-time" },
+          "createUserId": { "type": "string" },
+          "modifyUserId": { "type": "string" },
+          "isDeleted": { "type": "boolean" },
+          "userNo": { "type": "integer", "format": "int32" },
+          "userNm": { "type": "string" },
+          "userLoginId": { "type": "string" },
+          "userRoleCd": { "type": "string", "enum": ["USER", "ADMIN"] },
+          "onDutyNm": { "type": "string" },
+          "departmentNm": { "type": "string" },
+          "isOtherServiceAccessPossible": { "type": "boolean" },
+          "isIndividualInfoAgreement": { "type": "boolean" },
+          "individualInfoAgreementDtm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "customerCompany": { "$ref": "#/components/schemas/CustomerCompany" }
         }
       },
       "UserRes": {
         "type": "object",
         "properties": {
-          "userNo": { "type": "integer", "format": "int32", "description": "사용자번호" },
+          "userNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "사용자번호"
+          },
           "userNm": { "type": "string", "description": "사용자명" },
           "userLoginId": { "type": "string", "description": "사용자로그인ID" },
-          "userRoleCd": { "type": "string", "description": "사용자역할코드", "enum": ["USER", "ADMIN"] },
+          "userRoleCd": {
+            "type": "string",
+            "description": "사용자역할코드",
+            "enum": ["USER", "ADMIN"]
+          },
           "onDutyNm": { "type": "string", "description": "직책명" },
           "departmentNm": { "type": "string", "description": "부서명" },
-          "isOtherServiceAccessPossible": { "type": "boolean", "description": "타사서비스접근가능여부" },
-          "isIndividualInfoAgreement": { "type": "boolean", "description": "개인정보동의여부" },
-          "individualInfoAgreementDtm": { "type": "string", "format": "date-time", "description": "개인정보동의일시" },
-          "customerCompanyNo": { "$ref": "#/components/schemas/CustomerCompany", "description": "고객사번호" },
-          "createUserId": { "type": "string", "description": "등록자", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "등록일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정자", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" },
+          "isOtherServiceAccessPossible": {
+            "type": "boolean",
+            "description": "타사서비스접근가능여부"
+          },
+          "isIndividualInfoAgreement": {
+            "type": "boolean",
+            "description": "개인정보동의여부"
+          },
+          "individualInfoAgreementDtm": {
+            "type": "string",
+            "format": "date-time",
+            "description": "개인정보동의일시"
+          },
+          "customerCompanyNo": {
+            "$ref": "#/components/schemas/CustomerCompany",
+            "description": "고객사번호"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          },
           "auditInfo": { "description": "감사 정보" }
+        }
+      },
+      "adminInsert": {
+        "type": "object",
+        "properties": {
+          "imCd": {
+            "type": "string",
+            "description": "IM코드",
+            "example": 10001
+          },
+          "isOtherServiceAccessPossible": {
+            "type": "boolean",
+            "default": "false",
+            "description": "타사서비스접근가능여부",
+            "example": false
+          },
+          "accessAllowedIpAddress": {
+            "type": "array",
+            "description": "접근허용 IP",
+            "example": ["192.168.1.1", "192.168.1.2"],
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["imCd"]
+      },
+      "BaseResponseUserRes": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/UserRes" }
         }
       },
       "ProviderCreateReq": {
         "type": "object",
         "properties": {
-          "providerNm": { "type": "string", "description": "프로바이더 이름", "example": "레피니티브", "maxLength": 20, "minLength": 1 },
-          "providerCd": { "type": "string", "description": "프로바이더 코드", "example": "REF", "maxLength": 20, "minLength": 1 },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더 이름",
+            "example": "레피니티브",
+            "maxLength": 20,
+            "minLength": 1
+          },
+          "providerCd": {
+            "type": "string",
+            "description": "프로바이더 코드",
+            "example": "REF",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[A-Z]+$"
+          },
           "providerExpn": {
             "type": "string",
             "description": "프로바이더 설명",
@@ -1125,7 +2508,11 @@
             "maxLength": 100,
             "minLength": 1
           },
-          "isUsed": { "type": "boolean", "description": "프로바이더 사용유무", "example": true }
+          "isUsed": {
+            "type": "boolean",
+            "description": "프로바이더 사용유무",
+            "example": true
+          }
         },
         "required": ["isUsed", "providerCd", "providerExpn", "providerNm"]
       },
@@ -1141,24 +2528,122 @@
       "ProviderCreateRes": {
         "type": "object",
         "properties": {
-          "providerNo": { "type": "integer", "format": "int32", "description": "프로바이더번호", "example": 5000 },
-          "providerNm": { "type": "string", "description": "프로바이더명", "example": "레피니티브" },
-          "providerCd": { "type": "string", "description": "프로바이더코드", "example": "REF" },
-          "providerExpn": { "type": "string", "description": "프로바이더설명", "example": "레피니티브 설명" },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
-          "createUserId": { "type": "string", "description": "생성사용자로그인ID", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "생성일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정사용자로그인ID", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" }
+          "providerNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "프로바이더번호",
+            "example": 5000
+          },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더명",
+            "example": "레피니티브"
+          },
+          "providerCd": {
+            "type": "string",
+            "description": "프로바이더코드",
+            "example": "REF"
+          },
+          "providerExpn": {
+            "type": "string",
+            "description": "프로바이더설명",
+            "example": "레피니티브 설명"
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "생성사용자로그인ID",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정사용자로그인ID",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          }
+        }
+      },
+      "BaseResponseBoolean": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "type": "boolean" }
+        }
+      },
+      "BaseResponseFileUploadRes": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/FileUploadRes" }
+        }
+      },
+      "FileUploadRes": {
+        "type": "object",
+        "properties": {
+          "fileNo": {
+            "type": "integer",
+            "format": "int64",
+            "description": "파일번호",
+            "example": 1
+          },
+          "fileNm": {
+            "type": "string",
+            "description": "파일명",
+            "example": "sample.jpg"
+          },
+          "fileSize": {
+            "type": "integer",
+            "format": "int64",
+            "description": "파일크기(Byte)",
+            "example": 1024
+          },
+          "fileUrl": { "type": "string", "description": "파일URL" }
         }
       },
       "companyInsert": {
         "type": "object",
         "properties": {
-          "companyCd": { "type": "string", "description": "고객회사 코드", "example": 159 },
-          "companyNm": { "type": "string", "description": "고객회사 명", "example": "SK이노베이션" },
-          "usageBeginDate": { "type": "string", "format": "date", "description": "사용 시작일자", "example": 20250101 },
-          "usageEndDate": { "type": "string", "format": "date", "description": "사용 종료일자", "example": 20251231 }
+          "companyCd": {
+            "type": "string",
+            "description": "고객회사 코드",
+            "example": 159
+          },
+          "companyNm": {
+            "type": "string",
+            "description": "고객회사 명",
+            "example": "SK이노베이션"
+          },
+          "usageBeginDate": {
+            "type": "string",
+            "format": "date",
+            "description": "사용 시작일자",
+            "example": 20250101
+          },
+          "usageEndDate": {
+            "type": "string",
+            "format": "date",
+            "description": "사용 종료일자",
+            "example": 20251231
+          }
         },
         "required": ["usageBeginDate", "usageEndDate"]
       },
@@ -1174,24 +2659,76 @@
       "CompanyRes": {
         "type": "object",
         "properties": {
-          "companyNo": { "type": "integer", "format": "int32", "description": "고객사 번호", "example": 159 },
-          "companyCd": { "type": "string", "description": "고객사 코드", "example": 159 },
-          "companyNm": { "type": "string", "description": "고객사 명", "example": "SK이노베이션" },
-          "usageBeginDate": { "type": "string", "description": "사용시작 일자", "example": 20250101 },
-          "usageEndDate": { "type": "string", "description": "사용종료 일자", "example": 20251231 },
-          "isActivated": { "type": "boolean", "description": "활성화 여부", "example": true },
-          "createUserId": { "type": "string", "description": "등록자", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "등록일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정자", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" },
+          "companyNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "고객사 번호",
+            "example": 159
+          },
+          "companyCd": {
+            "type": "string",
+            "description": "고객사 코드",
+            "example": 159
+          },
+          "companyNm": {
+            "type": "string",
+            "description": "고객사 명",
+            "example": "SK이노베이션"
+          },
+          "usageBeginDate": {
+            "type": "string",
+            "description": "사용시작 일자",
+            "example": 20250101
+          },
+          "usageEndDate": {
+            "type": "string",
+            "description": "사용종료 일자",
+            "example": 20251231
+          },
+          "isActivated": {
+            "type": "boolean",
+            "description": "활성화 여부",
+            "example": true
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          },
           "auditInfo": { "description": "감사 정보" }
         }
       },
       "CompanyGoodsMapReq": {
         "type": "object",
         "properties": {
-          "goodsNo": { "type": "integer", "format": "int32", "description": "상품번호", "example": 1 },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
+          "goodsNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "상품번호",
+            "example": 1
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
           "goodsAuthManageCd": {
             "type": "string",
             "description": "상품권한주체구분코드",
@@ -1213,20 +2750,57 @@
       "CompanyGoodsMapRes": {
         "type": "object",
         "properties": {
-          "companyNo": { "type": "integer", "format": "int32", "description": "회사번호", "example": 2005 },
-          "goodsNo": { "type": "integer", "format": "int32", "description": "상품번호", "example": 159 },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
+          "companyNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "회사번호",
+            "example": 2005
+          },
+          "goodsNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "상품번호",
+            "example": 159
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
           "goodsAuthManageCd": {
             "type": "string",
             "description": "상품권한 주체구분 코드",
             "enum": ["COMPANY", "INDIVIDUAL"],
             "example": "INDIVIDUAL"
           },
-          "goodsAuthManageNm": { "type": "string", "description": "상품권한 주체구분 명", "enum": ["회사", "개인"], "example": "개인" },
-          "createUserId": { "type": "string", "description": "등록자", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "등록일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정자", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" }
+          "goodsAuthManageNm": {
+            "type": "string",
+            "description": "상품권한 주체구분 명",
+            "enum": ["회사", "개인"],
+            "example": "개인"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          }
         }
       },
       "BaseResponseCompanyGoodsMapDetailRes": {
@@ -1241,33 +2815,106 @@
       "CompanyGoodsMapDetailRes": {
         "type": "object",
         "properties": {
-          "companyNo": { "type": "integer", "format": "int32", "description": "회사번호", "example": 2005 },
-          "goodsNo": { "type": "integer", "format": "int32", "description": "상품번호", "example": 159 },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
+          "companyNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "회사번호",
+            "example": 2005
+          },
+          "goodsNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "상품번호",
+            "example": 159
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
           "goodsAuthManageCd": {
             "type": "string",
             "description": "상품권한 주체구분 코드",
             "enum": ["COMPANY", "INDIVIDUAL"],
             "example": "INDIVIDUAL"
           },
-          "goodsAuthManageNm": { "type": "string", "description": "상품권한 주체구분 명", "enum": ["회사", "개인"], "example": "개인" },
-          "createUserId": { "type": "string", "description": "등록자", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "등록일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정자", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" },
-          "goodsNm": { "type": "string", "description": "상품 명", "example": "제조사별 DRAM 생산량" },
-          "goodsExpn": { "type": "string", "description": "상품 설명", "example": "설명" },
+          "goodsAuthManageNm": {
+            "type": "string",
+            "description": "상품권한 주체구분 명",
+            "enum": ["회사", "개인"],
+            "example": "개인"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "goodsNm": {
+            "type": "string",
+            "description": "상품 명",
+            "example": "제조사별 DRAM 생산량"
+          },
+          "goodsExpn": {
+            "type": "string",
+            "description": "상품 설명",
+            "example": "설명"
+          },
           "companySetting": { "$ref": "#/components/schemas/CompanySetting" }
         }
       },
       "CompanySetting": {
         "type": "object",
         "properties": {
-          "isViewable": { "type": "boolean", "description": "보기권한 여부", "example": true },
-          "isDownloadable": { "type": "boolean", "description": "다운로드권한 여부", "example": false },
-          "usageBeginDate": { "type": "string", "description": "사용시작 일자", "example": 20250101 },
-          "usageEndDate": { "type": "string", "description": "사용종료 일자", "example": 20251231 }
+          "isViewable": {
+            "type": "boolean",
+            "description": "보기권한 여부",
+            "example": true
+          },
+          "isDownloadable": {
+            "type": "boolean",
+            "description": "다운로드권한 여부",
+            "example": false
+          },
+          "usageBeginDate": {
+            "type": "string",
+            "description": "사용시작 일자",
+            "example": 20250101
+          },
+          "usageEndDate": {
+            "type": "string",
+            "description": "사용종료 일자",
+            "example": 20251231
+          }
         }
+      },
+      "Insert": {
+        "type": "object",
+        "properties": {
+          "providerNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "프로바이더 번호",
+            "example": 159
+          }
+        },
+        "required": ["providerNo"]
       },
       "BaseResponseCompanyProviderMapRes": {
         "type": "object",
@@ -1281,10 +2928,28 @@
       "CompanyProviderMapRes": {
         "type": "object",
         "properties": {
-          "providerNo": { "type": "integer", "format": "int32", "description": "프로바이더 번호", "example": 159 },
-          "providerNm": { "type": "string", "description": "프로바이더 명", "example": "LSEG" },
-          "companyNo": { "type": "integer", "format": "int32", "description": "고객회사 번호", "example": 2005 },
-          "companyNm": { "type": "string", "description": "고객회사 명", "example": "sk이노베이션" }
+          "providerNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "프로바이더 번호",
+            "example": 159
+          },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더 명",
+            "example": "LSEG"
+          },
+          "companyNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "고객회사 번호",
+            "example": 2005
+          },
+          "companyNm": {
+            "type": "string",
+            "description": "고객회사 명",
+            "example": "sk이노베이션"
+          }
         }
       },
       "BaseResponseClientAccessInfoRes": {
@@ -1299,21 +2964,211 @@
       "ClientAccessInfoRes": {
         "type": "object",
         "properties": {
-          "clientAccessRegNo": { "type": "integer", "format": "int32", "description": "클라이언트 접속 등록번호" },
-          "clientCertId": { "type": "string", "description": "클라이언트 인증 ID" },
-          "clientSecretKey": { "type": "string", "description": "클라이언트 시크릿키" },
-          "customerCompanyNo": { "type": "integer", "format": "int32", "description": "고객회사 번호" },
-          "customerCompanyCd": { "type": "string", "description": "고객회사 코드" },
-          "customerCompanyNm": { "type": "string", "description": "고객회사 명" },
+          "clientAccessRegNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "클라이언트 접속 등록번호"
+          },
+          "clientCertId": {
+            "type": "string",
+            "description": "클라이언트 인증 ID"
+          },
+          "clientSecretKey": {
+            "type": "string",
+            "description": "클라이언트 시크릿키"
+          },
+          "customerCompanyNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "고객회사 번호"
+          },
+          "customerCompanyCd": {
+            "type": "string",
+            "description": "고객회사 코드"
+          },
+          "customerCompanyNm": {
+            "type": "string",
+            "description": "고객회사 명"
+          },
           "certTypeNm": { "type": "string", "description": "인증유형 명" },
           "certMethodNm": { "type": "string", "description": "인증방법 명" },
-          "permissionAuthScopeNm": { "type": "string", "description": "허용권한범위 명" }
+          "permissionAuthScopeNm": {
+            "type": "string",
+            "description": "허용권한범위 명"
+          }
         }
+      },
+      "NoticeCreateReq": {
+        "type": "object",
+        "properties": {
+          "isTopFixed": {
+            "type": "boolean",
+            "description": "고정여부",
+            "example": true
+          },
+          "isPopupUse": {
+            "type": "boolean",
+            "description": "팝업사용여부",
+            "example": true
+          },
+          "popupPostBeginDt": {
+            "type": "string",
+            "format": "date",
+            "description": "팝업게시시작일자",
+            "example": 20250101
+          },
+          "popupPostEndDt": {
+            "type": "string",
+            "format": "date",
+            "description": "팝업게시종료일자",
+            "example": 20251231
+          },
+          "bulletinCategorySeparateCode": {
+            "type": "string",
+            "description": "카테고리",
+            "example": "CAT1"
+          },
+          "isWholePost": {
+            "type": "boolean",
+            "description": "게시대상(전체:true, 개별:false)",
+            "example": true
+          },
+          "target": {
+            "type": "array",
+            "description": "고객사 ID 배열- 게시대상에 따라 null 또는 고객사 ID 배열",
+            "example": [1, 2, 3],
+            "items": { "type": "integer", "format": "int32" }
+          },
+          "bulletinValidBeginDt": {
+            "type": "string",
+            "format": "date",
+            "description": "게시글유효시작일자",
+            "example": 20250101
+          },
+          "bulletinValidEndDt": {
+            "type": "string",
+            "format": "date",
+            "description": "게시글유효종료일자",
+            "example": 20251231
+          },
+          "bulletinTitleName": {
+            "type": "string",
+            "description": "제목",
+            "example": "게시물 제목",
+            "maxLength": 50,
+            "minLength": 1
+          },
+          "bulletinContent": {
+            "type": "string",
+            "description": "내용",
+            "example": "게시물 내용"
+          },
+          "fileNo": {
+            "type": "integer",
+            "format": "int64",
+            "description": "파일번호",
+            "example": 1
+          }
+        },
+        "required": [
+          "bulletinCategorySeparateCode",
+          "bulletinContent",
+          "bulletinTitleName",
+          "bulletinValidBeginDt",
+          "bulletinValidEndDt",
+          "isPopupUse",
+          "isTopFixed",
+          "isWholePost",
+          "popupPostBeginDt",
+          "popupPostEndDt"
+        ]
+      },
+      "BaseResponseBulletinBoard": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/BulletinBoard" }
+        }
+      },
+      "BulletinBoard": {
+        "type": "object",
+        "properties": {
+          "createDt": { "type": "string", "format": "date-time" },
+          "modifyDt": { "type": "string", "format": "date-time" },
+          "createUserId": { "type": "string" },
+          "modifyUserId": { "type": "string" },
+          "isDeleted": { "type": "boolean" },
+          "bulletinNo": { "type": "integer", "format": "int32" },
+          "bulletinTypeCode": { "type": "string" },
+          "isTopFixed": { "type": "boolean" },
+          "isPopupUse": { "type": "boolean" },
+          "popupPostBeginDt": { "type": "string" },
+          "popupPostEndDt": { "type": "string" },
+          "bulletinCategorySeparateCode": { "type": "string" },
+          "isWholePost": { "type": "boolean" },
+          "bulletinValidBeginDt": { "type": "string" },
+          "bulletinValidEndDt": { "type": "string" },
+          "isValidPerioUnrestrict": { "type": "boolean" },
+          "bulletinTitleName": { "type": "string" },
+          "bulletinContent": { "type": "string" }
+        }
+      },
+      "FaqCreateReq": {
+        "type": "object",
+        "properties": {
+          "bulletinCategorySeparateCode": {
+            "type": "string",
+            "description": "카테고리",
+            "example": "CAT1"
+          },
+          "bulletinTitleName": {
+            "type": "string",
+            "description": "제목",
+            "example": "게시물 제목",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "bulletinContent": {
+            "type": "string",
+            "description": "내용",
+            "example": "게시물 내용"
+          }
+        },
+        "required": [
+          "bulletinCategorySeparateCode",
+          "bulletinContent",
+          "bulletinTitleName"
+        ]
+      },
+      "adminUpdate": {
+        "type": "object",
+        "properties": {
+          "isOtherServiceAccessPossible": {
+            "type": "boolean",
+            "description": "타사서비스접근가능여부",
+            "example": false
+          },
+          "accessAllowedIpAddress": {
+            "type": "array",
+            "description": "접근허용 IP",
+            "example": ["192.168.1.1", "192.168.1.2"],
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["accessAllowedIpAddress"]
       },
       "ProviderUpdateReq": {
         "type": "object",
         "properties": {
-          "providerNm": { "type": "string", "description": "프로바이더 이름", "example": "레피니티브", "maxLength": 20, "minLength": 1 },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더 이름",
+            "example": "레피니티브",
+            "maxLength": 20,
+            "minLength": 1
+          },
           "providerExpn": {
             "type": "string",
             "description": "프로바이더 설명",
@@ -1321,7 +3176,11 @@
             "maxLength": 100,
             "minLength": 1
           },
-          "isUsed": { "type": "boolean", "description": "프로바이더 사용유무", "example": true }
+          "isUsed": {
+            "type": "boolean",
+            "description": "프로바이더 사용유무",
+            "example": true
+          }
         }
       },
       "BaseResponseProviderUpdateRes": {
@@ -1336,24 +3195,79 @@
       "ProviderUpdateRes": {
         "type": "object",
         "properties": {
-          "providerNo": { "type": "integer", "format": "int32", "description": "프로바이더번호", "example": 5000 },
-          "providerNm": { "type": "string", "description": "프로바이더명", "example": "레피니티브" },
-          "providerCd": { "type": "string", "description": "프로바이더코드", "example": "REF" },
-          "providerExpn": { "type": "string", "description": "프로바이더설명", "example": "레피니티브 설명" },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
-          "createUserId": { "type": "string", "description": "생성사용자로그인ID", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "생성일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정사용자로그인ID", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" }
+          "providerNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "프로바이더번호",
+            "example": 5000
+          },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더명",
+            "example": "레피니티브"
+          },
+          "providerCd": {
+            "type": "string",
+            "description": "프로바이더코드",
+            "example": "REF"
+          },
+          "providerExpn": {
+            "type": "string",
+            "description": "프로바이더설명",
+            "example": "레피니티브 설명"
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "생성사용자로그인ID",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정사용자로그인ID",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          }
         }
       },
       "GoodsUpdateReq": {
         "type": "object",
         "properties": {
-          "goodsNm": { "type": "string", "description": "상품 이름", "example": "제조사별 DRAM 생산량" },
-          "goodsCd": { "type": "string", "description": "상품 코드", "example": "DRAM" },
-          "goodsExpn": { "type": "string", "description": "상품 설명", "example": "상품 설명" },
-          "isUsed": { "type": "boolean", "description": "상품 사용유무", "example": true }
+          "goodsNm": {
+            "type": "string",
+            "description": "상품 이름",
+            "example": "제조사별 DRAM 생산량"
+          },
+          "goodsCd": {
+            "type": "string",
+            "description": "상품 코드",
+            "example": "DRAM"
+          },
+          "goodsExpn": {
+            "type": "string",
+            "description": "상품 설명",
+            "example": "상품 설명"
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "상품 사용유무",
+            "example": true
+          }
         }
       },
       "BaseResponseGoodsUpdateRes": {
@@ -1368,42 +3282,112 @@
       "GoodsUpdateRes": {
         "type": "object",
         "properties": {
-          "goodsNo": { "type": "integer", "format": "int32", "description": "상품번호", "example": 5000 },
-          "goodsNm": { "type": "string", "description": "상품명", "example": "제조사별 DRAM 생산량" },
-          "goodsCd": { "type": "string", "description": "상품코드", "example": "DRAM" },
-          "goodsExpn": { "type": "string", "description": "상품설명", "example": "상품 설명" },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": "Y" },
-          "createUserId": { "type": "string", "description": "생성사용자로그인ID", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "생성일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정사용자로그인ID", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" }
+          "goodsNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "상품번호",
+            "example": 5000
+          },
+          "goodsNm": {
+            "type": "string",
+            "description": "상품명",
+            "example": "제조사별 DRAM 생산량"
+          },
+          "goodsCd": {
+            "type": "string",
+            "description": "상품코드",
+            "example": "DRAM"
+          },
+          "goodsExpn": {
+            "type": "string",
+            "description": "상품설명",
+            "example": "상품 설명"
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": "Y"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "생성사용자로그인ID",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정사용자로그인ID",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          }
         }
       },
       "companyUpdate": {
         "type": "object",
         "properties": {
-          "isActivated": { "type": "boolean", "description": "활성화 여부", "example": true },
-          "companyNm": { "type": "string", "description": "고객회사 명", "example": "SK이노베이션" },
-          "usageBeginDate": { "type": "string", "format": "date", "description": "사용 시작일자", "example": 20250101 },
-          "usageEndDate": { "type": "string", "format": "date", "description": "사용 종료일자", "example": 20251231 }
+          "isActivated": {
+            "type": "boolean",
+            "description": "활성화 여부",
+            "example": true
+          },
+          "companyNm": {
+            "type": "string",
+            "description": "고객회사 명",
+            "example": "SK이노베이션"
+          },
+          "usageBeginDate": {
+            "type": "string",
+            "format": "date",
+            "description": "사용 시작일자",
+            "example": 20250101
+          },
+          "usageEndDate": {
+            "type": "string",
+            "format": "date",
+            "description": "사용 종료일자",
+            "example": 20251231
+          }
         }
       },
       "Update": {
         "type": "object",
-        "properties": { "isUsed": { "type": "boolean", "description": "사용 여부", "example": "boolean" } },
+        "properties": {
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용 여부",
+            "example": "boolean"
+          }
+        },
         "required": ["isUsed"]
       },
       "AuthGoodsMapReq": {
         "type": "object",
         "properties": {
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
           "goodsAuthManageCd": {
             "type": "string",
             "description": "상품권한주체구분코드",
             "enum": ["INDIVIDUAL", "COMPANY"],
             "example": "INDIVIDUAL"
           },
-          "companySetting": { "$ref": "#/components/schemas/CompanySetting", "description": "회사 상품권한 설정" },
+          "companySetting": {
+            "$ref": "#/components/schemas/CompanySetting",
+            "description": "회사 상품권한 설정"
+          },
           "IndividualSettings": {
             "type": "array",
             "description": "개인 상품권한 설정",
@@ -1415,24 +3399,54 @@
       "IndividualSetting": {
         "type": "object",
         "properties": {
-          "userNo": { "type": "integer", "format": "int32", "description": "사용자 번호", "example": 159 },
-          "isViewable": { "type": "boolean", "description": "보기권한 여부", "example": true },
-          "isDownloadable": { "type": "boolean", "description": "다운로드권한 여부", "example": false },
-          "usageBeginDate": { "type": "string", "description": "사용시작 일자", "example": 20250101 },
-          "usageEndDate": { "type": "string", "description": "사용종료 일자", "example": 20251231 }
+          "userNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "사용자 번호",
+            "example": 159
+          },
+          "isViewable": {
+            "type": "boolean",
+            "description": "보기권한 여부",
+            "example": true
+          },
+          "isDownloadable": {
+            "type": "boolean",
+            "description": "다운로드권한 여부",
+            "example": false
+          },
+          "usageBeginDate": {
+            "type": "string",
+            "description": "사용시작 일자",
+            "example": 20250101
+          },
+          "usageEndDate": {
+            "type": "string",
+            "description": "사용종료 일자",
+            "example": 20251231
+          }
         }
       },
       "AuthGoodsMapSettingRes": {
         "type": "object",
         "properties": {
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
           "goodsAuthManageCd": {
             "type": "string",
             "description": "상품권한 주체구분 코드",
             "enum": ["COMPANY", "INDIVIDUAL"],
             "example": "INDIVIDUAL"
           },
-          "goodsAuthManageNm": { "type": "string", "description": "상품권한 주체구분 명", "enum": ["회사", "개인"], "example": "개인" }
+          "goodsAuthManageNm": {
+            "type": "string",
+            "description": "상품권한 주체구분 명",
+            "enum": ["회사", "개인"],
+            "example": "개인"
+          }
         }
       },
       "BaseResponseAuthGoodsMapSettingRes": {
@@ -1444,58 +3458,249 @@
           "data": { "$ref": "#/components/schemas/AuthGoodsMapSettingRes" }
         }
       },
+      "NoticeUpdateReq": {
+        "type": "object",
+        "properties": {
+          "isTopFixed": {
+            "type": "boolean",
+            "description": "고정여부",
+            "example": true
+          },
+          "isPopupUse": {
+            "type": "boolean",
+            "description": "팝업사용여부",
+            "example": true
+          },
+          "popupPostBeginDt": {
+            "type": "string",
+            "format": "date",
+            "description": "팝업게시시작일자",
+            "example": 20250101
+          },
+          "popupPostEndDt": {
+            "type": "string",
+            "format": "date",
+            "description": "팝업게시종료일자",
+            "example": 20251231
+          },
+          "bulletinCategorySeparateCode": {
+            "type": "string",
+            "description": "카테고리",
+            "example": "CAT1"
+          },
+          "isWholePost": {
+            "type": "boolean",
+            "description": "게시대상(전체:true, 개별:false)",
+            "example": true
+          },
+          "target": {
+            "type": "array",
+            "description": "고객서 ID 배열- 게시대상에 따라 null 또는 고객사 ID 배열",
+            "example": [1, 2, 3],
+            "items": { "type": "integer", "format": "int32" }
+          },
+          "bulletinValidBeginDt": {
+            "type": "string",
+            "format": "date",
+            "description": "게시글유효시작일자",
+            "example": 20250101
+          },
+          "bulletinValidEndDt": {
+            "type": "string",
+            "format": "date",
+            "description": "게시글유효종료일자",
+            "example": 20251231
+          },
+          "bulletinTitleName": {
+            "type": "string",
+            "description": "제목",
+            "example": "게시물 제목",
+            "maxLength": 50,
+            "minLength": 1
+          },
+          "bulletinContent": {
+            "type": "string",
+            "description": "내용",
+            "example": "게시물 내용"
+          },
+          "fileNo": {
+            "type": "integer",
+            "format": "int64",
+            "description": "파일번호",
+            "example": 1
+          }
+        }
+      },
+      "FaqUpdateReq": {
+        "type": "object",
+        "properties": {
+          "bulletinCategorySeparateCode": {
+            "type": "string",
+            "description": "카테고리",
+            "example": "CAT1"
+          },
+          "bulletinTitleName": {
+            "type": "string",
+            "description": "제목",
+            "example": "게시물 제목",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "bulletinContent": {
+            "type": "string",
+            "description": "내용",
+            "example": "게시물 내용"
+          }
+        }
+      },
       "BaseResponsePaginationResUserWithCreatorRes": {
         "type": "object",
         "properties": {
           "status": { "type": "boolean" },
           "code": { "type": "string" },
           "message": { "type": "string" },
-          "data": { "$ref": "#/components/schemas/PaginationResUserWithCreatorRes" }
+          "data": {
+            "$ref": "#/components/schemas/PaginationResUserWithCreatorRes"
+          }
         }
       },
       "PaginationResUserWithCreatorRes": {
         "type": "object",
         "properties": {
-          "totalPages": { "type": "integer", "format": "int32", "description": "전체 페이지 수", "example": 8 },
-          "totalElements": { "type": "integer", "format": "int32", "description": "전체 데이터 개수", "example": 1234 },
-          "currentPage": { "type": "integer", "format": "int32", "description": "현재 페이지", "example": 3 },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32",
             "description": "현재 페이지에서 조회된 데이터 개수",
             "example": 1234
           },
-          "size": { "type": "integer", "format": "int32", "description": "한 페이지당 최대 데이터 개수", "example": 10 },
-          "isFirst": { "type": "boolean", "description": "첫번째 페이지 여부", "example": false },
-          "isLast": { "type": "boolean", "description": "마지막 페이지 여부", "example": false },
-          "hasPrevious": { "type": "boolean", "description": "이전 페이지 존재 여부", "example": false },
-          "hasNext": { "type": "boolean", "description": "다음 페이지 존재 여부", "example": false },
-          "detail": { "type": "array", "description": "페이지 상세", "items": { "$ref": "#/components/schemas/UserWithCreatorRes" } }
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/UserWithCreatorRes" }
+          }
         }
       },
       "UserWithCreatorRes": {
         "type": "object",
         "properties": {
-          "userNo": { "type": "integer", "format": "int32", "description": "사용자번호" },
+          "userNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "사용자번호"
+          },
           "userNm": { "type": "string", "description": "사용자명" },
           "userLoginId": { "type": "string", "description": "사용자로그인ID" },
-          "userRoleCd": { "type": "string", "description": "사용자역할코드", "enum": ["USER", "ADMIN"] },
+          "userRoleCd": {
+            "type": "string",
+            "description": "사용자역할코드",
+            "enum": ["USER", "ADMIN"]
+          },
           "onDutyNm": { "type": "string", "description": "직책명" },
           "departmentNm": { "type": "string", "description": "부서명" },
-          "isOtherServiceAccessPossible": { "type": "boolean", "description": "타사서비스접근가능여부" },
-          "isIndividualInfoAgreement": { "type": "boolean", "description": "개인정보동의여부" },
-          "individualInfoAgreementDtm": { "type": "string", "format": "date-time", "description": "개인정보동의일시" },
-          "customerCompanyNo": { "$ref": "#/components/schemas/CustomerCompany", "description": "고객회사번호" },
-          "customerCompanyNm": { "type": "string", "description": "고객회사명" },
+          "isOtherServiceAccessPossible": {
+            "type": "boolean",
+            "description": "타사서비스접근가능여부"
+          },
+          "isIndividualInfoAgreement": {
+            "type": "boolean",
+            "description": "개인정보동의여부"
+          },
+          "individualInfoAgreementDtm": {
+            "type": "string",
+            "format": "date-time",
+            "description": "개인정보동의일시"
+          },
+          "customerCompanyNo": {
+            "$ref": "#/components/schemas/CustomerCompany",
+            "description": "고객회사번호"
+          },
+          "customerCompanyNm": {
+            "type": "string",
+            "description": "고객회사명"
+          },
           "creatorUserNm": { "type": "string", "description": "등록자 이름" },
-          "creatorDepartmentNm": { "type": "string", "description": "등록자 부서명" },
-          "creatorOnDutyNm": { "type": "string", "description": "등록자 직책명" },
-          "creatorCompanyNo": { "$ref": "#/components/schemas/CustomerCompany", "description": "등록자 회사번호" },
-          "creatorCompanyNm": { "type": "string", "description": "등록자 회사명" },
-          "createUserId": { "type": "string", "description": "등록자", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "등록일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정자", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" },
+          "creatorDepartmentNm": {
+            "type": "string",
+            "description": "등록자 부서명"
+          },
+          "creatorOnDutyNm": {
+            "type": "string",
+            "description": "등록자 직책명"
+          },
+          "creatorCompanyNo": {
+            "$ref": "#/components/schemas/CustomerCompany",
+            "description": "등록자 회사번호"
+          },
+          "creatorCompanyNm": {
+            "type": "string",
+            "description": "등록자 회사명"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          },
           "auditInfo": { "description": "감사 정보" }
         }
       },
@@ -1511,21 +3716,60 @@
       "UserWithCompanyRes": {
         "type": "object",
         "properties": {
-          "userNo": { "type": "integer", "format": "int32", "description": "사용자번호" },
+          "userNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "사용자번호"
+          },
           "userNm": { "type": "string", "description": "사용자명" },
           "userLoginId": { "type": "string", "description": "사용자로그인ID" },
-          "userRoleCd": { "type": "string", "description": "사용자역할코드", "enum": ["USER", "ADMIN"] },
+          "userRoleCd": {
+            "type": "string",
+            "description": "사용자역할코드",
+            "enum": ["USER", "ADMIN"]
+          },
           "onDutyNm": { "type": "string", "description": "직책명" },
           "departmentNm": { "type": "string", "description": "부서명" },
-          "isOtherServiceAccessPossible": { "type": "boolean", "description": "타사서비스접근가능여부" },
-          "isIndividualInfoAgreement": { "type": "boolean", "description": "개인정보동의여부" },
-          "individualInfoAgreementDtm": { "type": "string", "format": "date-time", "description": "개인정보동의일시" },
-          "customerCompanyNo": { "$ref": "#/components/schemas/CustomerCompany", "description": "고객사번호" },
+          "isOtherServiceAccessPossible": {
+            "type": "boolean",
+            "description": "타사서비스접근가능여부"
+          },
+          "isIndividualInfoAgreement": {
+            "type": "boolean",
+            "description": "개인정보동의여부"
+          },
+          "individualInfoAgreementDtm": {
+            "type": "string",
+            "format": "date-time",
+            "description": "개인정보동의일시"
+          },
+          "customerCompanyNo": {
+            "$ref": "#/components/schemas/CustomerCompany",
+            "description": "고객사번호"
+          },
           "customerCompanyNm": { "type": "string", "description": "고객사명" },
-          "createUserId": { "type": "string", "description": "등록자", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "등록일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정자", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          },
           "auditInfo": { "description": "감사 정보" }
         }
       },
@@ -1541,42 +3785,244 @@
       "PaginationResUserInfoRes": {
         "type": "object",
         "properties": {
-          "totalPages": { "type": "integer", "format": "int32", "description": "전체 페이지 수", "example": 8 },
-          "totalElements": { "type": "integer", "format": "int32", "description": "전체 데이터 개수", "example": 1234 },
-          "currentPage": { "type": "integer", "format": "int32", "description": "현재 페이지", "example": 3 },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32",
             "description": "현재 페이지에서 조회된 데이터 개수",
             "example": 1234
           },
-          "size": { "type": "integer", "format": "int32", "description": "한 페이지당 최대 데이터 개수", "example": 10 },
-          "isFirst": { "type": "boolean", "description": "첫번째 페이지 여부", "example": false },
-          "isLast": { "type": "boolean", "description": "마지막 페이지 여부", "example": false },
-          "hasPrevious": { "type": "boolean", "description": "이전 페이지 존재 여부", "example": false },
-          "hasNext": { "type": "boolean", "description": "다음 페이지 존재 여부", "example": false },
-          "detail": { "type": "array", "description": "페이지 상세", "items": { "$ref": "#/components/schemas/UserInfoRes" } }
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/UserInfoRes" }
+          }
         }
       },
       "UserInfoRes": {
         "type": "object",
         "properties": {
-          "imCd": { "type": "string", "description": "IM코드" },
+          "imCd": {
+            "type": "string",
+            "description": "IM코드",
+            "example": "NO01"
+          },
+          "userNm": {
+            "type": "string",
+            "description": "사용자명",
+            "example": "홍길동"
+          },
+          "userEnglishNm": {
+            "type": "string",
+            "description": "사용자영문명",
+            "example": "Hong Gil Dong"
+          },
+          "loginId": {
+            "type": "string",
+            "description": "로그인ID",
+            "example": "hong@sk.com"
+          },
+          "emailAddress": {
+            "type": "string",
+            "description": "이메일주소",
+            "example": "hong@sk.com"
+          },
+          "companyCd": {
+            "type": "string",
+            "description": "회사코드",
+            "example": "SK"
+          },
+          "companyNm": {
+            "type": "string",
+            "description": "회사명",
+            "example": "SK하이닉스"
+          },
+          "employeeNo": {
+            "type": "string",
+            "description": "사원번호",
+            "example": 1234567890
+          },
+          "departmentCd": {
+            "type": "string",
+            "description": "부서코드",
+            "example": "D0001"
+          },
+          "departmentNm": {
+            "type": "string",
+            "description": "부서명",
+            "example": "총무팀"
+          },
+          "positionCd": {
+            "type": "string",
+            "description": "직위코드",
+            "example": "P0001"
+          },
+          "positionNm": {
+            "type": "string",
+            "description": "직위명",
+            "example": "총무"
+          },
+          "jobGradeCd": {
+            "type": "string",
+            "description": "직급코드",
+            "example": "J0001"
+          },
+          "jobGradeNm": {
+            "type": "string",
+            "description": "직급명",
+            "example": "과장"
+          },
+          "onDutyCd": {
+            "type": "string",
+            "description": "직책코드",
+            "example": "D0001"
+          },
+          "onDutyNm": {
+            "type": "string",
+            "description": "직책명",
+            "example": "총무"
+          },
+          "isRegistered": {
+            "type": "boolean",
+            "description": "사용자 등록 여부",
+            "example": true
+          }
+        }
+      },
+      "AdminPermission": {
+        "type": "object",
+        "properties": {
+          "createDt": { "type": "string", "format": "date-time" },
+          "modifyDt": { "type": "string", "format": "date-time" },
+          "createUserId": { "type": "string" },
+          "modifyUserId": { "type": "string" },
+          "isDeleted": { "type": "boolean" },
+          "id": { "$ref": "#/components/schemas/AdminPermissionId" },
+          "user": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "AdminPermissionId": {
+        "type": "object",
+        "properties": {
+          "userNo": { "type": "integer", "format": "int32" },
+          "ipAddress": { "type": "string" },
+          "applyDt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AdminRes": {
+        "type": "object",
+        "properties": {
+          "userNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "사용자번호"
+          },
           "userNm": { "type": "string", "description": "사용자명" },
-          "userEnglishNm": { "type": "string", "description": "사용자영문명" },
-          "loginId": { "type": "string", "description": "로그인ID" },
-          "emailAddress": { "type": "string", "description": "이메일주소" },
-          "companyCd": { "type": "string", "description": "회사코드" },
-          "companyNm": { "type": "string", "description": "회사명" },
-          "employeeNo": { "type": "string", "description": "사원번호" },
-          "departmentCd": { "type": "string", "description": "부서코드" },
+          "userLoginId": { "type": "string", "description": "사용자로그인ID" },
+          "userRoleCd": {
+            "type": "string",
+            "description": "사용자역할코드",
+            "enum": ["USER", "ADMIN"]
+          },
+          "onDutyNm": { "type": "string", "description": "직책명" },
           "departmentNm": { "type": "string", "description": "부서명" },
-          "positionCd": { "type": "string", "description": "직위코드" },
-          "positionNm": { "type": "string", "description": "직위명" },
-          "jobGradeCd": { "type": "string", "description": "직급코드" },
-          "jobGradeNm": { "type": "string", "description": "직급명" },
-          "onDutyCd": { "type": "string", "description": "직책코드" },
-          "onDutyNm": { "type": "string", "description": "직책명" }
+          "isOtherServiceAccessPossible": {
+            "type": "boolean",
+            "description": "타사서비스접근가능여부"
+          },
+          "isIndividualInfoAgreement": {
+            "type": "boolean",
+            "description": "개인정보동의여부"
+          },
+          "individualInfoAgreementDtm": {
+            "type": "string",
+            "format": "date-time",
+            "description": "개인정보동의일시"
+          },
+          "customerCompanyNo": {
+            "$ref": "#/components/schemas/CustomerCompany",
+            "description": "고객사번호"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "auditInfo": { "description": "감사 정보" },
+          "accessAllowedIpAddressList": {
+            "type": "array",
+            "description": "관리자 허용 IP 주소 목록",
+            "items": { "$ref": "#/components/schemas/AdminPermission" }
+          }
+        }
+      },
+      "BaseResponseAdminRes": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/AdminRes" }
         }
       },
       "BaseResponseProviderDetailRes": {
@@ -1591,14 +4037,48 @@
       "ProviderDetailRes": {
         "type": "object",
         "properties": {
-          "providerNo": { "type": "integer", "format": "int32", "description": "프로바이더번호", "example": 5000 },
-          "providerNm": { "type": "string", "description": "프로바이더명", "example": "레피니티브" },
-          "providerCd": { "type": "string", "description": "프로바이더코드", "example": "REF" },
-          "providerExpn": { "type": "string", "description": "프로바이더설명", "example": "레피니티브 설명" },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
-          "createUserId": { "type": "string", "description": "생성사용자로그인ID", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "생성일시", "example": "2025-02-12 15:00:00" },
-          "createUserName": { "type": "string", "description": "생성사이름", "example": "홍길동" }
+          "providerNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "프로바이더번호",
+            "example": 5000
+          },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더명",
+            "example": "레피니티브"
+          },
+          "providerCd": {
+            "type": "string",
+            "description": "프로바이더코드",
+            "example": "REF"
+          },
+          "providerExpn": {
+            "type": "string",
+            "description": "프로바이더설명",
+            "example": "레피니티브 설명"
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "생성사용자로그인ID",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "createUserName": {
+            "type": "string",
+            "description": "생성사이름",
+            "example": "홍길동"
+          }
         }
       },
       "BaseResponseProviderLatestUpdatedRes": {
@@ -1613,8 +4093,17 @@
       "ProviderLatestUpdatedRes": {
         "type": "object",
         "properties": {
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserName": { "type": "string", "description": "수정자이름", "example": "홍길동" }
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserName": {
+            "type": "string",
+            "description": "수정자이름",
+            "example": "홍길동"
+          }
         }
       },
       "BaseResponsePaginationResGoodsRes": {
@@ -1629,30 +4118,88 @@
       "GoodsRes": {
         "type": "object",
         "properties": {
-          "goodsNo": { "type": "integer", "format": "int32", "description": "상품번호", "example": 5000 },
-          "goodsNm": { "type": "string", "description": "상품명", "example": "제조사별 DRAM 생산량" },
-          "goodsExpn": { "type": "string", "description": "상품설명", "example": "상품 설명" },
-          "goodsDataSourceCount": { "type": "integer", "format": "int64", "description": "데이타 개수", "example": 10 }
+          "goodsNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "상품번호",
+            "example": 5000
+          },
+          "goodsNm": {
+            "type": "string",
+            "description": "상품명",
+            "example": "제조사별 DRAM 생산량"
+          },
+          "goodsExpn": {
+            "type": "string",
+            "description": "상품설명",
+            "example": "상품 설명"
+          },
+          "goodsDataSourceCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "데이타 개수",
+            "example": 10
+          }
         }
       },
       "PaginationResGoodsRes": {
         "type": "object",
         "properties": {
-          "totalPages": { "type": "integer", "format": "int32", "description": "전체 페이지 수", "example": 8 },
-          "totalElements": { "type": "integer", "format": "int32", "description": "전체 데이터 개수", "example": 1234 },
-          "currentPage": { "type": "integer", "format": "int32", "description": "현재 페이지", "example": 3 },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32",
             "description": "현재 페이지에서 조회된 데이터 개수",
             "example": 1234
           },
-          "size": { "type": "integer", "format": "int32", "description": "한 페이지당 최대 데이터 개수", "example": 10 },
-          "isFirst": { "type": "boolean", "description": "첫번째 페이지 여부", "example": false },
-          "isLast": { "type": "boolean", "description": "마지막 페이지 여부", "example": false },
-          "hasPrevious": { "type": "boolean", "description": "이전 페이지 존재 여부", "example": false },
-          "hasNext": { "type": "boolean", "description": "다음 페이지 존재 여부", "example": false },
-          "detail": { "type": "array", "description": "페이지 상세", "items": { "$ref": "#/components/schemas/GoodsRes" } }
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/GoodsRes" }
+          }
         }
       },
       "BaseResponseGoodsDetailRes": {
@@ -1667,17 +4214,64 @@
       "GoodsDetailRes": {
         "type": "object",
         "properties": {
-          "goodsNo": { "type": "integer", "format": "int32", "description": "상품번호", "example": 5000 },
-          "goodsNm": { "type": "string", "description": "상품명", "example": "제조사별 DRAM 생산량" },
-          "goodsCd": { "type": "string", "description": "상품코드", "example": "DRAM" },
-          "goodsExpn": { "type": "string", "description": "상품설명", "example": "상품 설명" },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": "Y" },
-          "createUserId": { "type": "string", "description": "생성사용자로그인ID", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "생성일시", "example": "2025-02-12 15:00:00" },
-          "createUserName": { "type": "string", "description": "생성사이름", "example": "홍길동" },
-          "modifyUserId": { "type": "string", "description": "수정사용자로그인ID", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserName": { "type": "string", "description": "수정자이름", "example": "홍길동" }
+          "goodsNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "상품번호",
+            "example": 5000
+          },
+          "goodsNm": {
+            "type": "string",
+            "description": "상품명",
+            "example": "제조사별 DRAM 생산량"
+          },
+          "goodsCd": {
+            "type": "string",
+            "description": "상품코드",
+            "example": "DRAM"
+          },
+          "goodsExpn": {
+            "type": "string",
+            "description": "상품설명",
+            "example": "상품 설명"
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": "Y"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "생성사용자로그인ID",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "createUserName": {
+            "type": "string",
+            "description": "생성사이름",
+            "example": "홍길동"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정사용자로그인ID",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserName": {
+            "type": "string",
+            "description": "수정자이름",
+            "example": "홍길동"
+          }
         }
       },
       "BaseResponsePaginationResGoodsDataSourceRes": {
@@ -1686,42 +4280,121 @@
           "status": { "type": "boolean" },
           "code": { "type": "string" },
           "message": { "type": "string" },
-          "data": { "$ref": "#/components/schemas/PaginationResGoodsDataSourceRes" }
+          "data": {
+            "$ref": "#/components/schemas/PaginationResGoodsDataSourceRes"
+          }
         }
       },
       "GoodsDataSourceRes": {
         "type": "object",
         "properties": {
-          "goodsDataSourceNo": { "type": "integer", "format": "int32", "description": "상품데이터소스번호" },
-          "goodsDataSourceNm": { "type": "string", "description": "상품데이터소스명" },
-          "targetDbNm": { "type": "string", "description": "대상데이터베이스명" },
-          "targetTableNm": { "type": "string", "description": "대상데이터베이스명" },
-          "queryConditionContent": { "type": "string", "description": "쿼리조건내용" },
-          "goodsDataSourceExpn": { "type": "string", "description": "쿼리조건내용" },
-          "createUserId": { "type": "string", "description": "생성사용자로그인ID", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "생성일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정사용자로그인ID", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" }
+          "goodsDataSourceNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "상품데이터소스번호"
+          },
+          "goodsDataSourceNm": {
+            "type": "string",
+            "description": "상품데이터소스명"
+          },
+          "targetDbNm": {
+            "type": "string",
+            "description": "대상데이터베이스명"
+          },
+          "targetTableNm": {
+            "type": "string",
+            "description": "대상데이터베이스명"
+          },
+          "queryConditionContent": {
+            "type": "string",
+            "description": "쿼리조건내용"
+          },
+          "goodsDataSourceExpn": {
+            "type": "string",
+            "description": "쿼리조건내용"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "생성사용자로그인ID",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정사용자로그인ID",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          }
         }
       },
       "PaginationResGoodsDataSourceRes": {
         "type": "object",
         "properties": {
-          "totalPages": { "type": "integer", "format": "int32", "description": "전체 페이지 수", "example": 8 },
-          "totalElements": { "type": "integer", "format": "int32", "description": "전체 데이터 개수", "example": 1234 },
-          "currentPage": { "type": "integer", "format": "int32", "description": "현재 페이지", "example": 3 },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32",
             "description": "현재 페이지에서 조회된 데이터 개수",
             "example": 1234
           },
-          "size": { "type": "integer", "format": "int32", "description": "한 페이지당 최대 데이터 개수", "example": 10 },
-          "isFirst": { "type": "boolean", "description": "첫번째 페이지 여부", "example": false },
-          "isLast": { "type": "boolean", "description": "마지막 페이지 여부", "example": false },
-          "hasPrevious": { "type": "boolean", "description": "이전 페이지 존재 여부", "example": false },
-          "hasNext": { "type": "boolean", "description": "다음 페이지 존재 여부", "example": false },
-          "detail": { "type": "array", "description": "페이지 상세", "items": { "$ref": "#/components/schemas/GoodsDataSourceRes" } }
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/GoodsDataSourceRes" }
+          }
         }
       },
       "BaseResponsePaginationResProviderRes": {
@@ -1736,32 +4409,99 @@
       "PaginationResProviderRes": {
         "type": "object",
         "properties": {
-          "totalPages": { "type": "integer", "format": "int32", "description": "전체 페이지 수", "example": 8 },
-          "totalElements": { "type": "integer", "format": "int32", "description": "전체 데이터 개수", "example": 1234 },
-          "currentPage": { "type": "integer", "format": "int32", "description": "현재 페이지", "example": 3 },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32",
             "description": "현재 페이지에서 조회된 데이터 개수",
             "example": 1234
           },
-          "size": { "type": "integer", "format": "int32", "description": "한 페이지당 최대 데이터 개수", "example": 10 },
-          "isFirst": { "type": "boolean", "description": "첫번째 페이지 여부", "example": false },
-          "isLast": { "type": "boolean", "description": "마지막 페이지 여부", "example": false },
-          "hasPrevious": { "type": "boolean", "description": "이전 페이지 존재 여부", "example": false },
-          "hasNext": { "type": "boolean", "description": "다음 페이지 존재 여부", "example": false },
-          "detail": { "type": "array", "description": "페이지 상세", "items": { "$ref": "#/components/schemas/ProviderRes" } }
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/ProviderRes" }
+          }
         }
       },
       "ProviderRes": {
         "type": "object",
         "properties": {
-          "providerNo": { "type": "integer", "format": "int32", "description": "프로바이더번호", "example": 5000 },
-          "providerNm": { "type": "string", "description": "프로바이더명", "example": "레피니티브" },
-          "providerCd": { "type": "string", "description": "프로바이더코드", "example": "REF" },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
-          "goodsCount": { "type": "integer", "format": "int64", "description": "상품개수", "example": 10 },
-          "createDt": { "type": "string", "format": "date-time", "description": "생성일시", "example": "2025-02-12 15:00:00" }
+          "providerNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "프로바이더번호",
+            "example": 5000
+          },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더명",
+            "example": "레피니티브"
+          },
+          "providerCd": {
+            "type": "string",
+            "description": "프로바이더코드",
+            "example": "REF"
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
+          "goodsCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "상품개수",
+            "example": 10
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성일시",
+            "example": "2025-02-12 15:00:00"
+          }
         }
       },
       "BaseResponseListProviderNameRes": {
@@ -1770,14 +4510,203 @@
           "status": { "type": "boolean" },
           "code": { "type": "string" },
           "message": { "type": "string" },
-          "data": { "type": "array", "items": { "$ref": "#/components/schemas/ProviderNameRes" } }
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProviderNameRes" }
+          }
         }
       },
       "ProviderNameRes": {
         "type": "object",
         "properties": {
-          "providerNo": { "type": "integer", "format": "int32", "description": "프로바이더번호", "example": 5000 },
-          "providerNm": { "type": "string", "description": "프로바이더명", "example": "레피니티브" }
+          "providerNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "프로바이더번호",
+            "example": 5000
+          },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더명",
+            "example": "레피니티브"
+          }
+        }
+      },
+      "BaseResponsePaginationResNotificationRes": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": {
+            "$ref": "#/components/schemas/PaginationResNotificationRes"
+          }
+        }
+      },
+      "NotificationRes": {
+        "type": "object",
+        "properties": {
+          "emailSendSn": {
+            "type": "integer",
+            "format": "int32",
+            "description": "이메일 발송 일련번호",
+            "example": 1
+          },
+          "emailReceiveUserLoginId": {
+            "type": "string",
+            "description": "이메일 수신 사용자 로그인 ID",
+            "example": "test@test.com"
+          },
+          "emailTitleNm": {
+            "type": "string",
+            "description": "이메일 제목",
+            "example": "테스트 이메일"
+          },
+          "emailCntt": {
+            "type": "string",
+            "description": "이메일 내용",
+            "example": "테스트 이메일 내용"
+          },
+          "emailSendStatusNm": {
+            "type": "string",
+            "description": "이메일 발송 상태",
+            "example": "발송완료"
+          },
+          "emailSendErrorCntt": {
+            "type": "string",
+            "description": "이메일 발송 오류 내용",
+            "example": "테스트 이메일 오류 내용"
+          },
+          "emailSendDtm": {
+            "type": "string",
+            "format": "date-time",
+            "description": "이메일 발송 일시",
+            "example": "2025-01-01 00:00:00"
+          },
+          "userNm": {
+            "type": "string",
+            "description": "이메일 수신 사용자명",
+            "example": "홍길동"
+          },
+          "userRoleCd": {
+            "type": "string",
+            "description": "사용자역할코드",
+            "enum": ["USER", "ADMIN"],
+            "example": "ADMIN"
+          },
+          "onDutyNm": {
+            "type": "string",
+            "description": "직책명",
+            "example": "팀장"
+          },
+          "departmentNm": {
+            "type": "string",
+            "description": "부서명",
+            "example": "개발팀"
+          },
+          "customerCompanyNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "고객사번호",
+            "example": 1
+          },
+          "customerCompanyNm": {
+            "type": "string",
+            "description": "고객사명",
+            "example": "테스트 고객사"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "auditInfo": { "description": "감사 정보" }
+        }
+      },
+      "PaginationResNotificationRes": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지에서 조회된 데이터 개수",
+            "example": 1234
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/NotificationRes" }
+          }
+        }
+      },
+      "BaseResponseString": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "type": "string" }
         }
       },
       "BaseResponseListGroupCompanyRes": {
@@ -1786,15 +4715,69 @@
           "status": { "type": "boolean" },
           "code": { "type": "string" },
           "message": { "type": "string" },
-          "data": { "type": "array", "items": { "$ref": "#/components/schemas/GroupCompanyRes" } }
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/GroupCompanyRes" }
+          }
         }
       },
       "GroupCompanyRes": {
         "type": "object",
         "properties": {
-          "companyCd": { "type": "string", "description": "회사코드", "example": "SK001" },
-          "companyNm": { "type": "string", "description": "회사명", "example": "sk이노베이션" },
-          "companyEngNm": { "type": "string", "description": "회사영문명", "example": "skinnovation" }
+          "companyCd": {
+            "type": "string",
+            "description": "회사코드",
+            "example": "SK001"
+          },
+          "companyNm": {
+            "type": "string",
+            "description": "회사명",
+            "example": "sk이노베이션"
+          },
+          "companyEngNm": {
+            "type": "string",
+            "description": "회사영문명",
+            "example": "skinnovation"
+          }
+        }
+      },
+      "BaseResponseListCompanyDepartmentRes": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CompanyDepartmentRes" }
+          }
+        }
+      },
+      "CompanyDepartmentRes": {
+        "type": "object",
+        "properties": {
+          "companyNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "고객회사번호",
+            "example": 1
+          },
+          "companyCd": {
+            "type": "string",
+            "description": "고객회사코드",
+            "example": "C000000001"
+          },
+          "companyNm": {
+            "type": "string",
+            "description": "고객회사명",
+            "example": "테스트 고객사"
+          },
+          "departmentNm": {
+            "type": "array",
+            "description": "부서명",
+            "example": ["개발팀", "기획팀"],
+            "items": { "type": "string" }
+          }
         }
       },
       "BaseResponsePaginationResCompanyRes": {
@@ -1809,21 +4792,61 @@
       "PaginationResCompanyRes": {
         "type": "object",
         "properties": {
-          "totalPages": { "type": "integer", "format": "int32", "description": "전체 페이지 수", "example": 8 },
-          "totalElements": { "type": "integer", "format": "int32", "description": "전체 데이터 개수", "example": 1234 },
-          "currentPage": { "type": "integer", "format": "int32", "description": "현재 페이지", "example": 3 },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32",
             "description": "현재 페이지에서 조회된 데이터 개수",
             "example": 1234
           },
-          "size": { "type": "integer", "format": "int32", "description": "한 페이지당 최대 데이터 개수", "example": 10 },
-          "isFirst": { "type": "boolean", "description": "첫번째 페이지 여부", "example": false },
-          "isLast": { "type": "boolean", "description": "마지막 페이지 여부", "example": false },
-          "hasPrevious": { "type": "boolean", "description": "이전 페이지 존재 여부", "example": false },
-          "hasNext": { "type": "boolean", "description": "다음 페이지 존재 여부", "example": false },
-          "detail": { "type": "array", "description": "페이지 상세", "items": { "$ref": "#/components/schemas/CompanyRes" } }
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/CompanyRes" }
+          }
         }
       },
       "BaseResponseListProviderWithGoodsCntRes": {
@@ -1832,19 +4855,54 @@
           "status": { "type": "boolean" },
           "code": { "type": "string" },
           "message": { "type": "string" },
-          "data": { "type": "array", "items": { "$ref": "#/components/schemas/ProviderWithGoodsCntRes" } }
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProviderWithGoodsCntRes" }
+          }
         }
       },
       "ProviderWithGoodsCntRes": {
         "type": "object",
         "properties": {
-          "providerNo": { "type": "integer", "format": "int32", "description": "프로바이더 번호", "example": 159 },
-          "providerNm": { "type": "string", "description": "프로바이더 명", "example": "LSEG" },
-          "numberOfGoods": { "type": "integer", "format": "int32", "description": "회사가 구독중인 상품 개수", "example": 12 },
-          "createUserId": { "type": "string", "description": "등록자", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "등록일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정자", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" },
+          "providerNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "프로바이더 번호",
+            "example": 159
+          },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더 명",
+            "example": "LSEG"
+          },
+          "numberOfGoods": {
+            "type": "integer",
+            "format": "int32",
+            "description": "회사가 구독중인 상품 개수",
+            "example": 12
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          },
           "auditInfo": { "description": "감사 정보" }
         }
       },
@@ -1860,15 +4918,54 @@
       "CompanyProviderMapDetailRes": {
         "type": "object",
         "properties": {
-          "providerNo": { "type": "integer", "format": "int32", "description": "프로바이더 번호", "example": 159 },
-          "providerNm": { "type": "string", "description": "프로바이더 명", "example": "LSEG" },
-          "companyNo": { "type": "integer", "format": "int32", "description": "고객회사 번호", "example": 2005 },
-          "companyNm": { "type": "string", "description": "고객회사 명", "example": "sk이노베이션" },
-          "providerExpn": { "type": "string", "description": "프로바이더 기본 설명" },
-          "createUserId": { "type": "string", "description": "등록자", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "등록일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정자", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" }
+          "providerNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "프로바이더 번호",
+            "example": 159
+          },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더 명",
+            "example": "LSEG"
+          },
+          "companyNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "고객회사 번호",
+            "example": 2005
+          },
+          "companyNm": {
+            "type": "string",
+            "description": "고객회사 명",
+            "example": "sk이노베이션"
+          },
+          "providerExpn": {
+            "type": "string",
+            "description": "프로바이더 기본 설명"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          }
         }
       },
       "BaseResponseLatestUpdatedRes": {
@@ -1883,9 +4980,22 @@
       "LatestUpdatedRes": {
         "type": "object",
         "properties": {
-          "modifyUserId": { "type": "string", "description": "수정자 ID", "example": "sk01234" },
-          "modifyUserNm": { "type": "string", "description": "수정자 명", "example": "아이유" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정 일시", "example": "2025-02-12 15:00:00" }
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자 ID",
+            "example": "sk01234"
+          },
+          "modifyUserNm": {
+            "type": "string",
+            "description": "수정자 명",
+            "example": "아이유"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정 일시",
+            "example": "2025-02-12 15:00:00"
+          }
         }
       },
       "BaseResponsePaginationResGoodsWithDataCntRes": {
@@ -1894,59 +5004,171 @@
           "status": { "type": "boolean" },
           "code": { "type": "string" },
           "message": { "type": "string" },
-          "data": { "$ref": "#/components/schemas/PaginationResGoodsWithDataCntRes" }
+          "data": {
+            "$ref": "#/components/schemas/PaginationResGoodsWithDataCntRes"
+          }
         }
       },
       "GoodsWithDataCntRes": {
         "type": "object",
         "properties": {
-          "goodsNo": { "type": "integer", "format": "int32", "description": "상품번호", "example": 159 },
-          "goodsNm": { "type": "string", "description": "상품명", "example": "제조사별 DRAM 생산량" },
-          "goodsExpn": { "type": "string", "description": "상품설명", "example": "제품상세설명" },
-          "numberOfData": { "type": "integer", "format": "int32", "description": "상품에 포함된 데이터 개수", "example": 1 },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
+          "goodsNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "상품번호",
+            "example": 159
+          },
+          "goodsNm": {
+            "type": "string",
+            "description": "상품명",
+            "example": "제조사별 DRAM 생산량"
+          },
+          "goodsExpn": {
+            "type": "string",
+            "description": "상품설명",
+            "example": "제품상세설명"
+          },
+          "numberOfData": {
+            "type": "integer",
+            "format": "int32",
+            "description": "상품에 포함된 데이터 개수",
+            "example": 1
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
           "goodsAuthManageCd": {
             "type": "string",
             "description": "상품권한 주체구분 코드",
             "enum": ["COMPANY", "INDIVIDUAL"],
             "example": "INDIVIDUAL"
           },
-          "goodsAuthManageNm": { "type": "string", "description": "상품권한 주체구분 명", "enum": ["회사", "개인"], "example": "개인" },
-          "createUserId": { "type": "string", "description": "등록자", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "등록일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정자", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" }
+          "goodsAuthManageNm": {
+            "type": "string",
+            "description": "상품권한 주체구분 명",
+            "enum": ["회사", "개인"],
+            "example": "개인"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "등록자",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정자",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          }
         }
       },
       "PaginationResGoodsWithDataCntRes": {
         "type": "object",
         "properties": {
-          "totalPages": { "type": "integer", "format": "int32", "description": "전체 페이지 수", "example": 8 },
-          "totalElements": { "type": "integer", "format": "int32", "description": "전체 데이터 개수", "example": 1234 },
-          "currentPage": { "type": "integer", "format": "int32", "description": "현재 페이지", "example": 3 },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32",
             "description": "현재 페이지에서 조회된 데이터 개수",
             "example": 1234
           },
-          "size": { "type": "integer", "format": "int32", "description": "한 페이지당 최대 데이터 개수", "example": 10 },
-          "isFirst": { "type": "boolean", "description": "첫번째 페이지 여부", "example": false },
-          "isLast": { "type": "boolean", "description": "마지막 페이지 여부", "example": false },
-          "hasPrevious": { "type": "boolean", "description": "이전 페이지 존재 여부", "example": false },
-          "hasNext": { "type": "boolean", "description": "다음 페이지 존재 여부", "example": false },
-          "detail": { "type": "array", "description": "페이지 상세", "items": { "$ref": "#/components/schemas/GoodsWithDataCntRes" } }
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/GoodsWithDataCntRes" }
+          }
         }
       },
       "AuthGoodsMapRes": {
         "type": "object",
         "properties": {
-          "userNo": { "type": "integer", "format": "int32", "description": "사용자 번호", "example": 1 },
-          "userNm": { "type": "string", "description": "사용자 이름", "example": "홍길동" },
-          "onDutyNm": { "type": "string", "description": "직책 명", "example": "수석" },
-          "departmentNm": { "type": "string", "description": "부서 명", "example": "디지털 혁신부" },
-          "isViewable": { "type": "boolean", "description": "보기권한 여부", "example": true },
-          "isDownloadable": { "type": "boolean", "description": "다운로드권한 여부", "example": false }
+          "userNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "사용자 번호",
+            "example": 1
+          },
+          "userNm": {
+            "type": "string",
+            "description": "사용자 이름",
+            "example": "홍길동"
+          },
+          "onDutyNm": {
+            "type": "string",
+            "description": "직책 명",
+            "example": "수석"
+          },
+          "departmentNm": {
+            "type": "string",
+            "description": "부서 명",
+            "example": "디지털 혁신부"
+          },
+          "isViewable": {
+            "type": "boolean",
+            "description": "보기권한 여부",
+            "example": true
+          },
+          "isDownloadable": {
+            "type": "boolean",
+            "description": "다운로드권한 여부",
+            "example": false
+          }
         }
       },
       "BaseResponsePaginationResAuthGoodsMapRes": {
@@ -1955,27 +5177,69 @@
           "status": { "type": "boolean" },
           "code": { "type": "string" },
           "message": { "type": "string" },
-          "data": { "$ref": "#/components/schemas/PaginationResAuthGoodsMapRes" }
+          "data": {
+            "$ref": "#/components/schemas/PaginationResAuthGoodsMapRes"
+          }
         }
       },
       "PaginationResAuthGoodsMapRes": {
         "type": "object",
         "properties": {
-          "totalPages": { "type": "integer", "format": "int32", "description": "전체 페이지 수", "example": 8 },
-          "totalElements": { "type": "integer", "format": "int32", "description": "전체 데이터 개수", "example": 1234 },
-          "currentPage": { "type": "integer", "format": "int32", "description": "현재 페이지", "example": 3 },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32",
             "description": "현재 페이지에서 조회된 데이터 개수",
             "example": 1234
           },
-          "size": { "type": "integer", "format": "int32", "description": "한 페이지당 최대 데이터 개수", "example": 10 },
-          "isFirst": { "type": "boolean", "description": "첫번째 페이지 여부", "example": false },
-          "isLast": { "type": "boolean", "description": "마지막 페이지 여부", "example": false },
-          "hasPrevious": { "type": "boolean", "description": "이전 페이지 존재 여부", "example": false },
-          "hasNext": { "type": "boolean", "description": "다음 페이지 존재 여부", "example": false },
-          "detail": { "type": "array", "description": "페이지 상세", "items": { "$ref": "#/components/schemas/AuthGoodsMapRes" } }
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/AuthGoodsMapRes" }
+          }
         }
       },
       "BaseResponseListClientAccessInfoRes": {
@@ -1984,16 +5248,345 @@
           "status": { "type": "boolean" },
           "code": { "type": "string" },
           "message": { "type": "string" },
-          "data": { "type": "array", "items": { "$ref": "#/components/schemas/ClientAccessInfoRes" } }
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ClientAccessInfoRes" }
+          }
         }
       },
-      "BaseResponseUserRes": {
+      "BaseResponseNoticeDetailRes": {
         "type": "object",
         "properties": {
           "status": { "type": "boolean" },
           "code": { "type": "string" },
           "message": { "type": "string" },
-          "data": { "$ref": "#/components/schemas/UserRes" }
+          "data": { "$ref": "#/components/schemas/NoticeDetailRes" }
+        }
+      },
+      "BulletinBoardCompanyDto": {
+        "type": "object",
+        "properties": {
+          "customerCompanyNo": { "type": "integer", "format": "int32" },
+          "customerCompanyNm": { "type": "string" }
+        }
+      },
+      "BulletinBoardFileDto": {
+        "type": "object",
+        "properties": {
+          "fileNo": { "type": "integer", "format": "int64" },
+          "fileNm": { "type": "string" },
+          "fileSize": { "type": "integer", "format": "int64" },
+          "fileUrl": { "type": "string" }
+        }
+      },
+      "NoticeDetailRes": {
+        "type": "object",
+        "properties": {
+          "isTopFixed": {
+            "type": "boolean",
+            "description": "고정여부",
+            "example": true
+          },
+          "isPopupUse": {
+            "type": "boolean",
+            "description": "팝업사용여부",
+            "example": true
+          },
+          "popupPostBeginDt": {
+            "type": "string",
+            "description": "팝업게시시작일자",
+            "example": 20250101
+          },
+          "popupPostEndDt": {
+            "type": "string",
+            "description": "팝업게시종료일자",
+            "example": 20251231
+          },
+          "bulletinCategorySeparateCode": {
+            "type": "string",
+            "description": "카테고리",
+            "example": "CAT1"
+          },
+          "isWholePost": {
+            "type": "boolean",
+            "description": "게시대상(전체:true, 개별:false)",
+            "example": true
+          },
+          "targetList": {
+            "type": "array",
+            "description": "고객사 정보 배열",
+            "items": { "$ref": "#/components/schemas/BulletinBoardCompanyDto" }
+          },
+          "bulletinValidBeginDt": {
+            "type": "string",
+            "description": "게시글유효시작일자",
+            "example": 20250101
+          },
+          "bulletinValidEndDt": {
+            "type": "string",
+            "description": "게시글유효종료일자",
+            "example": 20251231
+          },
+          "bulletinTitleName": {
+            "type": "string",
+            "description": "제목",
+            "example": "게시물 제목"
+          },
+          "bulletinContent": {
+            "type": "string",
+            "description": "내용",
+            "example": "게시물 내용"
+          },
+          "fileList": {
+            "type": "array",
+            "description": "파일정보",
+            "items": { "$ref": "#/components/schemas/BulletinBoardFileDto" }
+          }
+        }
+      },
+      "BaseResponsePaginationResNoticeRes": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PaginationResNoticeRes" }
+        }
+      },
+      "NoticeRes": {
+        "type": "object",
+        "properties": {
+          "bulletinNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "게시물번호",
+            "example": 1
+          },
+          "isTopFixed": {
+            "type": "boolean",
+            "description": "고정",
+            "example": true
+          },
+          "isPopupUse": {
+            "type": "boolean",
+            "description": "팝업사용",
+            "example": true
+          },
+          "bulletinCategorySeparateCode": {
+            "type": "string",
+            "description": "카테고리",
+            "example": "카테고리"
+          },
+          "bulletinTitleName": {
+            "type": "string",
+            "description": "제목",
+            "example": "제목"
+          },
+          "createUserName": {
+            "type": "string",
+            "description": "등록자",
+            "example": "홍길동"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록일",
+            "example": "2025-02-12 15:00:00"
+          },
+          "status": {
+            "type": "string",
+            "description": "게시여부",
+            "example": "게시중"
+          },
+          "target": {
+            "type": "string",
+            "description": "게시대상",
+            "example": "SK 실트론, SK 하이닉스"
+          }
+        }
+      },
+      "PaginationResNoticeRes": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지에서 조회된 데이터 개수",
+            "example": 1234
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/NoticeRes" }
+          }
+        }
+      },
+      "BaseResponseNoticeFilterRes": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/NoticeFilterRes" }
+        }
+      },
+      "BulletinBoardFilterDto": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "value": { "type": "string" }
+        }
+      },
+      "NoticeFilterRes": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "array",
+            "description": "카테고리",
+            "items": { "$ref": "#/components/schemas/BulletinBoardFilterDto" }
+          },
+          "status": {
+            "type": "array",
+            "description": "게시여부",
+            "items": { "$ref": "#/components/schemas/BulletinBoardFilterDto" }
+          },
+          "target": {
+            "type": "array",
+            "description": "게시대상",
+            "items": { "$ref": "#/components/schemas/BulletinBoardFilterDto" }
+          }
+        }
+      },
+      "BaseResponsePaginationResBulletinBoard": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PaginationResBulletinBoard" }
+        }
+      },
+      "PaginationResBulletinBoard": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 페이지 수",
+            "example": 8
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "전체 데이터 개수",
+            "example": 1234
+          },
+          "currentPage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지",
+            "example": 3
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32",
+            "description": "현재 페이지에서 조회된 데이터 개수",
+            "example": 1234
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "한 페이지당 최대 데이터 개수",
+            "example": 10
+          },
+          "isFirst": {
+            "type": "boolean",
+            "description": "첫번째 페이지 여부",
+            "example": false
+          },
+          "isLast": {
+            "type": "boolean",
+            "description": "마지막 페이지 여부",
+            "example": false
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "이전 페이지 존재 여부",
+            "example": false
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "다음 페이지 존재 여부",
+            "example": false
+          },
+          "detail": {
+            "type": "array",
+            "description": "페이지 상세",
+            "items": { "$ref": "#/components/schemas/BulletinBoard" }
+          }
+        }
+      },
+      "BaseResponseFaqFilterRes": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/FaqFilterRes" }
+        }
+      },
+      "FaqFilterRes": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "array",
+            "description": "카테고리",
+            "items": { "$ref": "#/components/schemas/BulletinBoardFilterDto" }
+          }
         }
       },
       "BaseResponseProviderDeleteRes": {
@@ -2008,15 +5601,54 @@
       "ProviderDeleteRes": {
         "type": "object",
         "properties": {
-          "providerNo": { "type": "integer", "format": "int32", "description": "프로바이더번호", "example": 5000 },
-          "providerNm": { "type": "string", "description": "프로바이더명", "example": "레피니티브" },
-          "providerCd": { "type": "string", "description": "프로바이더코드", "example": "REF" },
-          "providerExpn": { "type": "string", "description": "프로바이더설명", "example": "레피니티브 설명" },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": true },
-          "createUserId": { "type": "string", "description": "생성사용자로그인ID", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "생성일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정사용자로그인ID", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" }
+          "providerNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "프로바이더번호",
+            "example": 5000
+          },
+          "providerNm": {
+            "type": "string",
+            "description": "프로바이더명",
+            "example": "레피니티브"
+          },
+          "providerCd": {
+            "type": "string",
+            "description": "프로바이더코드",
+            "example": "REF"
+          },
+          "providerExpn": {
+            "type": "string",
+            "description": "프로바이더설명",
+            "example": "레피니티브 설명"
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": true
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "생성사용자로그인ID",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정사용자로그인ID",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          }
         }
       },
       "BaseResponseGoodsDeleteRes": {
@@ -2031,15 +5663,54 @@
       "GoodsDeleteRes": {
         "type": "object",
         "properties": {
-          "goodsNo": { "type": "integer", "format": "int32", "description": "상품번호", "example": 5000 },
-          "goodsNm": { "type": "string", "description": "상품명", "example": "제조사별 DRAM 생산량" },
-          "goodsCd": { "type": "string", "description": "상품코드", "example": "DRAM" },
-          "goodsExpn": { "type": "string", "description": "상품설명", "example": "상품 설명" },
-          "isUsed": { "type": "boolean", "description": "사용여부", "example": "Y" },
-          "createUserId": { "type": "string", "description": "생성사용자로그인ID", "example": "sk01234" },
-          "createDt": { "type": "string", "format": "date-time", "description": "생성일시", "example": "2025-02-12 15:00:00" },
-          "modifyUserId": { "type": "string", "description": "수정사용자로그인ID", "example": "sk01234" },
-          "modifyDt": { "type": "string", "format": "date-time", "description": "수정일시", "example": "2025-02-12 15:00:00" }
+          "goodsNo": {
+            "type": "integer",
+            "format": "int32",
+            "description": "상품번호",
+            "example": 5000
+          },
+          "goodsNm": {
+            "type": "string",
+            "description": "상품명",
+            "example": "제조사별 DRAM 생산량"
+          },
+          "goodsCd": {
+            "type": "string",
+            "description": "상품코드",
+            "example": "DRAM"
+          },
+          "goodsExpn": {
+            "type": "string",
+            "description": "상품설명",
+            "example": "상품 설명"
+          },
+          "isUsed": {
+            "type": "boolean",
+            "description": "사용여부",
+            "example": "Y"
+          },
+          "createUserId": {
+            "type": "string",
+            "description": "생성사용자로그인ID",
+            "example": "sk01234"
+          },
+          "createDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성일시",
+            "example": "2025-02-12 15:00:00"
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "수정사용자로그인ID",
+            "example": "sk01234"
+          },
+          "modifyDt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정일시",
+            "example": "2025-02-12 15:00:00"
+          }
         }
       }
     }
