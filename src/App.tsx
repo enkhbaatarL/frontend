@@ -8,14 +8,12 @@ import '@/styles/global.scss'
 import '@/styles/utilities.scss'
 import '@/lib/i18n'
 
-const App = () => {
-  return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <QueryClientProvider client={queryClient}>
-        <AppRoutes />
-      </QueryClientProvider>
-    </LocalizationProvider>
-  )
-}
+const App = () => (
+  <LocalizationProvider dateAdapter={AdapterDayjs}>
+    <QueryClientProvider client={queryClient}>
+      <AppRoutes />
+    </QueryClientProvider>
+  </LocalizationProvider>
+)
 
 export default App

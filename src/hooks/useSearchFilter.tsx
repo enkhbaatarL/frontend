@@ -14,13 +14,8 @@ const checkPaginationKeys = <T,>(initialValue: Partial<T>) => {
   }
 }
 
-const removeEmptyValues = <T extends Record<string, unknown>>(obj: T) => {
-  return Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => {
-      return [key, value === '' ? undefined : value]
-    }),
-  ) as T
-}
+const removeEmptyValues = <T extends Record<string, unknown>>(obj: T) =>
+  Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, value === '' ? undefined : value])) as T
 
 type DiffCheckObject<T> = Partial<T> & { page?: number; size?: number }
 
@@ -90,13 +85,9 @@ const useSearchFilter = <Req, Res>(
     enabled: !isEmpty(requestParams),
   })
 
-  const isInitialState = useMemo(() => {
-    return diffCheck(filter, initialValue)
-  }, [filter, initialValue])
+  const isInitialState = useMemo(() => diffCheck(filter, initialValue), [filter, initialValue])
 
-  const isSearchedState = useMemo(() => {
-    return diffCheck(filter, requestParams)
-  }, [filter, requestParams])
+  const isSearchedState = useMemo(() => diffCheck(filter, requestParams), [filter, requestParams])
 
   return { isInitialState, isSearchedState, filter, updateFilter, resetFilter, search, data, isLoading }
 }

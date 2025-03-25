@@ -44,14 +44,15 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
     size: 10,
   })
 
-  const filter = useMemo(() => {
-    return {
+  const filter = useMemo(
+    () => ({
       ...searchFilter,
       ...paginationFilter,
       companyNm: searchFilter.companyNm === '' ? undefined : searchFilter.companyNm,
       status: searchFilter.status === 'all' ? undefined : searchFilter.status,
-    }
-  }, [searchFilter, paginationFilter])
+    }),
+    [searchFilter, paginationFilter],
+  )
 
   useEffect(() => {
     setCustomComponent(<AdminCustomerCompanyManagementCompaniesPageHeader />)

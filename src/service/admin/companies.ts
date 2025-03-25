@@ -116,7 +116,7 @@ const companiesService = {
    * @param params - { companyNm: 검색할 고객사 명, page: 페이지 번호, size: 페이지당 항목 수  }
    * @returns 고객사 목록
    */
-  async getCompanies (params: ICompaniesRequest): Promise<IPaginationResponse<ICompanyInfo>> {
+  async getCompanies(params: ICompaniesRequest): Promise<IPaginationResponse<ICompanyInfo>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<ICompanyInfo>>> = await api.get(
       '/admin/company-management/companies',
       { params },
@@ -128,7 +128,7 @@ const companiesService = {
    * 그룹사 목록을 조회합니다.
    * @returns 그룹사 목록
    */
-  async getGroupCompanies (): Promise<IGroupCompanyInfo[]> {
+  async getGroupCompanies(): Promise<IGroupCompanyInfo[]> {
     const response: AxiosResponse<ICommonResponse<IGroupCompanyInfo[]>> = await api.get('/admin/company-management/group-companies')
 
     return response.data.data
@@ -137,7 +137,7 @@ const companiesService = {
    * 고객사를 등록합니다.
    * @param body - { companyCd: 고객사 코드, companyNm: 고객사 명, usageBeginDate: 사용 시작일, usageEndDate: 사용 종료일 }
    */
-  async registerCompany (body: IRegisterCompanyRequest): Promise<ICommonResponse<null>> {
+  async registerCompany(body: IRegisterCompanyRequest): Promise<ICommonResponse<null>> {
     const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/company-management/company', body)
 
     return response.data
@@ -146,7 +146,7 @@ const companiesService = {
    * 드랍다운 메뉴 필터에 쓰일 테이블 고객사, 부서 목록을 조회합니다.
    * @returns 테이블 고객사, 부서 목록
    */
-  async getDepartmentAll (): Promise<IDepartmentInfo[]> {
+  async getDepartmentAll(): Promise<IDepartmentInfo[]> {
     const response: AxiosResponse<ICommonResponse<IDepartmentInfo[]>> = await api.get('/admin/company-management/company/department/all')
 
     return response.data.data
@@ -155,7 +155,7 @@ const companiesService = {
    * 사용자 목록을 조회합니다.
    * @param params - { page: 페이지 번호, size: 페이지당 항목 수, companyCode: 회사 코드, departmentNm: 부서 명, userName: 사용자 명, emailAddress: 이메일 주소 }
    */
-  async getUsers (params: Partial<Omit<IUserRequest, 'userRoleCd'>>): Promise<IPaginationResponse<IUserInfo>> {
+  async getUsers(params: Partial<Omit<IUserRequest, 'userRoleCd'>>): Promise<IPaginationResponse<IUserInfo>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IUserInfo>>> = await api.get('admin/user-management/users', {
       params: {
         ...params,

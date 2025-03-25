@@ -23,18 +23,16 @@ interface HeaderProp {
   saveAble: boolean
 }
 
-const Header = ({ onCancel, onSave, saveAble }: HeaderProp) => {
-  return (
-    <Flex gap={4}>
-      <AdminButton variant="contained" size="small" onClick={onCancel}>
-        {t('취소')}
-      </AdminButton>
-      <AdminButton variant="contained" color="primary" size="small" onClick={onSave} disabled={!saveAble}>
-        {t('등록')}
-      </AdminButton>
-    </Flex>
-  )
-}
+const Header = ({ onCancel, onSave, saveAble }: HeaderProp) => (
+  <Flex gap={4}>
+    <AdminButton variant="contained" size="small" onClick={onCancel}>
+      {t('취소')}
+    </AdminButton>
+    <AdminButton variant="contained" color="primary" size="small" onClick={onSave} disabled={!saveAble}>
+      {t('등록')}
+    </AdminButton>
+  </Flex>
+)
 
 const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
   const { setCustomComponent } = useAdminHeader()
@@ -55,14 +53,14 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
     queryFn: async () => await companiesService.getGroupCompanies(),
   })
 
-  const options = useMemo(() => {
-    return data?.map((company) => {
-      return {
+  const options = useMemo(
+    () =>
+      data?.map((company) => ({
         value: company.companyCd,
         label: company.companyNm,
-      }
-    })
-  }, [data])
+      })),
+    [data],
+  )
 
   const navigateToList = useCallback(() => {
     navigate('/admin/customer-company/companies', { replace: true })
@@ -89,9 +87,10 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
     }
   }, [navigateToList, selectedCompany?.label, selectedCompany?.value, showSnackbar, usageBeginDate, usageEndDate])
 
-  const saveAble = useMemo(() => {
-    return selectedCompany !== null && usageBeginDate !== null && usageEndDate !== null
-  }, [selectedCompany, usageBeginDate, usageEndDate])
+  const saveAble = useMemo(
+    () => selectedCompany !== null && usageBeginDate !== null && usageEndDate !== null,
+    [selectedCompany, usageBeginDate, usageEndDate],
+  )
 
   useEffect(() => {
     setCustomComponent(<Header onCancel={onCancel} onSave={() => setShowConfirmDialog(true)} saveAble={saveAble} />)

@@ -5,7 +5,7 @@ import api from '@/lib/axios'
 import { ICommonResponse, ISampleCompaniesResData, ISamplePagination } from '@/types/sample'
 
 const sampleService = {
-  async getSampleCompanies (size: string): Promise<ISampleCompaniesResData[]> {
+  async getSampleCompanies(size: string): Promise<ISampleCompaniesResData[]> {
     const response: AxiosResponse<ICommonResponse<ISamplePagination<ISampleCompaniesResData>>> = await api.post('/companies', {
       size: Number(size),
     })

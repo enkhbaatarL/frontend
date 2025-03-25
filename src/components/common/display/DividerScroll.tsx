@@ -16,7 +16,7 @@ const DividerScroll: FunctionComponent<DividerScrollProps> = ({
   bottomBorder = true,
   padding,
   children,
-  ...DividerScrollProps
+  ...dividerScrollProps
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -62,6 +62,8 @@ const DividerScroll: FunctionComponent<DividerScrollProps> = ({
         resizeObserver.disconnect()
       }
     }
+
+    return () => {}
   }, [handleScroll])
 
   return (
@@ -74,7 +76,7 @@ const DividerScroll: FunctionComponent<DividerScrollProps> = ({
         showBottomBorder && style.showBottomBorder,
         className,
       )}
-      {...DividerScrollProps}
+      {...dividerScrollProps}
     >
       <div ref={contentRef}>{children}</div>
     </div>

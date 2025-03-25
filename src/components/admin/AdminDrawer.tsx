@@ -55,16 +55,14 @@ interface DrawerHeaderProps {
   open: boolean
 }
 
-const DrawerHeader = ({ open }: DrawerHeaderProps) => {
-  return (
-    <>
-      <Typography className="ml-4" variant="subtitle1" fontWeight={700}>
-        {open ? 'MI Platform' : 'M'}
-      </Typography>
-      {open && <Chip label="Admin" size="small" variant="outlined" />}
-    </>
-  )
-}
+const DrawerHeader = ({ open }: DrawerHeaderProps) => (
+  <>
+    <Typography className="ml-4" variant="subtitle1" fontWeight={700}>
+      {open ? 'MI Platform' : 'M'}
+    </Typography>
+    {open && <Chip label="Admin" size="small" variant="outlined" />}
+  </>
+)
 
 const AdminDrawer = () => {
   const [open, setOpen] = useState(true)

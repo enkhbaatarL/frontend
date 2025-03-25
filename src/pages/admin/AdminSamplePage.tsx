@@ -5,18 +5,16 @@ import Flex from '@/components/common/display/Flex'
 import SampleChart from '@/components/user/chart/SampleChart'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 
-const TestButtons = () => {
-  return (
-    <Flex gap={4}>
-      <Button variant="contained" color="secondary" size="small">
-        취소
-      </Button>
-      <Button variant="contained" color="primary" size="small">
-        등록
-      </Button>
-    </Flex>
-  )
-}
+const TestButtons = () => (
+  <Flex gap={4}>
+    <Button variant="contained" color="secondary" size="small">
+      취소
+    </Button>
+    <Button variant="contained" color="primary" size="small">
+      등록
+    </Button>
+  </Flex>
+)
 
 const AdminSamplePage = () => {
   const { setCustomComponent } = useAdminHeader()

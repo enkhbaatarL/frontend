@@ -15,5 +15,6 @@ i18n
       escapeValue: false,
     },
   })
+  .then()
 
 export default i18n

@@ -6,20 +6,18 @@ import Flex from '@/components/common/display/Flex'
 import { DRAWER_WIDTH } from '@/constants/admin'
 import AdminProvider from '@/providers/AdminProvider'
 
-const AdminLayout = () => {
-  return (
-    <AdminProvider>
-      <Flex className="full-width full-height max-full-width">
-        <AdminDrawer />
-        <Flex direction="column" className="main flex-grow-1 full-height" style={{ width: `calc(100% - ${DRAWER_WIDTH.OPEN}px)` }}>
-          <AdminHeader />
-          <div className="content full-width">
-            <Outlet />
-          </div>
-        </Flex>
+const AdminLayout = () => (
+  <AdminProvider>
+    <Flex className="full-width full-height max-full-width">
+      <AdminDrawer />
+      <Flex direction="column" className="main flex-grow-1 full-height" style={{ width: `calc(100% - ${DRAWER_WIDTH.OPEN}px)` }}>
+        <AdminHeader />
+        <div className="content full-width">
+          <Outlet />
+        </div>
       </Flex>
-    </AdminProvider>
-  )
-}
+    </Flex>
+  </AdminProvider>
+)
 
 export default AdminLayout

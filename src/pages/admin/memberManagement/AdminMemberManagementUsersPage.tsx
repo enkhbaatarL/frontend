@@ -67,6 +67,14 @@ const AdminMemberManagementUsersPage = () => {
     }))
   }, [filter.companyNo, filterOptions, updateFilter])
 
+  const handleMenuClick = (event: MouseEvent<HTMLButtonElement>) => {
+    setMenuAnchorEl(event.currentTarget)
+  }
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null)
+  }
+
   const columns: GridColDef[] = [
     { field: 'customerCompanyNm', headerName: t('회사명'), minWidth: 150, flex: 1 },
     { field: 'departmentNm', headerName: t('소속'), width: 160 },
@@ -106,14 +114,6 @@ const AdminMemberManagementUsersPage = () => {
       ),
     },
   ]
-
-  const handleMenuClick = (event: MouseEvent<HTMLButtonElement>) => {
-    setMenuAnchorEl(event.currentTarget)
-  }
-
-  const handleMenuClose = () => {
-    setMenuAnchorEl(null)
-  }
 
   useEffect(() => {
     setCustomComponent(<PageHeader />)

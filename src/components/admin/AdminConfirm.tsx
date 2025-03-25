@@ -15,35 +15,33 @@ interface Props {
   confirmText?: string
 }
 
-const AdminConfirm = ({ open, title, children, handleClose, handleConfirm, closeText, confirmText }: Props) => {
-  return (
-    <Dialog open={open} onClose={handleClose}>
-      <Flex justify="space-between" gap={4}>
-        <DialogTitle>{title}</DialogTitle>
-        <IconButton
-          aria-label="close"
-          onClick={handleClose}
-          sx={(theme) => ({
-            marginRight: '8px',
-            color: theme.palette.grey[500],
-          })}
-        >
-          <Close />
-        </IconButton>
-      </Flex>
-      {children && (
-        <DialogContent>
-          <DialogContentText>{children}</DialogContentText>
-        </DialogContent>
-      )}
-      <DialogActions>
-        <AdminButton onClick={handleClose}>{closeText ?? t('취소')}</AdminButton>
-        <AdminButton onClick={handleConfirm} autoFocus>
-          {confirmText ?? t('확인')}
-        </AdminButton>
-      </DialogActions>
-    </Dialog>
-  )
-}
+const AdminConfirm = ({ open, title, children, handleClose, handleConfirm, closeText, confirmText }: Props) => (
+  <Dialog open={open} onClose={handleClose}>
+    <Flex justify="space-between" gap={4}>
+      <DialogTitle>{title}</DialogTitle>
+      <IconButton
+        aria-label="close"
+        onClick={handleClose}
+        sx={(theme) => ({
+          marginRight: '8px',
+          color: theme.palette.grey[500],
+        })}
+      >
+        <Close />
+      </IconButton>
+    </Flex>
+    {children && (
+      <DialogContent>
+        <DialogContentText>{children}</DialogContentText>
+      </DialogContent>
+    )}
+    <DialogActions>
+      <AdminButton onClick={handleClose}>{closeText ?? t('취소')}</AdminButton>
+      <AdminButton onClick={handleConfirm} autoFocus>
+        {confirmText ?? t('확인')}
+      </AdminButton>
+    </DialogActions>
+  </Dialog>
+)
 
 export default AdminConfirm

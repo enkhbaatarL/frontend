@@ -11,25 +11,23 @@ type Props = SelectProps & {
   useAllOption?: boolean
 }
 
-const AdminSelect = ({ children, displayEmpty = true, options, useAllOption = true, ...props }: Props) => {
-  return (
-    <Select {...props} displayEmpty={displayEmpty}>
-      {[
-        useAllOption && (
-          <MenuItem key="all" value={''}>
-            {t('전체')}
+const AdminSelect = ({ children, displayEmpty = true, options, useAllOption = true, ...props }: Props) => (
+  <Select {...props} displayEmpty={displayEmpty}>
+    {[
+      useAllOption && (
+        <MenuItem key="all" value={''}>
+          {t('전체')}
+        </MenuItem>
+      ),
+      ...(options
+        ? options.map(({ label, value }) => (
+          <MenuItem key={String(value)} value={value}>
+            {label}
           </MenuItem>
-        ),
-        ...(options
-          ? options.map(({ label, value }) => (
-            <MenuItem key={String(value)} value={value}>
-              {label}
-            </MenuItem>
-          ))
-          : [children]),
-      ]}
-    </Select>
-  )
-}
+        ))
+        : [children]),
+    ]}
+  </Select>
+)
 
 export default AdminSelect

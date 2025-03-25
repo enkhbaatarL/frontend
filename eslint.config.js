@@ -7,6 +7,7 @@ import jsxA11y from 'eslint-plugin-jsx-a11y'
 import importPlugin from 'eslint-plugin-import'
 import tseslint from 'typescript-eslint'
 import prettier from 'eslint-plugin-prettier'
+import stylisticJs from '@stylistic/eslint-plugin-js'
 
 export default tseslint.config(
   { ignores: ['dist'] },
@@ -23,6 +24,7 @@ export default tseslint.config(
       'react-refresh': reactRefresh,
       'jsx-a11y': jsxA11y,
       import: importPlugin,
+      '@stylistic/js': stylisticJs,
       prettier: prettier,
     },
     settings: {
@@ -39,21 +41,35 @@ export default tseslint.config(
       },
     },
     rules: {
-      ...react.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules,
-      'react/react-in-jsx-scope': 'off',
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      ...react.configs.recommended.rules, // React 권장 규칙 사용
+      ...reactHooks.configs.recommended.rules, // React Hooks 권장 규칙 사용
+      'react/react-in-jsx-scope': 'off', // JSX에서 React import 불필요
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }], // 컴포넌트만 export 경고, 상수 export 허용
 
-      // error
-      semi: ['error', 'never'],
-      quotes: ['error', 'single'],
-      'no-eval': 'error',
-      'rest-spread-spacing': ['error', 'never'],
-      'space-infix-ops': 'error',
-      'no-whitespace-before-property': 'error',
+      // Error rules
+      semi: ['error', 'never'], // 세미콜론 사용 금지
+      quotes: ['error', 'single'], // 작은 따옴표 사용
+      'no-eval': 'error', // eval() 사용 금지
+      'rest-spread-spacing': ['error', 'never'], // 스프레드 연산자와 객체 사이 공백 금지
+      'space-infix-ops': 'error', // 연산자 주위 공백 요구
+      'no-whitespace-before-property': 'error', // 속성 앞 공백 금지
+      'arrow-body-style': ['error', 'as-needed'], // 필요할 때만 중괄호 사용
+      'prefer-arrow-callback': ['error', { allowNamedFunctions: false, allowUnboundThis: true }], // 화살표 함수 선호
+      'consistent-return': 'error', // 일관된 return 요구
+      'no-param-reassign': ['error', { props: false }], // 매개변수 재할당 금지 (속성 제외)
+      'object-shorthand': ['error', 'always'], // 객체 축약 문법 사용
+      'prefer-template': 'error', // 템플릿 리터럴 선호
+      'no-shadow': 'error', // 동일한 변수명 선언 금지
+      'no-use-before-define': ['error', { functions: false, classes: true, variables: true }], // 정의 전에 사용 금지 (함수 제외)
+      'import/no-extraneous-dependencies': ['error', { devDependencies: false }], // 불필요한 의존성 import 금지
+      eqeqeq: ['error', 'always'], // 항상 일치 연산자 사용
+      'object-curly-spacing': ['error', 'always'],
+      '@stylistic/js/function-call-spacing': ['error', 'never'],
+      '@stylistic/js/jsx-quotes': ['error', 'prefer-double'],
 
-      // warning
+      // Warn rules
       '@typescript-eslint/no-unused-vars': [
+        // 사용하지 않는 변수 경고
         'warn',
         {
           varsIgnorePattern: '^_',
@@ -61,38 +77,21 @@ export default tseslint.config(
           ignoreRestSiblings: true,
         },
       ],
-      eqeqeq: ['warn', 'always'],
-      indent: ['warn', 2],
-      'func-style': ['warn', 'expression'],
-      'no-lone-blocks': 'warn',
-      'no-unneeded-ternary': 'warn',
-      'padding-line-between-statements': [
-        'warn',
-        { blankLine: 'always', prev: ['const', 'let', 'var'], next: '*' },
-        { blankLine: 'any', prev: ['const', 'let', 'var'], next: ['const', 'let', 'var'] },
-        { blankLine: 'always', prev: '*', next: 'return' },
-        { blankLine: 'always', prev: 'directive', next: '*' },
-        { blankLine: 'any', prev: 'directive', next: 'directive' },
-      ],
-      'space-before-function-paren': ['warn', 'always'],
-      'keyword-spacing': ['warn', { before: true, after: true }],
-      'eol-last': ['warn', 'always'],
-      'no-multiple-empty-lines': ['warn', { max: 2 }],
+      indent: ['warn', 2], // 들여쓰기 2칸
+      'func-style': ['warn', 'expression'], // 함수 표현식 사용
+      'keyword-spacing': ['warn', { before: true, after: true }], // 키워드 주위 공백 요구
+      'eol-last': ['warn', 'always'], // 파일 끝 줄바꿈 요구
+      'no-multiple-empty-lines': ['warn', { max: 1 }], // 여러 개의 빈 줄 금지
       'import/order': [
+        // import 순서 정렬
         'error',
         {
-          groups: [
-            'builtin', // 내장 모듈 (fs, path 등)
-            'external', // 외부 패키지 (react, lodash 등)
-            'internal', // 내부 모듈 (alias import 등)
-            ['parent', 'sibling', 'index'], // 상대 경로 모듈
-            'object',
-            'type',
-          ],
-          'newlines-between': 'always', // 그룹 사이에 개행 추가
+          groups: ['builtin', 'external', 'internal', ['parent', 'sibling', 'index'], 'object', 'type'],
+          'newlines-between': 'always',
           alphabetize: { order: 'asc', caseInsensitive: true },
         },
       ],
+      'no-console': ['warn', { allow: ['warn', 'error', 'info'] }], // console.log만 경고
     },
   },
 )

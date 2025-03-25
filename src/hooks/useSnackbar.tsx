@@ -6,9 +6,7 @@ export interface ISnackbarOptions extends OptionsObject<'default' | 'error' | 's
 }
 
 const useSnackbar = () => {
-  const showSnackbar = useCallback((message: SnackbarMessage, options?: ISnackbarOptions) => {
-    return enqueueSnackbar(message, options)
-  }, [])
+  const showSnackbar = useCallback((message: SnackbarMessage, options?: ISnackbarOptions) => enqueueSnackbar(message, options), [])
 
   return {
     showSnackbar,

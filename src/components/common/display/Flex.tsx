@@ -20,7 +20,7 @@ const Flex = ({
   gap = 0,
   fullWidth,
   style,
-  ...Props
+  ...props
 }: Partial<Props>) => {
   const flexStyle: CSSProperties = {
     display: 'flex',
@@ -28,13 +28,13 @@ const Flex = ({
     flexDirection: direction,
     justifyContent: justify,
     flexWrap: wrap,
-    gap: gap,
+    gap,
     width: fullWidth ? '100%' : 'auto',
     ...style,
   }
 
   return (
-    <div style={flexStyle} {...Props}>
+    <div style={flexStyle} {...props}>
       {children}
     </div>
   )
