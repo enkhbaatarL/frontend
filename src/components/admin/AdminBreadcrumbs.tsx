@@ -4,16 +4,17 @@ import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
 import { useNavigate } from 'react-router-dom'
 
-import useAdminMenuItems, { IMenuItem } from '@/hooks/useAdminMenuItems'
+import useAdminMenuItems from '@/hooks/useAdminMenuItems'
 import useAdminPageInfo from '@/hooks/useAdminPageInfo'
+import { ICustomRouteObject } from '@/types/common'
 
 const AdminBreadcrumbs = () => {
   const navigate = useNavigate()
   const { adminPageInfo } = useAdminPageInfo()
-  const { adminMenuItems } = useAdminMenuItems()
+  const adminMenuItems = useAdminMenuItems()
   const pathSegments = adminPageInfo.path.split('/').filter(Boolean)
   const getBreadcrumbLabel = (segment: string, fullPath: string) => {
-    const findLabel = (items: IMenuItem[], path: string): string | undefined => {
+    const findLabel = (items: ICustomRouteObject[], path: string): string | undefined => {
       for (const item of items) {
         if (item.path === path) {
           return item.label

@@ -3,7 +3,7 @@ import { Navigate, RouteObject } from 'react-router-dom'
 import UserLayout from '@/layouts/UserLayout'
 import UserChartSamplePage from '@/pages/user/UserChartSamplePage'
 
-const AdminRoutes: RouteObject = {
+const UserRoutes: RouteObject = {
   path: '/user',
   element: <UserLayout />,
   children: [
@@ -18,4 +18,4 @@ const AdminRoutes: RouteObject = {
   ],
 }
 
-export default AdminRoutes
+export default UserRoutes

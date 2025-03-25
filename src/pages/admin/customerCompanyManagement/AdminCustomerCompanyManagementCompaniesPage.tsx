@@ -14,16 +14,19 @@ import AdminTable from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
-import useAdminMenuItems from '@/hooks/useAdminMenuItems'
 import companiesService from '@/service/admin/companies'
 
 const AdminCustomerCompanyManagementCompaniesPageHeader = () => {
   const navigate = useNavigate()
-  const { getPath } = useAdminMenuItems()
 
   return (
     <Flex gap={4}>
-      <AdminButton variant="contained" color="primary" size="small" onClick={() => navigate(getPath('customer-company-registration'))}>
+      <AdminButton
+        variant="contained"
+        color="primary"
+        size="small"
+        onClick={() => navigate('/admin/customer-company/companies/registration')}
+      >
         {t('고객사 등록')}
       </AdminButton>
     </Flex>

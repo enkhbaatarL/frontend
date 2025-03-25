@@ -15,7 +15,6 @@ import AdminTable from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
-import useAdminMenuItems from '@/hooks/useAdminMenuItems'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import companiesService, { IUserInfo, IUserRequest } from '@/service/admin/companies'
 import { IPaginationResponse } from '@/types/api'
@@ -23,11 +22,10 @@ import { Nullable } from '@/types/common'
 
 const PageHeader = () => {
   const navigate = useNavigate()
-  const { getPath } = useAdminMenuItems()
 
   return (
     <Flex gap={4}>
-      <AdminButton variant="contained" color="primary" size="small" onClick={() => navigate(getPath('customer-company-registration'))}>
+      <AdminButton variant="contained" color="primary" size="small" onClick={() => navigate('/admin/member-mgmt/users/registration')}>
         {t('회원 등록')}
       </AdminButton>
     </Flex>

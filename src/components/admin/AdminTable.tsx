@@ -23,7 +23,7 @@ const AdminTable = <T extends GridRowModel>({ getRowId, columns, rows, isLoading
 
   return (
     <>
-      <div className="full-width">
+      <div className="full-width full-height">
         <DataGrid getRowId={getRowId} rows={rows ?? []} columns={memoizedColumns} {...adminTableBaseProps} loading={isLoading} />
       </div>
       <AdminPagination />

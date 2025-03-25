@@ -11,7 +11,6 @@ import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
-import useAdminMenuItems from '@/hooks/useAdminMenuItems'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService from '@/service/admin/companies'
 import { Nullable, ICommonOptions } from '@/types/common'
@@ -40,7 +39,6 @@ const Header = ({ onCancel, onSave, saveAble }: HeaderProp) => {
 const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
   const { setCustomComponent } = useAdminHeader()
   const navigate = useNavigate()
-  const { getPath } = useAdminMenuItems()
   const { showSnackbar } = useSnackbar()
 
   const today = dayjs()
@@ -67,7 +65,7 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
   }, [data])
 
   const navigateToList = useCallback(() => {
-    navigate(getPath('customer-companies'), { replace: true })
+    navigate('/admin/customer-company/companies', { replace: true })
   }, [navigate])
 
   const onCancel = () => {
@@ -89,7 +87,7 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
     } else {
       showSnackbar(t('등록되었습니다.'), { variant: 'success' })
     }
-  }, [navigateToList, selectedCompany?.label, selectedCompany?.value, usageBeginDate, usageEndDate])
+  }, [navigateToList, selectedCompany?.label, selectedCompany?.value, showSnackbar, usageBeginDate, usageEndDate])
 
   const saveAble = useMemo(() => {
     return selectedCompany !== null && usageBeginDate !== null && usageEndDate !== null

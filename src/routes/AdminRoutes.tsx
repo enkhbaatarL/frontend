@@ -1,4 +1,5 @@
-import { Navigate, RouteObject } from 'react-router-dom'
+import { Apartment, ManageAccounts, AccountTree, NotificationsActive, Dashboard, BarChart } from '@mui/icons-material'
+import { Navigate } from 'react-router-dom'
 
 import AdminLayout from '@/layouts/AdminLayout'
 import AdminAnalyticsDashboardPage from '@/pages/admin/analytics/AdminAnalyticsDashboardPage'
@@ -11,9 +12,11 @@ import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataPro
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
 import AdminMemberManagementManagersPage from '@/pages/admin/memberManagement/AdminMemberManagementManagersPage'
 import AdminMemberManagementUsersPage from '@/pages/admin/memberManagement/AdminMemberManagementUsersPage'
+import AdminMemberManagementUsersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementUsersRegistrationPage'
 import AdminNotificationListPage from '@/pages/admin/notification/AdminNotificationListPage'
+import { ICustomRouteObject } from '@/types/common'
 
-const AdminRoutes: RouteObject = {
+const AdminRoutes: ICustomRouteObject = {
   path: 'admin',
   element: <AdminLayout />,
   children: [
@@ -23,6 +26,8 @@ const AdminRoutes: RouteObject = {
     },
     {
       path: 'customer-company',
+      icon: <Apartment />,
+      label: '고객사 관리',
       children: [
         {
           index: true,
@@ -30,6 +35,7 @@ const AdminRoutes: RouteObject = {
         },
         {
           path: 'companies',
+          label: '고객사 목록',
           children: [
             {
               index: true,
@@ -37,7 +43,9 @@ const AdminRoutes: RouteObject = {
             },
             {
               path: 'registration',
+              label: '고객사 등록',
               element: <AdminCustomerCompanyManagementCompaniesRegistrationPage />,
+              hidden: true,
             },
           ],
         },
@@ -45,6 +53,8 @@ const AdminRoutes: RouteObject = {
     },
     {
       path: 'member-mgmt',
+      icon: <ManageAccounts />,
+      label: '사용자 관리',
       children: [
         {
           index: true,
@@ -52,16 +62,31 @@ const AdminRoutes: RouteObject = {
         },
         {
           path: 'users',
-          element: <AdminMemberManagementUsersPage />,
+          label: '서비스 회원',
+          children: [
+            {
+              index: true,
+              element: <AdminMemberManagementUsersPage />,
+            },
+            {
+              path: 'registration',
+              label: '회원 등록',
+              element: <AdminMemberManagementUsersRegistrationPage />,
+              hidden: true,
+            },
+          ],
         },
         {
           path: 'managers',
+          label: '어드민 관리자',
           element: <AdminMemberManagementManagersPage />,
         },
       ],
     },
     {
       path: 'data-providers',
+      icon: <AccountTree />,
+      label: '데이터 프로바이더 관리',
       children: [
         {
           index: true,
@@ -69,16 +94,20 @@ const AdminRoutes: RouteObject = {
         },
         {
           path: 'list',
+          label: '데이터 프로바이더 목록',
           element: <AdminDataProvidersListPage />,
         },
         {
           path: 'data',
+          label: '데이터 목록',
           element: <AdminDataProvidersDataPage />,
         },
       ],
     },
     {
       path: 'notification',
+      icon: <NotificationsActive />,
+      label: '알람 관리',
       children: [
         {
           index: true,
@@ -86,12 +115,15 @@ const AdminRoutes: RouteObject = {
         },
         {
           path: 'list',
+          label: '알람 발송 목록',
           element: <AdminNotificationListPage />,
         },
       ],
     },
     {
       path: 'boards',
+      icon: <Dashboard />,
+      label: '게시판 관리',
       children: [
         {
           index: true,
@@ -99,16 +131,20 @@ const AdminRoutes: RouteObject = {
         },
         {
           path: 'notices',
+          label: '공지사항',
           element: <AdminBoardsNoticesPage />,
         },
         {
           path: 'faq',
+          label: 'FAQ',
           element: <AdminBoardsFaqPage />,
         },
       ],
     },
     {
       path: 'analytics',
+      icon: <BarChart />,
+      label: '통계 분석',
       children: [
         {
           index: true,
@@ -116,10 +152,12 @@ const AdminRoutes: RouteObject = {
         },
         {
           path: 'dashboard',
+          label: '대시보드',
           element: <AdminAnalyticsDashboardPage />,
         },
         {
           path: 'table',
+          label: '테이블',
           element: <AdminAnalyticsTablePage />,
         },
       ],

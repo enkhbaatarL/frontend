@@ -5,12 +5,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import Flex from '@/components/common/display/Flex'
-import useAdminMenuItems, { IMenuItem } from '@/hooks/useAdminMenuItems'
+import useAdminMenuItems from '@/hooks/useAdminMenuItems'
 import useAdminPageInfo from '@/hooks/useAdminPageInfo'
+import { ICustomRouteObject } from '@/types/common'
 
 interface MenuItemProps {
   drawerOpen: boolean
-  item: IMenuItem
+  item: ICustomRouteObject
   depth?: number
   className?: string
 }
@@ -59,19 +60,19 @@ const MenuItem = ({ drawerOpen, item, depth = 0, className }: MenuItemProps) => 
       </ListItemButton>
       {open &&
         item.children?.map((child) => (
-          <MenuItem className={drawerOpen ? '' : 'display-none'} key={child.key} drawerOpen={drawerOpen} item={child} depth={depth + 1} />
+          <MenuItem className={drawerOpen ? '' : 'display-none'} key={child.path} drawerOpen={drawerOpen} item={child} depth={depth + 1} />
         ))}
     </>
   )
 }
 
 const AdminMenu = ({ drawerOpen }: { drawerOpen: boolean }) => {
-  const { adminMenuItems } = useAdminMenuItems()
+  const adminMenuItems = useAdminMenuItems()
 
   return (
     <>
       {adminMenuItems.map((item) => (
-        <MenuItem key={item.key} drawerOpen={drawerOpen} item={item} />
+        <MenuItem key={item.path} drawerOpen={drawerOpen} item={item} />
       ))}
     </>
   )
