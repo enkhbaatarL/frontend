@@ -1,22 +1,28 @@
-import { Navigate, RouteObject } from 'react-router-dom'
+import { RouteObject } from 'react-router-dom'
 
-import Error404Page from '@/pages/error/404'
-import AuthErrorPage from '@/pages/error/auth'
+import ErrorAccessDeniedPage from '@/pages/error/AccessDenied'
+import CommonErrorPage from '@/pages/error/CommonErrorPage'
+import ErrorIpVerificationPage from '@/pages/error/IpVerificaiton'
+import ErrorUnknownPage from '@/pages/error/unknown'
 
 const ErrorRoutes: RouteObject = {
   path: '/error',
   children: [
     {
       path: '',
-      element: <Navigate to="/error/404" replace={true} />,
+      element: <CommonErrorPage />,
     },
     {
-      path: '404',
-      element: <Error404Page />,
+      path: 'unknown',
+      element: <ErrorUnknownPage />,
     },
     {
-      path: 'auth',
-      element: <AuthErrorPage />,
+      path: 'access-denied',
+      element: <ErrorAccessDeniedPage />,
+    },
+    {
+      path: 'ip-verification',
+      element: <ErrorIpVerificationPage />,
     },
   ],
 }

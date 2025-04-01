@@ -5,6 +5,8 @@ export const DRAWER_WIDTH = {
 
 export const adminTableBaseProps = {
   sx: {
+    '--DataGrid-overlayHeight': '387px',
+    '--DataGrid-containerBackground': '#ffffff',
     '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
       outline: 'none',
     },

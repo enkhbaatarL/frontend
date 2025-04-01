@@ -24,7 +24,7 @@ const AdminCustomerCompanyManagementCompaniesPageHeader = () => {
       <AdminButton
         variant="contained"
         color="primary"
-        size="small"
+        size="h34"
         onClick={() => navigate('/admin/customer-company/companies/registration')}
       >
         {t('고객사 등록')}

@@ -25,7 +25,7 @@ const PageHeader = () => {
 
   return (
     <Flex gap={4}>
-      <AdminButton variant="contained" color="primary" size="small" onClick={() => navigate('/admin/member-mgmt/users/registration')}>
+      <AdminButton variant="contained" color="primary" size="h34" onClick={() => navigate('/admin/member-mgmt/users/registration')}>
         {t('회원 등록')}
       </AdminButton>
     </Flex>

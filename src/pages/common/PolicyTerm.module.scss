@@ -1,0 +1,22 @@
+.listDot{
+  padding-left: 37px;
+  li{
+    position: relative;
+    list-style: none;
+    &::before{
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 3px;
+      background: #495057;
+      -webkit-border-radius: 50px;
+      -moz-border-radius: 50px;
+      border-radius: 50px;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+  }
+}
+.paddingleft12{
+  padding-left: 12px;
+}

@@ -25,10 +25,10 @@ interface HeaderProp {
 
 const Header = ({ onCancel, onSave, saveAble }: HeaderProp) => (
   <Flex gap={4}>
-    <AdminButton variant="contained" size="small" onClick={onCancel}>
+    <AdminButton variant="contained" size="h34" onClick={onCancel}>
       {t('취소')}
     </AdminButton>
-    <AdminButton variant="contained" color="primary" size="small" onClick={onSave} disabled={!saveAble}>
+    <AdminButton variant="contained" color="primary" size="h34" onClick={onSave} disabled={!saveAble}>
       {t('등록')}
     </AdminButton>
   </Flex>

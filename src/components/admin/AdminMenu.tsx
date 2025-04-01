@@ -47,7 +47,7 @@ const MenuItem = ({ drawerOpen, item, depth = 0, className }: MenuItemProps) => 
         }}
         sx={{
           padding: '8px 14px',
-          color: isActive ? 'primary.main' : 'inherit',
+          color: isActive ? 'blue' : 'inherit',
         }}
       >
         <Flex className="full-width" justify="space-between">

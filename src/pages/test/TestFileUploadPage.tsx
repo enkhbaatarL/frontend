@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import api from '@/lib/axios'
 
-const TestPage = () => {
+const TestFileUploadPage = () => {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
@@ -75,4 +75,4 @@ const TestPage = () => {
   )
 }
 
-export default TestPage
+export default TestFileUploadPage
