@@ -1,4 +1,4 @@
-import { enqueueSnackbar, OptionsObject, SnackbarMessage } from 'notistack'
+import { OptionsObject, SnackbarMessage, useSnackbar as useNotistackSnackbar } from 'notistack'
 import { ReactNode, useCallback } from 'react'
 
 export interface ISnackbarOptions extends OptionsObject<'default' | 'error' | 'success' | 'warning' | 'info'> {
@@ -6,10 +6,16 @@ export interface ISnackbarOptions extends OptionsObject<'default' | 'error' | 's
 }
 
 const useSnackbar = () => {
-  const showSnackbar = useCallback((message: SnackbarMessage, options?: ISnackbarOptions) => enqueueSnackbar(message, options), [])
+  const { enqueueSnackbar, closeSnackbar } = useNotistackSnackbar()
+  const showSnackbar = useCallback(
+    (message: SnackbarMessage, options?: OptionsObject<'default' | 'error' | 'success' | 'warning' | 'info'> & { body?: ReactNode }) =>
+      enqueueSnackbar(message, options),
+    [enqueueSnackbar],
+  )
 
   return {
     showSnackbar,
+    closeSnackbar,
   }
 }
 

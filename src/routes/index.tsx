@@ -1,6 +1,7 @@
 import { omit } from 'lodash-es'
 import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
 
+import MainLayout from '@/layouts/MainLayout'
 import TempLoginPassPage from '@/pages/test/TempLoginPassPage'
 import AdminRoutes from '@/routes/AdminRoutes'
 import ErrorRoutes from '@/routes/ErrorRoutes'
@@ -11,9 +12,13 @@ import { ICustomRouteObject } from '@/types/common'
 const commonRoutes: ICustomRouteObject[] = [
   {
     path: '/',
-    element: <TempLoginPassPage />,
-    // children: [{ index: true, loader: pathLoader }, ...routes]
-    // errorElement: <ErrorPage />
+    element: <MainLayout />,
+    children: [
+      {
+        index: true,
+        element: <TempLoginPassPage />,
+      },
+    ],
   },
   { ...AdminRoutes },
   { ...UserRoutes },

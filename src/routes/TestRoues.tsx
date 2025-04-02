@@ -1,6 +1,7 @@
 import { RouteObject } from 'react-router-dom'
 
 import PolicyPage from '@/pages/common/PolicyPage'
+import TermPage from '@/pages/TermPage'
 import ComponentTestPage from '@/pages/test/ComponentTestPage'
 import TestErrorPage from '@/pages/test/TestErrorPage'
 import TestFileUploadPage from '@/pages/test/TestFileUploadPage'
@@ -31,8 +32,12 @@ const TestRoutes: RouteObject = {
       element: <TestErrorPage />,
     },
     {
-      path: 'policy',
+      path: 'privacy-policy',
       element: <PolicyPage />,
+    },
+    {
+      path: 'terms-of-service',
+      element: <TermPage />,
     },
   ],
 }

@@ -25,7 +25,7 @@ interface HeaderProp {
 
 const Header = ({ onCancel, onSave, saveAble }: HeaderProp) => (
   <Flex gap={4}>
-    <AdminButton variant="contained" size="h34" onClick={onCancel}>
+    <AdminButton variant="contained" size="h28" onClick={onCancel}>
       {t('취소')}
     </AdminButton>
     <AdminButton variant="contained" color="primary" size="h34" onClick={onSave} disabled={!saveAble}>
@@ -132,13 +132,19 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
         open={showCancelDialog}
         title={t('취소하시겠습니까?')}
         handleClose={() => setShowCancelDialog(false)}
-        handleConfirm={() => {
-          navigateToList()
-          showSnackbar(t('취소되었습니다.'), { variant: 'info' })
-          showSnackbar(t('문제가 발생했습니다.'), { variant: 'error', body: t('나중에 다시 시도해 주세요.') })
-        }}
-        closeText={t('이어서 작성')}
-        confirmText={t('취소 및 이동')}
+        actions={[
+          { label: '이어서 작성', variant: 'outlined', color: 'secondary', onClick: () => setShowCancelDialog(true) },
+          {
+            label: '취소 및 이동',
+            variant: 'contained',
+            color: 'primary',
+            onClick: () => {
+              navigateToList()
+              showSnackbar(t('취소되었습니다.'), { variant: 'info' })
+              showSnackbar(t('문제가 발생했습니다.'), { variant: 'error', body: t('나중에 다시 시도해 주세요.') })
+            },
+          },
+        ]}
       >
         {t('취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.')}
       </AdminConfirm>
@@ -146,7 +152,14 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
         open={showConfirmDialog}
         title={t('등록하시겠습니까?')}
         handleClose={() => setShowConfirmDialog(false)}
-        handleConfirm={onSave}
+        actions={[
+          {
+            label: '확인',
+            variant: 'contained',
+            color: 'primary',
+            onClick: () => onSave,
+          },
+        ]}
       />
     </>
   )

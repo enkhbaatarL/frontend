@@ -1,3 +1,5 @@
+@use "color";
+
 @font-face {
   font-family: 'Pretendard';
   src: url('../assets/fonts/Pretendard-ExtraBold.woff2') format('woff2'),
@@ -139,3 +141,71 @@ time, mark, audio, video {
 .flex-grow-1 {
   flex-grow: 1;
 }
+.main{
+  .content{
+    padding: 20px 24px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+}
+fieldset{
+  border: none !important;
+}
+.AdminSearchFilter{
+  padding: 16px 20px;
+  border-top: 1px solid #DCE1E5;
+  border-bottom: 1px solid #DCE1E5;
+  background: color.$gray-5;
+}
+.disable-cell{
+  color: #ADB5BD;
+  pointer-events: none;
+}
+.profileCard {
+  padding: 12px 20px;
+  width: 257px;
+  border-radius: 32px;
+  box-shadow: none;
+  gap: 20px;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-flex-direction: column;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+.profileMenu{
+  .MuiPopover-paper{
+    border-radius: 8px;
+    box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.20);
+  }
+  .chipRole{
+    font-size: 14px;
+    color: #1967D2;
+    font-weight: 700;
+    background-color: #D6E4F7;
+    margin-left: 8px;
+  }
+}
+.MuiDataGrid-columnSeparator{
+  svg{
+    visibility: hidden;
+  }
+}
+.dataGridAdmin.MuiDataGrid-root{
+  .MuiDataGrid-row:hover{
+    background: #F8F9FA !important;
+    font-weight: 600;
+    * {
+      font-weight: 600;
+    }
+  }
+  .cellAction{
+    padding: 6px;
+  }
+}
+

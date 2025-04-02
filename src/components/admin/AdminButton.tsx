@@ -6,39 +6,41 @@ interface AdminButton extends Omit<ButtonProps, 'size'> {
   size?: AdminButtonSize
 }
 
-const getSizeStyle = (size: AdminButtonSize = 'h28') => {
+const getSizeStyle = (size: AdminButtonSize) => {
   if (size === 'h28')
     return {
       padding: '4px 12px',
       fontSize: '12px',
+      height: '28px',
     }
 
   if (size === 'h32')
     return {
       padding: '6px 14px',
       fontSize: '14px',
+      height: '32px',
     }
 
   if (size === 'h34')
     return {
       padding: '7px 16px',
       fontSize: '14px',
+      height: '34px',
     }
 
   if (size === 'h42')
     return {
       padding: '10px 16px',
       fontSize: '16px',
+      height: '42px',
     }
 
   return {}
 }
 
 const AdminButton = ({ children, ...props }: AdminButton) => {
-  // The default value of size can be modified with real project later
-  const { size, ...originStyle } = props
+  const { size = 'h28', ...originStyle } = props
 
-  // Size style follow the design
   const buttonStyle = useMemo(
     (): SxProps<Theme> => ({
       ...getSizeStyle(size),

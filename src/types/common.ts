@@ -13,4 +13,5 @@ export interface ICustomRouteObject extends Omit<RouteObject, 'children'> {
   label?: string
   children?: ICustomRouteObject[]
   hidden?: boolean
+  hasBack?: boolean
 }

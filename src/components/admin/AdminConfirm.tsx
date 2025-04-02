@@ -5,19 +5,21 @@ import { ReactNode } from 'react'
 import AdminButton from '@/components/admin/AdminButton'
 import CloseIcon from '@/components/common/icons/CloseIcon.tsx'
 
+interface ActionButton {
+  label: ReactNode
+  variant?: 'text' | 'outlined' | 'contained'
+  color?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' | 'inherit'
+  onClick: () => void
+}
+
 interface Props {
   open: boolean
   title: ReactNode
   children?: ReactNode
   width?: string | number
   handleClose: () => void
-  handleConfirm: () => void
-  closeText?: string
-  closeVariant?: 'outlined' | 'contained' | 'text'
-  closeColor?: 'primary' | 'secondary' | 'gray' | 'success' | 'error' | 'warning' | 'info'
-  confirmText?: string
-  confirmVariant?: 'outlined' | 'contained' | 'text'
-  confirmColor?: 'primary' | 'secondary' | 'gray' | 'success' | 'error' | 'warning' | 'info'
+  justifyContentAction?: 'space-between' | 'end' | 'start' | 'center'
+  actions?: ActionButton[]
 }
 
 const AdminConfirm = ({
@@ -26,13 +28,8 @@ const AdminConfirm = ({
   children,
   width = 400,
   handleClose,
-  handleConfirm,
-  closeText,
-  closeVariant = 'outlined',
-  closeColor = 'secondary',
-  confirmText,
-  confirmVariant = 'contained',
-  confirmColor = 'primary',
+  justifyContentAction = 'end',
+  actions = [{ label: t('확인'), variant: 'contained', color: 'primary', onClick: handleClose }],
 }: Props) => (
   <Dialog
     slotProps={{
@@ -46,7 +43,7 @@ const AdminConfirm = ({
     onClose={handleClose}
   >
     <DialogTitle>
-      <span>{title}</span>
+      <span style={{ fontWeight: children ? 700 : 600 }}>{title}</span>
       {children && (
         <IconButton aria-label="close" onClick={handleClose} sx={{ padding: '6px' }}>
           <CloseIcon />
@@ -59,17 +56,12 @@ const AdminConfirm = ({
         <DialogContentText>{children}</DialogContentText>
       </DialogContent>
     )}
-    <DialogActions sx={{ paddingTop: children ? '30px' : 0 }}>
-      {closeText && (
-        <AdminButton size="h34" variant={closeVariant} color={closeColor} onClick={handleClose}>
-          {closeText ?? t('취소')}
+    <DialogActions sx={{ paddingTop: children ? '30px' : 0, justifyContent: justifyContentAction }}>
+      {actions.map((action, index) => (
+        <AdminButton size="h34" key={index} variant={action.variant ?? 'text'} color={action.color ?? 'primary'} onClick={action.onClick}>
+          {action.label}
         </AdminButton>
-      )}
-      {confirmText && (
-        <AdminButton size="h34" variant={confirmVariant} color={confirmColor} onClick={handleConfirm}>
-          {confirmText ?? t('확인')}
-        </AdminButton>
-      )}
+      ))}
     </DialogActions>
   </Dialog>
 )

@@ -1,7 +1,7 @@
+import ErrorIcon from '@mui/icons-material/Error'
 import { MenuItem, FormControl, FormControlLabel, RadioGroup, Radio } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import clsx from 'clsx'
-import { SnackbarProvider } from 'notistack'
 import { useState } from 'react'
 
 import style from './ComponentTestPage.module.scss'
@@ -9,7 +9,6 @@ import style from './ComponentTestPage.module.scss'
 import AdminButton from '@/components/admin/AdminButton.tsx'
 import AdminConfirm from '@/components/admin/AdminConfirm.tsx'
 import AdminSelect from '@/components/admin/AdminSelect.tsx'
-import AdminSnackbar from '@/components/admin/AdminSnackbar'
 import AdminTable from '@/components/admin/AdminTable.tsx'
 import Flex from '@/components/common/display/Flex.tsx'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -83,6 +82,24 @@ const ComponentTestPage = () => {
         </Flex>
 
         <Flex gap={6}>
+          <div>Admin Table No Data</div>
+          <div style={{ width: '600px', height: '300px' }}>
+            <AdminTable getRowId={(row) => row.companyCd} columns={columns} noRowMessage="표시할 데이터가 없습니다." />
+          </div>
+        </Flex>
+        <Flex gap={6}>
+          <div>Admin Table User/Information</div>
+          <div style={{ width: '600px', height: '300px' }}>
+            <AdminTable getRowId={(row) => row.companyCd} columns={columns} noRowMessage="사용자를 검색하세요." />
+          </div>
+        </Flex>
+        <Flex gap={6}>
+          <div>Admin Table Filter</div>
+          <div style={{ width: '600px', height: '300px' }}>
+            <AdminTable getRowId={(row) => row.companyCd} columns={columns} noRowMessage="해당 조건에 맞는 검색 결과가 없습니다." />
+          </div>
+        </Flex>
+        <Flex gap={6}>
           <div>Admin Select</div>
           <AdminSelect value={select} onChange={(e) => setSelect(String(e.target.value))}>
             <MenuItem value={'all'}>전체</MenuItem>
@@ -110,10 +127,11 @@ const ComponentTestPage = () => {
             open={showConfirmPrimary}
             title="Popup title"
             width={450}
-            closeText="취소"
-            confirmText="확인"
             handleClose={() => setShowConfirmPrimary(false)}
-            handleConfirm={() => setShowConfirmPrimary(false)}
+            actions={[
+              { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowConfirmPrimary(false) },
+              { label: '확인', variant: 'contained', color: 'primary', onClick: () => setShowConfirmPrimary(false) },
+            ]}
           >
             Contents
           </AdminConfirm>
@@ -121,28 +139,45 @@ const ComponentTestPage = () => {
             open={showConfirmPrimary2}
             title="세션이 만료되었습니다."
             width={350}
-            confirmText="로그인"
             handleClose={() => setShowConfirmPrimary2(false)}
-            handleConfirm={() => setShowConfirmPrimary2(false)}
+            actions={[
+              {
+                label: '로그인',
+                variant: 'contained',
+                color: 'primary',
+                onClick: () => setShowConfirmPrimary2(false),
+              },
+            ]}
           />
           <AdminConfirm
             open={showConfirmPrimary3}
             title="Main text"
             width={350}
-            confirmText="Button"
-            closeText="Button"
             handleClose={() => setShowConfirmPrimary3(false)}
-            handleConfirm={() => setShowConfirmPrimary3(false)}
+            actions={[
+              {
+                label: 'Button',
+                variant: 'outlined',
+                color: 'secondary',
+                onClick: () => setShowConfirmPrimary3(false),
+              },
+              { label: 'Button', variant: 'contained', color: 'primary', onClick: () => setShowConfirmPrimary3(false) },
+            ]}
           />
           <AdminConfirm
             open={showConfirmError}
-            title="삭제하시겠습니까?"
+            title={
+              <>
+                <ErrorIcon color="error" fontSize="small" sx={{ marginRight: '12px', verticalAlign: 'sub' }} />
+                삭제하시겠습니까?
+              </>
+            }
             width={450}
-            closeText="취소"
-            confirmText="삭제"
             handleClose={() => setShowConfirmError(false)}
-            handleConfirm={() => setShowConfirmError(false)}
-            confirmColor="error"
+            actions={[
+              { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowConfirmError(false) },
+              { label: '삭제', variant: 'contained', color: 'error', onClick: () => setShowConfirmError(false) },
+            ]}
           >
             삭제된 데이터는 복구할 수 없습니다.
           </AdminConfirm>
@@ -164,10 +199,11 @@ const ComponentTestPage = () => {
             open={showPopupContent1}
             title="Popup title"
             width={450}
-            closeText="취소"
-            confirmText="확인"
             handleClose={() => setShowPopupContent1(false)}
-            handleConfirm={() => setShowPopupContent1(false)}
+            actions={[
+              { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowPopupContent1(false) },
+              { label: '확인', variant: 'contained', color: 'primary', onClick: () => setShowPopupContent1(false) },
+            ]}
           >
             <p style={{ marginBottom: '20px' }}>
               Lorem ipsum dolor sit amet consectetur. Scelerisque turpis mauris vulputate turpis semper tempus.
@@ -184,10 +220,11 @@ const ComponentTestPage = () => {
             open={showPopupContent3}
             title="Popup title"
             width={450}
-            closeText="취소"
-            confirmText="확인"
             handleClose={() => setShowPopupContent3(false)}
-            handleConfirm={() => setShowPopupContent3(false)}
+            actions={[
+              { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowPopupContent3(false) },
+              { label: '확인', variant: 'contained', color: 'primary', onClick: () => setShowPopupContent3(false) },
+            ]}
           >
             <p style={{ marginBottom: '20px' }}>
               Lorem ipsum dolor sit amet consectetur. Scelerisque turpis mauris vulputate turpis semper tempus.
@@ -199,93 +236,59 @@ const ComponentTestPage = () => {
             open={showPopupContent2}
             title="회원 상세"
             width={450}
-            closeText="취소"
-            confirmText="확인"
             handleClose={() => setShowPopupContent2(false)}
-            handleConfirm={() => setShowPopupContent2(false)}
+            actions={[
+              { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowPopupContent2(false) },
+              { label: '확인', variant: 'contained', color: 'primary', onClick: () => setShowPopupContent2(false) },
+            ]}
           >
             <div className={clsx(style.boxTable)}>
               <table>
-                <tbody>
-                  <tr>
-                    <td>회사명</td>
-                    <td>SK실트론</td>
-                  </tr>
-                  <tr>
-                    <td>소속</td>
-                    <td>AI Market Intelligence팀</td>
-                  </tr>
-                  <tr>
-                    <td>직위/직함</td>
-                    <td>Manager</td>
-                  </tr>
-                  <tr>
-                    <td>이름</td>
-                    <td>홍길동</td>
-                  </tr>
-                  <tr>
-                    <td>이메일</td>
-                    <td>gildong.hone@sk.com</td>
-                  </tr>
-                </tbody>
+                <tr>
+                  <td>회사명</td>
+                  <td>SK실트론</td>
+                </tr>
+                <tr>
+                  <td>소속</td>
+                  <td>AI Market Intelligence팀</td>
+                </tr>
+                <tr>
+                  <td>직위/직함</td>
+                  <td>Manager</td>
+                </tr>
+                <tr>
+                  <td>이름</td>
+                  <td>홍길동</td>
+                </tr>
+                <tr>
+                  <td>이메일</td>
+                  <td>gildong.hone@sk.com</td>
+                </tr>
               </table>
             </div>
           </AdminConfirm>
         </Flex>
 
         <Flex gap={6}>
-          <SnackbarProvider
-            maxSnack={8}
-            autoHideDuration={2000}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'center',
-            }}
-            Components={{
-              success: AdminSnackbar,
-              error: AdminSnackbar,
-              info: AdminSnackbar,
-              warning: AdminSnackbar,
+          <div>Admin Snackbar</div>
+          <AdminButton
+            variant="contained"
+            color="success"
+            onClick={() => {
+              showSnackbar('Message success', { variant: 'success' })
             }}
           >
-            <div>Admin Snackbar</div>
-            <AdminButton
-              variant="contained"
-              color="success"
-              onClick={() => {
-                showSnackbar('Message success', { variant: 'success' })
-              }}
-            >
-              Show Snackbar success
-            </AdminButton>
-            <AdminButton
-              variant="contained"
-              color="error"
-              onClick={() => {
-                showSnackbar('Message error', { variant: 'error', body: 'Description error' })
-              }}
-            >
-              Show Snackbar error
-            </AdminButton>
-            <AdminButton
-              variant="contained"
-              color="info"
-              onClick={() => {
-                showSnackbar('Message info', { variant: 'info', body: 'Description info' })
-              }}
-            >
-              Show Snackbar info
-            </AdminButton>
-            <AdminButton
-              variant="contained"
-              color="warning"
-              onClick={() => {
-                showSnackbar('Message warning', { variant: 'warning', body: 'Description warning' })
-              }}
-            >
-              Show Snackbar warning
-            </AdminButton>
-          </SnackbarProvider>
+            Show Snackbar success
+          </AdminButton>
+          <AdminButton
+            variant="contained"
+            color="error"
+            onClick={() => {
+              showSnackbar('Message error', { variant: 'error', body: 'Description error' })
+            }}
+          >
+            Show Snackbar error
+          </AdminButton>
         </Flex>
       </Flex>
     </>

@@ -10,9 +10,12 @@ import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerC
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
+import AdminMemberManagementManagersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementManagerRegistrationPage'
 import AdminMemberManagementManagersPage from '@/pages/admin/memberManagement/AdminMemberManagementManagersPage'
+import AdminMemberManagementMangerDetail from '@/pages/admin/memberManagement/AdminMemberManagementMangerDetail'
+import AdminMemberManagementMangerEdit from '@/pages/admin/memberManagement/AdminMemberManagementMangerEdit'
+import AdminMemberManagementUserRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementUserRegistrationPage'
 import AdminMemberManagementUsersPage from '@/pages/admin/memberManagement/AdminMemberManagementUsersPage'
-import AdminMemberManagementUsersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementUsersRegistrationPage'
 import AdminNotificationListPage from '@/pages/admin/notification/AdminNotificationListPage'
 import { ICustomRouteObject } from '@/types/common'
 
@@ -71,7 +74,7 @@ const AdminRoutes: ICustomRouteObject = {
             {
               path: 'registration',
               label: '회원 등록',
-              element: <AdminMemberManagementUsersRegistrationPage />,
+              element: <AdminMemberManagementUserRegistrationPage />,
               hidden: true,
             },
           ],
@@ -79,7 +82,31 @@ const AdminRoutes: ICustomRouteObject = {
         {
           path: 'managers',
           label: '어드민 관리자',
-          element: <AdminMemberManagementManagersPage />,
+          children: [
+            {
+              index: true,
+              element: <AdminMemberManagementManagersPage />,
+            },
+            {
+              path: 'registration',
+              label: '관리자 등록',
+              element: <AdminMemberManagementManagersRegistrationPage />,
+              hidden: true,
+            },
+            {
+              path: 'detail',
+              label: '관리자 상세',
+              element: <AdminMemberManagementMangerDetail />,
+              hidden: true,
+              hasBack: true,
+            },
+            {
+              path: 'edit',
+              label: '관리자 수정',
+              element: <AdminMemberManagementMangerEdit />,
+              hidden: true,
+            },
+          ],
         },
       ],
     },

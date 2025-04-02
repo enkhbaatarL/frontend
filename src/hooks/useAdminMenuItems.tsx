@@ -27,6 +27,7 @@ export const useAdminMenuItems = () => {
       label: labelText ? t(labelText) : undefined,
       icon: indexChild?.icon ?? routes.icon,
       children: childrenWithoutIndex,
+      hasBack: indexChild?.hasBack ?? routes.hasBack,
     }
   }
 

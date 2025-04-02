@@ -1,8 +1,9 @@
-import { ExpandMore } from '@mui/icons-material'
-import { ListItemButton } from '@mui/material'
+import { Box, IconButton, ListItemButton, Typography } from '@mui/material'
 import { isEmpty } from 'lodash-es'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+import KeyboardArrowUpIcon from '../common/icons/KeyboardArrowUpIcon'
 
 import Flex from '@/components/common/display/Flex'
 import useAdminMenuItems from '@/hooks/useAdminMenuItems'
@@ -46,16 +47,35 @@ const MenuItem = ({ drawerOpen, item, depth = 0, className }: MenuItemProps) => 
           }
         }}
         sx={{
-          padding: '8px 14px',
-          color: isActive ? 'blue' : 'inherit',
+          padding: drawerOpen ? '8px 12px' : '8px 10px',
+          color: isActive || hasActiveChild ? 'common.white' : 'coolGray.10',
         }}
       >
-        <Flex className="full-width" justify="space-between">
-          <Flex className="full-width" gap={6}>
-            <div style={{ minWidth: 24, minHeight: 24 }}>{item.icon}</div>
-            <div className={drawerOpen ? '' : 'display-none'}>{item.label}</div>
+        <Flex className="full-width" justify="space-between" align="center">
+          <Flex className="full-width" gap={6} align="center">
+            <Box
+              borderRadius="6px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              width={24}
+              height={24}
+              p={1}
+              sx={{ backgroundColor: hasActiveChild ? 'coolGray.90' : 'transparent' }}
+            >
+              {item.icon}
+            </Box>
+            {drawerOpen && (
+              <Typography variant="body2" fontWeight={600}>
+                {item.label}
+              </Typography>
+            )}
           </Flex>
-          {hasChildren && drawerOpen && <ExpandMore />}
+          {hasChildren && drawerOpen && (
+            <IconButton sx={{ p: '6px' }}>
+              <KeyboardArrowUpIcon style={{ transform: open ? 'scaleY(1)' : 'scaleY(-1)', transformOrigin: 'center center' }} />
+            </IconButton>
+          )}
         </Flex>
       </ListItemButton>
       {open &&

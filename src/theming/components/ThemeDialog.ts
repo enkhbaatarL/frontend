@@ -18,7 +18,6 @@ const ThemeDialog: Components<Omit<Theme, 'components'>> = {
       root: {
         fontSize: '16px',
         padding: '20px 20px 30px 20px',
-        fontWeight: 700,
         color: '#495057',
         lineHeight: 1.4,
         display: 'flex',
