@@ -1,27 +1,20 @@
 import { omit } from 'lodash-es'
 import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
 
-import MainLayout from '@/layouts/MainLayout'
 import TempLoginPassPage from '@/pages/test/TempLoginPassPage'
 import AdminRoutes from '@/routes/AdminRoutes'
 import ErrorRoutes from '@/routes/ErrorRoutes'
+import MiRoutes from '@/routes/MiRoutes'
 import TestRoutes from '@/routes/TestRoues'
-import UserRoutes from '@/routes/UserRoutes'
 import { ICustomRouteObject } from '@/types/common'
 
 const commonRoutes: ICustomRouteObject[] = [
   {
     path: '/',
-    element: <MainLayout />,
-    children: [
-      {
-        index: true,
-        element: <TempLoginPassPage />,
-      },
-    ],
+    element: <TempLoginPassPage />,
   },
   { ...AdminRoutes },
-  { ...UserRoutes },
+  { ...MiRoutes },
   { ...ErrorRoutes },
   { ...TestRoutes }, // TODO: 테스트 페이지 제거 필요
   {

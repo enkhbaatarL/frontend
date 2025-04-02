@@ -6,7 +6,7 @@ const ThemeIconButton: Components<Omit<Theme, 'components'>>['MuiIconButton'] = 
       const isCustomColor = (color: string): boolean => {
         if (!color) return false
 
-        return typeof color === 'string' && color.includes('.')
+        return color.includes('.')
       }
 
       // If it's a custom color, extract the color family and shade

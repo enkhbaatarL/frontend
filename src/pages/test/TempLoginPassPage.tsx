@@ -34,7 +34,7 @@ const TempLoginPassPage = () => {
           <Button
             variant="contained"
             onClick={() => {
-              navigate('user/')
+              navigate('mi')
             }}
           >
             사용자 로그인

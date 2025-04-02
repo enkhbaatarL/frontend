@@ -1,6 +1,6 @@
 import { Grid2 as Grid, Typography } from '@mui/material'
 
-import style from './common/PolicyTerm.module.scss'
+import style from './PolicyTerm.module.scss'
 const TermPage = () => (
   <>
     <Grid direction="column" container paddingX={6} paddingY={5} spacing={10}>

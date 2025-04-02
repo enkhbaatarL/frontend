@@ -2,7 +2,7 @@ import { Button } from '@mui/material'
 import { useEffect } from 'react'
 
 import Flex from '@/components/common/display/Flex'
-import SampleChart from '@/components/user/chart/SampleChart'
+import SampleChart from '@/components/mi/chart/SampleChart'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 
 const TestButtons = () => (

@@ -1,4 +1,4 @@
-import SampleChart from '@/components/user/chart/SampleChart'
+import SampleChart from '@/components/mi/chart/SampleChart'
 
 const UserChartSamplePage = () => (
   <div className="p-14">

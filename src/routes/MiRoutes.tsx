@@ -1,11 +1,11 @@
 import { Navigate, RouteObject } from 'react-router-dom'
 
-import UserLayout from '@/layouts/UserLayout'
-import UserChartSamplePage from '@/pages/user/UserChartSamplePage'
+import MiLayout from '@/layouts/MiLayout'
+import UserChartSamplePage from '@/pages/mi/UserChartSamplePage'
 
-const UserRoutes: RouteObject = {
-  path: '/user',
-  element: <UserLayout />,
+const MiRoutes: RouteObject = {
+  path: '/mi',
+  element: <MiLayout />,
   children: [
     {
       index: true,
@@ -18,4 +18,4 @@ const UserRoutes: RouteObject = {
   ],
 }
 
-export default UserRoutes
+export default MiRoutes
