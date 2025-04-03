@@ -3,17 +3,6 @@ import { t } from 'i18next'
 import { isEmpty, isEqual, omit } from 'lodash-es'
 import { useCallback, useMemo, useState } from 'react'
 
-const checkPaginationKeys = <T,>(initialValue: Partial<T>) => {
-  const undefinedPaginationKeys: string[] = []
-
-  if (!('page' in initialValue)) undefinedPaginationKeys.push('page')
-  if (!('size' in initialValue)) undefinedPaginationKeys.push('size')
-
-  if (undefinedPaginationKeys.length > 0) {
-    console.warn(t('{{keyNames}} 키가 존재하지 않습니다.', { keyNames: undefinedPaginationKeys.join(', ') }))
-  }
-}
-
 const removeEmptyValues = <T extends Record<string, unknown>>(obj: T) =>
   Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, value === '' ? undefined : value])) as T
 
@@ -29,17 +18,23 @@ const diffCheck = <T,>(a: T, b: T) => {
 const useSearchFilter = <Req, Res>(
   fetchFn: (params: Partial<Req>) => Promise<Res>,
   initialValue: Partial<Req> = {},
-  options?: {
-    usePagination?: true
+  initialPagination?: {
+    page?: number
+    size?: number
   },
 ) => {
-  if (options?.usePagination) {
-    checkPaginationKeys(initialValue)
-  }
-
   const [filter, setFilter] = useState<Partial<Req>>(initialValue)
+  const [pagination, setPagination] = useState(
+    initialPagination
+      ? {
+        page: initialPagination?.page ?? 1,
+        size: initialPagination?.size ?? 20,
+      }
+      : null,
+  )
   const [requestParams, setRequestParams] = useState<Partial<Req>>({})
 
+  const [isPureState, setIsPureState] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleChangeItem = useCallback(<K extends keyof Req>(key: K, value?: Req[K]) => {
@@ -64,13 +59,45 @@ const useSearchFilter = <Req, Res>(
     [handleChangeItem, handleMultipleChange],
   )
 
+  const updatePagination = useCallback(
+    (page?: number, size?: number) => {
+      setPagination({ page: page ?? 1, size: size ?? 20 })
+      if (!isPureState) {
+        setRequestParams((prev) => ({
+          ...prev,
+          page,
+          size,
+        }))
+      }
+    },
+    [isPureState],
+  )
+
+  const updateSize = useCallback(
+    (size: number) => {
+      updatePagination(1, size)
+    },
+    [updatePagination],
+  )
+
+  const updatePage = useCallback(
+    (page: number) => {
+      updatePagination(page, pagination?.size)
+    },
+    [pagination?.size, updatePagination],
+  )
+
   const resetFilter = useCallback(() => {
     setFilter(initialValue)
   }, [initialValue])
 
   const search = useCallback(() => {
-    setRequestParams(removeEmptyValues(filter))
-  }, [filter])
+    setRequestParams({
+      ...removeEmptyValues(filter),
+      ...(pagination ? { page: 1, size: pagination.size } : {}),
+    })
+    setIsPureState(false)
+  }, [filter, pagination])
 
   const { data } = useQuery({
     queryKey: [fetchFn.name ?? 'searchFilter', JSON.stringify(requestParams)],
@@ -89,7 +116,20 @@ const useSearchFilter = <Req, Res>(
 
   const isSearchedState = useMemo(() => diffCheck(filter, requestParams), [filter, requestParams])
 
-  return { isInitialState, isSearchedState, filter, updateFilter, resetFilter, search, data, isLoading }
+  return {
+    isInitialState,
+    isSearchedState,
+    isPureState,
+    filter,
+    updateFilter,
+    pagination,
+    updateSize,
+    updatePage,
+    resetFilter,
+    search,
+    data,
+    isLoading,
+  }
 }
 
 export default useSearchFilter

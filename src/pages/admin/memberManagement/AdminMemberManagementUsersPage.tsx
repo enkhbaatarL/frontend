@@ -1,24 +1,26 @@
-import { Delete, MoreVert } from '@mui/icons-material'
-import { IconButton, Menu, MenuItem, Tooltip } from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
+import ErrorIcon from '@mui/icons-material/Error'
+import { Tooltip } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { isEmpty } from 'lodash-es'
-import { useEffect, useMemo, useState, MouseEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
+import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminSelect from '@/components/admin/AdminSelect'
-import AdminTable from '@/components/admin/AdminTable'
+import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
+import useSnackbar from '@/hooks/useSnackbar'
 import companiesService, { IUserInfo, IUserRequest } from '@/service/admin/companies'
 import { IPaginationResponse } from '@/types/api'
-import { Nullable } from '@/types/common'
 
 const PageHeader = () => {
   const navigate = useNavigate()
@@ -34,24 +36,35 @@ const PageHeader = () => {
 
 const AdminMemberManagementUsersPage = () => {
   const { setCustomComponent } = useAdminHeader()
-  const { filter, updateFilter, resetFilter, search, data, isInitialState, isSearchedState, isLoading } = useSearchFilter<
-    Omit<IUserRequest, 'userRoleCd'>,
-    IPaginationResponse<IUserInfo>
-  >(
+  const { showSnackbar } = useSnackbar()
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  const {
+    filter,
+    updateFilter,
+    pagination,
+    updateSize,
+    updatePage,
+    resetFilter,
+    search,
+    data,
+    isInitialState,
+    isSearchedState,
+    isLoading,
+  } = useSearchFilter<Omit<IUserRequest, 'userRoleCd'>, IPaginationResponse<IUserInfo>>(
     companiesService.getUsers,
     {
       companyNo: '',
       departmentNm: '',
       userNm: '',
       emailAddress: '',
-      page: 1,
-      size: 10,
     },
-    { usePagination: true },
+    {
+      page: 1,
+      size: 20,
+    },
   )
-
-  const [menuAnchorEl, setMenuAnchorEl] = useState<Nullable<HTMLElement>>(null)
-  const openMenu = Boolean(menuAnchorEl)
 
   const { data: filterOptions } = useQuery({
     queryKey: ['filterOptions'],
@@ -67,30 +80,32 @@ const AdminMemberManagementUsersPage = () => {
     }))
   }, [filter.companyNo, filterOptions, updateFilter])
 
-  const handleMenuClick = (event: MouseEvent<HTMLButtonElement>) => {
-    setMenuAnchorEl(event.currentTarget)
-  }
-
-  const handleMenuClose = () => {
-    setMenuAnchorEl(null)
-  }
-
   const columns: GridColDef[] = [
-    { field: 'customerCompanyNm', headerName: t('회사명'), minWidth: 150, flex: 1 },
+    {
+      field: 'customerCompanyNm',
+      headerName: t('회사명'),
+      minWidth: 150,
+      flex: 1,
+      renderCell: (params) => (
+        <AdminTableCell typography={{ variant: 'tableBody1' }} ellipsis cursorPointer>
+          {params.value}
+        </AdminTableCell>
+      ),
+    },
     { field: 'departmentNm', headerName: t('소속'), width: 160 },
     { field: 'onDutyNm', headerName: t('직위/직함'), width: 180 },
     { field: 'userNm', headerName: t('이름'), width: 120 },
     { field: 'userLoginId', headerName: t('이메일'), width: 180 },
     {
-      field: 'creatorUserNm',
+      field: 'createUserNm',
       headerName: t('등록자'),
       width: 120,
       renderCell: (param) => {
-        const { creatorUserNm, creatorDepartmentNm, creatorCompanyNm } = param.row
+        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
 
-        return creatorUserNm ? (
-          <Tooltip title={`${creatorUserNm} / ${creatorDepartmentNm} / ${creatorCompanyNm}`} arrow>
-            {creatorUserNm}
+        return createUserNm ? (
+          <Tooltip title={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`} arrow>
+            {createUserNm}
           </Tooltip>
         ) : null
       },
@@ -100,17 +115,28 @@ const AdminMemberManagementUsersPage = () => {
       headerName: t('등록일'),
       width: 150,
       align: 'center',
-      valueFormatter: ({ value }) => dayjs(value).format('YYYY-MM-DD'),
+      renderCell: (param) => {
+        const { createDt } = param.row.auditInfo
+
+        return createDt ? dayjs(createDt).format('YYYY-MM-DD') : null
+      },
     },
     {
-      field: 'menu',
+      field: 'actions',
       headerName: '',
       width: 52,
+      cellClassName: 'cellAction',
       align: 'center',
-      renderCell: (_param) => (
-        <IconButton onClick={handleMenuClick}>
-          <MoreVert />
-        </IconButton>
+      renderCell: () => (
+        <AdminTableAction
+          actions={[
+            {
+              label: t('삭제'),
+              icon: <DeleteIcon fontSize="small" />,
+              onClick: () => setShowDeleteModal(true),
+            },
+          ]}
+        />
       ),
     },
   ]
@@ -125,50 +151,86 @@ const AdminMemberManagementUsersPage = () => {
 
   return (
     <>
-      <Flex direction="column" gap={30} fullWidth>
-        <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
-          <AdminSelect
-            label={t('회사명')}
-            value={filter.companyNo}
-            onChange={(e) => {
-              updateFilter('companyNo', e.target.value as string)
-            }}
-            options={filterOptions?.map(({ companyNo, companyNm }) => ({ label: companyNm, value: companyNo })) ?? []}
-          />
-          <AdminSelect
-            label={t('소속')}
-            value={filter.departmentNm}
-            onChange={(e) => {
-              updateFilter('departmentNm', e.target.value as string)
-            }}
-            disabled={isEmpty(departmentOptions)}
-            options={departmentOptions}
-          />
-          <AdminTextField
-            label={t('이름')}
-            value={filter.userNm}
-            onChange={(e) => {
-              updateFilter('userNm', e.target.value)
-            }}
-          />
-          <AdminTextField
-            label={t('이메일')}
-            value={filter.emailAddress}
-            onChange={(e) => {
-              updateFilter('emailAddress', e.target.value)
-            }}
-          />
-        </AdminSearchFilter>
-        <AdminTable getRowId={(row) => row.userNo} columns={columns} rows={data?.detail ?? []} isLoading={isLoading} />
-      </Flex>
-      <Menu anchorEl={menuAnchorEl} open={openMenu} onClose={handleMenuClose}>
-        <MenuItem onClick={handleMenuClose}>
-          <Flex gap={4}>
-            <Delete />
-            <span>삭제</span>
-          </Flex>
-        </MenuItem>
-      </Menu>
+      <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
+        <AdminSelect
+          label={t('회사명')}
+          value={filter.companyNo}
+          onChange={(e) => {
+            updateFilter('companyNo', e.target.value as string)
+          }}
+          options={filterOptions?.map(({ companyNo, companyNm }) => ({ label: companyNm, value: companyNo })) ?? []}
+        />
+        <AdminSelect
+          label={t('소속')}
+          value={filter.departmentNm}
+          onChange={(e) => {
+            updateFilter('departmentNm', e.target.value as string)
+          }}
+          disabled={isEmpty(departmentOptions)}
+          options={departmentOptions}
+        />
+        <AdminTextField
+          label={t('이름')}
+          value={filter.userNm}
+          onChange={(e) => {
+            updateFilter('userNm', e.target.value)
+          }}
+        />
+        <AdminTextField
+          label={t('이메일')}
+          value={filter.emailAddress}
+          onChange={(e) => {
+            updateFilter('emailAddress', e.target.value)
+          }}
+        />
+      </AdminSearchFilter>
+      <AdminTable
+        getRowId={(row) => row.userNo}
+        columns={columns}
+        rows={data?.detail}
+        isLoading={isLoading}
+        size={pagination?.size}
+        page={data?.currentPage}
+        totalElements={data?.totalElements}
+        totalPages={data?.totalPages}
+        onSizeChange={updateSize}
+        onPageChange={updatePage}
+        onRowClick={() => {}}
+      />
+      <AdminConfirm
+        open={showDeleteModal}
+        title={
+          <>
+            <ErrorIcon color="error" fontSize="small" sx={{ marginRight: '12px', verticalAlign: 'sub' }} />
+            {t('회원을 삭제하시겠습니까?')}
+          </>
+        }
+        width={450}
+        handleClose={() => {
+          setShowDeleteModal(false)
+        }}
+        actions={[
+          {
+            label: t('취소'),
+            variant: 'outlined',
+            color: 'secondary',
+            onClick: () => {
+              setShowDeleteModal(false)
+            },
+          },
+          {
+            label: t('삭제'),
+            variant: 'contained',
+            color: 'error',
+            onClick: () => {
+              setShowDeleteModal(false)
+              showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
+            },
+          },
+        ]}
+      >
+        {t('회원 정보 삭제 시 해당 회원은 서비스에 접근이 불가합니다.')}
+      </AdminConfirm>
     </>
   )
 }
