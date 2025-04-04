@@ -1,6 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import ErrorIcon from '@mui/icons-material/Error'
-import { Tooltip } from '@mui/material'
+import { Box, Tooltip } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -69,6 +69,7 @@ const AdminMemberManagementUsersPage = () => {
   const { data: filterOptions } = useQuery({
     queryKey: ['filterOptions'],
     queryFn: async () => await companiesService.getDepartmentAll(),
+    refetchOnWindowFocus: false,
   })
 
   const departmentOptions = useMemo(() => {
@@ -93,7 +94,7 @@ const AdminMemberManagementUsersPage = () => {
       ),
     },
     { field: 'departmentNm', headerName: t('소속'), width: 160 },
-    { field: 'onDutyNm', headerName: t('직위/직함'), width: 180 },
+    { field: 'onDutyNm', headerName: t('직위'), width: 180 },
     { field: 'userNm', headerName: t('이름'), width: 120 },
     { field: 'userLoginId', headerName: t('이메일'), width: 180 },
     {
@@ -104,9 +105,11 @@ const AdminMemberManagementUsersPage = () => {
         const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
 
         return createUserNm ? (
-          <Tooltip title={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`} arrow>
-            {createUserNm}
-          </Tooltip>
+          <Box py="10px" px="12px">
+            <Tooltip title={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`} arrow>
+              {createUserNm}
+            </Tooltip>
+          </Box>
         ) : null
       },
     },
@@ -187,12 +190,9 @@ const AdminMemberManagementUsersPage = () => {
       <AdminTable
         getRowId={(row) => row.userNo}
         columns={columns}
-        rows={data?.detail}
+        data={data}
         isLoading={isLoading}
         size={pagination?.size}
-        page={data?.currentPage}
-        totalElements={data?.totalElements}
-        totalPages={data?.totalPages}
         onSizeChange={updateSize}
         onPageChange={updatePage}
         onRowClick={() => {}}

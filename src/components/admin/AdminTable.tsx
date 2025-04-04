@@ -17,21 +17,19 @@ import ErrorOutlineIcon from '../common/icons/ErrorOutlineIcon'
 import AdminButton from '@/components/admin/AdminButton.tsx'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { adminTableBaseProps } from '@/constants/admin'
+import { IPaginationResponse } from '@/types/api'
 
 interface AdminTableProps<T extends GridRowModel> extends DataGridProps {
   getRowId?: (row: T) => string | number
   columns: GridColDef[]
-  rows?: T[]
+  data?: IPaginationResponse<T>
   isLoading?: boolean
   noRowMessage?: string
   hidePagination?: boolean
   onRowClick?: GridEventListener<'rowClick'>
   size?: number
-  page?: number
   onSizeChange?: (value: number) => void
   onPageChange?: (value: number) => void
-  totalElements?: number
-  totalPages?: number
 }
 
 export const AdminTableHeader = ({ children }: PropsWithChildren) => (
@@ -78,14 +76,6 @@ export const AdminTableCell = (props: AdminTableCellProps) => {
     }
   }, [children, ellipsis, tooltipContent])
 
-  const handleMouseMove = (event: MouseEvent) => {
-    positionRef.current = { x: event.clientX, y: event.clientY }
-
-    if (popperRef.current !== null) {
-      popperRef.current.update().then()
-    }
-  }
-
   if (type === 'chip') {
     return (
       <Tooltip
@@ -100,7 +90,7 @@ export const AdminTableCell = (props: AdminTableCellProps) => {
         }}
         arrow
       >
-        <Box ref={areaRef} onMouseMove={handleMouseMove}>
+        <Box ref={areaRef}>
           <AdminChip label={children} {...chip} />
         </Box>
       </Tooltip>
@@ -108,26 +98,13 @@ export const AdminTableCell = (props: AdminTableCellProps) => {
   }
 
   return (
-    <Tooltip
-      title={tooltipText}
-      disableHoverListener={!tooltipText}
-      slotProps={{
-        popper: {
-          popperRef,
-          anchorEl: {
-            getBoundingClientRect: () => new DOMRect(positionRef.current.x, areaRef.current!.getBoundingClientRect().y + 40, 0, 0),
-          },
-        },
-      }}
-      arrow
-    >
+    <Tooltip title={tooltipText} disableHoverListener={!tooltipText} arrow>
       <Typography
         ref={(node: HTMLDivElement | null) => {
           areaRef.current = node
           textRef.current = node
         }}
         component="div"
-        onMouseMove={handleMouseMove}
         variant="tableBody2"
         color={disabled ? 'gray.50' : 'gray.90'}
         {...typography}
@@ -193,7 +170,7 @@ export const AdminTableAction = ({ actions }: AdminActionCellProps) => {
         open={open}
         onClose={handleClose}
         keepMounted
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         {actions.map((action, index) => (
@@ -228,7 +205,7 @@ const AdminTableNoRowsOverlay = (props: { noRowMessage?: string } & HTMLAttribut
 const AdminTable = <T extends GridRowModel>({
   getRowId,
   columns,
-  rows,
+  data,
   noRowMessage,
   hidePagination,
   onRowClick,
@@ -236,10 +213,10 @@ const AdminTable = <T extends GridRowModel>({
   size,
   onSizeChange,
   onPageChange,
-  page,
-  totalElements,
-  totalPages,
 }: AdminTableProps<T>) => {
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [tableHeight, setTableHeight] = useState<number | null>(null)
+
   const memoizedColumns = useMemo(
     () =>
       columns.map((column) => {
@@ -254,42 +231,71 @@ const AdminTable = <T extends GridRowModel>({
         return {
           ...column,
           headerAlign: column.align,
-          width: rows?.length === 0 ? 'auto' : column.width,
-          minWidth: rows?.length === 0 ? 'unset' : column.minWidth,
-          flex: rows?.length === 0 ? 1 : column.flex,
+          width: data?.detail?.length === 0 ? 'auto' : column.width,
+          minWidth: data?.detail?.length === 0 ? 'unset' : column.minWidth,
+          flex: data?.detail?.length === 0 ? 1 : column.flex,
           renderHeader: () => <AdminTableHeader>{column.headerName}</AdminTableHeader>,
           renderCell,
         }
       }) as GridColDef<T>[],
-    [columns, onRowClick, rows?.length],
+    [columns, onRowClick, data?.detail?.length],
   )
 
   const paginationRange = useMemo(() => {
-    if (!totalElements) return null
+    if (!data?.totalElements) return null
 
-    const currentPage = page ?? 1
+    const currentPage = data?.currentPage ?? 1
     const pageSize = size ?? 20
     const start = (currentPage - 1) * pageSize + 1
-    const end = Math.min(currentPage * pageSize, totalElements ?? 0)
-    return `${start}-${end} of ${(totalElements ?? 0).toLocaleString()}`
-  }, [page, size, totalElements])
+    const end = Math.min(currentPage * pageSize, data?.totalElements ?? 0)
+    return `${start}-${end} of ${(data?.totalElements ?? 0).toLocaleString()}`
+  }, [data?.currentPage, size, data?.totalElements])
 
   const handleChange = (event: SelectChangeEvent) => {
     onSizeChange?.(parseInt(event.target.value))
   }
 
+  const [prevPage, setPrevPage] = useState<number>(1)
+  const [prevTotalPages, setPrevTotalPages] = useState<number>(0)
+  const [selectedPage, setSelectedPage] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (data?.currentPage !== undefined) {
+      setPrevPage(data.currentPage)
+      if (!isLoading) {
+        setSelectedPage(null)
+      }
+    }
+    if (data?.totalPages !== undefined) {
+      setPrevTotalPages(data.totalPages)
+    }
+  }, [data?.currentPage, data?.totalPages, isLoading])
+
+  const handlePageChange = (page: number) => {
+    setSelectedPage(page)
+    onPageChange?.(page)
+  }
+
+  useEffect(() => {
+    setTableHeight(isLoading ? (boxRef.current?.getBoundingClientRect().height ?? null) : null)
+  }, [isLoading])
+
   return (
-    <Box display="flex" flexDirection="column" height="100%">
+    <Box ref={boxRef} display="flex" flexDirection="column" height={tableHeight ?? 'auto'}>
       <DataGrid
         slots={{
           noRowsOverlay: AdminTableNoRowsOverlay,
         }}
         slotProps={{
           noRowsOverlay: { children: noRowMessage },
+          loadingOverlay: {
+            variant: 'skeleton',
+            noRowsVariant: 'skeleton',
+          },
         }}
         onRowClick={onRowClick}
         getRowId={getRowId}
-        rows={rows ?? []}
+        rows={data?.detail ?? []}
         columns={memoizedColumns}
         getRowClassName={() => (onRowClick ? 'clickable-row' : '')}
         {...adminTableBaseProps}
@@ -307,14 +313,30 @@ const AdminTable = <T extends GridRowModel>({
       />
 
       {!hidePagination && (
-        <Box display="flex" alignItems="center" justifyContent="space-between" pt="20px" pb="10px">
+        <Box display="flex" alignItems="center" justifyContent="space-between" py="16px" position="relative">
           <Typography variant="body3" color="gray.60">
             {paginationRange}
           </Typography>
-          <AdminPagination onPageChange={onPageChange} page={page} count={totalPages} />
+
+          <Box
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            <AdminPagination
+              onPageChange={handlePageChange}
+              page={isLoading && selectedPage ? selectedPage : (data?.currentPage ?? prevPage)}
+              count={data?.totalPages ?? prevTotalPages}
+              disabled={isLoading}
+            />
+          </Box>
+
           <FormControl sx={{ width: '72px' }}>
-            <Select sx={{ minWidth: 'unset' }} size="small" value={(size ?? 20).toString()} onChange={handleChange}>
-              {[10, 15, 20, 25, 30].map((pageSize) => (
+            <Select sx={{ minWidth: 'unset' }} size="small" value={(size ?? 20).toString()} onChange={handleChange} disabled={isLoading}>
+              {[10, 15, 20, 50, 100].map((pageSize) => (
                 <MenuItem key={pageSize} sx={{ fontSize: 12 }} value={pageSize}>
                   {pageSize}
                 </MenuItem>

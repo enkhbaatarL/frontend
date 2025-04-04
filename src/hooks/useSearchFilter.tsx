@@ -110,6 +110,7 @@ const useSearchFilter = <Req, Res>(
       return response
     },
     enabled: !isEmpty(requestParams),
+    refetchOnWindowFocus: false,
   })
 
   const isInitialState = useMemo(() => diffCheck(filter, initialValue), [filter, initialValue])
