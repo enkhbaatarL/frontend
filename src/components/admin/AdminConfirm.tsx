@@ -6,7 +6,7 @@ import AdminButton from '@/components/admin/AdminButton'
 import CloseIcon from '@/components/common/icons/CloseIcon.tsx'
 
 interface ActionButton {
-  label: ReactNode
+  label: string
   variant?: 'text' | 'outlined' | 'contained'
   color?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' | 'inherit'
   onClick: () => void
@@ -52,13 +52,17 @@ const AdminConfirm = ({
     </DialogTitle>
 
     {children && (
-      <DialogContent>
-        <DialogContentText>{children}</DialogContentText>
-      </DialogContent>
+      <DialogContent>{typeof children === 'string' ? <DialogContentText>{children}</DialogContentText> : children}</DialogContent>
     )}
     <DialogActions sx={{ paddingTop: children ? '30px' : 0, justifyContent: justifyContentAction }}>
       {actions.map((action, index) => (
-        <AdminButton size="h34" key={index} variant={action.variant ?? 'text'} color={action.color ?? 'primary'} onClick={action.onClick}>
+        <AdminButton
+          size="h34"
+          key={action.label + index}
+          variant={action.variant ?? 'text'}
+          color={action.color ?? 'primary'}
+          onClick={action.onClick}
+        >
           {action.label}
         </AdminButton>
       ))}

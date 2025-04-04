@@ -1,0 +1,26 @@
+.boxTable {
+  border-radius: 6px;
+  border: 1px solid var(--Gray-10, #F1F3F5);
+  background: var(--Gray-5, #F8F9FA);
+  padding: 15px 20px;
+
+  table {
+    tr {
+      th,
+      td {
+        padding: 5px 0;
+      }
+
+      th {
+        width: 120px;
+        color: var(--Content-Text-Subtext, #868E96);
+        font-weight: normal;
+        text-align: left;
+      }
+
+      td {
+        color: var(--Content-Text-Normal, #495057);
+      }
+    }
+  }
+}

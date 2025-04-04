@@ -15,6 +15,7 @@ import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
+import AdminUserInfo from '@/components/admin/AdminUserInfo'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
@@ -39,6 +40,9 @@ const AdminMemberManagementUsersPage = () => {
   const { showSnackbar } = useSnackbar()
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showMemberDetailModal, setShowMemberDetailModal] = useState(false)
+
+  const [selectedUser, setSelectedUser] = useState<Partial<IUserInfo>>({})
 
   const {
     filter,
@@ -51,6 +55,7 @@ const AdminMemberManagementUsersPage = () => {
     data,
     isInitialState,
     isSearchedState,
+    isPureState,
     isLoading,
   } = useSearchFilter<Omit<IUserRequest, 'userRoleCd'>, IPaginationResponse<IUserInfo>>(
     companiesService.getUsers,
@@ -195,8 +200,37 @@ const AdminMemberManagementUsersPage = () => {
         size={pagination?.size}
         onSizeChange={updateSize}
         onPageChange={updatePage}
-        onRowClick={() => {}}
+        onRowClick={({ row }) => {
+          setSelectedUser(row)
+          setShowMemberDetailModal(true)
+        }}
+        noRowMessage={isPureState ? t('회원을 검색하세요.') : undefined}
       />
+      <AdminConfirm
+        open={showMemberDetailModal}
+        title="회원 상세"
+        justifyContentAction="space-between"
+        width={450}
+        handleClose={() => setShowMemberDetailModal(false)}
+        actions={[
+          {
+            label: t('회원 삭제'),
+            variant: 'outlined',
+            color: 'secondary',
+            onClick: () => {
+              setShowDeleteModal(true)
+            },
+          },
+          {
+            label: t('확인'),
+            variant: 'contained',
+            color: 'primary',
+            onClick: () => setShowMemberDetailModal(false),
+          },
+        ]}
+      >
+        <AdminUserInfo info={selectedUser} />
+      </AdminConfirm>
       <AdminConfirm
         open={showDeleteModal}
         title={
@@ -224,6 +258,7 @@ const AdminMemberManagementUsersPage = () => {
             color: 'error',
             onClick: () => {
               setShowDeleteModal(false)
+              setShowMemberDetailModal(false)
               showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
             },
           },

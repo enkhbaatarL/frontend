@@ -191,7 +191,7 @@ export const AdminTableAction = ({ actions }: AdminActionCellProps) => {
   )
 }
 
-const AdminTableNoRowsOverlay = (props: { noRowMessage?: string } & HTMLAttributes<HTMLDivElement>) => (
+const AdminTableNoRowsOverlay = (props: HTMLAttributes<HTMLDivElement> & { noRowMessage?: string }) => (
   <Box className={clsx(style.adminTableNoRowsOverlay)} {...props}>
     <Box display="flex" flexDirection="column" rowGap="10px" alignItems="center">
       <ErrorOutlineIcon />
@@ -201,6 +201,12 @@ const AdminTableNoRowsOverlay = (props: { noRowMessage?: string } & HTMLAttribut
     </Box>
   </Box>
 )
+
+const createNoRowsOverlay = (message?: string) => {
+  const Component = () => <AdminTableNoRowsOverlay noRowMessage={message} />
+  Component.displayName = 'NoRowsOverlay'
+  return Component
+}
 
 const AdminTable = <T extends GridRowModel>({
   getRowId,
@@ -259,6 +265,8 @@ const AdminTable = <T extends GridRowModel>({
   const [prevTotalPages, setPrevTotalPages] = useState<number>(0)
   const [selectedPage, setSelectedPage] = useState<number | null>(null)
 
+  const NoRowsOverlay = useMemo(() => createNoRowsOverlay(noRowMessage), [noRowMessage])
+
   useEffect(() => {
     if (data?.currentPage !== undefined) {
       setPrevPage(data.currentPage)
@@ -284,10 +292,9 @@ const AdminTable = <T extends GridRowModel>({
     <Box ref={boxRef} display="flex" flexDirection="column" height={tableHeight ?? 'auto'}>
       <DataGrid
         slots={{
-          noRowsOverlay: AdminTableNoRowsOverlay,
+          noRowsOverlay: NoRowsOverlay,
         }}
         slotProps={{
-          noRowsOverlay: { children: noRowMessage },
           loadingOverlay: {
             variant: 'skeleton',
             noRowsVariant: 'skeleton',
