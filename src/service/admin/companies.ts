@@ -54,6 +54,13 @@ export interface IUserRequest extends IPaginationRequest {
   emailAddress?: string
 }
 
+export interface IGroupUserRequest extends IPaginationRequest {
+  userRoleCd: UserRole.USER
+  companyCd?: number | string
+  userNm?: string
+  emailAddress?: string
+}
+
 export interface CustomerCompanyNo {
   createDt: string
   modifyDt: string
@@ -106,6 +113,26 @@ export interface IUserInfo {
   auditInfo: string
 }
 
+export interface IGroupUserInfo {
+  imCd: string
+  userNm: string
+  userEnglishNm: string
+  loginId: string
+  emailAddress: string
+  companyCd: string
+  companyNm: string
+  employeeNo: string
+  departmentCd: string
+  departmentNm: string
+  positionCd: string
+  positionNm: string
+  jobGradeCd: string
+  jobGradeNm: string
+  onDutyCd: string
+  onDutyNm: string
+  isRegistered: boolean
+}
+
 /**
  * 고객사 서비스
  */
@@ -153,7 +180,7 @@ const companiesService = {
   },
   /**
    * 사용자 목록을 조회합니다.
-   * @param params - { page: 페이지 번호, size: 페이지당 항목 수, companyCode: 회사 코드, departmentNm: 부서 명, userName: 사용자 명, emailAddress: 이메일 주소 }
+   * @param params - { page: 페이지 번호, size: 페이지당 항목 수, companyNo: 회사 번호, departmentNm: 부서 명, userNm: 사용자 명, emailAddress: 이메일 주소 }
    */
   async getUsers(params: Partial<Omit<IUserRequest, 'userRoleCd'>>): Promise<IPaginationResponse<IUserInfo>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IUserInfo>>> = await api.get('admin/user-management/users', {
@@ -162,6 +189,23 @@ const companiesService = {
         userRoleCd: UserRole.USER,
       },
     })
+
+    return response.data.data
+  },
+  /**
+   * 그룹사 사용자 목록을 조회합니다.
+   * @param params - { page: 페이지 번호, size: 페이지당 항목 수, companyCd: 회사 코드, userNm: 사용자 명, emailAddress: 이메일 주소 }
+   */
+  async getGroupUsers(params: Partial<Omit<IGroupUserRequest, 'userRoleCd'>>): Promise<IPaginationResponse<IGroupUserInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IGroupUserInfo>>> = await api.get(
+      'admin/user-management/group-users',
+      {
+        params: {
+          ...params,
+          userRoleCd: UserRole.USER,
+        },
+      },
+    )
 
     return response.data.data
   },
