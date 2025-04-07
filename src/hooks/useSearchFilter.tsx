@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
 import { isEmpty, isEqual, omit } from 'lodash-es'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigationType } from 'react-router-dom'
+
+import { usePageState } from '@/store/usePageState'
 
 const removeEmptyValues = <T extends Record<string, unknown>>(obj: T) =>
   Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, value === '' ? undefined : value])) as T
@@ -23,6 +26,12 @@ const useSearchFilter = <Req, Res>(
     size?: number
   },
 ) => {
+  const navigationType = useNavigationType()
+  const location = useLocation()
+  const { setPageState, getPageState } = usePageState()
+
+  const currentPath = location.pathname
+
   const [filter, setFilter] = useState<Partial<Req>>(initialValue)
   const [pagination, setPagination] = useState(
     initialPagination
@@ -116,6 +125,29 @@ const useSearchFilter = <Req, Res>(
   const isInitialState = useMemo(() => diffCheck(filter, initialValue), [filter, initialValue])
 
   const isSearchedState = useMemo(() => diffCheck(filter, requestParams), [filter, requestParams])
+
+  useEffect(() => {
+    if (navigationType === 'POP') {
+      const savedState = getPageState(currentPath)
+      if (savedState) {
+        setFilter(savedState.filter ?? initialValue)
+        setPagination((savedState.pagination as { page: number; size: number }) ?? initialPagination ?? { page: 1, size: 20 })
+
+        setRequestParams({
+          ...(savedState.requestParams ?? {}),
+          ...(savedState.pagination ?? {}),
+        })
+        setIsPureState(false)
+      }
+    }
+  }, [])
+
+  useEffect(
+    () => () => {
+      setPageState(currentPath, { filter, requestParams, pagination })
+    },
+    [filter, requestParams, pagination, setPageState, currentPath],
+  )
 
   return {
     isInitialState,
