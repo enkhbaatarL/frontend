@@ -113,6 +113,31 @@ export interface IUserInfo {
   auditInfo: string
 }
 
+export interface IMangerDetailInfo {
+  userNo: number
+  userNm: string
+  userLoginId: string
+  userRoleCd: string
+  onDutyNm: string
+  departmentNm: string
+  isOtherServiceAccessPossible: boolean
+  isIndividualInfoAgreement: boolean
+  individualInfoAgreementDtm: string
+  customerCompanyNo: number
+  createUserId: string
+  createDt: string
+  modifyUserId: string
+  modifyDt: string
+  createUserNm: string
+  createUserDeptNm: string
+  createUserCpnyNm: string
+  modifyUserNm: string
+  modifyUserDeptNm: string
+  modifyUserCpnyNm: string
+  auditInfo: string
+  accessAllowedIpAddressList: string[]
+}
+
 export interface IGroupUserInfo {
   imCd: string
   userNm: string
@@ -203,6 +228,13 @@ const companiesService = {
         userRoleCd: UserRole.ADMIN,
       },
     })
+
+    return response.data.data
+  },
+  async getManagerDetail(userNo?: string): Promise<IMangerDetailInfo> {
+    if (!userNo) throw new Error('userNo is required')
+
+    const response: AxiosResponse<ICommonResponse<IMangerDetailInfo>> = await api.get(`admin/user-management/admin-users/${userNo}`)
 
     return response.data.data
   },
