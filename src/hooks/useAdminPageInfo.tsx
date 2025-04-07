@@ -15,16 +15,21 @@ const useAdminPageInfo = () => {
       for (const item of items) {
         if (item.path === path) return item
         if (item.children) {
-          const found: ICustomRouteObject | null = findMenuItem(item.children, path)
-
+          const found = findMenuItem(item.children, path)
           if (found) return found
         }
       }
-
       return null
     }
 
-    const menuItem = findMenuItem(adminMenuItems, currentPath)
+    const segments = currentPath.split('/').filter(Boolean)
+
+    let menuItem: ICustomRouteObject | null = null
+    for (let i = segments.length; i > 0; i--) {
+      const tryPath = `/${segments.slice(0, i).join('/')}`
+      menuItem = findMenuItem(adminMenuItems, tryPath)
+      if (menuItem) break
+    }
 
     return {
       key: menuItem?.path ?? '',

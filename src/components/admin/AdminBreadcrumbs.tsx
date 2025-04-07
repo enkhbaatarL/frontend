@@ -13,27 +13,20 @@ const AdminBreadcrumbs = () => {
   const { adminPageInfo } = useAdminPageInfo()
   const adminMenuItems = useAdminMenuItems()
   const pathSegments = adminPageInfo.path.split('/').filter(Boolean)
-  const getBreadcrumbLabel = (segment: string, fullPath: string) => {
-    const findLabel = (items: ICustomRouteObject[], path: string): string | undefined => {
-      for (const item of items) {
-        if (item.path === path) {
-          return item.label
-        }
-        if (item.children) {
-          const childLabel = findLabel(item.children, path)
 
-          if (childLabel) {
-            return childLabel
-          }
+  const getBreadcrumbLabel = (items: ICustomRouteObject[], path: string): string | undefined => {
+    for (const item of items) {
+      if (item.path === path) {
+        return item.label
+      }
+      if (item.children) {
+        const childLabel = getBreadcrumbLabel(item.children, path)
+        if (childLabel) {
+          return childLabel
         }
       }
-
-      return undefined
     }
-
-    const label = findLabel(adminMenuItems, fullPath)
-
-    return label ?? segment
+    return undefined
   }
 
   return (
@@ -44,11 +37,14 @@ const AdminBreadcrumbs = () => {
         </Link>
         {pathSegments.slice(1).map((segment, index) => {
           const path = `/${pathSegments.slice(0, index + 2).join('/')}`
+          const label = getBreadcrumbLabel(adminMenuItems, path)
           const isLast = index === pathSegments.length - 2
+
+          if (!label) return null
 
           return isLast ? (
             <Typography color="gray.90" variant="breadcrumbs" key={segment}>
-              {getBreadcrumbLabel(segment, path)}
+              {label}
             </Typography>
           ) : (
             <Link
@@ -59,7 +55,7 @@ const AdminBreadcrumbs = () => {
               onClick={() => navigate(path)}
               style={{ cursor: 'pointer' }}
             >
-              {getBreadcrumbLabel(segment, path)}
+              {label}
             </Link>
           )
         })}

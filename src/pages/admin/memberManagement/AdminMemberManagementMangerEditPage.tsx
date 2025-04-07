@@ -6,7 +6,7 @@ import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 
 const AdminMemberManagementMangerEditPageHeader = ({ onCancel, onSave }: { onSave: () => void; onCancel: () => void }) => (
-  <Flex gap={4}>
+  <Flex gap={10}>
     <AdminButton variant="outlined" color="secondary" size="h34" onClick={onCancel}>
       {t('취소')}
     </AdminButton>
@@ -16,7 +16,7 @@ const AdminMemberManagementMangerEditPageHeader = ({ onCancel, onSave }: { onSav
   </Flex>
 )
 
-export default function AdminMemberManagementMangerEdit() {
+export default function AdminMemberManagementMangerEditPage() {
   const { setCustomComponent } = useAdminHeader()
 
   useEffect(() => {

@@ -6,7 +6,7 @@ import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 
 const AdminMemberManagementMangerDetailPageHeader = ({ onDelete, onEdit }: { onDelete: () => void; onEdit: () => void }) => (
-  <Flex gap={4}>
+  <Flex gap={10}>
     <AdminButton variant="outlined" color="secondary" size="h34" onClick={onDelete}>
       {t('삭제')}
     </AdminButton>
@@ -16,7 +16,7 @@ const AdminMemberManagementMangerDetailPageHeader = ({ onDelete, onEdit }: { onD
   </Flex>
 )
 
-export default function AdminMemberManagementMangerDetail() {
+export default function AdminMemberManagementMangerDetailPage() {
   const { setCustomComponent } = useAdminHeader()
 
   useEffect(() => {
