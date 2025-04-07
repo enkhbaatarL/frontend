@@ -1,5 +1,7 @@
+import CancelIcon from '@mui/icons-material/Cancel'
 import CheckIcon from '@mui/icons-material/Check'
 // import { Chip, Grid, Typography } from '@mui/material'
+import { Grid2 as Grid, Typography, Chip } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
@@ -16,16 +18,19 @@ import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import companiesService, { IGroupUserInfo, IGroupUserRequest, IUserInfo } from '@/service/admin/companies'
 import { IPaginationResponse } from '@/types/api'
-
 interface SelectedRow {
-  id: string
-  company: string
-  department: string
-  position: string
-  name: string
-  email: string
+  companyCd: string
+  companyNm: string
+  departmentCd: string
+  departmentNm: string
+  emailAddress: string
+  employeeNo: string
+  imCd: string
   isRegistered: boolean
+  loginId: string
+  userNm: string
   isRegisteredNew?: boolean
+  onDutyNm: string
 }
 
 const AdminCustomerCompanyManagementUserPageHeader = ({
@@ -102,7 +107,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
 
   const handleRegister = useCallback((user: SelectedRow) => {
     setRegisteredUsers((prev) => {
-      if (!prev.some((u) => u.id === user.id)) {
+      if (!prev.some((u) => u.employeeNo === user.employeeNo)) {
         return [...prev, { ...user, isRegistered: true, isRegisteredNew: true }]
       }
 
@@ -119,9 +124,8 @@ const AdminMemberManagementUserRegistrationPage = () => {
       renderHeader: () => <AdminTableHeader>등록 여부</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
       renderCell: ({ row }) => {
-        console.log('ROW ==> ', row)
         const initiallyRegistered = row.isRegistered
-        const isNewlyRegistered = registeredUsers.some((u) => u.id === row.id && u.isRegisteredNew)
+        const isNewlyRegistered = registeredUsers.some((u) => u.employeeNo === row.employeeNo && u.isRegisteredNew)
 
         return (
           <CheckIcon fontSize="small" style={{ color: initiallyRegistered ? '#ccc' : isNewlyRegistered ? '#0CA678' : 'transparent' }} />
@@ -154,6 +158,9 @@ const AdminMemberManagementUserRegistrationPage = () => {
       flex: 1,
       renderHeader: () => <AdminTableHeader>소속</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
+      renderCell(params) {
+        return <AdminTableCell typography={{ color: 'gray' }}>{params.value}</AdminTableCell>
+      },
     },
     {
       field: 'onDutyNm',
@@ -161,6 +168,9 @@ const AdminMemberManagementUserRegistrationPage = () => {
       flex: 1,
       renderHeader: () => <AdminTableHeader>직위</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
+      renderCell(params) {
+        return <AdminTableCell typography={{ color: 'gray' }}>{params.value}</AdminTableCell>
+      },
     },
     {
       field: 'userNm',
@@ -168,6 +178,9 @@ const AdminMemberManagementUserRegistrationPage = () => {
       flex: 1,
       renderHeader: () => <AdminTableHeader>이름</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
+      renderCell(params) {
+        return <AdminTableCell typography={{ color: 'gray' }}>{params.value}</AdminTableCell>
+      },
     },
     {
       field: 'loginId',
@@ -175,13 +188,16 @@ const AdminMemberManagementUserRegistrationPage = () => {
       flex: 1,
       renderHeader: () => <AdminTableHeader>이메일</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
+      renderCell(params) {
+        return <AdminTableCell typography={{ color: 'gray' }}>{params.value}</AdminTableCell>
+      },
     },
     {
       field: 'actions',
       headerName: '',
       width: 52,
       renderCell: ({ row }) => {
-        const isNewlyRegistered = registeredUsers.some((u) => u.id === row.id && u.isRegisteredNew)
+        const isNewlyRegistered = registeredUsers.some((u) => u.employeeNo === row.employeeNo && u.isRegisteredNew)
 
         return (
           <>
@@ -216,24 +232,28 @@ const AdminMemberManagementUserRegistrationPage = () => {
     }
   }, [setCustomComponent])
 
+  // useEffect(() => {
+  //   if (data?.detail) {
+  //     const registered = data.detail
+  //       .filter((user) => user.isRegistered)
+  //       .map(
+  //         (user): SelectedRow => ({
+  //           id: String(user.userNm),
+  //           company: user.companyNm,
+  //           department: user.departmentNm,
+  //           position: user.onDutyNm,
+  //           name: user.userNm,
+  //           email: user.loginId,
+  //           isRegistered: true,
+  //         }),
+  //       )
+  //     setRegisteredUsers(registered)
+  //   }
+  // }, [data])
+
   useEffect(() => {
-    if (data?.detail) {
-      const registered = data.detail
-        .filter((user) => user.isRegistered)
-        .map(
-          (user): SelectedRow => ({
-            id: String(user.userNm),
-            company: user.companyNm,
-            department: user.departmentNm,
-            position: user.onDutyNm,
-            name: user.userNm,
-            email: user.loginId,
-            isRegistered: true,
-          }),
-        )
-      setRegisteredUsers(registered)
-    }
-  }, [data])
+    console.log('RegisteredUsers ===> ', registeredUsers)
+  }, [registeredUsers])
 
   return (
     <>
@@ -277,7 +297,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
         noRowMessage={isPureState ? t('회원을 검색하세요.') : undefined}
       />
 
-      {/* <Grid container direction="column" spacing={3}>
+      <Grid container direction="column" spacing={3}>
         <Grid container direction="column" gap={1}>
           <Typography color="gray.90" variant="subtitle">
             등록할 사용자
@@ -304,13 +324,13 @@ const AdminMemberManagementUserRegistrationPage = () => {
               }}
               deleteIcon={<CancelIcon style={{ marginLeft: '3px', color: '#CED4DA' }} />}
               variant="outlined"
-              key={user.id}
-              label={`${user.name} • ${user.position} • ${user.department}`}
-              onDelete={() => setRegisteredUsers(registeredUsers.filter((u) => u.id !== user.id))}
+              key={user.employeeNo}
+              label={`${user.userNm} • ${user.onDutyNm} • ${user.departmentNm}`}
+              onDelete={() => setRegisteredUsers(registeredUsers.filter((u) => u.employeeNo !== user.employeeNo))}
             />
           ))}
         </Grid>
-      </Grid> */}
+      </Grid>
     </>
   )
 }
