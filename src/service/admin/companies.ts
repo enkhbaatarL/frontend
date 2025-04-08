@@ -113,6 +113,40 @@ export interface IUserInfo {
   auditInfo: string
 }
 
+export interface IAuditInfo {
+  createUserId: string
+  createDt: string
+  modifyUserId: string
+  modifyDt: string
+  createUserNm: string
+  createUserDeptNm: string
+  createUserCpnyNm: string
+  modifyUserNm: string
+  modifyUserDeptNm: string
+  modifyUserCpnyNm: string
+}
+
+export interface IMangerDetailInfo {
+  userNo: number
+  userNm: string
+  userLoginId: string
+  userRoleCd: string
+  onDutyNm: string
+  departmentNm: string
+  isOtherServiceAccessPossible: boolean
+  isIndividualInfoAgreement: boolean
+  individualInfoAgreementDtm: string
+  customerCompanyNo: number
+  customerCompanyNm: string
+  auditInfo: IAuditInfo
+  accessAllowedIpAddress: string[]
+}
+
+export interface IMangerInfoEditRequest {
+  isOtherServiceAccessPossible: boolean
+  accessAllowedIpAddress: string[]
+}
+
 export interface IGroupUserInfo {
   imCd: string
   userNm: string
@@ -195,6 +229,44 @@ const companiesService = {
     })
 
     return response.data.data
+  },
+  /**
+   * 관리자 목록을 조회합니다.
+   * @param params - { page: 페이지 번호, size: 페이지당 항목 수, companyNo: 회사 번호, departmentNm: 부서 명, userNm: 사용자 명, emailAddress: 이메일 주소 }
+   */
+  async getManagers(params: Partial<Omit<IUserRequest, 'userRoleCd'>>): Promise<IPaginationResponse<IUserInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IUserInfo>>> = await api.get('admin/user-management/users', {
+      params: {
+        ...params,
+        userRoleCd: UserRole.ADMIN,
+      },
+    })
+
+    return response.data.data
+  },
+  /**
+   * 관리자 상세 정보를 조회합니다.
+   * @param userNo - 사용자 번호
+   */
+  async getManagerDetail(userNo?: string): Promise<IMangerDetailInfo> {
+    if (!userNo) throw new Error('userNo is required')
+
+    const response: AxiosResponse<ICommonResponse<IMangerDetailInfo>> = await api.get(`admin/user-management/admin-users/${userNo}`)
+
+    return response.data.data
+  },
+  /**
+   * 관리자 상세 정보를 수정합니다.
+   * @param userNo - 사용자 번호
+   * @param body - { isOtherServiceAccessPossible: 다른 서비스 접근 가능 여부, accessAllowedIpAddress: 접근 가능 IP 주소 목록 }
+   */
+  async updateManagerDetail(userNo: string, body: IMangerInfoEditRequest): Promise<void> {
+    if (!userNo) throw new Error('userNo is required')
+
+    await api.patch(`admin/user-management/admin-users/${userNo}`, {
+      userRoleCd: UserRole.ADMIN,
+      ...body,
+    })
   },
   /**
    * 그룹사 사용자 목록을 조회합니다.

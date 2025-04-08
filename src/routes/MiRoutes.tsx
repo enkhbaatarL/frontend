@@ -2,10 +2,15 @@ import { Navigate, RouteObject } from 'react-router-dom'
 
 import MiLayout from '@/layouts/MiLayout'
 import UserChartSamplePage from '@/pages/mi/UserChartSamplePage'
+import MiProvider from '@/providers/MiProvider'
 
 const MiRoutes: RouteObject = {
   path: '/mi',
-  element: <MiLayout />,
+  element: (
+    <MiProvider>
+      <MiLayout />
+    </MiProvider>
+  ),
   children: [
     {
       index: true,

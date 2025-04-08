@@ -8,6 +8,7 @@ import { DataGrid, DataGridProps, GridColDef, GridEventListener, GridRenderCellP
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Instance } from '@popperjs/core'
 import clsx from 'clsx'
+import { t } from 'i18next'
 import { JSX, PropsWithChildren, useMemo, useRef, useState, MouseEvent, useEffect, HTMLAttributes } from 'react'
 
 import AdminChip, { AdminChipProps } from './AdminChip'
@@ -130,7 +131,7 @@ export const AdminTableCell = (props: AdminTableCellProps) => {
 export interface ActionItem {
   label: string
   icon: JSX.Element
-  onClick: () => void
+  onClick: () => void | Promise<void>
 }
 
 export interface AdminActionCellProps {
@@ -191,12 +192,12 @@ export const AdminTableAction = ({ actions }: AdminActionCellProps) => {
   )
 }
 
-const AdminTableNoRowsOverlay = (props: HTMLAttributes<HTMLDivElement> & { noRowMessage?: string }) => (
+const AdminTableNoRowsOverlay = ({ noRowMessage, ...props }: HTMLAttributes<HTMLDivElement> & { noRowMessage?: string }) => (
   <Box className={clsx(style.adminTableNoRowsOverlay)} {...props}>
     <Box display="flex" flexDirection="column" rowGap="10px" alignItems="center">
       <ErrorOutlineIcon />
       <Typography variant="body6" color="gray.60">
-        {props.noRowMessage ?? '표시할 데이터가 없습니다'}
+        {noRowMessage ?? t('표시할 데이터가 없습니다')}
       </Typography>
     </Box>
   </Box>

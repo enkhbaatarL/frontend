@@ -12,16 +12,21 @@ import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataPro
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
 import AdminMemberManagementManagersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementManagerRegistrationPage'
 import AdminMemberManagementManagersPage from '@/pages/admin/memberManagement/AdminMemberManagementManagersPage'
-import AdminMemberManagementMangerDetail from '@/pages/admin/memberManagement/AdminMemberManagementMangerDetail'
-import AdminMemberManagementMangerEdit from '@/pages/admin/memberManagement/AdminMemberManagementMangerEdit'
+import AdminMemberManagementMangerDetailPage from '@/pages/admin/memberManagement/AdminMemberManagementMangerDetailPage'
+import AdminMemberManagementMangerEditPage from '@/pages/admin/memberManagement/AdminMemberManagementMangerEditPage'
 import AdminMemberManagementUserRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementUserRegistrationPage'
 import AdminMemberManagementUsersPage from '@/pages/admin/memberManagement/AdminMemberManagementUsersPage'
 import AdminNotificationListPage from '@/pages/admin/notification/AdminNotificationListPage'
+import AdminProvider from '@/providers/AdminProvider'
 import { ICustomRouteObject } from '@/types/common'
 
 const AdminRoutes: ICustomRouteObject = {
   path: 'admin',
-  element: <AdminLayout />,
+  element: (
+    <AdminProvider>
+      <AdminLayout />
+    </AdminProvider>
+  ),
   children: [
     {
       index: true,
@@ -96,15 +101,29 @@ const AdminRoutes: ICustomRouteObject = {
             {
               path: 'detail',
               label: '관리자 상세',
-              element: <AdminMemberManagementMangerDetail />,
               hidden: true,
               hasBack: true,
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
+                  path: ':userNo',
+                  element: <AdminMemberManagementMangerDetailPage />,
+                },
+              ],
             },
             {
               path: 'edit',
               label: '관리자 수정',
-              element: <AdminMemberManagementMangerEdit />,
               hidden: true,
+              children: [
+                {
+                  path: ':userNo',
+                  element: <AdminMemberManagementMangerEditPage />,
+                },
+              ],
             },
           ],
         },

@@ -12,8 +12,14 @@ const AdminHeader = () => {
   const { customComponent } = useAdminHeader()
   const { adminPageInfo } = useAdminPageInfo()
   const backPage = () => {
-    navigate(-1)
-    // TODO: 상위 페이지로 이동하는 로직 추가
+    const pathSegments = adminPageInfo.path.split('/').filter(Boolean)
+
+    if (pathSegments.length > 2) {
+      const parentPath = `/${pathSegments.slice(0, pathSegments.length - 1).join('/')}`
+      navigate(parentPath)
+    } else {
+      navigate(-1)
+    }
   }
 
   return (

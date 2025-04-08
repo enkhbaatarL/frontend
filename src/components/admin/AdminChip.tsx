@@ -16,11 +16,13 @@ export default function AdminChip(props: Readonly<AdminChipProps>) {
     if (adminChipSize === 'h20')
       return {
         padding: '0px 8px',
+        height: '20px',
       }
 
     if (adminChipSize === 'h24')
       return {
         padding: '4px 8px',
+        height: '24px',
       }
 
     return {}
