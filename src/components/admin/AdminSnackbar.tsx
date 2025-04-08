@@ -1,6 +1,6 @@
 import { Alert, AlertTitle, Typography } from '@mui/material'
 import { closeSnackbar, CustomContentProps, SnackbarContent } from 'notistack'
-import { forwardRef, ReactNode } from 'react'
+import { forwardRef, ReactNode, useCallback } from 'react'
 
 import Flex from '@/components/common/display/Flex.tsx'
 import CloseIcon from '@/components/common/icons/CloseIcon.tsx'
@@ -16,6 +16,12 @@ interface AdminSnackbarProps extends CustomContentProps {
 const AdminSnackbar = forwardRef<HTMLDivElement, AdminSnackbarProps>((props, ref) => {
   const { id, message, variant, body } = props
 
+  const handleClose = useCallback(() => {
+    if (id) {
+      closeSnackbar(id)
+    }
+  }, [id])
+
   return (
     <SnackbarContent ref={ref} role="alert">
       <Alert
@@ -27,12 +33,12 @@ const AdminSnackbar = forwardRef<HTMLDivElement, AdminSnackbarProps>((props, ref
           warning: <WarningIconSm />,
         }}
         action={
-          <Flex style={{ cursor: 'pointer' }} onClick={() => closeSnackbar(id)}>
+          <Flex style={{ cursor: 'pointer' }} onClick={handleClose}>
             <CloseIcon />
           </Flex>
         }
         variant="outlined"
-        onClose={() => closeSnackbar(id)}
+        onClose={handleClose}
         severity={variant as 'error' | 'info' | 'success' | 'warning'}
       >
         <AlertTitle>{message}</AlertTitle>

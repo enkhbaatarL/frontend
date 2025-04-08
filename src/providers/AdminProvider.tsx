@@ -2,6 +2,7 @@ import { SnackbarProvider } from 'notistack'
 import { ReactNode, useState, useMemo } from 'react'
 
 import AdminSnackbar from '@/components/admin/AdminSnackbar'
+import AxiosErrorHandler from '@/components/common/AxiosErrorHandler'
 import { AdminHeaderContext } from '@/contexts/AdminHeaderContext'
 import { Nullable } from '@/types/common'
 
@@ -15,6 +16,7 @@ const AdminProvider = ({ children }: { children: ReactNode }) => {
       <SnackbarProvider
         maxSnack={8}
         autoHideDuration={2000}
+        preventDuplicate
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'center',
@@ -26,6 +28,7 @@ const AdminProvider = ({ children }: { children: ReactNode }) => {
           warning: AdminSnackbar,
         }}
       >
+        <AxiosErrorHandler />
         {children}
       </SnackbarProvider>
     </AdminHeaderContext.Provider>

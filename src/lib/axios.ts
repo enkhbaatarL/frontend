@@ -1,12 +1,26 @@
 import Axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 
-import useSnackbar, { ISnackbarOptions } from '@/hooks/useSnackbar'
+import { ISnackbarOptions } from '@/hooks/useSnackbar'
 
 export interface HttpResponse<T> {
   status: number
   code: string
   message?: string
   data?: T
+}
+
+export interface ErrorHandlerOptions {
+  showSnackbar: (message: string, options?: ISnackbarOptions) => void
+}
+
+let errorHandlerOptions: ErrorHandlerOptions | null = null
+
+export const setErrorHandlerOptions = (options: ErrorHandlerOptions) => {
+  errorHandlerOptions = options
+}
+
+export const removeErrorHandlerOptions = () => {
+  errorHandlerOptions = null
 }
 
 const api: AxiosInstance = Axios.create({
@@ -27,18 +41,18 @@ api.interceptors.request.use((req) => {
   return req
 })
 
-const errorHandler = (error: AxiosError<HttpResponse<unknown>>, showSnackbar: (message: string, options?: ISnackbarOptions) => void) => {
+const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
   const status = error.response?.status
 
-  if (status) {
+  if (status && errorHandlerOptions?.showSnackbar) {
     if (status > 400) {
       if (status === 401) {
         // TODO: logout
-        showSnackbar('Unauthorized access', { variant: 'warning' })
+        errorHandlerOptions.showSnackbar('Unauthorized access', { variant: 'warning' })
       } else {
         const statusText = error.response?.statusText
 
-        showSnackbar(`Error: ${statusText}`, { variant: 'error' })
+        errorHandlerOptions.showSnackbar(`Error: ${statusText}`, { variant: 'error' })
       }
     }
   }
@@ -48,11 +62,7 @@ const errorHandler = (error: AxiosError<HttpResponse<unknown>>, showSnackbar: (m
 
 api.interceptors.response.use(
   (res: AxiosResponse) => res,
-  (error: AxiosError<HttpResponse<unknown>>) => {
-    const { showSnackbar } = useSnackbar()
-
-    return errorHandler(error, showSnackbar)
-  },
+  (error: AxiosError<HttpResponse<unknown>>) => errorHandler(error),
 )
 
 export default api

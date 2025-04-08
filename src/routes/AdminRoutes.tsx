@@ -17,11 +17,16 @@ import AdminMemberManagementMangerEditPage from '@/pages/admin/memberManagement/
 import AdminMemberManagementUserRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementUserRegistrationPage'
 import AdminMemberManagementUsersPage from '@/pages/admin/memberManagement/AdminMemberManagementUsersPage'
 import AdminNotificationListPage from '@/pages/admin/notification/AdminNotificationListPage'
+import AdminProvider from '@/providers/AdminProvider'
 import { ICustomRouteObject } from '@/types/common'
 
 const AdminRoutes: ICustomRouteObject = {
   path: 'admin',
-  element: <AdminLayout />,
+  element: (
+    <AdminProvider>
+      <AdminLayout />
+    </AdminProvider>
+  ),
   children: [
     {
       index: true,
@@ -108,8 +113,13 @@ const AdminRoutes: ICustomRouteObject = {
             {
               path: 'edit',
               label: '관리자 수정',
-              element: <AdminMemberManagementMangerEditPage />,
               hidden: true,
+              children: [
+                {
+                  path: ':userNo',
+                  element: <AdminMemberManagementMangerEditPage />,
+                },
+              ],
             },
           ],
         },
