@@ -9,7 +9,7 @@ interface ActionButton {
   label: string
   variant?: 'text' | 'outlined' | 'contained'
   color?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' | 'inherit'
-  onClick: () => void
+  onClick: () => void | Promise<void>
 }
 
 interface Props {

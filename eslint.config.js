@@ -77,7 +77,7 @@ export default tseslint.config(
           ignoreRestSiblings: true,
         },
       ],
-      indent: ['warn', 2], // 들여쓰기 2칸
+      indent: ['warn', 2, { SwitchCase: 1 }], // 들여쓰기 2칸, case 문은 2칸 더 들여쓰기
       'func-style': ['warn', 'expression'], // 함수 표현식 사용
       'keyword-spacing': ['warn', { before: true, after: true }], // 키워드 주위 공백 요구
       'eol-last': ['warn', 'always'], // 파일 끝 줄바꿈 요구

@@ -131,7 +131,7 @@ export const AdminTableCell = (props: AdminTableCellProps) => {
 export interface ActionItem {
   label: string
   icon: JSX.Element
-  onClick: () => void
+  onClick: () => void | Promise<void>
 }
 
 export interface AdminActionCellProps {

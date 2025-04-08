@@ -8,6 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminChip from '@/components/admin/AdminChip'
 import AdminConfirm from '@/components/admin/AdminConfirm'
+import AdminLoading from '@/components/admin/AdminLoading'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
@@ -33,29 +34,44 @@ export default function AdminMemberManagementMangerDetailPage() {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
-  const { data } = useQuery({
+  const { data, isError, isLoading } = useQuery({
     queryKey: ['managerDetail', userNo],
     queryFn: async () => await companiesService.getManagerDetail(userNo),
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
     enabled: !!userNo,
   })
 
-  const managerInfo = useMemo(() => `${data?.userNm} • ${data?.onDutyNm} • ${data?.departmentNm}`, [data])
+  const displayManagerInfo = useMemo(
+    () => `${data?.userNm} • ${data?.onDutyNm} • ${data?.departmentNm} • ${data?.customerCompanyNm}`,
+    [data],
+  )
+
+  useEffect(() => {
+    if (isError) {
+      showSnackbar(t('사용자 정보를 찾을 수 없습니다.'), { variant: 'error' })
+      navigate('/admin/member-mgmt/managers', { replace: true })
+    }
+  }, [isError, navigate, showSnackbar])
 
   useEffect(() => {
     setCustomComponent(
       <AdminMemberManagementMangerDetailPageHeader
         onDelete={() => setShowDeleteModal(true)}
-        onEdit={() => navigate(`/admin/member-mgmt/managers/edit/${userNo}`)}
+        onEdit={() => navigate(`/admin/member-mgmt/managers/edit/${userNo}`, { state: data })}
       />,
     )
 
     return () => {
       setCustomComponent(null)
     }
-  }, [navigate, setCustomComponent, userNo])
+  }, [data, navigate, setCustomComponent, userNo])
 
-  return (
+  return isLoading ? (
+    <AdminLoading />
+  ) : (
     <>
       <Box>
         <Typography sx={{ mb: 1 }} component="span" variant="subtitle">
@@ -67,12 +83,11 @@ export default function AdminMemberManagementMangerDetailPage() {
         </Typography>
         <AdminTextField
           sx={{ width: '700px', mt: 3 }}
-          value={managerInfo}
+          value={displayManagerInfo}
           aria-readonly="true"
           placeholder="사용자 검색 목록에서 사용자를 선택하세요."
         />
       </Box>
-
       <Box>
         <Typography sx={{ mb: 1 }} component="span" variant="subtitle">
           {t('타사 서비스 접근 여부')}
@@ -88,7 +103,6 @@ export default function AdminMemberManagementMangerDetailPage() {
           />
         </Box>
       </Box>
-
       <Box>
         <Typography sx={{ mb: 1 }} component="span" variant="subtitle">
           {t('관리자 IP')}
@@ -98,9 +112,7 @@ export default function AdminMemberManagementMangerDetailPage() {
         </Typography>
 
         <Stack spacing={2} mt={3}>
-          {data?.accessAllowedIpAddressList.map((ip) => (
-            <AdminTextField key={ip} sx={{ width: '700px' }} value={ip} aria-readonly="true" />
-          ))}
+          {data?.accessAllowedIpAddress.map((ip) => <AdminTextField key={ip} sx={{ width: '700px' }} value={ip} aria-readonly="true" />)}
         </Stack>
       </Box>
       <AdminConfirm

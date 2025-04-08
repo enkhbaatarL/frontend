@@ -1,4 +1,5 @@
 import Axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import { t } from 'i18next'
 
 import { ISnackbarOptions } from '@/hooks/useSnackbar'
 
@@ -44,16 +45,19 @@ api.interceptors.request.use((req) => {
 const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
   const status = error.response?.status
 
-  if (status && errorHandlerOptions?.showSnackbar) {
-    if (status > 400) {
-      if (status === 401) {
-        // TODO: logout
-        errorHandlerOptions.showSnackbar('Unauthorized access', { variant: 'warning' })
-      } else {
-        const statusText = error.response?.statusText
+  if (status && status >= 400) {
+    const statusText = error.response?.statusText
 
-        errorHandlerOptions.showSnackbar(`Error: ${statusText}`, { variant: 'error' })
-      }
+    switch (status) {
+      case 400:
+        errorHandlerOptions?.showSnackbar?.(t('잘못된 요청입니다.'), { variant: 'error' })
+        break
+      case 401:
+        // TODO: logout
+        break
+      default:
+        errorHandlerOptions?.showSnackbar?.(`Error: ${statusText}`, { variant: 'error' })
+        break
     }
   }
 

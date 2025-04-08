@@ -149,13 +149,13 @@ const AdminMemberManagementManagersPage = () => {
       width: 52,
       cellClassName: 'cellAction',
       align: 'center',
-      renderCell: () => (
+      renderCell: ({ row }) => (
         <AdminTableAction
           actions={[
             {
               label: t('수정'),
               icon: <EditIcon fontSize="small" />,
-              onClick: () => {},
+              onClick: () => navigate(`/admin/member-mgmt/managers/detail/${row.userNo}`),
             },
             {
               label: t('삭제'),

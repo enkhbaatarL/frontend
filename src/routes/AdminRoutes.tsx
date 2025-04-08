@@ -105,6 +105,10 @@ const AdminRoutes: ICustomRouteObject = {
               hasBack: true,
               children: [
                 {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
                   path: ':userNo',
                   element: <AdminMemberManagementMangerDetailPage />,
                 },

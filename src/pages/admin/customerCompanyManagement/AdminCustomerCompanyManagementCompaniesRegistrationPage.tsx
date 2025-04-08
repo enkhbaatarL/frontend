@@ -157,7 +157,7 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
             label: '확인',
             variant: 'contained',
             color: 'primary',
-            onClick: () => onSave,
+            onClick: onSave,
           },
         ]}
       />
