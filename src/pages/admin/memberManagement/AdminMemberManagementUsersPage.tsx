@@ -1,11 +1,11 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import ErrorIcon from '@mui/icons-material/Error'
 import { GridColDef } from '@mui/x-data-grid'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { isEmpty } from 'lodash-es'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
@@ -40,8 +40,10 @@ const AdminMemberManagementUsersPage = () => {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showMemberDetailModal, setShowMemberDetailModal] = useState(false)
+  const [deleteUserRequest, setDeleteUserRequest] = useState<number>()
 
   const [selectedUser, setSelectedUser] = useState<Partial<IUserInfo>>({})
+  const queryClient = useQueryClient()
 
   const {
     filter,
@@ -70,7 +72,7 @@ const AdminMemberManagementUsersPage = () => {
     },
   )
 
-  const { data: filterOptions } = useQuery({
+  const { data: filterOptions, refetch } = useQuery({
     queryKey: ['filterOptions'],
     queryFn: async () => await companiesService.getDepartmentAll(),
     refetchOnWindowFocus: false,
@@ -88,9 +90,22 @@ const AdminMemberManagementUsersPage = () => {
   /**
    * 회원 삭제
    */
-  const handleDeleteUser = (userNo: number) => {
-    console.log('USERNO ==> ', userNo)
-  }
+  const handleDeleteUser = useCallback(async () => {
+    try {
+      const request = showMemberDetailModal ? selectedUser.userNo : deleteUserRequest
+      if (request) {
+        const response = await companiesService.deleteUser(request)
+        setShowDeleteModal(false)
+        setShowMemberDetailModal(false)
+        if (response.status) {
+          showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
+          await refetch()
+        }
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }, [deleteUserRequest, selectedUser.userNo, showMemberDetailModal, queryClient, showSnackbar, refetch])
 
   const columns: GridColDef[] = [
     {
@@ -188,7 +203,10 @@ const AdminMemberManagementUsersPage = () => {
             {
               label: t('삭제'),
               icon: <DeleteIcon fontSize="small" />,
-              onClick: () => handleDeleteUser(param.row.userNo),
+              onClick: () => {
+                setDeleteUserRequest(param.row.userNo)
+                setShowDeleteModal(true)
+              },
             },
           ]}
         />
@@ -304,9 +322,10 @@ const AdminMemberManagementUsersPage = () => {
             variant: 'contained',
             color: 'error',
             onClick: () => {
-              setShowDeleteModal(false)
-              setShowMemberDetailModal(false)
-              showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
+              handleDeleteUser()
+              // setShowDeleteModal(false)
+              // setShowMemberDetailModal(false)
+              // showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
             },
           },
         ]}

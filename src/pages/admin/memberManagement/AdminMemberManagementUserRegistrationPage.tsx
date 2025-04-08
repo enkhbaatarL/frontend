@@ -226,8 +226,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
   const handleRegisterUser = async () => {
     try {
       const request = registeredUsers.map((v) => v.imCd)
-      const response = await companiesService.registerUser({ imCd: request })
-      console.log(response)
+      await companiesService.registerUser({ imCd: request })
       showSnackbar('등록되었습니다.', { variant: 'success' })
       navigate('/admin/member-mgmt/users')
     } catch (error) {

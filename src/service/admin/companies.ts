@@ -294,6 +294,16 @@ const companiesService = {
 
     return response.data
   },
+  /**
+   * 사용자를 삭제합니다.
+   * @param userNo - 사용자 번호
+   */
+  async deleteUser(userNo: number): Promise<ICommonResponse<null>> {
+    if (!userNo) throw new Error('userNo is required')
+
+    const response: AxiosResponse<ICommonResponse<null>> = await api.delete(`admin/user-management/users/${userNo}`)
+    return response.data
+  },
 }
 
 export default companiesService
