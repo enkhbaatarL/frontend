@@ -1,6 +1,5 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import ErrorIcon from '@mui/icons-material/Error'
-import { Box, Tooltip } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -86,36 +85,83 @@ const AdminMemberManagementUsersPage = () => {
     }))
   }, [filter.companyNo, filterOptions, updateFilter])
 
+  /**
+   * 회원 삭제
+   */
+  const handleDeleteUser = (userNo: number) => {
+    console.log('USERNO ==> ', userNo)
+  }
+
   const columns: GridColDef[] = [
     {
       field: 'customerCompanyNm',
       headerName: t('회사명'),
       minWidth: 150,
       flex: 1,
-      renderCell: (params) => (
-        <AdminTableCell typography={{ variant: 'tableBody1' }} ellipsis cursorPointer>
-          {params.value}
-        </AdminTableCell>
-      ),
+      renderCell: (param) => {
+        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
+        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
+
+        return (
+          <AdminTableCell tooltipContent={tooltipContent} typography={{ variant: 'tableBody1' }} ellipsis cursorPointer>
+            {param.value}
+          </AdminTableCell>
+        )
+      },
     },
-    { field: 'departmentNm', headerName: t('소속'), width: 160 },
-    { field: 'onDutyNm', headerName: t('직위'), width: 180 },
-    { field: 'userNm', headerName: t('이름'), width: 120 },
-    { field: 'userLoginId', headerName: t('이메일'), width: 180 },
+    {
+      field: 'departmentNm',
+      headerName: t('소속'),
+      width: 160,
+      renderCell: (param) => {
+        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
+        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
+
+        return <AdminTableCell tooltipContent={tooltipContent}>{param.row.departmentNm}</AdminTableCell>
+      },
+    },
+    {
+      field: 'onDutyNm',
+      headerName: t('직위'),
+      width: 180,
+      renderCell: (param) => {
+        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
+        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
+
+        return <AdminTableCell tooltipContent={tooltipContent}>{param.row.onDutyNm}</AdminTableCell>
+      },
+    },
+    {
+      field: 'userNm',
+      headerName: t('이름'),
+      width: 120,
+      renderCell: (param) => {
+        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
+        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
+
+        return <AdminTableCell tooltipContent={tooltipContent}>{param.row.userNm}</AdminTableCell>
+      },
+    },
+    {
+      field: 'userLoginId',
+      headerName: t('이메일'),
+      width: 180,
+      renderCell: (param) => {
+        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
+        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
+
+        return <AdminTableCell tooltipContent={tooltipContent}>{param.row.userLoginId}</AdminTableCell>
+      },
+    },
     {
       field: 'createUserNm',
       headerName: t('등록자'),
       width: 120,
       renderCell: (param) => {
         const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
+        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
 
-        return createUserNm ? (
-          <Box py="10px" px="12px">
-            <Tooltip title={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`} arrow>
-              {createUserNm}
-            </Tooltip>
-          </Box>
-        ) : null
+        return <AdminTableCell tooltipContent={tooltipContent}>{createUserNm}</AdminTableCell>
       },
     },
     {
@@ -124,9 +170,10 @@ const AdminMemberManagementUsersPage = () => {
       width: 150,
       align: 'center',
       renderCell: (param) => {
-        const { createDt } = param.row.auditInfo
+        const { createUserNm, createUserDeptNm, createUserCpnyNm, createDt } = param.row.auditInfo
+        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
 
-        return createDt ? dayjs(createDt).format('YYYY-MM-DD') : null
+        return <AdminTableCell tooltipContent={tooltipContent}>{createDt ? dayjs(createDt).format('YYYY-MM-DD') : null}</AdminTableCell>
       },
     },
     {
@@ -135,13 +182,13 @@ const AdminMemberManagementUsersPage = () => {
       width: 52,
       cellClassName: 'cellAction',
       align: 'center',
-      renderCell: () => (
+      renderCell: (param) => (
         <AdminTableAction
           actions={[
             {
               label: t('삭제'),
               icon: <DeleteIcon fontSize="small" />,
-              onClick: () => setShowDeleteModal(true),
+              onClick: () => handleDeleteUser(param.row.userNo),
             },
           ]}
         />
