@@ -133,6 +133,10 @@ export interface IGroupUserInfo {
   isRegistered: boolean
 }
 
+export interface IRegisterUserRequest {
+  imCd: string[]
+}
+
 /**
  * 고객사 서비스
  */
@@ -208,6 +212,15 @@ const companiesService = {
     )
 
     return response.data.data
+  },
+  /**
+   * 사용자를 등록합니다.
+   * @param body - { imCd: IM코드 }
+   */
+  async registerUser(body: IRegisterUserRequest): Promise<ICommonResponse<null>> {
+    const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/user-management/user', body)
+
+    return response.data
   },
 }
 

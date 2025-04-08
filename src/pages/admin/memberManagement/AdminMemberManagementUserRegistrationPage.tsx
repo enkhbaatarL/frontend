@@ -1,13 +1,14 @@
 import CancelIcon from '@mui/icons-material/Cancel'
 import CheckIcon from '@mui/icons-material/Check'
-// import { Chip, Grid, Typography } from '@mui/material'
 import { Grid2 as Grid, Typography, Chip } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
+import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableCell, AdminTableHeader } from '@/components/admin/AdminTable'
@@ -16,6 +17,7 @@ import Flex from '@/components/common/display/Flex'
 import AddIcon from '@/components/common/icons/AddIcon'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
+import useSnackbar from '@/hooks/useSnackbar'
 import companiesService, { IGroupUserInfo, IGroupUserRequest, IUserInfo } from '@/service/admin/companies'
 import { IPaginationResponse } from '@/types/api'
 interface SelectedRow {
@@ -38,7 +40,7 @@ const AdminCustomerCompanyManagementUserPageHeader = ({
   setIsOpenCancel,
   setIsOpenRegistration,
 }: {
-  registeredUsers: []
+  registeredUsers: SelectedRow[]
   setIsOpenCancel: (value: boolean) => void
   setIsOpenRegistration: (value: boolean) => void
 }) => (
@@ -72,6 +74,9 @@ const AdminMemberManagementUserRegistrationPage = () => {
   const [registeredUsers, setRegisteredUsers] = useState<SelectedRow[]>([])
   const [_selectedRow, setSelectedRow] = useState<SelectedRow | null>(null)
   const [_isOpenDetail, setIsOpenDetail] = useState(false)
+  const [isOpenRegistration, setIsOpenRegistration] = useState<boolean>(false)
+  const { showSnackbar } = useSnackbar()
+  const navigate = useNavigate()
 
   const {
     filter,
@@ -107,7 +112,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
 
   const handleRegister = useCallback((user: SelectedRow) => {
     setRegisteredUsers((prev) => {
-      if (!prev.some((u) => u.employeeNo === user.employeeNo)) {
+      if (!prev.some((u) => u.imCd === user.imCd)) {
         return [...prev, { ...user, isRegistered: true, isRegisteredNew: true }]
       }
 
@@ -125,7 +130,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
       renderCell: ({ row }) => {
         const initiallyRegistered = row.isRegistered
-        const isNewlyRegistered = registeredUsers.some((u) => u.employeeNo === row.employeeNo && u.isRegisteredNew)
+        const isNewlyRegistered = registeredUsers.some((u) => u.imCd === row.imCd && u.isRegisteredNew)
 
         return (
           <CheckIcon fontSize="small" style={{ color: initiallyRegistered ? '#ccc' : isNewlyRegistered ? '#0CA678' : 'transparent' }} />
@@ -197,7 +202,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
       headerName: '',
       width: 52,
       renderCell: ({ row }) => {
-        const isNewlyRegistered = registeredUsers.some((u) => u.employeeNo === row.employeeNo && u.isRegisteredNew)
+        const isNewlyRegistered = registeredUsers.some((u) => u.imCd === row.imCd && u.isRegisteredNew)
 
         return (
           <>
@@ -218,42 +223,31 @@ const AdminMemberManagementUserRegistrationPage = () => {
     },
   ]
 
+  const handleRegisterUser = async () => {
+    try {
+      const request = registeredUsers.map((v) => v.imCd)
+      const response = await companiesService.registerUser({ imCd: request })
+      console.log(response)
+      showSnackbar('등록되었습니다.', { variant: 'success' })
+      navigate('/admin/member-mgmt/users')
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   useEffect(() => {
     setCustomComponent(
       <AdminCustomerCompanyManagementUserPageHeader
-        setIsOpenRegistration={(value: boolean) => value}
+        setIsOpenRegistration={setIsOpenRegistration}
         setIsOpenCancel={(value: boolean) => value}
-        registeredUsers={[]}
+        registeredUsers={registeredUsers}
       />,
     )
 
     return () => {
       setCustomComponent(null)
     }
-  }, [setCustomComponent])
-
-  // useEffect(() => {
-  //   if (data?.detail) {
-  //     const registered = data.detail
-  //       .filter((user) => user.isRegistered)
-  //       .map(
-  //         (user): SelectedRow => ({
-  //           id: String(user.userNm),
-  //           company: user.companyNm,
-  //           department: user.departmentNm,
-  //           position: user.onDutyNm,
-  //           name: user.userNm,
-  //           email: user.loginId,
-  //           isRegistered: true,
-  //         }),
-  //       )
-  //     setRegisteredUsers(registered)
-  //   }
-  // }, [data])
-
-  useEffect(() => {
-    console.log('RegisteredUsers ===> ', registeredUsers)
-  }, [registeredUsers])
+  }, [setCustomComponent, registeredUsers])
 
   return (
     <>
@@ -324,13 +318,50 @@ const AdminMemberManagementUserRegistrationPage = () => {
               }}
               deleteIcon={<CancelIcon style={{ marginLeft: '3px', color: '#CED4DA' }} />}
               variant="outlined"
-              key={user.employeeNo}
+              key={user.imCd}
               label={`${user.userNm} • ${user.onDutyNm} • ${user.departmentNm}`}
-              onDelete={() => setRegisteredUsers(registeredUsers.filter((u) => u.employeeNo !== user.employeeNo))}
+              onDelete={() => setRegisteredUsers(registeredUsers.filter((u) => u.imCd !== user.imCd))}
             />
           ))}
         </Grid>
       </Grid>
+      <AdminConfirm
+        open={isOpenRegistration}
+        title="등록하시겠습니까?"
+        width={450}
+        handleClose={() => {
+          setIsOpenRegistration(false)
+        }}
+        actions={[
+          {
+            label: '취소',
+            variant: 'outlined',
+            color: 'secondary',
+            onClick: () => {
+              setIsOpenRegistration(false)
+              setSelectedRow(null)
+              //showSnackbar('등록되었습니다.', { variant: 'success' })
+              //showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' })
+            },
+          },
+          {
+            label: '등록',
+            variant: 'contained',
+            color: 'primary',
+            onClick: () => {
+              setIsOpenRegistration(false)
+              handleRegisterUser()
+              // navigate(getPath('service-user'))
+              // showSnackbar('등록되었습니다.', { variant: 'success' })
+              //showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' })
+            },
+          },
+        ]}
+      >
+        {registeredUsers.length === 1
+          ? `${registeredUsers[0]?.userNm} 을 등록합니다.`
+          : `${registeredUsers[0]?.userNm} 외 ${registeredUsers.length - 1} 명을 등록합니다.`}
+      </AdminConfirm>
     </>
   )
 }
