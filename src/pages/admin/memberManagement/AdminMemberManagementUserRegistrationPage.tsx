@@ -45,14 +45,7 @@ const AdminCustomerCompanyManagementUserPageHeader = ({
   setIsOpenRegistration: (value: boolean) => void
 }) => (
   <Flex gap={10}>
-    <AdminButton
-      variant="outlined"
-      color="secondary"
-      size="h34"
-      onClick={() => {
-        setIsOpenCancel(true)
-      }}
-    >
+    <AdminButton variant="outlined" color="secondary" size="h34" onClick={() => setIsOpenCancel(true)}>
       {t('취소')}
     </AdminButton>
     <AdminButton
@@ -75,6 +68,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
   const [_selectedRow, setSelectedRow] = useState<SelectedRow | null>(null)
   const [_isOpenDetail, setIsOpenDetail] = useState(false)
   const [isOpenRegistration, setIsOpenRegistration] = useState<boolean>(false)
+  const [isOpenCancel, setIsOpenCancel] = useState<boolean>(false)
   const { showSnackbar } = useSnackbar()
   const navigate = useNavigate()
 
@@ -110,6 +104,9 @@ const AdminMemberManagementUserRegistrationPage = () => {
     refetchOnWindowFocus: false,
   })
 
+  /**
+   * 추가 버튼
+   */
   const handleRegister = useCallback((user: SelectedRow) => {
     setRegisteredUsers((prev) => {
       if (!prev.some((u) => u.imCd === user.imCd)) {
@@ -223,6 +220,9 @@ const AdminMemberManagementUserRegistrationPage = () => {
     },
   ]
 
+  /**
+   * 회원 등록
+   */
   const handleRegisterUser = async () => {
     try {
       const request = registeredUsers.map((v) => v.imCd)
@@ -239,7 +239,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
     setCustomComponent(
       <AdminCustomerCompanyManagementUserPageHeader
         setIsOpenRegistration={setIsOpenRegistration}
-        setIsOpenCancel={(value: boolean) => value}
+        setIsOpenCancel={setIsOpenCancel}
         registeredUsers={registeredUsers}
       />,
     )
@@ -340,8 +340,6 @@ const AdminMemberManagementUserRegistrationPage = () => {
             onClick: () => {
               setIsOpenRegistration(false)
               setSelectedRow(null)
-              //showSnackbar('등록되었습니다.', { variant: 'success' })
-              //showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' })
             },
           },
           {
@@ -351,9 +349,6 @@ const AdminMemberManagementUserRegistrationPage = () => {
             onClick: () => {
               setIsOpenRegistration(false)
               handleRegisterUser()
-              // navigate(getPath('service-user'))
-              // showSnackbar('등록되었습니다.', { variant: 'success' })
-              //showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' })
             },
           },
         ]}
@@ -361,6 +356,35 @@ const AdminMemberManagementUserRegistrationPage = () => {
         {registeredUsers.length === 1
           ? `${registeredUsers[0]?.userNm} 을 등록합니다.`
           : `${registeredUsers[0]?.userNm} 외 ${registeredUsers.length - 1} 명을 등록합니다.`}
+      </AdminConfirm>
+      <AdminConfirm
+        open={isOpenCancel}
+        title="취소하시겠습니까?"
+        width={450}
+        handleClose={() => {
+          setIsOpenCancel(false)
+        }}
+        actions={[
+          {
+            label: '이어서 작성',
+            variant: 'outlined',
+            color: 'secondary',
+            onClick: () => {
+              setIsOpenCancel(false)
+            },
+          },
+          {
+            label: '취소 및 이동',
+            variant: 'contained',
+            color: 'primary',
+            onClick: () => {
+              setIsOpenCancel(false)
+              navigate('/admin/member-mgmt/users')
+            },
+          },
+        ]}
+      >
+        취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.
       </AdminConfirm>
     </>
   )
