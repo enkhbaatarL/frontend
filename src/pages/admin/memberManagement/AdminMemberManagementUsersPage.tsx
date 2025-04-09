@@ -323,9 +323,6 @@ const AdminMemberManagementUsersPage = () => {
             color: 'error',
             onClick: () => {
               handleDeleteUser()
-              // setShowDeleteModal(false)
-              // setShowMemberDetailModal(false)
-              // showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
             },
           },
         ]}

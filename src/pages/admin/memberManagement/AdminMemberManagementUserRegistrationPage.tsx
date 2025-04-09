@@ -18,7 +18,7 @@ import AddIcon from '@/components/common/icons/AddIcon'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
-import companiesService, { IGroupUserInfo, IGroupUserRequest, IUserInfo } from '@/service/admin/companies'
+import companiesService, { IGroupUserInfo, IGroupUserRequest } from '@/service/admin/companies'
 import { IPaginationResponse } from '@/types/api'
 interface SelectedRow {
   companyCd: string
@@ -62,11 +62,8 @@ const AdminCustomerCompanyManagementUserPageHeader = ({
 
 const AdminMemberManagementUserRegistrationPage = () => {
   const { setCustomComponent } = useAdminHeader()
-  const [_selectedUser, setSelectedUser] = useState<Partial<IUserInfo>>({})
-  const [_showMemberDetailModal, setShowMemberDetailModal] = useState(false)
   const [registeredUsers, setRegisteredUsers] = useState<SelectedRow[]>([])
   const [_selectedRow, setSelectedRow] = useState<SelectedRow | null>(null)
-  const [_isOpenDetail, setIsOpenDetail] = useState(false)
   const [isOpenRegistration, setIsOpenRegistration] = useState<boolean>(false)
   const [isOpenCancel, setIsOpenCancel] = useState<boolean>(false)
   const { showSnackbar } = useSnackbar()
@@ -141,17 +138,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
       renderHeader: () => <AdminTableHeader>회사명</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
       renderCell(params) {
-        return (
-          <AdminTableCell
-            onClick={() => {
-              setSelectedRow(params.row)
-              setIsOpenDetail(true)
-            }}
-            typography={{ variant: 'tableBody1', color: 'gray' }}
-          >
-            {params.value}
-          </AdminTableCell>
-        )
+        return <AdminTableCell typography={{ variant: 'tableBody1', color: 'gray' }}>{params.value}</AdminTableCell>
       },
     },
     {
@@ -198,6 +185,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
       field: 'actions',
       headerName: '',
       width: 52,
+      align: 'center',
       renderCell: ({ row }) => {
         const isNewlyRegistered = registeredUsers.some((u) => u.imCd === row.imCd && u.isRegisteredNew)
 
@@ -250,7 +238,12 @@ const AdminMemberManagementUserRegistrationPage = () => {
 
   return (
     <>
-      <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
+      <AdminSearchFilter
+        onSearch={search}
+        onReset={resetFilter}
+        disabledSearch={!filter.companyCd || isSearchedState}
+        disabledReset={isInitialState}
+      >
         <AdminSelect
           label={t('회사명')}
           value={filter.companyCd}
@@ -283,10 +276,6 @@ const AdminMemberManagementUserRegistrationPage = () => {
         size={pagination?.size}
         onSizeChange={updateSize}
         onPageChange={updatePage}
-        onRowClick={({ row }) => {
-          setSelectedUser(row)
-          setShowMemberDetailModal(true)
-        }}
         noRowMessage={isPureState ? t('회원을 검색하세요.') : undefined}
       />
 
@@ -299,7 +288,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
             </Typography>
           </Typography>
           <Typography color="gray.60" variant="subtext">
-            등록할 사용자
+            사용자 목록에서 선택하세요.
           </Typography>
         </Grid>
         <Grid minHeight={100} wrap="wrap" borderRadius={2} bgcolor="gray.5" gap={2} padding={3.5} container>
@@ -314,11 +303,20 @@ const AdminMemberManagementUserRegistrationPage = () => {
                 backgroundColor: '#fff',
                 borderColor: 'gray.30',
                 padding: '0 5px',
+                borderWidth: '1.8px',
               }}
               deleteIcon={<CancelIcon style={{ marginLeft: '3px', color: '#CED4DA' }} />}
               variant="outlined"
               key={user.imCd}
-              label={`${user.userNm} • ${user.onDutyNm} • ${user.departmentNm}`}
+              label={
+                <>
+                  <span style={{ fontWeight: 600 }}>{user.userNm}</span>
+                  {' • '}
+                  {user.onDutyNm}
+                  {' • '}
+                  {user.departmentNm}
+                </>
+              }
               onDelete={() => setRegisteredUsers(registeredUsers.filter((u) => u.imCd !== user.imCd))}
             />
           ))}
