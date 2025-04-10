@@ -21,6 +21,9 @@ import { adminTableBaseProps } from '@/constants/admin'
 import { IPaginationResponse } from '@/types/api'
 
 interface AdminTableProps<T extends GridRowModel> extends DataGridProps {
+  height?: string | number
+  minHeight?: string | number
+  maxHeight?: string | number
   getRowId?: (row: T) => string | number
   columns: GridColDef[]
   data?: IPaginationResponse<T>
@@ -29,8 +32,10 @@ interface AdminTableProps<T extends GridRowModel> extends DataGridProps {
   hidePagination?: boolean
   onRowClick?: GridEventListener<'rowClick'>
   size?: number
+  sizeList?: number[]
   onSizeChange?: (value: number) => void
   onPageChange?: (value: number) => void
+  maxVisibleRowCount?: number
 }
 
 export const AdminTableHeader = ({ children }: PropsWithChildren) => (
@@ -210,6 +215,9 @@ const createNoRowsOverlay = (message?: string) => {
 }
 
 const AdminTable = <T extends GridRowModel>({
+  height,
+  minHeight,
+  maxHeight,
   getRowId,
   columns,
   data,
@@ -218,8 +226,10 @@ const AdminTable = <T extends GridRowModel>({
   onRowClick,
   isLoading,
   size,
+  sizeList,
   onSizeChange,
   onPageChange,
+  maxVisibleRowCount,
 }: AdminTableProps<T>) => {
   const boxRef = useRef<HTMLDivElement>(null)
   const [tableHeight, setTableHeight] = useState<number | null>(null)
@@ -290,35 +300,44 @@ const AdminTable = <T extends GridRowModel>({
   }, [isLoading])
 
   return (
-    <Box ref={boxRef} display="flex" flexDirection="column" height={tableHeight ?? 'auto'}>
-      <DataGrid
-        slots={{
-          noRowsOverlay: NoRowsOverlay,
-        }}
-        slotProps={{
-          loadingOverlay: {
-            variant: 'skeleton',
-            noRowsVariant: 'skeleton',
-          },
-        }}
-        onRowClick={onRowClick}
-        getRowId={getRowId}
-        rows={data?.detail ?? []}
-        columns={memoizedColumns}
-        getRowClassName={() => (onRowClick ? 'clickable-row' : '')}
-        {...adminTableBaseProps}
-        sx={{
-          ...adminTableBaseProps.sx,
-          '& .MuiDataGrid-row, & .MuiDataGrid-cell': {
-            cursor: onRowClick ? 'pointer' : 'default',
-          },
-        }}
-        rowHeight={40}
-        columnHeaderHeight={36}
-        style={{ borderLeftColor: 'transparent', borderRightColor: 'transparent' }}
-        className="dataGridAdmin"
-        loading={isLoading}
-      />
+    <Box display="flex" flexDirection="column">
+      <Box
+        ref={boxRef}
+        display="flex"
+        flexDirection="column"
+        height={height ?? tableHeight ?? 'auto'}
+        minHeight={minHeight}
+        maxHeight={maxHeight ?? (maxVisibleRowCount ? 40 + maxVisibleRowCount * 40 : undefined)}
+      >
+        <DataGrid
+          slots={{
+            noRowsOverlay: NoRowsOverlay,
+          }}
+          slotProps={{
+            loadingOverlay: {
+              variant: 'skeleton',
+              noRowsVariant: 'skeleton',
+            },
+          }}
+          onRowClick={onRowClick}
+          getRowId={getRowId}
+          rows={data?.detail ?? []}
+          columns={memoizedColumns}
+          getRowClassName={() => (onRowClick ? 'clickable-row' : '')}
+          {...adminTableBaseProps}
+          sx={{
+            ...adminTableBaseProps.sx,
+            '& .MuiDataGrid-row, & .MuiDataGrid-cell': {
+              cursor: onRowClick ? 'pointer' : 'default',
+            },
+          }}
+          rowHeight={40}
+          columnHeaderHeight={36}
+          style={{ borderLeftColor: 'transparent', borderRightColor: 'transparent' }}
+          className="dataGridAdmin"
+          loading={isLoading}
+        />
+      </Box>
 
       {!hidePagination && (
         <Box display="flex" alignItems="center" justifyContent="space-between" py="16px" position="relative">
@@ -344,7 +363,7 @@ const AdminTable = <T extends GridRowModel>({
 
           <FormControl sx={{ width: '72px' }}>
             <Select sx={{ minWidth: 'unset' }} size="small" value={(size ?? 20).toString()} onChange={handleChange} disabled={isLoading}>
-              {[10, 15, 20, 50, 100].map((pageSize) => (
+              {(sizeList ?? [10, 15, 20, 50, 100]).map((pageSize) => (
                 <MenuItem key={pageSize} sx={{ fontSize: 12 }} value={pageSize}>
                   {pageSize}
                 </MenuItem>

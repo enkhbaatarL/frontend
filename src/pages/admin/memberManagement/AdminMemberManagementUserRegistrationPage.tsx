@@ -11,7 +11,7 @@ import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminSelect from '@/components/admin/AdminSelect'
-import AdminTable, { AdminTableCell, AdminTableHeader } from '@/components/admin/AdminTable'
+import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import AddIcon from '@/components/common/icons/AddIcon'
@@ -91,7 +91,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
     },
     {
       page: 1,
-      size: 20,
+      size: 5,
     },
   )
 
@@ -117,10 +117,9 @@ const AdminMemberManagementUserRegistrationPage = () => {
   const columns: GridColDef[] = [
     {
       field: 'isRegistered',
-      headerName: '등록 여부',
+      headerName: t('등록 여부'),
       width: 90,
       align: 'center',
-      renderHeader: () => <AdminTableHeader>등록 여부</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
       renderCell: ({ row }) => {
         const initiallyRegistered = row.isRegistered
@@ -140,7 +139,6 @@ const AdminMemberManagementUserRegistrationPage = () => {
       field: 'companyNm',
       headerName: t('회사명'),
       flex: 1,
-      renderHeader: () => <AdminTableHeader>회사명</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
       renderCell(params) {
         return <AdminTableCell typography={{ variant: 'tableBody1', color: 'gray' }}>{params.value}</AdminTableCell>
@@ -150,40 +148,52 @@ const AdminMemberManagementUserRegistrationPage = () => {
       field: 'departmentNm',
       headerName: t('소속'),
       flex: 1,
-      renderHeader: () => <AdminTableHeader>소속</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
       renderCell(params) {
-        return <AdminTableCell typography={{ color: 'gray' }}>{params.value}</AdminTableCell>
+        return (
+          <AdminTableCell typography={{ color: 'gray' }} ellipsis>
+            {params.value}
+          </AdminTableCell>
+        )
       },
     },
     {
       field: 'onDutyNm',
       headerName: t('직위'),
       flex: 1,
-      renderHeader: () => <AdminTableHeader>직위</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
       renderCell(params) {
-        return <AdminTableCell typography={{ color: 'gray' }}>{params.value}</AdminTableCell>
+        return (
+          <AdminTableCell typography={{ color: 'gray' }} ellipsis>
+            {params.value}
+          </AdminTableCell>
+        )
       },
     },
     {
       field: 'userNm',
       headerName: t('이름'),
       flex: 1,
-      renderHeader: () => <AdminTableHeader>이름</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
       renderCell(params) {
-        return <AdminTableCell typography={{ color: 'gray' }}>{params.value}</AdminTableCell>
+        return (
+          <AdminTableCell typography={{ color: 'gray' }} ellipsis>
+            {params.value}
+          </AdminTableCell>
+        )
       },
     },
     {
       field: 'loginId',
       headerName: t('이메일'),
       flex: 1,
-      renderHeader: () => <AdminTableHeader>이메일</AdminTableHeader>,
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
       renderCell(params) {
-        return <AdminTableCell typography={{ color: 'gray' }}>{params.value}</AdminTableCell>
+        return (
+          <AdminTableCell typography={{ color: 'gray' }} ellipsis>
+            {params.value}
+          </AdminTableCell>
+        )
       },
     },
     {
@@ -220,7 +230,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
     try {
       const request = registeredUsers.map((v) => v.imCd)
       await membersService.registerUser({ imCd: request })
-      showSnackbar('등록되었습니다.', { variant: 'success' })
+      showSnackbar(t('등록되었습니다.'), { variant: 'success' })
       navigate('/admin/member-mgmt/users')
     } catch (error) {
       console.error(error)
@@ -279,21 +289,23 @@ const AdminMemberManagementUserRegistrationPage = () => {
         data={data}
         isLoading={isLoading}
         size={pagination?.size}
+        sizeList={[5, 10, 20, 50]}
         onSizeChange={updateSize}
         onPageChange={updatePage}
         noRowMessage={isPureState ? t('회원을 검색하세요.') : undefined}
+        maxVisibleRowCount={5}
       />
 
       <Grid container direction="column" spacing={3}>
         <Grid container direction="column" gap={1}>
           <Typography color="gray.90" variant="subtitle">
-            등록할 사용자
+            {t('등록할 사용자')}
             <Typography marginLeft="5px" sx={{ verticalAlign: 'text-bottom' }} component="span" color="error">
               *
             </Typography>
           </Typography>
           <Typography color="gray.60" variant="subtext">
-            사용자 목록에서 선택하세요.
+            {t('사용자 목록에서 선택하세요.')}
           </Typography>
         </Grid>
         <Grid minHeight={100} wrap="wrap" borderRadius={2} bgcolor="gray.5" gap={2} padding={3.5} container>
@@ -329,14 +341,14 @@ const AdminMemberManagementUserRegistrationPage = () => {
       </Grid>
       <AdminConfirm
         open={isOpenRegistration}
-        title="등록하시겠습니까?"
+        title={t('등록하시겠습니까?')}
         width={450}
         handleClose={() => {
           setIsOpenRegistration(false)
         }}
         actions={[
           {
-            label: '취소',
+            label: t('취소'),
             variant: 'outlined',
             color: 'secondary',
             onClick: () => {
@@ -344,7 +356,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
             },
           },
           {
-            label: '등록',
+            label: t('등록'),
             variant: 'contained',
             color: 'primary',
             onClick: async () => {
@@ -360,14 +372,14 @@ const AdminMemberManagementUserRegistrationPage = () => {
       </AdminConfirm>
       <AdminConfirm
         open={isOpenCancel}
-        title="취소하시겠습니까?"
+        title={t('취소하시겠습니까?')}
         width={450}
         handleClose={() => {
           setIsOpenCancel(false)
         }}
         actions={[
           {
-            label: '이어서 작성',
+            label: t('이어서 작성'),
             variant: 'outlined',
             color: 'secondary',
             onClick: () => {
@@ -375,7 +387,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
             },
           },
           {
-            label: '취소 및 이동',
+            label: t('취소 및 이동'),
             variant: 'contained',
             color: 'primary',
             onClick: () => {
@@ -385,7 +397,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
           },
         ]}
       >
-        취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.
+        {t('취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.')}
       </AdminConfirm>
     </>
   )

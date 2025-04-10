@@ -1,7 +1,7 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import ErrorIcon from '@mui/icons-material/Error'
 import { GridColDef } from '@mui/x-data-grid'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { isEmpty } from 'lodash-es'
@@ -44,7 +44,6 @@ const AdminMemberManagementUsersPage = () => {
   const [deleteUserRequest, setDeleteUserRequest] = useState<number>()
 
   const [selectedUser, setSelectedUser] = useState<Partial<IUserInfo>>({})
-  const queryClient = useQueryClient()
 
   const {
     filter,
@@ -55,6 +54,7 @@ const AdminMemberManagementUsersPage = () => {
     resetFilter,
     search,
     data,
+    refetch,
     isInitialState,
     isSearchedState,
     isPureState,
@@ -73,7 +73,7 @@ const AdminMemberManagementUsersPage = () => {
     },
   )
 
-  const { data: filterOptions, refetch } = useQuery({
+  const { data: filterOptions } = useQuery({
     queryKey: ['filterOptions'],
     queryFn: async () => await companiesService.getDepartmentAll(),
     refetchOnWindowFocus: false,
@@ -106,7 +106,7 @@ const AdminMemberManagementUsersPage = () => {
     } catch (error) {
       console.error(error)
     }
-  }, [deleteUserRequest, selectedUser.userNo, showMemberDetailModal, queryClient, showSnackbar, refetch])
+  }, [deleteUserRequest, selectedUser.userNo, showMemberDetailModal, showSnackbar, refetch])
 
   const columns: GridColDef[] = [
     {
@@ -114,60 +114,31 @@ const AdminMemberManagementUsersPage = () => {
       headerName: t('회사명'),
       minWidth: 150,
       flex: 1,
-      renderCell: (param) => {
-        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
-        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
-
-        return (
-          <AdminTableCell tooltipContent={tooltipContent} typography={{ variant: 'tableBody1' }} ellipsis cursorPointer>
-            {param.value}
-          </AdminTableCell>
-        )
-      },
+      renderCell: (param) => (
+        <AdminTableCell typography={{ variant: 'tableBody1' }} ellipsis cursorPointer>
+          {param.value}
+        </AdminTableCell>
+      ),
     },
     {
       field: 'departmentNm',
       headerName: t('소속'),
       width: 160,
-      renderCell: (param) => {
-        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
-        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
-
-        return <AdminTableCell tooltipContent={tooltipContent}>{param.row.departmentNm}</AdminTableCell>
-      },
     },
     {
       field: 'onDutyNm',
       headerName: t('직위'),
       width: 180,
-      renderCell: (param) => {
-        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
-        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
-
-        return <AdminTableCell tooltipContent={tooltipContent}>{param.row.onDutyNm}</AdminTableCell>
-      },
     },
     {
       field: 'userNm',
       headerName: t('이름'),
       width: 120,
-      renderCell: (param) => {
-        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
-        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
-
-        return <AdminTableCell tooltipContent={tooltipContent}>{param.row.userNm}</AdminTableCell>
-      },
     },
     {
       field: 'userLoginId',
       headerName: t('이메일'),
       width: 180,
-      renderCell: (param) => {
-        const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
-        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
-
-        return <AdminTableCell tooltipContent={tooltipContent}>{param.row.userLoginId}</AdminTableCell>
-      },
     },
     {
       field: 'createUserNm',
@@ -186,10 +157,9 @@ const AdminMemberManagementUsersPage = () => {
       width: 150,
       align: 'center',
       renderCell: (param) => {
-        const { createUserNm, createUserDeptNm, createUserCpnyNm, createDt } = param.row.auditInfo
-        const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
+        const { createDt } = param.row.auditInfo
 
-        return <AdminTableCell tooltipContent={tooltipContent}>{createDt ? dayjs(createDt).format('YYYY-MM-DD') : null}</AdminTableCell>
+        return createDt ? dayjs(createDt).format('YYYY-MM-DD') : null
       },
     },
     {
@@ -274,7 +244,7 @@ const AdminMemberManagementUsersPage = () => {
       />
       <AdminConfirm
         open={showMemberDetailModal}
-        title="회원 상세"
+        title={t('회원 상세')}
         justifyContentAction="space-between"
         width={450}
         handleClose={() => setShowMemberDetailModal(false)}
@@ -322,8 +292,8 @@ const AdminMemberManagementUsersPage = () => {
             label: t('삭제'),
             variant: 'contained',
             color: 'error',
-            onClick: () => {
-              handleDeleteUser()
+            onClick: async () => {
+              await handleDeleteUser()
             },
           },
         ]}

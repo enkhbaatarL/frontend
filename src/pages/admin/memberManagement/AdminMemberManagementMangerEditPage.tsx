@@ -63,7 +63,7 @@ export default function AdminMemberManagementMangerEditPage() {
         console.error('Error updating manager details:', error)
       }
     }
-  }, [userNo, managerInfo.isOtherServiceAccessPossible, managerInfo.accessAllowedIpAddress, navigate, showSnackbar])
+  }, [userNo, managerInfo, navigate, showSnackbar])
 
   useEffect(() => {
     setCustomComponent(

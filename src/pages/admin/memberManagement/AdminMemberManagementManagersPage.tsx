@@ -224,6 +224,7 @@ const AdminMemberManagementManagersPage = () => {
           navigate(`/admin/member-mgmt/managers/detail/${row.userNo}`)
         }}
         noRowMessage={isPureState ? t('회원을 검색하세요.') : undefined}
+        maxVisibleRowCount={20}
       />
       <AdminConfirm
         open={showDeleteModal}
