@@ -57,12 +57,12 @@ const useSearchFilter = <Req, Res>(
   const updateFilter = useCallback(
     (...params: [Array<[key: keyof Req, value?: Req[keyof Req]]>] | [key: keyof Req, value?: Req[keyof Req]]) => {
       switch (params.length) {
-      case 1:
-        return handleMultipleChange(params[0] as Array<[key: keyof Req, value?: Req[keyof Req]]>)
-      case 2:
-        return handleChangeItem(params[0], params[1])
-      default:
-        throw new Error(t('잘못된 인자가 전달 되었습니다.'))
+        case 1:
+          return handleMultipleChange(params[0] as Array<[key: keyof Req, value?: Req[keyof Req]]>)
+        case 2:
+          return handleChangeItem(params[0], params[1])
+        default:
+          throw new Error(t('잘못된 인자가 전달 되었습니다.'))
       }
     },
     [handleChangeItem, handleMultipleChange],
@@ -108,7 +108,7 @@ const useSearchFilter = <Req, Res>(
     setIsPureState(false)
   }, [filter, pagination])
 
-  const { data } = useQuery({
+  const { data, refetch } = useQuery({
     queryKey: [fetchFn.name ?? 'searchFilter', JSON.stringify(requestParams)],
     queryFn: async () => {
       setIsLoading(true)
@@ -161,6 +161,7 @@ const useSearchFilter = <Req, Res>(
     resetFilter,
     search,
     data,
+    refetch,
     isLoading,
   }
 }
