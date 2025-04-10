@@ -20,7 +20,8 @@ import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
-import companiesService, { IUserInfo, IUserRequest } from '@/service/admin/companies'
+import companiesService from '@/service/admin/companies'
+import membersService, { IUserInfo, IUserRequest } from '@/service/admin/members'
 import { IPaginationResponse } from '@/types/api'
 
 const AdminManagementManagersPageHeader = () => {
@@ -57,7 +58,7 @@ const AdminMemberManagementManagersPage = () => {
     isPureState,
     isLoading,
   } = useSearchFilter<Omit<IUserRequest, 'userRoleCd'>, IPaginationResponse<IUserInfo>>(
-    companiesService.getManagers,
+    membersService.getManagers,
     {
       companyNo: '',
       departmentNm: '',

@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 
 import style from '@/components/admin/AdminUserInfo.module.scss'
-import { IUserInfo } from '@/service/admin/companies'
+import { IUserInfo } from '@/service/admin/members'
 
 interface Props {
   info?: Partial<IUserInfo>

@@ -19,7 +19,8 @@ import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
-import companiesService, { IUserInfo, IUserRequest } from '@/service/admin/companies'
+import companiesService from '@/service/admin/companies'
+import membersService, { IUserInfo, IUserRequest } from '@/service/admin/members'
 import { IPaginationResponse } from '@/types/api'
 
 const PageHeader = () => {
@@ -59,7 +60,7 @@ const AdminMemberManagementUsersPage = () => {
     isPureState,
     isLoading,
   } = useSearchFilter<Omit<IUserRequest, 'userRoleCd'>, IPaginationResponse<IUserInfo>>(
-    companiesService.getUsers,
+    membersService.getUsers,
     {
       companyNo: '',
       departmentNm: '',
@@ -94,7 +95,7 @@ const AdminMemberManagementUsersPage = () => {
     try {
       const request = showMemberDetailModal ? selectedUser.userNo : deleteUserRequest
       if (request) {
-        const response = await companiesService.deleteUser(request)
+        const response = await membersService.deleteUser(request)
         setShowDeleteModal(false)
         setShowMemberDetailModal(false)
         if (response.status) {

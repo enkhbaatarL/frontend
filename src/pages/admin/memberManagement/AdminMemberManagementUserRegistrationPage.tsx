@@ -18,7 +18,8 @@ import AddIcon from '@/components/common/icons/AddIcon'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
-import companiesService, { IGroupUserInfo, IGroupUserRequest } from '@/service/admin/companies'
+import companiesService from '@/service/admin/companies'
+import membersService, { IGroupUserInfo, IGroupUserRequest } from '@/service/admin/members'
 import { IPaginationResponse } from '@/types/api'
 interface SelectedRow {
   companyCd: string
@@ -63,7 +64,6 @@ const AdminCustomerCompanyManagementUserPageHeader = ({
 const AdminMemberManagementUserRegistrationPage = () => {
   const { setCustomComponent } = useAdminHeader()
   const [registeredUsers, setRegisteredUsers] = useState<SelectedRow[]>([])
-  const [_selectedRow, setSelectedRow] = useState<SelectedRow | null>(null)
   const [isOpenRegistration, setIsOpenRegistration] = useState<boolean>(false)
   const [isOpenCancel, setIsOpenCancel] = useState<boolean>(false)
   const { showSnackbar } = useSnackbar()
@@ -83,7 +83,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
     updatePage,
     updateSize,
   } = useSearchFilter<Omit<IGroupUserRequest, 'userRoleCd'>, IPaginationResponse<IGroupUserInfo>>(
-    companiesService.getGroupUsers,
+    membersService.getGroupUsers,
     {
       companyCd: '',
       userNm: '',
@@ -126,9 +126,14 @@ const AdminMemberManagementUserRegistrationPage = () => {
         const initiallyRegistered = row.isRegistered
         const isNewlyRegistered = registeredUsers.some((u) => u.imCd === row.imCd && u.isRegisteredNew)
 
-        return (
-          <CheckIcon fontSize="small" style={{ color: initiallyRegistered ? '#ccc' : isNewlyRegistered ? '#0CA678' : 'transparent' }} />
-        )
+        let iconColor = 'transparent'
+        if (initiallyRegistered) {
+          iconColor = '#ccc'
+        } else if (isNewlyRegistered) {
+          iconColor = '#0CA678'
+        }
+
+        return <CheckIcon fontSize="small" style={{ color: iconColor }} />
       },
     },
     {
@@ -214,11 +219,11 @@ const AdminMemberManagementUserRegistrationPage = () => {
   const handleRegisterUser = async () => {
     try {
       const request = registeredUsers.map((v) => v.imCd)
-      await companiesService.registerUser({ imCd: request })
+      await membersService.registerUser({ imCd: request })
       showSnackbar('등록되었습니다.', { variant: 'success' })
       navigate('/admin/member-mgmt/users')
     } catch (error) {
-      console.log(error)
+      console.error(error)
     }
   }
 
@@ -336,16 +341,15 @@ const AdminMemberManagementUserRegistrationPage = () => {
             color: 'secondary',
             onClick: () => {
               setIsOpenRegistration(false)
-              setSelectedRow(null)
             },
           },
           {
             label: '등록',
             variant: 'contained',
             color: 'primary',
-            onClick: () => {
+            onClick: async () => {
               setIsOpenRegistration(false)
-              handleRegisterUser()
+              await handleRegisterUser()
             },
           },
         ]}

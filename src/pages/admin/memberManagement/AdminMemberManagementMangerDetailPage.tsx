@@ -13,7 +13,7 @@ import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import companiesService from '@/service/admin/companies'
+import membersService from '@/service/admin/members'
 
 const AdminMemberManagementMangerDetailPageHeader = ({ onDelete, onEdit }: { onDelete: () => void; onEdit: () => void }) => (
   <Flex gap={10}>
@@ -36,7 +36,7 @@ export default function AdminMemberManagementMangerDetailPage() {
 
   const { data, isError, isLoading } = useQuery({
     queryKey: ['managerDetail', userNo],
-    queryFn: async () => await companiesService.getManagerDetail(userNo),
+    queryFn: async () => await membersService.getManagerDetail(userNo),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,

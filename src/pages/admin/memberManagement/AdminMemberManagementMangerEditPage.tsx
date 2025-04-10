@@ -11,7 +11,7 @@ import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import companiesService, { IMangerInfoEditRequest } from '@/service/admin/companies'
+import membersService, { IMangerInfoEditRequest } from '@/service/admin/members'
 
 const AdminMemberManagementMangerEditPageHeader = ({ onCancel, onSave }: { onSave: () => void; onCancel: () => void }) => (
   <Flex gap={10}>
@@ -56,7 +56,7 @@ export default function AdminMemberManagementMangerEditPage() {
   const handleSave = useCallback(async () => {
     if (userNo) {
       try {
-        await companiesService.updateManagerDetail(userNo, managerInfo)
+        await membersService.updateManagerDetail(userNo, managerInfo)
         navigate(`/admin/member-mgmt/managers/detail/${userNo}`, { replace: true })
         showSnackbar(t('저장되었습니다.'), { variant: 'success' })
       } catch (error) {
