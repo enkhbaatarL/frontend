@@ -244,13 +244,14 @@ const AdminTable = <T extends GridRowModel>({
               {params.value}
             </AdminTableCell>
           )
+        const detailLength = data?.detail?.length ?? 0
 
         return {
           ...column,
           headerAlign: column.align,
-          width: data?.detail?.length === 0 ? 'auto' : column.width,
-          minWidth: data?.detail?.length === 0 ? 'unset' : column.minWidth,
-          flex: data?.detail?.length === 0 ? 1 : column.flex,
+          width: detailLength === 0 ? 'auto' : column.width,
+          minWidth: detailLength === 0 ? 'unset' : (column.minWidth ?? column.width),
+          flex: detailLength === 0 ? 1 : (column.flex ?? 1),
           renderHeader: () => <AdminTableHeader>{column.headerName}</AdminTableHeader>,
           renderCell,
         }
@@ -300,7 +301,7 @@ const AdminTable = <T extends GridRowModel>({
   }, [isLoading])
 
   return (
-    <Box display="flex" flexDirection="column">
+    <Box display="flex" flexDirection="column" mx="-1px">
       <Box
         ref={boxRef}
         display="flex"

@@ -112,8 +112,7 @@ const AdminMemberManagementUsersPage = () => {
     {
       field: 'customerCompanyNm',
       headerName: t('회사명'),
-      minWidth: 150,
-      flex: 1,
+      width: 150,
       renderCell: (param) => (
         <AdminTableCell typography={{ variant: 'tableBody1' }} ellipsis cursorPointer>
           {param.value}
@@ -165,7 +164,7 @@ const AdminMemberManagementUsersPage = () => {
     {
       field: 'actions',
       headerName: '',
-      width: 52,
+      maxWidth: 52,
       cellClassName: 'cellAction',
       align: 'center',
       renderCell: (param) => (

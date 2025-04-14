@@ -118,7 +118,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
     {
       field: 'isRegistered',
       headerName: t('등록 여부'),
-      width: 90,
+      maxWidth: 90,
       align: 'center',
       cellClassName: (params) => (params.row.isRegistered ? 'disable-cell' : ''),
       renderCell: ({ row }) => {
@@ -199,7 +199,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
     {
       field: 'actions',
       headerName: '',
-      width: 52,
+      maxWidth: 52,
       align: 'center',
       renderCell: ({ row }) => {
         const isNewlyRegistered = registeredUsers.some((u) => u.imCd === row.imCd && u.isRegisteredNew)
