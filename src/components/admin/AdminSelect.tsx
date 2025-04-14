@@ -1,5 +1,6 @@
-import { MenuItem, Select, SelectProps, Typography } from '@mui/material'
+import { MenuItem, MenuList, Select, SelectProps, Typography } from '@mui/material'
 import FormControl from '@mui/material/FormControl'
+import { MenuListProps } from '@mui/material/MenuList/MenuList'
 import { t } from 'i18next'
 import { ReactNode } from 'react'
 
@@ -16,6 +17,12 @@ type Props = SelectProps & {
   placeholder?: string
   showSelectedValue?: boolean
 }
+
+const MenuListComponent = (menuListProps: MenuListProps) => (
+  <ScrollWrapper offsetTop={8} maxHeight={268}>
+    <MenuList {...menuListProps} />
+  </ScrollWrapper>
+)
 
 const AdminSelect = ({
   children,
@@ -68,25 +75,24 @@ const AdminSelect = ({
       MenuProps={{
         MenuListProps: {
           disablePadding: true,
+          component: MenuListComponent,
         },
       }}
     >
-      <ScrollWrapper offsetTop={8} maxHeight={268}>
-        {[
-          useAllOption && (
-            <MenuItem key="all" value={''}>
-              {t('전체')}
+      {[
+        useAllOption && (
+          <MenuItem key="all" value={''}>
+            {t('전체')}
+          </MenuItem>
+        ),
+        ...(options
+          ? options.map(({ label: optionLabel, value }) => (
+            <MenuItem key={String(value)} value={value}>
+              {optionLabel}
             </MenuItem>
-          ),
-          ...(options
-            ? options.map(({ label: optionLabel, value }) => (
-              <MenuItem key={String(value)} value={value}>
-                {optionLabel}
-              </MenuItem>
-            ))
-            : [children]),
-        ]}
-      </ScrollWrapper>
+          ))
+          : [children]),
+      ]}
     </Select>
   </FormControl>
 )

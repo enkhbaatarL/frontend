@@ -23,7 +23,7 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
 
   useEffect(() => {
     props.onOpen?.(open)
-  }, [open])
+  }, [open, props])
 
   return (
     <>
