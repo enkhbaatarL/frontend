@@ -10,18 +10,18 @@ const ThemeSelect: Components<Omit<Theme, 'components'>> = {
         let padding
 
         switch (ownerStateSize) {
-        case 'small':
-          fontSize = '12px'
-          padding = '5px 12px'
-          break
-        case 'large':
-          fontSize = '16px'
-          padding = '10px 12px'
-          break
-        default: // 'medium'
-          fontSize = '14px'
-          padding = '7px 12px'
-          break
+          case 'small':
+            fontSize = '12px'
+            padding = '5px 12px'
+            break
+          case 'large':
+            fontSize = '16px'
+            padding = '10px 12px'
+            break
+          default: // 'medium'
+            fontSize = '14px'
+            padding = '7px 12px'
+            break
         }
 
         return {
@@ -38,6 +38,10 @@ const ThemeSelect: Components<Omit<Theme, 'components'>> = {
           '&.Mui-disabled': {
             border: '1px solid #E9ECEF',
             backgroundColor: '#F1F3F5',
+          },
+          '&.Mui-disabled .Mui-disabled': {
+            color: theme.palette.gray['70'],
+            WebkitTextFillColor: 'unset',
           },
         }
       },
@@ -84,8 +88,20 @@ const ThemeSelect: Components<Omit<Theme, 'components'>> = {
   MuiList: {
     styleOverrides: {
       root: {
-        borderRadius: '6px',
-        boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.20)',
+        borderRadius: '0',
+        boxShadow: 'none',
+        overflow: 'hidden',
+        position: 'relative',
+        '&::-webkit-scrollbar': {
+          width: 0,
+        },
+        '&::-webkit-scrollbar-track': {
+          backgroundColor: 'transparent',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: '#CED4DA',
+          borderRadius: '10px',
+        },
       },
     },
   },
@@ -105,13 +121,6 @@ const ThemeSelect: Components<Omit<Theme, 'components'>> = {
           color: theme.palette.gray['90'],
         },
       }),
-    },
-  },
-  MuiPaper: {
-    styleOverrides: {
-      root: {
-        //boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.02)'
-      },
     },
   },
 }

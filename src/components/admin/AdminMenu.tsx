@@ -3,9 +3,8 @@ import { isEmpty } from 'lodash-es'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import KeyboardArrowUpIcon from '../common/icons/KeyboardArrowUpIcon'
-
 import Flex from '@/components/common/display/Flex'
+import KeyboardArrowUpIcon from '@/components/common/icons/KeyboardArrowUpIcon'
 import useAdminMenuItems from '@/hooks/useAdminMenuItems'
 import useAdminPageInfo from '@/hooks/useAdminPageInfo'
 import { ICustomRouteObject } from '@/types/common'

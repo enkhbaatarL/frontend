@@ -3,7 +3,7 @@ import { t } from 'i18next'
 import { ReactNode } from 'react'
 
 import AdminButton from '@/components/admin/AdminButton'
-import CloseIcon from '@/components/common/icons/CloseIcon.tsx'
+import CloseIcon from '@/components/common/icons/CloseIcon'
 
 interface ActionButton {
   label: string

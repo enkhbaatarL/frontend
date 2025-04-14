@@ -1,8 +1,10 @@
 import { RouteObject } from 'react-router-dom'
 
 import ErrorAccessDeniedPage from '@/pages/error/AccessDenied'
+import AuthErrorPage from '@/pages/error/auth'
 import CommonErrorPage from '@/pages/error/CommonErrorPage'
 import ErrorIpVerificationPage from '@/pages/error/IpVerificaiton'
+import SessionExpiredPage from '@/pages/error/SessionExpired'
 import ErrorUnknownPage from '@/pages/error/unknown'
 
 const ErrorRoutes: RouteObject = {
@@ -11,6 +13,10 @@ const ErrorRoutes: RouteObject = {
     {
       path: '',
       element: <CommonErrorPage />,
+    },
+    {
+      path: 'auth',
+      element: <AuthErrorPage />,
     },
     {
       path: 'unknown',
@@ -23,6 +29,10 @@ const ErrorRoutes: RouteObject = {
     {
       path: 'ip-verification',
       element: <ErrorIpVerificationPage />,
+    },
+    {
+      path: 'session-expired',
+      element: <SessionExpiredPage />,
     },
   ],
 }

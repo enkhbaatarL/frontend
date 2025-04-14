@@ -1,10 +1,10 @@
 import { Box, IconButton, Typography } from '@mui/material'
 import { FunctionComponent, useState } from 'react'
 
-import AdminCheckboxField from './AdminCheckboxField'
-import AdminTextField from './AdminTextField'
-import AddIcon from '../common/icons/AddIcon'
-import TrashIcon from '../common/icons/TrashIcon'
+import AdminCheckboxField from '@/components/admin/AdminCheckboxField'
+import AdminTextField from '@/components/admin/AdminTextField'
+import AddIcon from '@/components/common/icons/AddIcon'
+import TrashIcon from '@/components/common/icons/TrashIcon'
 
 export type AdminRegistrationAccessSettingsValue = {
   admin?: { name: string; position: string; department: string; companyName: string }

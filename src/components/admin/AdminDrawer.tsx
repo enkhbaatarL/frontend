@@ -7,12 +7,11 @@ import MuiDrawer from '@mui/material/Drawer'
 import Menu from '@mui/material/Menu'
 import { useState, MouseEvent } from 'react'
 
-import AdminPanelSettings from '../common/icons/AdminPanelSettings'
-import KeyboardDoubleArrowLeftIcon from '../common/icons/KeyboardDoubleArrowLeftIcon'
-import MoreVertIcon from '../common/icons/MoreVertIcon'
-
 import AdminMenu from '@/components/admin/AdminMenu'
 import DividerScroll from '@/components/common/display/DividerScroll'
+import AdminPanelSettings from '@/components/common/icons/AdminPanelSettings'
+import KeyboardDoubleArrowLeftIcon from '@/components/common/icons/KeyboardDoubleArrowLeftIcon'
+import MoreVertIcon from '@/components/common/icons/MoreVertIcon'
 import { DRAWER_WIDTH } from '@/constants/admin'
 
 const openedMixin = (theme: Theme): CSSObject => ({

@@ -1,16 +1,23 @@
 import ErrorIcon from '@mui/icons-material/Error'
-import { MenuItem, FormControl, FormControlLabel, RadioGroup, Radio } from '@mui/material'
+import { MenuItem, FormControl, FormControlLabel, RadioGroup, Radio, Box, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import clsx from 'clsx'
 import { useState } from 'react'
 
 import style from './ComponentTestPage.module.scss'
 
-import AdminButton from '@/components/admin/AdminButton.tsx'
-import AdminConfirm from '@/components/admin/AdminConfirm.tsx'
-import AdminSelect from '@/components/admin/AdminSelect.tsx'
-import AdminTable from '@/components/admin/AdminTable.tsx'
-import Flex from '@/components/common/display/Flex.tsx'
+import AdminAutoComplete from '@/components/admin/AdminAutoComplete'
+import AdminButton from '@/components/admin/AdminButton'
+import AdminConfirm from '@/components/admin/AdminConfirm'
+import AdminDatePicker from '@/components/admin/AdminDatePicker'
+import AdminSelect from '@/components/admin/AdminSelect'
+import AdminTable from '@/components/admin/AdminTable'
+import DetailItem from '@/components/common/detail-item'
+import Flex from '@/components/common/display/Flex'
+import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
+import SettingIcon from '@/components/common/icons/SettingIcon'
+import MIField from '@/components/common/input/MIField'
+import MIInput from '@/components/common/input/MIInput'
 import useSnackbar from '@/hooks/useSnackbar'
 
 const columns: GridColDef[] = [
@@ -42,6 +49,34 @@ const rows = [
   { companyNm: '회사20', companyNo: 'Inactive', companyCd: '020' },
 ]
 
+const companies = [
+  'SUPEX추구협의회',
+  'SK주식회사',
+  'SK이노베이션',
+  'SK하이닉스',
+  'SK텔레콤',
+  'SK에코플랜트',
+  'SK실트론',
+  'SK네트웍스',
+  'SK스퀘어',
+  'SKC',
+  'SK바이오팜',
+  'SK디스커버리',
+  'SK케미칼',
+  'SK가스',
+  'SK머티리얼즈',
+  'SK이노베이션 E&S',
+  'SK에너지',
+  'SK지오센트릭',
+  'SK온',
+  'SK렌무브',
+  'SK브로드밴드',
+  'SK아이이테크놀로지',
+  'SK USA',
+  'SK China',
+  '행복나눔재단',
+]
+
 const ComponentTestPage = () => {
   const [select, setSelect] = useState<string>('all')
   const [showConfirmPrimary, setShowConfirmPrimary] = useState(false)
@@ -53,6 +88,10 @@ const ComponentTestPage = () => {
   const [showPopupContent2, setShowPopupContent2] = useState(false)
   const [showPopupContent3, setShowPopupContent3] = useState(false)
   const { showSnackbar } = useSnackbar()
+  const autoCompleteData = companies.map((company, index) => ({
+    value: index,
+    label: company,
+  }))
 
   return (
     <>
@@ -114,7 +153,7 @@ const ComponentTestPage = () => {
             Show Confirm Primary
           </AdminButton>
           <AdminButton color="primary" variant="contained" onClick={() => setShowConfirmPrimary2(true)}>
-            Show Confirm
+            Show session expired
           </AdminButton>
           <AdminButton color="primary" variant="contained" onClick={() => setShowConfirmPrimary3(true)}>
             Show Confirm
@@ -142,7 +181,7 @@ const ComponentTestPage = () => {
             handleClose={() => setShowConfirmPrimary2(false)}
             actions={[
               {
-                label: '로그인',
+                label: 'Login',
                 variant: 'contained',
                 color: 'primary',
                 onClick: () => setShowConfirmPrimary2(false),
@@ -291,6 +330,170 @@ const ComponentTestPage = () => {
           </AdminButton>
         </Flex>
       </Flex>
+
+      <Flex gap={6}>
+        <div>Admin DatePicker</div>
+        <AdminDatePicker />
+      </Flex>
+
+      <Flex>
+        <div>Admin Autocomplete</div>
+        <AdminAutoComplete<{ value: number; label: string }> options={autoCompleteData} />
+      </Flex>
+
+      <Flex>
+        <div>Detail item component: </div>
+        <DetailItem
+          title="SK 하이닉스"
+          fields={[
+            {
+              label: '수정일',
+              value: 'yyyy-mm-dd',
+            },
+            {
+              label: '수정일',
+              value: 'yyyy-mm-dd',
+            },
+            {
+              label: '등록자',
+              value: '홍길동',
+            },
+            {
+              label: '수정자',
+              value: '김선경',
+            },
+            {
+              label: '사용기간',
+              value: 'yyyy-mm-dd ~ 9999-12-31',
+            },
+          ]}
+          icon={<SettingIcon />}
+          tooltipMessage="test"
+        />
+      </Flex>
+      <Box mb={5}>
+        <Typography variant="body1" mb={3}>
+          Input style
+        </Typography>
+        <Box display={'flex'} flexDirection={'column'} rowGap={5} paddingLeft={5} mb={6}>
+          <Flex gap={10}>
+            <div>h26</div>
+            <MIInput size="h26" />
+          </Flex>
+          <Flex gap={10}>
+            <div>h34</div>
+            <MIInput size="h34" />
+          </Flex>
+          <Flex gap={10}>
+            <div>h36</div>
+            <MIInput size="h36" />
+          </Flex>
+        </Box>
+
+        <Box display={'flex'} flexDirection={'column'} rowGap={5} paddingLeft={5} mb={5}>
+          <Flex gap={10}>
+            <div>h26 error</div>
+            <MIInput size="h26" error />
+          </Flex>
+          <Flex gap={10}>
+            <div>h34 error</div>
+            <MIInput size="h34" error />
+          </Flex>
+          <Flex gap={10}>
+            <div>h36 error</div>
+            <MIInput size="h36" error />
+          </Flex>
+        </Box>
+
+        <Box display={'flex'} flexDirection={'column'} rowGap={5} paddingLeft={5} mb={5}>
+          <Flex gap={10}>
+            <div>h26 success</div>
+            <MIInput size="h26" success />
+          </Flex>
+          <Flex gap={10}>
+            <div>h34 success</div>
+            <MIInput size="h34" success />
+          </Flex>
+          <Flex gap={10}>
+            <div>h36 success</div>
+            <MIInput size="h36" success />
+          </Flex>
+        </Box>
+
+        <Box display={'flex'} flexDirection={'column'} rowGap={5} paddingLeft={5} mb={5}>
+          <Flex gap={10}>
+            <div>h26 disabled</div>
+            <MIInput size="h26" disabled />
+            <MIInput size="h26" disabled value="Value" />
+          </Flex>
+          <Flex gap={10}>
+            <div>h34 disabled</div>
+            <MIInput size="h34" disabled />
+            <MIInput size="h34" disabled value="Value" />
+          </Flex>
+          <Flex gap={10}>
+            <div>h36 disabled</div>
+            <MIInput size="h36" disabled />
+            <MIInput size="h36" disabled value="Value" />
+          </Flex>
+        </Box>
+
+        <Box display={'flex'} flexDirection={'column'} rowGap={5} paddingLeft={5}>
+          <Flex gap={10}>
+            <div>h26 read only</div>
+            <MIInput size="h26" readOnly />
+            <MIInput size="h26" readOnly value="Value" />
+          </Flex>
+          <Flex gap={10}>
+            <div>h34 read only</div>
+            <MIInput size="h34" readOnly />
+            <MIInput size="h34" readOnly value="Value" />
+          </Flex>
+          <Flex gap={10}>
+            <div>h36 read only</div>
+            <MIInput size="h36" readOnly />
+            <MIInput size="h36" readOnly value="Value" />
+          </Flex>
+        </Box>
+      </Box>
+
+      <Box>
+        <Typography variant="body1" mb={3}>
+          Field style
+        </Typography>
+        <Box display={'flex'} flexDirection={'column'} rowGap={5} paddingLeft={5} mb={6}>
+          <Flex gap={10}>
+            <div>Field default</div>
+            <MIField label="Label" subText="Guide text" helper="Helper text">
+              <MIInput />
+            </MIField>
+          </Flex>
+          <Flex gap={10}>
+            <div>Field requrie</div>
+            <MIField label="Label" subText="Guide text" helper="Helper text" required>
+              <MIInput />
+            </MIField>
+          </Flex>
+          <Flex gap={10}>
+            <div>Field requrie has icon</div>
+            <MIField
+              label="Label"
+              subText="Guide text"
+              helper="Helper text"
+              required
+              labelIcon={<InfoOutlineIcon width={'12px'} height={'12px'} />}
+            >
+              <MIInput />
+            </MIField>
+          </Flex>
+          <Flex gap={10}>
+            <div>Field have helper text only</div>
+            <MIField helper="Helper text" required labelIcon={<InfoOutlineIcon width={'12px'} height={'12px'} />}>
+              <MIInput />
+            </MIField>
+          </Flex>
+        </Box>
+      </Box>
     </>
   )
 }

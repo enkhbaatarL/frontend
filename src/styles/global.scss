@@ -210,3 +210,22 @@ fieldset{
   }
 }
 
+input::placeholder, textarea::placeholder {
+  opacity: 1 !important;
+  color: #CED4DA !important;
+}
+
+.disabledScroll {
+  &::-webkit-scrollbar {
+    width: 0;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    width: 0;
+  }
+}

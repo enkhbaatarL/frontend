@@ -9,7 +9,7 @@ export interface AdminChipProps extends Omit<ChipProps, 'size' | 'color'> {
   color?: AdminChipColor
 }
 
-export default function AdminChip(props: Readonly<AdminChipProps>) {
+const AdminChip = (props: Readonly<AdminChipProps>) => {
   const { size = 'h20', color = 'blue', label, ...originStyle } = props
 
   const getSizeStyle = (adminChipSize: AdminChipSize) => {
@@ -107,3 +107,5 @@ export default function AdminChip(props: Readonly<AdminChipProps>) {
     />
   )
 }
+
+export default AdminChip

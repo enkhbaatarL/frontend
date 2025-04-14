@@ -13,10 +13,10 @@ import { JSX, PropsWithChildren, useMemo, useRef, useState, MouseEvent, useEffec
 
 import AdminChip, { AdminChipProps } from './AdminChip'
 import style from './AdminTable.module.scss'
-import ErrorOutlineIcon from '../common/icons/ErrorOutlineIcon'
 
-import AdminButton from '@/components/admin/AdminButton.tsx'
+import AdminButton from '@/components/admin/AdminButton'
 import AdminPagination from '@/components/admin/AdminPagination'
+import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import { adminTableBaseProps } from '@/constants/admin'
 import { IPaginationResponse } from '@/types/api'
 
@@ -126,6 +126,7 @@ export const AdminTableCell = (props: AdminTableCellProps) => {
           }),
           ...typography?.sx,
         }}
+        className={clsx(style.textCell)}
       >
         {children}
       </Typography>

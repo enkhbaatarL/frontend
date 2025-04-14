@@ -26,7 +26,7 @@ const AdminMemberManagementMangerDetailPageHeader = ({ onDelete, onEdit }: { onD
   </Flex>
 )
 
-export default function AdminMemberManagementMangerDetailPage() {
+const AdminMemberManagementMangerDetailPage = () => {
   const { setCustomComponent } = useAdminHeader()
   const { userNo } = useParams()
   const { showSnackbar } = useSnackbar()
@@ -152,3 +152,5 @@ export default function AdminMemberManagementMangerDetailPage() {
     </>
   )
 }
+
+export default AdminMemberManagementMangerDetailPage

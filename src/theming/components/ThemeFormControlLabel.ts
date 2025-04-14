@@ -10,6 +10,9 @@ const ThemeFormControlLabel: Components<Omit<Theme, 'components'>>['MuiFormContr
       color: '#495057',
       fontWeight: '500',
       fontSize: '14px',
+      '&.Mui-disabled': {
+        color: '#495057',
+      },
     },
   },
 }

@@ -15,7 +15,7 @@ const ThemeAlert: Components<Omit<Theme, 'components'>> = {
           fontSize: '14px',
           fontWeight: 400,
           lineHeight: 1.4,
-          minWidth: '360px',
+          width: '360px',
           padding: '12px 16px',
           boxSizing: 'border-box',
           '&.MuiAlert-outlinedSuccess': {

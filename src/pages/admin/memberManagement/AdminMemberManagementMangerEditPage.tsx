@@ -24,7 +24,7 @@ const AdminMemberManagementMangerEditPageHeader = ({ onCancel, onSave }: { onSav
   </Flex>
 )
 
-export default function AdminMemberManagementMangerEditPage() {
+const AdminMemberManagementMangerEditPage = () => {
   const { setCustomComponent } = useAdminHeader()
   const location = useLocation()
   const navigate = useNavigate()
@@ -185,3 +185,5 @@ export default function AdminMemberManagementMangerEditPage() {
     </>
   )
 }
+
+export default AdminMemberManagementMangerEditPage

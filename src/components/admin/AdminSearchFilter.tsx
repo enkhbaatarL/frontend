@@ -2,7 +2,7 @@ import { ReactNode, KeyboardEvent } from 'react'
 
 import AdminButton from '@/components/admin/AdminButton'
 import Flex from '@/components/common/display/Flex'
-import RefreshIcon from '@/components/common/icons/RefreshIcon.tsx'
+import RefreshIcon from '@/components/common/icons/RefreshIcon'
 interface Props {
   children: ReactNode
   onSearch: () => void

@@ -1,0 +1,12 @@
+import { SVGProps } from 'react'
+
+const ArrowDown = (svgProps: Readonly<SVGProps<SVGSVGElement>>) => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...svgProps}>
+    <path
+      d="M6.77083 7.49961L10.0042 10.7329L13.2375 7.49961C13.5625 7.17461 14.0875 7.17461 14.4125 7.49961C14.7375 7.82461 14.7375 8.34961 14.4125 8.67461L10.5875 12.4996C10.2625 12.8246 9.7375 12.8246 9.4125 12.4996L5.5875 8.67461C5.2625 8.34961 5.2625 7.82461 5.5875 7.49961C5.9125 7.18294 6.44583 7.17461 6.77083 7.49961Z"
+      fill="#868E96"
+    />
+  </svg>
+)
+
+export default ArrowDown

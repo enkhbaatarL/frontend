@@ -8,8 +8,13 @@ import { Nullable } from '@/types/common'
 
 const AdminProvider = ({ children }: { children: ReactNode }) => {
   const [customComponent, setCustomComponent] = useState<Nullable<ReactNode>>(null)
+  const [subHeader, setSubHeader] = useState<Nullable<ReactNode>>(null)
+  const [customTitle, setCustomTitle] = useState<Nullable<ReactNode>>(null)
 
-  const value = useMemo(() => ({ customComponent, setCustomComponent }), [customComponent])
+  const value = useMemo(
+    () => ({ customComponent, setCustomComponent, subHeader, setSubHeader, customTitle, setCustomTitle }),
+    [customComponent, customTitle, subHeader],
+  )
 
   return (
     <AdminHeaderContext.Provider value={value}>

@@ -2,14 +2,39 @@ import { TextField, TextFieldProps, Typography } from '@mui/material'
 import FormControl from '@mui/material/FormControl'
 import { t } from 'i18next'
 
-const AdminTextField = ({ placeholder = t('입력하세요.'), fullWidth, label, ...props }: TextFieldProps) => (
+type AdminTextFieldProps = TextFieldProps & {
+  labelSub?: string
+  labelVariant?: 'body1' | 'body2' | 'body3' | 'h6' | 'subtitle' | 'labelText'
+  labelColor?: string
+}
+
+const AdminTextField = ({
+  placeholder,
+  fullWidth,
+  label,
+  labelSub,
+  labelVariant = 'labelText',
+  labelColor = 'gray.70',
+  required,
+  ...props
+}: AdminTextFieldProps) => (
   <FormControl fullWidth={fullWidth}>
     {label && (
-      <Typography marginBottom={1} variant="body3" color="gray.70">
+      <Typography marginBottom={labelVariant === 'subtitle' && !labelSub ? 3 : 1} variant={labelVariant} color={labelColor}>
         {label}
+        {required && (
+          <Typography marginLeft="4px" sx={{ verticalAlign: 4, fontSize: 12, fontWeight: 900 }} component="span" color="error">
+            *
+          </Typography>
+        )}
       </Typography>
     )}
-    <TextField variant="outlined" hiddenLabel placeholder={placeholder} {...props} />
+    {labelSub && (
+      <Typography variant="subtext2" color="gray.60" marginBottom={3}>
+        {labelSub}
+      </Typography>
+    )}
+    <TextField variant="outlined" hiddenLabel placeholder={placeholder ?? t('입력하세요')} {...props} />
   </FormControl>
 )
 

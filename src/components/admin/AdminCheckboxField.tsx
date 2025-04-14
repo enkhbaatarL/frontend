@@ -121,7 +121,7 @@ const CustomCheckbox = styled(Checkbox)(() => ({
 
 // Props interface for CustomizedCheckbox component
 interface CustomizedCheckboxProps extends CheckboxProps {
-  label: string
+  label?: string
   checked?: boolean
   disabled?: boolean
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void
@@ -184,9 +184,11 @@ export default function AdminCheckboxField({
         />
       }
       label={
-        <Typography ml={1} variant="body2M14" color={disabled ? 'gray.50' : 'gray.70'}>
-          {label}
-        </Typography>
+        label && (
+          <Typography ml={1} variant="body2M14" color={disabled ? 'gray.50' : 'gray.70'}>
+            {label}
+          </Typography>
+        )
       }
     />
   )

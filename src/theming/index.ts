@@ -52,7 +52,11 @@ declare module '@mui/material/styles' {
     body2: CSSProperties
     body2M14: CSSProperties
     body2SB14: CSSProperties
+    body2R14: CSSProperties
     body3: CSSProperties
+    body3M12: CSSProperties
+    body3R12: CSSProperties
+    body3R14: CSSProperties
     body4: CSSProperties
     body6: CSSProperties
     tableHeader1: CSSProperties
@@ -65,6 +69,9 @@ declare module '@mui/material/styles' {
     subtext: CSSProperties
     contentTitle: CSSProperties
     asterisk: CSSProperties
+    helperText: CSSProperties
+    labelText: CSSProperties
+    fieldLabel: CSSProperties
   }
 
   // allow configuration using `createTheme()`
@@ -79,7 +86,11 @@ declare module '@mui/material/styles' {
     body2?: CSSProperties
     body2M14?: CSSProperties
     body2SB14?: CSSProperties
+    body2R14?: CSSProperties
     body3?: CSSProperties
+    body3M12?: CSSProperties
+    body3R12?: CSSProperties
+    body3R14?: CSSProperties
     body4?: CSSProperties
     body6?: CSSProperties
     tableHeader1?: CSSProperties
@@ -92,6 +103,9 @@ declare module '@mui/material/styles' {
     subtext?: CSSProperties
     contentTitle?: CSSProperties
     asterisk?: CSSProperties
+    helperText?: CSSProperties
+    labelText?: CSSProperties
+    fieldLabel?: CSSProperties
   }
 }
 
@@ -108,8 +122,12 @@ declare module '@mui/material/Typography' {
     body2: true
     body2M14: true
     body2SB14: true
+    body2R14: true
     body4: true
     body3: true
+    body3M12: true
+    body3R12: true
+    body3R14: true
     body6: true
     tableHeader1: true
     tableBody1: true
@@ -122,6 +140,9 @@ declare module '@mui/material/Typography' {
     subtext: true
     contentTitle: true
     asterisk: true
+    helperText: true
+    labelText: true
+    fieldLabel: true
   }
 }
 
@@ -157,6 +178,9 @@ const theme = createTheme({
     },
     gray: {
       5: '#F8F9FA',
+      7: '#D1D5DB',
+      8: '#E5E7EB',
+      10: '#F1F3F5',
       20: '#E9ECEF',
       40: '#CED4DA',
       50: '#ADB5BD',
@@ -240,10 +264,34 @@ const theme = createTheme({
       fontWeight: 600,
       lineHeight: '1.4',
     },
+    body2R14: {
+      fontSize: '14px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.4',
+    },
     body3: {
       fontSize: '12px',
       fontStyle: 'normal',
       fontWeight: 500,
+      lineHeight: '1.4',
+    },
+    body3M12: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 500,
+      lineHeight: '1.4',
+    },
+    body3R12: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.4',
+    },
+    body3R14: {
+      fontSize: '14px',
+      fontStyle: 'normal',
+      fontWeight: 400,
       lineHeight: '1.4',
     },
     body4: {
@@ -319,6 +367,24 @@ const theme = createTheme({
       lineHeight: '1.4',
       letterSpacing: '0.15px',
       fontFeatureSettings: '\'liga\' off, \'clig\' off',
+    },
+    helperText: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.4',
+    },
+    labelText: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 500,
+      lineHeight: '100%',
+    },
+    fieldLabel: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 500,
+      lineHeight: '1',
     },
     h1: undefined,
     fontFamily: ['Pretendard', 'sans-serif'].join(','),

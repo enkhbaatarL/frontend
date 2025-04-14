@@ -28,7 +28,7 @@ const AdminMemberManagementManagersRegistrationPageHeader = ({
   </Flex>
 )
 
-export default function AdminMemberManagementManagersRegistrationPage() {
+const AdminMemberManagementManagersRegistrationPage = () => {
   const { setCustomComponent } = useAdminHeader()
 
   useEffect(() => {
@@ -51,3 +51,5 @@ export default function AdminMemberManagementManagersRegistrationPage() {
 
   return null
 }
+
+export default AdminMemberManagementManagersRegistrationPage

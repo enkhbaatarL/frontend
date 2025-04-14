@@ -1,6 +1,6 @@
 import Skeleton from '@mui/material/Skeleton'
 
-import Flex from '@/components/common/display/Flex.tsx'
+import Flex from '@/components/common/display/Flex'
 
 const TestSkeletonPage = () => (
   <>

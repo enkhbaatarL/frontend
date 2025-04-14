@@ -2,12 +2,12 @@ import { Alert, AlertTitle, Typography } from '@mui/material'
 import { closeSnackbar, CustomContentProps, SnackbarContent } from 'notistack'
 import { forwardRef, ReactNode, useCallback } from 'react'
 
-import Flex from '@/components/common/display/Flex.tsx'
-import CloseIcon from '@/components/common/icons/CloseIcon.tsx'
-import ErrorIconSm from '@/components/common/icons/ErrorIconSm.tsx'
-import InfoIconSm from '@/components/common/icons/InfoIconSm.tsx'
-import SuccessIconSm from '@/components/common/icons/SuccessIconSm.tsx'
-import WarningIconSm from '@/components/common/icons/WarningIconSm.tsx'
+import Flex from '@/components/common/display/Flex'
+import CloseIcon from '@/components/common/icons/CloseIcon'
+import ErrorIconSm from '@/components/common/icons/ErrorIconSm'
+import InfoIconSm from '@/components/common/icons/InfoIconSm'
+import SuccessIconSm from '@/components/common/icons/SuccessIconSm'
+import WarningIconSm from '@/components/common/icons/WarningIconSm'
 
 interface AdminSnackbarProps extends CustomContentProps {
   body?: ReactNode
