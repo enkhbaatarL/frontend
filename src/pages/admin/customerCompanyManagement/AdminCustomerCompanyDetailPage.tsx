@@ -2,8 +2,9 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import ErrorIcon from '@mui/icons-material/Error'
 import { Box, FormControlLabel, InputAdornment, MenuItem, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
@@ -15,6 +16,7 @@ import DetailItem from '@/components/common/detail-item'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import companiesService from '@/service/admin/companies'
 
 interface DataProvider {
   id: number
@@ -382,37 +384,58 @@ const AdminCustomerCompanyDetailPage = () => {
   const [openInformationDialog, setOpenInformationDialog] = useState(false)
   const [openConfirmSaving, setOpenConfirmSaving] = useState(false)
 
+  const { companyNo } = useParams()
+
   // const { showSnackbar } = useAdminSnackbar()
+
+  const { data } = useQuery({
+    queryKey: ['customerCompanyDetail', companyNo],
+    queryFn: async () => await companiesService.getCompanyDetail(Number(companyNo)),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!companyNo,
+  })
 
   const toogle = () => {
     setOpenConfirmActive(true)
   }
 
   useEffect(() => {
-    setCustomComponent(<AdminCustomerCompanyDetailPageHeader value={isActive} onChange={toogle} label={isActive ? '활성' : '비활성'} />)
+    setCustomComponent(
+      <AdminCustomerCompanyDetailPageHeader
+        value={data?.isActivated ?? false}
+        onChange={toogle}
+        label={data?.isActivated ? '활성' : '비활성'}
+      />,
+    )
     setSubHeader(
       <DetailItem
-        title="SK 하이닉스"
+        title={data?.companyNm}
         fields={[
           {
-            label: '수정일',
-            value: 'yyyy-mm-dd',
+            label: '등록일',
+            value: String(data?.auditInfo.createDt),
           },
           {
             label: '수정일',
-            value: 'yyyy-mm-dd',
+            value: String(data?.auditInfo.modifyDt),
           },
           {
             label: '등록자',
-            value: '홍길동',
+            value: String(data?.auditInfo.createUserId),
           },
           {
             label: '수정자',
-            value: '김선경',
+            value: String(data?.auditInfo.modifyUserId),
           },
           {
             label: '사용기간',
-            value: 'yyyy-mm-dd ~ 9999-12-31',
+            value:
+              data?.usageBeginDate && data?.usageEndDate
+                ? `${data?.usageBeginDate.slice(0, 4)}-${data?.usageBeginDate.slice(4, 6)}-${data?.usageBeginDate.slice(6, 8)} ~ ${data?.usageEndDate.slice(0, 4)}-${data?.usageEndDate.slice(4, 6)}-${data?.usageEndDate.slice(6, 8)}`
+                : '-',
           },
         ]}
         icon={<SettingIcon />}
@@ -427,7 +450,7 @@ const AdminCustomerCompanyDetailPage = () => {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [setCustomComponent, setSubHeader, isActive])
+  }, [setCustomComponent, setSubHeader, isActive, data])
 
   return (
     <>

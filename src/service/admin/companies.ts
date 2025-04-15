@@ -40,6 +40,22 @@ interface IDepartmentInfo {
   companyNm: string
   departmentNm: string[]
 }
+interface IAuditInfo {
+  createDt: string
+  createUserId: string
+  modifyDt: string
+  modifyUserId: string
+}
+
+interface ICompanyDetailInfo {
+  companyCd: string
+  companyNm: string
+  companyNo: number
+  isActivated: boolean
+  usageBeginDate: string
+  usageEndDate: string
+  auditInfo: IAuditInfo
+}
 
 /**
  * 고객사 서비스
@@ -83,6 +99,15 @@ const companiesService = {
    */
   async getDepartmentAll(): Promise<IDepartmentInfo[]> {
     const response: AxiosResponse<ICommonResponse<IDepartmentInfo[]>> = await api.get('/admin/company-management/company/department/all')
+
+    return response.data.data
+  },
+  /**
+   * 고객사 상세 정보를 조회합니다.
+   * @param companyNo - 고객회사 번호
+   */
+  async getCompanyDetail(companyNo?: number): Promise<ICompanyDetailInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyDetailInfo>> = await api.get(`admin/company-management/companies/${companyNo}`)
 
     return response.data.data
   },
