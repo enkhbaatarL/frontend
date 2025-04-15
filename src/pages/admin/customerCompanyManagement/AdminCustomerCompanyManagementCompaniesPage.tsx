@@ -1,12 +1,9 @@
-import { MoreVert } from '@mui/icons-material'
 import ErrorIcon from '@mui/icons-material/Error'
-import { IconButton, MenuItem } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
-import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { SnackbarProvider } from 'notistack'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
@@ -14,12 +11,14 @@ import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminSelect from '@/components/admin/AdminSelect'
 import AdminSnackbar from '@/components/admin/AdminSnackbar'
-import AdminTable from '@/components/admin/AdminTable'
+import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
-import companiesService from '@/service/admin/companies'
+import companiesService, { ICompaniesRequest, ICompanyInfo } from '@/service/admin/companies'
+import { IPaginationResponse } from '@/types/api'
 
 const AdminCustomerCompanyManagementCompaniesPageHeader = () => {
   const navigate = useNavigate()
@@ -41,23 +40,35 @@ const AdminCustomerCompanyManagementCompaniesPageHeader = () => {
 const AdminCustomerCompanyManagementCompaniesPage = () => {
   const { showSnackbar } = useSnackbar()
   const { setCustomComponent } = useAdminHeader()
-  const [searchFilter, setSearchFilter] = useState({
-    companyNm: '',
-    status: 'all',
-  })
-  const [paginationFilter] = useState({
-    page: 1,
-    size: 10,
-  })
 
-  const filter = useMemo(
-    () => ({
-      ...searchFilter,
-      ...paginationFilter,
-      companyNm: searchFilter.companyNm === '' ? undefined : searchFilter.companyNm,
-      status: searchFilter.status === 'all' ? undefined : searchFilter.status,
-    }),
-    [searchFilter, paginationFilter],
+  const activationStatusOptions = [
+    { label: t('활성'), value: 'ACTIVE' },
+    { label: t('비활성'), value: 'INACTIVE' },
+  ]
+
+  const {
+    filter,
+    updateFilter,
+    pagination,
+    updateSize,
+    updatePage,
+    resetFilter,
+    search,
+    data,
+    isInitialState,
+    isSearchedState,
+    isPureState,
+    isLoading,
+  } = useSearchFilter<ICompaniesRequest, IPaginationResponse<ICompanyInfo>>(
+    companiesService.getCompanies,
+    {
+      companyNm: '',
+      activationSts: '',
+    },
+    {
+      page: 1,
+      size: 20,
+    },
   )
 
   useEffect(() => {
@@ -69,76 +80,102 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
   }, [setCustomComponent])
 
   const columns: GridColDef[] = [
-    { field: 'companyNm', headerName: '회사명', minWidth: 150, flex: 1 },
-    { field: 'companyNo', headerName: '상태', width: 120, align: 'center' },
-    { field: 'companyCd', headerName: '회사 코드', width: 120, align: 'center' },
-    { field: 'createUserId', headerName: '등록자', width: 120 },
+    {
+      field: 'companyNm',
+      headerName: '회사명',
+      minWidth: 150,
+      flex: 1,
+      renderCell(params) {
+        return <AdminTableCell typography={{ variant: 'tableBody1' }}>{params.value}</AdminTableCell>
+      },
+    },
+    {
+      field: 'isActivated',
+      headerName: '상태',
+      width: 120,
+      align: 'center',
+      renderCell: (params) => (
+        <AdminTableCell
+          type="chip"
+          chip={{
+            color: params.value ? 'blue' : 'white',
+          }}
+        >
+          {params.value ? '활성' : '비활성'}
+        </AdminTableCell>
+      ),
+    },
+    {
+      field: 'companyCd',
+      headerName: '회사 코드',
+      width: 120,
+      align: 'center',
+      renderCell(params) {
+        return <AdminTableCell>{params.value}</AdminTableCell>
+      },
+    },
+    {
+      field: 'createUserId',
+      headerName: '등록자',
+      width: 120,
+      renderCell: (params) => {
+        const { createUserNm } = params.row.auditInfo
+        return <AdminTableCell>{createUserNm}</AdminTableCell>
+      },
+    },
     {
       field: 'createDt',
       headerName: '등록일',
       width: 150,
       align: 'center',
-      valueFormatter: ({ value }) => dayjs(value).format('YYYY-MM-DD'),
-    },
-    {
-      field: 'menu',
-      headerName: '',
-      width: 52,
-      align: 'center',
-      renderCell: (param) => (
-        <IconButton onClick={() => console.log(param)}>
-          <MoreVert />
-        </IconButton>
-      ),
+      renderCell: (params) => {
+        const { createDt } = params.row.auditInfo
+        return (
+          <AdminTableCell
+            typography={{
+              color: 'gray.60',
+            }}
+          >
+            {dayjs(createDt).format('YYYY-MM-DD')}
+          </AdminTableCell>
+        )
+      },
     },
   ]
-
-  const { data, refetch } = useQuery({
-    queryKey: [filter],
-    queryFn: async () => await companiesService.getCompanies(filter),
-    enabled: false,
-  })
-
-  const onSearch = async () => {
-    await refetch()
-  }
 
   const [isOpenDetail, setIsOpenDetail] = useState(false)
   const [isOpenDelete, setIsOpenDelete] = useState(false)
 
   return (
     <>
-      <AdminSearchFilter
-        onSearch={onSearch}
-        onReset={() => {
-          console.log('onReset')
-        }}
-      >
+      <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
         <AdminTextField
           label={t('회사명')}
-          value={searchFilter.companyNm}
+          value={filter.companyNm}
           onChange={(e) => {
-            setSearchFilter({ ...searchFilter, companyNm: e.target.value })
+            updateFilter('companyNm', e.target.value as string)
           }}
         />
         <AdminSelect
           label={t('상태')}
-          value={searchFilter.status}
+          value={filter.activationSts}
           onChange={(e) => {
-            setSearchFilter({ ...searchFilter, status: String(e.target.value) })
+            updateFilter('activationSts', e.target.value as string)
           }}
-        >
-          <MenuItem value={'all'}>{t('전체')}</MenuItem>
-          <MenuItem value={'Active'}>{t('Active')}</MenuItem>
-          <MenuItem value={'Inactive'}>{t('Inactive')}</MenuItem>
-        </AdminSelect>
+          options={activationStatusOptions}
+        ></AdminSelect>
       </AdminSearchFilter>
-      <div className="">
-        <AdminButton color="primary" variant="contained" onClick={() => setIsOpenDetail(true)}>
-          Show popup Detail
-        </AdminButton>
-      </div>
-      <AdminTable getRowId={(row) => row.companyCd} columns={columns} rows={data?.detail ?? []} />
+      <AdminTable
+        getRowId={(row) => row.companyNo}
+        columns={columns}
+        data={data}
+        isLoading={isLoading}
+        size={pagination?.size}
+        onSizeChange={updateSize}
+        onPageChange={updatePage}
+        noRowMessage={isPureState ? t('고객사를 검색하세요.') : undefined}
+        maxVisibleRowCount={20}
+      />
       <AdminConfirm
         open={isOpenDetail}
         title="회원 상세"

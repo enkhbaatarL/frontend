@@ -36,7 +36,7 @@ const AdminSelect = ({
 }: Props) => (
   <FormControl>
     {label && (
-      <Typography marginBottom={1} variant="body3" color="gray.70">
+      <Typography marginBottom={1} variant="labelText" color="gray.70">
         {label}
       </Typography>
     )}

@@ -3,12 +3,12 @@ import { AxiosResponse } from 'axios'
 import api from '@/lib/axios'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 
-interface ICompaniesRequest extends IPaginationRequest {
+export interface ICompaniesRequest extends IPaginationRequest {
   companyNm?: string
-  status?: string
+  activationSts?: string
 }
 
-interface ICompanyInfo {
+export interface ICompanyInfo {
   companyNo: number
   companyCd: string
   companyNm: string
@@ -51,7 +51,7 @@ const companiesService = {
    * @param params - { companyNm: 검색할 고객사 명, page: 페이지 번호, size: 페이지당 항목 수  }
    * @returns 고객사 목록
    */
-  async getCompanies(params: ICompaniesRequest): Promise<IPaginationResponse<ICompanyInfo>> {
+  async getCompanies(params: Partial<ICompaniesRequest>): Promise<IPaginationResponse<ICompanyInfo>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<ICompanyInfo>>> = await api.get(
       '/admin/company-management/companies',
       { params },
