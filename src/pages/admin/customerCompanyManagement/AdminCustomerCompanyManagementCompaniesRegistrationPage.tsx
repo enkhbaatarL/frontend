@@ -1,14 +1,14 @@
-import { Autocomplete } from '@mui/material'
-import { DatePicker } from '@mui/x-date-pickers'
+import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
 import { t } from 'i18next'
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import AdminAutoComplete from '@/components/admin/AdminAutoComplete'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
-import AdminTextField from '@/components/admin/AdminTextField'
+import AdminDatePicker from '@/components/admin/AdminDatePicker'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -25,7 +25,7 @@ interface HeaderProp {
 
 const Header = ({ onCancel, onSave, saveAble }: HeaderProp) => (
   <Flex gap={4}>
-    <AdminButton variant="contained" size="h28" onClick={onCancel}>
+    <AdminButton variant="outlined" color="secondary" size="h34" onClick={onCancel}>
       {t('취소')}
     </AdminButton>
     <AdminButton variant="contained" color="primary" size="h34" onClick={onSave} disabled={!saveAble}>
@@ -74,8 +74,8 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
     const response = await companiesService.registerCompany({
       companyCd: selectedCompany?.value ?? '',
       companyNm: selectedCompany?.label ?? '',
-      usageBeginDate: usageBeginDate?.format('YYYY-MM-DD') ?? '',
-      usageEndDate: usageEndDate?.format('YYYY-MM-DD') ?? '',
+      usageBeginDate: usageBeginDate?.format('YYYY-MM-DD').replace(/-/g, '') ?? '',
+      usageEndDate: usageEndDate?.format('YYYY-MM-DD').replace(/-/g, '') ?? '',
     })
 
     setShowConfirmDialog(false)
@@ -102,46 +102,58 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
 
   return (
     <>
-      <Flex direction="column" gap={4}>
-        <div>{t('고객사명')}*</div>
-        <div>{t('고객사로 등록할 회사를 선택하세요')}</div>
-        <Autocomplete
-          disablePortal
-          options={options ?? []}
-          value={selectedCompany}
-          onChange={(_event, newValue) => setSelectedCompany(newValue)}
-          sx={{ width: 300 }}
-          renderInput={(params) => <AdminTextField {...params} placeholder="검색 또는 선택하세요." />}
-        />
-
-        <div>{t('사용 기간')}*</div>
-        <div>{t('고객사의 MI Platform 사용 기간을 입력하세요.')}</div>
-        <Flex gap={2}>
-          <DatePicker format="YYYY-MM-DD" value={usageBeginDate} onChange={(date) => setUsageBeginDate(date)} />
-          <div>~</div>
-          <DatePicker
-            format="YYYY-MM-DD"
-            minDate={today}
-            maxDate={today.add(ADD_DATE_RANGE, 'years')}
-            value={usageEndDate}
-            onChange={(date) => setUsageEndDate(date)}
+      <Box display={'flex'} flexDirection={'column'} gap={4}>
+        <Box maxWidth={335}>
+          <Typography component={'p'} sx={{ mb: 1 }} variant="subtitle">
+            고객사명
+            <Typography component={'sup'} variant="asterisk" color="point.red1">
+              *
+            </Typography>
+          </Typography>
+          <Typography component="p" variant="subtext2" color="gray.60" mb={3}>
+            고객사로 등록할 회사를 선택하세요.
+          </Typography>
+          <AdminAutoComplete<ICommonOptions>
+            fullWidth
+            disablePortal
+            options={options ?? []}
+            onChange={(_event, newValue) => setSelectedCompany(newValue)}
+            placeholder="검색 또는 선택하세요."
           />
-        </Flex>
-      </Flex>
+        </Box>
+
+        <Box maxWidth={700}>
+          <Typography component={'p'} sx={{ mb: 1 }} variant="subtitle">
+            사용 기간
+            <Typography component={'sup'} variant="asterisk" color="point.red1">
+              *
+            </Typography>
+          </Typography>
+          <Typography component="p" variant="subtext2" color="gray.60" mb={3}>
+            고객사의 MI Platform 사용 기간을 입력하세요.
+          </Typography>
+          <Flex gap={2}>
+            <AdminDatePicker value={usageBeginDate} onChange={(date) => setUsageBeginDate(date)} />
+            <Typography variant="breadcrumbs" color="gray.50">
+              ~
+            </Typography>
+            <AdminDatePicker minDate={usageBeginDate || today} value={usageEndDate} onChange={(date) => setUsageEndDate(date)} />
+          </Flex>
+        </Box>
+      </Box>
       <AdminConfirm
         open={showCancelDialog}
         title={t('취소하시겠습니까?')}
         handleClose={() => setShowCancelDialog(false)}
         actions={[
-          { label: '이어서 작성', variant: 'outlined', color: 'secondary', onClick: () => setShowCancelDialog(true) },
+          { label: '이어서 작성', variant: 'outlined', color: 'secondary', onClick: () => setShowCancelDialog(false) },
           {
             label: '취소 및 이동',
             variant: 'contained',
             color: 'primary',
             onClick: () => {
+              setShowCancelDialog(false)
               navigateToList()
-              showSnackbar(t('취소되었습니다.'), { variant: 'info' })
-              showSnackbar(t('문제가 발생했습니다.'), { variant: 'error', body: t('나중에 다시 시도해 주세요.') })
             },
           },
         ]}
@@ -154,10 +166,16 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
         handleClose={() => setShowConfirmDialog(false)}
         actions={[
           {
-            label: '확인',
+            label: '취소',
+            variant: 'outlined',
+            color: 'secondary',
+            onClick: () => setShowConfirmDialog(false),
+          },
+          {
+            label: '등록',
             variant: 'contained',
             color: 'primary',
-            onClick: onSave,
+            onClick: () => onSave(),
           },
         ]}
       />
