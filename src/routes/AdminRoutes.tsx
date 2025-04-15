@@ -6,6 +6,7 @@ import AdminAnalyticsDashboardPage from '@/pages/admin/analytics/AdminAnalyticsD
 import AdminAnalyticsTablePage from '@/pages/admin/analytics/AdminAnalyticsTablePage'
 import AdminBoardsFaqPage from '@/pages/admin/boards/AdminBoardsFaqPage'
 import AdminBoardsNoticesPage from '@/pages/admin/boards/AdminBoardsNoticesPage'
+import AdminCustomerCompanyDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyDetailPage'
 import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesPage'
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
@@ -54,6 +55,22 @@ const AdminRoutes: ICustomRouteObject = {
               label: '고객사 등록',
               element: <AdminCustomerCompanyManagementCompaniesRegistrationPage />,
               hidden: true,
+            },
+            {
+              path: 'detail',
+              label: '고객사 상세',
+              hidden: true,
+              hasBack: true,
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
+                  path: ':companyNo',
+                  element: <AdminCustomerCompanyDetailPage />,
+                },
+              ],
             },
           ],
         },
