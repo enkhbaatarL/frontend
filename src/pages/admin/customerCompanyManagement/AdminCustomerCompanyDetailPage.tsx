@@ -3,6 +3,8 @@ import ErrorIcon from '@mui/icons-material/Error'
 import { Box, FormControlLabel, InputAdornment, MenuItem, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
+import { t } from 'i18next'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -16,14 +18,7 @@ import DetailItem from '@/components/common/detail-item'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
-import companiesService from '@/service/admin/companies'
-
-interface DataProvider {
-  id: number
-  name: string
-  count: number
-  date: string
-}
+import companiesService, { ICompanyProviderInfo } from '@/service/admin/companies'
 
 interface Member {
   id: number
@@ -33,6 +28,10 @@ interface Member {
   name: string
   email: string
   registrationDate: string
+}
+
+interface AdminCustomerDataProviderTableProps {
+  data: ICompanyProviderInfo
 }
 
 const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean) => void; label: string; value: boolean }) => {
@@ -48,29 +47,20 @@ const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean
   )
 }
 
-const AdminCustomerDataProviderTable = () => {
-  // const { showSnackbar } = useAdminSnackbar()
-  // Sample data
-  const data: DataProvider[] = [
-    { id: 1, name: 'LSEG', count: 12, date: 'yyyy-mm-dd' },
-    { id: 2, name: 'Bloomberg', count: 35, date: 'yyyy-mm-dd' },
-    { id: 3, name: 'Investing', count: 24, date: 'yyyy-mm-dd' },
-    { id: 4, name: 'S&P Global', count: 11, date: 'yyyy-mm-dd' },
-  ]
-
+const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTableProps) => {
   // Define columns
   const columns: GridColDef[] = [
     {
-      field: 'name',
-      // renderHeader: () => <AdminTableHeader fontWeight={600}>데이터 프로바이더</AdminTableHeader>,
+      field: 'providerNm',
+      headerName: t('데이터 프로바이더'),
       flex: 1,
       renderCell(params) {
         return <AdminTableCell>{params.value}</AdminTableCell>
       },
     },
     {
-      field: 'count',
-      // renderHeader: () => <AdminTableHeader fontWeight={600}>정품</AdminTableHeader>,
+      field: 'numberOfGoods',
+      headerName: t('상품'),
       type: 'number',
       align: 'right',
       headerAlign: 'right',
@@ -80,13 +70,14 @@ const AdminCustomerDataProviderTable = () => {
       },
     },
     {
-      field: 'date',
-      // renderHeader: () => <AdminTableHeader fontWeight={600}>등록일</AdminTableHeader>,
+      field: 'createDt',
+      headerName: t('등록일'),
       align: 'center',
       headerAlign: 'center',
       width: 200,
-      renderCell(params) {
-        return <AdminTableCell typography={{ color: 'gray.60' }}>{params.value}</AdminTableCell>
+      renderCell: (params) => {
+        const { createDt } = params.row.auditInfo
+        return <AdminTableCell typography={{ color: 'gray.60' }}>{dayjs(createDt).format('YYYY-MM-DD')}</AdminTableCell>
       },
     },
   ]
@@ -109,7 +100,7 @@ const AdminCustomerDataProviderTable = () => {
           데이터 프로바이더 등록
         </AdminButton>
       </Box>
-      <AdminTable getRowId={(row) => row.id} columns={columns} rows={data ?? []} onRowClick={handleOnRowClick} />
+      <AdminTable getRowId={(row) => row.providerNo} columns={columns} data={data} hidePagination onRowClick={handleOnRowClick} />
       <AdminConfirm
         open={openConfirmRegistration}
         title={<>데이터 프로바이더 등록</>}
@@ -398,6 +389,16 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
+  const { data: dataProviderData } = useQuery({
+    queryKey: ['dataProvider', companyNo],
+    queryFn: async () => await companiesService.getCompanyProviders(Number(companyNo)),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!companyNo,
+  })
+
   const toogle = () => {
     setOpenConfirmActive(true)
   }
@@ -454,7 +455,8 @@ const AdminCustomerCompanyDetailPage = () => {
 
   return (
     <>
-      <AdminCustomerDataProviderTable />
+      {dataProviderData && <AdminCustomerDataProviderTable data={dataProviderData} />}
+      {/* <AdminCustomerDataProviderTable data={dataProviderData}/> */}
       <AdminCustomerMemberTable />
       <AdminConfirm
         open={openConfirmActive}

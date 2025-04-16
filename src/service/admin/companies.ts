@@ -45,6 +45,12 @@ interface IAuditInfo {
   createUserId: string
   modifyDt: string
   modifyUserId: string
+  createUserNm: string
+  createUserDeptNm: string
+  createUserCpnyNm: string
+  modifyUserNm: string
+  modifyUserDeptNm: string
+  modifyUserCpnyNm: string
 }
 
 interface ICompanyDetailInfo {
@@ -54,6 +60,13 @@ interface ICompanyDetailInfo {
   isActivated: boolean
   usageBeginDate: string
   usageEndDate: string
+  auditInfo: IAuditInfo
+}
+
+export interface ICompanyProviderInfo {
+  providerNo: number
+  providerNm: string
+  numberOfGoods: number
   auditInfo: IAuditInfo
 }
 
@@ -108,6 +121,17 @@ const companiesService = {
    */
   async getCompanyDetail(companyNo?: number): Promise<ICompanyDetailInfo> {
     const response: AxiosResponse<ICommonResponse<ICompanyDetailInfo>> = await api.get(`admin/company-management/companies/${companyNo}`)
+
+    return response.data.data
+  },
+  /**
+   * 고객사와 매핑된 프로바이더 목록을 조회합니다.
+   * @param companyNo - 고객회사 번호
+   */
+  async getCompanyProviders(companyNo?: number): Promise<ICompanyProviderInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyProviderInfo>> = await api.get(
+      `admin/company-management/companies/${companyNo}` + '/providers',
+    )
 
     return response.data.data
   },
