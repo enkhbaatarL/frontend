@@ -12,26 +12,21 @@ import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
 import AdminSelect from '@/components/admin/AdminSelect'
-import AdminTable, { AdminTableAction, AdminTableCell, AdminTableHeader } from '@/components/admin/AdminTable'
+import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import DetailItem from '@/components/common/detail-item'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import companiesService, { ICompanyProviderInfo } from '@/service/admin/companies'
-
-interface Member {
-  id: number
-  company: string
-  department: string
-  position: string
-  name: string
-  email: string
-  registrationDate: string
-}
+import memebersService, { IUserInfo } from '@/service/admin/members'
+import { IPaginationResponse } from '@/types/api'
 
 interface AdminCustomerDataProviderTableProps {
   data: ICompanyProviderInfo
+}
+interface AdminCustomerMemberTableProps {
+  data: IPaginationResponse<IUserInfo>
 }
 
 const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean) => void; label: string; value: boolean }) => {
@@ -100,7 +95,7 @@ const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTable
           데이터 프로바이더 등록
         </AdminButton>
       </Box>
-      <AdminTable getRowId={(row) => row.providerNo} columns={columns} data={data} hidePagination onRowClick={handleOnRowClick} />
+      <AdminTable getRowId={(row) => row.providerNo} columns={columns} data={data} onRowClick={handleOnRowClick} />
       <AdminConfirm
         open={openConfirmRegistration}
         title={<>데이터 프로바이더 등록</>}
@@ -152,63 +147,14 @@ const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTable
   )
 }
 
-const AdminCustomerMemberTable = () => {
+const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
   const [isOpenDelete, setIsOpenDelete] = useState(false)
-  // const { showSnackbar } = useAdminSnackbar()
-  const members: Member[] = [
-    {
-      id: 1,
-      company: 'SK 실트론',
-      department: 'ESG플랫폼사업팀',
-      position: 'Manager',
-      name: '홍길동',
-      email: 'a.b@ekcc.com',
-      registrationDate: 'yyyy-mm-dd',
-    },
-    {
-      id: 2,
-      company: 'SK 실트론',
-      department: 'ESG플랫폼사업팀',
-      position: 'Manager',
-      name: '나길동',
-      email: 'a.b@ekcc.com',
-      registrationDate: 'yyyy-mm-dd',
-    },
-    {
-      id: 3,
-      company: 'SK 실트론',
-      department: 'ESG플랫폼사업팀',
-      position: 'Manager',
-      name: '다길동',
-      email: 'a.b@ekcc.com',
-      registrationDate: 'yyyy-mm-dd',
-    },
-    {
-      id: 4,
-      company: 'SK 실트론',
-      department: 'ESG플랫폼사업팀',
-      position: 'Manager',
-      name: '다길동',
-      email: 'a.b@ekcc.com',
-      registrationDate: 'yyyy-mm-dd',
-    },
-    {
-      id: 5,
-      company: 'SK 실트론',
-      department: 'ESG플랫폼사업팀',
-      position: 'Manager',
-      name: '다길동',
-      email: 'a.b@ekcc.com',
-      registrationDate: 'yyyy-mm-dd',
-    },
-  ]
   const navigate = useNavigate()
-  // const { getPath } = useAdminMenuItems()
 
   const columns: GridColDef[] = [
     {
-      field: 'company',
-      renderHeader: () => <AdminTableHeader>회사명</AdminTableHeader>,
+      field: 'customerCompanyNm',
+      headerName: t('회사명'),
       width: 250,
       flex: 1,
       sortable: false,
@@ -217,8 +163,8 @@ const AdminCustomerMemberTable = () => {
       },
     },
     {
-      field: 'department',
-      renderHeader: () => <AdminTableHeader>소속</AdminTableHeader>,
+      field: 'departmentNm',
+      headerName: t('소속'),
       width: 182,
       flex: 1,
       sortable: false,
@@ -227,9 +173,8 @@ const AdminCustomerMemberTable = () => {
       },
     },
     {
-      field: 'position',
+      field: 'positionNm',
       headerName: '직위',
-      renderHeader: () => <AdminTableHeader>직위</AdminTableHeader>,
       width: 182,
       sortable: false,
       renderCell(params) {
@@ -237,8 +182,8 @@ const AdminCustomerMemberTable = () => {
       },
     },
     {
-      field: 'name',
-      renderHeader: () => <AdminTableHeader>이름</AdminTableHeader>,
+      field: 'userNm',
+      headerName: t('이름'),
       width: 120,
       sortable: false,
       renderCell(params) {
@@ -246,8 +191,8 @@ const AdminCustomerMemberTable = () => {
       },
     },
     {
-      field: 'email',
-      renderHeader: () => <AdminTableHeader>이메일</AdminTableHeader>,
+      field: 'userLoginId',
+      headerName: t('이메일'),
       width: 182,
       sortable: false,
       renderCell(params) {
@@ -256,10 +201,11 @@ const AdminCustomerMemberTable = () => {
     },
     {
       field: 'registrationDate',
-      renderHeader: () => <AdminTableHeader>등록일</AdminTableHeader>,
+      headerName: t('등록일'),
       width: 182,
       sortable: false,
-      renderCell(params) {
+      renderCell: (params) => {
+        const { createDt } = params.row.auditInfo
         return (
           <AdminTableCell
             typography={{
@@ -267,7 +213,7 @@ const AdminCustomerMemberTable = () => {
               variant: 'tableBody2',
             }}
           >
-            {params.value}
+            {dayjs(createDt).format('YYYY-MM-DD')}
           </AdminTableCell>
         )
       },
@@ -325,7 +271,7 @@ const AdminCustomerMemberTable = () => {
           </AdminButton>
         </Box>
       </Box>
-      <AdminTable getRowId={(row) => row.id} columns={columns} rows={members ?? []} onRowClick={handleOnRowClick} />
+      <AdminTable getRowId={(row) => row.userNo} columns={columns} data={data} onRowClick={handleOnRowClick} />
       <AdminConfirm
         open={isOpenDelete}
         title={
@@ -399,6 +345,21 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
+  const { data: userData } = useQuery({
+    queryKey: ['user', companyNo],
+    queryFn: async () =>
+      await memebersService.getUsers({
+        companyNo,
+        page: 1,
+        size: 20,
+      }),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!companyNo,
+  })
+
   const toogle = () => {
     setOpenConfirmActive(true)
   }
@@ -456,8 +417,7 @@ const AdminCustomerCompanyDetailPage = () => {
   return (
     <>
       {dataProviderData && <AdminCustomerDataProviderTable data={dataProviderData} />}
-      {/* <AdminCustomerDataProviderTable data={dataProviderData}/> */}
-      <AdminCustomerMemberTable />
+      {userData && <AdminCustomerMemberTable data={userData} />}
       <AdminConfirm
         open={openConfirmActive}
         title={<>{isActive ? '비활성으로 변경하시겠습니까?' : '활성으로 변경하시겠습니까?'}</>}

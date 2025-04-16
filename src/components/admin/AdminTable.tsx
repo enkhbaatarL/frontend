@@ -29,7 +29,6 @@ interface AdminTableProps<T extends GridRowModel> extends DataGridProps {
   data?: IPaginationResponse<T> | T
   isLoading?: boolean
   noRowMessage?: string
-  hidePagination?: boolean
   onRowClick?: GridEventListener<'rowClick'>
   size?: number
   sizeList?: number[]
@@ -223,7 +222,6 @@ const AdminTable = <T extends GridRowModel>({
   columns,
   data,
   noRowMessage,
-  hidePagination,
   onRowClick,
   isLoading,
   size,
@@ -342,7 +340,7 @@ const AdminTable = <T extends GridRowModel>({
         />
       </Box>
 
-      {!hidePagination && !!data?.detail && (
+      {!!data?.detail && (
         <Box display="flex" alignItems="center" justifyContent="space-between" py="16px" position="relative">
           <Typography variant="body3" color="gray.60">
             {paginationRange}
