@@ -144,7 +144,7 @@ const companiesService = {
    */
   async getCompanyProviders(companyNo?: number): Promise<ICompanyProviderInfo> {
     const response: AxiosResponse<ICommonResponse<ICompanyProviderInfo>> = await api.get(
-      `admin/company-management/companies/${companyNo}` + '/providers',
+      `admin/company-management/companies/${companyNo}/providers`,
     )
 
     return response.data.data
@@ -156,7 +156,7 @@ const companiesService = {
    */
   async getCompanyProviderDetail(companyNo?: number, providerNo?: number): Promise<ICompanyProviderDetailInfo> {
     const response: AxiosResponse<ICommonResponse<ICompanyProviderDetailInfo>> = await api.get(
-      `admin/company-management/companies/${companyNo}` + `/providers/${providerNo}`,
+      `admin/company-management/companies/${companyNo}/providers/${providerNo}`,
     )
 
     return response.data.data
@@ -167,7 +167,19 @@ const companiesService = {
    */
   async getCompanyLatestUpdated(companyNo?: number): Promise<ICompanyLatestUpdatedInfo> {
     const response: AxiosResponse<ICommonResponse<ICompanyLatestUpdatedInfo>> = await api.get(
-      `admin/company-management/companies/${companyNo}` + '/latest-updated',
+      `admin/company-management/companies/${companyNo}/latest-updated`,
+    )
+
+    return response.data.data
+  },
+  /**
+   * 고객사-프로바이더 상세 화면에서 프로바이더 정보, 상품 정보를 포함하여 최신 수정 데이터를 조회합니다.
+   * @param companyNo - 고객회사 번호
+   * @param providerNo - 프로바이더 번호
+   */
+  async getProviderLatestUpdated(companyNo?: number, providerNo?: number): Promise<ICompanyLatestUpdatedInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyLatestUpdatedInfo>> = await api.get(
+      `admin/company-management/companies/${companyNo}/providers/${providerNo}/latest-updated`,
     )
 
     return response.data.data

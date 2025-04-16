@@ -1,6 +1,7 @@
 import { Box, FormControlLabel, Radio, RadioGroup, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -53,6 +54,16 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const { data } = useQuery({
     queryKey: ['providerDetail', companyNo, providerNo],
     queryFn: async () => await companiesService.getCompanyProviderDetail(Number(companyNo), Number(providerNo)),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!companyNo || !!providerNo,
+  })
+
+  const { data: providerLatestUpdatedData } = useQuery({
+    queryKey: ['latestUpdateData', companyNo, providerNo],
+    queryFn: async () => await companiesService.getProviderLatestUpdated(Number(companyNo), Number(providerNo)),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,
@@ -185,7 +196,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
 
   useEffect(() => {
     setCustomComponent(
-      <AdminCustomerCompanyProviderDetailPageHeader value={isActive} onChange={toogle} label={isActive ? '활성' : '비활성'} />,
+      <AdminCustomerCompanyProviderDetailPageHeader value={isActive} onChange={toogle} label={isActive ? '사용' : '미사용'} />,
     )
     setSubHeader(
       <DetailItem
@@ -214,19 +225,19 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
         fields={[
           {
             label: '등록일',
-            value: 'yyyy-mm-dd',
+            value: dayjs(data?.auditInfo.createDt).format('YYYY-MM-DD'),
           },
           {
             label: '수정일',
-            value: 'yyyy-mm-dd',
+            value: dayjs(providerLatestUpdatedData?.modifyDt).format('YYYY-MM-DD'),
           },
           {
             label: '등록자',
-            value: '홍길동',
+            value: String(data?.auditInfo.createUserNm),
           },
           {
             label: '수정자',
-            value: '김선경',
+            value: String(providerLatestUpdatedData?.modifyUserNm),
           },
         ]}
         tooltipMessage="기본 정보 수정"
@@ -240,7 +251,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [setCustomComponent, setSubHeader, isActive, selectedCompany])
+  }, [setCustomComponent, setSubHeader, isActive, selectedCompany, data, providerLatestUpdatedData])
 
   const handleOnRowClick = () => {
     // navigate(getPath('customer-company-product-detail'))
