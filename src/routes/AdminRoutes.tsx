@@ -6,6 +6,7 @@ import AdminAnalyticsDashboardPage from '@/pages/admin/analytics/AdminAnalyticsD
 import AdminAnalyticsTablePage from '@/pages/admin/analytics/AdminAnalyticsTablePage'
 import AdminBoardsFaqPage from '@/pages/admin/boards/AdminBoardsFaqPage'
 import AdminBoardsNoticesPage from '@/pages/admin/boards/AdminBoardsNoticesPage'
+import AdminCustomerCompanyDataProviderDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyDataProviderDetailPage'
 import AdminCustomerCompanyDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyDetailPage'
 import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesPage'
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
@@ -69,6 +70,22 @@ const AdminRoutes: ICustomRouteObject = {
                 {
                   path: ':companyNo',
                   element: <AdminCustomerCompanyDetailPage />,
+                },
+              ],
+            },
+            {
+              path: 'provider-detail',
+              label: '데이터 프로바이더 상세',
+              hidden: true,
+              hasBack: true,
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
+                  path: ':companyNo/:providerNo',
+                  element: <AdminCustomerCompanyDataProviderDetailPage />,
                 },
               ],
             },

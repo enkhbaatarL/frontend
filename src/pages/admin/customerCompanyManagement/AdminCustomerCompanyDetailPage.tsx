@@ -43,6 +43,8 @@ const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean
 }
 
 const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTableProps) => {
+  const navigate = useNavigate()
+  const { companyNo } = useParams()
   // Define columns
   const columns: GridColDef[] = [
     {
@@ -78,11 +80,7 @@ const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTable
   ]
 
   const [openConfirmRegistration, setOpenConfirmRegistration] = useState(false)
-  // const { getPath } = useAdminMenuItems()
 
-  const handleOnRowClick = () => {
-    // navigate(getPath('customer-company-data-provider-detail'))
-  }
   const registerDataProvider = () => {
     setOpenConfirmRegistration(true)
   }
@@ -95,7 +93,14 @@ const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTable
           데이터 프로바이더 등록
         </AdminButton>
       </Box>
-      <AdminTable getRowId={(row) => row.providerNo} columns={columns} data={data} onRowClick={handleOnRowClick} />
+      <AdminTable
+        getRowId={(row) => row.providerNo}
+        columns={columns}
+        data={data}
+        onRowClick={({ row }) => {
+          navigate(`/admin/customer-company/companies/provider-detail/${companyNo}/${row.providerNo}`)
+        }}
+      />
       <AdminConfirm
         open={openConfirmRegistration}
         title={<>데이터 프로바이더 등록</>}
