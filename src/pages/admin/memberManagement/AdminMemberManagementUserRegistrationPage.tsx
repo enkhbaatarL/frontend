@@ -96,7 +96,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
   )
 
   const { data: filterOptions } = useQuery({
-    queryKey: ['filterOptions'],
+    queryKey: ['getDepartmentAll'],
     queryFn: async () => await companiesService.getDepartmentAll(),
     refetchOnWindowFocus: false,
   })

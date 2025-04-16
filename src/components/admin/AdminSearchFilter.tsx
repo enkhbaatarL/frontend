@@ -13,7 +13,7 @@ interface Props {
 
 const AdminSearchFilter = ({ children, onSearch, onReset, disabledSearch, disabledReset }: Props) => {
   const handleKeyPress = (event: KeyboardEvent) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !disabledSearch) {
       onSearch()
     }
   }

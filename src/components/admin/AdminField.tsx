@@ -1,4 +1,4 @@
-import { FormControlLabel, MenuItem, Radio, RadioGroup, TextField, type TextFieldProps, Typography } from '@mui/material'
+import { FormControlLabel, Radio, RadioGroup, TextField, type TextFieldProps, Typography } from '@mui/material'
 import FormControl from '@mui/material/FormControl'
 import Switch from '@mui/material/Switch'
 import { t } from 'i18next'
@@ -28,6 +28,7 @@ type AdminTextFieldProps = TextFieldProps & {
   width?: number | string[]
   labelSw?: string
   showSelectedValue?: boolean
+  useAllOption?: boolean
 }
 
 const AdminField = ({
@@ -53,6 +54,7 @@ const AdminField = ({
   labelSw,
   disabled,
   showSelectedValue = true,
+  useAllOption,
   ...props
 }: AdminTextFieldProps) => {
   const handleChangeTextField = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +119,7 @@ const AdminField = ({
             defaultValue={value}
             placeholder={placeholder ?? t('제목을 입력하세요')}
             slotProps={{ htmlInput: { maxLength } }}
-            onChange={handleChangeTextField}
+            onInput={handleChangeTextField}
             {...props}
           />
           {countCharacters && typeof value === 'string' && (
@@ -138,13 +140,9 @@ const AdminField = ({
           sx={{ width }}
           showSelectedValue={showSelectedValue}
           onChange={handleSelectChange}
-        >
-          {options?.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </AdminSelect>
+          useAllOption={useAllOption}
+          options={options}
+        />
       )}
 
       {fieldType === 'switch' && (

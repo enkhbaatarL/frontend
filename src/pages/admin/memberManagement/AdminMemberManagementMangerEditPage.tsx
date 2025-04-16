@@ -1,12 +1,14 @@
 import { Box, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCheckboxField from '@/components/admin/AdminCheckboxField'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminIpInput from '@/components/admin/AdminIpInput'
+import AdminLoading from '@/components/admin/AdminLoading'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
@@ -26,7 +28,6 @@ const AdminMemberManagementMangerEditPageHeader = ({ onCancel, onSave }: { onSav
 
 const AdminMemberManagementMangerEditPage = () => {
   const { setCustomComponent } = useAdminHeader()
-  const location = useLocation()
   const navigate = useNavigate()
   const { userNo } = useParams()
   const { showSnackbar } = useSnackbar()
@@ -39,7 +40,15 @@ const AdminMemberManagementMangerEditPage = () => {
     accessAllowedIpAddress: [],
   })
 
-  const data = location.state
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['managerDetail', userNo],
+    queryFn: async () => await membersService.getManagerDetail(userNo),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!userNo,
+  })
 
   const displayManagerInfo = useMemo(
     () => `${data?.userNm} • ${data?.onDutyNm} • ${data?.departmentNm} • ${data?.customerCompanyNm}`,
@@ -73,14 +82,14 @@ const AdminMemberManagementMangerEditPage = () => {
     return () => {
       setCustomComponent(null)
     }
-  }, [setCustomComponent, handleSave])
+  }, [setCustomComponent])
 
   useEffect(() => {
-    if (!data) {
-      console.warn('No state passed in location')
-      navigate(`/admin/member-mgmt/managers/detail/${userNo}`, { replace: true })
+    if (isError) {
+      showSnackbar(t('사용자 정보를 찾을 수 없습니다.'), { variant: 'error' })
+      navigate('/admin/member-mgmt/managers', { replace: true })
     }
-  }, [data, navigate, userNo])
+  }, [isError, navigate, showSnackbar])
 
   useEffect(() => {
     if (data) {
@@ -93,7 +102,9 @@ const AdminMemberManagementMangerEditPage = () => {
     }
   }, [data])
 
-  return (
+  return isLoading ? (
+    <AdminLoading />
+  ) : (
     <>
       <Box>
         <Typography sx={{ mb: 1 }} component="span" variant="subtitle">
@@ -152,7 +163,7 @@ const AdminMemberManagementMangerEditPage = () => {
             color: 'primary',
             onClick: () => {
               setShowCancelDialog(false)
-              navigate(`/admin/member-mgmt/managers/detail/${userNo}`)
+              navigate(-1)
             },
           },
         ]}

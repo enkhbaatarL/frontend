@@ -72,7 +72,7 @@ const AdminMemberManagementManagersPage = () => {
   )
 
   const { data: filterOptions } = useQuery({
-    queryKey: ['filterOptions'],
+    queryKey: ['getDepartmentAll'],
     queryFn: async () => await companiesService.getDepartmentAll(),
     refetchOnWindowFocus: false,
   })
@@ -91,9 +91,9 @@ const AdminMemberManagementManagersPage = () => {
       field: 'customerCompanyNm',
       headerName: t('회사명'),
       width: 150,
-      renderCell: (params) => (
+      renderCell: (param) => (
         <AdminTableCell typography={{ variant: 'tableBody1' }} ellipsis cursorPointer>
-          {params.value}
+          {param.value}
         </AdminTableCell>
       ),
     },
@@ -103,9 +103,9 @@ const AdminMemberManagementManagersPage = () => {
       headerName: t('타사 서비스'),
       width: 100,
       align: 'center',
-      renderCell: (params) => {
-        const color = params.value ? 'blue' : 'gray'
-        const label = params.value ? t('허용') : t('비허용')
+      renderCell: (param) => {
+        const color = param.value ? 'blue' : 'gray'
+        const label = param.value ? t('허용') : t('비허용')
 
         return (
           <AdminTableCell type="chip" chip={{ color }}>
@@ -155,7 +155,7 @@ const AdminMemberManagementManagersPage = () => {
             {
               label: t('수정'),
               icon: <EditIcon fontSize="small" />,
-              onClick: () => navigate(`/admin/member-mgmt/managers/detail/${row.userNo}`),
+              onClick: () => navigate(`/admin/member-mgmt/managers/edit/${row.userNo}`),
             },
             {
               label: t('삭제'),

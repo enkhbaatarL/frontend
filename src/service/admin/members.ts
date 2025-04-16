@@ -181,7 +181,7 @@ const membersService = {
    * @param userNo - 사용자 번호
    * @param body - { isOtherServiceAccessPossible: 다른 서비스 접근 가능 여부, accessAllowedIpAddress: 접근 가능 IP 주소 목록 }
    */
-  async updateManagerDetail(userNo: string, body: IMangerInfoEditRequest): Promise<void> {
+  async updateManagerDetail(userNo: string | undefined, body: IMangerInfoEditRequest): Promise<void> {
     if (!userNo) throw new Error('userNo is required')
 
     await api.patch(`admin/user-management/admin-users/${userNo}`, {

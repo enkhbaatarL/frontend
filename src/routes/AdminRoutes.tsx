@@ -4,7 +4,10 @@ import { Navigate } from 'react-router-dom'
 import AdminLayout from '@/layouts/AdminLayout'
 import AdminAnalyticsDashboardPage from '@/pages/admin/analytics/AdminAnalyticsDashboardPage'
 import AdminAnalyticsTablePage from '@/pages/admin/analytics/AdminAnalyticsTablePage'
+import AdminBoardsFaqDetailPage from '@/pages/admin/boards/AdminBoardsFaqDetailPage'
+import AdminBoardsFaqEditPage from '@/pages/admin/boards/AdminBoardsFaqEditPage'
 import AdminBoardsFaqPage from '@/pages/admin/boards/AdminBoardsFaqPage'
+import AdminBoardsFaqRegistrationPage from '@/pages/admin/boards/AdminBoardsFaqRegistrationPage'
 import AdminBoardsNoticesPage from '@/pages/admin/boards/AdminBoardsNoticesPage'
 import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesPage'
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
@@ -183,7 +186,50 @@ const AdminRoutes: ICustomRouteObject = {
         {
           path: 'faq',
           label: 'FAQ',
-          element: <AdminBoardsFaqPage />,
+          children: [
+            {
+              index: true,
+              element: <AdminBoardsFaqPage />,
+            },
+            {
+              path: 'registration',
+              label: 'FAQ 등록',
+              element: <AdminBoardsFaqRegistrationPage />,
+              hidden: true,
+            },
+            {
+              path: 'detail',
+              label: 'FAQ 상세',
+              hidden: true,
+              hasBack: true,
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
+                  path: ':faqNo',
+                  element: <AdminBoardsFaqDetailPage />,
+                },
+              ],
+            },
+            {
+              path: 'edit',
+              label: 'FAQ 수정',
+              hidden: true,
+              hasBack: true,
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
+                  path: ':faqNo',
+                  element: <AdminBoardsFaqEditPage />,
+                },
+              ],
+            },
+          ],
         },
       ],
     },
