@@ -328,8 +328,6 @@ const AdminCustomerCompanyDetailPage = () => {
 
   const { companyNo } = useParams()
 
-  // const { showSnackbar } = useAdminSnackbar()
-
   const { data } = useQuery({
     queryKey: ['customerCompanyDetail', companyNo],
     queryFn: async () => await companiesService.getCompanyDetail(Number(companyNo)),
@@ -365,6 +363,16 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
+  const { data: companyLatestUpdatedData } = useQuery({
+    queryKey: ['latestUpdateData', companyNo],
+    queryFn: async () => await companiesService.getCompanyLatestUpdated(Number(companyNo)),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!companyNo,
+  })
+
   const toogle = () => {
     setOpenConfirmActive(true)
   }
@@ -383,11 +391,11 @@ const AdminCustomerCompanyDetailPage = () => {
         fields={[
           {
             label: '등록일',
-            value: String(data?.auditInfo.createDt),
+            value: dayjs(String(data?.auditInfo.createDt)).format('YYYY-MM-DD'),
           },
           {
             label: '수정일',
-            value: String(data?.auditInfo.modifyDt),
+            value: dayjs(String(companyLatestUpdatedData?.modifyDt)).format('YYYY-MM-DD'),
           },
           {
             label: '등록자',
@@ -395,7 +403,7 @@ const AdminCustomerCompanyDetailPage = () => {
           },
           {
             label: '수정자',
-            value: String(data?.auditInfo.modifyUserId),
+            value: String(companyLatestUpdatedData?.modifyUserNm),
           },
           {
             label: '사용기간',
