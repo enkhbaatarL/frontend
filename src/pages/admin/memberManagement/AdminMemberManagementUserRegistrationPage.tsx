@@ -93,6 +93,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
       page: 1,
       size: 5,
     },
+    { initialFetch: false },
   )
 
   const { data: filterOptions } = useQuery({

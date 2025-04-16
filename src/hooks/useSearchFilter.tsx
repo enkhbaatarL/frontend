@@ -1,10 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { t } from 'i18next'
 import { isEmpty, isEqual, omit } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigationType } from 'react-router-dom'
-
-import { usePageState } from '@/store/usePageState'
+import { useLocation, useNavigationType, useNavigate } from 'react-router-dom'
 
 const removeEmptyValues = <T extends Record<string, unknown>>(obj: T) =>
   Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, value === '' ? undefined : value])) as T
@@ -18,6 +16,10 @@ const diffCheck = <T,>(a: T, b: T) => {
   return isEqual(removeEmptyValues(restA), removeEmptyValues(restB))
 }
 
+const defaultOptions = {
+  initialFetch: true,
+}
+
 const useSearchFilter = <Req, Res>(
   fetchFn: (params: Partial<Req>) => Promise<Res>,
   initialValue: Partial<Req> = {},
@@ -25,12 +27,15 @@ const useSearchFilter = <Req, Res>(
     page?: number
     size?: number
   },
+  options?: {
+    initialFetch?: boolean
+  },
 ) => {
+  const queryClient = useQueryClient()
+  const mergedOptions = { ...defaultOptions, ...(options ?? {}) }
   const navigationType = useNavigationType()
   const location = useLocation()
-  const { setPageState, getPageState } = usePageState()
-
-  const currentPath = location.pathname
+  const navigate = useNavigate()
 
   const [filter, setFilter] = useState<Partial<Req>>(initialValue)
   const [pagination, setPagination] = useState(
@@ -72,14 +77,15 @@ const useSearchFilter = <Req, Res>(
     (page?: number, size?: number) => {
       setPagination({ page: page ?? 1, size: size ?? 20 })
       if (!isPureState) {
-        setRequestParams((prev) => ({
-          ...prev,
-          page,
-          size,
-        }))
+        const searchParams = new URLSearchParams()
+
+        searchParams.set('page', String(page))
+        searchParams.set('size', String(size))
+
+        navigate(`${location.pathname}?${searchParams.toString()}`)
       }
     },
-    [isPureState],
+    [isPureState, location.pathname, navigate],
   )
 
   const updateSize = useCallback(
@@ -100,13 +106,47 @@ const useSearchFilter = <Req, Res>(
     setFilter(initialValue)
   }, [initialValue])
 
+  useEffect(() => {
+    if (!isPureState || navigationType === 'POP') {
+      setIsPureState(false)
+
+      const searchParams = new URLSearchParams(location.search)
+
+      const params: Partial<Req> = {}
+
+      searchParams.forEach((value, key) => {
+        try {
+          params[key as keyof Req] = value.startsWith('{') ? JSON.parse(value) : value
+        } catch {
+          params[key as keyof Req] = value as Req[keyof Req]
+        }
+      })
+
+      setRequestParams(params)
+
+      const { size, page, ...rest } = params as Partial<Req> & { size?: number; page?: number }
+      setFilter((prev) => ({ ...prev, ...rest }))
+      setPagination((prev) => ({ size: size ?? prev?.size ?? 20, page: page ?? prev?.page ?? 1 }))
+    }
+  }, [location.search, isPureState, navigationType])
+
   const search = useCallback(() => {
-    setRequestParams({
-      ...removeEmptyValues(filter),
-      ...(pagination ? { page: 1, size: pagination.size } : {}),
+    const searchParams = new URLSearchParams()
+
+    Object.entries(filter).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.set(key, typeof value === 'object' ? JSON.stringify(value) : String(value as unknown))
+      }
     })
+
+    if (pagination) {
+      searchParams.set('page', '1')
+      searchParams.set('size', String(pagination.size))
+    }
+
+    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: isPureState })
     setIsPureState(false)
-  }, [filter, pagination])
+  }, [filter, pagination, navigate, location.pathname, isPureState])
 
   const { data, refetch } = useQuery({
     queryKey: [fetchFn.name ?? 'searchFilter', JSON.stringify(requestParams)],
@@ -127,26 +167,32 @@ const useSearchFilter = <Req, Res>(
   const isSearchedState = useMemo(() => diffCheck(filter, requestParams), [filter, requestParams])
 
   useEffect(() => {
-    if (navigationType === 'POP') {
-      const savedState = getPageState(currentPath)
-      if (savedState) {
-        setFilter(savedState.filter ?? initialValue)
-        setPagination((savedState.pagination as { page: number; size: number }) ?? initialPagination ?? { page: 1, size: 20 })
+    if (mergedOptions.initialFetch) {
+      setIsPureState(false)
 
-        setRequestParams({
-          ...(savedState.requestParams ?? {}),
-          ...(savedState.pagination ?? {}),
-        })
-        setIsPureState(false)
+      const searchParams = new URLSearchParams(location.search)
+      const isInitPage = searchParams.size === 0
+
+      if (isInitPage) {
+        if (pagination) {
+          searchParams.set('page', String(pagination.page))
+          searchParams.set('size', String(pagination.size))
+        }
+        navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true })
       }
     }
-  }, [])
+  }, [location.pathname, location.search, navigate, mergedOptions.initialFetch, pagination])
 
   useEffect(
     () => () => {
-      setPageState(currentPath, { filter, requestParams, pagination })
+      queryClient.removeQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey[0]
+          return queryKey === (fetchFn.name ?? 'searchFilter')
+        },
+      })
     },
-    [filter, requestParams, pagination, setPageState, currentPath],
+    [queryClient, fetchFn.name],
   )
 
   return {

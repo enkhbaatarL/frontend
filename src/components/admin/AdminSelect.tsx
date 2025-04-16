@@ -70,7 +70,10 @@ const AdminSelect = ({
           )
         }
 
-        return options?.find(({ value }) => value === selected)?.label ?? (selected as ReactNode)
+        return (
+          options?.find(({ value }) => value === (typeof value === 'number' ? Number(selected) : selected))?.label ??
+          (selected as ReactNode)
+        )
       }}
       MenuProps={{
         MenuListProps: {

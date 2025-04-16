@@ -71,6 +71,7 @@ const AdminMemberManagementUsersPage = () => {
       page: 1,
       size: 20,
     },
+    { initialFetch: false },
   )
 
   const { data: filterOptions } = useQuery({

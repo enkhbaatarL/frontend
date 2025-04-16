@@ -16,11 +16,11 @@ const AdminHeader = () => {
     if (pathSegments.length > 2) {
       const parentPath = `/${pathSegments.slice(0, pathSegments.length - 1).join('/')}`
       navigate(parentPath)
-      // window.dispatchEvent(
-      //   new PopStateEvent('popstate', {
-      //     state: { fake: true },
-      //   }),
-      // )
+      window.dispatchEvent(
+        new PopStateEvent('popstate', {
+          state: { fake: true },
+        }),
+      )
     } else {
       navigate(-1)
     }
