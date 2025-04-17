@@ -2,13 +2,14 @@ import { Box, FormControlLabel, Radio, RadioGroup, Switch, Typography } from '@m
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useEffect, useState } from 'react'
+import { t } from 'i18next'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
-import AdminTable, { AdminTableAction, AdminTableCell, AdminTableHeader } from '@/components/admin/AdminTable'
+import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import DetailItem from '@/components/common/detail-item'
 import SearchIcon from '@/components/common/icons/SearchIcon'
@@ -16,15 +17,6 @@ import SettingIcon from '@/components/common/icons/SettingIcon'
 import MIInput from '@/components/common/input/MIInput'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import companiesService from '@/service/admin/companies'
-
-interface Product {
-  id: number
-  productName: string
-  productDesc: string
-  dataCount: string
-  usageStatus: 'active' | 'inactive'
-  rightsType: string
-}
 
 const AdminCustomerCompanyProviderDetailPageHeader = (props: { onChange: (value: boolean) => void; label: string; value: boolean }) => {
   const toogle = (value: boolean) => {
@@ -45,13 +37,10 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const [isActive, _setIsActive] = useState(true)
   const [openConfirmActive, setOpenConfirmActive] = useState(false)
   const [openProductRegistrationConfirm, setOpenProductRegistrationConfirm] = useState(false)
-  const [selectedCompany, setSelectedCompany] = useState({
-    value: 'company1',
-    label: 'LSEG',
-  })
+  const [selectedCompany, setSelectedCompany] = useState({ value: '', label: '' })
   const { companyNo, providerNo } = useParams()
 
-  const { data } = useQuery({
+  const { data: providerDetailData } = useQuery({
     queryKey: ['providerDetail', companyNo, providerNo],
     queryFn: async () => await companiesService.getCompanyProviderDetail(Number(companyNo), Number(providerNo)),
     refetchOnWindowFocus: 'always',
@@ -71,67 +60,60 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     enabled: !!companyNo || !!providerNo,
   })
 
-  const products: Product[] = [
-    {
-      id: 1,
-      productName: '제조사별 DRAM 생산량',
-      productDesc: '제조사별 DRAM 생산량 설명 정보',
-      dataCount: '000',
-      usageStatus: 'active',
-      rightsType: '회사 권한',
-    },
-    {
-      id: 2,
-      productName: '제조사별 DRAM 생산량',
-      productDesc: '제조사별 DRAM 생산량 설명 정보',
-      dataCount: '000',
-      usageStatus: 'active',
-      rightsType: '개별 권한',
-    },
-    {
-      id: 3,
-      productName: '제조사별 DRAM 생산량',
-      productDesc: '제조사별 DRAM 생산량 설명 정보',
-      dataCount: '000',
-      usageStatus: 'inactive',
-      rightsType: '회사 권한',
-    },
-    {
-      id: 4,
-      productName: '제조사별 DRAM 생산량',
-      productDesc: '제조사별 DRAM 생산량 설명 정보',
-      dataCount: '000',
-      usageStatus: 'active',
-      rightsType: '개별 권한',
-    },
-    {
-      id: 5,
-      productName: '제조사별 DRAM 생산량',
-      productDesc: '제조사별 DRAM 생산량 설명 정보',
-      dataCount: '000',
-      usageStatus: 'active',
-      rightsType: '개별 권한',
-    },
-  ]
+  const { data: providerData } = useQuery({
+    queryKey: ['provider', companyNo],
+    queryFn: async () => await companiesService.getCompanyProviders(Number(companyNo)),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!companyNo,
+  })
+
+  const { data: providerGoodsData } = useQuery({
+    queryKey: ['provider', companyNo, providerNo],
+    queryFn: async () =>
+      await companiesService.getProviderGoods(Number(companyNo), Number(providerNo), {
+        search: '',
+        page: 1,
+        size: 20,
+      }),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!companyNo || !!providerNo,
+  })
+
+  const options = useMemo(
+    () =>
+      Array.isArray(providerData)
+        ? providerData.map((provider) => ({
+          value: provider.providerNm,
+          label: provider.providerNm,
+        }))
+        : [],
+    [providerData],
+  )
 
   const columns: GridColDef[] = [
     {
-      field: 'productName',
-      renderHeader: () => <AdminTableHeader>상품명</AdminTableHeader>,
+      field: 'goodsNm',
+      headerName: t('상품명'),
       flex: 1,
       sortable: false,
       renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
     },
     {
-      field: 'productDesc',
-      renderHeader: () => <AdminTableHeader>상품 설명</AdminTableHeader>,
+      field: 'goodsExpn',
+      headerName: t('상품 설명'),
       flex: 1,
       sortable: false,
       renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
     },
     {
-      field: 'dataCount',
-      renderHeader: () => <AdminTableHeader>데이터 개수</AdminTableHeader>,
+      field: 'numberOfData',
+      headerName: t('데이터 개수'),
       minWidth: 120,
       sortable: false,
       align: 'center',
@@ -139,8 +121,8 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
     },
     {
-      field: 'usageStatus',
-      renderHeader: () => <AdminTableHeader>사용 여부</AdminTableHeader>,
+      field: 'isUsed',
+      headerName: t('사용 여부'),
       minWidth: 120,
       sortable: false,
       align: 'center',
@@ -157,13 +139,13 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       ),
     },
     {
-      field: 'rightsType',
-      renderHeader: () => <AdminTableHeader>권한</AdminTableHeader>,
+      field: 'goodsAuthManagementSeparateNm',
+      headerName: t('권한'),
       minWidth: 120,
       sortable: false,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
+      renderCell: (params) => <AdminTableCell>{params.value === '개인' ? '개별 권한' : '회사 권한'}</AdminTableCell>,
     },
     {
       field: 'actions',
@@ -195,63 +177,76 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   }
 
   useEffect(() => {
-    setCustomComponent(
-      <AdminCustomerCompanyProviderDetailPageHeader value={isActive} onChange={toogle} label={isActive ? '사용' : '미사용'} />,
-    )
-    setSubHeader(
-      <DetailItem
-        title={
-          <Box>
-            <Box display={'flex'} alignItems={'center'}>
-              <Typography variant="body1" color="gray.70">
-                {data?.companyNm}
-              </Typography>
-              <Box width={'1px'} height={'14px'} bgcolor="common.black" mx="10px" />
-              <Typography variant="contentTitle" color="gray.90" mr={'4px'}>
-                {selectedCompany.label}
-              </Typography>
-              <AdminCompanySelectorIconButton
-                value={selectedCompany}
-                onChange={({ value, label }) => setSelectedCompany({ value: value as string, label })}
-              />
-            </Box>
-          </Box>
-        }
-        subTitle={
-          <Typography variant="subtext" color="gray.60">
-            프로바이더 등록 시 관리자가 입력한 설명이 출력됩니다. 글자 수 제한은 100자입니다.
-          </Typography>
-        }
-        fields={[
-          {
-            label: '등록일',
-            value: dayjs(data?.auditInfo.createDt).format('YYYY-MM-DD'),
-          },
-          {
-            label: '수정일',
-            value: dayjs(providerLatestUpdatedData?.modifyDt).format('YYYY-MM-DD'),
-          },
-          {
-            label: '등록자',
-            value: String(data?.auditInfo.createUserNm),
-          },
-          {
-            label: '수정자',
-            value: String(providerLatestUpdatedData?.modifyUserNm),
-          },
-        ]}
-        tooltipMessage="기본 정보 수정"
-        onAction={() => {
-          //   setOpenInformationDialog(true)
-        }}
-      />,
-    )
-
-    return () => {
-      setCustomComponent(null)
-      setSubHeader(null)
+    if (providerDetailData?.providerNm) {
+      setSelectedCompany({ value: providerDetailData.providerNm, label: providerDetailData.providerNm })
     }
-  }, [setCustomComponent, setSubHeader, isActive, selectedCompany, data, providerLatestUpdatedData])
+  }, [providerDetailData])
+
+  useEffect(() => {
+    if (providerDetailData && providerLatestUpdatedData) {
+      setCustomComponent(
+        <AdminCustomerCompanyProviderDetailPageHeader
+          value={providerDetailData?.isUsed}
+          onChange={toogle}
+          label={providerDetailData?.isUsed ? '사용' : '미사용'}
+        />,
+      )
+
+      setSubHeader(
+        <DetailItem
+          title={
+            <Box>
+              <Box display={'flex'} alignItems={'center'}>
+                <Typography variant="body1" color="gray.70">
+                  {providerDetailData?.companyNm}
+                </Typography>
+                <Box width={'1px'} height={'14px'} bgcolor="common.black" mx="10px" />
+                <Typography variant="contentTitle" color="gray.90" mr={'4px'}>
+                  {providerDetailData?.providerNm}
+                </Typography>
+                <AdminCompanySelectorIconButton
+                  value={selectedCompany}
+                  // onChange={({ value, label }) => setSelectedCompany({ value: value, label: label })}
+                  onChange={(v) => {
+                    console.log('???????? => ', v)
+                    setSelectedCompany(v)
+                  }}
+                  options={options}
+                />
+              </Box>
+            </Box>
+          }
+          subTitle={
+            <Typography variant="subtext" color="gray.60">
+              프로바이더 등록 시 관리자가 입력한 설명이 출력됩니다. 글자 수 제한은 100자입니다.
+            </Typography>
+          }
+          fields={[
+            {
+              label: '등록일',
+              value: dayjs(providerDetailData?.auditInfo.createDt).format('YYYY-MM-DD'),
+            },
+            {
+              label: '수정일',
+              value: dayjs(providerLatestUpdatedData?.modifyDt).format('YYYY-MM-DD'),
+            },
+            {
+              label: '등록자',
+              value: String(providerDetailData?.auditInfo.createUserNm),
+            },
+            {
+              label: '수정자',
+              value: String(providerLatestUpdatedData?.modifyUserNm),
+            },
+          ]}
+          tooltipMessage="기본 정보 수정"
+          onAction={() => {
+            //   setOpenInformationDialog(true)
+          }}
+        />,
+      )
+    }
+  }, [providerDetailData, providerLatestUpdatedData, options])
 
   const handleOnRowClick = () => {
     // navigate(getPath('customer-company-product-detail'))
@@ -281,7 +276,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
             </AdminButton>
           </Box>
         </Box>
-        <AdminTable getRowId={(row) => row.id} columns={columns} rows={products ?? []} onRowClick={handleOnRowClick} />
+        <AdminTable getRowId={(row) => row.goodsNo} columns={columns} data={providerGoodsData} onRowClick={handleOnRowClick} />
       </Box>
       <AdminConfirm
         open={openConfirmActive}

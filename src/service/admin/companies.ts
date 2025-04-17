@@ -75,6 +75,7 @@ export interface ICompanyProviderDetailInfo {
   providerNm: string
   companyNo: number
   companyNm: string
+  isUsed: boolean
   auditInfo: IAuditInfo
 }
 
@@ -82,6 +83,21 @@ export interface ICompanyLatestUpdatedInfo {
   modifyUserId: string
   modifyUserNm: string
   modifyDt: string
+}
+
+export interface IProviderGoodsInfo {
+  goodsNo: number
+  goodsNm: string
+  goodsExpn: string
+  numberOfData: number
+  isUsed: boolean
+  goodsAuthManagementSeparateCd: string
+  goodsAuthManagementSeparateNm: string
+  auditInfo: IAuditInfo
+}
+
+export interface IProviderGoodsRequest extends IPaginationRequest {
+  search?: string
 }
 
 /**
@@ -180,6 +196,24 @@ const companiesService = {
   async getProviderLatestUpdated(companyNo?: number, providerNo?: number): Promise<ICompanyLatestUpdatedInfo> {
     const response: AxiosResponse<ICommonResponse<ICompanyLatestUpdatedInfo>> = await api.get(
       `admin/company-management/companies/${companyNo}/providers/${providerNo}/latest-updated`,
+    )
+
+    return response.data.data
+  },
+  /**
+   * 고객사와 매핑되어있는 프로바이더의 상품 내역 중에 고객사가 등록한 상품 목록을 조회합니다.
+   * 'goodsNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.
+   * @param companyNo - 고객회사 번호
+   * @param providerNo - 프로바이더 번호
+   */
+  async getProviderGoods(
+    companyNo?: number,
+    providerNo?: number,
+    params?: Partial<IProviderGoodsRequest>,
+  ): Promise<IPaginationResponse<IProviderGoodsInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IProviderGoodsInfo>>> = await api.get(
+      `admin/company-management/companies/${companyNo}/providers/${providerNo}/goods`,
+      { params },
     )
 
     return response.data.data
