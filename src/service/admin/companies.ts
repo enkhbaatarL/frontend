@@ -100,6 +100,10 @@ export interface IProviderGoodsRequest extends IPaginationRequest {
   search?: string
 }
 
+export interface IChangeUsageRequest {
+  isUsed: boolean
+}
+
 /**
  * 고객사 서비스
  */
@@ -214,6 +218,22 @@ const companiesService = {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IProviderGoodsInfo>>> = await api.get(
       `admin/company-management/companies/${companyNo}/providers/${providerNo}/goods`,
       { params },
+    )
+
+    return response.data.data
+  },
+  /**
+   * 고객사와 프로바이더 매핑을 수정합니다.
+   * @param companyNo - 고객회사 번호
+   * @param providerNo - 프로바이더 번호
+   * @param body - { isUsed: 사용여부 }
+   */
+  async changeUsage(companyNo: number, providerNo: number, body: IChangeUsageRequest): Promise<ICompanyProviderDetailInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyProviderDetailInfo>> = await api.patch(
+      `admin/company-management/companies/${companyNo}/providers/${providerNo}`,
+      {
+        ...body,
+      },
     )
 
     return response.data.data

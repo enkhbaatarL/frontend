@@ -16,10 +16,15 @@ import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import MIInput from '@/components/common/input/MIInput'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useSnackbar from '@/hooks/useSnackbar'
 import companiesService from '@/service/admin/companies'
 
-const AdminCustomerCompanyProviderDetailPageHeader = (props: { onChange: (value: boolean) => void; label: string; value: boolean }) => {
-  const toogle = (value: boolean) => {
+const AdminCustomerCompanyProviderDetailPageHeader = (props: {
+  onChange: (value: boolean | undefined) => void
+  label: string
+  value: boolean
+}) => {
+  const toogle = (value: boolean | undefined) => {
     props.onChange(value)
   }
 
@@ -34,12 +39,12 @@ const AdminCustomerCompanyProviderDetailPageHeader = (props: { onChange: (value:
 const AdminCustomerCompanyDataProviderDetailPage = () => {
   const navigate = useNavigate()
   const { setCustomComponent, setSubHeader } = useAdminHeader()
-  const [isActive, _setIsActive] = useState(true)
   const [openConfirmActive, setOpenConfirmActive] = useState(false)
   const [openProductRegistrationConfirm, setOpenProductRegistrationConfirm] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState({ value: '', label: '' })
   const { companyNo, providerNo } = useParams()
   const [selectedProviderNo, setSelectedProviderNo] = useState<string | undefined>(providerNo)
+  const { showSnackbar } = useSnackbar()
 
   const { data: providerDetailData } = useQuery({
     queryKey: ['providerDetail', companyNo, selectedProviderNo],
@@ -50,6 +55,8 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     staleTime: 0,
     enabled: !!companyNo || !!selectedProviderNo,
   })
+
+  const [isActive, setIsActive] = useState<boolean>(providerDetailData?.isUsed ?? true)
 
   const { data: providerLatestUpdatedData } = useQuery({
     queryKey: ['latestUpdateData', companyNo, selectedProviderNo],
@@ -72,7 +79,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   })
 
   const { data: providerGoodsData } = useQuery({
-    queryKey: ['providerGoodsData', companyNo, selectedProviderNo],
+    queryKey: ['providerGoodsData', companyNo, selectedProviderNo, isActive],
     queryFn: async () =>
       await companiesService.getProviderGoods(Number(companyNo), Number(selectedProviderNo), {
         search: '',
@@ -132,10 +139,10 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
         <AdminTableCell
           type="chip"
           chip={{
-            color: params.value === 'active' ? 'green' : 'white',
+            color: params.value ? 'green' : 'white',
           }}
         >
-          {params.value === 'active' ? '사용 중' : '미사용'}
+          {params.value ? '사용 중' : '미사용'}
         </AdminTableCell>
       ),
     },
@@ -173,13 +180,10 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     },
   ]
 
-  const toogle = () => {
-    setOpenConfirmActive(true)
-  }
-
   useEffect(() => {
-    if (providerDetailData?.providerNm) {
-      setSelectedCompany({ value: providerDetailData.providerNm, label: providerDetailData.providerNm })
+    if (providerDetailData) {
+      setSelectedCompany({ value: String(providerDetailData.providerNo), label: providerDetailData.providerNm })
+      setIsActive(providerDetailData.isUsed)
     }
   }, [providerDetailData])
 
@@ -187,9 +191,9 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     if (providerDetailData && providerLatestUpdatedData) {
       setCustomComponent(
         <AdminCustomerCompanyProviderDetailPageHeader
-          value={providerDetailData?.isUsed}
-          onChange={toogle}
-          label={providerDetailData?.isUsed ? '사용' : '미사용'}
+          value={isActive}
+          onChange={() => setOpenConfirmActive(true)}
+          label={isActive ? '사용' : '미사용'}
         />,
       )
 
@@ -251,7 +255,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [providerDetailData, providerLatestUpdatedData, options, selectedCompany])
+  }, [providerDetailData, providerLatestUpdatedData, options, selectedCompany, isActive])
 
   const handleOnRowClick = () => {
     // navigate(getPath('customer-company-product-detail'))
@@ -259,6 +263,21 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
 
   const registerProduct = () => {
     setOpenProductRegistrationConfirm(true)
+  }
+
+  // 사용/미사용 변경
+  const handleChangeUsage = async () => {
+    try {
+      const request = {
+        isUsed: isActive ? false : true,
+      }
+      const response = await companiesService.changeUsage(Number(companyNo), Number(selectedProviderNo), request)
+      setIsActive(response.isUsed)
+      setOpenConfirmActive(false)
+      showSnackbar(t(response.isUsed ? '사용' : '미사용') + t('으로 변경되었습니다.'), { variant: 'success' })
+    } catch (error) {
+      console.error('error', error)
+    }
   }
 
   return (
@@ -290,26 +309,24 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
         handleClose={() => {
           setOpenConfirmActive(false)
         }}
-        // actions={[
-        //   {
-        //     label: <Typography variant="body2SB14">취소</Typography>,
-        //     variant: 'outlined',
-        //     color: 'secondary',
-        //     onClick: () => {
-        //       setOpenConfirmActive(false)
-        //     },
-        //   },
-        //   {
-        //     label: <Typography variant="body2SB14">변경</Typography>,
-        //     variant: 'contained',
-        //     color: 'primary',
-        //     onClick: () => {
-        //       setOpenConfirmActive(false)
-        //       showSnackbar(isActive ? '미사용으로 변경되었습니다.' : '사용으로 변경되었습니다.', { variant: 'success' })
-        //       setIsActive((value) => !value)
-        //     },
-        //   },
-        // ]}
+        actions={[
+          {
+            label: '취소',
+            variant: 'outlined',
+            color: 'secondary',
+            onClick: () => {
+              setOpenConfirmActive(false)
+            },
+          },
+          {
+            label: '변경',
+            variant: 'contained',
+            color: 'primary',
+            onClick: () => {
+              handleChangeUsage()
+            },
+          },
+        ]}
       >
         {isActive ? '변경 시 해당 프로바이더와 연계된 상품도 비활성화됩니다.' : '변경 시 해당 프로바이더와 연계된 상품도 활성화됩니다.'}
       </AdminConfirm>
