@@ -45,7 +45,6 @@ const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean
 const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTableProps) => {
   const navigate = useNavigate()
   const { companyNo } = useParams()
-  // Define columns
   const columns: GridColDef[] = [
     {
       field: 'providerNm',
@@ -321,7 +320,6 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
 
 const AdminCustomerCompanyDetailPage = () => {
   const { setCustomComponent, setSubHeader } = useAdminHeader()
-  const [isActive, setIsActive] = useState(true)
   const [openConfirmActive, setOpenConfirmActive] = useState(false)
   const [openInformationDialog, setOpenInformationDialog] = useState(false)
   const [openConfirmSaving, setOpenConfirmSaving] = useState(false)
@@ -425,7 +423,7 @@ const AdminCustomerCompanyDetailPage = () => {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [setCustomComponent, setSubHeader, isActive, data])
+  }, [setCustomComponent, setSubHeader, data])
 
   return (
     <>
@@ -433,7 +431,7 @@ const AdminCustomerCompanyDetailPage = () => {
       {userData && <AdminCustomerMemberTable data={userData} />}
       <AdminConfirm
         open={openConfirmActive}
-        title={<>{isActive ? '비활성으로 변경하시겠습니까?' : '활성으로 변경하시겠습니까?'}</>}
+        title={<>{data?.isActivated ? '비활성으로 변경하시겠습니까?' : '활성으로 변경하시겠습니까?'}</>}
         width={450}
         handleClose={() => {
           setOpenConfirmActive(false)
@@ -453,7 +451,6 @@ const AdminCustomerCompanyDetailPage = () => {
             color: 'primary',
             onClick: () => {
               setOpenConfirmActive(false)
-              setIsActive((value) => !value)
               // showSnackbar(isActive ? '비활성으로 변경되었습니다.' : '활성으로 변경되었습니다.', { variant: 'success' }) // Please use 1 of the snack bar in real case
             },
           },
@@ -514,17 +511,17 @@ const AdminCustomerCompanyDetailPage = () => {
           <Typography component={'p'} variant="subtext" color="gray.60" mb="6px">
             고객사로 등록할 회사를 선택하세요.
           </Typography>
-          <AdminTextField value={'SK 하이닉스'} aria-readonly fullWidth />
+          <AdminTextField value={data?.companyNm} aria-readonly fullWidth />
         </Box>
         <Box>
           <Typography component={'p'} variant="body3" color="gray.70">
-            고객사명{' '}
+            사용 기간{' '}
             <Typography component={'span'} color="point.red1">
               *
             </Typography>
           </Typography>
           <Typography component={'p'} variant="subtext" color="gray.60" mb="6px">
-            고객사로 등록할 회사를 선택하세요.
+            고객사의 MI platform 사용 기간을 입력하세요.
           </Typography>
           <Box display="flex" alignItems={'center'} columnGap={'8px'}>
             <AdminDatePicker />

@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import ArrowDown from '@/components/common/icons/ArrowDown'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
@@ -13,10 +13,6 @@ export interface AdminCompanySelectorIconButtonProps {
 
 const AdminCompanySelectorIconButton = (props: Readonly<AdminCompanySelectorIconButtonProps>) => {
   const [isOpen, setIsOpen] = useState(false)
-
-  useEffect(() => {
-    console.log('Props ==> ', props)
-  }, [props])
 
   return (
     <MIMenuSelector

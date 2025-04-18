@@ -39,25 +39,26 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const [openProductRegistrationConfirm, setOpenProductRegistrationConfirm] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState({ value: '', label: '' })
   const { companyNo, providerNo } = useParams()
+  const [selectedProviderNo, setSelectedProviderNo] = useState<string | undefined>(providerNo)
 
   const { data: providerDetailData } = useQuery({
-    queryKey: ['providerDetail', companyNo, providerNo],
-    queryFn: async () => await companiesService.getCompanyProviderDetail(Number(companyNo), Number(providerNo)),
+    queryKey: ['providerDetail', companyNo, selectedProviderNo],
+    queryFn: async () => await companiesService.getCompanyProviderDetail(Number(companyNo), Number(selectedProviderNo)),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,
     staleTime: 0,
-    enabled: !!companyNo || !!providerNo,
+    enabled: !!companyNo || !!selectedProviderNo,
   })
 
   const { data: providerLatestUpdatedData } = useQuery({
-    queryKey: ['latestUpdateData', companyNo, providerNo],
-    queryFn: async () => await companiesService.getProviderLatestUpdated(Number(companyNo), Number(providerNo)),
+    queryKey: ['latestUpdateData', companyNo, selectedProviderNo],
+    queryFn: async () => await companiesService.getProviderLatestUpdated(Number(companyNo), Number(selectedProviderNo)),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,
     staleTime: 0,
-    enabled: !!companyNo || !!providerNo,
+    enabled: !!companyNo || !!selectedProviderNo,
   })
 
   const { data: providerData } = useQuery({
@@ -71,9 +72,9 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   })
 
   const { data: providerGoodsData } = useQuery({
-    queryKey: ['provider', companyNo, providerNo],
+    queryKey: ['providerGoodsData', companyNo, selectedProviderNo],
     queryFn: async () =>
-      await companiesService.getProviderGoods(Number(companyNo), Number(providerNo), {
+      await companiesService.getProviderGoods(Number(companyNo), Number(selectedProviderNo), {
         search: '',
         page: 1,
         size: 20,
@@ -82,14 +83,14 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     refetchOnMount: 'always',
     gcTime: 0,
     staleTime: 0,
-    enabled: !!companyNo || !!providerNo,
+    enabled: !!companyNo || !!selectedProviderNo,
   })
 
   const options = useMemo(
     () =>
       Array.isArray(providerData)
         ? providerData.map((provider) => ({
-          value: provider.providerNm,
+          value: provider.providerNo,
           label: provider.providerNm,
         }))
         : [],
@@ -202,14 +203,13 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
                 </Typography>
                 <Box width={'1px'} height={'14px'} bgcolor="common.black" mx="10px" />
                 <Typography variant="contentTitle" color="gray.90" mr={'4px'}>
-                  {providerDetailData?.providerNm}
+                  {selectedCompany ? selectedCompany.label : providerDetailData.providerNm}
                 </Typography>
                 <AdminCompanySelectorIconButton
                   value={selectedCompany}
-                  // onChange={({ value, label }) => setSelectedCompany({ value: value, label: label })}
                   onChange={(v) => {
-                    console.log('???????? => ', v)
                     setSelectedCompany(v)
+                    setSelectedProviderNo(v.value)
                   }}
                   options={options}
                 />
@@ -246,7 +246,12 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
         />,
       )
     }
-  }, [providerDetailData, providerLatestUpdatedData, options])
+
+    return () => {
+      setCustomComponent(null)
+      setSubHeader(null)
+    }
+  }, [providerDetailData, providerLatestUpdatedData, options, selectedCompany])
 
   const handleOnRowClick = () => {
     // navigate(getPath('customer-company-product-detail'))
