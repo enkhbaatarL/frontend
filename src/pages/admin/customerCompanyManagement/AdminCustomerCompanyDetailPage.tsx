@@ -2,8 +2,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import ErrorIcon from '@mui/icons-material/Error'
 import { Box, FormControlLabel, InputAdornment, MenuItem, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
-import { useQuery } from '@tanstack/react-query'
-import dayjs from 'dayjs'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import dayjs, { Dayjs } from 'dayjs'
 import { t } from 'i18next'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -326,7 +326,10 @@ const AdminCustomerCompanyDetailPage = () => {
   const [openConfirmSaving, setOpenConfirmSaving] = useState(false)
   const [isErrorCompanyName, setIsErrorCompanyName] = useState(false)
   const [inputCompanyName, setInputCompanyName] = useState<string>('')
+  const [inputUsageBeginDate, setInputUsageBeginDate] = useState<Dayjs | null>(null)
+  const [inputUsageEndDate, setInputUsageEndDate] = useState<Dayjs | null>(null)
   const { showSnackbar } = useSnackbar()
+  const queryClient = useQueryClient()
 
   const { companyNo } = useParams()
 
@@ -393,6 +396,22 @@ const AdminCustomerCompanyDetailPage = () => {
       setOpenConfirmActive(false)
       showSnackbar(t(response?.isActivated ? '활성' : '비활성') + t('으로 변경되었습니다.'), { variant: 'success' })
       setIsErrorCompanyName(true)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  // 고객사 기본정보 수정
+  const handleSave = async () => {
+    try {
+      const response = await companiesService.updateCustomerCompany(Number(companyNo), {
+        isActivated: isActive ? true : false,
+        usageBeginDate: inputUsageBeginDate?.format('YYYYMMDD') ?? '',
+        usageEndDate: inputUsageEndDate?.format('YYYYMMDD') ?? '',
+      })
+      queryClient.setQueryData(['customerCompanyDetail', companyNo], response)
+      setOpenConfirmSaving(false)
+      showSnackbar('저장되었습니다.', { variant: 'success' })
     } catch (error) {
       console.error(error)
     }
@@ -529,13 +548,8 @@ const AdminCustomerCompanyDetailPage = () => {
         <Box mb={5}>
           <Typography component={'p'} variant="body3" color="gray.70">
             고객사명{' '}
-            <Typography component={'span'} color="point.red1">
-              *
-            </Typography>
           </Typography>
-          <Typography component={'p'} variant="subtext" color="gray.60" mb="6px">
-            고객사로 등록할 회사를 선택하세요.
-          </Typography>
+          <Typography component={'p'} variant="subtext" color="gray.60" mb="6px"></Typography>
           <AdminTextField value={data?.companyNm} aria-readonly fullWidth />
         </Box>
         <Box>
@@ -549,11 +563,23 @@ const AdminCustomerCompanyDetailPage = () => {
             고객사의 MI platform 사용 기간을 입력하세요.
           </Typography>
           <Box display="flex" alignItems={'center'} columnGap={'8px'}>
-            <AdminDatePicker />
+            <AdminDatePicker
+              defaultValue={data?.usageBeginDate ? dayjs(data?.usageBeginDate) : null}
+              value={inputUsageBeginDate}
+              onChange={(value) => {
+                setInputUsageBeginDate(value)
+              }}
+            />
             <Typography variant="breadcrumbs" color="gray.50">
               ~
             </Typography>
-            <AdminDatePicker />
+            <AdminDatePicker
+              defaultValue={data?.usageEndDate ? dayjs(data?.usageEndDate) : null}
+              value={inputUsageEndDate}
+              onChange={(value) => {
+                setInputUsageEndDate(value)
+              }}
+            />
           </Box>
         </Box>
       </AdminConfirm>
@@ -575,12 +601,11 @@ const AdminCustomerCompanyDetailPage = () => {
             },
           },
           {
-            label: '변경',
+            label: '저장',
             variant: 'contained',
             color: 'primary',
             onClick: () => {
-              // showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' }) // Please use 1 of the snack bar in real case
-              // showSnackbar('비활성으로 변경되었습니다.', { variant: 'success' }) // Please use 1 of the snack bar in real case
+              handleSave()
             },
           },
         ]}
