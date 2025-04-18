@@ -18,6 +18,7 @@ import DetailItem from '@/components/common/detail-item'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useSnackbar from '@/hooks/useSnackbar'
 import companiesService, { ICompanyProviderInfo } from '@/service/admin/companies'
 import memebersService, { IUserInfo } from '@/service/admin/members'
 import { IPaginationResponse } from '@/types/api'
@@ -323,6 +324,9 @@ const AdminCustomerCompanyDetailPage = () => {
   const [openConfirmActive, setOpenConfirmActive] = useState(false)
   const [openInformationDialog, setOpenInformationDialog] = useState(false)
   const [openConfirmSaving, setOpenConfirmSaving] = useState(false)
+  const [isErrorCompanyName, setIsErrorCompanyName] = useState(false)
+  const [inputCompanyName, setInputCompanyName] = useState<string>('')
+  const { showSnackbar } = useSnackbar()
 
   const { companyNo } = useParams()
 
@@ -335,6 +339,8 @@ const AdminCustomerCompanyDetailPage = () => {
     staleTime: 0,
     enabled: !!companyNo,
   })
+
+  const [isActive, setIsActive] = useState<boolean>(data?.isActivated ?? true)
 
   const { data: dataProviderData } = useQuery({
     queryKey: ['dataProvider', companyNo],
@@ -375,14 +381,25 @@ const AdminCustomerCompanyDetailPage = () => {
     setOpenConfirmActive(true)
   }
 
+  // 활성/비활성 변경경
+  const handleChangeActive = async () => {
+    try {
+      const response = await companiesService.updateCustomerCompany(Number(companyNo), {
+        isActivated: isActive ? false : true,
+        usageBeginDate: data?.usageBeginDate ?? '',
+        usageEndDate: data?.usageEndDate ?? '',
+      })
+      setIsActive(response?.isActivated)
+      setOpenConfirmActive(false)
+      showSnackbar(t(response?.isActivated ? '활성' : '비활성') + t('으로 변경되었습니다.'), { variant: 'success' })
+      setIsErrorCompanyName(true)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   useEffect(() => {
-    setCustomComponent(
-      <AdminCustomerCompanyDetailPageHeader
-        value={data?.isActivated ?? false}
-        onChange={toogle}
-        label={data?.isActivated ? '활성' : '비활성'}
-      />,
-    )
+    setCustomComponent(<AdminCustomerCompanyDetailPageHeader value={isActive} onChange={toogle} label={isActive ? '활성' : '비활성'} />)
     setSubHeader(
       <DetailItem
         title={data?.companyNm}
@@ -423,7 +440,11 @@ const AdminCustomerCompanyDetailPage = () => {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [setCustomComponent, setSubHeader, data])
+  }, [setCustomComponent, setSubHeader, data, companyLatestUpdatedData, isActive])
+
+  useEffect(() => {
+    setIsErrorCompanyName(inputCompanyName.replace(/\s/g, '') !== data?.companyNm.replace(/\s/g, ''))
+  }, [inputCompanyName])
 
   return (
     <>
@@ -431,14 +452,14 @@ const AdminCustomerCompanyDetailPage = () => {
       {userData && <AdminCustomerMemberTable data={userData} />}
       <AdminConfirm
         open={openConfirmActive}
-        title={<>{data?.isActivated ? '비활성으로 변경하시겠습니까?' : '활성으로 변경하시겠습니까?'}</>}
+        title={<>{data?.isActivated ? t('비활성으로 변경하시겠습니까?') : t('활성으로 변경하시겠습니까?')}</>}
         width={450}
         handleClose={() => {
           setOpenConfirmActive(false)
         }}
         actions={[
           {
-            label: '취소',
+            label: t('취소'),
             variant: 'outlined',
             color: 'secondary',
             onClick: () => {
@@ -446,13 +467,13 @@ const AdminCustomerCompanyDetailPage = () => {
             },
           },
           {
-            label: '변경',
+            label: t('변경'),
             variant: 'contained',
             color: 'primary',
             onClick: () => {
-              setOpenConfirmActive(false)
-              // showSnackbar(isActive ? '비활성으로 변경되었습니다.' : '활성으로 변경되었습니다.', { variant: 'success' }) // Please use 1 of the snack bar in real case
+              handleChangeActive()
             },
+            disabled: isErrorCompanyName,
           },
         ]}
       >
@@ -466,10 +487,14 @@ const AdminCustomerCompanyDetailPage = () => {
               *
             </Typography>
           </Typography>
-          <AdminTextField fullWidth />
-          <Typography component={'p'} variant="subtext2" color="point.red1" mt={1}>
-            고객사명을 동일하게 입력해 주세요.
-          </Typography>
+          <AdminTextField fullWidth onChange={(e) => setInputCompanyName(e.target.value)} />
+          {isErrorCompanyName && (
+            <>
+              <Typography component={'p'} variant="subtext2" color="#5191F5" mt={1}>
+                고객사명을 동일하게 입력해 주세요.
+              </Typography>
+            </>
+          )}
         </Box>
       </AdminConfirm>
 
@@ -554,7 +579,6 @@ const AdminCustomerCompanyDetailPage = () => {
             variant: 'contained',
             color: 'primary',
             onClick: () => {
-              setOpenConfirmSaving(false)
               // showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' }) // Please use 1 of the snack bar in real case
               // showSnackbar('비활성으로 변경되었습니다.', { variant: 'success' }) // Please use 1 of the snack bar in real case
             },

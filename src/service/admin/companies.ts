@@ -103,6 +103,11 @@ export interface IProviderGoodsRequest extends IPaginationRequest {
 export interface IChangeUsageRequest {
   isUsed: boolean
 }
+export interface IUpdateCustomerCompanyRequest {
+  isActivated: boolean
+  usageBeginDate: string
+  usageEndDate: string
+}
 
 /**
  * 고객사 서비스
@@ -231,6 +236,21 @@ const companiesService = {
   async changeUsage(companyNo: number, providerNo: number, body: IChangeUsageRequest): Promise<ICompanyProviderDetailInfo> {
     const response: AxiosResponse<ICommonResponse<ICompanyProviderDetailInfo>> = await api.patch(
       `admin/company-management/companies/${companyNo}/providers/${providerNo}`,
+      {
+        ...body,
+      },
+    )
+
+    return response.data.data
+  },
+  /**
+   * 고객사를 수정합니다.
+   * @param companyNo - 고객회사 번호
+   * @param body - { isActivated: 활성여부, usageBeginDate: 사용기간 시작 날짜, usageEndDate: 사용기간 종료 날짜 }
+   */
+  async updateCustomerCompany(companyNo: number, body: IUpdateCustomerCompanyRequest): Promise<ICompanyDetailInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyDetailInfo>> = await api.patch(
+      `admin/company-management/companies/${companyNo}`,
       {
         ...body,
       },
