@@ -109,6 +109,10 @@ export interface IUpdateCustomerCompanyRequest {
   usageEndDate: string
 }
 
+export interface IRegisterProviderRequest {
+  providerNo: number
+}
+
 /**
  * 고객사 서비스
  */
@@ -257,6 +261,19 @@ const companiesService = {
     )
 
     return response.data.data
+  },
+  /**
+   * 고객사와 프로바이더를 매핑하여 등록합니다.
+   * @param companyNo - 고객회사 번호
+   * @param body - { providerNo: 프로바이더 번호 }
+   */
+  async registerProvider(companyNo: number, body: IRegisterProviderRequest): Promise<ICommonResponse<ICompanyProviderDetailInfo>> {
+    const response: AxiosResponse<ICommonResponse<ICompanyProviderDetailInfo>> = await api.post(
+      `/admin/company-management/companies/${companyNo}/provider`,
+      body,
+    )
+
+    return response.data
   },
 }
 

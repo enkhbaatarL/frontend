@@ -1,6 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import ErrorIcon from '@mui/icons-material/Error'
-import { Box, FormControlLabel, InputAdornment, MenuItem, Switch, Typography } from '@mui/material'
+import { Box, FormControlLabel, InputAdornment, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
@@ -20,11 +20,13 @@ import SettingIcon from '@/components/common/icons/SettingIcon'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService, { ICompanyProviderInfo } from '@/service/admin/companies'
+import dataProviderService, { IProviderInfo } from '@/service/admin/dataProvider'
 import memebersService, { IUserInfo } from '@/service/admin/members'
 import { IPaginationResponse } from '@/types/api'
 
 interface AdminCustomerDataProviderTableProps {
   data: ICompanyProviderInfo
+  companyNm: string
 }
 interface AdminCustomerMemberTableProps {
   data: IPaginationResponse<IUserInfo>
@@ -43,9 +45,30 @@ const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean
   )
 }
 
-const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTableProps) => {
+const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataProviderTableProps) => {
   const navigate = useNavigate()
   const { companyNo } = useParams()
+  const [selectedValue, setSelectedValue] = useState<string>('')
+  const { showSnackbar } = useSnackbar()
+  const queryClient = useQueryClient()
+
+  const { data: providerData } = useQuery({
+    queryKey: ['providerData'],
+    queryFn: async () => await dataProviderService.getProviders(),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+  })
+
+  const providerOptions =
+    (Array.isArray(providerData)
+      ? providerData?.map((provider: IProviderInfo) => ({
+        label: provider.providerNm,
+        value: provider.providerNo,
+      }))
+      : []) ?? []
+
   const columns: GridColDef[] = [
     {
       field: 'providerNm',
@@ -81,15 +104,26 @@ const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTable
 
   const [openConfirmRegistration, setOpenConfirmRegistration] = useState(false)
 
-  const registerDataProvider = () => {
-    setOpenConfirmRegistration(true)
+  // 데이터 프로바이더 등록
+  const handleRegisterProvider = async () => {
+    try {
+      const response = await companiesService.registerProvider(Number(companyNo), { providerNo: Number(selectedValue) })
+      if (response.status) {
+        setOpenConfirmRegistration(false)
+        setSelectedValue('')
+        showSnackbar(t('등록되었습니다.'), { variant: 'success' })
+        queryClient.invalidateQueries({ queryKey: ['dataProvider', companyNo] })
+      }
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   return (
     <Box mb="30px">
       <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
         <Typography color="gray.90">{t('데이터 프로바이더 목록')}</Typography>
-        <AdminButton color="secondary" variant="outlined" size="h34" onClick={registerDataProvider}>
+        <AdminButton color="secondary" variant="outlined" size="h34" onClick={() => setOpenConfirmRegistration(true)}>
           {t('데이터 프로바이더 등록')}
         </AdminButton>
       </Box>
@@ -103,7 +137,7 @@ const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTable
       />
       <AdminConfirm
         open={openConfirmRegistration}
-        title={<>데이터 프로바이더 등록</>}
+        title={t('데이터 프로바이더 등록')}
         width={450}
         handleClose={() => {
           setOpenConfirmRegistration(false)
@@ -122,30 +156,32 @@ const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTable
             variant: 'contained',
             color: 'primary',
             onClick: () => {
-              setOpenConfirmRegistration(false)
-              // showSnackbar('등록되었습니다.', { variant: 'success' }) // Please use 1 of the snack bar in real case
-              // showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' }) // Please use 1 of the snack bar in real case
+              handleRegisterProvider()
             },
           },
         ]}
       >
         <Box>
           <Typography component={'p'} variant="body3" color="gray.70">
-            데이터 프로바이더{' '}
+            {t('데이터 프로바이더')}{' '}
             <Typography component={'span'} color="point.red1">
               *
             </Typography>
           </Typography>
           <Typography component={'p'} variant="subtext" color="gray.60" mb="6px">
-            등록된 프로바이더 중 선택하세요.
+            {t('등록된 프로바이더 중 선택하세요.')}
             <br />
-            등록 완료 시 &#123;SK실트론&#125;의 회원이 해당 프로바이더의 데이터에 접근 가능합니다.
+            {t('등록 완료 시')} {companyNm}
+            {t('의 회원이 해당 프로바이더의 데이터에 접근 가능합니다.')}
           </Typography>
-          <AdminSelect fullWidth>
-            <MenuItem value={'provider1'}>provider1</MenuItem>
-            <MenuItem value={'provider2'}>provider2</MenuItem>
-            <MenuItem value={'provider3'}>provider3</MenuItem>
-          </AdminSelect>
+          <AdminSelect
+            fullWidth
+            options={providerOptions}
+            showSelectedValue={true}
+            useAllOption={false}
+            value={selectedValue}
+            onChange={(e) => setSelectedValue(e.target.value as string)}
+          ></AdminSelect>
         </Box>
       </AdminConfirm>
     </Box>
@@ -344,6 +380,7 @@ const AdminCustomerCompanyDetailPage = () => {
   const [inputCompanyName, setInputCompanyName] = useState<string>('')
   const [inputUsageBeginDate, setInputUsageBeginDate] = useState<Dayjs | null>(null)
   const [inputUsageEndDate, setInputUsageEndDate] = useState<Dayjs | null>(null)
+  const [companyNm, setCompanyNm] = useState<string>('')
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
 
@@ -400,7 +437,7 @@ const AdminCustomerCompanyDetailPage = () => {
     setOpenConfirmActive(true)
   }
 
-  // 활성/비활성 변경경
+  // 활성/비활성 변경
   const handleChangeActive = async () => {
     try {
       const response = await companiesService.updateCustomerCompany(Number(companyNo), {
@@ -434,6 +471,7 @@ const AdminCustomerCompanyDetailPage = () => {
   }
 
   useEffect(() => {
+    setCompanyNm(data?.companyNm ?? '')
     setCustomComponent(<AdminCustomerCompanyDetailPageHeader value={isActive} onChange={toogle} label={isActive ? '활성' : '비활성'} />)
     setSubHeader(
       <DetailItem
@@ -483,7 +521,7 @@ const AdminCustomerCompanyDetailPage = () => {
 
   return (
     <>
-      {dataProviderData && <AdminCustomerDataProviderTable data={dataProviderData} />}
+      {dataProviderData && <AdminCustomerDataProviderTable data={dataProviderData} companyNm={companyNm} />}
       {userData && <AdminCustomerMemberTable data={userData} />}
       <AdminConfirm
         open={openConfirmActive}
