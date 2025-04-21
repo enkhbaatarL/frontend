@@ -1,6 +1,7 @@
 import { FormControlLabel, Radio, RadioGroup, TextField, type TextFieldProps, Typography } from '@mui/material'
 import FormControl from '@mui/material/FormControl'
 import Switch from '@mui/material/Switch'
+import { Dayjs } from 'dayjs'
 import { t } from 'i18next'
 
 import type { SelectChangeEvent } from '@mui/material/Select'
@@ -10,16 +11,17 @@ import AdminDatePicker from '@/components/admin/AdminDatePicker'
 import AdminSelect from '@/components/admin/AdminSelect'
 import AdminUpload, { type FileInfo } from '@/components/admin/AdminUpload'
 import Flex from '@/components/common/display/Flex'
+
 type AdminTextFieldProps = TextFieldProps & {
   labelSub?: string
   labelVariant?: 'body1' | 'body2' | 'body3' | 'h6' | 'subtitle'
   labelColor?: string
   fieldType?: 'text' | 'select' | 'radio' | 'checkbox' | 'switch' | 'upload' | 'date-range' | 'date'
   options?: { value: string; label: string; disabled?: boolean }[]
-  value?: string | string[] | boolean | (File | FileInfo)[]
+  value?: string | string[] | boolean | (File | FileInfo)[] | Dayjs[]
   countCharacters?: boolean
   maxLength?: number
-  onChange?: (value: string | string[] | boolean | (File | FileInfo)[]) => void
+  onChange?: (value: string | string[] | boolean | (File | FileInfo)[] | Dayjs[]) => void
   maxSize?: number
   minWidth?: number
   acceptedType?: string[]
@@ -163,14 +165,19 @@ const AdminField = ({
           }}
         >
           {options?.map((option) => (
-            <FormControlLabel disabled={option.disabled} key={option.value} value={option.value} control={<Radio />} label={option.label} />
+            <FormControlLabel
+              disabled={disabled ?? option.disabled}
+              key={option.value}
+              value={option.value}
+              control={<Radio />}
+              label={option.label}
+            />
           ))}
         </RadioGroup>
       )}
       {fieldType === 'upload' && (
         <AdminUpload
           disabled={disabled}
-          required={required}
           maxSize={maxSize}
           minWidth={minWidth}
           acceptedTypes={acceptedType}
@@ -182,11 +189,31 @@ const AdminField = ({
 
       {fieldType === 'date-range' && (
         <Flex direction="row">
-          <AdminDatePicker readOnly={disabled} />
+          <AdminDatePicker
+            readOnly={disabled}
+            value={((value as Dayjs[]) ?? [])[0]}
+            onChange={(newDate) => {
+              if (onChange && Array.isArray(value)) {
+                const dateArray = [...((value as Dayjs[]) || [])]
+                dateArray[0] = newDate as Dayjs
+                onChange(dateArray)
+              }
+            }}
+          />
           <Typography sx={{ margin: 2, verticalAlign: 'sub' }} color="gray.50" component="span">
             ~
           </Typography>
-          <AdminDatePicker readOnly={disabled} />
+          <AdminDatePicker
+            readOnly={disabled}
+            value={((value as Dayjs[]) ?? [])[1]}
+            onChange={(newDate) => {
+              if (onChange && Array.isArray(value)) {
+                const dateArray = [...((value as Dayjs[]) || [])]
+                dateArray[1] = newDate as Dayjs
+                onChange(dateArray)
+              }
+            }}
+          />
         </Flex>
       )}
 

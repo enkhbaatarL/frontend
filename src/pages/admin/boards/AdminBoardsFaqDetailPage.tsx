@@ -34,7 +34,7 @@ const AdminBoardsFaqDetailPage = () => {
 
   const { data, isError, isLoading } = useQuery({
     queryKey: ['faqDetail', faqNo],
-    queryFn: async () => await boardService.geFaqDetail(faqNo),
+    queryFn: async () => await boardService.getFaqDetail(faqNo),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,
@@ -78,7 +78,7 @@ const AdminBoardsFaqDetailPage = () => {
     setCustomComponent(
       <AdminBoardsFaqDetailPageHeader
         onDelete={() => setShowDeleteModal(true)}
-        onEdit={() => navigate(`/admin/boards/faq/edit/${faqNo}`, { state: data })}
+        onEdit={() => navigate(`/admin/boards/faq/edit/${faqNo}`)}
       />,
     )
 

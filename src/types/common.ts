@@ -15,3 +15,8 @@ export interface ICustomRouteObject extends Omit<RouteObject, 'children'> {
   hidden?: boolean
   hasBack?: boolean
 }
+
+export interface IFilterItem {
+  key: string
+  value: string
+}

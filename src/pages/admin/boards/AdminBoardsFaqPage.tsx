@@ -52,7 +52,6 @@ const AdminBoardsFaqPage = () => {
     refetch,
     isInitialState,
     isSearchedState,
-    isPureState,
     isLoading,
   } = useSearchFilter<IFaqRequest, IPaginationResponse<IFaqInfo>>(
     boardService.getFaq,
@@ -193,7 +192,6 @@ const AdminBoardsFaqPage = () => {
         size={pagination?.size}
         onSizeChange={updateSize}
         onPageChange={updatePage}
-        noRowMessage={isPureState ? t('회원을 검색하세요.') : undefined}
         onRowClick={({ row }) => {
           navigate(`/admin/boards/faq/detail/${row.bulletinNo}`)
         }}

@@ -40,7 +40,7 @@ const AdminBoardsFaqEditPage = () => {
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['faqDetail', faqNo],
-    queryFn: async () => await boardService.geFaqDetail(faqNo),
+    queryFn: async () => await boardService.getFaqDetail(faqNo),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,

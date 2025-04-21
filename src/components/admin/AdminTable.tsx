@@ -94,7 +94,6 @@ export const AdminTableCell = (props: AdminTableCellProps) => {
             },
           },
         }}
-        arrow
       >
         <Box ref={areaRef}>
           <AdminChip label={children} {...chip} />
@@ -104,7 +103,7 @@ export const AdminTableCell = (props: AdminTableCellProps) => {
   }
 
   return (
-    <Tooltip title={tooltipText} disableHoverListener={!tooltipText} arrow>
+    <Tooltip title={tooltipText} disableHoverListener={!tooltipText}>
       <Typography
         ref={(node: HTMLDivElement | null) => {
           areaRef.current = node

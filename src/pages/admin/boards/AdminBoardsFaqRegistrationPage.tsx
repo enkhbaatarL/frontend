@@ -47,7 +47,7 @@ const AdminBoardsFaqRegistrationPage = () => {
     try {
       await boardService.registerFaq(formData)
       showSnackbar(t('등록되었습니다.'), { variant: 'success' })
-      navigate('/admin/boards/faq', { state: { refetch: true } })
+      navigate('/admin/boards/faq')
     } catch (error) {
       console.error(error)
     }

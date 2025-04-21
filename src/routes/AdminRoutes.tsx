@@ -8,7 +8,10 @@ import AdminBoardsFaqDetailPage from '@/pages/admin/boards/AdminBoardsFaqDetailP
 import AdminBoardsFaqEditPage from '@/pages/admin/boards/AdminBoardsFaqEditPage'
 import AdminBoardsFaqPage from '@/pages/admin/boards/AdminBoardsFaqPage'
 import AdminBoardsFaqRegistrationPage from '@/pages/admin/boards/AdminBoardsFaqRegistrationPage'
-import AdminBoardsNoticesPage from '@/pages/admin/boards/AdminBoardsNoticesPage'
+import AdminBoardsNoticeDetailPage from '@/pages/admin/boards/AdminBoardsNoticeDetailPage'
+import AdminBoardsNoticeEditPage from '@/pages/admin/boards/AdminBoardsNoticeEditPage'
+import AdminBoardsNoticePage from '@/pages/admin/boards/AdminBoardsNoticePage'
+import AdminBoardsNoticeRegistrationPage from '@/pages/admin/boards/AdminBoardsNoticeRegistrationPage'
 import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesPage'
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
@@ -176,12 +179,55 @@ const AdminRoutes: ICustomRouteObject = {
       children: [
         {
           index: true,
-          element: <Navigate to="notices" replace />,
+          element: <Navigate to="notice" replace />,
         },
         {
-          path: 'notices',
+          path: 'notice',
           label: '공지사항',
-          element: <AdminBoardsNoticesPage />,
+          children: [
+            {
+              index: true,
+              element: <AdminBoardsNoticePage />,
+            },
+            {
+              path: 'registration',
+              label: '공지사항 등록',
+              element: <AdminBoardsNoticeRegistrationPage />,
+              hidden: true,
+            },
+            {
+              path: 'detail',
+              label: '공지사항 상세',
+              hidden: true,
+              hasBack: true,
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
+                  path: ':noticeNo',
+                  element: <AdminBoardsNoticeDetailPage />,
+                },
+              ],
+            },
+            {
+              path: 'edit',
+              label: '공지사항 수정',
+              hidden: true,
+              hasBack: true,
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
+                  path: ':noticeNo',
+                  element: <AdminBoardsNoticeEditPage />,
+                },
+              ],
+            },
+          ],
         },
         {
           path: 'faq',

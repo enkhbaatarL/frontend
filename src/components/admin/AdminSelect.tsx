@@ -52,7 +52,7 @@ const AdminSelect = ({
           )
         }
 
-        if (selected === '') {
+        if (selected === '' || (Array.isArray(selected) && selected.length === 0)) {
           if (useAllOption) return t('전체')
 
           return (
@@ -68,6 +68,13 @@ const AdminSelect = ({
               {placeholder ?? t('선택하세요.')}
             </Typography>
           )
+        }
+
+        if (Array.isArray(selected)) {
+          const selectedLabels = selected.map(
+            (item) => options?.find(({ value }) => value === (typeof value === 'number' ? Number(item) : item))?.label ?? item,
+          )
+          return selectedLabels.join(', ')
         }
 
         return (
