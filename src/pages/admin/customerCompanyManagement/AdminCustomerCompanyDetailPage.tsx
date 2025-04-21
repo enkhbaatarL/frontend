@@ -88,9 +88,9 @@ const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTable
   return (
     <Box mb="30px">
       <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
-        <Typography color="gray.90">데이터 프로바이더 목록</Typography>
+        <Typography color="gray.90">{t('데이터 프로바이더 목록')}</Typography>
         <AdminButton color="secondary" variant="outlined" size="h34" onClick={registerDataProvider}>
-          데이터 프로바이더 등록
+          {t('데이터 프로바이더 등록')}
         </AdminButton>
       </Box>
       <AdminTable
@@ -155,6 +155,10 @@ const AdminCustomerDataProviderTable = ({ data }: AdminCustomerDataProviderTable
 const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
   const [isOpenDelete, setIsOpenDelete] = useState(false)
   const navigate = useNavigate()
+  const [selectedUser, setSelectedUser] = useState<IUserInfo | null>(null)
+  const { showSnackbar } = useSnackbar()
+  const queryClient = useQueryClient()
+  const { companyNo } = useParams()
 
   const columns: GridColDef[] = [
     {
@@ -229,14 +233,15 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
       width: 52,
       cellClassName: 'cellAction',
       align: 'center',
-      renderCell: () => (
+      renderCell: (params) => (
         <AdminTableAction
           actions={[
             {
-              label: '삭제',
+              label: t('삭제'),
               icon: <DeleteIcon fontSize="small" />,
               onClick: () => {
                 setIsOpenDelete(true)
+                setSelectedUser(params.row)
               },
             },
           ]}
@@ -246,6 +251,22 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
   ]
 
   const handleOnRowClick = () => {}
+
+  // 회원 삭제
+  const handleDelete = async () => {
+    try {
+      if (selectedUser) {
+        const response = await memebersService.deleteUser(selectedUser.userNo)
+        if (response.status) {
+          showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
+          setIsOpenDelete(false)
+          queryClient.invalidateQueries({ queryKey: ['user', companyNo] })
+        }
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   return (
     <Box>
@@ -269,10 +290,10 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
             variant="outlined"
             size="h34"
             onClick={() => {
-              navigate('/admin/customer-company/companies/registration')
+              navigate('/admin/member-mgmt/users/registration')
             }}
           >
-            회원 등록
+            {t('회원 등록')}
           </AdminButton>
         </Box>
       </Box>
@@ -282,7 +303,7 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
         title={
           <>
             <ErrorIcon color="error" fontSize="small" sx={{ marginRight: '12px', verticalAlign: 'sub' }} />
-            회원을 삭제하시겠습니까?
+            {t('회원을 삭제하시겠습니까?')}
           </>
         }
         width={450}
@@ -291,24 +312,19 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
         }}
         actions={[
           {
-            label: '취소',
+            label: t('취소'),
             variant: 'outlined',
             color: 'secondary',
             onClick: () => {
               setIsOpenDelete(false)
-
-              //showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' })
             },
           },
           {
-            label: 'Button',
+            label: t('삭제'),
             variant: 'contained',
-            color: 'primary',
+            color: 'error',
             onClick: () => {
-              setIsOpenDelete(false)
-
-              // showSnackbar('삭제되었습니다. ', { variant: 'success' })
-              // showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' })
+              handleDelete()
             },
           },
         ]}

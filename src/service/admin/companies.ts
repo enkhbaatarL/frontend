@@ -141,7 +141,7 @@ const companiesService = {
    * @param body - { companyCd: 고객사 코드, companyNm: 고객사 명, usageBeginDate: 사용 시작일, usageEndDate: 사용 종료일 }
    */
   async registerCompany(body: IRegisterCompanyRequest): Promise<ICommonResponse<null>> {
-    const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/company-management/company', body)
+    const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/company-management/companies', body)
 
     return response.data
   },
@@ -150,7 +150,7 @@ const companiesService = {
    * @returns 테이블 고객사, 부서 목록
    */
   async getDepartmentAll(): Promise<IDepartmentInfo[]> {
-    const response: AxiosResponse<ICommonResponse<IDepartmentInfo[]>> = await api.get('/admin/company-management/company/department/all')
+    const response: AxiosResponse<ICommonResponse<IDepartmentInfo[]>> = await api.get('/admin/company-management/companies/department/all')
 
     return response.data.data
   },
