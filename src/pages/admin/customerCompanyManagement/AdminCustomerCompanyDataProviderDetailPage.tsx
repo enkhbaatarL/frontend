@@ -285,7 +285,11 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   }, [providerDetailData, providerLatestUpdatedData, options, selectedCompany, isActive])
 
   const handleOnRowClick = (goodsNo: number) => {
-    navigate(`/admin/customer-company/companies/provider-detail/${companyNo}/${selectedProviderNo}/${goodsNo}`)
+    navigate(`/admin/customer-company/companies/provider-detail/${companyNo}/${selectedProviderNo}/${goodsNo}`, {
+      state: {
+        companyNm: providerDetailData?.companyNm,
+      },
+    })
   }
 
   const registerProduct = () => {

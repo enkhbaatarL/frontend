@@ -118,6 +118,32 @@ export interface IRegisterGoodsRequest {
   goodsAuthManagementSeparateCd: string
 }
 
+interface ICompanySetting {
+  isViewable: boolean
+  isDownloadable: boolean
+  usageBeginDate: string
+  usageEndDate: string
+}
+export interface IGoodsDetailInfo {
+  companyNo: number
+  goodsNo: number
+  isUsed: boolean
+  goodsAuthManagementSeparateCd: string
+  goodsAuthManagementSeparateNm: string
+  auditInfo: IAuditInfo
+  goodsNm: string
+  goodsExpn: string
+  companySetting: ICompanySetting
+}
+export interface IUserPermissionInfo {
+  userNo: number
+  userNm: string
+  onDutyNm: string
+  departmentNm: string
+  isViewable: boolean
+  isDownloadable: boolean
+}
+
 /**
  * 고객사 서비스
  */
@@ -293,6 +319,53 @@ const companiesService = {
     )
 
     return response.data
+  },
+  /**
+   * 고객사와 매핑되어 있는 상품을 상세 조회합니다.
+   * @param companyNo - 고객회사 번호
+   * @param providerNo - 프로바이더 번호
+   * @param goodsNo - 상품번호
+   */
+  async getGoodsDetail(companyNo: number, providerNo: number, goodsNo: number): Promise<IGoodsDetailInfo> {
+    const response: AxiosResponse<ICommonResponse<IGoodsDetailInfo>> = await api.get(
+      `admin/company-management/companies/${companyNo}/providers/${providerNo}/goods/${goodsNo}`,
+    )
+
+    return response.data.data
+  },
+  /**
+   * 고객사-프로바이더-상품 상세 화면에서 고객사 정보, 프로바이더 정보, 회원 정보를 포함하여 최신 수정 데이터를 조회합니다.
+   * @param companyNo - 고객회사 번호
+   * @param providerNo - 프로바이더 번호
+   * @param goodsNo - 상품번호
+   */
+  async getGoodsLatestUpdated(companyNo: number, providerNo: number, goodsNo: number): Promise<ICompanyLatestUpdatedInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyLatestUpdatedInfo>> = await api.get(
+      `admin/company-management/companies/${companyNo}/providers/${providerNo}/goods/${goodsNo}/latest-updated`,
+    )
+
+    return response.data.data
+  },
+  /**
+   * 고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 조회합니다.
+   * 'userNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.
+   * @param companyNo - 고객회사 번호
+   * @param providerNo - 프로바이더 번호
+   * @param goodsNo - 상품번호
+   * @param params - { page: 페이지 번호, size: 페이지당 항목 수 }
+   */
+  async getUserPermissions(
+    companyNo: number,
+    providerNo: number,
+    goodsNo: number,
+    params: IPaginationRequest,
+  ): Promise<IPaginationResponse<IUserPermissionInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IUserPermissionInfo>>> = await api.get(
+      `admin/company-management/companies/${companyNo}/providers/${providerNo}/goods/${goodsNo}/permissions`,
+      { params },
+    )
+
+    return response.data.data
   },
 }
 

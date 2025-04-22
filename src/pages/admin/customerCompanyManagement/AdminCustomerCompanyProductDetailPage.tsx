@@ -1,7 +1,10 @@
 import { Box, FormControlLabel, Radio, RadioGroup, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
+import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
+import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCheckboxField from '@/components/admin/AdminCheckboxField'
@@ -17,6 +20,7 @@ import VisibilityIcon from '@/components/common/icons/VisibilityIcon'
 import MICheckBox from '@/components/common/input/MICheckBox'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
+import companiesService from '@/service/admin/companies'
 
 // Define interface for user data
 
@@ -78,6 +82,30 @@ const AdminCustomerCompanyProductDetailPage = () => {
   const [searchParams] = useSearchParams()
   const mode = searchParams.get('mode')
 
+  const { companyNo, providerNo, goodsNo } = useParams()
+  const { state } = useLocation()
+  const { companyNm } = state as { companyNm: string }
+
+  const { data: goodsDetailData } = useQuery({
+    queryKey: ['goodsDetail', companyNo, providerNo, goodsNo],
+    queryFn: async () => await companiesService.getGoodsDetail(Number(companyNo), Number(providerNo), Number(goodsNo)),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!companyNo || !!providerNo || !!goodsNo,
+  })
+
+  const { data: goodsDetailLatestData } = useQuery({
+    queryKey: ['goodsDetailLatest', companyNo, providerNo, goodsNo],
+    queryFn: async () => await companiesService.getGoodsLatestUpdated(Number(companyNo), Number(providerNo), Number(goodsNo)),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!companyNo || !!providerNo || !!goodsNo,
+  })
+
   const toogle = () => {
     setOpenConfirmActive(true)
   }
@@ -87,66 +115,68 @@ const AdminCustomerCompanyProductDetailPage = () => {
   }, [mode])
 
   useEffect(() => {
-    setCustomComponent(
-      <AdminCustomerCompanyProductDetailPageHeader
-        editMode={isDetailPermissionSetting}
-        changeMode={setIsDetailPermissionSetting}
-        onSave={() => setOpenSaveConfirm(true)}
-        onCancel={() => setOpenCancelConfirm(true)}
-        value={isActive}
-        onChange={toogle}
-        label={isActive ? '사용' : '미사용'}
-      />,
-    )
-    setSubHeader(
-      <DetailItem
-        title={
-          <Box>
-            <Box display={'flex'} alignItems={'center'}>
-              <Typography variant="body1" color="gray.70">
-                SK 하이닉스
-              </Typography>
-              <Box width={'1px'} height={'14px'} bgcolor="common.black" mx="10px" />
-              <Typography variant="contentTitle" color="gray.90">
-                LSEG • 제조사별 DRAM 생산량 1
-              </Typography>
+    if (goodsDetailData && goodsDetailLatestData) {
+      setCustomComponent(
+        <AdminCustomerCompanyProductDetailPageHeader
+          editMode={isDetailPermissionSetting}
+          changeMode={setIsDetailPermissionSetting}
+          onSave={() => setOpenSaveConfirm(true)}
+          onCancel={() => setOpenCancelConfirm(true)}
+          value={isActive}
+          onChange={toogle}
+          label={isActive ? '사용' : '미사용'}
+        />,
+      )
+      setSubHeader(
+        <DetailItem
+          title={
+            <Box>
+              <Box display={'flex'} alignItems={'center'}>
+                <Typography variant="body1" color="gray.70">
+                  {companyNm}
+                </Typography>
+                <Box width={'1px'} height={'14px'} bgcolor="common.black" mx="10px" />
+                <Typography variant="contentTitle" color="gray.90">
+                  {goodsDetailData?.goodsNm}
+                </Typography>
+              </Box>
             </Box>
-          </Box>
-        }
-        subTitle={
-          <Typography variant="subtext" color="gray.60">
-            프로바이더 등록 시 관리자가 입력한 설명이 출력됩니다. 글자 수 제한은 100자입니다.
-          </Typography>
-        }
-        fields={[
-          {
-            label: '등록일',
-            value: 'yyyy-mm-dd',
-          },
-          {
-            label: '수정일',
-            value: 'yyyy-mm-dd',
-          },
-          {
-            label: '등록자',
-            value: '홍길동',
-          },
-          {
-            label: '수정자',
-            value: '김선경',
-          },
-        ]}
-        tooltipMessage="기본 정보 수정"
-      />,
-    )
-    setCustomTitle(<CustomPageTitle isEdit={isDetailPermissionSetting} />)
+          }
+          subTitle={
+            <Typography variant="subtext" color="gray.60">
+              {goodsDetailData?.goodsExpn}
+            </Typography>
+          }
+          fields={[
+            {
+              label: t('등록일'),
+              value: dayjs(goodsDetailData?.auditInfo.createDt).format('YYYY-MM-DD'),
+            },
+            {
+              label: t('수정일'),
+              value: dayjs(goodsDetailLatestData?.modifyDt).format('YYYY-MM-DD'),
+            },
+            {
+              label: t('등록자'),
+              value: String(goodsDetailData?.auditInfo.createUserNm),
+            },
+            {
+              label: t('수정자'),
+              value: String(goodsDetailLatestData?.modifyUserNm),
+            },
+          ]}
+          tooltipMessage="기본 정보 수정"
+        />,
+      )
+      setCustomTitle(<CustomPageTitle isEdit={isDetailPermissionSetting} />)
+    }
 
     return () => {
       setCustomComponent(null)
       setSubHeader(null)
       setCustomTitle(null)
     }
-  }, [setCustomComponent, setSubHeader, isActive, isDetailPermissionSetting, mode])
+  }, [setCustomComponent, setSubHeader, isActive, isDetailPermissionSetting, mode, goodsDetailData])
 
   const [_users, setUsers] = useState([
     {
