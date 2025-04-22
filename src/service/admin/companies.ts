@@ -112,6 +112,11 @@ export interface IUpdateCustomerCompanyRequest {
 export interface IRegisterProviderRequest {
   providerNo: number
 }
+export interface IRegisterGoodsRequest {
+  goodsNo: number
+  isUsed: boolean
+  goodsAuthManagementSeparateCd: string
+}
 
 /**
  * 고객사 서비스
@@ -270,6 +275,20 @@ const companiesService = {
   async registerProvider(companyNo: number, body: IRegisterProviderRequest): Promise<ICommonResponse<ICompanyProviderDetailInfo>> {
     const response: AxiosResponse<ICommonResponse<ICompanyProviderDetailInfo>> = await api.post(
       `/admin/company-management/companies/${companyNo}/provider`,
+      body,
+    )
+
+    return response.data
+  },
+  /**
+   * 고객사와 상품을 매핑하여 등록합니다.
+   * @param companyNo - 고객회사 번호
+   * @param providerNo - 프로바이더 번호
+   * @param body - { goodsNo: 상품번호, isUsed: 사용여부, goodsAuthManagementSeparateCd: 상품권한주체구분코드 }
+   */
+  async registerGoods(companyNo: number, providerNo: number, body: IRegisterGoodsRequest): Promise<ICommonResponse<IProviderGoodsInfo>> {
+    const response: AxiosResponse<ICommonResponse<IProviderGoodsInfo>> = await api.post(
+      `/admin/company-management/companies/${companyNo}/providers/${providerNo}/goods`,
       body,
     )
 

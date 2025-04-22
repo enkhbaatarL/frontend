@@ -9,8 +9,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
+import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
-import AdminTextField from '@/components/admin/AdminTextField'
 import DetailItem from '@/components/common/detail-item'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
@@ -44,6 +44,8 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const [selectedCompany, setSelectedCompany] = useState({ value: '', label: '' })
   const { companyNo, providerNo } = useParams()
   const [selectedProviderNo, setSelectedProviderNo] = useState<string | undefined>(providerNo)
+  const [search, setSearch] = useState<string>('')
+  const [searchValue, setSearchValue] = useState<string>('')
   const { showSnackbar } = useSnackbar()
 
   const { data: providerDetailData } = useQuery({
@@ -79,10 +81,10 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   })
 
   const { data: providerGoodsData } = useQuery({
-    queryKey: ['providerGoodsData', companyNo, selectedProviderNo, isActive],
+    queryKey: ['providerGoodsData', companyNo, selectedProviderNo, isActive, searchValue],
     queryFn: async () =>
       await companiesService.getProviderGoods(Number(companyNo), Number(selectedProviderNo), {
-        search: '',
+        search: searchValue,
         page: 1,
         size: 20,
       }),
@@ -286,17 +288,29 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
         <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
           <Box>
             <Typography component={'p'} variant="contentTitle" color="gray.90">
-              상품 목록
+              {t('상품 목록')}
             </Typography>
             <Typography variant="subtext" color="gray.60">
-              리스트 클릭 시 해당 상품의 상세 화면으로 이동 및 상세 권한 설정이 가능합니다.
+              {t('리스트 클릭 시 해당 상품의 상세 화면으로 이동 및 상세 권한 설정이 가능합니다.')}
             </Typography>
           </Box>
 
           <Box display={'flex'} alignItems={'center'} columnGap={'10px'}>
-            <MIInput placeholder="상품 또는 상품 설명을 검색하세요." endIcon={<SearchIcon />} contentWidth={196} />
+            <MIInput
+              placeholder="상품 또는 상품 설명을 검색하세요."
+              endIcon={
+                <SearchIcon
+                  onClick={() => {
+                    setSearchValue(search)
+                  }}
+                />
+              }
+              contentWidth={196}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             <AdminButton color="secondary" variant="outlined" size="h34" onClick={registerProduct}>
-              상품 등록
+              {t('상품 등록')}
             </AdminButton>
           </Box>
         </Box>
@@ -333,7 +347,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
 
       <AdminConfirm
         open={openProductRegistrationConfirm}
-        title={<>상품 등록</>}
+        title={t('상품 등록')}
         width={450}
         handleClose={() => {
           setOpenProductRegistrationConfirm(false)
@@ -361,24 +375,26 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       >
         <Box mb="20px">
           <Typography component={'p'} variant="body3M12" color="gray.70">
-            상품{' '}
+            {t('상품 ')}
             <Typography component={'span'} color="point.red1">
-              *
+              {t('*')}
             </Typography>
           </Typography>
           <Typography component={'p'} variant="subtext" color="gray.60" mb="6px">
-            &#123;레피니티브&#125;에 등록된 상품 중 &#123;SK 실트론&#125;에 등록할 상품을 선택하세요. 등록 완료 시 &#123;SK실트론&#125;의
-            회원이 해당 상품에 접근 가능합니다.
+            {providerDetailData?.providerNm}
+            {t('에 등록된 상품 중')} {providerDetailData?.companyNm}
+            {t('에 등록할 상품을 선택하세요.')} {t('등록 완료 시')} {providerDetailData?.companyNm}
+            {t('의 회원이 해당 상품에 접근 가능합니다.')}
           </Typography>
-          <AdminTextField fullWidth />
+          <AdminSelect fullWidth />
         </Box>
         <Box>
           <Typography component={'p'} variant="body3M12" color="gray.70">
-            권한 유형
+            {t('권한 유형')}
           </Typography>
           <RadioGroup row value="individualPermission">
-            <FormControlLabel value="individualPermission" control={<Radio />} label="개별 권한" />
-            <FormControlLabel value="companyPermission" control={<Radio />} label="회사 권한" />
+            <FormControlLabel value="individualPermission" control={<Radio />} label={t('개별 권한')} />
+            <FormControlLabel value="companyPermission" control={<Radio />} label={t('회사 권한')} />
           </RadioGroup>
         </Box>
       </AdminConfirm>

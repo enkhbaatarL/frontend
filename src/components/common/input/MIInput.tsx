@@ -49,7 +49,11 @@ const MIInput = ({ size, readOnly, label, endIcon, success, contentWidth, ...pro
     }
 
     if (endIcon) {
-      defaultProps.endAdornment = <InputAdornment position="end">{endIcon}</InputAdornment>
+      defaultProps.endAdornment = (
+        <InputAdornment position="end" sx={{ cursor: 'pointer' }}>
+          {endIcon}
+        </InputAdornment>
+      )
     }
 
     return defaultProps
