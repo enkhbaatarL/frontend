@@ -1,6 +1,6 @@
 import { Box, FormControlLabel, Radio, RadioGroup, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
@@ -18,6 +18,7 @@ import MIInput from '@/components/common/input/MIInput'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService from '@/service/admin/companies'
+import dataProviderService from '@/service/admin/dataProvider'
 
 const AdminCustomerCompanyProviderDetailPageHeader = (props: {
   onChange: (value: boolean | undefined) => void
@@ -46,7 +47,10 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const [selectedProviderNo, setSelectedProviderNo] = useState<string | undefined>(providerNo)
   const [search, setSearch] = useState<string>('')
   const [searchValue, setSearchValue] = useState<string>('')
+  const [selectedGoods, setSelectedGoods] = useState<string>('')
+  const [goodsAuthManagementSeparateCd, setGoodsAuthManagementSeparateCd] = useState<string>('INDIVIDUAL')
   const { showSnackbar } = useSnackbar()
+  const queryClient = useQueryClient()
 
   const { data: providerDetailData } = useQuery({
     queryKey: ['providerDetail', companyNo, selectedProviderNo],
@@ -95,6 +99,16 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     enabled: !!companyNo || !!selectedProviderNo,
   })
 
+  const { data: selectProviderGoodsData } = useQuery({
+    queryKey: ['selectProviderGoodsData', selectedProviderNo],
+    queryFn: async () => await dataProviderService.getProviderGoods(Number(selectedProviderNo)),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!selectedProviderNo,
+  })
+
   const options = useMemo(
     () =>
       Array.isArray(providerData)
@@ -104,6 +118,17 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
         }))
         : [],
     [providerData],
+  )
+
+  const goodsOptions = useMemo(
+    () =>
+      Array.isArray(selectProviderGoodsData)
+        ? selectProviderGoodsData.map((goods) => ({
+          value: goods.goodsNo,
+          label: goods.goodsNm,
+        }))
+        : [],
+    [selectProviderGoodsData],
   )
 
   const columns: GridColDef[] = [
@@ -282,6 +307,25 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     }
   }
 
+  // 상품 등록
+  const handleRegisterGoods = async () => {
+    try {
+      const request = {
+        goodsNo: Number(selectedGoods),
+        isUsed: true,
+        goodsAuthManagementSeparateCd,
+      }
+      await companiesService.registerGoods(Number(companyNo), Number(selectedProviderNo), request)
+      setOpenProductRegistrationConfirm(false)
+      setSelectedGoods('')
+      setGoodsAuthManagementSeparateCd('INDIVIDUAL')
+      showSnackbar(t('등록되었습니다'), { variant: 'success' })
+      queryClient.invalidateQueries({ queryKey: ['providerGoodsData', companyNo, selectedProviderNo, isActive, searchValue] })
+    } catch (error) {
+      console.error('error', error)
+    }
+  }
+
   return (
     <>
       <Box>
@@ -357,26 +401,24 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
         handleClose={() => {
           setOpenProductRegistrationConfirm(false)
         }}
-        // actions={[
-        //   {
-        //     label: <Typography variant="body2SB14">취소</Typography>,
-        //     variant: 'outlined',
-        //     color: 'secondary',
-        //     onClick: () => {
-        //       setOpenProductRegistrationConfirm(false)
-        //     },
-        //   },
-        //   {
-        //     label: <Typography variant="body2SB14">등록</Typography>,
-        //     variant: 'contained',
-        //     color: 'primary',
-        //     onClick: () => {
-        //       setOpenProductRegistrationConfirm(false)
-        //       showSnackbar('등록되었습니다', { variant: 'success' })
-        //       showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' })
-        //     },
-        //   },
-        // ]}
+        actions={[
+          {
+            label: t('취소'),
+            variant: 'outlined',
+            color: 'secondary',
+            onClick: () => {
+              setOpenProductRegistrationConfirm(false)
+            },
+          },
+          {
+            label: t('등록'),
+            variant: 'contained',
+            color: 'primary',
+            onClick: () => {
+              handleRegisterGoods()
+            },
+          },
+        ]}
       >
         <Box mb="20px">
           <Typography component={'p'} variant="body3M12" color="gray.70">
@@ -391,15 +433,28 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
             {t('에 등록할 상품을 선택하세요.')} {t('등록 완료 시')} {providerDetailData?.companyNm}
             {t('의 회원이 해당 상품에 접근 가능합니다.')}
           </Typography>
-          <AdminSelect fullWidth />
+          <AdminSelect
+            fullWidth
+            options={goodsOptions}
+            showSelectedValue={true}
+            useAllOption={false}
+            value={selectedGoods}
+            onChange={(e) => setSelectedGoods(e.target.value as string)}
+          />
         </Box>
         <Box>
           <Typography component={'p'} variant="body3M12" color="gray.70">
             {t('권한 유형')}
           </Typography>
-          <RadioGroup row value="individualPermission">
-            <FormControlLabel value="individualPermission" control={<Radio />} label={t('개별 권한')} />
-            <FormControlLabel value="companyPermission" control={<Radio />} label={t('회사 권한')} />
+          <RadioGroup
+            row
+            value={goodsAuthManagementSeparateCd}
+            onChange={(e) => {
+              setGoodsAuthManagementSeparateCd(e.target.value)
+            }}
+          >
+            <FormControlLabel value="INDIVIDUAL" control={<Radio />} label={t('개별 권한')} />
+            <FormControlLabel value="COMPANY" control={<Radio />} label={t('회사 권한')} />
           </RadioGroup>
         </Box>
       </AdminConfirm>
