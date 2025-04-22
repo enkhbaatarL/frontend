@@ -242,7 +242,7 @@ const companiesService = {
    * @param providerNo - 프로바이더 번호
    * @param body - { isUsed: 사용여부 }
    */
-  async changeUsage(companyNo: number, providerNo: number, body: IChangeUsageRequest): Promise<ICompanyProviderDetailInfo> {
+  async updateUsage(companyNo: number, providerNo: number, body: IChangeUsageRequest): Promise<ICompanyProviderDetailInfo> {
     const response: AxiosResponse<ICommonResponse<ICompanyProviderDetailInfo>> = await api.patch(
       `admin/company-management/companies/${companyNo}/providers/${providerNo}`,
       {

@@ -517,7 +517,7 @@ const AdminCustomerCompanyDetailPage = () => {
 
   useEffect(() => {
     setIsErrorCompanyName(inputCompanyName.replace(/\s/g, '') !== data?.companyNm.replace(/\s/g, ''))
-  }, [inputCompanyName])
+  }, [inputCompanyName, data?.companyNm])
 
   return (
     <>

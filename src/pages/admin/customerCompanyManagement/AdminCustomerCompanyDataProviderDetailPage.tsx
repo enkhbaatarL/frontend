@@ -259,8 +259,8 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     }
   }, [providerDetailData, providerLatestUpdatedData, options, selectedCompany, isActive])
 
-  const handleOnRowClick = () => {
-    // navigate(getPath('customer-company-product-detail'))
+  const handleOnRowClick = (goodsNo: number) => {
+    navigate(`/admin/customer-company/companies/provider-detail/${companyNo}/${selectedProviderNo}/${goodsNo}`)
   }
 
   const registerProduct = () => {
@@ -273,7 +273,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       const request = {
         isUsed: isActive ? false : true,
       }
-      const response = await companiesService.changeUsage(Number(companyNo), Number(selectedProviderNo), request)
+      const response = await companiesService.updateUsage(Number(companyNo), Number(selectedProviderNo), request)
       setIsActive(response.isUsed)
       setOpenConfirmActive(false)
       showSnackbar(t(response.isUsed ? '사용' : '미사용') + t('으로 변경되었습니다.'), { variant: 'success' })
@@ -314,7 +314,12 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
             </AdminButton>
           </Box>
         </Box>
-        <AdminTable getRowId={(row) => row.goodsNo} columns={columns} data={providerGoodsData} onRowClick={handleOnRowClick} />
+        <AdminTable
+          getRowId={(row) => row.goodsNo}
+          columns={columns}
+          data={providerGoodsData}
+          onRowClick={(row) => handleOnRowClick(row.row.goodsNo)}
+        />
       </Box>
       <AdminConfirm
         open={openConfirmActive}

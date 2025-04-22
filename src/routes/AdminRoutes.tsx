@@ -10,6 +10,7 @@ import AdminCustomerCompanyDataProviderDetailPage from '@/pages/admin/customerCo
 import AdminCustomerCompanyDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyDetailPage'
 import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesPage'
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
+import AdminCustomerCompanyProductDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyProductDetailPage'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
 import AdminMemberManagementManagersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementManagerRegistrationPage'
@@ -86,6 +87,10 @@ const AdminRoutes: ICustomRouteObject = {
                 {
                   path: ':companyNo/:providerNo',
                   element: <AdminCustomerCompanyDataProviderDetailPage />,
+                },
+                {
+                  path: ':companyNo/:providerNo/:goodsNo',
+                  element: <AdminCustomerCompanyProductDetailPage />,
                 },
               ],
             },
