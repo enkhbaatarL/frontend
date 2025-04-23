@@ -135,13 +135,22 @@ export interface IGoodsDetailInfo {
   goodsExpn: string
   companySetting: ICompanySetting
 }
-export interface IUserPermissionInfo {
+export interface IExtension {
+  numberOfDownloadable: number
+  numberOfUsers: number
+  numberOfViewable: number
+}
+export interface IDetail {
   userNo: number
   userNm: string
   onDutyNm: string
   departmentNm: string
   isViewable: boolean
   isDownloadable: boolean
+}
+export interface IUserPermissionInfo extends IDetail {
+  detail: IDetail
+  extension: IExtension
 }
 
 /**

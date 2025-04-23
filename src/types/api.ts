@@ -21,4 +21,9 @@ export interface IPaginationResponse<T> {
   hasPrevious: boolean
   hasNext: boolean
   detail: T[]
+  extension?: {
+    numberOfUsers: number
+    numberOfDownloadable: number
+    numberOfViewable: number
+  }
 }

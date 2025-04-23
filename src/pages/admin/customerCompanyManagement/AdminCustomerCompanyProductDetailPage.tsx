@@ -11,7 +11,7 @@ import AdminCheckboxField from '@/components/admin/AdminCheckboxField'
 import AdminChip from '@/components/admin/AdminChip'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
-import AdminTable, { AdminTableCell, AdminTableHeader } from '@/components/admin/AdminTable'
+import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import DetailItem from '@/components/common/detail-item'
 import Flex from '@/components/common/display/Flex'
 import DownloadIcon from '@/components/common/icons/DownloadIcon'
@@ -20,9 +20,8 @@ import VisibilityIcon from '@/components/common/icons/VisibilityIcon'
 import MICheckBox from '@/components/common/input/MICheckBox'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
+import { IDetail } from '@/service/admin/companies'
 import companiesService from '@/service/admin/companies'
-
-// Define interface for user data
 
 const AdminCustomerCompanyProductDetailPageHeader = (props: {
   onChange: (value: boolean) => void
@@ -73,10 +72,8 @@ const CustomPageTitle = (props: { isEdit: boolean }) => (
 const AdminCustomerCompanyProductDetailPage = () => {
   const { showSnackbar } = useSnackbar()
   const { setCustomComponent, setSubHeader, setCustomTitle } = useAdminHeader()
-  const [isActive, setIsActive] = useState(false)
   const [openConfirmActive, setOpenConfirmActive] = useState(false)
   const [isDetailPermissionSetting, setIsDetailPermissionSetting] = useState(false)
-  const [permission, setPermission] = useState('individualPermission')
   const [openCancelConfirm, setOpenCancelConfirm] = useState(false)
   const [openSaveConfirm, setOpenSaveConfirm] = useState(false)
   const [searchParams] = useSearchParams()
@@ -105,6 +102,20 @@ const AdminCustomerCompanyProductDetailPage = () => {
     staleTime: 0,
     enabled: !!companyNo || !!providerNo || !!goodsNo,
   })
+
+  const { data: userPermissions } = useQuery({
+    queryKey: ['userPermissions', companyNo, providerNo, goodsNo],
+    queryFn: async () =>
+      await companiesService.getUserPermissions(Number(companyNo), Number(providerNo), Number(goodsNo), { page: 1, size: 20 }),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!companyNo || !!providerNo || !!goodsNo,
+  })
+
+  const [isActive, setIsActive] = useState<boolean>(goodsDetailData?.isUsed ?? true)
+  const [permission, setPermission] = useState<string>(goodsDetailData?.goodsAuthManagementSeparateCd ?? 'INDIVIDUAL')
 
   const toogle = () => {
     setOpenConfirmActive(true)
@@ -271,63 +282,61 @@ const AdminCustomerCompanyProductDetailPage = () => {
   const columns: GridColDef[] = useMemo(
     () => [
       {
-        field: 'id',
-        renderHeader: () => <AdminTableHeader>No.</AdminTableHeader>,
+        field: 'userNo',
+        headerName: t('No.'),
         width: 50,
         sortable: false,
         align: 'center',
         renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
       },
       {
-        field: 'name',
+        field: 'userNm',
         headerName: '이름',
-        renderHeader: () => <AdminTableHeader>이름</AdminTableHeader>,
         width: 120,
         sortable: false,
         renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
       },
       {
         field: 'department',
-        renderHeader: () => <AdminTableHeader>직위/부서명/회사명</AdminTableHeader>,
+        headerName: t('직위/부서명/회사명'),
         width: 392,
         flex: 1,
         sortable: false,
-        renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
+        renderCell: (params) => <AdminTableCell>{`${params.row.onDutyNm} / ${params.row.departmentNm} / ${companyNm}`}</AdminTableCell>,
       },
       {
-        field: 'hasAdminAccess',
+        field: 'isViewable',
         headerName: '조회 권한',
-        renderHeader: () => <AdminTableHeader>조회 권한</AdminTableHeader>,
         width: 100,
         sortable: false,
         align: 'center',
         headerAlign: 'center',
         renderCell: (params) => (
           <MICheckBox
-            checked={params.value}
-            onChange={(e) => changeField(params.row.id, 'hasAdminAccess', e.target.checked)}
+            checked={params.row.isViewable}
+            onChange={(e) => changeField(params.row.userNo, 'isViewable', e.target.checked)}
             disabled={!isDetailPermissionSetting}
           />
         ),
       },
       {
-        field: 'hasDataAccess',
-        renderHeader: () => <AdminTableHeader>다운로드 권한</AdminTableHeader>,
+        field: 'isDownloadable',
+        headerName: t('다운로드 권한'),
         width: 100,
         sortable: false,
         align: 'center',
         headerAlign: 'center',
         renderCell: (params) => (
           <MICheckBox
-            checked={params.value}
-            onChange={(e) => changeField(params.row.id, 'hasDataAccess', e.target.checked)}
+            checked={params.row.isDownloadable}
+            onChange={(e) => changeField(params.row.userNo, 'isDownloadable', e.target.checked)}
             disabled={!isDetailPermissionSetting}
           />
         ),
       },
       {
         field: 'accessStartDate',
-        renderHeader: () => <AdminTableHeader>권한 적용 기간</AdminTableHeader>,
+        headerName: t('권한 적용 기간'),
         width: 391,
         sortable: false,
         headerAlign: 'center',
@@ -356,44 +365,27 @@ const AdminCustomerCompanyProductDetailPage = () => {
     [isDetailPermissionSetting],
   )
 
-  const overviewItems = [
-    {
-      label: '회원',
-      value: 8,
-      icon: <PersonIcon />,
-    },
-    {
-      label: '조회',
-      value: 0,
-      icon: <VisibilityIcon />,
-    },
-    {
-      label: '다운로드',
-      value: 0,
-      icon: <DownloadIcon />,
-    },
-  ]
-
   return (
     <>
       <Box>
         <Box display={'flex'} alignItems={'center'}>
           <Box minWidth={'210px'}>
             <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
-              권한 유형
-              {isDetailPermissionSetting && (
-                <Typography component={'sup'} variant="asterisk" color="point.red1">
-                  *
-                </Typography>
-              )}
+              <Box>
+                {t('권한 유형')}
+                {isDetailPermissionSetting && (
+                  <Typography component={'sup'} variant="asterisk" color="point.red1">
+                    *
+                  </Typography>
+                )}
+              </Box>
             </Typography>
             <RadioGroup row value={permission} onChange={(e) => setPermission(e.target.value)}>
-              <FormControlLabel disabled={!isDetailPermissionSetting} value="individualPermission" control={<Radio />} label="개별 권한" />
-              <FormControlLabel disabled={!isDetailPermissionSetting} value="companyPermission" control={<Radio />} label="회사 권한" />
+              <FormControlLabel disabled={!isDetailPermissionSetting} value="INDIVIDUAL" control={<Radio />} label="개별 권한" />
+              <FormControlLabel disabled={!isDetailPermissionSetting} value="COMPANY" control={<Radio />} label="회사 권한" />
             </RadioGroup>
           </Box>
-
-          {permission === 'companyPermission' && (
+          {permission === 'COMPANY' && (
             <>
               <Box minWidth={'210px'}>
                 <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
@@ -427,6 +419,14 @@ const AdminCustomerCompanyProductDetailPage = () => {
         </Box>
       </Box>
       <Box>
+        <Box minWidth={'210px'} mb="5px">
+          <Typography component={'p'} variant="subtitle" color="gray.90">
+            {t('상세 권한 설정')}
+          </Typography>
+          <Typography variant="subtext" color="gray.60">
+            {t('회원별 상세 권한은 회사 권한 설정과 동일합니다.')}
+          </Typography>
+        </Box>
         <Box
           display={'flex'}
           alignItems={'center'}
@@ -438,20 +438,34 @@ const AdminCustomerCompanyProductDetailPage = () => {
           borderTop={'1px solid'}
           borderColor={'gray.30'}
         >
-          {overviewItems.map((item, idx) => (
-            <>
-              <Box key={item.label} display={'flex'} alignItems={'center'} columnGap={'4px'}>
-                <Box>{item.icon}</Box>
-                <Typography variant="subtitle2" color="gray.60">
-                  {item.label}
-                </Typography>
-                <Typography variant="chip1">{item.value}</Typography>
-              </Box>
-              {idx < overviewItems.length && <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />}
-            </>
-          ))}
+          <>
+            <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
+              <Box>{<PersonIcon />}</Box>
+              <Typography variant="subtitle2" color="gray.60">
+                {t('회원')}
+              </Typography>
+              <Typography variant="chip1">{userPermissions?.extension?.numberOfUsers}</Typography>
+            </Box>
+            <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
+            <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
+              <Box>{<VisibilityIcon />}</Box>
+              <Typography variant="subtitle2" color="gray.60">
+                {t('조회')}
+              </Typography>
+              <Typography variant="chip1">{userPermissions?.extension?.numberOfViewable}</Typography>
+            </Box>
+            <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
+            <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
+              <Box>{<DownloadIcon />}</Box>
+              <Typography variant="subtitle2" color="gray.60">
+                {t('다운로드')}
+              </Typography>
+              <Typography variant="chip1">{userPermissions?.extension?.numberOfDownloadable}</Typography>
+            </Box>
+            <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
+          </>
         </Box>
-        <AdminTable getRowId={(row) => row.id} columns={columns} />
+        <AdminTable getRowId={(row: IDetail) => row.userNo} columns={columns} data={userPermissions} />
       </Box>
 
       <AdminConfirm
