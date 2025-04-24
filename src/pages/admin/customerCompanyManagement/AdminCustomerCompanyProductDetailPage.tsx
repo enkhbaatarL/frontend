@@ -433,6 +433,21 @@ const AdminCustomerCompanyProductDetailPage = () => {
     }
   }
 
+  // 사용/미사용 변경
+  const handleChangeActive = async () => {
+    try {
+      const response = await companiesService.updateUserPermission(Number(companyNo), Number(providerNo), Number(goodsNo), {
+        isUsed: isActive ? false : true,
+        goodsAuthManagementSeparateCd: permission,
+      })
+
+      setIsActive(response?.isUsed)
+      setOpenConfirmActive(false)
+      showSnackbar(response?.isUsed ? t('사용으로 변경되었습니다.') : t('미사용으로 변경되었습니다.'), { variant: 'success' })
+    } catch (error) {
+      console.error(error)
+    }
+  }
   return (
     <>
       <Box>
@@ -649,9 +664,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
             variant: 'contained',
             color: 'primary',
             onClick: () => {
-              setOpenConfirmActive(false)
-              showSnackbar(isActive ? t('미사용으로 변경되었습니다.') : t('사용으로 변경되었습니다.'), { variant: 'success' })
-              setIsActive((value) => !value)
+              handleChangeActive()
             },
           },
         ]}
