@@ -118,7 +118,7 @@ export interface IRegisterGoodsRequest {
   goodsAuthManagementSeparateCd: string
 }
 
-interface ICompanySetting {
+export interface ICompanySetting {
   isViewable: boolean
   isDownloadable: boolean
   usageBeginDate: string
@@ -147,12 +147,31 @@ export interface IDetail {
   departmentNm: string
   isViewable: boolean
   isDownloadable: boolean
+  usageBeginDate: string
+  usageEndDate: string
 }
 export interface IUserPermissionInfo extends IDetail {
   detail: IDetail
   extension: IExtension
 }
-
+export interface IIndividualSettings {
+  userNo: number
+  isViewable: boolean
+  isDownloadable: boolean
+  usageBeginDate: string
+  usageEndDate: string
+}
+export interface IUpdateUserPermissionRequest {
+  isUsed: boolean
+  goodsAuthManagementSeparateCd: string
+  companySetting?: ICompanySetting
+  IndividualSettings?: IIndividualSettings[]
+}
+export interface IUpdateUserPermissionResponse {
+  isUsed: boolean
+  goodsAuthManagementSeparateCd: string
+  goodsAuthManagementSeparateNm: string
+}
 /**
  * 고객사 서비스
  */
@@ -372,6 +391,28 @@ const companiesService = {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IUserPermissionInfo>>> = await api.get(
       `admin/company-management/companies/${companyNo}/providers/${providerNo}/goods/${goodsNo}/permissions`,
       { params },
+    )
+
+    return response.data.data
+  },
+  /**
+   * 고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 수정합니다.
+   * @param companyNo - 고객회사 번호
+   * @param providerNo - 프로바이더 번호
+   * @param goodsNo - 상품번호
+   * @param body - { isUsed: 사용여부, goodsAuthManagementSeparateCd: 상품권한주체구분코드, companySetting: 회사 상품권한 설정, IndividualSettings: 개인 상품권한 설정 }
+   */
+  async updateUserPermission(
+    companyNo: number,
+    providerNo: number,
+    goodsNo: number,
+    body: IUpdateUserPermissionRequest,
+  ): Promise<IUpdateUserPermissionResponse> {
+    const response: AxiosResponse<ICommonResponse<IUpdateUserPermissionResponse>> = await api.patch(
+      `admin/company-management/companies/${companyNo}/providers/${providerNo}/goods/${goodsNo}/permissions`,
+      {
+        ...body,
+      },
     )
 
     return response.data.data

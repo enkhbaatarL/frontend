@@ -1,10 +1,10 @@
 import { Box, FormControlLabel, Radio, RadioGroup, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
-import { useQuery } from '@tanstack/react-query'
-import dayjs from 'dayjs'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import dayjs, { Dayjs } from 'dayjs'
 import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useParams, useSearchParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCheckboxField from '@/components/admin/AdminCheckboxField'
@@ -20,8 +20,8 @@ import VisibilityIcon from '@/components/common/icons/VisibilityIcon'
 import MICheckBox from '@/components/common/input/MICheckBox'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import { IDetail } from '@/service/admin/companies'
-import companiesService from '@/service/admin/companies'
+import { IDetail, IUserPermissionInfo } from '@/service/admin/companies'
+import companiesService, { ICompanySetting, IIndividualSettings, IUpdateUserPermissionRequest } from '@/service/admin/companies'
 
 const AdminCustomerCompanyProductDetailPageHeader = (props: {
   onChange: (value: boolean) => void
@@ -38,10 +38,6 @@ const AdminCustomerCompanyProductDetailPageHeader = (props: {
 
   return (
     <Flex gap={4} align="center">
-      <FormControlLabel
-        control={<Switch defaultChecked checked={props.value} onChange={(e) => toogle(e.target.checked)} />}
-        label={props.label}
-      />
       {props.editMode ? (
         <Box display={'flex'} columnGap={'10px'}>
           <AdminButton variant="outlined" color="secondary" size="h34" onClick={() => props.onCancel()}>
@@ -52,17 +48,23 @@ const AdminCustomerCompanyProductDetailPageHeader = (props: {
           </AdminButton>
         </Box>
       ) : (
-        <AdminButton variant="contained" color="primary" size="h34" onClick={() => props.changeMode(true)}>
-          상세 권한 설정
-        </AdminButton>
+        <>
+          <FormControlLabel
+            control={<Switch defaultChecked checked={props.value} onChange={(e) => toogle(e.target.checked)} />}
+            label={props.label}
+          />
+          <AdminButton variant="contained" color="primary" size="h34" onClick={() => props.changeMode(true)}>
+            상세 권한 설정
+          </AdminButton>
+        </>
       )}
     </Flex>
   )
 }
 
-const CustomPageTitle = (props: { isEdit: boolean }) => (
+const CustomPageTitle = (props: { isEdit: boolean; isActive: boolean }) => (
   <Box display="flex" alignItems="center" columnGap={'10px'}>
-    {props.isEdit && <AdminChip label="사용중" color="green" size="h24" />}
+    {props.isEdit && <AdminChip label={props.isActive ? t('사용중') : t('미사용')} color={props.isActive ? 'green' : 'white'} size="h24" />}
     <Typography color="gray.90" variant="heading2">
       {props.isEdit ? '상품 상세 권한 설정' : '상품 상세'}
     </Typography>
@@ -76,8 +78,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
   const [isDetailPermissionSetting, setIsDetailPermissionSetting] = useState(false)
   const [openCancelConfirm, setOpenCancelConfirm] = useState(false)
   const [openSaveConfirm, setOpenSaveConfirm] = useState(false)
-  const [searchParams] = useSearchParams()
-  const mode = searchParams.get('mode')
+  const queryClient = useQueryClient()
 
   const { companyNo, providerNo, goodsNo } = useParams()
   const { state } = useLocation()
@@ -93,6 +94,35 @@ const AdminCustomerCompanyProductDetailPage = () => {
     enabled: !!companyNo || !!providerNo || !!goodsNo,
   })
 
+  // 회사 권한 테스트 데이터
+  // const goodsDetailData = {
+  //   companyNo: 2005,
+  //   goodsNo: 70006,
+  //   isUsed: true,
+  //   goodsAuthManagementSeparateCd: "COMPANY",
+  //   goodsAuthManagementSeparateNm: "회사",
+  //   auditInfo: {
+  //     createUserId: "SYSTEM",
+  //     createDt: "2025-03-12 15:59:41",
+  //     modifyUserId: "SYSTEM",
+  //     modifyDt: "2025-03-20 15:07:49",
+  //     createUserNm: "TEST_USER11",
+  //     createUserDeptNm: "개발팀",
+  //     createUserCpnyNm: "T001회사",
+  //     modifyUserNm: "TEST_USER11",
+  //     modifyUserDeptNm: "개발팀",
+  //     modifyUserCpnyNm: "T001회사"
+  //   },
+  //   goodsNm: "TEST_PRODUCT1",
+  //   goodsExpn: "설명설명설명설명",
+  //   companySetting: {
+  //     isViewable: true,
+  //     isDownloadable: true,
+  //     usageBeginDate: "20250101",
+  //     usageEndDate: "20251231"
+  //   }
+  // }
+
   const { data: goodsDetailLatestData } = useQuery({
     queryKey: ['goodsDetailLatest', companyNo, providerNo, goodsNo],
     queryFn: async () => await companiesService.getGoodsLatestUpdated(Number(companyNo), Number(providerNo), Number(goodsNo)),
@@ -107,6 +137,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
     queryKey: ['userPermissions', companyNo, providerNo, goodsNo],
     queryFn: async () =>
       await companiesService.getUserPermissions(Number(companyNo), Number(providerNo), Number(goodsNo), { page: 1, size: 20 }),
+    // await companiesService.getUserPermissions(2005, 5000, 70006, { page: 1, size: 20 }),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,
@@ -120,10 +151,6 @@ const AdminCustomerCompanyProductDetailPage = () => {
   const toogle = () => {
     setOpenConfirmActive(true)
   }
-
-  useEffect(() => {
-    setIsDetailPermissionSetting(mode === 'set-permission')
-  }, [mode])
 
   useEffect(() => {
     if (goodsDetailData && goodsDetailLatestData) {
@@ -179,7 +206,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
           tooltipMessage="기본 정보 수정"
         />,
       )
-      setCustomTitle(<CustomPageTitle isEdit={isDetailPermissionSetting} />)
+      setCustomTitle(<CustomPageTitle isEdit={isDetailPermissionSetting} isActive={isActive} />)
     }
 
     return () => {
@@ -187,97 +214,100 @@ const AdminCustomerCompanyProductDetailPage = () => {
       setSubHeader(null)
       setCustomTitle(null)
     }
-  }, [setCustomComponent, setSubHeader, isActive, isDetailPermissionSetting, mode, goodsDetailData])
+  }, [setCustomComponent, setSubHeader, isActive, isDetailPermissionSetting, goodsDetailData])
 
-  const [_users, setUsers] = useState([
-    {
-      id: 1,
-      name: '홍길동',
-      department: 'Manager/AI Market Intelligence팀 / SK',
-      hasAdminAccess: true,
-      hasDataAccess: true,
-      accessStartDate: null,
-      accessEndDate: null,
-    },
-    {
-      id: 2,
-      name: '김길동',
-      department: 'Manager/AI Market Intelligence팀 / SK',
-      hasAdminAccess: true,
-      hasDataAccess: true,
-      accessStartDate: null,
-      accessEndDate: null,
-    },
-    {
-      id: 3,
-      name: '나길동',
-      department: 'Manager/AI Market Intelligence팀 / SK',
-      hasAdminAccess: true,
-      hasDataAccess: true,
-      accessStartDate: null,
-      accessEndDate: null,
-    },
-    {
-      id: 4,
-      name: '다길동',
-      department: 'Manager/AI Market Intelligence팀 / SK',
-      hasAdminAccess: true,
-      hasDataAccess: true,
-      accessStartDate: null,
-      accessEndDate: null,
-    },
-    {
-      id: 5,
-      name: '라길동',
-      department: 'Manager/AI Market Intelligence팀 / SK',
-      hasAdminAccess: true,
-      hasDataAccess: true,
-      accessStartDate: null,
-      accessEndDate: null,
-    },
-    {
-      id: 6,
-      name: '마길동',
-      department: 'Manager/AI Market Intelligence팀 / SK',
-      hasAdminAccess: true,
-      hasDataAccess: true,
-      accessStartDate: null,
-      accessEndDate: null,
-    },
-    {
-      id: 7,
-      name: '바길동',
-      department: 'Manager/AI Market Intelligence팀 / SK',
-      hasAdminAccess: true,
-      hasDataAccess: true,
-      accessStartDate: null,
-      accessEndDate: null,
-    },
-    {
-      id: 8,
-      name: '사길동',
-      department: 'Manager/AI Market Intelligence팀 / SK',
-      hasAdminAccess: true,
-      hasDataAccess: true,
-      accessStartDate: null,
-      accessEndDate: null,
-    },
-  ])
+  // 회사 권한 설정 상태
+  const [companyPermission, setCompanyPermission] = useState<ICompanySetting>({
+    isViewable: false,
+    isDownloadable: false,
+    usageBeginDate: '',
+    usageEndDate: '',
+  })
 
-  const changeField = (id: number, field: string, value: string | boolean) => {
-    setUsers((cloneUsers) =>
-      cloneUsers.map((item) => {
-        if (item.id === id) {
-          return {
-            ...item,
-            [field]: value,
-          }
-        }
+  // 개인 권한 설정 상태
+  const [individualPermissions, setIndividualPermissions] = useState<IIndividualSettings[]>([])
 
-        return item
-      }),
-    )
+  // 권한 설정 업데이트
+  const updatePermissions = async () => {
+    try {
+      const requestBody: IUpdateUserPermissionRequest = {
+        isUsed: isActive,
+        goodsAuthManagementSeparateCd: permission,
+        ...(permission === 'COMPANY' && { companySetting: companyPermission }),
+        ...(permission === 'INDIVIDUAL' && { IndividualSettings: individualPermissions }),
+      }
+
+      await companiesService.updateUserPermission(Number(companyNo), Number(providerNo), Number(goodsNo), requestBody)
+      setOpenSaveConfirm(false)
+      showSnackbar('저장되었습니다.', { variant: 'success' })
+      setIsDetailPermissionSetting(false)
+      queryClient.invalidateQueries({ queryKey: ['goodsDetail', companyNo, providerNo, goodsNo] })
+      queryClient.invalidateQueries({ queryKey: ['goodsDetailLatest', companyNo, providerNo, goodsNo] })
+      queryClient.invalidateQueries({ queryKey: ['userPermissions', companyNo, providerNo, goodsNo] })
+      setIndividualPermissions([])
+      setCompanyPermission({
+        isViewable: false,
+        isDownloadable: false,
+        usageBeginDate: '',
+        usageEndDate: '',
+      })
+    } catch (error) {
+      console.error(error)
+    }
   }
+
+  // 권한 변경
+  const handlePermissionChange = (e: React.ChangeEvent<HTMLInputElement>, row: IDetail) => {
+    const { checked, name } = e.target
+    const userNo = row.userNo
+
+    const targetUser = userPermissions?.detail?.find((user: IUserPermissionInfo) => user.userNo === userNo)
+    console.log('Name => ', name)
+    if (!targetUser) return
+
+    const newPermission = {
+      userNo: targetUser.userNo,
+      isViewable: name === 'isViewable' ? checked : targetUser.isViewable,
+      isDownloadable: name === 'isDownloadable' ? checked : targetUser.isDownloadable,
+      usageBeginDate: targetUser.usageBeginDate,
+      usageEndDate: targetUser.usageEndDate,
+    }
+
+    setIndividualPermissions((prev) => {
+      const updated = prev.map((p) => (p.userNo === userNo ? newPermission : p))
+
+      const exists = prev.some((p) => p.userNo === userNo)
+      return exists ? updated : [...prev, newPermission]
+    })
+  }
+
+  // 권한 적용 기간 변경
+  const handleDateChange = (value: string, row: IDetail, type: string) => {
+    const userNo = row.userNo
+
+    const targetUser = userPermissions?.detail?.find((user: IUserPermissionInfo) => user.userNo === userNo)
+
+    if (!targetUser) return
+
+    const newPermission = {
+      userNo: targetUser.userNo,
+      isViewable: targetUser.isViewable,
+      isDownloadable: targetUser.isDownloadable,
+      usageBeginDate: type === 'usageBeginDate' ? value : targetUser.usageBeginDate,
+      usageEndDate: type === 'usageEndDate' ? value : targetUser.usageEndDate,
+    }
+
+    setIndividualPermissions((prev) => {
+      const updated = prev.map((p) => (p.userNo === userNo ? newPermission : p))
+
+      const exists = prev.some((p) => p.userNo === userNo)
+      return exists ? updated : [...prev, newPermission]
+    })
+  }
+
+  useEffect(() => {
+    console.log('individualPermissions ==> ', individualPermissions)
+  }, [individualPermissions])
 
   const columns: GridColDef[] = useMemo(
     () => [
@@ -314,7 +344,10 @@ const AdminCustomerCompanyProductDetailPage = () => {
         renderCell: (params) => (
           <MICheckBox
             checked={params.row.isViewable}
-            onChange={(e) => changeField(params.row.userNo, 'isViewable', e.target.checked)}
+            onChange={(e) => {
+              params.row.isViewable = e.target.checked
+              handlePermissionChange(e, params.row)
+            }}
             disabled={!isDetailPermissionSetting}
           />
         ),
@@ -329,13 +362,16 @@ const AdminCustomerCompanyProductDetailPage = () => {
         renderCell: (params) => (
           <MICheckBox
             checked={params.row.isDownloadable}
-            onChange={(e) => changeField(params.row.userNo, 'isDownloadable', e.target.checked)}
+            onChange={(e) => {
+              params.row.isDownloadable = e.target.checked
+              handlePermissionChange(e, params.row)
+            }}
             disabled={!isDetailPermissionSetting}
           />
         ),
       },
       {
-        field: 'accessStartDate',
+        field: 'usageBeginDate',
         headerName: t('권한 적용 기간'),
         width: 391,
         sortable: false,
@@ -345,18 +381,40 @@ const AdminCustomerCompanyProductDetailPage = () => {
           <Box display={'flex'} alignItems={'center'} maxWidth={'100%'} padding="7px 12px">
             <AdminDatePicker
               readOnly={!isDetailPermissionSetting}
-              disabled={!params.row.hasDataAccess && !params.row.hasAdminAccess}
+              disabled={!params.row.isViewable && !params.row.isDownloadable}
               size="h26"
-              value={params.row.accessStartDate}
+              onChange={(e: Dayjs | null) => {
+                if (e) {
+                  const value = e.format('YYYYMMDD')
+                  params.row.usageBeginDate = value
+                  handleDateChange(value, params.row, 'usageBeginDate')
+                }
+              }}
+              value={dayjs(
+                `${params.row.usageBeginDate.slice(0, 4) 
+                }-${ 
+                  params.row.usageBeginDate.slice(4, 6) 
+                }-${ 
+                  params.row.usageBeginDate.slice(6, 8)}`,
+              )}
             />
             <Typography component={'div'} mx={'8px'} color="gray.50" variant="breadcrumbs">
               ~
             </Typography>
             <AdminDatePicker
               readOnly={!isDetailPermissionSetting}
-              disabled={!params.row.hasDataAccess && !params.row.hasAdminAccess}
+              disabled={!params.row.isViewable && !params.row.isDownloadable}
               size="h26"
-              value={params.row.accessEndDate}
+              onChange={(e: Dayjs | null) => {
+                if (e) {
+                  const value = e.format('YYYYMMDD')
+                  params.row.usageEndDate = value
+                  handleDateChange(value, params.row, 'usageEndDate')
+                }
+              }}
+              value={dayjs(
+                `${params.row.usageEndDate.slice(0, 4)  }-${  params.row.usageEndDate.slice(4, 6)  }-${  params.row.usageEndDate.slice(6, 8)}`,
+              )}
             />
           </Box>
         ),
@@ -389,17 +447,25 @@ const AdminCustomerCompanyProductDetailPage = () => {
             <>
               <Box minWidth={'210px'}>
                 <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
-                  회사 권한 설정
+                  {t('회사 권한 설정')}
                 </Typography>
 
                 <Flex>
-                  <AdminCheckboxField disabled={!isDetailPermissionSetting} checked label="조회" />
-                  <AdminCheckboxField disabled={!isDetailPermissionSetting} checked label="다운로드" />
+                  <AdminCheckboxField
+                    disabled={!isDetailPermissionSetting}
+                    checked={goodsDetailData?.companySetting.isViewable}
+                    label="조회"
+                  />
+                  <AdminCheckboxField
+                    disabled={!isDetailPermissionSetting}
+                    checked={goodsDetailData?.companySetting.isDownloadable}
+                    label="다운로드"
+                  />
                 </Flex>
               </Box>
               <Box minWidth={'210px'}>
                 <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
-                  권한 적용 기간
+                  {t('권한 적용 기간')}
                   {isDetailPermissionSetting && (
                     <Typography component={'sup'} variant="asterisk" color="point.red1">
                       *
@@ -407,11 +473,31 @@ const AdminCustomerCompanyProductDetailPage = () => {
                   )}
                 </Typography>
                 <Box display={'flex'} alignItems={'center'} maxWidth={'100%'}>
-                  <AdminDatePicker readOnly={!isDetailPermissionSetting} size="h26" />
+                  <AdminDatePicker
+                    readOnly={!isDetailPermissionSetting}
+                    size="h26"
+                    value={dayjs(
+                      `${goodsDetailData?.companySetting.usageBeginDate.slice(0, 4) 
+                      }-${ 
+                        goodsDetailData?.companySetting.usageBeginDate.slice(4, 6) 
+                      }-${ 
+                        goodsDetailData?.companySetting.usageBeginDate.slice(6, 8)}`,
+                    )}
+                  />
                   <Typography component={'div'} mx={'8px'} color="gray.50" variant="breadcrumbs">
                     ~
                   </Typography>
-                  <AdminDatePicker readOnly={!isDetailPermissionSetting} size="h26" />
+                  <AdminDatePicker
+                    readOnly={!isDetailPermissionSetting}
+                    size="h26"
+                    value={dayjs(
+                      `${goodsDetailData?.companySetting.usageEndDate.slice(0, 4) 
+                      }-${ 
+                        goodsDetailData?.companySetting.usageEndDate.slice(4, 6) 
+                      }-${ 
+                        goodsDetailData?.companySetting.usageEndDate.slice(6, 8)}`,
+                    )}
+                  />
                 </Box>
               </Box>
             </>
@@ -470,14 +556,14 @@ const AdminCustomerCompanyProductDetailPage = () => {
 
       <AdminConfirm
         open={openConfirmActive}
-        title={<>{isActive ? '미사용으로 변경하시겠습니까?' : '사용으로 변경하시겠습니까?'}</>}
+        title={<>{isActive ? t('미사용으로 변경하시겠습니까?') : t('사용으로 변경하시겠습니까?')}</>}
         width={450}
         handleClose={() => {
           setOpenConfirmActive(false)
         }}
         actions={[
           {
-            label: '취소',
+            label: t('취소'),
             variant: 'outlined',
             color: 'secondary',
             onClick: () => {
@@ -485,30 +571,32 @@ const AdminCustomerCompanyProductDetailPage = () => {
             },
           },
           {
-            label: '변경',
+            label: t('변경'),
             variant: 'contained',
             color: 'primary',
             onClick: () => {
               setOpenConfirmActive(false)
-              showSnackbar(isActive ? '미사용으로 변경되었습니다.' : '사용으로 변경되었습니다.', { variant: 'success' })
+              showSnackbar(isActive ? t('미사용으로 변경되었습니다.') : t('사용으로 변경되었습니다.'), { variant: 'success' })
               setIsActive((value) => !value)
             },
           },
         ]}
       >
-        {isActive ? '변경 시 해당 프로바이더와 연계된 상품도 비활성화됩니다.' : '변경 시 해당 프로바이더와 연계된 상품도 활성화됩니다.'}
+        {isActive
+          ? t('변경 시 해당 프로바이더와 연계된 상품도 비활성화됩니다.')
+          : t('변경 시 해당 프로바이더와 연계된 상품도 활성화됩니다.')}
       </AdminConfirm>
 
       <AdminConfirm
         open={openCancelConfirm}
-        title={<>취소하시겠습니까?</>}
+        title={t('취소하시겠습니까?')}
         width={450}
         handleClose={() => {
           setOpenConfirmActive(false)
         }}
         actions={[
           {
-            label: '이어서 작성',
+            label: t('이어서 작성'),
             variant: 'outlined',
             color: 'secondary',
             onClick: () => {
@@ -516,28 +604,29 @@ const AdminCustomerCompanyProductDetailPage = () => {
             },
           },
           {
-            label: '취소 및 이동',
+            label: t('취소 및 이동'),
             variant: 'contained',
             color: 'primary',
             onClick: () => {
               setOpenCancelConfirm(false)
+              setIsDetailPermissionSetting(false)
             },
           },
         ]}
       >
-        취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.
+        {t('취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.')}
       </AdminConfirm>
 
       <AdminConfirm
         open={openSaveConfirm}
-        title={<>저장하시겠습니까?</>}
+        title={t('저장하시겠습니까?')}
         width={450}
         handleClose={() => {
           setOpenSaveConfirm(false)
         }}
         actions={[
           {
-            label: '취소',
+            label: t('취소'),
             variant: 'outlined',
             color: 'secondary',
             onClick: () => {
@@ -545,14 +634,11 @@ const AdminCustomerCompanyProductDetailPage = () => {
             },
           },
           {
-            label: '저장',
+            label: t('저장'),
             variant: 'contained',
             color: 'primary',
             onClick: () => {
-              setOpenSaveConfirm(false)
-              showSnackbar('저장되었습니다.', { variant: 'success' })
-              showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' })
-              setIsDetailPermissionSetting(false)
+              updatePermissions()
             },
           },
         ]}
