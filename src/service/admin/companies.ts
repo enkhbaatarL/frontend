@@ -395,6 +395,19 @@ const companiesService = {
 
     return response.data.data
   },
+  // async getUserPermissions(
+  //   companyNo: number,
+  //   providerNo: number,
+  //   goodsNo: number,
+  //   params: IPaginationRequest,
+  // ): Promise<IDetail[]> {
+  //   const response: AxiosResponse<ICommonResponse<IDetail[]>> = await api.get(
+  //     `admin/company-management/companies/${companyNo}/providers/${providerNo}/goods/${goodsNo}/permissions`,
+  //     { params },
+  //   )
+
+  //   return response.data.data
+  // },
   /**
    * 고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 수정합니다.
    * @param companyNo - 고객회사 번호

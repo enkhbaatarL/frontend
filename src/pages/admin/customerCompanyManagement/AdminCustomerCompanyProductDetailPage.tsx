@@ -20,7 +20,7 @@ import VisibilityIcon from '@/components/common/icons/VisibilityIcon'
 import MICheckBox from '@/components/common/input/MICheckBox'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import { IDetail, IUserPermissionInfo } from '@/service/admin/companies'
+import { IDetail } from '@/service/admin/companies'
 import companiesService, { ICompanySetting, IIndividualSettings, IUpdateUserPermissionRequest } from '@/service/admin/companies'
 
 const AdminCustomerCompanyProductDetailPageHeader = (props: {
@@ -246,7 +246,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
     const { checked, name } = e.target
     const userNo = row.userNo
 
-    const targetUser = userPermissions?.detail?.find((user: IUserPermissionInfo) => user.userNo === userNo)
+    const targetUser = userPermissions?.detail?.find((user: IDetail) => user.userNo === userNo)
     if (!targetUser) return
 
     const newPermission = {
@@ -263,13 +263,15 @@ const AdminCustomerCompanyProductDetailPage = () => {
       const exists = prev.some((p) => p.userNo === userNo)
       return exists ? updated : [...prev, newPermission]
     })
+
+    console.log('isEditViewable', isEditViewable)
   }
 
   // 권한 적용 기간 변경
   const handleDateChange = (value: string, row: IDetail, type: string) => {
     const userNo = row.userNo
 
-    const targetUser = userPermissions?.detail?.find((user: IUserPermissionInfo) => user.userNo === userNo)
+    const targetUser = userPermissions?.detail?.find((user: IDetail) => user.userNo === userNo)
 
     if (!targetUser) return
 
@@ -288,6 +290,19 @@ const AdminCustomerCompanyProductDetailPage = () => {
       return exists ? updated : [...prev, newPermission]
     })
   }
+
+  useEffect(() => {
+    console.log('isEditViewable', isEditViewable)
+    console.log('goodsDetailData?.companySetting', goodsDetailData?.companySetting)
+    console.log('companyPermission', companyPermission.isViewable)
+  }, [isEditViewable, goodsDetailData?.companySetting, companyPermission, permission])
+
+  const [checkIsViewable, setCheckIsViewable] = useState<boolean>(false)
+
+  useEffect(() => {
+    console.log('checkIsViewable', checkIsViewable)
+    console.log('######## => ', permission === 'INDIVIDUAL' && goodsDetailData?.companySetting && checkIsViewable)
+  }, [checkIsViewable])
 
   const columns: GridColDef[] = useMemo(
     () => [
@@ -325,18 +340,20 @@ const AdminCustomerCompanyProductDetailPage = () => {
           <MICheckBox
             checked={
               permission === 'INDIVIDUAL'
-                ? params.row.isViewable
-                : goodsDetailData?.companySetting && !isEditViewable
-                  ? goodsDetailData?.companySetting?.isViewable
-                  : isEditViewable
-                    ? companyPermission.isViewable
+                ? goodsDetailData?.companySetting
+                  ? checkIsViewable
+                    ? params.row.isViewable
                     : false
+                  : params.row.isViewable
+                : false
             }
             onChange={(e) => {
               params.row.isViewable = e.target.checked
+              setCheckIsViewable(true)
+              console.log('params.row.isViewable', params.row.isViewable, e.target.checked)
               handlePermissionChange(e, params.row)
             }}
-            disabled={!isDetailPermissionSetting || permission === 'COMPANY'}
+            disabled={!isDetailPermissionSetting}
           />
         ),
       },
@@ -350,13 +367,15 @@ const AdminCustomerCompanyProductDetailPage = () => {
         renderCell: (params) => (
           <MICheckBox
             checked={
-              permission === 'INDIVIDUAL'
+              permission === 'INDIVIDUAL' && !goodsDetailData?.companySetting
                 ? params.row.isDownloadable
-                : goodsDetailData?.companySetting && !isEditDownloadable
-                  ? goodsDetailData?.companySetting?.isDownloadable
-                  : isEditDownloadable
-                    ? companyPermission.isDownloadable
-                    : false
+                : permission === 'INDIVIDUAL' && goodsDetailData?.companySetting
+                  ? false
+                  : goodsDetailData?.companySetting && !isEditDownloadable
+                    ? goodsDetailData?.companySetting?.isDownloadable
+                    : isEditDownloadable
+                      ? companyPermission.isDownloadable
+                      : false
             }
             onChange={(e) => {
               params.row.isDownloadable = e.target.checked
@@ -376,8 +395,9 @@ const AdminCustomerCompanyProductDetailPage = () => {
         renderCell: (params) => (
           <Box display={'flex'} alignItems={'center'} maxWidth={'100%'} padding="7px 12px">
             <AdminDatePicker
-              readOnly={!isDetailPermissionSetting || permission === 'COMPANY'}
-              disabled={!params.row.isViewable && !params.row.isDownloadable}
+              readOnly={!isDetailPermissionSetting || !params.row.isViewable}
+              // readOnly={!isDetailPermissionSetting || !params.row.isViewable}
+              // disabled={!params.row.isViewable}
               size="h26"
               onChange={(e: Dayjs | null) => {
                 if (e) {
@@ -387,11 +407,13 @@ const AdminCustomerCompanyProductDetailPage = () => {
                 }
               }}
               value={dayjs(
-                permission === 'INDIVIDUAL'
+                permission === 'INDIVIDUAL' && !goodsDetailData?.companySetting
                   ? `${params.row.usageBeginDate.slice(0, 4)}-${params.row.usageBeginDate.slice(4, 6)}-${params.row.usageBeginDate.slice(6, 8)}`
-                  : goodsDetailData?.companySetting && !isEditUsageBeginDate
-                    ? goodsDetailData?.companySetting?.usageBeginDate
-                    : companyPermission?.usageBeginDate,
+                  : permission === 'INDIVIDUAL' && goodsDetailData?.companySetting
+                    ? dayjs().format('YYYYMMDD')
+                    : goodsDetailData?.companySetting && !isEditUsageBeginDate
+                      ? goodsDetailData?.companySetting?.usageBeginDate
+                      : companyPermission?.usageBeginDate,
               )}
             />
             <Typography component={'div'} mx={'8px'} color="gray.50" variant="breadcrumbs">
@@ -409,11 +431,13 @@ const AdminCustomerCompanyProductDetailPage = () => {
                 }
               }}
               value={dayjs(
-                permission === 'INDIVIDUAL'
+                permission === 'INDIVIDUAL' && !goodsDetailData?.companySetting
                   ? `${params.row.usageEndDate.slice(0, 4)}-${params.row.usageEndDate.slice(4, 6)}-${params.row.usageEndDate.slice(6, 8)}`
-                  : goodsDetailData?.companySetting && !isEditUsageEndDate
-                    ? goodsDetailData?.companySetting?.usageEndDate
-                    : companyPermission?.usageEndDate,
+                  : permission === 'INDIVIDUAL' && goodsDetailData?.companySetting
+                    ? dayjs().add(10, 'year').endOf('year').format('YYYYMMDD')
+                    : goodsDetailData?.companySetting && !isEditUsageEndDate
+                      ? goodsDetailData?.companySetting?.usageEndDate
+                      : companyPermission?.usageEndDate,
               )}
             />
           </Box>
@@ -593,56 +617,60 @@ const AdminCustomerCompanyProductDetailPage = () => {
           )}
         </Box>
       </Box>
-      <Box>
-        <Box minWidth={'210px'} mb="5px">
-          <Typography component={'p'} variant="subtitle" color="gray.90">
-            {t('상세 권한 설정')}
-          </Typography>
-          <Typography variant="subtext" color="gray.60">
-            {t('회원별 상세 권한은 회사 권한 설정과 동일합니다.')}
-          </Typography>
-        </Box>
-        <Box
-          display={'flex'}
-          alignItems={'center'}
-          padding="10px 12px"
-          height={'54px'}
-          boxSizing={'border-box'}
-          bgcolor={'gray.5'}
-          borderBottom={'1px solid'}
-          borderTop={'1px solid'}
-          borderColor={'gray.30'}
-        >
-          <>
-            <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
-              <Box>{<PersonIcon />}</Box>
-              <Typography variant="subtitle2" color="gray.60">
-                {t('회원')}
+      {permission === 'INDIVIDUAL' && (
+        <>
+          <Box>
+            <Box minWidth={'210px'} mb="5px">
+              <Typography component={'p'} variant="subtitle" color="gray.90">
+                {t('상세 권한 설정')}
               </Typography>
-              <Typography variant="chip1">{userPermissions?.extension?.numberOfUsers}</Typography>
-            </Box>
-            <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
-            <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
-              <Box>{<VisibilityIcon />}</Box>
-              <Typography variant="subtitle2" color="gray.60">
-                {t('조회')}
+              <Typography variant="subtext" color="gray.60">
+                {t('회원별 상세 권한은 회사 권한 설정과 동일합니다.')}
               </Typography>
-              <Typography variant="chip1">{userPermissions?.extension?.numberOfViewable}</Typography>
             </Box>
-            <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
-            <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
-              <Box>{<DownloadIcon />}</Box>
-              <Typography variant="subtitle2" color="gray.60">
-                {t('다운로드')}
-              </Typography>
-              <Typography variant="chip1">{userPermissions?.extension?.numberOfDownloadable}</Typography>
+            <Box
+              display={'flex'}
+              alignItems={'center'}
+              padding="10px 12px"
+              height={'54px'}
+              boxSizing={'border-box'}
+              bgcolor={'gray.5'}
+              borderBottom={'1px solid'}
+              borderTop={'1px solid'}
+              borderColor={'gray.30'}
+            >
+              <>
+                <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
+                  <Box>{<PersonIcon />}</Box>
+                  <Typography variant="subtitle2" color="gray.60">
+                    {t('회원')}
+                  </Typography>
+                  <Typography variant="chip1">{userPermissions?.extension?.numberOfUsers}</Typography>
+                </Box>
+                <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
+                <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
+                  <Box>{<VisibilityIcon />}</Box>
+                  <Typography variant="subtitle2" color="gray.60">
+                    {t('조회')}
+                  </Typography>
+                  <Typography variant="chip1">{userPermissions?.extension?.numberOfViewable}</Typography>
+                </Box>
+                <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
+                <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
+                  <Box>{<DownloadIcon />}</Box>
+                  <Typography variant="subtitle2" color="gray.60">
+                    {t('다운로드')}
+                  </Typography>
+                  <Typography variant="chip1">{userPermissions?.extension?.numberOfDownloadable}</Typography>
+                </Box>
+                <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
+              </>
             </Box>
-            <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
-          </>
-        </Box>
-        <AdminTable getRowId={(row: IDetail) => row.userNo} columns={columns} data={userPermissions} />
-      </Box>
 
+            <AdminTable getRowId={(row: IDetail) => row?.userNo} columns={columns} data={userPermissions} />
+          </Box>
+        </>
+      )}
       <AdminConfirm
         open={openConfirmActive}
         title={<>{isActive ? t('미사용으로 변경하시겠습니까?') : t('사용으로 변경하시겠습니까?')}</>}
