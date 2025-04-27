@@ -77,7 +77,7 @@ const useSearchFilter = <Req, Res>(
     (page?: number, size?: number) => {
       setPagination({ page: page ?? 1, size: size ?? 20 })
       if (!isPureState) {
-        const searchParams = new URLSearchParams()
+        const searchParams = new URLSearchParams(location.search)
 
         searchParams.set('page', String(page))
         searchParams.set('size', String(size))
@@ -85,7 +85,7 @@ const useSearchFilter = <Req, Res>(
         navigate(`${location.pathname}?${searchParams.toString()}`)
       }
     },
-    [isPureState, location.pathname, navigate],
+    [isPureState, location.pathname, navigate, location.search],
   )
 
   const updateSize = useCallback(

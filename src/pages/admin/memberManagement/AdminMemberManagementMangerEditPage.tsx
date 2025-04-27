@@ -1,19 +1,16 @@
-import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminCheckboxField from '@/components/admin/AdminCheckboxField'
 import AdminConfirm from '@/components/admin/AdminConfirm'
-import AdminIpInput from '@/components/admin/AdminIpInput'
 import AdminLoading from '@/components/admin/AdminLoading'
-import AdminTextField from '@/components/admin/AdminTextField'
+import AdminAccessControlForm from '@/components/admin/memberManagement/AdminAccessControlForm'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import membersService, { IMangerInfoEditRequest } from '@/service/admin/members'
+import membersService, { IMangerInfoEditRequest, UserRole } from '@/service/admin/members'
 
 const AdminMemberManagementMangerEditPageHeader = ({ onCancel, onSave }: { onSave: () => void; onCancel: () => void }) => (
   <Flex gap={10}>
@@ -36,8 +33,9 @@ const AdminMemberManagementMangerEditPage = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   const [managerInfo, setManagerInfo] = useState<IMangerInfoEditRequest>({
+    userRoleCd: UserRole.ADMIN,
     isOtherServiceAccessPossible: false,
-    accessAllowedIpAddress: [],
+    accessAllowedIpAddress: [''],
   })
 
   const { data, isLoading, isError } = useQuery({
@@ -59,6 +57,20 @@ const AdminMemberManagementMangerEditPage = () => {
     setManagerInfo((prev) => ({
       ...prev,
       accessAllowedIpAddress: ipList,
+    }))
+  }
+
+  const handleToggleAccess = () => {
+    setManagerInfo((prev) => ({
+      ...prev,
+      isOtherServiceAccessPossible: !prev.isOtherServiceAccessPossible,
+    }))
+  }
+
+  const handleUserRoleChange = (newUserRole: UserRole) => {
+    setManagerInfo((prev) => ({
+      ...prev,
+      userRoleCd: newUserRole,
     }))
   }
 
@@ -93,9 +105,10 @@ const AdminMemberManagementMangerEditPage = () => {
 
   useEffect(() => {
     if (data) {
-      const { isOtherServiceAccessPossible, accessAllowedIpAddress } = data
+      const { userRoleCd, isOtherServiceAccessPossible, accessAllowedIpAddress } = data
 
       setManagerInfo({
+        userRoleCd,
         isOtherServiceAccessPossible,
         accessAllowedIpAddress,
       })
@@ -106,50 +119,16 @@ const AdminMemberManagementMangerEditPage = () => {
     <AdminLoading />
   ) : (
     <>
-      <Box>
-        <Typography sx={{ mb: 1 }} component="span" variant="subtitle">
-          {t('관리자 정보')}
-        </Typography>
-
-        <Typography component="p" variant="subtext2" color="gray.60">
-          {t('관리자 정보는 수정이 불가합니다. 수정 필요 시 삭제 후 신규 사용자를 등록해 주세요.')}
-        </Typography>
-        <AdminTextField
-          sx={{ width: '700px', mt: 3 }}
-          value={displayManagerInfo}
-          aria-readonly="true"
-          placeholder="사용자 검색 목록에서 사용자를 선택하세요."
-        />
-      </Box>
-      <Box>
-        <Typography sx={{ mb: 1 }} component="span" variant="subtitle">
-          {t('타사 서비스 접근 여부')}
-        </Typography>
-        <Typography component="p" variant="subtext2" color="gray.60">
-          {t('접근 허용 시 모든 고객사의 MI 서비스 접근이 가능합니다. 단, 데이터는 기본 정보만 표기됩니다.')}
-        </Typography>
-        <Box mt={3}>
-          <AdminCheckboxField
-            label="접근 허용"
-            checked={managerInfo.isOtherServiceAccessPossible}
-            onChange={() =>
-              setManagerInfo((prev) => ({
-                ...prev,
-                isOtherServiceAccessPossible: !prev.isOtherServiceAccessPossible,
-              }))
-            }
-          />
-        </Box>
-      </Box>
-      <Box>
-        <Typography sx={{ mb: 1 }} component="span" variant="subtitle">
-          {t('관리자 IP')}
-        </Typography>
-        <Typography component="p" variant="subtext2" color="gray.60">
-          {t('등록한 IP에서만 접속이 가능합니다. 등록할 관리자의 IP를 입력하세요.')}
-        </Typography>
-        <AdminIpInput ipList={managerInfo.accessAllowedIpAddress} onUpdate={handleIpUpdate} />
-      </Box>
+      <AdminAccessControlForm
+        mode="edit"
+        displayManagerInfo={displayManagerInfo}
+        userRoleCd={managerInfo.userRoleCd}
+        isOtherServiceAccessPossible={managerInfo.isOtherServiceAccessPossible}
+        accessAllowedIpAddress={managerInfo.accessAllowedIpAddress}
+        onToggleAccess={handleToggleAccess}
+        onIpUpdate={handleIpUpdate}
+        onUserRoleChange={handleUserRoleChange}
+      />
       <AdminConfirm
         open={showCancelDialog}
         title={t('취소하시겠습니까?')}

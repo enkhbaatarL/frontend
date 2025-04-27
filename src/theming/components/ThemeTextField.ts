@@ -4,7 +4,7 @@ const ThemeTextField: Components<Omit<Theme, 'components'>>['MuiTextField'] = {
   styleOverrides: {
     root: ({ theme, ownerState }) => ({
       backgroundColor: '#fff',
-      minWidth: '200px',
+      minWidth: '160px',
       fontWeight: '400',
       lineHeight: 1.4,
       boxSizing: 'border-box',

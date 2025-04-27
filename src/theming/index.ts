@@ -9,6 +9,8 @@ declare module '@mui/material/styles' {
     gray: Record<number, string>
     coolGray: Record<number, string>
     point: Record<string, string>
+    chart: Record<string, string>
+    content: Record<string, string>
   }
 
   interface PaletteOptions {
@@ -16,6 +18,8 @@ declare module '@mui/material/styles' {
     gray?: Record<number, string>
     coolGray?: Record<number, string>
     point?: Record<string, string>
+    chart?: Record<string, string>
+    content: Record<string, string>
   }
 }
 
@@ -25,6 +29,7 @@ declare module '@mui/material/Button' {
     gray: true
     coolGray: true
     point: true
+    chart: true
   }
 }
 
@@ -47,6 +52,7 @@ declare module '@mui/material/styles' {
     subtext1: CSSProperties
     subtext2: CSSProperties
     body1: CSSProperties
+    body1M16: CSSProperties
     body1B16: CSSProperties
     body1R16: CSSProperties
     body2: CSSProperties
@@ -54,12 +60,14 @@ declare module '@mui/material/styles' {
     body2SB14: CSSProperties
     body2R14: CSSProperties
     body3: CSSProperties
+    body3SB12: CSSProperties
     body3M12: CSSProperties
     body3R12: CSSProperties
     body3R14: CSSProperties
     body4: CSSProperties
     body6: CSSProperties
     tableHeader1: CSSProperties
+    tableHeaderSemibold: CSSProperties
     tableBody1: CSSProperties
     tableBody2: CSSProperties
     chip1: CSSProperties
@@ -72,6 +80,7 @@ declare module '@mui/material/styles' {
     helperText: CSSProperties
     labelText: CSSProperties
     fieldLabel: CSSProperties
+    sectionTitle: CSSProperties
   }
 
   // allow configuration using `createTheme()`
@@ -81,6 +90,7 @@ declare module '@mui/material/styles' {
     subtext1?: CSSProperties
     subtext2?: CSSProperties
     body1?: CSSProperties
+    body1M16?: CSSProperties
     body1B16?: CSSProperties
     body1R16?: CSSProperties
     body2?: CSSProperties
@@ -88,12 +98,14 @@ declare module '@mui/material/styles' {
     body2SB14?: CSSProperties
     body2R14?: CSSProperties
     body3?: CSSProperties
+    body3SB12?: CSSProperties
     body3M12?: CSSProperties
     body3R12?: CSSProperties
     body3R14?: CSSProperties
     body4?: CSSProperties
     body6?: CSSProperties
     tableHeader1?: CSSProperties
+    tableHeaderSemibold?: CSSProperties
     tableBody1?: CSSProperties
     tableBody2?: CSSProperties
     chip1?: CSSProperties
@@ -106,6 +118,7 @@ declare module '@mui/material/styles' {
     helperText?: CSSProperties
     labelText?: CSSProperties
     fieldLabel?: CSSProperties
+    sectionTitle?: CSSProperties
   }
 }
 
@@ -117,6 +130,7 @@ declare module '@mui/material/Typography' {
     subtext1: true
     subtext2: true
     body1: true
+    body1M16: true
     body1B16: true
     body1R16: true
     body2: true
@@ -125,11 +139,13 @@ declare module '@mui/material/Typography' {
     body2R14: true
     body4: true
     body3: true
+    body3SB12: true
     body3M12: true
     body3R12: true
     body3R14: true
     body6: true
     tableHeader1: true
+    tableHeaderSemibold: true
     tableBody1: true
     tableBody2: true
     chip1: true
@@ -143,6 +159,7 @@ declare module '@mui/material/Typography' {
     helperText: true
     labelText: true
     fieldLabel: true
+    sectionTitle: true
   }
 }
 
@@ -175,6 +192,12 @@ const theme = createTheme({
     point: {
       red1: '#F03E3E',
       green1: '#0CA678',
+    },
+    chart: {
+      blue2: '#5191F5',
+    },
+    content: {
+      backgroundHover: '#F0F3F6',
     },
     gray: {
       5: '#F8F9FA',
@@ -235,6 +258,12 @@ const theme = createTheme({
       fontWeight: 600,
       lineHeight: '1.4',
     },
+    body1M16: {
+      fontSize: '16px',
+      fontStyle: 'normal',
+      fontWeight: 500,
+      lineHeight: '1.4',
+    },
     body1B16: {
       fontSize: '16px',
       fontStyle: 'normal',
@@ -276,6 +305,12 @@ const theme = createTheme({
       fontWeight: 500,
       lineHeight: '1.4',
     },
+    body3SB12: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1.4',
+    },
     body3M12: {
       fontSize: '12px',
       fontStyle: 'normal',
@@ -310,6 +345,12 @@ const theme = createTheme({
       fontSize: '13px',
       fontStyle: 'normal',
       fontWeight: 500,
+      lineHeight: '1.4',
+    },
+    tableHeaderSemibold: {
+      fontSize: '13px',
+      fontStyle: 'normal',
+      fontWeight: 600,
       lineHeight: '1.4',
     },
     tableBody1: {
@@ -381,10 +422,16 @@ const theme = createTheme({
       lineHeight: '100%',
     },
     fieldLabel: {
-      fontSize: '12px',
+      fontSize: '14px',
       fontStyle: 'normal',
-      fontWeight: 500,
-      lineHeight: '1',
+      fontWeight: 700,
+      lineHeight: '1.4',
+    },
+    sectionTitle: {
+      fontSize: '14px',
+      fontStyle: 'normal',
+      fontWeight: 700,
+      lineHeight: '1.4',
     },
     h1: undefined,
     fontFamily: ['Pretendard', 'sans-serif'].join(','),

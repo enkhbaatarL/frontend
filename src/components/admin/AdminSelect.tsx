@@ -29,14 +29,15 @@ const AdminSelect = ({
   displayEmpty = true,
   options,
   useAllOption = true,
+  fullWidth,
   label,
   placeholder,
   showSelectedValue = true,
   ...props
 }: Props) => (
-  <FormControl>
+  <FormControl fullWidth={fullWidth}>
     {label && (
-      <Typography marginBottom={1} variant="body3" color="gray.70">
+      <Typography marginBottom={1} variant="labelText" color="gray.70">
         {label}
       </Typography>
     )}
@@ -57,15 +58,14 @@ const AdminSelect = ({
 
           return (
             <Typography
-              variant="tableBody2"
+              variant="body2"
+              color="gray.40"
               sx={{
-                color: 'rgba(0, 0, 0, 0.38)',
-                fontSize: '14px',
                 fontStyle: 'normal',
                 fontWeight: 400,
               }}
             >
-              {placeholder ?? t('선택하세요.')}
+              {placeholder ?? t('선택하세요')}
             </Typography>
           )
         }

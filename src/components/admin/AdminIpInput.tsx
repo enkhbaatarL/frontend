@@ -7,6 +7,7 @@ import TrashIcon from '@/components/common/icons/TrashIcon'
 interface Props {
   ipList?: string[]
   onUpdate: (ipList: string[]) => void
+  disabled?: boolean
 }
 
 interface AdditionalIpItemProps {
@@ -14,37 +15,19 @@ interface AdditionalIpItemProps {
   ip: string
   updateHandler: (index: number, ip: string) => void
   deleteHandler: (index: number) => void
+  disabled?: boolean
 }
 
-const AdditionalIpItem = ({ ipIndex, ip, updateHandler, deleteHandler }: AdditionalIpItemProps) => (
-  <Box display="flex" width="700px" mt={3} gap="8px">
-    <AdminTextField
-      sx={{
-        '&[aria-readonly="true"] .MuiInputBase-input': {
-          background: '#ffffff',
-        },
-      }}
-      fullWidth
-      value={ip}
-      onChange={(e) => updateHandler(ipIndex, e.target.value)}
-    />
-    <IconButton
-      type="button"
-      onClick={() => deleteHandler(ipIndex)}
-      style={{
-        padding: '6px 10px',
-        border: 'none',
-        background: 'transparent',
-        cursor: 'pointer',
-      }}
-      aria-label="Delete IP"
-    >
+const AdditionalIpItem = ({ ipIndex, ip, updateHandler, deleteHandler, disabled }: AdditionalIpItemProps) => (
+  <Box display="flex" width="500px" mt={3} gap="8px">
+    <AdminTextField fullWidth value={ip} onChange={(e) => updateHandler(ipIndex, e.target.value)} disabled={disabled} />
+    <IconButton type="button" onClick={() => deleteHandler(ipIndex)} aria-label="Delete IP" disabled={disabled}>
       <TrashIcon />
     </IconButton>
   </Box>
 )
 
-const AdminIpInput = ({ ipList = [], onUpdate }: Props) => {
+const AdminIpInput = ({ ipList = [], onUpdate, disabled }: Props) => {
   const ipListLength = ipList?.length ?? 0
 
   const updateHandler = (index: number, ip: string) => {
@@ -66,9 +49,15 @@ const AdminIpInput = ({ ipList = [], onUpdate }: Props) => {
 
   return (
     <>
-      <Box display="flex" width="700px" mt={3} gap="8px">
-        <AdminTextField fullWidth value={ipList[0] ?? ''} onChange={(e) => updateHandler(0, e.target.value)} placeholder="입력하세요." />
-        <IconButton onClick={addIpList}>
+      <Box display="flex" width="500px" mt={3} gap="8px">
+        <AdminTextField
+          fullWidth
+          value={ipList[0] ?? ''}
+          onChange={(e) => updateHandler(0, e.target.value)}
+          placeholder="입력하세요."
+          disabled={disabled}
+        />
+        <IconButton onClick={addIpList} disabled={disabled}>
           <AddIcon />
         </IconButton>
       </Box>
@@ -81,6 +70,7 @@ const AdminIpInput = ({ ipList = [], onUpdate }: Props) => {
             ip={ipList[ipIndex] ?? ''}
             updateHandler={updateHandler}
             deleteHandler={deleteHandler}
+            disabled={disabled}
           />
         ))}
     </>

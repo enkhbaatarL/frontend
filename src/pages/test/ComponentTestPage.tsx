@@ -14,7 +14,6 @@ import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable from '@/components/admin/AdminTable'
 import DetailItem from '@/components/common/detail-item'
 import Flex from '@/components/common/display/Flex'
-import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import MIField from '@/components/common/input/MIField'
 import MIInput from '@/components/common/input/MIInput'
@@ -476,19 +475,19 @@ const ComponentTestPage = () => {
           </Flex>
           <Flex gap={10}>
             <div>Field requrie has icon</div>
-            <MIField
-              label="Label"
-              subText="Guide text"
-              helper="Helper text"
-              required
-              labelIcon={<InfoOutlineIcon width={'12px'} height={'12px'} />}
-            >
+            <MIField label="Label" subText="Guide text" helper="Helper text" required title="Extra infomration">
               <MIInput />
             </MIField>
           </Flex>
           <Flex gap={10}>
             <div>Field have helper text only</div>
-            <MIField helper="Helper text" required labelIcon={<InfoOutlineIcon width={'12px'} height={'12px'} />}>
+            <MIField helper="Helper text" required title="Extra infomration">
+              <MIInput />
+            </MIField>
+          </Flex>
+          <Flex gap={10}>
+            <div>Field in form</div>
+            <MIField labelSize="lg" label="Label" subText="Sub text" helper="Helper text" required title="Extra infomration">
               <MIInput />
             </MIField>
           </Flex>

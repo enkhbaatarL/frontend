@@ -8,7 +8,7 @@ import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { isEmpty } from 'lodash-es'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
@@ -21,7 +21,7 @@ import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService from '@/service/admin/companies'
-import membersService, { IUserInfo, IUserRequest } from '@/service/admin/members'
+import membersService, { IAdminUserInfo, IAdminUserRequest, UserRole } from '@/service/admin/members'
 import { IPaginationResponse } from '@/types/api'
 
 const AdminManagementManagersPageHeader = () => {
@@ -43,6 +43,7 @@ const AdminMemberManagementManagersPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const navigate = useNavigate()
+  const location = useLocation()
 
   const {
     filter,
@@ -57,9 +58,10 @@ const AdminMemberManagementManagersPage = () => {
     isSearchedState,
     isPureState,
     isLoading,
-  } = useSearchFilter<Omit<IUserRequest, 'userRoleCd'>, IPaginationResponse<IUserInfo>>(
+  } = useSearchFilter<IAdminUserRequest, IPaginationResponse<IAdminUserInfo>>(
     membersService.getManagers,
     {
+      userRoleCd: '',
       companyNo: '',
       departmentNm: '',
       userNm: '',
@@ -81,24 +83,49 @@ const AdminMemberManagementManagersPage = () => {
   const departmentOptions = useMemo(() => {
     updateFilter('departmentNm', '')
 
-    return (filterOptions?.find(({ companyNo }) => companyNo === filter.companyNo)?.departmentNm ?? []).map((departmentNm) => ({
+    const departmentList = filterOptions?.find(({ companyNo }) => String(companyNo) === String(filter.companyNo))?.departmentNm ?? []
+
+    const searchParams = new URLSearchParams(location.search)
+    const departmentName = searchParams.get('departmentNm')
+
+    if (departmentName && departmentList.includes(departmentName)) {
+      updateFilter('departmentNm', departmentName)
+    }
+
+    return departmentList.map((departmentNm) => ({
       label: departmentNm,
       value: departmentNm,
     }))
-  }, [filter.companyNo, filterOptions, updateFilter])
+  }, [filter.companyNo, filterOptions, location.search, updateFilter])
 
   const columns: GridColDef[] = [
     {
+      field: 'userRoleCd',
+      headerName: t('구분'),
+      maxWidth: 80,
+      align: 'center',
+      renderCell: (param) => {
+        const color = param.value === UserRole.ADMIN ? 'blue' : 'orange'
+        const label = param.value === UserRole.ADMIN ? t('Admin') : t('운영자')
+
+        return (
+          <AdminTableCell type="chip" chip={{ color }}>
+            {label}
+          </AdminTableCell>
+        )
+      },
+    },
+    {
       field: 'customerCompanyNm',
       headerName: t('회사명'),
-      width: 150,
+      width: 170,
       renderCell: (param) => (
         <AdminTableCell typography={{ variant: 'tableBody1' }} ellipsis cursorPointer>
           {param.value}
         </AdminTableCell>
       ),
     },
-    { field: 'departmentNm', headerName: t('소속'), width: 160 },
+    { field: 'departmentNm', headerName: t('소속'), maxWidth: 180 },
     {
       field: 'isOtherServiceAccessPossible',
       headerName: t('타사 서비스'),
@@ -116,7 +143,7 @@ const AdminMemberManagementManagersPage = () => {
       },
     },
     { field: 'userNm', headerName: t('이름'), width: 120 },
-    { field: 'userLoginId', headerName: t('이메일'), width: 180 },
+    { field: 'userLoginId', headerName: t('이메일'), minWidth: 180 },
     {
       field: 'createUserNm',
       headerName: t('등록자'),
@@ -180,6 +207,17 @@ const AdminMemberManagementManagersPage = () => {
   return (
     <>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
+        <AdminSelect
+          label={t('구분')}
+          value={filter.userRoleCd}
+          onChange={(e) => {
+            updateFilter('userRoleCd', e.target.value as string)
+          }}
+          options={[
+            { label: t('Admin'), value: UserRole.ADMIN },
+            { label: t('운영자'), value: UserRole.OPERATOR },
+          ]}
+        />
         <AdminSelect
           label={t('회사명')}
           value={filter.companyNo}

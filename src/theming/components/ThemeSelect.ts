@@ -11,8 +11,8 @@ const ThemeSelect: Components<Omit<Theme, 'components'>> = {
 
         switch (ownerStateSize) {
           case 'small':
-            fontSize = '12px'
-            padding = '5px 12px'
+            fontSize = '14px'
+            padding = '6px 12px'
             break
           case 'large':
             fontSize = '16px'
@@ -20,19 +20,19 @@ const ThemeSelect: Components<Omit<Theme, 'components'>> = {
             break
           default: // 'medium'
             fontSize = '14px'
-            padding = '7px 12px'
+            padding = '8px 12px'
             break
         }
 
         return {
           borderRadius: 6,
-          minWidth: '200px',
+          minWidth: '160px',
           fontSize,
           fontWeight: '400',
           lineHeight: 1.4,
           boxSizing: 'border-box',
           backgroundColor: 'white',
-          color: theme.palette.gray['90'],
+          color: ownerState.color ? theme.palette.gray['70'] : theme.palette.gray['90'],
           border: `1px solid ${theme.palette.gray['30']}`,
           padding,
           '&.Mui-disabled': {
@@ -51,6 +51,7 @@ const ThemeSelect: Components<Omit<Theme, 'components'>> = {
         boxSizing: 'border-box',
         padding: 0,
         paddingRight: '10px !important',
+        minHeight: 'unset',
       },
       standard: {
         borderRadius: 6,
@@ -113,9 +114,14 @@ const ThemeSelect: Components<Omit<Theme, 'components'>> = {
         lineHeight: '1.4',
         padding: '8px 12px',
         color: theme.palette.gray['70'],
+        backgroundColor: '#fff !important',
         '&:hover': {
           color: theme.palette.gray['90'],
-          backgroundColor: '#F8F9FA',
+          backgroundColor: '#F8F9FA !important',
+        },
+        '&.Mui-selected': {
+          color: theme.palette.gray['90'],
+          backgroundColor: '#F8F9FA !important',
         },
         '&:hover .MuiSvgIcon-root': {
           color: theme.palette.gray['90'],

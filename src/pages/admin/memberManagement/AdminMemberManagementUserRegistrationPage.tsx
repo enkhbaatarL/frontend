@@ -82,7 +82,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
     pagination,
     updatePage,
     updateSize,
-  } = useSearchFilter<Omit<IGroupUserRequest, 'userRoleCd'>, IPaginationResponse<IGroupUserInfo>>(
+  } = useSearchFilter<IGroupUserRequest, IPaginationResponse<IGroupUserInfo>>(
     membersService.getGroupUsers,
     {
       companyCd: '',
@@ -293,7 +293,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
         sizeList={[5, 10, 20, 50]}
         onSizeChange={updateSize}
         onPageChange={updatePage}
-        noRowMessage={isPureState ? t('회원을 검색하세요.') : undefined}
+        noRowMessage={isPureState ? t('사용자를 검색하고 선택하여 등록하세요.') : undefined}
         maxVisibleRowCount={5}
       />
 
