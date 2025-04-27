@@ -26,10 +26,9 @@ interface AdminTableProps<T extends GridRowModel> extends DataGridProps {
   maxHeight?: string | number
   getRowId?: (row: T) => string | number
   columns: GridColDef[]
-  data?: IPaginationResponse<T>
+  data?: IPaginationResponse<T> | T
   isLoading?: boolean
   noRowMessage?: string
-  hidePagination?: boolean
   onRowClick?: GridEventListener<'rowClick'>
   size?: number
   sizeList?: number[]
@@ -222,7 +221,6 @@ const AdminTable = <T extends GridRowModel>({
   columns,
   data,
   noRowMessage,
-  hidePagination,
   onRowClick,
   isLoading,
   size,
@@ -234,6 +232,8 @@ const AdminTable = <T extends GridRowModel>({
   const boxRef = useRef<HTMLDivElement>(null)
   const [tableHeight, setTableHeight] = useState<number | null>(null)
 
+  const rows = data?.detail ?? data ?? []
+
   const memoizedColumns = useMemo(
     () =>
       columns.map((column) => {
@@ -244,19 +244,18 @@ const AdminTable = <T extends GridRowModel>({
               {params.value}
             </AdminTableCell>
           )
-        const detailLength = data?.detail?.length ?? 0
 
         return {
           ...column,
           headerAlign: column.align,
-          width: detailLength === 0 ? 'auto' : column.width,
-          minWidth: detailLength === 0 ? 'unset' : (column.minWidth ?? column.width),
-          flex: detailLength === 0 ? 1 : (column.flex ?? 1),
+          width: rows.length === 0 ? 'auto' : column.width,
+          minWidth: rows.length === 0 ? 'unset' : (column.minWidth ?? column.width),
+          flex: rows.length === 0 ? 1 : (column.flex ?? 1),
           renderHeader: () => <AdminTableHeader>{column.headerName}</AdminTableHeader>,
           renderCell,
         }
       }) as GridColDef<T>[],
-    [columns, onRowClick, data?.detail?.length],
+    [columns, rows.length, onRowClick],
   )
 
   const paginationRange = useMemo(() => {
@@ -322,7 +321,7 @@ const AdminTable = <T extends GridRowModel>({
           }}
           onRowClick={onRowClick}
           getRowId={getRowId}
-          rows={data?.detail ?? []}
+          rows={rows}
           columns={memoizedColumns}
           getRowClassName={() => (onRowClick ? 'clickable-row' : '')}
           {...adminTableBaseProps}
@@ -340,7 +339,7 @@ const AdminTable = <T extends GridRowModel>({
         />
       </Box>
 
-      {!hidePagination && (
+      {!!data?.detail && (
         <Box display="flex" alignItems="center" justifyContent="space-between" py="16px" position="relative">
           <Typography variant="body3" color="gray.60">
             {paginationRange}

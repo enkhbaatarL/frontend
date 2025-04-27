@@ -20,6 +20,7 @@ export interface MIInputProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   minWidth?: number | string
   width?: number | string
   maxHeight?: number | string
+  contentWidth?: number
 }
 
 const MIInput = ({
@@ -29,6 +30,7 @@ const MIInput = ({
   endIcon,
   startIcon,
   success,
+  contentWidth,
   maxLength,
   value,
   errorMessage,
@@ -201,6 +203,7 @@ const MIInput = ({
             width: '100%',
           },
           '& .MuiInputBase-input': {
+            width: contentWidth ? `${contentWidth}px` : 'auto',
             borderRadius: '0',
             padding: 0,
             '&::placeholder': {

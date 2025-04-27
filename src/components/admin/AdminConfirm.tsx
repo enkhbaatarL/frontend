@@ -10,6 +10,7 @@ interface ActionButton {
   variant?: 'text' | 'outlined' | 'contained'
   color?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' | 'inherit'
   onClick: () => void | Promise<void>
+  disabled?: boolean
 }
 
 interface Props {
@@ -62,6 +63,7 @@ const AdminConfirm = ({
           variant={action.variant ?? 'text'}
           color={action.color ?? 'primary'}
           onClick={action.onClick}
+          disabled={action.disabled}
         >
           {action.label}
         </AdminButton>

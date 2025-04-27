@@ -12,8 +12,11 @@ import AdminBoardsNoticeDetailPage from '@/pages/admin/boards/AdminBoardsNoticeD
 import AdminBoardsNoticeEditPage from '@/pages/admin/boards/AdminBoardsNoticeEditPage'
 import AdminBoardsNoticePage from '@/pages/admin/boards/AdminBoardsNoticePage'
 import AdminBoardsNoticeRegistrationPage from '@/pages/admin/boards/AdminBoardsNoticeRegistrationPage'
+import AdminCustomerCompanyDataProviderDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyDataProviderDetailPage'
+import AdminCustomerCompanyDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyDetailPage'
 import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesPage'
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
+import AdminCustomerCompanyProductDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyProductDetailPage'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
 import AdminMemberManagementManagersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementManagerRegistrationPage'
@@ -60,6 +63,42 @@ const AdminRoutes: ICustomRouteObject = {
               label: '고객사 등록',
               element: <AdminCustomerCompanyManagementCompaniesRegistrationPage />,
               hidden: true,
+            },
+            {
+              path: 'detail',
+              label: '고객사 상세',
+              hidden: true,
+              hasBack: true,
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
+                  path: ':companyNo',
+                  element: <AdminCustomerCompanyDetailPage />,
+                },
+              ],
+            },
+            {
+              path: 'provider-detail',
+              label: '데이터 프로바이더 상세',
+              hidden: true,
+              hasBack: true,
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
+                  path: ':companyNo/:providerNo',
+                  element: <AdminCustomerCompanyDataProviderDetailPage />,
+                },
+                {
+                  path: ':companyNo/:providerNo/:goodsNo',
+                  element: <AdminCustomerCompanyProductDetailPage />,
+                },
+              ],
             },
           ],
         },

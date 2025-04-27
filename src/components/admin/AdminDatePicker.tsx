@@ -246,6 +246,7 @@ const AdminDatePicker = (props: DatePickerProps<Dayjs> & { size?: 'h26' | 'h34' 
           },
         }}
         defaultValue={today}
+        minDate={today}
         format="YYYY-MM-DD"
         views={['year', 'month', 'day']}
         {...props}

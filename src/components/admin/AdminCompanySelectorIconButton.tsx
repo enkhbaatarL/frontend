@@ -8,33 +8,16 @@ import theme from '@/theming'
 export interface AdminCompanySelectorIconButtonProps {
   value: { value: string; label: string }
   onChange: (company: { value: string; label: string }) => void
+  options?: { value: string; label: string }[]
 }
 
 const AdminCompanySelectorIconButton = (props: Readonly<AdminCompanySelectorIconButtonProps>) => {
   const [isOpen, setIsOpen] = useState(false)
-  const companyList = [
-    {
-      value: 'company1',
-      label: 'LSEG',
-    },
-    {
-      value: 'company2',
-      label: 'Bloomberg',
-    },
-    {
-      value: 'company3',
-      label: 'Investing',
-    },
-    {
-      value: 'company4',
-      label: 'Wood Mackenzie',
-    },
-  ]
 
   return (
     <MIMenuSelector
       value={props.value}
-      options={companyList}
+      options={props.options}
       onChange={({ value, label }) => props.onChange({ value: value as string, label })}
       onOpen={setIsOpen}
     >
