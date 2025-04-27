@@ -1,6 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
+import { IAuditInfo } from '@/service/admin/members'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 export interface ICompaniesRequest extends IPaginationRequest {
@@ -39,18 +40,6 @@ interface IDepartmentInfo {
   companyCd: string
   companyNm: string
   departmentNm: string[]
-}
-interface IAuditInfo {
-  createDt: string
-  createUserId: string
-  modifyDt: string
-  modifyUserId: string
-  createUserNm: string
-  createUserDeptNm: string
-  createUserCpnyNm: string
-  modifyUserNm: string
-  modifyUserDeptNm: string
-  modifyUserCpnyNm: string
 }
 
 interface ICompanyDetailInfo {
@@ -150,10 +139,18 @@ export interface IDetail {
   usageBeginDate: string
   usageEndDate: string
 }
-export interface IUserPermissionInfo extends IDetail {
-  detail: IDetail
+export interface IUserPermissionInfo {
+  userNo: number
+  userNm: string
+  onDutyNm: string
+  departmentNm: string
+  isViewable: boolean
+  isDownloadable: boolean
+  usageBeginDate: string
+  usageEndDate: string
   extension: IExtension
 }
+
 export interface IIndividualSettings {
   userNo: number
   isViewable: boolean
@@ -203,7 +200,7 @@ const companiesService = {
    * @param body - { companyCd: 고객사 코드, companyNm: 고객사 명, usageBeginDate: 사용 시작일, usageEndDate: 사용 종료일 }
    */
   async registerCompany(body: IRegisterCompanyRequest): Promise<ICommonResponse<null>> {
-    const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/company-management/companies', body)
+    const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/company-management/company', body)
 
     return response.data
   },
@@ -229,8 +226,8 @@ const companiesService = {
    * 고객사와 매핑된 프로바이더 목록을 조회합니다.
    * @param companyNo - 고객회사 번호
    */
-  async getCompanyProviders(companyNo?: number): Promise<ICompanyProviderInfo> {
-    const response: AxiosResponse<ICommonResponse<ICompanyProviderInfo>> = await api.get(
+  async getCompanyProviders(companyNo?: number): Promise<ICompanyProviderInfo[]> {
+    const response: AxiosResponse<ICommonResponse<ICompanyProviderInfo[]>> = await api.get(
       `admin/company-management/companies/${companyNo}/providers`,
     )
 
@@ -276,6 +273,7 @@ const companiesService = {
    * 'goodsNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.
    * @param companyNo - 고객회사 번호
    * @param providerNo - 프로바이더 번호
+   * @param params
    */
   async getProviderGoods(
     companyNo?: number,
@@ -394,19 +392,6 @@ const companiesService = {
 
     return response.data.data
   },
-  // async getUserPermissions(
-  //   companyNo: number,
-  //   providerNo: number,
-  //   goodsNo: number,
-  //   params: IPaginationRequest,
-  // ): Promise<IDetail[]> {
-  //   const response: AxiosResponse<ICommonResponse<IDetail[]>> = await api.get(
-  //     `admin/company-management/companies/${companyNo}/providers/${providerNo}/goods/${goodsNo}/permissions`,
-  //     { params },
-  //   )
-
-  //   return response.data.data
-  // },
   /**
    * 고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 수정합니다.
    * @param companyNo - 고객회사 번호

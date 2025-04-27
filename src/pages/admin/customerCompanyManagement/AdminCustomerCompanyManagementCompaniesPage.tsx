@@ -89,7 +89,7 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
     {
       field: 'isActivated',
       headerName: '상태',
-      width: 120,
+      maxWidth: 120,
       align: 'center',
       renderCell: (params) => (
         <AdminTableCell
@@ -105,7 +105,7 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
     {
       field: 'companyCd',
       headerName: '회사 코드',
-      width: 120,
+      maxWidth: 120,
       align: 'center',
       renderCell(params) {
         return <AdminTableCell>{params.value}</AdminTableCell>
@@ -114,7 +114,7 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
     {
       field: 'createUserId',
       headerName: '등록자',
-      width: 120,
+      maxWidth: 120,
       renderCell: (params) => {
         const { createUserNm } = params.row.auditInfo
         return <AdminTableCell>{createUserNm}</AdminTableCell>
@@ -123,7 +123,7 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
     {
       field: 'createDt',
       headerName: '등록일',
-      width: 150,
+      maxWidth: 150,
       align: 'center',
       renderCell: (params) => {
         const { createDt } = params.row.auditInfo
@@ -147,7 +147,7 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
           label={t('회사명')}
           value={filter.companyNm}
           onChange={(e) => {
-            updateFilter('companyNm', e.target.value as string)
+            updateFilter('companyNm', e.target.value)
           }}
         />
         <AdminSelect

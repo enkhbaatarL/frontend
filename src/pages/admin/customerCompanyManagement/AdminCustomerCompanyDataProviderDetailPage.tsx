@@ -113,7 +113,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     () =>
       Array.isArray(providerData)
         ? providerData.map((provider) => ({
-          value: provider.providerNo,
+          value: String(provider.providerNo),
           label: provider.providerNm,
         }))
         : [],
@@ -282,7 +282,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [providerDetailData, providerLatestUpdatedData, options, selectedCompany, isActive])
+  }, [providerDetailData, providerLatestUpdatedData, options, selectedCompany, isActive, setCustomComponent, setSubHeader])
 
   const handleOnRowClick = (goodsNo: number) => {
     navigate(`/admin/customer-company/companies/provider-detail/${companyNo}/${selectedProviderNo}/${goodsNo}`, {
@@ -300,7 +300,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const handleChangeUsage = async () => {
     try {
       const request = {
-        isUsed: isActive ? false : true,
+        isUsed: !isActive,
       }
       const response = await companiesService.updateUsage(Number(companyNo), Number(selectedProviderNo), request)
       setIsActive(response.isUsed)
@@ -324,7 +324,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       setSelectedGoods('')
       setGoodsAuthManagementSeparateCd('INDIVIDUAL')
       showSnackbar(t('등록되었습니다'), { variant: 'success' })
-      queryClient.invalidateQueries({ queryKey: ['providerGoodsData', companyNo, selectedProviderNo, isActive, searchValue] })
+      await queryClient.invalidateQueries({ queryKey: ['providerGoodsData', companyNo, selectedProviderNo, isActive, searchValue] })
     } catch (error) {
       console.error('error', error)
     }
@@ -389,8 +389,8 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
             label: '변경',
             variant: 'contained',
             color: 'primary',
-            onClick: () => {
-              handleChangeUsage()
+            onClick: async () => {
+              await handleChangeUsage()
             },
           },
         ]}
@@ -418,8 +418,8 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
             label: t('등록'),
             variant: 'contained',
             color: 'primary',
-            onClick: () => {
-              handleRegisterGoods()
+            onClick: async () => {
+              await handleRegisterGoods()
             },
           },
         ]}

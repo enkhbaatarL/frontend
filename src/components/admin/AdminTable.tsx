@@ -26,9 +26,10 @@ interface AdminTableProps<T extends GridRowModel> extends DataGridProps {
   maxHeight?: string | number
   getRowId?: (row: T) => string | number
   columns: GridColDef[]
-  data?: IPaginationResponse<T> | T
+  data?: IPaginationResponse<T> | T[]
   isLoading?: boolean
   noRowMessage?: string
+  hidePagination?: boolean
   onRowClick?: GridEventListener<'rowClick'>
   size?: number
   sizeList?: number[]
@@ -232,7 +233,9 @@ const AdminTable = <T extends GridRowModel>({
   const boxRef = useRef<HTMLDivElement>(null)
   const [tableHeight, setTableHeight] = useState<number | null>(null)
 
-  const rows = data?.detail ?? data ?? []
+  const isPaginationResponse = (d: typeof data): d is IPaginationResponse<T> => d !== undefined && !Array.isArray(d) && 'detail' in d
+
+  const rows = isPaginationResponse(data) ? data.detail : Array.isArray(data) ? data : []
 
   const memoizedColumns = useMemo(
     () =>
@@ -259,14 +262,14 @@ const AdminTable = <T extends GridRowModel>({
   )
 
   const paginationRange = useMemo(() => {
-    if (!data?.totalElements) return null
+    if (!isPaginationResponse(data) || !data.totalElements) return null
 
-    const currentPage = data?.currentPage ?? 1
+    const currentPage = data.currentPage ?? 1
     const pageSize = size ?? 20
     const start = (currentPage - 1) * pageSize + 1
-    const end = Math.min(currentPage * pageSize, data?.totalElements ?? 0)
-    return `${start}-${end} of ${(data?.totalElements ?? 0).toLocaleString()}`
-  }, [data?.currentPage, size, data?.totalElements])
+    const end = Math.min(currentPage * pageSize, data.totalElements ?? 0)
+    return `${start}-${end} of ${(data.totalElements ?? 0).toLocaleString()}`
+  }, [data, size])
 
   const handleChange = (event: SelectChangeEvent) => {
     onSizeChange?.(parseInt(event.target.value))
@@ -279,16 +282,16 @@ const AdminTable = <T extends GridRowModel>({
   const NoRowsOverlay = useMemo(() => createNoRowsOverlay(noRowMessage), [noRowMessage])
 
   useEffect(() => {
-    if (data?.currentPage !== undefined) {
+    if (isPaginationResponse(data) && data.currentPage !== undefined) {
       setPrevPage(data.currentPage)
       if (!isLoading) {
         setSelectedPage(null)
       }
     }
-    if (data?.totalPages !== undefined) {
+    if (isPaginationResponse(data) && data.totalPages !== undefined) {
       setPrevTotalPages(data.totalPages)
     }
-  }, [data?.currentPage, data?.totalPages, isLoading])
+  }, [data, isLoading])
 
   const handlePageChange = (page: number) => {
     setSelectedPage(page)
@@ -339,7 +342,7 @@ const AdminTable = <T extends GridRowModel>({
         />
       </Box>
 
-      {!!data?.detail && (
+      {isPaginationResponse(data) && data.detail && (
         <Box display="flex" alignItems="center" justifyContent="space-between" py="16px" position="relative">
           <Typography variant="body3" color="gray.60">
             {paginationRange}
@@ -355,8 +358,8 @@ const AdminTable = <T extends GridRowModel>({
           >
             <AdminPagination
               onPageChange={handlePageChange}
-              page={isLoading && selectedPage ? selectedPage : (data?.currentPage ?? prevPage)}
-              count={data?.totalPages ?? prevTotalPages}
+              page={isLoading && selectedPage ? selectedPage : (data.currentPage ?? prevPage)}
+              count={data.totalPages ?? prevTotalPages}
               disabled={isLoading}
             />
           </Box>

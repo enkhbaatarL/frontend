@@ -21,11 +21,11 @@ import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService, { ICompanyProviderInfo } from '@/service/admin/companies'
 import dataProviderService, { IProviderInfo } from '@/service/admin/dataProvider'
-import memebersService, { IUserInfo } from '@/service/admin/members'
+import membersService, { IUserInfo } from '@/service/admin/members'
 import { IPaginationResponse } from '@/types/api'
 
 interface AdminCustomerDataProviderTableProps {
-  data: ICompanyProviderInfo
+  data: ICompanyProviderInfo[]
   companyNm: string
 }
 interface AdminCustomerMemberTableProps {
@@ -112,7 +112,7 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
         setOpenConfirmRegistration(false)
         setSelectedValue('')
         showSnackbar(t('등록되었습니다.'), { variant: 'success' })
-        queryClient.invalidateQueries({ queryKey: ['dataProvider', companyNo] })
+        await queryClient.invalidateQueries({ queryKey: ['dataProvider', companyNo] })
       }
     } catch (error) {
       console.error(error)
@@ -155,8 +155,8 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
             label: '등록',
             variant: 'contained',
             color: 'primary',
-            onClick: () => {
-              handleRegisterProvider()
+            onClick: async () => {
+              await handleRegisterProvider()
             },
           },
         ]}
@@ -292,11 +292,11 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
   const handleDelete = async () => {
     try {
       if (selectedUser) {
-        const response = await memebersService.deleteUser(selectedUser.userNo)
+        const response = await membersService.deleteUser(selectedUser.userNo)
         if (response.status) {
           showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
           setIsOpenDelete(false)
-          queryClient.invalidateQueries({ queryKey: ['user', companyNo] })
+          await queryClient.invalidateQueries({ queryKey: ['user', companyNo] })
         }
       }
     } catch (error) {
@@ -359,8 +359,8 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
             label: t('삭제'),
             variant: 'contained',
             color: 'error',
-            onClick: () => {
-              handleDelete()
+            onClick: async () => {
+              await handleDelete()
             },
           },
         ]}
@@ -411,7 +411,7 @@ const AdminCustomerCompanyDetailPage = () => {
   const { data: userData } = useQuery({
     queryKey: ['user', companyNo],
     queryFn: async () =>
-      await memebersService.getUsers({
+      await membersService.getUsers({
         companyNo,
         page: 1,
         size: 20,
@@ -441,7 +441,7 @@ const AdminCustomerCompanyDetailPage = () => {
   const handleChangeActive = async () => {
     try {
       const response = await companiesService.updateCustomerCompany(Number(companyNo), {
-        isActivated: isActive ? false : true,
+        isActivated: !isActive,
         usageBeginDate: data?.usageBeginDate ?? '',
         usageEndDate: data?.usageEndDate ?? '',
       })
@@ -458,7 +458,7 @@ const AdminCustomerCompanyDetailPage = () => {
   const handleSave = async () => {
     try {
       const response = await companiesService.updateCustomerCompany(Number(companyNo), {
-        isActivated: isActive ? true : false,
+        isActivated: isActive,
         usageBeginDate: inputUsageBeginDate?.format('YYYYMMDD') ?? '',
         usageEndDate: inputUsageEndDate?.format('YYYYMMDD') ?? '',
       })
@@ -543,8 +543,8 @@ const AdminCustomerCompanyDetailPage = () => {
             label: t('변경'),
             variant: 'contained',
             color: 'primary',
-            onClick: () => {
-              handleChangeActive()
+            onClick: async () => {
+              await handleChangeActive()
             },
             disabled: isErrorCompanyName,
           },
@@ -562,11 +562,9 @@ const AdminCustomerCompanyDetailPage = () => {
           </Typography>
           <AdminTextField fullWidth onChange={(e) => setInputCompanyName(e.target.value)} />
           {isErrorCompanyName && (
-            <>
-              <Typography component={'p'} variant="subtext2" color="#5191F5" mt={1}>
-                고객사명을 동일하게 입력해 주세요.
-              </Typography>
-            </>
+            <Typography component={'p'} variant="subtext2" color="#5191F5" mt={1}>
+              고객사명을 동일하게 입력해 주세요.
+            </Typography>
           )}
         </Box>
       </AdminConfirm>
@@ -658,8 +656,8 @@ const AdminCustomerCompanyDetailPage = () => {
             label: '저장',
             variant: 'contained',
             color: 'primary',
-            onClick: () => {
-              handleSave()
+            onClick: async () => {
+              await handleSave()
             },
           },
         ]}

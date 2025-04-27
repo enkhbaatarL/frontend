@@ -3,7 +3,7 @@ import { GridColDef } from '@mui/x-data-grid'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
@@ -20,8 +20,7 @@ import VisibilityIcon from '@/components/common/icons/VisibilityIcon'
 import MICheckBox from '@/components/common/input/MICheckBox'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import { IDetail } from '@/service/admin/companies'
-import companiesService, { ICompanySetting, IIndividualSettings, IUpdateUserPermissionRequest } from '@/service/admin/companies'
+import companiesService, { ICompanySetting, IIndividualSettings, IUpdateUserPermissionRequest, IDetail } from '@/service/admin/companies'
 
 const AdminCustomerCompanyProductDetailPageHeader = (props: {
   onChange: (value: boolean) => void
@@ -134,6 +133,10 @@ const AdminCustomerCompanyProductDetailPage = () => {
     usageEndDate: goodsDetailData?.companySetting ? goodsDetailData.companySetting.usageEndDate : '',
   })
 
+  const [checkList, setCheckList] = useState<
+    Record<number, { isViewable: boolean; isDownloadable: boolean; usageBeginDate: string; usageEndDate: string }>
+  >([])
+
   useEffect(() => {
     if (goodsDetailData && goodsDetailLatestData) {
       setCompanyPermission({
@@ -203,7 +206,16 @@ const AdminCustomerCompanyProductDetailPage = () => {
       setSubHeader(null)
       setCustomTitle(null)
     }
-  }, [setCustomComponent, setSubHeader, isActive, isDetailPermissionSetting, goodsDetailData])
+  }, [
+    setCustomComponent,
+    setSubHeader,
+    isActive,
+    isDetailPermissionSetting,
+    goodsDetailData,
+    goodsDetailLatestData,
+    companyNm,
+    setCustomTitle,
+  ])
 
   // 개인 권한 설정 상태
   const [individualPermissions, setIndividualPermissions] = useState<IIndividualSettings[]>([])
@@ -222,9 +234,9 @@ const AdminCustomerCompanyProductDetailPage = () => {
       setOpenSaveConfirm(false)
       showSnackbar('저장되었습니다.', { variant: 'success' })
       setIsDetailPermissionSetting(false)
-      queryClient.invalidateQueries({ queryKey: ['goodsDetail', companyNo, providerNo, goodsNo] })
-      queryClient.invalidateQueries({ queryKey: ['goodsDetailLatest', companyNo, providerNo, goodsNo] })
-      queryClient.invalidateQueries({ queryKey: ['userPermissions', companyNo, providerNo, goodsNo] })
+      await queryClient.invalidateQueries({ queryKey: ['goodsDetail', companyNo, providerNo, goodsNo] })
+      await queryClient.invalidateQueries({ queryKey: ['goodsDetailLatest', companyNo, providerNo, goodsNo] })
+      await queryClient.invalidateQueries({ queryKey: ['userPermissions', companyNo, providerNo, goodsNo] })
       setIndividualPermissions([])
       setCompanyPermission({
         isViewable: goodsDetailData?.companySetting ? goodsDetailData.companySetting.isViewable : false,
@@ -236,13 +248,14 @@ const AdminCustomerCompanyProductDetailPage = () => {
       setIsEditDownloadable(false)
       setIsEditUsageBeginDate(false)
       setIsEditUsageEndDate(false)
+      setCheckList([])
     } catch (error) {
       console.error(error)
     }
   }
 
   // 권한 변경
-  const handlePermissionChange = (e: React.ChangeEvent<HTMLInputElement>, row: IDetail) => {
+  const handlePermissionChange = (e: ChangeEvent<HTMLInputElement>, row: IDetail, type?: boolean) => {
     const { checked, name } = e.target
     const userNo = row.userNo
 
@@ -253,8 +266,8 @@ const AdminCustomerCompanyProductDetailPage = () => {
       userNo: targetUser.userNo,
       isViewable: name === 'isViewable' ? checked : targetUser.isViewable,
       isDownloadable: name === 'isDownloadable' ? checked : targetUser.isDownloadable,
-      usageBeginDate: targetUser.usageBeginDate,
-      usageEndDate: targetUser.usageEndDate,
+      usageBeginDate: type ? dayjs().format('YYYYMMDD') : targetUser.usageBeginDate,
+      usageEndDate: type ? dayjs().add(10, 'year').endOf('year').format('YYYYMMDD') : targetUser.usageEndDate,
     }
 
     setIndividualPermissions((prev) => {
@@ -263,12 +276,10 @@ const AdminCustomerCompanyProductDetailPage = () => {
       const exists = prev.some((p) => p.userNo === userNo)
       return exists ? updated : [...prev, newPermission]
     })
-
-    console.log('isEditViewable', isEditViewable)
   }
 
   // 권한 적용 기간 변경
-  const handleDateChange = (value: string, row: IDetail, type: string) => {
+  const handleDateChange = (value: string, row: IDetail, type: string, isNew?: boolean) => {
     const userNo = row.userNo
 
     const targetUser = userPermissions?.detail?.find((user: IDetail) => user.userNo === userNo)
@@ -279,8 +290,8 @@ const AdminCustomerCompanyProductDetailPage = () => {
       userNo: targetUser.userNo,
       isViewable: targetUser.isViewable,
       isDownloadable: targetUser.isDownloadable,
-      usageBeginDate: type === 'usageBeginDate' ? value : targetUser.usageBeginDate,
-      usageEndDate: type === 'usageEndDate' ? value : targetUser.usageEndDate,
+      usageBeginDate: type === 'usageBeginDate' ? value : isNew ? checkList[userNo].usageBeginDate : targetUser.usageBeginDate,
+      usageEndDate: type === 'usageEndDate' ? value : isNew ? checkList[userNo].usageEndDate : targetUser.usageEndDate,
     }
 
     setIndividualPermissions((prev) => {
@@ -292,17 +303,22 @@ const AdminCustomerCompanyProductDetailPage = () => {
   }
 
   useEffect(() => {
-    console.log('isEditViewable', isEditViewable)
-    console.log('goodsDetailData?.companySetting', goodsDetailData?.companySetting)
-    console.log('companyPermission', companyPermission.isViewable)
-  }, [isEditViewable, goodsDetailData?.companySetting, companyPermission, permission])
-
-  const [checkIsViewable, setCheckIsViewable] = useState<boolean>(false)
-
-  useEffect(() => {
-    console.log('checkIsViewable', checkIsViewable)
-    console.log('######## => ', permission === 'INDIVIDUAL' && goodsDetailData?.companySetting && checkIsViewable)
-  }, [checkIsViewable])
+    if (userPermissions?.detail) {
+      const initialCheckList = userPermissions.detail.reduce(
+        (acc, user) => {
+          acc[user.userNo] = {
+            isViewable: false,
+            isDownloadable: false,
+            usageBeginDate: dayjs().format('YYYYMMDD'),
+            usageEndDate: dayjs().add(10, 'year').endOf('year').format('YYYYMMDD'),
+          }
+          return acc
+        },
+        {} as Record<number, { isViewable: boolean; isDownloadable: boolean; usageBeginDate: string; usageEndDate: string }>,
+      )
+      setCheckList(initialCheckList)
+    }
+  }, [userPermissions])
 
   const columns: GridColDef[] = useMemo(
     () => [
@@ -336,26 +352,28 @@ const AdminCustomerCompanyProductDetailPage = () => {
         sortable: false,
         align: 'center',
         headerAlign: 'center',
-        renderCell: (params) => (
-          <MICheckBox
-            checked={
-              permission === 'INDIVIDUAL'
-                ? goodsDetailData?.companySetting
-                  ? checkIsViewable
-                    ? params.row.isViewable
-                    : false
-                  : params.row.isViewable
-                : false
-            }
-            onChange={(e) => {
-              params.row.isViewable = e.target.checked
-              setCheckIsViewable(true)
-              console.log('params.row.isViewable', params.row.isViewable, e.target.checked)
-              handlePermissionChange(e, params.row)
-            }}
-            disabled={!isDetailPermissionSetting}
-          />
-        ),
+        renderCell: (params) =>
+          goodsDetailData?.goodsAuthManagementSeparateCd === 'INDIVIDUAL' ? (
+            <MICheckBox
+              checked={params.row.isViewable}
+              onChange={(e) => {
+                if (e.target.checked === false) params.row.isDownloadable = false
+                params.row.isViewable = e.target.checked
+                handlePermissionChange(e, params.row)
+              }}
+              disabled={!isDetailPermissionSetting}
+            />
+          ) : (
+            <MICheckBox
+              checked={checkList[params.row.userNo].isViewable}
+              onChange={(e) => {
+                if (e.target.checked === false) checkList[params.row.userNo].isDownloadable = false
+                checkList[params.row.userNo].isViewable = e.target.checked
+                handlePermissionChange(e, params.row, true)
+              }}
+              disabled={!isDetailPermissionSetting}
+            />
+          ),
       },
       {
         field: 'isDownloadable',
@@ -364,26 +382,28 @@ const AdminCustomerCompanyProductDetailPage = () => {
         sortable: false,
         align: 'center',
         headerAlign: 'center',
-        renderCell: (params) => (
-          <MICheckBox
-            checked={
-              permission === 'INDIVIDUAL' && !goodsDetailData?.companySetting
-                ? params.row.isDownloadable
-                : permission === 'INDIVIDUAL' && goodsDetailData?.companySetting
-                  ? false
-                  : goodsDetailData?.companySetting && !isEditDownloadable
-                    ? goodsDetailData?.companySetting?.isDownloadable
-                    : isEditDownloadable
-                      ? companyPermission.isDownloadable
-                      : false
-            }
-            onChange={(e) => {
-              params.row.isDownloadable = e.target.checked
-              handlePermissionChange(e, params.row)
-            }}
-            disabled={!isDetailPermissionSetting || permission === 'COMPANY'}
-          />
-        ),
+        renderCell: (params) =>
+          goodsDetailData?.goodsAuthManagementSeparateCd === 'INDIVIDUAL' ? (
+            <MICheckBox
+              checked={params.row.isDownloadable}
+              onChange={(e) => {
+                if (e.target.checked === true) params.row.isViewable = true
+                params.row.isDownloadable = e.target.checked
+                handlePermissionChange(e, params.row)
+              }}
+              disabled={!isDetailPermissionSetting}
+            />
+          ) : (
+            <MICheckBox
+              checked={checkList[params.row.userNo].isDownloadable}
+              onChange={(e) => {
+                if (e.target.checked === true) checkList[params.row.userNo].isViewable = true
+                checkList[params.row.userNo].isDownloadable = e.target.checked
+                handlePermissionChange(e, params.row, true)
+              }}
+              disabled={!isDetailPermissionSetting}
+            />
+          ),
       },
       {
         field: 'usageBeginDate',
@@ -392,59 +412,79 @@ const AdminCustomerCompanyProductDetailPage = () => {
         sortable: false,
         headerAlign: 'center',
         align: 'center',
-        renderCell: (params) => (
-          <Box display={'flex'} alignItems={'center'} maxWidth={'100%'} padding="7px 12px">
-            <AdminDatePicker
-              readOnly={!isDetailPermissionSetting || !params.row.isViewable}
-              // readOnly={!isDetailPermissionSetting || !params.row.isViewable}
-              // disabled={!params.row.isViewable}
-              size="h26"
-              onChange={(e: Dayjs | null) => {
-                if (e) {
-                  const value = e.format('YYYYMMDD')
-                  params.row.usageBeginDate = value
-                  handleDateChange(value, params.row, 'usageBeginDate')
+        renderCell: (params) =>
+          goodsDetailData?.goodsAuthManagementSeparateCd === 'INDIVIDUAL' ? (
+            <Box display={'flex'} alignItems={'center'} maxWidth={'100%'} padding="7px 12px">
+              <AdminDatePicker
+                readOnly={!isDetailPermissionSetting || (!params.row.isViewable && !params.row.isDownloadable)}
+                size="h26"
+                onChange={(e: Dayjs | null) => {
+                  if (e) {
+                    const value = e.format('YYYYMMDD')
+                    params.row.usageBeginDate = value
+                    handleDateChange(value, params.row, 'usageBeginDate')
+                  }
+                }}
+                value={dayjs(
+                  `${params.row.usageBeginDate.slice(0, 4)}-${params.row.usageBeginDate.slice(4, 6)}-${params.row.usageBeginDate.slice(6, 8)}`,
+                )}
+              />
+              <Typography component={'div'} mx={'8px'} color="gray.50" variant="breadcrumbs">
+                ~
+              </Typography>
+              <AdminDatePicker
+                readOnly={!isDetailPermissionSetting || (!params.row.isViewable && !params.row.isDownloadable)}
+                size="h26"
+                onChange={(e: Dayjs | null) => {
+                  if (e) {
+                    const value = e.format('YYYYMMDD')
+                    params.row.usageEndDate = value
+                    handleDateChange(value, params.row, 'usageEndDate')
+                  }
+                }}
+                value={dayjs(
+                  `${params.row.usageEndDate.slice(0, 4)}-${params.row.usageEndDate.slice(4, 6)}-${params.row.usageEndDate.slice(6, 8)}`,
+                )}
+              />
+            </Box>
+          ) : (
+            <Box display={'flex'} alignItems={'center'} maxWidth={'100%'} padding="7px 12px">
+              <AdminDatePicker
+                readOnly={
+                  !isDetailPermissionSetting || (!checkList[params.row.userNo].isViewable && !checkList[params.row.userNo].isDownloadable)
                 }
-              }}
-              value={dayjs(
-                permission === 'INDIVIDUAL' && !goodsDetailData?.companySetting
-                  ? `${params.row.usageBeginDate.slice(0, 4)}-${params.row.usageBeginDate.slice(4, 6)}-${params.row.usageBeginDate.slice(6, 8)}`
-                  : permission === 'INDIVIDUAL' && goodsDetailData?.companySetting
-                    ? dayjs().format('YYYYMMDD')
-                    : goodsDetailData?.companySetting && !isEditUsageBeginDate
-                      ? goodsDetailData?.companySetting?.usageBeginDate
-                      : companyPermission?.usageBeginDate,
-              )}
-            />
-            <Typography component={'div'} mx={'8px'} color="gray.50" variant="breadcrumbs">
-              ~
-            </Typography>
-            <AdminDatePicker
-              readOnly={!isDetailPermissionSetting || permission === 'COMPANY'}
-              disabled={!params.row.isViewable && !params.row.isDownloadable}
-              size="h26"
-              onChange={(e: Dayjs | null) => {
-                if (e) {
-                  const value = e.format('YYYYMMDD')
-                  params.row.usageEndDate = value
-                  handleDateChange(value, params.row, 'usageEndDate')
+                size="h26"
+                onChange={(e: Dayjs | null) => {
+                  if (e) {
+                    const value = e.format('YYYYMMDD')
+                    checkList[params.row.userNo].usageBeginDate = value
+                    handleDateChange(value, params.row, 'usageBeginDate', true)
+                  }
+                }}
+                value={dayjs(checkList[params.row.userNo].usageBeginDate)}
+              />
+              <Typography component={'div'} mx={'8px'} color="gray.50" variant="breadcrumbs">
+                ~
+              </Typography>
+              <AdminDatePicker
+                readOnly={
+                  !isDetailPermissionSetting || (!checkList[params.row.userNo].isViewable && !checkList[params.row.userNo].isDownloadable)
                 }
-              }}
-              value={dayjs(
-                permission === 'INDIVIDUAL' && !goodsDetailData?.companySetting
-                  ? `${params.row.usageEndDate.slice(0, 4)}-${params.row.usageEndDate.slice(4, 6)}-${params.row.usageEndDate.slice(6, 8)}`
-                  : permission === 'INDIVIDUAL' && goodsDetailData?.companySetting
-                    ? dayjs().add(10, 'year').endOf('year').format('YYYYMMDD')
-                    : goodsDetailData?.companySetting && !isEditUsageEndDate
-                      ? goodsDetailData?.companySetting?.usageEndDate
-                      : companyPermission?.usageEndDate,
-              )}
-            />
-          </Box>
-        ),
+                size="h26"
+                onChange={(e: Dayjs | null) => {
+                  if (e) {
+                    const value = e.format('YYYYMMDD')
+                    checkList[params.row.userNo].usageEndDate = value
+                    handleDateChange(value, params.row, 'usageEndDate', true)
+                  }
+                }}
+                value={dayjs(checkList[params.row.userNo].usageEndDate)}
+              />
+            </Box>
+          ),
       },
     ],
-    [isDetailPermissionSetting, permission, companyPermission, goodsDetailData],
+    [isDetailPermissionSetting, permission, companyPermission, goodsDetailData, checkList],
   )
 
   // 회사 권한 적용 기간
@@ -461,7 +501,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
   const handleChangeActive = async () => {
     try {
       const response = await companiesService.updateUserPermission(Number(companyNo), Number(providerNo), Number(goodsNo), {
-        isUsed: isActive ? false : true,
+        isUsed: !isActive,
         goodsAuthManagementSeparateCd: permission,
       })
 
@@ -475,7 +515,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
   return (
     <>
       <Box>
-        <Box display={'flex'} alignItems={'center'}>
+        <Box display={'flex'} flexDirection={'column'} alignItems={'start'} gap={'30px'}>
           <Box minWidth={'210px'}>
             <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
               <Box>
@@ -487,7 +527,13 @@ const AdminCustomerCompanyProductDetailPage = () => {
                 )}
               </Box>
             </Typography>
-            <RadioGroup row value={permission} onChange={(e) => setPermission(e.target.value)}>
+            <RadioGroup
+              row
+              value={permission}
+              onChange={(e) => {
+                setPermission(e.target.value)
+              }}
+            >
               <FormControlLabel disabled={!isDetailPermissionSetting} value="INDIVIDUAL" control={<Radio />} label="개별 권한" />
               <FormControlLabel disabled={!isDetailPermissionSetting} value="COMPANY" control={<Radio />} label="회사 권한" />
             </RadioGroup>
@@ -618,58 +664,60 @@ const AdminCustomerCompanyProductDetailPage = () => {
         </Box>
       </Box>
       {permission === 'INDIVIDUAL' && (
-        <>
-          <Box>
-            <Box minWidth={'210px'} mb="5px">
-              <Typography component={'p'} variant="subtitle" color="gray.90">
-                {t('상세 권한 설정')}
-              </Typography>
-              <Typography variant="subtext" color="gray.60">
-                {t('회원별 상세 권한은 회사 권한 설정과 동일합니다.')}
-              </Typography>
-            </Box>
-            <Box
-              display={'flex'}
-              alignItems={'center'}
-              padding="10px 12px"
-              height={'54px'}
-              boxSizing={'border-box'}
-              bgcolor={'gray.5'}
-              borderBottom={'1px solid'}
-              borderTop={'1px solid'}
-              borderColor={'gray.30'}
-            >
-              <>
-                <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
-                  <Box>{<PersonIcon />}</Box>
-                  <Typography variant="subtitle2" color="gray.60">
-                    {t('회원')}
-                  </Typography>
-                  <Typography variant="chip1">{userPermissions?.extension?.numberOfUsers}</Typography>
-                </Box>
-                <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
-                <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
-                  <Box>{<VisibilityIcon />}</Box>
-                  <Typography variant="subtitle2" color="gray.60">
-                    {t('조회')}
-                  </Typography>
-                  <Typography variant="chip1">{userPermissions?.extension?.numberOfViewable}</Typography>
-                </Box>
-                <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
-                <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
-                  <Box>{<DownloadIcon />}</Box>
-                  <Typography variant="subtitle2" color="gray.60">
-                    {t('다운로드')}
-                  </Typography>
-                  <Typography variant="chip1">{userPermissions?.extension?.numberOfDownloadable}</Typography>
-                </Box>
-                <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
-              </>
-            </Box>
-
-            <AdminTable getRowId={(row: IDetail) => row?.userNo} columns={columns} data={userPermissions} />
+        <Box>
+          <Box minWidth={'210px'} mb="5px">
+            <Typography component={'p'} variant="subtitle" color="gray.90">
+              {t('상세 권한 설정')}
+            </Typography>
+            <Typography variant="subtext" color="gray.60">
+              {t('회원별 상세 권한은 회사 권한 설정과 동일합니다.')}
+            </Typography>
           </Box>
-        </>
+          <Box
+            display={'flex'}
+            alignItems={'center'}
+            padding="10px 12px"
+            height={'54px'}
+            boxSizing={'border-box'}
+            bgcolor={'gray.5'}
+            borderBottom={'1px solid'}
+            borderTop={'1px solid'}
+            borderColor={'gray.30'}
+          >
+            <>
+              <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
+                <Box>{<PersonIcon />}</Box>
+                <Typography variant="subtitle2" color="gray.60">
+                  {t('회원')}
+                </Typography>
+                <Typography variant="chip1">{userPermissions?.extension?.numberOfUsers}</Typography>
+              </Box>
+              <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
+              <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
+                <Box>{<VisibilityIcon />}</Box>
+                <Typography variant="subtitle2" color="gray.60">
+                  {t('조회')}
+                </Typography>
+                <Typography variant="chip1">{userPermissions?.extension?.numberOfViewable}</Typography>
+              </Box>
+              <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
+              <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
+                <Box>{<DownloadIcon />}</Box>
+                <Typography variant="subtitle2" color="gray.60">
+                  {t('다운로드')}
+                </Typography>
+                <Typography variant="chip1">{userPermissions?.extension?.numberOfDownloadable}</Typography>
+              </Box>
+              <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
+            </>
+          </Box>
+
+          <AdminTable
+            getRowId={(row) => row.userNo}
+            columns={columns}
+            data={isDetailPermissionSetting ? userPermissions?.detail : userPermissions}
+          />
+        </Box>
       )}
       <AdminConfirm
         open={openConfirmActive}
@@ -691,8 +739,8 @@ const AdminCustomerCompanyProductDetailPage = () => {
             label: t('변경'),
             variant: 'contained',
             color: 'primary',
-            onClick: () => {
-              handleChangeActive()
+            onClick: async () => {
+              await handleChangeActive()
             },
           },
         ]}
@@ -752,8 +800,8 @@ const AdminCustomerCompanyProductDetailPage = () => {
             label: t('저장'),
             variant: 'contained',
             color: 'primary',
-            onClick: () => {
-              updatePermissions()
+            onClick: async () => {
+              await updatePermissions()
             },
           },
         ]}
