@@ -136,9 +136,11 @@ const AdminMemberManagementManagersPage = () => {
         const label = param.value ? t('허용') : t('비허용')
 
         return (
-          <AdminTableCell type="chip" chip={{ color }}>
-            {label}
-          </AdminTableCell>
+          param.row.userRoleCd === UserRole.ADMIN && (
+            <AdminTableCell type="chip" chip={{ color }}>
+              {label}
+            </AdminTableCell>
+          )
         )
       },
     },
