@@ -356,6 +356,11 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
               contentWidth={196}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearchValue(search)
+                }
+              }}
             />
             <AdminButton color="secondary" variant="outlined" size="h34" onClick={registerProduct}>
               {t('상품 등록')}
