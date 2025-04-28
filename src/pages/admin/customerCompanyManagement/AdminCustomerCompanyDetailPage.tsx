@@ -75,7 +75,7 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
       headerName: t('데이터 프로바이더'),
       flex: 1,
       renderCell(params) {
-        return <AdminTableCell>{params.value}</AdminTableCell>
+        return <AdminTableCell cursorPointer>{params.value}</AdminTableCell>
       },
     },
     {
@@ -86,7 +86,7 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
       headerAlign: 'right',
       width: 120,
       renderCell(params) {
-        return <AdminTableCell>{params.value}</AdminTableCell>
+        return <AdminTableCell cursorPointer>{params.value}</AdminTableCell>
       },
     },
     {
@@ -97,7 +97,11 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
       width: 200,
       renderCell: (params) => {
         const { createDt } = params.row.auditInfo
-        return <AdminTableCell typography={{ color: 'gray.60' }}>{dayjs(createDt).format('YYYY-MM-DD')}</AdminTableCell>
+        return (
+          <AdminTableCell typography={{ color: 'gray.60' }} cursorPointer>
+            {dayjs(createDt).format('YYYY-MM-DD')}
+          </AdminTableCell>
+        )
       },
     },
   ]
