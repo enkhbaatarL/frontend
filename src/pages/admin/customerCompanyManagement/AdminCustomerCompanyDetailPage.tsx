@@ -323,6 +323,10 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
                 ),
               },
             }}
+            onClear={() => {
+              setSearchValue('')
+              setSearch('')
+            }}
           />
           <AdminButton
             color="secondary"

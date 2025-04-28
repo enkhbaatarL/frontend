@@ -363,6 +363,10 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
                   setSearchValue(search)
                 }
               }}
+              onClear={() => {
+                setSearchValue('')
+                setSearch('')
+              }}
             />
             <AdminButton color="secondary" variant="outlined" size="h34" onClick={registerProduct}>
               {t('상품 등록')}
