@@ -21,6 +21,7 @@ export interface MIInputProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   width?: number | string
   maxHeight?: number | string
   contentWidth?: number
+  onClear?: () => void
 }
 
 const MIInput = ({
@@ -36,6 +37,7 @@ const MIInput = ({
   errorMessage,
   maxHeight,
   variant = 'inForm',
+  onClear,
   ...props
 }: MIInputProps) => {
   const [innerValue, setInnerValue] = useState<string>(String(value) || '')
@@ -120,11 +122,17 @@ const MIInput = ({
     const defaultProps: Record<string, string | ReactNode> = {
       readOnly,
     }
-
     defaultProps.endAdornment = (
       <InputAdornment position="end" sx={{ cursor: 'pointer' }}>
         {!readOnly && isFocus && innerValue && !props.error && !props.multiline && (
-          <MIInputClearIcon width={16} height={16} onClick={() => setInnerValue('')} />
+          <MIInputClearIcon
+            width={16}
+            height={16}
+            onClick={() => {
+              setInnerValue('')
+              onClear?.()
+            }}
+          />
         )}
         {props.error && variant === 'inTable' && (
           <Tooltip disableHoverListener={!errorMessage} title={errorMessage}>
