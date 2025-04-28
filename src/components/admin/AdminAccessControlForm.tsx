@@ -88,7 +88,13 @@ const AdminAccessControlForm = ({
               }}
             >
               {userRoleOptions.map((option) => (
-                <FormControlLabel key={option.value} value={option.value} control={<Radio />} label={option.label} disabled={disabled} />
+                <FormControlLabel
+                  key={option.value}
+                  value={option.value}
+                  control={<Radio />}
+                  label={option.label}
+                  disabled={disabled || !isRegisterMode}
+                />
               ))}
             </RadioGroup>
           )}
