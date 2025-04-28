@@ -137,14 +137,14 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       headerName: t('상품명'),
       flex: 1,
       sortable: false,
-      renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
+      renderCell: (params) => <AdminTableCell cursorPointer>{params.value}</AdminTableCell>,
     },
     {
       field: 'goodsExpn',
       headerName: t('상품 설명'),
       flex: 1,
       sortable: false,
-      renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
+      renderCell: (params) => <AdminTableCell cursorPointer>{params.value}</AdminTableCell>,
     },
     {
       field: 'numberOfData',
@@ -153,7 +153,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       sortable: false,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
+      renderCell: (params) => <AdminTableCell cursorPointer>{params.value}</AdminTableCell>,
     },
     {
       field: 'isUsed',
@@ -168,6 +168,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
           chip={{
             color: params.value ? 'green' : 'white',
           }}
+          cursorPointer
         >
           {params.value ? '사용 중' : '미사용'}
         </AdminTableCell>
@@ -180,7 +181,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       sortable: false,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params) => <AdminTableCell>{params.value === '개인' ? '개별 권한' : '회사 권한'}</AdminTableCell>,
+      renderCell: (params) => <AdminTableCell cursorPointer>{params.value === '개인' ? '개별 권한' : '회사 권한'}</AdminTableCell>,
     },
     {
       field: 'actions',
@@ -188,16 +189,17 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       minWidth: 52,
       cellClassName: 'cellAction',
       align: 'right',
-      renderCell: () => (
+      renderCell: (params) => (
         <AdminTableAction
           actions={[
             {
-              label: '상세 권한 설정',
+              label: t('상세 권한 설정'),
               icon: <SettingIcon className="MuiSvgIcon-root" />,
               onClick: () => {
-                navigate({
-                  // pathname: getPath('customer-company-product-detail'),
-                  search: '?mode=set-permission',
+                navigate(`/admin/customer-company/companies/provider-detail/${companyNo}/${selectedProviderNo}/${params.row.goodsNo}`, {
+                  state: {
+                    companyNm: providerDetailData?.companyNm,
+                  },
                 })
               },
             },
