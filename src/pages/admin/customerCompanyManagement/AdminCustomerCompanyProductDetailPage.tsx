@@ -612,15 +612,15 @@ const AdminCustomerCompanyProductDetailPage = () => {
                     size="h26"
                     value={(() => {
                       const year =
-                        goodsDetailData?.companySetting && !isEditUsageBeginDate
+                        goodsDetailData?.companySetting.usageBeginDate && !isEditUsageBeginDate
                           ? goodsDetailData?.companySetting.usageBeginDate.slice(0, 4)
                           : companyPermission?.usageBeginDate?.slice(0, 4)
                       const month =
-                        goodsDetailData?.companySetting && !isEditUsageBeginDate
+                        goodsDetailData?.companySetting.usageBeginDate && !isEditUsageBeginDate
                           ? goodsDetailData?.companySetting.usageBeginDate.slice(4, 6)
                           : companyPermission?.usageBeginDate?.slice(4, 6)
                       const day =
-                        goodsDetailData?.companySetting && !isEditUsageBeginDate
+                        goodsDetailData?.companySetting.usageBeginDate && !isEditUsageBeginDate
                           ? goodsDetailData?.companySetting.usageBeginDate.slice(6, 8)
                           : companyPermission?.usageBeginDate?.slice(6, 8)
 
@@ -641,15 +641,15 @@ const AdminCustomerCompanyProductDetailPage = () => {
                     size="h26"
                     value={(() => {
                       const year =
-                        goodsDetailData?.companySetting && !isEditUsageEndDate
+                        goodsDetailData?.companySetting.usageEndDate && !isEditUsageEndDate
                           ? goodsDetailData?.companySetting.usageEndDate.slice(0, 4)
                           : companyPermission?.usageEndDate?.slice(0, 4)
                       const month =
-                        goodsDetailData?.companySetting && !isEditUsageEndDate
+                        goodsDetailData?.companySetting.usageEndDate && !isEditUsageEndDate
                           ? goodsDetailData?.companySetting.usageEndDate.slice(4, 6)
                           : companyPermission?.usageEndDate?.slice(4, 6)
                       const day =
-                        goodsDetailData?.companySetting && !isEditUsageEndDate
+                        goodsDetailData?.companySetting.usageEndDate && !isEditUsageEndDate
                           ? goodsDetailData?.companySetting.usageEndDate.slice(6, 8)
                           : companyPermission?.usageEndDate?.slice(6, 8)
 
