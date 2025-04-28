@@ -1,6 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import ErrorIcon from '@mui/icons-material/Error'
-import { Box, FormControlLabel, InputAdornment, Switch, Typography } from '@mui/material'
+import { Box, FormControlLabel, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
@@ -17,6 +17,7 @@ import AdminTextField from '@/components/admin/AdminTextField'
 import DetailItem from '@/components/common/detail-item'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
+import MIInput from '@/components/common/input/MIInput'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService, { ICompanyProviderInfo } from '@/service/admin/companies'
@@ -30,6 +31,10 @@ interface AdminCustomerDataProviderTableProps {
 }
 interface AdminCustomerMemberTableProps {
   data: IPaginationResponse<IUserInfo>
+  search: string
+  setSearch: (value: string) => void
+  searchValue: string
+  setSearchValue: (value: string) => void
 }
 
 const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean) => void; label: string; value: boolean }) => {
@@ -188,7 +193,7 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
   )
 }
 
-const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
+const AdminCustomerMemberTable = ({ data, search, setSearch, setSearchValue }: AdminCustomerMemberTableProps) => {
   const [isOpenDelete, setIsOpenDelete] = useState(false)
   const navigate = useNavigate()
   const [selectedUser, setSelectedUser] = useState<IUserInfo | null>(null)
@@ -307,18 +312,24 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
   return (
     <Box>
       <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
-        <Typography color="gray.90">회원 목록</Typography>
+        <Typography color="gray.90">{t('회원 목록')}</Typography>
         <Box display={'flex'} alignItems={'center'} columnGap={'10px'}>
-          <AdminTextField
-            placeholder="검색하세요"
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment sx={{ cursor: 'pointer' }} position="end">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              },
+          <MIInput
+            placeholder={t('검색하세요.')}
+            endIcon={
+              <SearchIcon
+                onClick={() => {
+                  setSearchValue(search)
+                }}
+              />
+            }
+            contentWidth={196}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setSearchValue(search)
+              }
             }}
           />
           <AdminButton
@@ -381,6 +392,8 @@ const AdminCustomerCompanyDetailPage = () => {
   const [inputUsageBeginDate, setInputUsageBeginDate] = useState<Dayjs | null>(null)
   const [inputUsageEndDate, setInputUsageEndDate] = useState<Dayjs | null>(null)
   const [companyNm, setCompanyNm] = useState<string>('')
+  const [search, setSearch] = useState<string>('')
+  const [searchValue, setSearchValue] = useState<string>('')
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
 
@@ -409,12 +422,13 @@ const AdminCustomerCompanyDetailPage = () => {
   })
 
   const { data: userData } = useQuery({
-    queryKey: ['user', companyNo],
+    queryKey: ['user', companyNo, searchValue],
     queryFn: async () =>
       await membersService.getUsers({
         companyNo,
         page: 1,
         size: 20,
+        userNm: searchValue,
       }),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
@@ -522,7 +536,15 @@ const AdminCustomerCompanyDetailPage = () => {
   return (
     <>
       {dataProviderData && <AdminCustomerDataProviderTable data={dataProviderData} companyNm={companyNm} />}
-      {userData && <AdminCustomerMemberTable data={userData} />}
+      {userData && (
+        <AdminCustomerMemberTable
+          data={userData}
+          search={search}
+          setSearch={setSearch}
+          searchValue={searchValue}
+          setSearchValue={setSearchValue}
+        />
+      )}
       <AdminConfirm
         open={openConfirmActive}
         title={<>{data?.isActivated ? t('비활성으로 변경하시겠습니까?') : t('활성으로 변경하시겠습니까?')}</>}
@@ -551,11 +573,13 @@ const AdminCustomerCompanyDetailPage = () => {
         ]}
       >
         <Typography component={'p'} variant="body2R14" color="gray.70" mb="30px">
-          변경 시 해당 고객사의 기존에 설정되었던 권한이 있는 경우 기존 권한이 적용됩니다. 변경 후 최종 권한을 다시 한 번 확인해 주세요.
+          {t(
+            '변경 시 해당 고객사의 기존에 설정되었던 권한이 있는 경우 기존 권한이 적용됩니다. 변경 후 최종 권한을 다시 한 번 확인해 주세요.',
+          )}
         </Typography>
         <Box>
           <Typography component={'p'} variant="body3" color="gray.70">
-            변경할 고객사명{' '}
+            {t('변경할 고객사명 ')}
             <Typography component={'span'} color="point.red1">
               *
             </Typography>
@@ -563,7 +587,7 @@ const AdminCustomerCompanyDetailPage = () => {
           <AdminTextField fullWidth onChange={(e) => setInputCompanyName(e.target.value)} />
           {isErrorCompanyName && (
             <Typography component={'p'} variant="subtext2" color="#5191F5" mt={1}>
-              고객사명을 동일하게 입력해 주세요.
+              {t('고객사명을 동일하게 입력해 주세요.')}
             </Typography>
           )}
         </Box>
@@ -571,14 +595,14 @@ const AdminCustomerCompanyDetailPage = () => {
 
       <AdminConfirm
         open={openInformationDialog}
-        title={<>고객사 기본정보 수정</>}
+        title={t('고객사 기본정보 수정')}
         width={450}
         handleClose={() => {
           setOpenInformationDialog(false)
         }}
         actions={[
           {
-            label: '취소',
+            label: t('취소'),
             variant: 'outlined',
             color: 'secondary',
             onClick: () => {
@@ -586,33 +610,32 @@ const AdminCustomerCompanyDetailPage = () => {
             },
           },
           {
-            label: '저장',
+            label: t('저장'),
             variant: 'contained',
             color: 'primary',
             onClick: () => {
               setOpenInformationDialog(false)
               setOpenConfirmSaving(true)
-              //   showSnackbar('비활성으로 변경되었습니다.', { variant: 'success' }) // Please use 1 of the snack bar in real case
             },
           },
         ]}
       >
         <Box mb={5}>
           <Typography component={'p'} variant="body3" color="gray.70">
-            고객사명{' '}
+            {t('고객사명 ')}
           </Typography>
           <Typography component={'p'} variant="subtext" color="gray.60" mb="6px"></Typography>
           <AdminTextField value={data?.companyNm} aria-readonly fullWidth />
         </Box>
         <Box>
           <Typography component={'p'} variant="body3" color="gray.70">
-            사용 기간{' '}
+            {t('사용 기간 ')}
             <Typography component={'span'} color="point.red1">
               *
             </Typography>
           </Typography>
           <Typography component={'p'} variant="subtext" color="gray.60" mb="6px">
-            고객사의 MI platform 사용 기간을 입력하세요.
+            {t('고객사의 MI platform 사용 기간을 입력하세요.')}
           </Typography>
           <Box display="flex" alignItems={'center'} columnGap={'8px'}>
             <AdminDatePicker
@@ -638,14 +661,14 @@ const AdminCustomerCompanyDetailPage = () => {
 
       <AdminConfirm
         open={openConfirmSaving}
-        title={<>저장하시겠습니까?</>}
+        title={t('저장하시겠습니까?')}
         width={450}
         handleClose={() => {
           setOpenConfirmActive(false)
         }}
         actions={[
           {
-            label: '취소',
+            label: t('취소'),
             variant: 'outlined',
             color: 'secondary',
             onClick: () => {
@@ -653,7 +676,7 @@ const AdminCustomerCompanyDetailPage = () => {
             },
           },
           {
-            label: '저장',
+            label: t('저장'),
             variant: 'contained',
             color: 'primary',
             onClick: async () => {
