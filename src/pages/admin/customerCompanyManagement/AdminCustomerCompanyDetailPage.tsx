@@ -11,6 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
+import AdminLoading from '@/components/admin/AdminLoading'
 import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
@@ -398,12 +399,13 @@ const AdminCustomerCompanyDetailPage = () => {
   const [companyNm, setCompanyNm] = useState<string>('')
   const [search, setSearch] = useState<string>('')
   const [searchValue, setSearchValue] = useState<string>('')
+  const [isActive, setIsActive] = useState<boolean>(true)
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
 
   const { companyNo } = useParams()
 
-  const { data } = useQuery({
+  const { data, isLoading: customerCompanyDetailIsLoading } = useQuery({
     queryKey: ['customerCompanyDetail', companyNo],
     queryFn: async () => await companiesService.getCompanyDetail(Number(companyNo)),
     refetchOnWindowFocus: 'always',
@@ -413,9 +415,7 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
-  const [isActive, setIsActive] = useState<boolean>(data?.isActivated ?? true)
-
-  const { data: dataProviderData } = useQuery({
+  const { data: dataProviderData, isLoading: dataProviderDataIsLoading } = useQuery({
     queryKey: ['dataProvider', companyNo],
     queryFn: async () => await companiesService.getCompanyProviders(Number(companyNo)),
     refetchOnWindowFocus: 'always',
@@ -425,7 +425,7 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
-  const { data: userData } = useQuery({
+  const { data: userData, isLoading: userDataIsLoading } = useQuery({
     queryKey: ['user', companyNo, searchValue],
     queryFn: async () =>
       await membersService.getUsers({
@@ -441,7 +441,7 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
-  const { data: companyLatestUpdatedData } = useQuery({
+  const { data: companyLatestUpdatedData, isLoading: companyLatestUpdatedDataIsLoading } = useQuery({
     queryKey: ['latestUpdateData', companyNo],
     queryFn: async () => await companiesService.getCompanyLatestUpdated(Number(companyNo)),
     refetchOnWindowFocus: 'always',
@@ -450,6 +450,8 @@ const AdminCustomerCompanyDetailPage = () => {
     staleTime: 0,
     enabled: !!companyNo,
   })
+
+  const isLoading = customerCompanyDetailIsLoading || dataProviderDataIsLoading || userDataIsLoading || companyLatestUpdatedDataIsLoading
 
   const toogle = () => {
     setOpenConfirmActive(true)
@@ -467,6 +469,7 @@ const AdminCustomerCompanyDetailPage = () => {
       setOpenConfirmActive(false)
       showSnackbar(t(response?.isActivated ? '활성' : '비활성') + t('으로 변경되었습니다.'), { variant: 'success' })
       setIsErrorCompanyName(true)
+      await queryClient.invalidateQueries({ queryKey: ['customerCompanyDetail', companyNo] })
     } catch (error) {
       console.error(error)
     }
@@ -489,44 +492,46 @@ const AdminCustomerCompanyDetailPage = () => {
   }
 
   useEffect(() => {
-    setCompanyNm(data?.companyNm ?? '')
-    setCustomComponent(<AdminCustomerCompanyDetailPageHeader value={isActive} onChange={toogle} label={isActive ? '활성' : '비활성'} />)
-    setSubHeader(
-      <DetailItem
-        title={data?.companyNm}
-        fields={[
-          {
-            label: '등록일',
-            value: dayjs(String(data?.auditInfo.createDt)).format('YYYY-MM-DD'),
-          },
-          {
-            label: '수정일',
-            value: dayjs(String(companyLatestUpdatedData?.modifyDt)).format('YYYY-MM-DD'),
-          },
-          {
-            label: '등록자',
-            value: String(data?.auditInfo.createUserId),
-          },
-          {
-            label: '수정자',
-            value: String(companyLatestUpdatedData?.modifyUserNm),
-          },
-          {
-            label: '사용기간',
-            value:
-              data?.usageBeginDate && data?.usageEndDate
-                ? `${data?.usageBeginDate.slice(0, 4)}-${data?.usageBeginDate.slice(4, 6)}-${data?.usageBeginDate.slice(6, 8)} ~ ${data?.usageEndDate.slice(0, 4)}-${data?.usageEndDate.slice(4, 6)}-${data?.usageEndDate.slice(6, 8)}`
-                : '-',
-          },
-        ]}
-        icon={<SettingIcon />}
-        tooltipMessage="기본 정보 수정"
-        onAction={() => {
-          setOpenInformationDialog(true)
-        }}
-      />,
-    )
-
+    if (data && companyLatestUpdatedData) {
+      setIsActive(data?.isActivated)
+      setCompanyNm(data?.companyNm ?? '')
+      setCustomComponent(<AdminCustomerCompanyDetailPageHeader value={isActive} onChange={toogle} label={isActive ? '활성' : '비활성'} />)
+      setSubHeader(
+        <DetailItem
+          title={data?.companyNm}
+          fields={[
+            {
+              label: '등록일',
+              value: dayjs(String(data?.auditInfo.createDt)).format('YYYY-MM-DD'),
+            },
+            {
+              label: '수정일',
+              value: dayjs(String(companyLatestUpdatedData?.modifyDt)).format('YYYY-MM-DD'),
+            },
+            {
+              label: '등록자',
+              value: String(data?.auditInfo.createUserId),
+            },
+            {
+              label: '수정자',
+              value: String(companyLatestUpdatedData?.modifyUserNm),
+            },
+            {
+              label: '사용기간',
+              value:
+                data?.usageBeginDate && data?.usageEndDate
+                  ? `${data?.usageBeginDate.slice(0, 4)}-${data?.usageBeginDate.slice(4, 6)}-${data?.usageBeginDate.slice(6, 8)} ~ ${data?.usageEndDate.slice(0, 4)}-${data?.usageEndDate.slice(4, 6)}-${data?.usageEndDate.slice(6, 8)}`
+                  : '-',
+            },
+          ]}
+          icon={<SettingIcon />}
+          tooltipMessage="기본 정보 수정"
+          onAction={() => {
+            setOpenInformationDialog(true)
+          }}
+        />,
+      )
+    }
     return () => {
       setCustomComponent(null)
       setSubHeader(null)
@@ -537,7 +542,9 @@ const AdminCustomerCompanyDetailPage = () => {
     setIsErrorCompanyName(inputCompanyName.replace(/\s/g, '') !== data?.companyNm.replace(/\s/g, ''))
   }, [inputCompanyName, data?.companyNm])
 
-  return (
+  return isLoading ? (
+    <AdminLoading />
+  ) : (
     <>
       {dataProviderData && <AdminCustomerDataProviderTable data={dataProviderData} companyNm={companyNm} />}
       {userData && (

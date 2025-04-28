@@ -9,6 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
+import AdminLoading from '@/components/admin/AdminLoading'
 import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import DetailItem from '@/components/common/detail-item'
@@ -48,11 +49,12 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const [search, setSearch] = useState<string>('')
   const [searchValue, setSearchValue] = useState<string>('')
   const [selectedGoods, setSelectedGoods] = useState<string>('')
+  const [isActive, setIsActive] = useState<boolean>(true)
   const [goodsAuthManagementSeparateCd, setGoodsAuthManagementSeparateCd] = useState<string>('INDIVIDUAL')
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
 
-  const { data: providerDetailData } = useQuery({
+  const { data: providerDetailData, isLoading } = useQuery({
     queryKey: ['providerDetail', companyNo, selectedProviderNo],
     queryFn: async () => await companiesService.getCompanyProviderDetail(Number(companyNo), Number(selectedProviderNo)),
     refetchOnWindowFocus: 'always',
@@ -61,8 +63,6 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     staleTime: 0,
     enabled: !!companyNo || !!selectedProviderNo,
   })
-
-  const [isActive, setIsActive] = useState<boolean>(providerDetailData?.isUsed ?? true)
 
   const { data: providerLatestUpdatedData } = useQuery({
     queryKey: ['latestUpdateData', companyNo, selectedProviderNo],
@@ -212,12 +212,12 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   useEffect(() => {
     if (providerDetailData) {
       setSelectedCompany({ value: String(providerDetailData.providerNo), label: providerDetailData.providerNm })
-      setIsActive(providerDetailData.isUsed)
     }
   }, [providerDetailData])
 
   useEffect(() => {
     if (providerDetailData && providerLatestUpdatedData) {
+      setIsActive(providerDetailData.isUsed)
       setCustomComponent(
         <AdminCustomerCompanyProviderDetailPageHeader
           value={isActive}
@@ -308,6 +308,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       setIsActive(response.isUsed)
       setOpenConfirmActive(false)
       showSnackbar(t(response.isUsed ? '사용' : '미사용') + t('으로 변경되었습니다.'), { variant: 'success' })
+      await queryClient.invalidateQueries({ queryKey: ['providerDetail', companyNo, selectedProviderNo] })
     } catch (error) {
       console.error('error', error)
     }
@@ -332,7 +333,9 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     }
   }
 
-  return (
+  return isLoading ? (
+    <AdminLoading />
+  ) : (
     <>
       <Box>
         <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>

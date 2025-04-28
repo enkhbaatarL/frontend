@@ -114,7 +114,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
     enabled: !!companyNo || !!providerNo || !!goodsNo,
   })
 
-  const [isActive, setIsActive] = useState<boolean>(goodsDetailData?.isUsed ?? true)
+  const [isActive, setIsActive] = useState<boolean>(true)
   const [permission, setPermission] = useState<string>('')
   const [isEditViewable, setIsEditViewable] = useState<boolean>(false)
   const [isEditDownloadable, setIsEditDownloadable] = useState<boolean>(false)
@@ -139,6 +139,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
 
   useEffect(() => {
     if (goodsDetailData && goodsDetailLatestData) {
+      setIsActive(goodsDetailData.isUsed)
       setCompanyPermission({
         isViewable: goodsDetailData?.companySetting ? goodsDetailData.companySetting.isViewable : false,
         isDownloadable: goodsDetailData?.companySetting ? goodsDetailData.companySetting.isDownloadable : false,
@@ -508,6 +509,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
       setIsActive(response?.isUsed)
       setOpenConfirmActive(false)
       showSnackbar(response?.isUsed ? t('사용으로 변경되었습니다.') : t('미사용으로 변경되었습니다.'), { variant: 'success' })
+      await queryClient.invalidateQueries({ queryKey: ['goodsDetail', companyNo, providerNo, goodsNo] })
     } catch (error) {
       console.error(error)
     }
