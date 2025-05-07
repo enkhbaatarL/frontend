@@ -52,6 +52,16 @@ interface ICompanyDetailInfo {
   auditInfo: IAuditInfo
 }
 
+interface IOwnerCompanyInfo {
+  companyNo: number
+  companyCd: string
+  companyNm: string
+  usageBeginDate: string
+  usageEndDate: string
+  isActivated: boolean
+  auditInfo: IAuditInfo
+}
+
 export interface ICompanyProviderInfo {
   providerNo: number
   providerNm: string
@@ -168,6 +178,9 @@ export interface IUpdateUserPermissionResponse {
   isUsed: boolean
   goodsAuthManagementSeparateCd: string
   goodsAuthManagementSeparateNm: string
+}
+export interface IRegisterOwnerCompanyRequest {
+  companyCd: string
 }
 /**
  * 고객사 서비스
@@ -413,6 +426,35 @@ const companiesService = {
     )
 
     return response.data.data
+  },
+  /**
+   * 관리사 목록을 조회합니다.
+   * @param params - { companyNm: 검색할 고객사 명, page: 페이지 번호, size: 페이지당 항목 수  }
+   * @returns 관리사 목록
+   */
+  async getOwnerCompanies(params: Partial<ICompaniesRequest>): Promise<IPaginationResponse<ICompanyInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<ICompanyInfo>>> = await api.get(
+      '/admin/company-management/owner-companies',
+      { params },
+    )
+
+    return response.data.data
+  },
+  /**
+   * 관리사를 등록합니다.
+   * @param body - { companyCd: 등록할 관리사 코드 }
+   */
+  async registerOwnerCompany(body: IRegisterOwnerCompanyRequest): Promise<ICommonResponse<IOwnerCompanyInfo>> {
+    const response: AxiosResponse<ICommonResponse<IOwnerCompanyInfo>> = await api.post('/admin/company-management/owner-company', body)
+
+    return response.data
+  },
+  async deleteOwnerCompany(companyNo: number): Promise<ICommonResponse<IOwnerCompanyInfo>> {
+    const response: AxiosResponse<ICommonResponse<IOwnerCompanyInfo>> = await api.delete(
+      `admin/company-management/owner-companies/${companyNo}`,
+    )
+
+    return response.data
   },
 }
 

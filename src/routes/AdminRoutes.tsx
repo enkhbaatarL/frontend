@@ -16,6 +16,7 @@ import AdminCustomerCompanyDataProviderDetailPage from '@/pages/admin/customerCo
 import AdminCustomerCompanyDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyDetailPage'
 import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesPage'
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
+import AdminCustomerCompanyManagementOwnerCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementOwnerCompaniesPage.tsx'
 import AdminCustomerCompanyProductDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyProductDetailPage'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
@@ -49,6 +50,11 @@ const AdminRoutes: ICustomRouteObject = {
         {
           index: true,
           element: <Navigate to="companies" replace />,
+        },
+        {
+          path: 'owner-companies',
+          label: '관리사 목록',
+          element: <AdminCustomerCompanyManagementOwnerCompaniesPage />,
         },
         {
           path: 'companies',
