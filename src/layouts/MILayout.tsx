@@ -2,7 +2,7 @@ import { Box } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
-import MIFooter from '@/components/mi/MiFooter.tsx'
+import MIFooter from '@/components/mi/MIFooter.tsx'
 import MIHeaderMainLayout from '@/components/mi/MIHeaderMainLayout.tsx'
 import MiProvider from '@/providers/MiProvider.tsx'
 
