@@ -55,7 +55,7 @@ const MIInput = ({
       setInnerValue(e.target.value)
       props.onInput?.(e)
     },
-    [maxLength, props.onInput],
+    [maxLength, props],
   )
 
   const handleChange = useCallback(
@@ -64,7 +64,7 @@ const MIInput = ({
       setInnerValue(e.target.value)
       props.onChange?.(e)
     },
-    [maxLength, props.onChange],
+    [maxLength, props],
   )
 
   const styleBaseSize = useMemo(() => {
@@ -133,12 +133,15 @@ const MIInput = ({
             height={size === 'h46' ? 20 : 16}
             onClick={() => {
               setInnerValue('')
-              props.onChange?.({
-                target: {
-                  value: '',
-                },
-              } as ChangeEvent<HTMLInputElement>)
-              onClear?.()
+              if (onClear) {
+                onClear()
+              } else {
+                props.onChange?.({
+                  target: {
+                    value: '',
+                  },
+                } as ChangeEvent<HTMLInputElement>)
+              }
             }}
           />
         )}
@@ -160,7 +163,7 @@ const MIInput = ({
     }
 
     return defaultProps
-  }, [readOnly, isFocus, innerValue, props, size, variant, errorMessage, endIcon, startIcon, maxLength])
+  }, [readOnly, isFocus, innerValue, props, size, variant, errorMessage, endIcon, startIcon, maxLength, onClear])
 
   return (
     <Box ref={containerRef} maxWidth={props.maxWidth} minWidth={props.minWidth} width={props.width}>

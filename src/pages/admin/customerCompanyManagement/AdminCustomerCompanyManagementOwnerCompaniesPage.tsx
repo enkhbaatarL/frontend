@@ -179,8 +179,8 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
     },
     {
       field: 'actions',
-      headerName: 'Actions',
-      width: 100,
+      headerName: '',
+      maxWidth: 52,
       cellClassName: 'actions',
       align: 'center',
       renderCell: (param) => (
@@ -243,8 +243,8 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
         width={450}
         handleClose={() => setShowRegistrationModal(false)}
         actions={[
-          { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowRegistrationModal(false) },
-          { label: '등록', variant: 'contained', color: 'primary', onClick: registerOwnerCompany },
+          { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setShowRegistrationModal(false) },
+          { label: '등록', variant: 'filled', color: 'primary', onClick: registerOwnerCompany },
         ]}
       >
         <p style={{ marginBottom: '20px' }}>
@@ -275,15 +275,15 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setShowDeleteModal(false)
             },
           },
           {
             label: t('삭제'),
-            variant: 'contained',
-            color: 'error',
+            variant: 'filled',
+            color: 'red',
             onClick: async () => {
               await handleDeleteOwnerCompany(deleteOwnerCompanyRequest)
             },

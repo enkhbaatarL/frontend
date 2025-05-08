@@ -53,11 +53,6 @@ const AdminRoutes: ICustomRouteObject = {
           element: <Navigate to="companies" replace />,
         },
         {
-          path: 'owner-companies',
-          label: '관리사 목록',
-          element: <AdminCustomerCompanyManagementOwnerCompaniesPage />,
-        },
-        {
           path: 'companies',
           label: '고객사 목록',
           children: [
@@ -108,6 +103,11 @@ const AdminRoutes: ICustomRouteObject = {
               ],
             },
           ],
+        },
+        {
+          path: 'owner-companies',
+          label: '관리사 목록',
+          element: <AdminCustomerCompanyManagementOwnerCompaniesPage />,
         },
       ],
     },
