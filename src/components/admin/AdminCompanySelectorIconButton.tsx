@@ -27,7 +27,7 @@ const AdminCompanySelectorIconButton = (props: Readonly<AdminCompanySelectorIcon
         display={'flex'}
         alignItems={'center'}
         justifyContent={'center'}
-        borderRadius={'6px'}
+        borderRadius={'4px'}
         sx={{
           cursor: 'pointer',
           transition: 'all 0.2s',

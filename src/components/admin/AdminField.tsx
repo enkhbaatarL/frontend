@@ -1,31 +1,30 @@
-import { FormControlLabel, Radio, RadioGroup, TextField, type TextFieldProps, Typography } from '@mui/material'
+import { FormControlLabel, Radio, RadioGroup, type TextFieldProps, Typography } from '@mui/material'
 import FormControl from '@mui/material/FormControl'
 import Switch from '@mui/material/Switch'
 import { Dayjs } from 'dayjs'
-import { t } from 'i18next'
 
-import type { SelectChangeEvent } from '@mui/material/Select'
 import type React from 'react'
 
-import AdminDatePicker from '@/components/admin/AdminDatePicker'
-import AdminSelect from '@/components/admin/AdminSelect'
 import AdminUpload, { type FileInfo } from '@/components/admin/AdminUpload'
-import Flex from '@/components/common/display/Flex'
+import MIDatePicker from '@/components/common/datepicker/MIDatePicker'
+import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
+import MIInput from '@/components/common/input/MIInput'
+import MISelect from '@/components/common/select/MISelect'
 
 type AdminTextFieldProps = TextFieldProps & {
   labelSub?: string
-  labelVariant?: 'body1' | 'body2' | 'body3' | 'h6' | 'subtitle'
+  labelVariant?: 'body1' | 'body2' | 'body3' | 'h6' | 'subtitle' | 'sectionTitle'
   labelColor?: string
   fieldType?: 'text' | 'select' | 'radio' | 'checkbox' | 'switch' | 'upload' | 'date-range' | 'date'
   options?: { value: string; label: string; disabled?: boolean }[]
   value?: string | string[] | boolean | (File | FileInfo)[] | Dayjs[]
-  countCharacters?: boolean
   maxLength?: number
   onChange?: (value: string | string[] | boolean | (File | FileInfo)[] | Dayjs[]) => void
   maxSize?: number
   minWidth?: number
   acceptedType?: string[]
   multiple?: boolean
+  multiline?: boolean
   defaultFiles?: FileInfo[]
   width?: number | string[]
   labelSw?: string
@@ -38,26 +37,25 @@ const AdminField = ({
   fullWidth,
   label,
   labelSub,
-  labelVariant = 'body3',
-  labelColor = 'gray.70',
+  labelVariant = 'sectionTitle',
+  labelColor = 'gray.90',
   required,
   fieldType = 'text',
   options,
   value = '',
-  countCharacters = false,
   maxLength,
   onChange,
   maxSize = 20,
   minWidth = 700,
   acceptedType = ['image/jpeg', 'image/png'],
   multiple = false,
+  multiline = false,
   defaultFiles = [],
   width,
   labelSw,
   disabled,
   showSelectedValue = true,
   useAllOption,
-  ...props
 }: AdminTextFieldProps) => {
   const handleChangeTextField = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value
@@ -66,17 +64,10 @@ const AdminField = ({
     }
   }
 
-  const handleSelectChange = (event: SelectChangeEvent<unknown>) => {
-    const newValue = event.target.value as string | string[]
-    let processedValue: string | string[]
+  const handleSelectChange = (e: { target: { value: string | number | (string | number)[] } }) => {
+    const newValue = e.target.value as string
 
-    if (multiple) {
-      processedValue = Array.isArray(newValue) ? newValue : [newValue]
-    } else {
-      processedValue = newValue
-    }
-
-    onChange?.(processedValue)
+    onChange?.(newValue)
   }
 
   const handleSwitchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,13 +76,6 @@ const AdminField = ({
 
   const handleChangeFile = (files: (File | FileInfo)[]) => {
     if (typeof onChange === 'function') onChange?.(files)
-  }
-
-  let selectValue
-  if (multiple) {
-    selectValue = Array.isArray(value) ? value : []
-  } else {
-    selectValue = value
   }
 
   return (
@@ -113,34 +97,24 @@ const AdminField = ({
       )}
 
       {fieldType === 'text' && (
-        <>
-          <TextField
-            disabled={disabled}
-            variant="outlined"
-            hiddenLabel
-            defaultValue={value}
-            placeholder={placeholder ?? t('제목을 입력하세요')}
-            slotProps={{ htmlInput: { maxLength } }}
-            onInput={handleChangeTextField}
-            {...props}
-          />
-          {countCharacters && typeof value === 'string' && (
-            <Typography align="right" variant="caption" color="gray.60" marginTop={1}>
-              {maxLength ? `${value.length} / ${maxLength}` : `${value.length}`}
-            </Typography>
-          )}
-        </>
+        <MIInput
+          disabled={disabled}
+          value={value}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          onChange={handleChangeTextField}
+          multiline={multiline}
+        />
       )}
 
       {fieldType === 'select' && (
-        <AdminSelect
+        <MISelect
           multiple={multiple}
-          displayEmpty
           disabled={disabled}
-          value={selectValue}
+          value={value as string}
           fullWidth
           sx={{ width }}
-          showSelectedValue={showSelectedValue}
+          showValue={showSelectedValue}
           onChange={handleSelectChange}
           useAllOption={useAllOption}
           options={options}
@@ -151,7 +125,16 @@ const AdminField = ({
         <FormControlLabel
           disabled={disabled}
           sx={{ marginRight: 0 }}
-          control={<Switch checked={Boolean(value)} onChange={handleSwitchChange} />}
+          control={
+            <Switch
+              checked={Boolean(value)}
+              onChange={handleSwitchChange}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                onChange?.(!value)
+              }}
+            />
+          }
           label={labelSw}
         />
       )}
@@ -178,6 +161,7 @@ const AdminField = ({
       {fieldType === 'upload' && (
         <AdminUpload
           disabled={disabled}
+          required={required}
           maxSize={maxSize}
           minWidth={minWidth}
           acceptedTypes={acceptedType}
@@ -188,36 +172,42 @@ const AdminField = ({
       )}
 
       {fieldType === 'date-range' && (
-        <Flex direction="row">
-          <AdminDatePicker
-            readOnly={disabled}
-            value={((value as Dayjs[]) ?? [])[0]}
-            onChange={(newDate) => {
-              if (onChange && Array.isArray(value)) {
-                const dateArray = [...((value as Dayjs[]) || [])]
-                dateArray[0] = newDate as Dayjs
-                onChange(dateArray)
-              }
-            }}
-          />
-          <Typography sx={{ margin: 2, verticalAlign: 'sub' }} color="gray.50" component="span">
-            ~
-          </Typography>
-          <AdminDatePicker
-            readOnly={disabled}
-            value={((value as Dayjs[]) ?? [])[1]}
-            onChange={(newDate) => {
-              if (onChange && Array.isArray(value)) {
-                const dateArray = [...((value as Dayjs[]) || [])]
-                dateArray[1] = newDate as Dayjs
-                onChange(dateArray)
-              }
-            }}
-          />
-        </Flex>
+        <MIDateRangePicker
+          disabled={disabled}
+          // value={value}
+          // onChange={onChange} ///
+        />
+        // <Flex direction="row">
+        //   <AdminDatePicker
+        //     readOnly={disabled}
+        //     value={((value as Dayjs[]) ?? [])[0]}
+        //     onChange={(newDate) => {
+        //       if (onChange && Array.isArray(value)) {
+        //         const dateArray = [...((value as Dayjs[]) || [])]
+        //         dateArray[0] = newDate as Dayjs
+        //         onChange(dateArray)
+        //       }
+        //     }}
+        //   />
+        //   <Typography sx={{ margin: 2, verticalAlign: 'sub' }} color="gray.50" component="span">
+        //     ~
+        //   </Typography>
+        //   <AdminDatePicker
+        //     readOnly={disabled}
+        //     value={((value as Dayjs[]) ?? [])[1]}
+        //     onChange={(newDate) => {
+        //       if (onChange && Array.isArray(value)) {
+        //         const dateArray = [...((value as Dayjs[]) || [])]
+        //         dateArray[1] = newDate as Dayjs
+        //         onChange(dateArray)
+        //       }
+        //     }}
+        //   />
+        // </Flex>
       )}
 
-      {fieldType === 'date' && <AdminDatePicker readOnly={disabled} />}
+      {fieldType === 'date' && <MIDatePicker readOnly={disabled} />}
+      {/*{fieldType === 'date' && <AdminDatePicker readOnly={disabled} />}*/}
     </FormControl>
   )
 }

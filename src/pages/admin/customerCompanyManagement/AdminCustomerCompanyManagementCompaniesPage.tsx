@@ -7,11 +7,12 @@ import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
-import AdminSelect from '@/components/admin/AdminSelect'
 import AdminSnackbar from '@/components/admin/AdminSnackbar'
 import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
+import MIField from '@/components/common/input/MIField'
+import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import companiesService, { ICompaniesRequest, ICompanyInfo } from '@/service/admin/companies'
@@ -150,14 +151,15 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
             updateFilter('companyNm', e.target.value)
           }}
         />
-        <AdminSelect
-          label={t('상태')}
-          value={filter.activationSts}
-          onChange={(e) => {
-            updateFilter('activationSts', e.target.value as string)
-          }}
-          options={activationStatusOptions}
-        ></AdminSelect>
+        <MIField label={t('상태')}>
+          <MISelect
+            value={filter.activationSts}
+            onChange={(e) => {
+              updateFilter('activationSts', e.target.value as string)
+            }}
+            options={activationStatusOptions}
+          />
+        </MIField>
       </AdminSearchFilter>
       <AdminTable
         getRowId={(row) => row.companyNo}

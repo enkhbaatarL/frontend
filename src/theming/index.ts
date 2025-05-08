@@ -53,6 +53,7 @@ declare module '@mui/material/styles' {
     subtext2: CSSProperties
     body1: CSSProperties
     body1M16: CSSProperties
+    body1SB16: CSSProperties
     body1B16: CSSProperties
     body1R16: CSSProperties
     body2: CSSProperties
@@ -71,6 +72,7 @@ declare module '@mui/material/styles' {
     tableBody1: CSSProperties
     tableBody2: CSSProperties
     chip1: CSSProperties
+    chipM: CSSProperties
     chip2: CSSProperties
     breadcrumbs: CSSProperties
     subtitle: CSSProperties
@@ -81,6 +83,17 @@ declare module '@mui/material/styles' {
     labelText: CSSProperties
     fieldLabel: CSSProperties
     sectionTitle: CSSProperties
+    titleBox: CSSProperties
+    fileName: CSSProperties
+    infoDocument: CSSProperties
+    titleSubheader: CSSProperties
+    chartToolTipTitle: CSSProperties
+    chartToolTipNumber: CSSProperties
+    titlePage: CSSProperties
+    bage1: CSSProperties
+    bage2: CSSProperties
+    titleCardInsight: CSSProperties
+    sectionTitleTXL: CSSProperties
   }
 
   // allow configuration using `createTheme()`
@@ -91,6 +104,7 @@ declare module '@mui/material/styles' {
     subtext2?: CSSProperties
     body1?: CSSProperties
     body1M16?: CSSProperties
+    body1SB16?: CSSProperties
     body1B16?: CSSProperties
     body1R16?: CSSProperties
     body2?: CSSProperties
@@ -109,6 +123,7 @@ declare module '@mui/material/styles' {
     tableBody1?: CSSProperties
     tableBody2?: CSSProperties
     chip1?: CSSProperties
+    chipM?: CSSProperties
     chip2?: CSSProperties
     breadcrumbs?: CSSProperties
     subtitle?: CSSProperties
@@ -119,6 +134,17 @@ declare module '@mui/material/styles' {
     labelText?: CSSProperties
     fieldLabel?: CSSProperties
     sectionTitle?: CSSProperties
+    titleBox: CSSProperties
+    fileName: CSSProperties
+    infoDocument: CSSProperties
+    titleSubheader: CSSProperties
+    chartToolTipTitle?: CSSProperties
+    chartToolTipNumber?: CSSProperties
+    titlePage: CSSProperties
+    bage1: CSSProperties
+    bage2: CSSProperties
+    titleCardInsight: CSSProperties
+    sectionTitleTXL: CSSProperties
   }
 }
 
@@ -131,6 +157,7 @@ declare module '@mui/material/Typography' {
     subtext2: true
     body1: true
     body1M16: true
+    body1SB16: true
     body1B16: true
     body1R16: true
     body2: true
@@ -149,6 +176,7 @@ declare module '@mui/material/Typography' {
     tableBody1: true
     tableBody2: true
     chip1: true
+    chipM: true
     chip2: true
     h1: false
     breadcrumbs: true
@@ -160,6 +188,17 @@ declare module '@mui/material/Typography' {
     labelText: true
     fieldLabel: true
     sectionTitle: true
+    titleBox: true
+    fileName: true
+    infoDocument: true
+    titleSubheader: true
+    chartToolTipTitle: true
+    chartToolTipNumber: true
+    titlePage: true
+    bage1: true
+    bage2: true
+    titleCardInsight: true
+    sectionTitleTXL: true
   }
 }
 
@@ -192,12 +231,24 @@ const theme = createTheme({
     point: {
       red1: '#F03E3E',
       green1: '#0CA678',
+      orange2: '#F76707',
+      purple2: '#7048E8',
     },
     chart: {
       blue2: '#5191F5',
     },
     content: {
       backgroundHover: '#F0F3F6',
+      backgroundDisabled: '#F1F3F5',
+      borderEnabled: '#DEE2E6',
+      borderHover: '#CED4DA',
+      borderActivePrimary: '#2E3F5E',
+      borderDisabled: '#E9ECEF',
+      iconEnabled: '#868E96',
+      iconHover: '#343A40',
+      iconActive: '#343A40',
+      iconDisabled: '#CED4DA',
+      textDisabled: '#ADB5BD',
     },
     gray: {
       5: '#F8F9FA',
@@ -209,6 +260,7 @@ const theme = createTheme({
       50: '#ADB5BD',
       60: '#868E96',
       70: '#495057',
+      80: '#343A40',
       90: '#212529',
       30: '#DEE2E6',
     },
@@ -262,6 +314,12 @@ const theme = createTheme({
       fontSize: '16px',
       fontStyle: 'normal',
       fontWeight: 500,
+      lineHeight: '1.4',
+    },
+    body1SB16: {
+      fontSize: '16px',
+      fontStyle: 'normal',
+      fontWeight: 600,
       lineHeight: '1.4',
     },
     body1B16: {
@@ -371,6 +429,15 @@ const theme = createTheme({
       fontWeight: 700,
       lineHeight: '1.4',
     },
+    chipM: {
+      fontSize: '14px',
+      fontStyle: 'normal',
+      fontWeight: 700,
+      lineHeight: '1',
+      display: 'inline-block',
+      height: '14px',
+      letterSpacing: '0.36px',
+    },
     chip2: {
       fontSize: '12px',
       fontStyle: 'normal',
@@ -433,8 +500,82 @@ const theme = createTheme({
       fontWeight: 700,
       lineHeight: '1.4',
     },
+    titleBox: {
+      fontSize: '20px',
+      fontStyle: 'normal',
+      fontWeight: 700,
+      lineHeight: '1.2',
+    },
+    fileName: {
+      fontSize: '16px',
+      fontStyle: 'normal',
+      fontWeight: 500,
+      overflow: 'hidden',
+      display: '-webkit-box',
+      WebkitLineClamp: 2,
+      WebkitBoxOrient: 'vertical',
+    },
+    infoDocument: {
+      fontSize: '18px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1.4',
+    },
+    titleSubheader: {
+      fontSize: '56px',
+      fontStyle: 'normal',
+      fontWeight: 300,
+    },
+    titlePage: {
+      fontSize: '36px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1.4',
+    },
+    bage1: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 500,
+      lineHeight: '1',
+    },
+    bage2: {
+      fontSize: '16px',
+      fontStyle: 'normal',
+      fontWeight: 500,
+      lineHeight: '1.28',
+    },
+    titleCardInsight: {
+      fontSize: '24px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      overflow: 'hidden',
+      display: '-webkit-box',
+      WebkitLineClamp: 6,
+      WebkitBoxOrient: 'vertical',
+    },
+
     h1: undefined,
     fontFamily: ['Pretendard', 'sans-serif'].join(','),
+    chartToolTipTitle: {
+      fontSize: '16px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1.5',
+      letterSpacing: '-0.5px',
+    },
+    chartToolTipNumber: {
+      fontSize: '14px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1.5',
+      letterSpacing: '-0.5px',
+    },
+    sectionTitleTXL: {
+      fontSize: '20px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1.4',
+    },
   },
   components,
 })

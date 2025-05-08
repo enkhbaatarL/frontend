@@ -10,11 +10,12 @@ import { useNavigate } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
-import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
 import AddIcon from '@/components/common/icons/AddIcon'
+import MIField from '@/components/common/input/MIField'
+import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -260,15 +261,16 @@ const AdminMemberManagementUserRegistrationPage = () => {
         disabledSearch={!filter.companyCd || isSearchedState}
         disabledReset={isInitialState}
       >
-        <AdminSelect
-          label={t('회사명')}
-          value={filter.companyCd}
-          onChange={(e) => {
-            updateFilter('companyCd', e.target.value as string)
-          }}
-          options={filterOptions?.map(({ companyCd, companyNm }) => ({ label: companyNm, value: companyCd })) ?? []}
-          useAllOption={false}
-        />
+        <MIField label={t('회사명')}>
+          <MISelect
+            value={filter.companyCd}
+            onChange={(e) => {
+              updateFilter('companyCd', e.target.value as string)
+            }}
+            options={filterOptions?.map(({ companyCd, companyNm }) => ({ label: companyNm, value: companyCd })) ?? []}
+            useAllOption={false}
+          />
+        </MIField>
         <AdminTextField
           label={t('이름')}
           value={filter.userNm}
@@ -351,14 +353,14 @@ const AdminMemberManagementUserRegistrationPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setIsOpenRegistration(false)
             },
           },
           {
             label: t('등록'),
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: async () => {
               setIsOpenRegistration(false)
@@ -382,14 +384,14 @@ const AdminMemberManagementUserRegistrationPage = () => {
           {
             label: t('이어서 작성'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setIsOpenCancel(false)
             },
           },
           {
             label: t('취소 및 이동'),
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: () => {
               setIsOpenCancel(false)

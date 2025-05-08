@@ -730,14 +730,14 @@ const AdminCustomerCompanyProductDetailPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setOpenConfirmActive(false)
             },
           },
           {
             label: t('변경'),
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: async () => {
               await handleChangeActive()
@@ -761,14 +761,14 @@ const AdminCustomerCompanyProductDetailPage = () => {
           {
             label: t('이어서 작성'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setOpenCancelConfirm(false)
             },
           },
           {
             label: t('취소 및 이동'),
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: () => {
               setOpenCancelConfirm(false)
@@ -791,14 +791,14 @@ const AdminCustomerCompanyProductDetailPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setOpenSaveConfirm(false)
             },
           },
           {
             label: t('저장'),
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: async () => {
               await updatePermissions()

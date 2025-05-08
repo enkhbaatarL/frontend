@@ -13,10 +13,11 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
-import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
+import MIField from '@/components/common/input/MIField'
+import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -209,34 +210,37 @@ const AdminMemberManagementManagersPage = () => {
   return (
     <>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
-        <AdminSelect
-          label={t('구분')}
-          value={filter.userRoleCd}
-          onChange={(e) => {
-            updateFilter('userRoleCd', e.target.value as string)
-          }}
-          options={[
-            { label: t('Admin'), value: UserRole.ADMIN },
-            { label: t('운영자'), value: UserRole.OPERATOR },
-          ]}
-        />
-        <AdminSelect
-          label={t('회사명')}
-          value={filter.companyNo}
-          onChange={(e) => {
-            updateFilter('companyNo', e.target.value as string)
-          }}
-          options={filterOptions?.map(({ companyNo, companyNm }) => ({ label: companyNm, value: companyNo })) ?? []}
-        />
-        <AdminSelect
-          label={t('소속')}
-          value={filter.departmentNm}
-          onChange={(e) => {
-            updateFilter('departmentNm', e.target.value as string)
-          }}
-          disabled={isEmpty(departmentOptions)}
-          options={departmentOptions}
-        />
+        <MIField label={t('구분')}>
+          <MISelect
+            value={filter.userRoleCd as string}
+            onChange={(e) => {
+              updateFilter('userRoleCd', e.target.value as string)
+            }}
+            options={[
+              { label: t('Admin'), value: UserRole.ADMIN },
+              { label: t('운영자'), value: UserRole.OPERATOR },
+            ]}
+          />
+        </MIField>
+        <MIField label={t('회사명')}>
+          <MISelect
+            value={filter.companyNo}
+            onChange={(e) => {
+              updateFilter('companyNo', e.target.value as string)
+            }}
+            options={filterOptions?.map(({ companyNo, companyNm }) => ({ label: companyNm, value: companyNo })) ?? []}
+          />
+        </MIField>
+        <MIField label={t('소속')}>
+          <MISelect
+            value={filter.departmentNm}
+            onChange={(e) => {
+              updateFilter('departmentNm', e.target.value as string)
+            }}
+            disabled={isEmpty(departmentOptions)}
+            options={departmentOptions}
+          />
+        </MIField>
         <AdminTextField
           label={t('이름')}
           value={filter.userNm}
@@ -282,15 +286,15 @@ const AdminMemberManagementManagersPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setShowDeleteModal(false)
             },
           },
           {
             label: t('삭제'),
-            variant: 'contained',
-            color: 'error',
+            variant: 'filled',
+            color: 'red',
             onClick: () => {
               setShowDeleteModal(false)
               showSnackbar(t('삭제되었습니다.'), { variant: 'success' })

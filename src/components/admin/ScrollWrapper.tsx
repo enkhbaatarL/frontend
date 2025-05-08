@@ -1,15 +1,20 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react'
+import { Box, SxProps, Theme } from '@mui/material'
+import { useRef, useEffect, useState, useCallback, ReactNode, CSSProperties } from 'react'
 
 const ScrollWrapper = ({
   children,
   className,
   offsetTop = 0,
   maxHeight = 268,
+  sx,
+  styScroll,
 }: {
-  children: React.ReactNode
+  children: ReactNode
   className?: string
   offsetTop?: number
-  maxHeight?: number
+  maxHeight?: number | string
+  sx?: SxProps<Theme>
+  styScroll?: CSSProperties
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
@@ -62,11 +67,11 @@ const ScrollWrapper = ({
   }, [children, syncThumb])
 
   return (
-    <div style={{ position: 'relative', maxHeight, overflow: 'hidden', padding: `${offsetTop}px 0` }}>
-      <div
+    <Box sx={{ position: 'relative', maxHeight, overflow: 'hidden', padding: `${offsetTop}px 0`, ...sx }}>
+      <Box
         className={`disabledScroll ${className ?? ''}`}
         ref={containerRef}
-        style={{
+        sx={{
           maxHeight,
           overflowY: 'auto',
           paddingRight: '0',
@@ -75,7 +80,7 @@ const ScrollWrapper = ({
         }}
       >
         <div>{children}</div>
-      </div>
+      </Box>
       {isScrollable && (
         <div
           ref={thumbRef}
@@ -89,10 +94,11 @@ const ScrollWrapper = ({
             backgroundColor: '#CED4DA',
             borderRadius: '10px',
             transition: 'top 0.1s',
+            ...styScroll,
           }}
         />
       )}
-    </div>
+    </Box>
   )
 }
 

@@ -88,6 +88,7 @@
     border-radius: 6px;
     margin-bottom: 8px;
     background-color: #F8F9FA;
+    box-sizing: border-box;
 }
 
 .upload-field-file-preview {
@@ -122,7 +123,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 200px;
+    max-width: 300px;
     font-weight: 600;
     margin-right: 8px;
 }
@@ -146,6 +147,44 @@
     border-radius: 4px;
     font-size: 12px;
     font-weight: 500;
+    width: 28px;
+    height: 28px;
+    &:hover{
+        background: #fff;
+    }
 }
 
-
+.InputUploadBox{
+    border-radius: 4px;
+    border: 1px solid #DEE2E6;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.4;
+    button{
+        display: block;
+        width: 100%;
+        padding: 6px 11px;
+        border: 0;
+        background: none;
+        outline: none;
+        cursor: pointer;
+        color: #ced4da;
+        text-align: left;
+        svg{
+            vertical-align: sub;
+            margin-right: 8px;
+            color: #868E96;
+        }
+    }
+}
+.disabled-input{
+    .InputUploadBox{
+        pointer-events: none;
+        border: 1px solid #E9ECEF;
+        background-color: #F1F3F5;
+    }
+}
+.flex-grow-1{
+    flex-grow: 1;
+}

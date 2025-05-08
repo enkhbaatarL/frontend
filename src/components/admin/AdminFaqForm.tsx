@@ -55,7 +55,6 @@ const AdminFaqForm = ({ formData, setFormData, readonly }: Props) => {
             labelColor="gray.90"
             required
             fullWidth
-            countCharacters={!readonly}
             maxLength={200}
             value={formData?.bulletinTitleNm ?? ''}
             onChange={(value) => {

@@ -1,6 +1,7 @@
+import { t } from 'i18next'
 import { ReactNode, KeyboardEvent } from 'react'
 
-import AdminButton from '@/components/admin/AdminButton'
+import MIButton from '@/components/common/button/MIButton'
 import Flex from '@/components/common/display/Flex'
 import RefreshIcon from '@/components/common/icons/RefreshIcon'
 interface Props {
@@ -24,20 +25,19 @@ const AdminSearchFilter = ({ children, onSearch, onReset, disabledSearch, disabl
         {children}
       </Flex>
       <Flex gap={12}>
-        <AdminButton color="primary" variant="contained" size="h32" onClick={onSearch} disabled={disabledSearch}>
-          검색
-        </AdminButton>
+        <MIButton color="primary" size="h34" onClick={onSearch} disabled={disabledSearch}>
+          {t('검색')}
+        </MIButton>
         {onReset && (
-          <AdminButton
-            sx={{ minWidth: 'unset', padding: '5px' }}
-            size="h32"
-            color="secondary"
-            variant="outlined"
+          <MIButton
+            size="h34"
+            color="gray"
+            type="outlined"
+            contentType={'icon'}
+            startIcon={<RefreshIcon />}
             onClick={onReset}
             disabled={disabledReset}
-          >
-            <RefreshIcon />
-          </AdminButton>
+          />
         )}
       </Flex>
     </Flex>

@@ -1,6 +1,6 @@
 export const DRAWER_WIDTH = {
   OPEN: 240,
-  CLOSED: 48,
+  CLOSED: 68,
 } as const
 
 export const adminTableBaseProps = {
