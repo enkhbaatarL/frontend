@@ -2,15 +2,15 @@ import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, I
 import { t } from 'i18next'
 import { ReactNode } from 'react'
 
-import AdminButton from '@/components/admin/AdminButton'
+import MIButton from '@/components/common/button/MIButton'
 import CloseIcon from '@/components/common/icons/CloseIcon'
 
 interface ActionButton {
-  label: string
-  variant?: 'text' | 'outlined' | 'contained'
-  color?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' | 'inherit'
-  onClick: () => void | Promise<void>
+  label: ReactNode
+  variant?: 'filled' | 'outlined' | 'ghost'
+  color?: 'primary' | 'gray' | 'white' | 'red'
   disabled?: boolean
+  onClick: () => void | Promise<void>
 }
 
 interface Props {
@@ -21,6 +21,7 @@ interface Props {
   handleClose: () => void
   justifyContentAction?: 'space-between' | 'end' | 'start' | 'center'
   actions?: ActionButton[]
+  hideFooter?: boolean
 }
 
 const AdminConfirm = ({
@@ -30,13 +31,15 @@ const AdminConfirm = ({
   width = 400,
   handleClose,
   justifyContentAction = 'end',
-  actions = [{ label: t('확인'), variant: 'contained', color: 'primary', onClick: handleClose }],
+  hideFooter = false,
+  actions = [{ label: t('확인'), variant: 'filled', color: 'primary', onClick: handleClose }],
 }: Props) => (
   <Dialog
     slotProps={{
       paper: {
         sx: {
           width: typeof width === 'number' ? `${width}px` : width,
+          maxHeight: 800,
         },
       },
     }}
@@ -53,21 +56,24 @@ const AdminConfirm = ({
     </DialogTitle>
 
     {children && (
-      <DialogContent>{typeof children === 'string' ? <DialogContentText>{children}</DialogContentText> : children}</DialogContent>
+      <DialogContent>
+        <DialogContentText>{children}</DialogContentText>
+      </DialogContent>
     )}
     <DialogActions sx={{ paddingTop: children ? '30px' : 0, justifyContent: justifyContentAction }}>
-      {actions.map((action, index) => (
-        <AdminButton
-          size="h34"
-          key={action.label + index}
-          variant={action.variant ?? 'text'}
-          color={action.color ?? 'primary'}
-          onClick={action.onClick}
-          disabled={action.disabled}
-        >
-          {action.label}
-        </AdminButton>
-      ))}
+      {!hideFooter &&
+        actions.map((action, index) => (
+          <MIButton
+            size="h34"
+            key={index}
+            type={action.variant ?? 'filled'}
+            color={action.color ?? 'primary'}
+            onClick={action.onClick}
+            disabled={action.disabled}
+          >
+            {action.label}
+          </MIButton>
+        ))}
     </DialogActions>
   </Dialog>
 )

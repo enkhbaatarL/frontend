@@ -1,9 +1,9 @@
-import { Apartment, ManageAccounts, AccountTree, NotificationsActive, Dashboard, BarChart } from '@mui/icons-material'
+import { ManageAccountsSharp, SupervisorAccount, Notifications, Settings } from '@mui/icons-material'
 import { Navigate } from 'react-router-dom'
 
+import DataExplorationIcon from '@/components/common/icons/DataExploration'
+import VolumeDownAlt from '@/components/common/icons/VolumeDownAlt'
 import AdminLayout from '@/layouts/AdminLayout'
-import AdminAnalyticsDashboardPage from '@/pages/admin/analytics/AdminAnalyticsDashboardPage'
-import AdminAnalyticsTablePage from '@/pages/admin/analytics/AdminAnalyticsTablePage'
 import AdminBoardsFaqDetailPage from '@/pages/admin/boards/AdminBoardsFaqDetailPage'
 import AdminBoardsFaqEditPage from '@/pages/admin/boards/AdminBoardsFaqEditPage'
 import AdminBoardsFaqPage from '@/pages/admin/boards/AdminBoardsFaqPage'
@@ -27,6 +27,7 @@ import AdminMemberManagementMangerEditPage from '@/pages/admin/memberManagement/
 import AdminMemberManagementUserRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementUserRegistrationPage'
 import AdminMemberManagementUsersPage from '@/pages/admin/memberManagement/AdminMemberManagementUsersPage'
 import AdminNotificationListPage from '@/pages/admin/notification/AdminNotificationListPage'
+import AdminApiPage from '@/pages/admin/system/AdminApiPage'
 import AdminProvider from '@/providers/AdminProvider'
 import { ICustomRouteObject } from '@/types/common'
 
@@ -44,7 +45,7 @@ const AdminRoutes: ICustomRouteObject = {
     },
     {
       path: 'customer-company',
-      icon: <Apartment />,
+      icon: (props) => <SupervisorAccount {...props} />,
       label: '고객사 관리',
       children: [
         {
@@ -112,7 +113,7 @@ const AdminRoutes: ICustomRouteObject = {
     },
     {
       path: 'member-mgmt',
-      icon: <ManageAccounts />,
+      icon: (props) => <ManageAccountsSharp {...props} />,
       label: '사용자 관리',
       children: [
         {
@@ -182,7 +183,7 @@ const AdminRoutes: ICustomRouteObject = {
     },
     {
       path: 'data-providers',
-      icon: <AccountTree />,
+      icon: (props) => <DataExplorationIcon {...props} />,
       label: '데이터 프로바이더 관리',
       children: [
         {
@@ -203,7 +204,7 @@ const AdminRoutes: ICustomRouteObject = {
     },
     {
       path: 'notification',
-      icon: <NotificationsActive />,
+      icon: (props) => <Notifications {...props} />,
       label: '알람 관리',
       children: [
         {
@@ -219,7 +220,7 @@ const AdminRoutes: ICustomRouteObject = {
     },
     {
       path: 'boards',
-      icon: <Dashboard />,
+      icon: (props) => <VolumeDownAlt {...props} />,
       label: '게시판 관리',
       children: [
         {
@@ -325,23 +326,18 @@ const AdminRoutes: ICustomRouteObject = {
       ],
     },
     {
-      path: 'analytics',
-      icon: <BarChart />,
-      label: '통계 분석',
+      path: 'system',
+      icon: (props) => <Settings {...props} />,
+      label: '시스템 관리',
       children: [
         {
           index: true,
-          element: <Navigate to="dashboard" replace />,
+          element: <Navigate to="api" replace />,
         },
         {
-          path: 'dashboard',
-          label: '대시보드',
-          element: <AdminAnalyticsDashboardPage />,
-        },
-        {
-          path: 'table',
-          label: '테이블',
-          element: <AdminAnalyticsTablePage />,
+          path: 'api',
+          label: 'API 관리',
+          element: <AdminApiPage />,
         },
       ],
     },

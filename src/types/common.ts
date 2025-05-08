@@ -1,4 +1,6 @@
-import { ReactNode } from 'react'
+import { SvgIconTypeMap } from '@mui/material'
+import { OverridableComponent } from '@mui/material/OverridableComponent'
+import { ComponentProps, JSX } from 'react'
 import { RouteObject } from 'react-router-dom'
 
 export type Nullable<T> = T | null
@@ -9,7 +11,7 @@ export interface ICommonOptions {
 }
 
 export interface ICustomRouteObject extends Omit<RouteObject, 'children'> {
-  icon?: ReactNode
+  icon?: (props: ComponentProps<OverridableComponent<SvgIconTypeMap>>) => JSX.Element
   label?: string
   children?: ICustomRouteObject[]
   hidden?: boolean

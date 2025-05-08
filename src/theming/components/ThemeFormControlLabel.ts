@@ -5,11 +5,13 @@ const ThemeFormControlLabel: Components<Omit<Theme, 'components'>>['MuiFormContr
     root: {
       marginLeft: 0,
       padding: '2px 0',
+      alignItems: 'start',
     },
     label: {
       color: '#495057',
       fontWeight: '500',
       fontSize: '14px',
+      lineHeight: 1.5,
       '&.Mui-disabled': {
         color: '#495057',
       },

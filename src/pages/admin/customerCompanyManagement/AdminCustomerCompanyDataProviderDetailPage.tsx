@@ -9,12 +9,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
-import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import DetailItem from '@/components/common/detail-item'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import MIInput from '@/components/common/input/MIInput'
+import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService from '@/service/admin/companies'
@@ -380,14 +380,14 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
           {
             label: '취소',
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setOpenConfirmActive(false)
             },
           },
           {
             label: '변경',
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: async () => {
               await handleChangeUsage()
@@ -409,14 +409,14 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setOpenProductRegistrationConfirm(false)
             },
           },
           {
             label: t('등록'),
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: async () => {
               await handleRegisterGoods()
@@ -437,10 +437,10 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
             {t('에 등록할 상품을 선택하세요.')} {t('등록 완료 시')} {providerDetailData?.companyNm}
             {t('의 회원이 해당 상품에 접근 가능합니다.')}
           </Typography>
-          <AdminSelect
+          <MISelect
             fullWidth
             options={goodsOptions}
-            showSelectedValue={true}
+            // showValue={true} ///
             useAllOption={false}
             value={selectedGoods}
             onChange={(e) => setSelectedGoods(e.target.value as string)}

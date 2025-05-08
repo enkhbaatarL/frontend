@@ -135,10 +135,10 @@ const AdminMemberManagementMangerEditPage = () => {
         width={450}
         handleClose={() => setShowCancelDialog(false)}
         actions={[
-          { label: '이어서 작성', variant: 'outlined', color: 'secondary', onClick: () => setShowCancelDialog(false) },
+          { label: '이어서 작성', variant: 'outlined', color: 'gray', onClick: () => setShowCancelDialog(false) },
           {
             label: t('취소 및 이동'),
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: () => {
               setShowCancelDialog(false)
@@ -158,12 +158,12 @@ const AdminMemberManagementMangerEditPage = () => {
           {
             label: '취소',
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => setShowConfirmDialog(false),
           },
           {
             label: '저장',
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: async () => {
               setShowConfirmDialog(false)

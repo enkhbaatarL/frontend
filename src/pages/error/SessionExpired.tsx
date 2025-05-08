@@ -15,7 +15,7 @@ const SessionExpiredPage = () => {
       actions={[
         {
           label: 'Login',
-          variant: 'contained',
+          variant: 'filled',
           color: 'primary',
           onClick: () => alert('Redirect to login'),
         },

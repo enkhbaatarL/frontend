@@ -102,14 +102,14 @@ const AdminBoardsNoticeRegistrationlPage = () => {
           {
             label: t('이어서 작성'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setShowCancelModal(false)
             },
           },
           {
             label: '취소 및 이동',
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: () => {
               setShowCancelModal(false)
@@ -131,14 +131,14 @@ const AdminBoardsNoticeRegistrationlPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setShowSaveModal(false)
             },
           },
           {
             label: t('등록'),
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: async () => {
               setShowSaveModal(false)

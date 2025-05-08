@@ -3,10 +3,11 @@ import { styled } from '@mui/material/styles'
 
 const BpIcon = styled('span')(({ theme }) => ({
   borderRadius: 4,
-  width: 20,
-  height: 20,
+  width: 16,
+  height: 16,
   border: '2px solid #CED4DA',
   boxSizing: 'border-box',
+  flexShrink: 0,
   backgroundColor: '#fff',
   '.Mui-focusVisible &': {
     outline: '2px auto rgba(19,124,189,.6)',
@@ -56,7 +57,7 @@ const BpCheckedIcon = styled(BpIcon)({
     display: 'block',
     width: '100%',
     height: '100%',
-    backgroundSize: 16,
+    backgroundSize: 14,
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
     // outline: '1px auto #2E3F5E',

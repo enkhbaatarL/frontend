@@ -11,12 +11,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
-import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import DetailItem from '@/components/common/detail-item'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
+import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService, { ICompanyProviderInfo } from '@/service/admin/companies'
@@ -146,14 +146,14 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
           {
             label: '취소',
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setOpenConfirmRegistration(false)
             },
           },
           {
             label: '등록',
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: async () => {
               await handleRegisterProvider()
@@ -174,14 +174,13 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
             {t('등록 완료 시')} {companyNm}
             {t('의 회원이 해당 프로바이더의 데이터에 접근 가능합니다.')}
           </Typography>
-          <AdminSelect
+          <MISelect
             fullWidth
             options={providerOptions}
-            showSelectedValue={true}
             useAllOption={false}
             value={selectedValue}
             onChange={(e) => setSelectedValue(e.target.value as string)}
-          ></AdminSelect>
+          />
         </Box>
       </AdminConfirm>
     </Box>
@@ -350,15 +349,15 @@ const AdminCustomerMemberTable = ({ data }: AdminCustomerMemberTableProps) => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setIsOpenDelete(false)
             },
           },
           {
             label: t('삭제'),
-            variant: 'contained',
-            color: 'error',
+            variant: 'filled',
+            color: 'red',
             onClick: async () => {
               await handleDelete()
             },
@@ -534,14 +533,14 @@ const AdminCustomerCompanyDetailPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setOpenConfirmActive(false)
             },
           },
           {
             label: t('변경'),
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: async () => {
               await handleChangeActive()
@@ -580,14 +579,14 @@ const AdminCustomerCompanyDetailPage = () => {
           {
             label: '취소',
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setOpenInformationDialog(false)
             },
           },
           {
             label: '저장',
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: () => {
               setOpenInformationDialog(false)
@@ -647,14 +646,14 @@ const AdminCustomerCompanyDetailPage = () => {
           {
             label: '취소',
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setOpenConfirmSaving(false)
             },
           },
           {
             label: '저장',
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: async () => {
               await handleSave()

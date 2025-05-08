@@ -1,5 +1,5 @@
 import ErrorIcon from '@mui/icons-material/Error'
-import { MenuItem, FormControl, FormControlLabel, RadioGroup, Radio, Box, Typography } from '@mui/material'
+import { FormControl, FormControlLabel, RadioGroup, Radio, Box, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import clsx from 'clsx'
 import { useState } from 'react'
@@ -10,7 +10,6 @@ import AdminAutoComplete from '@/components/admin/AdminAutoComplete'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
-import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable from '@/components/admin/AdminTable'
 import DetailItem from '@/components/common/detail-item'
 import Flex from '@/components/common/display/Flex'
@@ -77,7 +76,6 @@ const companies = [
 ]
 
 const ComponentTestPage = () => {
-  const [select, setSelect] = useState<string>('all')
   const [showConfirmPrimary, setShowConfirmPrimary] = useState(false)
   const [showConfirmPrimary2, setShowConfirmPrimary2] = useState(false)
   const [showConfirmPrimary3, setShowConfirmPrimary3] = useState(false)
@@ -138,15 +136,6 @@ const ComponentTestPage = () => {
           </div>
         </Flex>
         <Flex gap={6}>
-          <div>Admin Select</div>
-          <AdminSelect value={select} onChange={(e) => setSelect(String(e.target.value))}>
-            <MenuItem value={'all'}>전체</MenuItem>
-            <MenuItem value={'Active'}>Active</MenuItem>
-            <MenuItem value={'Inactive'}>Inactive</MenuItem>
-          </AdminSelect>
-        </Flex>
-
-        <Flex gap={6}>
           <div>Admin Confirm</div>
           <AdminButton color="primary" variant="contained" onClick={() => setShowConfirmPrimary(true)}>
             Show Confirm Primary
@@ -167,8 +156,8 @@ const ComponentTestPage = () => {
             width={450}
             handleClose={() => setShowConfirmPrimary(false)}
             actions={[
-              { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowConfirmPrimary(false) },
-              { label: '확인', variant: 'contained', color: 'primary', onClick: () => setShowConfirmPrimary(false) },
+              { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setShowConfirmPrimary(false) },
+              { label: '확인', variant: 'filled', color: 'primary', onClick: () => setShowConfirmPrimary(false) },
             ]}
           >
             Contents
@@ -181,7 +170,7 @@ const ComponentTestPage = () => {
             actions={[
               {
                 label: 'Login',
-                variant: 'contained',
+                variant: 'filled',
                 color: 'primary',
                 onClick: () => setShowConfirmPrimary2(false),
               },
@@ -196,10 +185,10 @@ const ComponentTestPage = () => {
               {
                 label: 'Button',
                 variant: 'outlined',
-                color: 'secondary',
+                color: 'gray',
                 onClick: () => setShowConfirmPrimary3(false),
               },
-              { label: 'Button', variant: 'contained', color: 'primary', onClick: () => setShowConfirmPrimary3(false) },
+              { label: 'Button', variant: 'filled', color: 'primary', onClick: () => setShowConfirmPrimary3(false) },
             ]}
           />
           <AdminConfirm
@@ -213,8 +202,8 @@ const ComponentTestPage = () => {
             width={450}
             handleClose={() => setShowConfirmError(false)}
             actions={[
-              { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowConfirmError(false) },
-              { label: '삭제', variant: 'contained', color: 'error', onClick: () => setShowConfirmError(false) },
+              { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setShowConfirmError(false) },
+              { label: '삭제', variant: 'filled', color: 'red', onClick: () => setShowConfirmError(false) },
             ]}
           >
             삭제된 데이터는 복구할 수 없습니다.
@@ -239,8 +228,8 @@ const ComponentTestPage = () => {
             width={450}
             handleClose={() => setShowPopupContent1(false)}
             actions={[
-              { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowPopupContent1(false) },
-              { label: '확인', variant: 'contained', color: 'primary', onClick: () => setShowPopupContent1(false) },
+              { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setShowPopupContent1(false) },
+              { label: '확인', variant: 'filled', color: 'primary', onClick: () => setShowPopupContent1(false) },
             ]}
           >
             <p style={{ marginBottom: '20px' }}>
@@ -260,8 +249,8 @@ const ComponentTestPage = () => {
             width={450}
             handleClose={() => setShowPopupContent3(false)}
             actions={[
-              { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowPopupContent3(false) },
-              { label: '확인', variant: 'contained', color: 'primary', onClick: () => setShowPopupContent3(false) },
+              { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setShowPopupContent3(false) },
+              { label: '확인', variant: 'filled', color: 'primary', onClick: () => setShowPopupContent3(false) },
             ]}
           >
             <p style={{ marginBottom: '20px' }}>
@@ -276,8 +265,8 @@ const ComponentTestPage = () => {
             width={450}
             handleClose={() => setShowPopupContent2(false)}
             actions={[
-              { label: '취소', variant: 'outlined', color: 'secondary', onClick: () => setShowPopupContent2(false) },
-              { label: '확인', variant: 'contained', color: 'primary', onClick: () => setShowPopupContent2(false) },
+              { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setShowPopupContent2(false) },
+              { label: '확인', variant: 'filled', color: 'primary', onClick: () => setShowPopupContent2(false) },
             ]}
           >
             <div className={clsx(style.boxTable)}>

@@ -34,6 +34,16 @@ const ThemeDialog: Components<Omit<Theme, 'components'>> = {
         fontWeight: 400,
         lineHeight: 1.4,
         color: '#495057',
+        '&::-webkit-scrollbar': {
+          width: 4,
+        },
+        '&::-webkit-scrollbar-track': {
+          background: 'transparent',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: '#CED4DA',
+          borderRadius: 10,
+        },
       },
     },
   },

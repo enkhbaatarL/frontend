@@ -11,10 +11,11 @@ import { useNavigate } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
-import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import Flex from '@/components/common/display/Flex'
+import MIField from '@/components/common/input/MIField'
+import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -168,14 +169,15 @@ const AdminBoardsFaqPage = () => {
   return (
     <>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
-        <AdminSelect
-          label={t('카테고리')}
-          value={filter.category}
-          onChange={(e) => {
-            updateFilter('category', e.target.value as string)
-          }}
-          options={filterOptions?.category.map(({ key, value }) => ({ label: value, value: key })) ?? []}
-        />
+        <MIField label={t('카테고리')}>
+          <MISelect
+            value={filter.category}
+            onChange={(e) => {
+              updateFilter('category', e.target.value as string)
+            }}
+            options={filterOptions?.category.map(({ key, value }) => ({ label: value, value: key })) ?? []}
+          />
+        </MIField>
         <AdminTextField
           label={t('제목 또는 내용')}
           value={filter.keyword}
@@ -212,15 +214,15 @@ const AdminBoardsFaqPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setDeleteFaqBulletinNo(null)
             },
           },
           {
             label: t('삭제'),
-            variant: 'contained',
-            color: 'error',
+            variant: 'filled',
+            color: 'red',
             onClick: async () => {
               await handleDeleteFaq()
             },

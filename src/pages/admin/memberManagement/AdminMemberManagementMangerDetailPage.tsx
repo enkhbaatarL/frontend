@@ -75,8 +75,8 @@ const AdminMemberManagementMangerDetailPage = () => {
         mode="view"
         displayManagerInfo={displayManagerInfo}
         userRoleCd={data?.userRoleCd ?? UserRole.ADMIN}
-        isOtherServiceAccessPossible={data?.isOtherServiceAccessPossible || false}
-        accessAllowedIpAddress={data?.accessAllowedIpAddress || []}
+        isOtherServiceAccessPossible={data?.isOtherServiceAccessPossible ?? false}
+        accessAllowedIpAddress={data?.accessAllowedIpAddress ?? []}
       />
       <AdminConfirm
         open={showDeleteModal}
@@ -94,15 +94,15 @@ const AdminMemberManagementMangerDetailPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setShowDeleteModal(false)
             },
           },
           {
             label: t('삭제'),
-            variant: 'contained',
-            color: 'error',
+            variant: 'filled',
+            color: 'red',
             onClick: () => {
               setShowDeleteModal(false)
               showSnackbar(t('삭제되었습니다.'), { variant: 'success' })

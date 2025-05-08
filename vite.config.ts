@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import * as path from 'node:path'
 
 import react from '@vitejs/plugin-react'
@@ -21,6 +20,7 @@ export default defineConfig(({ mode }) =>{
       ],
     },
     server: {
+      allowedHosts: true,
       proxy: {
         '/api/v1': {
           target: API_BASE_URL,

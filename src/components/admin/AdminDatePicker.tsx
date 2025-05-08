@@ -4,7 +4,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker, DatePickerProps } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import dayjs, { Dayjs } from 'dayjs'
-import { useMemo } from 'react'
+import { ReactElement, useMemo } from 'react'
 
 import ArrowDown from '@/components/common/icons/ArrowDown'
 import ArrowLeft from '@/components/common/icons/ArrowLeft'
@@ -14,7 +14,6 @@ import theme from '@/theming'
 
 import 'dayjs/locale/ko'
 
-// Function to check if date is Sunday (0 is Sunday in dayjs)
 const isSunday = (date: Dayjs): boolean => date.day() === 0
 
 const AdminDatePickerDay = (props: PickersDayProps<Dayjs>) => {
@@ -67,13 +66,19 @@ const AdminCalendarHeader = (props: PickersCalendarHeaderProps<Dayjs>) => {
 
 const AdminInputAdornment = (props: InputAdornmentProps) => {
   const { children, ...rest } = props
-  // the type of this props is not defined
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const childProps = (children as any).props as IconButtonProps
+  const childProps = (children as ReactElement).props as IconButtonProps
 
   return (
     <InputAdornment {...rest}>
-      <IconButton {...childProps}>
+      <IconButton
+        disableRipple
+        {...childProps}
+        sx={{
+          '&:hover': {
+            borderRadius: '4px',
+          },
+        }}
+      >
         <CalendarTodayIcon />
       </IconButton>
     </InputAdornment>
@@ -197,13 +202,13 @@ const AdminDatePicker = (props: DatePickerProps<Dayjs> & { size?: 'h26' | 'h34' 
                 color: theme.palette.gray[70],
                 margin: 0,
                 padding: '6px 18px',
-                borderRadius: '6px',
+                borderRadius: '4px',
                 '&::hover': {
                   backgroundColor: theme.palette.gray[5],
                 },
               },
               color: '#1565c0',
-              borderRadius: '6px',
+              borderRadius: '4px',
               borderColor: '#2196f3',
               padding: '20px 12px 12px 12px',
               boxSizing: 'border-box',
@@ -228,9 +233,9 @@ const AdminDatePicker = (props: DatePickerProps<Dayjs> & { size?: 'h26' | 'h34' 
               minWidth: '0 !important',
               // ...readOnlyStyle,
               '& .MuiInputBase-root': {
-                borderRadius: '6px',
+                borderRadius: '4px',
                 //border: `1px solid ${theme.palette.gray[30]}`,
-                background: props.readOnly || props.disabled ? theme.palette.gray[10] : theme.palette.common.white,
+                //background: props.readOnly || props.disabled ? theme.palette.gray[10] : theme.palette.common.white,
                 paddingRight: 3,
               },
               '& .MuiInputBase-input': {

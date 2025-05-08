@@ -11,6 +11,7 @@ export interface MIInputProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   size?: 'h26' | 'h34' | 'h36' | 'h46'
   readOnly?: boolean
   success?: boolean
+  contentWidth?: number
   endIcon?: ReactNode
   startIcon?: ReactNode
   maxLength?: number
@@ -20,7 +21,7 @@ export interface MIInputProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   minWidth?: number | string
   width?: number | string
   maxHeight?: number | string
-  contentWidth?: number
+  appendContent?: string
 }
 
 const MIInput = ({
@@ -35,6 +36,7 @@ const MIInput = ({
   value,
   errorMessage,
   maxHeight,
+  appendContent,
   variant = 'inForm',
   ...props
 }: MIInputProps) => {
@@ -96,6 +98,7 @@ const MIInput = ({
           '& input': {
             height: '25px',
             fontSize: '18px',
+            fontWeight: 500,
             '&::placeholder': {
               color: `${theme.palette.gray['60']} !important`, // Only apply for input H46
             },
@@ -123,8 +126,19 @@ const MIInput = ({
 
     defaultProps.endAdornment = (
       <InputAdornment position="end" sx={{ cursor: 'pointer' }}>
-        {!readOnly && isFocus && innerValue && !props.error && !props.multiline && (
-          <MIInputClearIcon width={16} height={16} onClick={() => setInnerValue('')} />
+        {isFocus && !readOnly && innerValue && !props.error && !props.multiline && (
+          <MIInputClearIcon
+            width={size === 'h46' ? 20 : 16}
+            height={size === 'h46' ? 20 : 16}
+            onClick={() => {
+              setInnerValue('')
+              props.onChange?.({
+                target: {
+                  value: '',
+                },
+              } as ChangeEvent<HTMLInputElement>)
+            }}
+          />
         )}
         {props.error && variant === 'inTable' && (
           <Tooltip disableHoverListener={!errorMessage} title={errorMessage}>
@@ -144,89 +158,117 @@ const MIInput = ({
     }
 
     return defaultProps
-  }, [endIcon, readOnly, startIcon, innerValue, isFocus, props.error, props.multiline, variant, errorMessage, maxLength])
+  }, [readOnly, isFocus, innerValue, props, size, variant, errorMessage, endIcon, startIcon, maxLength])
 
   return (
     <Box ref={containerRef} maxWidth={props.maxWidth} minWidth={props.minWidth} width={props.width}>
-      <TextField
-        fullWidth
-        variant="outlined"
-        hiddenLabel
-        placeholder={t('입력하세요.')}
-        value={innerValue}
-        onFocus={registerClickOutListener}
-        minRows={4.3}
-        maxRows={11.8}
-        slotProps={{
-          input: inputProps,
-        }}
-        sx={{
-          '& .MuiInputBase-root': {
-            alignItems: props.multiline ? 'flex-start' : 'center',
-            borderRadius: '6px',
-            border: `1px solid ${theme.palette.gray[30]}`,
-            borderColor: success ? theme.palette.point.green1 : 'none',
-            ...styleBaseSize,
-            '&.MuiInputBase-multiline': {
-              lineHeight: '20px',
-              padding: '6px 4px 6px 11px',
+      <Box display={'flex'} alignItems={'center'}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          hiddenLabel
+          placeholder={t('입력하세요.')}
+          value={innerValue}
+          onFocus={registerClickOutListener}
+          minRows={4.3}
+          maxRows={11.8}
+          slotProps={{
+            input: inputProps,
+          }}
+          sx={{
+            '& .MuiInputBase-root': {
+              alignItems: props.multiline ? 'flex-start' : 'center',
+              borderRadius: '4px',
+              //border: `1px solid ${theme.palette.content['borderEnabled']}`,
+              borderColor: success ? theme.palette.point.green1 : 'none',
+              ...styleBaseSize,
+              '&.MuiInputBase-multiline': {
+                lineHeight: '20px',
+                padding: '6px 4px 6px 11px',
+              },
+              '.MuiInputAdornment-root': {
+                marginRight: 0,
+              },
+              // '&:hover' : {
+              //   borderColor: theme.palette.content['borderHover']
+              // }
             },
-          },
-          '& .MuiInputBase-root .MuiSvgIcon-root': {
-            marginRight: 2,
-            color: '#868E96',
-          },
+            '& .MuiInputBase-root .MuiSvgIcon-root': {
+              marginRight: 2,
+              color: '#868E96',
+            },
 
-          '& .MuiInputBase-root.Mui-focused': {
-            borderColor: theme.palette.primary.main,
-          },
-          '& .MuiInputBase-root.Mui-error': {
-            borderColor: `${theme.palette.point.red1}`,
-          },
-          '& .MuiInputBase-root.Mui-disabled': {
-            borderColor: theme.palette.gray[20],
-            backgroundColor: theme.palette.gray[10],
-            color: theme.palette.gray[50],
-            '& .MuiSvgIcon-root': {
-              color: '#CED4DA',
+            '& .MuiInputBase-root.Mui-focused': {
+              //borderColor: theme.palette.content['borderActivePrimary'],
+              '.MuiInputAdornment-root': {
+                marginRight: 0,
+                'svg:last-child': {
+                  color: theme.palette.content['iconActive'],
+                  path: {
+                    fill: theme.palette.content['iconActive'],
+                  },
+                },
+                'svg.iconClear': {
+                  color: theme.palette.content['iconEnabled'],
+                  path: {
+                    fill: theme.palette.content['iconEnabled'],
+                  },
+                },
+              },
             },
-          },
-          '& .MuiInputBase-root.Mui-readOnly': {
-            borderColor: theme.palette.gray[20],
-            backgroundColor: theme.palette.gray[10],
-            color: theme.palette.gray[70],
-          },
-          '& .MuiInputAdornment-root': {
-            margin: 0,
-          },
-          '& .MuiInputBase-input.MuiInputBase-inputMultiline ': {
-            width: '100%',
-          },
-          '& .MuiInputBase-input': {
-            width: contentWidth ? `${contentWidth}px` : 'auto',
-            borderRadius: '0',
-            padding: 0,
-            '&::placeholder': {
-              color: theme.palette.gray[40],
+            '& .MuiInputBase-root.Mui-error': {
+              borderColor: `${theme.palette.point.red1}`,
             },
-            '&::-webkit-scrollbar': {
-              width: '4px',
+            // '& .MuiInputBase-root.Mui-disabled': {
+            //   borderColor: theme.palette.gray[20],
+            //   backgroundColor: theme.palette.gray[10],
+            //   color: theme.palette.gray[50],
+            //   '& .MuiSvgIcon-root': {
+            //     color: '#CED4DA',
+            //   },
+            // },
+            // '& .MuiInputBase-root.Mui-readOnly': {
+            //   borderColor: theme.palette.gray[20],
+            //   backgroundColor: theme.palette.gray[10],
+            //   color: theme.palette.gray[70],
+            // },
+            '& .MuiInputAdornment-root': {
+              margin: 0,
             },
-            '&::-webkit-scrollbar-track': {
-              background: 'transparent',
+            '& .MuiInputBase-input.MuiInputBase-inputMultiline ': {
+              width: '100%',
             },
-            '&::-webkit-scrollbar-thumb': {
-              background: '#CED4DA',
-              borderRadius: '10px',
+            '& .MuiInputBase-input': {
+              width: contentWidth ? `${contentWidth}px` : 'auto',
+              borderRadius: '0',
+              padding: 0,
+              '&::placeholder': {
+                color: theme.palette.gray[40],
+              },
+              '&::-webkit-scrollbar': {
+                width: '4px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: 'transparent',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#CED4DA',
+                borderRadius: '10px',
+              },
             },
-          },
-        }}
-        {...props}
-        onInput={handleInput}
-        onChange={handleChange}
-      />
+          }}
+          {...props}
+          onInput={handleInput}
+          onChange={handleChange}
+        />
+        {appendContent && (
+          <Typography whiteSpace={'nowrap'} ml={1} component={'div'} variant="body2R14" color="gray.70">
+            {appendContent}
+          </Typography>
+        )}
+      </Box>
       {/* show the limitation of length input */}
-      {!props.error && maxLength && (
+      {!props.error && maxLength && !props.disabled && (
         <Box display={'flex'} justifyContent={'flex-end'} width={'100%'} mt={1}>
           <Typography variant="subtext2" color="gray.60">{`${innerValue.length}/${maxLength}`}</Typography>
         </Box>

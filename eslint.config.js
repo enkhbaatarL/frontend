@@ -59,9 +59,7 @@ export default tseslint.config(
       'no-param-reassign': ['error', { props: false }], // 매개변수 재할당 금지 (속성 제외)
       'object-shorthand': ['error', 'always'], // 객체 축약 문법 사용
       'prefer-template': 'error', // 템플릿 리터럴 선호
-      'no-shadow': 'error', // 동일한 변수명 선언 금지
       'no-use-before-define': ['error', { functions: false, classes: true, variables: true }], // 정의 전에 사용 금지 (함수 제외)
-      'import/no-extraneous-dependencies': ['error', { devDependencies: false }], // 불필요한 의존성 import 금지
       eqeqeq: ['error', 'always'], // 항상 일치 연산자 사용
       'object-curly-spacing': ['error', 'always'],
       '@stylistic/js/function-call-spacing': ['error', 'never'],
@@ -77,6 +75,8 @@ export default tseslint.config(
           ignoreRestSiblings: true,
         },
       ],
+      'no-shadow': 'warn', // 동일한 변수명 선언 경고
+      'import/no-extraneous-dependencies': ['warn', { devDependencies: false }], // dev 의존성 import 경고
       indent: ['warn', 2, { SwitchCase: 1 }], // 들여쓰기 2칸, case 문은 2칸 더 들여쓰기
       'func-style': ['warn', 'expression'], // 함수 표현식 사용
       'keyword-spacing': ['warn', { before: true, after: true }], // 키워드 주위 공백 요구

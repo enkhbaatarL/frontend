@@ -1,11 +1,8 @@
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import { Box, Typography, TypographyProps, ListItemIcon, Tooltip } from '@mui/material'
-import FormControl from '@mui/material/FormControl'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
-import Select, { SelectChangeEvent } from '@mui/material/Select'
 import { DataGrid, DataGridProps, GridColDef, GridEventListener, GridRenderCellParams, GridRowModel } from '@mui/x-data-grid'
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Instance } from '@popperjs/core'
 import clsx from 'clsx'
 import { t } from 'i18next'
@@ -16,6 +13,7 @@ import style from './AdminTable.module.scss'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminPagination from '@/components/admin/AdminPagination'
+import MIButton from '@/components/common/button/MIButton'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import { adminTableBaseProps } from '@/constants/admin'
 import { IPaginationResponse } from '@/types/api'
@@ -271,8 +269,8 @@ const AdminTable = <T extends GridRowModel>({
     return `${start}-${end} of ${(data.totalElements ?? 0).toLocaleString()}`
   }, [data, size])
 
-  const handleChange = (event: SelectChangeEvent) => {
-    onSizeChange?.(parseInt(event.target.value))
+  const handleChange = (value: string) => {
+    onSizeChange?.(parseInt(value))
   }
 
   const [prevPage, setPrevPage] = useState<number>(1)
@@ -364,15 +362,22 @@ const AdminTable = <T extends GridRowModel>({
             />
           </Box>
 
-          <FormControl sx={{ width: '72px' }}>
-            <Select sx={{ minWidth: 'unset' }} size="small" value={(size ?? 20).toString()} onChange={handleChange} disabled={isLoading}>
-              {(sizeList ?? [10, 15, 20, 50, 100]).map((pageSize) => (
-                <MenuItem key={pageSize} sx={{ fontSize: 12 }} value={pageSize}>
-                  {pageSize}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box width={72}>
+            <MIButton
+              offsetTop={0}
+              type={'outlined'}
+              contentType={'select'}
+              color={'gray'}
+              size={'h28'}
+              minWidth={69}
+              valueSelect={{ label: (size ?? 20).toString(), value: (size ?? 20).toString() }}
+              onChange={(option) => handleChange(option.value)}
+              options={(sizeList ?? [10, 15, 20, 50, 100]).map((pageSize) => ({
+                label: pageSize.toString(),
+                value: pageSize.toString(),
+              }))}
+            />
+          </Box>
         </Box>
       )}
     </Box>

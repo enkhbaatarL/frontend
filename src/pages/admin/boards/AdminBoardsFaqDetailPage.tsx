@@ -108,15 +108,15 @@ const AdminBoardsFaqDetailPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setShowDeleteModal(false)
             },
           },
           {
             label: t('삭제'),
-            variant: 'contained',
-            color: 'error',
+            variant: 'filled',
+            color: 'red',
             onClick: async () => {
               await handleDeleteFaq()
             },

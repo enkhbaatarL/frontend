@@ -11,11 +11,12 @@ import { useNavigate } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
-import AdminSelect from '@/components/admin/AdminSelect'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import AdminUserInfo from '@/components/admin/AdminUserInfo'
 import Flex from '@/components/common/display/Flex'
+import MIField from '@/components/common/input/MIField'
+import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -80,14 +81,14 @@ const AdminMemberManagementUsersPage = () => {
     refetchOnWindowFocus: false,
   })
 
-  const departmentOptions = useMemo(() => {
-    updateFilter('departmentNm', '')
-
-    return (filterOptions?.find(({ companyNo }) => companyNo === filter.companyNo)?.departmentNm ?? []).map((departmentNm) => ({
-      label: departmentNm,
-      value: departmentNm,
-    }))
-  }, [filter.companyNo, filterOptions, updateFilter])
+  const departmentOptions = useMemo(
+    () =>
+      (filterOptions?.find(({ companyNo }) => companyNo === Number(filter.companyNo))?.departmentNm ?? []).map((departmentNm) => ({
+        label: departmentNm,
+        value: departmentNm,
+      })),
+    [filter.companyNo, filterOptions],
+  )
 
   /**
    * 회원 삭제
@@ -196,23 +197,28 @@ const AdminMemberManagementUsersPage = () => {
   return (
     <>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
-        <AdminSelect
-          label={t('회사명')}
-          value={filter.companyNo}
-          onChange={(e) => {
-            updateFilter('companyNo', e.target.value as string)
-          }}
-          options={filterOptions?.map(({ companyNo, companyNm }) => ({ label: companyNm, value: companyNo })) ?? []}
-        />
-        <AdminSelect
-          label={t('소속')}
-          value={filter.departmentNm}
-          onChange={(e) => {
-            updateFilter('departmentNm', e.target.value as string)
-          }}
-          disabled={isEmpty(departmentOptions)}
-          options={departmentOptions}
-        />
+        <MIField label={t('회사명')}>
+          <MISelect
+            value={filter.companyNo}
+            onChange={(e) => {
+              updateFilter([
+                ['companyNo', e.target.value as string],
+                ['departmentNm', ''],
+              ])
+            }}
+            options={filterOptions?.map(({ companyNo, companyNm }) => ({ label: companyNm, value: companyNo })) ?? []}
+          />
+        </MIField>
+        <MIField label={t('소속')}>
+          <MISelect
+            value={filter.departmentNm}
+            onChange={(e) => {
+              updateFilter('departmentNm', e.target.value as string)
+            }}
+            disabled={isEmpty(departmentOptions)}
+            options={departmentOptions}
+          />
+        </MIField>
         <AdminTextField
           label={t('이름')}
           value={filter.userNm}
@@ -252,14 +258,14 @@ const AdminMemberManagementUsersPage = () => {
           {
             label: t('회원 삭제'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setShowDeleteModal(true)
             },
           },
           {
             label: t('확인'),
-            variant: 'contained',
+            variant: 'filled',
             color: 'primary',
             onClick: () => setShowMemberDetailModal(false),
           },
@@ -283,15 +289,15 @@ const AdminMemberManagementUsersPage = () => {
           {
             label: t('취소'),
             variant: 'outlined',
-            color: 'secondary',
+            color: 'gray',
             onClick: () => {
               setShowDeleteModal(false)
             },
           },
           {
             label: t('삭제'),
-            variant: 'contained',
-            color: 'error',
+            variant: 'filled',
+            color: 'red',
             onClick: async () => {
               await handleDeleteUser()
             },

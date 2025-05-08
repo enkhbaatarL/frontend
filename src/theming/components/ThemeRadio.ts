@@ -6,6 +6,7 @@ const ThemeRadio: Components<Omit<Theme, 'components'>>['MuiRadio'] = {
       color: '#CED4DA',
       padding: '2px',
       marginRight: '4px',
+      marginTop: '-4px',
       '&.Mui-disabled': {
         backgroundColor: '#E9ECEF',
         outline: '4px solid #ffffff',

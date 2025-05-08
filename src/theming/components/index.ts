@@ -5,6 +5,7 @@ import ThemeCheckbox from './ThemeCheckbox.ts'
 import ThemeDialog from './ThemeDialog.ts'
 import ThemeFormControlLabel from './ThemeFormControlLabel.ts'
 import ThemeIconButton from './ThemeIconButton.ts'
+import ThemeLinearProgress from './ThemeLinearProgress.ts'
 import ThemePagination from './ThemePagination.ts'
 import ThemeRadio from './ThemeRadio.ts'
 import ThemeSelect from './ThemeSelect.ts'
@@ -17,7 +18,7 @@ const components = {
   MuiAlert: ThemeAlert.MuiAlert,
   MuiAlertTitle: ThemeAlert.MuiAlertTitle,
   MuiButton: ThemeButton,
-  MuiSelect: ThemeSelect.MuiSelect,
+  // MuiSelect: ThemeSelect.MuiSelect, ///
   MuiTextField: ThemeTextField,
   MuiList: ThemeSelect.MuiList,
   MuiMenuItem: ThemeSelect.MuiMenuItem,
@@ -35,6 +36,7 @@ const components = {
   MuiPagination: ThemePagination,
   MuiSwitch: ThemeSwitch,
   MuiCheckbox: ThemeCheckbox,
+  MuiLinearProgress: ThemeLinearProgress,
 }
 
 export default components
