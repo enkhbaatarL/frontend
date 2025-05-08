@@ -11,7 +11,6 @@ export interface MIInputProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   size?: 'h26' | 'h34' | 'h36' | 'h46'
   readOnly?: boolean
   success?: boolean
-  contentWidth?: number
   endIcon?: ReactNode
   startIcon?: ReactNode
   maxLength?: number
@@ -21,6 +20,8 @@ export interface MIInputProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   minWidth?: number | string
   width?: number | string
   maxHeight?: number | string
+  contentWidth?: number
+  onClear?: () => void
   appendContent?: string
 }
 
@@ -38,6 +39,7 @@ const MIInput = ({
   maxHeight,
   appendContent,
   variant = 'inForm',
+  onClear,
   ...props
 }: MIInputProps) => {
   const [innerValue, setInnerValue] = useState<string>(String(value) || '')
@@ -53,7 +55,7 @@ const MIInput = ({
       setInnerValue(e.target.value)
       props.onInput?.(e)
     },
-    [maxLength, props.onInput],
+    [maxLength, props],
   )
 
   const handleChange = useCallback(
@@ -62,7 +64,7 @@ const MIInput = ({
       setInnerValue(e.target.value)
       props.onChange?.(e)
     },
-    [maxLength, props.onChange],
+    [maxLength, props],
   )
 
   const styleBaseSize = useMemo(() => {
@@ -123,7 +125,6 @@ const MIInput = ({
     const defaultProps: Record<string, string | ReactNode> = {
       readOnly,
     }
-
     defaultProps.endAdornment = (
       <InputAdornment position="end" sx={{ cursor: 'pointer' }}>
         {isFocus && !readOnly && innerValue && !props.error && !props.multiline && (
@@ -132,11 +133,15 @@ const MIInput = ({
             height={size === 'h46' ? 20 : 16}
             onClick={() => {
               setInnerValue('')
-              props.onChange?.({
-                target: {
-                  value: '',
-                },
-              } as ChangeEvent<HTMLInputElement>)
+              if (onClear) {
+                onClear()
+              } else {
+                props.onChange?.({
+                  target: {
+                    value: '',
+                  },
+                } as ChangeEvent<HTMLInputElement>)
+              }
             }}
           />
         )}
@@ -158,7 +163,7 @@ const MIInput = ({
     }
 
     return defaultProps
-  }, [readOnly, isFocus, innerValue, props, size, variant, errorMessage, endIcon, startIcon, maxLength])
+  }, [readOnly, isFocus, innerValue, props, size, variant, errorMessage, endIcon, startIcon, maxLength, onClear])
 
   return (
     <Box ref={containerRef} maxWidth={props.maxWidth} minWidth={props.minWidth} width={props.width}>
