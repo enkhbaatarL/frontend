@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
-import { ICommonResponse, IPaginationResponse } from '@/types/api'
+import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 export interface IProviderInfo {
   providerNo: number
@@ -44,11 +44,15 @@ const dataProviderService = {
   },
   /**
    * 데이타 프로바이더 목록을 조회합니다.
+   * @param params - { page: 페이지 번호, size: 페이지당 항목 수 }
    */
-  async getProviderList(): Promise<IPaginationResponse<IProviderListInfo>> {
-    const response: AxiosResponse<IPaginationResponse<IProviderListInfo>> = await api.get('/admin/provider-management/provider')
+  async getProviderList(params: Partial<IPaginationRequest>): Promise<IPaginationResponse<IProviderListInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IProviderListInfo>>> = await api.get(
+      '/admin/provider-management/provider',
+      { params },
+    )
 
-    return response.data
+    return response.data.data
   },
 }
 
