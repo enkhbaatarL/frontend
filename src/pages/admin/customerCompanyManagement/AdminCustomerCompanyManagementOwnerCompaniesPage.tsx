@@ -1,5 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import ErrorIcon from '@mui/icons-material/Error'
+import { Box, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -8,7 +9,6 @@ import { SnackbarProvider } from 'notistack'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import AdminAutoComplete from '@/components/admin/AdminAutoComplete.tsx'
 import AdminButton from '@/components/admin/AdminButton.tsx'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter.tsx'
@@ -16,13 +16,12 @@ import AdminSnackbar from '@/components/admin/AdminSnackbar.tsx'
 import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable.tsx'
 import AdminTextField from '@/components/admin/AdminTextField.tsx'
 import Flex from '@/components/common/display/Flex.tsx'
-import MIField from '@/components/common/input/MIField.tsx'
+import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext.tsx'
 import useSearchFilter from '@/hooks/useSearchFilter.tsx'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService, { ICompaniesRequest, ICompanyInfo } from '@/service/admin/companies.ts'
 import { IPaginationResponse } from '@/types/api.ts'
-import { Nullable, ICommonOptions } from '@/types/common.ts'
 
 const AdminCustomerCompanyManagementOwnerCompaniesPageHeader = ({ onRegister }: { onRegister: () => void }) => (
   <Flex gap={4}>
@@ -37,14 +36,14 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
   const navigate = useNavigate()
   const { showSnackbar } = useSnackbar()
   const [showRegistrationModal, setShowRegistrationModal] = useState(false)
-  const [selectedCompany, setSelectedCompany] = useState<Nullable<ICommonOptions>>(null)
+  const [selectedValue, setSelectedValue] = useState<string>('')
 
   const { data: filterOptions } = useQuery({
     queryKey: ['group-companies'],
     queryFn: async () => await companiesService.getGroupCompanies(),
   })
 
-  const options = useMemo(
+  const memberOptions = useMemo(
     () =>
       filterOptions?.map((company) => ({
         value: company.companyCd,
@@ -60,19 +59,21 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
   }, [navigate])
 
   const registerOwnerCompany = useCallback(async () => {
-    const response = await companiesService.registerOwnerCompany({
-      companyCd: selectedCompany?.value ?? '',
-    })
+    try {
+      const response = await companiesService.registerOwnerCompany({
+        companyCd: selectedValue ?? '',
+      })
+      if (response.status) {
+        await queryClient.invalidateQueries({ queryKey: ['owner-companies'] })
+        showSnackbar(t('등록되었습니다.'), { variant: 'success' })
+      }
+      navigateToList()
+    } catch (error) {
+      console.error(error)
+    }
 
     setShowRegistrationModal(false)
-    if (response.status) {
-      await queryClient.invalidateQueries({ queryKey: ['owner-companies'] })
-      navigateToList()
-      showSnackbar(t('등록되었습니다.'), { variant: 'success' })
-    } else {
-      showSnackbar(t('등록되었습니다.'), { variant: 'success' })
-    }
-  }, [navigateToList, selectedCompany?.value, showSnackbar, queryClient])
+  }, [navigateToList, selectedValue, showSnackbar, queryClient])
 
   const [deleteOwnerCompanyRequest, setDeleteOwnerCompanyRequest] = useState<number>()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -89,8 +90,8 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
           if (response.status) {
             await queryClient.invalidateQueries({ queryKey: ['owner-companies'] })
             showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
-            navigateToList()
           }
+          navigateToList()
         }
       } catch (error) {
         console.error(error)
@@ -239,25 +240,39 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
 
       <AdminConfirm
         open={showRegistrationModal}
-        title="관리사 등록"
+        title={t('관리사 등록')}
         width={450}
         handleClose={() => setShowRegistrationModal(false)}
         actions={[
           { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setShowRegistrationModal(false) },
-          { label: '등록', variant: 'filled', color: 'primary', onClick: registerOwnerCompany },
+          {
+            label: '등록',
+            variant: 'filled',
+            color: 'primary',
+            onClick: async () => {
+              await registerOwnerCompany()
+            },
+          },
         ]}
       >
-        <p style={{ marginBottom: '20px' }}>
-          <MIField label="회사 선택" subText="관리사로 등록할 멤버사를 선택하세요" required>
-            <AdminAutoComplete<ICommonOptions>
-              fullWidth
-              disablePortal
-              options={options ?? []}
-              onChange={(_event, newValue) => setSelectedCompany(newValue)}
-              placeholder="검색 또는 선택하세요."
-            />
-          </MIField>
-        </p>
+        <Box>
+          <Typography component={'p'} variant="body3" color="gray.70">
+            {t('회사 선택')}{' '}
+            <Typography component={'span'} color="point.red1">
+              *
+            </Typography>
+          </Typography>
+          <Typography component={'p'} variant="subtext" color="gray.60" mb="6px">
+            {t('관리사로 선택할 멤버사를 선택하세요.')}
+          </Typography>
+          <MISelect
+            fullWidth
+            options={memberOptions}
+            useAllOption={false}
+            value={selectedValue}
+            onChange={(e) => setSelectedValue(e.target.value as string)}
+          />
+        </Box>
       </AdminConfirm>
       <AdminConfirm
         open={showDeleteModal}
