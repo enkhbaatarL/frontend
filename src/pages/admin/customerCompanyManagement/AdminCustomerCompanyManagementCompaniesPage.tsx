@@ -80,16 +80,20 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
   const columns: GridColDef[] = [
     {
       field: 'companyNm',
-      headerName: '회사명',
+      headerName: t('회사명'),
       minWidth: 150,
       flex: 1,
       renderCell(params) {
-        return <AdminTableCell typography={{ variant: 'tableBody1' }}>{params.value}</AdminTableCell>
+        return (
+          <AdminTableCell typography={{ variant: 'tableBody1' }} cursorPointer>
+            {params.value}
+          </AdminTableCell>
+        )
       },
     },
     {
       field: 'isActivated',
-      headerName: '상태',
+      headerName: t('상태'),
       maxWidth: 120,
       align: 'center',
       renderCell: (params) => (
@@ -98,32 +102,33 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
           chip={{
             color: params.value ? 'blue' : 'white',
           }}
+          cursorPointer
         >
-          {params.value ? '활성' : '비활성'}
+          {params.value ? t('활성') : t('비활성')}
         </AdminTableCell>
       ),
     },
     {
       field: 'companyCd',
-      headerName: '회사 코드',
+      headerName: t('회사 코드'),
       maxWidth: 120,
       align: 'center',
       renderCell(params) {
-        return <AdminTableCell>{params.value}</AdminTableCell>
+        return <AdminTableCell cursorPointer>{params.value}</AdminTableCell>
       },
     },
     {
       field: 'createUserId',
-      headerName: '등록자',
+      headerName: t('등록자'),
       maxWidth: 120,
       renderCell: (params) => {
         const { createUserNm } = params.row.auditInfo
-        return <AdminTableCell>{createUserNm}</AdminTableCell>
+        return <AdminTableCell cursorPointer>{createUserNm}</AdminTableCell>
       },
     },
     {
       field: 'createDt',
-      headerName: '등록일',
+      headerName: t('등록일'),
       maxWidth: 150,
       align: 'center',
       renderCell: (params) => {
@@ -133,6 +138,7 @@ const AdminCustomerCompanyManagementCompaniesPage = () => {
             typography={{
               color: 'gray.60',
             }}
+            cursorPointer
           >
             {dayjs(createDt).format('YYYY-MM-DD')}
           </AdminTableCell>

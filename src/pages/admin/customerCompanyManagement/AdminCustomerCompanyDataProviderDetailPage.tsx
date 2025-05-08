@@ -9,6 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
+import AdminLoading from '@/components/admin/AdminLoading'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import DetailItem from '@/components/common/detail-item'
 import SearchIcon from '@/components/common/icons/SearchIcon'
@@ -48,11 +49,12 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const [search, setSearch] = useState<string>('')
   const [searchValue, setSearchValue] = useState<string>('')
   const [selectedGoods, setSelectedGoods] = useState<string>('')
+  const [isActive, setIsActive] = useState<boolean>(true)
   const [goodsAuthManagementSeparateCd, setGoodsAuthManagementSeparateCd] = useState<string>('INDIVIDUAL')
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
 
-  const { data: providerDetailData } = useQuery({
+  const { data: providerDetailData, isLoading } = useQuery({
     queryKey: ['providerDetail', companyNo, selectedProviderNo],
     queryFn: async () => await companiesService.getCompanyProviderDetail(Number(companyNo), Number(selectedProviderNo)),
     refetchOnWindowFocus: 'always',
@@ -61,8 +63,6 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     staleTime: 0,
     enabled: !!companyNo || !!selectedProviderNo,
   })
-
-  const [isActive, setIsActive] = useState<boolean>(providerDetailData?.isUsed ?? true)
 
   const { data: providerLatestUpdatedData } = useQuery({
     queryKey: ['latestUpdateData', companyNo, selectedProviderNo],
@@ -137,14 +137,14 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       headerName: t('상품명'),
       flex: 1,
       sortable: false,
-      renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
+      renderCell: (params) => <AdminTableCell cursorPointer>{params.value}</AdminTableCell>,
     },
     {
       field: 'goodsExpn',
       headerName: t('상품 설명'),
       flex: 1,
       sortable: false,
-      renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
+      renderCell: (params) => <AdminTableCell cursorPointer>{params.value}</AdminTableCell>,
     },
     {
       field: 'numberOfData',
@@ -153,7 +153,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       sortable: false,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params) => <AdminTableCell>{params.value}</AdminTableCell>,
+      renderCell: (params) => <AdminTableCell cursorPointer>{params.value}</AdminTableCell>,
     },
     {
       field: 'isUsed',
@@ -168,6 +168,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
           chip={{
             color: params.value ? 'green' : 'white',
           }}
+          cursorPointer
         >
           {params.value ? '사용 중' : '미사용'}
         </AdminTableCell>
@@ -180,7 +181,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       sortable: false,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params) => <AdminTableCell>{params.value === '개인' ? '개별 권한' : '회사 권한'}</AdminTableCell>,
+      renderCell: (params) => <AdminTableCell cursorPointer>{params.value === '개인' ? '개별 권한' : '회사 권한'}</AdminTableCell>,
     },
     {
       field: 'actions',
@@ -188,16 +189,17 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       minWidth: 52,
       cellClassName: 'cellAction',
       align: 'right',
-      renderCell: () => (
+      renderCell: (params) => (
         <AdminTableAction
           actions={[
             {
-              label: '상세 권한 설정',
+              label: t('상세 권한 설정'),
               icon: <SettingIcon className="MuiSvgIcon-root" />,
               onClick: () => {
-                navigate({
-                  // pathname: getPath('customer-company-product-detail'),
-                  search: '?mode=set-permission',
+                navigate(`/admin/customer-company/companies/provider-detail/${companyNo}/${selectedProviderNo}/${params.row.goodsNo}`, {
+                  state: {
+                    companyNm: providerDetailData?.companyNm,
+                  },
                 })
               },
             },
@@ -210,12 +212,12 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   useEffect(() => {
     if (providerDetailData) {
       setSelectedCompany({ value: String(providerDetailData.providerNo), label: providerDetailData.providerNm })
-      setIsActive(providerDetailData.isUsed)
     }
   }, [providerDetailData])
 
   useEffect(() => {
     if (providerDetailData && providerLatestUpdatedData) {
+      setIsActive(providerDetailData.isUsed)
       setCustomComponent(
         <AdminCustomerCompanyProviderDetailPageHeader
           value={isActive}
@@ -306,6 +308,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       setIsActive(response.isUsed)
       setOpenConfirmActive(false)
       showSnackbar(t(response.isUsed ? '사용' : '미사용') + t('으로 변경되었습니다.'), { variant: 'success' })
+      await queryClient.invalidateQueries({ queryKey: ['providerDetail', companyNo, selectedProviderNo] })
     } catch (error) {
       console.error('error', error)
     }
@@ -330,7 +333,9 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     }
   }
 
-  return (
+  return isLoading ? (
+    <AdminLoading />
+  ) : (
     <>
       <Box>
         <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
@@ -356,6 +361,15 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
               contentWidth={196}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearchValue(search)
+                }
+              }}
+              onClear={() => {
+                setSearchValue('')
+                setSearch('')
+              }}
             />
             <AdminButton color="secondary" variant="outlined" size="h34" onClick={registerProduct}>
               {t('상품 등록')}

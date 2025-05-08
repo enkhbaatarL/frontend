@@ -114,7 +114,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
     enabled: !!companyNo || !!providerNo || !!goodsNo,
   })
 
-  const [isActive, setIsActive] = useState<boolean>(goodsDetailData?.isUsed ?? true)
+  const [isActive, setIsActive] = useState<boolean>(true)
   const [permission, setPermission] = useState<string>('')
   const [isEditViewable, setIsEditViewable] = useState<boolean>(false)
   const [isEditDownloadable, setIsEditDownloadable] = useState<boolean>(false)
@@ -139,6 +139,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
 
   useEffect(() => {
     if (goodsDetailData && goodsDetailLatestData) {
+      setIsActive(goodsDetailData.isUsed)
       setCompanyPermission({
         isViewable: goodsDetailData?.companySetting ? goodsDetailData.companySetting.isViewable : false,
         isDownloadable: goodsDetailData?.companySetting ? goodsDetailData.companySetting.isDownloadable : false,
@@ -508,6 +509,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
       setIsActive(response?.isUsed)
       setOpenConfirmActive(false)
       showSnackbar(response?.isUsed ? t('사용으로 변경되었습니다.') : t('미사용으로 변경되었습니다.'), { variant: 'success' })
+      await queryClient.invalidateQueries({ queryKey: ['goodsDetail', companyNo, providerNo, goodsNo] })
     } catch (error) {
       console.error(error)
     }
@@ -610,15 +612,15 @@ const AdminCustomerCompanyProductDetailPage = () => {
                     size="h26"
                     value={(() => {
                       const year =
-                        goodsDetailData?.companySetting && !isEditUsageBeginDate
+                        goodsDetailData?.companySetting.usageBeginDate && !isEditUsageBeginDate
                           ? goodsDetailData?.companySetting.usageBeginDate.slice(0, 4)
                           : companyPermission?.usageBeginDate?.slice(0, 4)
                       const month =
-                        goodsDetailData?.companySetting && !isEditUsageBeginDate
+                        goodsDetailData?.companySetting.usageBeginDate && !isEditUsageBeginDate
                           ? goodsDetailData?.companySetting.usageBeginDate.slice(4, 6)
                           : companyPermission?.usageBeginDate?.slice(4, 6)
                       const day =
-                        goodsDetailData?.companySetting && !isEditUsageBeginDate
+                        goodsDetailData?.companySetting.usageBeginDate && !isEditUsageBeginDate
                           ? goodsDetailData?.companySetting.usageBeginDate.slice(6, 8)
                           : companyPermission?.usageBeginDate?.slice(6, 8)
 
@@ -639,15 +641,15 @@ const AdminCustomerCompanyProductDetailPage = () => {
                     size="h26"
                     value={(() => {
                       const year =
-                        goodsDetailData?.companySetting && !isEditUsageEndDate
+                        goodsDetailData?.companySetting.usageEndDate && !isEditUsageEndDate
                           ? goodsDetailData?.companySetting.usageEndDate.slice(0, 4)
                           : companyPermission?.usageEndDate?.slice(0, 4)
                       const month =
-                        goodsDetailData?.companySetting && !isEditUsageEndDate
+                        goodsDetailData?.companySetting.usageEndDate && !isEditUsageEndDate
                           ? goodsDetailData?.companySetting.usageEndDate.slice(4, 6)
                           : companyPermission?.usageEndDate?.slice(4, 6)
                       const day =
-                        goodsDetailData?.companySetting && !isEditUsageEndDate
+                        goodsDetailData?.companySetting.usageEndDate && !isEditUsageEndDate
                           ? goodsDetailData?.companySetting.usageEndDate.slice(6, 8)
                           : companyPermission?.usageEndDate?.slice(6, 8)
 

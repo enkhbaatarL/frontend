@@ -11,7 +11,6 @@ export interface MIInputProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   size?: 'h26' | 'h34' | 'h36' | 'h46'
   readOnly?: boolean
   success?: boolean
-  contentWidth?: number
   endIcon?: ReactNode
   startIcon?: ReactNode
   maxLength?: number
@@ -21,6 +20,8 @@ export interface MIInputProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   minWidth?: number | string
   width?: number | string
   maxHeight?: number | string
+  contentWidth?: number
+  onClear?: () => void
   appendContent?: string
 }
 
@@ -38,6 +39,7 @@ const MIInput = ({
   maxHeight,
   appendContent,
   variant = 'inForm',
+  onClear,
   ...props
 }: MIInputProps) => {
   const [innerValue, setInnerValue] = useState<string>(String(value) || '')
@@ -123,7 +125,6 @@ const MIInput = ({
     const defaultProps: Record<string, string | ReactNode> = {
       readOnly,
     }
-
     defaultProps.endAdornment = (
       <InputAdornment position="end" sx={{ cursor: 'pointer' }}>
         {isFocus && !readOnly && innerValue && !props.error && !props.multiline && (
@@ -137,6 +138,7 @@ const MIInput = ({
                   value: '',
                 },
               } as ChangeEvent<HTMLInputElement>)
+              onClear?.()
             }}
           />
         )}
