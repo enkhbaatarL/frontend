@@ -4,7 +4,7 @@ import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'reac
 import TempLoginPassPage from '@/pages/test/TempLoginPassPage'
 import AdminRoutes from '@/routes/AdminRoutes'
 import ErrorRoutes from '@/routes/ErrorRoutes'
-import MiRoutes from '@/routes/MiRoutes'
+import MIRoutes from '@/routes/MiRoutes.tsx'
 import TestRoutes from '@/routes/TestRoues'
 import { ICustomRouteObject } from '@/types/common'
 
@@ -14,7 +14,7 @@ const commonRoutes: ICustomRouteObject[] = [
     element: <TempLoginPassPage />,
   },
   { ...AdminRoutes },
-  { ...MiRoutes },
+  { ...MIRoutes },
   { ...ErrorRoutes },
   { ...TestRoutes }, // TODO: 테스트 페이지 제거 필요
   {
