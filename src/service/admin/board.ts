@@ -78,7 +78,7 @@ const boardService = {
    * FAQ 필터를 조회합니다.
    */
   async getFaqFilter(): Promise<IFaqFilter> {
-    const response: AxiosResponse<ICommonResponse<IFaqFilter>> = await api.get('admin/bulletinboard-manangement/faq/filter')
+    const response: AxiosResponse<ICommonResponse<IFaqFilter>> = await api.get('admin/bulletinboard-management/faq/filter')
 
     return response.data.data
   },
@@ -87,7 +87,7 @@ const boardService = {
    * @param params - { page: 페이지 번호, size: 페이지당 항목 수, category: 카테고리, keyword: 검색어 }
    */
   async getFaq(params: Partial<IFaqRequest>): Promise<IPaginationResponse<IFaqInfo>> {
-    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IFaqInfo>>> = await api.get('admin/bulletinboard-manangement/faq', {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IFaqInfo>>> = await api.get('admin/bulletinboard-management/faq', {
       params,
     })
 
@@ -98,7 +98,7 @@ const boardService = {
    * @param body - { bulletinCategorySeparateCd: 카테고리 코드, bulletinTitleNm: 제목(질문), bulletinCntt: 내용(답변) }
    */
   async registerFaq(body: IFaqDetailInfo): Promise<ICommonResponse<null>> {
-    const response: AxiosResponse<ICommonResponse<null>> = await api.post('admin/bulletinboard-manangement/faq', body)
+    const response: AxiosResponse<ICommonResponse<null>> = await api.post('admin/bulletinboard-management/faq', body)
 
     return response.data
   },
@@ -109,7 +109,7 @@ const boardService = {
   async getFaqDetail(faqNo?: number | string): Promise<IFaqDetailInfo> {
     if (!faqNo) throw new Error('faqNo is required')
 
-    const response: AxiosResponse<ICommonResponse<IFaqDetailInfo>> = await api.get(`admin/bulletinboard-manangement/faq/${faqNo}`)
+    const response: AxiosResponse<ICommonResponse<IFaqDetailInfo>> = await api.get(`admin/bulletinboard-management/faq/${faqNo}`)
 
     return response.data.data
   },
@@ -118,7 +118,7 @@ const boardService = {
    * @param faqNo - FAQ 번호
    */
   async deleteFaq(faqNo: number | string): Promise<ICommonResponse<null>> {
-    const response: AxiosResponse<ICommonResponse<null>> = await api.delete(`admin/bulletinboard-manangement/faq/${faqNo}`)
+    const response: AxiosResponse<ICommonResponse<null>> = await api.delete(`admin/bulletinboard-management/faq/${faqNo}`)
     return response.data
   },
   /**
@@ -129,13 +129,13 @@ const boardService = {
   async updateFaq(faqNo: number | string | undefined, body: IFaqDetailInfo): Promise<void> {
     if (!faqNo) throw new Error('faqNo is required')
 
-    await api.patch(`admin/bulletinboard-manangement/faq/${faqNo}`, body)
+    await api.patch(`admin/bulletinboard-management/faq/${faqNo}`, body)
   },
   /**
    * 공지사항 필터를 조회합니다.
    */
   async getNoticeFilter(): Promise<INoticeFilter> {
-    const response: AxiosResponse<ICommonResponse<INoticeFilter>> = await api.get('admin/bulletinboard-manangement/notice/filter')
+    const response: AxiosResponse<ICommonResponse<INoticeFilter>> = await api.get('admin/bulletinboard-management/notice/filter')
 
     return response.data.data
   },
@@ -145,7 +145,7 @@ const boardService = {
    */
   async getNotice(params: Partial<INoticeRequest>): Promise<IPaginationResponse<INoticeInfo>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INoticeInfo>>> = await api.get(
-      'admin/bulletinboard-manangement/notice',
+      'admin/bulletinboard-management/notice',
       {
         params,
       },
@@ -160,7 +160,7 @@ const boardService = {
   async registerNotice(body: INoticeDetailInfo): Promise<ICommonResponse<null>> {
     const { targetList, ...rest } = body
 
-    const response: AxiosResponse<ICommonResponse<null>> = await api.post('admin/bulletinboard-manangement/notice', {
+    const response: AxiosResponse<ICommonResponse<null>> = await api.post('admin/bulletinboard-management/notice', {
       ...rest,
       target: targetList.map((item) => item.customerCompanyNo),
     })
@@ -174,7 +174,7 @@ const boardService = {
   async getNoticeDetail(noticeNo?: number | string): Promise<INoticeDetailInfo> {
     if (!noticeNo) throw new Error('noticeNo is required')
 
-    const response: AxiosResponse<ICommonResponse<INoticeDetailInfo>> = await api.get(`admin/bulletinboard-manangement/notices/${noticeNo}`)
+    const response: AxiosResponse<ICommonResponse<INoticeDetailInfo>> = await api.get(`admin/bulletinboard-management/notices/${noticeNo}`)
 
     return response.data.data
   },
@@ -183,7 +183,7 @@ const boardService = {
    * @param noticeNo - 공지사항 번호
    */
   async deleteNotice(noticeNo: number | string): Promise<ICommonResponse<null>> {
-    const response: AxiosResponse<ICommonResponse<null>> = await api.delete(`admin/bulletinboard-manangement/notices/${noticeNo}`)
+    const response: AxiosResponse<ICommonResponse<null>> = await api.delete(`admin/bulletinboard-management/notices/${noticeNo}`)
     return response.data
   },
   /**
@@ -196,18 +196,18 @@ const boardService = {
 
     const { targetList, ...rest } = body
 
-    await api.patch(`admin/bulletinboard-manangement/notices/${noticeNo}`, {
+    await api.patch(`admin/bulletinboard-management/notices/${noticeNo}`, {
       ...rest,
       target: targetList.map((item) => item.customerCompanyNo),
     })
   },
   async uploadNoticeFile(): Promise<INoticeFilter> {
-    const response: AxiosResponse<ICommonResponse<INoticeFilter>> = await api.get('admin/bulletinboard-manangement/notice/upload-file')
+    const response: AxiosResponse<ICommonResponse<INoticeFilter>> = await api.get('admin/bulletinboard-management/notice/upload-file')
 
     return response.data.data
   },
 
-  // /api/v1/admin/bulletinboard-manangement/notice/upload-file
+  // /api/v1/admin/bulletinboard-management/notice/upload-file
 }
 
 export default boardService

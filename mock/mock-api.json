@@ -58,7 +58,7 @@
         "x-order": 2
       }
     },
-    "/api/v1/admin/provider-manangement/provider": {
+    "/api/v1/admin/provider-management/provider": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "데이타 프로바이더 목록 조회 - with pagination",
@@ -140,7 +140,7 @@
         "x-order": 1
       }
     },
-    "/api/v1/admin/privatepolicy-manangement/": {
+    "/api/v1/admin/privatepolicy-management/": {
       "get": {
         "tags": ["08. 정책약관 관리 API"],
         "summary": "정책약관 목록 조회",
@@ -205,7 +205,7 @@
         "x-order": 1
       }
     },
-    "/api/v1/admin/file-manangement/all": {
+    "/api/v1/admin/file-management/all": {
       "get": {
         "tags": ["09. 파일 관리 API"],
         "summary": "파일 목록 조회",
@@ -235,7 +235,7 @@
         "x-order": 1
       }
     },
-    "/api/v1/admin/bulletinboard-manangement/notice/filter": {
+    "/api/v1/admin/bulletinboard-management/notice/filter": {
       "get": {
         "tags": ["04. 게시판 관리 API"],
         "summary": "공지사항 필터 조회",
@@ -250,7 +250,7 @@
         "x-order": 1
       }
     },
-    "/api/v1/admin/file-manangement/": {
+    "/api/v1/admin/file-management/": {
       "post": {
         "tags": ["09. 파일 관리 API"],
         "summary": "파일 업로드",
@@ -270,7 +270,7 @@
         "x-order": 2
       }
     },
-    "/api/v1/admin/bulletinboard-manangement/notice": {
+    "/api/v1/admin/bulletinboard-management/notice": {
       "get": {
         "tags": ["04. 게시판 관리 API"],
         "summary": "공지사항 목록 조회 - with pagination",
@@ -369,7 +369,7 @@
         "x-order": 2
       }
     },
-    "/api/v1/admin/provider-manangement/provider/name": {
+    "/api/v1/admin/provider-management/provider/name": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "데이타 프로바이더명 목록 조회 - without pagination",
@@ -384,7 +384,7 @@
         "x-order": 2
       }
     },
-    "/api/v1/admin/privatepolicy-manangement/PrivatePolicies/{poltacNo}": {
+    "/api/v1/admin/privatepolicy-management/PrivatePolicies/{poltacNo}": {
       "get": {
         "tags": ["08. 정책약관 관리 API"],
         "summary": "정책약관 조회",
@@ -566,7 +566,7 @@
         "x-order": 3
       }
     },
-    "/api/v1/admin/file-manangement/{fileNo}": {
+    "/api/v1/admin/file-management/{fileNo}": {
       "get": {
         "tags": ["09. 파일 관리 API"],
         "summary": "파일 다운로드",
@@ -617,7 +617,7 @@
         "x-order": 5
       }
     },
-    "/api/v1/admin/privatepolicy-manangement/PrivatePolicies/latest": {
+    "/api/v1/admin/privatepolicy-management/PrivatePolicies/latest": {
       "get": {
         "tags": ["08. 정책약관 관리 API"],
         "summary": "최신 정책약관 조회",
@@ -632,7 +632,7 @@
         "x-order": 3
       }
     },
-    "/api/v1/admin/provider-manangement/providers/{providerNo}": {
+    "/api/v1/admin/provider-management/providers/{providerNo}": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "데이타 프로바이더 상세 조회",
@@ -682,7 +682,7 @@
         "x-order": 5
       }
     },
-    "/api/v1/admin/bulletinboard-manangement/notices/{noticeNo}": {
+    "/api/v1/admin/bulletinboard-management/notices/{noticeNo}": {
       "get": {
         "tags": ["04. 게시판 관리 API"],
         "summary": "공지사항 상세 조회",
@@ -931,7 +931,7 @@
         "x-order": 7
       }
     },
-    "/api/v1/admin/bulletinboard-manangement/notice/upload-file": {
+    "/api/v1/admin/bulletinboard-management/notice/upload-file": {
       "post": {
         "tags": ["04. 게시판 관리 API"],
         "summary": "공지사항 첨부 파일 업로드",
@@ -1001,7 +1001,7 @@
         "x-order": 8
       }
     },
-    "/api/v1/admin/provider-manangement/providers/{providerNo}/latest-updated/": {
+    "/api/v1/admin/provider-management/providers/{providerNo}/latest-updated/": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "데이타 프로바이더 최신 수정일, 수정자",
@@ -1025,7 +1025,7 @@
         "x-order": 7
       }
     },
-    "/api/v1/admin/provider-manangement/providers/{providerNo}/goods": {
+    "/api/v1/admin/provider-management/providers/{providerNo}/goods": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "상품 목록 조회 - with pagination",
@@ -1090,7 +1090,7 @@
         "x-order": 9
       }
     },
-    "/api/v1/admin/bulletinboard-manangement/notice/download-file/{fileNo}": {
+    "/api/v1/admin/bulletinboard-management/notice/download-file/{fileNo}": {
       "post": {
         "tags": ["04. 게시판 관리 API"],
         "summary": "공지사항 첨부 파일 다운로드",
@@ -1153,7 +1153,7 @@
         "x-order": 8
       }
     },
-    "/api/v1/admin/provider-manangement/providers/{providerNo}/goods/name": {
+    "/api/v1/admin/provider-management/providers/{providerNo}/goods/name": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "상품 목록 조회 - without pagination",
@@ -1273,7 +1273,7 @@
         "x-order": 9
       }
     },
-    "/api/v1/admin/bulletinboard-manangement/notices/popup": {
+    "/api/v1/admin/bulletinboard-management/notices/popup": {
       "get": {
         "tags": ["04. 게시판 관리 API"],
         "summary": "공지사항 팝업 조회",
@@ -1288,7 +1288,7 @@
         "x-order": 9
       }
     },
-    "/api/v1/admin/bulletinboard-manangement/faq/filter": {
+    "/api/v1/admin/bulletinboard-management/faq/filter": {
       "get": {
         "tags": ["04. 게시판 관리 API"],
         "summary": "FAQ 필터 조회",
@@ -1303,7 +1303,7 @@
         "x-order": 9
       }
     },
-    "/api/v1/admin/bulletinboard-manangement/faq": {
+    "/api/v1/admin/bulletinboard-management/faq": {
       "get": {
         "tags": ["04. 게시판 관리 API"],
         "summary": "FAQ 목록 조회 - with pagination",
@@ -1353,7 +1353,7 @@
         "x-order": 11
       }
     },
-    "/api/v1/admin/provider-manangement/providers/{providerNo}/goods/{goodsNo}": {
+    "/api/v1/admin/provider-management/providers/{providerNo}/goods/{goodsNo}": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "상품 상세 조회",
@@ -1533,7 +1533,7 @@
         "x-order": 13
       }
     },
-    "/api/v1/admin/bulletinboard-manangement/faq/{faqNo}": {
+    "/api/v1/admin/bulletinboard-management/faq/{faqNo}": {
       "get": {
         "tags": ["04. 게시판 관리 API"],
         "summary": "FAQ 상세 조회",
@@ -1605,7 +1605,7 @@
         "x-order": 13
       }
     },
-    "/api/v1/admin/provider-manangement/providers/{providerNo}/goods/{goodsNo}/latest-updated/": {
+    "/api/v1/admin/provider-management/providers/{providerNo}/goods/{goodsNo}/latest-updated/": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "상품 최신 수정일, 수정자",
@@ -1636,7 +1636,7 @@
         "x-order": 13
       }
     },
-    "/api/v1/admin/provider-manangement/providers/{providerNo}/goods/{goodsNo}/goods-data": {
+    "/api/v1/admin/provider-management/providers/{providerNo}/goods/{goodsNo}/goods-data": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "데이타 목록 조회 - withpagination",
@@ -1837,7 +1837,7 @@
         "x-order": 16
       }
     },
-    "/api/v1/admin/provider-manangement/goods-data/category/doc": {
+    "/api/v1/admin/provider-management/goods-data/category/doc": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "문서 타입 카테고리 조회",
@@ -1852,7 +1852,7 @@
         "x-order": 15
       }
     },
-    "/api/v1/admin/provider-manangement/goods-data/category/lang": {
+    "/api/v1/admin/provider-management/goods-data/category/lang": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "언어 타입 카테고리 조회",
@@ -1867,7 +1867,7 @@
         "x-order": 16
       }
     },
-    "/api/v1/admin/provider-manangement/goods-data/structured-data-type": {
+    "/api/v1/admin/provider-management/goods-data/structured-data-type": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "정형 데이타 타입 목록을 조회",
@@ -1920,7 +1920,7 @@
         "x-order": 17
       }
     },
-    "/api/v1/admin/provider-manangement/providers/{providerNo}/goods/{goodsNo}/goods-data/name": {
+    "/api/v1/admin/provider-management/providers/{providerNo}/goods/{goodsNo}/goods-data/name": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "데이터명 목록 조회",
@@ -1989,7 +1989,7 @@
         "x-order": 18
       }
     },
-    "/api/v1/admin/provider-manangement/providers/{providerNo}/goods/{goodsNo}/goods-datas/{goodsDataNo}": {
+    "/api/v1/admin/provider-management/providers/{providerNo}/goods/{goodsNo}/goods-datas/{goodsDataNo}": {
       "get": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "데이터 상세 조회",
@@ -2191,7 +2191,7 @@
         "x-order": 22
       }
     },
-    "/api/v1/admin/provider-manangement/goods-datas/upload-file/structured-data": {
+    "/api/v1/admin/provider-management/goods-datas/upload-file/structured-data": {
       "post": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "정형 데이타 파일 업로드",
@@ -2220,7 +2220,7 @@
         "x-order": 91
       }
     },
-    "/api/v1/admin/provider-manangement/goods-datas/upload-file/unstructured-data": {
+    "/api/v1/admin/provider-management/goods-datas/upload-file/unstructured-data": {
       "post": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "비정형 데이타 파일 업로드",
@@ -2240,7 +2240,7 @@
         "x-order": 92
       }
     },
-    "/api/v1/admin/provider-manangement/goods-datas/download-file/unstructured-data/{fileNo}": {
+    "/api/v1/admin/provider-management/goods-datas/download-file/unstructured-data/{fileNo}": {
       "post": {
         "tags": ["03. 데이타 프로바이더 관리 API"],
         "summary": "비정형 데이타 파일 다운로드",
