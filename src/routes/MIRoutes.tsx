@@ -8,14 +8,14 @@ import MIMarketDataPage from '@/pages/mi/marketData/MIMarketDataPage.tsx'
 import MINoticePage from '@/pages/mi/notice/MINoticePage.tsx'
 import MISignalMapPage from '@/pages/mi/signalMap/MISignalMapPage.tsx'
 import UserChartSamplePage from '@/pages/mi/UserChartSamplePage'
-import MiProvider from '@/providers/MiProvider'
+import MIProvider from '@/providers/MIProvider'
 
 const MIRoutes: RouteObject = {
   path: '/mi',
   element: (
-    <MiProvider>
+    <MIProvider>
       <MILayout />
-    </MiProvider>
+    </MIProvider>
   ),
   children: [
     {

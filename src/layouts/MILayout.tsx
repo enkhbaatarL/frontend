@@ -4,7 +4,7 @@ import { Outlet } from 'react-router-dom'
 
 import MIFooter from '@/components/mi/MIFooter.tsx'
 import MIHeaderMainLayout from '@/components/mi/MIHeaderMainLayout.tsx'
-import MiProvider from '@/providers/MiProvider.tsx'
+import MIProvider from '@/providers/MIProvider.tsx'
 
 const MILayout = () => {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -32,7 +32,7 @@ const MILayout = () => {
   }, [])
 
   return (
-    <MiProvider>
+    <MIProvider>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
           <MIHeaderMainLayout />
@@ -51,7 +51,7 @@ const MILayout = () => {
 
         <MIFooter />
       </div>
-    </MiProvider>
+    </MIProvider>
   )
 }
 

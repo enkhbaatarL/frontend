@@ -3,11 +3,11 @@ import { ReactNode } from 'react'
 
 import AxiosErrorHandler from '@/components/common/AxiosErrorHandler'
 
-interface MiProviderProps {
+interface MIProviderProps {
   children: ReactNode
 }
 
-const MiProvider = ({ children }: MiProviderProps) => (
+const MIProvider = ({ children }: MIProviderProps) => (
   <SnackbarProvider
     maxSnack={8}
     autoHideDuration={2000}
@@ -30,4 +30,4 @@ const MiProvider = ({ children }: MiProviderProps) => (
   </SnackbarProvider>
 )
 
-export default MiProvider
+export default MIProvider
