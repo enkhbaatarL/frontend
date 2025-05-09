@@ -95,7 +95,7 @@ const dataProviderService = {
    */
   async getProviderGoodsLatestUpdated(providerNo: number, goodsNo: number): Promise<IProviderGoodsLatestUpdatedInfo> {
     const response: AxiosResponse<ICommonResponse<IProviderGoodsLatestUpdatedInfo>> = await api.get(
-      `/admin/provider-management/providers/${providerNo}/goods/${goodsNo}/latest-updated/`,
+      `/admin/provider-management/providers/${providerNo}/goods/${goodsNo}/latest-updated`,
     )
 
     return response.data.data
