@@ -9,6 +9,7 @@ import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
+import AdminTextField from '@/components/admin/AdminTextField'
 import MIChip from '@/components/common/chip/MIChip'
 import DetailItem from '@/components/common/detail-item/DetailItem'
 import SearchIcon from '@/components/common/icons/SearchIcon'
@@ -24,6 +25,9 @@ import { getMockTableData } from '@/utils/mock-data'
 interface ProductDataTableProps {
   data: IPaginationResponse<IProviderGoodsDataInfo>
   isPublic: boolean
+  search: string
+  setSearch: (value: string) => void
+  setSearchValue: (value: string) => void
 }
 
 const AdminDataProviderProductDetailPageHeader = (props: { onChange: (value: boolean) => void; value: boolean; label: string }) => {
@@ -60,7 +64,7 @@ const CustomPageTitle = (props: { label: string }) => (
 )
 
 // 데이터 목록 테이블
-const ProductDataListTable = ({ data, isPublic }: ProductDataTableProps) => {
+const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValue }: ProductDataTableProps) => {
   const columns: GridColDef[] = [
     {
       field: 'customerCompanyNm',
@@ -121,21 +125,21 @@ const ProductDataListTable = ({ data, isPublic }: ProductDataTableProps) => {
             endIcon={
               <SearchIcon
                 onClick={() => {
-                  // setSearchValue(search)
+                  setSearchValue(search)
                 }}
               />
             }
             contentWidth={270}
             value={null}
-            // onChange={(e) => setSearch(e.target.value)}
-            // onKeyDown={(e) => {
-            //   if (e.key === 'Enter') {
-            //     setSearchValue(search)
-            //   }
-            // }}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setSearchValue(search)
+              }
+            }}
             onClear={() => {
-              // setSearchValue('')
-              // setSearch('')
+              setSearchValue('')
+              setSearch('')
             }}
           />
           <AdminButton
@@ -329,7 +333,10 @@ const ProductDataListTable = ({ data, isPublic }: ProductDataTableProps) => {
 const AdminDataProviderProductDetailPage = () => {
   const { providerNo, goodsNo } = useParams()
   const { state } = useLocation()
-  const [search, _setSearch] = useState('')
+  const [search, setSearch] = useState('')
+  const [searchValue, setSearchValue] = useState('')
+  const [inputProviderName, setInputProviderName] = useState('')
+  const [isErrorProviderName, setIsErrorProviderName] = useState(true)
 
   // 상품 상세
   const { data: productDetailData } = useQuery({
@@ -354,10 +361,10 @@ const AdminDataProviderProductDetailPage = () => {
 
   // 데이터 목록
   const { data: dataList } = useQuery({
-    queryKey: ['dataList'],
+    queryKey: ['dataList', searchValue],
     queryFn: async () =>
       await dataProviderService.getProviderGoodsDataList(Number(providerNo), Number(goodsNo), {
-        keyword: search,
+        keyword: searchValue,
         page: 1,
         size: 20,
       }),
@@ -427,6 +434,22 @@ const AdminDataProviderProductDetailPage = () => {
   // const canEdit = useStore(editForm.store, (state: { canSubmit: boolean; isDirty: boolean }) => {
   //   return state.canSubmit
   // })
+
+  // 활성/비활성 변경
+  const handleUpdateActive = async () => {
+    try {
+      const response = await dataProviderService.updateProviderGoods(Number(providerNo), Number(goodsNo), {
+        goodsNm: productDetailData?.goodsNm ?? '',
+        goodsId: productDetailData?.goodsId ?? '',
+        goodsExpn: productDetailData?.goodsExpn ?? '',
+        isUsed: !isActive,
+        isPublic,
+      })
+      console.log('Response ==> ', response)
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   useEffect(() => {
     if (productDetailData) {
@@ -498,76 +521,15 @@ const AdminDataProviderProductDetailPage = () => {
     }
   }, [setCustomComponent, setSubHeader, setCustomTitle, isActive, productDetailData, latestUpdatedData, state])
 
+  useEffect(() => {
+    setIsErrorProviderName(inputProviderName.replace(/\s/g, '') !== state?.providerNm.replace(/\s/g, ''))
+  }, [inputProviderName, state])
+
   return (
     <>
-      {dataList && <ProductDataListTable data={dataList} isPublic={isPublic} />}
-      {/* <Box>
-        <MITableLayout
-          label="데이터 목록"
-          search={{
-            placeholder: '검색하세요.',
-          }}
-          actionButtons={
-            <MIButton
-              disabled={(type === 'private' && role === 'admin') || (type === 'public' && role === 'user')}
-              type="outlined"
-              color="gray"
-              onClick={() => {
-                navigate({
-                  // pathname: getPath('data-provider-data-registration'),
-                })
-              }}
-            >
-              데이터 등록
-            </MIButton>
-          }
-          tableProps={{
-          onRowClick: handleRowClick,
-            columns: [
-              ...(type === 'public' ? [] : [{ field: 'customer', headerName: '고객사', width: 120 }]),
-              {
-                field: 'dataName',
-                headerName: '데이터명',
-                width: 360,
-                renderCell: (param) => <MITableCell value={param.value} typography={{ variant: 'body2SB14' }} />,
-              },
-              { field: 'dataDescription', headerName: '데이터 설명', flex: 1 },
-              {
-                field: 'actions',
-                headerName: '',
-                width: 52,
-                align: 'center',
-                renderCell: () => (
-                  <AdminTableAction
-                    actions={[
-                      {
-                        label: '데이터 업데이트',
-                        icon: <UpdateIcon className="MuiSvgIcon-root" />,
-                        // disabled: (type === 'public' && role === 'user') || (type === 'private' && role === 'admin'),
-                        onClick: () => {
-                          // navigate(getPath('data-provider-data-detail'))
-                        },
-                      },
-                    ]}
-                  />
-                ),
-              },
-            ],
-            rows: getMockTableData(
-              {
-                customer: ['SK 실트론', 'SK 하이닉스', 'SK ON', 'SK C&C'],
-                dataName: ['Fab Utilization Rate (%)', 'Global Semiconductor Revenue ($B)', 'DRAM ASP ($ per Gb)'],
-                dataDescription: [
-                  'Fab Utilization Rate (%)',
-                  'Global Semiconductor Revenue ($B) Global Semiconductor Revenue ($B) Global Semiconductor Revenue ($B)',
-                ],
-              },
-              6,
-            ),
-            rowId: 'id',
-          }}
-        />
-      </Box> */}
+      {dataList && (
+        <ProductDataListTable data={dataList} isPublic={isPublic} search={search} setSearch={setSearch} setSearchValue={setSearchValue} />
+      )}
       {role === 'admin' && (
         <Box>
           <MITableLayout
@@ -612,14 +574,14 @@ const AdminDataProviderProductDetailPage = () => {
 
       <AdminConfirm
         open={openActiveCofirm}
-        title={isActive ? <>비활성으로 변경하시겠습니까?</> : <>활성으로 변경하시겠습니까?</>}
+        title={isActive ? t('비활성으로 변경하시겠습니까?') : t('활성으로 변경하시겠습니까?')}
         width={502}
         handleClose={() => {
           setOpenActiveConfirm(false)
         }}
         actions={[
           {
-            label: <Typography variant="body2SB14">취소</Typography>,
+            label: t('취소'),
             variant: 'outlined',
             color: 'gray',
             onClick: () => {
@@ -627,47 +589,49 @@ const AdminDataProviderProductDetailPage = () => {
             },
           },
           {
-            label: <Typography variant="body2SB14">변경</Typography>,
+            label: t('변경'),
             variant: 'filled',
             color: 'primary',
-            // disabled: !canActive,
-            onClick: () => {
-              setOpenActiveConfirm(false)
-              setIsActive((value) => !value)
-              // showSnackbar('저장되었습니다.', { variant: 'success' })
-            },
+            disabled: isErrorProviderName,
+            onClick: () => handleUpdateActive(),
           },
         ]}
       >
         <Typography component={'p'} variant="body2R14" color="gray.70" mb={'20px'} sx={{ letterSpacing: '-0.1px' }}>
           {isActive
-            ? '변경 후에도 해당 데이터 프로바이더의 기존에 설정된 상품 및 사용자 권한 정보는 유지됩니다. 다시 활성 상태로 변경하면 이전의 권한 설정을 그대로 사용할 수 있습니다.'
-            : '변경 시 해당 데이터 프로바이더의 기존에 설정되었던 권한이 있는 경우 기존 권한이 적용됩니다. 변경 후 최종 권한을 다시 한 번 확인해주세요.'}
+            ? t(
+              '변경 시에도 해당 상품의 기존에 설정된 권한 정보는 유지됩니다. 다시 사용중 설정 시 이전의 권한 설정 그대로 사용이 가능합니다.',
+            )
+            : t(
+              '변경 시 해당 상품의 기존에 설정되었던 권한이 있는 경우 기존 권한이 적용됩니다. 변경 후 최종 권한을 다시 한 번 확인해주세요.',
+            )}
         </Typography>
-        {/* <activeForm.Field name="name">
-          {(field: { state: { value: string } }) => (
-            <MIField
-              label="변경할 데이터 프로바이더 명 입력"
-              required
-              helper="데이터 프로바이더명을 동일하게 입력해주세요."
-              helperStyle={{ color: 'chart.blue2' }}
-            >
-              <MIInput fullWidth value={field.state.value} />
-            </MIField>
+        <Box>
+          <Typography component={'p'} variant="body3" color="gray.70">
+            {t('변경할 상품명 입력 ')}
+            <Typography component={'span'} color="point.red1">
+              *
+            </Typography>
+          </Typography>
+          <AdminTextField fullWidth onChange={(e) => setInputProviderName(e.target.value)} />
+          {isErrorProviderName && (
+            <Typography component={'p'} variant="subtext2" color="#5191F5" mt={1}>
+              {t('상품명을 동일하게 입력해주세요.')}
+            </Typography>
           )}
-        </activeForm.Field> */}
+        </Box>
       </AdminConfirm>
 
       <AdminConfirm
         open={openModifiedData}
-        title={<>상품 수정</>}
+        title={t('상품 수정')}
         width={502}
         handleClose={() => {
           setOpenModifiedData(false)
         }}
         actions={[
           {
-            label: <Typography variant="body2SB14">취소</Typography>,
+            label: t('취소'),
             variant: 'outlined',
             color: 'gray',
             onClick: () => {
@@ -675,7 +639,7 @@ const AdminDataProviderProductDetailPage = () => {
             },
           },
           {
-            label: <Typography variant="body2SB14">저장</Typography>,
+            label: t('저장'),
             variant: 'filled',
             color: 'primary',
             // disabled: !canEdit,
