@@ -69,7 +69,7 @@ export default function AdminDataProviderRegistrationPage() {
 
     setIsOpenRegistration(false)
     if (response.status) {
-      navigate('/admin/data-providers/list')
+      navigate('/admin/data-providers/providers')
       showSnackbar(t('등록되었습니다.'), { variant: 'success' })
     } else {
       showSnackbar(t('등록되었습니다.'), { variant: 'success' })
@@ -167,7 +167,7 @@ export default function AdminDataProviderRegistrationPage() {
             color: 'primary',
             onClick: () => {
               setIsOpenCancel(false)
-              navigate('/admin/data-providers/list')
+              navigate('/admin/data-providers/providers')
             },
           },
         ]}

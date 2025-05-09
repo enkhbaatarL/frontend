@@ -17,7 +17,7 @@ const AdminDataProvidersListPageHeader = () => {
 
   return (
     <Flex gap={4}>
-      <MIButton size="h34" onClick={() => navigate('/admin/data-providers/registration')}>
+      <MIButton size="h34" onClick={() => navigate('/admin/data-providers/providers/registration')}>
         데이터 프로바이더 등록
       </MIButton>
     </Flex>
@@ -90,7 +90,7 @@ const AdminDataProvidersListPage = () => {
         onSizeChange={updateSize}
         onPageChange={updatePage}
         onRowClick={({ row }) => {
-          navigate(`/admin/data-providers/detail/${row.providerNo}`)
+          navigate(`/admin/data-providers/providers/detail/${row.providerNo}`)
         }}
         maxVisibleRowCount={20}
       />
