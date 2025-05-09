@@ -18,7 +18,9 @@ import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerC
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
 import AdminCustomerCompanyManagementOwnerCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementOwnerCompaniesPage'
 import AdminCustomerCompanyProductDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyProductDetailPage'
+import AdminDataProviderRegistrationPage from '@/pages/admin/dataProviders/AdminDataProviderRegistrationPage.tsx'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
+import AdminDataProvidersDetailPage from '@/pages/admin/dataProviders/AdminDataProvidersDetailPage.tsx'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
 import AdminMemberManagementManagersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementManagerRegistrationPage'
 import AdminMemberManagementManagersPage from '@/pages/admin/memberManagement/AdminMemberManagementManagersPage'
@@ -199,6 +201,28 @@ const AdminRoutes: ICustomRouteObject = {
           path: 'data',
           label: '데이터 목록',
           element: <AdminDataProvidersDataPage />,
+        },
+        {
+          path: 'registration',
+          label: '데이터 프로바이더 등록',
+          element: <AdminDataProviderRegistrationPage />,
+          hidden: true,
+        },
+        {
+          path: 'detail',
+          label: '데이터 프로바이더 상세',
+          hidden: true,
+          hasBack: true,
+          children: [
+            {
+              index: true,
+              element: <Navigate to=".." replace />,
+            },
+            {
+              path: ':providerNo',
+              element: <AdminDataProvidersDetailPage />,
+            },
+          ],
         },
       ],
     },
