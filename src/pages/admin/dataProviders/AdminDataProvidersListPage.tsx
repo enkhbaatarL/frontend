@@ -90,7 +90,7 @@ const AdminDataProvidersListPage = () => {
         onSizeChange={updateSize}
         onPageChange={updatePage}
         onRowClick={({ row }) => {
-          navigate(`/admin/member-mgmt/managers/detail/${row.userNo}`)
+          navigate(`/admin/data-providers/detail/${row.providerNo}`)
         }}
         maxVisibleRowCount={20}
       />
