@@ -21,6 +21,12 @@ export interface IProviderListInfo {
   goodsCount: number
   createDt: string
 }
+export interface IProviderRegisterRequest {
+  providerNm: string
+  providerId: string
+  providerExpn: string
+  isUsed: boolean
+}
 
 const dataProviderService = {
   /**
@@ -53,6 +59,15 @@ const dataProviderService = {
     )
 
     return response.data.data
+  },
+  /**
+   * 데이타 프로바이더를 등록합니다.
+   * @param body - { providerNm: 데이터 프로바이더명, providerId: 데이터 프로바이더 고유코드, providerExpn: 데이터프로바이더 설명, isUsed: 사용상태 }
+   */
+  async registerProvider(body: IProviderRegisterRequest): Promise<ICommonResponse<null>> {
+    const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/provider-management/provider', body)
+
+    return response.data
   },
 }
 
