@@ -4,7 +4,7 @@ import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'reac
 import TempLoginPassPage from '@/pages/test/TempLoginPassPage'
 import AdminRoutes from '@/routes/AdminRoutes'
 import ErrorRoutes from '@/routes/ErrorRoutes'
-import MIRoutes from '@/routes/MIRoutes.tsx'
+import MIRoutes from '@/routes/MIRoutes'
 import TestRoutes from '@/routes/TestRoues'
 import { ICustomRouteObject } from '@/types/common'
 

@@ -1,9 +1,9 @@
 import { Typography } from '@mui/material'
 import { Dayjs } from 'dayjs'
-import * as React from 'react'
+import { useState } from 'react'
 
-import MIDatePicker from '@/components/common/datepicker/MIDatePicker.tsx'
-import Flex from '@/components/common/display/Flex.tsx'
+import MIDatePicker from '@/components/common/datepicker/MIDatePicker'
+import Flex from '@/components/common/display/Flex'
 
 interface MIDateRangePickerProps {
   onChange?: (dates: { startDate: Dayjs | null; endDate: Dayjs | null }) => void
@@ -13,8 +13,8 @@ interface MIDateRangePickerProps {
 }
 
 export default function MIDateRangePicker({ onChange, sizeInput = 'h34', disabled, readOnly }: Readonly<MIDateRangePickerProps>) {
-  const [startDate, setStartDate] = React.useState<Dayjs | null>(null)
-  const [endDate, setEndDate] = React.useState<Dayjs | null>(null)
+  const [startDate, setStartDate] = useState<Dayjs | null>(null)
+  const [endDate, setEndDate] = useState<Dayjs | null>(null)
 
   const handleStartChange = (value: Dayjs | null) => {
     if (value && endDate?.isBefore(value, 'day')) {

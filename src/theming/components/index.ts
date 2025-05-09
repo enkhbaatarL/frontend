@@ -18,7 +18,6 @@ const components = {
   MuiAlert: ThemeAlert.MuiAlert,
   MuiAlertTitle: ThemeAlert.MuiAlertTitle,
   MuiButton: ThemeButton,
-  // MuiSelect: ThemeSelect.MuiSelect, ///
   MuiTextField: ThemeTextField,
   MuiList: ThemeSelect.MuiList,
   MuiMenuItem: ThemeSelect.MuiMenuItem,

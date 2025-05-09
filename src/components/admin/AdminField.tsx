@@ -2,8 +2,7 @@ import { FormControlLabel, Radio, RadioGroup, type TextFieldProps, Typography } 
 import FormControl from '@mui/material/FormControl'
 import Switch from '@mui/material/Switch'
 import { Dayjs } from 'dayjs'
-
-import type React from 'react'
+import { ChangeEvent } from 'react'
 
 import AdminUpload, { type FileInfo } from '@/components/admin/AdminUpload'
 import MIDatePicker from '@/components/common/datepicker/MIDatePicker'
@@ -57,7 +56,7 @@ const AdminField = ({
   showSelectedValue = true,
   useAllOption,
 }: AdminTextFieldProps) => {
-  const handleChangeTextField = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeTextField = (event: ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value
     if (!maxLength || newValue.length <= maxLength) {
       onChange?.(newValue)
@@ -70,7 +69,7 @@ const AdminField = ({
     onChange?.(newValue)
   }
 
-  const handleSwitchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSwitchChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange?.(event.target.checked)
   }
 

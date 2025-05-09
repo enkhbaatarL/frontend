@@ -14,7 +14,7 @@ import AdminDatePicker from '@/components/admin/AdminDatePicker'
 import AdminLoading from '@/components/admin/AdminLoading'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
-import DetailItem from '@/components/common/detail-item'
+import DetailItem from '@/components/common/detail-item/DetailItem'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import MIInput from '@/components/common/input/MIInput'
@@ -39,13 +39,13 @@ interface AdminCustomerMemberTableProps {
 }
 
 const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean) => void; label: string; value: boolean }) => {
-  const toogle = (value: boolean) => {
+  const toggle = (value: boolean) => {
     props.onChange(value)
   }
 
   return (
     <FormControlLabel
-      control={<Switch defaultChecked checked={props.value} onChange={(e) => toogle(e.target.checked)} />}
+      control={<Switch defaultChecked checked={props.value} onChange={(e) => toggle(e.target.checked)} />}
       label={props.label}
     />
   )

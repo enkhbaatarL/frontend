@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react'
-import { useState, useRef, useCallback } from 'react'
+import { useEffect, DragEvent, ChangeEvent, useState, useRef, useCallback } from 'react'
 import '@/styles/upload-field.scss'
 
 export interface FileInfo {
@@ -163,25 +162,25 @@ const UploadField = ({
     [handleFileValidation, multiple, onChange, files],
   )
 
-  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragEnter = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(true)
   }, [])
 
-  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
   }, [])
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.stopPropagation()
   }, [])
 
   const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault()
       e.stopPropagation()
       setIsDragging(false)
@@ -194,7 +193,7 @@ const UploadField = ({
   )
 
   const handleFileInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files.length > 0) {
         processFiles(e.target.files)
       }

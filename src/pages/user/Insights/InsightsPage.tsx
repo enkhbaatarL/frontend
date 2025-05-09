@@ -1,14 +1,14 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography } from '@mui/material'
 
-import AdminCheckbox from '@/components/admin/AdminCheckbox.tsx'
-import MIInput from '@/components/common/input/MIInput.tsx'
-import MISelect from '@/components/common/select/MISelect.tsx'
-import MITablePagination from '@/components/common/table-user/MITablePagination.tsx'
-import { mockFilters } from '@/hooks/mockFilters.tsx'
-import { useMockReports } from '@/hooks/useMockReports.tsx'
-import InsightsCardBtn from '@/pages/user/Insights/components/InsightsCardBtn.tsx'
-import InsightsDocumentItem from '@/pages/user/Insights/components/InsightsDocumentItem.tsx'
+import AdminCheckbox from '@/components/admin/AdminCheckbox'
+import MIInput from '@/components/common/input/MIInput'
+import MISelect from '@/components/common/select/MISelect'
+import MITablePagination from '@/components/common/table-user/MITablePagination'
+import { mockFilters } from '@/hooks/mockFilters'
+import { useMockReports } from '@/hooks/useMockReports'
+import InsightsCardBtn from '@/pages/user/Insights/components/InsightsCardBtn'
+import InsightsDocumentItem from '@/pages/user/Insights/components/InsightsDocumentItem'
 
 const InsightsPage = () => {
   const reports = useMockReports()

@@ -2,11 +2,11 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { Chart, Tick } from 'chart.js'
 import dayjs from 'dayjs'
-import React, { useEffect, useRef } from 'react'
+import { FC, useEffect, useRef } from 'react'
 
-import MIChip from '@/components/common/chip/MIChip.tsx'
-import MILine from '@/components/common/divider/MILine.tsx'
-import { Report } from '@/hooks/useMockReports.tsx'
+import MIChip from '@/components/common/chip/MIChip'
+import MILine from '@/components/common/divider/MILine'
+import { Report } from '@/hooks/useMockReports'
 import { generateMonthlyTimestamps, genMockDataForLineChart } from '@/utils/mock-data.ts'
 
 interface InsightsCardBtnProps {
@@ -129,7 +129,7 @@ const SimpleLineChart = () => {
   return <canvas ref={chartRef}></canvas>
 }
 
-const MarketdataChart: React.FC<InsightsCardBtnProps> = () => (
+const MarketdataChart: FC<InsightsCardBtnProps> = () => (
   <Box
     borderRadius={1}
     sx={{

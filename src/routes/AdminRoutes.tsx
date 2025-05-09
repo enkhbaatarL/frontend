@@ -16,7 +16,7 @@ import AdminCustomerCompanyDataProviderDetailPage from '@/pages/admin/customerCo
 import AdminCustomerCompanyDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyDetailPage'
 import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesPage'
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
-import AdminCustomerCompanyManagementOwnerCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementOwnerCompaniesPage.tsx'
+import AdminCustomerCompanyManagementOwnerCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementOwnerCompaniesPage'
 import AdminCustomerCompanyProductDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyProductDetailPage'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'

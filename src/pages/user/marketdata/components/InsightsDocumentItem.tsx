@@ -1,15 +1,15 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
-import React from 'react'
+import { FC } from 'react'
 
-import MIBage from '@/components/common/bage/MIBage.tsx'
-import MILine from '@/components/common/divider/MILine.tsx'
-import { Report } from '@/hooks/useMockReports.tsx'
+import MIBage from '@/components/common/bage/MIBage'
+import MILine from '@/components/common/divider/MILine'
+import { Report } from '@/hooks/useMockReports'
 
 interface InsightsDocumentItemProps {
   report: Report
 }
 
-const InsightsDocumentItem: React.FC<InsightsDocumentItemProps> = ({ report }) => (
+const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => (
   <Grid container direction={'column'} alignItems={'start'} justifyContent={'space-between'} padding={2.5} gap={2.5} borderRadius={1}>
     <MIBage size={'h20'} color={report.type} label={report.type} />
     <Box>

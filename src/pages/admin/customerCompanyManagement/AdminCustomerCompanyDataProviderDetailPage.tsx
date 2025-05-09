@@ -11,7 +11,7 @@ import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelec
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminLoading from '@/components/admin/AdminLoading'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
-import DetailItem from '@/components/common/detail-item'
+import DetailItem from '@/components/common/detail-item/DetailItem'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import MIInput from '@/components/common/input/MIInput'
@@ -454,7 +454,6 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
           <MISelect
             fullWidth
             options={goodsOptions}
-            // showValue={true} ///
             useAllOption={false}
             value={selectedGoods}
             onChange={(e) => setSelectedGoods(e.target.value as string)}

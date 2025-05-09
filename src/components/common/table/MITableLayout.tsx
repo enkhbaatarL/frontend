@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import { GridRowModel } from '@mui/x-data-grid'
+import { ReactElement } from 'react'
 
 import MITable, { MITableProps } from './MITable'
 import MITablePagination from './MITablePagination'
@@ -13,7 +14,7 @@ export interface MITableLayoutProps<T extends GridRowModel> {
     onSearch?: (text: string) => void
     width?: number | string
   }
-  actionButtons?: React.ReactElement
+  actionButtons?: ReactElement
   tableProps: MITableProps<T>
   hidePagination?: boolean
 }
@@ -35,7 +36,7 @@ export default function MITableLayout<T extends GridRowModel>(props: Readonly<MI
           <Box display={'flex'} gap={'10px'}>
             {props.search && (
               <MIInput
-                width={props.search?.width || 300}
+                width={props.search?.width ?? 300}
                 placeholder={props.search.placeholder}
                 endIcon={<SearchIcon />}
                 onChange={(e) => props.search?.onSearch?.(e.target.value)}

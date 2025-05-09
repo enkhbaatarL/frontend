@@ -2,7 +2,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { Box, SxProps, Tooltip, TooltipProps } from '@mui/material'
 import { JSX, PropsWithChildren, ReactElement, useMemo, useState, MouseEvent } from 'react'
 
-import MIMenuSelector from '@/components/common/input/MIMenuSelector.tsx'
+import MIMenuSelector from '@/components/common/input/MIMenuSelector'
 import theme from '@/theming'
 
 export type MIButtonSize = 'h42' | 'h34' | 'h32' | 'h28'

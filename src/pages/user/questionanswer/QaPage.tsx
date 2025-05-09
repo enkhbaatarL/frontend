@@ -2,9 +2,9 @@ import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
 
 import MIAccordion from '@/components/common/accordion/MIAccordion'
-import MIInput from '@/components/common/input/MIInput.tsx'
-import MITablePagination from '@/components/common/table/MITablePagination.tsx'
-import MITabs from '@/components/common/tabs/MITabs.tsx'
+import MIInput from '@/components/common/input/MIInput'
+import MITablePagination from '@/components/common/table/MITablePagination'
+import MITabs from '@/components/common/tabs/MITabs'
 
 const QaPage = () => {
   const createQAItems = (prefix: string, titlePrefix: string) =>

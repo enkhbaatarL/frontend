@@ -1,22 +1,22 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { Dayjs } from 'dayjs'
-import React from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-import MIButton from '@/components/common/button/MIButton.tsx'
-import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker.tsx'
-import MILine from '@/components/common/divider/MILine.tsx'
-import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon.tsx'
-import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon.tsx'
-import MITableCell from '@/components/common/table/MITableCell.tsx'
+import MIButton from '@/components/common/button/MIButton'
+import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
+import MILine from '@/components/common/divider/MILine'
+import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
+import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
+import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table-user/MITableUser'
-import ChartComponent from '@/pages/user/datavisualization/components/ChartComponent.tsx'
-import DescriptionComponent from '@/pages/user/datavisualization/components/DescriptionComponent.tsx'
-import DocumentComponent from '@/pages/user/datavisualization/components/DocumentComponent.tsx'
-import DocumentInfoComponent from '@/pages/user/datavisualization/components/DocumentInfoComponent.tsx'
+import ChartComponent from '@/pages/user/datavisualization/components/ChartComponent'
+import DescriptionComponent from '@/pages/user/datavisualization/components/DescriptionComponent'
+import DocumentComponent from '@/pages/user/datavisualization/components/DocumentComponent'
+import DocumentInfoComponent from '@/pages/user/datavisualization/components/DocumentInfoComponent'
 const DataVisualizationPage = () => {
-  const [startDate, setStartDate] = React.useState<string>('')
-  const [endDate, setEndDate] = React.useState<string>('')
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
 
   const handleDateChange = ({ startDate, endDate }: { startDate: Dayjs | null; endDate: Dayjs | null }) => {
     setStartDate(startDate?.format('YYYYMMDD') ?? '')

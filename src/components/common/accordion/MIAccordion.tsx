@@ -4,14 +4,14 @@ import MuiAccordion, { AccordionProps } from '@mui/material/Accordion'
 import MuiAccordionDetails from '@mui/material/AccordionDetails'
 import MuiAccordionSummary, { accordionSummaryClasses, AccordionSummaryProps } from '@mui/material/AccordionSummary'
 import { styled } from '@mui/material/styles'
-import * as React from 'react'
+import { ComponentProps, ReactNode, SyntheticEvent, useState } from 'react'
 
-import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon.tsx'
+import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 
 interface AccordionItem {
   key: string
   title: string
-  content: React.ReactNode
+  content: ReactNode
   isRequired?: boolean
   tooltip?: string
 }
@@ -86,7 +86,7 @@ const AccordionSummary = styled((props: AccordionSummaryProps & { isBorder?: boo
   }),
 }))
 
-const AccordionDetails = styled((props: React.ComponentProps<typeof MuiAccordionDetails> & { isBorder?: boolean }) => {
+const AccordionDetails = styled((props: ComponentProps<typeof MuiAccordionDetails> & { isBorder?: boolean }) => {
   const { isBorder, ...rest } = props
 
   return <MuiAccordionDetails {...rest} />
@@ -111,8 +111,8 @@ const AccordionDetails = styled((props: React.ComponentProps<typeof MuiAccordion
 }))
 
 export default function MIAccordion({ isBorder, items, defaultExpandedKeys, visibleKeys }: Readonly<CustomAccordionProps>) {
-  const [expandedPanels, setExpandedPanels] = React.useState<string[]>(defaultExpandedKeys || [])
-  const handleChange = (panel: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
+  const [expandedPanels, setExpandedPanels] = useState<string[]>(defaultExpandedKeys || [])
+  const handleChange = (panel: string) => (_event: SyntheticEvent, isExpanded: boolean) => {
     setExpandedPanels((prev) => (isExpanded ? [...prev, panel] : prev.filter((p) => p !== panel)))
   }
 

@@ -5,18 +5,18 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
 import { useForm, useStore } from '@tanstack/react-form'
-import React, { useEffect } from 'react'
+import { useEffect, FC, useState } from 'react'
 
-import AdminConfirm from '@/components/admin/AdminConfirm.tsx'
-import ScrollWrapper from '@/components/admin/ScrollWrapper.tsx'
-import MIButton from '@/components/common/button/MIButton.tsx'
-import MIChip from '@/components/common/chip/MIChip.tsx'
-import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon.tsx'
-import MIField from '@/components/common/input/MIField.tsx'
-import MIInput from '@/components/common/input/MIInput.tsx'
-import MISelect from '@/components/common/select/MISelect.tsx'
-import MITabs from '@/components/common/tabs/MITabs.tsx'
-import useSnackbar from '@/hooks/useSnackbar.tsx'
+import AdminConfirm from '@/components/admin/AdminConfirm'
+import ScrollWrapper from '@/components/admin/ScrollWrapper'
+import MIButton from '@/components/common/button/MIButton'
+import MIChip from '@/components/common/chip/MIChip'
+import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
+import MIField from '@/components/common/input/MIField'
+import MIInput from '@/components/common/input/MIInput'
+import MISelect from '@/components/common/select/MISelect'
+import MITabs from '@/components/common/tabs/MITabs'
+import useSnackbar from '@/hooks/useSnackbar'
 
 interface SettingModalProps {
   open: boolean
@@ -32,8 +32,8 @@ interface TransactionItem {
   value: string
 }
 
-const SettingModalComponent: React.FC<SettingModalProps> = ({ open, onClose }) => {
-  const [transactions, setTransactions] = React.useState<TransactionItem[]>([
+const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose }) => {
+  const [transactions, setTransactions] = useState<TransactionItem[]>([
     {
       id: '1',
       title: '번호롤',
@@ -115,7 +115,7 @@ const SettingModalComponent: React.FC<SettingModalProps> = ({ open, onClose }) =
       value: '하락',
     },
   ])
-  const [hideFooter, setHideFooter] = React.useState(false)
+  const [hideFooter, setHideFooter] = useState(false)
   const { showSnackbar } = useSnackbar()
   const handleDelete = (id: string) => {
     setTransactions((prevTransactions) => prevTransactions.filter((transaction) => transaction.id !== id))

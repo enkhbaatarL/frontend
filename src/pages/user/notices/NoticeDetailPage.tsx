@@ -2,7 +2,7 @@ import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 
-import MIButton from '@/components/common/button/MIButton.tsx'
+import MIButton from '@/components/common/button/MIButton'
 
 export default function CustomerNoticesDetailPage() {
   const navigate = useNavigate()

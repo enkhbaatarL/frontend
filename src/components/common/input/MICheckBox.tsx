@@ -1,5 +1,5 @@
 import { Checkbox, CheckboxProps, styled, SvgIcon, SvgIconProps } from '@mui/material'
-import { JSX, useState } from 'react'
+import { ChangeEvent, JSX, useState } from 'react'
 
 // Custom SVG icons
 const UncheckedIcon = (props: SvgIconProps): JSX.Element => (
@@ -130,7 +130,7 @@ export interface MICheckBoxProps extends CheckboxProps {
   label?: string
   checked?: boolean
   disabled?: boolean
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void
   name?: string
 }
 

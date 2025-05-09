@@ -2,9 +2,9 @@ import { Box } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
-import MIFooter from '@/components/mi/MIFooter.tsx'
-import MIHeaderMainLayout from '@/components/mi/MIHeaderMainLayout.tsx'
-import MIProvider from '@/providers/MIProvider.tsx'
+import MIFooter from '@/components/mi/MIFooter'
+import MIHeaderMainLayout from '@/components/mi/MIHeaderMainLayout'
+import MIProvider from '@/providers/MIProvider'
 
 const MILayout = () => {
   const [isScrolled, setIsScrolled] = useState(false)

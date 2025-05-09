@@ -6,7 +6,7 @@ import MIChartViewToggle from './MIChartViewToogle'
 import CandlestickChartOutlineIcon from '../icons/CandlestickChartOutlineIcon'
 import ShowChartIcon from '../icons/ShowChartIcon'
 
-import MIButton from '@/components/common/button/MIButton.tsx'
+import MIButton from '@/components/common/button/MIButton'
 
 export default function MIChartContrller() {
   const options = [

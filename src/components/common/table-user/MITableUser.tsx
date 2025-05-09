@@ -1,11 +1,12 @@
 import { Box } from '@mui/material'
 import { GridRowModel } from '@mui/x-data-grid'
+import { ReactNode } from 'react'
 
 import MITable, { MITableProps } from './MITable'
 import MITablePagination from './MITablePagination'
 
 export interface MITableUsertProps<T extends GridRowModel> {
-  tableHeader?: React.ReactNode
+  tableHeader?: ReactNode
   tableProps: MITableProps<T>
   hidePagination?: boolean
 }

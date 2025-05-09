@@ -1,14 +1,14 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 
-import MILine from '@/components/common/divider/MILine.tsx'
-import MIInput from '@/components/common/input/MIInput.tsx'
-import MITableCell from '@/components/common/table/MITableCell.tsx'
-import MITableUser from '@/components/common/table-user/MITableUser.tsx'
-import { useMockEvents } from '@/hooks/useMockEvents.tsx'
-import { useMockMarket } from '@/hooks/useMockMarket.tsx'
-import MarketdataChart from '@/pages/user/marketdata/components/MarketdataChart.tsx'
-import MarketdataChartSmall from '@/pages/user/marketdata/components/MarketdataChartSmall.tsx'
+import MILine from '@/components/common/divider/MILine'
+import MIInput from '@/components/common/input/MIInput'
+import MITableCell from '@/components/common/table/MITableCell'
+import MITableUser from '@/components/common/table-user/MITableUser'
+import { useMockEvents } from '@/hooks/useMockEvents'
+import { useMockMarket } from '@/hooks/useMockMarket'
+import MarketdataChart from '@/pages/user/marketdata/components/MarketdataChart'
+import MarketdataChartSmall from '@/pages/user/marketdata/components/MarketdataChartSmall'
 
 const MarketDataPage = () => {
   const { data } = useMockMarket()

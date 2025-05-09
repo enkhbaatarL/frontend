@@ -3,13 +3,13 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import { Typography } from '@mui/material'
 import Box from '@mui/material/Box'
 import Menu from '@mui/material/Menu'
-import * as React from 'react'
+import { useState, MouseEvent } from 'react'
 
-import MIProfile from '@/components/common/profile/MIProfile.tsx'
+import MIProfile from '@/components/common/profile/MIProfile'
 
 const MIHeaderProfile = () => {
-  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null)
-  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
+  const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null)
+  const handleOpenUserMenu = (event: MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget)
   }
   const handleCloseUserMenu = () => {

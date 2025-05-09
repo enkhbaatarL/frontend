@@ -129,7 +129,7 @@ const DrawerProfile = (props: { open: boolean }) => {
 
       <AdminButton
         ref={triggerRef}
-        onClick={(event) => handleClick(event as unknown as React.MouseEvent<HTMLElement>)}
+        onClick={(event) => handleClick(event as unknown as MouseEvent<HTMLElement>)}
         sx={{
           padding: open ? '6px' : '10px',
           boxSizing: 'border-box',

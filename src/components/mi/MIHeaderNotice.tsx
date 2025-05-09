@@ -3,12 +3,12 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { Badge, Box, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material'
 import Menu from '@mui/material/Menu'
-import * as React from 'react'
+import { useState, MouseEvent } from 'react'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import MIButton from '@/components/common/button/MIButton.tsx'
-import MITabs from '@/components/common/tabs/MITabs.tsx'
-import useMockNotice from '@/hooks/useMockNotice.tsx'
+import MIButton from '@/components/common/button/MIButton'
+import MITabs from '@/components/common/tabs/MITabs'
+import useMockNotice from '@/hooks/useMockNotice'
 
 interface NoticeItemProps {
   id: number
@@ -102,8 +102,8 @@ const NoticeItem = ({ id, trend, title, subtitle, date, isRead, onClick }: Notic
   </ListItem>
 )
 const MIHeaderNotice = () => {
-  const [anchorElNotice, setAnchorElNotice] = React.useState<null | HTMLElement>(null)
-  const handleOpenNoticeMenu = (event: React.MouseEvent<HTMLElement>) => {
+  const [anchorElNotice, setAnchorElNotice] = useState<null | HTMLElement>(null)
+  const handleOpenNoticeMenu = (event: MouseEvent<HTMLElement>) => {
     setAnchorElNotice(event.currentTarget)
   }
   const handleCloseNoticeMenu = () => {

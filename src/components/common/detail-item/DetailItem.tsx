@@ -1,13 +1,14 @@
 import { Box, Tooltip, Typography } from '@mui/material'
+import { ReactNode } from 'react'
 
 interface IDetailItemProps {
-  title: string | React.ReactNode
-  subTitle?: string | React.ReactNode
+  title: string | ReactNode
+  subTitle?: string | ReactNode
   fields: {
     label: string
     value: string | number
   }[]
-  icon?: React.ReactNode
+  icon?: ReactNode
   onAction?: () => void
   tooltipMessage?: string
 }

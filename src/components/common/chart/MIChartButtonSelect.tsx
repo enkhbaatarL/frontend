@@ -1,5 +1,5 @@
 import { Box, Menu, MenuItem, Typography } from '@mui/material'
-import { ReactElement, useRef, useState, useEffect } from 'react'
+import { ReactElement, useRef, useState, useEffect, MouseEvent } from 'react'
 import ReactDOM from 'react-dom'
 
 import KeyboardArrowUpIcon from '../icons/KeyboardArrowUpIcon'
@@ -25,7 +25,7 @@ export default function MIButtonSelect(
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const triggerRef = useRef<HTMLElement | null>(null)
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null)
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+  const handleClick = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
     setIsOpen(true)
     const rect = event.currentTarget.getBoundingClientRect()

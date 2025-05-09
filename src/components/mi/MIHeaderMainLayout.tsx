@@ -11,15 +11,14 @@ import MenuItem from '@mui/material/MenuItem'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import clsx from 'clsx'
-import * as React from 'react'
-import { useState } from 'react'
+import { MouseEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import style from './MIHeaderMainLayout.module.scss'
 
-import MIMenuSelector from '@/components/common/input/MIMenuSelector.tsx'
-import MIHeaderNotice from '@/components/mi/MIHeaderNotice.tsx'
-import MIHeaderProfile from '@/components/mi/MIHeaderProfile.tsx'
+import MIMenuSelector from '@/components/common/input/MIMenuSelector'
+import MIHeaderNotice from '@/components/mi/MIHeaderNotice'
+import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
 
 const pages = [
   {
@@ -42,9 +41,9 @@ const pages = [
 
 const MIHeaderMainLayout = () => {
   const navigate = useNavigate()
-  const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null)
+  const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null)
 
-  const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
+  const handleOpenNavMenu = (event: MouseEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget)
   }
 

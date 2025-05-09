@@ -1,9 +1,9 @@
 import { Button } from '@mui/material'
 import { SxProps, Theme } from '@mui/material/styles'
-import React from 'react'
+import { FC, ReactNode } from 'react'
 
 type Props = {
-  children: React.ReactNode
+  children: ReactNode
   onClick?: () => void
   disabled?: boolean
   color?: string
@@ -13,7 +13,7 @@ type Props = {
   sx?: SxProps<Theme>
 }
 
-const AdminIconButton: React.FC<Props> = ({
+const AdminIconButton: FC<Props> = ({
   children,
   onClick,
   disabled = false,

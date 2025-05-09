@@ -3,7 +3,7 @@ import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArro
 import { Box, Pagination, PaginationItem, PaginationProps, Typography } from '@mui/material'
 import { useState } from 'react'
 
-import MIButton from '@/components/common/button/MIButton.tsx'
+import MIButton from '@/components/common/button/MIButton'
 
 export interface MITablePaginationProps extends PaginationProps {
   total?: number

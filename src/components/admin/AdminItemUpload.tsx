@@ -2,11 +2,11 @@ import '@/styles/upload-field.scss'
 import { Typography } from '@mui/material'
 import LinearProgress from '@mui/material/LinearProgress'
 
-import Flex from '@/components/common/display/Flex.tsx'
-import CloseIcon from '@/components/common/icons/CloseIcon.tsx'
-import LoadingIcon from '@/components/common/icons/LoadingIcon.tsx'
-import SuccessIconSm from '@/components/common/icons/SuccessIconSm.tsx'
-import WarningIconRed from '@/components/common/icons/WarningIconRed.tsx'
+import Flex from '@/components/common/display/Flex'
+import CloseIcon from '@/components/common/icons/CloseIcon'
+import LoadingIcon from '@/components/common/icons/LoadingIcon'
+import SuccessIconSm from '@/components/common/icons/SuccessIconSm'
+import WarningIconRed from '@/components/common/icons/WarningIconRed'
 
 export interface FileInfo {
   id?: string

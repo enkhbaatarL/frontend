@@ -3,10 +3,10 @@ import { Box, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import MIInput from '@/components/common/input/MIInput.tsx'
-import MITableCell from '@/components/common/table/MITableCell.tsx'
-import MITableLayout from '@/components/common/table/MITableLayout.tsx'
-import { useMockBoardData } from '@/hooks/useMockBoardNotices.tsx'
+import MIInput from '@/components/common/input/MIInput'
+import MITableCell from '@/components/common/table/MITableCell'
+import MITableLayout from '@/components/common/table/MITableLayout'
+import { useMockBoardData } from '@/hooks/useMockBoardNotices'
 
 const NoticesPage = () => {
   const data = useMockBoardData()

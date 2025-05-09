@@ -4,9 +4,9 @@ import FormControl from '@mui/material/FormControl'
 import { t } from 'i18next'
 import { PropsWithChildren, useMemo, useState, ReactNode } from 'react'
 
-import AdminTextField from '@/components/admin/AdminTextField.tsx'
+import AdminTextField from '@/components/admin/AdminTextField'
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import CancelIcon from '@/components/common/icons/CancelIcon.tsx'
+import MIInputClearIcon from '@/components/common/input/MIInputClearIcon'
 import theme from '@/theming'
 
 type OptionType = {
@@ -116,6 +116,10 @@ const MISelect = ({
 
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
+  const [isFocused, setIsFocused] = useState(false)
+
+  const shouldShowClearButton =
+    isFocused && !disabled && (multiple ? Array.isArray(value) && value.length > 0 : inputValue !== undefined && inputValue !== '')
 
   const getSizeStyle = (sizeSelect: MISelectSize) => {
     if (sizeSelect === 'h26') {
@@ -152,7 +156,19 @@ const MISelect = ({
 
       '.MuiOutlinedInput-root': {
         '.MuiAutocomplete-clearIndicator': {
-          ...(sizeSelect === 'h26' && { display: 'none' }),
+          display: sizeSelect === 'h26' ? 'none' : 'flex !important',
+          visibility: shouldShowClearButton ? 'visible' : 'hidden',
+          cursor: 'pointer',
+          '& svg': {
+            marginRight: '-1px',
+            width: sizeSelect === 'h26' ? 14 : 20,
+            height: sizeSelect === 'h26' ? 14 : 20,
+          },
+        },
+        '.MuiAutocomplete-endAdornment': {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
         },
       },
       '.MuiChip-root': {
@@ -178,7 +194,7 @@ const MISelect = ({
 
       ...sx,
     }),
-    [minWidth, sizeSelect, showValue, sx],
+    [minWidth, sizeSelect, showValue, sx, shouldShowClearButton],
   )
 
   const getSelectedOption = (value: string | number | (string | number)[] | undefined): OptionType | OptionType[] | null => {
@@ -187,22 +203,16 @@ const MISelect = ({
     if (multiple) {
       if (!Array.isArray(value)) return []
 
-      return options.filter((opt) => value.includes(opt.value))
+      return options.filter((opt) => value.includes(opt.value)) as OptionType[]
     } else {
-      if (useAllOption && value === '') return { label: t('전체'), value: '' }
+      if (useAllOption && !isFocused && value === '') return { label: t('전체'), value: '' } as OptionType
       if (value === undefined) return null
 
-      return options.find((opt) => opt.value === (typeof opt.value === 'number' ? Number(value) : value)) ?? null
+      return (options.find((opt) => opt.value === (typeof opt.value === 'number' ? Number(value) : value)) as OptionType) ?? null
     }
   }
 
-  const selected = multiple ? (getSelectedOption(value) as OptionType[]) : (getSelectedOption(value) as OptionType | null)
-
-  const handleClear = () => {
-    if (onChange) {
-      onChange({ target: { value: multiple ? [] : '' } })
-    }
-  }
+  const selected = getSelectedOption(value)
 
   return (
     <FormControl fullWidth={fullWidth}>
@@ -212,11 +222,11 @@ const MISelect = ({
         </Typography>
       )}
       <Autocomplete
-        clearIcon={inputValue ? <CancelIcon width={16} height={16} onClick={handleClear} /> : null}
+        clearIcon={<MIInputClearIcon />}
         clearOnEscape
         disabled={disabled}
         multiple={multiple}
-        options={options ? [...(useAllOption ? [{ label: t('전체'), value: '' }] : []), ...options] : []}
+        options={options ?? []}
         open={open}
         onOpen={() => setOpen(true)}
         onClose={() => setOpen(false)}
@@ -257,6 +267,8 @@ const MISelect = ({
                 // disableUnderline: true,
               },
             }}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
           />
         )}
         slotProps={{

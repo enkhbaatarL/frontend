@@ -1,8 +1,8 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useState } from 'react'
 
-import MISelect from '@/components/common/select/MISelect.tsx'
-import usePolicyHtml from '@/hooks/usePolicyHtml.tsx'
+import MISelect from '@/components/common/select/MISelect'
+import usePolicyHtml from '@/hooks/usePolicyHtml'
 
 import './Policy.scss'
 

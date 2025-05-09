@@ -1,7 +1,7 @@
 import { Box, Card, Stack, Typography } from '@mui/material'
 
-import MIButton from '@/components/common/button/MIButton.tsx'
-import MIChip from '@/components/common/chip/MIChip.tsx'
+import MIButton from '@/components/common/button/MIButton'
+import MIChip from '@/components/common/chip/MIChip'
 import BusinessOutlineIcon from '@/components/common/icons/BusinessOutlineIcon'
 import CompanyOutlineIcon from '@/components/common/icons/CompanyOutlineIcon'
 import EmailOutlineIcon from '@/components/common/icons/EmailOutlineIcon'
@@ -16,7 +16,7 @@ type MIProfileProps = {
   onAlarmClick?: () => void
 }
 
-export default function MIProfile({ name, role, email, company, team, buttonLabel, onAlarmClick }: MIProfileProps) {
+export default function MIProfile({ name, role, email, company, team, buttonLabel, onAlarmClick }: Readonly<MIProfileProps>) {
   return (
     <Card sx={{ boxShadow: 'none' }} className="profileCard">
       <Stack direction="row" spacing={1.5} alignItems="center">

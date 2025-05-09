@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, MouseEvent } from 'react'
 import ReactDOM from 'react-dom'
 
 interface UseOverlayClickProps<T extends HTMLElement = HTMLElement> {
@@ -51,7 +51,7 @@ export function useOverlayClick<T extends HTMLElement = HTMLElement>({
   const [rect, setRect] = useState<DOMRect | null>(null)
 
   const handleOpen = useCallback(
-    (e: React.MouseEvent<T>) => {
+    (e: MouseEvent<T>) => {
       const target = e.currentTarget
 
       if (target) {

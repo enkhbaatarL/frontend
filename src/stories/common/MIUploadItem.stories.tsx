@@ -1,7 +1,7 @@
 import { action } from '@storybook/addon-actions'
 import { Meta, StoryObj } from '@storybook/react'
 
-import AdminItemUpload from '@/components/admin/AdminItemUpload.tsx'
+import AdminItemUpload from '@/components/admin/AdminItemUpload'
 const meta = {
   title: 'common/AdminItemUpload',
   component: AdminItemUpload,

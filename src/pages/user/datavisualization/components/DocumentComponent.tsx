@@ -1,7 +1,7 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 
-import MIButton from '@/components/common/button/MIButton.tsx'
-import MILine from '@/components/common/divider/MILine.tsx'
+import MIButton from '@/components/common/button/MIButton'
+import MILine from '@/components/common/divider/MILine'
 
 interface DocumentItemProps {
   title: string

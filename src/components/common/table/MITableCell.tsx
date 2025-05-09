@@ -1,6 +1,6 @@
 import { Box, Tooltip, Typography, TypographyProps } from '@mui/material'
 import { Instance } from '@popperjs/core'
-import { PropsWithChildren, useRef } from 'react'
+import { PropsWithChildren, useRef, MouseEvent } from 'react'
 
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 
@@ -20,7 +20,7 @@ export default function MITableCell(props: Readonly<MITableCellProps>) {
     y: 0,
   })
   const popperRef = useRef<Instance>(null)
-  const handleMouseMove = (event: React.MouseEvent) => {
+  const handleMouseMove = (event: MouseEvent) => {
     positionRef.current = { x: event.clientX, y: event.clientY }
 
     if (popperRef.current !== null) {

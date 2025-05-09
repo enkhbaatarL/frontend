@@ -2,13 +2,13 @@ import LocalSeeOutlinedIcon from '@mui/icons-material/LocalSeeOutlined'
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
 import { Box, Grid2 as Grid, Stack, Switch, Tooltip, Typography } from '@mui/material'
 import { Dayjs } from 'dayjs'
-import React, { useCallback, useState } from 'react'
+import { useCallback, useState } from 'react'
 
-import MIButton from '@/components/common/button/MIButton.tsx'
+import MIButton from '@/components/common/button/MIButton'
 import MIChart from '@/components/common/chart/MIChart'
 import MIChartContrller from '@/components/common/chart/MIChartController'
-import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker.tsx'
-import SettingModalComponent from '@/pages/user/datavisualization/components/SettingModalComponent.tsx'
+import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
+import SettingModalComponent from '@/pages/user/datavisualization/components/SettingModalComponent'
 import { calculateBollingerBands, calculateSMA, getMockOHLCData } from '@/utils/mock-data'
 
 const mockMainData = getMockOHLCData(200)
@@ -62,10 +62,10 @@ const ChartComponent = () => {
     label: '정형 데이터 이름 1',
     value: 'structured-data-name-1',
   })
-  const [startDate, setStartDate] = React.useState<string>('')
-  const [endDate, setEndDate] = React.useState<string>('')
-  const [timeRangeSelected, setTimeRangeSelected] = React.useState<string>('')
-  const [isOpenSetting, setIsOpenSetting] = React.useState(false)
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
+  const [timeRangeSelected, setTimeRangeSelected] = useState<string>('')
+  const [isOpenSetting, setIsOpenSetting] = useState(false)
 
   const timeRanges = [
     { label: '1 Week', value: '1w' },

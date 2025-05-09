@@ -1,11 +1,11 @@
 import { Tabs, Tab, Box } from '@mui/material'
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState, ReactNode, SyntheticEvent } from 'react'
 
 import theme from '@/theming'
 
 interface TabItem {
-  label: React.ReactNode
-  content: React.ReactNode
+  label: ReactNode
+  content: ReactNode
 }
 
 interface MITabsProps {
@@ -17,7 +17,7 @@ interface MITabsProps {
   size?: 'h70' | 'h52' | 'h42' | 'h38'
 }
 
-function CustomTabPanel(props: Readonly<{ children?: React.ReactNode; value: number; index: number }>) {
+function CustomTabPanel(props: Readonly<{ children?: ReactNode; value: number; index: number }>) {
   const { children, value, index, ...other } = props
 
   return (
@@ -37,7 +37,7 @@ export default function MITabs({
 }: Readonly<MITabsProps>) {
   const [value, setValue] = useState(initialValue)
 
-  const handleChange = (_: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (_: SyntheticEvent, newValue: number) => {
     setValue(newValue)
     onChange?.(newValue)
   }
