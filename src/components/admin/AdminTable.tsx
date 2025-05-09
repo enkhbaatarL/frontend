@@ -135,6 +135,7 @@ export interface ActionItem {
   label: string
   icon: JSX.Element
   onClick: () => void | Promise<void>
+  disabled?: boolean
 }
 
 export interface AdminActionCellProps {
@@ -185,6 +186,7 @@ export const AdminTableAction = ({ actions }: AdminActionCellProps) => {
               action.onClick()
               handleClose()
             }}
+            disabled={action.disabled}
           >
             <ListItemIcon sx={{ minWidth: '20px !important', marginRight: 2, color: 'gray.60' }}>{action.icon}</ListItemIcon>
             {action.label}

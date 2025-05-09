@@ -18,6 +18,7 @@ import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerC
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
 import AdminCustomerCompanyManagementOwnerCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementOwnerCompaniesPage.tsx'
 import AdminCustomerCompanyProductDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyProductDetailPage'
+import AdminDataProviderProductDetailPage from '@/pages/admin/dataProviders/AdminDataProviderProductDetailPage'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
 import AdminMemberManagementManagersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementManagerRegistrationPage'
@@ -193,7 +194,29 @@ const AdminRoutes: ICustomRouteObject = {
         {
           path: 'list',
           label: '데이터 프로바이더 목록',
-          element: <AdminDataProvidersListPage />,
+          children: [
+            {
+              index: true,
+              element: <AdminDataProvidersListPage />,
+            },
+            {
+              path: 'product-detail',
+              label: '상품 상세',
+              hidden: true,
+              hasBack: true,
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to=".." replace />,
+                },
+                {
+                  path: ':providerNo/:goodsNo',
+                  hidden: true,
+                  element: <AdminDataProviderProductDetailPage />,
+                },
+              ],
+            },
+          ],
         },
         {
           path: 'data',
