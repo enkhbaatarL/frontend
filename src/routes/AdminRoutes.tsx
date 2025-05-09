@@ -18,6 +18,7 @@ import AdminCustomerCompanyManagementCompaniesPage from '@/pages/admin/customerC
 import AdminCustomerCompanyManagementCompaniesRegistrationPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementCompaniesRegistrationPage'
 import AdminCustomerCompanyManagementOwnerCompaniesPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyManagementOwnerCompaniesPage.tsx'
 import AdminCustomerCompanyProductDetailPage from '@/pages/admin/customerCompanyManagement/AdminCustomerCompanyProductDetailPage'
+import AdminDataProviderRegistrationPage from '@/pages/admin/dataProviders/AdminDataProviderRegistrationPage.tsx'
 import AdminDataProvidersDataPage from '@/pages/admin/dataProviders/AdminDataProvidersDataPage'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
 import AdminMemberManagementManagersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementManagerRegistrationPage'
@@ -199,6 +200,12 @@ const AdminRoutes: ICustomRouteObject = {
           path: 'data',
           label: '데이터 목록',
           element: <AdminDataProvidersDataPage />,
+        },
+        {
+          path: 'registration',
+          label: '데이터 프로바이더 등록',
+          element: <AdminDataProviderRegistrationPage />,
+          hidden: true,
         },
       ],
     },
