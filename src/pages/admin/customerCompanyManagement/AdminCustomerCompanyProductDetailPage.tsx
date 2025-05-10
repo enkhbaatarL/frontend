@@ -30,36 +30,30 @@ const AdminCustomerCompanyProductDetailPageHeader = (props: {
   changeMode: (value: boolean) => void
   onCancel: () => void
   onSave: () => void
-}) => {
-  const toogle = (value: boolean) => {
-    props.onChange(value)
-  }
-
-  return (
-    <Flex gap={4} align="center">
-      {props.editMode ? (
-        <Box display={'flex'} columnGap={'10px'}>
-          <AdminButton variant="outlined" color="secondary" size="h34" onClick={() => props.onCancel()}>
-            취소
-          </AdminButton>
-          <AdminButton variant="contained" color="primary" size="h34" onClick={() => props.onSave()}>
-            저장
-          </AdminButton>
-        </Box>
-      ) : (
-        <>
-          <FormControlLabel
-            control={<Switch defaultChecked checked={props.value} onChange={(e) => toogle(e.target.checked)} />}
-            label={props.label}
-          />
-          <AdminButton variant="contained" color="primary" size="h34" onClick={() => props.changeMode(true)}>
-            상세 권한 설정
-          </AdminButton>
-        </>
-      )}
-    </Flex>
-  )
-}
+}) => (
+  <Flex gap={4} align="center">
+    {props.editMode ? (
+      <Box display={'flex'} columnGap={'10px'}>
+        <AdminButton variant="outlined" color="secondary" size="h34" onClick={() => props.onCancel()}>
+          취소
+        </AdminButton>
+        <AdminButton variant="contained" color="primary" size="h34" onClick={() => props.onSave()}>
+          저장
+        </AdminButton>
+      </Box>
+    ) : (
+      <>
+        <FormControlLabel
+          control={<Switch defaultChecked checked={props.value} onChange={(e) => props.onChange(e.target.checked)} />}
+          label={props.label}
+        />
+        <AdminButton variant="contained" color="primary" size="h34" onClick={() => props.changeMode(true)}>
+          상세 권한 설정
+        </AdminButton>
+      </>
+    )}
+  </Flex>
+)
 
 const CustomPageTitle = (props: { isEdit: boolean; isActive: boolean }) => (
   <Box display="flex" alignItems="center" columnGap={'10px'}>
@@ -121,10 +115,6 @@ const AdminCustomerCompanyProductDetailPage = () => {
   const [isEditUsageBeginDate, setIsEditUsageBeginDate] = useState<boolean>(false)
   const [isEditUsageEndDate, setIsEditUsageEndDate] = useState<boolean>(false)
 
-  const toogle = () => {
-    setOpenConfirmActive(true)
-  }
-
   // 회사 권한 설정 상태
   const [companyPermission, setCompanyPermission] = useState<ICompanySetting>({
     isViewable: goodsDetailData?.companySetting ? goodsDetailData.companySetting.isViewable : false,
@@ -154,7 +144,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
           onSave={() => setOpenSaveConfirm(true)}
           onCancel={() => setOpenCancelConfirm(true)}
           value={isActive}
-          onChange={toogle}
+          onChange={() => setOpenConfirmActive(true)}
           label={isActive ? '사용' : '미사용'}
         />,
       )
@@ -259,14 +249,17 @@ const AdminCustomerCompanyProductDetailPage = () => {
   const handlePermissionChange = (e: ChangeEvent<HTMLInputElement>, row: IDetail, type?: boolean) => {
     const { checked, name } = e.target
     const userNo = row.userNo
-
     const targetUser = userPermissions?.detail?.find((user: IDetail) => user.userNo === userNo)
     if (!targetUser) return
 
     const newPermission = {
       userNo: targetUser.userNo,
-      isViewable: name === 'isViewable' ? checked : targetUser.isViewable,
-      isDownloadable: name === 'isDownloadable' ? checked : targetUser.isDownloadable,
+      isViewable: goodsDetailData?.companySetting ? checkList[userNo].isViewable : name === 'isViewable' ? checked : targetUser.isViewable,
+      isDownloadable: goodsDetailData?.companySetting
+        ? checkList[userNo].isDownloadable
+        : name === 'isDownloadable'
+          ? checked
+          : targetUser.isDownloadable,
       usageBeginDate: type ? dayjs().format('YYYYMMDD') : targetUser.usageBeginDate,
       usageEndDate: type ? dayjs().add(10, 'year').endOf('year').format('YYYYMMDD') : targetUser.usageEndDate,
     }
@@ -353,6 +346,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
         sortable: false,
         align: 'center',
         headerAlign: 'center',
+        name: 'isViewable',
         renderCell: (params) =>
           goodsDetailData?.goodsAuthManagementSeparateCd === 'INDIVIDUAL' ? (
             <MICheckBox
@@ -383,6 +377,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
         sortable: false,
         align: 'center',
         headerAlign: 'center',
+        name: 'isDownloadable',
         renderCell: (params) =>
           goodsDetailData?.goodsAuthManagementSeparateCd === 'INDIVIDUAL' ? (
             <MICheckBox
@@ -566,8 +561,15 @@ const AdminCustomerCompanyProductDetailPage = () => {
                     }
                     label="조회"
                     onChange={(e) => {
-                      setCompanyPermission((prev) => ({ ...prev, isViewable: e.target.checked }))
+                      const checked = e.target.checked
+                      // setCompanyPermission((prev) => ({ ...prev, isViewable: e.target.checked }))
+                      setCompanyPermission((prev) => ({
+                        ...prev,
+                        isViewable: checked,
+                        isDownloadable: !checked ? false : prev.isDownloadable,
+                      }))
                       setIsEditViewable(true)
+                      if (!checked) setIsEditDownloadable(false)
                     }}
                   />
                   <AdminCheckboxField
@@ -588,8 +590,14 @@ const AdminCustomerCompanyProductDetailPage = () => {
                     }
                     label="다운로드"
                     onChange={(e) => {
-                      setCompanyPermission((prev) => ({ ...prev, isDownloadable: e.target.checked }))
+                      const checked = e.target.checked
+                      setCompanyPermission((prev) => ({
+                        ...prev,
+                        isDownloadable: checked,
+                        isViewable: checked ? true : prev.isViewable,
+                      }))
                       setIsEditDownloadable(true)
+                      if (checked) setIsEditViewable(true)
                     }}
                   />
                 </Flex>
@@ -612,16 +620,16 @@ const AdminCustomerCompanyProductDetailPage = () => {
                     size="h26"
                     value={(() => {
                       const year =
-                        goodsDetailData?.companySetting.usageBeginDate && !isEditUsageBeginDate
-                          ? goodsDetailData?.companySetting.usageBeginDate.slice(0, 4)
+                        goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
+                          ? goodsDetailData?.companySetting?.usageBeginDate.slice(0, 4)
                           : companyPermission?.usageBeginDate?.slice(0, 4)
                       const month =
-                        goodsDetailData?.companySetting.usageBeginDate && !isEditUsageBeginDate
-                          ? goodsDetailData?.companySetting.usageBeginDate.slice(4, 6)
+                        goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
+                          ? goodsDetailData?.companySetting?.usageBeginDate.slice(4, 6)
                           : companyPermission?.usageBeginDate?.slice(4, 6)
                       const day =
-                        goodsDetailData?.companySetting.usageBeginDate && !isEditUsageBeginDate
-                          ? goodsDetailData?.companySetting.usageBeginDate.slice(6, 8)
+                        goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
+                          ? goodsDetailData?.companySetting?.usageBeginDate.slice(6, 8)
                           : companyPermission?.usageBeginDate?.slice(6, 8)
 
                       return dayjs(`${year}-${month}-${day}`)
@@ -641,16 +649,16 @@ const AdminCustomerCompanyProductDetailPage = () => {
                     size="h26"
                     value={(() => {
                       const year =
-                        goodsDetailData?.companySetting.usageEndDate && !isEditUsageEndDate
-                          ? goodsDetailData?.companySetting.usageEndDate.slice(0, 4)
+                        goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
+                          ? goodsDetailData?.companySetting?.usageEndDate.slice(0, 4)
                           : companyPermission?.usageEndDate?.slice(0, 4)
                       const month =
-                        goodsDetailData?.companySetting.usageEndDate && !isEditUsageEndDate
-                          ? goodsDetailData?.companySetting.usageEndDate.slice(4, 6)
+                        goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
+                          ? goodsDetailData?.companySetting?.usageEndDate.slice(4, 6)
                           : companyPermission?.usageEndDate?.slice(4, 6)
                       const day =
-                        goodsDetailData?.companySetting.usageEndDate && !isEditUsageEndDate
-                          ? goodsDetailData?.companySetting.usageEndDate.slice(6, 8)
+                        goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
+                          ? goodsDetailData?.companySetting?.usageEndDate.slice(6, 8)
                           : companyPermission?.usageEndDate?.slice(6, 8)
 
                       return dayjs(`${year}-${month}-${day}`)
