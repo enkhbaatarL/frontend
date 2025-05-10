@@ -21,10 +21,10 @@ const AdminSearchFilter = ({ children, onSearch, onReset, disabledSearch, disabl
 
   return (
     <Flex className="AdminSearchFilter" align="end" justify="space-between" gap={20}>
-      <Flex align="center" wrap="wrap" gap={12} onKeyUp={handleKeyPress}>
+      <Flex className="AdminSearchFilterField" align="center" wrap="nowrap" gap={12} onKeyUp={handleKeyPress}>
         {children}
       </Flex>
-      <Flex gap={12}>
+      <Flex className="AdminSearchFilterButton" gap={12}>
         <MIButton color="primary" size="h34" onClick={onSearch} disabled={disabledSearch}>
           {t('검색')}
         </MIButton>

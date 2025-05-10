@@ -73,9 +73,9 @@ const AdminField = ({
     onChange?.(event.target.checked)
   }
 
-  const handleChangeFile = (files: (File | FileInfo)[]) => {
-    if (typeof onChange === 'function') onChange?.(files)
-  }
+  // const handleChangeFile = (files: (File | FileInfo)[]) => {
+  //   if (typeof onChange === 'function') onChange?.(files)
+  // }
 
   return (
     <FormControl fullWidth={fullWidth}>
@@ -166,7 +166,7 @@ const AdminField = ({
           acceptedTypes={acceptedType}
           multiple={multiple}
           defaultFiles={defaultFiles}
-          onChange={handleChangeFile}
+          // onChange={handleChangeFile}
         />
       )}
 

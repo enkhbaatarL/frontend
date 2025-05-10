@@ -11,31 +11,31 @@ export const useMockMarket = () => {
   const data = useMemo<TableData[]>(
     () => [
       {
-        dataProvider: 'LSEG',
+        dataProvider: 'LSEG 1',
         dataName: 'Global Semiconductor Revenue ($B)',
         description: 'Global Semiconductor Revenue ($B)',
         lastUpdated: '2025-04-26 12:00:00',
       },
       {
-        dataProvider: 'LSEG',
+        dataProvider: 'LSEG 2',
         dataName: 'DRAM ASP ($ per Gb)',
         description: 'DRAM ASP ($ per Gb)',
         lastUpdated: '2025-04-26 12:00:00',
       },
       {
-        dataProvider: 'LSEG',
+        dataProvider: 'LSEG 3',
         dataName: 'NAND ASP ($ per Gb)',
         description: 'NAND ASP ($ per Gb)',
         lastUpdated: '2025-04-26 12:00:00',
       },
       {
-        dataProvider: 'LSEG',
+        dataProvider: 'LSEG 4',
         dataName: '12-inch Wafer Price ($ per Wafer)',
         description: '12-Inch Wafer Price ($ per Wafer)',
         lastUpdated: '2025-04-26 12:00:00',
       },
       {
-        dataProvider: 'LSEG',
+        dataProvider: 'LSEG 5',
         dataName: 'Fab Utilization Rate (%)',
         description: 'Fab Utilization Rate (%)',
         lastUpdated: '2025-04-26 12:00:00',

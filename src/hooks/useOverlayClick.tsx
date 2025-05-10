@@ -44,7 +44,7 @@ export function useOverlayClick<T extends HTMLElement = HTMLElement>({
   open,
   onClose,
   setAnchorEl,
-  zIndex = 1300,
+  zIndex = 1000,
   borderRadius = 1,
 }: UseOverlayClickProps<T>) {
   const triggerRef = useRef<T | null>(null)

@@ -27,6 +27,7 @@ type MISelectProps = {
   fullWidth?: boolean
   value?: string | number
   disabled?: boolean
+  readOnly?: boolean
   onChange?: (e: { target: { value: string | number | (string | number)[] } }) => void
   options?: readonly OptionType[]
   useAllOption?: boolean
@@ -76,9 +77,9 @@ const CustomArrowIcon = ({
         alignItems: 'center',
         cursor: 'pointer',
         borderRadius: '4px',
-        backgroundColor: open ? '#F0F3F6' : 'transparent',
+        backgroundColor: open ? theme.palette.content['backgroundHover'] : 'transparent',
         '&:hover': {
-          backgroundColor: '#F0F3F6',
+          backgroundColor: theme.palette.content['backgroundHover'],
         },
         svg: {
           position: 'unset',
@@ -104,10 +105,11 @@ const MISelect = ({
   multiple,
   showValue = true,
   minWidth = 200,
-  sizeSelect = 'h36',
+  sizeSelect = 'h34',
   sx,
   value,
   disabled,
+  readOnly,
   onChange,
   options,
   useAllOption = true,
@@ -179,7 +181,7 @@ const MISelect = ({
         height: 'auto',
         ...getSizeStyle(sizeSelect),
         '&:focus': {
-          outline: '1px solid #2E3F5E',
+          outline: `1px solid ${theme.palette.content['borderActivePrimary']}`,
         },
         ...(sizeSelect === 'h26' && { borderRadius: '4px' }),
       },
@@ -225,11 +227,13 @@ const MISelect = ({
         clearIcon={<MIInputClearIcon />}
         clearOnEscape
         disabled={disabled}
+        readOnly={readOnly}
         multiple={multiple}
         options={options ?? []}
         open={open}
         onOpen={() => setOpen(true)}
         onClose={() => setOpen(false)}
+        noOptionsText="결과 없음"
         value={selected}
         onInputChange={(_event, newInputValue) => {
           setInputValue(newInputValue)
@@ -258,13 +262,14 @@ const MISelect = ({
         popupIcon={<CustomArrowIcon open={open} size={sizeSelect} />}
         renderInput={(params) => (
           <AdminTextField
+            className={readOnly ? 'select-readonly' : ''}
             {...params}
             placeholder={finalPlaceholder}
             sx={inputSx}
             slotProps={{
               input: {
                 ...params.InputProps,
-                // disableUnderline: true,
+                disableUnderline: true,
               },
             }}
             onFocus={() => setIsFocused(true)}
@@ -299,7 +304,9 @@ const MISelect = ({
               },
 
               '& .MuiAutocomplete-noOptions': {
-                ...theme.typography.body2M14,
+                ...theme.typography.body2R14,
+                padding: '16px 12px',
+                color: theme.palette.gray[50],
               },
             },
           },

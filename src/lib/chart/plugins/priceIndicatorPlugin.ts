@@ -90,8 +90,6 @@ const priceIndicatorPlugin: PriceIndicatorPlugin = {
         const VALUE_BOX_HEIGHT = 21
         const VALUE_MARGIN = 6
 
-        console.log(this.focusedPoints)
-
         this.focusedPoints.forEach((p) => {
           if (['Upper BB', 'Lower BB'].includes(p.label ?? '')) return
 

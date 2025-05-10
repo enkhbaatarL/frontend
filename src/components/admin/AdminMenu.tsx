@@ -197,6 +197,7 @@ const AdminMenuItem = ({ drawerOpen, item, depth = 0, className }: MenuItemProps
             </Flex>
             {hasChildren && drawerOpen && (
               <IconButton
+                disableRipple
                 sx={{
                   p: '4px',
                   boxSizing: 'border-box',

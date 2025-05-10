@@ -4,7 +4,7 @@ const ThemeTextField: Components<Omit<Theme, 'components'>>['MuiTextField'] = {
   styleOverrides: {
     root: ({ theme, ownerState }) => ({
       backgroundColor: '#fff',
-      minWidth: '200px',
+      minWidth: '0',
       fontWeight: '400',
       lineHeight: 1.4,
       boxSizing: 'border-box',
@@ -61,6 +61,16 @@ const ThemeTextField: Components<Omit<Theme, 'components'>>['MuiTextField'] = {
           '& .MuiInputBase-input': {
             color: theme.palette.content['textDisabled'],
           },
+          '.MuiAutocomplete-endAdornment': {
+            '.MuiButtonBase-root': {
+              '.MuiSvgIcon-root': {
+                color: theme.palette.content['iconDisabled'],
+                path: {
+                  fill: theme.palette.content['iconDisabled'],
+                },
+              },
+            },
+          },
           '.MuiInputAdornment-root': {
             '.MuiIconButton-edgeEnd': {
               backgroundColor: theme.palette.content['backgroundHover'],
@@ -92,7 +102,7 @@ const ThemeTextField: Components<Omit<Theme, 'components'>>['MuiTextField'] = {
           },
         },
         '&.MuiAutocomplete-inputRoot': {
-          paddingRight: '32px !important',
+          //paddingRight: '32px !important',
           '.MuiAutocomplete-clearIndicator': {
             display: 'none',
           },

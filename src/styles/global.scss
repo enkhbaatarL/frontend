@@ -165,6 +165,20 @@ fieldset{
   border-top: 1px solid #DCE1E5;
   border-bottom: 1px solid #DCE1E5;
   background: color.$gray-5;
+  .AdminSearchFilterField{
+    flex-grow: 1;
+    max-width: 995px;
+    >.MuiBox-root{
+      flex: 1;
+      max-width: 189px;
+      .BoxInput{
+        width: 100%;
+      }
+    }
+  }
+  .AdminSearchFilterButton{
+    width: 103px;
+  }
 }
 .disable-cell{
   color: #ADB5BD;
@@ -203,18 +217,18 @@ fieldset{
     visibility: hidden;
   }
 }
-.dataGridAdmin.MuiDataGrid-root{
-  .MuiDataGrid-row:hover{
-    background: #F8F9FA !important;
-    font-weight: 600;
-    * {
-      font-weight: 600;
-    }
-  }
-  .cellAction{
-    padding: 6px;
-  }
-}
+//.dataGridAdmin.MuiDataGrid-root{
+//  .MuiDataGrid-row:hover{
+//    background: #F8F9FA !important;
+//    font-weight: 600;
+//    * {
+//      font-weight: 600;
+//    }
+//  }
+//  .cellAction{
+//    padding: 6px;
+//  }
+//}
 
 input::placeholder, textarea::placeholder {
   opacity: 1 !important;
@@ -302,11 +316,65 @@ input::placeholder, textarea::placeholder {
     transform: translateY(0)
   }
 }
-
-.mui-list-open{
-  overflow: unset !important;
-  padding-right: 0 !important;
+.pdf-page-number{
+  text-align: center;
+  background-color: #212529;
+  border: 1px solid #212529;
+  padding: 4px 8px;
+  width: 44px;
+  height: 25px;
+  box-sizing: border-box;
+  outline: none;
+  color: #CED4DA;
+  font-size: 14px;
+  font-weight: 500;
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  &:hover {
+    border-color: #495057;
+  }
+  &:focus {
+    border-color: #495057;
+    color: #F8F9FA;
+    background: #101214;
+  }
 }
+
+.mui-list-open-search {
+  //overflow: hidden !important;
+  //padding-right: 17px !important;
+  .main-header {
+    .GNBTop {
+      padding-right: 45px;
+    }
+
+    header {
+      padding-right: 45px;
+    }
+
+
+  }
+}
+
+.mui-list-open {
+  //overflow: hidden !important;
+  //padding-right: 17px !important;
+  .main-header {
+    .GNBTop {
+      padding-right: 45px;
+    }
+
+    header {
+      padding-right: 45px;
+    }
+
+  }
+
+}
+
 .select-readonly{
   .MuiInputBase-root{
     border-color: #E9ECEF !important;

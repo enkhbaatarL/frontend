@@ -57,12 +57,21 @@ const ScrollWrapper = ({
     if (!container) return () => {}
 
     syncThumb()
+
     container.addEventListener('scroll', syncThumb)
     window.addEventListener('resize', syncThumb)
+
+    // Observe container height changes
+    const resizeObserver = new ResizeObserver(() => {
+      syncThumb()
+    })
+
+    resizeObserver.observe(container)
 
     return () => {
       container.removeEventListener('scroll', syncThumb)
       window.removeEventListener('resize', syncThumb)
+      resizeObserver.disconnect()
     }
   }, [children, syncThumb])
 

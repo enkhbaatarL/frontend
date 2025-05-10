@@ -1,6 +1,6 @@
 import { Box, InputAdornment, TextField, TextFieldProps, Tooltip, Typography } from '@mui/material'
 import { t } from 'i18next'
-import { ChangeEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import MIInputClearIcon from '@/components/common/input/MIInputClearIcon'
 import MIInputErrorIcon from '@/components/common/input/MIInputErrorIcon'
@@ -23,6 +23,7 @@ export interface MIInputProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   contentWidth?: number
   onClear?: () => void
   appendContent?: string
+  onFocusInput?: () => void
 }
 
 const MIInput = ({
@@ -40,20 +41,30 @@ const MIInput = ({
   appendContent,
   variant = 'inForm',
   onClear,
+  onFocusInput,
   ...props
 }: MIInputProps) => {
   const [innerValue, setInnerValue] = useState<string>(String(value) || '')
   const { ref: containerRef, isFocus, registerClickOutListener } = useCheckFocus()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    setInnerValue(value ? value.toString() : '')
+    if (maxLength && typeof value === 'string' && value.length >= maxLength) return
+    setInnerValue(value ? String(value) : '')
   }, [value])
 
   const handleInput = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       if (maxLength && e.target.value.length > maxLength) return
       setInnerValue(e.target.value)
-      props.onInput?.(e)
+
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+
+      debounceRef.current = setTimeout(() => {
+        props.onChange?.(e)
+      }, 300)
     },
     [maxLength, props],
   )
@@ -67,10 +78,18 @@ const MIInput = ({
     [maxLength, props],
   )
 
+  const handleFocus = useCallback(() => {
+    if (onFocusInput) {
+      onFocusInput()
+    }
+    registerClickOutListener()
+  }, [innerValue])
+
   const styleBaseSize = useMemo(() => {
     switch (size) {
       case 'h26':
         return {
+          height: props.multiline ? 'auto' : '26px',
           padding: '4px 11px',
           ...theme.typography.body3R12,
           '& input': {
@@ -79,6 +98,7 @@ const MIInput = ({
         }
       case 'h34':
         return {
+          height: props.multiline ? 'auto' : '34px',
           padding: '6px 11px',
           ...theme.typography.body2R14,
           '& input': {
@@ -87,6 +107,7 @@ const MIInput = ({
         }
       case 'h36':
         return {
+          height: props.multiline ? 'auto' : '36px',
           padding: '7px 11px',
           ...theme.typography.body2R14,
           '& input': {
@@ -95,6 +116,7 @@ const MIInput = ({
         }
       case 'h46':
         return {
+          height: props.multiline ? 'auto' : '46px',
           padding: '10px 12px',
           ...theme.typography.body2R14,
           '& input': {
@@ -112,6 +134,7 @@ const MIInput = ({
       // Default size is h34
       default:
         return {
+          height: props.multiline ? 'auto' : '34px',
           padding: '6px 11px',
           ...theme.typography.body3R14,
           '& input': {
@@ -119,12 +142,13 @@ const MIInput = ({
           },
         }
     }
-  }, [size])
+  }, [props.multiline, size])
 
   const inputProps = useMemo(() => {
     const defaultProps: Record<string, string | ReactNode> = {
       readOnly,
     }
+
     defaultProps.endAdornment = (
       <InputAdornment position="end" sx={{ cursor: 'pointer' }}>
         {isFocus && !readOnly && innerValue && !props.error && !props.multiline && (
@@ -133,15 +157,11 @@ const MIInput = ({
             height={size === 'h46' ? 20 : 16}
             onClick={() => {
               setInnerValue('')
-              if (onClear) {
-                onClear()
-              } else {
-                props.onChange?.({
-                  target: {
-                    value: '',
-                  },
-                } as ChangeEvent<HTMLInputElement>)
-              }
+              props.onChange?.({
+                target: {
+                  value: '',
+                },
+              } as ChangeEvent<HTMLInputElement>)
             }}
           />
         )}
@@ -150,7 +170,11 @@ const MIInput = ({
             <MIInputErrorIcon width={16} height={16} />
           </Tooltip>
         )}
-        {endIcon}
+        {endIcon && (
+          <Box className="end-icon-wrapper" p={'4px'}>
+            {endIcon}
+          </Box>
+        )}
       </InputAdornment>
     )
 
@@ -163,10 +187,21 @@ const MIInput = ({
     }
 
     return defaultProps
-  }, [readOnly, isFocus, innerValue, props, size, variant, errorMessage, endIcon, startIcon, maxLength, onClear])
+  }, [readOnly, isFocus, innerValue, props, size, variant, errorMessage, endIcon, startIcon, maxLength])
 
   return (
-    <Box ref={containerRef} maxWidth={props.maxWidth} minWidth={props.minWidth} width={props.width}>
+    <Box
+      className={'BoxInput'}
+      ref={containerRef}
+      maxWidth={props.maxWidth}
+      minWidth={props.minWidth}
+      width={props.width}
+      sx={{
+        svg: {
+          display: 'block',
+        },
+      }}
+    >
       <Box display={'flex'} alignItems={'center'}>
         <TextField
           fullWidth
@@ -174,7 +209,7 @@ const MIInput = ({
           hiddenLabel
           placeholder={t('입력하세요.')}
           value={innerValue}
-          onFocus={registerClickOutListener}
+          onFocus={handleFocus}
           minRows={4.3}
           maxRows={11.8}
           slotProps={{
@@ -194,9 +229,19 @@ const MIInput = ({
               '.MuiInputAdornment-root': {
                 marginRight: 0,
               },
-              // '&:hover' : {
-              //   borderColor: theme.palette.content['borderHover']
-              // }
+              '& .end-icon-wrapper': {
+                borderRadius: '4px',
+                marginLeft: '8px',
+              },
+              '& .end-icon-wrapper svg path': {
+                fill: '#868E96',
+              },
+              '&:hover .end-icon-wrapper': {
+                backgroundColor: theme.palette.content.backgroundHover,
+              },
+              '&:hover .end-icon-wrapper svg path': {
+                fill: theme.palette.gray[80],
+              },
             },
             '& .MuiInputBase-root .MuiSvgIcon-root': {
               marginRight: 2,
@@ -207,6 +252,9 @@ const MIInput = ({
               //borderColor: theme.palette.content['borderActivePrimary'],
               '.MuiInputAdornment-root': {
                 marginRight: 0,
+                '.end-icon-wrapper': {
+                  backgroundColor: theme.palette.content.backgroundHover,
+                },
                 'svg:last-child': {
                   color: theme.palette.content['iconActive'],
                   path: {
@@ -244,7 +292,6 @@ const MIInput = ({
               width: '100%',
             },
             '& .MuiInputBase-input': {
-              width: contentWidth ? `${contentWidth}px` : 'auto',
               borderRadius: '0',
               padding: 0,
               '&::placeholder': {

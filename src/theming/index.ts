@@ -47,10 +47,17 @@ declare module '@mui/material/IconButton' {
 
 declare module '@mui/material/styles' {
   interface TypographyVariants {
+    heading0: CSSProperties
     heading1: CSSProperties
     heading2: CSSProperties
+    heading3: CSSProperties
+    heading4: CSSProperties
+    subtext0: CSSProperties
     subtext1: CSSProperties
     subtext2: CSSProperties
+    subtext3: CSSProperties
+    subtext4: CSSProperties
+    subtext5: CSSProperties
     body1: CSSProperties
     body1M16: CSSProperties
     body1SB16: CSSProperties
@@ -98,10 +105,17 @@ declare module '@mui/material/styles' {
 
   // allow configuration using `createTheme()`
   interface TypographyVariantsOptions {
+    heading0?: CSSProperties
     heading1?: CSSProperties
     heading2?: CSSProperties
+    heading3?: CSSProperties
+    heading4?: CSSProperties
+    subtext0?: CSSProperties
     subtext1?: CSSProperties
     subtext2?: CSSProperties
+    subtext3?: CSSProperties
+    subtext4?: CSSProperties
+    subtext5?: CSSProperties
     body1?: CSSProperties
     body1M16?: CSSProperties
     body1SB16?: CSSProperties
@@ -151,10 +165,17 @@ declare module '@mui/material/styles' {
 // Update the Typography's variant prop options
 declare module '@mui/material/Typography' {
   interface TypographyPropsVariantOverrides {
+    heading0: true
     heading1: true
     heading2: true
+    heading3: true
+    heading4: true
+    subtext0: true
     subtext1: true
     subtext2: true
+    subtext3: true
+    subtext4: true
+    subtext5: true
     body1: true
     body1M16: true
     body1SB16: true
@@ -280,6 +301,12 @@ const theme = createTheme({
   },
   spacing: 4, // 1 spacing = 4px
   typography: {
+    heading0: {
+      fontSize: '40px',
+      fontStyle: 'normal',
+      fontWeight: 700,
+      lineHeight: '1.4',
+    },
     heading1: {
       fontSize: '32px',
       fontStyle: 'normal',
@@ -292,6 +319,24 @@ const theme = createTheme({
       fontWeight: 700,
       lineHeight: '1.4',
     },
+    heading3: {
+      fontSize: '22px',
+      fontStyle: 'normal',
+      fontWeight: 700,
+      lineHeight: '1.4',
+    },
+    heading4: {
+      fontSize: '18px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.4',
+    },
+    subtext0: {
+      fontSize: '18px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.6',
+    },
     subtext1: {
       fontSize: '16px',
       fontStyle: 'normal',
@@ -303,6 +348,24 @@ const theme = createTheme({
       fontStyle: 'normal',
       fontWeight: 400,
       lineHeight: '1.4',
+    },
+    subtext3: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1.4',
+    },
+    subtext4: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.4',
+    },
+    subtext5: {
+      fontSize: '16px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.6',
     },
     body1: {
       fontSize: '16px',

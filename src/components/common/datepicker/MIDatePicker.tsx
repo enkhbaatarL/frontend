@@ -251,6 +251,7 @@ export default function MIDatePicker(props: DatePickerProps<Dayjs> & { size?: 'h
                 //border: `1px solid ${theme.palette.gray[30]}`,
                 //background: props.readOnly || props.disabled ? theme.palette.gray[10] : theme.palette.common.white,
                 paddingRight: 3,
+                caretColor: 'transparent',
 
                 '& svg': {
                   display: 'block',
@@ -277,12 +278,31 @@ export default function MIDatePicker(props: DatePickerProps<Dayjs> & { size?: 'h
                 },
 
                 '&:hover': {
-                  borderColor: theme.palette.primary.main,
+                  // borderColor: theme.palette.primary.main,
                   '& .mi-calendar__calendar-button': {
                     backgroundColor: theme.palette.content.backgroundHover,
                   },
                   '.mi-calendar__calendar-icon path': {
-                    fill: theme.palette.primary.main,
+                    fill: theme.palette.gray[80],
+                  },
+                },
+                '&.Mui-readOnly': {
+                  borderColor: theme.palette.content['borderDisabled'],
+                  backgroundColor: theme.palette.content['backgroundDisabled'],
+                  '& .MuiInputBase-input': {
+                    color: theme.palette.gray['70'],
+                  },
+                  '.MuiInputAdornment-root': {
+                    pointerEvents: 'none',
+                    '.mi-calendar__calendar-button': {
+                      backgroundColor: theme.palette.content['backgroundHover'],
+                      svg: {
+                        color: theme.palette.content['iconDisabled'],
+                        path: {
+                          fill: theme.palette.content['iconDisabled'],
+                        },
+                      },
+                    },
                   },
                 },
               },

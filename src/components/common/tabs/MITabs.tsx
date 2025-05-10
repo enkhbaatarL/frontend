@@ -73,11 +73,17 @@ export default function MITabs({
           padding: isNotice ? 1 : 0,
           borderRadius: isNotice ? 1 : 0,
           '.MuiTabs-indicator': {
-            display: isNotice ? 'none' : 'block',
+            display: isNotice || arrayItem.length === 1 ? 'none' : 'block',
           },
         }}
       >
-        <Tabs sx={{ minHeight: 'unset' }} value={value} onChange={handleChange}>
+        <Tabs
+          sx={{
+            minHeight: 'unset',
+          }}
+          value={value}
+          onChange={handleChange}
+        >
           {arrayItem.map((item, idx) => (
             <Tab
               key={idx}
@@ -104,9 +110,9 @@ export default function MITabs({
                   fontWeight: 600,
                 },
                 '&.Mui-selected': {
-                  color: isNotice ? '#212529' : '#2E3F5E',
+                  color: isNotice || arrayItem.length === 1 ? '#212529' : '#2E3F5E',
                   borderBottom: 0,
-                  fontWeight: 600,
+                  fontWeight: arrayItem.length === 1 ? 700 : 600,
                   backgroundColor: isNotice ? '#fff' : 'transparent',
                 },
               }}

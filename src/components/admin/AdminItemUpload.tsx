@@ -129,8 +129,8 @@ const AdminItemUpload = ({
           </>
 
           {!hideClose && (
-            <button type="button" className="upload-field-file-action" onClick={onDelete}>
-              <CloseIcon />
+            <button type="button" className="upload-field-file-action upload-field-file-action-del" onClick={onDelete}>
+              <CloseIcon width={20} height={20} />
             </button>
           )}
         </Flex>

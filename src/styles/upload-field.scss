@@ -89,6 +89,7 @@
     margin-bottom: 8px;
     background-color: #F8F9FA;
     box-sizing: border-box;
+    //width: 400px;
 }
 
 .upload-field-file-preview {
@@ -149,8 +150,26 @@
     font-weight: 500;
     width: 28px;
     height: 28px;
+
+}
+.upload-field-file-action-del{
+    svg{
+        color: #868E96;
+        transition: all 0.1s;
+        path {
+            fill: #868E96;
+            transition: all 0.1s;
+        }
+    }
     &:hover{
-        background: #fff;
+        svg{
+            color: #343A40;
+            transition: all 0.1s;
+            path {
+                fill: #343A40;
+                transition: all 0.1s;
+            }
+        }
     }
 }
 
@@ -169,12 +188,19 @@
         background: none;
         outline: none;
         cursor: pointer;
-        color: #ced4da;
+        color: #ADB5BD;
+        transition: all 0.1s;
         text-align: left;
         svg{
             vertical-align: sub;
             margin-right: 8px;
             color: #868E96;
+        }
+    }
+    &:hover {
+        border-color: #CED4DA;
+        button{
+            color: #495057;
         }
     }
 }
@@ -183,6 +209,11 @@
         pointer-events: none;
         border: 1px solid #E9ECEF;
         background-color: #F1F3F5;
+        button{
+            svg{
+                color: #CED4DA;
+            }
+        }
     }
 }
 .flex-grow-1{

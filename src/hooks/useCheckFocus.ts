@@ -22,6 +22,7 @@ export default function useCheckFocus() {
   return {
     ref,
     isFocus,
+    setIsFocus,
     registerClickOutListener,
   }
 }
