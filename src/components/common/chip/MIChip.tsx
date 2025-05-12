@@ -2,7 +2,7 @@ import { Chip, ChipProps, SxProps, Theme, Typography, TypographyProps } from '@m
 import { useCallback, useMemo } from 'react'
 
 type MIChipSize = 'h20' | 'h24'
-type MIChipColor = 'blue' | 'purple' | 'orange' | 'green' | 'green-climb' | 'red' | 'red-decline' | 'gray' | 'white'
+type MIChipColor = 'blue' | 'purple' | 'orange' | 'green' | 'green-climb' | 'red' | 'red-decline' | 'gray' | 'white' | 'gray-border'
 
 export interface MIChipProps extends Omit<ChipProps, 'size' | 'color'> {
   size?: MIChipSize
@@ -101,7 +101,12 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           backgroundColor: '#FFFFFF',
           borderColor: '#495057',
         }
-
+      if (color === 'gray-border')
+        return {
+          color: '#495057',
+          backgroundColor: '#FFFFFF',
+          borderColor: '#DEE2E6',
+        }
       return {}
     },
     [type],
