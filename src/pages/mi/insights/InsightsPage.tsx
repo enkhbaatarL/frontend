@@ -7,8 +7,8 @@ import MISelect from '@/components/common/select/MISelect'
 import MITablePagination from '@/components/common/table-user/MITablePagination'
 import { mockFilters } from '@/hooks/mockFilters'
 import { useMockReports } from '@/hooks/useMockReports'
-import InsightsCardBtn from '@/pages/user/Insights/components/InsightsCardBtn'
-import InsightsDocumentItem from '@/pages/user/Insights/components/InsightsDocumentItem'
+import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn.tsx'
+import InsightsDocumentItem from '@/pages/mi/insights/components/InsightsDocumentItem.tsx'
 
 const InsightsPage = () => {
   const reports = useMockReports()

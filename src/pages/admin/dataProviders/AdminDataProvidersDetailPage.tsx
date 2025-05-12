@@ -317,10 +317,8 @@ export default function AdminDataProvidersDetailPage() {
           getRowId={(row) => row.goodsNo}
           columns={columns}
           data={dataProviderGoods}
-          onRowClick={(row) => {
-            navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${row.row.goodsNo}`, {
-              state: { providerNm: data?.providerNm },
-            })
+          onRowClick={({ row }) => {
+            navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${row.goodsNo}`)
           }}
         />
       </Box>

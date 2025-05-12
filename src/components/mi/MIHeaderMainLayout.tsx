@@ -135,7 +135,7 @@ const MIHeaderMainLayout = () => {
               href=""
               onClick={(e) => {
                 e.preventDefault()
-                navigate('/mi/notice')
+                navigate('/mi/notices')
               }}
               color="gray.70"
               padding="4px 12px"

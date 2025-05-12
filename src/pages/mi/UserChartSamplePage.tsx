@@ -1,9 +1,8 @@
 import { Box, Tab, Tabs } from '@mui/material'
 import { useState } from 'react'
 
-import ChartComponent from '../user/datavisualization/components/ChartComponent'
-
 import SampleChart from '@/components/mi/chart/SampleChart'
+import ChartComponent from '@/pages/mi/dashboard/components/ChartComponent'
 
 const UserChartSamplePage = () => {
   const [tab, setTab] = useState(0)

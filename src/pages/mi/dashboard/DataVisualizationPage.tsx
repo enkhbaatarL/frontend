@@ -10,10 +10,11 @@ import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table-user/MITableUser'
-import ChartComponent from '@/pages/user/datavisualization/components/ChartComponent'
-import DescriptionComponent from '@/pages/user/datavisualization/components/DescriptionComponent'
-import DocumentComponent from '@/pages/user/datavisualization/components/DocumentComponent'
-import DocumentInfoComponent from '@/pages/user/datavisualization/components/DocumentInfoComponent'
+import ChartComponent from '@/pages/mi/dashboard/components/ChartComponent.tsx'
+import DescriptionComponent from '@/pages/mi/dashboard/components/DescriptionComponent.tsx'
+import DocumentComponent from '@/pages/mi/dashboard/components/DocumentComponent.tsx'
+import DocumentInfoComponent from '@/pages/mi/dashboard/components/DocumentInfoComponent.tsx'
+
 const DataVisualizationPage = () => {
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
