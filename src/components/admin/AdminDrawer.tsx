@@ -14,7 +14,7 @@ import AdminMenu from '@/components/admin/AdminMenu'
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIProfile from '@/components/common/profile/MIProfile'
 import { DRAWER_WIDTH } from '@/constants/admin'
-import { useAuth } from '@/contexts/AuthContext'
+import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
 
 const openedMixin = (theme: Theme): CSSObject => ({
@@ -76,7 +76,7 @@ const DrawerHeader = () => (
 
 const DrawerProfile = (props: { open: boolean }) => {
   const { open } = props
-  const { user } = useAuth()
+  const { user } = useAuthStore()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [isOpen, setIsOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)

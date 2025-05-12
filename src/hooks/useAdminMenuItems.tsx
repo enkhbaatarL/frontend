@@ -1,13 +1,13 @@
 import { t } from 'i18next'
 import { JSX, useMemo } from 'react'
 
-import { useAuth } from '@/contexts/AuthContext'
 import AdminRoutes from '@/routes/AdminRoutes'
 import { UserRole } from '@/service/admin/members'
+import useAuthStore from '@/store/useAuthStore'
 import { ICustomRouteObject } from '@/types/common'
 
 export const useAdminMenuItems = () => {
-  const { user } = useAuth()
+  const { user } = useAuthStore()
 
   const removeNavigateItems = (routes: ICustomRouteObject, parentPath: string = ''): ICustomRouteObject => {
     const currentPath = parentPath ? `${parentPath}/${routes.path}` : `/${routes.path}`

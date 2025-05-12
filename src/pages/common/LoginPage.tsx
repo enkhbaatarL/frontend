@@ -6,9 +6,8 @@ import { useNavigate } from 'react-router-dom'
 import MIButton from '@/components/common/button/MIButton'
 import Flex from '@/components/common/display/Flex'
 import MISelect from '@/components/common/select/MISelect'
-import { IUser, useAuth } from '@/contexts/AuthContext'
 import { UserRole } from '@/service/admin/members'
-import useAuthStore from '@/store/useAuthStore'
+import useAuthStore, { IUser } from '@/store/useAuthStore'
 
 interface ITokenPayload {
   sub: string
@@ -78,8 +77,7 @@ const LoginPage = () => {
   const isProd = false
 
   const navigate = useNavigate()
-  const { setUser } = useAuth()
-  const { setToken, clearToken } = useAuthStore()
+  const { setUser, setToken, clearAuth } = useAuthStore()
 
   const [devUser, setDevUser] = useState<string>(devTokens.user[0].value)
   const [devAdmin, setDevAdmin] = useState<string>(devTokens.admin[0].value)
@@ -102,8 +100,7 @@ const LoginPage = () => {
   )
 
   useEffect(() => {
-    setUser(null)
-    clearToken()
+    clearAuth()
   }, [])
 
   if (isProd) {

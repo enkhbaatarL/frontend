@@ -5,10 +5,10 @@ import Box from '@mui/material/Box'
 import { useEffect, useRef, useState } from 'react'
 
 import MIProfile from '@/components/common/profile/MIProfile'
-import { useAuth } from '@/contexts/AuthContext'
+import useAuthStore from '@/store/useAuthStore'
 
 const MIHeaderProfile = () => {
-  const { user } = useAuth()
+  const { user } = useAuthStore()
 
   const [anchorElUser, setAnchorElUser] = useState(false)
   const anchorEl = useRef<HTMLElement>(null)
