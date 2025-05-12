@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { useEffect, useState } from 'react'
-import { useLocation, useParams, useSearchParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
@@ -46,9 +46,8 @@ const AdminDataProviderProductDetailPageHeader = (props: { onChange: (value: boo
   </Stack>
 )
 
-const CustomPageTitle = (props: { label: string }) => (
+const CustomPageTitle = () => (
   <Box display="flex" alignItems="center" columnGap={'10px'}>
-    {props.label && <MIChip label={props.label} color={props.label === t('활성화') ? 'gray' : 'blue'} size="h24" />}
     <Typography color="gray.90" variant="heading2">
       {t('상품 상세')}
     </Typography>
@@ -311,11 +310,6 @@ const AdminDataProviderProductDetailPage = () => {
   const [openModifiedData, setOpenModifiedData] = useState(false)
   const [saveBtnDisabled, setSaveBtnDisabled] = useState(true)
 
-  const [searchParams] = useSearchParams()
-  const role = searchParams.get('role') || 'admin'
-  const status = searchParams.get('status') || ''
-  const isAdmin = role === 'admin'
-
   const editForm = useForm({
     defaultValues: {
       name: productDetailData?.goodsNm,
@@ -380,7 +374,7 @@ const AdminDataProviderProductDetailPage = () => {
             <Box>
               <Box display={'flex'} alignItems={'center'}>
                 <MIChip
-                  color="white"
+                  color="gray-border"
                   variant="outlined"
                   label={productDetailData.isPublic ? 'Public' : 'Private'}
                   sx={{ textTransform: 'capitalize', mr: '10px' }}
@@ -427,7 +421,7 @@ const AdminDataProviderProductDetailPage = () => {
           }}
         />,
       )
-      setCustomTitle(<CustomPageTitle label={!isAdmin ? status : ''} />)
+      setCustomTitle(<CustomPageTitle />)
     }
 
     return () => {
