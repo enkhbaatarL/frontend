@@ -79,6 +79,12 @@ export interface IProductCompanyPermissionInfo {
   downloadPermission: string
   auditInfo: IAuditInfo
 }
+export interface IUpdateProviderRequest {
+  providerNm: string
+  providerExpn: string
+  isUsed: boolean
+}
+
 const dataProviderService = {
   /**
    * 데이터 프로바이더명 목록을 조회합니다.
@@ -219,6 +225,18 @@ const dataProviderService = {
     )
 
     return response.data.data
+  },
+  /**
+   * 데이터 프로바이더 기본정보를 수정합니다.
+   * @param providerNo - 데이터 프로바이더 번호
+   * @param body - { providerNm: 데이터 프로바이더명, providerExpn: 데이터프로바이더 설명, isUsed: 사용상태 true }
+   */
+  async updateProvider(providerNo: number, body: IUpdateProviderRequest): Promise<ICommonResponse<null>> {
+    const response: AxiosResponse<ICommonResponse<null>> = await api.patch(`/admin/provider-management/providers/${providerNo}`, {
+      ...body,
+    })
+
+    return response.data
   },
 }
 
