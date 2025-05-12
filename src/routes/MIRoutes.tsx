@@ -43,7 +43,7 @@ const MIRoutes: RouteObject = {
       element: <MISignalMapPage />,
     },
     {
-      path: 'notice',
+      path: 'notices',
       element: <MINoticesPage />,
     },
     {
