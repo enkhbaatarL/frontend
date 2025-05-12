@@ -6,6 +6,7 @@ export interface IUser {
   role: UserRole
   userNo: string | null
   userNm: string | null
+  email: string | null
   companyNm: string | null
   departmentNm: string | null
 }

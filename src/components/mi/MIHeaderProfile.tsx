@@ -4,9 +4,12 @@ import { Typography } from '@mui/material'
 import Box from '@mui/material/Box'
 import { useEffect, useRef, useState } from 'react'
 
-import MIProfile from '@/components/common/profile/MIProfile.tsx'
+import MIProfile from '@/components/common/profile/MIProfile'
+import { useAuth } from '@/contexts/AuthContext'
 
 const MIHeaderProfile = () => {
+  const { user } = useAuth()
+
   const [anchorElUser, setAnchorElUser] = useState(false)
   const anchorEl = useRef<HTMLElement>(null)
 
@@ -86,7 +89,12 @@ const MIHeaderProfile = () => {
             }}
             className="profileMenu"
           >
-            <MIProfile name="홍길동" email="gildong.hong@sk.com" company="SK C&C" team="Market Intelligence팀" />
+            <MIProfile
+              name={user?.userNm ?? ''}
+              email={user?.email ?? ''}
+              company={user?.companyNm ?? ''}
+              team={user?.departmentNm ?? ''}
+            />
           </Box>
         )}
       </Box>

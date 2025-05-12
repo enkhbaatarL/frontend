@@ -14,6 +14,7 @@ import AdminMenu from '@/components/admin/AdminMenu'
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIProfile from '@/components/common/profile/MIProfile'
 import { DRAWER_WIDTH } from '@/constants/admin'
+import { useAuth } from '@/contexts/AuthContext'
 import theme from '@/theming'
 
 const openedMixin = (theme: Theme): CSSObject => ({
@@ -75,14 +76,17 @@ const DrawerHeader = () => (
 
 const DrawerProfile = (props: { open: boolean }) => {
   const { open } = props
+  const { user } = useAuth()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [isOpen, setIsOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null)
+
   const handleClose = () => {
     setAnchorEl(null)
     setIsOpen(false)
   }
+
   const handleClick = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
     setIsOpen(true)
@@ -119,10 +123,10 @@ const DrawerProfile = (props: { open: boolean }) => {
       {open && (
         <Box flex={1}>
           <Typography variant="body2" color="common.white">
-            홍길동
+            {user?.userNm}
           </Typography>
           <Typography variant="body6" fontWeight={500} color="coolGray.30">
-            Market Intelligence팀
+            {user?.departmentNm}
           </Typography>
         </Box>
       )}
@@ -174,7 +178,13 @@ const DrawerProfile = (props: { open: boolean }) => {
         open={isOpen}
         onClose={handleClose}
       >
-        <MIProfile name="홍길동" role="Admin" email="gildong.hong@sk.com" company="SK C&C" team="Market Intelligence팀" />
+        <MIProfile
+          name={user?.userNm ?? ''}
+          role={user?.role}
+          email={user?.email ?? ''}
+          company={user?.companyNm ?? ''}
+          team={user?.departmentNm ?? ''}
+        />
       </Menu>
     </Box>
   )

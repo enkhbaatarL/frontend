@@ -11,6 +11,7 @@ import { UserRole } from '@/service/admin/members'
 import useAuthStore from '@/store/useAuthStore'
 
 interface ITokenPayload {
+  sub: string
   iat: number
   userNo: number
   companyNo: number
@@ -24,11 +25,13 @@ const getUserInfo = (token: string): IUser | null => {
     const decoded = jwtDecode<ITokenPayload>(token)
 
     return {
+      // TODO: 실 데이터로 교체
       role: decoded.role,
       userNo: decoded.userNo.toString(),
-      userNm: null,
-      companyNm: null,
-      departmentNm: null,
+      userNm: '홍길동(테스트)',
+      email: decoded.sub,
+      companyNm: 'SK C&C',
+      departmentNm: 'Market Intelligence팀',
     }
   } catch (error) {
     console.error('token decoding error:', error)
@@ -164,7 +167,7 @@ const LoginPage = () => {
           <MIButton
             onClick={() => {
               setDevUserInfo(devOperator)
-              navigate('admin')
+              navigate('admin/data-providers/providers')
             }}
             width="120px"
           >

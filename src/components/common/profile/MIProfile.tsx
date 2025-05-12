@@ -1,14 +1,16 @@
 import { Box, Card, Stack, Typography } from '@mui/material'
+import { t } from 'i18next'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIChip from '@/components/common/chip/MIChip'
 import BusinessOutlineIcon from '@/components/common/icons/BusinessOutlineIcon'
 import CompanyOutlineIcon from '@/components/common/icons/CompanyOutlineIcon'
 import EmailOutlineIcon from '@/components/common/icons/EmailOutlineIcon'
+import { UserRole } from '@/service/admin/members'
 
 type MIProfileProps = {
   name: string
-  role?: string
+  role?: UserRole
   buttonLabel?: string
   email: string
   company: string
@@ -24,7 +26,14 @@ export default function MIProfile({ name, role, email, company, team, buttonLabe
           <Typography marginRight="8px" color="gray.90" variant="body1B16">
             {name}
           </Typography>
-          {role && <MIChip variant="filled" label={role} color={role === 'Admin' ? 'blue' : 'orange'} size="h24" />}
+          {role && (
+            <MIChip
+              variant="filled"
+              label={role === UserRole.ADMIN ? 'Admin' : t('운영자')}
+              color={role === UserRole.ADMIN ? 'blue' : 'orange'}
+              size="h24"
+            />
+          )}
         </Box>
       </Stack>
       <Stack gap={1.5}>

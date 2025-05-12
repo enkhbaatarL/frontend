@@ -1,10 +1,14 @@
 import { t } from 'i18next'
-import { JSX } from 'react'
+import { JSX, useMemo } from 'react'
 
+import { useAuth } from '@/contexts/AuthContext'
 import AdminRoutes from '@/routes/AdminRoutes'
+import { UserRole } from '@/service/admin/members'
 import { ICustomRouteObject } from '@/types/common'
 
 export const useAdminMenuItems = () => {
+  const { user } = useAuth()
+
   const removeNavigateItems = (routes: ICustomRouteObject, parentPath: string = ''): ICustomRouteObject => {
     const currentPath = parentPath ? `${parentPath}/${routes.path}` : `/${routes.path}`
 
@@ -31,7 +35,18 @@ export const useAdminMenuItems = () => {
     }
   }
 
-  return removeNavigateItems(AdminRoutes).children ?? []
+  const targetRoutes = useMemo(
+    () =>
+      user?.role === UserRole.OPERATOR
+        ? {
+          ...AdminRoutes,
+          children: AdminRoutes.children?.filter((child) => child.path && ['data-providers'].includes(child.path)),
+        }
+        : AdminRoutes,
+    [user?.role],
+  )
+
+  return removeNavigateItems(targetRoutes).children ?? []
 }
 
 export default useAdminMenuItems
