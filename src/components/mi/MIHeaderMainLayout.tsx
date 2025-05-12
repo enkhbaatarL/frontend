@@ -103,7 +103,7 @@ const MIHeaderMainLayout = () => {
               onChange={({ value, label }) => {
                 setSelectedCompany({
                   value: value as string,
-                  label: typeof label === 'string' ? label : '',
+                  label,
                 })
               }}
             >
@@ -185,37 +185,39 @@ const MIHeaderMainLayout = () => {
               >
                 <MenuIcon />
               </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorElNav}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'left',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'left',
-                }}
-                open={Boolean(anchorElNav)}
-                onClose={handleCloseNavMenu}
-                sx={{ display: { xs: 'block', md: 'none' } }}
-              >
-                {pages.map((page) => (
-                  <MenuItem
-                    disableRipple
-                    key={page.label}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      navigate(page.url)
-                    }}
-                  >
-                    <Typography sx={{ textAlign: 'center' }} color="gray.70" variant="body1M16">
-                      {page.label}
-                    </Typography>
-                  </MenuItem>
-                ))}
-              </Menu>
+              {Boolean(anchorElNav) && (
+                <Menu
+                  id="menu-appbar"
+                  anchorEl={anchorElNav}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                  }}
+                  keepMounted
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'left',
+                  }}
+                  open={Boolean(anchorElNav)}
+                  onClose={handleCloseNavMenu}
+                  sx={{ display: { xs: 'block', md: 'none' } }}
+                >
+                  {pages.map((page) => (
+                    <MenuItem
+                      disableRipple
+                      key={page.label}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        navigate(page.url)
+                      }}
+                    >
+                      <Typography sx={{ textAlign: 'center' }} color="gray.70" variant="body1M16">
+                        {page.label}
+                      </Typography>
+                    </MenuItem>
+                  ))}
+                </Menu>
+              )}
             </Box>
             <Box sx={{ display: { xs: 'flex', md: 'none' }, mr: 7.5 }}>
               <img width="150" src="/src/assets/logo.svg" alt="Market Intelligence" />
@@ -237,11 +239,19 @@ const MIHeaderMainLayout = () => {
                     borderRadius: 0,
                     '&:hover': {
                       backgroundColor: 'transparent',
-                      borderBottom: '2px solid #2E3F5E',
                       '.MuiTypography-root': {
                         color: '#2E3F5E',
                       },
                     },
+                    ...(page.url === location.pathname
+                      ? {
+                        backgroundColor: 'transparent',
+                        borderBottom: '2px solid #2E3F5E',
+                        '.MuiTypography-root': {
+                          color: '#2E3F5E',
+                        },
+                      }
+                      : {}),
                   }}
                 >
                   <Typography sx={{ textAlign: 'center' }} color="gray.70" variant="body1M16">

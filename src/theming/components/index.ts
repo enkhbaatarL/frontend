@@ -3,6 +3,7 @@ import ThemeBreadcrumbs from './ThemeBreadcrumbs.ts'
 import ThemeButton from './ThemeButton.ts'
 import ThemeCheckbox from './ThemeCheckbox.ts'
 import ThemeDialog from './ThemeDialog.ts'
+import ThemeFormControl from './ThemeFormControl'
 import ThemeFormControlLabel from './ThemeFormControlLabel.ts'
 import ThemeIconButton from './ThemeIconButton.ts'
 import ThemeLinearProgress from './ThemeLinearProgress.ts'
@@ -18,6 +19,7 @@ const components = {
   MuiAlert: ThemeAlert.MuiAlert,
   MuiAlertTitle: ThemeAlert.MuiAlertTitle,
   MuiButton: ThemeButton,
+  // MuiSelect: ThemeSelect.MuiSelect,
   MuiTextField: ThemeTextField,
   MuiList: ThemeSelect.MuiList,
   MuiMenuItem: ThemeSelect.MuiMenuItem,
@@ -28,6 +30,7 @@ const components = {
   MuiDialogContentText: ThemeDialog.MuiDialogContentText,
   MuiRadio: ThemeRadio,
   MuiFormControlLabel: ThemeFormControlLabel,
+  MuiFormControl: ThemeFormControl,
   MuiSkeleton: ThemeSkeleton,
   MuiBreadcrumbs: ThemeBreadcrumbs,
   MuiTooltip: ThemeTooltip,

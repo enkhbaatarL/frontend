@@ -4,11 +4,13 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { Badge, Box, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material'
 import Menu from '@mui/material/Menu'
 import { useState, MouseEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import MIButton from '@/components/common/button/MIButton'
-import MITabs from '@/components/common/tabs/MITabs'
-import useMockNotice from '@/hooks/useMockNotice'
+import MIButton from '@/components/common/button/MIButton.tsx'
+import NoticeIcon from '@/components/common/icons/NoticeIcon.tsx'
+import MITabs from '@/components/common/tabs/MITabs.tsx'
+import useMockNotice from '@/hooks/useMockNotice.tsx'
 
 interface NoticeItemProps {
   id: number
@@ -19,7 +21,7 @@ interface NoticeItemProps {
   isRead: boolean
   onClick?: (id: number) => void
 }
-const NoticeItem = ({ id, trend, title, subtitle, date, isRead, onClick }: NoticeItemProps) => (
+const AlertItem = ({ id, trend, title, subtitle, date, isRead, onClick }: NoticeItemProps) => (
   <ListItem
     onClick={() => onClick?.(id)}
     sx={{
@@ -101,7 +103,88 @@ const NoticeItem = ({ id, trend, title, subtitle, date, isRead, onClick }: Notic
     </Box>
   </ListItem>
 )
+
+const NoticeItem = ({ id, title, subtitle, date, isRead, onClick }: NoticeItemProps) => (
+  <ListItem
+    onClick={() => onClick?.(id)}
+    sx={{
+      padding: 5,
+      position: 'relative',
+      borderBottom: '1px solid #E9ECEF',
+      width: 'auto',
+      cursor: 'pointer',
+      transition: 'all 0.15s linear',
+      backgroundColor: isRead ? '#F8F9FA' : '#fff',
+      '.MuiTypography-root': {
+        transition: 'all 0.15s linear',
+      },
+      '&:hover': {
+        backgroundColor: isRead ? '#F1F3F5' : '#F8F9FA',
+        '.readText': {
+          '.MuiTypography-root': {
+            color: '#495057',
+          },
+        },
+      },
+    }}
+  >
+    <Box
+      sx={{
+        width: 6,
+        marginRight: '18px',
+      }}
+    >
+      {!isRead && (
+        <Box
+          sx={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            bgcolor: 'error.main',
+          }}
+        />
+      )}
+    </Box>
+
+    <ListItemAvatar
+      sx={{
+        marginRight: '12px',
+        width: '34px',
+        minWidth: 'unset',
+        height: '34px',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: isRead ? '#868E96' : '#2E3F5E',
+        backgroundColor: 'rgba(46, 63, 94, 0.05)',
+      }}
+    >
+      <NoticeIcon fontSize={'small'} />
+    </ListItemAvatar>
+    <ListItemText
+      sx={{ margin: 0 }}
+      className={isRead ? 'readText' : ''}
+      primary={
+        <Typography color={isRead ? 'gray.60' : 'gray.90'} variant="body2SB14" fontWeight={500}>
+          {title}
+        </Typography>
+      }
+      secondary={
+        <Typography variant="body2R14" color={isRead ? 'gray.60' : 'gray.70'} component="div">
+          {subtitle}
+        </Typography>
+      }
+    />
+    <Box sx={{ minHeight: '43px' }}>
+      <Typography variant="body3R12" color="gray.60">
+        {date}
+      </Typography>
+    </Box>
+  </ListItem>
+)
 const MIHeaderNotice = () => {
+  const navigate = useNavigate()
   const [anchorElNotice, setAnchorElNotice] = useState<null | HTMLElement>(null)
   const handleOpenNoticeMenu = (event: MouseEvent<HTMLElement>) => {
     setAnchorElNotice(event.currentTarget)
@@ -114,39 +197,64 @@ const MIHeaderNotice = () => {
     {
       label: 'Recent Alerts',
       content: (
-        <ScrollWrapper sx={{ margin: '0 -20px' }} maxHeight={638}>
-          {useMockNotice(10).map((notice) => (
-            <NoticeItem
-              id={notice.id}
-              key={notice.id}
-              trend={notice.trend}
-              title={notice.title}
-              subtitle={notice.subtitle}
-              date={notice.date}
-              isRead={notice.isRead}
-              onClick={(id) => console.log(id)}
-            />
-          ))}
-        </ScrollWrapper>
+        <>
+          <ScrollWrapper sx={{ margin: '0 -20px' }} maxHeight={556}>
+            {useMockNotice(10).map((notice) => (
+              <AlertItem
+                id={notice.id}
+                key={notice.id}
+                trend={notice.trend}
+                title={notice.title}
+                subtitle={notice.subtitle}
+                date={notice.date}
+                isRead={notice.isRead}
+                onClick={(id) => console.log(id)}
+              />
+            ))}
+          </ScrollWrapper>
+          <Box sx={{ margin: '0 -20px' }} borderTop={'1px solid #E9ECEF'} p={5}>
+            <MIButton width={'100%'} color={'gray'} type={'outlined'} contentType={'text'} size={'h42'}>
+              Manage My Alerts
+            </MIButton>
+          </Box>
+        </>
       ),
     },
     {
       label: 'Notice',
       content: (
-        <ScrollWrapper sx={{ margin: '0 -20px' }} maxHeight={638}>
-          {useMockNotice(5).map((notice) => (
-            <NoticeItem
-              id={notice.id}
-              key={notice.id}
-              trend={notice.trend}
-              title={notice.title}
-              subtitle={notice.subtitle}
-              date={notice.date}
-              isRead={notice.isRead}
-              onClick={(id) => console.log(id)}
-            />
-          ))}
-        </ScrollWrapper>
+        <>
+          <ScrollWrapper sx={{ margin: '0 -20px' }} maxHeight={638}>
+            {useMockNotice(5).map((notice) => (
+              <NoticeItem
+                id={notice.id}
+                key={notice.id}
+                trend={notice.trend}
+                title={notice.title}
+                subtitle={notice.subtitle}
+                date={notice.date}
+                isRead={notice.isRead}
+                onClick={(id) => console.log(id)}
+              />
+            ))}
+          </ScrollWrapper>
+          <Box sx={{ margin: '0 -20px' }} borderTop={'1px solid #E9ECEF'} p={5}>
+            <MIButton
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/mi/notice')
+                handleCloseNoticeMenu()
+              }}
+              width={'100%'}
+              color={'gray'}
+              type={'outlined'}
+              contentType={'text'}
+              size={'h42'}
+            >
+              More
+            </MIButton>
+          </Box>
+        </>
       ),
     },
   ]
@@ -165,44 +273,46 @@ const MIHeaderNotice = () => {
           <NotificationsIcon />
         </Badge>
       </MIButton>
-      <Menu
-        sx={{
-          mt: '42px',
-          '.MuiPaper-root': {
-            borderRadius: 1,
-            overflowY: 'hidden',
-            maxHeight: 'unset',
-          },
-          '.MuiList-root': {
-            border: '1px solid #DEE2E6',
-            padding: 5,
-            paddingBottom: 0,
-            borderRadius: 1,
-            width: '450px',
-            '.MuiListItem-root:last-child': {
-              border: 0,
+      {Boolean(anchorElNotice) && (
+        <Menu
+          sx={{
+            mt: '42px',
+            '.MuiPaper-root': {
+              borderRadius: 1,
+              overflowY: 'hidden',
+              maxHeight: 'unset',
             },
-            '@media(max-width: 767px)': {
-              width: '300px',
+            '.MuiList-root': {
+              border: '1px solid #DEE2E6',
+              padding: 5,
+              paddingBottom: 0,
+              borderRadius: 1,
+              width: '450px',
+              '.MuiListItem-root:last-child': {
+                border: 0,
+              },
+              '@media(max-width: 767px)': {
+                width: '300px',
+              },
             },
-          },
-        }}
-        anchorEl={anchorElNotice}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        className="profileMenu"
-        open={Boolean(anchorElNotice)}
-        onClose={handleCloseNoticeMenu}
-      >
-        <MITabs widthItem={'50%'} isNotice arrayItem={tabsData} />
-      </Menu>
+          }}
+          anchorEl={anchorElNotice}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          keepMounted
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          className="profileMenu"
+          open={Boolean(anchorElNotice)}
+          onClose={handleCloseNoticeMenu}
+        >
+          <MITabs widthItem={'50%'} isNotice arrayItem={tabsData} />
+        </Menu>
+      )}
     </>
   )
 }

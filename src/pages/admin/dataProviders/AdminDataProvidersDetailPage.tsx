@@ -1,22 +1,26 @@
 import { Box, Stack, Switch, Typography } from '@mui/material'
-import { GridRowParams } from '@mui/x-data-grid'
+import { GridColDef } from '@mui/x-data-grid'
 import { useForm, useStore } from '@tanstack/react-form'
-import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
+import { t } from 'i18next'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams } from 'react-router-dom'
 
-import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
+import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton.tsx'
 import AdminConfirm from '@/components/admin/AdminConfirm'
-import MIChip from '@/components/common/chip/MIChip'
+import AdminLoading from '@/components/admin/AdminLoading.tsx'
+import AdminTable from '@/components/admin/AdminTable.tsx'
 import DetailItem from '@/components/common/detail-item/DetailItem'
+import SearchIcon from '@/components/common/icons/SearchIcon.tsx'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import MIField from '@/components/common/input/MIField'
 import MIInput from '@/components/common/input/MIInput'
 import { uppercase, require } from '@/components/common/input/validators'
 import MITableCell from '@/components/common/table/MITableCell'
-import MITableLayout from '@/components/common/table/MITableLayout'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar.tsx'
-import { getMockTableData } from '@/utils/mock-data'
+import dataProviderService, { IProviderInfo } from '@/service/admin/dataProvider.ts'
 
 const AdminDataProvidersDetailPageHeaderButton = (props: { onChange: (value: boolean) => void; value: boolean; label: string }) => {
   const toggle = (value: boolean) => {
@@ -26,7 +30,7 @@ const AdminDataProvidersDetailPageHeaderButton = (props: { onChange: (value: boo
   return (
     <Stack direction="row" alignItems="center" sx={{ ml: 'auto' }}>
       <Switch
-        defaultChecked
+        checked={props.value}
         onChange={(e) => toggle(e.target.checked)}
         onContextMenu={(e) => {
           e.preventDefault()
@@ -42,42 +46,75 @@ const AdminDataProvidersDetailPageHeaderButton = (props: { onChange: (value: boo
   )
 }
 
-const CustomPageTitle = (props: { label: string }) => (
-  <Box display="flex" alignItems="center" columnGap={'10px'}>
-    {props.label && <MIChip label={props.label} color={props.label === '활성화' ? 'gray' : 'blue'} size="h24" />}
-    <Typography color="gray.90" variant="heading2">
-      데이터 프로바이더 상세
-    </Typography>
-  </Box>
-)
-
 export default function AdminDataProvidersDetailPage() {
-  const navigate = useNavigate()
   const { showSnackbar } = useSnackbar()
-  const { setCustomComponent, setSubHeader, setCustomTitle } = useAdminHeader()
+  const { setCustomComponent, setSubHeader } = useAdminHeader()
+  const { providerNo } = useParams()
   const [isActive, setIsActive] = useState(true)
-  const [selectedCompany, setSelectedCompany] = useState({
-    value: 'company1',
-    label: 'LSEG',
-  })
   const [openModifiedData, setOpenModifiedData] = useState(false)
   const [openEditingConfirm, setOpenEditingConfirm] = useState(false)
-  const [openActiveCofirm, setOpenActiveConfirm] = useState(false)
+  const [openActiveConfirm, setOpenActiveConfirm] = useState(false)
+  const [keyValue, setKeyValue] = useState<string>('')
+  const [keyword, setKeyword] = useState<string>('')
 
-  const [searchParams] = useSearchParams()
-  const role = searchParams.get('role') || 'admin'
-  const status = searchParams.get('status') || ''
-  const isAdmin = role === 'admin'
+  const { data, isLoading: dataProviderDetailIsLoading } = useQuery({
+    queryKey: ['providerDetail', providerNo],
+    queryFn: async () => await dataProviderService.getProviderDetail(Number(providerNo)),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!providerNo,
+  })
 
-  const toogle = () => {
-    setOpenActiveConfirm(true)
-  }
+  const { data: dataProvidersName, isLoading: dataProvidersNameIsLoading } = useQuery({
+    queryKey: ['dataProviderName'],
+    queryFn: async () => await dataProviderService.getProviders(),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+  })
+
+  const { data: dataProviderGoods, isLoading: dataProviderGoodsIsLoading } = useQuery({
+    queryKey: ['dataProviderGoods', providerNo, keyValue],
+    queryFn: async () =>
+      await dataProviderService.getProviderGoodsList(Number(providerNo), {
+        keyword: keyValue,
+        page: 1,
+        size: 20,
+      }),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!providerNo,
+  })
+
+  const providerOptions = useMemo(
+    () =>
+      (Array.isArray(dataProvidersName)
+        ? dataProvidersName?.map((provider: IProviderInfo) => ({
+          value: String(provider.providerNo),
+          label: provider.providerNm,
+        }))
+        : []) ?? [],
+    [dataProvidersName],
+  )
+
+  const initialProvider =
+    providerOptions.find((option) => option.value === providerNo) ||
+    (providerOptions.length > 0 ? providerOptions[0] : { value: '', label: '' })
+
+  const [selectedProvider, setSelectedProvider] = useState<{ value: string; label: string }>(initialProvider)
+
+  const isLoading = dataProviderDetailIsLoading || dataProvidersNameIsLoading || dataProviderGoodsIsLoading
 
   const editForm = useForm({
     defaultValues: {
-      name: 'LSEG',
-      code: 'RFTV',
-      description: '프로바이더명$에 대한 설명입니다.',
+      name: '',
+      code: '',
+      description: '',
     },
     validators: {
       onChange: ({ value }) => ({
@@ -110,117 +147,141 @@ export default function AdminDataProvidersDetailPage() {
   })
   const canActive = useStore(activeForm.store, (state) => state.canSubmit && state.isDirty)
 
-  useEffect(() => {
-    setCustomComponent(<AdminDataProvidersDetailPageHeaderButton value={isActive} onChange={toogle} label={isActive ? '활성' : '비활성'} />)
-    setSubHeader(
-      <DetailItem
-        title={
-          <Box>
-            <Box display={'flex'} alignItems={'center'}>
-              <Typography variant="contentTitle" color="gray.90" mr={'4px'}>
-                {selectedCompany.label}
-              </Typography>
-              <AdminCompanySelectorIconButton
-                value={selectedCompany}
-                onChange={({ value, label }) => {
-                  setSelectedCompany({
-                    value: value as string,
-                    label: typeof label === 'string' ? label : '',
-                  })
-                }}
-              />
-            </Box>
-          </Box>
-        }
-        subTitle={
-          <Typography variant="subtext" color="gray.60">
-            상세 설명 내용입니다. 최대 100자까지 입력됩니다.
-          </Typography>
-        }
-        fields={[
-          {
-            label: '등록일',
-            value: 'yyyy-mm-dd',
-          },
-          {
-            label: '수정일',
-            value: 'yyyy-mm-dd',
-          },
-          {
-            label: '등록자',
-            value: '홍길동',
-          },
-          {
-            label: '수정자',
-            value: '김선경',
-          },
-        ]}
-        tooltipMessage="기본 정보 수정"
-        icon={<SettingIcon />}
-        onAction={() => {
-          setOpenModifiedData(true)
-        }}
-      />,
-    )
+  const toggle = (checked: boolean) => {
+    // 현재 상태와 변경하려는 상태가 다른 경우에만 확인 대화상자 표시
+    if (isActive !== checked) {
+      // 변경하려는 상태 저장
+      // setTargetActiveState(checked)
 
-    setCustomTitle(<CustomPageTitle label={!isAdmin ? status : ''} />)
+      // 활성화 폼의 기본값 초기화
+
+      // 확인 대화상자 표시
+      setOpenActiveConfirm(true)
+    }
+  }
+
+  const columns: GridColDef[] = [
+    {
+      field: 'isPublic',
+      headerName: '타입',
+      maxWidth: 80,
+      align: 'center',
+      renderCell: (param) => (param.value ? 'Public' : 'Private'),
+    },
+    {
+      field: 'goodsNm',
+      headerName: '상품명',
+      maxWidth: 360,
+      renderCell(params) {
+        return <MITableCell value={params.value} typography={{ variant: 'body2SB14' }} />
+      },
+    },
+    { field: 'goodsExpn', headerName: '상품 설명', flex: 1 },
+    { field: 'goodsDataSourceCount', headerName: '데이터 개수', maxWidth: 120, align: 'right' },
+  ]
+
+  useEffect(() => {
+    if (data && providerOptions) {
+      setIsActive(data?.isUsed)
+      setCustomComponent(
+        <AdminDataProvidersDetailPageHeaderButton value={isActive} onChange={toggle} label={isActive ? '활성' : '비활성'} />,
+      )
+      setSubHeader(
+        <DetailItem
+          title={
+            <Box>
+              <Box display={'flex'} alignItems={'center'}>
+                <Typography variant="contentTitle" color="gray.90" mr={'4px'}>
+                  {data?.providerNm}
+                </Typography>
+                <AdminCompanySelectorIconButton
+                  value={selectedProvider}
+                  onChange={(provider) => setSelectedProvider(provider)}
+                  options={providerOptions}
+                />
+              </Box>
+            </Box>
+          }
+          subTitle={
+            <Typography variant="subtext" color="gray.60">
+              {data?.providerExpn}
+            </Typography>
+          }
+          fields={[
+            {
+              label: '등록일',
+              value: dayjs(String(data?.auditInfo.createDt)).format('YYYY-MM-DD'),
+            },
+            {
+              label: '수정일',
+              value: dayjs(String(data?.auditInfo.modifyDt)).format('YYYY-MM-DD'),
+            },
+            {
+              label: '등록자',
+              value: String(data?.auditInfo.createUserNm),
+            },
+            {
+              label: '수정자',
+              value: String(data?.auditInfo.modifyUserNm),
+            },
+          ]}
+          tooltipMessage="기본 정보 수정"
+          icon={<SettingIcon />}
+          onAction={() => {
+            setOpenModifiedData(true)
+          }}
+        />,
+      )
+    }
 
     return () => {
       setCustomComponent(null)
       setSubHeader(null)
-      setCustomTitle(null)
     }
-  }, [setCustomComponent, setSubHeader, setCustomTitle, isActive, selectedCompany, isAdmin, status])
+  }, [setCustomComponent, setSubHeader, isActive, data, dataProvidersName, providerOptions, selectedProvider])
 
-  const handleRowClick = useCallback(
-    (data: GridRowParams<{ type: string; productName: string }>) => {
-      const type = data.row.type
-      const productName = data.row.productName
+  return isLoading ? (
+    <AdminLoading />
+  ) : (
+    <>
+      <Box>
+        <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
+          <Box>
+            <Typography component={'p'} variant="contentTitle" color="gray.90">
+              {t('상품 목록')}
+            </Typography>
+            <Typography variant="subtext" color="gray.60">
+              {t('리스트 클릭 시 해당 상품의 상세 화면으로 이동 및 상세 권한 설정이 가능합니다.')}
+            </Typography>
+          </Box>
 
-      navigate({
-        pathname: 'data-provider-product-detail',
-        search: `?type=${type.toLowerCase()}&role=${role}&status=${status}&companyName=${selectedCompany.label}&productName=${productName}`,
-      })
-    },
-    [navigate, role, selectedCompany.label, status],
-  )
-
-  return (
-    <div>
-      <MITableLayout
-        label="상품 목록"
-        search={{
-          placeholder: '상품명 또는 상품 설명을 검색하세요',
-          onSearch: () => {},
-        }}
-        tableProps={{
-          onRowClick: (e) => handleRowClick(e),
-          columns: [
-            { field: 'type', headerName: '타입', width: 80, align: 'center' },
-            {
-              field: 'productName',
-              headerName: '상품명',
-              width: 360,
-              renderCell(params) {
-                return <MITableCell value={params.value} typography={{ variant: 'body2SB14' }} />
-              },
-            },
-            { field: 'productDescription', headerName: '상품 설명', flex: 1 },
-            { field: 'dataCount', headerName: '데이터 개수', width: 120, align: 'right' },
-          ],
-          rows: getMockTableData(
-            {
-              type: ['Public', 'Private'],
-              productName: ['제조사별 DRAM 생산량'],
-              productDescription: ['제조사별 DRAM 생산량 설명 정보'],
-              dataCount: ['0,000'],
-            },
-            5,
-          ),
-          rowId: 'id',
-        }}
-      />
-
+          <Box display={'flex'} alignItems={'center'} columnGap={'10px'}>
+            <MIInput
+              placeholder="상품 또는 상품 설명을 검색하세요."
+              endIcon={
+                <SearchIcon
+                  onClick={() => {
+                    setKeyValue(keyword)
+                  }}
+                />
+              }
+              contentWidth={196}
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setKeyValue(keyword)
+                }
+              }}
+              onClear={() => {
+                setKeyValue('')
+                setKeyword('')
+              }}
+            />
+          </Box>
+        </Box>
+        <AdminTable getRowId={(row) => row.goodsNo} columns={columns} data={dataProviderGoods} />
+      </Box>
       <AdminConfirm
         width={500}
         open={openModifiedData}
@@ -234,7 +295,7 @@ export default function AdminDataProvidersDetailPage() {
             onClick: () => setOpenModifiedData(false),
           },
           {
-            label: '등록',
+            label: '수정',
             variant: 'filled',
             color: 'primary',
             disabled: !canEdit,
@@ -329,7 +390,7 @@ export default function AdminDataProvidersDetailPage() {
       />
 
       <AdminConfirm
-        open={openActiveCofirm}
+        open={openActiveConfirm}
         title={isActive ? <>비활성으로 변경하시겠습니까?</> : <>활성으로 변경하시겠습니까?</>}
         width={502}
         handleClose={() => {
@@ -375,6 +436,6 @@ export default function AdminDataProvidersDetailPage() {
           )}
         </activeForm.Field>
       </AdminConfirm>
-    </div>
+    </>
   )
 }

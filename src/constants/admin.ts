@@ -23,9 +23,6 @@ export const adminTableBaseProps = {
     '& .no-click': {
       pointerEvents: 'none',
     },
-    '& .MuiDataGrid-row:hover': {
-      backgroundColor: '#f5f5f5 !important',
-    },
     '& .MuiDataGrid-columnSeparator': {
       display: 'none !important',
     },

@@ -14,13 +14,14 @@ export interface MITableProps<T extends GridRowModel> extends DataGridProps {
   rows?: T[]
   noRowMessage?: string
   hidePagination?: boolean
+  disableHover?: boolean
 }
 
 export default function MITable<T extends GridRowModel>(props: Readonly<MITableProps<T>>) {
   const ROW_HEIGHT = 40
   const HEADER_HEIGHT = 36
 
-  const { columns, rows, noRowMessage, rowId, ...dataGridProps } = props
+  const { columns, rows, noRowMessage, rowId, disableHover = false, ...dataGridProps } = props
   const memoizedColumns = useMemo(
     () =>
       columns.map((column) => ({
@@ -76,16 +77,40 @@ export default function MITable<T extends GridRowModel>(props: Readonly<MITableP
         '& .no-click': {
           pointerEvents: 'none',
         },
+        ...(disableHover
+          ? {
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: `${theme.palette.common.white} !important`,
+            },
+          }
+          : {
+            '& .MuiDataGrid-row:hover *': {
+              cursor: props.onRowClick ? 'pointer' : 'auto',
+            },
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: `${theme.palette.gray[5]}`,
+              fontHeight: 600,
+              '& *': {
+                fontWeight: 600,
+              },
+            },
+          }),
         '& .MuiDataGrid-row:hover *': {
           cursor: props.onRowClick ? 'pointer' : 'auto',
         },
-        '& .MuiDataGrid-row:hover': {
-          backgroundColor: `${theme.palette.gray[5]}`,
-          fontHeight: 600,
-          '& *': {
-            fontWeight: 600,
-          },
+        '& .MuiDataGrid-row:hover .MuiDataGrid-cell button': {
+          cursor: 'pointer',
         },
+        '& .MuiDataGrid-row:hover .MuiDataGrid-cell button *': {
+          cursor: 'pointer',
+        },
+        // '& .MuiDataGrid-row:hover': {
+        //   backgroundColor: `${theme.palette.gray[5]}`,
+        //   fontHeight: 600,
+        //   '& *': {
+        //     fontWeight: 600,
+        //   },
+        // },
         '& .MuiDataGrid-columnSeparator': {
           display: 'none !important',
         },

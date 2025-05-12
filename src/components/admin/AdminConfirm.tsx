@@ -1,4 +1,4 @@
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton } from '@mui/material'
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material'
 import { t } from 'i18next'
 import { ReactNode } from 'react'
 
@@ -49,9 +49,7 @@ const AdminConfirm = ({
     <DialogTitle>
       <span style={{ fontWeight: children ? 700 : 600 }}>{title}</span>
       {children && (
-        <IconButton aria-label="close" onClick={handleClose} sx={{ padding: '6px' }}>
-          <CloseIcon />
-        </IconButton>
+        <MIButton startIcon={<CloseIcon />} size={'h32'} type={'ghost'} contentType={'icon'} color={'gray'} onClick={handleClose} />
       )}
     </DialogTitle>
 

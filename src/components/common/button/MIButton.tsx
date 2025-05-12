@@ -196,7 +196,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
           },
         },
         '&:hover': {
-          background: theme.palette.content['backgroundHover'],
+          //background: theme.palette.content['backgroundHover'],
           svg: {
             color: theme.palette.content['iconHover'],
             path: {
@@ -216,7 +216,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
           },
         },
         '&:disabled': {
-          borderColor: theme.palette.gray[10],
+          //borderColor: theme.palette.gray[10],
           color: theme.palette.gray[50],
           '& svg': {
             color: theme.palette.content['iconDisabled'],

@@ -18,3 +18,20 @@ export const formatPrice = (amount: number, currencySymbol = '', locale = 'en-US
   // Return with currency symbol
   return `${currencySymbol}${formattedNumber}`
 }
+
+/**
+ * Formats an integer number to decimal string
+ * @param {number} num - The number to format
+ * @returns {string} The formatted decimal string
+ */
+
+export const formatNumberToDecimal = (num: number) => {
+  // Convert the number to a string with one decimal place
+  let formatted = num.toFixed(1) // Add a plus sign for positive numbers
+
+  if (num > 0) {
+    formatted = `+${formatted}`
+  }
+
+  return formatted
+}

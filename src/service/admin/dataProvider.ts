@@ -58,10 +58,18 @@ export interface IProviderGoodsUpdateRequest {
   isUsed: boolean
   isPublic: boolean
 }
+export interface IProviderDetailInfo {
+  providerNo: number
+  providerNm: string
+  providerId: string
+  providerExpn: string
+  isUsed: boolean
+  auditInfo: IAuditInfo
+}
 
 const dataProviderService = {
   /**
-   * 데이타 프로바이더명 목록을 조회합니다.
+   * 데이터 프로바이더명 목록을 조회합니다.
    */
   async getProviders(): Promise<IProviderInfo> {
     const response: AxiosResponse<ICommonResponse<IProviderInfo>> = await api.get('/admin/provider-management/provider/name')
@@ -82,10 +90,12 @@ const dataProviderService = {
   /**
    * 상품 목록을 조회합니다. with pagination
    * @param providerNo 프로바이더 번호
+   * @param params - { page: 페이지 번호, size: 페이지당 항목 수, keyword: 상품명 또는 상품설명 검색 }
    */
-  async getProviderGoodsList(providerNo: number): Promise<IProviderGoodsInfo> {
-    const response: AxiosResponse<ICommonResponse<IProviderGoodsInfo>> = await api.get(
+  async getProviderGoodsList(providerNo: number, params: IProviderGoodsDataRequest): Promise<IPaginationResponse<IProviderGoodsInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IProviderGoodsInfo>>> = await api.get(
       `/admin/provider-management/providers/${providerNo}/goods`,
+      { params },
     )
 
     return response.data.data
@@ -147,7 +157,7 @@ const dataProviderService = {
     return response.data.data
   },
   /**
-   * 데이타 프로바이더 목록을 조회합니다.
+   * 데이터 프로바이더 목록을 조회합니다.
    * @param params - { page: 페이지 번호, size: 페이지당 항목 수 }
    */
   async getProviderList(params: Partial<IPaginationRequest>): Promise<IPaginationResponse<IProviderListInfo>> {
@@ -159,13 +169,26 @@ const dataProviderService = {
     return response.data.data
   },
   /**
-   * 데이타 프로바이더를 등록합니다.
+   * 데이터 프로바이더를 등록합니다.
    * @param body - { providerNm: 데이터 프로바이더명, providerId: 데이터 프로바이더 고유코드, providerExpn: 데이터프로바이더 설명, isUsed: 사용상태 }
    */
   async registerProvider(body: IProviderRegisterRequest): Promise<ICommonResponse<null>> {
     const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/provider-management/provider', body)
 
     return response.data
+  },
+  /**
+   * 데이터 프로바이더 상세 정보를 조회합니다.
+   * @param providerNo - 데이터 프로바이더 번호
+   */
+  async getProviderDetail(providerNo?: number | string): Promise<IProviderDetailInfo> {
+    if (!providerNo) throw new Error('providerNo is required')
+
+    const response: AxiosResponse<ICommonResponse<IProviderDetailInfo>> = await api.get(
+      `/admin/provider-management/providers/${providerNo}`,
+    )
+
+    return response.data.data
   },
 }
 

@@ -12,6 +12,7 @@ export default function MIButtonSelect(
     options?: Array<{ label: string | ReactElement; value: unknown; icon?: ReactElement; activeIcon?: ReactElement }>
     onChange?: (item: { label: string | ReactElement; value: unknown; icon?: ReactElement; activeIcon?: ReactElement }) => void
     minWidthMenu?: number | string
+    styleInput?: boolean
   }>,
 ) {
   const [selectedItem, setSelectedItem] = useState(props.value || props.options?.[0])
@@ -66,9 +67,14 @@ export default function MIButtonSelect(
           '& svg': { display: 'block' },
           padding: '7px 8px',
           borderRadius: '4px',
-          backgroundColor: isOpen ? theme.palette.content.backgroundHover : 'transparent',
+          backgroundColor: isOpen && !props.styleInput ? theme.palette.content.backgroundHover : 'transparent',
           minWidth: props.minWidthMenu,
+          height: props.minWidthMenu ? '40px' : '36px',
           boxSizing: 'border-box',
+          border: props.styleInput ? '1px solid #DEE2E6' : 'none',
+          '&:hover': {
+            border: props.styleInput ? '1px solid #2E3F5E' : 'none',
+          },
         }}
         onClick={handleClick}
       >
@@ -83,7 +89,22 @@ export default function MIButtonSelect(
           </Typography>
         </Box>
 
-        <Typography color={isOpen ? 'gray.80' : 'gray.60'} ml="12px">
+        <Typography
+          color={isOpen ? 'gray.80' : 'gray.60'}
+          ml="12px"
+          sx={{
+            width: props.styleInput ? '24px' : '20px',
+            height: props.styleInput ? '24px' : '20px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: '4px',
+            backgroundColor: isOpen ? '#F0F3F6' : 'none',
+            '&:hover': {
+              backgroundColor: props.styleInput ? '#F0F3F6' : 'none',
+            },
+          }}
+        >
           <KeyboardArrowUpIcon style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)' }} />
         </Typography>
       </Box>
@@ -107,62 +128,69 @@ export default function MIButtonSelect(
           />,
           document.body,
         )}
-      <Menu
-        anchorEl={anchorEl}
-        open={isOpen}
-        onClose={handleClose}
-        keepMounted
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        sx={{
-          '& .MuiPaper-root': {
-            borderRadius: '6px',
-            boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.20)',
-          },
-        }}
-        slotProps={{
-          list: {
-            sx: {
-              minWidth: props.minWidthMenu,
+      {isOpen && (
+        <Menu
+          anchorEl={anchorEl}
+          open={isOpen}
+          onClose={handleClose}
+          keepMounted
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          sx={{
+            '& .MuiPaper-root': {
+              borderRadius: '6px',
+              boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.20)',
+              marginTop: '8px',
             },
-          },
-        }}
-      >
-        {props.options?.map((item, index) => (
-          <MenuItem
-            key={index}
-            onClick={() => {
-              props.onChange?.(item)
-              setSelectedItem(item)
-              handleClose()
-            }}
-            sx={{
-              padding: '8px 12px',
-              backgroundColor: props.value?.value === item.value ? `${theme.palette.gray[5]} !important` : 'inherit',
-              '&:hover': {
-                backgroundColor: theme.palette.gray[5],
+          }}
+          slotProps={{
+            list: {
+              sx: {
+                minWidth: props.minWidthMenu,
               },
-            }}
-            onMouseOver={() => setHoverItem(item)}
-            onMouseOut={() => setHoverItem(null)}
-          >
-            <Box display={'flex'} alignItems={'center'}>
-              {(item.activeIcon || item.icon) && (
-                <Typography color={hoverItem?.value === item.value || selectedItem?.value === item.value ? 'gray.80' : 'gray.60'} mr="8px">
-                  {hoverItem?.value === item.value || selectedItem?.value === item.value ? item.activeIcon : item.icon}
-                </Typography>
-              )}
+            },
+          }}
+        >
+          {props.options?.map((item, index) => (
+            <MenuItem
+              key={index}
+              onClick={() => {
+                props.onChange?.(item)
+                setSelectedItem(item)
+                handleClose()
+              }}
+              sx={{
+                padding: '8px 12px',
+                backgroundColor: props.value?.value === item.value ? `${theme.palette.gray[5]} !important` : 'inherit',
+                height: '36px',
+                '&:hover': {
+                  backgroundColor: theme.palette.gray[5],
+                },
+              }}
+              onMouseOver={() => setHoverItem(item)}
+              onMouseOut={() => setHoverItem(null)}
+            >
+              <Box display={'flex'} alignItems={'center'}>
+                {(item.activeIcon || item.icon) && (
+                  <Typography
+                    color={hoverItem?.value === item.value || selectedItem?.value === item.value ? 'gray.80' : 'gray.60'}
+                    mr="8px"
+                  >
+                    {hoverItem?.value === item.value || selectedItem?.value === item.value ? item.activeIcon : item.icon}
+                  </Typography>
+                )}
 
-              <Typography
-                variant={hoverItem?.value === item.value || selectedItem?.value === item.value ? 'body2M14' : 'body2R14'}
-                color={hoverItem?.value === item.value || selectedItem?.value === item.value ? 'gray.90' : 'gray.70'}
-              >
-                {item.label}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-      </Menu>
+                <Typography
+                  variant={hoverItem?.value === item.value || selectedItem?.value === item.value ? 'body2M14' : 'body2R14'}
+                  color={hoverItem?.value === item.value || selectedItem?.value === item.value ? 'gray.90' : 'gray.70'}
+                >
+                  {item.label}
+                </Typography>
+              </Box>
+            </MenuItem>
+          ))}
+        </Menu>
+      )}
     </>
   )
 }

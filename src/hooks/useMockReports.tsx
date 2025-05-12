@@ -8,6 +8,7 @@ export interface Report {
   subtitle: string
   date: string
   source: string
+  typeId: string
 }
 
 const mockReports: Report[] = [
@@ -17,6 +18,7 @@ const mockReports: Report[] = [
     subtitle: 'Removing Kardemir, Including Turkish Airlines...',
     date: '25 Mar 2025',
     source: 'LSEG',
+    typeId: 'commodity_market_report',
   },
   {
     type: 'Insight',
@@ -24,6 +26,7 @@ const mockReports: Report[] = [
     subtitle: 'Regional analysis and key trends',
     date: '25 Mar 2025',
     source: 'Wood Mackenzie',
+    typeId: 'insight',
   },
   {
     type: 'Insight',
@@ -31,6 +34,7 @@ const mockReports: Report[] = [
     subtitle: 'Quarterly performance snapshot',
     date: '25 Mar 2025',
     source: 'LSEG',
+    typeId: 'insight',
   },
   {
     type: 'Asset Report',
@@ -38,6 +42,7 @@ const mockReports: Report[] = [
     subtitle: 'Infrastructure overview and operational status',
     date: '25 Mar 2025',
     source: 'Wood Mackenzie',
+    typeId: 'asset_report',
   },
   {
     type: 'Deal Insight',
@@ -45,6 +50,7 @@ const mockReports: Report[] = [
     subtitle: 'Deal valued at US$735 million',
     date: '25 Mar 2025',
     source: 'LSEG',
+    typeId: 'deal_insight',
   },
   {
     type: 'Commodity Market Report',
@@ -52,6 +58,7 @@ const mockReports: Report[] = [
     subtitle: 'Unplanned outages and market reaction',
     date: '25 Mar 2025',
     source: 'Wood Mackenzie',
+    typeId: 'commodity_market_report',
   },
   {
     type: 'Insight',
@@ -59,6 +66,7 @@ const mockReports: Report[] = [
     subtitle: 'Quarterly report highlights and analysis',
     date: '25 Mar 2025',
     source: 'LSEG',
+    typeId: 'insight',
   },
   {
     type: 'Insight',
@@ -66,6 +74,7 @@ const mockReports: Report[] = [
     subtitle: 'Insights into revenue and performance',
     date: '25 Mar 2025',
     source: 'LSEG',
+    typeId: 'insight',
   },
 ]
 
