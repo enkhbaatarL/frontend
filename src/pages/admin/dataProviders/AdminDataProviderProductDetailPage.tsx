@@ -58,20 +58,22 @@ const CustomPageTitle = (props: { label: string }) => (
 // 데이터 목록 테이블
 const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValue }: ProductDataTableProps) => {
   const columns: GridColDef[] = [
-    {
-      field: 'customerCompanyNm',
-      headerName: t('고객사'),
-      maxWidth: 120,
-      flex: 1,
-      renderCell(params) {
-        return <AdminTableCell>{params.value}</AdminTableCell>
-      },
-    },
+    !isPublic
+      ? {
+        field: 'customerCompanyNm',
+        headerName: t('고객사'),
+        maxWidth: 120,
+        flex: 1,
+        renderCell(params: { value: string }) {
+          return <AdminTableCell>{params.value}</AdminTableCell>
+        },
+      }
+      : null,
     {
       field: 'goodsDataNm',
       headerName: t('데이터명'),
       maxWidth: 360,
-      renderCell(params) {
+      renderCell(params: { value: string }) {
         return <AdminTableCell typography={{ variant: 'body2SB14' }}>{params.value}</AdminTableCell>
       },
     },
@@ -79,7 +81,7 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
       field: 'goodsDataExpn',
       headerName: t('데이터 설명'),
       flex: 1,
-      renderCell(params) {
+      renderCell(params: { value: string }) {
         return <AdminTableCell>{params.value}</AdminTableCell>
       },
     },
@@ -104,7 +106,7 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
         />
       ),
     },
-  ]
+  ].filter(Boolean) as GridColDef[]
 
   return (
     <Box>
