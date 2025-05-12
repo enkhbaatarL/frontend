@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton.tsx'
 import AdminConfirm from '@/components/admin/AdminConfirm'
@@ -57,6 +57,7 @@ export default function AdminDataProvidersDetailPage() {
   const [openActiveConfirm, setOpenActiveConfirm] = useState(false)
   const [keyValue, setKeyValue] = useState<string>('')
   const [keyword, setKeyword] = useState<string>('')
+  const navigate = useNavigate()
 
   const { data, isLoading: dataProviderDetailIsLoading } = useQuery({
     queryKey: ['providerDetail', providerNo],
@@ -312,7 +313,14 @@ export default function AdminDataProvidersDetailPage() {
             />
           </Box>
         </Box>
-        <AdminTable getRowId={(row) => row.goodsNo} columns={columns} data={dataProviderGoods} />
+        <AdminTable
+          getRowId={(row) => row.goodsNo}
+          columns={columns}
+          data={dataProviderGoods}
+          onRowClick={({ row }) => {
+            navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${row.goodsNo}`)
+          }}
+        />
       </Box>
       <AdminConfirm
         width={500}
