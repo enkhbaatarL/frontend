@@ -66,7 +66,19 @@ export interface IProviderDetailInfo {
   isUsed: boolean
   auditInfo: IAuditInfo
 }
-
+export interface IProductCompanyPermissionRequest extends IPaginationRequest {
+  companyNm?: string
+}
+export interface IProductCompanyPermissionInfo {
+  companyNo: number
+  companyNm: string
+  isUsed: boolean
+  goodsAuthManagementSeparateCd: string
+  goodsAuthManagementSeparateNm: string
+  viewPermission: string
+  downloadPermission: string
+  auditInfo: IAuditInfo
+}
 const dataProviderService = {
   /**
    * 데이터 프로바이더명 목록을 조회합니다.
@@ -186,6 +198,24 @@ const dataProviderService = {
 
     const response: AxiosResponse<ICommonResponse<IProviderDetailInfo>> = await api.get(
       `/admin/provider-management/providers/${providerNo}`,
+    )
+
+    return response.data.data
+  },
+  /**
+   * 해당 상품을 구독하고 있는 회사 목록과 매핑된 권한 내역을 조회합니다.
+   * 페이지네이션 처리되어 'companyNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.
+   * @param providerNo - 데이터 프로바이더 번호
+   * @param goodsNo - 상품 번호
+   */
+  async getProductCompanyPermissionList(
+    providerNo?: number | string,
+    goodsNo?: number | string,
+    params?: IProductCompanyPermissionRequest,
+  ): Promise<IPaginationResponse<IProductCompanyPermissionInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IProductCompanyPermissionInfo>>> = await api.get(
+      `/admin/provider-management/providers/${providerNo}/goods/${goodsNo}/company-permissions`,
+      { params },
     )
 
     return response.data.data
