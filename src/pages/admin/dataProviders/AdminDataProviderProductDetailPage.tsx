@@ -16,11 +16,9 @@ import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
 import UpdateIcon from '@/components/common/icons/UpdateIcon'
 import MIInput from '@/components/common/input/MIInput'
-import MITableLayout from '@/components/common/table/MITableLayout'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
-import dataProviderService, { IProviderGoodsDataInfo } from '@/service/admin/dataProvider'
+import dataProviderService, { IProductCompanyPermissionInfo, IProviderGoodsDataInfo } from '@/service/admin/dataProvider'
 import { IPaginationResponse } from '@/types/api'
-import { getMockTableData } from '@/utils/mock-data'
 
 interface ProductDataTableProps {
   data: IPaginationResponse<IProviderGoodsDataInfo>
@@ -29,7 +27,12 @@ interface ProductDataTableProps {
   setSearch: (value: string) => void
   setSearchValue: (value: string) => void
 }
-
+interface AuthorityDetailTableProps {
+  data: IPaginationResponse<IProductCompanyPermissionInfo>
+  searchCompanyNm: string
+  setCompanyNmSearch: (value: string) => void
+  setCompanyNmSearchValue: (value: string) => void
+}
 const AdminDataProviderProductDetailPageHeader = (props: { onChange: (value: boolean) => void; value: boolean; label: string }) => {
   const toogle = (value: boolean) => {
     props.onChange(value)
@@ -154,12 +157,7 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
           </AdminButton>
         </Box>
       </Box>
-      <AdminTable
-        getRowId={(row) => row.goodsDataNo}
-        columns={columns}
-        data={data}
-        // onRowClick={}
-      />
+      <AdminTable getRowId={(row) => row.goodsDataNo} columns={columns} data={data} />
       {/* <AdminConfirm
         open={isOpenDelete}
         title={
@@ -198,143 +196,96 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
 }
 
 // 권한 상세 테이블
-// const AuthorityDetailTable = ({ data }: ProductDataTableProps) => {
-//   const columns: GridColDef[] = [
-//     {
-//       field: 'customerCompanyNm',
-//       headerName: t('고객사'),
-//       maxWidth: 120,
-//       flex: 1,
-//       renderCell(params) {
-//         return <AdminTableCell>{params.value}</AdminTableCell>
-//       }
-//     },
-//     {
-//       field: 'goodsDataNm',
-//       headerName: t('데이터명'),
-//       maxWidth: 360,
-//       renderCell(params) {
-//         return <AdminTableCell typography={{ variant: 'body2SB14' }}>{params.value}</AdminTableCell>
-//       }
-//     },
-//     {
-//       field: 'goodsDataExpn',
-//       headerName: t('데이터 설명'),
-//       flex: 1,
-//       renderCell(params) {
-//         return <AdminTableCell>{params.value}</AdminTableCell>
-//       }
-//     },
-//     {
-//       field: 'actions',
-//       headerName: '',
-//       maxWidth: 52,
-//       cellClassName: 'cellAction',
-//       align: 'center',
-//       renderCell: (params) => (
-//         <AdminTableAction
-//           actions={[
-//             {
-//               label: t('삭제'),
-//               icon: <DeleteIcon fontSize="small" />,
-//               onClick: () => {
-//                 // setIsOpenDelete(true)
-//                 // setSelectedUser(params.row)
-//               },
-//             },
-//           ]}
-//         />
-//       ),
-//     },
-//   ]
+const AuthorityDetailTable = ({ data, searchCompanyNm, setCompanyNmSearch, setCompanyNmSearchValue }: AuthorityDetailTableProps) => {
+  const columns: GridColDef[] = [
+    {
+      field: 'companyNm',
+      headerName: t('회사명'),
+      flex: 1,
+      renderCell(params) {
+        return <AdminTableCell>{params.value}</AdminTableCell>
+      },
+    },
+    {
+      field: 'isUsed',
+      headerName: t('사용 여부'),
+      maxWidth: 120,
+      align: 'center',
+      renderCell(params) {
+        return <MIChip color={params.value ? 'green' : 'gray'} label={params.value ? t('사용중') : t('미사용')} />
+      },
+    },
+    {
+      field: 'goodsAuthManagementSeparateCd',
+      headerName: t('타입'),
+      maxWidth: 120,
+      renderCell(params) {
+        return <AdminTableCell>{params.value === 'COMPANY' ? t('회사 권한') : t('개별 권한')}</AdminTableCell>
+      },
+    },
+    {
+      field: 'viewPermission',
+      headerName: t('조회(명)'),
+      maxWidth: 120,
+      align: 'right',
+      renderCell(params) {
+        const { type, count } = params.row.viewPermission
+        return <AdminTableCell>{type === 'ALL' ? 'All' : type === 'NONE' ? t('없음') : type === 'SOME' ? count : '-'}</AdminTableCell>
+      },
+    },
+    {
+      field: 'downloadPermission',
+      headerName: t('다운로드(명)'),
+      maxWidth: 120,
+      align: 'right',
+      renderCell(params) {
+        const { type, count } = params.row.downloadPermission
+        return <AdminTableCell>{type === 'ALL' ? 'All' : type === 'NONE' ? t('없음') : type === 'SOME' ? count : '-'}</AdminTableCell>
+      },
+    },
+  ]
 
-//   return (
-//     <Box>
-//       <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
-//         <Typography color="gray.90">{t('데이터 목록')}</Typography>
-//         <Box display={'flex'} alignItems={'center'} columnGap={'10px'}>
-//           <MIInput
-//             placeholder={t('검색하세요.')}
-//             endIcon={
-//               <SearchIcon
-//                 onClick={() => {
-//                   // setSearchValue(search)
-//                 }}
-//               />
-//             }
-//             contentWidth={270}
-//             value={null}
-//             // onChange={(e) => setSearch(e.target.value)}
-//             // onKeyDown={(e) => {
-//             //   if (e.key === 'Enter') {
-//             //     setSearchValue(search)
-//             //   }
-//             // }}
-//             onClear={() => {
-//               // setSearchValue('')
-//               // setSearch('')
-//             }}
-//           />
-//           <AdminButton
-//             color="secondary"
-//             variant="outlined"
-//             size="h34"
-//             onClick={() => {
-//               // navigate('/admin/member-mgmt/users/registration')
-//             }}
-//           >
-//             {t('데이터 등록')}
-//           </AdminButton>
-//         </Box>
-//       </Box>
-//       <AdminTable
-//         getRowId={(row) => row.goodsDataNo}
-//         columns={columns}
-//         data={data}
-//         // onRowClick={}
-//       />
-//       {/* <AdminConfirm
-//         open={isOpenDelete}
-//         title={
-//           <>
-//             <ErrorIcon color="error" fontSize="small" sx={{ marginRight: '12px', verticalAlign: 'sub' }} />
-//             {t('회원을 삭제하시겠습니까?')}
-//           </>
-//         }
-//         width={450}
-//         handleClose={() => {
-//           setIsOpenDelete(false)
-//         }}
-//         actions={[
-//           {
-//             label: t('취소'),
-//             variant: 'outlined',
-//             color: 'gray',
-//             onClick: () => {
-//               setIsOpenDelete(false)
-//             },
-//           },
-//           {
-//             label: t('삭제'),
-//             variant: 'filled',
-//             color: 'red',
-//             onClick: async () => {
-//               await handleDelete()
-//             },
-//           },
-//         ]}
-//       >
-//         회원 정보 삭제 시 해당 회원은 서비스에 접근이 불가합니다.
-//       </AdminConfirm> */}
-//     </Box>
-//   )
-// }
+  return (
+    <Box>
+      <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
+        <Typography color="gray.90">{t('권한 상세')}</Typography>
+        <Box display={'flex'} alignItems={'center'} columnGap={'10px'}>
+          <MIInput
+            placeholder={t('회사명을 검색하세요.')}
+            endIcon={
+              <SearchIcon
+                onClick={() => {
+                  setCompanyNmSearchValue(searchCompanyNm)
+                }}
+              />
+            }
+            contentWidth={270}
+            value={searchCompanyNm}
+            onChange={(e) => setCompanyNmSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setCompanyNmSearchValue(searchCompanyNm)
+              }
+            }}
+            onClear={() => {
+              setCompanyNmSearchValue('')
+              setCompanyNmSearch('')
+            }}
+          />
+        </Box>
+      </Box>
+      <AdminTable getRowId={(row) => row.companyNo} columns={columns} data={data} />
+    </Box>
+  )
+}
 
 const AdminDataProviderProductDetailPage = () => {
   const { providerNo, goodsNo } = useParams()
   const { state } = useLocation()
   const [search, setSearch] = useState('')
   const [searchValue, setSearchValue] = useState('')
+  const [searchCompanyNm, setSearchCompanyNm] = useState('')
+  const [searchCompanyNmValue, setSearchCompanyNmValue] = useState('')
   const [inputProviderName, setInputProviderName] = useState('')
   const [isErrorProviderName, setIsErrorProviderName] = useState(true)
 
@@ -375,30 +326,26 @@ const AdminDataProviderProductDetailPage = () => {
     enabled: !!providerNo && !!goodsNo,
   })
 
+  // 권한 상세 목록
+  const { data: companyPermissionList } = useQuery({
+    queryKey: ['companyPermissionList', searchCompanyNmValue],
+    queryFn: async () =>
+      await dataProviderService.getProductCompanyPermissionList(Number(providerNo), Number(goodsNo), {
+        companyNm: searchCompanyNmValue,
+        page: 1,
+        size: 20,
+      }),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!providerNo && !!goodsNo,
+  })
+
   const { setCustomComponent, setSubHeader, setCustomTitle } = useAdminHeader()
-  // const { showSnackbar } = useAdminSnackbar()
   const [isActive, setIsActive] = useState(true)
   const [isPublic, setIsPublic] = useState(true)
   const [openActiveCofirm, setOpenActiveConfirm] = useState(false)
-  // const activeForm = useForm({
-  //   defaultValues: {
-  //     name: '',
-  //   },
-  //   validators: {
-  //     onChange: ({ value }: { value: { name: string } }) => {
-  //       const isRequire = (v: string) => (v.length === 0 ? true : undefined)
-
-  //       return {
-  //         fields: {
-  //           name: isRequire(value.name),
-  //         },
-  //       }
-  //     },
-  //   },
-  // })
-  // const canActive = useStore(activeForm.store, (state: { canSubmit: boolean; isDirty: boolean }) => {
-  //   return state.canSubmit && state.isDirty
-  // })
 
   const toogle = () => {
     setOpenActiveConfirm(true)
@@ -411,29 +358,6 @@ const AdminDataProviderProductDetailPage = () => {
   const role = searchParams.get('role') || 'admin'
   const status = searchParams.get('status') || ''
   const isAdmin = role === 'admin'
-
-  // const editForm = useForm({
-  //   defaultValues: {
-  //     name: '제조사별 DRAM 생산량',
-  //     description: '제조사별 DRAM 생산량 상품의 상세 정보입니다.',
-  //   },
-  //   validators: {
-  //     onChange: ({ value }: { value: { name: string; description: string } }) => {
-  //       const isRequire = (v: string) => (v.length === 0 ? true : undefined)
-
-  //       return {
-  //         fields: {
-  //           name: isRequire(value.name),
-  //           description: isRequire(value.description),
-  //         },
-  //       }
-  //     },
-  //   },
-  // })
-
-  // const canEdit = useStore(editForm.store, (state: { canSubmit: boolean; isDirty: boolean }) => {
-  //   return state.canSubmit
-  // })
 
   // 활성/비활성 변경
   const handleUpdateActive = async () => {
@@ -530,46 +454,13 @@ const AdminDataProviderProductDetailPage = () => {
       {dataList && (
         <ProductDataListTable data={dataList} isPublic={isPublic} search={search} setSearch={setSearch} setSearchValue={setSearchValue} />
       )}
-      {role === 'admin' && (
-        <Box>
-          <MITableLayout
-            label="권한 상세"
-            search={{
-              placeholder: '회사명을 검색하세요.',
-            }}
-            tableProps={{
-              columns: [
-                { field: 'companyName', headerName: '회사명', flex: 1 },
-                {
-                  field: 'usage',
-                  headerName: '사용 여부',
-                  width: 120,
-                  align: 'center',
-                  renderCell: (param) => <MIChip color={param.value === '사용중' ? 'green' : 'gray'} label={param.value} />,
-                },
-                { field: 'type', headerName: '타입', width: 120 },
-                { field: 'views', headerName: '조회(명)', width: 120, align: 'right' },
-                {
-                  field: 'downloads',
-                  headerName: '다운로드(명)',
-                  width: 120,
-                  align: 'right',
-                },
-              ],
-              rows: getMockTableData(
-                {
-                  companyName: ['SK 실트론', 'SK 하이닉스', 'SK ON', 'SK C&C'],
-                  usage: ['사용중', '미사용'],
-                  type: ['회사 권한', '개별 권한'],
-                  views: ['All'],
-                  downloads: ['없음', '000'],
-                },
-                2,
-              ),
-              rowId: 'id',
-            }}
-          ></MITableLayout>
-        </Box>
+      {companyPermissionList && (
+        <AuthorityDetailTable
+          data={companyPermissionList}
+          searchCompanyNm={searchCompanyNm}
+          setCompanyNmSearch={setSearchCompanyNm}
+          setCompanyNmSearchValue={setSearchCompanyNmValue}
+        />
       )}
 
       <AdminConfirm
@@ -642,7 +533,6 @@ const AdminDataProviderProductDetailPage = () => {
             label: t('저장'),
             variant: 'filled',
             color: 'primary',
-            // disabled: !canEdit,
             onClick: () => {
               setOpenEditingConfirm(true)
             },
