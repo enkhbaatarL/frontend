@@ -5,7 +5,7 @@ import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
 import MIHelpCenterPage from '@/pages/mi/helpCenter/MIHelpCenterPage'
 import MIInsightsPage from '@/pages/mi/insights/MIInsightsPage'
 import MIMarketDataPage from '@/pages/mi/marketData/MIMarketDataPage'
-import MINoticePage from '@/pages/mi/notice/MINoticePage'
+import MINoticesPage from '@/pages/mi/notice/MINoticesPage'
 import MISignalMapPage from '@/pages/mi/signalMap/MISignalMapPage'
 import UserChartSamplePage from '@/pages/mi/UserChartSamplePage'
 import MIProvider from '@/providers/MIProvider'
@@ -44,7 +44,7 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'notice',
-      element: <MINoticePage />,
+      element: <MINoticesPage />,
     },
     {
       path: 'help-center',
