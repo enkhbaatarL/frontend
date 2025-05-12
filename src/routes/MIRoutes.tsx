@@ -1,12 +1,12 @@
 import { Navigate, RouteObject } from 'react-router-dom'
 
 import MILayout from '@/layouts/MILayout'
-import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
-import MIHelpCenterPage from '@/pages/mi/helpCenter/MIHelpCenterPage'
-import MIInsightsPage from '@/pages/mi/insights/MIInsightsPage'
-import MIMarketDataPage from '@/pages/mi/marketData/MIMarketDataPage'
-import MINoticesPage from '@/pages/mi/notice/MINoticesPage'
-import MISignalMapPage from '@/pages/mi/signalMap/MISignalMapPage'
+import DataVisualizationPage from '@/pages/mi/dashboard/DataVisualizationPage'
+import QaPage from '@/pages/mi/helpCenter/QaPage'
+import InsightsPage from '@/pages/mi/insights/InsightsPage'
+import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
+import NoticesPage from '@/pages/mi/notice/NoticesPage'
+import SignalMap from '@/pages/mi/signalMap/SignalMap.tsx'
 import UserChartSamplePage from '@/pages/mi/UserChartSamplePage'
 import MIProvider from '@/providers/MIProvider'
 
@@ -28,27 +28,27 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'dashboard',
-      element: <MIDashboardPage />,
+      element: <DataVisualizationPage />,
     },
     {
       path: 'insights',
-      element: <MIInsightsPage />,
+      element: <InsightsPage />,
     },
     {
       path: 'market-data',
-      element: <MIMarketDataPage />,
+      element: <MarketDataPage />,
     },
     {
       path: 'signal-map',
-      element: <MISignalMapPage />,
+      element: <SignalMap />,
     },
     {
       path: 'notices',
-      element: <MINoticesPage />,
+      element: <NoticesPage />,
     },
     {
       path: 'help-center',
-      element: <MIHelpCenterPage />,
+      element: <QaPage />,
     },
   ],
 }
