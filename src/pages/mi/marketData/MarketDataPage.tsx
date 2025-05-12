@@ -7,8 +7,8 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table-user/MITableUser'
 import { useMockEvents } from '@/hooks/useMockEvents'
 import { useMockMarket } from '@/hooks/useMockMarket'
-import MarketdataChart from '@/pages/user/marketdata/components/MarketdataChart'
-import MarketdataChartSmall from '@/pages/user/marketdata/components/MarketdataChartSmall'
+import MarketdataChart from '@/pages/mi/marketData/components/MarketdataChart.tsx'
+import MarketdataChartSmall from '@/pages/mi/marketData/components/MarketdataChartSmall.tsx'
 
 const MarketDataPage = () => {
   const { data } = useMockMarket()

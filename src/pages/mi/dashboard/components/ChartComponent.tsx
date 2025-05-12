@@ -8,7 +8,7 @@ import MIButton from '@/components/common/button/MIButton'
 import MIChart from '@/components/common/chart/MIChart'
 import MIChartContrller from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
-import SettingModalComponent from '@/pages/user/datavisualization/components/SettingModalComponent'
+import SettingModalComponent from '@/pages/mi/dashboard/components/SettingModalComponent.tsx'
 import { calculateBollingerBands, calculateSMA, getMockOHLCData } from '@/utils/mock-data'
 
 const mockMainData = getMockOHLCData(200)
