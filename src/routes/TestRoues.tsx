@@ -2,6 +2,7 @@ import { Outlet, RouteObject } from 'react-router-dom'
 
 import PolicyPage from '@/pages/common/PolicyPage'
 import TermPage from '@/pages/common/TermPage'
+import UserChartSamplePage from '@/pages/mi/UserChartSamplePage'
 import ComponentTestPage from '@/pages/test/ComponentTestPage'
 import TestErrorPage from '@/pages/test/TestErrorPage'
 import TestFileUploadPage from '@/pages/test/TestFileUploadPage'
@@ -21,6 +22,10 @@ const TestRoutes: RouteObject = {
     {
       index: true,
       element: <TestPage />,
+    },
+    {
+      path: 'chart-sample',
+      element: <UserChartSamplePage />,
     },
     {
       path: 'component',

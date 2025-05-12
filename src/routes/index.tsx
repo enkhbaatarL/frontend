@@ -1,7 +1,8 @@
 import { omit } from 'lodash-es'
 import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
 
-import TempLoginPassPage from '@/pages/test/TempLoginPassPage'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import LoginPage from '@/pages/common/LoginPage'
 import AdminRoutes from '@/routes/AdminRoutes'
 import ErrorRoutes from '@/routes/ErrorRoutes'
 import MIRoutes from '@/routes/MIRoutes'
@@ -11,12 +12,18 @@ import { ICustomRouteObject } from '@/types/common'
 const commonRoutes: ICustomRouteObject[] = [
   {
     path: '/',
-    element: <TempLoginPassPage />,
+    element: <LoginPage />,
   },
-  { ...AdminRoutes },
-  { ...MIRoutes },
+  {
+    ...AdminRoutes,
+    element: <ProtectedRoute>{AdminRoutes.element}</ProtectedRoute>,
+  },
+  {
+    ...MIRoutes,
+    element: <ProtectedRoute>{MIRoutes.element}</ProtectedRoute>,
+  },
   { ...ErrorRoutes },
-  { ...TestRoutes }, // TODO: 테스트 페이지 제거 필요
+  { ...TestRoutes },
   {
     path: '/*',
     element: <Navigate to="/error/404" replace={true} />,

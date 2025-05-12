@@ -2,7 +2,7 @@ import Axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import { t } from 'i18next'
 
 import { ISnackbarOptions } from '@/hooks/useSnackbar'
-
+import useAuthStore from '@/store/useAuthStore'
 export interface HttpResponse<T> {
   status: number
   code: string
@@ -36,10 +36,11 @@ const api: AxiosInstance = Axios.create({
 
 api.interceptors.request.use((req) => {
   if (req.headers !== undefined) {
-    // 어드민 임시 헤더 적용
-    // TODO: 로그인 후 토큰으로 변경
-    req.headers['Authorization'] =
-      'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ0Mjc0ODcxLCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc4MDI3NDg3MX0.hVm8KPlcTPwjxGtdRr8VH1uIrGFIfIePb_FyVkiquHc'
+    const token = useAuthStore.getState().token
+
+    if (token) {
+      req.headers['Authorization'] = `Bearer ${token}`
+    }
   }
 
   return req

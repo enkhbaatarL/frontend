@@ -4,6 +4,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { QueryClientProvider } from '@tanstack/react-query'
 
 import queryClient from '@/lib/queryClient'
+import AuthProvider from '@/providers/AuthProvider'
 import { AppRoutes } from '@/routes'
 import theme from '@/theming'
 import '@/styles/global.scss'
@@ -14,7 +15,9 @@ const App = () => (
   <LocalizationProvider dateAdapter={AdapterDayjs}>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
-        <AppRoutes />
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   </LocalizationProvider>
