@@ -62,6 +62,7 @@ const DetailItem = (props: IDetailItemProps) => {
                   borderRadius={'6px'}
                   onClick={handleClick}
                   boxSizing={'border-box'}
+                  sx={{ cursor: 'pointer' }}
                 >
                   {props.icon}
                 </Box>
@@ -81,6 +82,7 @@ const DetailItem = (props: IDetailItemProps) => {
                 borderRadius={'6px'}
                 onClick={handleClick}
                 boxSizing={'border-box'}
+                sx={{ cursor: 'pointer' }}
               >
                 {props.icon}
               </Box>

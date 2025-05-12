@@ -25,18 +25,12 @@ const AdminCustomerCompanyProviderDetailPageHeader = (props: {
   onChange: (value: boolean | undefined) => void
   label: string
   value: boolean
-}) => {
-  const toogle = (value: boolean | undefined) => {
-    props.onChange(value)
-  }
-
-  return (
-    <FormControlLabel
-      control={<Switch defaultChecked checked={props.value} onChange={(e) => toogle(e.target.checked)} />}
-      label={props.label}
-    />
-  )
-}
+}) => (
+  <FormControlLabel
+    control={<Switch defaultChecked checked={props.value} onChange={(e) => props.onChange(e.target.checked)} />}
+    label={props.label}
+  />
+)
 
 const AdminCustomerCompanyDataProviderDetailPage = () => {
   const navigate = useNavigate()
