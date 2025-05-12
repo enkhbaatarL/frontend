@@ -282,8 +282,8 @@ const AdminCustomerCompanyProductDetailPage = () => {
 
     const newPermission = {
       userNo: targetUser.userNo,
-      isViewable: targetUser.isViewable,
-      isDownloadable: targetUser.isDownloadable,
+      isViewable: isNew ? checkList[userNo].isViewable : targetUser.isViewable,
+      isDownloadable: isNew ? checkList[userNo].isDownloadable : targetUser.isDownloadable,
       usageBeginDate: type === 'usageBeginDate' ? value : isNew ? checkList[userNo].usageBeginDate : targetUser.usageBeginDate,
       usageEndDate: type === 'usageEndDate' ? value : isNew ? checkList[userNo].usageEndDate : targetUser.usageEndDate,
     }
