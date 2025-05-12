@@ -20,6 +20,7 @@ import { uppercase, require } from '@/components/common/input/validators'
 import MITableCell from '@/components/common/table/MITableCell'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar.tsx'
+import queryClient from '@/lib/queryClient'
 import dataProviderService, { IProviderInfo } from '@/service/admin/dataProvider.ts'
 
 const AdminDataProvidersDetailPageHeaderButton = (props: { onChange: (value: boolean) => void; value: boolean; label: string }) => {
@@ -112,16 +113,16 @@ export default function AdminDataProvidersDetailPage() {
 
   const editForm = useForm({
     defaultValues: {
-      name: '',
-      code: '',
-      description: '',
+      name: data?.providerNm,
+      code: data?.providerId,
+      description: data?.providerExpn,
     },
     validators: {
       onChange: ({ value }) => ({
         fields: {
-          name: require(value.name),
-          code: require(value.code) || uppercase(value.code),
-          description: require(value.description),
+          name: require(value.name ?? ''),
+          code: require(value.code ?? '') || uppercase(value.code ?? ''),
+          description: require(value.description ?? ''),
         },
       }),
     },
@@ -145,18 +146,49 @@ export default function AdminDataProvidersDetailPage() {
       },
     },
   })
-  const canActive = useStore(activeForm.store, (state) => state.canSubmit && state.isDirty)
+  const canActive = useStore(activeForm.store, (state) => state.isDirty && state.values.name === data?.providerNm)
 
   const toggle = (checked: boolean) => {
     // 현재 상태와 변경하려는 상태가 다른 경우에만 확인 대화상자 표시
     if (isActive !== checked) {
-      // 변경하려는 상태 저장
-      // setTargetActiveState(checked)
-
-      // 활성화 폼의 기본값 초기화
-
       // 확인 대화상자 표시
       setOpenActiveConfirm(true)
+    }
+  }
+
+  // 활성/비활성 변경
+  const handleChangeActive = async () => {
+    try {
+      await dataProviderService.updateProvider(Number(providerNo), {
+        providerNm: data?.providerNm ?? '',
+        providerExpn: data?.providerExpn ?? '',
+        isUsed: !isActive,
+      })
+      setIsActive(!isActive)
+      setOpenActiveConfirm(false)
+      showSnackbar(t(!isActive ? '활성' : '비활성') + t('으로 변경되었습니다.'), { variant: 'success' })
+      await queryClient.invalidateQueries({ queryKey: ['providerDetail', providerNo] })
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  // 고객사 기본정보 수정
+  const handleSave = async () => {
+    try {
+      await dataProviderService.updateProvider(Number(providerNo), {
+        providerNm: editForm.getFieldValue('name') ?? '',
+        providerExpn: editForm.getFieldValue('description') ?? '',
+        isUsed: isActive,
+      })
+      // 쿼리 무효화를 통해 서버에서 최신 데이터 다시 가져오기
+      await queryClient.invalidateQueries({ queryKey: ['providerDetail', providerNo] })
+
+      setOpenModifiedData(false)
+      setOpenEditingConfirm(false)
+      showSnackbar('저장되었습니다.', { variant: 'success' })
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -295,7 +327,7 @@ export default function AdminDataProvidersDetailPage() {
             onClick: () => setOpenModifiedData(false),
           },
           {
-            label: '수정',
+            label: '저장',
             variant: 'filled',
             color: 'primary',
             disabled: !canEdit,
@@ -379,11 +411,8 @@ export default function AdminDataProvidersDetailPage() {
             label: <Typography variant="body2SB14">저장</Typography>,
             variant: 'filled',
             color: 'primary',
-            onClick: () => {
-              setOpenEditingConfirm(false)
-              setOpenModifiedData(false)
-              showSnackbar('저장되었습니다.', { variant: 'success' })
-              showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' })
+            onClick: async () => {
+              await handleSave()
             },
           },
         ]}
@@ -410,10 +439,8 @@ export default function AdminDataProvidersDetailPage() {
             variant: 'filled',
             color: 'primary',
             disabled: !canActive,
-            onClick: () => {
-              setOpenActiveConfirm(false)
-              setIsActive((value) => !value)
-              showSnackbar('저장되었습니다.', { variant: 'success' })
+            onClick: async () => {
+              await handleChangeActive()
             },
           },
         ]}
