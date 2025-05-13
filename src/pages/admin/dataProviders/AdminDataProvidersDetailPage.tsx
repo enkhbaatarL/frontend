@@ -216,6 +216,7 @@ export default function AdminDataProvidersDetailPage() {
   useEffect(() => {
     if (data && providerOptions) {
       setIsActive(data?.isUsed)
+      setSelectedProvider(initialProvider)
       setCustomComponent(
         <AdminDataProvidersDetailPageHeaderButton value={isActive} onChange={toggle} label={isActive ? '활성' : '비활성'} />,
       )
