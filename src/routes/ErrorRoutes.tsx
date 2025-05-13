@@ -15,6 +15,10 @@ const ErrorRoutes: RouteObject = {
       element: <CommonErrorPage />,
     },
     {
+      path: '404',
+      element: <CommonErrorPage />,
+    },
+    {
       path: 'auth',
       element: <AuthErrorPage />,
     },
