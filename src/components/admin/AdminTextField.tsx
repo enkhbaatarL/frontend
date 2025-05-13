@@ -20,7 +20,12 @@ const AdminTextField = ({
 }: AdminTextFieldProps) => (
   <FormControl fullWidth={fullWidth}>
     {label && (
-      <Typography marginBottom={labelVariant === 'subtitle' && !labelSub ? 3 : 1} variant={labelVariant} color={labelColor}>
+      <Typography
+        marginBottom={labelVariant === 'subtitle' && !labelSub ? 3 : 1}
+        variant={labelVariant}
+        color={labelColor}
+        sx={{ marginBottom: '6px' }}
+      >
         {label}
         {required && (
           <Typography marginLeft="4px" sx={{ verticalAlign: 4, fontSize: 12, fontWeight: 900 }} component="span" color="error">

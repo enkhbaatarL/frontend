@@ -139,7 +139,7 @@ const ThemeTextField: Components<Omit<Theme, 'components'>>['MuiTextField'] = {
         color: theme.palette.gray['90'],
         border: 0,
         fontSize: (ownerState.size as 'small' | 'medium') === 'small' ? '12px' : '14px',
-        padding: (ownerState.size as 'small' | 'medium') === 'small' ? '5px 12px' : '8px 12px',
+        padding: (ownerState.size as 'small' | 'medium') === 'small' ? '5px 12px' : '6px 11px',
       },
       '& .MuiInputBase-input[readonly]': {
         borderColor: theme.palette.content['borderDisabled'],
