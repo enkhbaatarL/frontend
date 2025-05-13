@@ -51,6 +51,8 @@ const useSearchFilter = <Req, Res>(
   const [isPureState, setIsPureState] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
 
+  const [searchFlg, setSearchFlg] = useState(false)
+
   const handleChangeItem = useCallback(<K extends keyof Req>(key: K, value?: Req[K]) => {
     setFilter((prev) => ({ ...prev, [key]: value }))
   }, [])
@@ -71,6 +73,14 @@ const useSearchFilter = <Req, Res>(
       }
     },
     [handleChangeItem, handleMultipleChange],
+  )
+
+  const updateFilterWithSearch = useCallback(
+    (...params: [Array<[key: keyof Req, value?: Req[keyof Req]]>] | [key: keyof Req, value?: Req[keyof Req]]) => {
+      updateFilter(...params)
+      setSearchFlg(true)
+    },
+    [updateFilter],
   )
 
   const updatePagination = useCallback(
@@ -195,12 +205,20 @@ const useSearchFilter = <Req, Res>(
     [queryClient, fetchFn.name],
   )
 
+  useEffect(() => {
+    if (searchFlg) {
+      search()
+      setSearchFlg(false)
+    }
+  }, [searchFlg, filter, search])
+
   return {
     isInitialState,
     isSearchedState,
     isPureState,
     filter,
     updateFilter,
+    updateFilterWithSearch,
     pagination,
     updateSize,
     updatePage,
