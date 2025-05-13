@@ -1,37 +1,79 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 
 import MIAccordion from '@/components/common/accordion/MIAccordion'
 import MIInput from '@/components/common/input/MIInput'
 import MITablePagination from '@/components/common/table/MITablePagination'
 import MITabs from '@/components/common/tabs/MITabs'
+import useSearchFilter from '@/hooks/useSearchFilter'
+import boardService, { IFaqDetailInfo, IFaqRequest } from '@/service/mi/board'
+import { IPaginationResponse } from '@/types/api'
 
 const QaPage = () => {
-  const createQAItems = (prefix: string, titlePrefix: string) =>
-    Array.from({ length: 10 }, (_, index) => ({
-      key: `${prefix}${index + 1}`,
-      title: `${titlePrefix} ${index + 1}?`,
-      content: `
-          예시문장입니다. This is sample content for question number ${index + 1}. The US horizontal rig count decreased by three this week,
-          bringing the total to 529.
-          예시문장입니다. This is sample content for question number ${index + 1}. The US horizontal rig count decreased by three this week,
-          bringing the total to 529.
-          예시문장입니다. This is sample content for question number ${index + 1}. The US horizontal rig count decreased by three this week,
-          bringing the total to 529.
-      `,
-    }))
+  const [selectedTab, setSelectedTab] = useState(0)
 
-  const QAItems1 = createQAItems('qa1-', '데이터는 어떻게 조회하나요')
-  const QAItems2 = createQAItems('qa2-', '사용 안내 질문')
-  const QAItems3 = createQAItems('qa3-', '권한 및 접근 질문')
-  const QAItems4 = createQAItems('qa4-', '기타 질문')
+  const convQaItem = (item: IFaqDetailInfo) => ({
+    key: item.bulletinNo,
+    title: item.bulletinTitleNm,
+    content: item.bulletinCntt,
+  })
 
-  const tabsData = [
-    { label: '전체', content: <MIAccordion isBorder items={QAItems1} /> },
-    { label: '사용 안내', content: <MIAccordion isBorder items={QAItems2} /> },
-    { label: '권한 및 접근', content: <MIAccordion isBorder items={QAItems3} /> },
-    { label: '기타', content: <MIAccordion isBorder items={QAItems4} /> },
-  ]
+  const { data: filterOptions } = useQuery({
+    queryKey: ['getFaqFilter'],
+    queryFn: async () => await boardService.getFaqFilter(),
+    refetchOnWindowFocus: false,
+  })
+
+  const {
+    // filter,
+    updateFilter,
+    // pagination,
+    // updateSize,
+    // updatePage,
+    // resetFilter,
+    search,
+    data,
+    // refetch,
+    // isInitialState,
+    // isSearchedState,
+    // isLoading,
+  } = useSearchFilter<IFaqRequest, IPaginationResponse<IFaqDetailInfo>>(
+    boardService.getFaq,
+    {
+      category: '',
+      keyword: '',
+    },
+    {
+      page: 1,
+      size: 20,
+    },
+  )
+
+  const tabsData = useMemo(
+    () =>
+      filterOptions?.category.map((item) => ({
+        label: item.value,
+        content: data?.detail ? <MIAccordion isBorder items={data.detail.map(convQaItem) ?? []} /> : null,
+      })) ?? [],
+    [data?.detail, filterOptions?.category],
+  )
+
+  const handleTabChange = (newValue: number) => {
+    setSelectedTab(newValue)
+    if (filterOptions?.category[newValue]) {
+      updateFilter('category', filterOptions.category[newValue].key)
+      search()
+    }
+  }
+
+  useEffect(() => {
+    if (filterOptions?.category && filterOptions.category.length > 0) {
+      updateFilter('category', filterOptions.category[selectedTab]?.key || '')
+      search()
+    }
+  }, [filterOptions?.category, selectedTab])
 
   return (
     <Box maxWidth={'1380px'} margin={'auto'} paddingX={7.5}>
@@ -48,7 +90,7 @@ const QaPage = () => {
         />
       </Box>
       <Box paddingTop={5} paddingBottom={5}>
-        <MITabs size={'h52'} arrayItem={tabsData} />
+        <MITabs size={'h52'} arrayItem={tabsData} onChange={handleTabChange} />
         <MITablePagination />
       </Box>
     </Box>
