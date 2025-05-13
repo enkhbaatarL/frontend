@@ -40,33 +40,33 @@ interface FileItem {
   default?: boolean
 }
 
-interface AdminDataRegistrationRequestBody {
-  goodsDataNm: string
-  goodsDataExpn: string
-  goodsDataSummaryCntt: string
-  docCategoryList: [
-    {
-      CodeId: string
-    },
-  ]
-  langCategoryList: [
-    {
-      CodeId: string
-    },
-  ]
-  structuredDataList: [
-    {
-      componentTypeId: string
-      fileNo: number
-    },
-  ]
-  unstructuredDataList: [
-    {
-      criteriaDt: string
-      fileNo: number
-    },
-  ]
-}
+// interface AdminDataRegistrationRequestBody {
+//   goodsDataNm: string
+//   goodsDataExpn: string
+//   goodsDataSummaryCntt: string
+//   docCategoryList: [
+//     {
+//       CodeId: string
+//     },
+//   ]
+//   langCategoryList: [
+//     {
+//       CodeId: string
+//     },
+//   ]
+//   structuredDataList: [
+//     {
+//       componentTypeId: string
+//       fileNo: number
+//     },
+//   ]
+//   unstructuredDataList: [
+//     {
+//       criteriaDt: string
+//       fileNo: number
+//     },
+//   ]
+// }
 
 const AdminDataProvidersListPageHeader = (props: { disabled: boolean; onRegister: () => void; onCancel: () => void }) => (
   <Flex gap={10}>
@@ -115,13 +115,6 @@ const AdminDataRegistration = () => {
   })
 
   const formCanSubmit = useStore(form.store, (state) => state.isDirty && state.canSubmit)
-
-  console.log('form', form.state.values)
-
-  // const formValues = useStore(form.store, (s) => s.values)
-  // useEffect(() => {
-  //   console.log('form values changed:', formValues)
-  // }, [formValues])
 
   const uploadRef = useRef<UploadFieldRef>(null)
   const uploadRefDate = useRef<UploadFieldRef>(null)
