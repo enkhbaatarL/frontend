@@ -5,6 +5,7 @@ import DataVisualizationPage from '@/pages/mi/dashboard/DataVisualizationPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
+import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage.tsx'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
 import SignalMap from '@/pages/mi/signalMap/SignalMap.tsx'
 import UserChartSamplePage from '@/pages/mi/UserChartSamplePage'
@@ -44,7 +45,16 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'notices',
-      element: <NoticesPage />,
+      children: [
+        {
+          index: true,
+          element: <NoticesPage />,
+        },
+        {
+          path: ':noticeNo',
+          element: <NoticesDetailPage />,
+        },
+      ],
     },
     {
       path: 'help-center',

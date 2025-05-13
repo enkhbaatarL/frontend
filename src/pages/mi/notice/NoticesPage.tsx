@@ -54,7 +54,7 @@ const NoticesPage = () => {
       <Box paddingTop={5} paddingBottom={5}>
         <MITableLayout
           tableProps={{
-            onRowClick: () => navigate('/user/notice-detail'),
+            onRowClick: (row) => navigate(`/mi/notices/${row.id}`),
             noRowMessage: '등록된 내용이 없습니다.',
             columns: [
               { field: 'bulletinCategorySeparateCode', headerName: 'Category', width: 120, align: 'center' },
