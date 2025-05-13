@@ -229,7 +229,10 @@ export default function AdminDataProvidersDetailPage() {
                 </Typography>
                 <AdminCompanySelectorIconButton
                   value={selectedProvider}
-                  onChange={(provider) => setSelectedProvider(provider)}
+                  onChange={(provider) => {
+                    setSelectedProvider(provider)
+                    navigate(`/admin/data-providers/providers/detail/${provider.value}`)
+                  }}
                   options={providerOptions}
                 />
               </Box>
