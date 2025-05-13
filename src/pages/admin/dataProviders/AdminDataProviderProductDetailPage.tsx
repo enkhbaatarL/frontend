@@ -22,6 +22,7 @@ import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import queryClient from '@/lib/queryClient'
 import dataProviderService, { IProductCompanyPermissionInfo, IProviderGoodsDataInfo } from '@/service/admin/dataProvider'
+import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
 
 interface ProductDataTableProps {
@@ -57,6 +58,8 @@ const CustomPageTitle = () => (
 
 // 데이터 목록 테이블
 const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValue, onRegister }: ProductDataTableProps) => {
+  const user = useAuthStore((state) => state.user)
+
   const columns: GridColDef[] = [
     !isPublic
       ? {
@@ -97,7 +100,7 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
             {
               label: t('데이터 업데이트'),
               icon: <UpdateIcon fontSize="small" />,
-              disabled: !isPublic,
+              disabled: (user?.role === 'ADMIN' && !isPublic) || (user?.role === 'OPERATOR' && isPublic),
               onClick: () => {
                 // TODO: 데이터 업데이트 페이지 이동
               },
@@ -135,7 +138,13 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
               setSearch('')
             }}
           />
-          <AdminButton color="secondary" variant="outlined" size="h34" onClick={onRegister}>
+          <AdminButton
+            color="secondary"
+            variant="outlined"
+            size="h34"
+            onClick={onRegister}
+            disabled={(user?.role === 'ADMIN' && !isPublic) || (user?.role === 'OPERATOR' && isPublic)}
+          >
             {t('데이터 등록')}
           </AdminButton>
         </Box>
@@ -241,6 +250,7 @@ const AdminDataProviderProductDetailPage = () => {
   const [editProductName, setEditProductName] = useState('')
   const [editProductDescription, setEditProductDescription] = useState('')
   const { showSnackbar } = useSnackbar()
+  const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
 
   // 상품 상세
@@ -359,7 +369,7 @@ const AdminDataProviderProductDetailPage = () => {
       setCustomComponent(
         <AdminDataProviderProductDetailPageHeader
           value={isActive}
-          onChange={() => setOpenActiveConfirm(true)}
+          onChange={() => user?.role === 'ADMIN' && setOpenActiveConfirm(true)}
           label={isActive ? '활성' : '비활성'}
         />,
       )
@@ -446,7 +456,7 @@ const AdminDataProviderProductDetailPage = () => {
           onRegister={() => navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}/data-registration`)}
         />
       )}
-      {companyPermissionList && (
+      {user?.role === 'ADMIN' && companyPermissionList && (
         <AuthorityDetailTable
           data={companyPermissionList}
           searchCompanyNm={searchCompanyNm}

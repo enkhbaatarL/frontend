@@ -166,16 +166,24 @@ fieldset{
   border-bottom: 1px solid #DCE1E5;
   background: color.$gray-5;
   .AdminSearchFilterField{
-    flex-grow: 1;
-    max-width: 995px;
     >.MuiBox-root{
       flex: 1;
-      max-width: 189px;
+      min-width: 200px;
       .BoxInput{
         width: 100%;
       }
     }
   }
+  // .AdminSearchFilterField{
+  //   max-width: 995px;
+  //   >.MuiBox-root{
+  //     flex: 1;
+  //     max-width: 200px;
+  //     .BoxInput{
+  //       width: 100%;
+  //     }
+  //   }
+  // }
   .AdminSearchFilterButton{
     width: 103px;
   }
