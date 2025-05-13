@@ -1,7 +1,6 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
-import { IFile } from '@/service/admin/file'
 import { IAuditInfo } from '@/service/admin/members'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 import { IFilterItem } from '@/types/common'
@@ -52,22 +51,16 @@ export interface INoticeInfo {
   auditInfo: IAuditInfo
 }
 
+export interface INoticeDetailRequest {
+  customerCompanyNo: number
+}
+
 export interface INoticeDetailInfo {
-  isTopFixed: boolean
-  isPopupUse: boolean
-  popupPostBeginDt: string
-  popupPostEndDt: string
-  bulletinCategorySeparateCd: string
-  isWholePost: boolean
-  targetList: {
-    customerCompanyNo: number
-    customerCompanyNm: string
-  }[]
-  bulletinValidBeginDt: string
-  bulletinValidEndDt: string
+  bulletinNo: number
+  bulletinCategoryName: string
   bulletinTitleNm: string
   bulletinCntt: string
-  fileList: IFile[]
+  fileUrl: string
 }
 
 /**
@@ -115,11 +108,14 @@ const boardService = {
   /**
    * 공지사항 상세 정보를 조회합니다.
    * @param noticeNo - 공지사항 번호
+   * @param params - { customerCompanyNo: 고객회사번호 }
    */
-  async getNoticeDetail(noticeNo?: number | string): Promise<INoticeDetailInfo> {
+  async getNoticeDetail(noticeNo?: number | string, params?: INoticeDetailRequest): Promise<INoticeDetailInfo> {
     if (!noticeNo) throw new Error('noticeNo is required')
 
-    const response: AxiosResponse<ICommonResponse<INoticeDetailInfo>> = await api.get(`mi/bulletinboard/notices/${noticeNo}`)
+    const response: AxiosResponse<ICommonResponse<INoticeDetailInfo>> = await api.get(`mi/bulletinboard/notices/${noticeNo}`, {
+      params,
+    })
 
     return response.data.data
   },
