@@ -1,25 +1,40 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableLayout from '@/components/common/table/MITableLayout'
-import { useMockBoardData } from '@/hooks/useMockBoardNotices'
+import useSearchFilter from '@/hooks/useSearchFilter.tsx'
+import boardService, { INoticeInfo, INoticeRequest } from '@/service/mi/board.ts'
+import { IPaginationResponse } from '@/types/api.ts'
 
 const NoticesPage = () => {
-  const data = useMockBoardData()
+  const { data, updateFilter, pagination, updatePage, updateSize } = useSearchFilter<INoticeRequest, IPaginationResponse<INoticeInfo>>(
+    boardService.getNotice,
+    {
+      category: '',
+      status: '',
+      target: '',
+      keyword: '',
+    },
+    {
+      page: 1,
+      size: 20,
+    },
+  )
+
   const navigate = useNavigate()
-  const [dataTable, setDataTable] = useState([])
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDataTable(data as [])
-    }, 1000)
+  // 페이지 변경 핸들러
+  const handlePageChange = (page: number) => {
+    updatePage(page)
+  }
 
-    return () => clearInterval(interval)
-  }, [])
+  // 페이지 사이즈 변경 핸들러
+  const handlePageSizeChange = (pageSize: number) => {
+    updateSize(pageSize)
+  }
 
   return (
     <Box maxWidth={'1380px'} margin={'auto'} paddingX={7.5}>
@@ -33,6 +48,7 @@ const NoticesPage = () => {
           placeholder="Search for notice"
           size="h46"
           startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
+          onChange={(e) => updateFilter('keyword', e.target.value)}
         />
       </Box>
       <Box paddingTop={5} paddingBottom={5}>
@@ -41,10 +57,10 @@ const NoticesPage = () => {
             onRowClick: () => navigate('/user/notice-detail'),
             noRowMessage: '등록된 내용이 없습니다.',
             columns: [
-              { field: 'category', headerName: 'Category', width: 120, align: 'center' },
-              { field: 'title', headerName: 'Title', flex: 1 },
+              { field: 'bulletinCategorySeparateCode', headerName: 'Category', width: 120, align: 'center' },
+              { field: 'bulletinTitleName', headerName: 'Title', flex: 1 },
               {
-                field: 'date',
+                field: 'createDt',
                 headerName: 'Updated',
                 width: 120,
                 align: 'center',
@@ -53,8 +69,15 @@ const NoticesPage = () => {
                 },
               },
             ],
-            rowId: 'id',
-            rows: dataTable,
+            rowId: 'bulletinNo',
+            rows: data?.detail || [],
+          }}
+          pagination={{
+            total: data?.totalElements || 0,
+            current: pagination?.page || 1,
+            pageSize: pagination?.size || 20,
+            onPageChange: handlePageChange,
+            onPageSizeChange: handlePageSizeChange,
           }}
         />
       </Box>

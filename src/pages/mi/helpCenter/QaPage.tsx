@@ -13,6 +13,8 @@ import { IPaginationResponse } from '@/types/api'
 
 const QaPage = () => {
   const [selectedTab, setSelectedTab] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const convQaItem = (item: IFaqDetailInfo) => ({
     key: item.bulletinNo,
@@ -66,6 +68,16 @@ const QaPage = () => {
       updateFilter('category', filterOptions.category[newValue].key)
       search()
     }
+    setCurrentPage(1)
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size)
+    setCurrentPage(1) // 페이지 사이즈 변경 시 첫 페이지로 이동
   }
 
   useEffect(() => {
@@ -87,11 +99,18 @@ const QaPage = () => {
           placeholder="Search for help center"
           size="h46"
           startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
+          onChange={() => search()}
         />
       </Box>
       <Box paddingTop={5} paddingBottom={5}>
         <MITabs size={'h52'} arrayItem={tabsData} onChange={handleTabChange} />
-        <MITablePagination />
+        <MITablePagination
+          total={data?.totalElements ?? 0}
+          current={currentPage}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </Box>
     </Box>
   )

@@ -17,6 +17,13 @@ export interface MITableLayoutProps<T extends GridRowModel> {
   actionButtons?: ReactElement
   tableProps: MITableProps<T>
   hidePagination?: boolean
+  pagination?: {
+    total: number
+    current: number
+    pageSize: number
+    onPageChange: (page: number) => void
+    onPageSizeChange: (pageSize: number) => void
+  }
 }
 
 export default function MITableLayout<T extends GridRowModel>(props: Readonly<MITableLayoutProps<T>>) {
@@ -47,7 +54,15 @@ export default function MITableLayout<T extends GridRowModel>(props: Readonly<MI
         </Box>
       )}
       <MITable {...props.tableProps} />
-      {!props.hidePagination && <MITablePagination />}
+      {!props.hidePagination && props.pagination && (
+        <MITablePagination
+          total={props.pagination.total}
+          current={props.pagination.current}
+          pageSize={props.pagination.pageSize}
+          onPageChange={props.pagination.onPageChange}
+          onPageSizeChange={props.pagination.onPageSizeChange}
+        />
+      )}
     </Box>
   )
 }
