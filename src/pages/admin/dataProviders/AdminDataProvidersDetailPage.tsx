@@ -322,7 +322,9 @@ export default function AdminDataProvidersDetailPage() {
           columns={columns}
           data={dataProviderGoods}
           onRowClick={({ row }) => {
-            navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${row.goodsNo}`)
+            navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${row.goodsNo}`, {
+              state: { providerNm: data?.providerNm },
+            })
           }}
         />
       </Box>
