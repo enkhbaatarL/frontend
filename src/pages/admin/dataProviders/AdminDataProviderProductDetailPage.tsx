@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { useEffect, useState } from 'react'
-import { useLocation, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminConfirm from '@/components/admin/AdminConfirm'
@@ -30,6 +30,7 @@ interface ProductDataTableProps {
   search: string
   setSearch: (value: string) => void
   setSearchValue: (value: string) => void
+  onRegister: () => void
 }
 interface AuthorityDetailTableProps {
   data: IPaginationResponse<IProductCompanyPermissionInfo>
@@ -55,7 +56,7 @@ const CustomPageTitle = () => (
 )
 
 // 데이터 목록 테이블
-const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValue }: ProductDataTableProps) => {
+const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValue, onRegister }: ProductDataTableProps) => {
   const columns: GridColDef[] = [
     !isPublic
       ? {
@@ -134,14 +135,7 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
               setSearch('')
             }}
           />
-          <AdminButton
-            color="secondary"
-            variant="outlined"
-            size="h34"
-            onClick={() => {
-              // TODO: 데이터 등록 페이지 이동
-            }}
-          >
+          <AdminButton color="secondary" variant="outlined" size="h34" onClick={onRegister}>
             {t('데이터 등록')}
           </AdminButton>
         </Box>
@@ -247,6 +241,7 @@ const AdminDataProviderProductDetailPage = () => {
   const [editProductName, setEditProductName] = useState('')
   const [editProductDescription, setEditProductDescription] = useState('')
   const { showSnackbar } = useSnackbar()
+  const navigate = useNavigate()
 
   // 상품 상세
   const { data: productDetailData } = useQuery({
@@ -442,7 +437,14 @@ const AdminDataProviderProductDetailPage = () => {
   return (
     <>
       {dataList && (
-        <ProductDataListTable data={dataList} isPublic={isPublic} search={search} setSearch={setSearch} setSearchValue={setSearchValue} />
+        <ProductDataListTable
+          data={dataList}
+          isPublic={isPublic}
+          search={search}
+          setSearch={setSearch}
+          setSearchValue={setSearchValue}
+          onRegister={() => navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}/data-registration`)}
+        />
       )}
       {companyPermissionList && (
         <AuthorityDetailTable

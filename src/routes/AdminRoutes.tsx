@@ -22,6 +22,7 @@ import AdminDataProviderProductDetailPage from '@/pages/admin/dataProviders/Admi
 import AdminDataProviderRegistrationPage from '@/pages/admin/dataProviders/AdminDataProviderRegistrationPage.tsx'
 import AdminDataProvidersDetailPage from '@/pages/admin/dataProviders/AdminDataProvidersDetailPage.tsx'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
+import AdminDataRegistration from '@/pages/admin/dataProviders/AdminDataRegistration'
 import AdminMemberManagementManagersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementManagerRegistrationPage'
 import AdminMemberManagementManagersPage from '@/pages/admin/memberManagement/AdminMemberManagementManagersPage'
 import AdminMemberManagementMangerDetailPage from '@/pages/admin/memberManagement/AdminMemberManagementMangerDetailPage'
@@ -236,6 +237,10 @@ const AdminRoutes: ICustomRouteObject = {
                   path: ':providerNo/:goodsNo',
                   hidden: true,
                   element: <AdminDataProviderProductDetailPage />,
+                },
+                {
+                  path: ':providerNo/:goodsNo/data-registration',
+                  element: <AdminDataRegistration />,
                 },
               ],
             },
