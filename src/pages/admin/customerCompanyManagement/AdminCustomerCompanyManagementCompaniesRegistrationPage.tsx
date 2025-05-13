@@ -134,7 +134,7 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
           </Typography>
           <Flex gap={2}>
             <AdminDatePicker value={usageBeginDate} onChange={(date) => setUsageBeginDate(date)} />
-            <Typography variant="breadcrumbs" color="gray.50">
+            <Typography variant="breadcrumbs" color="gray.50" sx={{ margin: '5px', marginTop: '10px' }}>
               ~
             </Typography>
             <AdminDatePicker minDate={usageBeginDate || today} value={usageEndDate} onChange={(date) => setUsageEndDate(date)} />
