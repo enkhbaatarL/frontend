@@ -32,7 +32,7 @@ const Accordion = styled((props: AccordionProps & { isBorder?: boolean }) => {
   borderBottom: isBorder ? '1px solid #DEE2E6' : 'none',
   borderRadius: 0,
   '&:last-child': { paddingBottom: isBorder ? 12 : 0 },
-  '&:first-child': { paddingTop: isBorder ? 12 : 0 },
+  '&:first-of-type': { paddingTop: isBorder ? 12 : 0 },
   '&::before': { display: 'none' },
   '&.Mui-expanded': {
     backgroundColor: isBorder ? '#F8F9FA' : 'transparent',

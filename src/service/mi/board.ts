@@ -23,7 +23,7 @@ export interface IFaqInfo {
 }
 
 export interface IFaqDetailInfo {
-  bulletinCategorySeparateCd: string
+  bulletinNo: string
   bulletinTitleNm: string
   bulletinCntt: string
 }
@@ -86,8 +86,8 @@ const boardService = {
    * FAQ 목록을 조회합니다.
    * @param params - { page: 페이지 번호, size: 페이지당 항목 수, category: 카테고리, keyword: 검색어 }
    */
-  async getFaq(params: Partial<IFaqRequest>): Promise<IPaginationResponse<IFaqInfo>> {
-    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IFaqInfo>>> = await api.get('mi/bulletinboard/faq', {
+  async getFaq(params: Partial<IFaqRequest>): Promise<IPaginationResponse<IFaqDetailInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IFaqDetailInfo>>> = await api.get('mi/bulletinboard/faq', {
       params,
     })
 

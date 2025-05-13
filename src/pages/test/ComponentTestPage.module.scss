@@ -12,7 +12,7 @@
     tr{
       td{
         padding: 5px 0;
-        &:first-child{
+        &:first-of-type{
           width: 120px;
           color: var(--Content-Text-Subtext, #868E96);
         }

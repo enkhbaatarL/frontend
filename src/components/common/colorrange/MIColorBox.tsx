@@ -38,7 +38,7 @@ const MIColorBox = (props: MIChipProps) => {
           height: '16px',
           backgroundColor: '#CED4DA',
         },
-        '&:first-child::after': {
+        '&:first-of-type::after': {
           content: '""',
           position: 'absolute',
           left: '-1px',

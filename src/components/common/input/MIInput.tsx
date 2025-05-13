@@ -40,6 +40,9 @@ const MIInput = ({
   maxHeight,
   appendContent,
   variant = 'inForm',
+  maxWidth,
+  minWidth,
+  width,
   onClear,
   onFocusInput,
   ...props
@@ -193,10 +196,10 @@ const MIInput = ({
     <Box
       className={'BoxInput'}
       ref={containerRef}
-      maxWidth={props.maxWidth}
-      minWidth={props.minWidth}
-      width={props.width}
       sx={{
+        maxWidth,
+        minWidth,
+        width,
         svg: {
           display: 'block',
         },
