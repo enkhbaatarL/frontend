@@ -240,6 +240,7 @@ const AdminRoutes: ICustomRouteObject = {
                 },
                 {
                   path: ':providerNo/:goodsNo/data-registration',
+                  label: '데이터 등록',
                   element: <AdminDataRegistration />,
                 },
               ],
