@@ -39,6 +39,17 @@ const pages = [
   },
 ]
 
+const boards = [
+  {
+    label: 'Notice',
+    url: '/mi/notices',
+  },
+  {
+    label: 'Help Center',
+    url: '/mi/help-center',
+  },
+]
+
 const MIHeaderMainLayout = () => {
   const navigate = useNavigate()
   const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null)
@@ -131,32 +142,24 @@ const MIHeaderMainLayout = () => {
             </MIMenuSelector>
           </Box>
           <Grid container gap={1}>
-            <Link
-              href=""
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/mi/notices')
-              }}
-              color="gray.70"
-              padding="4px 12px"
-              underline="hover"
-              variant="subtext"
-            >
-              Notice
-            </Link>
-            <Link
-              href=""
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/mi/help-center')
-              }}
-              color="gray.70"
-              padding="4px 12px"
-              underline="hover"
-              variant="subtext"
-            >
-              Help Center
-            </Link>
+            {boards.map((board) => (
+              <Link
+                key={board.label}
+                href=""
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (location.pathname !== board.url) {
+                    navigate(board.url)
+                  }
+                }}
+                color="gray.70"
+                padding="4px 12px"
+                underline="hover"
+                variant="subtext"
+              >
+                {board.label}
+              </Link>
+            ))}
           </Grid>
         </Grid>
       </Grid>
