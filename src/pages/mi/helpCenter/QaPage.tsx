@@ -1,9 +1,11 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
+import { t } from 'i18next'
 import { useEffect, useMemo } from 'react'
 
 import MIAccordion from '@/components/common/accordion/MIAccordion'
+import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MIInput from '@/components/common/input/MIInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MITabs from '@/components/common/tabs/MITabs'
@@ -42,13 +44,34 @@ const QaPage = () => {
     },
   )
 
+  const isEmpty = useMemo(() => !data?.detail || data.detail.length === 0, [data?.detail])
+
   const tabsData = useMemo(
     () =>
       filterOptions?.category.map((item) => ({
         label: item.value,
-        content: data?.detail ? <MIAccordion isBorder items={data.detail.map(convQaItem) ?? []} /> : null,
+        content: isEmpty ? (
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            bgcolor="gray.5"
+            textAlign="center"
+            height="100%"
+            sx={{ padding: '140px 0', borderBottom: '1px solid #DEE2E6' }}
+          >
+            <Box display="flex" flexDirection="column" rowGap="10px" alignItems="center">
+              <ErrorOutlineIcon />
+              <Typography variant="body6" color="gray.60">
+                {t('검색 결과가 없습니다.')}
+              </Typography>
+            </Box>
+          </Box>
+        ) : (
+          <MIAccordion isBorder items={data?.detail.map(convQaItem) ?? []} />
+        ),
       })) ?? [],
-    [data?.detail, filterOptions?.category],
+    [data?.detail, filterOptions?.category, isEmpty],
   )
 
   const handleTabChange = (newValue: number) => {
@@ -69,25 +92,26 @@ const QaPage = () => {
   }, [filterOptions, filter.category, updateFilter, updateFilterWithSearch])
 
   return (
-    <Box maxWidth={'1380px'} margin={'auto'} paddingX={7.5}>
+    <Box maxWidth="1380px" margin="auto" paddingX={7.5}>
       <Box paddingTop={10}>
         <Typography variant="heading2" component="div" mb={5} color="gray.90">
           Help Center
         </Typography>
         <MIInput
           width={458}
-          maxWidth={'100%'}
+          maxWidth="100%"
           placeholder="Search for help center"
           size="h46"
           startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
+          value={filter?.keyword ?? ''}
           onChange={(e) => updateFilter('keyword', e.target.value)}
           onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}
           onClear={() => updateFilterWithSearch('keyword', '')}
         />
       </Box>
       <Box paddingTop={5} paddingBottom={5}>
-        <MITabs size={'h52'} arrayItem={tabsData} onChange={handleTabChange} value={activeTab} />
-        <MIPagination data={data} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />
+        <MITabs size="h52" arrayItem={tabsData} onChange={handleTabChange} value={activeTab} />
+        {!isEmpty && <MIPagination data={data} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />}
       </Box>
     </Box>
   )
