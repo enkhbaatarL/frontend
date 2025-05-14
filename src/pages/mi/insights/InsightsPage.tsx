@@ -3,8 +3,8 @@ import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography } from '@mu
 
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIInput from '@/components/common/input/MIInput'
+import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
-import MITablePagination from '@/components/common/table-user/MITablePagination'
 import { mockFilters } from '@/hooks/mockFilters'
 import { useMockReports } from '@/hooks/useMockReports'
 import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn.tsx'
@@ -119,7 +119,7 @@ const InsightsPage = () => {
                 <InsightsDocumentItem key={index} report={report} />
               ))}
             </Grid>
-            <MITablePagination />
+            <MIPagination />
           </Box>
           <Box
             flexShrink={0}

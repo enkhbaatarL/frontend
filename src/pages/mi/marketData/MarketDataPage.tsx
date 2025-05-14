@@ -4,7 +4,7 @@ import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import MILine from '@/components/common/divider/MILine'
 import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
-import MITableUser from '@/components/common/table-user/MITableUser'
+import MITableUser from '@/components/common/table/MITableUser'
 import { useMockEvents } from '@/hooks/useMockEvents'
 import { useMockMarket } from '@/hooks/useMockMarket'
 import MarketdataChart from '@/pages/mi/marketData/components/MarketdataChart.tsx'
@@ -113,7 +113,7 @@ const MarketDataPage = () => {
             <Box width={'100%'}>
               <MITableUser
                 tableProps={{
-                  disabledHover: true,
+                  disableHover: true,
                   noRowMessage: '등록된 내용이 없습니다.',
                   columns: [
                     {

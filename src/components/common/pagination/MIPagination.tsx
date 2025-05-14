@@ -9,7 +9,7 @@ import { useMemo } from 'react'
 import MIButton from '@/components/common/button/MIButton'
 import { IPaginationResponse } from '@/types/api'
 
-interface Props<T> {
+export interface MIPaginationProps<T> {
   data?: IPaginationResponse<T>
   size?: number
   sizeList?: number[]
@@ -19,7 +19,7 @@ interface Props<T> {
   groupSize?: number
 }
 
-const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, disabled, groupSize = 5 }: Props<T>) => {
+const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, disabled, groupSize = 5 }: MIPaginationProps<T>) => {
   const page = data?.currentPage ?? 1
   const count = data?.totalPages ?? 0
 
