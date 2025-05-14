@@ -1,7 +1,8 @@
 import { action } from '@storybook/addon-actions'
 import { Meta, StoryObj } from '@storybook/react'
 
-import AdminItemUpload from '@/components/admin/AdminItemUpload'
+import AdminItemUpload from '@/components/admin/AdminItemUpload/AdminItemUpload'
+
 const meta = {
   title: 'common/AdminItemUpload',
   component: AdminItemUpload,
@@ -36,11 +37,13 @@ type Story = StoryObj<typeof meta>
 export const AdminItemUploadDefault: Story = {
   args: {
     progressValue: 80,
-    file: {
+    fileItem: {
       url: '/src/assets/bgcard.png',
-      name: 'sample.jpg',
-      size: 512 * 1024,
+      fileNm: 'sample.jpg',
+      fileSize: 512 * 1024,
       type: 'image/jpeg',
+      fileNo: 0,
+      componentTypeId: '',
     },
     widthItem: 456,
     onDelete: () => alert('Item deleted'),
@@ -50,11 +53,13 @@ export const AdminItemUploadDefault: Story = {
 export const AdminItemUploadCsv: Story = {
   args: {
     progressValue: 10,
-    file: {
+    fileItem: {
       url: '/src/assets/fileicon.svg',
-      name: 'document_file_name.csv',
-      size: 512 * 1024,
+      fileNm: 'document_file_name.csv',
+      fileSize: 512 * 1024,
       type: 'text/csv',
+      fileNo: 0,
+      componentTypeId: '',
     },
     widthItem: 456,
     onDelete: () => alert('Item deleted'),
@@ -63,10 +68,12 @@ export const AdminItemUploadCsv: Story = {
 export const AdminItemUploadNoImage: Story = {
   args: {
     progressValue: 100,
-    file: {
-      name: 'document_file_name.csv',
-      size: 512 * 1024,
+    fileItem: {
+      fileNm: 'document_file_name.csv',
+      fileSize: 512 * 1024,
       type: 'text/csv',
+      componentTypeId: '',
+      fileNo: 0,
     },
     widthItem: 456,
     onDelete: () => alert('Item deleted'),

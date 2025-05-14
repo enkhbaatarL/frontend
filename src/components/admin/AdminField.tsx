@@ -166,7 +166,7 @@ const AdminField = ({
           acceptedTypes={acceptedType}
           multiple={multiple}
           defaultFiles={defaultFiles}
-          // onChange={handleChangeFile}
+          onUploadAction={() => {}} // onChange={handleChangeFile}
         />
       )}
 

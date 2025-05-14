@@ -11,9 +11,20 @@ const useAdminPageInfo = () => {
   const adminPageInfo = useMemo(() => {
     const currentPath = location.pathname
 
+    const matchPath = (pattern: string, path: string): boolean => {
+      const patternSegments = pattern.split('/').filter(Boolean)
+      const pathSegments = path.split('/').filter(Boolean)
+
+      if (patternSegments.length !== pathSegments.length) return false
+
+      return patternSegments.every((seg, i) => seg.startsWith(':') || seg === pathSegments[i])
+    }
+
     const findMenuItem = (items: ICustomRouteObject[], path: string): ICustomRouteObject | null => {
       for (const item of items) {
-        if (item.path === path) return item
+        if (item.path && matchPath(item.path, path)) {
+          return item
+        }
         if (item.children) {
           const found = findMenuItem(item.children, path)
           if (found) return found
