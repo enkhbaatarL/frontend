@@ -1,17 +1,49 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIInput from '@/components/common/input/MIInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
 import { mockFilters } from '@/hooks/mockFilters'
-import { useMockReports } from '@/hooks/useMockReports'
-import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
-import InsightsDocumentItem from '@/pages/mi/insights/components/InsightsDocumentItem'
+import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn.tsx'
+// import InsightsDocumentItem from '@/pages/mi/insights/components/InsightsDocumentItem.tsx'
+import insightsService from '@/service/mi/insights'
+
+export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT'
+export interface Report {
+  type: ReportType
+  title: string
+  date: string
+  source: string
+  typeId: string
+}
 
 const InsightsPage = () => {
-  const reports = useMockReports()
+  // 포커스 목록
+  const { data: focusedList } = useQuery({
+    queryKey: ['insights'],
+    queryFn: async () => await insightsService.getFocusedList({ customerCompanyNo: 2014 }),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+  })
+
+  const reports = useMemo(() => {
+    if (focusedList && Array.isArray(focusedList.data)) {
+      return focusedList.data.map((item) => ({
+        type: item.goodsDataCategoryCd,
+        title: item.goodsDataNm,
+        date: item.modifyDt,
+        source: item.providerNm,
+        typeId: item.goodsDataNo,
+      }))
+    }
+    return []
+  }, [focusedList])
 
   return (
     <>
@@ -50,12 +82,14 @@ const InsightsPage = () => {
           Focused
         </Typography>
         <Grid mb={17.5} container spacing={6}>
-          {reports.map((report, index) => (
-            <Grid size={{ xs: 6, md: 3 }} key={index}>
-              <InsightsCardBtn index={index} report={report} />
-            </Grid>
-          ))}
+          {reports &&
+            reports.map((report, index) => (
+              <Grid size={{ xs: 6, md: 3 }} key={index}>
+                <InsightsCardBtn index={index} report={report} />
+              </Grid>
+            ))}
         </Grid>
+
         <Box pb={6} mb={9} borderBottom={'1px solid'} borderColor={'gray.30'}>
           <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
             Insights
@@ -114,11 +148,11 @@ const InsightsPage = () => {
                 ]}
               />
             </Grid>
-            <Grid container direction={'column'} gap={8}>
-              {reports.map((report, index) => (
+            {/* <Grid container direction={'column'} gap={8}>
+              {dump.map((report, index) => (
                 <InsightsDocumentItem key={index} report={report} />
               ))}
-            </Grid>
+            </Grid> */}
             <MIPagination />
           </Box>
           <Box

@@ -1,7 +1,7 @@
 import { Grid2 as Grid, Typography } from '@mui/material'
 import { FC } from 'react'
 
-import MIBage from '@/components/common/bage/MIBage'
+// import MIBage from '@/components/common/bage/MIBage'
 import MILine from '@/components/common/divider/MILine'
 import { Report } from '@/hooks/useMockReports'
 
@@ -26,7 +26,7 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => (
       },
     }}
   >
-    <MIBage color={report.type} label={report.type} />
+    {/* <MIBage color={report.type} label={report.type} /> */}
     <Typography sx={{ WebkitLineClamp: index > 3 ? 3 : 6 }} color="white" mt={4.5} mb={'auto'} component="h4" variant="titleCardInsight">
       {report.title}
     </Typography>

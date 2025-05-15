@@ -33,8 +33,6 @@ const insightsService = {
       params,
     })
 
-    await api.get('/mi/company-management/companies/all')
-
     return response.data
   },
   /**
