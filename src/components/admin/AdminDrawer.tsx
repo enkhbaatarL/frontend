@@ -4,6 +4,7 @@ import MuiDrawer from '@mui/material/Drawer'
 import Menu from '@mui/material/Menu'
 import { useEffect, useRef, useState, MouseEvent } from 'react'
 import ReactDOM from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 
 import AdminPanelSettings from '../common/icons/AdminPanelSettings'
 import KeyboardDoubleArrowLeftIcon from '../common/icons/KeyboardDoubleArrowLeftIcon'
@@ -81,6 +82,7 @@ const DrawerProfile = (props: { open: boolean }) => {
   const [isOpen, setIsOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null)
+  const navigate = useNavigate()
 
   const handleClose = () => {
     setAnchorEl(null)
@@ -184,6 +186,10 @@ const DrawerProfile = (props: { open: boolean }) => {
           email={user?.userLoginId ?? ''}
           company={user?.companyNm ?? ''}
           team={user?.departmentNm ?? ''}
+          buttonLabel={user?.isOtherServiceAccessPossible ? '사용자 페이지로 이동 (임시)' : undefined}
+          onButtonClick={() => {
+            navigate('/mi')
+          }}
         />
       </Menu>
     </Box>

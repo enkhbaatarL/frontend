@@ -3,12 +3,14 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import { Typography } from '@mui/material'
 import Box from '@mui/material/Box'
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import MIProfile from '@/components/common/profile/MIProfile'
 import useAuthStore from '@/store/useAuthStore'
 
 const MIHeaderProfile = () => {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
 
   const [anchorElUser, setAnchorElUser] = useState(false)
   const anchorEl = useRef<HTMLElement>(null)
@@ -94,6 +96,11 @@ const MIHeaderProfile = () => {
               email={user?.userLoginId ?? ''}
               company={user?.companyNm ?? ''}
               team={user?.departmentNm ?? ''}
+              role={user?.isOtherServiceAccessPossible ? user?.userRoleCd : undefined}
+              buttonLabel={user?.isOtherServiceAccessPossible ? '어드민 페이지로 이동 (임시)' : undefined}
+              onButtonClick={() => {
+                navigate('/admin')
+              }}
             />
           </Box>
         )}
