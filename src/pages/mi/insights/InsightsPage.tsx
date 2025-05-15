@@ -12,6 +12,7 @@ import MISelect from '@/components/common/select/MISelect'
 import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
 // import InsightsDocumentItem from '@/pages/mi/insights/components/InsightsDocumentItem'
 import insightsService, { IAdvancedFilter, IAdvancedFilterItem } from '@/service/mi/insights'
+import useAuthStore from '@/store/useAuthStore'
 
 export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT'
 export interface Report {
@@ -23,10 +24,13 @@ export interface Report {
 }
 
 const InsightsPage = () => {
+  const { accessCompanyInfo } = useAuthStore()
+  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
+
   // 포커스 목록
   const { data: focusedList } = useQuery({
     queryKey: ['insights'],
-    queryFn: async () => await insightsService.getFocusedList({ customerCompanyNo: 2014 }),
+    queryFn: async () => await insightsService.getFocusedList({ customerCompanyNo }),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,

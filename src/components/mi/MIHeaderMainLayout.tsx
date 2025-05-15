@@ -8,7 +8,7 @@ import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import style from './MIHeaderMainLayout.module.scss'
@@ -53,11 +53,11 @@ const boards = [
 
 const MIHeaderMainLayout = () => {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user, setAccessCompanyInfo } = useAuthStore()
 
   const [selectedCompany, setSelectedCompany] = useState({
     label: user?.companyNm ?? '',
-    value: '', // TODO: set customerCompanyNo
+    value: user?.companyNo ?? 0,
   })
   const [isOpenCompany, setIsOpenCompany] = useState(false)
 
@@ -79,6 +79,15 @@ const MIHeaderMainLayout = () => {
       })) ?? [],
     [allCompanies],
   )
+
+  useEffect(() => {
+    if (selectedCompany) {
+      setAccessCompanyInfo({
+        customerCompanyNo: selectedCompany.value,
+        customerCompanyNm: selectedCompany.label,
+      })
+    }
+  }, [selectedCompany, setAccessCompanyInfo])
 
   return (
     <div className={clsx(style.GNBHeader)}>
@@ -105,7 +114,7 @@ const MIHeaderMainLayout = () => {
                 onOpen={setIsOpenCompany}
                 onChange={({ value, label }) => {
                   setSelectedCompany({
-                    value: value as string,
+                    value: value as number,
                     label,
                   })
                 }}

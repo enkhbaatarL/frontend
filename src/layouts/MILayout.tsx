@@ -7,12 +7,41 @@ import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout from '@/components/mi/MIHeaderMainLayout'
 import MIProvider from '@/providers/MIProvider'
 import boardService, { INoticeDetailInfo, INoticeInfo } from '@/service/mi/board'
+import useAuthStore from '@/store/useAuthStore'
+
+// 쿠키 설정 함수
+const setCookie = (name: string, value: string, expiryDays: number) => {
+  const date = new Date()
+  date.setTime(date.getTime() + expiryDays * 24 * 60 * 60 * 1000)
+  const expires = `expires=${date.toUTCString()}`
+  document.cookie = `${name}=${value};${expires};path=/`
+}
+
+// 쿠키 가져오기 함수
+const getCookie = (name: string): string | null => {
+  const cookieName = `${name}=`
+  const cookies = document.cookie.split(';')
+
+  for (const cookieStr of cookies) {
+    const cookie = cookieStr.trim()
+    if (cookie.startsWith(cookieName)) {
+      return cookie.substring(cookieName.length, cookie.length)
+    }
+  }
+  return null
+}
 
 const MILayout = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [showNoticePopup, setShowNoticePopup] = useState(false)
   const [noticeData, setNoticeData] = useState<INoticeInfo | null>(null)
   const [noticeDetailData, setNoticeDetailData] = useState<INoticeDetailInfo | null>(null)
+  const [outletKey, setOutletKey] = useState(0)
+  const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
+
+  useEffect(() => {
+    setOutletKey((prevKey) => prevKey + 1)
+  }, [accessCompanyInfo])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,8 +81,8 @@ const MILayout = () => {
           const latestNotice = response.detail[0]
           setNoticeData(latestNotice)
 
-          // 로컬스토리지를 확인하여 오늘 하루 보지 않기를 선택했는지 확인
-          const todayDontShow = localStorage.getItem(`notice_dont_show_${latestNotice.bulletinNo}`)
+          // 쿠키를 확인하여 오늘 하루 보지 않기를 선택했는지 확인
+          const todayDontShow = getCookie(`notice_dont_show_${latestNotice.bulletinNo}`)
           const today = new Date().toDateString()
 
           if (!todayDontShow || todayDontShow !== today) {
@@ -74,7 +103,9 @@ const MILayout = () => {
   const handleDontShowToday = () => {
     if (noticeData) {
       const today = new Date().toDateString()
-      localStorage.setItem(`notice_dont_show_${noticeData.bulletinNo}`, today)
+
+      // 쿠키 설정 (1일 후 만료)
+      setCookie(`notice_dont_show_${noticeData.bulletinNo}`, today, 1)
     }
     setShowNoticePopup(false)
   }
@@ -98,7 +129,7 @@ const MILayout = () => {
             },
           }}
         >
-          <Outlet />
+          <Outlet key={outletKey} />
         </Box>
 
         <MIFooter />
