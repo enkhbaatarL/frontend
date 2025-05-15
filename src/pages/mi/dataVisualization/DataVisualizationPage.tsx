@@ -3,6 +3,7 @@ import { Dayjs } from 'dayjs'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
+import bshImg from '@/assets/bgsubheader.png'
 import MIButton from '@/components/common/button/MIButton'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import MILine from '@/components/common/divider/MILine'
@@ -39,7 +40,7 @@ const DataVisualizationPage = () => {
 
   return (
     <>
-      <Box paddingX={7.5} paddingY={21} sx={{ background: ' url(\'/src/assets/bgsubheader.png\') lightgray 50% / cover no-repeat' }}>
+      <Box paddingX={7.5} paddingY={21} sx={{ background: ` url(${bshImg}) lightgray 50% / cover no-repeat` }}>
         <Box maxWidth={'1380px'} margin={'auto'}>
           <Typography color="white" variant="body1M16">
             Insight

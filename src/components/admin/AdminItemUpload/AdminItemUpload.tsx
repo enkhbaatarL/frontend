@@ -4,6 +4,10 @@ import { useMemo } from 'react'
 
 import AdminItemUploadStatusButton from './component/AdminItemUploadStatusButton'
 
+import docIcon from '@/assets/docicon.svg'
+import fileIcon from '@/assets/fileicon.svg'
+import folderIcon from '@/assets/folder.svg'
+import pdfIcon from '@/assets/pdficon.svg'
 import Flex from '@/components/common/display/Flex'
 import CloseIcon from '@/components/common/icons/CloseIcon'
 
@@ -38,13 +42,13 @@ interface UploadStatus {
 const fileTypeIconMapper = (type: FileType, url?: string) => {
   if (url) return url
   const icons: Record<FileType, string> = {
-    'application/pdf': '/src/assets/pdficon.svg',
-    'text/csv': '/src/assets/fileicon.svg',
-    'application/msword': '/src/assets/docicon.svg',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '/src/assets/docicon.svg',
-    'image/jpeg': '/src/assets/folder.svg',
+    'application/pdf': pdfIcon,
+    'text/csv': fileIcon,
+    'application/msword': docIcon,
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': docIcon,
+    'image/jpeg': folderIcon,
   }
-  return icons[type] || '/src/assets/folder.svg'
+  return icons[type] || folderIcon
 }
 
 const formatFileSize = (bytes: number): string => {
