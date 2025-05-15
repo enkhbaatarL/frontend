@@ -1,6 +1,8 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography } from '@mui/material'
 
+import psImg from '@/assets/productsymbol.png'
+import shiImg from '@/assets/subheaderinsight.jpg'
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIInput from '@/components/common/input/MIInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
@@ -19,8 +21,7 @@ const InsightsPage = () => {
         paddingX={7.5}
         paddingY={14}
         sx={{
-          background:
-            'url(\'/src/assets/productsymbol.png\') right / 33% no-repeat, url(\'/src/assets/subheaderinsight.jpg\') lightgray 50% / cover no-repeat',
+          background: `url(${psImg}) right / 33% no-repeat, url(${shiImg}) lightgray 50% / cover no-repeat`,
           zIndex: 0,
           position: 'relative',
         }}

@@ -1,6 +1,8 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 
+import bgmImg from '@/assets/bgmarket.jpg'
+import psImg from '@/assets/productsymbol.png'
 import MILine from '@/components/common/divider/MILine'
 import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
@@ -20,8 +22,7 @@ const MarketDataPage = () => {
         paddingX={7.5}
         paddingY={14}
         sx={{
-          background:
-            'url(\'/src/assets/productsymbol.png\') right / 33% no-repeat, url(\'/src/assets/bgmarket.jpg\') lightgray 50% 82%/ cover no-repeat',
+          background: `url(${psImg}) right / 33% no-repeat, url(${bgmImg}) lightgray 50% 82%/ cover no-repeat`,
           zIndex: 0,
           position: 'relative',
         }}
