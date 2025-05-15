@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { useState } from 'react'
 
+import aiImg from '@/assets/ai.svg'
 import MIButton from '@/components/common/button/MIButton'
 import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
 import MIDataTrendHeatMapChart from '@/components/common/data-trend-chart/MIDataTrendHeatMapChart'
@@ -60,7 +61,7 @@ const ReportMIComponent = () => {
         <MonthSelector selected={monthSelect} onSelect={setMonthSelect} months={monthsData} />
         <Box borderRadius={'4px'} border={'1px solid #E5EDFA'} bgcolor={'#F6F9FD'} padding={5} mt={10} mb={6}>
           <Typography mb={2.5} component={'div'} variant={'textAI'}>
-            <img style={{ verticalAlign: 'sub', marginRight: '4px' }} src="/src/assets/ai.svg" alt="" />
+            <img style={{ verticalAlign: 'sub', marginRight: '4px' }} src={aiImg} alt="" />
             AI Summary
           </Typography>
           <Typography mb={1} variant={'subtext5'} color={'gray.90'} component={'div'}>

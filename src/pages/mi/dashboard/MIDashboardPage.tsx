@@ -2,6 +2,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useState } from 'react'
 
+import psImg from '@/assets/productsymbol.png'
 import MIButton from '@/components/common/button/MIButton'
 import MITabs from '@/components/common/tabs/MITabs'
 import DailyChart from '@/pages/mi/dashboard/components/DailyChart'
@@ -31,7 +32,7 @@ const MIDashboardPage = () => {
           paddingTop={6.25}
           paddingBottom={7.5}
           sx={{
-            background: 'url(\'/src/assets/productsymbol.png\') right / 33% no-repeat,linear-gradient(271deg, #71738F 1.64%, #475083 99.32%)',
+            background: `url(${psImg}) right / 33% no-repeat,linear-gradient(271deg, #71738F 1.64%, #475083 99.32%)`,
             zIndex: 0,
             position: 'relative',
           }}

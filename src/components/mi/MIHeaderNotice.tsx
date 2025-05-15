@@ -2,14 +2,16 @@ import NotificationsIcon from '@mui/icons-material/Notifications'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { Badge, Box, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material'
+import dayjs from 'dayjs'
 import { useState, MouseEvent as ReactMouseEvent, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import MIButton from '@/components/common/button/MIButton'
-import NoticeIcon from '@/components/common/icons/NoticeIcon'
-import MITabs from '@/components/common/tabs/MITabs'
+import MIButton from '@/components/common/button/MIButton.tsx'
+import NoticeIcon from '@/components/common/icons/NoticeIcon.tsx'
+import MITabs from '@/components/common/tabs/MITabs.tsx'
 import useMockNotice from '@/hooks/useMockNotice'
+import boardService, { INoticeInfo } from '@/service/mi/board.ts'
 
 interface NoticeItemProps {
   id: number
@@ -182,16 +184,52 @@ const NoticeItem = ({ id, title, subtitle, date, isRead, onClick }: NoticeItemPr
     </Box>
   </ListItem>
 )
+
 const MIHeaderNotice = () => {
   const navigate = useNavigate()
   const [anchorElNotice, setAnchorElNotice] = useState<null | HTMLElement>(null)
+  const [notices, setNotices] = useState<INoticeInfo[]>([])
+  const [isLoadingNotices, setIsLoadingNotices] = useState(false)
+
   const handleOpenNoticeMenu = (event: ReactMouseEvent<HTMLElement>) => {
     setAnchorElNotice(event.currentTarget)
   }
+
   const handleCloseNoticeMenu = () => {
     setAnchorElNotice(null)
   }
   const anchorEl = useRef<HTMLElement>(null)
+
+  // 공지사항 데이터 로드
+  useEffect(() => {
+    const fetchNotices = async () => {
+      if (anchorElNotice) {
+        try {
+          setIsLoadingNotices(true)
+          const response = await boardService.getNotice({
+            page: 1,
+            size: 5,
+            keyword: '',
+          })
+          if (response.detail) {
+            setNotices(response.detail)
+          }
+        } catch (error) {
+          console.error('Failed to fetch notices:', error)
+        } finally {
+          setIsLoadingNotices(false)
+        }
+      }
+    }
+
+    fetchNotices()
+  }, [anchorElNotice])
+
+  const handleNoticeClick = (noticeNo: number) => {
+    navigate(`/mi/notices/${noticeNo}`)
+    handleCloseNoticeMenu()
+  }
+
   const tabsData = [
     {
       label: 'Recent Alerts',
@@ -224,24 +262,38 @@ const MIHeaderNotice = () => {
       content: (
         <>
           <ScrollWrapper sx={{ margin: '0 -20px' }} maxHeight={638}>
-            {useMockNotice(5).map((notice) => (
-              <NoticeItem
-                id={notice.id}
-                key={notice.id}
-                trend={notice.trend}
-                title={notice.title}
-                subtitle={notice.subtitle}
-                date={notice.date}
-                isRead={notice.isRead}
-                onClick={(id) => console.log(id)}
-              />
-            ))}
+            {isLoadingNotices ? (
+              <Box display="flex" justifyContent="center" alignItems="center" p={5}>
+                <Typography variant="body2R14" color="gray.60">
+                  Loading...
+                </Typography>
+              </Box>
+            ) : notices.length > 0 ? (
+              notices.map((notice) => (
+                <NoticeItem
+                  id={notice.bulletinNo}
+                  key={notice.bulletinNo}
+                  trend={'down'} // API에서 trend 정보가 없으므로 기본값 사용
+                  title={notice.bulletinTitleName}
+                  subtitle={notice.bulletinCategorySeparateCode}
+                  date={dayjs(notice.auditInfo?.createDt).format('YYYY-MM-DD HH:mm')}
+                  isRead={false} // 읽음 상태 정보가 없으므로 기본값 사용
+                  onClick={handleNoticeClick}
+                />
+              ))
+            ) : (
+              <Box display="flex" justifyContent="center" alignItems="center" p={5}>
+                <Typography variant="body2R14" color="gray.60">
+                  공지사항이 없습니다.
+                </Typography>
+              </Box>
+            )}
           </ScrollWrapper>
           <Box sx={{ margin: '0 -20px' }} borderTop={'1px solid #E9ECEF'} p={5}>
             <MIButton
               onClick={(e) => {
                 e.preventDefault()
-                navigate('/mi/notice')
+                navigate('/mi/notices')
                 handleCloseNoticeMenu()
               }}
               width={'100%'}

@@ -1,14 +1,16 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 
+import bgmImg from '@/assets/bgmarket.jpg'
+import psImg from '@/assets/productsymbol.png'
 import MILine from '@/components/common/divider/MILine'
 import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import { useMockEvents } from '@/hooks/useMockEvents'
 import { useMockMarket } from '@/hooks/useMockMarket'
-import MarketdataChart from '@/pages/mi/marketData/components/MarketdataChart'
-import MarketdataChartSmall from '@/pages/mi/marketData/components/MarketdataChartSmall'
+import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart.tsx'
+import MarketDataChartSmall from '@/pages/mi/marketData/components/MarketDataChartSmall.tsx'
 
 const MarketDataPage = () => {
   const { data } = useMockMarket()
@@ -20,8 +22,7 @@ const MarketDataPage = () => {
         paddingX={7.5}
         paddingY={14}
         sx={{
-          background:
-            'url(\'/src/assets/productsymbol.png\') right / 33% no-repeat, url(\'/src/assets/bgmarket.jpg\') lightgray 50% 82%/ cover no-repeat',
+          background: `url(${psImg}) right / 33% no-repeat, url(${bgmImg}) lightgray 50% 82%/ cover no-repeat`,
           zIndex: 0,
           position: 'relative',
         }}
@@ -53,36 +54,36 @@ const MarketDataPage = () => {
         <Grid mb={17.5} container spacing={5}>
           <Grid width={'100%'} container direction={'row'} gap={5}>
             <Grid size={{ xs: 12, md: 6 }}>
-              <MarketdataChart />
+              <MarketDataChart />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <MarketdataChart />
+              <MarketDataChart />
             </Grid>
           </Grid>
           <Grid width={'100%'} container direction={'row'} gap={5}>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall isClock />
+              <MarketDataChartSmall isClock />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
           </Grid>
         </Grid>

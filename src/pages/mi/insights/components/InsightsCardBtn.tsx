@@ -1,8 +1,14 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { FC, useMemo, useState } from 'react'
 
-import MIBage from '@/components/common/bage/MIBage.tsx'
-import MILine from '@/components/common/divider/MILine.tsx'
+import arBgImg from '@/assets/asset-report-bg.png'
+import bgCardImg from '@/assets/bgcard.png'
+import cmrBgImg from '@/assets/commodity-market-report-bg.png'
+import diBgImg from '@/assets/deal-insight-bg.png'
+import iBgImg from '@/assets/insight-bg.png'
+import pshImg from '@/assets/product_symbol_hover.png'
+import MIBage from '@/components/common/bage/MIBage'
+import MILine from '@/components/common/divider/MILine'
 
 export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT' | 'A_INFORM'
 export interface Report {
@@ -22,22 +28,21 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
 
   const background = useMemo(() => {
     if (!isHover) {
-      return 'url(\'/src/assets/bgcard.png\')'
+      return `url(${bgCardImg})`
     }
 
     switch (report.type) {
       case 'A_ASST_RPT':
-        return ' url(\'/src/assets/asset-report-bg.png\')'
+        return `url(${arBgImg})`
       case 'A_CMMDT_MRKT_RPT':
-        return 'url(\'/src/assets/commodity-market-report-bg.png\')'
+        return `url(${cmrBgImg})`
       case 'A_DEAL_INSIGHT':
-        return 'url(\'/src/assets/deal-insight-bg.png\')'
+        return `url(${diBgImg})`
       case 'A_INSIGHT':
-        return 'url(\'/src/assets/insight-bg.png\')'
+        return `url(${iBgImg})`
       case 'A_CMPY_RPT':
-        return 'url(\'/src/assets/insight-bg.png\')'
       default:
-        return 'url(\'/src/assets/insight-bg.png\')'
+        return `url(${bgCardImg})`
     }
   }, [report.type, isHover])
 
@@ -92,7 +97,7 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
           },
         }}
       >
-        <img src="/src/assets/product_symbol_hover.png" />
+        <img src={pshImg} alt="pshImg" />
       </Box>
       <Grid
         height={index > 3 ? 220 : 340}

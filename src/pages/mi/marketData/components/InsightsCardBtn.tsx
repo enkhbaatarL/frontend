@@ -1,6 +1,7 @@
 import { Grid2 as Grid, Typography } from '@mui/material'
 import { FC } from 'react'
 
+import bgcImg from '@/assets/bgcard.png'
 // import MIBage from '@/components/common/bage/MIBage'
 import MILine from '@/components/common/divider/MILine'
 import { Report } from '@/hooks/useMockReports'
@@ -19,7 +20,7 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => (
     justifyContent={'space-between'}
     borderRadius={1}
     sx={{
-      background: 'url(\'/src/assets/bgcard.png\') center / cover no-repeat',
+      background: `url(${bgcImg}) center / cover no-repeat`,
       padding: {
         xs: '20px',
         md: '20px 80px 20px 20px',

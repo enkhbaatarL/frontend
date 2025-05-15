@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material'
 
+import smImg from '@/assets/product_symbol_hover.png'
 import MIButtonSelect from '@/components/common/chart/MIChartButtonSelect'
 import MIColorRange from '@/components/common/colorrange/MIColorRange'
 
@@ -28,7 +29,7 @@ const SectionHeader = ({ title, itemCount, subCategories, boldTitle = false }: S
       </Typography>
       {subCategories && (
         <>
-          <img width={2} height={2} style={{ marginLeft: '6px', marginRight: '6px' }} src="/src/assets/eclipse.svg" alt="" />
+          <img width={2} height={2} style={{ marginLeft: '6px', marginRight: '6px' }} src={smImg} alt="" />
           <Typography color="gray.70" variant={boldTitle ? 'subtext3' : 'subtext4'}>
             {subCategories} Sub-categories
           </Typography>

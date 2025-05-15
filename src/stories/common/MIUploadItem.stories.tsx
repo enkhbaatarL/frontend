@@ -1,6 +1,8 @@
 import { action } from '@storybook/addon-actions'
 import { Meta, StoryObj } from '@storybook/react'
 
+import bgcImg from '@/assets/bgcard.png'
+import fileIcon from '@/assets/fileicon.svg'
 import AdminItemUpload from '@/components/admin/AdminItemUpload/AdminItemUpload'
 
 const meta = {
@@ -38,7 +40,7 @@ export const AdminItemUploadDefault: Story = {
   args: {
     progressValue: 80,
     fileItem: {
-      url: '/src/assets/bgcard.png',
+      url: bgcImg,
       fileNm: 'sample.jpg',
       fileSize: 512 * 1024,
       type: 'image/jpeg',
@@ -54,7 +56,7 @@ export const AdminItemUploadCsv: Story = {
   args: {
     progressValue: 10,
     fileItem: {
-      url: '/src/assets/fileicon.svg',
+      url: fileIcon,
       fileNm: 'document_file_name.csv',
       fileSize: 512 * 1024,
       type: 'text/csv',

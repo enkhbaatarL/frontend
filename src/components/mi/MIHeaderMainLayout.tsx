@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom'
 
 import style from './MIHeaderMainLayout.module.scss'
 
+import logoImg from '@/assets/logo.svg'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
 import MIHeaderNotice from '@/components/mi/MIHeaderNotice'
 import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
@@ -172,7 +173,7 @@ const MIHeaderMainLayout = () => {
                 navigate('/')
               }}
             >
-              <img src="/src/assets/logo.svg" alt="Market Intelligence" />
+              <img src={logoImg} alt="Market Intelligence" />
             </Box>
             <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
               <IconButton
@@ -221,7 +222,7 @@ const MIHeaderMainLayout = () => {
               )}
             </Box>
             <Box sx={{ display: { xs: 'flex', md: 'none' }, mr: 7.5 }}>
-              <img width="150" src="/src/assets/logo.svg" alt="Market Intelligence" />
+              <img width="150" src={logoImg} alt="Market Intelligence" />
             </Box>
             <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
               {pages.map((page) => (
