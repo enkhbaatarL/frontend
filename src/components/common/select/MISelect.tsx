@@ -298,7 +298,7 @@ const MISelect = ({
             slotProps={{
               input: {
                 ...params.InputProps,
-                disableUnderline: true,
+                // disableUnderline: true,
               },
             }}
             onFocus={() => setIsFocused(true)}

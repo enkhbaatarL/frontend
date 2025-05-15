@@ -134,7 +134,7 @@ const MarketDataPage = () => {
                       renderCell: (param) => <MITableCell value={param.value} typography={{ variant: 'tableBody2', color: '#868E96' }} />,
                     },
                   ],
-                  rowId: 'dataName',
+                  rowId: 'id',
                   rows: data,
                 }}
               />
