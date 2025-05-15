@@ -112,11 +112,11 @@ export interface IProviderGoodsDataRegisterRequest {
     CodeId: string
   }[]
   structuredDataList: {
-    componentTypeId: string
+    componentTypeId?: string
     fileNo: number
   }[]
   unstructuredDataList: {
-    criteriaDt: string
+    criteriaDt?: string
     fileNo: number
   }[]
 }

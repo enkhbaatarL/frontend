@@ -7,26 +7,26 @@ import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import dayjs, { Dayjs } from 'dayjs'
 import { t } from 'i18next'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import AdminCheckbox from '@/components/admin/AdminCheckbox'
+import AdminCheckbox from '@/components/admin/AdminCheckbox.tsx'
 import AdminItemUpload, { FileType } from '@/components/admin/AdminItemUpload/AdminItemUpload'
 import AdminUpload from '@/components/admin/AdminUpload'
-import MIAccordion from '@/components/common/accordion/MIAccordion'
+import MIAccordion from '@/components/common/accordion/MIAccordion.tsx'
 import MIButton from '@/components/common/button/MIButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIDatePicker from '@/components/common/datepicker/MIDatePicker'
 import Flex from '@/components/common/display/Flex'
-import MIField from '@/components/common/input/MIField'
-import MIInput from '@/components/common/input/MIInput'
+import MIField from '@/components/common/input/MIField.tsx'
+import MIInput from '@/components/common/input/MIInput.tsx'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import axios from '@/lib/axios'
 import dataProviderService, { IProviderGoodsDataRegisterRequest } from '@/service/admin/dataProvider'
-import { getRandomItem } from '@/utils/mock-data'
 
 export interface FileInfo {
   id?: string
@@ -34,6 +34,17 @@ export interface FileInfo {
   size: number
   type: string
   url: string
+}
+
+type UploadFileInfo = {
+  fileNo: number
+  componentTypeId?: string // 정형 only
+  criteriaDt?: string // 비정형 only
+  fileNm: string
+  fileSize: number
+  type: FileType
+  fileKey: string | null
+  status: 'uploading' | 'checking' | 'fail' | 'pass'
 }
 
 const AdminDataProvidersListPageHeader = (props: { disabled: boolean; onRegister: () => void; onCancel: () => void }) => (
@@ -46,6 +57,8 @@ const AdminDataProvidersListPageHeader = (props: { disabled: boolean; onRegister
     </MIButton>
   </Flex>
 )
+
+const documentFileType = ['application/pdf', 'text/csv', 'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint']
 
 const AdminDataRegistration = () => {
   const { showSnackbar } = useSnackbar()
@@ -67,24 +80,12 @@ const AdminDataRegistration = () => {
   const [structuredComponentType, setStructuredComponentType] = useState('')
 
   /** 선택된 비정형화 데이터 카테고리 */
-  const [unstructuredDate, setUnstructuredDate] = useState('')
+  const [unstructuredDate, setUnstructuredDate] = useState<Dayjs | null>(dayjs())
 
   /** 정형화 업로드 파일 목록 */
-  const [filesStructured, setFilesStructured] = useState<
-    {
-      fileNo: number
-      componentTypeId: string
-      fileNm: string
-      fileSize: number
-      type: FileType
-      fileKey: string | null
-      status: 'uploading' | 'checking' | 'fail' | 'pass'
-    }[]
-  >([])
+  const [filesStructured, setFilesStructured] = useState<UploadFileInfo[]>([])
   /** 비정형화 업로드 파일 목록 */
-  const [filesUnstructured, _setFilesUnstructured] = useState<
-    { fileNo: number; componentTypeId: string; fileNm: string; fileSize: number }[]
-  >([])
+  const [filesUnstructured, setFilesUnstructured] = useState<UploadFileInfo[]>([])
 
   const form = useForm({
     defaultValues: {
@@ -112,11 +113,11 @@ const AdminDataRegistration = () => {
         }
         return {
           fields: {
-            goodsDataNm: isEmpty(value.goodsDataNm) || undefined,
-            goodsDataExpn: isEmpty(value.goodsDataExpn) || undefined,
-            goodsDataSummaryCntt: isEmpty(value.goodsDataSummaryCntt) || undefined,
-            docCategoryList: isEmpty(value.docCategoryList) || undefined,
-            langCategoryList: isEmpty(value.langCategoryList) || undefined,
+            goodsDataNm: isEmpty(value.goodsDataNm),
+            goodsDataSummaryCntt: isEmpty(value.goodsDataSummaryCntt),
+            docCategoryList: isEmpty(value.docCategoryList),
+            langCategoryList: isEmpty(value.langCategoryList),
+            fileTypes: isEmpty(value.fileTypes),
           },
         }
       },
@@ -124,7 +125,11 @@ const AdminDataRegistration = () => {
   })
 
   /** 필수 값 등 제출 가능 한 상태 여부 */
-  const formCanSubmit = useStore(form.store, (state) => state.canSubmit)
+  const formCanSubmit = useStore(form.store, (state) => {
+    const valid = state.isValid
+    const hasFile = [...filesStructured, ...filesUnstructured].length > 0
+    return valid && hasFile
+  })
 
   /** 업로드 진행률 상태 추적 state */
   const [uploadProgressMap, setUploadProgressMap] = useState<Record<string, number>>({})
@@ -143,55 +148,55 @@ const AdminDataRegistration = () => {
     })
   }, [])
 
-  const handleRemoveFile = (index: number) => {
-    setFilesStructured((prev) => prev.filter((_f, idx) => idx !== index))
-  }
-
   const onUploadAction = useCallback(
-    async (file: File) => {
+    async (file: File, uploadType: 'structured' | 'unstructured') => {
+      const setAction = uploadType === 'structured' ? setFilesStructured : setFilesUnstructured
+
       /** 업로드 진행동안 추적할 uniqKey */
       const fileKey = `${Date.now()}-${file.name}`
       const formData = new FormData()
       formData.append('file', file)
-      formData.append(
-        'data',
-        JSON.stringify({
-          componentTypeId: structuredComponentType,
-        }),
-      )
 
       const { name, type, size } = file
-      setFilesStructured((prev) => [
-        ...prev,
-        {
-          fileNo: -1,
-          componentTypeId: structuredComponentType,
-          fileNm: name,
-          fileSize: size,
-          fileKey,
-          type: type as FileType,
-          status: 'uploading',
-        },
-      ])
+      const newFileInfo = {
+        fileNo: -1,
+        fileNm: name,
+        fileSize: size,
+        fileKey,
+        type: type as FileType,
+        status: 'uploading' as UploadFileInfo['status'],
+        ...(uploadType === 'structured' ? { componentTypeId: structuredComponentType } : {}),
+        ...(uploadType === 'unstructured' ? { criteriaDt: dayjs(unstructuredDate).format('YYYYMMDD') } : {}),
+      }
+
+      if (uploadType === 'structured') {
+        formData.append(
+          'data',
+          JSON.stringify({
+            componentTypeId: structuredComponentType,
+          }),
+        )
+        setStructuredComponentType('')
+      }
+      setAction((prev) => [...prev, newFileInfo])
       try {
-        const response = await axios.post('/admin/provider-management/goods-datas/upload-file/structured-data', formData, {
+        const response = await axios.post(`/admin/provider-management/goods-datas/upload-file/${uploadType}-data`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (event) => {
-            const percent = Math.round((event.loaded * 100) / (event.total ?? 1))
+            const percent = Math.round((event.loaded * 100) / (event.total || 1))
             updateUploadProgress(fileKey, percent)
           },
         })
         const { fileNo } = response.data.data
-        setFilesStructured((prev) => prev.map((f) => (f.fileKey === fileKey ? { ...f, fileNo, fileKey: null, status: 'pass' } : f)))
+        setAction((prev) => prev.map((f) => (f.fileKey === fileKey ? { ...f, fileNo, fileKey: null, status: 'pass' } : f)))
         setTimeout(() => clearUploadProgress(fileKey), 1000)
       } catch {
         setOpenRegisterErrorFileAlert(true)
-        setFilesStructured((prev) => prev.map((f) => (f.fileKey === fileKey ? { ...f, fileKey: null, status: 'fail' } : f)))
+        setAction((prev) => prev.map((f) => (f.fileKey === fileKey ? { ...f, fileKey: null, status: 'fail' } : f)))
         clearUploadProgress(fileKey)
       }
-      setStructuredComponentType('')
     },
-    [clearUploadProgress, structuredComponentType, updateUploadProgress],
+    [clearUploadProgress, structuredComponentType, unstructuredDate, updateUploadProgress],
   )
 
   // GET 정형 데이타 타입 목록
@@ -204,6 +209,13 @@ const AdminDataRegistration = () => {
         value: componentTypeId,
       })),
   })
+
+  const onRegister = useCallback(() => {
+    const checkFilesStatusClean = () => [...filesStructured, ...filesUnstructured].every((m) => m.status === 'pass')
+
+    if (!checkFilesStatusClean()) setOpenRegisterErrorFileAlert(true)
+    else setOpenRegisterSuccessFileAlert(true)
+  }, [filesStructured, filesUnstructured])
 
   /** 정형데이터 옵션에서 사용한 옵션을 제외한 나머지 리스트
    *  데이터 소스 1개당 정형데이터 파일은 유일한 1개만 매칭
@@ -233,10 +245,6 @@ const AdminDataRegistration = () => {
     enabled: !!providerNo && !!goodsNo,
   })
 
-  useEffect(() => {
-    if (goodsNm) form.setFieldValue('goodsDataNm', goodsNm)
-  }, [goodsNm])
-
   const accordionItems = useMemo(
     () => [
       {
@@ -265,7 +273,7 @@ const AdminDataRegistration = () => {
                 <Grid size={6}>
                   <AdminUpload
                     disabled={!structuredComponentType}
-                    onUploadAction={onUploadAction}
+                    onUploadAction={(file) => onUploadAction(file, 'structured')}
                     acceptedTypes={['text/csv']}
                     maxSize={24}
                   />
@@ -280,7 +288,7 @@ const AdminDataRegistration = () => {
                     key={index}
                     progressValue={uploadProgressMap[fileItem.fileKey ?? '']}
                     fileItem={fileItem}
-                    onDelete={() => handleRemoveFile(index)}
+                    onDelete={() => setFilesStructured((prev) => prev.filter((_f, idx) => idx !== index))}
                   />
                 ))}
               </Box>
@@ -288,7 +296,6 @@ const AdminDataRegistration = () => {
           </Box>
         ),
       },
-      // TODO
       {
         key: 'unstructured',
         title: '비정형 데이터 업로드',
@@ -302,36 +309,29 @@ const AdminDataRegistration = () => {
             <Flex direction="row" align="start" gap={8}>
               <Grid container spacing={2} sx={{ flexGrow: 1 }}>
                 <Grid size={6}>
-                  <MIDatePicker
-                    onChange={(value) => {
-                      setUnstructuredDate(String(value))
-                    }}
-                    size="h34"
-                  />
+                  <MIDatePicker onChange={setUnstructuredDate} value={unstructuredDate} size="h34" />
                 </Grid>
                 <Grid size={6}>
-                  <AdminUpload disabled={!unstructuredDate} onUploadAction={onUploadAction} acceptedTypes={['text/csv']} maxSize={1124} />
+                  <AdminUpload
+                    disabled={!unstructuredDate}
+                    onUploadAction={(file) => onUploadAction(file, 'unstructured')}
+                    acceptedTypes={documentFileType}
+                    maxSize={24}
+                  />
                 </Grid>
               </Grid>
-              {/* <Box width={34}>
-              <MIButton
-                disabled={!unstructuredFileName}
-                onClick={(e) => {
-                  e.preventDefault()
-                  // handleClickAddDate()
-                  setUnstructuredFileName('')
-                }}
-                startIcon={<UploadIcon style={{ color: !unstructuredFileName ? '#CED4DA' : '#868E96' }} fontSize="small" />}
-                contentType={'icon'}
-                type="outlined"
-              />
-            </Box> */}
             </Flex>
             {filesUnstructured.length > 0 && (
               <Box mt={2}>
-                {/* {filesUnstructured.map((fileItem, index) => (
-                <AdminItemUpload checkFile="pass" key={index} file={fileItem.info} onDelete={() => handleRemoveFileDate(index)} />
-              ))} */}
+                {filesUnstructured.map((fileItem, index) => (
+                  <AdminItemUpload
+                    checkFile={fileItem.status}
+                    key={index}
+                    progressValue={uploadProgressMap[fileItem.fileKey ?? '']}
+                    fileItem={fileItem}
+                    onDelete={() => setFilesUnstructured((prev) => prev.filter((_f, idx) => idx !== index))}
+                  />
+                ))}
               </Box>
             )}
           </Box>
@@ -339,35 +339,32 @@ const AdminDataRegistration = () => {
       },
     ],
     [
+      availableDataTypeOptions,
       filesStructured,
-      filesUnstructured.length,
+      filesUnstructured,
       onUploadAction,
       structuredComponentType,
-      structuredDataTypeOptions,
       unstructuredDate,
       uploadProgressMap,
     ],
   )
-
   useEffect(() => {
     setCustomComponent(
       <AdminDataProvidersListPageHeader
         disabled={!formCanSubmit}
-        onRegister={() => {
-          const state = getRandomItem(['success', 'error'])
-
-          if (state === 'error') {
-            setOpenRegisterErrorFileAlert(true)
-          } else {
-            setOpenRegisterSuccessFileAlert(true)
-          }
-        }}
+        onRegister={onRegister}
         onCancel={() => {
           setOpenCancelConfirmation(true)
         }}
       />,
     )
 
+    return () => {
+      setCustomComponent(null)
+    }
+  }, [setCustomComponent, formCanSubmit, onRegister])
+
+  useEffect(() => {
     setCustomTitle(
       <Box display="flex" alignItems="center" columnGap={'10px'}>
         <Typography color="gray.90" variant="heading2">
@@ -377,42 +374,38 @@ const AdminDataRegistration = () => {
     )
 
     return () => {
-      setCustomComponent(null)
       setCustomTitle(null)
     }
-  }, [setCustomComponent, formCanSubmit, setCustomTitle, goodsNm])
+  }, [setCustomTitle, goodsNm])
 
+  /** 덤프 */
   const majorOccupationOptions = [
     { label: t('Major Occupations 1'), value: 'major1' },
     { label: t('Major Occupations 2'), value: 'major2' },
     { label: t('Major Occupations 3'), value: 'major3' },
   ]
 
+  /** 덤프 */
   const mediumOccupationOptions = [
     { label: t('Medium Occupations 1'), value: 'medium1' },
     { label: t('Medium Occupations 2'), value: 'medium2' },
     { label: t('Medium Occupations 3'), value: 'medium3' },
   ]
 
-  const postGoodsDataErrorCallback = () => {
-    showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' })
-  }
-
-  // GET 정형 데이타 타입 목록
+  // POST 데이터 등록
   const { mutate: postGoodsData } = useMutation({
     mutationFn: (body: IProviderGoodsDataRegisterRequest) => dataProviderService.postGoodsData(Number(providerNo), Number(goodsNo), body),
-    onSuccess: () => {
-      showSnackbar('저장되었습니다.', { variant: 'success' })
-    },
-    onError: postGoodsDataErrorCallback,
+    onSuccess: () => showSnackbar('저장되었습니다.', { variant: 'success' }),
+    onError: () => showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' }),
     onSettled: () => {
       setOpenRegisterSuccessFileAlert(false)
+      navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}`)
     },
   })
 
   /** 데이터 등록 */
   const onRegisterGoodsData = () => {
-    const { langCategoryList, docCategoryList, ...rest } = form.state.values
+    const { langCategoryList, docCategoryList, fileTypes, ...rest } = form.state.values
 
     const requestBody = {
       ...rest,
@@ -422,9 +415,30 @@ const AdminDataRegistration = () => {
       docCategoryList: docCategoryList.map((m) => ({
         CodeId: m,
       })),
+      structuredDataList: filesStructured.map(({ componentTypeId, fileNo }) => ({ componentTypeId, fileNo })),
+      unstructuredDataList: filesUnstructured.map(({ criteriaDt, fileNo }) => ({ criteriaDt, fileNo })),
     }
     postGoodsData(requestBody)
   }
+
+  /** InputText Component */
+  const renderInputField = (
+    field: { state: { value: string }; handleChange: (param: string) => void },
+    label: string,
+    subText: string,
+    multiline?: boolean,
+    required?: boolean,
+  ) => (
+    <MIField labelSize="lg" label={label} subText={subText} required={required}>
+      <MIInput
+        placeholder="내용을 입력하세요"
+        fullWidth
+        multiline={multiline}
+        value={field.state.value}
+        onChange={(e) => field.handleChange(e.target.value)}
+      />
+    </MIField>
+  )
 
   return (
     <form>
@@ -441,43 +455,13 @@ const AdminDataRegistration = () => {
             <FormControlLabel value="updateExistingData" control={<Radio />} label="기존 데이터 업데이트" />
           </RadioGroup>
         </MIField>
-
-        <form.Field name="goodsDataNm">
-          {(field) => (
-            <MIField labelSize="lg" label="데이터명" required subText="데이터의 이름을 입력해주세요.">
-              <MIInput placeholder="입력하세요" fullWidth value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
-            </MIField>
-          )}
-        </form.Field>
-
+        <form.Field name="goodsDataNm">{(field) => renderInputField(field, '데이터명', '데이터의 이름을 입력해주세요.')}</form.Field>
         <form.Field name="goodsDataExpn">
-          {(field) => (
-            <MIField labelSize="lg" label="Description" subText="데이터에 대한 설명을 입력해주세요.">
-              <MIInput
-                placeholder="내용을 입력하세요"
-                fullWidth
-                multiline
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            </MIField>
-          )}
+          {(field) => renderInputField(field, 'Description', '데이터에 대한 설명을 입력해주세요.', true)}
         </form.Field>
-
         <form.Field name="goodsDataSummaryCntt">
-          {(field) => (
-            <MIField labelSize="lg" label="Summary" subText="데이터에 대한 요약 정보를 입력해주세요.">
-              <MIInput
-                placeholder="내용을 입력하세요"
-                fullWidth
-                multiline
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            </MIField>
-          )}
+          {(field) => renderInputField(field, 'Summary', '데이터에 대한 요약 정보를 입력해주세요.', true, true)}
         </form.Field>
-
         <MIField labelSize="lg" label="데이터 카테고리" subText="대분류, 중분류를 선택하여 추가하세요. 중복 등록이 가능합니다.">
           <Flex direction="row" gap={8}>
             <Grid container spacing={2} sx={{ flexGrow: 1 }}>
@@ -670,7 +654,6 @@ const AdminDataRegistration = () => {
       >
         취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.
       </MIConfirm>
-
       <MIConfirm
         open={openRegisterErrorFileAlert}
         title={<>에러 파일이 있습니다.</>}
