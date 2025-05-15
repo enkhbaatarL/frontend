@@ -7,8 +7,8 @@ import { useNavigate } from 'react-router-dom'
 
 import AdminAutoComplete from '@/components/admin/AdminAutoComplete'
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -141,7 +141,7 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
           </Flex>
         </Box>
       </Box>
-      <AdminConfirm
+      <MIConfirm
         open={showCancelDialog}
         title={t('취소하시겠습니까?')}
         handleClose={() => setShowCancelDialog(false)}
@@ -159,8 +159,8 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
         ]}
       >
         {t('취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.')}
-      </AdminConfirm>
-      <AdminConfirm
+      </MIConfirm>
+      <MIConfirm
         open={showConfirmDialog}
         title={t('등록하시겠습니까?')}
         handleClose={() => setShowConfirmDialog(false)}

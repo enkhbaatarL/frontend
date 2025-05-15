@@ -9,11 +9,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import AdminUserInfo from '@/components/admin/AdminUserInfo'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
 import MISelect from '@/components/common/select/MISelect'
@@ -248,7 +248,7 @@ const AdminMemberManagementUsersPage = () => {
         }}
         noRowMessage={isPureState ? t('회원을 검색하세요.') : undefined}
       />
-      <AdminConfirm
+      <MIConfirm
         open={showMemberDetailModal}
         title={t('회원 상세')}
         justifyContentAction="space-between"
@@ -272,8 +272,8 @@ const AdminMemberManagementUsersPage = () => {
         ]}
       >
         <AdminUserInfo info={selectedUser} />
-      </AdminConfirm>
-      <AdminConfirm
+      </MIConfirm>
+      <MIConfirm
         open={showDeleteModal}
         title={
           <>
@@ -305,7 +305,7 @@ const AdminMemberManagementUsersPage = () => {
         ]}
       >
         {t('회원 정보 삭제 시 해당 회원은 서비스에 접근이 불가합니다.')}
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }

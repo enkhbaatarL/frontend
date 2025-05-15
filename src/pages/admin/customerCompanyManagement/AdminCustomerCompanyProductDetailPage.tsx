@@ -9,9 +9,9 @@ import { useLocation, useParams } from 'react-router-dom'
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCheckboxField from '@/components/admin/AdminCheckboxField'
 import AdminChip from '@/components/admin/AdminChip'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
 import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DetailItem from '@/components/common/detail-item/DetailItem'
 import Flex from '@/components/common/display/Flex'
 import DownloadIcon from '@/components/common/icons/DownloadIcon'
@@ -729,7 +729,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
           />
         </Box>
       )}
-      <AdminConfirm
+      <MIConfirm
         open={openConfirmActive}
         title={<>{isActive ? t('미사용으로 변경하시겠습니까?') : t('사용으로 변경하시겠습니까?')}</>}
         width={450}
@@ -758,9 +758,9 @@ const AdminCustomerCompanyProductDetailPage = () => {
         {isActive
           ? t('변경 시 해당 프로바이더와 연계된 상품도 비활성화됩니다.')
           : t('변경 시 해당 프로바이더와 연계된 상품도 활성화됩니다.')}
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={openCancelConfirm}
         title={t('취소하시겠습니까?')}
         width={450}
@@ -788,9 +788,9 @@ const AdminCustomerCompanyProductDetailPage = () => {
         ]}
       >
         {t('취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.')}
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={openSaveConfirm}
         title={t('저장하시겠습니까?')}
         width={450}
@@ -815,7 +815,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
             },
           },
         ]}
-      ></AdminConfirm>
+      ></MIConfirm>
     </>
   )
 }

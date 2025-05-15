@@ -10,11 +10,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminSnackbar from '@/components/admin/AdminSnackbar'
 import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
@@ -238,7 +238,7 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
         }}
       />
 
-      <AdminConfirm
+      <MIConfirm
         open={showRegistrationModal}
         title={t('관리사 등록')}
         width={450}
@@ -273,8 +273,8 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
             onChange={(e) => setSelectedValue(e.target.value as string)}
           />
         </Box>
-      </AdminConfirm>
-      <AdminConfirm
+      </MIConfirm>
+      <MIConfirm
         open={showDeleteModal}
         title={
           <>
@@ -304,7 +304,7 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
             },
           },
         ]}
-      ></AdminConfirm>
+      ></MIConfirm>
     </>
   )
 }

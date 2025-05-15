@@ -6,8 +6,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminAccessControlForm from '@/components/admin/AdminAccessControlForm'
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminLoading from '@/components/admin/AdminLoading'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -78,7 +78,7 @@ const AdminMemberManagementMangerDetailPage = () => {
         isOtherServiceAccessPossible={data?.isOtherServiceAccessPossible ?? false}
         accessAllowedIpAddress={data?.accessAllowedIpAddress ?? []}
       />
-      <AdminConfirm
+      <MIConfirm
         open={showDeleteModal}
         title={
           <>
@@ -111,7 +111,7 @@ const AdminMemberManagementMangerDetailPage = () => {
         ]}
       >
         {t('삭제 시 관리자의 모든 권한이 즉시 해제됩니다.')}
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }

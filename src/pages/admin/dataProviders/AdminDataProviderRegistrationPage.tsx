@@ -4,8 +4,8 @@ import { t } from 'i18next'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import MIButton from '@/components/common/button/MIButton'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
 import MIInput from '@/components/common/input/MIInput'
@@ -145,7 +145,7 @@ export default function AdminDataProviderRegistrationPage() {
         </form.Field>
       </Box>
 
-      <AdminConfirm
+      <MIConfirm
         open={isOpenCancel}
         title={<>취소하시겠습니까?</>}
         width={450}
@@ -173,9 +173,9 @@ export default function AdminDataProviderRegistrationPage() {
         ]}
       >
         취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={isOpenRegistration}
         title={<>등록하시겠습니까?</>}
         width={450}
@@ -200,7 +200,7 @@ export default function AdminDataProviderRegistrationPage() {
         ]}
       >
         프로바이더 고유 코드는 최초 등록 이후 변경이 불가합니다.
-      </AdminConfirm>
+      </MIConfirm>
     </form>
   )
 }

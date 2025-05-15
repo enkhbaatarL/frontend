@@ -8,9 +8,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminLoading from '@/components/admin/AdminLoading'
 import AdminTable from '@/components/admin/AdminTable'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DetailItem from '@/components/common/detail-item/DetailItem'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
@@ -328,7 +328,7 @@ export default function AdminDataProvidersDetailPage() {
           }}
         />
       </Box>
-      <AdminConfirm
+      <MIConfirm
         width={500}
         open={openModifiedData}
         title={'데이터 프로바이더 기본정보 수정'}
@@ -403,9 +403,9 @@ export default function AdminDataProvidersDetailPage() {
             )}
           </editForm.Field>
         </Box>
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={openEditingConfirm}
         title={<>저장하시겠습니까?</>}
         width={350}
@@ -432,7 +432,7 @@ export default function AdminDataProvidersDetailPage() {
         ]}
       />
 
-      <AdminConfirm
+      <MIConfirm
         open={openActiveConfirm}
         title={isActive ? <>비활성으로 변경하시겠습니까?</> : <>활성으로 변경하시겠습니까?</>}
         width={502}
@@ -476,7 +476,7 @@ export default function AdminDataProvidersDetailPage() {
             </MIField>
           )}
         </activeForm.Field>
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }

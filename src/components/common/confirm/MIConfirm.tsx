@@ -24,7 +24,7 @@ interface Props {
   hideFooter?: boolean
 }
 
-const AdminConfirm = ({
+const MIConfirm = ({
   open,
   title,
   children,
@@ -109,4 +109,4 @@ const AdminConfirm = ({
   )
 }
 
-export default AdminConfirm
+export default MIConfirm

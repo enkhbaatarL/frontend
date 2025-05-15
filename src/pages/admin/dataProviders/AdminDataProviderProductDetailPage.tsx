@@ -8,10 +8,10 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import MIChip from '@/components/common/chip/MIChip'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DetailItem from '@/components/common/detail-item/DetailItem'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
@@ -309,7 +309,7 @@ const AdminDataProviderProductDetailPage = () => {
   const { setCustomComponent, setSubHeader, setCustomTitle } = useAdminHeader()
   const [isActive, setIsActive] = useState(true)
   const [isPublic, setIsPublic] = useState(true)
-  const [openActiveCofirm, setOpenActiveConfirm] = useState(false)
+  const [openActiveConfirm, setOpenActiveConfirm] = useState(false)
 
   const [openEditConfirm, setOpenEditingConfirm] = useState(false)
   const [openModifiedData, setOpenModifiedData] = useState(false)
@@ -465,8 +465,8 @@ const AdminDataProviderProductDetailPage = () => {
         />
       )}
 
-      <AdminConfirm
-        open={openActiveCofirm}
+      <MIConfirm
+        open={openActiveConfirm}
         title={isActive ? t('비활성으로 변경하시겠습니까?') : t('활성으로 변경하시겠습니까?')}
         width={502}
         handleClose={() => {
@@ -513,9 +513,9 @@ const AdminDataProviderProductDetailPage = () => {
             </Typography>
           )}
         </Box>
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={openModifiedData}
         title={t('상품 수정')}
         width={502}
@@ -572,9 +572,9 @@ const AdminDataProviderProductDetailPage = () => {
             )}
           </editForm.Field>
         </Box>
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={openEditConfirm}
         title={<>{t('저장하시겠습니까?')}</>}
         width={350}

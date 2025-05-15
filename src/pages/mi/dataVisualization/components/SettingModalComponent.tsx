@@ -7,10 +7,10 @@ import RadioGroup from '@mui/material/RadioGroup'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useEffect, FC, useState } from 'react'
 
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIButton from '@/components/common/button/MIButton'
 import MIChip from '@/components/common/chip/MIChip'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MIField from '@/components/common/input/MIField'
 import MIInput from '@/components/common/input/MIInput'
@@ -301,7 +301,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
   const visibleTabs = isNotification ? [tabsData[1]] : tabsData
 
   return (
-    <AdminConfirm
+    <MIConfirm
       open={open}
       title="알람"
       width={500}
@@ -313,7 +313,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       ]}
     >
       <MITabs onChange={(value) => setHideFooter(!!value)} arrayItem={visibleTabs} />
-    </AdminConfirm>
+    </MIConfirm>
   )
 }
 

@@ -3,11 +3,11 @@ import { Grid2 as Grid, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
-import AdminConfirm from '@/components/admin/AdminConfirm.tsx'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout from '@/components/mi/MIHeaderMainLayout'
 import MIProvider from '@/providers/MIProvider'
-import boardService, { INoticeDetailInfo, INoticeInfo } from '@/service/mi/board.ts'
+import boardService, { INoticeDetailInfo, INoticeInfo } from '@/service/mi/board'
 
 const MILayout = () => {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -106,7 +106,7 @@ const MILayout = () => {
 
         {/* 공지사항 팝업 */}
         {noticeData && noticeDetailData && (
-          <AdminConfirm
+          <MIConfirm
             open={showNoticePopup}
             title={noticeDetailData.bulletinTitleNm}
             width={800}
@@ -132,7 +132,7 @@ const MILayout = () => {
                 {noticeDetailData.bulletinCntt}
               </Typography>
             </Grid>
-          </AdminConfirm>
+          </MIConfirm>
         )}
       </div>
     </MIProvider>

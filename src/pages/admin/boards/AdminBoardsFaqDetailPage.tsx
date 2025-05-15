@@ -5,9 +5,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminFaqForm from '@/components/admin/AdminFaqForm'
 import AdminLoading from '@/components/admin/AdminLoading'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -92,7 +92,7 @@ const AdminBoardsFaqDetailPage = () => {
   ) : (
     <>
       <AdminFaqForm formData={faqData} readonly />
-      <AdminConfirm
+      <MIConfirm
         open={showDeleteModal}
         title={
           <>
@@ -124,7 +124,7 @@ const AdminBoardsFaqDetailPage = () => {
         ]}
       >
         {t('게시 중인 글이 즉시 삭제됩니다.')}
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }

@@ -9,10 +9,10 @@ import { useNavigate } from 'react-router-dom'
 
 import AdminAccessControlForm from '@/components/admin/AdminAccessControlForm'
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
 import MISelect from '@/components/common/select/MISelect'
@@ -314,7 +314,7 @@ const AdminMemberManagementManagersRegistrationPage = () => {
           />
         </Box>
       </Box>
-      <AdminConfirm
+      <MIConfirm
         open={isOpenRegistration}
         title={t('등록하시겠습니까?')}
         width={450}
@@ -342,8 +342,8 @@ const AdminMemberManagementManagersRegistrationPage = () => {
         ]}
       >
         {`${selectedAdmin.userNm} 을 등록합니다.`}
-      </AdminConfirm>
-      <AdminConfirm
+      </MIConfirm>
+      <MIConfirm
         open={isOpenCancel}
         title={t('취소하시겠습니까?')}
         width={450}
@@ -371,7 +371,7 @@ const AdminMemberManagementManagersRegistrationPage = () => {
         ]}
       >
         {t('취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.')}
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }

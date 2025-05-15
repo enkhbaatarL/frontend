@@ -8,9 +8,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminLoading from '@/components/admin/AdminLoading'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DetailItem from '@/components/common/detail-item/DetailItem'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
@@ -377,7 +377,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
           onRowClick={(row) => handleOnRowClick(row.row.goodsNo)}
         />
       </Box>
-      <AdminConfirm
+      <MIConfirm
         open={openConfirmActive}
         title={<>{isActive ? '미사용으로 변경하시겠습니까?' : '사용으로 변경하시겠습니까?'}</>}
         width={450}
@@ -404,9 +404,9 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
         ]}
       >
         {isActive ? '변경 시 해당 프로바이더와 연계된 상품도 비활성화됩니다.' : '변경 시 해당 프로바이더와 연계된 상품도 활성화됩니다.'}
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={openProductRegistrationConfirm}
         title={t('상품 등록')}
         width={450}
@@ -468,7 +468,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
             <FormControlLabel value="COMPANY" control={<Radio />} label={t('회사 권한')} />
           </RadioGroup>
         </Box>
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }

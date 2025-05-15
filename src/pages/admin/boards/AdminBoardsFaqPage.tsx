@@ -9,10 +9,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
 import MISelect from '@/components/common/select/MISelect'
@@ -198,7 +198,7 @@ const AdminBoardsFaqPage = () => {
           navigate(`/admin/boards/faq/detail/${row.bulletinNo}`)
         }}
       />
-      <AdminConfirm
+      <MIConfirm
         open={deleteFaqBulletinNo !== null}
         title={
           <>
@@ -230,7 +230,7 @@ const AdminBoardsFaqPage = () => {
         ]}
       >
         {t('게시 중인 글이 즉시 삭제됩니다.')}
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }

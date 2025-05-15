@@ -8,9 +8,9 @@ import style from './ComponentTestPage.module.scss'
 
 import AdminAutoComplete from '@/components/admin/AdminAutoComplete'
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
 import AdminTable from '@/components/admin/AdminTable'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DetailItem from '@/components/common/detail-item/DetailItem'
 import Flex from '@/components/common/display/Flex'
 import SettingIcon from '@/components/common/icons/SettingIcon'
@@ -150,7 +150,7 @@ const ComponentTestPage = () => {
             Show Confirm Error
           </AdminButton>
 
-          <AdminConfirm
+          <MIConfirm
             open={showConfirmPrimary}
             title="Popup title"
             width={450}
@@ -161,8 +161,8 @@ const ComponentTestPage = () => {
             ]}
           >
             Contents
-          </AdminConfirm>
-          <AdminConfirm
+          </MIConfirm>
+          <MIConfirm
             open={showConfirmPrimary2}
             title="세션이 만료되었습니다."
             width={350}
@@ -176,7 +176,7 @@ const ComponentTestPage = () => {
               },
             ]}
           />
-          <AdminConfirm
+          <MIConfirm
             open={showConfirmPrimary3}
             title="Main text"
             width={350}
@@ -191,7 +191,7 @@ const ComponentTestPage = () => {
               { label: 'Button', variant: 'filled', color: 'primary', onClick: () => setShowConfirmPrimary3(false) },
             ]}
           />
-          <AdminConfirm
+          <MIConfirm
             open={showConfirmError}
             title={
               <>
@@ -207,7 +207,7 @@ const ComponentTestPage = () => {
             ]}
           >
             삭제된 데이터는 복구할 수 없습니다.
-          </AdminConfirm>
+          </MIConfirm>
         </Flex>
 
         <Flex gap={6}>
@@ -222,7 +222,7 @@ const ComponentTestPage = () => {
             Show popup content 3
           </AdminButton>
 
-          <AdminConfirm
+          <MIConfirm
             open={showPopupContent1}
             title="Popup title"
             width={450}
@@ -241,9 +241,9 @@ const ComponentTestPage = () => {
                 <FormControlLabel value="male" control={<Radio size="small" />} label="Radio btn Label" />
               </RadioGroup>
             </FormControl>
-          </AdminConfirm>
+          </MIConfirm>
 
-          <AdminConfirm
+          <MIConfirm
             open={showPopupContent3}
             title="Popup title"
             width={450}
@@ -257,9 +257,9 @@ const ComponentTestPage = () => {
               Lorem ipsum dolor sit amet consectetur. Scelerisque turpis mauris vulputate turpis semper tempus.
             </p>
             <div className={clsx(style.boxDescription)}>*description text</div>
-          </AdminConfirm>
+          </MIConfirm>
 
-          <AdminConfirm
+          <MIConfirm
             open={showPopupContent2}
             title="회원 상세"
             width={450}
@@ -293,7 +293,7 @@ const ComponentTestPage = () => {
                 </tr>
               </table>
             </div>
-          </AdminConfirm>
+          </MIConfirm>
         </Flex>
 
         <Flex gap={6}>

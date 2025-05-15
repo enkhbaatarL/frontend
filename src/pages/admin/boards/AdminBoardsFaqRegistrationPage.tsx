@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminFaqForm from '@/components/admin/AdminFaqForm'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -73,7 +73,7 @@ const AdminBoardsFaqRegistrationPage = () => {
   return (
     <>
       <AdminFaqForm formData={formData} setFormData={setFormData} />
-      <AdminConfirm
+      <MIConfirm
         open={showCancelModal}
         title={t('등록을 취소하시겠습니까?')}
         width={450}
@@ -101,8 +101,8 @@ const AdminBoardsFaqRegistrationPage = () => {
         ]}
       >
         {t('등록 취소 시 입력된 내용은 저장되지 않습니다.')}
-      </AdminConfirm>
-      <AdminConfirm
+      </MIConfirm>
+      <MIConfirm
         open={showSaveModal}
         title={t('등록하시겠습니까?')}
         width={450}
@@ -130,7 +130,7 @@ const AdminBoardsFaqRegistrationPage = () => {
         ]}
       >
         {t('등록 즉시 서비스 화면에 게시됩니다.')}
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }

@@ -1,13 +1,13 @@
 import { t } from 'i18next'
 import { useState } from 'react'
 
-import AdminConfirm from '@/components/admin/AdminConfirm'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 
 const SessionExpiredPage = () => {
   const [showPopup, setShowPopup] = useState(true)
 
   return (
-    <AdminConfirm
+    <MIConfirm
       open={showPopup}
       title={t('세션이 만료되었습니다.')}
       width={350}

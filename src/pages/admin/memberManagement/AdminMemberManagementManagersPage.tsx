@@ -11,10 +11,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
 import MISelect from '@/components/common/select/MISelect'
@@ -270,7 +270,7 @@ const AdminMemberManagementManagersPage = () => {
         noRowMessage={isPureState ? t('회원을 검색하세요.') : undefined}
         maxVisibleRowCount={20}
       />
-      <AdminConfirm
+      <MIConfirm
         open={showDeleteModal}
         title={
           <>
@@ -303,7 +303,7 @@ const AdminMemberManagementManagersPage = () => {
         ]}
       >
         {t('삭제 시 관리자의 모든 권한이 즉시 해제됩니다.')}
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }

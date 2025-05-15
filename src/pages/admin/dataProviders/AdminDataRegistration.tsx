@@ -12,11 +12,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminItemUpload, { FileType } from '@/components/admin/AdminItemUpload/AdminItemUpload'
 import AdminUpload from '@/components/admin/AdminUpload'
 import MIAccordion from '@/components/common/accordion/MIAccordion'
 import MIButton from '@/components/common/button/MIButton'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIDatePicker from '@/components/common/datepicker/MIDatePicker'
 import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
@@ -648,7 +648,7 @@ const AdminDataRegistration = () => {
           )}
         </form.Field>
       </Box>
-      <AdminConfirm
+      <MIConfirm
         open={openCancelConfirmation}
         title={<>취소하시겠습니까?</>}
         width={450}
@@ -669,9 +669,9 @@ const AdminDataRegistration = () => {
         ]}
       >
         취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={openRegisterErrorFileAlert}
         title={<>에러 파일이 있습니다.</>}
         width={450}
@@ -690,9 +690,9 @@ const AdminDataRegistration = () => {
         ]}
       >
         에러가 발생한 파일을 삭제하거나 확인 후 다시 업로드해주세요.
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={openRegisterSuccessFileAlert}
         title={<>등록하시겠습니까?</>}
         width={450}
@@ -713,7 +713,7 @@ const AdminDataRegistration = () => {
             },
           },
         ]}
-      ></AdminConfirm>
+      ></MIConfirm>
     </form>
   )
 }

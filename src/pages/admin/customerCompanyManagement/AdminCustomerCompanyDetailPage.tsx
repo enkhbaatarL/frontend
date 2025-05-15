@@ -9,11 +9,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
 import AdminLoading from '@/components/admin/AdminLoading'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DetailItem from '@/components/common/detail-item/DetailItem'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import SettingIcon from '@/components/common/icons/SettingIcon'
@@ -145,7 +145,7 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
           navigate(`/admin/customer-company/companies/provider-detail/${companyNo}/${row.providerNo}`)
         }}
       />
-      <AdminConfirm
+      <MIConfirm
         open={openConfirmRegistration}
         title={t('데이터 프로바이더 등록')}
         width={450}
@@ -192,7 +192,7 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
             onChange={(e) => setSelectedValue(e.target.value as string)}
           />
         </Box>
-      </AdminConfirm>
+      </MIConfirm>
     </Box>
   )
 }
@@ -353,7 +353,7 @@ const AdminCustomerMemberTable = ({ data, search, setSearch, setSearchValue }: A
         </Box>
       </Box>
       <AdminTable getRowId={(row) => row.userNo} columns={columns} data={data} onRowClick={handleOnRowClick} />
-      <AdminConfirm
+      <MIConfirm
         open={isOpenDelete}
         title={
           <>
@@ -385,7 +385,7 @@ const AdminCustomerMemberTable = ({ data, search, setSearch, setSearchValue }: A
         ]}
       >
         회원 정보 삭제 시 해당 회원은 서비스에 접근이 불가합니다.
-      </AdminConfirm>
+      </MIConfirm>
     </Box>
   )
 }
@@ -559,7 +559,7 @@ const AdminCustomerCompanyDetailPage = () => {
           setSearchValue={setSearchValue}
         />
       )}
-      <AdminConfirm
+      <MIConfirm
         open={openConfirmActive}
         title={<>{data?.isActivated ? t('비활성으로 변경하시겠습니까?') : t('활성으로 변경하시겠습니까?')}</>}
         width={450}
@@ -605,9 +605,9 @@ const AdminCustomerCompanyDetailPage = () => {
             </Typography>
           )}
         </Box>
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={openInformationDialog}
         title={t('고객사 기본정보 수정')}
         width={450}
@@ -671,9 +671,9 @@ const AdminCustomerCompanyDetailPage = () => {
             />
           </Box>
         </Box>
-      </AdminConfirm>
+      </MIConfirm>
 
-      <AdminConfirm
+      <MIConfirm
         open={openConfirmSaving}
         title={t('저장하시겠습니까?')}
         width={450}
@@ -698,7 +698,7 @@ const AdminCustomerCompanyDetailPage = () => {
             },
           },
         ]}
-      ></AdminConfirm>
+      ></MIConfirm>
     </>
   )
 }

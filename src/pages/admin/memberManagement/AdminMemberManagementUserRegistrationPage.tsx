@@ -8,10 +8,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import AddIcon from '@/components/common/icons/AddIcon'
 import MIField from '@/components/common/input/MIField'
@@ -342,7 +342,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
           ))}
         </Grid>
       </Grid>
-      <AdminConfirm
+      <MIConfirm
         open={isOpenRegistration}
         title={t('등록하시겠습니까?')}
         width={450}
@@ -372,8 +372,8 @@ const AdminMemberManagementUserRegistrationPage = () => {
         {registeredUsers.length === 1
           ? `${registeredUsers[0]?.userNm} 을 등록합니다.`
           : `${registeredUsers[0]?.userNm} 외 ${registeredUsers.length - 1} 명을 등록합니다.`}
-      </AdminConfirm>
-      <AdminConfirm
+      </MIConfirm>
+      <MIConfirm
         open={isOpenCancel}
         title={t('취소하시겠습니까?')}
         width={450}
@@ -401,7 +401,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
         ]}
       >
         {t('취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.')}
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }

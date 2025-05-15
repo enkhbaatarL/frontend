@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminNoticeForm from '@/components/admin/AdminNoticeForm'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -91,7 +91,7 @@ const AdminBoardsNoticeRegistrationlPage = () => {
   return (
     <>
       <AdminNoticeForm formData={formData} setFormData={setFormData} />
-      <AdminConfirm
+      <MIConfirm
         open={showCancelModal}
         title={t('등록을 취소하시겠습니까?')}
         width={450}
@@ -119,8 +119,8 @@ const AdminBoardsNoticeRegistrationlPage = () => {
         ]}
       >
         {t('등록 취소 시 입력된 내용은 저장되지 않습니다.')}
-      </AdminConfirm>
-      <AdminConfirm
+      </MIConfirm>
+      <MIConfirm
         open={showSaveModal}
         title={t('등록하시겠습니까?')}
         width={450}
@@ -155,7 +155,7 @@ const AdminBoardsNoticeRegistrationlPage = () => {
           <div>{t(`게시 시작일 : ${dayjs(formData.bulletinValidBeginDt).format('YYYY-MM-DD')}`)}</div>
           <div>{t(`게시 종료일 : ${dayjs(formData.bulletinValidEndDt).format('YYYY-MM-DD')}`)}</div>
         </Typography>
-      </AdminConfirm>
+      </MIConfirm>
     </>
   )
 }
