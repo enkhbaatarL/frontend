@@ -7,10 +7,9 @@ import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIInput from '@/components/common/input/MIInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
-import { mockFilters } from '@/hooks/mockFilters'
 import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn.tsx'
 // import InsightsDocumentItem from '@/pages/mi/insights/components/InsightsDocumentItem.tsx'
-import insightsService from '@/service/mi/insights'
+import insightsService, { IAdvancedFilter, IAdvancedFilterItem } from '@/service/mi/insights'
 
 export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT'
 export interface Report {
@@ -32,6 +31,16 @@ const InsightsPage = () => {
     staleTime: 0,
   })
 
+  // 필터
+  const { data: filterList } = useQuery({
+    queryKey: ['filterList'],
+    queryFn: async () => await insightsService.getAdvancedFilterData(),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+  })
+
   const reports = useMemo(() => {
     if (focusedList && Array.isArray(focusedList.data)) {
       return focusedList.data.map((item) => ({
@@ -44,6 +53,40 @@ const InsightsPage = () => {
     }
     return []
   }, [focusedList])
+
+  const convertToMockFilters = (filterList: IAdvancedFilter) => {
+    const { documentTypes, providers, languages } = filterList
+
+    const toSnakeCase = (str: string) => str.replace(/\s+/g, '_').replace(/[()]/g, '').toLowerCase()
+
+    const buildOptions = (arr: IAdvancedFilterItem[]) =>
+      arr.map((item: IAdvancedFilterItem) => ({
+        label: item.codeNm,
+        value: toSnakeCase(item.codeNm),
+      }))
+
+    return [
+      {
+        title: 'Document Types',
+        options: buildOptions(documentTypes as IAdvancedFilterItem[]),
+      },
+      {
+        title: 'Providers',
+        options: buildOptions(providers as IAdvancedFilterItem[]),
+      },
+      {
+        title: 'Languages',
+        options: buildOptions(languages),
+      },
+    ]
+  }
+
+  const filters = useMemo(() => {
+    if (filterList) {
+      return convertToMockFilters(filterList.data)
+    }
+    return []
+  }, [filterList])
 
   return (
     <>
@@ -165,27 +208,28 @@ const InsightsPage = () => {
             }}
           >
             <Grid container border={'1px solid'} borderColor={'gray.30'} borderRadius={1} gap={6} padding={6} flexShrink={0}>
-              {mockFilters.map((section) => (
-                <Box key={section.title}>
-                  <Typography mb={3.5} color="gray.90" component="h2" variant="titleBox">
-                    {section.title}
-                  </Typography>
-                  <FormGroup>
-                    {section.options.map((option) => (
-                      <FormControlLabel
-                        key={option.value}
-                        sx={{
-                          p: '6.82px 8px',
-                          mr: 0,
-                          '.MuiTypography-root': { fontSize: '16px', lineHeight: 1.4 },
-                        }}
-                        control={<AdminCheckbox value={option.value} />}
-                        label={option.label}
-                      />
-                    ))}
-                  </FormGroup>
-                </Box>
-              ))}
+              {filters &&
+                filters.map((section) => (
+                  <Box key={section.title}>
+                    <Typography mb={3.5} color="gray.90" component="h2" variant="titleBox">
+                      {section.title}
+                    </Typography>
+                    <FormGroup>
+                      {section.options.map((option: { label: string; value: string }) => (
+                        <FormControlLabel
+                          key={option.value}
+                          sx={{
+                            p: '6.82px 8px',
+                            mr: 0,
+                            '.MuiTypography-root': { fontSize: '16px', lineHeight: 1.4 },
+                          }}
+                          control={<AdminCheckbox value={option.value} />}
+                          label={option.label}
+                        />
+                      ))}
+                    </FormGroup>
+                  </Box>
+                ))}
             </Grid>
           </Box>
         </Grid>
