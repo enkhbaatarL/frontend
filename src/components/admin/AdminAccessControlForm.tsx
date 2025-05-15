@@ -43,7 +43,7 @@ const AdminAccessControlForm = ({
   ]
 
   return (
-    <>
+    <Box className="content-body">
       <Box>
         <MIField
           labelSize="lg"
@@ -138,7 +138,7 @@ const AdminAccessControlForm = ({
           </Stack>
         </MIField>
       </Box>
-    </>
+    </Box>
   )
 }
 

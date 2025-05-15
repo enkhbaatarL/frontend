@@ -100,7 +100,7 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
       headerName: t('등록일'),
       align: 'center',
       headerAlign: 'center',
-      width: 200,
+      maxWidth: 200,
       renderCell: (params) => {
         const { createDt } = params.row.auditInfo
         return (
@@ -275,7 +275,7 @@ const AdminCustomerMemberTable = ({ data, search, setSearch, setSearchValue }: A
     {
       field: 'actions',
       headerName: '',
-      width: 52,
+      maxWidth: 52,
       cellClassName: 'cellAction',
       align: 'center',
       renderCell: (params) => (

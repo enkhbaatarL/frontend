@@ -264,6 +264,7 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
                 }))}
                 fieldType="select"
                 useAllOption={false}
+                showSelectedValue={false}
               />
             </Grid>
           )}

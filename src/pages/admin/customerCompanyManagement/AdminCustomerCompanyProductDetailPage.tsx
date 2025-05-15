@@ -510,169 +510,165 @@ const AdminCustomerCompanyProductDetailPage = () => {
     }
   }
   return (
-    <>
-      <Box>
-        <Box display={'flex'} flexDirection={'column'} alignItems={'start'} gap={'30px'}>
+    <Box className="content-body">
+      <Box minWidth={'210px'}>
+        <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
+          <Box>
+            {t('권한 유형')}
+            {isDetailPermissionSetting && (
+              <Typography component={'sup'} variant="asterisk" color="point.red1">
+                *
+              </Typography>
+            )}
+          </Box>
+        </Typography>
+        <RadioGroup
+          row
+          value={permission}
+          onChange={(e) => {
+            setPermission(e.target.value)
+          }}
+        >
+          <FormControlLabel disabled={!isDetailPermissionSetting} value="INDIVIDUAL" control={<Radio />} label="개별 권한" />
+          <FormControlLabel disabled={!isDetailPermissionSetting} value="COMPANY" control={<Radio />} label="회사 권한" />
+        </RadioGroup>
+      </Box>
+      {permission === 'COMPANY' && (
+        <>
           <Box minWidth={'210px'}>
             <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
-              <Box>
-                {t('권한 유형')}
-                {isDetailPermissionSetting && (
-                  <Typography component={'sup'} variant="asterisk" color="point.red1">
-                    *
-                  </Typography>
-                )}
-              </Box>
+              {t('회사 권한 설정')}
             </Typography>
-            <RadioGroup
-              row
-              value={permission}
-              onChange={(e) => {
-                setPermission(e.target.value)
-              }}
-            >
-              <FormControlLabel disabled={!isDetailPermissionSetting} value="INDIVIDUAL" control={<Radio />} label="개별 권한" />
-              <FormControlLabel disabled={!isDetailPermissionSetting} value="COMPANY" control={<Radio />} label="회사 권한" />
-            </RadioGroup>
+
+            <Flex>
+              <AdminCheckboxField
+                disabled={!isDetailPermissionSetting}
+                checked={
+                  goodsDetailData?.companySetting && !isEditViewable
+                    ? goodsDetailData?.companySetting.isViewable
+                    : isEditViewable
+                      ? companyPermission.isViewable
+                      : false
+                }
+                value={
+                  goodsDetailData?.companySetting && !isEditViewable
+                    ? goodsDetailData?.companySetting.isViewable
+                    : isEditViewable
+                      ? companyPermission.isViewable
+                      : false
+                }
+                label="조회"
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  // setCompanyPermission((prev) => ({ ...prev, isViewable: e.target.checked }))
+                  setCompanyPermission((prev) => ({
+                    ...prev,
+                    isViewable: checked,
+                    isDownloadable: !checked ? false : prev.isDownloadable,
+                  }))
+                  setIsEditViewable(true)
+                  if (!checked) setIsEditDownloadable(false)
+                }}
+              />
+              <AdminCheckboxField
+                disabled={!isDetailPermissionSetting}
+                checked={
+                  goodsDetailData?.companySetting && !isEditDownloadable
+                    ? goodsDetailData?.companySetting.isDownloadable
+                    : isEditDownloadable
+                      ? companyPermission.isDownloadable
+                      : false
+                }
+                value={
+                  goodsDetailData?.companySetting && !isEditDownloadable
+                    ? goodsDetailData?.companySetting.isDownloadable
+                    : isEditDownloadable
+                      ? companyPermission.isDownloadable
+                      : false
+                }
+                label="다운로드"
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  setCompanyPermission((prev) => ({
+                    ...prev,
+                    isDownloadable: checked,
+                    isViewable: checked ? true : prev.isViewable,
+                  }))
+                  setIsEditDownloadable(true)
+                  if (checked) setIsEditViewable(true)
+                }}
+              />
+            </Flex>
           </Box>
-          {permission === 'COMPANY' && (
-            <>
-              <Box minWidth={'210px'}>
-                <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
-                  {t('회사 권한 설정')}
+          <Box minWidth={'210px'}>
+            <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
+              {t('권한 적용 기간')}
+              {isDetailPermissionSetting && (
+                <Typography component={'sup'} variant="asterisk" color="point.red1">
+                  *
                 </Typography>
+              )}
+            </Typography>
+            <Box display={'flex'} alignItems={'center'} maxWidth={'100%'}>
+              <AdminDatePicker
+                readOnly={
+                  !isDetailPermissionSetting ||
+                  (isDetailPermissionSetting && !(companyPermission.isViewable || companyPermission.isDownloadable))
+                }
+                size="h26"
+                value={(() => {
+                  const year =
+                    goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
+                      ? goodsDetailData?.companySetting?.usageBeginDate.slice(0, 4)
+                      : companyPermission?.usageBeginDate?.slice(0, 4)
+                  const month =
+                    goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
+                      ? goodsDetailData?.companySetting?.usageBeginDate.slice(4, 6)
+                      : companyPermission?.usageBeginDate?.slice(4, 6)
+                  const day =
+                    goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
+                      ? goodsDetailData?.companySetting?.usageBeginDate.slice(6, 8)
+                      : companyPermission?.usageBeginDate?.slice(6, 8)
 
-                <Flex>
-                  <AdminCheckboxField
-                    disabled={!isDetailPermissionSetting}
-                    checked={
-                      goodsDetailData?.companySetting && !isEditViewable
-                        ? goodsDetailData?.companySetting.isViewable
-                        : isEditViewable
-                          ? companyPermission.isViewable
-                          : false
-                    }
-                    value={
-                      goodsDetailData?.companySetting && !isEditViewable
-                        ? goodsDetailData?.companySetting.isViewable
-                        : isEditViewable
-                          ? companyPermission.isViewable
-                          : false
-                    }
-                    label="조회"
-                    onChange={(e) => {
-                      const checked = e.target.checked
-                      // setCompanyPermission((prev) => ({ ...prev, isViewable: e.target.checked }))
-                      setCompanyPermission((prev) => ({
-                        ...prev,
-                        isViewable: checked,
-                        isDownloadable: !checked ? false : prev.isDownloadable,
-                      }))
-                      setIsEditViewable(true)
-                      if (!checked) setIsEditDownloadable(false)
-                    }}
-                  />
-                  <AdminCheckboxField
-                    disabled={!isDetailPermissionSetting}
-                    checked={
-                      goodsDetailData?.companySetting && !isEditDownloadable
-                        ? goodsDetailData?.companySetting.isDownloadable
-                        : isEditDownloadable
-                          ? companyPermission.isDownloadable
-                          : false
-                    }
-                    value={
-                      goodsDetailData?.companySetting && !isEditDownloadable
-                        ? goodsDetailData?.companySetting.isDownloadable
-                        : isEditDownloadable
-                          ? companyPermission.isDownloadable
-                          : false
-                    }
-                    label="다운로드"
-                    onChange={(e) => {
-                      const checked = e.target.checked
-                      setCompanyPermission((prev) => ({
-                        ...prev,
-                        isDownloadable: checked,
-                        isViewable: checked ? true : prev.isViewable,
-                      }))
-                      setIsEditDownloadable(true)
-                      if (checked) setIsEditViewable(true)
-                    }}
-                  />
-                </Flex>
-              </Box>
-              <Box minWidth={'210px'}>
-                <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
-                  {t('권한 적용 기간')}
-                  {isDetailPermissionSetting && (
-                    <Typography component={'sup'} variant="asterisk" color="point.red1">
-                      *
-                    </Typography>
-                  )}
-                </Typography>
-                <Box display={'flex'} alignItems={'center'} maxWidth={'100%'}>
-                  <AdminDatePicker
-                    readOnly={
-                      !isDetailPermissionSetting ||
-                      (isDetailPermissionSetting && !(companyPermission.isViewable || companyPermission.isDownloadable))
-                    }
-                    size="h26"
-                    value={(() => {
-                      const year =
-                        goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
-                          ? goodsDetailData?.companySetting?.usageBeginDate.slice(0, 4)
-                          : companyPermission?.usageBeginDate?.slice(0, 4)
-                      const month =
-                        goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
-                          ? goodsDetailData?.companySetting?.usageBeginDate.slice(4, 6)
-                          : companyPermission?.usageBeginDate?.slice(4, 6)
-                      const day =
-                        goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
-                          ? goodsDetailData?.companySetting?.usageBeginDate.slice(6, 8)
-                          : companyPermission?.usageBeginDate?.slice(6, 8)
+                  return dayjs(`${year}-${month}-${day}`)
+                })()}
+                onChange={(value) => {
+                  handleChangeCompanyDate(value, 'usageBeginDate')
+                }}
+              />
+              <Typography component={'div'} mx={'8px'} color="gray.50" variant="breadcrumbs">
+                ~
+              </Typography>
+              <AdminDatePicker
+                readOnly={
+                  !isDetailPermissionSetting ||
+                  (isDetailPermissionSetting && !(companyPermission.isViewable || companyPermission.isDownloadable))
+                }
+                size="h26"
+                value={(() => {
+                  const year =
+                    goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
+                      ? goodsDetailData?.companySetting?.usageEndDate.slice(0, 4)
+                      : companyPermission?.usageEndDate?.slice(0, 4)
+                  const month =
+                    goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
+                      ? goodsDetailData?.companySetting?.usageEndDate.slice(4, 6)
+                      : companyPermission?.usageEndDate?.slice(4, 6)
+                  const day =
+                    goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
+                      ? goodsDetailData?.companySetting?.usageEndDate.slice(6, 8)
+                      : companyPermission?.usageEndDate?.slice(6, 8)
 
-                      return dayjs(`${year}-${month}-${day}`)
-                    })()}
-                    onChange={(value) => {
-                      handleChangeCompanyDate(value, 'usageBeginDate')
-                    }}
-                  />
-                  <Typography component={'div'} mx={'8px'} color="gray.50" variant="breadcrumbs">
-                    ~
-                  </Typography>
-                  <AdminDatePicker
-                    readOnly={
-                      !isDetailPermissionSetting ||
-                      (isDetailPermissionSetting && !(companyPermission.isViewable || companyPermission.isDownloadable))
-                    }
-                    size="h26"
-                    value={(() => {
-                      const year =
-                        goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
-                          ? goodsDetailData?.companySetting?.usageEndDate.slice(0, 4)
-                          : companyPermission?.usageEndDate?.slice(0, 4)
-                      const month =
-                        goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
-                          ? goodsDetailData?.companySetting?.usageEndDate.slice(4, 6)
-                          : companyPermission?.usageEndDate?.slice(4, 6)
-                      const day =
-                        goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
-                          ? goodsDetailData?.companySetting?.usageEndDate.slice(6, 8)
-                          : companyPermission?.usageEndDate?.slice(6, 8)
-
-                      return dayjs(`${year}-${month}-${day}`)
-                    })()}
-                    onChange={(value) => {
-                      handleChangeCompanyDate(value, 'usageEndDate')
-                    }}
-                  />
-                </Box>
-              </Box>
-            </>
-          )}
-        </Box>
-      </Box>
+                  return dayjs(`${year}-${month}-${day}`)
+                })()}
+                onChange={(value) => {
+                  handleChangeCompanyDate(value, 'usageEndDate')
+                }}
+              />
+            </Box>
+          </Box>
+        </>
+      )}
       {permission === 'INDIVIDUAL' && (
         <Box>
           <Box minWidth={'210px'} mb="5px">
@@ -815,8 +811,8 @@ const AdminCustomerCompanyProductDetailPage = () => {
             },
           },
         ]}
-      ></MIConfirm>
-    </>
+      />
+    </Box>
   )
 }
 

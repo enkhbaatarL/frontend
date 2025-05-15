@@ -279,39 +279,41 @@ const AdminMemberManagementManagersRegistrationPage = () => {
           }}
         />
       </AdminSearchFilter>
-      <AdminTable
-        getRowId={(row) => row.imCd}
-        columns={columns}
-        data={data}
-        isLoading={isLoading}
-        size={pagination?.size}
-        sizeList={[5, 10, 20, 50]}
-        onSizeChange={updateSize}
-        onPageChange={updatePage}
-        noRowMessage={isPureState ? t('등록할 사용자를 검색하세요.') : undefined}
-        maxVisibleRowCount={5}
-        onRowClick={(param) => {
-          if (param.row.isRegistered || param.row.imCd === selectedAdmin.imCd) return
+      <Box className="content-body">
+        <AdminTable
+          getRowId={(row) => row.imCd}
+          columns={columns}
+          data={data}
+          isLoading={isLoading}
+          size={pagination?.size}
+          sizeList={[5, 10, 20, 50]}
+          onSizeChange={updateSize}
+          onPageChange={updatePage}
+          noRowMessage={isPureState ? t('등록할 사용자를 검색하세요.') : undefined}
+          maxVisibleRowCount={5}
+          onRowClick={(param) => {
+            if (param.row.isRegistered || param.row.imCd === selectedAdmin.imCd) return
 
-          setSelectedAdmin(param.row)
-        }}
-      />
-      <Box>
-        <Typography component="p" mb={3} variant="contentTitle">
-          상세 권한 설정
-        </Typography>
-        <Box display="flex" flexDirection="column" p={5} sx={{ backgroundColor: 'gray.5', borderRadius: '4px' }} gap={'30px'}>
-          <AdminAccessControlForm
-            mode="register"
-            displayManagerInfo={displayManagerInfo}
-            userRoleCd={managerInfo.userRoleCd}
-            isOtherServiceAccessPossible={managerInfo.isOtherServiceAccessPossible ?? false}
-            accessAllowedIpAddress={managerInfo.accessAllowedIpAddress ?? ['']}
-            onToggleAccess={handleToggleAccess}
-            onIpUpdate={handleIpUpdate}
-            onUserRoleChange={handleUserRoleChange}
-            disabled={isEmpty(selectedAdmin)}
-          />
+            setSelectedAdmin(param.row)
+          }}
+        />
+        <Box>
+          <Typography component="p" mb={3} variant="contentTitle">
+            상세 권한 설정
+          </Typography>
+          <Box display="flex" flexDirection="column" p={5} sx={{ backgroundColor: 'gray.5', borderRadius: '4px' }} gap={'30px'}>
+            <AdminAccessControlForm
+              mode="register"
+              displayManagerInfo={displayManagerInfo}
+              userRoleCd={managerInfo.userRoleCd}
+              isOtherServiceAccessPossible={managerInfo.isOtherServiceAccessPossible ?? false}
+              accessAllowedIpAddress={managerInfo.accessAllowedIpAddress ?? ['']}
+              onToggleAccess={handleToggleAccess}
+              onIpUpdate={handleIpUpdate}
+              onUserRoleChange={handleUserRoleChange}
+              disabled={isEmpty(selectedAdmin)}
+            />
+          </Box>
         </Box>
       </Box>
       <MIConfirm

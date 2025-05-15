@@ -47,6 +47,7 @@ const useAdminPageInfo = () => {
       label: menuItem?.label ?? '',
       path: menuItem?.path ?? currentPath,
       hasBack: menuItem?.hasBack ?? false,
+      parentPath: menuItem?.parentPath ?? '',
     }
   }, [adminMenuItems, location.pathname])
 

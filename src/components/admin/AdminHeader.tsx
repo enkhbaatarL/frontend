@@ -1,5 +1,5 @@
 import { Box, Grid2 as Grid, IconButton, Typography } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminBreadcrumbs from '@/components/admin/AdminBreadcrumbs'
 import BackIcon from '@/components/common/icons/BackIcon'
@@ -8,22 +8,22 @@ import useAdminPageInfo from '@/hooks/useAdminPageInfo'
 
 const AdminHeader = () => {
   const navigate = useNavigate()
+  const params = useParams()
   const { customComponent, subHeader, customTitle } = useAdminHeader()
   const { adminPageInfo } = useAdminPageInfo()
-  const backPage = () => {
-    const pathSegments = adminPageInfo.path.split('/').filter(Boolean)
 
-    if (pathSegments.length > 2) {
-      const parentPath = `/${pathSegments.slice(0, pathSegments.length - 1).join('/')}`
+  const backPage = () => {
+    if (adminPageInfo.parentPath) {
+      let parentPath = adminPageInfo.parentPath
+      Object.entries(params).forEach(([key, value]) => {
+        parentPath = parentPath.replace(`:${key}`, value as string)
+      })
+
       navigate(parentPath)
-      window.dispatchEvent(
-        new PopStateEvent('popstate', {
-          state: { fake: true },
-        }),
-      )
-    } else {
-      navigate(-1)
+      return
     }
+
+    navigate(-1)
   }
 
   return (
@@ -54,7 +54,6 @@ const AdminHeader = () => {
               </Typography>
             )}
           </Box>
-
           {customComponent}
         </Grid>
       </Grid>

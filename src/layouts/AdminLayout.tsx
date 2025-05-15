@@ -14,8 +14,8 @@ const AdminLayout = () => (
       <Box height={'100vh'} style={{ width: '100%', minWidth: `calc(100% - ${DRAWER_WIDTH.OPEN}px)` }}>
         <Flex direction="column" className="main flex-grow-1 full-height">
           <AdminHeader />
-          <Box className={'content'}>
-            <Box className=" full-width">
+          <Box className="content">
+            <Box className="full-width">
               <Outlet />
             </Box>
           </Box>

@@ -1,6 +1,6 @@
 import CancelIcon from '@mui/icons-material/Cancel'
 import CheckIcon from '@mui/icons-material/Check'
-import { Grid2 as Grid, Typography, Chip } from '@mui/material'
+import { Grid2 as Grid, Typography, Chip, Box } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
@@ -22,6 +22,7 @@ import useSnackbar from '@/hooks/useSnackbar'
 import companiesService from '@/service/admin/companies'
 import membersService, { IGroupUserInfo, IGroupUserRequest } from '@/service/admin/members'
 import { IPaginationResponse } from '@/types/api'
+
 interface SelectedRow {
   companyCd: string
   companyNm: string
@@ -286,62 +287,64 @@ const AdminMemberManagementUserRegistrationPage = () => {
           }}
         />
       </AdminSearchFilter>
-      <AdminTable
-        getRowId={(row) => row.userNm}
-        columns={columns}
-        data={data}
-        isLoading={isLoading}
-        size={pagination?.size}
-        sizeList={[5, 10, 20, 50]}
-        onSizeChange={updateSize}
-        onPageChange={updatePage}
-        noRowMessage={isPureState ? t('사용자를 검색하고 선택하여 등록하세요.') : undefined}
-        maxVisibleRowCount={5}
-      />
+      <Box className="content-body">
+        <AdminTable
+          getRowId={(row) => row.userNm}
+          columns={columns}
+          data={data}
+          isLoading={isLoading}
+          size={pagination?.size}
+          sizeList={[5, 10, 20, 50]}
+          onSizeChange={updateSize}
+          onPageChange={updatePage}
+          noRowMessage={isPureState ? t('사용자를 검색하고 선택하여 등록하세요.') : undefined}
+          maxVisibleRowCount={5}
+        />
 
-      <Grid container direction="column" spacing={3}>
-        <Grid container direction="column" gap={1}>
-          <Typography color="gray.90" variant="subtitle">
-            {t('등록할 사용자')}
-            <Typography marginLeft="5px" sx={{ verticalAlign: 'text-bottom' }} component="span" color="error">
-              *
+        <Grid container direction="column" spacing={3}>
+          <Grid container direction="column" gap={1}>
+            <Typography color="gray.90" variant="subtitle">
+              {t('등록할 사용자')}
+              <Typography marginLeft="5px" sx={{ verticalAlign: 'text-bottom' }} component="span" color="error">
+                *
+              </Typography>
             </Typography>
-          </Typography>
-          <Typography color="gray.60" variant="subtext">
-            {t('사용자 목록에서 선택하세요.')}
-          </Typography>
+            <Typography color="gray.60" variant="subtext">
+              {t('사용자 목록에서 선택하세요.')}
+            </Typography>
+          </Grid>
+          <Grid minHeight={100} wrap="wrap" borderRadius={2} bgcolor="gray.5" gap={2} padding={3.5} container>
+            {registeredUsers.map((user) => (
+              <Chip
+                size="small"
+                sx={{
+                  height: '28px',
+                  color: 'gray.70',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  backgroundColor: '#fff',
+                  borderColor: 'gray.30',
+                  padding: '0 5px',
+                  borderWidth: '1.8px',
+                }}
+                deleteIcon={<CancelIcon style={{ marginLeft: '3px', color: '#CED4DA' }} />}
+                variant="outlined"
+                key={user.imCd}
+                label={
+                  <>
+                    <span style={{ fontWeight: 600 }}>{user.userNm}</span>
+                    {' • '}
+                    {user.onDutyNm}
+                    {' • '}
+                    {user.departmentNm}
+                  </>
+                }
+                onDelete={() => setRegisteredUsers(registeredUsers.filter((u) => u.imCd !== user.imCd))}
+              />
+            ))}
+          </Grid>
         </Grid>
-        <Grid minHeight={100} wrap="wrap" borderRadius={2} bgcolor="gray.5" gap={2} padding={3.5} container>
-          {registeredUsers.map((user) => (
-            <Chip
-              size="small"
-              sx={{
-                height: '28px',
-                color: 'gray.70',
-                fontSize: '14px',
-                fontWeight: 400,
-                backgroundColor: '#fff',
-                borderColor: 'gray.30',
-                padding: '0 5px',
-                borderWidth: '1.8px',
-              }}
-              deleteIcon={<CancelIcon style={{ marginLeft: '3px', color: '#CED4DA' }} />}
-              variant="outlined"
-              key={user.imCd}
-              label={
-                <>
-                  <span style={{ fontWeight: 600 }}>{user.userNm}</span>
-                  {' • '}
-                  {user.onDutyNm}
-                  {' • '}
-                  {user.departmentNm}
-                </>
-              }
-              onDelete={() => setRegisteredUsers(registeredUsers.filter((u) => u.imCd !== user.imCd))}
-            />
-          ))}
-        </Grid>
-      </Grid>
+      </Box>
       <MIConfirm
         open={isOpenRegistration}
         title={t('등록하시겠습니까?')}

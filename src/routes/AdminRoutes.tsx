@@ -62,18 +62,19 @@ const AdminRoutes: ICustomRouteObject = {
             {
               index: true,
               element: <AdminCustomerCompanyManagementCompaniesPage />,
+              label: '고객사 목록',
             },
             {
               path: 'registration',
-              label: '고객사 등록',
               element: <AdminCustomerCompanyManagementCompaniesRegistrationPage />,
+              label: '고객사 등록',
               hidden: true,
+              hasBack: true,
+              parentPath: '/admin/customer-company/companies',
             },
             {
               path: 'detail',
-              label: '고객사 상세',
               hidden: true,
-              hasBack: true,
               children: [
                 {
                   index: true,
@@ -82,14 +83,15 @@ const AdminRoutes: ICustomRouteObject = {
                 {
                   path: ':companyNo',
                   element: <AdminCustomerCompanyDetailPage />,
+                  label: '고객사 상세',
+                  hasBack: true,
+                  parentPath: '/admin/customer-company/companies',
                 },
               ],
             },
             {
               path: 'provider-detail',
-              label: '데이터 프로바이더 상세',
               hidden: true,
-              hasBack: true,
               children: [
                 {
                   index: true,
@@ -98,10 +100,16 @@ const AdminRoutes: ICustomRouteObject = {
                 {
                   path: ':companyNo/:providerNo',
                   element: <AdminCustomerCompanyDataProviderDetailPage />,
+                  label: '데이터 프로바이더 상세',
+                  hasBack: true,
+                  parentPath: '/admin/customer-company/companies/detail/:companyNo',
                 },
                 {
                   path: ':companyNo/:providerNo/:goodsNo',
                   element: <AdminCustomerCompanyProductDetailPage />,
+                  label: '상품 상세',
+                  hasBack: true,
+                  parentPath: '/admin/customer-company/companies/provider-detail/:companyNo/:providerNo',
                 },
               ],
             },
@@ -130,12 +138,15 @@ const AdminRoutes: ICustomRouteObject = {
             {
               index: true,
               element: <AdminMemberManagementUsersPage />,
+              label: '서비스 회원',
             },
             {
               path: 'registration',
-              label: '회원 등록',
               element: <AdminMemberManagementUserRegistrationPage />,
+              label: '회원 등록',
               hidden: true,
+              hasBack: true,
+              parentPath: '/admin/member-mgmt/users',
             },
           ],
         },
@@ -146,18 +157,19 @@ const AdminRoutes: ICustomRouteObject = {
             {
               index: true,
               element: <AdminMemberManagementManagersPage />,
+              label: '어드민 관리자',
             },
             {
               path: 'registration',
-              label: '관리자 등록',
               element: <AdminMemberManagementManagersRegistrationPage />,
+              label: '관리자 등록',
               hidden: true,
+              hasBack: true,
+              parentPath: '/admin/member-mgmt/managers',
             },
             {
               path: 'detail',
-              label: '관리자 상세',
               hidden: true,
-              hasBack: true,
               children: [
                 {
                   index: true,
@@ -166,17 +178,22 @@ const AdminRoutes: ICustomRouteObject = {
                 {
                   path: ':userNo',
                   element: <AdminMemberManagementMangerDetailPage />,
+                  label: '관리자 상세',
+                  hasBack: true,
+                  parentPath: '/admin/member-mgmt/managers',
                 },
               ],
             },
             {
               path: 'edit',
-              label: '관리자 수정',
               hidden: true,
               children: [
                 {
                   path: ':userNo',
                   element: <AdminMemberManagementMangerEditPage />,
+                  label: '관리자 수정',
+                  hasBack: true,
+                  parentPath: '/admin/member-mgmt/managers/detail/:userNo',
                 },
               ],
             },
@@ -200,18 +217,19 @@ const AdminRoutes: ICustomRouteObject = {
             {
               index: true,
               element: <AdminDataProvidersListPage />,
+              label: '데이터 프로바이더 목록',
             },
             {
               path: 'registration',
-              label: '데이터 프로바이더 등록',
               element: <AdminDataProviderRegistrationPage />,
+              label: '데이터 프로바이더 등록',
               hidden: true,
+              hasBack: true,
+              parentPath: '/admin/data-providers/providers',
             },
             {
               path: 'detail',
-              label: '데이터 프로바이더 상세',
               hidden: true,
-              hasBack: true,
               children: [
                 {
                   index: true,
@@ -220,14 +238,15 @@ const AdminRoutes: ICustomRouteObject = {
                 {
                   path: ':providerNo',
                   element: <AdminDataProvidersDetailPage />,
+                  label: '데이터 프로바이더 상세',
+                  hasBack: true,
+                  parentPath: '/admin/data-providers/providers',
                 },
               ],
             },
             {
               path: 'product-detail',
-              label: '상품 상세',
               hidden: true,
-              hasBack: true,
               children: [
                 {
                   index: true,
@@ -235,13 +254,18 @@ const AdminRoutes: ICustomRouteObject = {
                 },
                 {
                   path: ':providerNo/:goodsNo',
-                  hidden: true,
                   element: <AdminDataProviderProductDetailPage />,
+                  label: '상품 상세',
+                  hidden: true,
+                  hasBack: true,
+                  parentPath: '/admin/data-providers/providers/detail/:providerNo',
                 },
                 {
                   path: ':providerNo/:goodsNo/data-registration',
-                  label: '데이터 등록',
                   element: <AdminDataRegistration />,
+                  label: '데이터 등록',
+                  hasBack: true,
+                  parentPath: '/admin/data-providers/providers/product-detail/:providerNo/:goodsNo',
                 },
               ],
             },
@@ -281,18 +305,19 @@ const AdminRoutes: ICustomRouteObject = {
             {
               index: true,
               element: <AdminBoardsNoticePage />,
+              label: '공지사항',
             },
             {
               path: 'registration',
-              label: '공지사항 등록',
               element: <AdminBoardsNoticeRegistrationPage />,
+              label: '공지사항 등록',
               hidden: true,
+              hasBack: true,
+              parentPath: '/admin/boards/notice',
             },
             {
               path: 'detail',
-              label: '공지사항 상세',
               hidden: true,
-              hasBack: true,
               children: [
                 {
                   index: true,
@@ -301,14 +326,15 @@ const AdminRoutes: ICustomRouteObject = {
                 {
                   path: ':noticeNo',
                   element: <AdminBoardsNoticeDetailPage />,
+                  label: '공지사항 상세',
+                  hasBack: true,
+                  parentPath: '/admin/boards/notice',
                 },
               ],
             },
             {
               path: 'edit',
-              label: '공지사항 수정',
               hidden: true,
-              hasBack: true,
               children: [
                 {
                   index: true,
@@ -317,6 +343,9 @@ const AdminRoutes: ICustomRouteObject = {
                 {
                   path: ':noticeNo',
                   element: <AdminBoardsNoticeEditPage />,
+                  label: '공지사항 수정',
+                  hasBack: true,
+                  parentPath: '/admin/boards/notice/detail/:noticeNo',
                 },
               ],
             },
@@ -329,18 +358,19 @@ const AdminRoutes: ICustomRouteObject = {
             {
               index: true,
               element: <AdminBoardsFaqPage />,
+              label: 'FAQ',
             },
             {
               path: 'registration',
-              label: 'FAQ 등록',
               element: <AdminBoardsFaqRegistrationPage />,
+              label: 'FAQ 등록',
               hidden: true,
+              hasBack: true,
+              parentPath: '/admin/boards/faq',
             },
             {
               path: 'detail',
-              label: 'FAQ 상세',
               hidden: true,
-              hasBack: true,
               children: [
                 {
                   index: true,
@@ -349,14 +379,15 @@ const AdminRoutes: ICustomRouteObject = {
                 {
                   path: ':faqNo',
                   element: <AdminBoardsFaqDetailPage />,
+                  label: 'FAQ 상세',
+                  hasBack: true,
+                  parentPath: '/admin/boards/faq',
                 },
               ],
             },
             {
               path: 'edit',
-              label: 'FAQ 수정',
               hidden: true,
-              hasBack: true,
               children: [
                 {
                   index: true,
@@ -365,6 +396,9 @@ const AdminRoutes: ICustomRouteObject = {
                 {
                   path: ':faqNo',
                   element: <AdminBoardsFaqEditPage />,
+                  label: 'FAQ 수정',
+                  hasBack: true,
+                  parentPath: '/admin/boards/faq/detail/:faqNo',
                 },
               ],
             },
