@@ -66,6 +66,22 @@ export interface IProviderDetailInfo {
   isUsed: boolean
   auditInfo: IAuditInfo
 }
+
+export interface IStructuredDataTypeInfo {
+  componentTypeId: string
+  componentTypeNm: string
+}
+
+export interface IProviderCommonOptionTypeInfo {
+  codeId: string
+  codeNm: string
+  codeExpn: string
+}
+
+export type IProviderDocumentTypeInfo = IProviderCommonOptionTypeInfo
+
+export type IProviderLanguageTypeInfo = IProviderCommonOptionTypeInfo
+
 export interface IProductCompanyPermissionRequest extends IPaginationRequest {
   companyNm?: string
 }
@@ -83,6 +99,26 @@ export interface IUpdateProviderRequest {
   providerNm: string
   providerExpn: string
   isUsed: boolean
+}
+
+export interface IProviderGoodsDataRegisterRequest {
+  goodsDataNm: string
+  goodsDataExpn: string
+  goodsDataSummaryCntt: string
+  docCategoryList: {
+    CodeId: string
+  }[]
+  langCategoryList: {
+    CodeId: string
+  }[]
+  structuredDataList: {
+    componentTypeId: string
+    fileNo: number
+  }[]
+  unstructuredDataList: {
+    criteriaDt: string
+    fileNo: number
+  }[]
 }
 
 const dataProviderService = {
@@ -237,6 +273,38 @@ const dataProviderService = {
     })
 
     return response.data
+  },
+
+  /**
+   * 정형 데이타 타입 목록을 조회합니다.
+   */
+  async getStructuredDataType(): Promise<IStructuredDataTypeInfo[]> {
+    const response = await api.get('/admin/provider-management/goods-data/structured-data-type')
+    return response.data.data
+  },
+
+  /**
+   * 문서 타입 카테고리를 조회합니다.
+   */
+  async getProviderDocumentType(): Promise<IProviderDocumentTypeInfo[]> {
+    const response = await api.get('/admin/provider-management/goods-data/category/doc')
+    return response.data.data
+  },
+
+  /**
+   * 언어 타입 카테고리를 조회합니다.
+   */
+  async getProviderLanguageType(): Promise<IProviderLanguageTypeInfo[]> {
+    const response = await api.get('/admin/provider-management/goods-data/category/lang')
+    return response.data.data
+  },
+
+  /**
+   * 데이터 프로바이더 데이터 신규등록
+   */
+  async postGoodsData(providerNo: number, goodsNo: number, body: IProviderGoodsDataRegisterRequest): Promise<IStructuredDataTypeInfo[]> {
+    const response = await api.post(`/admin/provider-management/providers/${providerNo}/goods/${goodsNo}/goods-data`, body)
+    return response.data.data
   },
 }
 

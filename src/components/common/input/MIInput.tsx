@@ -54,7 +54,7 @@ const MIInput = ({
   useEffect(() => {
     if (maxLength && typeof value === 'string' && value.length >= maxLength) return
     setInnerValue(value ? String(value) : '')
-  }, [value])
+  }, [maxLength, value])
 
   const handleInput = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -86,7 +86,7 @@ const MIInput = ({
       onFocusInput()
     }
     registerClickOutListener()
-  }, [innerValue])
+  }, [onFocusInput, registerClickOutListener])
 
   const styleBaseSize = useMemo(() => {
     switch (size) {
@@ -160,11 +160,15 @@ const MIInput = ({
             height={size === 'h46' ? 20 : 16}
             onClick={() => {
               setInnerValue('')
-              props.onChange?.({
-                target: {
-                  value: '',
-                },
-              } as ChangeEvent<HTMLInputElement>)
+              if (onClear) {
+                onClear()
+              } else {
+                props.onChange?.({
+                  target: {
+                    value: '',
+                  },
+                } as ChangeEvent<HTMLInputElement>)
+              }
             }}
           />
         )}
@@ -190,7 +194,7 @@ const MIInput = ({
     }
 
     return defaultProps
-  }, [readOnly, isFocus, innerValue, props, size, variant, errorMessage, endIcon, startIcon, maxLength])
+  }, [readOnly, isFocus, innerValue, props, size, variant, errorMessage, endIcon, startIcon, maxLength, onClear])
 
   return (
     <Box

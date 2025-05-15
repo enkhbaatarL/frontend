@@ -9,7 +9,7 @@ import MILine from '@/components/common/divider/MILine'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
 import MITableCell from '@/components/common/table/MITableCell'
-import MITableUser from '@/components/common/table-user/MITableUser'
+import MITableUser from '@/components/common/table/MITableUser'
 import ChartComponent from '@/pages/mi/dashboard/components/ChartComponent.tsx'
 import DescriptionComponent from '@/pages/mi/dashboard/components/DescriptionComponent.tsx'
 import DocumentComponent from '@/pages/mi/dashboard/components/DocumentComponent.tsx'
@@ -92,7 +92,7 @@ const DataVisualizationPage = () => {
                       </Grid>
                     }
                     tableProps={{
-                      disabledHover: true,
+                      disableHover: true,
                       noRowMessage: '등록된 내용이 없습니다.',
                       columns: [
                         {

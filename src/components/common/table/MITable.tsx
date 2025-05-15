@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import { DataGrid, DataGridProps, GridColDef, GridRowModel } from '@mui/x-data-grid'
+import { t } from 'i18next'
 import { useMemo } from 'react'
 
 import MITableCell from './MITableCell'
@@ -17,11 +18,27 @@ export interface MITableProps<T extends GridRowModel> extends DataGridProps {
   disableHover?: boolean
 }
 
+const createNoRowsOverlay = (message?: string) => {
+  const Component = () => (
+    <Box display={'flex'} alignItems={'center'} justifyContent={'center'} bgcolor={'gray.5'} textAlign={'center'} height={'100%'}>
+      <Box display="flex" flexDirection="column" rowGap="10px" alignItems="center">
+        <ErrorOutlineIcon />
+        <Typography variant="body6" color="gray.60">
+          {message ?? t('표시할 데이터가 없습니다')}
+        </Typography>
+      </Box>
+    </Box>
+  )
+  Component.displayName = 'NoRowsOverlay'
+  return Component
+}
+
 export default function MITable<T extends GridRowModel>(props: Readonly<MITableProps<T>>) {
   const ROW_HEIGHT = 40
   const HEADER_HEIGHT = 36
 
   const { columns, rows, noRowMessage, rowId, disableHover = false, ...dataGridProps } = props
+
   const memoizedColumns = useMemo(
     () =>
       columns.map((column) => ({
@@ -36,19 +53,12 @@ export default function MITable<T extends GridRowModel>(props: Readonly<MITableP
     [columns, rows],
   )
 
+  const noRowsOverlay = useMemo(() => createNoRowsOverlay(noRowMessage), [noRowMessage])
+
   return (
     <DataGrid
       slots={{
-        noRowsOverlay: () => (
-          <Box display={'flex'} alignItems={'center'} justifyContent={'center'} bgcolor={'gray.5'} textAlign={'center'} height={'100%'}>
-            <Box display="flex" flexDirection="column" rowGap="10px" alignItems="center">
-              <ErrorOutlineIcon />
-              <Typography variant="body6" color="gray.60">
-                {noRowMessage ?? '표시할 데이터가 없습니다'}
-              </Typography>
-            </Box>
-          </Box>
-        ),
+        noRowsOverlay,
       }}
       getRowId={(row) => row[rowId]}
       rows={rows ?? []}

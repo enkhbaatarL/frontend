@@ -1,5 +1,5 @@
 import { Tabs, Tab, Box } from '@mui/material'
-import { useMemo, useState, ReactNode, SyntheticEvent } from 'react'
+import { useMemo, ReactNode, SyntheticEvent } from 'react'
 
 import theme from '@/theming'
 
@@ -10,7 +10,7 @@ interface TabItem {
 
 interface MITabsProps {
   arrayItem: TabItem[]
-  initialValue?: number
+  value?: number
   widthItem?: number | string
   onChange?: (value: number) => void
   isNotice?: boolean
@@ -29,16 +29,13 @@ function CustomTabPanel(props: Readonly<{ children?: ReactNode; value: number; i
 
 export default function MITabs({
   arrayItem,
-  initialValue = 0,
+  value = 0,
   widthItem = 'auto',
   isNotice = false,
   onChange,
   size = 'h42',
 }: Readonly<MITabsProps>) {
-  const [value, setValue] = useState(initialValue)
-
   const handleChange = (_: SyntheticEvent, newValue: number) => {
-    setValue(newValue)
     onChange?.(newValue)
   }
 
@@ -86,7 +83,7 @@ export default function MITabs({
         >
           {arrayItem.map((item, idx) => (
             <Tab
-              key={idx}
+              key={`tab-${idx}`}
               label={item.label}
               id={`mitab-tab-${idx}`}
               aria-controls={`mitab-panel-${idx}`}
@@ -121,7 +118,7 @@ export default function MITabs({
         </Tabs>
       </Box>
       {arrayItem.map((item, idx) => (
-        <CustomTabPanel key={idx} value={value} index={idx}>
+        <CustomTabPanel key={`tab-panel-${idx}`} value={value} index={idx}>
           {item.content}
         </CustomTabPanel>
       ))}
