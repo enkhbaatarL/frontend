@@ -59,14 +59,47 @@ const NoticesPage = () => {
             },
             noRowMessage: t('등록된 내용이 없습니다.'),
             columns: [
-              { field: 'bulletinCategorySeparateCode', headerName: 'Category', width: 120, align: 'center' },
-              { field: 'bulletinTitleName', headerName: 'Title', flex: 1 },
+              {
+                field: 'bulletinCategorySeparateCode',
+                headerName: 'Category',
+                width: 120,
+                align: 'center',
+                renderCell: (params) => (
+                  <MITableCell
+                    value={params.value}
+                    typography={{
+                      fontWeight: params.row.isTopFixed ? 600 : 400,
+                    }}
+                  />
+                ),
+              },
+              {
+                field: 'bulletinTitleName',
+                headerName: 'Title',
+                flex: 1,
+                renderCell: (params) => (
+                  <MITableCell
+                    value={params.value}
+                    typography={{
+                      fontWeight: params.row.isTopFixed ? 600 : 400,
+                    }}
+                  />
+                ),
+              },
               {
                 field: 'createDt',
                 headerName: 'Updated',
                 width: 120,
                 align: 'center',
-                renderCell: (params) => <MITableCell value={dayjs(params.value).format('YYYY-MM-DD')} typography={{ color: 'gray.60' }} />,
+                renderCell: (params) => (
+                  <MITableCell
+                    value={dayjs(params.value).format('YYYY-MM-DD')}
+                    typography={{
+                      color: 'gray.60',
+                      fontWeight: params.row.isTopFixed ? 600 : 400,
+                    }}
+                  />
+                ),
               },
             ],
             rowId: 'bulletinNo',
