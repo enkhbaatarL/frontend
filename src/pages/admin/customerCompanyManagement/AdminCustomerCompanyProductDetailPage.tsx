@@ -128,7 +128,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
   >([])
 
   useEffect(() => {
-    if (goodsDetailData && goodsDetailLatestData) {
+    if (goodsDetailData) {
       setIsActive(goodsDetailData.isUsed)
       setCompanyPermission({
         isViewable: goodsDetailData?.companySetting ? goodsDetailData.companySetting.isViewable : false,
@@ -175,7 +175,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
             },
             {
               label: t('수정일'),
-              value: dayjs(goodsDetailLatestData?.modifyDt).format('YYYY-MM-DD'),
+              value: goodsDetailLatestData ? dayjs(goodsDetailLatestData?.modifyDt).format('YYYY-MM-DD') : '-',
             },
             {
               label: t('등록자'),
@@ -183,7 +183,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
             },
             {
               label: t('수정자'),
-              value: String(goodsDetailLatestData?.modifyUserNm),
+              value: goodsDetailLatestData ? String(goodsDetailLatestData?.modifyUserNm) : '-',
             },
           ]}
           tooltipMessage="기본 정보 수정"

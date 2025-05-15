@@ -409,7 +409,7 @@ const AdminDataProviderProductDetailPage = () => {
             },
             {
               label: t('수정일'),
-              value: dayjs(latestUpdatedData?.modifyDt).format('YYYY-MM-DD'),
+              value: latestUpdatedData ? dayjs(latestUpdatedData?.modifyDt).format('YYYY-MM-DD') : '-',
             },
             {
               label: t('등록자'),
@@ -417,7 +417,7 @@ const AdminDataProviderProductDetailPage = () => {
             },
             {
               label: t('수정자'),
-              value: String(latestUpdatedData?.modifyUserName),
+              value: latestUpdatedData ? String(latestUpdatedData?.modifyUserName) : '-',
             },
           ]}
           tooltipMessage={t('기본 정보 수정')}

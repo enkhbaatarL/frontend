@@ -2,7 +2,6 @@ import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
 import { ICommonResponse } from '@/types/api'
-
 export interface IFocusedRequest {
   customerCompanyNo: number
 }
@@ -16,11 +15,14 @@ export interface IFocusedInfo {
   goodsDataNm: string
   goodsNm: string
 }
-
+export interface IAdvancedFilterItem {
+  codeNm: string
+  codeId: string
+}
 export interface IAdvancedFilter {
-  documentTypes: string
-  providers: string
-  languages: string
+  documentTypes: IAdvancedFilterItem[]
+  providers: IAdvancedFilterItem[]
+  languages: IAdvancedFilterItem[]
 }
 
 const insightsService = {
@@ -32,8 +34,6 @@ const insightsService = {
     const response: AxiosResponse<ICommonResponse<IFocusedInfo>> = await api.get('mi/insights/focused-data', {
       params,
     })
-
-    await api.get('/mi/company-management/companies/all')
 
     return response.data
   },

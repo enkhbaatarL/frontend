@@ -11,7 +11,7 @@ interface InsightsDocumentItemProps {
 
 const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => (
   <Grid container direction={'column'} alignItems={'start'} justifyContent={'space-between'} padding={2.5} gap={2.5} borderRadius={1}>
-    <MIBage size={'h20'} color={report.type} label={report.type} />
+    <MIBage size={'h20'} label={report.type} />
     <Box>
       <Typography color="gray.90" fontSize={20} component="div" variant="body4">
         {report.title}

@@ -210,7 +210,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   }, [providerDetailData])
 
   useEffect(() => {
-    if (providerDetailData && providerLatestUpdatedData) {
+    if (providerDetailData) {
       setIsActive(providerDetailData.isUsed)
       setCustomComponent(
         <AdminCustomerCompanyProviderDetailPageHeader
@@ -255,7 +255,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
             },
             {
               label: '수정일',
-              value: dayjs(providerLatestUpdatedData?.modifyDt).format('YYYY-MM-DD'),
+              value: providerLatestUpdatedData ? dayjs(providerLatestUpdatedData?.modifyDt).format('YYYY-MM-DD') : '-',
             },
             {
               label: '등록자',
@@ -263,7 +263,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
             },
             {
               label: '수정자',
-              value: String(providerLatestUpdatedData?.modifyUserNm),
+              value: providerLatestUpdatedData ? String(providerLatestUpdatedData?.modifyUserNm) : '-',
             },
           ]}
           tooltipMessage="기본 정보 수정"

@@ -2,7 +2,7 @@ import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { FC } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import MIBage from '@/components/common/bage/MIBage'
+// import MIBage from '@/components/common/bage/MIBage'
 import MILine from '@/components/common/divider/MILine'
 import { Report } from '@/hooks/useMockReports'
 import theme from '@/theming'
@@ -31,7 +31,7 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
         },
       }}
     >
-      <MIBage size={'h20'} color={report.type} label={report.type} />
+      {/* <MIBage size={'h20'} color={report.type} label={report.type} /> */}
       <Box>
         <Typography color="gray.90" fontSize={20} component="div" variant="body4">
           {report.title}
