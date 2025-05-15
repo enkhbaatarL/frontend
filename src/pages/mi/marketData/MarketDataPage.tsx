@@ -7,8 +7,8 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import { useMockEvents } from '@/hooks/useMockEvents'
 import { useMockMarket } from '@/hooks/useMockMarket'
-import MarketdataChart from '@/pages/mi/marketData/components/MarketdataChart'
-import MarketdataChartSmall from '@/pages/mi/marketData/components/MarketdataChartSmall'
+import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart.tsx'
+import MarketDataChartSmall from '@/pages/mi/marketData/components/MarketDataChartSmall.tsx'
 
 const MarketDataPage = () => {
   const { data } = useMockMarket()
@@ -53,36 +53,36 @@ const MarketDataPage = () => {
         <Grid mb={17.5} container spacing={5}>
           <Grid width={'100%'} container direction={'row'} gap={5}>
             <Grid size={{ xs: 12, md: 6 }}>
-              <MarketdataChart />
+              <MarketDataChart />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <MarketdataChart />
+              <MarketDataChart />
             </Grid>
           </Grid>
           <Grid width={'100%'} container direction={'row'} gap={5}>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall isClock />
+              <MarketDataChartSmall isClock />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
             <Grid size={{ xs: 6, md: 3 }}>
-              <MarketdataChartSmall />
+              <MarketDataChartSmall />
             </Grid>
           </Grid>
         </Grid>

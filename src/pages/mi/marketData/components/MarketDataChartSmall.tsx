@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { generateMonthlyTimestamps, genMockDataForLineChart } from '@/utils/mock-data'
 
-interface MarketdataChartSmallProps {
+interface MarketDataChartSmallProps {
   isClock?: boolean
 }
 
@@ -110,7 +110,7 @@ const SimpleLineChart = () => {
   return <canvas ref={chartRef} style={{ maxWidth: '100%' }}></canvas>
 }
 
-const MarketdataChartSmall = (props: MarketdataChartSmallProps) => {
+const MarketDataChartSmall = (props: MarketDataChartSmallProps) => {
   const { isClock } = props
 
   return (
@@ -169,4 +169,4 @@ const MarketdataChartSmall = (props: MarketdataChartSmallProps) => {
   )
 }
 
-export default MarketdataChartSmall
+export default MarketDataChartSmall

@@ -129,7 +129,7 @@ const SimpleLineChart = () => {
   return <canvas ref={chartRef}></canvas>
 }
 
-const MarketdataChart: FC<InsightsCardBtnProps> = () => (
+const MarketDataChart: FC<InsightsCardBtnProps> = () => (
   <Box
     borderRadius={1}
     sx={{
@@ -191,4 +191,4 @@ const MarketdataChart: FC<InsightsCardBtnProps> = () => (
   </Box>
 )
 
-export default MarketdataChart
+export default MarketDataChart
