@@ -12,17 +12,20 @@ import boardService, { INoticeInfo, INoticeRequest } from '@/service/mi/board.ts
 import { IPaginationResponse } from '@/types/api.ts'
 
 const NoticesPage = () => {
-  const { data, updateFilter, pagination, updatePage, updateSize } = useSearchFilter<INoticeRequest, IPaginationResponse<INoticeInfo>>(
+  const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch } = useSearchFilter<
+    INoticeRequest,
+    IPaginationResponse<INoticeInfo>
+  >(
     boardService.getNotice,
     {
-      category: '',
-      status: '',
-      target: '',
       keyword: '',
     },
     {
       page: 1,
       size: 20,
+    },
+    {
+      initialFetch: false,
     },
   )
 
@@ -40,11 +43,15 @@ const NoticesPage = () => {
           placeholder="Search for notice"
           size="h46"
           startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
+          value={filter?.keyword ?? ''}
           onChange={(e) => updateFilter('keyword', e.target.value)}
+          onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}
+          onClear={() => updateFilterWithSearch('keyword', '')}
         />
       </Box>
       <Box paddingTop={5} paddingBottom={5}>
         <MITableUser
+          hidePagination={data?.totalElements === 0 || !data?.totalElements}
           tableProps={{
             disableHover: true,
             onRowClick: (row) => {
