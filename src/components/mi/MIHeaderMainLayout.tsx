@@ -10,8 +10,9 @@ import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
+import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { MouseEvent, useState } from 'react'
+import { MouseEvent, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import style from './MIHeaderMainLayout.module.scss'
@@ -19,6 +20,9 @@ import style from './MIHeaderMainLayout.module.scss'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
 import MIHeaderNotice from '@/components/mi/MIHeaderNotice'
 import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
+import { UserRole } from '@/service/admin/members'
+import companiesService from '@/service/mi/companies'
+import useAuthStore from '@/store/useAuthStore'
 
 const pages = [
   {
@@ -54,6 +58,8 @@ const MIHeaderMainLayout = () => {
   const navigate = useNavigate()
   const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null)
 
+  const { user } = useAuthStore()
+
   const handleOpenNavMenu = (event: MouseEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget)
   }
@@ -63,40 +69,29 @@ const MIHeaderMainLayout = () => {
   }
 
   const [selectedCompany, setSelectedCompany] = useState({
-    label: 'SK Innovation',
-    value: 'sk-innovation',
+    label: user?.companyNm ?? '',
+    value: '', // TODO: set customerCompanyNo
   })
   const [isOpenCompany, setIsOpenCompany] = useState(false)
-  const companyList = [
-    {
-      label: 'SK 하이닉스',
-      value: 'sk-hynix',
-    },
-    {
-      label: 'SK 실트론',
-      value: 'sk-siltron',
-    },
-    {
-      label: 'SK E&S',
-      value: 'sk-ens',
-    },
-    {
-      label: 'SK 가스',
-      value: 'sk-gas',
-    },
-    {
-      label: 'SK 온',
-      value: 'sk-on',
-    },
-    {
-      label: 'SK Innovation',
-      value: 'sk-innovation',
-    },
-    {
-      label: 'SK 에너지',
-      value: 'sk-energy',
-    },
-  ]
+
+  const { data: allCompanies } = useQuery({
+    queryKey: ['getAllCompanies'],
+    queryFn: async () => await companiesService.getAllCompanies(),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: user?.userRoleCd === UserRole.ADMIN && user?.isOtherServiceAccessPossible,
+  })
+
+  const companyList = useMemo(
+    () =>
+      allCompanies?.map(({ customerCompanyNo, customerCompanyNm }) => ({
+        label: customerCompanyNm,
+        value: customerCompanyNo,
+      })) ?? [],
+    [allCompanies],
+  )
 
   return (
     <div className={clsx(style.GNBHeader)}>
@@ -106,40 +101,43 @@ const MIHeaderMainLayout = () => {
             <Typography mr={1} variant="body3SB12" color="gray.70">
               {selectedCompany.label}
             </Typography>
-            <MIMenuSelector
-              sx={{ marginTop: '8px' }}
-              value={selectedCompany}
-              options={companyList}
-              onOpen={setIsOpenCompany}
-              onChange={({ value, label }) => {
-                setSelectedCompany({
-                  value: value as string,
-                  label,
-                })
-              }}
-            >
-              <Box
-                width={'28px'}
-                height={'28px'}
-                display={'flex'}
-                alignItems={'center'}
-                justifyContent={'center'}
-                borderRadius={'4px'}
-                sx={{
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  backgroundColor: isOpenCompany ? 'rgba(46, 63, 94, 0.15)' : 'transparent',
-                  '&:hover': {
-                    backgroundColor: 'rgba(46, 63, 94, 0.15)',
-                  },
-                  '& svg': {
-                    transform: isOpenCompany ? 'rotate(180deg)' : 'rotate(0deg)',
-                  },
+            {companyList.length > 0 && (
+              <MIMenuSelector
+                sx={{ marginTop: '8px' }}
+                minWidthMenu="160px"
+                value={selectedCompany}
+                options={companyList}
+                onOpen={setIsOpenCompany}
+                onChange={({ value, label }) => {
+                  setSelectedCompany({
+                    value: value as string,
+                    label,
+                  })
                 }}
               >
-                <KeyboardArrowDownIcon sx={{ color: '#495057' }} fontSize="small" />
-              </Box>
-            </MIMenuSelector>
+                <Box
+                  width={'28px'}
+                  height={'28px'}
+                  display={'flex'}
+                  alignItems={'center'}
+                  justifyContent={'center'}
+                  borderRadius={'4px'}
+                  sx={{
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    backgroundColor: isOpenCompany ? 'rgba(46, 63, 94, 0.15)' : 'transparent',
+                    '&:hover': {
+                      backgroundColor: 'rgba(46, 63, 94, 0.15)',
+                    },
+                    '& svg': {
+                      transform: isOpenCompany ? 'rotate(180deg)' : 'rotate(0deg)',
+                    },
+                  }}
+                >
+                  <KeyboardArrowDownIcon sx={{ color: '#495057' }} fontSize="small" />
+                </Box>
+              </MIMenuSelector>
+            )}
           </Box>
           <Grid container gap={1}>
             {boards.map((board) => (

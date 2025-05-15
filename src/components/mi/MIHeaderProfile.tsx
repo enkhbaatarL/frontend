@@ -43,10 +43,10 @@ const MIHeaderProfile = () => {
           fontSize: '18px',
         }}
       >
-        K
+        {(user?.userNm ?? '')[0]}
       </Box>
       <Typography sx={{ flexGrow: 1, display: { xs: 'none', md: 'inline-block' } }} marginLeft={2} variant="body2SB14" color="gray.70">
-        Sena Kim
+        {user?.userNm}
       </Typography>
       <Box ref={anchorEl} sx={{ position: 'relative' }}>
         <Box
@@ -91,7 +91,7 @@ const MIHeaderProfile = () => {
           >
             <MIProfile
               name={user?.userNm ?? ''}
-              email={user?.email ?? ''}
+              email={user?.userLoginId ?? ''}
               company={user?.companyNm ?? ''}
               team={user?.departmentNm ?? ''}
             />

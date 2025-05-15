@@ -1,43 +1,11 @@
 import { Divider } from '@mui/material'
-import { jwtDecode } from 'jwt-decode'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
 import Flex from '@/components/common/display/Flex'
-import MISelect from '@/components/common/select/MISelect'
-import { UserRole } from '@/service/admin/members'
-import useAuthStore, { IUser } from '@/store/useAuthStore'
-
-interface ITokenPayload {
-  sub: string
-  iat: number
-  userNo: number
-  companyNo: number
-  companyCd: string
-  role: UserRole
-  exp: number
-}
-
-const getUserInfo = (token: string): IUser | null => {
-  try {
-    const decoded = jwtDecode<ITokenPayload>(token)
-
-    return {
-      // TODO: 실 데이터로 교체
-      role: decoded.role,
-      userNo: decoded.userNo.toString(),
-      userNm: '홍길동(테스트)',
-      email: decoded.sub,
-      companyNm: 'SK C&C',
-      departmentNm: 'Market Intelligence팀',
-    }
-  } catch (error) {
-    console.error('token decoding error:', error)
-  }
-
-  return null
-}
+import authService from '@/service/common/auth'
+import useAuthStore from '@/store/useAuthStore'
 
 const devTokens = {
   admin: [
@@ -87,12 +55,12 @@ const LoginPage = () => {
     // TODO: SSO login 작성
   }
 
-  const setDevUserInfo = useCallback(
-    (token: string) => {
-      const user = getUserInfo(token)
+  const setUserInfo = useCallback(
+    async (token: string) => {
+      const userDetail = await authService.getUserDetail(token)
 
-      if (user) {
-        setUser(user)
+      if (userDetail) {
+        setUser(userDetail)
         setToken(token)
       }
     },
@@ -112,17 +80,20 @@ const LoginPage = () => {
     <Flex direction="column" gap={20} className="full-height" justify="center" align="center">
       <Flex direction="column" gap={20} align="center">
         <Flex gap={10}>
-          <MISelect
-            value={devUser}
+          <MIButton
+            contentType="select"
+            type="outlined"
+            valueSelect={devTokens.user.find((option) => option.value === devUser)}
             options={devTokens.user}
-            sx={{ width: '160px' }}
-            onChange={({ target }) => {
-              setDevUser(target.value as string)
+            width="160px"
+            minWidth="160px"
+            onChange={(option) => {
+              setDevUser(option.value)
             }}
           />
           <MIButton
-            onClick={() => {
-              setDevUserInfo(devUser)
+            onClick={async () => {
+              await setUserInfo(devUser)
               navigate('mi')
             }}
             width="120px"
@@ -132,17 +103,20 @@ const LoginPage = () => {
         </Flex>
         <Divider sx={{ width: '100%' }} />
         <Flex gap={10}>
-          <MISelect
-            value={devAdmin}
+          <MIButton
+            contentType="select"
+            type="outlined"
+            valueSelect={devTokens.admin.find((option) => option.value === devAdmin)}
             options={devTokens.admin}
-            sx={{ width: '160px' }}
-            onChange={({ target }) => {
-              setDevAdmin(target.value as string)
+            width="160px"
+            minWidth="160px"
+            onChange={(option) => {
+              setDevAdmin(option.value)
             }}
           />
           <MIButton
-            onClick={() => {
-              setDevUserInfo(devAdmin)
+            onClick={async () => {
+              await setUserInfo(devAdmin)
               navigate('admin')
             }}
             width="120px"
@@ -151,19 +125,20 @@ const LoginPage = () => {
           </MIButton>
         </Flex>
         <Flex gap={10}>
-          <MISelect
-            value={devOperator}
+          <MIButton
+            contentType="select"
+            type="outlined"
+            valueSelect={devTokens.operator.find((option) => option.value === devOperator)}
             options={devTokens.operator}
-            sx={{ width: '160px' }}
-            onChange={({ target }) => {
-              if (target.value) {
-                setDevOperator(target.value as string)
-              }
+            width="160px"
+            minWidth="160px"
+            onChange={(option) => {
+              setDevOperator(option.value)
             }}
           />
           <MIButton
-            onClick={() => {
-              setDevUserInfo(devOperator)
+            onClick={async () => {
+              await setUserInfo(devOperator)
               navigate('admin/data-providers/providers')
             }}
             width="120px"

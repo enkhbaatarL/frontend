@@ -37,13 +37,13 @@ export const useAdminMenuItems = () => {
 
   const targetRoutes = useMemo(
     () =>
-      user?.role === UserRole.OPERATOR
+      user?.userRoleCd === UserRole.OPERATOR
         ? {
           ...AdminRoutes,
           children: AdminRoutes.children?.filter((child) => child.path && ['data-providers'].includes(child.path)),
         }
         : AdminRoutes,
-    [user?.role],
+    [user?.userRoleCd],
   )
 
   return removeNavigateItems(targetRoutes).children ?? []

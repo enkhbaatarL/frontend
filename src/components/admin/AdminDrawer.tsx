@@ -180,8 +180,8 @@ const DrawerProfile = (props: { open: boolean }) => {
       >
         <MIProfile
           name={user?.userNm ?? ''}
-          role={user?.role}
-          email={user?.email ?? ''}
+          role={user?.userRoleCd}
+          email={user?.userLoginId ?? ''}
           company={user?.companyNm ?? ''}
           team={user?.departmentNm ?? ''}
         />

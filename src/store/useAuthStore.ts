@@ -3,20 +3,26 @@ import { persist } from 'zustand/middleware'
 
 import { UserRole } from '@/service/admin/members'
 
-export interface IUser {
-  role: UserRole
-  userNo: string | null
-  userNm: string | null
-  email: string | null
-  companyNm: string | null
-  departmentNm: string | null
+export interface IUserDetail {
+  userNo: number
+  userNm: string
+  userLoginId: string
+  userRoleCd: UserRole
+  userRoleNm: string
+  positionNm: string
+  jobGradeNm: string
+  onDutyNm: string
+  departmentNm: string
+  isOtherServiceAccessPossible: boolean
+  isIndividualInfoAgreement: boolean
+  companyNm: string
 }
 
 interface AuthState {
   token: string | null
-  user: IUser | null
+  user: IUserDetail | null
   setToken: (token: string) => void
-  setUser: (user: IUser | null) => void
+  setUser: (user: IUserDetail | null) => void
   clearAuth: () => void
 }
 

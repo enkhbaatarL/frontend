@@ -127,7 +127,10 @@ const MISelect = ({
   const autoCompleteRef = useRef<HTMLElement>(null)
 
   const shouldShowClearButton =
-    isFocused && !disabled && (multiple ? Array.isArray(value) && value.length > 0 : inputValue !== undefined && inputValue !== '')
+    type === 'input' &&
+    isFocused &&
+    !disabled &&
+    (multiple ? Array.isArray(value) && value.length > 0 : inputValue !== undefined && inputValue !== '')
 
   const getSizeStyle = (sizeSelect: MISelectSize) => {
     if (sizeSelect === 'h26') {

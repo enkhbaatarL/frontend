@@ -24,9 +24,6 @@ const NoticesPage = () => {
       page: 1,
       size: 20,
     },
-    {
-      initialFetch: false,
-    },
   )
 
   const navigate = useNavigate()

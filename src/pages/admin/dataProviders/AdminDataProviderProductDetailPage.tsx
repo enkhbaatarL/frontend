@@ -22,6 +22,7 @@ import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import queryClient from '@/lib/queryClient'
 import dataProviderService, { IProductCompanyPermissionInfo, IProviderGoodsDataInfo } from '@/service/admin/dataProvider'
+import { UserRole } from '@/service/admin/members'
 import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
 
@@ -100,7 +101,7 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
             {
               label: t('데이터 업데이트'),
               icon: <UpdateIcon fontSize="small" />,
-              disabled: (user?.role === 'ADMIN' && !isPublic) || (user?.role === 'OPERATOR' && isPublic),
+              disabled: (user?.userRoleCd === UserRole.ADMIN && !isPublic) || (user?.userRoleCd === UserRole.OPERATOR && isPublic),
               onClick: () => {
                 // TODO: 데이터 업데이트 페이지 이동
               },
@@ -143,7 +144,7 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
             variant="outlined"
             size="h34"
             onClick={onRegister}
-            disabled={(user?.role === 'ADMIN' && !isPublic) || (user?.role === 'OPERATOR' && isPublic)}
+            disabled={(user?.userRoleCd === UserRole.ADMIN && !isPublic) || (user?.userRoleCd === UserRole.OPERATOR && isPublic)}
           >
             {t('데이터 등록')}
           </AdminButton>
@@ -311,7 +312,7 @@ const AdminDataProviderProductDetailPage = () => {
   const [isPublic, setIsPublic] = useState(true)
   const [openActiveConfirm, setOpenActiveConfirm] = useState(false)
 
-  const [openEditConfirm, setOpenEditingConfirm] = useState(false)
+  const [openEditConfirm, setOpenEditConfirm] = useState(false)
   const [openModifiedData, setOpenModifiedData] = useState(false)
   const [saveBtnDisabled, setSaveBtnDisabled] = useState(true)
 
@@ -351,7 +352,7 @@ const AdminDataProviderProductDetailPage = () => {
         isPublic,
       })
       setOpenModifiedData(false)
-      setOpenEditingConfirm(false)
+      setOpenEditConfirm(false)
       setSaveBtnDisabled(true)
       showSnackbar(t('저장되었습니다.'), { variant: 'success' })
       await queryClient.invalidateQueries({ queryKey: ['productDetailData'] })
@@ -369,7 +370,7 @@ const AdminDataProviderProductDetailPage = () => {
       setCustomComponent(
         <AdminDataProviderProductDetailPageHeader
           value={isActive}
-          onChange={() => user?.role === 'ADMIN' && setOpenActiveConfirm(true)}
+          onChange={() => user?.userRoleCd === UserRole.ADMIN && setOpenActiveConfirm(true)}
           label={isActive ? '활성' : '비활성'}
         />,
       )
@@ -456,7 +457,7 @@ const AdminDataProviderProductDetailPage = () => {
           onRegister={() => navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}/data-registration`)}
         />
       )}
-      {user?.role === 'ADMIN' && companyPermissionList && (
+      {user?.userRoleCd === UserRole.ADMIN && companyPermissionList && (
         <AuthorityDetailTable
           data={companyPermissionList}
           searchCompanyNm={searchCompanyNm}
@@ -537,7 +538,7 @@ const AdminDataProviderProductDetailPage = () => {
             color: 'primary',
             disabled: saveBtnDisabled,
             onClick: () => {
-              setOpenEditingConfirm(true)
+              setOpenEditConfirm(true)
             },
           },
         ]}
@@ -579,7 +580,7 @@ const AdminDataProviderProductDetailPage = () => {
         title={<>{t('저장하시겠습니까?')}</>}
         width={350}
         handleClose={() => {
-          setOpenEditingConfirm(false)
+          setOpenEditConfirm(false)
         }}
         actions={[
           {
@@ -587,7 +588,7 @@ const AdminDataProviderProductDetailPage = () => {
             variant: 'outlined',
             color: 'gray',
             onClick: () => {
-              setOpenEditingConfirm(false)
+              setOpenEditConfirm(false)
             },
           },
           {
