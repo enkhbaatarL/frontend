@@ -12,11 +12,15 @@ export type FileType =
   | 'text/csv'
   | 'application/msword'
   | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  | 'application/vnd.ms-excel'
+  | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  | 'application/vnd.ms-powerpoint'
+  | 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
   | 'image/jpeg'
 
 export interface FileInfo {
   fileNo: number
-  componentTypeId: string
+  componentTypeId?: string
   fileNm: string
   fileSize: number
   url?: string
@@ -43,6 +47,10 @@ const fileTypeIconMapper = (type: FileType, url?: string) => {
     'application/msword': '/src/assets/docicon.svg',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '/src/assets/docicon.svg',
     'image/jpeg': '/src/assets/folder.svg',
+    'application/vnd.ms-excel': '/src/assets/docicon.svg',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '/src/assets/docicon.svg',
+    'application/vnd.ms-powerpoint': '/src/assets/docicon.svg',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': '/src/assets/docicon.svg',
   }
   return icons[type] || '/src/assets/folder.svg'
 }
