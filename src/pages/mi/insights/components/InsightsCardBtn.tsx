@@ -1,6 +1,12 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { FC, useMemo, useState } from 'react'
 
+import arBgImg from '@/assets/asset-report-bg.png'
+import bgCardImg from '@/assets/bgcard.png'
+import cmrBgImg from '@/assets/commodity-market-report-bg.png'
+import diBgImg from '@/assets/deal-insight-bg.png'
+import iBgImg from '@/assets/insight-bg.png'
+import pshImg from '@/assets/product_symbol_hover.png'
 import MIBage from '@/components/common/bage/MIBage'
 import MILine from '@/components/common/divider/MILine'
 import { Report } from '@/hooks/useMockReports'
@@ -15,20 +21,20 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
 
   const background = useMemo(() => {
     if (!isHover) {
-      return 'url(\'/src/assets/bgcard.png\')'
+      return `url(${bgCardImg})`
     }
 
     switch (report.type) {
       case 'Asset Report':
-        return ' url(\'/src/assets/asset-report-bg.png\')'
+        return `url(${arBgImg})`
       case 'Commodity Market Report':
-        return 'url(\'/src/assets/commodity-market-report-bg.png\')'
+        return `url(${cmrBgImg})`
       case 'Deal Insight':
-        return 'url(\'/src/assets/deal-insight-bg.png\')'
+        return `url(${diBgImg})`
       case 'Insight':
-        return 'url(\'/src/assets/insight-bg.png\')'
+        return `url(${iBgImg})`
       default:
-        return 'url(\'/src/assets/bgcard.png\')'
+        return `url(${bgCardImg})`
     }
   }, [report.type, isHover])
 
@@ -56,7 +62,7 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
           },
         }}
       >
-        <img src="/src/assets/product_symbol_hover.png" />
+        <img src={pshImg} />
       </Box>
       <Grid
         height={index > 3 ? 220 : 340}

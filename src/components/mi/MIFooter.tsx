@@ -2,6 +2,8 @@ import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import Link from '@mui/material/Link'
 import { useNavigate } from 'react-router-dom'
 
+import logowImg from '@/assets/logow.svg'
+
 const MIFooter = () => {
   const navigate = useNavigate()
 
@@ -17,7 +19,7 @@ const MIFooter = () => {
                 navigate('/')
               }}
             >
-              <img width="210" src="/src/assets/logow.svg" alt="" />
+              <img width="210" src={logowImg} alt="" />
             </Link>
             <Typography color="gray.40" component="div" variant="body3R12">
               COPYRIGHT©2025 ALL RIGHTS RESERVED. <br />
