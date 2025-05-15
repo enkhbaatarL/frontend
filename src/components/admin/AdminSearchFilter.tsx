@@ -21,7 +21,7 @@ const AdminSearchFilter = ({ children, onSearch, onReset, disabledSearch, disabl
 
   return (
     <Flex className="AdminSearchFilter" align="end" justify="space-between" gap={20}>
-      <Flex className="AdminSearchFilterField" align="center" wrap="nowrap" gap={12} onKeyUp={handleKeyPress}>
+      <Flex className="AdminSearchFilterField" align="center" wrap="wrap" fullWidth gap={12} onKeyUp={handleKeyPress}>
         {children}
       </Flex>
       <Flex className="AdminSearchFilterButton" gap={12}>

@@ -20,7 +20,7 @@ const DetailItem = (props: IDetailItemProps) => {
 
   return (
     <Box px={6} py={5} bgcolor={'gray.5'} borderBottom="1px solid" borderColor={'gray.30'} maxWidth={'100%'}>
-      <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
+      <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} gap={20}>
         <Box>
           {typeof props.title === 'string' ? (
             <Typography variant="body1" color="gray.70">
@@ -33,11 +33,11 @@ const DetailItem = (props: IDetailItemProps) => {
         <Box display={'flex'} alignItems={'center'}>
           {props.fields?.map((field, index) => (
             <>
-              <Box key={field.label} px={3} display="flex" columnGap={1} alignItems={'center'}>
-                <Typography variant="body3" color="gray.70">
+              <Box key={field.label} px={3} display="flex" columnGap={1} alignItems={'center'} flexWrap={'wrap'}>
+                <Typography variant="body3" color="gray.70" noWrap>
                   {field.label}
                 </Typography>
-                <Typography variant="body3R12" color="gray.60">
+                <Typography variant="body3R12" color="gray.60" noWrap>
                   {field.value}
                 </Typography>
               </Box>

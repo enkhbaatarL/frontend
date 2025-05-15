@@ -299,6 +299,7 @@ const MIInput = ({
               width: '100%',
             },
             '& .MuiInputBase-input': {
+              width: contentWidth ? `${contentWidth}px` : 'auto',
               borderRadius: '0',
               padding: 0,
               '&::placeholder': {

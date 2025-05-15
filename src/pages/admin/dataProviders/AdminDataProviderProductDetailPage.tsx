@@ -384,13 +384,13 @@ const AdminDataProviderProductDetailPage = () => {
                   label={productDetailData.isPublic ? 'Public' : 'Private'}
                   sx={{ textTransform: 'capitalize', mr: '10px' }}
                 />
-                <Typography variant="body1B16" color="gray.90">
+                <Typography variant="body1B16" color="gray.90" noWrap>
                   {state?.providerNm}
                 </Typography>
                 <Typography variant="body1B16" color="gray.90" px={'8px'}>
                   •
                 </Typography>
-                <Typography variant="body1B16" color="gray.90">
+                <Typography variant="body1B16" color="gray.90" noWrap>
                   {productDetailData?.goodsNm}
                 </Typography>
               </Box>

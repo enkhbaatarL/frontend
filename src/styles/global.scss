@@ -172,14 +172,14 @@ fieldset{
   background: color.$gray-5;
 
   .AdminSearchFilterField{
-    flex-grow: 1;
-    max-width: 995px;
     >.MuiBox-root{
-      flex: 1;
-      max-width: 189px;
+      width: 160px;
       .BoxInput{
         width: 100%;
       }
+    }
+    >.MuiFormControl-root{
+      width: 160px;
     }
   }
   .AdminSearchFilterButton{
