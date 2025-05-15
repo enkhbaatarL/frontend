@@ -7,9 +7,9 @@ import { useNavigate } from 'react-router-dom'
 import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
-import useSearchFilter from '@/hooks/useSearchFilter.tsx'
-import boardService, { INoticeInfo, INoticeRequest } from '@/service/mi/board.ts'
-import { IPaginationResponse } from '@/types/api.ts'
+import useSearchFilter from '@/hooks/useSearchFilter'
+import boardService, { INoticeInfo, INoticeRequest } from '@/service/mi/board'
+import { IPaginationResponse } from '@/types/api'
 
 const NoticesPage = () => {
   const { data, updateFilter, pagination, updatePage, updateSize } = useSearchFilter<INoticeRequest, IPaginationResponse<INoticeInfo>>(

@@ -24,7 +24,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
     if (size === 'h24')
       return {
         padding: '4px 8px',
-        height: '24px',
+        height: '22px',
       }
 
     return {}

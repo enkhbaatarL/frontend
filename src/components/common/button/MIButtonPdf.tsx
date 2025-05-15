@@ -1,8 +1,8 @@
 import { Button } from '@mui/material'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, MouseEvent } from 'react'
 
 export interface MIButtonProps {
-  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void
   disabled?: boolean
 }
 

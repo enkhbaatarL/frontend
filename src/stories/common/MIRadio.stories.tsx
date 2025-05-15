@@ -5,7 +5,7 @@ import FormLabel from '@mui/material/FormLabel'
 import RadioGroup from '@mui/material/RadioGroup'
 import { Meta, StoryObj } from '@storybook/react'
 import { fn } from '@storybook/test'
-import { useState } from 'react'
+import { ChangeEvent, useState } from 'react'
 
 import MIRadio from '@/components/common/input/MIRadio'
 
@@ -84,7 +84,7 @@ export const RadioGroupStory: Story = {
   render: () => {
     const [value, setValue] = useState('option1')
 
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
       setValue(event.target.value)
     }
 
@@ -106,7 +106,7 @@ export const HorizontalRadioGroup: Story = {
   render: () => {
     const [value, setValue] = useState('option1')
 
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
       setValue(event.target.value)
     }
 
@@ -128,7 +128,7 @@ export const MixedStateGroup: Story = {
   render: () => {
     const [value, setValue] = useState('option1')
 
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
       setValue(event.target.value)
     }
 

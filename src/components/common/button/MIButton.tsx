@@ -11,7 +11,7 @@ export type MIButtonContentType = 'text' | 'link' | 'icon' | 'select'
 export type MIButtonColor = 'primary' | 'gray' | 'gray2' | 'white' | 'red'
 
 export interface MIButtonProps {
-  toolTip?: string
+  toolTip?: string | ReactElement
   toolTipProps?: Partial<TooltipProps>
   size?: MIButtonSize
   type?: MIButtonType

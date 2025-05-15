@@ -2,7 +2,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { Autocomplete, Box, SvgIconProps, SxProps, Theme, Typography } from '@mui/material'
 import FormControl from '@mui/material/FormControl'
 import { t } from 'i18next'
-import { PropsWithChildren, useMemo, useState, ReactNode } from 'react'
+import { PropsWithChildren, useMemo, useState, ReactNode, useRef, useEffect } from 'react'
 
 import AdminTextField from '@/components/admin/AdminTextField'
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
@@ -26,8 +26,10 @@ type MISelectProps = {
   multiple?: boolean
   fullWidth?: boolean
   value?: string | number
+  width?: string | number
   disabled?: boolean
   readOnly?: boolean
+  type?: 'button' | 'input'
   onChange?: (e: { target: { value: string | number | (string | number)[] } }) => void
   options?: readonly OptionType[]
   useAllOption?: boolean
@@ -113,12 +115,16 @@ const MISelect = ({
   onChange,
   options,
   useAllOption = true,
+  width,
+  type = 'input',
 }: MISelectProps) => {
   const finalPlaceholder = placeholder ?? t('선택하세요')
 
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [isFocused, setIsFocused] = useState(false)
+
+  const autoCompleteRef = useRef<HTMLElement>(null)
 
   const shouldShowClearButton =
     isFocused && !disabled && (multiple ? Array.isArray(value) && value.length > 0 : inputValue !== undefined && inputValue !== '')
@@ -145,6 +151,16 @@ const MISelect = ({
 
     return {}
   }
+
+  useEffect(() => {
+    if (autoCompleteRef.current && type === 'button') {
+      const input = autoCompleteRef.current?.querySelector('input')
+
+      if (input) {
+        input.readOnly = true
+      }
+    }
+  }, [autoCompleteRef, type])
 
   const inputSx = useMemo(
     (): SxProps<Theme> => ({
@@ -193,7 +209,16 @@ const MISelect = ({
           backgroundColor: 'transparent',
         },
       },
-
+      ...(type === 'button'
+        ? {
+          '& .MuiInputBase-input[readonly]': {
+            borderColor: 'inherit',
+            backgroundColor: 'inherit',
+            userSelect: 'none',
+            cursor: 'pointer',
+          },
+        }
+        : {}),
       ...sx,
     }),
     [minWidth, sizeSelect, showValue, sx, shouldShowClearButton],
@@ -217,13 +242,14 @@ const MISelect = ({
   const selected = getSelectedOption(value)
 
   return (
-    <FormControl fullWidth={fullWidth}>
+    <FormControl sx={{ width }} fullWidth={fullWidth}>
       {label && (
         <Typography marginBottom={1} variant="labelText" color="gray.70">
           {label}
         </Typography>
       )}
       <Autocomplete
+        ref={autoCompleteRef}
         clearIcon={<MIInputClearIcon />}
         clearOnEscape
         disabled={disabled}

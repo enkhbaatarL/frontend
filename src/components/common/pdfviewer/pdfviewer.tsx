@@ -5,13 +5,11 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import RemoveIcon from '@mui/icons-material/Remove'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import Button from '@mui/material/Button'
-import { useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useRef, useState, KeyboardEvent, MouseEvent } from 'react'
 
-import type React from 'react'
-
-import MIButtonPdf from '@/components/common/button/MIButtonPdf.tsx'
-import MILine from '@/components/common/divider/MILine.tsx'
-import PDFPageImage from '@/components/common/pdfviewer/PDFPageImage.tsx'
+import MIButtonPdf from '@/components/common/button/MIButtonPdf'
+import MILine from '@/components/common/divider/MILine'
+import PDFPageImage from '@/components/common/pdfviewer/PDFPageImage'
 
 interface PDFViewerProps {
   fileName?: string
@@ -27,7 +25,7 @@ const formatFileSize = (bytes: number) => {
   return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`
 }
 
-export default function PDFViewer({ fileName = 'Document', fileDate = new Date(), images }: PDFViewerProps) {
+export default function PDFViewer({ fileName = 'Document', fileDate = new Date(), images }: Readonly<PDFViewerProps>) {
   const [fileSize, setFileSize] = useState(0)
   const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -148,7 +146,7 @@ export default function PDFViewer({ fileName = 'Document', fileDate = new Date()
     }
   }, [currentIndex, isScrolling])
 
-  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePageInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = Number.parseInt(e.target.value)
 
     if (!isNaN(value) && value >= 1 && value <= images.length) {
@@ -165,7 +163,7 @@ export default function PDFViewer({ fileName = 'Document', fileDate = new Date()
     setScale((prevScale) => Math.max(prevScale - 0.1, 0.7))
   }
 
-  const handleZoomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleZoomInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setZoomInputValue(e.target.value)
   }
 
@@ -182,7 +180,7 @@ export default function PDFViewer({ fileName = 'Document', fileDate = new Date()
     }
   }
 
-  const handleZoomInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleZoomInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       console.log('test')
       e.preventDefault()
@@ -198,7 +196,7 @@ export default function PDFViewer({ fileName = 'Document', fileDate = new Date()
   }
 
   // Dragging functionality
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     // Only enable dragging when zoomed in
     if (scale <= 1.0 || renderInProgress.current) return
 
@@ -206,7 +204,7 @@ export default function PDFViewer({ fileName = 'Document', fileDate = new Date()
     setDragStart({ x: e.clientX, y: e.clientY })
   }
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!isDragging) return
 
     const dx = e.clientX - dragStart.x

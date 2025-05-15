@@ -7,8 +7,8 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import { useMockEvents } from '@/hooks/useMockEvents'
 import { useMockMarket } from '@/hooks/useMockMarket'
-import MarketdataChart from '@/pages/mi/marketData/components/MarketdataChart.tsx'
-import MarketdataChartSmall from '@/pages/mi/marketData/components/MarketdataChartSmall.tsx'
+import MarketdataChart from '@/pages/mi/marketData/components/MarketdataChart'
+import MarketdataChartSmall from '@/pages/mi/marketData/components/MarketdataChartSmall'
 
 const MarketDataPage = () => {
   const { data } = useMockMarket()
@@ -109,8 +109,16 @@ const MarketDataPage = () => {
           wrap={'nowrap'}
           gap={6}
         >
-          <Box flexGrow={1}>
-            <Box width={'100%'}>
+          <Box
+            boxSizing={'border-box'}
+            sx={{
+              width: {
+                xs: '100%',
+                md: 'calc(100% - 370px)',
+              },
+            }}
+          >
+            <Box boxSizing={'border-box'} width={'100%'}>
               <MITableUser
                 tableProps={{
                   disableHover: true,
@@ -139,7 +147,7 @@ const MarketDataPage = () => {
             </Box>
           </Box>
           <Box
-            flexShrink={0}
+            boxSizing={'border-box'}
             sx={{
               width: {
                 xs: '100%',

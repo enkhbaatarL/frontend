@@ -4,7 +4,7 @@ import { Chart } from 'chart.js'
 import { useEffect, useRef } from 'react'
 
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
-import { generateMonthlyTimestamps, genMockDataForLineChart } from '@/utils/mock-data.ts'
+import { generateMonthlyTimestamps, genMockDataForLineChart } from '@/utils/mock-data'
 
 interface MarketdataChartSmallProps {
   isClock?: boolean

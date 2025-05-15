@@ -1,5 +1,5 @@
 import Radio, { RadioProps } from '@mui/material/Radio'
-import { useState } from 'react'
+import { ChangeEvent, useState } from 'react'
 
 // SVG Icons Components
 const UncheckedIcon = () => (
@@ -97,7 +97,7 @@ const CheckedDisabledIcon = () => (
 interface MIRadioProps extends RadioProps {
   checked?: boolean
   disabled?: boolean
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void
 }
 
 // Custom styled Radio component

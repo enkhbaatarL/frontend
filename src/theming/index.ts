@@ -101,6 +101,7 @@ declare module '@mui/material/styles' {
     bage2: CSSProperties
     titleCardInsight: CSSProperties
     sectionTitleTXL: CSSProperties
+    textAI: CSSProperties
   }
 
   // allow configuration using `createTheme()`
@@ -159,6 +160,7 @@ declare module '@mui/material/styles' {
     bage2: CSSProperties
     titleCardInsight: CSSProperties
     sectionTitleTXL: CSSProperties
+    textAI: CSSProperties
   }
 }
 
@@ -220,6 +222,7 @@ declare module '@mui/material/Typography' {
     bage2: true
     titleCardInsight: true
     sectionTitleTXL: true
+    textAI: true
   }
 }
 
@@ -257,6 +260,8 @@ const theme = createTheme({
     },
     chart: {
       blue2: '#5191F5',
+      green6: '#498B47',
+      red4: '#CC4D50',
     },
     content: {
       backgroundHover: '#F0F3F6',
@@ -638,6 +643,16 @@ const theme = createTheme({
       fontStyle: 'normal',
       fontWeight: 600,
       lineHeight: '1.4',
+    },
+    textAI: {
+      background: 'linear-gradient(272deg, #29487B -41.16%, #4B84E1 109.67%)',
+      backgroundClip: 'text',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      fontSize: '20px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      letterSpacing: '-0.4px',
     },
   },
   components,

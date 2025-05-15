@@ -56,7 +56,7 @@ export default function MIButtonSelect(
   }, [isOpen])
 
   return (
-    <>
+    <Box position={'relative'}>
       <Box
         ref={triggerRef}
         display={'flex'}
@@ -136,11 +136,22 @@ export default function MIButtonSelect(
           keepMounted
           anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
           transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          disablePortal
           sx={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            bottom: 'auto',
+            right: 'auto',
+            zIndex: 1200,
             '& .MuiPaper-root': {
               borderRadius: '6px',
               boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.20)',
               marginTop: '8px',
+              position: 'unset',
+              maxWidth: '100%',
+              maxHeight: 'unset',
+              transform: 'none',
             },
           }}
           slotProps={{
@@ -191,6 +202,6 @@ export default function MIButtonSelect(
           ))}
         </Menu>
       )}
-    </>
+    </Box>
   )
 }

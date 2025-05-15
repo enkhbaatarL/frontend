@@ -2,15 +2,15 @@ import { GridColDef } from '@mui/x-data-grid'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import AdminTable from '@/components/admin/AdminTable.tsx'
+import AdminTable from '@/components/admin/AdminTable'
 import MIButton from '@/components/common/button/MIButton'
 import MIChip from '@/components/common/chip/MIChip'
 import Flex from '@/components/common/display/Flex'
 import MITableCell from '@/components/common/table/MITableCell'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
-import useSearchFilter from '@/hooks/useSearchFilter.tsx'
+import useSearchFilter from '@/hooks/useSearchFilter'
 import dataProviderService, { IProviderListInfo } from '@/service/admin/dataProvider'
-import { IPaginationRequest, IPaginationResponse } from '@/types/api.ts'
+import { IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 const AdminDataProvidersListPageHeader = () => {
   const navigate = useNavigate()

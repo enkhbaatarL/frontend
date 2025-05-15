@@ -1,14 +1,14 @@
 import { Navigate, RouteObject } from 'react-router-dom'
 
 import MILayout from '@/layouts/MILayout'
-import DataVisualizationPage from '@/pages/mi/dashboard/DataVisualizationPage'
+import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
+import DataVisualizationPage from '@/pages/mi/dataVisualization/DataVisualizationPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
-import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage.tsx'
+import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
-import SignalMap from '@/pages/mi/signalMap/SignalMap.tsx'
-import UserChartSamplePage from '@/pages/mi/UserChartSamplePage'
+import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import MIProvider from '@/providers/MIProvider'
 
 const MIRoutes: RouteObject = {
@@ -24,12 +24,8 @@ const MIRoutes: RouteObject = {
       element: <Navigate to="chart-sample" replace />,
     },
     {
-      path: 'chart-sample',
-      element: <UserChartSamplePage />,
-    },
-    {
       path: 'dashboard',
-      element: <DataVisualizationPage />,
+      element: <MIDashboardPage />,
     },
     {
       path: 'insights',
@@ -41,7 +37,11 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'signal-map',
-      element: <SignalMap />,
+      element: <SignalMapPage />,
+    },
+    {
+      path: 'data-visualization',
+      element: <DataVisualizationPage />,
     },
     {
       path: 'notices',

@@ -1,5 +1,5 @@
 import { Tabs, Tab, Box } from '@mui/material'
-import { useMemo, ReactNode, SyntheticEvent } from 'react'
+import { useMemo, ReactNode, SyntheticEvent, useState } from 'react'
 
 import theme from '@/theming'
 
@@ -12,16 +12,17 @@ interface MITabsProps {
   arrayItem: TabItem[]
   value?: number
   widthItem?: number | string
+  widthTab?: number | string
   onChange?: (value: number) => void
   isNotice?: boolean
   size?: 'h70' | 'h52' | 'h42' | 'h38'
 }
 
-function CustomTabPanel(props: Readonly<{ children?: ReactNode; value: number; index: number }>) {
+const CustomTabPanel = (props: Readonly<{ children?: ReactNode; value: number; index: number }>) => {
   const { children, value, index, ...other } = props
 
   return (
-    <div role="tabpanel" hidden={value !== index} id={`mitab-panel-${index}`} aria-labelledby={`mitab-tab-${index}`} {...other}>
+    <div role="tabpanel" hidden={value !== index} id={`mi-tab-panel-${index}`} aria-labelledby={`mi-tab-tab-${index}`} {...other}>
       {value === index && <Box>{children}</Box>}
     </div>
   )
@@ -29,15 +30,21 @@ function CustomTabPanel(props: Readonly<{ children?: ReactNode; value: number; i
 
 export default function MITabs({
   arrayItem,
-  value = 0,
+  value,
   widthItem = 'auto',
+  widthTab,
   isNotice = false,
   onChange,
   size = 'h42',
 }: Readonly<MITabsProps>) {
+  const [innerTabId, setInnerTabId] = useState(value ?? 0)
+
   const handleChange = (_: SyntheticEvent, newValue: number) => {
     onChange?.(newValue)
+    setInnerTabId(newValue)
   }
+
+  const tabId = useMemo(() => value ?? innerTabId, [value, innerTabId])
 
   const styleBaseSize = useMemo(() => {
     const typography = {
@@ -64,6 +71,8 @@ export default function MITabs({
     <Box sx={{ width: '100%' }}>
       <Box
         sx={{
+          width: widthTab,
+          margin: 'auto',
           borderBottom: isNotice ? 0 : 1,
           borderColor: '#DEE2E6',
           backgroundColor: isNotice ? '#F1F3F5' : 'transparent',
@@ -78,15 +87,15 @@ export default function MITabs({
           sx={{
             minHeight: 'unset',
           }}
-          value={value}
+          value={tabId}
           onChange={handleChange}
         >
           {arrayItem.map((item, idx) => (
             <Tab
               key={`tab-${idx}`}
               label={item.label}
-              id={`mitab-tab-${idx}`}
-              aria-controls={`mitab-panel-${idx}`}
+              id={`mi-tab-tab-${idx}`}
+              aria-controls={`mi-tab-panel-${idx}`}
               disableRipple
               sx={{
                 ...(isNotice
@@ -118,7 +127,7 @@ export default function MITabs({
         </Tabs>
       </Box>
       {arrayItem.map((item, idx) => (
-        <CustomTabPanel key={`tab-panel-${idx}`} value={value} index={idx}>
+        <CustomTabPanel key={`tab-panel-${idx}`} value={tabId} index={idx}>
           {item.content}
         </CustomTabPanel>
       ))}

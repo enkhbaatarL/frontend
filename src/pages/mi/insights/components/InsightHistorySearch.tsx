@@ -1,12 +1,18 @@
 import { Box, MenuItem, Typography } from '@mui/material'
 import { KeyboardEventHandler, useEffect, useRef, useState } from 'react'
 
-import ScrollWrapper from '@/components/admin/ScrollWrapper.tsx'
+import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import SearchIcon from '@/components/common/icons/SearchIcon'
 import MIInput from '@/components/common/input/MIInput'
 import theme from '@/theming'
 
-export default function InsightHistorySearch(props: { onChange?: (text: string) => void; placeholder?: string; nameSearch?: string }) {
+export default function InsightHistorySearch(
+  props: Readonly<{
+    onChange?: (text: string) => void
+    placeholder?: string
+    nameSearch?: string
+  }>,
+) {
   const { onChange } = props
   const [histories, setHistories] = useState<string[]>([])
   const [filteredHistories, setFilteredHistories] = useState<string[]>([])

@@ -1,6 +1,6 @@
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import { Box, Chip } from '@mui/material'
-import { useCallback, useRef, useState } from 'react'
+import { ChangeEvent, useCallback, useRef, useState } from 'react'
 
 import '@/styles/upload-field.scss'
 import MIButton from '@/components/common/button/MIButton'
@@ -83,7 +83,7 @@ const AdminUpload = ({
   const bufferFile = useRef<File | null>(null)
 
   /** 파일 선택 이벤트 */
-  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = async (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target?.files?.[0]) {
       const selectedFile = e.target.files[0]
       const errorMsg = await handleFileValidation(selectedFile)

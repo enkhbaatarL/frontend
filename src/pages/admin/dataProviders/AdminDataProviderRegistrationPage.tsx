@@ -11,8 +11,8 @@ import MIField from '@/components/common/input/MIField'
 import MIInput from '@/components/common/input/MIInput'
 import { require, uppercaseWithLength } from '@/components/common/input/validators'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
-import useSnackbar from '@/hooks/useSnackbar.tsx'
-import dataProviderService from '@/service/admin/dataProvider.ts'
+import useSnackbar from '@/hooks/useSnackbar'
+import dataProviderService from '@/service/admin/dataProvider'
 
 const AdminDataProviderRegistrationPageHeader = (props: { onCancel: () => void; onRegister: () => void; disabled: boolean }) => (
   <Flex gap={4}>

@@ -1,6 +1,6 @@
 import { Box, Tooltip, Typography, TypographyProps } from '@mui/material'
 import { Instance } from '@popperjs/core'
-import { PropsWithChildren, useRef, MouseEvent } from 'react'
+import { PropsWithChildren, useRef, MouseEvent, ReactNode } from 'react'
 
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 
@@ -8,7 +8,7 @@ export interface MITableCellProps extends PropsWithChildren {
   disabled?: boolean
   typography?: TypographyProps
   tooltip?: boolean
-  tooltipContent?: string
+  tooltipContent?: string | ReactNode
   onClick?: () => void
   value?: string | number
 }

@@ -11,16 +11,16 @@ import { t } from 'i18next'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import AdminCheckbox from '@/components/admin/AdminCheckbox.tsx'
+import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import AdminConfirm from '@/components/admin/AdminConfirm'
 import AdminItemUpload, { FileType } from '@/components/admin/AdminItemUpload/AdminItemUpload'
 import AdminUpload from '@/components/admin/AdminUpload'
-import MIAccordion from '@/components/common/accordion/MIAccordion.tsx'
+import MIAccordion from '@/components/common/accordion/MIAccordion'
 import MIButton from '@/components/common/button/MIButton'
 import MIDatePicker from '@/components/common/datepicker/MIDatePicker'
 import Flex from '@/components/common/display/Flex'
-import MIField from '@/components/common/input/MIField.tsx'
-import MIInput from '@/components/common/input/MIInput.tsx'
+import MIField from '@/components/common/input/MIField'
+import MIInput from '@/components/common/input/MIInput'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -58,7 +58,7 @@ const AdminDataRegistration = () => {
   /** 중분류 */
   const [mediumOccupation, setMediumOccupation] = useState('')
   /** 이동 시 confirm 다이어로그 trigger */
-  const [openCancelConfirmation, setCancelConfirmation] = useState(false)
+  const [openCancelConfirmation, setOpenCancelConfirmation] = useState(false)
   /** 파일 업로드 실패 다이어로그 trigger */
   const [openRegisterErrorFileAlert, setOpenRegisterErrorFileAlert] = useState(false)
   /** 등록 버튼 클릭 시 confirm 다이어로그 trigger */
@@ -177,7 +177,7 @@ const AdminDataRegistration = () => {
         const response = await axios.post('/admin/provider-management/goods-datas/upload-file/structured-data', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (event) => {
-            const percent = Math.round((event.loaded * 100) / (event.total || 1))
+            const percent = Math.round((event.loaded * 100) / (event.total ?? 1))
             updateUploadProgress(fileKey, percent)
           },
         })
@@ -363,7 +363,7 @@ const AdminDataRegistration = () => {
           }
         }}
         onCancel={() => {
-          setCancelConfirmation(true)
+          setOpenCancelConfirmation(true)
         }}
       />,
     )
@@ -652,13 +652,13 @@ const AdminDataRegistration = () => {
         open={openCancelConfirmation}
         title={<>취소하시겠습니까?</>}
         width={450}
-        handleClose={() => setCancelConfirmation(false)}
+        handleClose={() => setOpenCancelConfirmation(false)}
         actions={[
           {
             label: <Typography variant="body2SB14">이어서 작성</Typography>,
             variant: 'outlined',
             color: 'gray',
-            onClick: () => setCancelConfirmation(false),
+            onClick: () => setOpenCancelConfirmation(false),
           },
           {
             label: <Typography variant="body2SB14">취소 및 이동</Typography>,

@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import React from 'react'
+import { MouseEventHandler, Ref } from 'react'
 
 interface PDFPageImageProps {
   imageSrc: string
@@ -8,12 +8,12 @@ interface PDFPageImageProps {
   dragOffset: { x: number; y: number }
   isDragging: boolean
   canDrag: boolean
-  onMouseDown: React.MouseEventHandler
-  onMouseMove: React.MouseEventHandler
+  onMouseDown: MouseEventHandler
+  onMouseMove: MouseEventHandler
   onMouseUp: () => void
   onMouseLeave: () => void
-  imageRef?: React.Ref<HTMLImageElement>
-  containerRef?: React.Ref<HTMLDivElement>
+  imageRef?: Ref<HTMLImageElement>
+  containerRef?: Ref<HTMLDivElement>
 }
 
 const PDFPageImage = ({

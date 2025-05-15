@@ -18,6 +18,7 @@ const ScrollWrapper = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
+  const childrenRef = useRef<HTMLDivElement>(null)
   const [thumbHeight, setThumbHeight] = useState(0)
   const [isScrollable, setIsScrollable] = useState(false)
 
@@ -53,8 +54,9 @@ const ScrollWrapper = ({
 
   useEffect(() => {
     const container = containerRef.current
+    const children = childrenRef.current
 
-    if (!container) return () => {}
+    if (!container || !children) return () => {}
 
     syncThumb()
 
@@ -66,7 +68,7 @@ const ScrollWrapper = ({
       syncThumb()
     })
 
-    resizeObserver.observe(container)
+    resizeObserver.observe(children)
 
     return () => {
       container.removeEventListener('scroll', syncThumb)
@@ -88,7 +90,7 @@ const ScrollWrapper = ({
           msOverflowStyle: 'none',
         }}
       >
-        <div>{children}</div>
+        <div ref={childrenRef}>{children}</div>
       </Box>
       {isScrollable && (
         <div

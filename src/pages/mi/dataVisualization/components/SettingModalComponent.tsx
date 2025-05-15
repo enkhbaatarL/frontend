@@ -21,6 +21,8 @@ import useSnackbar from '@/hooks/useSnackbar'
 interface SettingModalProps {
   open: boolean
   onClose: () => void
+  onRegister?: () => void
+  isNotification?: boolean
 }
 
 interface TransactionItem {
@@ -32,7 +34,7 @@ interface TransactionItem {
   value: string
 }
 
-const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose }) => {
+const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotification = false, onRegister }) => {
   const [transactions, setTransactions] = useState<TransactionItem[]>([
     {
       id: '1',
@@ -125,6 +127,10 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose }) => {
     onClose()
     setHideFooter(false)
   }
+  const handleRegister = () => {
+    onRegister?.()
+    handleClose()
+  }
 
   useEffect(() => {
     if (open) {
@@ -181,6 +187,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose }) => {
               <MIField labelSize="sm" required label="조건">
                 <MISelect
                   fullWidth
+                  type="button"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value as string)}
                   options={[
@@ -291,6 +298,8 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose }) => {
     },
   ]
 
+  const visibleTabs = isNotification ? [tabsData[1]] : tabsData
+
   return (
     <AdminConfirm
       open={open}
@@ -300,10 +309,10 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose }) => {
       hideFooter={hideFooter}
       actions={[
         { label: '취소', variant: 'outlined', color: 'gray', onClick: handleClose },
-        { label: '등록', disabled: !formCanSubmit, variant: 'filled', color: 'primary', onClick: handleClose },
+        { label: '등록', disabled: !formCanSubmit, variant: 'filled', color: 'primary', onClick: handleRegister },
       ]}
     >
-      <MITabs onChange={(value) => setHideFooter(!!value)} arrayItem={tabsData} />
+      <MITabs onChange={(value) => setHideFooter(!!value)} arrayItem={visibleTabs} />
     </AdminConfirm>
   )
 }

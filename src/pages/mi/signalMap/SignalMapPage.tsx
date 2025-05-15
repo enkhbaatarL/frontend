@@ -38,7 +38,7 @@ const SectionHeader = ({ title, itemCount, subCategories, boldTitle = false }: S
   </Box>
 )
 
-const SignalMap = () => (
+const SignalMapPage = () => (
   <>
     <Box paddingX={7.5} paddingTop="50px" paddingBottom="40px" textAlign="center">
       <Typography color="gray.90" variant="heading0">
@@ -144,4 +144,4 @@ const SignalMap = () => (
   </>
 )
 
-export default SignalMap
+export default SignalMapPage

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
-import boardService from '@/service/mi/board.ts'
+import boardService from '@/service/mi/board'
 
 export default function NoticesDetailPage() {
   const navigate = useNavigate()

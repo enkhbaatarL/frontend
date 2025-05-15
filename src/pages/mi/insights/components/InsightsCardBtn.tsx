@@ -1,16 +1,16 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
-import React, { useMemo, useState } from 'react'
+import { FC, useMemo, useState } from 'react'
 
-import MIBage from '@/components/common/bage/MIBage.tsx'
-import MILine from '@/components/common/divider/MILine.tsx'
-import { Report } from '@/hooks/useMockReports.tsx'
+import MIBage from '@/components/common/bage/MIBage'
+import MILine from '@/components/common/divider/MILine'
+import { Report } from '@/hooks/useMockReports'
 
 interface InsightsCardBtnProps {
   report: Report
   index: number
 }
 
-const InsightsCardBtn: React.FC<InsightsCardBtnProps> = ({ report, index }) => {
+const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
   const [isHover, setIsHover] = useState(false)
 
   const background = useMemo(() => {

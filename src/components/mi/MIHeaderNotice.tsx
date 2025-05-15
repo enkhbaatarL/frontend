@@ -2,15 +2,14 @@ import NotificationsIcon from '@mui/icons-material/Notifications'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { Badge, Box, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material'
-import Menu from '@mui/material/Menu'
-import { useState, MouseEvent } from 'react'
+import { useState, MouseEvent as ReactMouseEvent, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import MIButton from '@/components/common/button/MIButton.tsx'
-import NoticeIcon from '@/components/common/icons/NoticeIcon.tsx'
-import MITabs from '@/components/common/tabs/MITabs.tsx'
-import useMockNotice from '@/hooks/useMockNotice.tsx'
+import MIButton from '@/components/common/button/MIButton'
+import NoticeIcon from '@/components/common/icons/NoticeIcon'
+import MITabs from '@/components/common/tabs/MITabs'
+import useMockNotice from '@/hooks/useMockNotice'
 
 interface NoticeItemProps {
   id: number
@@ -186,13 +185,13 @@ const NoticeItem = ({ id, title, subtitle, date, isRead, onClick }: NoticeItemPr
 const MIHeaderNotice = () => {
   const navigate = useNavigate()
   const [anchorElNotice, setAnchorElNotice] = useState<null | HTMLElement>(null)
-  const handleOpenNoticeMenu = (event: MouseEvent<HTMLElement>) => {
+  const handleOpenNoticeMenu = (event: ReactMouseEvent<HTMLElement>) => {
     setAnchorElNotice(event.currentTarget)
   }
   const handleCloseNoticeMenu = () => {
     setAnchorElNotice(null)
   }
-
+  const anchorEl = useRef<HTMLElement>(null)
   const tabsData = [
     {
       label: 'Recent Alerts',
@@ -259,8 +258,22 @@ const MIHeaderNotice = () => {
     },
   ]
 
+  useEffect(() => {
+    const handleClickOutside = (event: globalThis.MouseEvent) => {
+      if (anchorEl.current && !anchorEl.current.contains(event.target as Node)) {
+        setAnchorElNotice(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   return (
-    <>
+    <Box position={'relative'} ref={anchorEl}>
       <MIButton
         onClick={handleOpenNoticeMenu}
         color="gray"
@@ -274,46 +287,26 @@ const MIHeaderNotice = () => {
         </Badge>
       </MIButton>
       {Boolean(anchorElNotice) && (
-        <Menu
+        <Box
           sx={{
-            mt: '42px',
-            '.MuiPaper-root': {
-              borderRadius: 1,
-              overflowY: 'hidden',
-              maxHeight: 'unset',
-            },
-            '.MuiList-root': {
-              border: '1px solid #DEE2E6',
-              padding: 5,
-              paddingBottom: 0,
-              borderRadius: 1,
-              width: '450px',
-              '.MuiListItem-root:last-child': {
-                border: 0,
-              },
-              '@media(max-width: 767px)': {
-                width: '300px',
-              },
-            },
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            mt: '12px',
+            zIndex: 10,
+            border: '1px solid #DEE2E6',
+            boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.2)',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            padding: '20px 20px 0 20px',
+            backgroundColor: '#fff',
+            width: '450px',
           }}
-          anchorEl={anchorElNotice}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'left',
-          }}
-          keepMounted
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          className="profileMenu"
-          open={Boolean(anchorElNotice)}
-          onClose={handleCloseNoticeMenu}
         >
           <MITabs widthItem={'50%'} isNotice arrayItem={tabsData} />
-        </Menu>
+        </Box>
       )}
-    </>
+    </Box>
   )
 }
 

@@ -20,8 +20,8 @@ import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
-import companiesService, { ICompaniesRequest, ICompanyInfo } from '@/service/admin/companies.ts'
-import { IPaginationResponse } from '@/types/api.ts'
+import companiesService, { ICompaniesRequest, ICompanyInfo } from '@/service/admin/companies'
+import { IPaginationResponse } from '@/types/api'
 
 const AdminCustomerCompanyManagementOwnerCompaniesPageHeader = ({ onRegister }: { onRegister: () => void }) => (
   <Flex gap={4}>

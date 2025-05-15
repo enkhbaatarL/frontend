@@ -41,7 +41,11 @@ const AdminMenuItem = ({ drawerOpen, item, depth = 0, className }: MenuItemProps
     <>
       <Tooltip
         open={tooltipOpen}
-        onClose={() => setTooltipOpen(false)}
+        onClose={(e) => {
+          if (e.type !== 'blur') {
+            setTooltipOpen(false)
+          }
+        }}
         onOpen={() => setTooltipOpen(true)}
         disableHoverListener={depth > 0 || (open && drawerOpen)}
         slotProps={{

@@ -7,7 +7,7 @@ import { FC, useEffect, useRef } from 'react'
 import MIChip from '@/components/common/chip/MIChip'
 import MILine from '@/components/common/divider/MILine'
 import { Report } from '@/hooks/useMockReports'
-import { generateMonthlyTimestamps, genMockDataForLineChart } from '@/utils/mock-data.ts'
+import { generateMonthlyTimestamps, genMockDataForLineChart } from '@/utils/mock-data'
 
 interface InsightsCardBtnProps {
   report?: Report

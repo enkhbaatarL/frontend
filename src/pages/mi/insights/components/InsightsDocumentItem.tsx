@@ -1,17 +1,17 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
-import React from 'react'
+import { FC } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import MIBage from '@/components/common/bage/MIBage.tsx'
-import MILine from '@/components/common/divider/MILine.tsx'
-import { Report } from '@/hooks/useMockReports.tsx'
+import MIBage from '@/components/common/bage/MIBage'
+import MILine from '@/components/common/divider/MILine'
+import { Report } from '@/hooks/useMockReports'
 import theme from '@/theming'
 
 interface InsightsDocumentItemProps {
   report: Report
 }
 
-const InsightsDocumentItem: React.FC<InsightsDocumentItemProps> = ({ report }) => {
+const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
   const navigate = useNavigate()
 
   return (
