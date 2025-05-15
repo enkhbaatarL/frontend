@@ -21,7 +21,7 @@ const MIRoutes: RouteObject = {
   children: [
     {
       index: true,
-      element: <Navigate to="chart-sample" replace />,
+      element: <Navigate to="dashboard" replace />,
     },
     {
       path: 'dashboard',
