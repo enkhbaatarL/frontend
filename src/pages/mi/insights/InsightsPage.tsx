@@ -54,7 +54,7 @@ const InsightsPage = () => {
     return []
   }, [focusedList])
 
-  const convertToMockFilters = (filterList: IAdvancedFilter) => {
+  const convertToFilters = (filterList: IAdvancedFilter) => {
     const { documentTypes, providers, languages } = filterList
 
     const toSnakeCase = (str: string) => str.replace(/\s+/g, '_').replace(/[()]/g, '').toLowerCase()
@@ -83,7 +83,7 @@ const InsightsPage = () => {
 
   const filters = useMemo(() => {
     if (filterList) {
-      return convertToMockFilters(filterList.data)
+      return convertToFilters(filterList.data)
     }
     return []
   }, [filterList])

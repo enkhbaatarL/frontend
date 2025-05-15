@@ -495,7 +495,7 @@ const AdminCustomerCompanyDetailPage = () => {
   }
 
   useEffect(() => {
-    if (data && companyLatestUpdatedData) {
+    if (data) {
       setIsActive(data?.isActivated)
       setCompanyNm(data?.companyNm ?? '')
       setCustomComponent(<AdminCustomerCompanyDetailPageHeader value={isActive} onChange={toogle} label={isActive ? '활성' : '비활성'} />)
@@ -509,7 +509,7 @@ const AdminCustomerCompanyDetailPage = () => {
             },
             {
               label: '수정일',
-              value: dayjs(String(companyLatestUpdatedData?.modifyDt)).format('YYYY-MM-DD'),
+              value: companyLatestUpdatedData ? dayjs(String(companyLatestUpdatedData?.modifyDt)).format('YYYY-MM-DD') : '-',
             },
             {
               label: '등록자',
@@ -517,7 +517,7 @@ const AdminCustomerCompanyDetailPage = () => {
             },
             {
               label: '수정자',
-              value: String(companyLatestUpdatedData?.modifyUserNm),
+              value: companyLatestUpdatedData ? String(companyLatestUpdatedData?.modifyUserNm) : '-',
             },
             {
               label: '사용기간',
