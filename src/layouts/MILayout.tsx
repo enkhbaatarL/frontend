@@ -1,5 +1,4 @@
-import { Box } from '@mui/material'
-import { Grid2 as Grid, Typography } from '@mui/material'
+import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
@@ -86,7 +85,7 @@ const MILayout = () => {
 
   return (
     <MIProvider>
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', minWidth: '1440px', boxSizing: 'border-box' }}>
         <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
           <MIHeaderMainLayout />
         </div>

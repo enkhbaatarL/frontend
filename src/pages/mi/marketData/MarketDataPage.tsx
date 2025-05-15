@@ -9,8 +9,8 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import { useMockEvents } from '@/hooks/useMockEvents'
 import { useMockMarket } from '@/hooks/useMockMarket'
-import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart.tsx'
-import MarketDataChartSmall from '@/pages/mi/marketData/components/MarketDataChartSmall.tsx'
+import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
+import MarketDataChartSmall from '@/pages/mi/marketData/components/MarketDataChartSmall'
 
 const MarketDataPage = () => {
   const { data } = useMockMarket()
@@ -19,7 +19,6 @@ const MarketDataPage = () => {
   return (
     <>
       <Box
-        paddingX={7.5}
         paddingY={14}
         sx={{
           background: `url(${psImg}) right / 33% no-repeat, url(${bgmImg}) lightgray 50% 82%/ cover no-repeat`,
@@ -38,7 +37,7 @@ const MarketDataPage = () => {
             boxShadow: '0px 20px 20px 0px rgba(0, 0, 0, 0.25) inset',
           }}
         ></Box>
-        <Box maxWidth={'1380px'} margin={'auto'}>
+        <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
           <Typography color="white" component="h1" fontSize={40} variant="body1M16">
             Market Data
           </Typography>
@@ -47,42 +46,42 @@ const MarketDataPage = () => {
           </Typography>
         </Box>
       </Box>
-      <Box maxWidth={'1380px'} margin={'auto'} py={12.5} px={7.5}>
+      <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'} py={12.5} px={7.5}>
         <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
           Data Dashboard
         </Typography>
         <Grid mb={17.5} container spacing={5}>
           <Grid width={'100%'} container direction={'row'} gap={5}>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid size={6}>
               <MarketDataChart />
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid size={6}>
               <MarketDataChart />
             </Grid>
           </Grid>
           <Grid width={'100%'} container direction={'row'} gap={5}>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={3}>
               <MarketDataChartSmall isClock />
             </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={3}>
               <MarketDataChartSmall />
             </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={3}>
               <MarketDataChartSmall />
             </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={3}>
               <MarketDataChartSmall />
             </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={3}>
               <MarketDataChartSmall />
             </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={3}>
               <MarketDataChartSmall />
             </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={3}>
               <MarketDataChartSmall />
             </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={3}>
               <MarketDataChartSmall />
             </Grid>
           </Grid>
@@ -102,10 +101,7 @@ const MarketDataPage = () => {
         <Grid
           container
           sx={{
-            flexDirection: {
-              xs: 'column',
-              md: 'row',
-            },
+            flexDirection: 'row',
           }}
           wrap={'nowrap'}
           gap={6}
@@ -113,10 +109,7 @@ const MarketDataPage = () => {
           <Box
             boxSizing={'border-box'}
             sx={{
-              width: {
-                xs: '100%',
-                md: 'calc(100% - 370px)',
-              },
+              width: 'calc(100% - 370px)',
             }}
           >
             <Box boxSizing={'border-box'} width={'100%'}>
@@ -150,10 +143,7 @@ const MarketDataPage = () => {
           <Box
             boxSizing={'border-box'}
             sx={{
-              width: {
-                xs: '100%',
-                md: 346,
-              },
+              width: 346,
             }}
           >
             <Box border={'1px solid'} borderColor={'gray.30'} borderRadius={1} gap={6} padding={6} flexShrink={0}>

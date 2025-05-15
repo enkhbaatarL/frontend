@@ -1,18 +1,14 @@
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import MenuIcon from '@mui/icons-material/Menu'
 import { Divider, Grid2 as Grid } from '@mui/material'
 import AppBar from '@mui/material/AppBar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
-import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { MouseEvent, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import style from './MIHeaderMainLayout.module.scss'
@@ -57,17 +53,7 @@ const boards = [
 
 const MIHeaderMainLayout = () => {
   const navigate = useNavigate()
-  const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null)
-
   const { user } = useAuthStore()
-
-  const handleOpenNavMenu = (event: MouseEvent<HTMLElement>) => {
-    setAnchorElNav(event.currentTarget)
-  }
-
-  const handleCloseNavMenu = () => {
-    setAnchorElNav(null)
-  }
 
   const [selectedCompany, setSelectedCompany] = useState({
     label: user?.companyNm ?? '',
@@ -97,7 +83,15 @@ const MIHeaderMainLayout = () => {
   return (
     <div className={clsx(style.GNBHeader)}>
       <Grid bgcolor="gray.10" className={`GNBTop ${clsx(style.headerTop)}`}>
-        <Grid container maxWidth={'1380px'} margin={'auto'} alignItems="center" justifyContent="space-between">
+        <Grid
+          boxSizing={'border-box'}
+          px={7.5}
+          container
+          width={'1440px'}
+          margin={'auto'}
+          alignItems="center"
+          justifyContent="space-between"
+        >
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography mr={1} variant="body3SB12" color="gray.70">
               {selectedCompany.label}
@@ -163,68 +157,18 @@ const MIHeaderMainLayout = () => {
         </Grid>
       </Grid>
       <AppBar className={clsx(style.AppBar)} position="static">
-        <Box maxWidth={'1380px'} width={'100%'} margin={'auto'}>
+        <Box boxSizing={'border-box'} px={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
           <Toolbar disableGutters>
             <Box
-              sx={{ display: { xs: 'none', md: 'flex' }, mr: 7.5, cursor: 'pointer' }}
+              sx={{ display: 'flex', mr: 7.5, cursor: 'pointer' }}
               onClick={(e) => {
                 e.preventDefault()
-                handleCloseNavMenu()
                 navigate('/')
               }}
             >
-              <img src={logoImg} alt="Market Intelligence" />
-            </Box>
-            <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
-              <IconButton
-                size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleOpenNavMenu}
-                color="primary"
-                sx={{ padding: 0 }}
-              >
-                <MenuIcon />
-              </IconButton>
-              {Boolean(anchorElNav) && (
-                <Menu
-                  id="menu-appbar"
-                  anchorEl={anchorElNav}
-                  anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'left',
-                  }}
-                  keepMounted
-                  transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'left',
-                  }}
-                  open={Boolean(anchorElNav)}
-                  onClose={handleCloseNavMenu}
-                  sx={{ display: { xs: 'block', md: 'none' } }}
-                >
-                  {pages.map((page) => (
-                    <MenuItem
-                      disableRipple
-                      key={page.label}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        navigate(page.url)
-                      }}
-                    >
-                      <Typography sx={{ textAlign: 'center' }} color="gray.70" variant="body1M16">
-                        {page.label}
-                      </Typography>
-                    </MenuItem>
-                  ))}
-                </Menu>
-              )}
-            </Box>
-            <Box sx={{ display: { xs: 'flex', md: 'none' }, mr: 7.5 }}>
               <img width="150" src={logoImg} alt="Market Intelligence" />
             </Box>
-            <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+            <Box sx={{ flexGrow: 1, display: 'flex' }}>
               {pages.map((page) => (
                 <Button
                   disableRipple

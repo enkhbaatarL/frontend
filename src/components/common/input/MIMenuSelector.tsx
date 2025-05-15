@@ -12,11 +12,12 @@ export interface MIMenuSelectorProps {
   menuProps?: MenuProps
   size?: number | string
   minWidthMenu?: number | string
+  disablePortal?: boolean
   sx?: SxProps
 }
 
 const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
-  const { children, value, options = [], menuProps, size, minWidthMenu = 71, sx } = props
+  const { children, value, options = [], menuProps, size, minWidthMenu = 71, sx, disablePortal } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [menuBottom, setMenuBottom] = useState<number | null>(null)
 
@@ -72,27 +73,28 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
           keepMounted
           anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
           transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-          disablePortal
+          disablePortal={disablePortal}
           sx={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            bottom: 'auto',
-            right: 'auto',
-            zIndex: 1200,
-            '& .MuiPaper-root': {
-              borderRadius: '4px',
-              minWidth: minWidthMenu,
-              boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.20)',
-              position: 'unset',
-              maxWidth: '100%',
-              maxHeight: 'unset',
-              transform: 'none',
-              '.MuiList-root': {
-                width: '100% !important',
-                paddingRight: '0 !important',
+            ...(disablePortal && {
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 'auto',
+              zIndex: 1200,
+              '& .MuiPaper-root': {
+                borderRadius: '4px',
+                minWidth: minWidthMenu,
+                boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.20)',
+                position: 'unset',
+                maxWidth: '100%',
+                maxHeight: 'unset',
+                transform: 'none',
+                '.MuiList-root': {
+                  width: '100% !important',
+                  paddingRight: '0 !important',
+                },
               },
-            },
+            }),
             ...sx,
           }}
           {...menuProps}

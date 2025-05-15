@@ -93,7 +93,7 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
             bottom: 0,
             right: 0,
             opacity: isHover ? 1 : 0.3,
-            transition: '0.3s',
+            transition: 'all 0.3s linear',
           },
         }}
       >

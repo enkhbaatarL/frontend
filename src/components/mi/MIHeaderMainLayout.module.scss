@@ -4,12 +4,14 @@
     background-color: #fff;
     border-bottom: 1px solid $gray-30;
     box-shadow: none;
-    padding: 0px 30px;
+    //padding: 0px 30px;
     max-width: 100%;
+    box-sizing: border-box;
   }
   .headerTop{
     background-color: #D3DAE6;
-    padding: 4px 30px;
+    padding: 4px 0;
+    box-sizing: border-box;
     .Select{
       min-width: 109px;
       font-weight: 600;

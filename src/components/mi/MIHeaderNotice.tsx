@@ -7,11 +7,11 @@ import { useState, MouseEvent as ReactMouseEvent, useEffect, useRef } from 'reac
 import { useNavigate } from 'react-router-dom'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import MIButton from '@/components/common/button/MIButton.tsx'
-import NoticeIcon from '@/components/common/icons/NoticeIcon.tsx'
-import MITabs from '@/components/common/tabs/MITabs.tsx'
+import MIButton from '@/components/common/button/MIButton'
+import NoticeIcon from '@/components/common/icons/NoticeIcon'
+import MITabs from '@/components/common/tabs/MITabs'
 import useMockNotice from '@/hooks/useMockNotice'
-import boardService, { INoticeInfo } from '@/service/mi/board.ts'
+import boardService, { INoticeInfo } from '@/service/mi/board'
 
 interface NoticeItemProps {
   id: number

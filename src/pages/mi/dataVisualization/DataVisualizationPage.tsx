@@ -40,8 +40,8 @@ const DataVisualizationPage = () => {
 
   return (
     <>
-      <Box paddingX={7.5} paddingY={21} sx={{ background: ` url(${bshImg}) lightgray 50% / cover no-repeat` }}>
-        <Box maxWidth={'1380px'} margin={'auto'}>
+      <Box paddingY={21} sx={{ background: ` url(${bshImg}) lightgray 50% / cover no-repeat` }}>
+        <Box paddingX={7.5} boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
           <Typography color="white" variant="body1M16">
             Insight
           </Typography>
@@ -59,13 +59,10 @@ const DataVisualizationPage = () => {
           </Grid>
         </Box>
       </Box>
-      <Box maxWidth={'1380px'} margin={'auto'} paddingTop={10} paddingX={7.5}>
+      <Box boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'} paddingTop={10} paddingX={7.5}>
         <Grid
           sx={{
-            flexWrap: {
-              xs: 'wrap',
-              md: 'nowrap',
-            },
+            flexWrap: 'nowrap',
           }}
           direction="row"
           container
@@ -141,10 +138,7 @@ const DataVisualizationPage = () => {
           </Grid>
           <Grid
             sx={{
-              width: {
-                xs: '100%',
-                md: '286px',
-              },
+              width: '286px',
             }}
             container
             gap={6}

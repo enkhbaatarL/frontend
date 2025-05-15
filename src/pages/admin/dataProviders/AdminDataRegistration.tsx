@@ -12,16 +12,16 @@ import { t } from 'i18next'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import AdminCheckbox from '@/components/admin/AdminCheckbox.tsx'
+import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import AdminItemUpload, { FileType } from '@/components/admin/AdminItemUpload/AdminItemUpload'
 import AdminUpload from '@/components/admin/AdminUpload'
-import MIAccordion from '@/components/common/accordion/MIAccordion.tsx'
+import MIAccordion from '@/components/common/accordion/MIAccordion'
 import MIButton from '@/components/common/button/MIButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIDatePicker from '@/components/common/datepicker/MIDatePicker'
 import Flex from '@/components/common/display/Flex'
-import MIField from '@/components/common/input/MIField.tsx'
-import MIInput from '@/components/common/input/MIInput.tsx'
+import MIField from '@/components/common/input/MIField'
+import MIInput from '@/components/common/input/MIInput'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -183,7 +183,7 @@ const AdminDataRegistration = () => {
         const response = await axios.post(`/admin/provider-management/goods-datas/upload-file/${uploadType}-data`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (event) => {
-            const percent = Math.round((event.loaded * 100) / (event.total || 1))
+            const percent = Math.round((event.loaded * 100) / (event.total ?? 1))
             updateUploadProgress(fileKey, percent)
           },
         })

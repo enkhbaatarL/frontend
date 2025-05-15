@@ -21,6 +21,7 @@ export interface MIButtonProps {
   hoverIcon?: ReactElement
   color?: MIButtonColor
   disabled?: boolean
+  disablePortal?: boolean
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void
   onChange?: (value: { label: string; value: string }) => void
   width?: number | string
@@ -52,6 +53,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
     hoverIcon,
     color = 'primary',
     disabled = false,
+    disablePortal = true,
     width,
     minWidth = 100,
     valueSelect,
@@ -292,6 +294,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
 
   return contentType === 'select' ? (
     <MIMenuSelector
+      disablePortal={disablePortal}
       size={size}
       minWidthMenu={minWidth}
       sx={{ marginTop: offsetTop }}

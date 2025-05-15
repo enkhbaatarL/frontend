@@ -99,6 +99,7 @@ body {
   font-family: Pretendard, sans-serif;
   padding: 0 !important;
   overflow: unset !important;
+  min-width: 1440px;
   &.admin-confirm-open{
     //overflow: hidden !important;
     //padding-right: 15px !important;
@@ -155,10 +156,12 @@ time, mark, audio, video {
   .content{
     padding: 20px 24px;
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-    height: fit-content;
+    //display: flex;
+    //flex-direction: column;
+    //gap: 30px;
+    width: 100%;
+    height: calc(100% - 113px);
+    overflow-x: hidden;
     overflow-y: auto;
   }
 }
@@ -170,6 +173,7 @@ fieldset{
   border-top: 1px solid #DCE1E5;
   border-bottom: 1px solid #DCE1E5;
   background: color.$gray-5;
+  margin-bottom: 30px;
 
   .AdminSearchFilterField{
     >.MuiBox-root{

@@ -9,8 +9,8 @@ import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIInput from '@/components/common/input/MIInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
-import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn.tsx'
-// import InsightsDocumentItem from '@/pages/mi/insights/components/InsightsDocumentItem.tsx'
+import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
+// import InsightsDocumentItem from '@/pages/mi/insights/components/InsightsDocumentItem'
 import insightsService, { IAdvancedFilter, IAdvancedFilterItem } from '@/service/mi/insights'
 
 export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT'
@@ -93,7 +93,6 @@ const InsightsPage = () => {
   return (
     <>
       <Box
-        paddingX={7.5}
         paddingY={14}
         sx={{
           background: `url(${psImg}) right / 33% no-repeat, url(${shiImg}) lightgray 50% / cover no-repeat`,
@@ -112,7 +111,7 @@ const InsightsPage = () => {
             boxShadow: '0px 20px 20px 0px rgba(0, 0, 0, 0.25) inset',
           }}
         ></Box>
-        <Box maxWidth={'1380px'} margin={'auto'}>
+        <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
           <Typography color="white" component="h1" fontSize={40} variant="body1M16">
             Insights
           </Typography>
@@ -121,17 +120,16 @@ const InsightsPage = () => {
           </Typography>
         </Box>
       </Box>
-      <Box maxWidth={'1380px'} margin={'auto'} py={12.5} px={7.5}>
+      <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'} py={12.5} px={7.5}>
         <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
           Focused
         </Typography>
         <Grid mb={17.5} container spacing={6}>
-          {reports &&
-            reports.map((report, index) => (
-              <Grid size={{ xs: 6, md: 3 }} key={index}>
-                <InsightsCardBtn index={index} report={report} />
-              </Grid>
-            ))}
+          {reports?.map((report, index) => (
+            <Grid size={3} key={index}>
+              <InsightsCardBtn index={index} report={report} />
+            </Grid>
+          ))}
         </Grid>
 
         <Box pb={6} mb={9} borderBottom={'1px solid'} borderColor={'gray.30'}>
@@ -149,10 +147,7 @@ const InsightsPage = () => {
         <Grid
           container
           sx={{
-            flexDirection: {
-              xs: 'column',
-              md: 'row',
-            },
+            flexDirection: 'row',
           }}
           wrap={'nowrap'}
           gap={6}
@@ -202,35 +197,31 @@ const InsightsPage = () => {
           <Box
             flexShrink={0}
             sx={{
-              width: {
-                xs: '100%',
-                md: 346,
-              },
+              width: 346,
             }}
           >
             <Grid container border={'1px solid'} borderColor={'gray.30'} borderRadius={1} gap={6} padding={6} flexShrink={0}>
-              {filters &&
-                filters.map((section) => (
-                  <Box key={section.title}>
-                    <Typography mb={3.5} color="gray.90" component="h2" variant="titleBox">
-                      {section.title}
-                    </Typography>
-                    <FormGroup>
-                      {section.options.map((option: { label: string; value: string }) => (
-                        <FormControlLabel
-                          key={option.value}
-                          sx={{
-                            p: '6.82px 8px',
-                            mr: 0,
-                            '.MuiTypography-root': { fontSize: '16px', lineHeight: 1.4 },
-                          }}
-                          control={<AdminCheckbox value={option.value} />}
-                          label={option.label}
-                        />
-                      ))}
-                    </FormGroup>
-                  </Box>
-                ))}
+              {filters?.map((section) => (
+                <Box key={section.title}>
+                  <Typography mb={3.5} color="gray.90" component="h2" variant="titleBox">
+                    {section.title}
+                  </Typography>
+                  <FormGroup>
+                    {section.options.map((option: { label: string; value: string }) => (
+                      <FormControlLabel
+                        key={option.value}
+                        sx={{
+                          p: '6.82px 8px',
+                          mr: 0,
+                          '.MuiTypography-root': { fontSize: '16px', lineHeight: 1.4 },
+                        }}
+                        control={<AdminCheckbox value={option.value} />}
+                        label={option.label}
+                      />
+                    ))}
+                  </FormGroup>
+                </Box>
+              ))}
             </Grid>
           </Box>
         </Grid>

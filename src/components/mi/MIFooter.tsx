@@ -9,8 +9,17 @@ const MIFooter = () => {
 
   return (
     <footer>
-      <Box mt={25} bgcolor="gray.60" paddingX={{ xs: 6, md: 7.5 }} paddingY={{ xs: 6, md: 10 }}>
-        <Grid gap={5} wrap="wrap" container maxWidth={'1380px'} margin={'auto'} justifyContent="space-between">
+      <Box mt={25} bgcolor="gray.60" paddingY={10}>
+        <Grid
+          width={'1440px'}
+          paddingX={7.5}
+          gap={5}
+          wrap="wrap"
+          container
+          maxWidth={'1380px'}
+          margin={'auto'}
+          justifyContent="space-between"
+        >
           <Grid container gap={5} direction="column">
             <Link
               href="/"

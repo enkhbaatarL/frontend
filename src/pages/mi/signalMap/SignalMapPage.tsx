@@ -50,7 +50,7 @@ const SignalMapPage = () => (
         Visual Correlation of Market Signals by Sector
       </Typography>
     </Box>
-    <Box paddingX={7.5} maxWidth="1380px" margin="auto">
+    <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin="auto">
       <Box
         paddingTop="24px"
         paddingBottom="20px"
@@ -58,18 +58,9 @@ const SignalMapPage = () => (
         borderColor="gray.30"
         sx={{
           display: 'flex',
-          flexDirection: {
-            xs: 'column',
-            md: 'row',
-          },
-          justifyContent: {
-            xs: 'center',
-            md: 'space-between',
-          },
-          alignItems: {
-            xs: 'center',
-            md: 'start',
-          },
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'start',
           gap: '14px',
         }}
       >
@@ -99,7 +90,7 @@ const SignalMapPage = () => (
       </Box>
       <Box
         sx={{
-          display: { xs: 'block', md: 'grid' },
+          display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
           gap: '24px',
         }}
