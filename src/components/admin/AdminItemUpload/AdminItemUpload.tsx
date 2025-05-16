@@ -10,6 +10,7 @@ import folderIcon from '@/assets/folder.svg'
 import pdfIcon from '@/assets/pdficon.svg'
 import Flex from '@/components/common/display/Flex'
 import CloseIcon from '@/components/common/icons/CloseIcon'
+import { formatSize } from '@/utils/dataUtil'
 
 export type FileType =
   | 'application/pdf'
@@ -38,6 +39,7 @@ interface UploadStatus {
   nameStatus?: string
   hideStatus?: boolean
   hideClose?: boolean
+  showChecking?: boolean // 검수중 표기여부
   widthItem?: string | number
   onDelete?: () => void
   fileItem: FileInfo
@@ -59,15 +61,10 @@ const fileTypeIconMapper = (type: FileType, url?: string) => {
   return icons[type] || folderIcon
 }
 
-const formatFileSize = (bytes: number): string => {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
-
 const AdminItemUpload = ({
   progressValue = 0,
   uploadError = false,
+  showChecking = false,
   checkFile = 'uploading',
   nameStatus,
   hideStatus = false,
@@ -77,29 +74,21 @@ const AdminItemUpload = ({
   fileItem,
 }: UploadStatus) => {
   const statusLabel = useMemo(() => {
-    if (checkFile === 'uploading' && progressValue === 100) return 'checking'
+    if (showChecking && checkFile === 'uploading' && progressValue === 100) return 'checking'
     return checkFile
-  }, [progressValue, checkFile])
+  }, [showChecking, checkFile, progressValue])
 
   const iconSrc = useMemo(() => fileTypeIconMapper(fileItem.type, fileItem.url), [fileItem.type, fileItem.url])
   return (
     <div className="upload-field-file-item" style={{ width: widthItem }}>
       <img src={iconSrc} className="upload-field-file-preview" />
-
       <div className="flex-grow-1">
-        <Flex>
+        <Flex style={{ alignItems: 'center' }}>
           <div className="upload-field-file-info">
             <div className="upload-field-file-name">{fileItem.fileNm}</div>
-            {!uploadError && <div className="upload-field-file-size">{formatFileSize(fileItem.fileSize)}</div>}
+            {!uploadError && <div className="upload-field-file-size">{formatSize(fileItem.fileSize, 'mb')}</div>}
           </div>
-          {!hideStatus && (
-            <AdminItemUploadStatusButton
-              checkFile={statusLabel}
-              progressValue={progressValue}
-              uploadError={uploadError}
-              nameStatus={nameStatus}
-            />
-          )}
+          {!hideStatus && <AdminItemUploadStatusButton checkFile={statusLabel} progressValue={progressValue} nameStatus={nameStatus} />}
           {!hideClose && (
             <button type="button" className="upload-field-file-action upload-field-file-action-del" onClick={onDelete}>
               <CloseIcon width={20} height={20} />
