@@ -19,8 +19,16 @@ import PersonIcon from '@/components/common/icons/PersonIcon'
 import VisibilityIcon from '@/components/common/icons/VisibilityIcon'
 import MICheckBox from '@/components/common/input/MICheckBox'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
-import companiesService, { ICompanySetting, IIndividualSettings, IUpdateUserPermissionRequest, IDetail } from '@/service/admin/companies'
+import companiesService, {
+  ICompanySetting,
+  IIndividualSettings,
+  IUpdateUserPermissionRequest,
+  IDetail,
+  IUserPermissionInfo,
+} from '@/service/admin/companies'
+import { IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 const AdminCustomerCompanyProductDetailPageHeader = (props: {
   onChange: (value: boolean) => void
@@ -75,7 +83,8 @@ const AdminCustomerCompanyProductDetailPage = () => {
 
   const { companyNo, providerNo, goodsNo } = useParams()
   const { state } = useLocation()
-  const { companyNm } = state as { companyNm: string }
+  // const { companyNm } = state as { companyNm: string }
+  const [companyNm, setCompanyNm] = useState<string>('')
 
   const { data: goodsDetailData } = useQuery({
     queryKey: ['goodsDetail', companyNo, providerNo, goodsNo],
@@ -97,16 +106,19 @@ const AdminCustomerCompanyProductDetailPage = () => {
     enabled: !!companyNo || !!providerNo || !!goodsNo,
   })
 
-  const { data: userPermissions } = useQuery({
-    queryKey: ['userPermissions', companyNo, providerNo, goodsNo],
-    queryFn: async () =>
-      await companiesService.getUserPermissions(Number(companyNo), Number(providerNo), Number(goodsNo), { page: 1, size: 20 }),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
-    enabled: !!companyNo || !!providerNo || !!goodsNo,
-  })
+  const {
+    pagination,
+    updateSize,
+    updatePage,
+    data: userPermissions,
+    isLoading,
+  } = useSearchFilter<IPaginationRequest, IPaginationResponse<IUserPermissionInfo>>(
+    (params) => companiesService.getUserPermissions(Number(companyNo), Number(providerNo), Number(goodsNo), params),
+    {
+      page: 1,
+      size: 20,
+    },
+  )
 
   const [isActive, setIsActive] = useState<boolean>(true)
   const [permission, setPermission] = useState<string>('')
@@ -128,6 +140,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
   >([])
 
   useEffect(() => {
+    if (state) setCompanyNm(state.companyNm)
     if (goodsDetailData) {
       setIsActive(goodsDetailData.isUsed)
       setCompanyPermission({
@@ -197,16 +210,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
       setSubHeader(null)
       setCustomTitle(null)
     }
-  }, [
-    setCustomComponent,
-    setSubHeader,
-    isActive,
-    isDetailPermissionSetting,
-    goodsDetailData,
-    goodsDetailLatestData,
-    companyNm,
-    setCustomTitle,
-  ])
+  }, [setCustomComponent, setSubHeader, isActive, isDetailPermissionSetting, goodsDetailData, goodsDetailLatestData, state, setCustomTitle])
 
   // 개인 권한 설정 상태
   const [individualPermissions, setIndividualPermissions] = useState<IIndividualSettings[]>([])
@@ -722,6 +726,10 @@ const AdminCustomerCompanyProductDetailPage = () => {
             getRowId={(row) => row.userNo}
             columns={columns}
             data={isDetailPermissionSetting ? userPermissions?.detail : userPermissions}
+            isLoading={isLoading}
+            size={pagination?.size}
+            onSizeChange={updateSize}
+            onPageChange={updatePage}
           />
         </Box>
       )}
