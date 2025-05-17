@@ -1,12 +1,21 @@
 import Breadcrumbs from '@mui/material/Breadcrumbs'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import HomeIcon from '@/components/common/icons/HomeIcon'
 import useAdminMenuItems from '@/hooks/useAdminMenuItems'
 import useAdminPageInfo from '@/hooks/useAdminPageInfo'
 import { ICustomRouteObject } from '@/types/common'
+
+const replaceParamsInPath = (template: string, params: Record<string, string | undefined>) =>
+  template.replace(/:([a-zA-Z0-9_]+)/g, (_, key) => {
+    const value = params[key]
+    if (!value) {
+      return `:${key}`
+    }
+    return value
+  })
 
 const AdminBreadcrumbs = () => {
   const navigate = useNavigate()
@@ -27,6 +36,12 @@ const AdminBreadcrumbs = () => {
       }
     }
     return undefined
+  }
+
+  const params = useParams()
+  const onNavigate = (path: string) => {
+    const resolvedPath = replaceParamsInPath(path, params)
+    navigate(resolvedPath)
   }
 
   return (
@@ -52,7 +67,7 @@ const AdminBreadcrumbs = () => {
               underline="hover"
               color="gray.60"
               variant="breadcrumbs"
-              onClick={() => navigate(path)}
+              onClick={() => onNavigate(path)}
               style={{ cursor: 'pointer' }}
             >
               {label}

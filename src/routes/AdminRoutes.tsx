@@ -267,6 +267,12 @@ const AdminRoutes: ICustomRouteObject = {
                   hasBack: true,
                   parentPath: '/admin/data-providers/providers/product-detail/:providerNo/:goodsNo',
                 },
+                {
+                  path: ':providerNo/:goodsNo/data-detail/:dataNo',
+                  label: '데이터 등록',
+                  element: <AdminDataRegistration />,
+                  parentPath: '/admin/data-providers/providers/product-detail/:providerNo/:goodsNo',
+                },
               ],
             },
           ],

@@ -7,25 +7,21 @@ import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import dayjs, { Dayjs } from 'dayjs'
 import { t } from 'i18next'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import AdminCheckbox from '@/components/admin/AdminCheckbox'
-import AdminItemUpload, { FileType } from '@/components/admin/AdminItemUpload/AdminItemUpload'
-import AdminUpload from '@/components/admin/AdminUpload'
-import MIAccordion from '@/components/common/accordion/MIAccordion'
+import AdminDataRegiUploadComponent, { AdminDataUploadFileInfo } from './components/AdminDataRegiUploadComponent'
+
+import AdminCheckbox from '@/components/admin/AdminCheckbox.tsx'
 import MIButton from '@/components/common/button/MIButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
-import MIDatePicker from '@/components/common/datepicker/MIDatePicker'
 import Flex from '@/components/common/display/Flex'
-import MIField from '@/components/common/input/MIField'
-import MIInput from '@/components/common/input/MIInput'
+import MIField from '@/components/common/input/MIField.tsx'
+import MIInput from '@/components/common/input/MIInput.tsx'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import axios from '@/lib/axios'
 import dataProviderService, { IProviderGoodsDataRegisterRequest } from '@/service/admin/dataProvider'
 
 export interface FileInfo {
@@ -34,17 +30,6 @@ export interface FileInfo {
   size: number
   type: string
   url: string
-}
-
-type UploadFileInfo = {
-  fileNo: number
-  componentTypeId?: string // 정형 only
-  criteriaDt?: string // 비정형 only
-  fileNm: string
-  fileSize: number
-  type: FileType
-  fileKey: string | null
-  status: 'uploading' | 'checking' | 'fail' | 'pass'
 }
 
 const AdminDataProvidersListPageHeader = (props: { disabled: boolean; onRegister: () => void; onCancel: () => void }) => (
@@ -58,13 +43,15 @@ const AdminDataProvidersListPageHeader = (props: { disabled: boolean; onRegister
   </Flex>
 )
 
-const documentFileType = ['application/pdf', 'text/csv', 'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint']
+// const documentFileType = ['application/pdf', 'text/csv', 'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint']
 
 const AdminDataRegistration = () => {
   const { showSnackbar } = useSnackbar()
   const { setCustomComponent, setCustomTitle } = useAdminHeader()
   const navigate = useNavigate()
-  const { providerNo, goodsNo } = useParams()
+  const { providerNo, goodsNo, dataNo } = useParams()
+  const [editDataNo, setEditDataNo] = useState<number | null>(null)
+  const [isEdit, setIsEdit] = useState<boolean>(!!dataNo)
   const [categories, setCategories] = useState<string[]>([])
   /** 대분류 */
   const [majorOccupation, setMajorOccupation] = useState('')
@@ -76,16 +63,11 @@ const AdminDataRegistration = () => {
   const [openRegisterErrorFileAlert, setOpenRegisterErrorFileAlert] = useState(false)
   /** 등록 버튼 클릭 시 confirm 다이어로그 trigger */
   const [openRegisterSuccessFileAlert, setOpenRegisterSuccessFileAlert] = useState(false)
-  /** 선택된 정형화 데이터 카테고리 */
-  const [structuredComponentType, setStructuredComponentType] = useState('')
-
-  /** 선택된 비정형화 데이터 카테고리 */
-  const [unstructuredDate, setUnstructuredDate] = useState<Dayjs | null>(dayjs())
 
   /** 정형화 업로드 파일 목록 */
-  const [filesStructured, setFilesStructured] = useState<UploadFileInfo[]>([])
+  const [filesStructured, setFilesStructured] = useState<AdminDataUploadFileInfo[]>([])
   /** 비정형화 업로드 파일 목록 */
-  const [filesUnstructured, setFilesUnstructured] = useState<UploadFileInfo[]>([])
+  const [filesUnstructured, setFilesUnstructured] = useState<AdminDataUploadFileInfo[]>([])
 
   const form = useForm({
     defaultValues: {
@@ -95,14 +77,6 @@ const AdminDataRegistration = () => {
       docCategoryList: [] as string[],
       langCategoryList: [] as string[],
       fileTypes: [] as string[],
-      structuredDataList: [] as {
-        componentTypeId: string
-        fileNo: number
-      }[],
-      unstructuredDataList: [] as {
-        criteriaDt: string
-        fileNo: number
-      }[],
     },
     validators: {
       onChange: ({ value }) => {
@@ -131,99 +105,24 @@ const AdminDataRegistration = () => {
     return valid && hasFile
   })
 
-  /** 업로드 진행률 상태 추적 state */
-  const [uploadProgressMap, setUploadProgressMap] = useState<Record<string, number>>({})
-  const updateUploadProgress = useCallback((key: string, percent: number) => {
-    setUploadProgressMap((prev) => ({
-      ...prev,
-      [key]: percent,
-    }))
-  }, [])
-
-  const clearUploadProgress = useCallback((key: string) => {
-    setUploadProgressMap((prev) => {
-      const copy = { ...prev }
-      delete copy[key]
-      return copy
-    })
-  }, [])
-
-  const onUploadAction = useCallback(
-    async (file: File, uploadType: 'structured' | 'unstructured') => {
-      const setAction = uploadType === 'structured' ? setFilesStructured : setFilesUnstructured
-
-      /** 업로드 진행동안 추적할 uniqKey */
-      const fileKey = `${Date.now()}-${file.name}`
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const { name, type, size } = file
-      const newFileInfo = {
-        fileNo: -1,
-        fileNm: name,
-        fileSize: size,
-        fileKey,
-        type: type as FileType,
-        status: 'uploading' as UploadFileInfo['status'],
-        ...(uploadType === 'structured' ? { componentTypeId: structuredComponentType } : {}),
-        ...(uploadType === 'unstructured' ? { criteriaDt: dayjs(unstructuredDate).format('YYYYMMDD') } : {}),
-      }
-
-      if (uploadType === 'structured') {
-        formData.append(
-          'data',
-          JSON.stringify({
-            componentTypeId: structuredComponentType,
-          }),
-        )
-        setStructuredComponentType('')
-      }
-      setAction((prev) => [...prev, newFileInfo])
-      try {
-        const response = await axios.post(`/admin/provider-management/goods-datas/upload-file/${uploadType}-data`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          onUploadProgress: (event) => {
-            const percent = Math.round((event.loaded * 100) / (event.total ?? 1))
-            updateUploadProgress(fileKey, percent)
-          },
-        })
-        const { fileNo } = response.data.data
-        setAction((prev) => prev.map((f) => (f.fileKey === fileKey ? { ...f, fileNo, fileKey: null, status: 'pass' } : f)))
-        setTimeout(() => clearUploadProgress(fileKey), 1000)
-      } catch {
-        setOpenRegisterErrorFileAlert(true)
-        setAction((prev) => prev.map((f) => (f.fileKey === fileKey ? { ...f, fileKey: null, status: 'fail' } : f)))
-        clearUploadProgress(fileKey)
-      }
-    },
-    [clearUploadProgress, structuredComponentType, unstructuredDate, updateUploadProgress],
-  )
-
-  // GET 정형 데이타 타입 목록
-  const { data: structuredDataTypeOptions = [] } = useQuery({
-    queryKey: ['getStructuredDataType'],
-    queryFn: async () => await dataProviderService.getStructuredDataType(),
-    select: (res) =>
-      res.map(({ componentTypeId, componentTypeNm }) => ({
-        label: componentTypeNm,
-        value: componentTypeId,
-      })),
-  })
-
   const onRegister = useCallback(() => {
+    if (isEdit) {
+      showSnackbar('TODO.', { variant: 'error', body: 'TODO' })
+      return
+    }
+
     const checkFilesStatusClean = () => [...filesStructured, ...filesUnstructured].every((m) => m.status === 'pass')
 
     if (!checkFilesStatusClean()) setOpenRegisterErrorFileAlert(true)
     else setOpenRegisterSuccessFileAlert(true)
   }, [filesStructured, filesUnstructured])
 
-  /** 정형데이터 옵션에서 사용한 옵션을 제외한 나머지 리스트
-   *  데이터 소스 1개당 정형데이터 파일은 유일한 1개만 매칭
-   */
-  const availableDataTypeOptions = useMemo(() => {
-    const usedComponentTypeIds = filesStructured.map((file) => file.componentTypeId)
-    return structuredDataTypeOptions.filter((option) => !usedComponentTypeIds.includes(option.value))
-  }, [structuredDataTypeOptions, filesStructured])
+  // GET 데이터명 목록
+  const { data: getDataList = [] } = useQuery({
+    queryKey: ['getDataList'],
+    queryFn: async () => await dataProviderService.getDataList(Number(providerNo), Number(goodsNo)),
+    select: (res) => res.map((m) => ({ label: m.goodDataNm, value: m.goodDataNo })),
+  })
 
   // GET 문서 타입 카테고리
   const { data: providerDocumentTypeOptions = [] } = useQuery({
@@ -245,109 +144,27 @@ const AdminDataRegistration = () => {
     enabled: !!providerNo && !!goodsNo,
   })
 
-  const accordionItems = useMemo(
-    () => [
-      {
-        key: 'structured',
-        title: '정형 데이터 업로드',
-        isRequired: true,
-        tooltip: '데이터 소스 선택 후 파일을 업로드하세요.',
-        content: (
-          <Box>
-            <Typography variant="labelText" color="gray.70" component="div" marginBottom={1.5}>
-              파일 추가
-            </Typography>
-            <Flex direction="row" align="start" gap={8}>
-              <Grid container spacing={2} sx={{ flexGrow: 1 }}>
-                <Grid size={6}>
-                  <MISelect
-                    onChange={(e) => {
-                      setStructuredComponentType(String(e.target.value))
-                    }}
-                    value={structuredComponentType}
-                    sizeSelect={'h34'}
-                    placeholder="데이터 소스를 선택하세요."
-                    options={availableDataTypeOptions}
-                  ></MISelect>
-                </Grid>
-                <Grid size={6}>
-                  <AdminUpload
-                    disabled={!structuredComponentType}
-                    onUploadAction={(file) => onUploadAction(file, 'structured')}
-                    acceptedTypes={['text/csv']}
-                    maxSize={24}
-                  />
-                </Grid>
-              </Grid>
-            </Flex>
-            {filesStructured.length > 0 && (
-              <Box mt={2}>
-                {filesStructured.map((fileItem, index) => (
-                  <AdminItemUpload
-                    checkFile={fileItem.status}
-                    key={index}
-                    progressValue={uploadProgressMap[fileItem.fileKey ?? '']}
-                    fileItem={fileItem}
-                    onDelete={() => setFilesStructured((prev) => prev.filter((_f, idx) => idx !== index))}
-                  />
-                ))}
-              </Box>
-            )}
-          </Box>
-        ),
-      },
-      {
-        key: 'unstructured',
-        title: '비정형 데이터 업로드',
-        isRequired: true,
-        tooltip: '기준일자 선택 후 파일을 업로드하세요.',
-        content: (
-          <Box>
-            <Typography variant="labelText" color="gray.70" component="div" marginBottom={1.5}>
-              파일 추가
-            </Typography>
-            <Flex direction="row" align="start" gap={8}>
-              <Grid container spacing={2} sx={{ flexGrow: 1 }}>
-                <Grid size={6}>
-                  <MIDatePicker onChange={setUnstructuredDate} value={unstructuredDate} size="h34" />
-                </Grid>
-                <Grid size={6}>
-                  <AdminUpload
-                    disabled={!unstructuredDate}
-                    onUploadAction={(file) => onUploadAction(file, 'unstructured')}
-                    acceptedTypes={documentFileType}
-                    maxSize={24}
-                  />
-                </Grid>
-              </Grid>
-            </Flex>
-            {filesUnstructured.length > 0 && (
-              <Box mt={2}>
-                {filesUnstructured.map((fileItem, index) => (
-                  <AdminItemUpload
-                    checkFile={fileItem.status}
-                    key={index}
-                    progressValue={uploadProgressMap[fileItem.fileKey ?? '']}
-                    fileItem={fileItem}
-                    onDelete={() => setFilesUnstructured((prev) => prev.filter((_f, idx) => idx !== index))}
-                  />
-                ))}
-              </Box>
-            )}
-          </Box>
-        ),
-      },
-    ],
-    [
-      availableDataTypeOptions,
-      filesStructured,
-      filesUnstructured,
-      onUploadAction,
-      structuredComponentType,
-      unstructuredDate,
-      uploadProgressMap,
-    ],
-  )
+  /** GET 신규 등록 데이터 상품 명 조회 */
+  const { data: dataDetail } = useQuery({
+    queryKey: ['getGoodsDataDetail'],
+    queryFn: async () => await dataProviderService.getGoodsDataDetail(Number(providerNo), Number(goodsNo), Number(dataNo)),
+    select: (res) => res,
+    enabled: !!providerNo && !!goodsNo && !!dataNo,
+  })
+
+  /** 기존 등록된 데이터 수정 */
+  useEffect(() => {
+    if (dataNo && dataDetail) {
+      const langCategoryList = dataDetail.langCategoryList.map((m) => m.codeId)
+      const docCategoryList = dataDetail.docCategoryList.map((m) => m.codeId)
+      form.setFieldValue('goodsDataNm', dataDetail.goodsDataNm)
+      form.setFieldValue('goodsDataExpn', dataDetail.goodsDataExpn)
+      form.setFieldValue('goodsDataSummaryCntt', dataDetail.goodsDataSummaryCntt)
+      form.setFieldValue('langCategoryList', langCategoryList)
+      form.setFieldValue('docCategoryList', docCategoryList)
+    }
+  }, [dataDetail, dataNo, form])
+
   useEffect(() => {
     setCustomComponent(
       <AdminDataProvidersListPageHeader
@@ -365,6 +182,10 @@ const AdminDataRegistration = () => {
   }, [setCustomComponent, formCanSubmit, onRegister])
 
   useEffect(() => {
+    if (dataNo) setEditDataNo(Number(dataNo))
+  }, [dataNo])
+
+  useEffect(() => {
     setCustomTitle(
       <Box display="flex" alignItems="center" columnGap={'10px'}>
         <Typography color="gray.90" variant="heading2">
@@ -377,20 +198,6 @@ const AdminDataRegistration = () => {
       setCustomTitle(null)
     }
   }, [setCustomTitle, goodsNm])
-
-  /** 덤프 */
-  const majorOccupationOptions = [
-    { label: t('Major Occupations 1'), value: 'major1' },
-    { label: t('Major Occupations 2'), value: 'major2' },
-    { label: t('Major Occupations 3'), value: 'major3' },
-  ]
-
-  /** 덤프 */
-  const mediumOccupationOptions = [
-    { label: t('Medium Occupations 1'), value: 'medium1' },
-    { label: t('Medium Occupations 2'), value: 'medium2' },
-    { label: t('Medium Occupations 3'), value: 'medium3' },
-  ]
 
   // POST 데이터 등록
   const { mutate: postGoodsData } = useMutation({
@@ -428,11 +235,13 @@ const AdminDataRegistration = () => {
     subText: string,
     multiline?: boolean,
     required?: boolean,
+    disabled?: boolean,
   ) => (
     <MIField labelSize="lg" label={label} subText={subText} required={required}>
       <MIInput
         placeholder="내용을 입력하세요"
         fullWidth
+        disabled={disabled}
         multiline={multiline}
         value={field.state.value}
         onChange={(e) => field.handleChange(e.target.value)}
@@ -448,19 +257,38 @@ const AdminDataRegistration = () => {
             {goodsNm}
           </Typography>
         </MIField>
-
-        <MIField labelSize="lg" label="등록 방식">
-          <RadioGroup row value={'newRegistration'} sx={{ pointerEvents: 'none' }}>
-            <FormControlLabel value="newRegistration" control={<Radio />} label="신규 등록" />
-            <FormControlLabel value="updateExistingData" control={<Radio />} label="기존 데이터 업데이트" />
-          </RadioGroup>
-        </MIField>
-        <form.Field name="goodsDataNm">{(field) => renderInputField(field, '데이터명', '데이터의 이름을 입력해주세요.')}</form.Field>
+        {!dataNo && (
+          <MIField labelSize="lg" label="등록 방식">
+            <RadioGroup row value={isEdit} defaultValue={-1} onChange={(e) => setIsEdit(e.target.value === 'true')}>
+              <FormControlLabel value={false} control={<Radio />} label="신규 등록" />
+              <FormControlLabel value={true} control={<Radio />} label="기존 데이터 업데이트" />
+            </RadioGroup>
+          </MIField>
+        )}
+        {!isEdit && (
+          <form.Field name="goodsDataNm">
+            {(field) => renderInputField(field, '데이터명', '데이터의 이름을 입력해주세요.', false, true)}
+          </form.Field>
+        )}
+        {isEdit && (
+          <MIField labelSize="lg" label={'데이터명'} subText={'데이터의 이름을 입력해주세요.'} required>
+            <MISelect
+              value={editDataNo ?? ''}
+              onChange={(e) => setEditDataNo(Number(e.target.value))}
+              placeholder="선택하세요"
+              disabled={!!dataNo}
+              sizeSelect={'h34'}
+              fullWidth
+              useAllOption={false}
+              options={getDataList}
+            />
+          </MIField>
+        )}
         <form.Field name="goodsDataExpn">
-          {(field) => renderInputField(field, 'Description', '데이터에 대한 설명을 입력해주세요.', true)}
+          {(field) => renderInputField(field, 'Description', '데이터에 대한 설명을 입력해주세요.', true, false, isEdit && !editDataNo)}
         </form.Field>
         <form.Field name="goodsDataSummaryCntt">
-          {(field) => renderInputField(field, 'Summary', '데이터에 대한 요약 정보를 입력해주세요.', true, true)}
+          {(field) => renderInputField(field, 'Summary', '데이터에 대한 요약 정보를 입력해주세요.', true, true, isEdit && !editDataNo)}
         </form.Field>
         <MIField labelSize="lg" label="데이터 카테고리" subText="대분류, 중분류를 선택하여 추가하세요. 중복 등록이 가능합니다.">
           <Flex direction="row" gap={8}>
@@ -468,6 +296,7 @@ const AdminDataRegistration = () => {
               <Grid size={6}>
                 <MISelect
                   value={majorOccupation}
+                  disabled={isEdit && !editDataNo}
                   onChange={(e) => {
                     setMajorOccupation(e.target.value as string)
                     setMediumOccupation('')
@@ -475,18 +304,18 @@ const AdminDataRegistration = () => {
                   placeholder="대분류"
                   sizeSelect={'h34'}
                   fullWidth
-                  options={majorOccupationOptions}
+                  options={[]}
                 ></MISelect>
               </Grid>
               <Grid size={6}>
                 <MISelect
                   sizeSelect={'h34'}
+                  disabled={isEdit && !editDataNo}
                   value={mediumOccupation}
                   onChange={(e) => setMediumOccupation(e.target.value as string)}
                   placeholder="중분류"
-                  disabled={!majorOccupation}
                   fullWidth
-                  options={mediumOccupationOptions}
+                  options={[]}
                 ></MISelect>
               </Grid>
             </Grid>
@@ -539,7 +368,6 @@ const AdminDataRegistration = () => {
               ))}
           </Grid>
         </MIField>
-
         <form.Field name="docCategoryList">
           {(field) => (
             <MIField labelSize="lg" label="Document Types" subText="도큐먼트 타입을 선택하세요. 중복 선택이 가능합니다." required>
@@ -596,39 +424,20 @@ const AdminDataRegistration = () => {
             </MIField>
           )}
         </form.Field>
-
         <Divider sx={{ backgroundColor: '#DEE2E6', height: '0px' }} />
         <form.Field name="fileTypes">
           {(field) => (
-            <MIField labelSize="lg" label="데이터 분류" required>
-              <FormGroup row>
-                {['structured', 'unstructured'].map((val) => (
-                  <FormControlLabel
-                    key={val}
-                    control={
-                      <AdminCheckbox
-                        checked={field.state.value.includes(val)}
-                        onChange={(e) => {
-                          const isChecked = e.target.checked
-                          const newValue = isChecked ? [...field.state.value, val] : field.state.value.filter((v) => v !== val)
-
-                          field.handleChange(newValue)
-                        }}
-                      />
-                    }
-                    value={val}
-                    label={val === 'structured' ? '정형 데이터' : '비정형 데이터'}
-                  />
-                ))}
-              </FormGroup>
-              <Box marginTop={7.5}>
-                <MIAccordion
-                  visibleKeys={form.state.values.fileTypes}
-                  defaultExpandedKeys={['structured', 'unstructured']}
-                  items={accordionItems}
-                />
-              </Box>
-            </MIField>
+            <AdminDataRegiUploadComponent
+              fileTypes={form.state.values.fileTypes}
+              selectedTypes={field.state.value}
+              onChange={field.handleChange}
+              setFilesStructured={setFilesStructured}
+              setFilesUnstructured={setFilesUnstructured}
+              savedstructuredData={dataDetail?.structuredDataList ?? []}
+              savedunstructuredData={dataDetail?.unstructuredDataList ?? []}
+              filesStructured={filesStructured}
+              filesUnstructured={filesUnstructured}
+            />
           )}
         </form.Field>
       </Box>

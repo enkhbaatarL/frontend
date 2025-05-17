@@ -32,7 +32,7 @@ interface ProductDataTableProps {
   search: string
   setSearch: (value: string) => void
   setSearchValue: (value: string) => void
-  onRegister: () => void
+  onRegister: (dataNo?: number) => void
 }
 interface AuthorityDetailTableProps {
   data: IPaginationResponse<IProductCompanyPermissionInfo>
@@ -95,16 +95,14 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
       maxWidth: 52,
       cellClassName: 'cellAction',
       align: 'center',
-      renderCell: () => (
+      renderCell: (params: { id: number }) => (
         <AdminTableAction
           actions={[
             {
               label: t('데이터 업데이트'),
               icon: <UpdateIcon fontSize="small" />,
               disabled: (user?.userRoleCd === UserRole.ADMIN && !isPublic) || (user?.userRoleCd === UserRole.OPERATOR && isPublic),
-              onClick: () => {
-                // TODO: 데이터 업데이트 페이지 이동
-              },
+              onClick: () => onRegister(params.id),
             },
           ]}
         />
@@ -143,7 +141,7 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
             color="secondary"
             variant="outlined"
             size="h34"
-            onClick={onRegister}
+            onClick={() => onRegister()}
             disabled={(user?.userRoleCd === UserRole.ADMIN && !isPublic) || (user?.userRoleCd === UserRole.OPERATOR && isPublic)}
           >
             {t('데이터 등록')}
@@ -445,6 +443,11 @@ const AdminDataProviderProductDetailPage = () => {
     setSaveBtnDisabled(editProductName === '' || editProductDescription === '')
   }, [editProductName, editProductDescription])
 
+  const onRegister = (dataNo?: number) => {
+    if (!dataNo) navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}/data-registration`)
+    else navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}/data-detail/${dataNo}`)
+  }
+
   return (
     <>
       {dataList && (
@@ -454,7 +457,7 @@ const AdminDataProviderProductDetailPage = () => {
           search={search}
           setSearch={setSearch}
           setSearchValue={setSearchValue}
-          onRegister={() => navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}/data-registration`)}
+          onRegister={onRegister}
         />
       )}
       {user?.userRoleCd === UserRole.ADMIN && companyPermissionList && (
