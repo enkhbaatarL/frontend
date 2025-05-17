@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/material'
 import smImg from '@/assets/product_symbol_hover.png'
 import MIButtonSelect from '@/components/common/chart/MIChartButtonSelect'
 import MIColorRange from '@/components/common/colorrange/MIColorRange'
+import MISignalMap from '@/components/common/signal-map/MISignalMap'
 
 interface SectionHeaderProps {
   title: string
@@ -101,11 +102,27 @@ const SignalMapPage = () => (
           </Box>
           <Box mb={6}>
             <SectionHeader title="Financial Markets" itemCount="29" />
-            <Box height="460px" bgcolor="#D9D9D9" marginTop="6px"></Box>
+            <Box height="460px" marginTop="6px">
+              <MISignalMap
+                data={Array.from({ length: Math.floor(Math.random() * 50) + 1 }, () => ({
+                  sector: `${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+                  change: Number((Math.random() * 2 - 1).toFixed(2)),
+                }))}
+                useAnimation
+              />
+            </Box>
           </Box>
           <Box mb={6}>
             <SectionHeader title="External Factors" itemCount="43" subCategories="3" />
-            <Box height="460px" bgcolor="#D9D9D9" marginTop="6px"></Box>
+            <Box height="460px" marginTop="6px">
+              <MISignalMap
+                data={Array.from({ length: 41 }, (_, i) => ({
+                  sector: `SECTOR_${i + 1}`,
+                  change: Number((1 - i * 0.05).toFixed(2)),
+                }))}
+                useAnimation
+              />
+            </Box>
           </Box>
         </Box>
         <Box>
@@ -114,11 +131,42 @@ const SignalMapPage = () => (
           </Box>
           <Box mb={6}>
             <SectionHeader title="Supply-side Factors" itemCount="29" subCategories="2" />
-            <Box height="460px" bgcolor="#D9D9D9" marginTop="6px"></Box>
+            <Box height="460px" marginTop="6px">
+              <MISignalMap
+                data={Array.from({ length: Math.floor(Math.random() * 10) + 30 }, () => ({
+                  sector: `${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+                  change: Number((Math.random() * 2 - 1).toFixed(2)),
+                }))}
+                thresholdLevels={14}
+                useAnimation
+              />
+            </Box>
           </Box>
           <Box mb={6}>
             <SectionHeader title="Demand-side Factors" itemCount="30" subCategories="2" />
-            <Box height="460px" bgcolor="#D9D9D9" marginTop="6px"></Box>
+            <Box height="460px" marginTop="6px">
+              <MISignalMap
+                data={[
+                  {
+                    sector: 'US, Natural Gas, Consumption, Electric Power',
+                    change: -0.55,
+                  },
+                  {
+                    sector: 'US, Natural Gas, Consumption, Pipeline and Distribution Use',
+                    change: 0.55,
+                  },
+                  {
+                    sector: 'US, Renewable Energy Consumption, Consumption, Totla',
+                    change: 0.63,
+                  },
+                  {
+                    sector: 'US, Natural Gas, Consumption, Electric Power 2',
+                    change: 0.55,
+                  },
+                ]}
+                useAnimation
+              />
+            </Box>
           </Box>
         </Box>
       </Box>

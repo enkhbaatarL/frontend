@@ -21,13 +21,15 @@ const UserChartSamplePage = () => {
       {tab === 0 && <SampleChart />}
       {tab === 1 && <ChartComponent />}
       {tab === 2 && (
-        <MISignalMap
-          data={Array.from({ length: 41 }, (_, i) => ({
-            sector: `SECTOR_${i + 1}_이름이 길어지면 ... 처리가 됩니다`,
-            change: Number((1 - i * 0.05).toFixed(2)),
-          }))}
-          useAnimation
-        />
+        <Box height="600px" marginTop="6px">
+          <MISignalMap
+            data={Array.from({ length: 41 }, (_, i) => ({
+              sector: `SECTOR_${i + 1}_이름이 길어지면 ... 처리가 됩니다`,
+              change: Number((1 - i * 0.05).toFixed(2)),
+            }))}
+            useAnimation
+          />
+        </Box>
       )}
     </div>
   )

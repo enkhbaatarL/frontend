@@ -88,7 +88,7 @@ Tooltip.positioners.myCustomPositioner = function (_elements: ActiveElement[], e
   }
 }
 
-const MISignalMap = ({ data = [], thresholdLevels = 4, useAnimation = false }: Props) => {
+const MISignalMap = ({ data = [], thresholdLevels = 6, useAnimation = false }: Props) => {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
   const chartInstanceRef = useRef<{ destroy:() => void }>(null)
@@ -281,7 +281,7 @@ const MISignalMap = ({ data = [], thresholdLevels = 4, useAnimation = false }: P
   }, [data, thresholdLevels, useAnimation]) // 차트 다시 그리기
 
   return (
-    <div style={{ width: '100%', height: '600px' }}>
+    <div style={{ width: '100%', height: '100%' }}>
       <canvas ref={chartRef} />
     </div>
   )
