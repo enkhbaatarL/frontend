@@ -21,24 +21,10 @@ import { UserRole } from '@/service/admin/members'
 import companiesService from '@/service/mi/companies'
 import useAuthStore from '@/store/useAuthStore'
 
-const pages = [
-  {
-    label: 'MI Dashboard',
-    url: '/mi/dashboard',
-  },
-  {
-    label: 'Signal Map',
-    url: '/mi/signal-map',
-  },
-  {
-    label: 'Market Data',
-    url: '/mi/market-data',
-  },
-  {
-    label: 'Insights',
-    url: '/mi/insights',
-  },
-]
+export interface Page {
+  label: string
+  url: string
+}
 
 const boards = [
   {
@@ -51,7 +37,11 @@ const boards = [
   },
 ]
 
-const MIHeaderMainLayout = () => {
+interface MIHeaderMainLayoutProps {
+  pages: Page[]
+}
+
+const MIHeaderMainLayout = ({ pages }: MIHeaderMainLayoutProps) => {
   const navigate = useNavigate()
   const { user, setAccessCompanyInfo } = useAuthStore()
 
