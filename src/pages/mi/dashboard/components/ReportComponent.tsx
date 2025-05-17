@@ -99,7 +99,7 @@ const ReportMIComponent = () => {
             height={598}
             bottomLabel="First Unit"
             topLabel="Unit: USD/bbl"
-            lastUpated="April 29, 2025"
+            lastUpdated="April 29, 2025"
           />
         </Box>
         <Box p="20px" mb="40px" sx={{ borderRadius: '4px', backgroundColor: '#FAFBFE', border: '0.76px solid', borderColor: '#E9EFFB' }}>

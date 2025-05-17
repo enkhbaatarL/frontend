@@ -186,7 +186,7 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
                 } else {
                   ctx.drawImage(hoverImages['forecast'], xPos, yPos, size, size)
                 }
-              } else if ((dataset as any).category !== DATA_CATEGORIES.FORECAST && !dataset.hidden) {
+              } else if ((dataset as any).category !== DATA_CATEGORIES.FORECAST && !(dataset as any).hidden) {
                 const img = hoverImages[dataset.label ?? '']
 
                 ctx.drawImage(img, xPos, yPos, size, size)
@@ -220,7 +220,7 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
         }
 
         futureDatasets.forEach((dataset) => {
-          if (!dataset.hidden && dataset.data[currentIndex] !== null) {
+          if (!(dataset as { hidden?: boolean }).hidden && dataset.data[currentIndex] !== null) {
             this.tooltipContent.push({
               label: dataset.label,
               value: dataset.data[currentIndex] as number,

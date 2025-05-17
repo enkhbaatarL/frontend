@@ -48,10 +48,10 @@ export interface MIForecastChartProps {
   hidePoint?: boolean
   bottomLabel?: string
   topLabel?: string
-  lastUpated?: string
+  lastUpdated?: string
 }
 
-export default function MIForecastChart(props: MIForecastChartProps) {
+export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
   const {
     height,
     actualData,
@@ -62,7 +62,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
     hidePoint = false,
     bottomLabel = '',
     topLabel = '',
-    lastUpated = '',
+    lastUpdated = '',
   } = props
   const chartRef = useRef<HTMLCanvasElement>(null)
   const { showSnackbar } = useSnackbar()
@@ -103,7 +103,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
   // Add these refs and state for caching hover dot images (moved inside the component)
   const hoverDotImagesRef = useRef<{ [key: string]: HTMLImageElement | null }>({})
   const [hoverDotsLoaded, setHoverDotsLoaded] = useState(false)
-  const [datasets, setDatasets] = useState<Array<ChartDataset & { category: string }>>([])
+  const [datasets, setDatasets] = useState<Array<ChartDataset & { category: string; hidden?: boolean }>>([])
   // Handle toggling dataset visibility
   const handleToggleDataset = (index: number) => {
     const newDatasets = [...datasets]
@@ -123,7 +123,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
   }
 
   useEffect(() => {
-    const forecastDatasets: Array<ChartDataset & { category: string }> = []
+    const forecastDatasets: Array<ChartDataset & { category: string; hidden?: boolean }> = []
 
     forecastData.forEach((data, i) => {
       forecastDatasets.push({
@@ -352,9 +352,9 @@ export default function MIForecastChart(props: MIForecastChartProps) {
         sx={{ borderBottom: '1px solid', borderColor: theme.palette.gray[30] }}
       >
         <Box>
-          {lastUpated && (
+          {lastUpdated && (
             <Typography variant="body3M12" color="gray.60">
-              Last Updated : {lastUpated}
+              Last Updated : {lastUpdated}
             </Typography>
           )}
         </Box>

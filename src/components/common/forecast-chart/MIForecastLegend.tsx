@@ -6,11 +6,11 @@ import ActualLegendIcon from './icons/ActualLegendIcon'
 import ForecastLegendIcon from './icons/ForecastLegendIcon'
 
 interface MIForecastLegendProps {
-  datasets: Array<ChartDataset & { category: string }>
+  datasets: Array<ChartDataset & { category: string; hidden?: boolean }>
   onToggleDataset: (index: number) => void
 }
 
-export default function MIForecastLegend({ datasets, onToggleDataset }: MIForecastLegendProps) {
+export default function MIForecastLegend({ datasets, onToggleDataset }: Readonly<MIForecastLegendProps>) {
   return (
     <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} px="24px" py="10px">
       <Box display={'flex'} alignItems={'center'} gap="10px">
