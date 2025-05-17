@@ -8,7 +8,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
-import AdminLoading from '@/components/admin/AdminLoading'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DetailItem from '@/components/common/detail-item/DetailItem'
@@ -17,9 +16,11 @@ import SettingIcon from '@/components/common/icons/SettingIcon'
 import MIInput from '@/components/common/input/MIInput'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
-import companiesService from '@/service/admin/companies'
+import companiesService, { IProviderGoodsInfo, IProviderGoodsRequest } from '@/service/admin/companies'
 import dataProviderService from '@/service/admin/dataProvider'
+import { IPaginationResponse } from '@/types/api'
 
 const AdminCustomerCompanyProviderDetailPageHeader = (props: {
   onChange: (value: boolean | undefined) => void
@@ -40,15 +41,13 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const [selectedCompany, setSelectedCompany] = useState({ value: '', label: '' })
   const { companyNo, providerNo } = useParams()
   const [selectedProviderNo, setSelectedProviderNo] = useState<string | undefined>(providerNo)
-  const [search, setSearch] = useState<string>('')
-  const [searchValue, setSearchValue] = useState<string>('')
   const [selectedGoods, setSelectedGoods] = useState<string>('')
   const [isActive, setIsActive] = useState<boolean>(true)
   const [goodsAuthManagementSeparateCd, setGoodsAuthManagementSeparateCd] = useState<string>('INDIVIDUAL')
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
 
-  const { data: providerDetailData, isLoading } = useQuery({
+  const { data: providerDetailData } = useQuery({
     queryKey: ['providerDetail', companyNo, selectedProviderNo],
     queryFn: async () => await companiesService.getCompanyProviderDetail(Number(companyNo), Number(selectedProviderNo)),
     refetchOnWindowFocus: 'always',
@@ -78,20 +77,26 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     enabled: !!companyNo,
   })
 
-  const { data: providerGoodsData } = useQuery({
-    queryKey: ['providerGoodsData', companyNo, selectedProviderNo, isActive, searchValue],
-    queryFn: async () =>
-      await companiesService.getProviderGoods(Number(companyNo), Number(selectedProviderNo), {
-        search: searchValue,
-        page: 1,
-        size: 20,
-      }),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
-    enabled: !!companyNo || !!selectedProviderNo,
-  })
+  const {
+    filter,
+    updateFilter,
+    pagination,
+    updateSize,
+    updatePage,
+    search,
+    data: providerGoodsData,
+    refetch,
+    isLoading,
+  } = useSearchFilter<IProviderGoodsRequest, IPaginationResponse<IProviderGoodsInfo>>(
+    (params) => companiesService.getProviderGoods(Number(companyNo), Number(selectedProviderNo), params),
+    {
+      search: '',
+    },
+    {
+      page: 1,
+      size: 20,
+    },
+  )
 
   const { data: selectProviderGoodsData } = useQuery({
     queryKey: ['selectProviderGoodsData', selectedProviderNo],
@@ -321,15 +326,13 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       setSelectedGoods('')
       setGoodsAuthManagementSeparateCd('INDIVIDUAL')
       showSnackbar(t('등록되었습니다'), { variant: 'success' })
-      await queryClient.invalidateQueries({ queryKey: ['providerGoodsData', companyNo, selectedProviderNo, isActive, searchValue] })
+      await refetch()
     } catch (error) {
       console.error('error', error)
     }
   }
 
-  return isLoading ? (
-    <AdminLoading />
-  ) : (
+  return (
     <>
       <Box>
         <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
@@ -348,21 +351,21 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
               endIcon={
                 <SearchIcon
                   onClick={() => {
-                    setSearchValue(search)
+                    search()
                   }}
                 />
               }
               contentWidth={196}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={filter.search}
+              onChange={(e) => updateFilter('search', e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  setSearchValue(search)
+                  search()
                 }
               }}
               onClear={() => {
-                setSearchValue('')
-                setSearch('')
+                updateFilter('search', '')
+                search()
               }}
             />
             <AdminButton color="secondary" variant="outlined" size="h34" onClick={registerProduct}>
@@ -375,6 +378,10 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
           columns={columns}
           data={providerGoodsData}
           onRowClick={(row) => handleOnRowClick(row.row.goodsNo)}
+          isLoading={isLoading}
+          size={pagination?.size}
+          onSizeChange={updateSize}
+          onPageChange={updatePage}
         />
       </Box>
       <MIConfirm
