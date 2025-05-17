@@ -206,11 +206,7 @@ const MIHeaderNotice = () => {
       if (anchorElNotice) {
         try {
           setIsLoadingNotices(true)
-          const response = await boardService.getNotice({
-            page: 1,
-            size: 5,
-            keyword: '',
-          })
+          const response = await boardService.getNotice()
           if (response.detail) {
             setNotices(response.detail)
           }
@@ -277,7 +273,7 @@ const MIHeaderNotice = () => {
                   title={notice.bulletinTitleName}
                   subtitle={notice.bulletinCategorySeparateCode}
                   date={dayjs(notice.auditInfo?.createDt).format('YYYY-MM-DD HH:mm')}
-                  isRead={false} // 읽음 상태 정보가 없으므로 기본값 사용
+                  isRead={notice.isRead} // 읽음 상태 정보가 없으므로 기본값 사용
                   onClick={handleNoticeClick}
                 />
               ))
