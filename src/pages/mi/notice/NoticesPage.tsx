@@ -9,15 +9,20 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import boardService, { INoticeInfo, INoticeRequest } from '@/service/mi/board'
+import useAuthStore from '@/store/useAuthStore.ts'
 import { IPaginationResponse } from '@/types/api'
 
 const NoticesPage = () => {
+  const { accessCompanyInfo } = useAuthStore()
+  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
+
   const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch } = useSearchFilter<
     INoticeRequest,
     IPaginationResponse<INoticeInfo>
   >(
     boardService.getNotice,
     {
+      customerCompanyNo,
       keyword: '',
     },
     {

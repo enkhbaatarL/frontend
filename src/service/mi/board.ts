@@ -34,11 +34,14 @@ export interface INoticeFilter {
   target: IFilterItem[]
 }
 
-export interface INoticeRequest extends IPaginationRequest {
-  category: string
-  status: string
-  target: string
-  keyword: string
+export interface INoticeRequest {
+  customerCompanyNo?: number
+  category?: string
+  status?: string
+  target?: string
+  keyword?: string
+  size?: number
+  page?: number
 }
 
 export interface INoticeInfo {

@@ -5,13 +5,17 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
 import boardService from '@/service/mi/board'
+import useAuthStore from '@/store/useAuthStore.ts'
 
 export default function NoticesDetailPage() {
   const navigate = useNavigate()
   const { noticeNo } = useParams()
+  const { accessCompanyInfo } = useAuthStore()
+  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
+
   const { data } = useQuery({
     queryKey: ['noticeDetail', noticeNo],
-    queryFn: async () => await boardService.getNoticeDetail(noticeNo),
+    queryFn: async () => await boardService.getNoticeDetail(noticeNo, { customerCompanyNo }),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,
