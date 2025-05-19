@@ -16,9 +16,9 @@ const SimpleLineChart: FC<{ data?: IMarketData }> = ({ data }) => {
   const chartInstance = useRef<Chart<'line', number[], string | number> | null>(null)
 
   const generateChartData = () => {
-    if (data?.mainGraph?.rawData) {
-      const mainData = data.mainGraph.rawData.map((point) => point.value)
-      const labels = data.mainGraph.rawData.map((point) => point.date)
+    if (data?.mainChart?.rawData) {
+      const mainData = data.mainChart.rawData.map((point) => point.value)
+      const labels = data.mainChart.rawData.map((point) => point.date)
 
       const datasets = [
         {
@@ -32,10 +32,10 @@ const SimpleLineChart: FC<{ data?: IMarketData }> = ({ data }) => {
         },
       ]
 
-      if (data.compareGraphs && data.compareGraphs.length > 0) {
-        data.compareGraphs.forEach((compareGraph, index) => {
-          if (compareGraph.rawData) {
-            const compareData = compareGraph.rawData.map((point) => point.value)
+      if (data.compareCharts && data.compareCharts.length > 0) {
+        data.compareCharts.forEach((compareChart, index) => {
+          if (compareChart.rawData) {
+            const compareData = compareChart.rawData.map((point) => point.value)
             datasets.push({
               label: `Compare ${index + 1}`,
               data: compareData,
