@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
-import AdminLoading from '@/components/admin/AdminLoading'
+import AdminSkeleton from '@/components/admin/AdminSkeleton'
 import AdminTable from '@/components/admin/AdminTable'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DetailItem from '@/components/common/detail-item/DetailItem'
@@ -269,18 +269,29 @@ export default function AdminDataProvidersDetailPage() {
           }}
         />,
       )
+    } else {
+      setSubHeader(<AdminSkeleton loading={isLoading} subHeader />)
     }
 
     return () => {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [setCustomComponent, setSubHeader, isActive, data, dataProvidersName, providerOptions, selectedProvider])
+  }, [
+    setCustomComponent,
+    setSubHeader,
+    isActive,
+    data,
+    dataProvidersName,
+    providerOptions,
+    selectedProvider,
+    isLoading,
+    initialProvider,
+    navigate,
+  ])
 
-  return isLoading ? (
-    <AdminLoading />
-  ) : (
-    <>
+  return (
+    <AdminSkeleton loading={isLoading} table>
       <Box>
         <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
           <Box>
@@ -477,6 +488,6 @@ export default function AdminDataProvidersDetailPage() {
           )}
         </activeForm.Field>
       </MIConfirm>
-    </>
+    </AdminSkeleton>
   )
 }

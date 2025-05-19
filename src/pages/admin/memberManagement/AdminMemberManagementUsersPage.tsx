@@ -61,7 +61,7 @@ const AdminMemberManagementUsersPage = () => {
     isPureState,
     isLoading,
   } = useSearchFilter<Omit<IUserRequest, 'userRoleCd'>, IPaginationResponse<IUserInfo>>(
-    membersService.getUsers,
+    (params) => membersService.getUsers(Number(params.companyNo), params),
     {
       companyNo: '',
       departmentNm: '',

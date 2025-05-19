@@ -1,10 +1,11 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
-import { useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
-import MIHeaderMainLayout from '@/components/mi/MIHeaderMainLayout'
+import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
+import DailyChart from '@/pages/mi/dashboard/components/DailyChart'
 import MIProvider from '@/providers/MIProvider'
 import boardService, { INoticeDetailInfo, INoticePopupInfo } from '@/service/mi/board'
 import useAuthStore from '@/store/useAuthStore'
@@ -31,6 +32,25 @@ const getCookie = (name: string): string | null => {
   return null
 }
 
+const mainPages: Page[] = [
+  {
+    label: 'MI Dashboard',
+    url: '/mi/dashboard',
+  },
+  {
+    label: 'Signal Map',
+    url: '/mi/signal-map',
+  },
+  {
+    label: 'Market Data',
+    url: '/mi/market-data',
+  },
+  {
+    label: 'Insights',
+    url: '/mi/insights',
+  },
+]
+
 const MILayout = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [showNoticePopup, setShowNoticePopup] = useState(false)
@@ -38,6 +58,7 @@ const MILayout = () => {
   const [noticeDetailData, setNoticeDetailData] = useState<INoticeDetailInfo | null>(null)
   const [outletKey, setOutletKey] = useState(0)
   const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
+  const location = useLocation()
 
   useEffect(() => {
     setOutletKey((prevKey) => prevKey + 1)
@@ -104,19 +125,31 @@ const MILayout = () => {
     setShowNoticePopup(false)
   }
 
+  const dailyChartData = [
+    { product: 'Wheat Flour', country: 'Ukraine', name: 'Wheat Flour in Ukraine', change: 0.0035 },
+    { product: 'Rice', country: 'China', name: 'Rice in China', change: -0.237 },
+  ]
+
+  const showDailyChart = useMemo(() => location.pathname === '/mi/dashboard', [location.pathname])
+
+  const paddingTop = useMemo(() => {
+    const defaultPadding = isScrolled ? 70 : 106
+
+    return `${defaultPadding + (showDailyChart ? 50 : 0)}px`
+  }, [showDailyChart, isScrolled])
+
   return (
     <MIProvider>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', minWidth: '1440px', boxSizing: 'border-box' }}>
         <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
-          <MIHeaderMainLayout />
+          <MIHeaderMainLayout pages={mainPages} />
+          {showDailyChart && <DailyChart data={dailyChartData} />}
         </div>
         <Box
           sx={{
-            paddingTop: '106px',
+            paddingTop,
             flex: 1,
-            '@media(max-width: 600px)': {
-              paddingTop: '90px',
-            },
+            transition: 'padding-top 0.15s linear',
           }}
         >
           <Outlet key={outletKey} />

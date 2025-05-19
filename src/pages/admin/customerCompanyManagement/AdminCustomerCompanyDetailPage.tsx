@@ -10,7 +10,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
-import AdminLoading from '@/components/admin/AdminLoading'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -20,22 +19,16 @@ import SettingIcon from '@/components/common/icons/SettingIcon'
 import MIInput from '@/components/common/input/MIInput'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService, { ICompanyProviderInfo } from '@/service/admin/companies'
 import dataProviderService, { IProviderInfo } from '@/service/admin/dataProvider'
-import membersService, { IUserInfo } from '@/service/admin/members'
+import membersService, { IUserInfo, IUserRequest } from '@/service/admin/members'
 import { IPaginationResponse } from '@/types/api'
 
 interface AdminCustomerDataProviderTableProps {
   data: ICompanyProviderInfo[]
   companyNm: string
-}
-interface AdminCustomerMemberTableProps {
-  data: IPaginationResponse<IUserInfo>
-  search: string
-  setSearch: (value: string) => void
-  searchValue: string
-  setSearchValue: (value: string) => void
 }
 
 const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean) => void; label: string; value: boolean }) => {
@@ -197,13 +190,28 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
   )
 }
 
-const AdminCustomerMemberTable = ({ data, search, setSearch, setSearchValue }: AdminCustomerMemberTableProps) => {
+const AdminCustomerMemberTable = () => {
   const [isOpenDelete, setIsOpenDelete] = useState(false)
   const navigate = useNavigate()
   const [selectedUser, setSelectedUser] = useState<IUserInfo | null>(null)
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
   const { companyNo } = useParams()
+
+  const { filter, updateFilter, pagination, updateSize, updatePage, search, data, isLoading } = useSearchFilter<
+    IUserRequest,
+    IPaginationResponse<IUserInfo>
+  >(
+    (params) => membersService.getUsers(Number(companyNo), params),
+    {
+      userNm: '',
+      companyNo,
+    },
+    {
+      page: 1,
+      size: 20,
+    },
+  )
 
   const columns: GridColDef[] = [
     {
@@ -323,21 +331,23 @@ const AdminCustomerMemberTable = ({ data, search, setSearch, setSearchValue }: A
             endIcon={
               <SearchIcon
                 onClick={() => {
-                  setSearchValue(search)
+                  search()
                 }}
               />
             }
             contentWidth={196}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={filter.userNm}
+            onChange={(e) => {
+              updateFilter('userNm', e.target.value as string)
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                setSearchValue(search)
+                search()
               }
             }}
             onClear={() => {
-              setSearchValue('')
-              setSearch('')
+              updateFilter('userNm', '')
+              search()
             }}
           />
           <AdminButton
@@ -352,7 +362,16 @@ const AdminCustomerMemberTable = ({ data, search, setSearch, setSearchValue }: A
           </AdminButton>
         </Box>
       </Box>
-      <AdminTable getRowId={(row) => row.userNo} columns={columns} data={data} onRowClick={handleOnRowClick} />
+      <AdminTable
+        getRowId={(row) => row.userNo}
+        columns={columns}
+        data={data}
+        onRowClick={handleOnRowClick}
+        isLoading={isLoading}
+        size={pagination?.size}
+        onSizeChange={updateSize}
+        onPageChange={updatePage}
+      />
       <MIConfirm
         open={isOpenDelete}
         title={
@@ -400,15 +419,13 @@ const AdminCustomerCompanyDetailPage = () => {
   const [inputUsageBeginDate, setInputUsageBeginDate] = useState<Dayjs | null>(null)
   const [inputUsageEndDate, setInputUsageEndDate] = useState<Dayjs | null>(null)
   const [companyNm, setCompanyNm] = useState<string>('')
-  const [search, setSearch] = useState<string>('')
-  const [searchValue, setSearchValue] = useState<string>('')
   const [isActive, setIsActive] = useState<boolean>(true)
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
 
   const { companyNo } = useParams()
 
-  const { data, isLoading: customerCompanyDetailIsLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ['customerCompanyDetail', companyNo],
     queryFn: async () => await companiesService.getCompanyDetail(Number(companyNo)),
     refetchOnWindowFocus: 'always',
@@ -418,7 +435,7 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
-  const { data: dataProviderData, isLoading: dataProviderDataIsLoading } = useQuery({
+  const { data: dataProviderData } = useQuery({
     queryKey: ['dataProvider', companyNo],
     queryFn: async () => await companiesService.getCompanyProviders(Number(companyNo)),
     refetchOnWindowFocus: 'always',
@@ -428,23 +445,7 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
-  const { data: userData, isLoading: userDataIsLoading } = useQuery({
-    queryKey: ['user', companyNo, searchValue],
-    queryFn: async () =>
-      await membersService.getUsers({
-        companyNo,
-        page: 1,
-        size: 20,
-        userNm: searchValue,
-      }),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
-    enabled: !!companyNo,
-  })
-
-  const { data: companyLatestUpdatedData, isLoading: companyLatestUpdatedDataIsLoading } = useQuery({
+  const { data: companyLatestUpdatedData } = useQuery({
     queryKey: ['latestUpdateData', companyNo],
     queryFn: async () => await companiesService.getCompanyLatestUpdated(Number(companyNo)),
     refetchOnWindowFocus: 'always',
@@ -453,8 +454,6 @@ const AdminCustomerCompanyDetailPage = () => {
     staleTime: 0,
     enabled: !!companyNo,
   })
-
-  const isLoading = customerCompanyDetailIsLoading || dataProviderDataIsLoading || userDataIsLoading || companyLatestUpdatedDataIsLoading
 
   const toogle = () => {
     setOpenConfirmActive(true)
@@ -545,20 +544,10 @@ const AdminCustomerCompanyDetailPage = () => {
     setIsErrorCompanyName(inputCompanyName.replace(/\s/g, '') !== data?.companyNm.replace(/\s/g, ''))
   }, [inputCompanyName, data?.companyNm])
 
-  return isLoading ? (
-    <AdminLoading />
-  ) : (
+  return (
     <>
       {dataProviderData && <AdminCustomerDataProviderTable data={dataProviderData} companyNm={companyNm} />}
-      {userData && (
-        <AdminCustomerMemberTable
-          data={userData}
-          search={search}
-          setSearch={setSearch}
-          searchValue={searchValue}
-          setSearchValue={setSearchValue}
-        />
-      )}
+      {<AdminCustomerMemberTable />}
       <MIConfirm
         open={openConfirmActive}
         title={<>{data?.isActivated ? t('비활성으로 변경하시겠습니까?') : t('활성으로 변경하시겠습니까?')}</>}

@@ -82,6 +82,11 @@ export type IProviderDocumentTypeInfo = IProviderCommonOptionTypeInfo
 
 export type IProviderLanguageTypeInfo = IProviderCommonOptionTypeInfo
 
+export interface IProviderDataTypeInfo {
+  goodDataNo: number
+  goodDataNm: string
+}
+
 export interface IProductCompanyPermissionRequest extends IPaginationRequest {
   companyNm?: string
 }
@@ -121,6 +126,29 @@ export interface IProviderGoodsDataRegisterRequest {
   }[]
 }
 
+export interface IProviderGoodsDataDetailResponse {
+  goodsDataNm: string
+  goodsDataExpn: string
+  goodsDataSummaryCntt: string
+  docCategoryList: {
+    codeId: string
+    codeNm: string
+  }[]
+  langCategoryList: {
+    codeId: string
+    codeNm: string
+  }[]
+  structuredDataList: {
+    componentTypeNm: string
+    createDt: number
+  }[]
+  unstructuredDataList: {
+    criteriaDt: string
+    fileNm: string
+    fileNo: number
+    fileSize: number
+  }[]
+}
 const dataProviderService = {
   /**
    * 데이터 프로바이더명 목록을 조회합니다.
@@ -300,11 +328,37 @@ const dataProviderService = {
   },
 
   /**
+   * 데이터명 목록을 조회합니다.
+   */
+  async getDataList(providerNo: number, goodsNo: number): Promise<IProviderDataTypeInfo[]> {
+    const response = await api.get(`/admin/provider-management/providers/${providerNo}/goods/${goodsNo}/goods-data/name`)
+    return response.data.data
+  },
+
+  /**
+   * 데이터 싱세 조회합니다.
+   */
+  async getGoodsDataDetail(providerNo: number, goodsNo: number, goodsDataNo: number): Promise<IProviderGoodsDataDetailResponse> {
+    const response = await api.get(`/admin/provider-management/providers/${providerNo}/goods/${goodsNo}/goods-datas/${goodsDataNo}`)
+    return response.data.data
+  },
+
+  /**
    * 데이터 프로바이더 데이터 신규등록
    */
   async postGoodsData(providerNo: number, goodsNo: number, body: IProviderGoodsDataRegisterRequest): Promise<IStructuredDataTypeInfo[]> {
     const response = await api.post(`/admin/provider-management/providers/${providerNo}/goods/${goodsNo}/goods-data`, body)
     return response.data.data
+  },
+
+  /**
+   * 비정형 데이타 파일 다운로드
+   */
+  async postDownloadUnstructuredData(fileNo: number, body: { fileNo: number; fileNm: string }) {
+    const response = await api.post(`/admin/provider-management/goods-datas/download-file/unstructured-data/${fileNo}`, body, {
+      responseType: 'blob',
+    })
+    return response
   },
 }
 

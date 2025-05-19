@@ -396,7 +396,7 @@ const companiesService = {
     companyNo: number,
     providerNo: number,
     goodsNo: number,
-    params: IPaginationRequest,
+    params: Partial<IPaginationRequest>,
   ): Promise<IPaginationResponse<IUserPermissionInfo>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IUserPermissionInfo>>> = await api.get(
       `admin/company-management/companies/${companyNo}/providers/${providerNo}/goods/${goodsNo}/permissions`,

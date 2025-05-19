@@ -8,7 +8,7 @@ import ShowChartIcon from '../icons/ShowChartIcon'
 
 import MIButton from '@/components/common/button/MIButton'
 
-export default function MIChartContrller() {
+export default function MIChartController() {
   const options = [
     {
       value: 'line',

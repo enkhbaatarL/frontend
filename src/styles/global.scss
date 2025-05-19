@@ -306,16 +306,14 @@ input::placeholder, textarea::placeholder {
   z-index: 1000;
   top: 0;
   background: #fff;
-  -webkit-transition: all .15s linear;
-  transition: all .15s linear;
+  transition: all 0.15s linear;
 }
 
 .fixed-header {
-  top: 0;
   z-index: 1300;
   width: 100%;
   background: #fff;
-  transform: translateY(-36px)
+  transform: translateY(-36px);
 }
 
 @keyframes animatedown {

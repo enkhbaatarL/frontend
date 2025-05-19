@@ -53,7 +53,7 @@ export const DefaultChart: Story = {
     height: 598,
     bottomLabel: 'First Unit',
     topLabel: 'Unit: USD/bbl',
-    lastUpated: 'April 29, 2025',
+    lastUpdated: 'April 29, 2025',
   },
 }
 
