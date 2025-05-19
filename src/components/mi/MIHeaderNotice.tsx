@@ -222,7 +222,7 @@ const MIHeaderNotice = () => {
     }
 
     fetchNotices()
-  }, [anchorElNotice])
+  }, [anchorElNotice, customerCompanyNo])
 
   const handleNoticeClick = (noticeNo: number) => {
     navigate(`/mi/notices/${noticeNo}`)
