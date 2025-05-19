@@ -222,6 +222,11 @@ const InsightsPage = () => {
               <InsightsCardBtn index={index} report={report} />
             </Grid>
           ))}
+          {reports?.length === 0 && (
+            <Grid size={3}>
+              <Typography>No results found</Typography>
+            </Grid>
+          )}
         </Grid>
 
         <Box pb={6} mb={9} borderBottom={'1px solid'} borderColor={'gray.30'}>
@@ -282,6 +287,11 @@ const InsightsPage = () => {
             </Grid>
             {insightsData && (
               <MIPagination data={insightsData} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />
+            )}
+            {insights?.length === 0 && (
+              <Grid size={3}>
+                <Typography>No results found</Typography>
+              </Grid>
             )}
           </Box>
           <Box
