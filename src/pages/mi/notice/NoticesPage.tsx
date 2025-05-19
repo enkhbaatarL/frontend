@@ -2,6 +2,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIInput from '@/components/common/input/MIInput'
@@ -15,8 +16,9 @@ import { IPaginationResponse } from '@/types/api'
 const NoticesPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
+  const initialFetchRef = useRef(false)
 
-  const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch } = useSearchFilter<
+  const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch, search } = useSearchFilter<
     INoticeRequest,
     IPaginationResponse<INoticeInfo>
   >(
@@ -29,7 +31,20 @@ const NoticesPage = () => {
       page: 1,
       size: 20,
     },
+    {
+      initialFetch: false,
+    },
   )
+
+  useEffect(() => {
+    if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
+      updateFilter('customerCompanyNo', accessCompanyInfo.customerCompanyNo)
+      initialFetchRef.current = true
+      setTimeout(() => {
+        search()
+      }, 0)
+    }
+  }, [accessCompanyInfo])
 
   const navigate = useNavigate()
 
