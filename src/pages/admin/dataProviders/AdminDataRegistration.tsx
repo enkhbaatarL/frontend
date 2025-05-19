@@ -5,10 +5,10 @@ import Divider from '@mui/material/Divider'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
-import { useForm, useStore } from '@tanstack/react-form'
+import { Updater, useForm, useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminDataRegiUploadComponent, { AdminDataUploadFileInfo } from './components/AdminDataRegiUploadComponent'
@@ -23,7 +23,6 @@ import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import dataProviderService, { IProviderGoodsDataRegisterRequest } from '@/service/admin/dataProvider'
-
 export interface FileInfo {
   id?: string
   name: string
@@ -43,13 +42,12 @@ const AdminDataProvidersListPageHeader = (props: { disabled: boolean; onRegister
   </Flex>
 )
 
-// const documentFileType = ['application/pdf', 'text/csv', 'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint']
-
 const AdminDataRegistration = () => {
   const { showSnackbar } = useSnackbar()
   const { setCustomComponent, setCustomTitle } = useAdminHeader()
   const navigate = useNavigate()
   const { providerNo, goodsNo, dataNo } = useParams()
+  /** 수정모드시 수정하는 데이터 No */
   const [editDataNo, setEditDataNo] = useState<number | null>(null)
   const [isEdit, setIsEdit] = useState<boolean>(!!dataNo)
   const [categories, setCategories] = useState<string[]>([])
@@ -64,10 +62,16 @@ const AdminDataRegistration = () => {
   /** 등록 버튼 클릭 시 confirm 다이어로그 trigger */
   const [openRegisterSuccessFileAlert, setOpenRegisterSuccessFileAlert] = useState(false)
 
+  /** 비정형 체크박스 해제시 파일 삭제 다이어로그 trigger */
+  const [openUnstructuredConfirm, setOpenUnstructuredConfirm] = useState(false)
+
   /** 정형화 업로드 파일 목록 */
   const [filesStructured, setFilesStructured] = useState<AdminDataUploadFileInfo[]>([])
   /** 비정형화 업로드 파일 목록 */
   const [filesUnstructured, setFilesUnstructured] = useState<AdminDataUploadFileInfo[]>([])
+
+  /** 기등록 비정형 파일 중 삭제한 파일No 리스트 */
+  const [deletedUnstructeredFiles, setDeletedUnstructeredFiles] = useState<number[]>([])
 
   const form = useForm({
     defaultValues: {
@@ -91,30 +95,45 @@ const AdminDataRegistration = () => {
             goodsDataSummaryCntt: isEmpty(value.goodsDataSummaryCntt),
             docCategoryList: isEmpty(value.docCategoryList),
             langCategoryList: isEmpty(value.langCategoryList),
-            fileTypes: isEmpty(value.fileTypes),
           },
         }
       },
     },
   })
 
+  /** GET 신규 등록 데이터 상품 명 조회 */
+  const { data: dataDetail } = useQuery({
+    queryKey: ['getGoodsDataDetail', providerNo, goodsNo, editDataNo],
+    queryFn: async () => await dataProviderService.getGoodsDataDetail(Number(providerNo), Number(goodsNo), Number(editDataNo)),
+    select: (res) => res,
+    enabled: !!providerNo && !!goodsNo && !!editDataNo,
+  })
+
+  /** 삭제한 파일 제외하고 기등록된 데이터 파일 리스트 */
+  const savedDataInfo = useMemo(() => {
+    const structured = dataDetail?.structuredDataList ?? []
+    const unstructured = dataDetail?.unstructuredDataList.filter((f) => !deletedUnstructeredFiles.includes(f.fileNo)) ?? []
+    return { structured, unstructured }
+  }, [dataDetail?.structuredDataList, dataDetail?.unstructuredDataList, deletedUnstructeredFiles])
+
   /** 필수 값 등 제출 가능 한 상태 여부 */
   const formCanSubmit = useStore(form.store, (state) => {
     const valid = state.isValid
+    /** 기 제출한 파일이 있는경우 파일 업로드 확인 생략 */
+    if (!!savedDataInfo.structured.length || !!savedDataInfo.unstructured.length) {
+      return valid
+    }
     const hasFile = [...filesStructured, ...filesUnstructured].length > 0
     return valid && hasFile
   })
 
   const onRegister = useCallback(() => {
-    if (isEdit) {
-      showSnackbar('TODO.', { variant: 'error', body: 'TODO' })
+    const checkFilesStatusClean = () => [...filesStructured, ...filesUnstructured].every((m) => m.status === 'pass')
+    if (!checkFilesStatusClean()) {
+      setOpenRegisterErrorFileAlert(true)
       return
     }
-
-    const checkFilesStatusClean = () => [...filesStructured, ...filesUnstructured].every((m) => m.status === 'pass')
-
-    if (!checkFilesStatusClean()) setOpenRegisterErrorFileAlert(true)
-    else setOpenRegisterSuccessFileAlert(true)
+    setOpenRegisterSuccessFileAlert(true)
   }, [filesStructured, filesUnstructured])
 
   // GET 데이터명 목록
@@ -138,23 +157,16 @@ const AdminDataRegistration = () => {
 
   /** GET 신규 등록 데이터 상품 명 조회 */
   const { data: goodsNm } = useQuery({
-    queryKey: ['productDetailData'],
+    queryKey: ['productDetailData', providerNo, goodsNo],
     queryFn: async () => await dataProviderService.getProviderGoodsDetail(Number(providerNo), Number(goodsNo)),
     select: (res) => res.goodsNm,
     enabled: !!providerNo && !!goodsNo,
   })
 
-  /** GET 신규 등록 데이터 상품 명 조회 */
-  const { data: dataDetail } = useQuery({
-    queryKey: ['getGoodsDataDetail'],
-    queryFn: async () => await dataProviderService.getGoodsDataDetail(Number(providerNo), Number(goodsNo), Number(dataNo)),
-    select: (res) => res,
-    enabled: !!providerNo && !!goodsNo && !!dataNo,
-  })
-
   /** 기존 등록된 데이터 수정 */
   useEffect(() => {
-    if (dataNo && dataDetail) {
+    if (!!editDataNo && dataDetail) {
+      form.reset()
       const langCategoryList = dataDetail.langCategoryList.map((m) => m.codeId)
       const docCategoryList = dataDetail.docCategoryList.map((m) => m.codeId)
       form.setFieldValue('goodsDataNm', dataDetail.goodsDataNm)
@@ -162,8 +174,13 @@ const AdminDataRegistration = () => {
       form.setFieldValue('goodsDataSummaryCntt', dataDetail.goodsDataSummaryCntt)
       form.setFieldValue('langCategoryList', langCategoryList)
       form.setFieldValue('docCategoryList', docCategoryList)
+      const fileTypes = []
+      if (dataDetail.structuredDataList.length) fileTypes.push('structured')
+      if (dataDetail.unstructuredDataList.length) fileTypes.push('unstructured')
+      form.setFieldValue('fileTypes', fileTypes)
     }
-  }, [dataDetail, dataNo, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataDetail, editDataNo])
 
   useEffect(() => {
     setCustomComponent(
@@ -210,12 +227,25 @@ const AdminDataRegistration = () => {
     },
   })
 
+  // PATCH 기존 데이터 수정등록
+  const { mutate: patchGoodsData } = useMutation({
+    mutationFn: (body: IProviderGoodsDataRegisterRequest) =>
+      dataProviderService.patchGoodsData(Number(providerNo), Number(goodsNo), Number(dataNo), body),
+    onSuccess: () => showSnackbar('저장되었습니다.', { variant: 'success' }),
+    onError: () => showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' }),
+    onSettled: () => {
+      setOpenRegisterSuccessFileAlert(false)
+      navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}`)
+    },
+  })
+
   /** 데이터 등록 */
   const onRegisterGoodsData = () => {
-    const { langCategoryList, docCategoryList, fileTypes, ...rest } = form.state.values
+    const { langCategoryList, docCategoryList, fileTypes, goodsDataExpn, ...rest } = form.state.values
 
     const requestBody = {
       ...rest,
+      ...(isEdit ? { goodsDataExpn } : { goodsExpn: goodsDataExpn }),
       langCategoryList: langCategoryList.map((m) => ({
         CodeId: m,
       })),
@@ -223,9 +253,40 @@ const AdminDataRegistration = () => {
         CodeId: m,
       })),
       structuredDataList: filesStructured.map(({ componentTypeId, fileNo }) => ({ componentTypeId, fileNo })),
-      unstructuredDataList: filesUnstructured.map(({ criteriaDt, fileNo }) => ({ criteriaDt, fileNo })),
+      unstructuredDataList: [...filesUnstructured, ...(dataDetail?.unstructuredDataList ?? [])].map(({ criteriaDt, fileNo }) => ({
+        criteriaDt,
+        fileNo,
+      })),
     }
-    postGoodsData(requestBody)
+    if (isEdit) patchGoodsData(requestBody)
+    else postGoodsData(requestBody)
+  }
+
+  const onChangeCheckbox = (checkType: string, checked: boolean, updateFn: () => void) => {
+    if (checked) {
+      updateFn()
+      return
+    }
+    if (checkType === 'structured') {
+      updateFn()
+      setFilesStructured([])
+      return
+    }
+    const remaining = dataDetail?.unstructuredDataList.filter((f) => !deletedUnstructeredFiles.includes(f.fileNo))
+    if (remaining?.length) {
+      setOpenUnstructuredConfirm(true)
+    } else {
+      setFilesUnstructured([])
+      updateFn()
+    }
+  }
+
+  /** 비정형 데이터 파일 초기화 */
+  const clearUnstructedSavedFiles = () => {
+    setOpenUnstructuredConfirm(false)
+    setDeletedUnstructeredFiles(dataDetail?.unstructuredDataList.map((m) => m.fileNo) ?? [])
+    setFilesUnstructured([])
+    form.setFieldValue('fileTypes', (prev) => prev.filter((f) => f !== 'unstructured'))
   }
 
   /** InputText Component */
@@ -429,14 +490,15 @@ const AdminDataRegistration = () => {
           {(field) => (
             <AdminDataRegiUploadComponent
               fileTypes={form.state.values.fileTypes}
-              selectedTypes={field.state.value}
-              onChange={field.handleChange}
+              onChange={(updater: Updater<string[]>, checkType, checked) =>
+                onChangeCheckbox(checkType, checked, () => field.handleChange(updater))
+              }
               setFilesStructured={setFilesStructured}
               setFilesUnstructured={setFilesUnstructured}
-              savedstructuredData={dataDetail?.structuredDataList ?? []}
-              savedunstructuredData={dataDetail?.unstructuredDataList ?? []}
+              savedDataInfo={savedDataInfo}
               filesStructured={filesStructured}
               filesUnstructured={filesUnstructured}
+              onDeleteUnstructuredData={(fileNo) => setDeletedUnstructeredFiles((prev) => [...prev, fileNo])}
             />
           )}
         </form.Field>
@@ -467,17 +529,13 @@ const AdminDataRegistration = () => {
         open={openRegisterErrorFileAlert}
         title={<>에러 파일이 있습니다.</>}
         width={450}
-        handleClose={() => {
-          setOpenRegisterErrorFileAlert(false)
-        }}
+        handleClose={() => setOpenRegisterErrorFileAlert(false)}
         actions={[
           {
             label: <Typography variant="body2SB14">확인</Typography>,
             variant: 'filled',
             color: 'primary',
-            onClick: () => {
-              setOpenRegisterErrorFileAlert(false)
-            },
+            onClick: () => setOpenRegisterErrorFileAlert(false),
           },
         ]}
       >
@@ -506,6 +564,28 @@ const AdminDataRegistration = () => {
           },
         ]}
       ></MIConfirm>
+      <MIConfirm
+        open={openUnstructuredConfirm}
+        title={<>비정형데이터를 사용안함으로 변경하시겠습니까?</>}
+        width={450}
+        handleClose={() => setOpenUnstructuredConfirm(false)}
+        actions={[
+          {
+            label: <Typography variant="body2SB14">취소</Typography>,
+            variant: 'outlined',
+            color: 'gray',
+            onClick: () => setOpenUnstructuredConfirm(false),
+          },
+          {
+            label: <Typography variant="body2SB14">변경</Typography>,
+            variant: 'filled',
+            color: 'primary',
+            onClick: clearUnstructedSavedFiles,
+          },
+        ]}
+      >
+        기존에 등록된 데이터가 있는 경우 모두 삭제됩니다.
+      </MIConfirm>
     </form>
   )
 }

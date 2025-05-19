@@ -108,7 +108,8 @@ export interface IUpdateProviderRequest {
 
 export interface IProviderGoodsDataRegisterRequest {
   goodsDataNm: string
-  goodsDataExpn: string
+  goodsDataExpn?: string
+  goodsExpn?: string
   goodsDataSummaryCntt: string
   docCategoryList: {
     CodeId: string
@@ -336,7 +337,7 @@ const dataProviderService = {
   },
 
   /**
-   * 데이터 싱세 조회합니다.
+   * 데이터 상세 조회합니다.
    */
   async getGoodsDataDetail(providerNo: number, goodsNo: number, goodsDataNo: number): Promise<IProviderGoodsDataDetailResponse> {
     const response = await api.get(`/admin/provider-management/providers/${providerNo}/goods/${goodsNo}/goods-datas/${goodsDataNo}`)
@@ -348,6 +349,20 @@ const dataProviderService = {
    */
   async postGoodsData(providerNo: number, goodsNo: number, body: IProviderGoodsDataRegisterRequest): Promise<IStructuredDataTypeInfo[]> {
     const response = await api.post(`/admin/provider-management/providers/${providerNo}/goods/${goodsNo}/goods-data`, body)
+    return response.data.data
+  },
+
+  /**
+   * 데이터 프로바이더 데이터 등록: 기존 데이타 업데이트
+
+   */
+  async patchGoodsData(
+    providerNo: number,
+    goodsNo: number,
+    goodsDataNo: number,
+    body: IProviderGoodsDataRegisterRequest,
+  ): Promise<IStructuredDataTypeInfo[]> {
+    const response = await api.patch(`/admin/provider-management/providers/${providerNo}/goods/${goodsNo}/goods-datas/${goodsDataNo}`, body)
     return response.data.data
   },
 
