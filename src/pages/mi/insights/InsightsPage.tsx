@@ -1,7 +1,9 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+
+import InsightsDocumentItem from './components/InsightsDocumentItem'
 
 import psImg from '@/assets/productsymbol.png'
 import shiImg from '@/assets/subheaderinsight.jpg'
@@ -9,18 +11,23 @@ import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIInput from '@/components/common/input/MIInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
+import useSearchFilter from '@/hooks/useSearchFilter'
 import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
-// import InsightsDocumentItem from '@/pages/mi/insights/components/InsightsDocumentItem'
-import insightsService, { IAdvancedFilter, IAdvancedFilterItem } from '@/service/mi/insights'
+import insightsService, { IAdvancedFilter, IAdvancedFilterItem, IInsightsInfo, IInsightsRequest } from '@/service/mi/insights'
 import useAuthStore from '@/store/useAuthStore'
+import { IPaginationResponse } from '@/types/api'
 
 export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT'
 export interface Report {
-  type: ReportType
+  type?: ReportType
+  types?: string[]
   title: string
   date: string
   source: string
   typeId: string
+  subtitle?: string
+  goodsNo?: number
+  goodsDataNo?: number
 }
 
 const InsightsPage = () => {
@@ -30,7 +37,7 @@ const InsightsPage = () => {
   // 포커스 목록
   const { data: focusedList } = useQuery({
     queryKey: ['insights'],
-    queryFn: async () => await insightsService.getFocusedList({ customerCompanyNo }),
+    queryFn: async () => await insightsService.getFocusedList(customerCompanyNo),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,
@@ -47,6 +54,53 @@ const InsightsPage = () => {
     staleTime: 0,
   })
 
+  // 정렬 옵션
+  const sortOptions = useMemo(
+    () => [
+      { label: 'Newest', value: 'NEWEST' },
+      { label: 'Oldest', value: 'OLDEST' },
+      { label: 'Most relevant', value: 'MOST_RELEVANT' },
+    ],
+    [],
+  )
+
+  // 기간 옵션
+  const periodOptions = useMemo(
+    () => [
+      { label: 'All dates', value: 'ALL_DATES' },
+      { label: '1 day', value: 'ONE_DAY' },
+      { label: '1 week', value: 'ONE_WEEK' },
+      { label: '1 month', value: 'ONE_MONTH' },
+      { label: '3 month', value: 'THREE_MONTH' },
+      { label: '6 month', value: 'SIX_MONTH' },
+      { label: '12 month', value: 'TWELVE_MONTH' },
+    ],
+    [],
+  )
+
+  const {
+    filter,
+    updateFilter,
+    updateFilterWithSearch,
+    data: insightsData,
+    pagination,
+    updatePage,
+    updateSize,
+  } = useSearchFilter<IInsightsRequest, IPaginationResponse<IInsightsInfo>>(
+    (params) => insightsService.getInsightsData(customerCompanyNo, params),
+    {
+      keyword: '',
+      sort: 'NEWEST',
+      period: 'ALL_DATES',
+      filters: '',
+    },
+    {
+      page: 1,
+      size: 10,
+    },
+  )
+
+  // focused
   const reports = useMemo(() => {
     if (focusedList && Array.isArray(focusedList.data)) {
       return focusedList.data.map((item) => ({
@@ -63,12 +117,10 @@ const InsightsPage = () => {
   const convertToFilters = (filterList: IAdvancedFilter) => {
     const { documentTypes, providers, languages } = filterList
 
-    const toSnakeCase = (str: string) => str.replace(/\s+/g, '_').replace(/[()]/g, '').toLowerCase()
-
     const buildOptions = (arr: IAdvancedFilterItem[]) =>
       arr.map((item: IAdvancedFilterItem) => ({
         label: item.codeNm,
-        value: toSnakeCase(item.codeNm),
+        value: item.codeId,
       }))
 
     return [
@@ -93,6 +145,42 @@ const InsightsPage = () => {
     }
     return []
   }, [filterList])
+
+  const convertToTypes = (category: string) => {
+    const categoryList = category.split(',')
+
+    const matchedDocumentTypes = filterList?.data.documentTypes.filter((type) => categoryList.includes(type.codeId))
+    return matchedDocumentTypes?.map((type) => type.codeId)
+  }
+
+  // insights
+  const insights = useMemo(() => {
+    if (insightsData && Array.isArray(insightsData.detail)) {
+      return insightsData.detail.map((item) => ({
+        types: convertToTypes(item.goodsDataCategory),
+        title: item.goodsDataNm,
+        date: item.modifyDt,
+        source: item.providerNm,
+        typeId: String(item.goodsDataNo),
+        subtitle: item.goodsDataExpn,
+        goodsNo: item.goodsNo,
+        goodsDataNo: item.goodsDataNo,
+      }))
+    }
+    return []
+  }, [insightsData])
+
+  const [_checkedValues, setCheckedValues] = useState<string[]>([])
+
+  const handleFilterChange = (value: string) => {
+    setCheckedValues((prev) => {
+      const isChecked = prev.includes(value)
+      const newValues = isChecked ? prev.filter((v) => v !== value) : [...prev, value]
+
+      updateFilterWithSearch('filters', newValues.join(','))
+      return newValues
+    })
+  }
 
   return (
     <>
@@ -134,6 +222,11 @@ const InsightsPage = () => {
               <InsightsCardBtn index={index} report={report} />
             </Grid>
           ))}
+          {reports?.length === 0 && (
+            <Grid size={3}>
+              <Typography>No results found</Typography>
+            </Grid>
+          )}
         </Grid>
 
         <Box pb={6} mb={9} borderBottom={'1px solid'} borderColor={'gray.30'}>
@@ -145,6 +238,10 @@ const InsightsPage = () => {
             maxWidth={'100%'}
             placeholder="Search for insights"
             size="h46"
+            value={filter.keyword}
+            onChange={(e) => updateFilter('keyword', e.target.value)}
+            onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}
+            onClear={() => updateFilterWithSearch('keyword', '')}
             startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
           />
         </Box>
@@ -161,42 +258,41 @@ const InsightsPage = () => {
               <MISelect
                 minWidth={160}
                 fullWidth
-                options={[
-                  {
-                    label: 'Newest',
-                    value: 'Newest',
-                  },
-                  {
-                    label: 'Newest1',
-                    value: 'Newest1',
-                  },
-                ]}
+                options={sortOptions}
+                value={filter.sort ? String(filter.sort) : 'NEWEST'}
+                onChange={(e) => {
+                  if (!e.target.value) {
+                    updateFilterWithSearch('sort', 'NEWEST')
+                  } else {
+                    updateFilterWithSearch('sort', String(e.target.value))
+                  }
+                }}
               />
               <MISelect
                 minWidth={160}
                 fullWidth
-                options={[
-                  {
-                    label: 'All dates',
-                    value: 'All',
-                  },
-                  {
-                    label: 'Dates 1',
-                    value: 'Dates',
-                  },
-                  {
-                    label: 'Dates 2',
-                    value: 'Dates2',
-                  },
-                ]}
+                options={periodOptions}
+                value={filter.period ? String(filter.period) : 'ALL_DATES'}
+                onChange={(e) => {
+                  if (!e.target.value) {
+                    updateFilterWithSearch('period', 'ALL_DATES')
+                  } else {
+                    updateFilterWithSearch('period', String(e.target.value))
+                  }
+                }}
               />
             </Grid>
-            {/* <Grid container direction={'column'} gap={8}>
-              {dump.map((report, index) => (
-                <InsightsDocumentItem key={index} report={report} />
-              ))}
-            </Grid> */}
-            <MIPagination />
+            <Grid container direction={'column'} gap={8}>
+              {insights?.map((report, index) => <InsightsDocumentItem key={index} report={report} />)}
+            </Grid>
+            {insightsData && (
+              <MIPagination data={insightsData} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />
+            )}
+            {insights?.length === 0 && (
+              <Grid size={3}>
+                <Typography>No results found</Typography>
+              </Grid>
+            )}
           </Box>
           <Box
             flexShrink={0}
@@ -219,7 +315,14 @@ const InsightsPage = () => {
                           mr: 0,
                           '.MuiTypography-root': { fontSize: '16px', lineHeight: 1.4 },
                         }}
-                        control={<AdminCheckbox value={option.value} />}
+                        control={
+                          <AdminCheckbox
+                            value={option.value}
+                            onChange={(e) => {
+                              handleFilterChange(e.target.value)
+                            }}
+                          />
+                        }
                         label={option.label}
                       />
                     ))}

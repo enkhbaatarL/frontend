@@ -2,7 +2,7 @@ import { Chip, ChipProps, SxProps, Theme, Typography, TypographyProps } from '@m
 import { useMemo } from 'react'
 
 type MIChipSize = 'h20' | 'h24'
-type MIChipColor = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT' | 'A_INFORM'
+export type MIChipColor = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT' | 'A_INFORM'
 export interface MIChipProps extends Omit<ChipProps, 'size' | 'color'> {
   size?: MIChipSize
   color?: MIChipColor
