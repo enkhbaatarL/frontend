@@ -1,5 +1,6 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 
 import bgmImg from '@/assets/bgmarket.jpg'
@@ -8,7 +9,6 @@ import MILine from '@/components/common/divider/MILine'
 import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
-import { useMockEvents } from '@/hooks/useMockEvents'
 import useSearchFilter from '@/hooks/useSearchFilter.tsx'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
 import MarketDataChartSmall from '@/pages/mi/marketData/components/MarketDataChartSmall'
@@ -17,7 +17,6 @@ import useAuthStore from '@/store/useAuthStore.ts'
 import { IPaginationResponse } from '@/types/api.ts'
 
 const MarketDataPage = () => {
-  const { dataEvent } = useMockEvents()
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
   const initialFetchRef = useRef(false)
@@ -41,6 +40,16 @@ const MarketDataPage = () => {
       initialFetch: false,
     },
   )
+
+  // Recent Viewed
+  const { data: recentViewedList } = useQuery({
+    queryKey: ['recentViewed'],
+    queryFn: async () => await marketDataService.getRecentViewed(),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+  })
 
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
@@ -187,31 +196,42 @@ const MarketDataPage = () => {
               <Typography mb={2.5} color="gray.90" component="h2" variant="titleBox">
                 Recent Viewed
               </Typography>
-              {dataEvent.map((item, index) => (
-                <Box py={3} borderBottom={index === dataEvent.length - 1 ? 'none' : '1px solid'} borderColor={'gray.30'} key={index}>
-                  <Typography color="gray.70" component="div" variant="body1">
-                    {item.title}
-                  </Typography>
-                  <Typography
-                    sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                    color="gray.70"
-                    lineHeight={1.6}
-                    component="div"
-                    variant="body2"
+              {recentViewedList?.length ? (
+                recentViewedList.map((item, index) => (
+                  <Box
+                    py={3}
+                    borderBottom={index === recentViewedList.length - 1 ? 'none' : '1px solid'}
+                    borderColor={'gray.30'}
+                    key={item.goodsDataNo}
                   >
-                    {item.subtitle}
-                  </Typography>
-                  <Grid direction={'row'} container alignItems={'center'}>
-                    <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
-                      {item.location}
+                    <Typography color="gray.70" component="div" variant="body1">
+                      {item.goodsDataNm}
                     </Typography>
-                    <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
-                    <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
-                      {item.date}
+                    <Typography
+                      sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                      color="gray.70"
+                      lineHeight={1.6}
+                      component="div"
+                      variant="body2"
+                    >
+                      {item.goodsDataExpn}
                     </Typography>
-                  </Grid>
-                </Box>
-              ))}
+                    <Grid direction={'row'} container alignItems={'center'}>
+                      <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
+                        {item.providerNm}
+                      </Typography>
+                      <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
+                      <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
+                        {item.modifyDt}
+                      </Typography>
+                    </Grid>
+                  </Box>
+                ))
+              ) : (
+                <Typography color="gray.60" textAlign="center" py={4} component="div" variant="body2">
+                  최근 조회한 데이터가 없습니다.
+                </Typography>
+              )}
             </Box>
           </Box>
         </Grid>
