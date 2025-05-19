@@ -1,6 +1,6 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { FC, useMemo } from 'react'
-// import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import MIBage, { MIChipColor } from '@/components/common/bage/MIBage'
 import MILine from '@/components/common/divider/MILine'
@@ -12,7 +12,7 @@ interface InsightsDocumentItemProps {
 }
 
 const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
-  // const navigate = useNavigate()
+  const navigate = useNavigate()
 
   const formatDate = useMemo(() => {
     const date = new Date(report.date.replace(' ', 'T'))
@@ -32,7 +32,9 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
       justifyContent={'space-between'}
       padding={2.5}
       gap={2.5}
-      // onClick={() => navigate('/mi/data-detail/0/0')}
+      onClick={() => {
+        navigate(`/mi/data-detail/${report.goodsNo}/${report.goodsDataNo}`)
+      }}
       sx={{
         cursor: 'pointer',
         transition: '0.3s',

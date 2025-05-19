@@ -13,7 +13,6 @@ import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
-// import InsightsDocumentItem from '@/pages/mi/insights/components/InsightsDocumentItem'
 import insightsService, { IAdvancedFilter, IAdvancedFilterItem, IInsightsInfo, IInsightsRequest } from '@/service/mi/insights'
 import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
@@ -27,6 +26,8 @@ export interface Report {
   source: string
   typeId: string
   subtitle?: string
+  goodsNo?: number
+  goodsDataNo?: number
 }
 
 const InsightsPage = () => {
@@ -156,13 +157,14 @@ const InsightsPage = () => {
   const insights = useMemo(() => {
     if (insightsData && Array.isArray(insightsData.detail)) {
       return insightsData.detail.map((item) => ({
-        // types: item.goodsDataCategory.split(','),
         types: convertToTypes(item.goodsDataCategory),
         title: item.goodsDataNm,
         date: item.modifyDt,
         source: item.providerNm,
         typeId: String(item.goodsDataNo),
         subtitle: item.goodsDataExpn,
+        goodsNo: item.goodsNo,
+        goodsDataNo: item.goodsDataNo,
       }))
     }
     return []
