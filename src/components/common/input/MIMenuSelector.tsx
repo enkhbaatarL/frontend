@@ -60,7 +60,7 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
   }, [open, triggerRef])
 
   return (
-    <Box position={'relative'}>
+    <Box position={'relative'} display={'flex'} alignItems={'center'}>
       <Box style={{ cursor: 'pointer !important' }} ref={triggerRef} display={'inline-block'} onClick={onTriggerClick}>
         {children}
       </Box>

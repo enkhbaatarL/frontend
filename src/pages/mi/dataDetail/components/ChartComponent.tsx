@@ -6,9 +6,9 @@ import { useCallback, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIChart from '@/components/common/chart/MIChart'
-import MIChartContrller from '@/components/common/chart/MIChartController'
+import MIChartController from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
-import SettingModalComponent from '@/pages/mi/dataVisualization/components/SettingModalComponent'
+import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import { calculateBollingerBands, calculateSMA, getMockOHLCData } from '@/utils/mock-data'
 
 const mockMainData = getMockOHLCData(200)
@@ -153,7 +153,7 @@ const ChartComponent = () => {
 
         {/*Chart content*/}
         <Box display={'flex'} maxWidth={'100%'} flexDirection={'column'} p={5} height={'642px'} sx={{ boxSizing: 'border-box' }}>
-          <MIChartContrller />
+          <MIChartController />
           <MIChart
             height={'100%'}
             mainData={{

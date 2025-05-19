@@ -5,7 +5,6 @@ import { useState } from 'react'
 import psImg from '@/assets/productsymbol.png'
 import MIButton from '@/components/common/button/MIButton'
 import MITabs from '@/components/common/tabs/MITabs'
-import DailyChart from '@/pages/mi/dashboard/components/DailyChart'
 import HistoryComponent from '@/pages/mi/dashboard/components/HistoryComponent'
 import LatestData from '@/pages/mi/dashboard/components/LatestData'
 import ReportComponent from '@/pages/mi/dashboard/components/ReportComponent'
@@ -25,7 +24,6 @@ const MIDashboardPage = () => {
 
   return (
     <Box bgcolor={'#F2F5F7'} position={'relative'}>
-      <DailyChart />
       {showBanner && (
         <Box
           paddingX={7.5}

@@ -12,6 +12,7 @@ import NoticeIcon from '@/components/common/icons/NoticeIcon'
 import MITabs from '@/components/common/tabs/MITabs'
 import useMockNotice from '@/hooks/useMockNotice'
 import boardService, { INoticeInfo } from '@/service/mi/board'
+import useAuthStore from '@/store/useAuthStore.ts'
 
 interface NoticeItemProps {
   id: number
@@ -190,6 +191,8 @@ const MIHeaderNotice = () => {
   const [anchorElNotice, setAnchorElNotice] = useState<null | HTMLElement>(null)
   const [notices, setNotices] = useState<INoticeInfo[]>([])
   const [isLoadingNotices, setIsLoadingNotices] = useState(false)
+  const { accessCompanyInfo } = useAuthStore()
+  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
   const handleOpenNoticeMenu = (event: ReactMouseEvent<HTMLElement>) => {
     setAnchorElNotice(event.currentTarget)
@@ -206,11 +209,7 @@ const MIHeaderNotice = () => {
       if (anchorElNotice) {
         try {
           setIsLoadingNotices(true)
-          const response = await boardService.getNotice({
-            page: 1,
-            size: 5,
-            keyword: '',
-          })
+          const response = await boardService.getNotice({ customerCompanyNo })
           if (response.detail) {
             setNotices(response.detail)
           }
@@ -223,7 +222,7 @@ const MIHeaderNotice = () => {
     }
 
     fetchNotices()
-  }, [anchorElNotice])
+  }, [anchorElNotice, customerCompanyNo])
 
   const handleNoticeClick = (noticeNo: number) => {
     navigate(`/mi/notices/${noticeNo}`)
@@ -277,7 +276,7 @@ const MIHeaderNotice = () => {
                   title={notice.bulletinTitleName}
                   subtitle={notice.bulletinCategorySeparateCode}
                   date={dayjs(notice.auditInfo?.createDt).format('YYYY-MM-DD HH:mm')}
-                  isRead={false} // 읽음 상태 정보가 없으므로 기본값 사용
+                  isRead={notice.isRead} // 읽음 상태 정보가 없으므로 기본값 사용
                   onClick={handleNoticeClick}
                 />
               ))

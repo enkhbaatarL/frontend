@@ -1,7 +1,7 @@
 import { omit } from 'lodash-es'
 import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
 
-import ProtectedRoute from '@/components/ProtectedRoute'
+import ProtectedRoute from '@/components/common/ProtectedRoute'
 import LoginPage from '@/pages/common/LoginPage'
 import AdminRoutes from '@/routes/AdminRoutes'
 import ErrorRoutes from '@/routes/ErrorRoutes'

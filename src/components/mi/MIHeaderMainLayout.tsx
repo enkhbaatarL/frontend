@@ -21,24 +21,10 @@ import { UserRole } from '@/service/admin/members'
 import companiesService from '@/service/mi/companies'
 import useAuthStore from '@/store/useAuthStore'
 
-const pages = [
-  {
-    label: 'MI Dashboard',
-    url: '/mi/dashboard',
-  },
-  {
-    label: 'Signal Map',
-    url: '/mi/signal-map',
-  },
-  {
-    label: 'Market Data',
-    url: '/mi/market-data',
-  },
-  {
-    label: 'Insights',
-    url: '/mi/insights',
-  },
-]
+export interface Page {
+  label: string
+  url: string
+}
 
 const boards = [
   {
@@ -51,7 +37,11 @@ const boards = [
   },
 ]
 
-const MIHeaderMainLayout = () => {
+interface MIHeaderMainLayoutProps {
+  pages: Page[]
+}
+
+const MIHeaderMainLayout = ({ pages }: MIHeaderMainLayoutProps) => {
   const navigate = useNavigate()
   const { user, setAccessCompanyInfo } = useAuthStore()
 
@@ -118,10 +108,11 @@ const MIHeaderMainLayout = () => {
                     label,
                   })
                 }}
+                disablePortal
               >
                 <Box
-                  width={'28px'}
-                  height={'28px'}
+                  width={'24px'}
+                  height={'24px'}
                   display={'flex'}
                   alignItems={'center'}
                   justifyContent={'center'}
@@ -187,10 +178,10 @@ const MIHeaderMainLayout = () => {
                     navigate(page.url)
                   }}
                   sx={{
+                    position: 'relative',
                     px: 4,
                     py: '22px',
                     display: 'block',
-                    borderBottom: '2px solid transparent',
                     borderRadius: 0,
                     '&:hover': {
                       backgroundColor: 'transparent',
@@ -198,20 +189,24 @@ const MIHeaderMainLayout = () => {
                         color: '#2E3F5E',
                       },
                     },
-                    ...(page.url === location.pathname
-                      ? {
-                        backgroundColor: 'transparent',
-                        borderBottom: '2px solid #2E3F5E',
-                        '.MuiTypography-root': {
-                          color: '#2E3F5E',
-                        },
-                      }
-                      : {}),
                   }}
                 >
                   <Typography sx={{ textAlign: 'center' }} color="gray.70" variant="body1M16">
                     {page.label}
                   </Typography>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: -2.5,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: 'calc(100% - 0px)',
+                      height: '2px',
+                      backgroundColor: '#2E3F5E',
+                      opacity: page.url === location.pathname ? 1 : 0,
+                      transition: 'opacity 0.5s ease',
+                    }}
+                  />
                 </Button>
               ))}
             </Box>

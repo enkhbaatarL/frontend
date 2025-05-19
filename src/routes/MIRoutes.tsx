@@ -2,7 +2,7 @@ import { Navigate, RouteObject } from 'react-router-dom'
 
 import MILayout from '@/layouts/MILayout'
 import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
-import DataVisualizationPage from '@/pages/mi/dataVisualization/DataVisualizationPage'
+import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
@@ -40,8 +40,8 @@ const MIRoutes: RouteObject = {
       element: <SignalMapPage />,
     },
     {
-      path: 'data-visualization',
-      element: <DataVisualizationPage />,
+      path: 'data-detail/:goodsNo/:goodsDataNo',
+      element: <DataDetailPage />,
     },
     {
       path: 'notices',

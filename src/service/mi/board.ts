@@ -1,6 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
+import { IFile } from '@/service/admin/file.ts'
 import { IAuditInfo } from '@/service/admin/members'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 import { IFilterItem } from '@/types/common'
@@ -33,11 +34,14 @@ export interface INoticeFilter {
   target: IFilterItem[]
 }
 
-export interface INoticeRequest extends IPaginationRequest {
-  category: string
-  status: string
-  target: string
-  keyword: string
+export interface INoticeRequest {
+  customerCompanyNo?: number
+  category?: string
+  status?: string
+  target?: string
+  keyword?: string
+  size?: number
+  page?: number
 }
 
 export interface INoticeInfo {
@@ -48,6 +52,7 @@ export interface INoticeInfo {
   bulletinTitleName: string
   status: string
   target: string
+  isRead: boolean
   auditInfo: IAuditInfo
 }
 
@@ -61,6 +66,13 @@ export interface INoticeDetailInfo {
   bulletinTitleNm: string
   bulletinCntt: string
   fileUrl: string
+}
+
+export interface INoticePopupInfo {
+  bulletinNo: number
+  bulletinTitleName: string
+  bulletinContent: string
+  fileList: IFile[]
 }
 
 /**
@@ -98,7 +110,7 @@ const boardService = {
    * 공지사항 목록을 조회합니다.
    * @param params - { page: 페이지 번호, size: 페이지당 항목 수, category: 카테고리, status: 게시 여부, target: 게시 대상, keyword: 검색어 }
    */
-  async getNotice(params: Partial<INoticeRequest>): Promise<IPaginationResponse<INoticeInfo>> {
+  async getNotice(params?: Partial<INoticeRequest>): Promise<IPaginationResponse<INoticeInfo>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INoticeInfo>>> = await api.get('mi/bulletinboard/notice', {
       params,
     })
@@ -116,6 +128,14 @@ const boardService = {
     const response: AxiosResponse<ICommonResponse<INoticeDetailInfo>> = await api.get(`mi/bulletinboard/notices/${noticeNo}`, {
       params,
     })
+
+    return response.data.data
+  },
+  /**
+   * 공지사항 팝업을 조회합니다.
+   */
+  async getNoticePopup(): Promise<INoticePopupInfo> {
+    const response: AxiosResponse<ICommonResponse<INoticePopupInfo>> = await api.get('mi/bulletinboard/notices/popup')
 
     return response.data.data
   },
