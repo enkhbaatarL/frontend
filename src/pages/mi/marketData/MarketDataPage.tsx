@@ -1,5 +1,6 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 
 import bgmImg from '@/assets/bgmarket.jpg'
@@ -8,26 +9,35 @@ import MILine from '@/components/common/divider/MILine'
 import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
-import { useMockEvents } from '@/hooks/useMockEvents'
 import useSearchFilter from '@/hooks/useSearchFilter.tsx'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
 import MarketDataChartSmall from '@/pages/mi/marketData/components/MarketDataChartSmall'
-import marketDataService, { IDataCatalogItem, IDataCatalogRequest } from '@/service/mi/marketData.ts'
+import marketDataService, { IDataCatalogItem, IDataCatalogRequest, IMarketData } from '@/service/mi/marketData.ts'
 import useAuthStore from '@/store/useAuthStore.ts'
 import { IPaginationResponse } from '@/types/api.ts'
 
 const MarketDataPage = () => {
-  const { dataEvent } = useMockEvents()
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
+
   const initialFetchRef = useRef(false)
 
-  const {
-    data: dataCatalogData,
-    filter,
-    updateFilter,
-    updateFilterWithSearch,
-  } = useSearchFilter<IDataCatalogRequest, IPaginationResponse<IDataCatalogItem>>(
+  // Data Dashboard
+  const { data: dashboardList } = useQuery<IMarketData[]>({
+    queryKey: ['dashboard', customerCompanyNo],
+    queryFn: async () => await marketDataService.getMarketDatas(customerCompanyNo),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+    enabled: !!customerCompanyNo,
+  })
+
+  // Data Catalog
+  const { data, filter, updateFilter, updateFilterWithSearch, pagination, updatePage, updateSize } = useSearchFilter<
+    IDataCatalogRequest,
+    IPaginationResponse<IDataCatalogItem>
+  >(
     marketDataService.getDataCatalog,
     {
       customerCompanyNo,
@@ -35,12 +45,22 @@ const MarketDataPage = () => {
     },
     {
       page: 1,
-      size: 20,
+      size: 10,
     },
     {
       initialFetch: false,
     },
   )
+
+  // Recent Viewed
+  const { data: recentViewedList } = useQuery({
+    queryKey: ['recentViewed'],
+    queryFn: async () => await marketDataService.getRecentViewed(),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+  })
 
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
@@ -48,6 +68,12 @@ const MarketDataPage = () => {
       updateFilterWithSearch('customerCompanyNo', accessCompanyInfo.customerCompanyNo)
     }
   }, [accessCompanyInfo, updateFilterWithSearch])
+
+  const chartDataList = dashboardList || []
+  const normalizedChartData = chartDataList.slice(0, 10)
+
+  const largeCharts = normalizedChartData.slice(0, 2)
+  const smallCharts = normalizedChartData.slice(2, 10)
 
   return (
     <>
@@ -84,39 +110,31 @@ const MarketDataPage = () => {
           Data Dashboard
         </Typography>
         <Grid mb={17.5} container spacing={5}>
+          {/* 큰 차트 2개 표시 */}
           <Grid width={'100%'} container direction={'row'} gap={5}>
-            <Grid size={6}>
-              <MarketDataChart />
-            </Grid>
-            <Grid size={6}>
-              <MarketDataChart />
-            </Grid>
+            {largeCharts.length > 0 ? (
+              largeCharts.map((chartData, index) => (
+                <Grid key={`large-chart-${index}`} size={6}>
+                  <MarketDataChart data={chartData} />
+                </Grid>
+              ))
+            ) : (
+              // 데이터가 없을 경우
+              <></>
+            )}
           </Grid>
+
+          {/* 작은 차트 8개 표시 */}
           <Grid width={'100%'} container direction={'row'} gap={5}>
-            <Grid size={3}>
-              <MarketDataChartSmall isClock />
-            </Grid>
-            <Grid size={3}>
-              <MarketDataChartSmall />
-            </Grid>
-            <Grid size={3}>
-              <MarketDataChartSmall />
-            </Grid>
-            <Grid size={3}>
-              <MarketDataChartSmall />
-            </Grid>
-            <Grid size={3}>
-              <MarketDataChartSmall />
-            </Grid>
-            <Grid size={3}>
-              <MarketDataChartSmall />
-            </Grid>
-            <Grid size={3}>
-              <MarketDataChartSmall />
-            </Grid>
-            <Grid size={3}>
-              <MarketDataChartSmall />
-            </Grid>
+            {smallCharts.length > 0 ? (
+              smallCharts.map((chartData, index) => (
+                <Grid key={`small-chart-${index}`} size={3}>
+                  <MarketDataChartSmall data={chartData} isClock={!chartData.isPermitted} />
+                </Grid>
+              ))
+            ) : (
+              <></>
+            )}
           </Grid>
         </Grid>
         <Box pb={6} mb={9} borderBottom={'1px solid'} borderColor={'gray.30'}>
@@ -151,6 +169,7 @@ const MarketDataPage = () => {
           >
             <Box boxSizing={'border-box'} width={'100%'}>
               <MITableUser
+                hidePagination={data?.totalElements === 0 || !data?.totalElements}
                 tableProps={{
                   disableHover: true,
                   noRowMessage: '등록된 내용이 없습니다.',
@@ -172,7 +191,13 @@ const MarketDataPage = () => {
                     },
                   ],
                   rowId: 'goodsDataNo',
-                  rows: dataCatalogData?.detail,
+                  rows: data?.detail,
+                }}
+                paginationProps={{
+                  data,
+                  size: pagination?.size,
+                  onPageChange: updatePage,
+                  onSizeChange: updateSize,
                 }}
               />
             </Box>
@@ -187,31 +212,42 @@ const MarketDataPage = () => {
               <Typography mb={2.5} color="gray.90" component="h2" variant="titleBox">
                 Recent Viewed
               </Typography>
-              {dataEvent.map((item, index) => (
-                <Box py={3} borderBottom={index === dataEvent.length - 1 ? 'none' : '1px solid'} borderColor={'gray.30'} key={index}>
-                  <Typography color="gray.70" component="div" variant="body1">
-                    {item.title}
-                  </Typography>
-                  <Typography
-                    sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                    color="gray.70"
-                    lineHeight={1.6}
-                    component="div"
-                    variant="body2"
+              {recentViewedList?.length ? (
+                recentViewedList.map((item, index) => (
+                  <Box
+                    py={3}
+                    borderBottom={index === recentViewedList.length - 1 ? 'none' : '1px solid'}
+                    borderColor={'gray.30'}
+                    key={item.goodsDataNo}
                   >
-                    {item.subtitle}
-                  </Typography>
-                  <Grid direction={'row'} container alignItems={'center'}>
-                    <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
-                      {item.location}
+                    <Typography color="gray.70" component="div" variant="body1">
+                      {item.goodsDataNm}
                     </Typography>
-                    <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
-                    <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
-                      {item.date}
+                    <Typography
+                      sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                      color="gray.70"
+                      lineHeight={1.6}
+                      component="div"
+                      variant="body2"
+                    >
+                      {item.goodsDataExpn}
                     </Typography>
-                  </Grid>
-                </Box>
-              ))}
+                    <Grid direction={'row'} container alignItems={'center'}>
+                      <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
+                        {item.providerNm}
+                      </Typography>
+                      <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
+                      <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
+                        {item.modifyDt}
+                      </Typography>
+                    </Grid>
+                  </Box>
+                ))
+              ) : (
+                <Typography color="gray.60" textAlign="center" py={4} component="div" variant="body2">
+                  최근 조회한 데이터가 없습니다.
+                </Typography>
+              )}
             </Box>
           </Box>
         </Grid>
