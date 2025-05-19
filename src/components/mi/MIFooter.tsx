@@ -28,7 +28,7 @@ const MIFooter = () => {
                 navigate('/')
               }}
             >
-              <img width="210" src={logowImg} alt="" />
+              <img src={logowImg} alt="" />
             </Link>
             <Typography color="gray.40" component="div" variant="body3R12">
               COPYRIGHT©2025 ALL RIGHTS RESERVED. <br />
