@@ -2,6 +2,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import bgmImg from '@/assets/bgmarket.jpg'
 import psImg from '@/assets/productsymbol.png'
@@ -14,6 +15,7 @@ import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
 import MarketDataChartSmall from '@/pages/mi/marketData/components/MarketDataChartSmall'
 import marketDataService, { IDataCatalogItem, IDataCatalogRequest, IMarketData } from '@/service/mi/marketData.ts'
 import useAuthStore from '@/store/useAuthStore.ts'
+import theme from '@/theming'
 import { IPaginationResponse } from '@/types/api.ts'
 
 const MarketDataPage = () => {
@@ -24,7 +26,7 @@ const MarketDataPage = () => {
 
   // Data Dashboard
   const { data: dashboardList } = useQuery<IMarketData[]>({
-    queryKey: ['dashboard', customerCompanyNo],
+    queryKey: ['marketDashboard', customerCompanyNo],
     queryFn: async () => await marketDataService.getMarketDatas(customerCompanyNo),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
@@ -74,6 +76,8 @@ const MarketDataPage = () => {
 
   const largeCharts = normalizedChartData.slice(0, 2)
   const smallCharts = normalizedChartData.slice(2, 10)
+
+  const navigate = useNavigate()
 
   return (
     <>
@@ -192,6 +196,9 @@ const MarketDataPage = () => {
                   ],
                   rowId: 'goodsDataNo',
                   rows: data?.detail,
+                  onRowClick: (row) => {
+                    navigate(`mi/data-detail/goods/${row.row.goodsNo}/goods-data/${row.row.goodsDataNo}`)
+                  },
                 }}
                 paginationProps={{
                   data,
@@ -215,10 +222,15 @@ const MarketDataPage = () => {
               {recentViewedList?.length ? (
                 recentViewedList.map((item, index) => (
                   <Box
-                    py={3}
-                    borderBottom={index === recentViewedList.length - 1 ? 'none' : '1px solid'}
-                    borderColor={'gray.30'}
-                    key={item.goodsDataNo}
+                    p={3}
+                    key={index}
+                    onClick={() => navigate(`mi/data-detail/goods/${item.goodsNo}/goods-data/${item.goodsDataNo}`)}
+                    sx={{
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: theme.palette.gray[5],
+                      },
+                    }}
                   >
                     <Typography color="gray.70" component="div" variant="body1">
                       {item.goodsDataNm}

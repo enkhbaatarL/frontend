@@ -1,7 +1,8 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Typography } from '@mui/material'
 import { Chart } from 'chart.js'
-import { FC, useEffect, useRef } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { IMarketData } from '@/service/mi/marketData.ts'
@@ -146,6 +147,9 @@ const SimpleLineChart: FC<{ data?: IMarketData }> = ({ data }) => {
 }
 
 const MarketDataChartSmall: FC<MarketDataChartSmallProps> = ({ isClock, data }) => {
+  const navigate = useNavigate()
+  const [isHover, setIsHover] = useState(false)
+
   const metaData = data?.marketMetaData || {
     goodsDataNm: 'DRAM Price Index',
     indexStartDt: 'Dec 30, 2019',
@@ -160,8 +164,17 @@ const MarketDataChartSmall: FC<MarketDataChartSmallProps> = ({ isClock, data }) 
       sx={{
         padding: 6,
         borderRadius: '4px',
-        border: '1px solid #E9ECEF',
+        border: '1px solid',
+        borderColor: isHover ? '#2E3F5E' : '#E9ECEF',
+        backgroundColor: isHover ? '#F8F9FA' : '#FFFFFF',
+        transition: '0.3s',
+        cursor: !isClock ? 'pointer' : 'default',
       }}
+      onMouseOver={() => !isClock && setIsHover(true)}
+      onMouseOut={() => setIsHover(false)}
+      onClick={() =>
+        isHover && navigate(`mi/data-detail/goods/${data?.marketMetaData.goodsNo}/goods-data/${data?.marketMetaData.goodsDataNo}`)
+      }
     >
       <Typography sx={{ cursor: 'pointer' }} color="gray.90" mb={2.5} component="h4" variant="sectionTitleTXL">
         {metaData.goodsDataNm}

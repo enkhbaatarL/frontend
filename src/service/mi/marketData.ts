@@ -18,6 +18,7 @@ export interface ICompareGraph {
 
 export interface IMarketMetaData {
   chartMarkRank: number
+  goodsNo: number
   goodsDataNo: number
   goodsDataSourceNo: number
   goodsDataNm: string
