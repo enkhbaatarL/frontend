@@ -69,7 +69,7 @@ const marketDataService = {
     if (!customerCompanyNo) throw new Error('customerCompanyNo is required')
 
     const response: AxiosResponse<ICommonResponse<IMarketData[]>> = await api.get(
-      `mi/market-data/company/${customerCompanyNo}/market-datas`,
+      `mi/market-data/companies/${customerCompanyNo}/market-datas`,
     )
 
     return response.data.data
@@ -77,12 +77,16 @@ const marketDataService = {
 
   /**
    * 데이터 카탈로그를 조회합니다.
+   * @param companyNo - 고객사 번호
    * @param params - { customerCompanyNo: 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호, page: 페이지 번호, size: 페이지당 항목 수, keyword: 데이타명 검색 }
    */
   async getDataCatalog(params: Partial<IDataCatalogRequest>): Promise<IPaginationResponse<IDataCatalogItem>> {
-    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IDataCatalogItem>>> = await api.get('mi/market-data/data-catalog', {
-      params,
-    })
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IDataCatalogItem>>> = await api.get(
+      `mi/market-data/companies/${params.customerCompanyNo}/data-catalog`,
+      {
+        params,
+      },
+    )
 
     return response.data.data
   },
