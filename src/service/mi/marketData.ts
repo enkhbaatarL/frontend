@@ -35,10 +35,10 @@ export interface IMarketMetaData {
 }
 
 export interface IMarketData {
-  mainGraph: IMainGraph
+  mainChart: IMainGraph
   isPermitted: boolean
   marketMetaData: IMarketMetaData
-  compareGraphs: ICompareGraph[]
+  compareCharts: ICompareGraph[]
 }
 
 export interface IDataCatalogRequest extends IPaginationRequest {
@@ -77,7 +77,6 @@ const marketDataService = {
 
   /**
    * 데이터 카탈로그를 조회합니다.
-   * @param companyNo - 고객사 번호
    * @param params - { customerCompanyNo: 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호, page: 페이지 번호, size: 페이지당 항목 수, keyword: 데이타명 검색 }
    */
   async getDataCatalog(params: Partial<IDataCatalogRequest>): Promise<IPaginationResponse<IDataCatalogItem>> {
