@@ -1,5 +1,6 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { useEffect, useRef } from 'react'
 
 import bgmImg from '@/assets/bgmarket.jpg'
 import psImg from '@/assets/productsymbol.png'
@@ -8,13 +9,45 @@ import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import { useMockEvents } from '@/hooks/useMockEvents'
-import { useMockMarket } from '@/hooks/useMockMarket'
+import useSearchFilter from '@/hooks/useSearchFilter.tsx'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
 import MarketDataChartSmall from '@/pages/mi/marketData/components/MarketDataChartSmall'
+import marketDataService, { IDataCatalogItem, IDataCatalogRequest } from '@/service/mi/marketData.ts'
+import useAuthStore from '@/store/useAuthStore.ts'
+import { IPaginationResponse } from '@/types/api.ts'
 
 const MarketDataPage = () => {
-  const { data } = useMockMarket()
   const { dataEvent } = useMockEvents()
+  const { accessCompanyInfo } = useAuthStore()
+  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
+  const initialFetchRef = useRef(false)
+
+  const {
+    data: dataCatalogData,
+    filter,
+    updateFilter,
+    updateFilterWithSearch,
+  } = useSearchFilter<IDataCatalogRequest, IPaginationResponse<IDataCatalogItem>>(
+    marketDataService.getDataCatalog,
+    {
+      customerCompanyNo,
+      keyword: '',
+    },
+    {
+      page: 1,
+      size: 20,
+    },
+    {
+      initialFetch: false,
+    },
+  )
+
+  useEffect(() => {
+    if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
+      initialFetchRef.current = true
+      updateFilterWithSearch('customerCompanyNo', accessCompanyInfo.customerCompanyNo)
+    }
+  }, [accessCompanyInfo, updateFilterWithSearch])
 
   return (
     <>
@@ -96,6 +129,10 @@ const MarketDataPage = () => {
             placeholder="Search for Data"
             size="h46"
             startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
+            value={filter?.keyword ?? ''}
+            onChange={(e) => updateFilter('keyword', e.target.value)}
+            onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}
+            onClear={() => updateFilterWithSearch('keyword', '')}
           />
         </Box>
         <Grid
@@ -119,23 +156,23 @@ const MarketDataPage = () => {
                   noRowMessage: '등록된 내용이 없습니다.',
                   columns: [
                     {
-                      field: 'dataProvider',
+                      field: 'providerNm',
                       headerName: 'Data Provider',
                       flex: 1,
                       renderCell: (param) => <MITableCell value={param.value} typography={{ variant: 'tableBody1' }} />,
                     },
-                    { field: 'dataName', headerName: 'Data Name', flex: 2 },
-                    { field: 'description', headerName: 'Description', flex: 2 },
+                    { field: 'goodsDataNm', headerName: 'Data Name', flex: 2 },
+                    { field: 'goodsDataExpn', headerName: 'Description', flex: 2 },
                     {
-                      field: 'lastUpdated',
+                      field: 'modifyDt',
                       headerName: 'Last Updated',
                       flex: 1,
                       align: 'center',
                       renderCell: (param) => <MITableCell value={param.value} typography={{ variant: 'tableBody2', color: '#868E96' }} />,
                     },
                   ],
-                  rowId: 'id',
-                  rows: data,
+                  rowId: 'goodsDataNo',
+                  rows: dataCatalogData?.detail,
                 }}
               />
             </Box>
