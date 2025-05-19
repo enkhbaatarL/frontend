@@ -18,7 +18,7 @@ const NoticesPage = () => {
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
   const initialFetchRef = useRef(false)
 
-  const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch, search } = useSearchFilter<
+  const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch } = useSearchFilter<
     INoticeRequest,
     IPaginationResponse<INoticeInfo>
   >(
@@ -38,13 +38,10 @@ const NoticesPage = () => {
 
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
-      updateFilter('customerCompanyNo', accessCompanyInfo.customerCompanyNo)
       initialFetchRef.current = true
-      setTimeout(() => {
-        search()
-      }, 0)
+      updateFilterWithSearch('customerCompanyNo', accessCompanyInfo.customerCompanyNo)
     }
-  }, [accessCompanyInfo])
+  }, [accessCompanyInfo, updateFilterWithSearch])
 
   const navigate = useNavigate()
 
