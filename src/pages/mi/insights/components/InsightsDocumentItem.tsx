@@ -22,7 +22,7 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
       justifyContent={'space-between'}
       padding={2.5}
       gap={2.5}
-      onClick={() => navigate('/user/data-visualization')}
+      onClick={() => navigate('/mi/data-detail/0/0')}
       sx={{
         cursor: 'pointer',
         transition: '0.3s',

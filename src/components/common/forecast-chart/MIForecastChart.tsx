@@ -25,7 +25,7 @@ import verticalLineAndHighlightPlugin, { PointerMoveEventContext } from './plugi
 import loadImages, { createHoverDiamonSVG, createHoverDotSVG, createMakerSVG } from './utils/loadImage'
 
 import useSnackbar from '@/hooks/useSnackbar'
-import SettingModalComponent from '@/pages/mi/dataVisualization/components/SettingModalComponent'
+import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import theme from '@/theming'
 
 Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, TooltipJS, Legend, Filler)

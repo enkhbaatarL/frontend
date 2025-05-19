@@ -3,6 +3,7 @@ import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { Chart, Tick } from 'chart.js'
 import dayjs from 'dayjs'
 import { FC, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import MIChip from '@/components/common/chip/MIChip'
 import MILine from '@/components/common/divider/MILine'
@@ -129,66 +130,71 @@ const SimpleLineChart = () => {
   return <canvas ref={chartRef}></canvas>
 }
 
-const MarketDataChart: FC<InsightsCardBtnProps> = () => (
-  <Box
-    borderRadius={1}
-    sx={{
-      padding: 6,
-      borderRadius: '4px',
-      border: '1px solid #E9ECEF',
-    }}
-  >
-    <Typography sx={{ cursor: 'pointer' }} color="gray.90" mb={5} component="h4" variant="sectionTitleTXL">
-      DRAM Price Index
-      <ChevronRightIcon sx={{ color: 'gray.60', verticalAlign: 'middle', ml: 2 }} />
-    </Typography>
-    <Typography component={'span'} mr={5} color="gray.60" variant="body2M14">
-      Index Start Date :
-      <Typography ml={1} color="gray.70" variant="body2M14">
-        Dec 30, 2019
+const MarketDataChart: FC<InsightsCardBtnProps> = () => {
+  const navigate = useNavigate()
+
+  return (
+    <Box
+      borderRadius={1}
+      sx={{
+        padding: 6,
+        borderRadius: '4px',
+        border: '1px solid #E9ECEF',
+      }}
+      onClick={() => navigate('/mi/data-detail/0/0')}
+    >
+      <Typography sx={{ cursor: 'pointer' }} color="gray.90" mb={5} component="h4" variant="sectionTitleTXL">
+        DRAM Price Index
+        <ChevronRightIcon sx={{ color: 'gray.60', verticalAlign: 'middle', ml: 2 }} />
       </Typography>
-    </Typography>
-    <Typography component={'span'} color="gray.60" variant="body2M14">
-      Unit:
-      <Typography ml={1} color="gray.70" variant="body2M14">
-        $/Bbl
+      <Typography component={'span'} mr={5} color="gray.60" variant="body2M14">
+        Index Start Date :
+        <Typography ml={1} color="gray.70" variant="body2M14">
+          Dec 30, 2019
+        </Typography>
       </Typography>
-    </Typography>
-    <Typography component={'div'} color="gray.60" mt={1} variant="body2M14">
-      Updated Date :
-      <Typography ml={1} color="gray.70" variant="body2M14">
-        Feb 17, 2025
+      <Typography component={'span'} color="gray.60" variant="body2M14">
+        Unit:
+        <Typography ml={1} color="gray.70" variant="body2M14">
+          $/Bbl
+        </Typography>
       </Typography>
-    </Typography>
-    <Typography sx={{ fontWeight: 600 }} color="gray.90" mt={5} mb={2.5} component="div" variant="heading1">
-      85.6
-    </Typography>
-    <Grid container direction={'row'} alignItems={'center'} wrap={'nowrap'}>
-      <Box>
-        <Typography color="gray.70" mb={2.5} component="div" variant="body1R16">
-          WoW Change
+      <Typography component={'div'} color="gray.60" mt={1} variant="body2M14">
+        Updated Date :
+        <Typography ml={1} color="gray.70" variant="body2M14">
+          Feb 17, 2025
         </Typography>
-        <MIChip size={'h24'} color={'blue'} label={'-2.5%'} />
+      </Typography>
+      <Typography sx={{ fontWeight: 600 }} color="gray.90" mt={5} mb={2.5} component="div" variant="heading1">
+        85.6
+      </Typography>
+      <Grid container direction={'row'} alignItems={'center'} wrap={'nowrap'}>
+        <Box>
+          <Typography color="gray.70" mb={2.5} component="div" variant="body1R16">
+            WoW Change
+          </Typography>
+          <MIChip size={'h24'} color={'blue'} label={'-2.5%'} />
+        </Box>
+        <MILine thickness={'1px'} length={49} direction={'vertical'} margin={'0 20px'} />
+        <Box>
+          <Typography color="gray.70" mb={2.5} component="div" variant="body1R16">
+            WoW Change
+          </Typography>
+          <MIChip size={'h24'} color={'green'} label={'+4.8%'} />
+        </Box>
+        <MILine thickness={'1px'} length={49} direction={'vertical'} margin={'0 20px'} />
+        <Box>
+          <Typography color="gray.70" mb={2.5} component="div" variant="body1R16">
+            YoY Change
+          </Typography>
+          <MIChip size={'h24'} color={'blue'} label={'-12.3%'} />
+        </Box>
+      </Grid>
+      <Box mt={6} height={109}>
+        <SimpleLineChart />
       </Box>
-      <MILine thickness={'1px'} length={49} direction={'vertical'} margin={'0 20px'} />
-      <Box>
-        <Typography color="gray.70" mb={2.5} component="div" variant="body1R16">
-          WoW Change
-        </Typography>
-        <MIChip size={'h24'} color={'green'} label={'+4.8%'} />
-      </Box>
-      <MILine thickness={'1px'} length={49} direction={'vertical'} margin={'0 20px'} />
-      <Box>
-        <Typography color="gray.70" mb={2.5} component="div" variant="body1R16">
-          YoY Change
-        </Typography>
-        <MIChip size={'h24'} color={'blue'} label={'-12.3%'} />
-      </Box>
-    </Grid>
-    <Box mt={6} height={109}>
-      <SimpleLineChart />
     </Box>
-  </Box>
-)
+  )
+}
 
 export default MarketDataChart

@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import MISignalMap from '@/components/common/signal-map/MISignalMap'
 import SampleChart from '@/components/mi/chart/SampleChart'
-import ChartComponent from '@/pages/mi/dataVisualization/components/ChartComponent'
+import ChartComponent from '@/pages/mi/dataDetail/components/ChartComponent'
 
 const UserChartSamplePage = () => {
   const [tab, setTab] = useState(0)
