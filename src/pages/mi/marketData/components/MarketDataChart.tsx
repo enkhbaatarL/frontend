@@ -2,7 +2,8 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { Chart, Tick } from 'chart.js'
 import dayjs from 'dayjs'
-import { FC, useEffect, useRef } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import MIChip from '@/components/common/chip/MIChip'
 import MILine from '@/components/common/divider/MILine'
@@ -183,14 +184,26 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data }) => {
     return unit
   }
 
+  const [isHover, setIsHover] = useState(false)
+  const navigate = useNavigate()
+
   return (
     <Box
       borderRadius={1}
       sx={{
         padding: 6,
         borderRadius: '4px',
-        border: '1px solid #E9ECEF',
+        border: '1px solid',
+        borderColor: isHover ? '#2E3F5E' : '#E9ECEF',
+        backgroundColor: isHover ? '#F8F9FA' : '#FFFFFF',
+        transition: '0.3s',
+        cursor: 'pointer',
       }}
+      onMouseOver={() => setIsHover(true)}
+      onMouseOut={() => setIsHover(false)}
+      onClick={() =>
+        isHover && navigate(`mi/data-detail/goods/${data?.marketMetaData.goodsNo}/goods-data/${data?.marketMetaData.goodsDataNo}`)
+      }
     >
       <Typography sx={{ cursor: 'pointer' }} color="gray.90" mb={5} component="h4" variant="sectionTitleTXL">
         {metaData.goodsDataNm}
