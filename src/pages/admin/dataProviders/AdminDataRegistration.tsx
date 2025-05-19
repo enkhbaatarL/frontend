@@ -103,10 +103,10 @@ const AdminDataRegistration = () => {
 
   /** GET 신규 등록 데이터 상품 명 조회 */
   const { data: dataDetail } = useQuery({
-    queryKey: ['getGoodsDataDetail', providerNo, goodsNo, dataNo],
-    queryFn: async () => await dataProviderService.getGoodsDataDetail(Number(providerNo), Number(goodsNo), Number(dataNo)),
+    queryKey: ['getGoodsDataDetail', providerNo, goodsNo, editDataNo],
+    queryFn: async () => await dataProviderService.getGoodsDataDetail(Number(providerNo), Number(goodsNo), Number(editDataNo)),
     select: (res) => res,
-    enabled: !!providerNo && !!goodsNo && !!dataNo,
+    enabled: !!providerNo && !!goodsNo && !!editDataNo,
   })
 
   /** 삭제한 파일 제외하고 기등록된 데이터 파일 리스트 */
@@ -165,8 +165,8 @@ const AdminDataRegistration = () => {
 
   /** 기존 등록된 데이터 수정 */
   useEffect(() => {
-    if (dataNo && dataDetail) {
-      if (form.state?.values?.goodsDataNm !== '') return
+    if (!!editDataNo && dataDetail) {
+      form.reset()
       const langCategoryList = dataDetail.langCategoryList.map((m) => m.codeId)
       const docCategoryList = dataDetail.docCategoryList.map((m) => m.codeId)
       form.setFieldValue('goodsDataNm', dataDetail.goodsDataNm)
@@ -179,7 +179,8 @@ const AdminDataRegistration = () => {
       if (dataDetail.unstructuredDataList.length) fileTypes.push('unstructured')
       form.setFieldValue('fileTypes', fileTypes)
     }
-  }, [dataDetail, dataNo, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataDetail, editDataNo])
 
   useEffect(() => {
     setCustomComponent(
@@ -488,10 +489,10 @@ const AdminDataRegistration = () => {
         <form.Field name="fileTypes">
           {(field) => (
             <AdminDataRegiUploadComponent
-              fileTypes={field.state.value}
-              onChange={(updater: Updater<string[]>, checkType, checked) => {
+              fileTypes={form.state.values.fileTypes}
+              onChange={(updater: Updater<string[]>, checkType, checked) =>
                 onChangeCheckbox(checkType, checked, () => field.handleChange(updater))
-              }}
+              }
               setFilesStructured={setFilesStructured}
               setFilesUnstructured={setFilesUnstructured}
               savedDataInfo={savedDataInfo}
