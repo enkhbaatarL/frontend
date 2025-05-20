@@ -1,4 +1,4 @@
-import { Box } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import Skeleton from '@mui/material/Skeleton'
 import { ReactNode } from 'react'
 
@@ -119,6 +119,106 @@ export const AdminAccessControlFormSkeleton = () => (
         <Skeleton variant="rectangular" width={498} height={32.13} sx={{ borderRadius: '4px' }} />
         <Skeleton variant="rectangular" width={498} height={32.13} sx={{ borderRadius: '4px' }} />
       </Box>
+    </Box>
+  </Box>
+)
+
+export const AdminNoticeFormSkeleton = () => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: '30px', width: '700px' }}>
+    {/* 고정 여부 및 팝업 사용 여부 */}
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: '30px' }}>
+      {/* 고정 여부 */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <Skeleton variant="rectangular" width={120} height={24} sx={{ borderRadius: '2px' }} />
+        <Skeleton variant="rectangular" width={300} height={16} sx={{ borderRadius: '2px' }} />
+        <Box sx={{ mt: 1 }}>
+          <Skeleton variant="rectangular" width={42} height={24} sx={{ borderRadius: '12px' }} />
+        </Box>
+      </Box>
+
+      {/* 팝업 사용 여부 */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <Skeleton variant="rectangular" width={150} height={24} sx={{ borderRadius: '2px' }} />
+        <Skeleton variant="rectangular" width={300} height={16} sx={{ borderRadius: '2px' }} />
+        <Box sx={{ mt: 1 }}>
+          <Skeleton variant="rectangular" width={42} height={24} sx={{ borderRadius: '12px' }} />
+        </Box>
+      </Box>
+    </Box>
+
+    {/* 카테고리 */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '335px' }}>
+      <Skeleton variant="rectangular" width={100} height={24} sx={{ borderRadius: '2px' }} />
+      <Skeleton variant="rectangular" width="100%" height={34} sx={{ borderRadius: '4px' }} />
+    </Box>
+
+    {/* 제목 */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: '2px' }} />
+      <Skeleton variant="rectangular" width="100%" height={34} sx={{ borderRadius: '4px' }} />
+    </Box>
+
+    {/* 게시일자 */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Skeleton variant="rectangular" width={100} height={24} sx={{ borderRadius: '2px' }} />
+      <Skeleton variant="rectangular" width={450} height={16} sx={{ borderRadius: '2px' }} />
+      <Box sx={{ display: 'flex', gap: '16px' }}>
+        <Skeleton variant="rectangular" width={260} height={36} sx={{ borderRadius: '4px' }} />
+        <Typography variant="body1" sx={{ mx: 1 }}>
+          ~
+        </Typography>
+        <Skeleton variant="rectangular" width={260} height={36} sx={{ borderRadius: '4px' }} />
+      </Box>
+    </Box>
+
+    {/* 게시대상 */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Skeleton variant="rectangular" width={100} height={24} sx={{ borderRadius: '2px' }} />
+      <Skeleton variant="rectangular" width={450} height={16} sx={{ borderRadius: '2px' }} />
+      <Box sx={{ display: 'flex', gap: '16px', mt: 1 }}>
+        <Skeleton variant="rectangular" width={70} height={20} sx={{ borderRadius: '10px' }} />
+        <Skeleton variant="rectangular" width={70} height={20} sx={{ borderRadius: '10px' }} />
+      </Box>
+    </Box>
+
+    {/* 고객사 선택 영역 */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Skeleton variant="rectangular" width="100%" height={100} sx={{ borderRadius: '8px' }} />
+    </Box>
+
+    {/* 내용 */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: '2px' }} />
+      <Skeleton variant="rectangular" width="100%" height={120} sx={{ borderRadius: '4px' }} />
+    </Box>
+
+    {/* 이미지 */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: '2px' }} />
+      <Skeleton variant="rectangular" width={450} height={16} sx={{ borderRadius: '2px' }} />
+      <Skeleton variant="rectangular" width="100%" height={40} sx={{ borderRadius: '4px' }} />
+    </Box>
+  </Box>
+)
+
+export const AdminFaqFormSkeleton = () => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: '30px', width: '700px' }}>
+    {/* 카테고리 */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '335px' }}>
+      <Skeleton variant="rectangular" width={100} height={24} sx={{ borderRadius: '2px' }} />
+      <Skeleton variant="rectangular" width="100%" height={34} sx={{ borderRadius: '4px' }} />
+    </Box>
+
+    {/* 제목(질문) */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Skeleton variant="rectangular" width={120} height={24} sx={{ borderRadius: '2px' }} />
+      <Skeleton variant="rectangular" width="100%" height={34} sx={{ borderRadius: '4px' }} />
+    </Box>
+
+    {/* 내용 */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: '2px' }} />
+      <Skeleton variant="rectangular" width="100%" height={120} sx={{ borderRadius: '4px' }} />
     </Box>
   </Box>
 )

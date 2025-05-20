@@ -1,12 +1,13 @@
 import ErrorIcon from '@mui/icons-material/Error'
+import { Box } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
-import AdminLoading from '@/components/admin/AdminLoading'
 import AdminNoticeForm from '@/components/admin/AdminNoticeForm'
+import AdminSkeleton, { AdminNoticeFormSkeleton } from '@/components/admin/AdminSkeleton.tsx'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
@@ -96,10 +97,15 @@ const AdminBoardsNoticeDetailPage = () => {
     }
   }, [navigate, noticeNo, setCustomComponent])
 
-  return isLoading ? (
-    <AdminLoading />
-  ) : (
-    <>
+  return (
+    <AdminSkeleton
+      loading={isLoading}
+      custom={
+        <Box display={'flex'} flexDirection={'column'} gap={'60px'}>
+          <AdminNoticeFormSkeleton />
+        </Box>
+      }
+    >
       <AdminNoticeForm formData={noticeData} readonly />
       <MIConfirm
         open={showDeleteModal}
@@ -134,7 +140,7 @@ const AdminBoardsNoticeDetailPage = () => {
       >
         {t('게시 중인 글이 즉시 삭제됩니다.')}
       </MIConfirm>
-    </>
+    </AdminSkeleton>
   )
 }
 
