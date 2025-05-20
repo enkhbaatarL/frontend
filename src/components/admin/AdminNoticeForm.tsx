@@ -2,7 +2,7 @@ import CancelIcon from '@mui/icons-material/Cancel'
 import { Chip, Box, Grid2 as Grid, Typography } from '@mui/material'
 import Switch from '@mui/material/Switch'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import dayjs, { Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { ChangeEvent, Dispatch, SetStateAction } from 'react'
 
@@ -140,6 +140,9 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
                 setFormData?.((prev) => ({
                   ...prev,
                   isPopupUse: event.target.checked,
+                  ...(event.target.checked
+                    ? { popupPostBeginDt: dayjs().format('YYYYMMDD'), popupPostEndDt: '99991231' }
+                    : { popupPostBeginDt: '', popupPostEndDt: '' }),
                 }))
               }}
             />
