@@ -101,8 +101,8 @@ const AdminDataRegistration = () => {
     },
   })
 
-  /** GET 신규 등록 데이터 상품 명 조회 */
-  const { data: dataDetail } = useQuery({
+  /** GET 데이터 상세 조회 */
+  const { data: dataDetail, refetch: refetchDataDetail } = useQuery({
     queryKey: ['getGoodsDataDetail', providerNo, goodsNo, editDataNo],
     queryFn: async () => await dataProviderService.getGoodsDataDetail(Number(providerNo), Number(goodsNo), Number(editDataNo)),
     select: (res) => res,
@@ -231,7 +231,10 @@ const AdminDataRegistration = () => {
   const { mutate: patchGoodsData } = useMutation({
     mutationFn: (body: IProviderGoodsDataRegisterRequest) =>
       dataProviderService.patchGoodsData(Number(providerNo), Number(goodsNo), Number(dataNo), body),
-    onSuccess: () => showSnackbar('저장되었습니다.', { variant: 'success' }),
+    onSuccess: () => {
+      showSnackbar('저장되었습니다.', { variant: 'success' })
+      refetchDataDetail()
+    },
     onError: () => showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' }),
     onSettled: () => {
       setOpenRegisterSuccessFileAlert(false)
@@ -242,18 +245,22 @@ const AdminDataRegistration = () => {
   /** 데이터 등록 */
   const onRegisterGoodsData = () => {
     const { langCategoryList, docCategoryList, fileTypes, goodsDataExpn, ...rest } = form.state.values
-
+    const getConfirmedUnstructuredFiles = () => {
+      const combinedFiles = [...filesUnstructured, ...(dataDetail?.unstructuredDataList ?? [])]
+      return combinedFiles.filter((f) => !deletedUnstructeredFiles.includes(f.fileNo))
+    }
     const requestBody = {
       ...rest,
-      ...(isEdit ? { goodsDataExpn } : { goodsExpn: goodsDataExpn }),
+      ...(isEdit ? { goodsExpn: goodsDataExpn } : { goodsDataExpn }),
       langCategoryList: langCategoryList.map((m) => ({
         codeId: m,
       })),
+
       docCategoryList: docCategoryList.map((m) => ({
         codeId: m,
       })),
       structuredDataList: filesStructured.map(({ componentTypeId, fileNo }) => ({ componentTypeId, fileNo })),
-      unstructuredDataList: [...filesUnstructured, ...(dataDetail?.unstructuredDataList ?? [])].map(({ criteriaDt, fileNo }) => ({
+      unstructuredDataList: getConfirmedUnstructuredFiles().map(({ criteriaDt, fileNo }) => ({
         criteriaDt,
         fileNo,
       })),
