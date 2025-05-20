@@ -1,7 +1,7 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import InsightsDocumentItem from './components/InsightsDocumentItem'
 
@@ -33,6 +33,7 @@ export interface Report {
 const InsightsPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
+  const [keyword, setKeyword] = useState('')
 
   // 포커스 목록
   const { data: focusedList } = useQuery({
@@ -59,9 +60,9 @@ const InsightsPage = () => {
     () => [
       { label: 'Newest', value: 'NEWEST' },
       { label: 'Oldest', value: 'OLDEST' },
-      { label: 'Most relevant', value: 'MOST_RELEVANT' },
+      { label: 'Most relevant', value: 'MOST_RELEVANT', disabled: !keyword },
     ],
-    [],
+    [keyword],
   )
 
   // 기간 옵션
@@ -182,6 +183,14 @@ const InsightsPage = () => {
     })
   }
 
+  useEffect(() => {
+    if (filter.filters) {
+      setCheckedValues(filter.filters.split(','))
+    } else {
+      setCheckedValues([])
+    }
+  }, [filter.filters])
+
   return (
     <>
       <Box
@@ -239,9 +248,15 @@ const InsightsPage = () => {
             placeholder="Search for insights"
             size="h46"
             value={filter.keyword}
-            onChange={(e) => updateFilter('keyword', e.target.value)}
+            onChange={(e) => {
+              updateFilter('keyword', e.target.value)
+              setKeyword(e.target.value)
+            }}
             onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}
-            onClear={() => updateFilterWithSearch('keyword', '')}
+            onClear={() => {
+              updateFilterWithSearch('keyword', '')
+              setKeyword('')
+            }}
             startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
           />
         </Box>

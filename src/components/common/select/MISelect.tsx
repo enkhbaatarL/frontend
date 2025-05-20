@@ -12,6 +12,7 @@ import theme from '@/theming'
 type OptionType = {
   label: ReactNode
   value: string | number
+  disabled?: boolean
 }
 
 type MISelectSize = 'h26' | 'h36' | 'h34'
@@ -267,21 +268,22 @@ const MISelect = ({
           if (!onChange) return
 
           if (multiple) {
-            const values = (newValue as OptionType[]).map((option) => option.value)
+            const values = (newValue as OptionType[]).filter((option) => !option.disabled).map((option) => option.value)
 
             onChange({ target: { value: values } })
           } else {
-            const value = (newValue as OptionType | null)?.value ?? ''
+            const option = newValue as OptionType | null
+            if (option && option.disabled) return
+
+            const value = option?.value ?? ''
 
             onChange({ target: { value } })
           }
         }}
-        getOptionLabel={(typedOption: OptionType | string | number) => {
-          if (typeof typedOption === 'string' || typeof typedOption === 'number') {
-            return String(typedOption)
-          }
-
-          return typedOption.label as string
+        getOptionLabel={(option) => {
+          if (typeof option === 'string' || typeof option === 'number') return String(option)
+          if (typeof option.label === 'string') return option.label
+          return ''
         }}
         isOptionEqualToValue={(typedOption: OptionType, typedValue: OptionType) => typedOption.value === typedValue.value}
         popupIcon={<CustomArrowIcon open={open} size={sizeSelect} />}
@@ -333,12 +335,25 @@ const MISelect = ({
                 padding: '16px 12px',
                 color: theme.palette.gray[50],
               },
+
+              '& .MuiAutocomplete-option.mi-option-disabled': {
+                color: theme.palette.gray[40],
+                pointerEvents: 'none',
+                cursor: 'not-allowed',
+                backgroundColor: 'transparent',
+              },
             },
           },
         }}
         slots={{
           listbox: ListBoxComponent,
         }}
+        getOptionDisabled={(option: OptionType) => !!option.disabled}
+        renderOption={(props: React.HTMLAttributes<HTMLLIElement>, option: OptionType) => (
+          <li {...props} className={`${props?.className} ${option.disabled ? 'mi-option-disabled' : ''}`}>
+            {option.label}
+          </li>
+        )}
       />
     </FormControl>
   )

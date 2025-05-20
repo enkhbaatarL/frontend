@@ -24,6 +24,25 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
     return `${month} ${day}, ${year}`
   }, [report.date])
 
+  const convertToType = (type: string) => {
+    switch (type) {
+      case 'A_ASST_RPT':
+        return 'Asset Report'
+      case 'A_CMMDT_MRKT_RPT':
+        return 'Commodity Market Report'
+      case 'A_DEAL_INSIGHT':
+        return 'Deal Insight'
+      case 'A_INSIGHT':
+        return 'Insight'
+      case 'A_CMPY_RPT':
+        return 'Company Report'
+      case 'A_INFORM':
+        return 'Inform'
+      default:
+        return '-'
+    }
+  }
+
   return (
     <Grid
       container
@@ -44,7 +63,7 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
       }}
     >
       <Box display={'flex'} alignItems={'center'} gap={1}>
-        {report.types?.map((type) => <MIBage key={type} size={'h20'} color={type as MIChipColor} label={type} />)}
+        {report.types?.map((type) => <MIBage key={type} size={'h20'} color={type as MIChipColor} label={convertToType(type)} />)}
       </Box>
       <Box>
         <Typography color="gray.90" fontSize={20} component="div" variant="body4">
