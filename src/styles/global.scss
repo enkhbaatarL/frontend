@@ -99,11 +99,6 @@ body {
   font-family: Pretendard, sans-serif;
   padding: 0 !important;
   overflow: unset !important;
-  min-width: 1440px;
-  &.admin-confirm-open{
-    //overflow: hidden !important;
-    //padding-right: 15px !important;
-  }
 }
 ul{
   li{

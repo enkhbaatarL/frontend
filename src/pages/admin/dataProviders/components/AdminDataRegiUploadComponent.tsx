@@ -19,7 +19,7 @@ import MISelect from '@/components/common/select/MISelect'
 import useSnackbar from '@/hooks/useSnackbar'
 import axios from '@/lib/axios'
 import dataProviderService, { IProviderGoodsDataDetailResponse } from '@/service/admin/dataProvider'
-import { formatSize } from '@/utils/dataUtil'
+import { formatFileSize } from '@/utils/dataUtil'
 
 export type AdminDataUploadFileInfo = {
   fileNo: number
@@ -120,7 +120,7 @@ const AdminDataRegiUploadComponent = ({
         const response = await axios.post(`/admin/provider-management/goods-datas/upload-file/${uploadType}-data`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (event) => {
-            const percent = Math.round((event.loaded * 100) / (event.total || 1))
+            const percent = Math.round((event.loaded * 100) / (event.total ?? 1))
             updateUploadProgress(fileKey, percent)
           },
         })
@@ -305,7 +305,7 @@ const AdminDataRegiUploadComponent = ({
                               {originFile.fileNm}
                             </Typography>
                             <Typography variant="body3R12" color="gray.60" mr={2}>
-                              {formatSize(originFile.fileSize, 'mb')}
+                              {formatFileSize(originFile.fileSize, { fixedUnit: 'MB', fixedDecimal: 1 })}
                             </Typography>
                             <MIButton
                               contentType="link"

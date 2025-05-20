@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'reac
 
 import ProtectedRoute from '@/components/common/ProtectedRoute'
 import LoginPage from '@/pages/common/LoginPage'
+import PdfViewerPage from '@/pages/common/PdfViewerPage'
 import AdminRoutes from '@/routes/AdminRoutes'
 import ErrorRoutes from '@/routes/ErrorRoutes'
 import MIRoutes from '@/routes/MIRoutes'
@@ -21,6 +22,10 @@ const commonRoutes: ICustomRouteObject[] = [
   {
     ...MIRoutes,
     element: <ProtectedRoute>{MIRoutes.element}</ProtectedRoute>,
+  },
+  {
+    path: 'pdf-viewer/:fileId',
+    element: <PdfViewerPage />,
   },
   { ...ErrorRoutes },
   { ...TestRoutes },
