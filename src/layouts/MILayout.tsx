@@ -153,7 +153,7 @@ const MILayout = () => {
           }}
         >
           <Outlet key={outletKey} />
-          <ScrollRestoration />
+          <ScrollRestoration getKey={(location) => location.pathname} />
         </Box>
 
         <MIFooter />

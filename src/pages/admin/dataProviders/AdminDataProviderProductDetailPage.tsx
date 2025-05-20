@@ -98,7 +98,11 @@ const ProductDataListTable = ({
       headerName: t('데이터명'),
       maxWidth: 360,
       renderCell(params: { value: string }) {
-        return <AdminTableCell typography={{ variant: 'body2SB14' }}>{params.value}</AdminTableCell>
+        return (
+          <AdminTableCell ellipsis typography={{ variant: 'body2SB14' }}>
+            {params.value}
+          </AdminTableCell>
+        )
       },
     },
     {
@@ -106,7 +110,7 @@ const ProductDataListTable = ({
       headerName: t('데이터 설명'),
       flex: 1,
       renderCell(params: { value: string }) {
-        return <AdminTableCell>{params.value}</AdminTableCell>
+        return <AdminTableCell ellipsis>{params.value}</AdminTableCell>
       },
     },
     {
