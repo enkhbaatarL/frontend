@@ -60,6 +60,12 @@ export const TableSkeleton = () => (
   </Box>
 )
 
+export const AdminDataProviderTableSkeleton = () => (
+  <Box sx={{ width: '100%', display: 'flex', gap: '30px', flexDirection: 'column', alignItems: 'flex-start' }}>
+    <Skeleton variant="rectangular" width="100%" height={827.8} />
+  </Box>
+)
+
 export const SomeItemSkeleton = () => (
   <Box sx={{ display: 'flex', gap: '10px', flexDirection: 'column', alignItems: 'flex-start' }}>
     <Skeleton variant="rectangular" width={66} height={20} />

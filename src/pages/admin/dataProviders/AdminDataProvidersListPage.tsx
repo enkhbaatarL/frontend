@@ -2,7 +2,7 @@ import { GridColDef } from '@mui/x-data-grid'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import AdminSkeleton from '@/components/admin/AdminSkeleton'
+import AdminSkeleton, { AdminDataProviderTableSkeleton } from '@/components/admin/AdminSkeleton'
 import AdminTable from '@/components/admin/AdminTable'
 import MIButton from '@/components/common/button/MIButton'
 import MIChip from '@/components/common/chip/MIChip'
@@ -81,13 +81,12 @@ const AdminDataProvidersListPage = () => {
   }, [setCustomComponent])
 
   return (
-    <AdminSkeleton loading={isLoading} table>
+    <AdminSkeleton loading={isLoading} custom={<AdminDataProviderTableSkeleton />}>
       <div>
         <AdminTable
           getRowId={(row) => row.providerId}
           columns={columns}
           data={data}
-          isLoading={isLoading}
           size={pagination?.size}
           onSizeChange={updateSize}
           onPageChange={updatePage}
