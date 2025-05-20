@@ -151,7 +151,7 @@ const AdminUpload = ({
         />
 
         <div className={disabled ? 'disabled-input' : ''}>
-          {draggable && (
+          {draggable && !disabled && (
             <div
               className={`upload-field-dropzone ${isDragging ? 'dragging' : ''}`}
               onDrop={onDrop}

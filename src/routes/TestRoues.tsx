@@ -50,10 +50,6 @@ const TestRoutes: RouteObject = {
       element: <TestErrorPage />,
     },
     {
-      path: 'privacy-policy',
-      element: <PolicyPage />,
-    },
-    {
       path: 'terms-of-service',
       element: <TermPage />,
     },

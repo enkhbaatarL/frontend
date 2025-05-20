@@ -174,11 +174,12 @@ const boardService = {
    * @param body
    */
   async registerNotice(body: INoticeDetailInfo): Promise<ICommonResponse<null>> {
-    const { targetList, ...rest } = body
+    const { targetList, fileList, ...rest } = body
 
     const response: AxiosResponse<ICommonResponse<null>> = await api.post('admin/bulletinboard-management/notice', {
       ...rest,
       target: targetList.map((item) => item.customerCompanyNo),
+      fileNo: fileList?.[0]?.fileNo ?? undefined,
     })
 
     return response.data
@@ -210,11 +211,12 @@ const boardService = {
   async updateNotice(noticeNo: number | string | undefined, body: INoticeDetailInfo): Promise<void> {
     if (!noticeNo) throw new Error('noticeNo is required')
 
-    const { targetList, ...rest } = body
+    const { targetList, fileList, ...rest } = body
 
     await api.patch(`admin/bulletinboard-management/notices/${noticeNo}`, {
       ...rest,
       target: targetList.map((item) => item.customerCompanyNo),
+      fileNo: fileList?.[0]?.fileNo ?? undefined,
     })
   },
   /** 공지사항 이미지 파일 업로드 */

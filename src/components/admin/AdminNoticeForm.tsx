@@ -351,11 +351,12 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
             />
             <>
               {formData.fileList.length !== 0 && (
-                <div className="upload-field-file-list">
+                <div>
                   {formData.fileList.map((fileItem, index) => (
                     <AdminItemUpload
                       checkFile="pass"
                       key={index}
+                      readonly={readonly}
                       fileItem={{ ...fileItem, type: 'image/*' }}
                       nameStatus={'완료'}
                       onDelete={handleRemoveFile}

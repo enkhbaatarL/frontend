@@ -134,7 +134,7 @@ const AdminField = ({
         ))}
       </RadioGroup>
     )}
-    {fieldType === 'upload' && (
+    {fieldType === 'upload' && !disabled && (
       <AdminUpload
         disabled={disabled}
         required={required}

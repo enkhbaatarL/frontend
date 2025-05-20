@@ -1,6 +1,7 @@
 import { Navigate, RouteObject } from 'react-router-dom'
 
 import MILayout from '@/layouts/MILayout'
+import PolicyPage from '@/pages/common/PolicyPage'
 import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
 import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
@@ -59,6 +60,10 @@ const MIRoutes: RouteObject = {
     {
       path: 'help-center',
       element: <QaPage />,
+    },
+    {
+      path: 'privacy-policy',
+      element: <PolicyPage />,
     },
   ],
 }

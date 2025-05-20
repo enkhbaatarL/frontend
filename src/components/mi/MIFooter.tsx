@@ -44,7 +44,7 @@ const MIFooter = () => {
               padding="6px 14px"
               onClick={(e) => {
                 e.preventDefault()
-                navigate('/test/privacy-policy')
+                navigate('/mi/privacy-policy')
               }}
               href=""
               sx={{

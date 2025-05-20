@@ -10,7 +10,6 @@ import folderIcon from '@/assets/folder.svg'
 import pdfIcon from '@/assets/pdficon.svg'
 import Flex from '@/components/common/display/Flex'
 import CloseIcon from '@/components/common/icons/CloseIcon'
-import { formatSize } from '@/utils/dataUtil'
 
 export type FileType =
   | 'application/pdf'
@@ -34,15 +33,13 @@ export interface FileInfo {
 
 interface UploadStatus {
   progressValue?: number
-  uploadError?: boolean
   checkFile?: 'uploading' | 'checking' | 'fail' | 'pass'
   nameStatus?: string
-  hideStatus?: boolean
-  hideClose?: boolean
   showChecking?: boolean // 검수중 표기여부
   widthItem?: string | number
   onDelete?: () => void
   fileItem: FileInfo
+  readonly?: boolean
 }
 
 const fileTypeIconMapper = (type: FileType, url?: string) => {
@@ -63,15 +60,13 @@ const fileTypeIconMapper = (type: FileType, url?: string) => {
 
 const AdminItemUpload = ({
   progressValue = 0,
-  uploadError = false,
   showChecking = false,
   checkFile = 'uploading',
   nameStatus,
-  hideStatus = false,
-  hideClose = false,
   widthItem = '100%',
   onDelete,
   fileItem,
+  readonly,
 }: UploadStatus) => {
   const statusLabel = useMemo(() => {
     if (showChecking && checkFile === 'uploading' && progressValue === 100) return 'checking'
@@ -86,17 +81,16 @@ const AdminItemUpload = ({
         <Flex style={{ alignItems: 'center' }}>
           <div className="upload-field-file-info">
             <div className="upload-field-file-name">{fileItem.fileNm}</div>
-            {!uploadError && <div className="upload-field-file-size">{formatSize(fileItem.fileSize, 'mb')}</div>}
           </div>
-          {!hideStatus && <AdminItemUploadStatusButton checkFile={statusLabel} progressValue={progressValue} nameStatus={nameStatus} />}
-          {!hideClose && (
+          <AdminItemUploadStatusButton checkFile={statusLabel} progressValue={progressValue} nameStatus={nameStatus} />
+          {!readonly && (
             <button type="button" className="upload-field-file-action upload-field-file-action-del" onClick={onDelete}>
               <CloseIcon width={20} height={20} />
             </button>
           )}
         </Flex>
         {progressValue !== 0 && statusLabel === 'uploading' && (
-          <LinearProgress color={uploadError ? 'error' : 'primary'} sx={{ marginTop: 1 }} variant="determinate" value={progressValue} />
+          <LinearProgress color={'primary'} sx={{ marginTop: 1 }} variant="determinate" value={progressValue} />
         )}
       </div>
     </div>

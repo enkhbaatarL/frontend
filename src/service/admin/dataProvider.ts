@@ -112,10 +112,10 @@ export interface IProviderGoodsDataRegisterRequest {
   goodsExpn?: string
   goodsDataSummaryCntt: string
   docCategoryList: {
-    CodeId: string
+    codeId: string
   }[]
   langCategoryList: {
-    CodeId: string
+    codeId: string
   }[]
   structuredDataList: {
     componentTypeId?: string
