@@ -28,18 +28,20 @@ import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
 
 interface ProductDataTableProps {
-  data: IPaginationResponse<IProviderGoodsDataInfo>
+  data?: IPaginationResponse<IProviderGoodsDataInfo>
   isPublic: boolean
   search: string
   setSearch: (value: string) => void
   setSearchValue: (value: string) => void
   onRegister: (dataNo?: number) => void
+  isLoading: boolean
 }
 interface AuthorityDetailTableProps {
-  data: IPaginationResponse<IProductCompanyPermissionInfo>
+  data?: IPaginationResponse<IProductCompanyPermissionInfo>
   searchCompanyNm: string
   setCompanyNmSearch: (value: string) => void
   setCompanyNmSearchValue: (value: string) => void
+  isLoading: boolean
 }
 const AdminDataProviderProductDetailPageHeader = (props: { onChange: (value: boolean) => void; value: boolean; label: string }) => (
   <Stack direction="row" alignItems="center" sx={{ ml: 'auto' }}>
@@ -59,7 +61,7 @@ const CustomPageTitle = () => (
 )
 
 // 데이터 목록 테이블
-const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValue, onRegister }: ProductDataTableProps) => {
+const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValue, onRegister, isLoading }: ProductDataTableProps) => {
   const user = useAuthStore((state) => state.user)
 
   const columns: GridColDef[] = [
@@ -149,13 +151,19 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
           </AdminButton>
         </Box>
       </Box>
-      <AdminTable getRowId={(row) => row.goodsDataNo} columns={columns} data={data} />
+      <AdminTable getRowId={(row) => row.goodsDataNo} columns={columns} data={data} isLoading={isLoading} />
     </Box>
   )
 }
 
 // 권한 상세 테이블
-const AuthorityDetailTable = ({ data, searchCompanyNm, setCompanyNmSearch, setCompanyNmSearchValue }: AuthorityDetailTableProps) => {
+const AuthorityDetailTable = ({
+  data,
+  searchCompanyNm,
+  setCompanyNmSearch,
+  setCompanyNmSearchValue,
+  isLoading,
+}: AuthorityDetailTableProps) => {
   const columns: GridColDef[] = [
     {
       field: 'companyNm',
@@ -233,7 +241,7 @@ const AuthorityDetailTable = ({ data, searchCompanyNm, setCompanyNmSearch, setCo
           />
         </Box>
       </Box>
-      <AdminTable getRowId={(row) => row.companyNo} columns={columns} data={data} />
+      <AdminTable getRowId={(row) => row.companyNo} columns={columns} data={data} isLoading={isLoading} />
     </Box>
   )
 }
@@ -455,28 +463,24 @@ const AdminDataProviderProductDetailPage = () => {
 
   return (
     <>
-      <AdminSkeleton loading={isLoading} table>
-        {dataList && (
-          <ProductDataListTable
-            data={dataList}
-            isPublic={isPublic}
-            search={search}
-            setSearch={setSearch}
-            setSearchValue={setSearchValue}
-            onRegister={onRegister}
-          />
-        )}
-      </AdminSkeleton>
-      <AdminSkeleton loading={isLoading} table>
-        {user?.userRoleCd === UserRole.ADMIN && companyPermissionList && (
-          <AuthorityDetailTable
-            data={companyPermissionList}
-            searchCompanyNm={searchCompanyNm}
-            setCompanyNmSearch={setSearchCompanyNm}
-            setCompanyNmSearchValue={setSearchCompanyNmValue}
-          />
-        )}
-      </AdminSkeleton>
+      <ProductDataListTable
+        data={dataList}
+        isPublic={isPublic}
+        search={search}
+        setSearch={setSearch}
+        setSearchValue={setSearchValue}
+        onRegister={onRegister}
+        isLoading={dataListIsLoading}
+      />
+      {user?.userRoleCd === UserRole.ADMIN && (
+        <AuthorityDetailTable
+          data={companyPermissionList}
+          searchCompanyNm={searchCompanyNm}
+          setCompanyNmSearch={setSearchCompanyNm}
+          setCompanyNmSearchValue={setSearchCompanyNmValue}
+          isLoading={companyPermissionListIsLoading}
+        />
+      )}
 
       <MIConfirm
         open={openActiveConfirm}
