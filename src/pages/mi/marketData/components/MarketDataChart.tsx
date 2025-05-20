@@ -297,9 +297,26 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
       }}
       onClick={() => !locked && navigate(`/mi/data-detail/${data?.marketMetaData?.goodsNo}/${data?.marketMetaData?.goodsDataNo}`)}
     >
-      <Typography color="gray.90" mb={size === 'large' ? 5 : 2.5} component="h4" variant="sectionTitleTXL">
-        {metaData.goodsDataNm}
-        <ChevronRightIcon sx={{ color: 'gray.60', verticalAlign: 'middle', ml: 2 }} />
+      <Typography
+        color="gray.90"
+        mb={size === 'large' ? 5 : 2.5}
+        component="h4"
+        variant="sectionTitleTXL"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          '& > span': {
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: 'calc(100% - 32px)',
+          },
+        }}
+      >
+        <span>{metaData.goodsDataNm}</span>
+        <ChevronRightIcon sx={{ color: 'gray.60', minWidth: '24px', ml: 1 }} />
       </Typography>
       <Typography component={size === 'large' ? 'span' : 'div'} mr={5} color="gray.60" variant="body2M14">
         Index Start Date :

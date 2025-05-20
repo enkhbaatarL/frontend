@@ -28,7 +28,7 @@ import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
 
 interface ProductDataTableProps {
-  data: IPaginationResponse<IProviderGoodsDataInfo> | undefined
+  data?: IPaginationResponse<IProviderGoodsDataInfo>
   isPublic: boolean
   search: string
   setSearch: (value: string) => void
@@ -40,7 +40,7 @@ interface ProductDataTableProps {
   isLoading: boolean
 }
 interface AuthorityDetailTableProps {
-  data: IPaginationResponse<IProductCompanyPermissionInfo> | undefined
+  data?: IPaginationResponse<IProductCompanyPermissionInfo>
   searchCompanyNm: string
   setCompanyNmSearch: (value: string) => void
   setCompanyNmSearchValue: (value: string) => void

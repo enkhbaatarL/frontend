@@ -110,7 +110,7 @@ export default function AdminDataProvidersDetailPage() {
 
   const [selectedProvider, setSelectedProvider] = useState<{ value: string; label: string }>(initialProvider)
 
-  const isLoading = dataProviderDetailIsLoading || dataProvidersNameIsLoading || dataProviderGoodsIsLoading
+  const isLoading = dataProviderDetailIsLoading || dataProvidersNameIsLoading
 
   const editForm = useForm({
     defaultValues: {
@@ -291,7 +291,7 @@ export default function AdminDataProvidersDetailPage() {
   ])
 
   return (
-    <AdminSkeleton loading={isLoading} table>
+    <>
       <Box>
         <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
           <Box>
@@ -332,6 +332,7 @@ export default function AdminDataProvidersDetailPage() {
           getRowId={(row) => row.goodsNo}
           columns={columns}
           data={dataProviderGoods}
+          isLoading={dataProviderGoodsIsLoading}
           onRowClick={({ row }) => {
             navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${row.goodsNo}`, {
               state: { providerNm: data?.providerNm },
@@ -488,6 +489,6 @@ export default function AdminDataProvidersDetailPage() {
           )}
         </activeForm.Field>
       </MIConfirm>
-    </AdminSkeleton>
+    </>
   )
 }

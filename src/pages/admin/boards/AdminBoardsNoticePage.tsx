@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
+import AdminSkeleton from '@/components/admin/AdminSkeleton.tsx'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -69,7 +70,7 @@ const AdminBoardsNoticePage = () => {
     },
   )
 
-  const { data: filterOptions } = useQuery({
+  const { data: filterOptions, isLoading: filterOptionsIsLoading } = useQuery({
     queryKey: ['getNoticeFilter'],
     queryFn: async () => await boardService.getNoticeFilter(),
     refetchOnWindowFocus: false,
@@ -197,7 +198,7 @@ const AdminBoardsNoticePage = () => {
   }, [setCustomComponent])
 
   return (
-    <>
+    <AdminSkeleton loading={isLoading || filterOptionsIsLoading} table>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
         <MIField label={t('카테고리')}>
           <MISelect
@@ -279,7 +280,7 @@ const AdminBoardsNoticePage = () => {
       >
         {t('게시 중인 글이 즉시 삭제됩니다.')}
       </MIConfirm>
-    </>
+    </AdminSkeleton>
   )
 }
 
