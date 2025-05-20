@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
+import AdminSkeleton from '@/components/admin/AdminSkeleton.tsx'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import AdminUserInfo from '@/components/admin/AdminUserInfo'
@@ -75,7 +76,7 @@ const AdminMemberManagementUsersPage = () => {
     { initialFetch: false },
   )
 
-  const { data: filterOptions } = useQuery({
+  const { data: filterOptions, isLoading: filterOptionsIsLoading } = useQuery({
     queryKey: ['getDepartmentAll'],
     queryFn: async () => await companiesService.getDepartmentAll(),
     refetchOnWindowFocus: false,
@@ -195,7 +196,7 @@ const AdminMemberManagementUsersPage = () => {
   }, [setCustomComponent])
 
   return (
-    <>
+    <AdminSkeleton loading={filterOptionsIsLoading} table>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
         <MIField label={t('회사명')}>
           <MISelect
@@ -306,7 +307,7 @@ const AdminMemberManagementUsersPage = () => {
       >
         {t('회원 정보 삭제 시 해당 회원은 서비스에 접근이 불가합니다.')}
       </MIConfirm>
-    </>
+    </AdminSkeleton>
   )
 }
 

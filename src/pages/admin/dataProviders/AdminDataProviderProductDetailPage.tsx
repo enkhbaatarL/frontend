@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
+import AdminSkeleton from '@/components/admin/AdminSkeleton.tsx'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import MIChip from '@/components/common/chip/MIChip'
@@ -253,7 +254,7 @@ const AdminDataProviderProductDetailPage = () => {
   const navigate = useNavigate()
 
   // 상품 상세
-  const { data: productDetailData } = useQuery({
+  const { data: productDetailData, isLoading: productDetailDataIsLoading } = useQuery({
     queryKey: ['productDetailData'],
     queryFn: async () => await dataProviderService.getProviderGoodsDetail(Number(providerNo), Number(goodsNo)),
     refetchOnWindowFocus: 'always',
@@ -263,7 +264,7 @@ const AdminDataProviderProductDetailPage = () => {
     enabled: !!providerNo && !!goodsNo,
   })
 
-  const { data: latestUpdatedData } = useQuery({
+  const { data: latestUpdatedData, isLoading: latestUpdateDataIsLoading } = useQuery({
     queryKey: ['latestUpdatedData'],
     queryFn: async () => await dataProviderService.getProviderGoodsLatestUpdated(Number(providerNo), Number(goodsNo)),
     refetchOnWindowFocus: 'always',
@@ -274,7 +275,7 @@ const AdminDataProviderProductDetailPage = () => {
   })
 
   // 데이터 목록
-  const { data: dataList } = useQuery({
+  const { data: dataList, isLoading: dataListIsLoading } = useQuery({
     queryKey: ['dataList', searchValue],
     queryFn: async () =>
       await dataProviderService.getProviderGoodsDataList(Number(providerNo), Number(goodsNo), {
@@ -290,7 +291,7 @@ const AdminDataProviderProductDetailPage = () => {
   })
 
   // 권한 상세 목록
-  const { data: companyPermissionList } = useQuery({
+  const { data: companyPermissionList, isLoading: companyPermissionListIsLoading } = useQuery({
     queryKey: ['companyPermissionList', searchCompanyNmValue],
     queryFn: async () =>
       await dataProviderService.getProductCompanyPermissionList(Number(providerNo), Number(goodsNo), {
@@ -304,6 +305,8 @@ const AdminDataProviderProductDetailPage = () => {
     staleTime: 0,
     enabled: !!providerNo && !!goodsNo,
   })
+
+  const isLoading = productDetailDataIsLoading || latestUpdateDataIsLoading || dataListIsLoading || companyPermissionListIsLoading
 
   const { setCustomComponent, setSubHeader, setCustomTitle } = useAdminHeader()
   const [isActive, setIsActive] = useState(true)
@@ -426,6 +429,8 @@ const AdminDataProviderProductDetailPage = () => {
         />,
       )
       setCustomTitle(<CustomPageTitle />)
+    } else {
+      setSubHeader(<AdminSkeleton loading={isLoading} subHeader />)
     }
 
     return () => {
@@ -433,7 +438,7 @@ const AdminDataProviderProductDetailPage = () => {
       setSubHeader(null)
       setCustomTitle(null)
     }
-  }, [setCustomComponent, setSubHeader, setCustomTitle, isActive, productDetailData, latestUpdatedData, state])
+  }, [setCustomComponent, setSubHeader, setCustomTitle, isActive, productDetailData, latestUpdatedData, state, isLoading])
 
   useEffect(() => {
     setIsErrorProviderName(inputProviderName.replace(/\s/g, '') !== state?.providerNm.replace(/\s/g, ''))
@@ -450,24 +455,28 @@ const AdminDataProviderProductDetailPage = () => {
 
   return (
     <>
-      {dataList && (
-        <ProductDataListTable
-          data={dataList}
-          isPublic={isPublic}
-          search={search}
-          setSearch={setSearch}
-          setSearchValue={setSearchValue}
-          onRegister={onRegister}
-        />
-      )}
-      {user?.userRoleCd === UserRole.ADMIN && companyPermissionList && (
-        <AuthorityDetailTable
-          data={companyPermissionList}
-          searchCompanyNm={searchCompanyNm}
-          setCompanyNmSearch={setSearchCompanyNm}
-          setCompanyNmSearchValue={setSearchCompanyNmValue}
-        />
-      )}
+      <AdminSkeleton loading={isLoading} table>
+        {dataList && (
+          <ProductDataListTable
+            data={dataList}
+            isPublic={isPublic}
+            search={search}
+            setSearch={setSearch}
+            setSearchValue={setSearchValue}
+            onRegister={onRegister}
+          />
+        )}
+      </AdminSkeleton>
+      <AdminSkeleton loading={isLoading} table>
+        {user?.userRoleCd === UserRole.ADMIN && companyPermissionList && (
+          <AuthorityDetailTable
+            data={companyPermissionList}
+            searchCompanyNm={searchCompanyNm}
+            setCompanyNmSearch={setSearchCompanyNm}
+            setCompanyNmSearchValue={setSearchCompanyNmValue}
+          />
+        )}
+      </AdminSkeleton>
 
       <MIConfirm
         open={openActiveConfirm}

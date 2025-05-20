@@ -10,6 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
+import AdminSkeleton from '@/components/admin/AdminSkeleton.tsx'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -425,7 +426,7 @@ const AdminCustomerCompanyDetailPage = () => {
 
   const { companyNo } = useParams()
 
-  const { data } = useQuery({
+  const { data, isLoading: customerCompanyDetailIsLoading } = useQuery({
     queryKey: ['customerCompanyDetail', companyNo],
     queryFn: async () => await companiesService.getCompanyDetail(Number(companyNo)),
     refetchOnWindowFocus: 'always',
@@ -435,7 +436,7 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
-  const { data: dataProviderData } = useQuery({
+  const { data: dataProviderData, isLoading: dataProviderDataIsLoading } = useQuery({
     queryKey: ['dataProvider', companyNo],
     queryFn: async () => await companiesService.getCompanyProviders(Number(companyNo)),
     refetchOnWindowFocus: 'always',
@@ -445,7 +446,7 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
-  const { data: companyLatestUpdatedData } = useQuery({
+  const { data: companyLatestUpdatedData, isLoading: companyLatestUpdateDataIsLoading } = useQuery({
     queryKey: ['latestUpdateData', companyNo],
     queryFn: async () => await companiesService.getCompanyLatestUpdated(Number(companyNo)),
     refetchOnWindowFocus: 'always',
@@ -493,6 +494,8 @@ const AdminCustomerCompanyDetailPage = () => {
     }
   }
 
+  const isLoading = dataProviderDataIsLoading || companyLatestUpdateDataIsLoading || customerCompanyDetailIsLoading
+
   useEffect(() => {
     if (data) {
       setIsActive(data?.isActivated)
@@ -533,19 +536,21 @@ const AdminCustomerCompanyDetailPage = () => {
           }}
         />,
       )
+    } else {
+      setSubHeader(<AdminSkeleton loading={isLoading} subHeader />)
     }
     return () => {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [setCustomComponent, setSubHeader, data, companyLatestUpdatedData, isActive])
+  }, [setCustomComponent, setSubHeader, data, companyLatestUpdatedData, isActive, isLoading])
 
   useEffect(() => {
     setIsErrorCompanyName(inputCompanyName.replace(/\s/g, '') !== data?.companyNm.replace(/\s/g, ''))
   }, [inputCompanyName, data?.companyNm])
 
   return (
-    <>
+    <AdminSkeleton loading={isLoading} table>
       {dataProviderData && <AdminCustomerDataProviderTable data={dataProviderData} companyNm={companyNm} />}
       {<AdminCustomerMemberTable />}
       <MIConfirm
@@ -688,7 +693,7 @@ const AdminCustomerCompanyDetailPage = () => {
           },
         ]}
       ></MIConfirm>
-    </>
+    </AdminSkeleton>
   )
 }
 

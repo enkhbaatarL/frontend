@@ -12,6 +12,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
+import AdminSkeleton from '@/components/admin/AdminSkeleton.tsx'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -75,7 +76,7 @@ const AdminMemberManagementManagersPage = () => {
     { initialFetch: false },
   )
 
-  const { data: filterOptions } = useQuery({
+  const { data: filterOptions, isLoading: filterOptionsIsLoading } = useQuery({
     queryKey: ['getDepartmentAll'],
     queryFn: async () => await companiesService.getDepartmentAll(),
     refetchOnWindowFocus: false,
@@ -208,7 +209,7 @@ const AdminMemberManagementManagersPage = () => {
   }, [setCustomComponent])
 
   return (
-    <>
+    <AdminSkeleton loading={filterOptionsIsLoading} table>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
         <MIField label={t('구분')}>
           <MISelect
@@ -304,7 +305,7 @@ const AdminMemberManagementManagersPage = () => {
       >
         {t('삭제 시 관리자의 모든 권한이 즉시 해제됩니다.')}
       </MIConfirm>
-    </>
+    </AdminSkeleton>
   )
 }
 

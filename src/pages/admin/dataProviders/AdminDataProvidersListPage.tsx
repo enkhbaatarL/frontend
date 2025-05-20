@@ -2,6 +2,7 @@ import { GridColDef } from '@mui/x-data-grid'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import AdminSkeleton from '@/components/admin/AdminSkeleton'
 import AdminTable from '@/components/admin/AdminTable'
 import MIButton from '@/components/common/button/MIButton'
 import MIChip from '@/components/common/chip/MIChip'
@@ -80,21 +81,23 @@ const AdminDataProvidersListPage = () => {
   }, [setCustomComponent])
 
   return (
-    <div>
-      <AdminTable
-        getRowId={(row) => row.providerId}
-        columns={columns}
-        data={data}
-        isLoading={isLoading}
-        size={pagination?.size}
-        onSizeChange={updateSize}
-        onPageChange={updatePage}
-        onRowClick={({ row }) => {
-          navigate(`/admin/data-providers/providers/detail/${row.providerNo}`)
-        }}
-        maxVisibleRowCount={20}
-      />
-    </div>
+    <AdminSkeleton loading={isLoading} table>
+      <div>
+        <AdminTable
+          getRowId={(row) => row.providerId}
+          columns={columns}
+          data={data}
+          isLoading={isLoading}
+          size={pagination?.size}
+          onSizeChange={updateSize}
+          onPageChange={updatePage}
+          onRowClick={({ row }) => {
+            navigate(`/admin/data-providers/providers/detail/${row.providerNo}`)
+          }}
+          maxVisibleRowCount={20}
+        />
+      </div>
+    </AdminSkeleton>
   )
 }
 

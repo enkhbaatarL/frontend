@@ -8,6 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
+import AdminSkeleton from '@/components/admin/AdminSkeleton.tsx'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DetailItem from '@/components/common/detail-item/DetailItem'
@@ -47,7 +48,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
 
-  const { data: providerDetailData } = useQuery({
+  const { data: providerDetailData, isLoading: providerDetailDataIsLoading } = useQuery({
     queryKey: ['providerDetail', companyNo, selectedProviderNo],
     queryFn: async () => await companiesService.getCompanyProviderDetail(Number(companyNo), Number(selectedProviderNo)),
     refetchOnWindowFocus: 'always',
@@ -57,7 +58,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     enabled: !!companyNo || !!selectedProviderNo,
   })
 
-  const { data: providerLatestUpdatedData } = useQuery({
+  const { data: providerLatestUpdatedData, isLoading: providerLatestUpdatedDataIsLoading } = useQuery({
     queryKey: ['latestUpdateData', companyNo, selectedProviderNo],
     queryFn: async () => await companiesService.getProviderLatestUpdated(Number(companyNo), Number(selectedProviderNo)),
     refetchOnWindowFocus: 'always',
@@ -67,7 +68,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     enabled: !!companyNo || !!selectedProviderNo,
   })
 
-  const { data: providerData } = useQuery({
+  const { data: providerData, isLoading: providerDataIsLoading } = useQuery({
     queryKey: ['provider', companyNo],
     queryFn: async () => await companiesService.getCompanyProviders(Number(companyNo)),
     refetchOnWindowFocus: 'always',
@@ -86,7 +87,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     search,
     data: providerGoodsData,
     refetch,
-    isLoading,
+    isLoading: providerGoodsDataisLoading,
   } = useSearchFilter<IProviderGoodsRequest, IPaginationResponse<IProviderGoodsInfo>>(
     (params) => companiesService.getProviderGoods(Number(companyNo), Number(selectedProviderNo), params),
     {
@@ -98,7 +99,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     },
   )
 
-  const { data: selectProviderGoodsData } = useQuery({
+  const { data: selectProviderGoodsData, isLoading: selectProviderGoodsDataIsLoading } = useQuery({
     queryKey: ['selectProviderGoodsData', selectedProviderNo],
     queryFn: async () => await dataProviderService.getProviderGoods(Number(selectedProviderNo)),
     refetchOnWindowFocus: 'always',
@@ -107,6 +108,13 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     staleTime: 0,
     enabled: !!selectedProviderNo,
   })
+
+  const isLoading =
+    providerDetailDataIsLoading ||
+    providerLatestUpdatedDataIsLoading ||
+    providerDataIsLoading ||
+    providerGoodsDataisLoading ||
+    selectProviderGoodsDataIsLoading
 
   const options = useMemo(
     () =>
@@ -277,13 +285,15 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
           }}
         />,
       )
+    } else {
+      setSubHeader(<AdminSkeleton loading={isLoading} subHeader />)
     }
 
     return () => {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [providerDetailData, providerLatestUpdatedData, options, selectedCompany, isActive, setCustomComponent, setSubHeader])
+  }, [providerDetailData, providerLatestUpdatedData, options, selectedCompany, isActive, setCustomComponent, setSubHeader, isLoading])
 
   const handleOnRowClick = (goodsNo: number) => {
     navigate(`/admin/customer-company/companies/provider-detail/${companyNo}/${selectedProviderNo}/${goodsNo}`, {
@@ -333,7 +343,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   }
 
   return (
-    <>
+    <AdminSkeleton loading={isLoading} table>
       <Box>
         <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
           <Box>
@@ -476,7 +486,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
           </RadioGroup>
         </Box>
       </MIConfirm>
-    </>
+    </AdminSkeleton>
   )
 }
 
