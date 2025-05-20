@@ -34,6 +34,7 @@ type MISelectProps = {
   onChange?: (e: { target: { value: string | number | (string | number)[] } }) => void
   options?: readonly OptionType[]
   useAllOption?: boolean
+  showClearIcon?: boolean
 }
 
 const CustomArrowIcon = ({
@@ -114,6 +115,7 @@ const MISelect = ({
   disabled,
   readOnly,
   onChange,
+  showClearIcon,
   options,
   useAllOption = true,
   width,
@@ -221,7 +223,7 @@ const MISelect = ({
         : {}),
       ...sx,
     }),
-    [minWidth, sizeSelect, showValue, sx, shouldShowClearButton],
+    [minWidth, sizeSelect, shouldShowClearButton, showValue, type, sx],
   )
 
   const getSelectedOption = (value: string | number | (string | number)[] | undefined): OptionType | OptionType[] | null => {
@@ -250,7 +252,7 @@ const MISelect = ({
       )}
       <Autocomplete
         ref={autoCompleteRef}
-        clearIcon={<MIInputClearIcon />}
+        clearIcon={showClearIcon && <MIInputClearIcon />}
         clearOnEscape
         disabled={disabled}
         readOnly={readOnly}
