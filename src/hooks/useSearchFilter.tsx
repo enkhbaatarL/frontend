@@ -114,6 +114,7 @@ const useSearchFilter = <Req, Res>(
 
   const resetFilter = useCallback(() => {
     setFilter(initialValue)
+    setSearchFlg(true)
   }, [initialValue])
 
   useEffect(() => {
