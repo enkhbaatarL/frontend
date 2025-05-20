@@ -41,6 +41,7 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
       case 'A_INSIGHT':
         return `url(${iBgImg})`
       case 'A_CMPY_RPT':
+        return `url(${iBgImg})`
       default:
         return `url(${bgCardImg})`
     }

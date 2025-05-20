@@ -47,16 +47,11 @@ export default function MIBage(props: Readonly<MIChipProps>) {
         backgroundColor: '#E5E0FC',
         color: '#672382',
       }
-    // if (color === 'Inform')
-    //   return {
-    //     backgroundColor: '#DEDEDE',
-    //     color: '#505050',
-    //   }
-    // if (color === 'Trending')
-    //   return {
-    //     color: '#E6513A',
-    //     backgroundColor: '#fff',
-    //   }
+    if (color === 'A_INFORM')
+      return {
+        backgroundColor: '#DEDEDE',
+        color: '#505050',
+      }
     if (color === 'A_ASST_RPT')
       return {
         color: '#823923',
