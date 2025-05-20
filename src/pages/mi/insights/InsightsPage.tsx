@@ -1,7 +1,7 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import InsightsDocumentItem from './components/InsightsDocumentItem'
 
@@ -34,7 +34,6 @@ const InsightsPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
   const [keyword, setKeyword] = useState('')
-  const isPageRefresh = useRef(true)
 
   // 포커스 목록
   const { data: focusedList } = useQuery({
@@ -171,7 +170,7 @@ const InsightsPage = () => {
       }))
     }
     return []
-  }, [insightsData])
+  }, [convertToTypes, insightsData])
 
   const [_checkedValues, setCheckedValues] = useState<string[]>([])
 
@@ -192,16 +191,6 @@ const InsightsPage = () => {
       setCheckedValues([])
     }
   }, [filter.filters])
-
-  useEffect(() => {
-    if (isPageRefresh.current) {
-      updateFilterWithSearch('keyword', '')
-      updateFilterWithSearch('sort', 'NEWEST')
-      updateFilterWithSearch('period', 'ALL_DATES')
-      updateFilterWithSearch('filters', '')
-      isPageRefresh.current = false
-    }
-  }, [updateFilterWithSearch])
 
   return (
     <>

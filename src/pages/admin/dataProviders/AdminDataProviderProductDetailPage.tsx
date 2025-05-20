@@ -109,9 +109,6 @@ const ProductDataListTable = ({
       field: 'goodsDataExpn',
       headerName: t('데이터 설명'),
       flex: 1,
-      renderCell(params: { value: string }) {
-        return <AdminTableCell ellipsis>{params.value}</AdminTableCell>
-      },
     },
     {
       field: 'actions',
@@ -666,8 +663,8 @@ const AdminDataProviderProductDetailPage = () => {
             label: <Typography variant="body2SB14">{t('저장')}</Typography>,
             variant: 'filled',
             color: 'primary',
-            onClick: () => {
-              handleUpdateProduct()
+            onClick: async () => {
+              await handleUpdateProduct()
             },
           },
         ]}
