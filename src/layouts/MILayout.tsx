@@ -1,6 +1,6 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
 
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
@@ -153,6 +153,7 @@ const MILayout = () => {
           }}
         >
           <Outlet key={outletKey} />
+          <ScrollRestoration />
         </Box>
 
         <MIFooter />

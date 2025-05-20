@@ -43,11 +43,11 @@ interface MIHeaderMainLayoutProps {
 
 const MIHeaderMainLayout = ({ pages }: MIHeaderMainLayoutProps) => {
   const navigate = useNavigate()
-  const { user, setAccessCompanyInfo } = useAuthStore()
+  const { user, accessCompanyInfo, setAccessCompanyInfo } = useAuthStore()
 
   const [selectedCompany, setSelectedCompany] = useState({
-    label: user?.companyNm ?? '',
-    value: user?.companyNo ?? 0,
+    label: accessCompanyInfo?.customerCompanyNm ?? user?.companyNm ?? '',
+    value: accessCompanyInfo?.customerCompanyNo ?? user?.companyNo ?? 0,
   })
   const [isOpenCompany, setIsOpenCompany] = useState(false)
 
