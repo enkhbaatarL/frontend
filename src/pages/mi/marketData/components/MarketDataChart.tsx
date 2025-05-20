@@ -63,7 +63,7 @@ const getChangeRateLabel = (changeRate: number) => {
   const isPositive = changeRate >= 0
 
   return (
-    <Typography component={'div'} color={isPositive ? '#498B47' : '#A9141A'} lineHeight={1} variant="fieldLabel">
+    <Typography component={'div'} color={isPositive ? '#3C8A36' : '#A9141A'} lineHeight={1} variant="fieldLabel">
       {isPositive ? '+' : ''}
       {changeRate}%
     </Typography>
