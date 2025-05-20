@@ -24,7 +24,6 @@ const MarketDataPage = () => {
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
   const initialFetchRef = useRef(false)
-  const isPageRefresh = useRef(true)
 
   // Data Dashboard
   const { data: dashboardList } = useQuery<IMarketData[]>({
@@ -67,13 +66,6 @@ const MarketDataPage = () => {
   })
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
-
-  useEffect(() => {
-    if (isPageRefresh.current) {
-      updateFilterWithSearch('keyword', '')
-      isPageRefresh.current = false
-    }
-  }, [updateFilterWithSearch])
 
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
