@@ -28,18 +28,26 @@ import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
 
 interface ProductDataTableProps {
-  data: IPaginationResponse<IProviderGoodsDataInfo>
+  data: IPaginationResponse<IProviderGoodsDataInfo> | undefined
   isPublic: boolean
   search: string
   setSearch: (value: string) => void
   setSearchValue: (value: string) => void
   onRegister: (dataNo?: number) => void
+  size: number
+  updateSize: (value: number) => void
+  updatePage: (value: number) => void
+  isLoading: boolean
 }
 interface AuthorityDetailTableProps {
-  data: IPaginationResponse<IProductCompanyPermissionInfo>
+  data: IPaginationResponse<IProductCompanyPermissionInfo> | undefined
   searchCompanyNm: string
   setCompanyNmSearch: (value: string) => void
   setCompanyNmSearchValue: (value: string) => void
+  size: number
+  updateSize: (value: number) => void
+  updatePage: (value: number) => void
+  isLoading: boolean
 }
 const AdminDataProviderProductDetailPageHeader = (props: { onChange: (value: boolean) => void; value: boolean; label: string }) => (
   <Stack direction="row" alignItems="center" sx={{ ml: 'auto' }}>
@@ -59,7 +67,18 @@ const CustomPageTitle = () => (
 )
 
 // 데이터 목록 테이블
-const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValue, onRegister }: ProductDataTableProps) => {
+const ProductDataListTable = ({
+  data,
+  isPublic,
+  search,
+  setSearch,
+  setSearchValue,
+  onRegister,
+  size,
+  updateSize,
+  updatePage,
+  isLoading,
+}: ProductDataTableProps) => {
   const user = useAuthStore((state) => state.user)
 
   const columns: GridColDef[] = [
@@ -79,7 +98,11 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
       headerName: t('데이터명'),
       maxWidth: 360,
       renderCell(params: { value: string }) {
-        return <AdminTableCell typography={{ variant: 'body2SB14' }}>{params.value}</AdminTableCell>
+        return (
+          <AdminTableCell ellipsis typography={{ variant: 'body2SB14' }}>
+            {params.value}
+          </AdminTableCell>
+        )
       },
     },
     {
@@ -87,7 +110,7 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
       headerName: t('데이터 설명'),
       flex: 1,
       renderCell(params: { value: string }) {
-        return <AdminTableCell>{params.value}</AdminTableCell>
+        return <AdminTableCell ellipsis>{params.value}</AdminTableCell>
       },
     },
     {
@@ -149,13 +172,31 @@ const ProductDataListTable = ({ data, isPublic, search, setSearch, setSearchValu
           </AdminButton>
         </Box>
       </Box>
-      <AdminTable getRowId={(row) => row.goodsDataNo} columns={columns} data={data} />
+      <AdminSkeleton loading={isLoading} table>
+        <AdminTable
+          getRowId={(row) => row.goodsDataNo}
+          columns={columns}
+          data={data}
+          size={size}
+          onSizeChange={updateSize}
+          onPageChange={updatePage}
+        />
+      </AdminSkeleton>
     </Box>
   )
 }
 
 // 권한 상세 테이블
-const AuthorityDetailTable = ({ data, searchCompanyNm, setCompanyNmSearch, setCompanyNmSearchValue }: AuthorityDetailTableProps) => {
+const AuthorityDetailTable = ({
+  data,
+  searchCompanyNm,
+  setCompanyNmSearch,
+  setCompanyNmSearchValue,
+  size,
+  updateSize,
+  updatePage,
+  isLoading,
+}: AuthorityDetailTableProps) => {
   const columns: GridColDef[] = [
     {
       field: 'companyNm',
@@ -233,7 +274,16 @@ const AuthorityDetailTable = ({ data, searchCompanyNm, setCompanyNmSearch, setCo
           />
         </Box>
       </Box>
-      <AdminTable getRowId={(row) => row.companyNo} columns={columns} data={data} />
+      <AdminSkeleton loading={isLoading} table>
+        <AdminTable
+          getRowId={(row) => row.companyNo}
+          columns={columns}
+          data={data}
+          size={size}
+          onSizeChange={updateSize}
+          onPageChange={updatePage}
+        />
+      </AdminSkeleton>
     </Box>
   )
 }
@@ -249,6 +299,10 @@ const AdminDataProviderProductDetailPage = () => {
   const [isErrorProviderName, setIsErrorProviderName] = useState(true)
   const [editProductName, setEditProductName] = useState('')
   const [editProductDescription, setEditProductDescription] = useState('')
+  const [size, setSize] = useState(20)
+  const [page, setPage] = useState(1)
+  const [permissionSize, setPermissionSize] = useState(20)
+  const [permissionPage, setPermissionPage] = useState(1)
   const { showSnackbar } = useSnackbar()
   const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
@@ -276,13 +330,15 @@ const AdminDataProviderProductDetailPage = () => {
 
   // 데이터 목록
   const { data: dataList, isLoading: dataListIsLoading } = useQuery({
-    queryKey: ['dataList', searchValue],
-    queryFn: async () =>
-      await dataProviderService.getProviderGoodsDataList(Number(providerNo), Number(goodsNo), {
+    queryKey: ['dataList', searchValue, size, page],
+    queryFn: async () => {
+      const data = await dataProviderService.getProviderGoodsDataList(Number(providerNo), Number(goodsNo), {
         keyword: searchValue,
-        page: 1,
-        size: 20,
-      }),
+        page,
+        size,
+      })
+      return data
+    },
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     gcTime: 0,
@@ -292,12 +348,12 @@ const AdminDataProviderProductDetailPage = () => {
 
   // 권한 상세 목록
   const { data: companyPermissionList, isLoading: companyPermissionListIsLoading } = useQuery({
-    queryKey: ['companyPermissionList', searchCompanyNmValue],
+    queryKey: ['companyPermissionList', searchCompanyNmValue, permissionSize, permissionPage],
     queryFn: async () =>
       await dataProviderService.getProductCompanyPermissionList(Number(providerNo), Number(goodsNo), {
         companyNm: searchCompanyNmValue,
-        page: 1,
-        size: 20,
+        page: permissionPage,
+        size: permissionSize,
       }),
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
@@ -455,28 +511,31 @@ const AdminDataProviderProductDetailPage = () => {
 
   return (
     <>
-      <AdminSkeleton loading={isLoading} table>
-        {dataList && (
-          <ProductDataListTable
-            data={dataList}
-            isPublic={isPublic}
-            search={search}
-            setSearch={setSearch}
-            setSearchValue={setSearchValue}
-            onRegister={onRegister}
-          />
-        )}
-      </AdminSkeleton>
-      <AdminSkeleton loading={isLoading} table>
-        {user?.userRoleCd === UserRole.ADMIN && companyPermissionList && (
-          <AuthorityDetailTable
-            data={companyPermissionList}
-            searchCompanyNm={searchCompanyNm}
-            setCompanyNmSearch={setSearchCompanyNm}
-            setCompanyNmSearchValue={setSearchCompanyNmValue}
-          />
-        )}
-      </AdminSkeleton>
+      <ProductDataListTable
+        data={dataList}
+        isPublic={isPublic}
+        search={search}
+        setSearch={setSearch}
+        setSearchValue={setSearchValue}
+        onRegister={onRegister}
+        size={size}
+        updateSize={(size) => setSize(size)}
+        updatePage={(page) => setPage(page)}
+        isLoading={dataListIsLoading}
+      />
+
+      {user?.userRoleCd === UserRole.ADMIN && (
+        <AuthorityDetailTable
+          data={companyPermissionList}
+          searchCompanyNm={searchCompanyNm}
+          setCompanyNmSearch={setSearchCompanyNm}
+          setCompanyNmSearchValue={setSearchCompanyNmValue}
+          size={permissionSize}
+          updateSize={(size) => setPermissionSize(size)}
+          updatePage={(page) => setPermissionPage(page)}
+          isLoading={companyPermissionListIsLoading}
+        />
+      )}
 
       <MIConfirm
         open={openActiveConfirm}

@@ -1,6 +1,5 @@
 import { Outlet, RouteObject } from 'react-router-dom'
 
-import PolicyPage from '@/pages/common/PolicyPage'
 import TermPage from '@/pages/common/TermPage'
 import UserChartSamplePage from '@/pages/mi/UserChartSamplePage'
 import ComponentTestPage from '@/pages/test/ComponentTestPage'
