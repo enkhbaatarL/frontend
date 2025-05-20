@@ -26,7 +26,7 @@ interface InsightsCardBtnProps {
 const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
   const [isHover, setIsHover] = useState(false)
 
-  const background = useMemo(() => {
+  const backgroundImageUrl = useMemo(() => {
     if (!isHover) {
       return `url(${bgCardImg})`
     }
@@ -79,22 +79,33 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
       sx={{
         position: 'relative',
         cursor: 'pointer',
+        transition: 'all 0.3s ease-in-out',
+        transform: isHover ? 'scale3d(0.994, 0.994, 0.994)' : 'scale3d(1, 1, 1)',
+        backgroundColor: 'transparent',
+        boxShadow: isHover ? 'none' : '0px 5px 15px rgba(0, 0, 0, 0.1)',
+        borderRadius: 1,
+        overflow: 'hidden',
       }}
+      onMouseOver={() => setIsHover(true)}
+      onMouseOut={() => setIsHover(false)}
     >
       <Box
         sx={{
           position: 'absolute',
-          backgroundImage: background,
+          backgroundImage: backgroundImageUrl,
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center center',
-          backgroundSize: '50% / cover',
+          backgroundSize: 'cover',
           inset: 0,
+          transition: 'background-image 0.3s linear',
           '& img': {
             position: 'absolute',
             bottom: 0,
             right: 0,
             opacity: isHover ? 1 : 0.3,
-            transition: 'all 0.3s linear',
+            transform: isHover ? 'scale(1)' : 'scale(0.95)',
+            transformOrigin: 'right bottom',
+            transition: 'opacity 0.3s linear, transform 0.4s ease 0.1s',
           },
         }}
       >
@@ -106,7 +117,6 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
         direction={'column'}
         alignItems={'start'}
         justifyContent={'space-between'}
-        borderRadius={1}
         sx={{
           position: 'relative',
           zIndex: 1,
@@ -114,22 +124,38 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
             xs: '20px',
             md: '20px 80px 20px 20px',
           },
+          transition: 'padding 0.3s ease',
         }}
-        onMouseOver={() => setIsHover(true)}
-        onMouseOut={() => setIsHover(false)}
       >
-        <MIBage color={report.type} label={reportType} />
+        <MIBage
+          color={report.type}
+          label={reportType}
+          sx={{
+            transition: 'all 0.2s ease-out',
+            opacity: isHover ? 0.8 : 1,
+          }}
+        />
         <Typography
-          sx={{ WebkitLineClamp: index > 3 ? 3 : 6 }}
-          color="white"
-          mt={4.5}
-          mb={'auto'}
+          sx={{
+            WebkitLineClamp: index > 3 ? 3 : 6,
+            transition: 'all 0.2s ease-out 0.03s',
+            color: 'white',
+            mt: 4.5,
+            mb: 'auto',
+          }}
           component="h4"
           variant="titleCardInsight"
         >
           {report.title}
         </Typography>
-        <Grid container alignItems="center">
+        <Grid
+          container
+          alignItems="center"
+          sx={{
+            transition: 'all 0.2s ease-out 0.1s',
+            transform: isHover ? 'translateY(1px)' : 'translateY(0px)',
+          }}
+        >
           <Typography color={'#fff'} variant={'subtext'}>
             {formatDate}
           </Typography>
