@@ -1,7 +1,7 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import bgmImg from '@/assets/bgmarket.jpg'
@@ -12,7 +12,6 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import useSearchFilter from '@/hooks/useSearchFilter.tsx'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
-import MarketDataChartSmall from '@/pages/mi/marketData/components/MarketDataChartSmall'
 import marketDataService, { IDataCatalogItem, IDataCatalogRequest, IMarketData } from '@/service/mi/marketData.ts'
 import useAuthStore from '@/store/useAuthStore.ts'
 import theme from '@/theming'
@@ -20,6 +19,8 @@ import { IPaginationResponse } from '@/types/api.ts'
 
 const MarketDataPage = () => {
   const { accessCompanyInfo } = useAuthStore()
+  const navigate = useNavigate()
+
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
   const initialFetchRef = useRef(false)
@@ -64,20 +65,14 @@ const MarketDataPage = () => {
     staleTime: 0,
   })
 
+  const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
+
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
       initialFetchRef.current = true
       updateFilterWithSearch('customerCompanyNo', accessCompanyInfo.customerCompanyNo)
     }
   }, [accessCompanyInfo, updateFilterWithSearch])
-
-  const chartDataList = dashboardList || []
-  const normalizedChartData = chartDataList.slice(0, 10)
-
-  const largeCharts = normalizedChartData.slice(0, 2)
-  const smallCharts = normalizedChartData.slice(2, 10)
-
-  const navigate = useNavigate()
 
   return (
     <>
@@ -114,30 +109,16 @@ const MarketDataPage = () => {
           Data Dashboard
         </Typography>
         <Grid mb={17.5} container spacing={5}>
-          {/* 큰 차트 2개 표시 */}
           <Grid width={'100%'} container direction={'row'} gap={5}>
-            {largeCharts.length > 0 ? (
-              largeCharts.map((chartData, index) => (
-                <Grid key={`large-chart-${index}`} size={6}>
-                  <MarketDataChart data={chartData} />
-                </Grid>
-              ))
-            ) : (
-              // 데이터가 없을 경우
-              <></>
-            )}
-          </Grid>
-
-          {/* 작은 차트 8개 표시 */}
-          <Grid width={'100%'} container direction={'row'} gap={5}>
-            {smallCharts.length > 0 ? (
-              smallCharts.map((chartData, index) => (
-                <Grid key={`small-chart-${index}`} size={3}>
-                  <MarketDataChartSmall data={chartData} isClock={!chartData.isPermitted} />
-                </Grid>
-              ))
-            ) : (
-              <></>
+            {normalizedChartData?.map((chartData, index) => (
+              // 2개: 큰 차트, 8개: 작은 차트
+              <Grid key={`market-data-chart-${index}`} size={index <= 1 ? 6 : 3}>
+                <MarketDataChart data={chartData} size={index <= 1 ? 'large' : 'small'} locked={!chartData.isPermitted} />
+              </Grid>
+            )) ?? (
+              <Grid size={3}>
+                <Typography>No results found</Typography>
+              </Grid>
             )}
           </Grid>
         </Grid>
@@ -197,7 +178,7 @@ const MarketDataPage = () => {
                   rowId: 'goodsDataNo',
                   rows: data?.detail,
                   onRowClick: (row) => {
-                    navigate(`mi/data-detail/goods/${row.row.goodsNo}/goods-data/${row.row.goodsDataNo}`)
+                    navigate(`/mi/data-detail/${row.row.goodsNo}/${row.row.goodsDataNo}`)
                   },
                 }}
                 paginationProps={{
@@ -224,7 +205,7 @@ const MarketDataPage = () => {
                   <Box
                     p={3}
                     key={index}
-                    onClick={() => navigate(`mi/data-detail/goods/${item.goodsNo}/goods-data/${item.goodsDataNo}`)}
+                    onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
                     sx={{
                       cursor: 'pointer',
                       '&:hover': {
