@@ -36,10 +36,10 @@ export interface IMarketMetaData {
 }
 
 export interface IMarketData {
-  mainChart: IMainGraph
+  mainChart?: IMainGraph
   isPermitted: boolean
-  marketMetaData: IMarketMetaData
-  compareCharts: ICompareGraph[]
+  marketMetaData?: IMarketMetaData
+  compareCharts?: ICompareGraph[]
 }
 
 export interface IDataCatalogRequest extends IPaginationRequest {

@@ -240,22 +240,39 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
   const metaData = locked ? { ...data.marketMetaData, ...dummyMetaData } : data.marketMetaData
   const displayData = locked
     ? {
-      ...data,
       mainChart: {
-        ...data.mainChart,
-        rawData: data.mainChart.rawData.map(({ date }, index) => ({
-          date,
-          value: dummyChartData.mainChart[index],
+        rawData: dummyChartData.mainChart.map((value, index) => ({
+          date: String(index),
+          value,
         })),
       },
       compareCharts: [
         {
-          rawData: data.mainChart.rawData.map(({ date }, index) => ({
-            date,
-            value: dummyChartData.compareCharts[index],
+          rawData: dummyChartData.compareCharts.map((value, index) => ({
+            date: String(index),
+            value,
           })),
         },
       ],
+      isPermitted: false,
+      marketMetaData: {
+        chartMarkRank: 0,
+        goodsNo: 0,
+        goodsDataNo: 0,
+        goodsDataSourceNo: 0,
+        goodsDataNm: '',
+        goodsDataSourceNm: '',
+        currency: '',
+        currentUnitCd: '',
+        visibleChartType: '',
+        interval: '',
+        lastUpdateDt: '',
+        indexStartDt: '',
+        lastValue: 0,
+        yoyChangeRate: 0,
+        momChangeRate: 0,
+        wowChangeRate: 0,
+      },
     }
     : data
 
@@ -278,7 +295,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
             backgroundColor: '#F8F9FA',
           },
       }}
-      onClick={() => !locked && navigate(`/mi/data-detail/${data?.marketMetaData.goodsNo}/${data?.marketMetaData.goodsDataNo}`)}
+      onClick={() => !locked && navigate(`/mi/data-detail/${data?.marketMetaData?.goodsNo}/${data?.marketMetaData?.goodsDataNo}`)}
     >
       <Typography color="gray.90" mb={size === 'large' ? 5 : 2.5} component="h4" variant="sectionTitleTXL">
         {metaData.goodsDataNm}
