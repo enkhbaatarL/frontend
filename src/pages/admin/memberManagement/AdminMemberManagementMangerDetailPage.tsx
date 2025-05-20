@@ -1,4 +1,5 @@
 import ErrorIcon from '@mui/icons-material/Error'
+import { Box } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
@@ -6,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminAccessControlForm from '@/components/admin/AdminAccessControlForm'
 import AdminButton from '@/components/admin/AdminButton'
-import AdminLoading from '@/components/admin/AdminLoading'
+import AdminSkeleton, { AdminAccessControlFormSkeleton } from '@/components/admin/AdminSkeleton.tsx'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
@@ -67,10 +68,15 @@ const AdminMemberManagementMangerDetailPage = () => {
     }
   }, [data, navigate, setCustomComponent, userNo])
 
-  return isLoading ? (
-    <AdminLoading />
-  ) : (
-    <>
+  return (
+    <AdminSkeleton
+      loading={isLoading}
+      custom={
+        <Box display={'flex'} flexDirection={'column'} gap={'60px'}>
+          <AdminAccessControlFormSkeleton />
+        </Box>
+      }
+    >
       <AdminAccessControlForm
         mode="view"
         displayManagerInfo={displayManagerInfo}
@@ -112,7 +118,7 @@ const AdminMemberManagementMangerDetailPage = () => {
       >
         {t('삭제 시 관리자의 모든 권한이 즉시 해제됩니다.')}
       </MIConfirm>
-    </>
+    </AdminSkeleton>
   )
 }
 
