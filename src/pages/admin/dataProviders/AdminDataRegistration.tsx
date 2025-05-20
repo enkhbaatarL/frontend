@@ -247,10 +247,10 @@ const AdminDataRegistration = () => {
       ...rest,
       ...(isEdit ? { goodsDataExpn } : { goodsExpn: goodsDataExpn }),
       langCategoryList: langCategoryList.map((m) => ({
-        CodeId: m,
+        codeId: m,
       })),
       docCategoryList: docCategoryList.map((m) => ({
-        CodeId: m,
+        codeId: m,
       })),
       structuredDataList: filesStructured.map(({ componentTypeId, fileNo }) => ({ componentTypeId, fileNo })),
       unstructuredDataList: [...filesUnstructured, ...(dataDetail?.unstructuredDataList ?? [])].map(({ criteriaDt, fileNo }) => ({

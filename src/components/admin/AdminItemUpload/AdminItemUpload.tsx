@@ -10,7 +10,6 @@ import folderIcon from '@/assets/folder.svg'
 import pdfIcon from '@/assets/pdficon.svg'
 import Flex from '@/components/common/display/Flex'
 import CloseIcon from '@/components/common/icons/CloseIcon'
-import { formatSize } from '@/utils/dataUtil'
 
 export type FileType =
   | 'application/pdf'
