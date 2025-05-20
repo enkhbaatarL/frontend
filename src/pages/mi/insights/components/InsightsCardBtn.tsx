@@ -1,5 +1,6 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { FC, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import arBgImg from '@/assets/asset-report-bg.png'
 import bgCardImg from '@/assets/bgcard.png'
@@ -17,6 +18,7 @@ export interface Report {
   date: string
   source: string
   typeId: string
+  goodsNo?: number
 }
 interface InsightsCardBtnProps {
   report: Report
@@ -25,6 +27,7 @@ interface InsightsCardBtnProps {
 
 const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
   const [isHover, setIsHover] = useState(false)
+  const navigate = useNavigate()
 
   const backgroundImageUrl = useMemo(() => {
     if (!isHover) {
@@ -88,6 +91,9 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
       }}
       onMouseOver={() => setIsHover(true)}
       onMouseOut={() => setIsHover(false)}
+      onClick={() => {
+        navigate(`/mi/data-detail/${report.goodsNo}/${report.typeId}`)
+      }}
     >
       <Box
         sx={{

@@ -110,6 +110,7 @@ const InsightsPage = () => {
         date: item.modifyDt,
         source: item.providerNm,
         typeId: item.goodsDataNo,
+        goodsNo: item.goodsNo,
       }))
     }
     return []
