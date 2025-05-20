@@ -21,14 +21,14 @@ export type FileType =
   | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   | 'application/vnd.ms-powerpoint'
   | 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-  | 'image/jpeg'
+  | 'image/*'
 
 export interface FileInfo {
   fileNo: number
   componentTypeId?: string
   fileNm: string
   fileSize: number
-  url?: string
+  fileUrl?: string
   type: FileType
 }
 
@@ -52,7 +52,7 @@ const fileTypeIconMapper = (type: FileType, url?: string) => {
     'text/csv': fileIcon,
     'application/msword': docIcon,
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': docIcon,
-    'image/jpeg': folderIcon,
+    'image/*': folderIcon,
     'application/vnd.ms-excel': docIcon,
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': docIcon,
     'application/vnd.ms-powerpoint': docIcon,
@@ -78,7 +78,7 @@ const AdminItemUpload = ({
     return checkFile
   }, [showChecking, checkFile, progressValue])
 
-  const iconSrc = useMemo(() => fileTypeIconMapper(fileItem.type, fileItem.url), [fileItem.type, fileItem.url])
+  const iconSrc = useMemo(() => fileTypeIconMapper(fileItem.type, fileItem.fileUrl), [fileItem.type, fileItem.fileUrl])
   return (
     <div className="upload-field-file-item" style={{ width: widthItem }}>
       <img src={iconSrc} className="upload-field-file-preview" />

@@ -1,40 +1,39 @@
 import { Typography } from '@mui/material'
-import { Dayjs } from 'dayjs'
-import { useState } from 'react'
+import dayjs, { Dayjs } from 'dayjs'
+import { useMemo } from 'react'
 
 import MIDatePicker from '@/components/common/datepicker/MIDatePicker'
 import Flex from '@/components/common/display/Flex'
 
 interface MIDateRangePickerProps {
-  onChange?: (dates: { startDate: Dayjs | null; endDate: Dayjs | null }) => void
+  onChange?: (dates: { startDate?: Dayjs; endDate?: Dayjs }) => void
   sizeInput?: 'h34' | 'h36' | 'h26'
   disabled?: boolean
   readOnly?: boolean
+  startDate?: string
+  endDate?: string
 }
 
-export default function MIDateRangePicker({ onChange, sizeInput = 'h34', disabled, readOnly }: Readonly<MIDateRangePickerProps>) {
-  const [startDate, setStartDate] = useState<Dayjs | null>(null)
-  const [endDate, setEndDate] = useState<Dayjs | null>(null)
+export default function MIDateRangePicker({
+  onChange,
+  sizeInput = 'h34',
+  disabled,
+  readOnly,
+  startDate,
+  endDate,
+}: Readonly<MIDateRangePickerProps>) {
+  const dateValues = useMemo(() => ({ startDate: dayjs(startDate), endDate: dayjs(endDate) }), [startDate, endDate])
 
   const handleStartChange = (value: Dayjs | null) => {
-    if (value && endDate?.isBefore(value, 'day')) {
-      setEndDate(null)
-    }
-    setStartDate(value)
-    onChange?.({ startDate: value, endDate: endDate && !endDate.isBefore(value) ? endDate : null })
+    const endDateVal = value && dateValues.endDate?.isBefore(value, 'day') ? undefined : dateValues.endDate
+    onChange?.({ startDate: value ?? undefined, endDate: endDateVal })
   }
-
   const handleEndChange = (value: Dayjs | null) => {
-    if (value && startDate && value.isBefore(startDate, 'day')) {
-      setStartDate(null)
-    }
-    setEndDate(value)
-    onChange?.({ startDate: startDate && !value?.isBefore(startDate) ? startDate : null, endDate: value })
+    onChange?.({ startDate: dateValues.startDate, endDate: value ?? undefined })
   }
-
   return (
     <Flex direction="row" align="center">
-      <MIDatePicker readOnly={readOnly} disabled={disabled} size={sizeInput} value={startDate} onChange={handleStartChange} />
+      <MIDatePicker readOnly={readOnly} disabled={disabled} size={sizeInput} value={dayjs(startDate)} onChange={handleStartChange} />
       <Typography sx={{ marginX: 2 }} color="gray.50" component="span">
         ~
       </Typography>
@@ -42,9 +41,9 @@ export default function MIDateRangePicker({ onChange, sizeInput = 'h34', disable
         readOnly={readOnly}
         disabled={disabled}
         size={sizeInput}
-        value={endDate}
+        value={dayjs(endDate)}
         onChange={handleEndChange}
-        minDate={startDate || undefined}
+        minDate={dayjs(startDate) || undefined}
       />
     </Flex>
   )

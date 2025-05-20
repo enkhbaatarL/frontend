@@ -112,9 +112,7 @@ const AdminBoardsNoticeEditPage = () => {
   }, [disabledSaveButton, navigate, noticeNo, setCustomComponent])
 
   useEffect(() => {
-    if (data) {
-      setFormData(data)
-    }
+    if (data) setFormData(data)
   }, [data])
 
   return isLoading ? (

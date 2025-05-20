@@ -20,7 +20,7 @@ const DataDetailPage = () => {
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
 
-  const handleDateChange = ({ startDate, endDate }: { startDate: Dayjs | null; endDate: Dayjs | null }) => {
+  const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
     setStartDate(startDate?.format('YYYYMMDD') ?? '')
     setEndDate(endDate?.format('YYYYMMDD') ?? '')
   }
@@ -77,7 +77,7 @@ const DataDetailPage = () => {
                     tableHeader={
                       <Grid container justifyContent="space-between">
                         <Box maxWidth={465}>
-                          <MIDateRangePicker onChange={handleDateChange} />
+                          <MIDateRangePicker onChange={handleDateChange} startDate={startDate} endDate={endDate} />
                         </Box>
                         <MIButton
                           toolTip={'엑셀 다운로드'}
