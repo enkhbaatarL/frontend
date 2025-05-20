@@ -1,14 +1,17 @@
 import CancelIcon from '@mui/icons-material/Cancel'
 import { Chip, Box, Grid2 as Grid, Typography } from '@mui/material'
 import Switch from '@mui/material/Switch'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { ChangeEvent, Dispatch, SetStateAction } from 'react'
 
+import AdminItemUpload from './AdminItemUpload/AdminItemUpload'
+
 import AdminChip from '@/components/admin/AdminChip'
-import AdminField from '@/components/admin/AdminField'
+import AdminField, { AdminDateRangeType } from '@/components/admin/AdminField'
 import Flex from '@/components/common/display/Flex'
+import useSnackbar from '@/hooks/useSnackbar'
 import boardService, { INoticeDetailInfo } from '@/service/admin/board'
 import companiesService from '@/service/admin/companies'
 
@@ -19,6 +22,7 @@ interface Props {
 }
 
 const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
+  const { showSnackbar } = useSnackbar()
   const { data: options } = useQuery({
     queryKey: ['getNoticeFilter'],
     queryFn: async () => await boardService.getNoticeFilter(),
@@ -35,7 +39,6 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
   const handleOnTargetDelete = (customerCompanyNo: number) => {
     setFormData?.((prev) => {
       const targetList = prev.targetList.filter((target) => target.customerCompanyNo !== customerCompanyNo)
-
       return {
         ...formData,
         targetList,
@@ -66,6 +69,36 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
       })}
     />
   )
+
+  /**
+   * POST 공지사항 이미지 파일 업로드
+   */
+  const { mutate: uploadNoticeFile } = useMutation({
+    mutationFn: ({ file }: { file: File }) => {
+      const formFileData = new FormData()
+      formFileData.append('file', file)
+      return boardService.uploadNoticeFile(formFileData)
+    },
+    onSuccess: (data) => {
+      setFormData?.((prev) => ({
+        ...prev,
+        fileList: [data],
+      }))
+    },
+    onError: () => showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' }),
+  })
+
+  const handleFileChange = (files: File[]) => {
+    if (!files?.[0]) return
+    uploadNoticeFile({ file: files[0] })
+  }
+
+  const handleRemoveFile = () => {
+    setFormData?.((prev) => ({
+      ...prev,
+      fileList: [],
+    }))
+  }
 
   return (
     <Grid sx={{ maxWidth: 700 }} container direction="column" spacing={7.5}>
@@ -107,6 +140,9 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
                 setFormData?.((prev) => ({
                   ...prev,
                   isPopupUse: event.target.checked,
+                  ...(event.target.checked
+                    ? { popupPostBeginDt: dayjs().format('YYYYMMDD'), popupPostEndDt: '99991231' }
+                    : { popupPostBeginDt: '', popupPostEndDt: '' }),
                 }))
               }}
             />
@@ -123,7 +159,7 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
               labelVariant="subtitle"
               labelColor="gray.90"
               fullWidth
-              value={[dayjs(formData.popupPostBeginDt), dayjs(formData.popupPostEndDt)]}
+              value={[formData.popupPostBeginDt, formData.popupPostEndDt]}
               onChange={(value) => {
                 if (Array.isArray(value) && value.length === 2 && setFormData) {
                   const [startDate, endDate] = value
@@ -190,18 +226,13 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
             labelColor="gray.90"
             required
             fullWidth
-            value={[dayjs(formData.bulletinValidBeginDt), dayjs(formData.bulletinValidEndDt)]}
-            onChange={(value) => {
-              if (Array.isArray(value) && value.length === 2 && setFormData) {
-                const [startDate, endDate] = value
-                if (dayjs.isDayjs(startDate) && dayjs.isDayjs(endDate)) {
-                  setFormData((prev) => ({
-                    ...prev,
-                    bulletinValidBeginDt: startDate.isValid() ? startDate.format('YYYYMMDD') : '',
-                    bulletinValidEndDt: endDate.isValid() ? endDate.format('YYYYMMDD') : '',
-                  }))
-                }
-              }
+            value={[formData.bulletinValidBeginDt, formData.bulletinValidEndDt]}
+            onChange={({ startDate, endDate }: AdminDateRangeType) => {
+              setFormData?.((prev) => ({
+                ...prev,
+                bulletinValidBeginDt: startDate ? startDate.format('YYYYMMDD') : '',
+                bulletinValidEndDt: endDate ? endDate.format('YYYYMMDD') : '',
+              }))
             }}
             fieldType="date-range"
           />
@@ -305,7 +336,7 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
           />
         </Grid>
       </Grid>
-      {(formData.fileList.length > 0 || !readonly) && (
+      {(formData.fileList.length !== 0 || !readonly) && (
         <Grid container spacing={7.5}>
           <Grid size={12}>
             <AdminField
@@ -315,16 +346,24 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
               labelVariant="subtitle"
               labelColor="gray.90"
               fullWidth
-              defaultFiles={formData.fileList.map(({ fileNo, fileNm, fileSize, fileUrl }) => ({
-                id: String(fileNo),
-                name: fileNm,
-                size: fileSize,
-                type: '',
-                url: fileUrl,
-              }))}
-              // onChange={handleFileChange}
+              onChange={(files) => handleFileChange(files as File[])}
               fieldType="upload"
             />
+            <>
+              {formData.fileList.length !== 0 && (
+                <div className="upload-field-file-list">
+                  {formData.fileList.map((fileItem, index) => (
+                    <AdminItemUpload
+                      checkFile="pass"
+                      key={index}
+                      fileItem={{ ...fileItem, type: 'image/*' }}
+                      nameStatus={'완료'}
+                      onDelete={handleRemoveFile}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           </Grid>
         </Grid>
       )}

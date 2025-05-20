@@ -68,6 +68,22 @@ export interface INoticeDetailInfo {
   bulletinTitleNm: string
   bulletinCntt: string
   fileList: IFile[]
+  fileNo?: number
+}
+
+export interface INoticeRegisterRequest {
+  isTopFixed: boolean
+  isPopupUse: boolean
+  popupPostBeginDt: string
+  popupPostEndDt: string
+  bulletinCategorySeparateCd: string
+  isWholePost: boolean
+  target: number[]
+  bulletinValidBeginDt: string
+  bulletinValidEndDt: string
+  bulletinTitleNm: string
+  bulletinCntt: string
+  fileNo?: number
 }
 
 /**
@@ -201,13 +217,15 @@ const boardService = {
       target: targetList.map((item) => item.customerCompanyNo),
     })
   },
-  async uploadNoticeFile(): Promise<INoticeFilter> {
-    const response: AxiosResponse<ICommonResponse<INoticeFilter>> = await api.get('admin/bulletinboard-management/notice/upload-file')
-
+  /** 공지사항 이미지 파일 업로드 */
+  async uploadNoticeFile(formData: FormData): Promise<IFile> {
+    const response = await api.post('admin/bulletinboard-management/notice/upload-file', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     return response.data.data
   },
-
-  // /api/v1/admin/bulletinboard-management/notice/upload-file
 }
 
 export default boardService

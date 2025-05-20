@@ -77,7 +77,7 @@ const ChartComponent = () => {
     { label: 'Custom', value: 'custom' },
   ]
 
-  const handleDateChange = ({ startDate, endDate }: { startDate: Dayjs | null; endDate: Dayjs | null }) => {
+  const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
     setStartDate(startDate?.format('YYYYMMDD') ?? '')
     setEndDate(endDate?.format('YYYYMMDD') ?? '')
   }
