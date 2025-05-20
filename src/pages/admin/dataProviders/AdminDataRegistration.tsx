@@ -245,7 +245,10 @@ const AdminDataRegistration = () => {
   /** 데이터 등록 */
   const onRegisterGoodsData = () => {
     const { langCategoryList, docCategoryList, fileTypes, goodsDataExpn, ...rest } = form.state.values
-
+    const getConfirmedUnstructuredFiles = () => {
+      const combinedFiles = [...filesUnstructured, ...(dataDetail?.unstructuredDataList ?? [])]
+      return combinedFiles.filter((f) => !deletedUnstructeredFiles.includes(f.fileNo))
+    }
     const requestBody = {
       ...rest,
       ...(isEdit ? { goodsExpn: goodsDataExpn } : { goodsDataExpn }),
@@ -257,7 +260,7 @@ const AdminDataRegistration = () => {
         codeId: m,
       })),
       structuredDataList: filesStructured.map(({ componentTypeId, fileNo }) => ({ componentTypeId, fileNo })),
-      unstructuredDataList: [...filesUnstructured, ...(dataDetail?.unstructuredDataList ?? [])].map(({ criteriaDt, fileNo }) => ({
+      unstructuredDataList: getConfirmedUnstructuredFiles().map(({ criteriaDt, fileNo }) => ({
         criteriaDt,
         fileNo,
       })),
