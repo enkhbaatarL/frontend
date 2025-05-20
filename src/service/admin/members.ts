@@ -182,11 +182,10 @@ const membersService = {
    * 사용자 목록을 조회합니다.
    * @param params - { page: 페이지 번호, size: 페이지당 항목 수, companyNo: 회사 번호, departmentNm: 부서 명, userNm: 사용자 명, emailAddress: 이메일 주소 }
    */
-  async getUsers(companyNo: number, params: Partial<Omit<IUserRequest, 'userRoleCd'>>): Promise<IPaginationResponse<IUserInfo>> {
+  async getUsers(params: Partial<Omit<IUserRequest, 'userRoleCd'>>): Promise<IPaginationResponse<IUserInfo>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IUserInfo>>> = await api.get('admin/user-management/users', {
       params: {
         ...params,
-        companyNo,
         userRoleCd: UserRole.USER,
       },
     })

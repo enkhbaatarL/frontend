@@ -202,7 +202,7 @@ const AdminCustomerMemberTable = () => {
     IUserRequest,
     IPaginationResponse<IUserInfo>
   >(
-    (params) => membersService.getUsers(Number(companyNo), params),
+    (params) => membersService.getUsers(params),
     {
       userNm: '',
       companyNo,
