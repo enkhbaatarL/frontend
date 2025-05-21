@@ -101,7 +101,11 @@ const AdminBoardsFaqPage = () => {
         const { bulletinCategorySeparateCd } = param.row
         const category = filterOptions?.category.find(({ key }) => key === bulletinCategorySeparateCd)?.value
 
-        return <AdminTableCell ellipsis>{category}</AdminTableCell>
+        return (
+          <AdminTableCell ellipsis cursorPointer>
+            {category}
+          </AdminTableCell>
+        )
       },
     },
     {
@@ -117,7 +121,11 @@ const AdminBoardsFaqPage = () => {
         const { createUserNm, createUserDeptNm, createUserCpnyNm } = param.row.auditInfo
         const tooltipContent = `${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`
 
-        return <AdminTableCell tooltipContent={tooltipContent}>{createUserNm}</AdminTableCell>
+        return (
+          <AdminTableCell tooltipContent={tooltipContent} cursorPointer>
+            {createUserNm}
+          </AdminTableCell>
+        )
       },
     },
     {
@@ -128,7 +136,11 @@ const AdminBoardsFaqPage = () => {
       renderCell: (param) => {
         const { createDt } = param.row.auditInfo
 
-        return <AdminTableCell typography={{ color: 'gray.60' }}>{createDt ? dayjs(createDt).format('YYYY-MM-DD') : null}</AdminTableCell>
+        return (
+          <AdminTableCell typography={{ color: 'gray.60' }} cursorPointer>
+            {createDt ? dayjs(createDt).format('YYYY-MM-DD') : null}
+          </AdminTableCell>
+        )
       },
     },
     {
