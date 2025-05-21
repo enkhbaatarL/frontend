@@ -3,6 +3,7 @@ import { t } from 'i18next'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIChip from '@/components/common/chip/MIChip'
+import ArrowRight from '@/components/common/icons/ArrowRight'
 import BusinessOutlineIcon from '@/components/common/icons/BusinessOutlineIcon'
 import CompanyOutlineIcon from '@/components/common/icons/CompanyOutlineIcon'
 import EmailOutlineIcon from '@/components/common/icons/EmailOutlineIcon'
@@ -93,7 +94,7 @@ const MIProfile = ({ name, role, email, company, team, buttonLabel, onButtonClic
     </Stack>
     {buttonLabel && (
       <Stack sx={{ textAlign: 'center', justifyContent: 'center' }} direction="row" spacing={1.5} alignItems="center">
-        <MIButton width="220px" color="primary" onClick={onButtonClick}>
+        <MIButton width="220px" color="gray" type="outlined" size="h34" onClick={onButtonClick} endIcon={<ArrowRight />}>
           {buttonLabel}
         </MIButton>
       </Stack>

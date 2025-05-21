@@ -97,7 +97,7 @@ const MIHeaderProfile = () => {
               company={user?.companyNm ?? ''}
               team={user?.departmentNm ?? ''}
               role={user?.isOtherServiceAccessPossible ? user?.userRoleCd : undefined}
-              buttonLabel={user?.isOtherServiceAccessPossible ? '어드민 페이지로 이동 (임시)' : undefined}
+              buttonLabel={user?.isOtherServiceAccessPossible ? '어드민 페이지' : undefined}
               onButtonClick={() => {
                 navigate('/admin')
               }}
