@@ -186,7 +186,7 @@ const DrawerProfile = (props: { open: boolean }) => {
           email={user?.userLoginId ?? ''}
           company={user?.companyNm ?? ''}
           team={user?.departmentNm ?? ''}
-          buttonLabel={user?.isOtherServiceAccessPossible ? '사용자 페이지로 이동 (임시)' : undefined}
+          buttonLabel={user?.isOtherServiceAccessPossible ? '서비스 페이지' : undefined}
           onButtonClick={() => {
             navigate('/mi')
           }}
