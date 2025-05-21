@@ -23,24 +23,11 @@ const DocumentInfoItem = ({ label, value }: DocumentInfoItemProps) => (
 )
 
 const DocumentInfoComponent = ({ data }: DocumentInfoComponentProps) => {
-  // 미정
   const dataInfo = useMemo(
     () => [
       {
-        label: 'Category',
-        value: 'Company Report',
-      },
-      {
-        label: 'Region',
-        value: 'Research Department',
-      },
-      {
-        label: 'Country',
-        value: 'PORTFOLIO STRATEGY',
-      },
-      {
         label: 'Language',
-        value: 'EQUITY',
+        value: data.categories.find((cat) => cat.categoryHighCd === 'LANGUAGES')?.value[0] ?? '',
       },
     ],
     [data],
