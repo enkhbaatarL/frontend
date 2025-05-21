@@ -206,7 +206,7 @@ export default function AdminDataProvidersDetailPage() {
       headerName: '상품명',
       maxWidth: 360,
       renderCell(params) {
-        return <MITableCell value={params.value} typography={{ variant: 'body2SB14' }} />
+        return <MITableCell value={params.value} typography={{ variant: 'body2SB14' }} cursorPointer />
       },
     },
     { field: 'goodsExpn', headerName: '상품 설명', flex: 1 },

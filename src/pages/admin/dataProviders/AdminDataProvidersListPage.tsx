@@ -43,7 +43,7 @@ const AdminDataProvidersListPage = () => {
       headerName: '데이터 프로바이더 명',
       flex: 1,
       renderCell(params) {
-        return <MITableCell value={params.value} typography={{ variant: 'body2SB14' }} />
+        return <MITableCell value={params.value} typography={{ variant: 'body2SB14' }} cursorPointer />
       },
     },
     { field: 'providerId', headerName: '고유 코드', maxWidth: 180, align: 'center' },
@@ -54,7 +54,7 @@ const AdminDataProvidersListPage = () => {
       align: 'center',
       renderCell(params) {
         return (
-          <MITableCell>
+          <MITableCell cursorPointer>
             <MIChip label={params.value === true ? '활성' : '비활성'} color={params.value === true ? 'blue' : 'gray'} />
           </MITableCell>
         )
@@ -66,7 +66,7 @@ const AdminDataProvidersListPage = () => {
       maxWidth: 150,
       align: 'center',
       renderCell(params) {
-        return <MITableCell value={params.value} typography={{ color: 'gray.60' }} />
+        return <MITableCell value={params.value} typography={{ color: 'gray.60' }} cursorPointer />
       },
     },
     { field: 'goodsCount', headerName: '상품 수', maxWidth: 80, align: 'right' },
