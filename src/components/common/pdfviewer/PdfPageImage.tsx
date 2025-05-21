@@ -1,7 +1,7 @@
 import { Box, CircularProgress, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
-import { useCallback, MouseEvent, useRef, useEffect, useState } from 'react'
+import { useCallback, MouseEvent, useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 import { useParams } from 'react-router-dom'
 
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
@@ -12,13 +12,17 @@ interface PdfPageImageProps {
   currentPage: number
   numberOfImages: number
   zoomLevel: number
+  initialPadding: number
+}
+
+export interface PdfPageImageHandles {
+  getInitialCanvasSize: () => { width: number; height: number } | null
 }
 
 // 페이지 이미지 URL을 전역적으로 관리하는 객체
 const imageUrlCache: Record<string, string> = {}
 
 const PDF_IMAGE_STALE_TIME = 1000 * 60 * 30 // PDF 이미지 캐시 유효 시간 (30분)
-const INITIAL_PADDING = 32
 
 // 컨텍스트 메뉴(오른쪽 클릭) 방지
 const handleContextMenu = (e: MouseEvent) => {
@@ -39,130 +43,156 @@ const fetchPdfImage = async (fileId: string | number, page: number): Promise<str
   return url
 }
 
-const PdfPageImage = ({ currentPage, numberOfImages, zoomLevel }: PdfPageImageProps) => {
-  const { fileId } = useParams()
+const PdfPageImage = forwardRef<PdfPageImageHandles, PdfPageImageProps>(
+  ({ currentPage, numberOfImages, zoomLevel, initialPadding }, ref) => {
+    const { fileId } = useParams()
 
-  const imageWrapperRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+    const imageWrapperRef = useRef<HTMLDivElement>(null)
+    const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  const [initialImageInfo, setInitialImageInfo] = useState<{
-    width: number
-    height: number
-  } | null>(null)
+    const [initialImageInfo, setInitialImageInfo] = useState<{
+      width: number
+      height: number
+    } | null>(null)
 
-  // 현재 페이지 이미지 조회
-  const {
-    data: imageUrl,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['pdfImage', fileId, currentPage],
-    queryFn: () => fetchPdfImage(fileId!, currentPage),
-    staleTime: PDF_IMAGE_STALE_TIME,
-  })
+    // 현재 페이지 이미지 조회
+    const {
+      data: imageUrl,
+      isLoading,
+      error,
+    } = useQuery({
+      queryKey: ['pdfImage', fileId, currentPage],
+      queryFn: () => fetchPdfImage(fileId!, currentPage),
+      staleTime: PDF_IMAGE_STALE_TIME,
+    })
 
-  const prefetchNeighborPages = useCallback(() => {
-    const pagesToPrefetch: number[] = []
+    useImperativeHandle(
+      ref,
+      () => ({
+        getInitialCanvasSize: () => initialImageInfo,
+      }),
+      [initialImageInfo],
+    )
 
-    // 현재 페이지 기준 앞뒤로 2장씩 미리 로드
-    for (let i = 1; i <= 2; i++) {
-      if (currentPage - i > 0) {
-        pagesToPrefetch.push(currentPage - i)
-      }
-      if (currentPage + i <= numberOfImages) {
-        pagesToPrefetch.push(currentPage + i)
-      }
-    }
+    const prefetchNeighborPages = useCallback(() => {
+      const pagesToPrefetch: number[] = []
 
-    if (pagesToPrefetch.length > 0) {
-      pagesToPrefetch.forEach(async (page) => {
-        await queryClient.prefetchQuery({
-          queryKey: ['pdfImage', fileId, page],
-          queryFn: () => fetchPdfImage(fileId!, page),
-          staleTime: PDF_IMAGE_STALE_TIME,
-        })
-      })
-    }
-  }, [currentPage, fileId, numberOfImages])
-
-  // 페이지가 변경되면 주변 페이지 미리 로드
-  useEffect(() => {
-    prefetchNeighborPages()
-  }, [currentPage, prefetchNeighborPages])
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-
-    if (canvas && imageUrl) {
-      const context = canvas.getContext('2d')
-      const img = new Image()
-      img.src = imageUrl
-
-      img.onload = () => {
-        if (!initialImageInfo) {
-          const { width: containerWidth, height: containerHeight } = imageWrapperRef.current?.parentElement?.getBoundingClientRect() ?? {
-            width: 0,
-            height: 0,
-          }
-          const imageType = img.width > img.height ? 'landscape' : 'portrait'
-
-          // 세로기준 기본값 설정
-          let imageWrapperHeight = Math.max(Math.floor(containerHeight - INITIAL_PADDING * 2), 0)
-          let imageWrapperWidth = Math.max(Math.floor(imageWrapperHeight * (img.width / img.height)), 0)
-
-          if (imageType === 'landscape') {
-            imageWrapperWidth = Math.max(Math.floor(containerWidth - INITIAL_PADDING * 2), 0)
-            imageWrapperHeight = Math.max(Math.floor(imageWrapperWidth * (img.height / img.width)), 0)
-          }
-
-          canvas.width = imageWrapperWidth
-          canvas.height = imageWrapperHeight
-
-          setInitialImageInfo({
-            width: imageWrapperWidth,
-            height: imageWrapperHeight,
-          })
-        } else {
-          canvas.width = initialImageInfo.width
-          canvas.height = initialImageInfo.height
+      // 현재 페이지 기준 앞뒤로 2장씩 미리 로드
+      for (let i = 1; i <= 2; i++) {
+        if (currentPage - i > 0) {
+          pagesToPrefetch.push(currentPage - i)
         }
-
-        context?.drawImage(img, 0, 0, canvas.width, canvas.height)
+        if (currentPage + i <= numberOfImages) {
+          pagesToPrefetch.push(currentPage + i)
+        }
       }
-    }
-  }, [imageUrl, initialImageInfo])
 
-  return (
-    <>
-      {isLoading && (
-        <Box display="flex" sx={{ userSelect: 'none' }}>
-          <CircularProgress sx={{ color: 'gray.40' }} />
-        </Box>
-      )}
-      {error && (
-        <Box display="flex" flexDirection="column" gap="10px" alignItems="center" sx={{ userSelect: 'none' }}>
-          <ErrorOutlineIcon fontSize={24} />
-          <Typography variant="body1R16" color="gray.40">
-            {t('페이지를 불러오는데 실패했습니다.')}
-          </Typography>
-        </Box>
-      )}
-      {imageUrl && !isLoading && !error && (
-        <Box
-          ref={imageWrapperRef}
-          style={{
-            transform: `scale(${zoomLevel / 100})`,
-            transformOrigin: 'center',
-            transition: 'transform 0.2s ease-out',
-            userSelect: 'none',
-          }}
-          onContextMenu={handleContextMenu}
-        >
-          <canvas ref={canvasRef} className="shadow-lg bg-white" />
-        </Box>
-      )}
-    </>
-  )
-}
+      if (pagesToPrefetch.length > 0) {
+        pagesToPrefetch.forEach(async (page) => {
+          await queryClient.prefetchQuery({
+            queryKey: ['pdfImage', fileId, page],
+            queryFn: () => fetchPdfImage(fileId!, page),
+            staleTime: PDF_IMAGE_STALE_TIME,
+          })
+        })
+      }
+    }, [currentPage, fileId, numberOfImages])
+
+    // 페이지가 변경되면 주변 페이지 미리 로드
+    useEffect(() => {
+      prefetchNeighborPages()
+    }, [currentPage, prefetchNeighborPages])
+
+    useEffect(() => {
+      const canvas = canvasRef.current
+
+      if (canvas && imageUrl) {
+        const context = canvas.getContext('2d')
+        const img = new Image()
+        img.src = imageUrl
+
+        img.onload = () => {
+          if (initialImageInfo) {
+            canvas.width = initialImageInfo.width
+            canvas.height = initialImageInfo.height
+          } else {
+            // 화면에 보이는 영역을 초기 배율(100%)로 설정
+            const parentElement = imageWrapperRef.current?.parentElement
+
+            if (!parentElement) {
+              canvas.width = 0
+              canvas.height = 0
+              setInitialImageInfo({ width: 0, height: 0 })
+              console.error('Parent element not found for size calculation.')
+              return
+            }
+
+            const { width: viewportWidth, height: viewportHeight } = parentElement.getBoundingClientRect()
+            const targetContainerWidth = Math.max(0, viewportWidth - initialPadding * 2)
+            const targetContainerHeight = Math.max(0, viewportHeight - initialPadding * 2)
+
+            let imageWrapperWidth = 0
+            let imageWrapperHeight = 0
+
+            const originalImageWidth = img.width
+            const originalImageHeight = img.height
+
+            if (originalImageWidth > 0 && originalImageHeight > 0 && targetContainerWidth > 0 && targetContainerHeight > 0) {
+              const widthRatio = targetContainerWidth / originalImageWidth
+              const heightRatio = targetContainerHeight / originalImageHeight
+              const finalRatio = Math.min(widthRatio, heightRatio)
+              imageWrapperWidth = Math.floor(originalImageWidth * finalRatio)
+              imageWrapperHeight = Math.floor(originalImageHeight * finalRatio)
+            }
+
+            canvas.width = imageWrapperWidth
+            canvas.height = imageWrapperHeight
+
+            setInitialImageInfo({
+              width: imageWrapperWidth,
+              height: imageWrapperHeight,
+            })
+          }
+
+          context?.drawImage(img, 0, 0, canvas.width, canvas.height)
+        }
+      }
+    }, [imageUrl, initialImageInfo, initialPadding])
+
+    return (
+      <>
+        {isLoading && (
+          <Box display="flex" sx={{ userSelect: 'none' }}>
+            <CircularProgress sx={{ color: 'gray.40' }} />
+          </Box>
+        )}
+        {error && (
+          <Box display="flex" flexDirection="column" gap="10px" alignItems="center" sx={{ userSelect: 'none' }}>
+            <ErrorOutlineIcon fontSize={24} />
+            <Typography variant="body1R16" color="gray.40">
+              {t('페이지를 불러오는데 실패했습니다.')}
+            </Typography>
+          </Box>
+        )}
+        {imageUrl && !isLoading && !error && (
+          <Box
+            ref={imageWrapperRef}
+            style={{
+              transform: `scale(${zoomLevel / 100})`,
+              transformOrigin: 'center',
+              transition: 'transform 0.2s ease-out',
+              userSelect: 'none',
+            }}
+            onContextMenu={handleContextMenu}
+          >
+            <canvas ref={canvasRef} className="shadow-lg bg-white" />
+          </Box>
+        )}
+      </>
+    )
+  },
+)
+
+PdfPageImage.displayName = 'PdfPageImage'
 
 export default PdfPageImage

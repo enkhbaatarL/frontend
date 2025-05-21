@@ -9,7 +9,7 @@ import { ChangeEvent, useEffect, useRef, useState, KeyboardEvent } from 'react'
 
 import MIButtonPdf from '@/components/common/button/MIButtonPdf'
 import MILine from '@/components/common/divider/MILine'
-import PdfPageImage from '@/components/common/pdfviewer/PdfPageImage'
+import PdfPageImage, { PdfPageImageHandles } from '@/components/common/pdfviewer/PdfPageImage'
 import { PdfMetadata } from '@/service/common/pdf'
 import { formatFileSize } from '@/utils/dataUtil'
 
@@ -20,12 +20,15 @@ interface PdfViewerProps {
 const MIN_ZOOM_LEVEL = 30
 const MAX_ZOOM_LEVEL = 300
 
+const INITIAL_PADDING = 32
+
 const PdfViewer = ({ metadata }: Readonly<PdfViewerProps>) => {
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [inputValue, setInputValue] = useState<string>(currentPage.toString())
   const [zoomLevel, setZoomLevel] = useState<number>(100)
   const [zoomInputValue, setZoomInputValue] = useState<string>(zoomLevel.toFixed(0))
   const imageContainerRef = useRef<HTMLDivElement>(null)
+  const pdfPageImageRef = useRef<PdfPageImageHandles>(null)
 
   useEffect(() => {
     setInputValue(currentPage.toString())
@@ -106,6 +109,32 @@ const PdfViewer = ({ metadata }: Readonly<PdfViewerProps>) => {
 
   const zoomOut = () => {
     setZoomLevel((prev) => Math.max(prev - 10, MIN_ZOOM_LEVEL))
+  }
+
+  const setFitZoom = () => {
+    const imageContainer = imageContainerRef.current
+    const initialCanvasSize = pdfPageImageRef.current?.getInitialCanvasSize()
+
+    if (imageContainer && initialCanvasSize && initialCanvasSize.width > 0 && initialCanvasSize.height > 0) {
+      const { width: containerWidth, height: containerHeight } = imageContainer.getBoundingClientRect()
+
+      const targetContainerWidth = Math.max(0, containerWidth - INITIAL_PADDING * 2)
+      const targetContainerHeight = Math.max(0, containerHeight - INITIAL_PADDING * 2)
+
+      if (targetContainerWidth === 0 || targetContainerHeight === 0) {
+        setZoomLevel(100)
+        return
+      }
+
+      // 100% 줌 상태를 기준으로 현재 컨테이너에 맞추기 위한 비율 계산
+      const widthRatio = targetContainerWidth / initialCanvasSize.width
+      const heightRatio = targetContainerHeight / initialCanvasSize.height
+
+      let newZoomLevel = Math.min(widthRatio, heightRatio) * 100
+      newZoomLevel = Math.max(MIN_ZOOM_LEVEL, Math.min(newZoomLevel, MAX_ZOOM_LEVEL))
+
+      setZoomLevel(newZoomLevel)
+    }
   }
 
   return (
@@ -240,7 +269,7 @@ const PdfViewer = ({ metadata }: Readonly<PdfViewerProps>) => {
                 %
               </Typography>
             </Box>
-            <MIButtonPdf onClick={() => setZoomLevel(100)} disabled={!metadata.numberOfImages}>
+            <MIButtonPdf onClick={setFitZoom} disabled={!metadata.numberOfImages}>
               <FitScreenIcon />
             </MIButtonPdf>
           </Grid>
@@ -294,30 +323,27 @@ const PdfViewer = ({ metadata }: Readonly<PdfViewerProps>) => {
             )
           })}
         </Box>
-        <Grid
+        <Box
+          ref={imageContainerRef}
           sx={{
-            overflowY: 'auto',
+            flexGrow: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             overflow: 'hidden',
             position: 'relative',
-            '&::-webkit-scrollbar': {
-              width: '4px',
-            },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: 'transparent',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: '#CED4DA',
-              borderRadius: '10px',
-            },
+            height: '100%',
+            bgcolor: 'gray.70',
           }}
-          container
-          alignItems={'center'}
-          justifyContent={'center'}
-          flexGrow={1}
-          ref={imageContainerRef}
         >
-          <PdfPageImage currentPage={currentPage} numberOfImages={metadata.numberOfImages} zoomLevel={zoomLevel} />
-        </Grid>
+          <PdfPageImage
+            ref={pdfPageImageRef}
+            currentPage={currentPage}
+            numberOfImages={metadata.numberOfImages}
+            zoomLevel={zoomLevel}
+            initialPadding={INITIAL_PADDING}
+          />
+        </Box>
       </Grid>
     </Grid>
   )
