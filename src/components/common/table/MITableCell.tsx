@@ -11,9 +11,10 @@ export interface MITableCellProps extends PropsWithChildren {
   tooltipContent?: string | ReactNode
   onClick?: () => void
   value?: string | number
+  cursorPointer?: boolean
 }
 export default function MITableCell(props: Readonly<MITableCellProps>) {
-  const { tooltip = false, tooltipContent, value, onClick, typography, children } = props
+  const { tooltip = false, tooltipContent, value, onClick, typography, children, cursorPointer } = props
   const { ref, isEllipsis } = useEllipsisDetection()
   const positionRef = useRef<{ x: number; y: number }>({
     x: 0,
@@ -55,7 +56,7 @@ export default function MITableCell(props: Readonly<MITableCellProps>) {
           color="gray.90"
           onClick={onClick}
           sx={{
-            cursor: onClick ? 'pointer' : 'default',
+            cursor: cursorPointer || onClick ? 'pointer' : 'default',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',

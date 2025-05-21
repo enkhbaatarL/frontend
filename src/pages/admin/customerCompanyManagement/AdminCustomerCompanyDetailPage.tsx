@@ -5,7 +5,7 @@ import { GridColDef } from '@mui/x-data-grid'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
@@ -37,12 +37,7 @@ const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean
     props.onChange(value)
   }
 
-  return (
-    <FormControlLabel
-      control={<Switch defaultChecked checked={props.value} onChange={(e) => toggle(e.target.checked)} />}
-      label={props.label}
-    />
-  )
+  return <FormControlLabel control={<Switch checked={props.value} onChange={(e) => toggle(e.target.checked)} />} label={props.label} />
 }
 
 const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataProviderTableProps) => {
@@ -198,8 +193,9 @@ const AdminCustomerMemberTable = () => {
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
   const { companyNo } = useParams()
+  const initialFetchRef = useRef(false)
 
-  const { filter, updateFilter, pagination, updateSize, updatePage, search, data, isLoading } = useSearchFilter<
+  const { filter, updateFilter, pagination, updateSize, updatePage, data, isLoading, search } = useSearchFilter<
     IUserRequest,
     IPaginationResponse<IUserInfo>
   >(
@@ -212,7 +208,17 @@ const AdminCustomerMemberTable = () => {
       page: 1,
       size: 20,
     },
+    {
+      initialFetch: false,
+    },
   )
+
+  useEffect(() => {
+    if (companyNo && !initialFetchRef.current) {
+      initialFetchRef.current = true
+      search()
+    }
+  }, [companyNo, search])
 
   const columns: GridColDef[] = [
     {
@@ -341,11 +347,7 @@ const AdminCustomerMemberTable = () => {
             onChange={(e) => {
               updateFilter('userNm', e.target.value as string)
             }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                search()
-              }
-            }}
+            onKeyDown={({ key }) => key === 'Enter' && search()}
             onClear={() => {
               updateFilter('userNm', '')
               search()
@@ -456,7 +458,7 @@ const AdminCustomerCompanyDetailPage = () => {
     enabled: !!companyNo,
   })
 
-  const toogle = () => {
+  const toggle = () => {
     setOpenConfirmActive(true)
   }
 
@@ -500,7 +502,7 @@ const AdminCustomerCompanyDetailPage = () => {
     if (data) {
       setIsActive(data?.isActivated)
       setCompanyNm(data?.companyNm ?? '')
-      setCustomComponent(<AdminCustomerCompanyDetailPageHeader value={isActive} onChange={toogle} label={isActive ? '활성' : '비활성'} />)
+      setCustomComponent(<AdminCustomerCompanyDetailPageHeader value={isActive} onChange={toggle} label={isActive ? '활성' : '비활성'} />)
       setSubHeader(
         <DetailItem
           title={data?.companyNm}

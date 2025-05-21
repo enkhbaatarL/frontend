@@ -1,5 +1,5 @@
 import { Box, Tooltip, Typography } from '@mui/material'
-import { ReactNode } from 'react'
+import { Fragment, ReactNode } from 'react'
 
 interface IDetailItemProps {
   title: string | ReactNode
@@ -32,8 +32,8 @@ const DetailItem = (props: IDetailItemProps) => {
         </Box>
         <Box display={'flex'} alignItems={'center'}>
           {props.fields?.map((field, index) => (
-            <>
-              <Box key={field.label} px={3} display="flex" columnGap={1} alignItems={'center'} flexWrap={'wrap'}>
+            <Fragment key={`field-${index}`}>
+              <Box px={3} display="flex" columnGap={1} alignItems={'center'} flexWrap={'wrap'}>
                 <Typography variant="body3" color="gray.70" noWrap>
                   {field.label}
                 </Typography>
@@ -42,7 +42,7 @@ const DetailItem = (props: IDetailItemProps) => {
                 </Typography>
               </Box>
               {index < props.fields.length - 1 && <Box width="1px" height="12px" bgcolor="gray.7" />}
-            </>
+            </Fragment>
           ))}
 
           {props.icon &&

@@ -2,7 +2,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { Autocomplete, Box, SvgIconProps, SxProps, Theme, Typography } from '@mui/material'
 import FormControl from '@mui/material/FormControl'
 import { t } from 'i18next'
-import { PropsWithChildren, useMemo, useState, ReactNode, useRef, useEffect } from 'react'
+import { PropsWithChildren, useMemo, useState, ReactNode, useRef, useEffect, HTMLAttributes, Key } from 'react'
 
 import AdminTextField from '@/components/admin/AdminTextField'
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
@@ -96,11 +96,29 @@ const CustomArrowIcon = ({
   )
 }
 
-const ListBoxComponent = (props: PropsWithChildren) => (
-  <ScrollWrapper offsetTop={8} maxHeight={268}>
-    <ul className="MuiAutocomplete-listbox" {...props} />
-  </ScrollWrapper>
-)
+type OwnerState = {
+  disablePortal?: boolean
+  expanded?: boolean
+  focused?: boolean
+  fullWidth?: boolean
+  hasClearIcon?: boolean
+  hasPopupIcon?: boolean
+  inputFocused?: boolean
+  popupOpen?: boolean
+  size?: 'small' | 'medium'
+  [key: string]: unknown
+}
+
+const ListBoxComponent = (props: PropsWithChildren & { ownerState?: OwnerState }) => {
+  const { children, ownerState, ...otherProps } = props
+  return (
+    <ScrollWrapper offsetTop={8} maxHeight={268}>
+      <ul className="MuiAutocomplete-listbox" {...otherProps}>
+        {children}
+      </ul>
+    </ScrollWrapper>
+  )
+}
 
 const MISelect = ({
   fullWidth,
@@ -351,11 +369,16 @@ const MISelect = ({
           listbox: ListBoxComponent,
         }}
         getOptionDisabled={(option: OptionType) => !!option.disabled}
-        renderOption={(props: React.HTMLAttributes<HTMLLIElement>, option: OptionType) => (
-          <li {...props} className={`${props?.className} ${option.disabled ? 'mi-option-disabled' : ''}`}>
-            {option.label}
-          </li>
-        )}
+        renderOption={(props: HTMLAttributes<HTMLLIElement> & { key?: Key }, option: OptionType) => {
+          const { key, ...otherProps } = props
+
+          // key를 직접 전달하고 나머지 props는 구조분해로 전달
+          return (
+            <li key={key} {...otherProps} className={`${otherProps?.className} ${option.disabled ? 'mi-option-disabled' : ''}`}>
+              {option.label}
+            </li>
+          )
+        }}
       />
     </FormControl>
   )

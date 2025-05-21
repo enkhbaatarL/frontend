@@ -4,7 +4,7 @@ import { useForm } from '@tanstack/react-form'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
@@ -30,9 +30,6 @@ import { IPaginationResponse } from '@/types/api'
 interface ProductDataTableProps {
   data?: IPaginationResponse<IProviderGoodsDataInfo>
   isPublic: boolean
-  search: string
-  setSearch: (value: string) => void
-  setSearchValue: (value: string) => void
   onRegister: (dataNo?: number) => void
   size: number
   updateSize: (value: number) => void
@@ -41,9 +38,6 @@ interface ProductDataTableProps {
 }
 interface AuthorityDetailTableProps {
   data?: IPaginationResponse<IProductCompanyPermissionInfo>
-  searchCompanyNm: string
-  setCompanyNmSearch: (value: string) => void
-  setCompanyNmSearchValue: (value: string) => void
   size: number
   updateSize: (value: number) => void
   updatePage: (value: number) => void
@@ -51,7 +45,7 @@ interface AuthorityDetailTableProps {
 }
 const AdminDataProviderProductDetailPageHeader = (props: { onChange: (value: boolean) => void; value: boolean; label: string }) => (
   <Stack direction="row" alignItems="center" sx={{ ml: 'auto' }}>
-    <Switch defaultChecked checked={props.value} onChange={(e) => props.onChange(e.target.checked)} />
+    <Switch checked={props.value} onChange={(e) => props.onChange(e.target.checked)} />
     <Typography variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
       {props.label}
     </Typography>
@@ -67,18 +61,7 @@ const CustomPageTitle = () => (
 )
 
 // 데이터 목록 테이블
-const ProductDataListTable = ({
-  data,
-  isPublic,
-  search,
-  setSearch,
-  setSearchValue,
-  onRegister,
-  size,
-  updateSize,
-  updatePage,
-  isLoading,
-}: ProductDataTableProps) => {
+const ProductDataListTable = memo(({ data, isPublic, onRegister, size, updateSize, updatePage, isLoading }: ProductDataTableProps) => {
   const user = useAuthStore((state) => state.user)
 
   const columns: GridColDef[] = [
@@ -132,68 +115,22 @@ const ProductDataListTable = ({
   ].filter(Boolean) as GridColDef[]
 
   return (
-    <Box>
-      <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
-        <Typography color="gray.90">{t('데이터 목록')}</Typography>
-        <Box display={'flex'} alignItems={'center'} columnGap={'10px'}>
-          <MIInput
-            placeholder={t('검색하세요.')}
-            endIcon={
-              <SearchIcon
-                onClick={() => {
-                  setSearchValue(search)
-                }}
-              />
-            }
-            contentWidth={270}
-            value={null}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setSearchValue(search)
-              }
-            }}
-            onClear={() => {
-              setSearchValue('')
-              setSearch('')
-            }}
-          />
-          <AdminButton
-            color="secondary"
-            variant="outlined"
-            size="h34"
-            onClick={() => onRegister()}
-            disabled={(user?.userRoleCd === UserRole.ADMIN && !isPublic) || (user?.userRoleCd === UserRole.OPERATOR && isPublic)}
-          >
-            {t('데이터 등록')}
-          </AdminButton>
-        </Box>
-      </Box>
-      <AdminSkeleton loading={isLoading} table>
-        <AdminTable
-          getRowId={(row) => row.goodsDataNo}
-          columns={columns}
-          data={data}
-          size={size}
-          onSizeChange={updateSize}
-          onPageChange={updatePage}
-        />
-      </AdminSkeleton>
-    </Box>
+    <AdminTable
+      getRowId={(row) => row.goodsDataNo}
+      columns={columns}
+      data={data}
+      size={size}
+      isLoading={isLoading}
+      onSizeChange={updateSize}
+      onPageChange={updatePage}
+    />
   )
-}
+})
+
+ProductDataListTable.displayName = 'ProductDataListTable'
 
 // 권한 상세 테이블
-const AuthorityDetailTable = ({
-  data,
-  searchCompanyNm,
-  setCompanyNmSearch,
-  setCompanyNmSearchValue,
-  size,
-  updateSize,
-  updatePage,
-  isLoading,
-}: AuthorityDetailTableProps) => {
+const AuthorityDetailTable = memo(({ data, size, updateSize, updatePage, isLoading }: AuthorityDetailTableProps) => {
   const columns: GridColDef[] = [
     {
       field: 'companyNm',
@@ -243,51 +180,34 @@ const AuthorityDetailTable = ({
   ]
 
   return (
-    <Box>
-      <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
-        <Typography color="gray.90">{t('권한 상세')}</Typography>
-        <Box display={'flex'} alignItems={'center'} columnGap={'10px'}>
-          <MIInput
-            placeholder={t('회사명을 검색하세요.')}
-            endIcon={
-              <SearchIcon
-                onClick={() => {
-                  setCompanyNmSearchValue(searchCompanyNm)
-                }}
-              />
-            }
-            contentWidth={270}
-            value={searchCompanyNm}
-            onChange={(e) => setCompanyNmSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setCompanyNmSearchValue(searchCompanyNm)
-              }
-            }}
-            onClear={() => {
-              setCompanyNmSearchValue('')
-              setCompanyNmSearch('')
-            }}
-          />
-        </Box>
-      </Box>
-      <AdminSkeleton loading={isLoading} table>
-        <AdminTable
-          getRowId={(row) => row.companyNo}
-          columns={columns}
-          data={data}
-          size={size}
-          onSizeChange={updateSize}
-          onPageChange={updatePage}
-        />
-      </AdminSkeleton>
-    </Box>
+    <AdminTable
+      getRowId={(row) => row.companyNo}
+      columns={columns}
+      data={data}
+      size={size}
+      onSizeChange={updateSize}
+      onPageChange={updatePage}
+      isLoading={isLoading}
+    />
   )
-}
+})
+
+AuthorityDetailTable.displayName = 'AuthorityDetailTable'
 
 const AdminDataProviderProductDetailPage = () => {
   const { providerNo, goodsNo } = useParams()
   const { state } = useLocation()
+  const navigate = useNavigate()
+  const { user } = useAuthStore()
+
+  const onRegister = useCallback(
+    (dataNo?: number) => {
+      if (!dataNo) navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}/data-registration`)
+      else navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}/data-detail/${dataNo}`)
+    },
+    [navigate, providerNo, goodsNo],
+  )
+
   const [search, setSearch] = useState('')
   const [searchValue, setSearchValue] = useState('')
   const [searchCompanyNm, setSearchCompanyNm] = useState('')
@@ -301,65 +221,49 @@ const AdminDataProviderProductDetailPage = () => {
   const [permissionSize, setPermissionSize] = useState(20)
   const [permissionPage, setPermissionPage] = useState(1)
   const { showSnackbar } = useSnackbar()
-  const user = useAuthStore((state) => state.user)
-  const navigate = useNavigate()
 
   // 상품 상세
   const { data: productDetailData, isLoading: productDetailDataIsLoading } = useQuery({
-    queryKey: ['productDetailData'],
+    queryKey: ['productDetailData', providerNo, goodsNo],
     queryFn: async () => await dataProviderService.getProviderGoodsDetail(Number(providerNo), Number(goodsNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!providerNo && !!goodsNo,
   })
 
   const { data: latestUpdatedData, isLoading: latestUpdateDataIsLoading } = useQuery({
-    queryKey: ['latestUpdatedData'],
+    queryKey: ['latestUpdatedData', providerNo, goodsNo],
     queryFn: async () => await dataProviderService.getProviderGoodsLatestUpdated(Number(providerNo), Number(goodsNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!providerNo && !!goodsNo,
   })
 
   // 데이터 목록
   const { data: dataList, isLoading: dataListIsLoading } = useQuery({
-    queryKey: ['dataList', searchValue, size, page],
-    queryFn: async () => {
-      const data = await dataProviderService.getProviderGoodsDataList(Number(providerNo), Number(goodsNo), {
+    queryKey: ['dataList', providerNo, goodsNo, searchValue, size, page],
+    queryFn: async () =>
+      await dataProviderService.getProviderGoodsDataList(Number(providerNo), Number(goodsNo), {
         keyword: searchValue,
         page,
         size,
-      })
-      return data
-    },
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+      }),
+    refetchOnWindowFocus: false,
     enabled: !!providerNo && !!goodsNo,
   })
 
   // 권한 상세 목록
   const { data: companyPermissionList, isLoading: companyPermissionListIsLoading } = useQuery({
-    queryKey: ['companyPermissionList', searchCompanyNmValue, permissionSize, permissionPage],
+    queryKey: ['companyPermissionList', providerNo, goodsNo, searchCompanyNmValue, permissionSize, permissionPage],
     queryFn: async () =>
       await dataProviderService.getProductCompanyPermissionList(Number(providerNo), Number(goodsNo), {
         companyNm: searchCompanyNmValue,
         page: permissionPage,
         size: permissionSize,
       }),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!providerNo && !!goodsNo,
   })
 
-  const isLoading = productDetailDataIsLoading || latestUpdateDataIsLoading || dataListIsLoading || companyPermissionListIsLoading
+  const isLoading = productDetailDataIsLoading || latestUpdateDataIsLoading
 
   const { setCustomComponent, setSubHeader, setCustomTitle } = useAdminHeader()
   const [isActive, setIsActive] = useState(true)
@@ -389,7 +293,7 @@ const AdminDataProviderProductDetailPage = () => {
       })
       setOpenActiveConfirm(false)
       showSnackbar(t('변경되었습니다.'), { variant: 'success' })
-      await queryClient.invalidateQueries({ queryKey: ['productDetailData'] })
+      await queryClient.invalidateQueries({ queryKey: ['productDetailData', providerNo, goodsNo] })
     } catch (error) {
       console.error(error)
     }
@@ -409,81 +313,170 @@ const AdminDataProviderProductDetailPage = () => {
       setOpenEditConfirm(false)
       setSaveBtnDisabled(true)
       showSnackbar(t('저장되었습니다.'), { variant: 'success' })
-      await queryClient.invalidateQueries({ queryKey: ['productDetailData'] })
+      await queryClient.invalidateQueries({ queryKey: ['productDetailData', providerNo, goodsNo] })
     } catch (error) {
       console.error(error)
     }
   }
 
+  // SubHeaderComponent 분리
+  const ProductDetailHeader = useMemo(() => {
+    if (!productDetailData) return null
+
+    return (
+      <AdminDataProviderProductDetailPageHeader
+        value={isActive}
+        onChange={() => user?.userRoleCd === UserRole.ADMIN && setOpenActiveConfirm(true)}
+        label={isActive ? '활성' : '비활성'}
+      />
+    )
+  }, [productDetailData, isActive, user?.userRoleCd])
+
+  // DetailItem 컴포넌트를 위한 필드 메모이제이션
+  const detailFields = useMemo(() => {
+    if (!productDetailData) return []
+
+    return [
+      {
+        label: t('등록일'),
+        value: dayjs(productDetailData.auditInfo.createDt).format('YYYY-MM-DD'),
+      },
+      {
+        label: t('수정일'),
+        value: latestUpdatedData ? dayjs(latestUpdatedData.modifyDt).format('YYYY-MM-DD') : '-',
+      },
+      {
+        label: t('등록자'),
+        value: productDetailData.auditInfo.createUserNm,
+      },
+      {
+        label: t('수정자'),
+        value: latestUpdatedData ? String(latestUpdatedData.modifyUserName) : '-',
+      },
+    ]
+  }, [productDetailData, latestUpdatedData])
+
+  // SubHeader 컴포넌트 메모이제이션
+  const ProductDetailSubHeader = useMemo(() => {
+    if (!productDetailData) return <AdminSkeleton loading={isLoading} subHeader />
+
+    return (
+      <DetailItem
+        title={
+          <Box>
+            <Box display={'flex'} alignItems={'center'}>
+              <MIChip
+                color="gray-border"
+                variant="outlined"
+                label={productDetailData.isPublic ? 'Public' : 'Private'}
+                sx={{ textTransform: 'capitalize', mr: '10px' }}
+              />
+              <Typography variant="body1B16" color="gray.90" noWrap>
+                {state?.providerNm}
+              </Typography>
+              <Typography variant="body1B16" color="gray.90" px={'8px'}>
+                •
+              </Typography>
+              <Typography variant="body1B16" color="gray.90" noWrap>
+                {productDetailData.goodsNm}
+              </Typography>
+            </Box>
+          </Box>
+        }
+        subTitle={
+          <Typography variant="subtext" color="gray.60">
+            {productDetailData.goodsExpn}
+          </Typography>
+        }
+        fields={detailFields}
+        tooltipMessage={t('기본 정보 수정')}
+        icon={<SettingIcon />}
+        onAction={() => setOpenModifiedData(true)}
+      />
+    )
+  }, [productDetailData, state?.providerNm, detailFields, isLoading])
+
+  // 커스텀 타이틀 메모이제이션
+  const customTitle = useMemo(() => <CustomPageTitle />, [])
+
+  // 검색 UI 부분을 분리
+  const searchSection = (
+    <Box display={'flex'} alignItems={'center'} columnGap={'10px'}>
+      <MIInput
+        placeholder={t('검색하세요.')}
+        endIcon={
+          <SearchIcon
+            onClick={() => {
+              setSearchValue(search)
+            }}
+          />
+        }
+        contentWidth={270}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            setSearchValue(search)
+          }
+        }}
+        onClear={() => {
+          setSearchValue('')
+          setSearch('')
+        }}
+      />
+      <AdminButton
+        color="secondary"
+        variant="outlined"
+        size="h34"
+        onClick={() => onRegister()}
+        disabled={(user?.userRoleCd === UserRole.ADMIN && !isPublic) || (user?.userRoleCd === UserRole.OPERATOR && isPublic)}
+      >
+        {t('데이터 등록')}
+      </AdminButton>
+    </Box>
+  )
+
+  const authoritySearchSection = (
+    <Box display={'flex'} alignItems={'center'} columnGap={'10px'}>
+      <MIInput
+        placeholder={t('회사명을 검색하세요.')}
+        endIcon={
+          <SearchIcon
+            onClick={() => {
+              setSearchCompanyNmValue(searchCompanyNm)
+            }}
+          />
+        }
+        contentWidth={270}
+        value={searchCompanyNm}
+        onChange={(e) => setSearchCompanyNm(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            setSearchCompanyNmValue(searchCompanyNm)
+          }
+        }}
+        onClear={() => {
+          setSearchCompanyNmValue('')
+          setSearchCompanyNm('')
+        }}
+      />
+    </Box>
+  )
+
   useEffect(() => {
-    if (productDetailData) {
+    if (!productDetailData) {
+      setSubHeader(<AdminSkeleton loading={isLoading} subHeader />)
+    } else {
+      // 상태 업데이트는 productDetailData 변경 시에만 수행
       setIsActive(productDetailData.isUsed)
       setIsPublic(productDetailData.isPublic)
       setEditProductName(productDetailData.goodsNm)
       setEditProductDescription(productDetailData.goodsExpn)
-      setCustomComponent(
-        <AdminDataProviderProductDetailPageHeader
-          value={isActive}
-          onChange={() => user?.userRoleCd === UserRole.ADMIN && setOpenActiveConfirm(true)}
-          label={isActive ? '활성' : '비활성'}
-        />,
-      )
-      setSubHeader(
-        <DetailItem
-          title={
-            <Box>
-              <Box display={'flex'} alignItems={'center'}>
-                <MIChip
-                  color="gray-border"
-                  variant="outlined"
-                  label={productDetailData.isPublic ? 'Public' : 'Private'}
-                  sx={{ textTransform: 'capitalize', mr: '10px' }}
-                />
-                <Typography variant="body1B16" color="gray.90" noWrap>
-                  {state?.providerNm}
-                </Typography>
-                <Typography variant="body1B16" color="gray.90" px={'8px'}>
-                  •
-                </Typography>
-                <Typography variant="body1B16" color="gray.90" noWrap>
-                  {productDetailData?.goodsNm}
-                </Typography>
-              </Box>
-            </Box>
-          }
-          subTitle={
-            <Typography variant="subtext" color="gray.60">
-              {productDetailData?.goodsExpn}
-            </Typography>
-          }
-          fields={[
-            {
-              label: t('등록일'),
-              value: dayjs(productDetailData?.auditInfo.createDt).format('YYYY-MM-DD'),
-            },
-            {
-              label: t('수정일'),
-              value: latestUpdatedData ? dayjs(latestUpdatedData?.modifyDt).format('YYYY-MM-DD') : '-',
-            },
-            {
-              label: t('등록자'),
-              value: productDetailData?.auditInfo.createUserNm,
-            },
-            {
-              label: t('수정자'),
-              value: latestUpdatedData ? String(latestUpdatedData?.modifyUserName) : '-',
-            },
-          ]}
-          tooltipMessage={t('기본 정보 수정')}
-          icon={<SettingIcon />}
-          onAction={() => {
-            setOpenModifiedData(true)
-          }}
-        />,
-      )
-      setCustomTitle(<CustomPageTitle />)
-    } else {
-      setSubHeader(<AdminSkeleton loading={isLoading} subHeader />)
+
+      // 메모이제이션된 컴포넌트 설정
+      setCustomComponent(ProductDetailHeader)
+      setSubHeader(ProductDetailSubHeader)
+      setCustomTitle(customTitle)
     }
 
     return () => {
@@ -491,7 +484,16 @@ const AdminDataProviderProductDetailPage = () => {
       setSubHeader(null)
       setCustomTitle(null)
     }
-  }, [setCustomComponent, setSubHeader, setCustomTitle, isActive, productDetailData, latestUpdatedData, state, isLoading])
+  }, [
+    productDetailData,
+    ProductDetailHeader,
+    ProductDetailSubHeader,
+    customTitle,
+    isLoading,
+    setCustomComponent,
+    setSubHeader,
+    setCustomTitle,
+  ])
 
   useEffect(() => {
     setIsErrorProviderName(inputProviderName.replace(/\s/g, '') !== state?.providerNm.replace(/\s/g, ''))
@@ -501,37 +503,38 @@ const AdminDataProviderProductDetailPage = () => {
     setSaveBtnDisabled(editProductName === '' || editProductDescription === '')
   }, [editProductName, editProductDescription])
 
-  const onRegister = (dataNo?: number) => {
-    if (!dataNo) navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}/data-registration`)
-    else navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}/data-detail/${dataNo}`)
-  }
-
   return (
     <>
-      <ProductDataListTable
-        data={dataList}
-        isPublic={isPublic}
-        search={search}
-        setSearch={setSearch}
-        setSearchValue={setSearchValue}
-        onRegister={onRegister}
-        size={size}
-        updateSize={(size) => setSize(size)}
-        updatePage={(page) => setPage(page)}
-        isLoading={dataListIsLoading}
-      />
+      <Box>
+        <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
+          <Typography color="gray.90">{t('데이터 목록')}</Typography>
+          {searchSection}
+        </Box>
+        <ProductDataListTable
+          data={dataList}
+          isPublic={isPublic}
+          onRegister={onRegister}
+          size={size}
+          updateSize={setSize}
+          updatePage={setPage}
+          isLoading={dataListIsLoading}
+        />
+      </Box>
 
       {user?.userRoleCd === UserRole.ADMIN && (
-        <AuthorityDetailTable
-          data={companyPermissionList}
-          searchCompanyNm={searchCompanyNm}
-          setCompanyNmSearch={setSearchCompanyNm}
-          setCompanyNmSearchValue={setSearchCompanyNmValue}
-          size={permissionSize}
-          updateSize={(size) => setPermissionSize(size)}
-          updatePage={(page) => setPermissionPage(page)}
-          isLoading={companyPermissionListIsLoading}
-        />
+        <Box>
+          <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} mb={3}>
+            <Typography color="gray.90">{t('권한 상세')}</Typography>
+            {authoritySearchSection}
+          </Box>
+          <AuthorityDetailTable
+            data={companyPermissionList}
+            size={permissionSize}
+            updateSize={setPermissionSize}
+            updatePage={setPermissionPage}
+            isLoading={companyPermissionListIsLoading}
+          />
+        </Box>
       )}
 
       <MIConfirm

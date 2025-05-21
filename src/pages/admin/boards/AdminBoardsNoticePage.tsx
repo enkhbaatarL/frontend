@@ -115,7 +115,11 @@ const AdminBoardsNoticePage = () => {
       width: 120,
       align: 'left',
       renderCell(param) {
-        return <AdminTableCell>{filterOptions?.category.find((item) => item.key === param.value)?.value ?? param.value}</AdminTableCell>
+        return (
+          <AdminTableCell cursorPointer>
+            {filterOptions?.category.find((item) => item.key === param.value)?.value ?? param.value}
+          </AdminTableCell>
+        )
       },
     },
     {
@@ -129,7 +133,7 @@ const AdminBoardsNoticePage = () => {
       headerName: t('등록자'),
       width: 120,
       renderCell(param) {
-        return <AdminTableCell>{param.row.auditInfo?.createUserNm}</AdminTableCell>
+        return <AdminTableCell cursorPointer>{param.row.auditInfo?.createUserNm}</AdminTableCell>
       },
     },
     {
@@ -138,7 +142,11 @@ const AdminBoardsNoticePage = () => {
       width: 120,
       align: 'center',
       renderCell(param) {
-        return <AdminTableCell typography={{ color: 'gray.60' }}>{param.row.auditInfo?.createDt}</AdminTableCell>
+        return (
+          <AdminTableCell typography={{ color: 'gray.60' }} cursorPointer>
+            {param.row.auditInfo?.createDt}
+          </AdminTableCell>
+        )
       },
     },
     {
@@ -148,7 +156,7 @@ const AdminBoardsNoticePage = () => {
       align: 'center',
       renderCell(param) {
         return (
-          <AdminTableCell type="chip" chip={{ color: 'ACTIVE' === param.value ? 'blue' : 'gray' }}>
+          <AdminTableCell type="chip" chip={{ color: 'ACTIVE' === param.value ? 'blue' : 'gray' }} cursorPointer>
             {param.value === 'ACTIVE' ? t('게시  중') : t('게시 안함')}
           </AdminTableCell>
         )
@@ -162,7 +170,11 @@ const AdminBoardsNoticePage = () => {
       renderCell(param) {
         const formattedValue = Array.isArray(param.value) ? param.value.join(', ') : param.value
 
-        return <AdminTableCell ellipsis>{formattedValue}</AdminTableCell>
+        return (
+          <AdminTableCell ellipsis cursorPointer>
+            {formattedValue}
+          </AdminTableCell>
+        )
       },
     },
     {
@@ -198,7 +210,7 @@ const AdminBoardsNoticePage = () => {
   }, [setCustomComponent])
 
   return (
-    <AdminSkeleton loading={isLoading || filterOptionsIsLoading} table>
+    <AdminSkeleton loading={filterOptionsIsLoading} table>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
         <MIField label={t('카테고리')}>
           <MISelect

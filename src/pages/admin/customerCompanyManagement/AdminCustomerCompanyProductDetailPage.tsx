@@ -52,7 +52,7 @@ const AdminCustomerCompanyProductDetailPageHeader = (props: {
     ) : (
       <>
         <FormControlLabel
-          control={<Switch defaultChecked checked={props.value} onChange={(e) => props.onChange(e.target.checked)} />}
+          control={<Switch checked={props.value} onChange={(e) => props.onChange(e.target.checked)} />}
           label={props.label}
         />
         <AdminButton variant="contained" color="primary" size="h34" onClick={() => props.changeMode(true)}>

@@ -206,7 +206,7 @@ export default function AdminDataProvidersDetailPage() {
       headerName: '상품명',
       maxWidth: 360,
       renderCell(params) {
-        return <MITableCell value={params.value} typography={{ variant: 'body2SB14' }} />
+        return <MITableCell value={params.value} typography={{ variant: 'body2SB14' }} cursorPointer />
       },
     },
     { field: 'goodsExpn', headerName: '상품 설명', flex: 1 },
@@ -216,7 +216,9 @@ export default function AdminDataProvidersDetailPage() {
   useEffect(() => {
     if (data && providerOptions) {
       setIsActive(data?.isUsed)
-      setSelectedProvider(initialProvider)
+      if (selectedProvider.value !== initialProvider.value) {
+        setSelectedProvider(initialProvider)
+      }
       setCustomComponent(
         <AdminDataProvidersDetailPageHeaderButton value={isActive} onChange={toggle} label={isActive ? '활성' : '비활성'} />,
       )
@@ -277,18 +279,7 @@ export default function AdminDataProvidersDetailPage() {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [
-    setCustomComponent,
-    setSubHeader,
-    isActive,
-    data,
-    dataProvidersName,
-    providerOptions,
-    selectedProvider,
-    isLoading,
-    initialProvider,
-    navigate,
-  ])
+  }, [setCustomComponent, setSubHeader, isActive, data, dataProvidersName, providerOptions, selectedProvider, isLoading, navigate])
 
   return (
     <>

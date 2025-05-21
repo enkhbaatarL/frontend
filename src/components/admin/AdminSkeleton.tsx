@@ -19,7 +19,7 @@ export const SubHeaderSkeleton = () => (
   <Box
     sx={{
       width: '100%',
-      padding: '32px 24px',
+      padding: '20px 24px',
       backgroundColor: '#F8F9FA',
       display: 'flex',
       flexDirection: 'column',
@@ -29,10 +29,10 @@ export const SubHeaderSkeleton = () => (
     }}
   >
     <Box sx={{ display: 'flex', gap: '19px', flexWrap: 'wrap' }}>
-      <Skeleton variant="rectangular" width={66} height={20} />
-      <Skeleton variant="rectangular" width={258} height={20} />
+      <Skeleton variant="rectangular" width={66} height={22} />
+      <Skeleton variant="rectangular" width={258} height={22} />
     </Box>
-    <Skeleton variant="rectangular" width={454} height={12} />
+    <Skeleton variant="rectangular" width={454} height={20} />
   </Box>
 )
 
