@@ -13,6 +13,7 @@ interface PdfPageImageProps {
   numberOfImages: number
   zoomLevel: number
   initialPadding: number
+  viewPosition?: { x: number; y: number }
 }
 
 export interface PdfPageImageHandles {
@@ -44,7 +45,7 @@ const fetchPdfImage = async (fileId: string | number, page: number): Promise<str
 }
 
 const PdfPageImage = forwardRef<PdfPageImageHandles, PdfPageImageProps>(
-  ({ currentPage, numberOfImages, zoomLevel, initialPadding }, ref) => {
+  ({ currentPage, numberOfImages, zoomLevel, initialPadding, viewPosition = { x: 0, y: 0 } }, ref) => {
     const { fileId } = useParams()
 
     const imageWrapperRef = useRef<HTMLDivElement>(null)
@@ -169,7 +170,7 @@ const PdfPageImage = forwardRef<PdfPageImageHandles, PdfPageImageProps>(
         {error && (
           <Box display="flex" flexDirection="column" gap="10px" alignItems="center" sx={{ userSelect: 'none' }}>
             <ErrorOutlineIcon fontSize={24} />
-            <Typography variant="body1R16" color="gray.40">
+            <Typography variant="body1R16" color="gray.50">
               {t('페이지를 불러오는데 실패했습니다.')}
             </Typography>
           </Box>
@@ -178,9 +179,9 @@ const PdfPageImage = forwardRef<PdfPageImageHandles, PdfPageImageProps>(
           <Box
             ref={imageWrapperRef}
             style={{
-              transform: `scale(${zoomLevel / 100})`,
+              transform: `translate(${viewPosition.x}px, ${viewPosition.y}px) scale(${zoomLevel / 100})`,
               transformOrigin: 'center',
-              transition: 'transform 0.2s ease-out',
+              transition: 'transform 0.1s ease-out',
               userSelect: 'none',
             }}
             onContextMenu={handleContextMenu}
