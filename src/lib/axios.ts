@@ -36,10 +36,14 @@ const api: AxiosInstance = Axios.create({
 
 api.interceptors.request.use((req) => {
   if (req.headers !== undefined) {
-    const token = useAuthStore.getState().token
+    const { token, user, accessCompanyInfo } = useAuthStore.getState()
 
     if (token) {
       req.headers['Authorization'] = `Bearer ${token}`
+    }
+
+    if (user?.isOtherServiceAccessPossible && accessCompanyInfo?.customerCompanyNo) {
+      req.headers['X-Company-No'] = accessCompanyInfo.customerCompanyNo.toString()
     }
   }
 
