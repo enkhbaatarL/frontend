@@ -1,11 +1,11 @@
 import { RouteObject } from 'react-router-dom'
 
-import ErrorAccessDeniedPage from '@/pages/error/AccessDenied'
 import AuthErrorPage from '@/pages/error/auth'
 import CommonErrorPage from '@/pages/error/CommonErrorPage'
+import ErrorAccessDeniedPage from '@/pages/error/ErrorAccessDeniedPage'
+import ErrorUnknownPage from '@/pages/error/ErrorUnknownPage'
 import ErrorIpVerificationPage from '@/pages/error/IpVerificaiton'
 import SessionExpiredPage from '@/pages/error/SessionExpired'
-import ErrorUnknownPage from '@/pages/error/unknown'
 
 const ErrorRoutes: RouteObject = {
   path: '/error',

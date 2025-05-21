@@ -256,7 +256,7 @@ const AdminDataRegiUploadComponent = ({
                           disabled={!structuredComponentType}
                           onUploadAction={(file) => onUploadAction(file, 'structured')}
                           acceptedTypes={['text/csv']}
-                          maxSize={24}
+                          maxSize={100}
                         />
                       </Grid>
                     </Grid>
@@ -349,7 +349,7 @@ const AdminDataRegiUploadComponent = ({
                           disabled={!unstructuredDate}
                           onUploadAction={(file) => onUploadAction(file, 'unstructured')}
                           acceptedTypes={documentFileType}
-                          maxSize={24}
+                          maxSize={100}
                         />
                       </Grid>
                     </Grid>
