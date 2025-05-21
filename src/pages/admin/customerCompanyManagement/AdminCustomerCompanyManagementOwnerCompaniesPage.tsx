@@ -11,7 +11,6 @@ import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
-import AdminSkeleton from '@/components/admin/AdminSkeleton.tsx'
 import AdminSnackbar from '@/components/admin/AdminSnackbar'
 import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
@@ -203,7 +202,7 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
   ]
 
   return (
-    <AdminSkeleton loading={isLoading} table>
+    <>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
         <AdminTextField
           label={t('회사명')}
@@ -306,7 +305,7 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
           },
         ]}
       ></MIConfirm>
-    </AdminSkeleton>
+    </>
   )
 }
 

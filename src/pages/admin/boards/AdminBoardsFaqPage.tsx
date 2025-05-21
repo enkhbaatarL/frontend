@@ -168,7 +168,7 @@ const AdminBoardsFaqPage = () => {
   }, [setCustomComponent])
 
   return (
-    <AdminSkeleton loading={isLoading || filterOptionsIsLoading} table>
+    <AdminSkeleton loading={filterOptionsIsLoading} table>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
         <MIField label={t('카테고리')}>
           <MISelect
@@ -197,6 +197,7 @@ const AdminBoardsFaqPage = () => {
         onRowClick={({ row }) => {
           navigate(`/admin/boards/faq/detail/${row.bulletinNo}`)
         }}
+        isLoading={isLoading}
       />
       <MIConfirm
         open={deleteFaqBulletinNo !== null}

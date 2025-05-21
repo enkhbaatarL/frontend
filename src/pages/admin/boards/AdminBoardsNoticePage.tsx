@@ -198,7 +198,7 @@ const AdminBoardsNoticePage = () => {
   }, [setCustomComponent])
 
   return (
-    <AdminSkeleton loading={isLoading || filterOptionsIsLoading} table>
+    <AdminSkeleton loading={filterOptionsIsLoading} table>
       <AdminSearchFilter onSearch={search} onReset={resetFilter} disabledSearch={isSearchedState} disabledReset={isInitialState}>
         <MIField label={t('카테고리')}>
           <MISelect
