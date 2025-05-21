@@ -1,5 +1,6 @@
 import Axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import { t } from 'i18next'
+import { NavigateFunction } from 'react-router-dom'
 
 import { ISnackbarOptions } from '@/hooks/useSnackbar'
 import useAuthStore from '@/store/useAuthStore'
@@ -13,6 +14,10 @@ export interface HttpResponse<T> {
 export interface ErrorHandlerOptions {
   showSnackbar: (message: string, options?: ISnackbarOptions) => void
 }
+
+let navigateFn: NavigateFunction
+
+export const setNavigate = (navFn: typeof navigateFn) => (navigateFn = navFn)
 
 let errorHandlerOptions: ErrorHandlerOptions | null = null
 
@@ -49,26 +54,35 @@ api.interceptors.request.use((req) => {
 
   return req
 })
-
 const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
   const status = error.response?.status
+  const code = error.response?.data?.code
+  const statusText = error.response?.statusText ?? t('알 수 없는 오류')
 
   if (status && status >= 400) {
-    const statusText = error.response?.statusText
+    switch (code) {
+      // ==========TODO
+      // case 'AUTH-001': // 인증 필요
+      // case 'AUTH-002': // 잘못된 자격증명
+      // case 'AUTH-006': // 계정 잠김  계정이 잠겼습니다. 관리자에게 문의하세요.
+      // case 'AUTH-004': // 토큰 무효
 
-    switch (status) {
-      case 400:
-        errorHandlerOptions?.showSnackbar?.(t('잘못된 요청입니다.'), { variant: 'error' })
+      case 'AUTH-003': // 토큰 만료
+        errorHandlerOptions?.showSnackbar?.(t('세션이 만료되었습니다. 다시 로그인해주세요.'), {
+          variant: 'warning',
+        })
+        navigateFn('/login')
         break
-      case 401:
-        // TODO: logout
+      case 'SYS-999': // 401 unknown Error
+      case 'AUTH-005': // 권한 부족
+      case 'AUTH-007': // 접근 거부
+        navigateFn('/error', { state: { code, status }, replace: true })
         break
       default:
         errorHandlerOptions?.showSnackbar?.(`Error: ${statusText}`, { variant: 'error' })
         break
     }
   }
-
   return Promise.reject(error)
 }
 
