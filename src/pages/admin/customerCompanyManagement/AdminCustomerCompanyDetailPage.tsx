@@ -37,12 +37,7 @@ const AdminCustomerCompanyDetailPageHeader = (props: { onChange: (value: boolean
     props.onChange(value)
   }
 
-  return (
-    <FormControlLabel
-      control={<Switch defaultChecked checked={props.value} onChange={(e) => toggle(e.target.checked)} />}
-      label={props.label}
-    />
-  )
+  return <FormControlLabel control={<Switch checked={props.value} onChange={(e) => toggle(e.target.checked)} />} label={props.label} />
 }
 
 const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataProviderTableProps) => {
