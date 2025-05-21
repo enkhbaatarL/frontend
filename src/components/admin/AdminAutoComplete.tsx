@@ -7,8 +7,23 @@ import ArrowDown from '@/components/common/icons/ArrowDown'
 import CancelIcon from '@/components/common/icons/CancelIcon'
 import theme from '@/theming'
 
-const ListBoxComponent = (props: PropsWithChildren) => {
-  const { children, ...other } = props
+// MUI의 ownerState 타입을 정의
+type OwnerState = {
+  disablePortal?: boolean
+  expanded?: boolean
+  focused?: boolean
+  fullWidth?: boolean
+  hasClearIcon?: boolean
+  hasPopupIcon?: boolean
+  inputFocused?: boolean
+  popupOpen?: boolean
+  size?: 'small' | 'medium'
+  [key: string]: unknown // 다른 가능한 ownerState 속성들
+}
+
+const ListBoxComponent = (props: PropsWithChildren & { ownerState?: OwnerState }) => {
+  // ownerState prop을 명시적으로 제거하고 다른 속성들만 전달
+  const { children, ownerState, ...other } = props
 
   return (
     <ScrollWrapper maxHeight={180}>
