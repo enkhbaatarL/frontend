@@ -44,7 +44,7 @@ const CommonErrorPage = () => {
   const renderButtons = () => (
     <Grid display="flex" gap={3}>
       <AdminButton size="h42" variant={isAuthError ? 'contained' : 'outlined'} color="primary" onClick={() => navigate(-1)}>
-        이전 페이지로1
+        이전 페이지로
       </AdminButton>
       {!isAuthError && (
         <AdminButton size="h42" variant="contained" color="primary" onClick={() => navigate('/')}>
