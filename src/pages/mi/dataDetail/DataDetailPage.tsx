@@ -1,7 +1,8 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import { Dayjs } from 'dayjs'
-import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
 
 import bshImg from '@/assets/bgsubheader.png'
 import MIButton from '@/components/common/button/MIButton'
@@ -15,10 +16,17 @@ import ChartComponent from '@/pages/mi/dataDetail/components/ChartComponent'
 import DescriptionComponent from '@/pages/mi/dataDetail/components/DescriptionComponent'
 import DocumentComponent from '@/pages/mi/dataDetail/components/DocumentComponent'
 import DocumentInfoComponent from '@/pages/mi/dataDetail/components/DocumentInfoComponent'
+import dataDetailService from '@/service/mi/dataDetail'
 
 const DataDetailPage = () => {
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
+  const { goodsNo, goodsDataNo } = useParams()
+
+  const { data: productData } = useQuery({
+    queryKey: ['productData', goodsNo, goodsDataNo],
+    queryFn: () => dataDetailService.getProductData(Number(goodsNo), Number(goodsDataNo)),
+  })
 
   const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
     setStartDate(startDate?.format('YYYYMMDD') ?? '')
@@ -38,27 +46,39 @@ const DataDetailPage = () => {
   const [searchParams] = useSearchParams('')
   const hideComponent = searchParams.getAll('hide')
 
+  const formatDate = useMemo(() => {
+    const date = new Date(productData?.auditInfo?.modifyDt.replace(' ', 'T') ?? '')
+
+    const day = date.getDate()
+    const month = date.toLocaleString('en-US', { month: 'long' })
+    const year = date.getFullYear()
+
+    return `${month} ${day}, ${year}`
+  }, [productData])
+
   return (
     <>
-      <Box paddingY={21} sx={{ background: ` url(${bshImg}) lightgray 50% / cover no-repeat` }}>
-        <Box paddingX={7.5} boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
-          <Typography color="white" variant="body1M16">
-            Insight
-          </Typography>
-          <Typography color="white" component="h1" lineHeight={1.2} mb={7.5} mt={1} variant="titleSubheader">
-            Eye on the tiger: how higher Indian economic growth could impact global energy markets
-          </Typography>
-          <Grid container alignItems="center">
-            <Typography color="white" variant="subtext1">
-              March 19, 2025
+      {productData && (
+        <Box paddingY={21} sx={{ background: ` url(${bshImg}) lightgray 50% / cover no-repeat` }}>
+          <Box paddingX={7.5} boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
+            <Typography color="white" variant="body1M16">
+              Insight
             </Typography>
-            <MILine length={14} margin="0 14px" direction="vertical" backgroundColor="gray.50" />
-            <Typography color="white" variant="subtext1">
-              Wood Mackenzie
+            <Typography color="white" component="h1" lineHeight={1.2} mb={7.5} mt={1} variant="titleSubheader">
+              {productData.goodsDataNm}
             </Typography>
-          </Grid>
+            <Grid container alignItems="center">
+              <Typography color="white" variant="subtext1">
+                {formatDate}
+              </Typography>
+              <MILine length={14} margin="0 14px" direction="vertical" backgroundColor="gray.50" />
+              <Typography color="white" variant="subtext1">
+                {productData.providerNm}
+              </Typography>
+            </Grid>
+          </Box>
         </Box>
-      </Box>
+      )}
       <Box boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'} paddingTop={10} paddingX={7.5}>
         <Grid
           sx={{
@@ -146,7 +166,7 @@ const DataDetailPage = () => {
             flexShrink={0}
           >
             {!hideComponent.includes('document') && <DocumentComponent />}
-            <DocumentInfoComponent />
+            {productData && <DocumentInfoComponent data={productData} />}
             <Typography color="gray.60" component="div" variant="body2R14">
               This document is the property of LSEG, and unauthorized reproduction or distribution is prohibited; prior approval is required
               via mi.admin@sk.com. The content is provided for informational purposes only, and Market Intelligence bears no responsibility

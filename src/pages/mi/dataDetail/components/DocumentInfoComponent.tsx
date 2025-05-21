@@ -1,8 +1,14 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { useMemo } from 'react'
+
+import { IProductDataInfo } from '@/service/mi/dataDetail'
 
 interface DocumentInfoItemProps {
   label: string
   value: string
+}
+interface DocumentInfoComponentProps {
+  data: IProductDataInfo
 }
 
 const DocumentInfoItem = ({ label, value }: DocumentInfoItemProps) => (
@@ -16,45 +22,37 @@ const DocumentInfoItem = ({ label, value }: DocumentInfoItemProps) => (
   </Box>
 )
 
-const DocumentInfoComponent = () => {
-  const documentInfoData = [
-    {
-      label: 'Contributor',
-      value: 'Gedik Investment',
-    },
-    {
-      label: 'Author',
-      value: 'Research Department',
-    },
-    {
-      label: 'Subject',
-      value: 'PORTFOLIO STRATEGY',
-    },
-    {
-      label: 'Category',
-      value: 'EQUITY',
-    },
-    {
-      label: 'Region',
-      value: 'Western Asia, Europe',
-    },
-    {
-      label: 'Country',
-      value: 'Turkey',
-    },
-    {
-      label: 'Language',
-      value: 'English',
-    },
-  ]
+const DocumentInfoComponent = ({ data }: DocumentInfoComponentProps) => {
+  // 미정
+  const dataInfo = useMemo(
+    () => [
+      {
+        label: 'Category',
+        value: 'Company Report',
+      },
+      {
+        label: 'Region',
+        value: 'Research Department',
+      },
+      {
+        label: 'Country',
+        value: 'PORTFOLIO STRATEGY',
+      },
+      {
+        label: 'Language',
+        value: 'EQUITY',
+      },
+    ],
+    [data],
+  )
 
   return (
     <Grid gap={3.5} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
       <Typography component="div" color="gray.90" variant="titleBox">
-        Document Info
+        Data Info
       </Typography>
       <Grid container direction="column" gap={3}>
-        {documentInfoData.map((item, index) => (
+        {dataInfo.map((item, index) => (
           <DocumentInfoItem key={index} label={item.label} value={item.value} />
         ))}
       </Grid>
