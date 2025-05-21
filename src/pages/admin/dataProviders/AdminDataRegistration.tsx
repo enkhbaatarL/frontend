@@ -206,7 +206,7 @@ const AdminDataRegistration = () => {
     setCustomTitle(
       <Box display="flex" alignItems="center" columnGap={'10px'}>
         <Typography color="gray.90" variant="heading2">
-          {`${goodsNm}${t('의 데이터 등록')}`}
+          {goodsNm ? `${goodsNm}${t('의 데이터 등록')}` : ''}
         </Typography>
       </Box>,
     )
