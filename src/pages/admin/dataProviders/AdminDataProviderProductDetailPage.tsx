@@ -51,7 +51,7 @@ interface AuthorityDetailTableProps {
 }
 const AdminDataProviderProductDetailPageHeader = (props: { onChange: (value: boolean) => void; value: boolean; label: string }) => (
   <Stack direction="row" alignItems="center" sx={{ ml: 'auto' }}>
-    <Switch defaultChecked checked={props.value} onChange={(e) => props.onChange(e.target.checked)} />
+    <Switch checked={props.value} onChange={(e) => props.onChange(e.target.checked)} />
     <Typography variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
       {props.label}
     </Typography>
