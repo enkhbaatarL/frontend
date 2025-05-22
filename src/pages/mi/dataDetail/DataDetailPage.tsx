@@ -213,6 +213,8 @@ const DataDetailPage = () => {
                   setGoodsDataSourceNo={setGoodsDataSourceNo}
                   structuredDataList={structuredDataList}
                   modifyDt={productData?.auditInfo?.modifyDt}
+                  goodsDataNm={productData?.goodsDataNm}
+                  isDownloadable={productData?.isDownloadable}
                 />
                 {rawGoodsData && (
                   <Box width={'100%'}>

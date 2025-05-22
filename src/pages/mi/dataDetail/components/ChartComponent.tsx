@@ -3,7 +3,7 @@ import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
 import { Box, Grid2 as Grid, Stack, Switch, Tooltip, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIChart from '@/components/common/chart/MIChart'
@@ -20,6 +20,8 @@ interface ChartComponentProps {
   setGoodsDataSourceNo: Dispatch<SetStateAction<number | undefined>>
   structuredDataList?: IProductDataStructuredData[]
   modifyDt?: string
+  goodsDataNm?: string
+  isDownloadable?: boolean
 }
 
 const ChartComponent = ({
@@ -29,7 +31,11 @@ const ChartComponent = ({
   setGoodsDataSourceNo,
   structuredDataList,
   modifyDt,
+  goodsDataNm,
+  isDownloadable,
 }: ChartComponentProps) => {
+  const miChartRef = useRef<HTMLCanvasElement | null>(null)
+
   const [chartType, setChartType] = useState<ChartType>(ChartType.LINE)
   const [isInitialState, setIsInitialState] = useState(true)
   const [searchFilter, setSearchFilter] = useState<IProductDataStructuredChartRequest>({
@@ -132,6 +138,28 @@ const ChartComponent = ({
             type={'outlined'}
             contentType={'icon'}
             startIcon={<LocalSeeOutlinedIcon fontSize={'small'} />}
+            onClick={() => {
+              if (!miChartRef.current) return
+
+              const canvas = miChartRef.current
+
+              const tempCanvas = document.createElement('canvas')
+              tempCanvas.width = canvas.width
+              tempCanvas.height = canvas.height
+              const tempCtx = tempCanvas.getContext('2d')
+
+              if (!tempCtx) return
+
+              tempCtx.fillStyle = '#ffffff'
+              tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
+              tempCtx.drawImage(canvas, 0, 0)
+
+              const link = document.createElement('a')
+              link.download = `${goodsDataNm ?? 'chart'}-${chartData?.metadata.currentUnitCd}-${dayjs().format('YYYYMMDD')}.png`
+              link.href = tempCanvas.toDataURL('image/png')
+              link.click()
+            }}
+            disabled={!isDownloadable}
           />
 
           <Tooltip title={'그래프 설정 초기화'}>
@@ -164,6 +192,7 @@ const ChartComponent = ({
             unitList={chartData?.metadata.changeableUnitCd ?? []}
           />
           <MIChart
+            ref={miChartRef}
             height={'100%'}
             chartType={chartType}
             mainData={{

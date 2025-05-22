@@ -1,7 +1,7 @@
 import { Box, CircularProgress } from '@mui/material'
 import Chart, { FinancialDataPoint, Tooltip } from 'chart.js/auto'
 import { CandlestickController, CandlestickElement, OhlcController, OhlcElement } from 'chartjs-chart-financial'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import '@/lib/chart/adapterDayjs'
 import MIChartLegendToggle from './MIChartLegendToggle'
@@ -71,7 +71,7 @@ const bbLabels: {
   bb_lower: 'Lower BB',
 }
 
-export default function MIChart(props: Readonly<MIChartProps>) {
+const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, ref) => {
   const { height, interval = 'day', mainData, chartType = ChartType.LINE, indicators = [], comparisonCharts = [] } = props
   const chartRef = useRef<HTMLCanvasElement>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -342,6 +342,14 @@ export default function MIChart(props: Readonly<MIChartProps>) {
     }
   }, [mainData.data, indicatorDatasets, comparisonDatasets, interval, mainData.unit, subYAxes])
 
+  useEffect(() => {
+    if (ref && typeof ref === 'function') {
+      ref(chartRef.current)
+    } else if (ref) {
+      ref.current = chartRef.current
+    }
+  }, [ref])
+
   return (
     <Box
       height={height}
@@ -392,4 +400,8 @@ export default function MIChart(props: Readonly<MIChartProps>) {
       <MIChartTooltip {...tooltip} />
     </Box>
   )
-}
+})
+
+MIChart.displayName = 'MIChart'
+
+export default MIChart
