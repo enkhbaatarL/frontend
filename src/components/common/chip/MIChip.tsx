@@ -2,7 +2,18 @@ import { Chip, ChipProps, SxProps, Theme, Typography, TypographyProps } from '@m
 import { useCallback, useMemo } from 'react'
 
 type MIChipSize = 'h20' | 'h24'
-type MIChipColor = 'blue' | 'purple' | 'orange' | 'green' | 'green-climb' | 'red' | 'red-decline' | 'gray' | 'white' | 'gray-border'
+type MIChipColor =
+  | 'blue'
+  | 'purple'
+  | 'orange'
+  | 'green'
+  | 'green-climb'
+  | 'red'
+  | 'red-decline'
+  | 'gray'
+  | 'white'
+  | 'gray-border'
+  | 'primary'
 
 export interface MIChipProps extends Omit<ChipProps, 'size' | 'color'> {
   size?: MIChipSize
@@ -34,74 +45,80 @@ export default function MIChip(props: Readonly<MIChipProps>) {
     (color: MIChipColor) => {
       if (color === 'blue')
         return {
-          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#D6E4F7',
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#1C7ED61A',
           color: '#1967D2',
-          borderColor: '#D6E4F7',
+          borderColor: '#1C7ED61A',
           '&:hover': {
-            backgroundColor: '#D6E4F7',
+            backgroundColor: '#1C7ED61A',
           },
         }
       if (color === 'purple')
         return {
-          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#EDE7FE',
-          color: '#7048E8',
-          borderColor: type === 'outlined' ? 'rgba(112, 72, 232, 0.10)' : '#EDE7FE',
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F3EFF9',
+          color: '#7451DD',
+          borderColor: type === 'outlined' ? 'rgba(112, 72, 232, 0.10)' : '#F3EFF9',
           '&:hover': {
-            backgroundColor: '#EDE7FE',
+            backgroundColor: '#F3EFF9',
           },
         }
       if (color === 'orange')
         return {
-          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#FFEADA',
-          color: '#F76707',
-          borderColor: type === 'outlined' ? 'rgba(247, 103, 7, 0.10)' : '#FFEADA',
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F261001A',
+          color: '#EB670F',
+          borderColor: type === 'outlined' ? 'rgba(247, 103, 7, 0.10)' : '#F261001A',
           '&:hover': {
-            backgroundColor: '#FFEADA',
+            backgroundColor: '#F261001A',
           },
         }
       if (color === 'green')
         return {
-          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#CAEDD1',
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#2A8D3E1A',
           color: '#2A8D3E',
-          borderColor: type === 'outlined' ? 'rgba(42, 141, 62, 0.10)' : '#CAEDD1',
+          borderColor: type === 'outlined' ? 'rgba(42, 141, 62, 0.10)' : '#2A8D3E1A',
           '&:hover': {
-            backgroundColor: '#CAEDD1',
+            backgroundColor: '#2A8D3E1A',
           },
         }
       if (color === 'green-climb')
         return {
-          backgroundColor: 'rgba(73, 139, 71, 0.10)',
+          backgroundColor: '#498B471A',
           color: '#498B47',
           borderColor: 'tranparent',
         }
       if (color === 'red')
         return {
-          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#FFE6E6',
-          color: '#F03E3E',
-          borderColor: type === 'outlined' ? 'rgba(240, 62, 62, 0.10)' : '#FFE6E6',
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F03E3E1A',
+          color: '#DF4B4A',
+          borderColor: type === 'outlined' ? 'rgba(240, 62, 62, 0.10)' : '#F03E3E1A',
           '&:hover': {
-            backgroundColor: '#FFE6E6',
+            backgroundColor: '#F03E3E1A',
           },
         }
       if (color === 'red-decline')
         return {
-          backgroundColor: 'rgba(204, 77, 80, 0.10)',
+          backgroundColor: '#CC4D501A',
           color: '#CC4D50',
           borderColor: 'tranparent',
         }
       if (color === 'gray')
         return {
           color: '#495057',
-          backgroundColor: '#E9ECEF',
-          // borderColor: '#495057',
+          backgroundColor: '#FFFFFF',
+          borderColor: '#4950571A',
         }
       if (color === 'white')
         return {
           color: '#495057',
           backgroundColor: '#FFFFFF',
-          borderColor: '#495057',
+          borderColor: '#DEE2E6',
         }
       if (color === 'gray-border')
+        return {
+          color: '#495057',
+          backgroundColor: '#FFFFFF',
+          borderColor: '#DEE2E6',
+        }
+      if (color === 'primary')
         return {
           color: '#495057',
           backgroundColor: '#FFFFFF',

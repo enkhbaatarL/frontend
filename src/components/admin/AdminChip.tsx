@@ -2,7 +2,7 @@ import { Chip, ChipProps, SxProps, Theme, Typography, TypographyProps } from '@m
 import { useMemo } from 'react'
 
 type AdminChipSize = 'h20' | 'h24'
-type AdminChipColor = 'blue' | 'purple' | 'orange' | 'green' | 'red' | 'gray' | 'white'
+type AdminChipColor = 'blue' | 'purple' | 'orange' | 'green' | 'red' | 'gray' | 'white' | 'primary'
 
 export interface AdminChipProps extends Omit<ChipProps, 'size' | 'color'> {
   size?: AdminChipSize
@@ -31,28 +31,28 @@ const AdminChip = (props: Readonly<AdminChipProps>) => {
   const getColorStyle = (adminChipColor: AdminChipColor) => {
     if (adminChipColor === 'blue')
       return {
-        backgroundColor: '#D6E4F7',
+        backgroundColor: '#1C7ED61A',
         color: '#1967D2',
       }
     if (adminChipColor === 'purple')
       return {
-        backgroundColor: '#EDE7FE',
-        color: '#7048E8',
+        backgroundColor: '#F3EFF9',
+        color: '#7451DD',
       }
     if (adminChipColor === 'orange')
       return {
-        backgroundColor: '#FFEADA',
-        color: '#F76707',
+        backgroundColor: '#F261001A',
+        color: '#EB670F',
       }
     if (adminChipColor === 'green')
       return {
-        backgroundColor: '#CAEDD1',
+        backgroundColor: '#2A8D3E1A',
         color: '#2A8D3E',
       }
     if (adminChipColor === 'red')
       return {
-        backgroundColor: '#FFE6E6',
-        color: '#F03E3E',
+        backgroundColor: '#F03E3E1A',
+        color: '#DF4B4A',
       }
     if (adminChipColor === 'gray')
       return {
@@ -63,6 +63,11 @@ const AdminChip = (props: Readonly<AdminChipProps>) => {
       return {
         color: '#495057',
         backgroundColor: '#DEE2E6',
+      }
+    if (adminChipColor === 'primary')
+      return {
+        color: '#FFFFFF',
+        backgroundColor: '#2E3F5E',
       }
 
     return {}
