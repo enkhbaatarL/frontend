@@ -38,7 +38,10 @@ export interface IProductDataStructuredRequest extends IPaginationRequest {
 export interface IProductDataStructuredRawData {
   cells: string[]
 }
-
+export interface IProductDataStructuredRawDataDownloadRequest {
+  startDate: string
+  endDate: string
+}
 /**
  * 상품 데이터를 조회합니다.
  * isViewable: 상품에 대한 보기 권한 여부를 의미합니다.
@@ -103,6 +106,28 @@ const dataDetailService = {
     )
 
     return response.data.data
+  },
+
+  /**
+   * 상품 정형 데이터(데이터소스) raw 데이터를 다운로드 합니다.
+   * 상품 DOWNLOAD권한이 필요합니다.
+   * @param goodsNo - 상품 번호
+   * @param goodsDataNo - 상품 데이터 번호
+   * @param goodsDataSourceNo - 상품 데이터소스 번호
+   * @param params - { startDate: 조회 시작일, endDate: 조회 종료일 }
+   */
+  async downloadProductDataStructuredRawData(
+    goodsNo: number,
+    goodsDataNo: number,
+    goodsDataSourceNo: number,
+    params: IProductDataStructuredRawDataDownloadRequest,
+  ) {
+    const response = await api.get(
+      `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/raw-data/download`,
+      { params, responseType: 'blob' },
+    )
+
+    return response
   },
 }
 export default dataDetailService
