@@ -86,6 +86,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
     unknown
   > | null>(null)
   const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
+  const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
 
   const externalTooltipHandler = useCallback(
     (context: { tooltip: { x: number; y: number; content: Record<string, number | null> } | null }) => {
@@ -186,13 +187,13 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
       })),
       type: 'line',
       pointRadius: 0,
-      borderColor: colors[index % colors.length],
+      borderColor: hideComparisonChartIndexList.includes(index) ? 'transparent' : colors[index % colors.length],
       borderWidth: 3,
       fill: false,
       tension: 0.1,
       yAxisID: chart.unitCd,
     }))
-  }, [comparisonCharts])
+  }, [comparisonCharts, hideComparisonChartIndexList])
 
   const comparisonChartUnits = useMemo(() => comparisonCharts.map((chart) => chart.unitCd), [comparisonCharts])
 
@@ -388,10 +389,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
           labels={comparisonDatasets.map((data) => data.label)}
           colors={comparisonDatasets.map((data) => data.borderColor)}
           onChange={(index, isShow) => {
-            if (chartInstance) {
-              // TODO: 그래프 on/off 기능 구현
-              console.log(index, isShow)
-            }
+            setHideComparisonChartIndexList((prev) => (isShow ? prev.filter((item) => item !== index) : [...prev, index]))
           }}
         />
       </Box>
