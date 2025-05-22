@@ -223,6 +223,72 @@ export const AdminFaqFormSkeleton = () => (
   </Box>
 )
 
+export const AdminCustomerCompanyProductDetail1Skeleton = () => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: '30px', width: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '210px' }}>
+      <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: '2px' }} />
+      <Box sx={{ display: 'flex', gap: '16px' }}>
+        <Skeleton variant="rectangular" width={100} height={20} sx={{ borderRadius: '10px' }} />
+        <Skeleton variant="rectangular" width={100} height={20} sx={{ borderRadius: '10px' }} />
+      </Box>
+    </Box>
+  </Box>
+)
+
+export const AdminCustomerCompanyProductDetail2Skeleton = () => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '210px' }}>
+    <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: '2px' }} />
+    <Box sx={{ display: 'flex', gap: '16px' }}>
+      <Skeleton variant="rectangular" width={53} height={20} sx={{ borderRadius: '10px' }} />
+      <Skeleton variant="rectangular" width={77} height={20} sx={{ borderRadius: '10px' }} />
+    </Box>
+  </Box>
+)
+
+export const AdminCustomerCompanyProductDetailCompanyDateSkeleton = () => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '210px' }}>
+    <Skeleton variant="rectangular" width={120} height={24} sx={{ borderRadius: '2px' }} />
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <Skeleton variant="rectangular" width={150} height={26} sx={{ borderRadius: '4px' }} />
+      <Typography variant="breadcrumbs" color="gray.50">
+        ~
+      </Typography>
+      <Skeleton variant="rectangular" width={150} height={26} sx={{ borderRadius: '4px' }} />
+    </Box>
+  </Box>
+)
+
+export const AdminCustomerCompanyProductDetailIndividualSkeleton = () => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+    <Skeleton variant="rectangular" width={120} height={24} sx={{ borderRadius: '2px' }} />
+    <Skeleton variant="rectangular" width={300} height={16} sx={{ borderRadius: '2px' }} />
+
+    {/* 통계 정보 헤더 */}
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '10px 12px',
+        height: '54px',
+        bgcolor: 'gray.5',
+        borderTop: '1px solid',
+        borderBottom: '1px solid',
+        borderColor: 'gray.30',
+        gap: '8px',
+      }}
+    >
+      <Skeleton variant="rectangular" width={60} height={20} sx={{ borderRadius: '2px' }} />
+      <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} />
+      <Skeleton variant="rectangular" width={60} height={20} sx={{ borderRadius: '2px' }} />
+      <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} />
+      <Skeleton variant="rectangular" width={80} height={20} sx={{ borderRadius: '2px' }} />
+    </Box>
+
+    {/* 테이블 영역 */}
+    <Skeleton variant="rectangular" width="100%" height={400} sx={{ borderRadius: '4px' }} />
+  </Box>
+)
+
 const AdminSkeleton = ({ loading, children, subHeader, filter, table, someItem, textarea, custom }: Props) => {
   if (!loading) {
     return children
