@@ -163,7 +163,7 @@ const MIHeaderMainLayout = ({ pages }: MIHeaderMainLayoutProps) => {
                 navigate('/')
               }}
             >
-              <img src={logoImg} alt="Market Intelligence" />
+              <img src={logoImg} alt="AI Market Insights" />
             </Box>
             <Box sx={{ flexGrow: 1, display: 'flex' }}>
               {pages.map((page) => (
