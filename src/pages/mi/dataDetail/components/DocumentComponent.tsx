@@ -51,7 +51,7 @@ const DocumentItem = ({ title, date, format, isPdfViewable, isDownloadable, file
 const DocumentComponent = ({ data }: DocumentComponentProps) => (
   <Grid gap={2.5} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
     <Typography component="div" color="gray.90" variant="titleBox">
-        Document
+      Document
     </Typography>
     <Box>
       {data?.map((item, index) => (
@@ -66,9 +66,11 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => (
         />
       ))}
     </Box>
-    <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'}>
+    {data && (
+      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'}>
         Download All
-    </MIButton>
+      </MIButton>
+    )}
   </Grid>
 )
 
