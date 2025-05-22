@@ -58,18 +58,22 @@ const priceIndicatorPlugin: PriceIndicatorPlugin = {
 
           plugin.focusedPoints = focusedPoints.filter((item) => !['MA5', 'MA20', 'MA60', 'MA120'].includes(item.label ?? ''))
         }
-        chart.draw()
+        if (chart.ctx) {
+          chart.draw()
+        }
       } catch (err) {
-        console.log(err)
+        console.error(err)
       }
     })
 
     chart.canvas.addEventListener('mouseout', () => {
       try {
         plugin.mousePosition = null
-        chart.draw()
+        if (chart.ctx) {
+          chart.draw()
+        }
       } catch (err) {
-        console.log(err)
+        console.error(err)
       }
     })
   },

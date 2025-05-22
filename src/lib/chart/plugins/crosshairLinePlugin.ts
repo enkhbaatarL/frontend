@@ -65,9 +65,11 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
           date: dayjs((chart.data.datasets[0]?.data[mainDataPoint?.index || 0] as Point).x).format('YYYY-MM-DD'),
         }
 
-        chart.draw()
+        if (chart.ctx) {
+          chart.draw()
+        }
       } catch (err) {
-        console.log(err)
+        console.error(err)
       }
     })
 
@@ -79,9 +81,11 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
           chart,
           tooltip: null,
         })
-        chart.draw()
+        if (chart.ctx) {
+          chart.draw()
+        }
       } catch (err) {
-        console.log(err)
+        console.error(err)
       }
     })
   },
