@@ -28,7 +28,14 @@ const PdfViewerPage = () => {
 
   useEffect(() => {
     if (isError) {
-      navigate('/error/404', { replace: true })
+      navigate('/error', {
+        state: {
+          code: 401,
+          status: 'An unknown error has occurred. Please try again later.',
+          hiddenButton: true,
+        },
+        replace: true,
+      })
     }
   }, [isError, navigate])
 

@@ -91,11 +91,10 @@ const MILayout = () => {
     const fetchNotice = async () => {
       try {
         const latestNotice = await boardService.getNoticePopup()
-        if (latestNotice) {
-          setNoticeData(latestNotice)
-        } else {
-          return
-        }
+
+        if (!latestNotice) return
+
+        setNoticeData(latestNotice)
 
         // 쿠키를 확인하여 오늘 하루 보지 않기를 선택했는지 확인
         const todayDontShow = getCookie(`notice_dont_show_${latestNotice.bulletinNo}`)
