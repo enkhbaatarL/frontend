@@ -1,10 +1,11 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
-import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
+import { useScrollRestoration } from '@/hooks/useScrollRestoration'
 import DailyChart from '@/pages/mi/dashboard/components/DailyChart'
 import MIProvider from '@/providers/MIProvider'
 import boardService, { INoticeDetailInfo, INoticePopupInfo } from '@/service/mi/board'
@@ -52,7 +53,7 @@ const mainPages: Page[] = [
 ]
 
 const MILayout = () => {
-  const [isScrolled, setIsScrolled] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(true)
   const [showNoticePopup, setShowNoticePopup] = useState(false)
   const [noticeData, setNoticeData] = useState<INoticePopupInfo | null>(null)
   const [noticeDetailData, setNoticeDetailData] = useState<INoticeDetailInfo | null>(null)
@@ -60,17 +61,17 @@ const MILayout = () => {
   const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
   const location = useLocation()
 
+  const { saveScroll, currentScroll, preRenderMinHeight } = useScrollRestoration({ urls: mainPages.map((m) => m.url) })
+
   useEffect(() => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
 
+  useEffect(() => setIsScrolled(currentScroll > 0), [currentScroll])
+
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0)
-    }
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 0)
     window.addEventListener('scroll', handleScroll)
-
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
@@ -143,20 +144,27 @@ const MILayout = () => {
 
   return (
     <MIProvider>
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', minWidth: '1440px', boxSizing: 'border-box' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: preRenderMinHeight,
+          minWidth: '1440px',
+          boxSizing: 'border-box',
+        }}
+      >
         <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
-          <MIHeaderMainLayout pages={mainPages} />
+          <MIHeaderMainLayout pages={mainPages} onMoveTab={(callback) => saveScroll(callback)} />
           {showDailyChart && <DailyChart data={dailyChartData} />}
         </div>
         <Box
           sx={{
             paddingTop,
             flex: 1,
-            transition: 'padding-top 0.15s linear',
+            // transition: 'padding-top 0.15s linear', 화면 꿀렁거려서 주석
           }}
         >
           <Outlet key={outletKey} />
-          <ScrollRestoration getKey={(location) => location.pathname} />
         </Box>
 
         <MIFooter />
