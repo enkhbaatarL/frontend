@@ -22,7 +22,7 @@ const codeMapper = (status: number, code?: string): string => {
   return '문제가 발생했습니다.\n나중에 다시 시도하시거나 이전 페이지로 돌아가세요.'
 }
 
-const getErrorInfo = (state: { status?: number; code?: string }, pathname: string) => {
+const getErrorInfo = (state: { status?: number; code?: string; hiddenButton?: boolean }, pathname: string) => {
   const fallbackStatus = (() => {
     const last = pathname.split('/').filter(Boolean).pop()
     return last && !isNaN(Number(last)) ? Number(last) : 0
@@ -30,15 +30,16 @@ const getErrorInfo = (state: { status?: number; code?: string }, pathname: strin
 
   const status = state?.status ?? fallbackStatus
   const message = codeMapper(status, state?.code)
+  const hiddenButton = state?.hiddenButton ?? false
 
-  return { status, message }
+  return { status, message, hiddenButton }
 }
 
 const CommonErrorPage = () => {
   const { state, pathname } = useLocation()
   const navigate = useNavigate()
 
-  const { status, message } = useMemo(() => getErrorInfo(state, pathname), [state, pathname])
+  const { status, message, hiddenButton } = useMemo(() => getErrorInfo(state, pathname), [state, pathname])
   const isAuthError = typeof status === 'number' && status >= 400 && status < 500
 
   const renderButtons = () => (
@@ -69,7 +70,7 @@ const CommonErrorPage = () => {
       </Grid>
 
       <Grid display="flex" gap={3}>
-        {renderButtons()}
+        {!hiddenButton && renderButtons()}
       </Grid>
     </Grid>
   )

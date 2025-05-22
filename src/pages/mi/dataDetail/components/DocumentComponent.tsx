@@ -17,6 +17,14 @@ interface DocumentComponentProps {
 }
 
 const DocumentItem = ({ title, date, format, isPdfViewable, isDownloadable, fileNo }: DocumentItemProps) => {
+  const handleViewPdf = () => {
+    window.open(
+      `/pdf-viewer/${fileNo}`,
+      '_blank',
+      'width=1100,height=800,toolbar=no,menubar=no,scrollbars=no,resizable=no,location=no,status=no',
+    )
+  }
+
   // 파일 다운로드
   const handleDownloadFile = async () => {
     await fileService.downloadFile(fileNo)
@@ -36,7 +44,7 @@ const DocumentItem = ({ title, date, format, isPdfViewable, isDownloadable, file
           {format}
         </Typography>
         {isPdfViewable && (
-          <MIButton contentType={'link'} color={'gray'} type={'ghost'} size={'h32'}>
+          <MIButton contentType={'link'} color={'gray'} type={'ghost'} size={'h32'} onClick={handleViewPdf}>
             View
           </MIButton>
         )}
@@ -51,7 +59,7 @@ const DocumentItem = ({ title, date, format, isPdfViewable, isDownloadable, file
 const DocumentComponent = ({ data }: DocumentComponentProps) => (
   <Grid gap={2.5} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
     <Typography component="div" color="gray.90" variant="titleBox">
-        Document
+      Document
     </Typography>
     <Box>
       {data?.map((item, index) => (
@@ -67,7 +75,7 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => (
       ))}
     </Box>
     <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'}>
-        Download All
+      Download All
     </MIButton>
   </Grid>
 )
