@@ -103,7 +103,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
       if (color === 'gray')
         return {
           color: '#495057',
-          backgroundColor: '#FFFFFF',
+          backgroundColor: '#E9ECEF',
           borderColor: '#4950571A',
         }
       if (color === 'white')
