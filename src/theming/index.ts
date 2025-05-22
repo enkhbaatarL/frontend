@@ -256,7 +256,7 @@ const theme = createTheme({
       red1: '#F03E3E',
       green1: '#0CA678',
       orange2: '#F76707',
-      purple2: '#7048E8',
+      purple2: '#7451DD',
     },
     chart: {
       blue2: '#5191F5',

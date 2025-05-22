@@ -248,7 +248,7 @@ export default function MIChart(props: Readonly<MIChartProps>) {
     }
 
     if (mainData.sma120?.length) {
-      datasets.push(generateSMADatasets('MA120', '#7048E8', mainData.sma120))
+      datasets.push(generateSMADatasets('MA120', '#7451DD', mainData.sma120))
     }
 
     if (mainData.bb) {
