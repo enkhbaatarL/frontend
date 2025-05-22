@@ -109,13 +109,17 @@ const DataDetailPage = () => {
     [productDataUnstructuredData, productData],
   )
 
-  const columns = useMemo(() => productDataStructuredRawData?.headers?.map((item) => ({
-    field: item?.field,
-    headerName: item?.name,
-    flex: 1,
-    align: 'center',
-    renderCell: (params: GridRenderCellParams) => <MITableCell value={params.value} typography={{ variant: 'tableBody1' }} />,
-  })), [productDataStructuredRawData])
+  const columns = useMemo(
+    () =>
+      productDataStructuredRawData?.headers?.map((item) => ({
+        field: item?.field,
+        headerName: item?.name,
+        flex: 1,
+        align: 'center',
+        renderCell: (params: GridRenderCellParams) => <MITableCell value={params.value} typography={{ variant: 'tableBody1' }} />,
+      })),
+    [productDataStructuredRawData],
+  )
 
   const rows = useMemo(() => {
     if (!columns || !productDataStructuredRawData) return []
@@ -193,7 +197,7 @@ const DataDetailPage = () => {
                             color="gray"
                             contentType="icon"
                             startIcon={<FileDownloadIcon />}
-                            onClick={() => console.log(startDate, endDate)}
+                            // onClick={}
                           />
                         </Grid>
                       }
@@ -249,10 +253,15 @@ const DataDetailPage = () => {
           >
             {convertUnstructuredDataToStructuredData.length > 0 && <DocumentComponent data={convertUnstructuredDataToStructuredData} />}
             {productData && <DocumentInfoComponent data={productData} />}
-            <Typography color="gray.60" component="div" variant="body2R14">
+            <Typography color="gray.60" component="div" variant="body2R14" fontSize={12}>
               This document is the property of LSEG, and unauthorized reproduction or distribution is prohibited; prior approval is required
               via mi.admin@sk.com. The content is provided for informational purposes only, and Market Intelligence bears no responsibility
               for errors or damages.
+            </Typography>
+            <Typography color="gray.60" component="div" variant="body2R14" fontSize={12}>
+              본 문서는 해당 데이터 제공업체의 자산으로, 사전 승인 없이 복제하거나 배포하는 것은 삼가 주시기 바랍니다. 활용을 원하실 경우,
+              관련 관리자에게 사전 문의해 주시기 바랍니다. 본 문서는 참고용 정보를 제공하기 위한 것으로, 내용의 정확성이나 활용 결과에
+              대해서는 사용자의 판단과 책임이 요구됩니다.
             </Typography>
           </Grid>
         </Grid>
