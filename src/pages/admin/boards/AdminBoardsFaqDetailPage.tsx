@@ -37,6 +37,7 @@ const AdminBoardsFaqDetailPage = () => {
     queryKey: ['faqDetail', faqNo],
     queryFn: async () => await boardService.getFaqDetail(faqNo),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!faqNo,
   })
 

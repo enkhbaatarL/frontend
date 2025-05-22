@@ -49,6 +49,7 @@ const DataDetailPage = () => {
     queryKey: ['productData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductData(goodsNo, goodsDataNo),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   // 정형데이터 목록
@@ -56,6 +57,7 @@ const DataDetailPage = () => {
     queryKey: ['productDataUnstructuredData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductDataStructuredDataList(goodsNo, goodsDataNo),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   // 비정형데이터 목록
@@ -63,6 +65,7 @@ const DataDetailPage = () => {
     queryKey: ['productDataStructuredData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductDataUnstructuredDataList(goodsNo, goodsDataNo),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   const hasStructuredDataList = useMemo(() => (structuredDataList ?? []).length > 0, [structuredDataList])
@@ -79,6 +82,7 @@ const DataDetailPage = () => {
         endDate,
       }),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!goodsDataSourceNo,
   })
 

@@ -102,6 +102,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
     queryKey: ['getDepartmentAll'],
     queryFn: async () => await companiesService.getDepartmentAll(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   /**

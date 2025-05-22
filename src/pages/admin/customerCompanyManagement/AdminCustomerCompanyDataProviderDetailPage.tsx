@@ -47,6 +47,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     queryKey: ['providerDetail', companyNo, selectedProviderNo],
     queryFn: async () => await companiesService.getCompanyProviderDetail(Number(companyNo), Number(selectedProviderNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!companyNo || !!selectedProviderNo,
   })
 
@@ -54,6 +55,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     queryKey: ['latestUpdateData', companyNo, selectedProviderNo],
     queryFn: async () => await companiesService.getProviderLatestUpdated(Number(companyNo), Number(selectedProviderNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!companyNo || !!selectedProviderNo,
   })
 
@@ -61,6 +63,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     queryKey: ['provider', companyNo],
     queryFn: async () => await companiesService.getCompanyProviders(Number(companyNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!companyNo,
   })
 
@@ -89,6 +92,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
     queryKey: ['selectProviderGoodsData', selectedProviderNo],
     queryFn: async () => await dataProviderService.getProviderGoods(Number(selectedProviderNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!selectedProviderNo,
   })
 

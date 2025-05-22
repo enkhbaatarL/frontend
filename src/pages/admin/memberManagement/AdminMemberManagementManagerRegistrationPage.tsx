@@ -82,6 +82,7 @@ const AdminMemberManagementManagersRegistrationPage = () => {
     queryKey: ['getDepartmentAll'],
     queryFn: async () => await companiesService.getDepartmentAll(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   const [managerInfo, setManagerInfo] = useState<Partial<IMangerRegisterRequest>>({

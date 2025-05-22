@@ -37,6 +37,7 @@ const AdminMemberManagementMangerDetailPage = () => {
     queryKey: ['managerDetail', userNo],
     queryFn: async () => await membersService.getManagerDetail(userNo),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!userNo,
   })
 

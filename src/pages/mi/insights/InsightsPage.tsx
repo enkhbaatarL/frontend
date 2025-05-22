@@ -40,6 +40,7 @@ const InsightsPage = () => {
     queryKey: ['insights'],
     queryFn: async () => await insightsService.getFocusedList(customerCompanyNo),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   // 필터
@@ -47,6 +48,7 @@ const InsightsPage = () => {
     queryKey: ['filterList'],
     queryFn: async () => await insightsService.getAdvancedFilterData(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   // 정렬 옵션

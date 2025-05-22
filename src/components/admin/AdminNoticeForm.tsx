@@ -27,12 +27,14 @@ const AdminNoticeForm = ({ formData, setFormData, readonly }: Props) => {
     queryKey: ['getNoticeFilter'],
     queryFn: async () => await boardService.getNoticeFilter(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   const { data: companiesOptions } = useQuery({
     queryKey: ['getDepartmentAll'],
     queryFn: async () => await companiesService.getDepartmentAll(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !formData.isWholePost,
   })
 
