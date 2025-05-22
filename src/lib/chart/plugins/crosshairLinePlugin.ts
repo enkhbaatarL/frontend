@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 // EmptyObject type matches what Chart.js actually passes
 type EmptyObject = Record<string, never>
 
-interface CrosshairLinePlugin extends Plugin<ChartType> {
+interface CrosshairLinePlugin extends Plugin {
   id: string
   mousePosition: { x: number; y: number } | null
   tooltipContent: Record<string, { label?: string; value?: number; color?: string; date: string }>
@@ -38,15 +38,17 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
         const sameIndexPoints = chart.getElementsAtEventForMode(event, 'index', { axis: 'x', intersect: false }, false)
 
         const mainDataPoint = sameIndexPoints[0]
-        const comparationDataPoints = sameIndexPoints.slice(1)
+        const comparisonDataPoints = sameIndexPoints.slice(1)
 
-        if (comparationDataPoints.length) {
-          // Access data from all datasets at this index
-          comparationDataPoints.forEach((point) => {
+        plugin.tooltipContent = {}
+
+        if (comparisonDataPoints.length) {
+          comparisonDataPoints.forEach((point) => {
             const ds = chart.data.datasets[point.datasetIndex]
 
             if (ds?.label && !['Upper BB', 'Lower BB'].includes(ds.label)) {
-              plugin.tooltipContent[ds.label] = {
+              const key = `${ds.label}_${point.datasetIndex}`
+              plugin.tooltipContent[key] = {
                 label: ds.label,
                 color: ds.borderColor as string,
                 value: (ds?.data[point.index || 0] as Point).y || (ds?.data[point.index || 0] as FinancialDataPoint).c,
@@ -56,13 +58,15 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
           })
         }
 
-        plugin.tooltipContent.mainData = {
-          label: chart.data.datasets[0].label,
-          color: chart.data.datasets[0].borderColor as string,
-          value:
-            (chart.data.datasets[0]?.data[mainDataPoint?.index || 0] as Point).y ||
-            (chart.data.datasets[0]?.data[mainDataPoint?.index || 0] as FinancialDataPoint).c,
-          date: dayjs((chart.data.datasets[0]?.data[mainDataPoint?.index || 0] as Point).x).format('YYYY-MM-DD'),
+        if (mainDataPoint) {
+          plugin.tooltipContent.mainData = {
+            label: chart.data.datasets[mainDataPoint.datasetIndex].label,
+            color: chart.data.datasets[mainDataPoint.datasetIndex].borderColor as string,
+            value:
+              (chart.data.datasets[mainDataPoint.datasetIndex]?.data[mainDataPoint.index || 0] as Point).y ||
+              (chart.data.datasets[mainDataPoint.datasetIndex]?.data[mainDataPoint.index || 0] as FinancialDataPoint).c,
+            date: dayjs((chart.data.datasets[mainDataPoint.datasetIndex]?.data[mainDataPoint.index || 0] as Point).x).format('YYYY-MM-DD'),
+          }
         }
 
         if (chart.ctx) {
