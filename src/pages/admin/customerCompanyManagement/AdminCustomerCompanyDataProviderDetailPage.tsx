@@ -46,30 +46,21 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const { data: providerDetailData, isLoading: providerDetailDataIsLoading } = useQuery({
     queryKey: ['providerDetail', companyNo, selectedProviderNo],
     queryFn: async () => await companiesService.getCompanyProviderDetail(Number(companyNo), Number(selectedProviderNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!companyNo || !!selectedProviderNo,
   })
 
   const { data: providerLatestUpdatedData, isLoading: providerLatestUpdatedDataIsLoading } = useQuery({
     queryKey: ['latestUpdateData', companyNo, selectedProviderNo],
     queryFn: async () => await companiesService.getProviderLatestUpdated(Number(companyNo), Number(selectedProviderNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!companyNo || !!selectedProviderNo,
   })
 
   const { data: providerData, isLoading: providerDataIsLoading } = useQuery({
     queryKey: ['provider', companyNo],
     queryFn: async () => await companiesService.getCompanyProviders(Number(companyNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!companyNo,
   })
 
@@ -97,10 +88,7 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
   const { data: selectProviderGoodsData, isLoading: selectProviderGoodsDataIsLoading } = useQuery({
     queryKey: ['selectProviderGoodsData', selectedProviderNo],
     queryFn: async () => await dataProviderService.getProviderGoods(Number(selectedProviderNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!selectedProviderNo,
   })
 

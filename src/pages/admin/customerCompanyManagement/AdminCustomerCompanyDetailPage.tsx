@@ -50,10 +50,7 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
   const { data: providerData } = useQuery({
     queryKey: ['providerData'],
     queryFn: async () => await dataProviderService.getProviders(),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
   const providerOptions =
@@ -431,30 +428,21 @@ const AdminCustomerCompanyDetailPage = () => {
   const { data, isLoading: customerCompanyDetailIsLoading } = useQuery({
     queryKey: ['customerCompanyDetail', companyNo],
     queryFn: async () => await companiesService.getCompanyDetail(Number(companyNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!companyNo,
   })
 
   const { data: dataProviderData, isLoading: dataProviderDataIsLoading } = useQuery({
     queryKey: ['dataProvider', companyNo],
     queryFn: async () => await companiesService.getCompanyProviders(Number(companyNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!companyNo,
   })
 
   const { data: companyLatestUpdatedData, isLoading: companyLatestUpdateDataIsLoading } = useQuery({
     queryKey: ['latestUpdateData', companyNo],
     queryFn: async () => await companiesService.getCompanyLatestUpdated(Number(companyNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!companyNo,
   })
 

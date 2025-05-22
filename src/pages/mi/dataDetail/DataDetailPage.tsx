@@ -28,30 +28,21 @@ const DataDetailPage = () => {
   const { data: productData } = useQuery({
     queryKey: ['productData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductData(Number(goodsNo), Number(goodsDataNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
   // 비정형데이터 목록
   const { data: productDataUnstructuredData } = useQuery({
     queryKey: ['productDataUnstructuredData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductDataUnstructuredDataList(Number(goodsNo), Number(goodsDataNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
   // 정형데이터 목록
   // const { data: productDataStructuredData } = useQuery({
   //   queryKey: ['productDataStructuredData', goodsNo, goodsDataNo],
   //   queryFn: () => dataDetailService.getProductDataStructuredDataList(Number(goodsNo), Number(goodsDataNo)),
-  //   refetchOnWindowFocus: 'always',
-  //   refetchOnMount: 'always',
-  //   gcTime: 0,
-  //   staleTime: 0,
+  //   refetchOnWindowFocus: false,
   // })
 
   const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
@@ -82,16 +73,20 @@ const DataDetailPage = () => {
     return `${month} ${day}, ${year}`
   }, [productData])
 
-  const convertUnstructuredDataToStructuredData = useMemo(() => isArray(productDataUnstructuredData)
-    ? productDataUnstructuredData.map((item) => ({
-      title: item.fileName,
-      date: dayjs(item.auditInfo.modifyDt).format('YYYY-MM-DD'),
-      format: item.extension,
-      isPdfViewable: item.isPdfViewable,
-      isDownloadable: productData?.isDownloadable ?? false,
-      fileNo: item.fileNo,
-    }))
-    : [], [productDataUnstructuredData, productData])
+  const convertUnstructuredDataToStructuredData = useMemo(
+    () =>
+      isArray(productDataUnstructuredData)
+        ? productDataUnstructuredData.map((item) => ({
+          title: item.fileName,
+          date: dayjs(item.auditInfo.modifyDt).format('YYYY-MM-DD'),
+          format: item.extension,
+          isPdfViewable: item.isPdfViewable,
+          isDownloadable: productData?.isDownloadable ?? false,
+          fileNo: item.fileNo,
+        }))
+        : [],
+    [productDataUnstructuredData, productData],
+  )
 
   return (
     <>
