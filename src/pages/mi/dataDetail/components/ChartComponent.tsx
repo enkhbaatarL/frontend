@@ -2,13 +2,14 @@ import LocalSeeOutlinedIcon from '@mui/icons-material/LocalSeeOutlined'
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
 import { Box, Grid2 as Grid, Stack, Switch, Tooltip, Typography } from '@mui/material'
 import { Dayjs } from 'dayjs'
-import { useCallback, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useMemo, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIChart from '@/components/common/chart/MIChart'
 import MIChartController from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
+import { IProductDataStructuredData } from '@/service/mi/dataDetail'
 import { calculateBollingerBands, calculateSMA, getMockOHLCData } from '@/utils/mock-data'
 
 const mockMainData = getMockOHLCData(200)
@@ -57,11 +58,13 @@ const comparisionData1 = getMockOHLCData(200).map((item) => ({ time: item.time, 
 const comparisionData2 = getMockOHLCData(200).map((item) => ({ time: item.time, value: item.close }))
 const comparisionData3 = getMockOHLCData(200).map((item) => ({ time: item.time, value: item.close }))
 
-const ChartComponent = () => {
-  const [selectedCompany, setSelectedCompany] = useState({
-    label: '정형 데이터 이름 1',
-    value: 'structured-data-name-1',
-  })
+interface ChartComponentProps {
+  goodsDataSourceNo?: number
+  setGoodsDataSourceNo: Dispatch<SetStateAction<number | undefined>>
+  structuredDataList?: IProductDataStructuredData[]
+}
+
+const ChartComponent = ({ goodsDataSourceNo, setGoodsDataSourceNo, structuredDataList }: ChartComponentProps) => {
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
   const [timeRangeSelected, setTimeRangeSelected] = useState<string>('')
@@ -85,6 +88,15 @@ const ChartComponent = () => {
     setTimeRangeSelected((prev) => (prev === value ? '' : value))
   }, [])
 
+  const selectedDataSource = useMemo(() => {
+    const selectedData = structuredDataList?.find((item) => item.goodsDataSourceNo === goodsDataSourceNo)
+
+    return {
+      label: selectedData?.goodsDataSourceNm ?? '',
+      value: String(selectedData?.goodsDataSourceNo ?? 0),
+    }
+  }, [goodsDataSourceNo, structuredDataList])
+
   return (
     <>
       <Box borderRadius={1} maxWidth={'100%'} border={'1px solid'} borderColor={'gray.30'}>
@@ -101,18 +113,15 @@ const ChartComponent = () => {
         >
           <MIButton
             contentType={'select'}
-            onChange={(option) => setSelectedCompany(option)}
+            onChange={({ value }) => setGoodsDataSourceNo(Number(value))}
             type={'ghost'}
             color={'gray'}
             minWidth={150}
-            valueSelect={selectedCompany}
-            options={[
-              { label: 'Structured Data name 1234', value: 'structured-data-name-1234' },
-              { label: '정형 데이터 이름 1', value: 'structured-data-name-1' },
-              { label: 'Structured name test data', value: 'structured-name-test-data' },
-              { label: 'Data name-structured', value: 'data-name-structured' },
-              { label: 'Structured data 334', value: 'structured-data-334' },
-            ]}
+            valueSelect={selectedDataSource}
+            options={(structuredDataList ?? []).map(({ goodsDataSourceNm, goodsDataSourceNo }) => ({
+              label: goodsDataSourceNm,
+              value: String(goodsDataSourceNo),
+            }))}
           />
 
           <MIButton

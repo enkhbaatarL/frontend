@@ -4,19 +4,19 @@ import MIButton from '@/components/common/button/MIButton'
 import MILine from '@/components/common/divider/MILine'
 import fileService from '@/service/admin/file'
 interface DocumentItemProps {
-  title: string
+  fileNo: number
+  fileName: string
   date: string
-  format: string
+  extension: string
   isPdfViewable: boolean
   isDownloadable: boolean
-  fileNo: number
 }
 
 interface DocumentComponentProps {
   data: DocumentItemProps[]
 }
 
-const DocumentItem = ({ title, date, format, isPdfViewable, isDownloadable, fileNo }: DocumentItemProps) => {
+const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable, fileNo }: DocumentItemProps) => {
   const handleViewPdf = () => {
     window.open(
       `/pdf-viewer/${fileNo}`,
@@ -33,7 +33,7 @@ const DocumentItem = ({ title, date, format, isPdfViewable, isDownloadable, file
   return (
     <Box paddingY={3}>
       <Typography mb={1} color="gray.70" component="div" variant="fileName">
-        {title}
+        {fileName}
       </Typography>
       <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
         <Typography whiteSpace="nowrap" lineHeight={1.6} color="gray.60" variant="body2">
@@ -41,7 +41,7 @@ const DocumentItem = ({ title, date, format, isPdfViewable, isDownloadable, file
         </Typography>
         <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
         <Typography lineHeight={1.6} color="gray.60" variant="body2">
-          {format}
+          {extension}
         </Typography>
         {isPdfViewable && (
           <MIButton contentType={'link'} color={'gray'} type={'ghost'} size={'h32'} onClick={handleViewPdf}>
@@ -65,20 +65,18 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => (
       {data?.map((item, index) => (
         <DocumentItem
           key={index}
-          title={item.title}
+          fileName={item.fileName}
           date={item.date}
-          format={item.format}
+          extension={item.extension}
           isPdfViewable={item.isPdfViewable}
           isDownloadable={item.isDownloadable}
           fileNo={item.fileNo}
         />
       ))}
     </Box>
-    {data && (
-      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'}>
-        Download All
-      </MIButton>
-    )}
+    <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'}>
+      Download All
+    </MIButton>
   </Grid>
 )
 

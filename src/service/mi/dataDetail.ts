@@ -23,6 +23,7 @@ export interface IProductDataUnstructuredData {
   fileName: string
   extension: string
   isPdfViewable: boolean
+  isDownloadable: boolean
   auditInfo: IAuditInfo
 }
 export interface IProductDataStructuredData {
@@ -61,8 +62,8 @@ const dataDetailService = {
    * @param goodsNo - 상품 번호
    * @param goodsDataNo - 상품 데이터 번호
    */
-  async getProductDataUnstructuredDataList(goodsNo: number, goodsDataNo: number): Promise<IProductDataUnstructuredData> {
-    const response: AxiosResponse<ICommonResponse<IProductDataUnstructuredData>> = await api.get(
+  async getProductDataUnstructuredDataList(goodsNo: number, goodsDataNo: number): Promise<IProductDataUnstructuredData[]> {
+    const response: AxiosResponse<ICommonResponse<IProductDataUnstructuredData[]>> = await api.get(
       `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/unstructured-data`,
     )
 
@@ -74,8 +75,8 @@ const dataDetailService = {
    * @param goodsNo - 상품 번호
    * @param goodsDataNo - 상품 데이터 번호
    */
-  async getProductDataStructuredDataList(goodsNo: number, goodsDataNo: number): Promise<IProductDataStructuredData> {
-    const response: AxiosResponse<ICommonResponse<IProductDataStructuredData>> = await api.get(
+  async getProductDataStructuredDataList(goodsNo: number, goodsDataNo: number): Promise<IProductDataStructuredData[]> {
+    const response: AxiosResponse<ICommonResponse<IProductDataStructuredData[]>> = await api.get(
       `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources`,
     )
 

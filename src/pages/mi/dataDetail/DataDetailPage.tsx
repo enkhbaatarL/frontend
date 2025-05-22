@@ -2,59 +2,77 @@ import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
-import { isArray } from 'lodash'
-import { SetStateAction, useEffect, useMemo, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams } from 'react-router-dom'
 
 import bshImg from '@/assets/bgsubheader.png'
 import MIButton from '@/components/common/button/MIButton'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import MILine from '@/components/common/divider/MILine'
-import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
-// import ChartComponent from '@/pages/mi/dataDetail/components/ChartComponent'
 import queryClient from '@/lib/queryClient'
+import ChartComponent from '@/pages/mi/dataDetail/components/ChartComponent'
 import DescriptionComponent from '@/pages/mi/dataDetail/components/DescriptionComponent'
 import DocumentComponent from '@/pages/mi/dataDetail/components/DocumentComponent'
 import DocumentInfoComponent from '@/pages/mi/dataDetail/components/DocumentInfoComponent'
-import dataDetailService from '@/service/mi/dataDetail'
+import dataDetailService, { IProductDataStructuredRawData } from '@/service/mi/dataDetail'
+import { IPaginationResponse } from '@/types/api'
+
+interface ITableRow {
+  id: string
+  [key: string]: unknown
+}
 
 const DataDetailPage = () => {
+  const pathParams = useParams()
+
+  const [goodsDataSourceNo, setGoodsDataSourceNo] = useState<number>()
+
   const [startDate, setStartDate] = useState<string>(dayjs().subtract(1, 'month').format('YYYYMMDD'))
   const [endDate, setEndDate] = useState<string>(dayjs().format('YYYYMMDD'))
-  const { goodsNo, goodsDataNo } = useParams()
+
   const [rawSize, setRawSize] = useState<number>(10)
   const [rawPage, setRawPage] = useState<number>(1)
-  const [goodsDataSourceNo, setGoodsDataSourceNo] = useState<number>()
+
+  const { goodsNo, goodsDataNo } = useMemo(
+    () => ({
+      goodsNo: Number(pathParams.goodsNo),
+      goodsDataNo: Number(pathParams.goodsDataNo),
+    }),
+    [pathParams],
+  )
 
   // 데이터 정보
   const { data: productData } = useQuery({
     queryKey: ['productData', goodsNo, goodsDataNo],
-    queryFn: () => dataDetailService.getProductData(Number(goodsNo), Number(goodsDataNo)),
-    refetchOnWindowFocus: false,
-  })
-
-  // 비정형데이터 목록
-  const { data: productDataUnstructuredData } = useQuery({
-    queryKey: ['productDataUnstructuredData', goodsNo, goodsDataNo],
-    queryFn: () => dataDetailService.getProductDataUnstructuredDataList(Number(goodsNo), Number(goodsDataNo)),
+    queryFn: () => dataDetailService.getProductData(goodsNo, goodsDataNo),
     refetchOnWindowFocus: false,
   })
 
   // 정형데이터 목록
-  const { data: productDataStructuredData } = useQuery({
-    queryKey: ['productDataStructuredData', goodsNo, goodsDataNo],
-    queryFn: () => dataDetailService.getProductDataStructuredDataList(Number(goodsNo), Number(goodsDataNo)),
+  const { data: structuredDataList } = useQuery({
+    queryKey: ['productDataUnstructuredData', goodsNo, goodsDataNo],
+    queryFn: () => dataDetailService.getProductDataStructuredDataList(goodsNo, goodsDataNo),
     refetchOnWindowFocus: false,
   })
 
+  // 비정형데이터 목록
+  const { data: unstructuredDataList } = useQuery({
+    queryKey: ['productDataStructuredData', goodsNo, goodsDataNo],
+    queryFn: () => dataDetailService.getProductDataUnstructuredDataList(goodsNo, goodsDataNo),
+    refetchOnWindowFocus: false,
+  })
+
+  const hasStructuredDataList = useMemo(() => (structuredDataList ?? []).length > 0, [structuredDataList])
+  const hasUnstructuredData = useMemo(() => (unstructuredDataList ?? []).length > 0, [unstructuredDataList])
+
   // 정형데이터 raw 목록
-  const { data: productDataStructuredRawData } = useQuery({
+  const { data: rawGoodsData } = useQuery({
     queryKey: ['productDataStructuredRawData', goodsNo, goodsDataNo, goodsDataSourceNo, rawPage, rawSize, startDate, endDate],
     queryFn: () =>
-      dataDetailService.getProductDataStructuredRawData(Number(goodsNo), Number(goodsDataNo), Number(goodsDataSourceNo), {
+      dataDetailService.getProductDataStructuredRawData(goodsNo, goodsDataNo, goodsDataSourceNo!, {
         page: rawPage,
         size: rawSize,
         startDate,
@@ -69,11 +87,6 @@ const DataDetailPage = () => {
     setEndDate(endDate?.format('YYYYMMDD') ?? '')
   }
 
-  const [searchParams] = useSearchParams('')
-  const hideComponent = searchParams.getAll('hide')
-
-  const [field, setField] = useState([])
-
   const formatDate = useMemo(() => {
     const date = new Date(productData?.auditInfo?.modifyDt.replace(' ', 'T') ?? '')
 
@@ -84,61 +97,61 @@ const DataDetailPage = () => {
     return `${month} ${day}, ${year}`
   }, [productData])
 
-  const convertUnstructuredDataToStructuredData = useMemo(
-    () =>
-      isArray(productDataUnstructuredData)
-        ? productDataUnstructuredData.map((item) => ({
-          title: item.fileName,
-          date: dayjs(item.auditInfo.modifyDt).format('YYYY-MM-DD'),
-          format: item.extension,
-          isPdfViewable: item.isPdfViewable,
-          isDownloadable: productData?.isDownloadable ?? false,
-          fileNo: item.fileNo,
-        }))
-        : [],
-    [productDataUnstructuredData, productData],
-  )
-
   const columns = useMemo(
     () =>
-      productDataStructuredRawData?.headers?.map((item) => ({
-        field: item?.field,
-        headerName: item?.name,
+      rawGoodsData?.headers?.map(({ field, name }, index) => ({
+        field,
+        headerName: name,
         flex: 1,
         align: 'center',
-        renderCell: (params: GridRenderCellParams) => <MITableCell value={params.value} typography={{ variant: 'tableBody1' }} />,
+        renderCell: (params: GridRenderCellParams) => {
+          const cellValue = index === 0 ? dayjs(params.value).format('YYYY-MM-DD') : params.value
+
+          return <MITableCell value={cellValue} typography={{ variant: 'tableBody1' }} />
+        },
       })),
-    [productDataStructuredRawData],
+    [rawGoodsData],
   )
 
   const rows = useMemo(() => {
-    if (!columns || !productDataStructuredRawData) return []
-    return productDataStructuredRawData.detail.map((item, index) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const row: Record<string, any> = { id: index }
-      field.forEach((key, index) => {
-        row[key] = item.cells[index]
-      })
-      return row
+    if (!rawGoodsData?.detail) return []
+
+    return rawGoodsData.detail.map((row: IProductDataStructuredRawData, index: number) => {
+      const cells = row.cells.reduce(
+        (acc, cell, i) => {
+          const header = rawGoodsData.headers?.[i]
+          if (header) {
+            acc[header.field] = cell
+          }
+          return acc
+        },
+        {} as Record<string, unknown>,
+      )
+
+      return {
+        id: String(index),
+        ...cells,
+      }
     })
-  }, [field, productDataStructuredRawData])
-
-  useEffect(() => {
-    if (!columns) return
-    setField(columns.map((item) => item.field) as SetStateAction<never[]>)
-  }, [columns])
-
-  useEffect(() => {
-    if (!productDataStructuredData || (isArray(productDataStructuredData) && productDataStructuredData.length === 0)) return
-    setGoodsDataSourceNo(isArray(productDataStructuredData) ? productDataStructuredData[0].goodsDataSourceNo : 0)
-  }, [productDataStructuredData])
+  }, [rawGoodsData])
 
   useEffect(() => {
     if (!goodsDataSourceNo) return
-    queryClient.invalidateQueries({
-      queryKey: ['productDataStructuredRawData', goodsNo, goodsDataNo, goodsDataSourceNo, rawPage, rawSize, startDate, endDate],
-    })
-  }, [goodsDataSourceNo])
+
+    queryClient
+      .invalidateQueries({
+        queryKey: ['productDataStructuredRawData', goodsNo, goodsDataNo, goodsDataSourceNo, rawPage, rawSize, startDate, endDate],
+      })
+      .then()
+  }, [endDate, goodsDataNo, goodsDataSourceNo, goodsNo, rawPage, rawSize, startDate])
+
+  useEffect(() => {
+    const { goodsDataSourceNo: initGoodsDataSourceNo } = structuredDataList?.[0] ?? {}
+
+    if (initGoodsDataSourceNo) {
+      setGoodsDataSourceNo(initGoodsDataSourceNo)
+    }
+  }, [structuredDataList])
 
   return (
     <>
@@ -170,12 +183,16 @@ const DataDetailPage = () => {
           gap={6}
         >
           <Grid container direction="column" flexGrow={1} gap={9.5}>
-            {!hideComponent.includes('charttable') && (
+            {hasStructuredDataList && (
               <>
-                {/* {productDataStructuredData && <ChartComponent />} */}
-                {productDataStructuredRawData && (
+                <ChartComponent
+                  goodsDataSourceNo={goodsDataSourceNo}
+                  setGoodsDataSourceNo={setGoodsDataSourceNo}
+                  structuredDataList={structuredDataList}
+                />
+                {rawGoodsData && (
                   <Box width={'100%'}>
-                    <MITableUser
+                    <MITableUser<ITableRow>
                       tableHeader={
                         <Grid container justifyContent="space-between">
                           <Box maxWidth={465}>
@@ -199,7 +216,7 @@ const DataDetailPage = () => {
                         rows,
                       }}
                       paginationProps={{
-                        data: productDataStructuredRawData,
+                        data: rawGoodsData as unknown as IPaginationResponse<ITableRow>,
                         size: rawSize,
                         onPageChange: (page) => setRawPage(page),
                         onSizeChange: (size) => setRawSize(size),
@@ -207,30 +224,10 @@ const DataDetailPage = () => {
                     />
                   </Box>
                 )}
+                <MILine />
               </>
             )}
-            {!hideComponent.includes('description') && !hideComponent.includes('charttable') && <MILine />}
-            {!hideComponent.includes('description') && <DescriptionComponent />}
-
-            {hideComponent.includes('description') && hideComponent.includes('charttable') && (
-              <Box
-                display={'flex'}
-                borderBottom={'1px solid'}
-                borderColor={'gray.30'}
-                alignItems={'center'}
-                justifyContent={'center'}
-                bgcolor={'gray.5'}
-                textAlign={'center'}
-                height={800}
-              >
-                <Box display="flex" flexDirection="column" rowGap="10px" alignItems="center">
-                  <ErrorOutlineIcon />
-                  <Typography variant="body3SB12" color="gray.60">
-                    이 콘텐츠는 본문을 제공하지 않습니다.
-                  </Typography>
-                </Box>
-              </Box>
-            )}
+            <DescriptionComponent description={productData?.goodsDataExpn} summary={productData?.goodsDataSummaryCntt} />
           </Grid>
           <Grid
             sx={{
@@ -241,7 +238,20 @@ const DataDetailPage = () => {
             direction="column"
             flexShrink={0}
           >
-            {convertUnstructuredDataToStructuredData.length > 0 && <DocumentComponent data={convertUnstructuredDataToStructuredData} />}
+            {hasUnstructuredData && (
+              <DocumentComponent
+                data={
+                  unstructuredDataList?.map(({ fileNo, fileName, auditInfo, extension, isPdfViewable, isDownloadable }) => ({
+                    fileNo,
+                    fileName,
+                    date: dayjs(auditInfo.modifyDt).format('YYYY-MM-DD'),
+                    extension,
+                    isPdfViewable,
+                    isDownloadable,
+                  })) ?? []
+                }
+              />
+            )}
             {productData && <DocumentInfoComponent data={productData} />}
             <Typography color="gray.60" component="div" variant="body3R12">
               This document is the property of the respective data provider. Please refrain from reproducing or distributing it without

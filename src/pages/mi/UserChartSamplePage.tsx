@@ -3,7 +3,6 @@ import { useState } from 'react'
 
 import MISignalMap from '@/components/common/signal-map/MISignalMap'
 import SampleChart from '@/components/mi/chart/SampleChart'
-import ChartComponent from '@/pages/mi/dataDetail/components/ChartComponent'
 
 const UserChartSamplePage = () => {
   const [tab, setTab] = useState(0)
@@ -14,13 +13,11 @@ const UserChartSamplePage = () => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tab} onChange={(_, tabId) => setTab(tabId)} aria-label="basic tabs example">
           <Tab label="Sample" />
-          <Tab label="Detail" />
           <Tab label="Signal Map" />
         </Tabs>
       </Box>
       {tab === 0 && <SampleChart />}
-      {tab === 1 && <ChartComponent />}
-      {tab === 2 && (
+      {tab === 1 && (
         <Box height="600px" marginTop="6px">
           <MISignalMap
             data={Array.from({ length: 41 }, (_, i) => ({
