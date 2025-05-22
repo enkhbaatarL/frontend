@@ -1,6 +1,6 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
 import { isArray } from 'lodash'
 import { SetStateAction, useEffect, useMemo, useState } from 'react'
@@ -133,6 +133,29 @@ const DataDetailPage = () => {
     })
   }, [field, productDataStructuredRawData])
 
+  // 정형데이터 raw 데이터 다운로드
+  const { mutate: downloadRawData } = useMutation({
+    mutationFn: () =>
+      dataDetailService.downloadProductDataStructuredRawData(Number(goodsNo), Number(goodsDataNo), Number(goodsDataSourceNo), {
+        startDate,
+        endDate,
+      }),
+    onSuccess: (response) => {
+      const blob = new Blob([response.data])
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${productData?.goodsDataNm}_${productData?.goodsDataExpn}_${startDate}_${endDate}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+    },
+    onError: (error) => {
+      console.error(error)
+    },
+  })
+
   useEffect(() => {
     if (!columns) return
     setField(columns.map((item) => item.field) as SetStateAction<never[]>)
@@ -197,7 +220,7 @@ const DataDetailPage = () => {
                             color="gray"
                             contentType="icon"
                             startIcon={<FileDownloadIcon />}
-                            // onClick={}
+                            onClick={() => downloadRawData()}
                           />
                         </Grid>
                       }
