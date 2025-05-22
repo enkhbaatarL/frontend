@@ -80,6 +80,7 @@ const AdminMemberManagementUsersPage = () => {
     queryKey: ['getDepartmentAll'],
     queryFn: async () => await companiesService.getDepartmentAll(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   const departmentOptions = useMemo(

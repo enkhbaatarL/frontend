@@ -29,6 +29,7 @@ const DataDetailPage = () => {
     queryKey: ['productData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductData(Number(goodsNo), Number(goodsDataNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   // 비정형데이터 목록
@@ -36,6 +37,7 @@ const DataDetailPage = () => {
     queryKey: ['productDataUnstructuredData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductDataUnstructuredDataList(Number(goodsNo), Number(goodsDataNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   // 정형데이터 목록
@@ -43,6 +45,7 @@ const DataDetailPage = () => {
   //   queryKey: ['productDataStructuredData', goodsNo, goodsDataNo],
   //   queryFn: () => dataDetailService.getProductDataStructuredDataList(Number(goodsNo), Number(goodsDataNo)),
   //   refetchOnWindowFocus: false,
+  //   gcTime: 0,
   // })
 
   const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {

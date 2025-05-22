@@ -74,6 +74,7 @@ const AdminBoardsNoticePage = () => {
     queryKey: ['getNoticeFilter'],
     queryFn: async () => await boardService.getNoticeFilter(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   const handleDeleteNotice = useCallback(async () => {

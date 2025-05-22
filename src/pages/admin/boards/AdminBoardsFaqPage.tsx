@@ -71,6 +71,7 @@ const AdminBoardsFaqPage = () => {
     queryKey: ['getFaqFilter'],
     queryFn: async () => await boardService.getFaqFilter(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   const handleDeleteFaq = useCallback(async () => {

@@ -30,6 +30,7 @@ const MarketDataPage = () => {
     queryKey: ['marketDashboard', customerCompanyNo],
     queryFn: async () => await marketDataService.getMarketDatas(customerCompanyNo),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!customerCompanyNo,
   })
 
@@ -57,6 +58,7 @@ const MarketDataPage = () => {
     queryKey: ['recentViewed'],
     queryFn: async () => await marketDataService.getRecentViewed(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])

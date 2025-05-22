@@ -17,6 +17,7 @@ const AdminFaqForm = ({ formData, setFormData, readonly }: Props) => {
     queryKey: ['getFaqFilter'],
     queryFn: async () => await boardService.getFaqFilter(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   return (

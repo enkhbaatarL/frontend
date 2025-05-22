@@ -227,6 +227,7 @@ const AdminDataProviderProductDetailPage = () => {
     queryKey: ['productDetailData', providerNo, goodsNo],
     queryFn: async () => await dataProviderService.getProviderGoodsDetail(Number(providerNo), Number(goodsNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!providerNo && !!goodsNo,
   })
 
@@ -234,6 +235,7 @@ const AdminDataProviderProductDetailPage = () => {
     queryKey: ['latestUpdatedData', providerNo, goodsNo],
     queryFn: async () => await dataProviderService.getProviderGoodsLatestUpdated(Number(providerNo), Number(goodsNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!providerNo && !!goodsNo,
   })
 
@@ -247,6 +249,7 @@ const AdminDataProviderProductDetailPage = () => {
         size,
       }),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!providerNo && !!goodsNo,
   })
 
@@ -260,6 +263,7 @@ const AdminDataProviderProductDetailPage = () => {
         size: permissionSize,
       }),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!providerNo && !!goodsNo,
   })
 

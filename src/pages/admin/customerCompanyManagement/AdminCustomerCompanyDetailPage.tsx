@@ -51,6 +51,7 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
     queryKey: ['providerData'],
     queryFn: async () => await dataProviderService.getProviders(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   const providerOptions =
@@ -429,6 +430,7 @@ const AdminCustomerCompanyDetailPage = () => {
     queryKey: ['customerCompanyDetail', companyNo],
     queryFn: async () => await companiesService.getCompanyDetail(Number(companyNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!companyNo,
   })
 
@@ -436,6 +438,7 @@ const AdminCustomerCompanyDetailPage = () => {
     queryKey: ['dataProvider', companyNo],
     queryFn: async () => await companiesService.getCompanyProviders(Number(companyNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!companyNo,
   })
 
@@ -443,6 +446,7 @@ const AdminCustomerCompanyDetailPage = () => {
     queryKey: ['latestUpdateData', companyNo],
     queryFn: async () => await companiesService.getCompanyLatestUpdated(Number(companyNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!companyNo,
   })
 

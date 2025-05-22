@@ -55,6 +55,7 @@ const MIHeaderMainLayout = ({ pages }: MIHeaderMainLayoutProps) => {
     queryKey: ['getAllCompanies'],
     queryFn: async () => await companiesService.getAllCompanies(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: user?.userRoleCd === UserRole.ADMIN && user?.isOtherServiceAccessPossible,
   })
 

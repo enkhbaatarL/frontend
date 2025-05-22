@@ -90,6 +90,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
     queryKey: ['goodsDetail', companyNo, providerNo, goodsNo],
     queryFn: async () => await companiesService.getGoodsDetail(Number(companyNo), Number(providerNo), Number(goodsNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!companyNo || !!providerNo || !!goodsNo,
   })
 
@@ -97,6 +98,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
     queryKey: ['goodsDetailLatest', companyNo, providerNo, goodsNo],
     queryFn: async () => await companiesService.getGoodsLatestUpdated(Number(companyNo), Number(providerNo), Number(goodsNo)),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!companyNo || !!providerNo || !!goodsNo,
   })
 

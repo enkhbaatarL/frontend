@@ -24,6 +24,7 @@ const QaPage = () => {
     queryKey: ['getFaqFilter'],
     queryFn: async () => await boardService.getFaqFilter(),
     refetchOnWindowFocus: false,
+    gcTime: 0,
   })
 
   const { filter, updateFilter, updateFilterWithSearch, data, pagination, updatePage, updateSize } = useSearchFilter<

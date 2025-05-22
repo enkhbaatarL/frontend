@@ -37,6 +37,7 @@ const AdminBoardsNoticeDetailPage = () => {
     queryKey: ['noticeDetail', noticeNo],
     queryFn: async () => await boardService.getNoticeDetail(noticeNo),
     refetchOnWindowFocus: false,
+    gcTime: 0,
     enabled: !!noticeNo,
   })
 
