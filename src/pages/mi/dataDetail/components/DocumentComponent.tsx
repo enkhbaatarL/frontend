@@ -74,9 +74,11 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => (
         />
       ))}
     </Box>
-    <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'}>
-      Download All
-    </MIButton>
+    {data && (
+      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'}>
+        Download All
+      </MIButton>
+    )}
   </Grid>
 )
 

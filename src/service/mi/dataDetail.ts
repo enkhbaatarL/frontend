@@ -2,7 +2,7 @@ import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
 import { IAuditInfo } from '@/service/admin/members'
-import { ICommonResponse } from '@/types/api'
+import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 export interface ICategoryDataInfo {
   categoryHighCd: string
@@ -29,6 +29,13 @@ export interface IProductDataStructuredData {
   goodsDataSourceNo: number
   goodsDataSourceNm: string
   minInterval: string
+}
+export interface IProductDataStructuredRequest extends IPaginationRequest {
+  startDate: string
+  endDate: string
+}
+export interface IProductDataStructuredRawData {
+  cells: string[]
 }
 
 /**
@@ -74,6 +81,27 @@ const dataDetailService = {
 
     return response.data.data
   },
-}
 
+  /**
+   * 페이지네이션을 통해 상품 정형 데이터(데이터소스) raw 데이터를 조회합니다.
+   * 상품 VIEW권한이 필요합니다.
+   * @param goodsNo - 상품 번호
+   * @param goodsDataNo - 상품 데이터 번호
+   * @param goodsDataSourceNo - 상품 데이터소스 번호
+   * @param params - { page: 페이지 번호, size: 페이지당 항목 수, startDate: 조회 시작일, endDate: 조회 종료일 }
+   */
+  async getProductDataStructuredRawData(
+    goodsNo: number,
+    goodsDataNo: number,
+    goodsDataSourceNo: number,
+    params: IProductDataStructuredRequest,
+  ): Promise<IPaginationResponse<IProductDataStructuredRawData>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IProductDataStructuredRawData>>> = await api.get(
+      `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/raw-data`,
+      { params },
+    )
+
+    return response.data.data
+  },
+}
 export default dataDetailService

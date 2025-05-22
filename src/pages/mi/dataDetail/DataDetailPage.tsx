@@ -1,8 +1,9 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
 import { isArray } from 'lodash'
-import { useMemo, useState } from 'react'
+import { SetStateAction, useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 
 import bshImg from '@/assets/bgsubheader.png'
@@ -13,16 +14,20 @@ import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
-import ChartComponent from '@/pages/mi/dataDetail/components/ChartComponent'
+// import ChartComponent from '@/pages/mi/dataDetail/components/ChartComponent'
+import queryClient from '@/lib/queryClient'
 import DescriptionComponent from '@/pages/mi/dataDetail/components/DescriptionComponent'
 import DocumentComponent from '@/pages/mi/dataDetail/components/DocumentComponent'
 import DocumentInfoComponent from '@/pages/mi/dataDetail/components/DocumentInfoComponent'
 import dataDetailService from '@/service/mi/dataDetail'
 
 const DataDetailPage = () => {
-  const [startDate, setStartDate] = useState<string>('')
-  const [endDate, setEndDate] = useState<string>('')
+  const [startDate, setStartDate] = useState<string>(dayjs().subtract(1, 'month').format('YYYYMMDD'))
+  const [endDate, setEndDate] = useState<string>(dayjs().format('YYYYMMDD'))
   const { goodsNo, goodsDataNo } = useParams()
+  const [rawSize, setRawSize] = useState<number>(10)
+  const [rawPage, setRawPage] = useState<number>(1)
+  const [goodsDataSourceNo, setGoodsDataSourceNo] = useState<number>()
 
   // 데이터 정보
   const { data: productData } = useQuery({
@@ -45,32 +50,39 @@ const DataDetailPage = () => {
   })
 
   // 정형데이터 목록
-  // const { data: productDataStructuredData } = useQuery({
-  //   queryKey: ['productDataStructuredData', goodsNo, goodsDataNo],
-  //   queryFn: () => dataDetailService.getProductDataStructuredDataList(Number(goodsNo), Number(goodsDataNo)),
-  //   refetchOnWindowFocus: 'always',
-  //   refetchOnMount: 'always',
-  //   gcTime: 0,
-  //   staleTime: 0,
-  // })
+  const { data: productDataStructuredData } = useQuery({
+    queryKey: ['productDataStructuredData', goodsNo, goodsDataNo],
+    queryFn: () => dataDetailService.getProductDataStructuredDataList(Number(goodsNo), Number(goodsDataNo)),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    gcTime: 0,
+    staleTime: 0,
+  })
+
+  // 정형데이터 raw 목록
+  const { data: productDataStructuredRawData } = useQuery({
+    queryKey: ['productDataStructuredRawData', goodsNo, goodsDataNo, goodsDataSourceNo, rawPage, rawSize, startDate, endDate],
+    queryFn: () =>
+      dataDetailService.getProductDataStructuredRawData(Number(goodsNo), Number(goodsDataNo), Number(goodsDataSourceNo), {
+        page: rawPage,
+        size: rawSize,
+        startDate,
+        endDate,
+      }),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    enabled: !!goodsDataSourceNo,
+  })
 
   const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
     setStartDate(startDate?.format('YYYYMMDD') ?? '')
     setEndDate(endDate?.format('YYYYMMDD') ?? '')
   }
-  const mockTableData = Array.from({ length: 5 }).map((_, index) => ({
-    id: index + 1,
-    col1: 'value',
-    col2: 'value',
-    col3: '00,000',
-    col4: '00,000',
-    col5: '00,000',
-    col6: '00,000',
-    col7: '00,000',
-  }))
 
   const [searchParams] = useSearchParams('')
   const hideComponent = searchParams.getAll('hide')
+
+  const [field, setField] = useState([])
 
   const formatDate = useMemo(() => {
     const date = new Date(productData?.auditInfo?.modifyDt.replace(' ', 'T') ?? '')
@@ -82,25 +94,67 @@ const DataDetailPage = () => {
     return `${month} ${day}, ${year}`
   }, [productData])
 
-  const convertUnstructuredDataToStructuredData = useMemo(() => isArray(productDataUnstructuredData)
-    ? productDataUnstructuredData.map((item) => ({
-      title: item.fileName,
-      date: dayjs(item.auditInfo.modifyDt).format('YYYY-MM-DD'),
-      format: item.extension,
-      isPdfViewable: item.isPdfViewable,
-      isDownloadable: productData?.isDownloadable ?? false,
-      fileNo: item.fileNo,
-    }))
-    : [], [productDataUnstructuredData, productData])
+  const convertUnstructuredDataToStructuredData = useMemo(
+    () =>
+      isArray(productDataUnstructuredData)
+        ? productDataUnstructuredData.map((item) => ({
+          title: item.fileName,
+          date: dayjs(item.auditInfo.modifyDt).format('YYYY-MM-DD'),
+          format: item.extension,
+          isPdfViewable: item.isPdfViewable,
+          isDownloadable: productData?.isDownloadable ?? false,
+          fileNo: item.fileNo,
+        }))
+        : [],
+    [productDataUnstructuredData, productData],
+  )
+
+  const columns = useMemo(
+    () =>
+      productDataStructuredRawData?.headers?.map((item) => ({
+        field: item?.field,
+        headerName: item?.name,
+        flex: 1,
+        align: 'center',
+        renderCell: (params: GridRenderCellParams) => <MITableCell value={params.value} typography={{ variant: 'tableBody1' }} />,
+      })),
+    [productDataStructuredRawData],
+  )
+
+  const rows = useMemo(() => {
+    if (!columns || !productDataStructuredRawData) return []
+    return productDataStructuredRawData.detail.map((item, index) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const row: Record<string, any> = { id: index }
+      field.forEach((key, index) => {
+        row[key] = item.cells[index]
+      })
+      return row
+    })
+  }, [field, productDataStructuredRawData])
+
+  useEffect(() => {
+    if (!columns) return
+    setField(columns.map((item) => item.field) as SetStateAction<never[]>)
+  }, [columns])
+
+  useEffect(() => {
+    if (!productDataStructuredData || (isArray(productDataStructuredData) && productDataStructuredData.length === 0)) return
+    setGoodsDataSourceNo(isArray(productDataStructuredData) ? productDataStructuredData[0].goodsDataSourceNo : 0)
+  }, [productDataStructuredData])
+
+  useEffect(() => {
+    if (!goodsDataSourceNo) return
+    queryClient.invalidateQueries({
+      queryKey: ['productDataStructuredRawData', goodsNo, goodsDataNo, goodsDataSourceNo, rawPage, rawSize, startDate, endDate],
+    })
+  }, [goodsDataSourceNo])
 
   return (
     <>
       {productData && (
         <Box paddingY={21} sx={{ background: ` url(${bshImg}) lightgray 50% / cover no-repeat` }}>
           <Box paddingX={7.5} boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
-            {/* <Typography color="white" variant="body1M16">
-              Insight
-            </Typography> */}
             <Typography color="white" component="h1" lineHeight={1.2} mb={7.5} mt={1} variant="titleSubheader">
               {productData.goodsDataNm}
             </Typography>
@@ -128,46 +182,41 @@ const DataDetailPage = () => {
           <Grid container direction="column" flexGrow={1} gap={9.5}>
             {!hideComponent.includes('charttable') && (
               <>
-                <ChartComponent />
-                <Box width={'100%'}>
-                  <MITableUser
-                    tableHeader={
-                      <Grid container justifyContent="space-between">
-                        <Box maxWidth={465}>
-                          <MIDateRangePicker onChange={handleDateChange} startDate={startDate} endDate={endDate} />
-                        </Box>
-                        <MIButton
-                          toolTip={'엑셀 다운로드'}
-                          type="outlined"
-                          color="gray"
-                          contentType="icon"
-                          startIcon={<FileDownloadIcon />}
-                          onClick={() => console.log(startDate, endDate)}
-                        />
-                      </Grid>
-                    }
-                    tableProps={{
-                      disableHover: true,
-                      noRowMessage: '등록된 내용이 없습니다.',
-                      columns: [
-                        {
-                          field: 'col1',
-                          headerName: 'value',
-                          flex: 1,
-                          renderCell: (param) => <MITableCell value={param.value} typography={{ variant: 'tableBody1' }} />,
-                        },
-                        { field: 'col2', headerName: 'value', flex: 1 },
-                        { field: 'col3', headerName: 'value', flex: 1, align: 'right' },
-                        { field: 'col4', headerName: 'value', flex: 1, align: 'right' },
-                        { field: 'col5', headerName: 'value', flex: 1, align: 'right' },
-                        { field: 'col6', headerName: 'value', flex: 1, align: 'right' },
-                        { field: 'col7', headerName: 'value', flex: 1, align: 'right' },
-                      ],
-                      rowId: 'id',
-                      rows: mockTableData,
-                    }}
-                  />
-                </Box>
+                {/* {productDataStructuredData && <ChartComponent />} */}
+                {productDataStructuredRawData && (
+                  <Box width={'100%'}>
+                    <MITableUser
+                      tableHeader={
+                        <Grid container justifyContent="space-between">
+                          <Box maxWidth={465}>
+                            <MIDateRangePicker onChange={handleDateChange} startDate={startDate} endDate={endDate} />
+                          </Box>
+                          <MIButton
+                            toolTip={'엑셀 다운로드'}
+                            type="outlined"
+                            color="gray"
+                            contentType="icon"
+                            startIcon={<FileDownloadIcon />}
+                            onClick={() => console.log(startDate, endDate)}
+                          />
+                        </Grid>
+                      }
+                      tableProps={{
+                        disableHover: true,
+                        noRowMessage: '등록된 내용이 없습니다.',
+                        columns: columns as GridColDef[],
+                        rowId: 'id',
+                        rows,
+                      }}
+                      paginationProps={{
+                        data: productDataStructuredRawData,
+                        size: rawSize,
+                        onPageChange: (page) => setRawPage(page),
+                        onSizeChange: (size) => setRawSize(size),
+                      }}
+                    />
+                  </Box>
+                )}
               </>
             )}
             {!hideComponent.includes('description') && !hideComponent.includes('charttable') && <MILine />}
@@ -202,7 +251,7 @@ const DataDetailPage = () => {
             direction="column"
             flexShrink={0}
           >
-            {convertUnstructuredDataToStructuredData && <DocumentComponent data={convertUnstructuredDataToStructuredData} />}
+            {convertUnstructuredDataToStructuredData.length > 0 && <DocumentComponent data={convertUnstructuredDataToStructuredData} />}
             {productData && <DocumentInfoComponent data={productData} />}
             <Typography color="gray.60" component="div" variant="body2R14">
               This document is the property of LSEG, and unauthorized reproduction or distribution is prohibited; prior approval is required

@@ -26,4 +26,8 @@ export interface IPaginationResponse<T> {
     numberOfDownloadable: number
     numberOfViewable: number
   }
+  headers?: {
+    field: string
+    name: string
+  }[]
 }
