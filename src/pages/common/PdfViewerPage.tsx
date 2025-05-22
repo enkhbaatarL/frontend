@@ -19,10 +19,7 @@ const PdfViewerPage = () => {
   const { data, isError, isLoading } = useQuery({
     queryKey: ['getPdfMetadata', fileId],
     queryFn: async () => await pdfService.getPdfMetadata(Number(fileId)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!fileId,
   })
 

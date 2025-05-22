@@ -89,20 +89,14 @@ const AdminCustomerCompanyProductDetailPage = () => {
   const { data: goodsDetailData } = useQuery({
     queryKey: ['goodsDetail', companyNo, providerNo, goodsNo],
     queryFn: async () => await companiesService.getGoodsDetail(Number(companyNo), Number(providerNo), Number(goodsNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!companyNo || !!providerNo || !!goodsNo,
   })
 
   const { data: goodsDetailLatestData } = useQuery({
     queryKey: ['goodsDetailLatest', companyNo, providerNo, goodsNo],
     queryFn: async () => await companiesService.getGoodsLatestUpdated(Number(companyNo), Number(providerNo), Number(goodsNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!companyNo || !!providerNo || !!goodsNo,
   })
 

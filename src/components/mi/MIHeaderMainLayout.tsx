@@ -54,10 +54,7 @@ const MIHeaderMainLayout = ({ pages }: MIHeaderMainLayoutProps) => {
   const { data: allCompanies } = useQuery({
     queryKey: ['getAllCompanies'],
     queryFn: async () => await companiesService.getAllCompanies(),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: user?.userRoleCd === UserRole.ADMIN && user?.isOtherServiceAccessPossible,
   })
 

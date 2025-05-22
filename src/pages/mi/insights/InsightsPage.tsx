@@ -39,20 +39,14 @@ const InsightsPage = () => {
   const { data: focusedList } = useQuery({
     queryKey: ['insights'],
     queryFn: async () => await insightsService.getFocusedList(customerCompanyNo),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
   // 필터
   const { data: filterList } = useQuery({
     queryKey: ['filterList'],
     queryFn: async () => await insightsService.getAdvancedFilterData(),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
   // 정렬 옵션

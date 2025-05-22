@@ -16,10 +16,7 @@ export default function NoticesDetailPage() {
   const { data } = useQuery({
     queryKey: ['noticeDetail', noticeNo],
     queryFn: async () => await boardService.getNoticeDetail(noticeNo, { customerCompanyNo }),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!noticeNo,
   })
 
