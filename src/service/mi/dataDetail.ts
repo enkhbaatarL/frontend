@@ -122,12 +122,10 @@ const dataDetailService = {
     goodsDataSourceNo: number,
     params: IProductDataStructuredRawDataDownloadRequest,
   ) {
-    const response = await api.get(
+    return await api.get(
       `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/raw-data/download`,
       { params, responseType: 'blob' },
     )
-
-    return response
   },
 }
 export default dataDetailService

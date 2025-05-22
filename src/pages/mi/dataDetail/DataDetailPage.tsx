@@ -19,6 +19,7 @@ import DocumentComponent from '@/pages/mi/dataDetail/components/DocumentComponen
 import DocumentInfoComponent from '@/pages/mi/dataDetail/components/DocumentInfoComponent'
 import dataDetailService, { IProductDataStructuredRawData } from '@/service/mi/dataDetail'
 import { IPaginationResponse } from '@/types/api'
+import { downloadFile } from '@/utils/file'
 
 interface ITableRow {
   id: string
@@ -89,6 +90,22 @@ const DataDetailPage = () => {
   const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
     setStartDate(startDate?.format('YYYYMMDD') ?? '')
     setEndDate(endDate?.format('YYYYMMDD') ?? '')
+  }
+
+  const downloadRawData = async () => {
+    if (!goodsDataSourceNo) return
+
+    try {
+      const response = await dataDetailService.downloadProductDataStructuredRawData(goodsNo, goodsDataNo, goodsDataSourceNo, {
+        startDate,
+        endDate,
+      })
+
+      const fileName = `${productData?.goodsDataNm}_${productData?.goodsDataExpn}_${startDate}_${endDate}.xlsx`
+      downloadFile(response.data, fileName)
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   const formatDate = useMemo(() => {
@@ -208,7 +225,7 @@ const DataDetailPage = () => {
                             color="gray"
                             contentType="icon"
                             startIcon={<FileDownloadIcon />}
-                            onClick={() => console.log(startDate, endDate)}
+                            onClick={downloadRawData}
                           />
                         </Grid>
                       }
