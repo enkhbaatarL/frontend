@@ -46,7 +46,7 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
           comparisonDataPoints.forEach((point) => {
             const ds = chart.data.datasets[point.datasetIndex]
 
-            if (ds?.label && !['Upper BB', 'Lower BB'].includes(ds.label)) {
+            if (ds?.label && !['Upper BB', 'Middle BB', 'Lower BB'].includes(ds.label)) {
               const key = `${ds.label}_${point.datasetIndex}`
               plugin.tooltipContent[key] = {
                 label: ds.label,

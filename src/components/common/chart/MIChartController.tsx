@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 
 import MIChartMAToggle from './MIChartMAToggle'
 import MIChartViewToggle from './MIChartViewToogle'
@@ -7,27 +7,44 @@ import CandlestickChartOutlineIcon from '../icons/CandlestickChartOutlineIcon'
 import ShowChartIcon from '../icons/ShowChartIcon'
 
 import MIButton from '@/components/common/button/MIButton'
+import { IProductDataStructuredChartRequest } from '@/service/mi/dataDetail'
+import { ChartType } from '@/types/dataDetailChart'
 
-export default function MIChartController() {
-  const options = [
-    {
-      value: 'line',
-      label: 'Line',
-      icon: <ShowChartIcon />,
-    },
-    {
-      value: 'candles',
-      label: 'Candles',
-      icon: <CandlestickChartOutlineIcon />,
-    },
-  ]
+interface MIChartControllerProps {
+  chartType: ChartType
+  setChartType: Dispatch<SetStateAction<ChartType>>
+  unitList: string[]
+  searchFilter: IProductDataStructuredChartRequest
+  setSearchFilter: Dispatch<SetStateAction<IProductDataStructuredChartRequest>>
+}
 
-  const [selectedChart, setSelectedChart] = useState(options[0])
+const chartTypeOptions = [
+  {
+    value: ChartType.LINE,
+    label: 'Line',
+    icon: <ShowChartIcon />,
+  },
+  {
+    value: ChartType.CANDLE,
+    label: 'Candles',
+    icon: <CandlestickChartOutlineIcon />,
+  },
+]
 
-  const [selectedUnit, setSelectedUnit] = useState({
-    value: 'mmBtu',
-    label: 'MMBtu',
-  })
+export default function MIChartController({
+  chartType,
+  setChartType,
+  unitList,
+  searchFilter,
+  setSearchFilter,
+}: Readonly<MIChartControllerProps>) {
+  const unitOptions = unitList.map((unit) => ({
+    value: unit,
+    label: unit,
+  }))
+
+  const selectedChart = useMemo(() => chartTypeOptions.find((option) => option.value === chartType) ?? chartTypeOptions[0], [chartType])
+
   const [selectedTime, setSelectedTime] = useState({
     value: 'day',
     label: '1 day',
@@ -72,53 +89,24 @@ export default function MIChartController() {
           valueSelect={selectedChart}
           startIcon={selectedChart.icon}
           contentType={'select'}
-          onChange={(option) => {
-            const matchedOption = options.find((opt) => opt.value === option.value)
-
-            if (matchedOption) {
-              setSelectedChart(matchedOption)
-            }
+          onChange={({ value }) => {
+            setChartType(value as ChartType)
           }}
-          options={options.map(({ icon, value, label }) => ({ icon, value, label }))}
+          options={chartTypeOptions}
           minWidth="130px"
         />
         <MIButton
           type={'ghost'}
           color={'gray'}
           contentType={'select'}
-          valueSelect={selectedUnit}
-          onChange={(option) => setSelectedUnit(option)}
-          options={[
-            {
-              value: 'm3',
-              label: 'm3', ///
-              // (
-              //   <span>
-              //     m<sup>3</sup>
-              //   </span>
-              // ),
-            },
-            {
-              value: 'mmBtu',
-              label: 'MMBtu',
-            },
-            {
-              value: 'cf',
-              label: 'cf',
-            },
-            {
-              value: 'bcf',
-              label: 'Bcf',
-            },
-            {
-              value: 'tcf',
-              label: 'Tcf',
-            },
-            {
-              value: 'mt',
-              label: 'mt',
-            },
-          ]}
+          valueSelect={{
+            value: searchFilter.unitCd ?? '',
+            label: searchFilter.unitCd ?? '',
+          }}
+          onChange={({ value }) => {
+            setSearchFilter((prev) => ({ ...prev, unitCd: value }))
+          }}
+          options={unitOptions}
           minWidth="95px"
         />
       </Box>

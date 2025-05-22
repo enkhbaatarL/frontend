@@ -7,12 +7,14 @@ interface YAxisOptions {
 
 const AXIS_BORDER_COLOR = '#2E3F5E'
 const UNIT_BORDER_COLOR = '#DEE2E6'
-const FONT = '600 12px Pretendard'
+const DEFAULT_FONT_SIZE = 12
+const MIN_FONT_SIZE = 8
 const COLOR = '#868E96'
 const UNIT_BOX_HEIGHT = 32
 const UNIT_PADDING_RIGHT = 12
 const UNIT_PADDING_TOP = 12
 const UNIT_LINE_HEIGHT = 12
+const SIZE_TOLERANCE = 2
 
 const verticalAxisDecoratorPlugin: Plugin = {
   id: 'verticalAxisDecorator',
@@ -51,11 +53,20 @@ const verticalAxisDecoratorPlugin: Plugin = {
         ctx.strokeStyle = UNIT_BORDER_COLOR
         ctx.stroke()
 
-        ctx.font = FONT
-        const textMetrics = ctx.measureText(unit)
+        const availableWidth = width - UNIT_PADDING_RIGHT
+        let fontSize = DEFAULT_FONT_SIZE
+        ctx.font = `600 ${fontSize}px Pretendard`
+        let textMetrics = ctx.measureText(unit)
+
+        while (textMetrics.width > availableWidth - SIZE_TOLERANCE && fontSize > MIN_FONT_SIZE) {
+          fontSize -= 1
+          ctx.font = `600 ${fontSize}px Pretendard`
+          textMetrics = ctx.measureText(unit)
+        }
 
         ctx.fillStyle = COLOR
-        ctx.fillText(unit, right - (textMetrics.width + UNIT_PADDING_RIGHT), bottom + (UNIT_LINE_HEIGHT + UNIT_PADDING_TOP))
+        const adjustedLineHeight = UNIT_LINE_HEIGHT * (fontSize / DEFAULT_FONT_SIZE)
+        ctx.fillText(unit, right - (textMetrics.width + UNIT_PADDING_RIGHT), bottom + (adjustedLineHeight + UNIT_PADDING_TOP))
       } else {
         ctx.beginPath()
         ctx.moveTo(left, bottom)
@@ -72,10 +83,20 @@ const verticalAxisDecoratorPlugin: Plugin = {
         ctx.strokeStyle = UNIT_BORDER_COLOR
         ctx.stroke()
 
-        ctx.font = FONT
+        const availableWidth = width - UNIT_PADDING_RIGHT
+        let fontSize = DEFAULT_FONT_SIZE
+        ctx.font = `600 ${fontSize}px Pretendard`
+        let textMetrics = ctx.measureText(unit)
+
+        while (textMetrics.width > availableWidth - SIZE_TOLERANCE && fontSize > MIN_FONT_SIZE) {
+          fontSize -= 1
+          ctx.font = `600 ${fontSize}px Pretendard`
+          textMetrics = ctx.measureText(unit)
+        }
 
         ctx.fillStyle = COLOR
-        ctx.fillText(unit, left + UNIT_PADDING_RIGHT, bottom + (UNIT_LINE_HEIGHT + UNIT_PADDING_TOP))
+        const adjustedLineHeight = UNIT_LINE_HEIGHT * (fontSize / DEFAULT_FONT_SIZE)
+        ctx.fillText(unit, left + UNIT_PADDING_RIGHT, bottom + (adjustedLineHeight + UNIT_PADDING_TOP))
       }
 
       ctx.restore()

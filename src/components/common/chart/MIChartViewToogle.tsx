@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import VisibilityIcon from '../icons/VisibilityIcon'
 import VisibilityOffIcon from '../icons/VisibilityOffIcon'
@@ -9,21 +9,20 @@ import theme from '@/theming'
 export default function MIChartViewToggle(
   props: Readonly<{
     label: string
+    color?: string
     onChange?: (state: { label: string; isShow: boolean }) => void
     maxWidth?: number
   }>,
 ) {
   const [isShow, setIsShow] = useState(true)
   const toggle = () => {
-    setIsShow((value) => !value)
-  }
-
-  useEffect(() => {
+    const newIsShow = !isShow
+    setIsShow(newIsShow)
     props.onChange?.({
       label: props.label,
-      isShow,
+      isShow: newIsShow,
     })
-  }, [isShow])
+  }
 
   return (
     <Box
@@ -53,6 +52,20 @@ export default function MIChartViewToggle(
           <VisibilityOffIcon width={20} height={20} color={theme.palette.gray[60]} />
         )}
       </Box>
+      {props.color && (
+        <Box
+          ml="4px"
+          mr="8px"
+          width={'11px'}
+          height={'11px'}
+          bgcolor={props.color}
+          borderRadius={'3px'}
+          sx={{
+            opacity: isShow ? 1 : 0.3,
+          }}
+        />
+      )}
+
       <Typography
         variant="body3M12"
         color={isShow ? 'gray.70' : 'gray.50'}

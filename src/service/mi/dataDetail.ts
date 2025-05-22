@@ -3,6 +3,7 @@ import { AxiosResponse } from 'axios'
 import api from '@/lib/axios'
 import { IAuditInfo } from '@/service/admin/members'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
+import { ChartInterval, ChartRange, DataDetailChart, MinInterval } from '@/types/dataDetailChart'
 
 export interface ICategoryDataInfo {
   categoryHighCd: string
@@ -29,7 +30,7 @@ export interface IProductDataUnstructuredData {
 export interface IProductDataStructuredData {
   goodsDataSourceNo: number
   goodsDataSourceNm: string
-  minInterval: string
+  minInterval: MinInterval
 }
 export interface IProductDataStructuredRequest extends IPaginationRequest {
   startDate: string
@@ -41,6 +42,13 @@ export interface IProductDataStructuredRawData {
 export interface IProductDataStructuredRawDataDownloadRequest {
   startDate: string
   endDate: string
+}
+export interface IProductDataStructuredChartRequest {
+  interval?: ChartInterval
+  range?: ChartRange
+  startDate?: string
+  endDate?: string
+  unitCd?: string
 }
 /**
  * 상품 데이터를 조회합니다.
@@ -81,6 +89,28 @@ const dataDetailService = {
   async getProductDataStructuredDataList(goodsNo: number, goodsDataNo: number): Promise<IProductDataStructuredData[]> {
     const response: AxiosResponse<ICommonResponse<IProductDataStructuredData[]>> = await api.get(
       `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources`,
+    )
+
+    return response.data.data
+  },
+
+  /**
+   * 상품 정형 데이터(데이터소스) 차트를 조회합니다.
+   * 상품 VIEW권한이 필요합니다.
+   * @param goodsNo
+   * @param goodsDataNo
+   * @param goodsDataSourceNo
+   * @param params - { interval: 차트 주기, range: 차트 범위, startDate: 조회 시작일, endDate: 조회 종료일, unitCd: 변환 단위 코드 }
+   */
+  async getProductDataStructuredChartData(
+    goodsNo: number,
+    goodsDataNo: number,
+    goodsDataSourceNo: number,
+    params: IProductDataStructuredChartRequest,
+  ): Promise<DataDetailChart> {
+    const response: AxiosResponse<ICommonResponse<DataDetailChart>> = await api.get(
+      `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/chart`,
+      { params },
     )
 
     return response.data.data

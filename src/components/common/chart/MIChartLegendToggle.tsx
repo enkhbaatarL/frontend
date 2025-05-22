@@ -6,7 +6,9 @@ import KeyboardArrowUpIcon from '../icons/KeyboardArrowUpIcon'
 
 import theme from '@/theming'
 
-export default function MIChartLegendToggle(props: Readonly<{ labels: string[] }>) {
+export default function MIChartLegendToggle(
+  props: Readonly<{ labels: string[]; colors?: string[]; onChange?: (index: number, isShow: boolean) => void }>,
+) {
   const [isOpen, setIsOpen] = useState(false)
 
   const toggleExpand = () => {
@@ -25,6 +27,8 @@ export default function MIChartLegendToggle(props: Readonly<{ labels: string[] }
         {showedItems.map((item, index) => (
           <Box
             key={index}
+            display={'flex'}
+            alignItems={'center'}
             sx={{
               boxSizing: 'border-box',
               height: '34px',
@@ -42,7 +46,13 @@ export default function MIChartLegendToggle(props: Readonly<{ labels: string[] }
               },
             }}
           >
-            <MIChartViewToggle label={item} />
+            <MIChartViewToggle
+              label={item}
+              color={props.colors?.[index]}
+              onChange={({ isShow }) => {
+                props.onChange?.(index, isShow)
+              }}
+            />
           </Box>
         ))}
       </Box>

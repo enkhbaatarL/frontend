@@ -109,7 +109,7 @@ const priceIndicatorPlugin: PriceIndicatorPlugin = {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const isComparison = (dataset as any).yAxisID !== 'y'
 
-        if (isComparison || !['MA5', 'MA20', 'MA60', 'MA120', 'Upper BB', 'Lower BB'].includes(dataset.label ?? '')) {
+        if (isComparison && !['MA5', 'MA20', 'MA60', 'MA120', 'Upper BB', 'Middle BB', 'Lower BB'].includes(dataset.label ?? '')) {
           const lastIndex = dataset.data.length - 1
           const lastData = dataset.data[lastIndex]
 
@@ -219,7 +219,7 @@ const priceIndicatorPlugin: PriceIndicatorPlugin = {
         const VALUE_MARGIN = 6
 
         this.focusedPoints.forEach((p) => {
-          if (['Upper BB', 'Lower BB'].includes(p.label ?? '')) return
+          if (['Upper BB', 'Middle BB', 'Lower BB'].includes(p.label ?? '')) return
 
           const yAxisId = p.yAxisID || 'y'
           const value = p.y

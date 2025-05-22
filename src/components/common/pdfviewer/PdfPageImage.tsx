@@ -1,12 +1,13 @@
 import { Box, CircularProgress, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
-import { useCallback, MouseEvent, useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
+import { useCallback, useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 import { useParams } from 'react-router-dom'
 
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import queryClient from '@/lib/queryClient'
 import pdfService from '@/service/common/pdf'
+import { disableContextMenu } from '@/utils/mouse'
 
 interface PdfPageImageProps {
   currentPage: number
@@ -24,12 +25,6 @@ export interface PdfPageImageHandles {
 const imageUrlCache: Record<string, string> = {}
 
 const PDF_IMAGE_STALE_TIME = 1000 * 60 * 30 // PDF 이미지 캐시 유효 시간 (30분)
-
-// 컨텍스트 메뉴(오른쪽 클릭) 방지
-const handleContextMenu = (e: MouseEvent) => {
-  e.preventDefault()
-  return false
-}
 
 const fetchPdfImage = async (fileId: string | number, page: number): Promise<string> => {
   const cacheKey = `${fileId}-${page}`
@@ -184,7 +179,7 @@ const PdfPageImage = forwardRef<PdfPageImageHandles, PdfPageImageProps>(
               transition: 'transform 0.1s ease-out',
               userSelect: 'none',
             }}
-            onContextMenu={handleContextMenu}
+            onContextMenu={disableContextMenu}
           >
             <canvas ref={canvasRef} className="shadow-lg bg-white" />
           </Box>

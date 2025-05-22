@@ -207,9 +207,12 @@ const DataDetailPage = () => {
             {hasStructuredDataList && (
               <>
                 <ChartComponent
+                  goodsNo={goodsNo}
+                  goodsDataNo={goodsDataNo}
                   goodsDataSourceNo={goodsDataSourceNo}
                   setGoodsDataSourceNo={setGoodsDataSourceNo}
                   structuredDataList={structuredDataList}
+                  modifyDt={productData?.auditInfo?.modifyDt}
                 />
                 {rawGoodsData && (
                   <Box width={'100%'}>

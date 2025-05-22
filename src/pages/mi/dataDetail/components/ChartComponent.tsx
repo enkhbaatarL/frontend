@@ -1,70 +1,73 @@
 import LocalSeeOutlinedIcon from '@mui/icons-material/LocalSeeOutlined'
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
 import { Box, Grid2 as Grid, Stack, Switch, Tooltip, Typography } from '@mui/material'
-import { Dayjs } from 'dayjs'
-import { Dispatch, SetStateAction, useCallback, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import dayjs, { Dayjs } from 'dayjs'
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIChart from '@/components/common/chart/MIChart'
 import MIChartController from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
-import { IProductDataStructuredData } from '@/service/mi/dataDetail'
-import { calculateBollingerBands, calculateSMA, getMockOHLCData } from '@/utils/mock-data'
-
-const mockMainData = getMockOHLCData(200)
-const genMockSMA = (day: number) => {
-  const rawData = calculateSMA(
-    mockMainData.map((d) => d.close),
-    day,
-  )
-
-  return mockMainData.map((d, i) => ({
-    time: d.time,
-    value: i >= day ? rawData[i - day] : null,
-  }))
-}
-
-const genMockBB = () => {
-  const rawData = calculateBollingerBands(
-    mockMainData.map((d) => d.close),
-    120,
-    2,
-  )
-
-  const upper = mockMainData.map((d, i) => ({
-    time: d.time,
-    value: i >= 119 ? rawData.upper[i - 119] : null,
-  }))
-
-  const lower = mockMainData.map((d, i) => ({
-    time: d.time,
-    value: i >= 119 ? rawData.lower[i - 119] : null,
-  }))
-
-  return {
-    upper,
-    lower,
-  }
-}
-
-const mockSMA5 = genMockSMA(5)
-const mockSMA20 = genMockSMA(20)
-const mockSMA60 = genMockSMA(60)
-const mockSMA120 = genMockSMA(120)
-const mockbb = genMockBB()
-
-const comparisionData1 = getMockOHLCData(200).map((item) => ({ time: item.time, value: item.close }))
-const comparisionData2 = getMockOHLCData(200).map((item) => ({ time: item.time, value: item.close }))
-const comparisionData3 = getMockOHLCData(200).map((item) => ({ time: item.time, value: item.close }))
+import dataDetailService, { IProductDataStructuredChartRequest, IProductDataStructuredData } from '@/service/mi/dataDetail'
+import { ChartRange, ChartType } from '@/types/dataDetailChart'
 
 interface ChartComponentProps {
+  goodsNo: number
+  goodsDataNo: number
   goodsDataSourceNo?: number
   setGoodsDataSourceNo: Dispatch<SetStateAction<number | undefined>>
   structuredDataList?: IProductDataStructuredData[]
+  modifyDt?: string
 }
 
-const ChartComponent = ({ goodsDataSourceNo, setGoodsDataSourceNo, structuredDataList }: ChartComponentProps) => {
+const ChartComponent = ({
+  goodsNo,
+  goodsDataNo,
+  goodsDataSourceNo,
+  setGoodsDataSourceNo,
+  structuredDataList,
+  modifyDt,
+}: ChartComponentProps) => {
+  const [chartType, setChartType] = useState<ChartType>(ChartType.LINE)
+  const [isInitialState, setIsInitialState] = useState(true)
+  const [searchFilter, setSearchFilter] = useState<IProductDataStructuredChartRequest>({
+    range: ChartRange.MONTH,
+  })
+
+  const selectedDataSource = useMemo(
+    () => structuredDataList?.find((item) => item.goodsDataSourceNo === goodsDataSourceNo),
+    [goodsDataSourceNo, structuredDataList],
+  )
+
+  const selectedDataSourceOption = useMemo(
+    () => ({
+      label: selectedDataSource?.goodsDataSourceNm ?? '',
+      value: String(selectedDataSource?.goodsDataSourceNo ?? 0),
+    }),
+    [selectedDataSource],
+  )
+
+  const { data: chartData } = useQuery({
+    queryKey: ['productDataStructuredChartData', goodsNo, goodsDataNo, goodsDataSourceNo],
+    queryFn: () => dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, goodsDataSourceNo!, {}),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+    enabled: !!goodsDataSourceNo,
+  })
+
+  useEffect(() => {
+    if (chartData && isInitialState) {
+      setSearchFilter({
+        interval: chartData.metadata.currentInterval,
+        unitCd: chartData.metadata.currentUnitCd,
+      })
+      setChartType(chartData.metadata.initialChartType)
+      setIsInitialState(false)
+    }
+  }, [chartData, isInitialState, searchFilter])
+
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
   const [timeRangeSelected, setTimeRangeSelected] = useState<string>('')
@@ -88,15 +91,6 @@ const ChartComponent = ({ goodsDataSourceNo, setGoodsDataSourceNo, structuredDat
     setTimeRangeSelected((prev) => (prev === value ? '' : value))
   }, [])
 
-  const selectedDataSource = useMemo(() => {
-    const selectedData = structuredDataList?.find((item) => item.goodsDataSourceNo === goodsDataSourceNo)
-
-    return {
-      label: selectedData?.goodsDataSourceNm ?? '',
-      value: String(selectedData?.goodsDataSourceNo ?? 0),
-    }
-  }, [goodsDataSourceNo, structuredDataList])
-
   return (
     <>
       <Box borderRadius={1} maxWidth={'100%'} border={'1px solid'} borderColor={'gray.30'}>
@@ -117,7 +111,7 @@ const ChartComponent = ({ goodsDataSourceNo, setGoodsDataSourceNo, structuredDat
             type={'ghost'}
             color={'gray'}
             minWidth={150}
-            valueSelect={selectedDataSource}
+            valueSelect={selectedDataSourceOption}
             options={(structuredDataList ?? []).map(({ goodsDataSourceNm, goodsDataSourceNo }) => ({
               label: goodsDataSourceNm,
               value: String(goodsDataSourceNo),
@@ -161,37 +155,23 @@ const ChartComponent = ({ goodsDataSourceNo, setGoodsDataSourceNo, structuredDat
         </Grid>
 
         {/*Chart content*/}
-        <Box display={'flex'} maxWidth={'100%'} flexDirection={'column'} p={5} height={'642px'} sx={{ boxSizing: 'border-box' }}>
-          <MIChartController />
+        <Box display={'flex'} maxWidth={'100%'} flexDirection={'column'} p={5} height={'700px'} sx={{ boxSizing: 'border-box' }}>
+          <MIChartController
+            chartType={chartType}
+            setChartType={setChartType}
+            searchFilter={searchFilter}
+            setSearchFilter={setSearchFilter}
+            unitList={chartData?.metadata.changeableUnitCd ?? []}
+          />
           <MIChart
             height={'100%'}
+            chartType={chartType}
             mainData={{
-              label: '주인공',
-              data: mockMainData,
-              unit: '$/MMbtu',
-              sma5: mockSMA5,
-              sma20: mockSMA20,
-              sma60: mockSMA60,
-              sma120: mockSMA120,
-              bb: mockbb,
+              data: chartData?.mainChart,
+              unit: chartData?.mainChart.unitCd ?? '',
             }}
-            comparisionDataGroup={[
-              {
-                label: '비교군 1',
-                data: comparisionData1,
-                unit: 'mg',
-              },
-              {
-                label: '비교군 2',
-                data: comparisionData2,
-                unit: 'mg',
-              },
-              {
-                label: '비교군 3',
-                data: comparisionData3,
-                unit: '$/MMbtu',
-              },
-            ]}
+            indicators={chartData?.indicators}
+            comparisonCharts={chartData?.comparisonCharts}
           />
         </Box>
 
@@ -226,9 +206,11 @@ const ChartComponent = ({ goodsDataSourceNo, setGoodsDataSourceNo, structuredDat
               </MIButton>
             </Grid>
           )}
-          <Typography ml={'auto'} variant={'body3M12'} color={'gray.60'}>
-            Updated Date : 2025-04-02
-          </Typography>
+          {modifyDt && (
+            <Typography ml={'auto'} variant={'body3M12'} color={'gray.60'}>
+              Updated Date : {dayjs(modifyDt).format('YYYY-MM-DD')}
+            </Typography>
+          )}
         </Grid>
       </Box>
 

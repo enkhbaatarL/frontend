@@ -49,7 +49,7 @@ export const generateYAxis = (params: {
       // Hide the first tick (index 0)
       if (index === 0 || index === ticks.length - 1) return ''
 
-      return value
+      return value.toLocaleString()
     },
   },
 })
