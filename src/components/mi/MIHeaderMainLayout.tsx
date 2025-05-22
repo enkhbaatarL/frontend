@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography'
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { useEffect, useMemo, useState } from 'react'
-import { NavigateFunction, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import style from './MIHeaderMainLayout.module.scss'
 
@@ -55,10 +55,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
   const { data: allCompanies } = useQuery({
     queryKey: ['getAllCompanies'],
     queryFn: async () => await companiesService.getAllCompanies(),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: user?.userRoleCd === UserRole.ADMIN && user?.isOtherServiceAccessPossible,
   })
 
@@ -167,7 +164,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
                 navigate('/')
               }}
             >
-              <img src={logoImg} alt="Market Intelligence" />
+              <img src={logoImg} alt="AI Market Insights" />
             </Box>
             <Box sx={{ flexGrow: 1, display: 'flex' }}>
               {pages.map((page) => (

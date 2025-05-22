@@ -62,20 +62,14 @@ export default function AdminDataProvidersDetailPage() {
   const { data, isLoading: dataProviderDetailIsLoading } = useQuery({
     queryKey: ['providerDetail', providerNo],
     queryFn: async () => await dataProviderService.getProviderDetail(Number(providerNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!providerNo,
   })
 
   const { data: dataProvidersName, isLoading: dataProvidersNameIsLoading } = useQuery({
     queryKey: ['dataProviderName'],
     queryFn: async () => await dataProviderService.getProviders(),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
   const { data: dataProviderGoods, isLoading: dataProviderGoodsIsLoading } = useQuery({
@@ -86,10 +80,7 @@ export default function AdminDataProvidersDetailPage() {
         page: 1,
         size: 20,
       }),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!providerNo,
   })
 

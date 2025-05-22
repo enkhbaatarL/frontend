@@ -33,30 +33,21 @@ const DataDetailPage = () => {
   const { data: productData } = useQuery({
     queryKey: ['productData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductData(Number(goodsNo), Number(goodsDataNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
   // 비정형데이터 목록
   const { data: productDataUnstructuredData } = useQuery({
     queryKey: ['productDataUnstructuredData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductDataUnstructuredDataList(Number(goodsNo), Number(goodsDataNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
   // 정형데이터 목록
   const { data: productDataStructuredData } = useQuery({
     queryKey: ['productDataStructuredData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductDataStructuredDataList(Number(goodsNo), Number(goodsDataNo)),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
   // 정형데이터 raw 목록
@@ -69,8 +60,7 @@ const DataDetailPage = () => {
         startDate,
         endDate,
       }),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
     enabled: !!goodsDataSourceNo,
   })
 
@@ -253,10 +243,16 @@ const DataDetailPage = () => {
           >
             {convertUnstructuredDataToStructuredData.length > 0 && <DocumentComponent data={convertUnstructuredDataToStructuredData} />}
             {productData && <DocumentInfoComponent data={productData} />}
-            <Typography color="gray.60" component="div" variant="body2R14">
-              This document is the property of LSEG, and unauthorized reproduction or distribution is prohibited; prior approval is required
-              via mi.admin@sk.com. The content is provided for informational purposes only, and Market Intelligence bears no responsibility
-              for errors or damages.
+            <Typography color="gray.60" component="div" variant="body3R12">
+              This document is the property of the respective data provider. Please refrain from reproducing or distributing it without
+              prior approval. If you wish to use this content, please contact the appropriate administrator in advance. The information
+              contained herein is provided for reference purposes only, and users are encouraged to exercise their own judgment and
+              responsibility when utilizing it.
+            </Typography>
+            <Typography color="gray.60" component="div" variant="body3R12">
+              본 문서는 해당 데이터 제공업체의 자산으로, 사전 승인 없이 복제하거나 배포하는 것은 삼가 주시기 바랍니다. 활용을 원하실 경우,
+              관련 관리자에게 사전 문의해 주시기 바랍니다. 본 문서는 참고용 정보를 제공하기 위한 것으로, 내용의 정확성이나 활용 결과에
+              대해서는 사용자의 판단과 책임이 요구됩니다.
             </Typography>
           </Grid>
         </Grid>

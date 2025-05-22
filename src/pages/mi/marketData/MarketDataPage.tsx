@@ -29,10 +29,7 @@ const MarketDataPage = () => {
   const { data: dashboardList } = useQuery<IMarketData[]>({
     queryKey: ['marketDashboard', customerCompanyNo],
     queryFn: async () => await marketDataService.getMarketDatas(customerCompanyNo),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
     enabled: !!customerCompanyNo,
   })
 
@@ -59,10 +56,7 @@ const MarketDataPage = () => {
   const { data: recentViewedList } = useQuery({
     queryKey: ['recentViewed'],
     queryFn: async () => await marketDataService.getRecentViewed(),
-    refetchOnWindowFocus: 'always',
-    refetchOnMount: 'always',
-    gcTime: 0,
-    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
