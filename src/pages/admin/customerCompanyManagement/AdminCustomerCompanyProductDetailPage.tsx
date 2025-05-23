@@ -15,7 +15,6 @@ import AdminSkeleton, {
   AdminCustomerCompanyProductDetail1Skeleton,
   AdminCustomerCompanyProductDetail2Skeleton,
   AdminCustomerCompanyProductDetailCompanyDateSkeleton,
-  AdminCustomerCompanyProductDetailIndividualSkeleton,
 } from '@/components/admin/AdminSkeleton.tsx'
 import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -116,6 +115,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
     updateSize,
     updatePage,
     data: userPermissions,
+    isLoading: userPermissionsLoading,
   } = useSearchFilter<IPaginationRequest, IPaginationResponse<IUserPermissionInfo>>(
     (params) => companiesService.getUserPermissions(Number(companyNo), Number(providerNo), Number(goodsNo), params),
     {
@@ -540,158 +540,150 @@ const AdminCustomerCompanyProductDetailPage = () => {
   }
 
   return (
-    <AdminSkeleton
-      loading={goodsDetailDataIsLoading}
-      custom={
-        <Box display={'flex'} flexDirection={'column'} gap={'30px'}>
-          <AdminCustomerCompanyProductDetail1Skeleton />
-          {/* permission 값에 따른 조건부 스켈레톤 */}
-          {(!permission || permission === 'COMPANY') && (
-            <>
+    <>
+      <Box className="content-body">
+        <AdminSkeleton
+          loading={goodsDetailDataIsLoading}
+          custom={
+            <Box display={'flex'} flexDirection={'column'} gap={'30px'}>
+              <AdminCustomerCompanyProductDetail1Skeleton />
               {/* 회사 권한 설정 스켈레톤 */}
               <AdminCustomerCompanyProductDetail2Skeleton />
               {/* 권한 적용 기간 스켈레톤 */}
               <AdminCustomerCompanyProductDetailCompanyDateSkeleton />
+            </Box>
+          }
+        >
+          <Box minWidth={'210px'}>
+            <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
+              <Box>
+                {t('권한 유형')}
+                {isDetailPermissionSetting && (
+                  <Typography component={'sup'} variant="asterisk" color="point.red1">
+                    *
+                  </Typography>
+                )}
+              </Box>
+            </Typography>
+            <RadioGroup
+              row
+              value={permission}
+              onChange={(e) => {
+                setPermission(e.target.value)
+              }}
+            >
+              <FormControlLabel disabled={!isDetailPermissionSetting} value="INDIVIDUAL" control={<Radio />} label="개별 권한" />
+              <FormControlLabel disabled={!isDetailPermissionSetting} value="COMPANY" control={<Radio />} label="회사 권한" />
+            </RadioGroup>
+          </Box>
+
+          {permission === 'COMPANY' && (
+            <>
+              <Box minWidth={'210px'}>
+                <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
+                  {t('회사 권한 설정')}
+                </Typography>
+
+                <Flex>
+                  <AdminCheckboxField
+                    disabled={!isDetailPermissionSetting}
+                    checked={
+                      goodsDetailData?.companySetting && !isEditViewable
+                        ? goodsDetailData?.companySetting.isViewable
+                        : isEditViewable
+                          ? companyPermission.isViewable
+                          : false
+                    }
+                    value={
+                      goodsDetailData?.companySetting && !isEditViewable
+                        ? goodsDetailData?.companySetting.isViewable
+                        : isEditViewable
+                          ? companyPermission.isViewable
+                          : false
+                    }
+                    label="조회"
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      // setCompanyPermission((prev) => ({ ...prev, isViewable: e.target.checked }))
+                      setCompanyPermission((prev) => ({
+                        ...prev,
+                        isViewable: checked,
+                        isDownloadable: !checked ? false : prev.isDownloadable,
+                      }))
+                      setIsEditViewable(true)
+                      if (!checked) setIsEditDownloadable(false)
+                    }}
+                  />
+                  <AdminCheckboxField
+                    disabled={!isDetailPermissionSetting}
+                    checked={
+                      goodsDetailData?.companySetting && !isEditDownloadable
+                        ? goodsDetailData?.companySetting.isDownloadable
+                        : isEditDownloadable
+                          ? companyPermission.isDownloadable
+                          : false
+                    }
+                    value={
+                      goodsDetailData?.companySetting && !isEditDownloadable
+                        ? goodsDetailData?.companySetting.isDownloadable
+                        : isEditDownloadable
+                          ? companyPermission.isDownloadable
+                          : false
+                    }
+                    label="다운로드"
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setCompanyPermission((prev) => ({
+                        ...prev,
+                        isDownloadable: checked,
+                        isViewable: checked ? true : prev.isViewable,
+                      }))
+                      setIsEditDownloadable(true)
+                      if (checked) setIsEditViewable(true)
+                    }}
+                  />
+                </Flex>
+              </Box>
+              <Grid container spacing={7.5}>
+                <Grid size={4}>
+                  <AdminField
+                    disabled={
+                      !isDetailPermissionSetting ||
+                      (isDetailPermissionSetting && !(companyPermission.isViewable || companyPermission.isDownloadable))
+                    }
+                    label={t('권한 적용 기간')}
+                    labelVariant="subtitle"
+                    labelColor="gray.90"
+                    fullWidth
+                    value={[
+                      goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
+                        ? formatDateString(goodsDetailData.companySetting.usageBeginDate)
+                        : formatDateString(companyPermission?.usageBeginDate || ''),
+                      goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
+                        ? formatDateString(goodsDetailData.companySetting.usageEndDate)
+                        : formatDateString(companyPermission?.usageEndDate || ''),
+                    ]}
+                    onChange={({ startDate, endDate }: AdminDateRangeType) => {
+                      setCompanyPermission((prev) => {
+                        const updated = {
+                          isViewable: prev.isViewable,
+                          isDownloadable: prev.isDownloadable,
+                          usageBeginDate: startDate ? startDate.format('YYYYMMDD') : '',
+                          usageEndDate: endDate ? endDate.format('YYYYMMDD') : '',
+                        }
+                        return updated
+                      })
+                      setIsEditUsageBeginDate(true)
+                      setIsEditUsageEndDate(true)
+                    }}
+                    fieldType="date-range"
+                    required={isDetailPermissionSetting}
+                  />
+                </Grid>
+              </Grid>
             </>
           )}
-
-          {permission === 'INDIVIDUAL' && (
-            /* 개별 권한 테이블 스켈레톤 */
-            <AdminCustomerCompanyProductDetailIndividualSkeleton />
-          )}
-        </Box>
-      }
-    >
-      <Box className="content-body">
-        <Box minWidth={'210px'}>
-          <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
-            <Box>
-              {t('권한 유형')}
-              {isDetailPermissionSetting && (
-                <Typography component={'sup'} variant="asterisk" color="point.red1">
-                  *
-                </Typography>
-              )}
-            </Box>
-          </Typography>
-          <RadioGroup
-            row
-            value={permission}
-            onChange={(e) => {
-              setPermission(e.target.value)
-            }}
-          >
-            <FormControlLabel disabled={!isDetailPermissionSetting} value="INDIVIDUAL" control={<Radio />} label="개별 권한" />
-            <FormControlLabel disabled={!isDetailPermissionSetting} value="COMPANY" control={<Radio />} label="회사 권한" />
-          </RadioGroup>
-        </Box>
-
-        {permission === 'COMPANY' && (
-          <>
-            <Box minWidth={'210px'}>
-              <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
-                {t('회사 권한 설정')}
-              </Typography>
-
-              <Flex>
-                <AdminCheckboxField
-                  disabled={!isDetailPermissionSetting}
-                  checked={
-                    goodsDetailData?.companySetting && !isEditViewable
-                      ? goodsDetailData?.companySetting.isViewable
-                      : isEditViewable
-                        ? companyPermission.isViewable
-                        : false
-                  }
-                  value={
-                    goodsDetailData?.companySetting && !isEditViewable
-                      ? goodsDetailData?.companySetting.isViewable
-                      : isEditViewable
-                        ? companyPermission.isViewable
-                        : false
-                  }
-                  label="조회"
-                  onChange={(e) => {
-                    const checked = e.target.checked
-                    // setCompanyPermission((prev) => ({ ...prev, isViewable: e.target.checked }))
-                    setCompanyPermission((prev) => ({
-                      ...prev,
-                      isViewable: checked,
-                      isDownloadable: !checked ? false : prev.isDownloadable,
-                    }))
-                    setIsEditViewable(true)
-                    if (!checked) setIsEditDownloadable(false)
-                  }}
-                />
-                <AdminCheckboxField
-                  disabled={!isDetailPermissionSetting}
-                  checked={
-                    goodsDetailData?.companySetting && !isEditDownloadable
-                      ? goodsDetailData?.companySetting.isDownloadable
-                      : isEditDownloadable
-                        ? companyPermission.isDownloadable
-                        : false
-                  }
-                  value={
-                    goodsDetailData?.companySetting && !isEditDownloadable
-                      ? goodsDetailData?.companySetting.isDownloadable
-                      : isEditDownloadable
-                        ? companyPermission.isDownloadable
-                        : false
-                  }
-                  label="다운로드"
-                  onChange={(e) => {
-                    const checked = e.target.checked
-                    setCompanyPermission((prev) => ({
-                      ...prev,
-                      isDownloadable: checked,
-                      isViewable: checked ? true : prev.isViewable,
-                    }))
-                    setIsEditDownloadable(true)
-                    if (checked) setIsEditViewable(true)
-                  }}
-                />
-              </Flex>
-            </Box>
-            <Grid container spacing={7.5}>
-              <Grid size={4}>
-                <AdminField
-                  disabled={
-                    !isDetailPermissionSetting ||
-                    (isDetailPermissionSetting && !(companyPermission.isViewable || companyPermission.isDownloadable))
-                  }
-                  label={t('권한 적용 기간')}
-                  labelVariant="subtitle"
-                  labelColor="gray.90"
-                  fullWidth
-                  value={[
-                    goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
-                      ? formatDateString(goodsDetailData.companySetting.usageBeginDate)
-                      : formatDateString(companyPermission?.usageBeginDate || ''),
-                    goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
-                      ? formatDateString(goodsDetailData.companySetting.usageEndDate)
-                      : formatDateString(companyPermission?.usageEndDate || ''),
-                  ]}
-                  onChange={({ startDate, endDate }: AdminDateRangeType) => {
-                    setCompanyPermission((prev) => {
-                      const updated = {
-                        isViewable: prev.isViewable,
-                        isDownloadable: prev.isDownloadable,
-                        usageBeginDate: startDate ? startDate.format('YYYYMMDD') : '',
-                        usageEndDate: endDate ? endDate.format('YYYYMMDD') : '',
-                      }
-                      return updated
-                    })
-                    setIsEditUsageBeginDate(true)
-                    setIsEditUsageEndDate(true)
-                  }}
-                  fieldType="date-range"
-                  required={isDetailPermissionSetting}
-                />
-              </Grid>
-            </Grid>
-          </>
-        )}
+        </AdminSkeleton>
         {permission === 'INDIVIDUAL' && (
           <Box>
             <Box minWidth={'210px'} mb="5px">
@@ -752,6 +744,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
               size={pagination?.size}
               onSizeChange={updateSize}
               onPageChange={updatePage}
+              isLoading={userPermissionsLoading}
             />
           </Box>
         )}
@@ -844,7 +837,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
           ]}
         />
       </Box>
-    </AdminSkeleton>
+    </>
   )
 }
 
