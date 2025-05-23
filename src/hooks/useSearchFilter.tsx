@@ -52,10 +52,12 @@ const useSearchFilter = <Req, Res>(
   const blockerAction = useCallback(
     () =>
       new Promise<boolean>((resolve) => {
-        navigate('.', { state: { params: fetchParams }, replace: true })
+        if (!isEqual(initialFilter, fetchParams)) {
+          navigate('.', { state: { params: fetchParams }, replace: true })
+        }
         resolve(false)
       }),
-    [navigate, fetchParams],
+    [initialFilter, fetchParams, navigate],
   )
 
   useBlocker({ onSave: blockerAction })
@@ -108,7 +110,7 @@ const useSearchFilter = <Req, Res>(
   useEffect(() => {
     if (fetchParams !== null) return
     if (savedParams) runInitialize(savedParams)
-    else if (options.initialFetch) setFilter(initialFilter)
+    else if (options.initialFetch) runInitialize(initialFilter)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.initialFetch, savedParams])
 
