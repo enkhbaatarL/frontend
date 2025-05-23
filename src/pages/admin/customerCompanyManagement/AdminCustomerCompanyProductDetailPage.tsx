@@ -324,6 +324,30 @@ const AdminCustomerCompanyProductDetailPage = () => {
     }
   }, [userPermissions])
 
+  const calculateViewableCount = useMemo(() => {
+    if (!userPermissions?.detail || permission !== 'INDIVIDUAL') {
+      return userPermissions?.extension?.numberOfViewable || 0
+    }
+
+    return userPermissions.detail.reduce((count, user) => {
+      const updatedPermission = individualPermissions.find((p) => p.userNo === user.userNo)
+      const isViewable = updatedPermission ? updatedPermission.isViewable : user.isViewable
+      return count + (isViewable ? 1 : 0)
+    }, 0)
+  }, [userPermissions?.detail, userPermissions?.extension?.numberOfViewable, individualPermissions, permission])
+
+  const calculateDownloadableCount = useMemo(() => {
+    if (!userPermissions?.detail || permission !== 'INDIVIDUAL') {
+      return userPermissions?.extension?.numberOfDownloadable || 0
+    }
+
+    return userPermissions.detail.reduce((count, user) => {
+      const updatedPermission = individualPermissions.find((p) => p.userNo === user.userNo)
+      const isDownloadable = updatedPermission ? updatedPermission.isDownloadable : user.isDownloadable
+      return count + (isDownloadable ? 1 : 0)
+    }, 0)
+  }, [userPermissions?.detail, userPermissions?.extension?.numberOfDownloadable, individualPermissions, permission])
+
   const columns: GridColDef[] = useMemo(
     () => [
       {
@@ -703,7 +727,9 @@ const AdminCustomerCompanyProductDetailPage = () => {
                   <Typography variant="subtitle2" color="gray.60">
                     {t('조회')}
                   </Typography>
-                  <Typography variant="chip1">{userPermissions?.extension?.numberOfViewable}</Typography>
+                  <Typography variant="chip1">
+                    {isDetailPermissionSetting ? calculateViewableCount : userPermissions?.extension?.numberOfViewable}
+                  </Typography>
                 </Box>
                 <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
                 <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
@@ -711,7 +737,9 @@ const AdminCustomerCompanyProductDetailPage = () => {
                   <Typography variant="subtitle2" color="gray.60">
                     {t('다운로드')}
                   </Typography>
-                  <Typography variant="chip1">{userPermissions?.extension?.numberOfDownloadable}</Typography>
+                  <Typography variant="chip1">
+                    {isDetailPermissionSetting ? calculateDownloadableCount : userPermissions?.extension?.numberOfDownloadable}
+                  </Typography>
                 </Box>
                 <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
               </>
