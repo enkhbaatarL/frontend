@@ -109,7 +109,8 @@ const useSearchFilter = <Req, Res>(
     if (fetchParams !== null) return
     if (savedParams) runInitialize(savedParams)
     else if (options.initialFetch) setFilter(initialFilter)
-  }, [fetchParams, initialFilter, options.initialFetch, runInitialize, savedParams])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options.initialFetch, savedParams])
 
   useEffect(
     () => () => {
