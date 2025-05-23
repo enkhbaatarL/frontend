@@ -9,6 +9,7 @@ interface ChartMeta {
 interface Options {
   labels: string[]
   fillColor?: string
+  hidden?: boolean
 }
 
 const drawFillBetweenLines = (ctx: CanvasRenderingContext2D, metaData1: ChartMeta, metaData2: ChartMeta, fillColor: string) => {
@@ -49,7 +50,7 @@ const fillBetweenPlugin: Plugin<'line'> = {
 
     const fillColor = options.fillColor ?? 'rgba(0, 0, 255, 0.3)'
 
-    drawFillBetweenLines(ctx, metaData1, metaData2, fillColor)
+    drawFillBetweenLines(ctx, metaData1, metaData2, options.hidden ? 'transparent' : fillColor)
   },
 }
 

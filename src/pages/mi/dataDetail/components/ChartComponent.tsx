@@ -6,7 +6,7 @@ import dayjs, { Dayjs } from 'dayjs'
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
-import MIChart from '@/components/common/chart/MIChart'
+import MIChart, { DisplayDataInfo } from '@/components/common/chart/MIChart'
 import MIChartController from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
@@ -38,6 +38,17 @@ const ChartComponent = ({
 
   const [chartType, setChartType] = useState<ChartType>(ChartType.LINE)
   const [isInitialState, setIsInitialState] = useState(true)
+
+  const [displayDataInfo, setDisplayDataInfo] = useState<DisplayDataInfo>({
+    BB: true,
+    MA: {
+      MA5: true,
+      MA20: true,
+      MA60: true,
+      MA120: true,
+    },
+  })
+
   const [searchFilter, setSearchFilter] = useState<IProductDataStructuredChartRequest>({
     range: ChartRange.MONTH,
   })
@@ -190,6 +201,40 @@ const ChartComponent = ({
             searchFilter={searchFilter}
             setSearchFilter={setSearchFilter}
             unitList={chartData?.metadata.changeableUnitCd ?? []}
+            displayDataInfo={displayDataInfo}
+            onDisplayDataInfoChange={({ label, isShow }) => {
+              if (label === 'BB') {
+                setDisplayDataInfo((prev) => ({
+                  ...prev,
+                  BB: isShow,
+                }))
+              } else if (label === 'MA') {
+                setDisplayDataInfo((prev) => ({
+                  ...prev,
+                  MA: {
+                    MA5: isShow,
+                    MA20: isShow,
+                    MA60: isShow,
+                    MA120: isShow,
+                  },
+                }))
+              } else {
+                setDisplayDataInfo((prev) => {
+                  const updatedMA = {
+                    ...prev.MA,
+                    [label]: isShow,
+                  }
+
+                  const isAnyMAVisible = Object.values(updatedMA).some((value) => value)
+
+                  return {
+                    ...prev,
+                    MA: updatedMA,
+                    ...(isAnyMAVisible ? {} : { BB: prev.BB }),
+                  }
+                })
+              }
+            }}
           />
           <MIChart
             ref={miChartRef}
@@ -201,6 +246,7 @@ const ChartComponent = ({
             }}
             indicators={chartData?.indicators}
             comparisonCharts={chartData?.comparisonCharts}
+            displayDataInfo={displayDataInfo}
           />
         </Box>
 

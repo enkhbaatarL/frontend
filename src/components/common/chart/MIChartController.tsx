@@ -1,12 +1,13 @@
 import { Box } from '@mui/material'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 
-import MIChartMAToggle from './MIChartMAToggle'
 import MIChartViewToggle from './MIChartViewToogle'
 import CandlestickChartOutlineIcon from '../icons/CandlestickChartOutlineIcon'
 import ShowChartIcon from '../icons/ShowChartIcon'
 
 import MIButton from '@/components/common/button/MIButton'
+import { DisplayDataInfo } from '@/components/common/chart/MIChart'
+import MIChip, { MIChipProps } from '@/components/common/chip/MIChip'
 import { IProductDataStructuredChartRequest } from '@/service/mi/dataDetail'
 import { ChartType } from '@/types/dataDetailChart'
 
@@ -16,6 +17,8 @@ interface MIChartControllerProps {
   unitList: string[]
   searchFilter: IProductDataStructuredChartRequest
   setSearchFilter: Dispatch<SetStateAction<IProductDataStructuredChartRequest>>
+  displayDataInfo?: DisplayDataInfo
+  onDisplayDataInfoChange?: (value: { label: string; isShow: boolean }) => void
 }
 
 const chartTypeOptions = [
@@ -37,6 +40,8 @@ export default function MIChartController({
   unitList,
   searchFilter,
   setSearchFilter,
+  displayDataInfo,
+  onDisplayDataInfoChange,
 }: Readonly<MIChartControllerProps>) {
   const unitOptions = unitList.map((unit) => ({
     value: unit,
@@ -76,11 +81,37 @@ export default function MIChartController({
           minWidth={84}
         />
         <Box display={'flex'} gap={'6px'}>
-          <MIChartViewToggle label="BB" />
-          <MIChartViewToggle label="MA" />
+          <MIChartViewToggle
+            label="BB"
+            onChange={(value) => {
+              onDisplayDataInfoChange?.(value)
+            }}
+          />
+          <MIChartViewToggle
+            label="MA"
+            value={Object.values(displayDataInfo?.MA ?? {}).some((value) => value)}
+            onChange={(value) => {
+              onDisplayDataInfoChange?.(value)
+            }}
+          />
         </Box>
 
-        <MIChartMAToggle />
+        <Box display={'flex'} gap={'4px'} sx={{ cursor: 'pointer' }}>
+          {[
+            { label: 'MA5', color: 'green' },
+            { label: 'MA20', color: 'red' },
+            { label: 'MA60', color: 'orange' },
+            { label: 'MA120', color: 'purple' },
+          ].map(({ label, color }) => (
+            <MIChip
+              key={label}
+              label={label.replace('MA', '')}
+              color={color as MIChipProps['color']}
+              type={displayDataInfo?.MA[label] ? 'filled' : 'outlined'}
+              onClick={() => onDisplayDataInfoChange?.({ label, isShow: !displayDataInfo?.MA[label] })}
+            />
+          ))}
+        </Box>
       </Box>
       <Box display={'flex'} alignItems={'center'} gap={'10px'}>
         <MIButton

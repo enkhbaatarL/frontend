@@ -10,14 +10,19 @@ export default function MIChartViewToggle(
   props: Readonly<{
     label: string
     color?: string
+    value?: boolean
     onChange?: (state: { label: string; isShow: boolean }) => void
     maxWidth?: number
   }>,
 ) {
-  const [isShow, setIsShow] = useState(true)
+  const [isShow, setIsShow] = useState(props.value ?? true)
   const toggle = () => {
-    const newIsShow = !isShow
-    setIsShow(newIsShow)
+    let newIsShow = !isShow
+    if (props.value !== undefined) {
+      newIsShow = !props.value
+    } else {
+      setIsShow(newIsShow)
+    }
     props.onChange?.({
       label: props.label,
       isShow: newIsShow,
@@ -46,7 +51,7 @@ export default function MIChartViewToggle(
           '& svg': { display: 'block' },
         }}
       >
-        {isShow ? (
+        {(props.value ?? isShow) ? (
           <VisibilityIcon width={20} height={20} color={theme.palette.gray[60]} />
         ) : (
           <VisibilityOffIcon width={20} height={20} color={theme.palette.gray[60]} />
@@ -61,14 +66,14 @@ export default function MIChartViewToggle(
           bgcolor={props.color}
           borderRadius={'3px'}
           sx={{
-            opacity: isShow ? 1 : 0.3,
+            opacity: (props.value ?? isShow) ? 1 : 0.3,
           }}
         />
       )}
 
       <Typography
         variant="body3M12"
-        color={isShow ? 'gray.70' : 'gray.50'}
+        color={(props.value ?? isShow) ? 'gray.70' : 'gray.50'}
         sx={{
           whiteSpace: 'nowrap',
           overflow: 'hidden',

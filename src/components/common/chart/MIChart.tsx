@@ -15,6 +15,17 @@ import { generateYAxis } from '@/lib/chart/utils/chartUtils'
 import { ChartType, ChartData, Indicator } from '@/types/dataDetailChart'
 import { disableContextMenu } from '@/utils/mouse'
 
+export interface DisplayDataInfo {
+  BB: boolean
+  MA: {
+    [key: string]: boolean
+    MA5: boolean
+    MA20: boolean
+    MA60: boolean
+    MA120: boolean
+  }
+}
+
 interface MIChartProps {
   mainData: {
     unit: string
@@ -22,6 +33,7 @@ interface MIChartProps {
   }
   indicators?: Indicator[]
   comparisonCharts?: ChartData[]
+  displayDataInfo: DisplayDataInfo
   width?: string | number
   height?: string | number
   interval?: 'day' | 'month' | 'year'
@@ -148,7 +160,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
             y: value,
           })),
           type: 'line',
-          borderColor: maColors[series.seriesId],
+          borderColor: props.displayDataInfo.MA[maLabels[series.seriesId]] ? maColors[series.seriesId] : 'transparent',
           borderWidth: 1,
           pointRadius: 0,
           fill: false,
@@ -167,14 +179,14 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
           y: value,
         })),
         type: 'line',
-        borderColor: bbColors[series.seriesId],
+        borderColor: props.displayDataInfo.BB ? bbColors[series.seriesId] : 'transparent',
         borderWidth: 1,
         pointRadius: 0,
         fill: false,
         tension: 0.1,
       })),
     }
-  }, [indicators])
+  }, [indicators, props.displayDataInfo])
 
   const comparisonDatasets = useMemo(() => {
     const colors = ['#0CA678', '#FF973C', '#5191F5', '#8F5B5D', '#819E9A', '#7D68A4']
@@ -192,6 +204,9 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
       fill: false,
       tension: 0.1,
       yAxisID: chart.unitCd,
+      metaData: {
+        chipColor: colors[index % colors.length],
+      },
     }))
   }, [comparisonCharts, hideComparisonChartIndexList])
 
@@ -318,6 +333,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
           fillBetween: {
             labels: ['Upper BB', 'Lower BB'],
             fillColor: 'rgba(206, 212, 218, 0.1)',
+            hidden: !props.displayDataInfo.BB,
           },
           legend: {
             display: false,
@@ -387,7 +403,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
       >
         <MIChartLegendToggle
           labels={comparisonDatasets.map((data) => data.label)}
-          colors={comparisonDatasets.map((data) => data.borderColor)}
+          colors={comparisonDatasets.map((data) => data.metaData?.chipColor)}
           onChange={(index, isShow) => {
             setHideComparisonChartIndexList((prev) => (isShow ? prev.filter((item) => item !== index) : [...prev, index]))
           }}
