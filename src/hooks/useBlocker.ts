@@ -1,4 +1,5 @@
 import { isEqual } from 'lodash-es'
+import { useEffect } from 'react'
 import { useBlocker as useOriginBlocker } from 'react-router-dom'
 
 interface BlockerProps {
@@ -15,6 +16,10 @@ const useBlocker = ({ onSave }: BlockerProps = {}) => {
     onSave?.()
     return false
   })
+
+  useEffect(() => {
+    if (blocker.state === 'blocked') blocker.proceed()
+  }, [blocker])
 
   return { blocker }
 }
