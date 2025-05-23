@@ -3,6 +3,8 @@ import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import MIButton from '@/components/common/button/MIButton'
 import MILine from '@/components/common/divider/MILine'
 import fileService from '@/service/admin/file'
+import { downloadFile } from '@/utils/file'
+
 interface DocumentItemProps {
   fileNo: number
   fileName: string
@@ -27,7 +29,17 @@ const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable
 
   // 파일 다운로드
   const handleDownloadFile = async () => {
-    await fileService.downloadFile(fileNo)
+    try {
+      const fileBlob = await fileService.downloadFile({
+        fileNo,
+        fileNm: fileName,
+        fileSize: 0, // 파일 크기 정보가 없음
+      })
+
+      downloadFile(fileBlob, fileName)
+    } catch (error) {
+      console.error('파일 다운로드 중 오류가 발생했습니다:', error)
+    }
   }
 
   return (

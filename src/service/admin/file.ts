@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
-import { ICommonResponse } from '@/types/api'
+
 export interface IFile {
   fileNo: number
   fileNm: string
@@ -9,14 +9,20 @@ export interface IFile {
   fileUrl: string
 }
 
+interface IFileDownloadRequest {
+  fileNo: number
+  fileNm: string
+  fileSize: number
+}
+
 const fileService = {
   /**
    * 파일을 다운로드합니다.
-   * @param fileNo
+   * @param fileData - 파일 정보 객체
    */
-  async downloadFile(fileNo: number): Promise<IFile> {
-    const response: AxiosResponse<ICommonResponse<IFile>> = await api.get(`/admin/file-management/${fileNo}`)
-    return response.data.data
+  async downloadFile(fileData: IFileDownloadRequest): Promise<string> {
+    const response: AxiosResponse<string> = await api.post('file-management/download/file', fileData)
+    return response.data
   },
 }
 
