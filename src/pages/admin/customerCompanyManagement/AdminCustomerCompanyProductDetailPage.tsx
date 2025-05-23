@@ -1,4 +1,4 @@
-import { Box, FormControlLabel, Radio, RadioGroup, Switch, Typography } from '@mui/material'
+import { Box, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
@@ -10,6 +10,7 @@ import AdminButton from '@/components/admin/AdminButton'
 import AdminCheckboxField from '@/components/admin/AdminCheckboxField'
 import AdminChip from '@/components/admin/AdminChip'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
+import AdminField, { AdminDateRangeType } from '@/components/admin/AdminField.tsx'
 import AdminSkeleton, {
   AdminCustomerCompanyProductDetail1Skeleton,
   AdminCustomerCompanyProductDetail2Skeleton,
@@ -492,16 +493,6 @@ const AdminCustomerCompanyProductDetailPage = () => {
     [isDetailPermissionSetting, permission, companyPermission, goodsDetailData, checkList],
   )
 
-  // 회사 권한 적용 기간
-  const handleChangeCompanyDate = (value: Dayjs | null, type: string) => {
-    if (value) {
-      const formattedDate = value.format('YYYYMMDD')
-      setCompanyPermission((prev) => ({ ...prev, [type]: formattedDate }))
-      setIsEditUsageBeginDate(type === 'usageBeginDate')
-      setIsEditUsageEndDate(type === 'usageEndDate')
-    }
-  }
-
   // 사용/미사용 변경
   const handleChangeActive = async () => {
     try {
@@ -518,30 +509,36 @@ const AdminCustomerCompanyProductDetailPage = () => {
       console.error(error)
     }
   }
-  return (
-    <Box className="content-body">
-      <AdminSkeleton
-        loading={goodsDetailDataIsLoading}
-        custom={
-          <Box display={'flex'} flexDirection={'column'} gap={'30px'}>
-            <AdminCustomerCompanyProductDetail1Skeleton />
-            {/* permission 값에 따른 조건부 스켈레톤 */}
-            {(!permission || permission === 'COMPANY') && (
-              <>
-                {/* 회사 권한 설정 스켈레톤 */}
-                <AdminCustomerCompanyProductDetail2Skeleton />
-                {/* 권한 적용 기간 스켈레톤 */}
-                <AdminCustomerCompanyProductDetailCompanyDateSkeleton />
-              </>
-            )}
 
-            {permission === 'INDIVIDUAL' && (
-              /* 개별 권한 테이블 스켈레톤 */
-              <AdminCustomerCompanyProductDetailIndividualSkeleton />
-            )}
-          </Box>
-        }
-      >
+  const formatDateString = (dateStr: string) => {
+    if (!dateStr || dateStr.length !== 8) return ''
+    return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
+  }
+
+  return (
+    <AdminSkeleton
+      loading={goodsDetailDataIsLoading}
+      custom={
+        <Box display={'flex'} flexDirection={'column'} gap={'30px'}>
+          <AdminCustomerCompanyProductDetail1Skeleton />
+          {/* permission 값에 따른 조건부 스켈레톤 */}
+          {(!permission || permission === 'COMPANY') && (
+            <>
+              {/* 회사 권한 설정 스켈레톤 */}
+              <AdminCustomerCompanyProductDetail2Skeleton />
+              {/* 권한 적용 기간 스켈레톤 */}
+              <AdminCustomerCompanyProductDetailCompanyDateSkeleton />
+            </>
+          )}
+
+          {permission === 'INDIVIDUAL' && (
+            /* 개별 권한 테이블 스켈레톤 */
+            <AdminCustomerCompanyProductDetailIndividualSkeleton />
+          )}
+        </Box>
+      }
+    >
+      <Box className="content-body">
         <Box minWidth={'210px'}>
           <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
             <Box>
@@ -632,73 +629,43 @@ const AdminCustomerCompanyProductDetailPage = () => {
                 />
               </Flex>
             </Box>
-            <Box minWidth={'210px'}>
-              <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
-                {t('권한 적용 기간')}
-                {isDetailPermissionSetting && (
-                  <Typography component={'sup'} variant="asterisk" color="point.red1">
-                    *
-                  </Typography>
-                )}
-              </Typography>
-              <Box display={'flex'} alignItems={'center'}>
-                <AdminDatePicker
-                  readOnly={
+            <Grid container spacing={7.5}>
+              <Grid size={4}>
+                <AdminField
+                  disabled={
                     !isDetailPermissionSetting ||
                     (isDetailPermissionSetting && !(companyPermission.isViewable || companyPermission.isDownloadable))
                   }
-                  size="h26"
-                  value={(() => {
-                    const year =
-                      goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
-                        ? goodsDetailData?.companySetting?.usageBeginDate.slice(0, 4)
-                        : companyPermission?.usageBeginDate?.slice(0, 4)
-                    const month =
-                      goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
-                        ? goodsDetailData?.companySetting?.usageBeginDate.slice(4, 6)
-                        : companyPermission?.usageBeginDate?.slice(4, 6)
-                    const day =
-                      goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
-                        ? goodsDetailData?.companySetting?.usageBeginDate.slice(6, 8)
-                        : companyPermission?.usageBeginDate?.slice(6, 8)
-
-                    return dayjs(`${year}-${month}-${day}`)
-                  })()}
-                  onChange={(value) => {
-                    handleChangeCompanyDate(value, 'usageBeginDate')
+                  label={t('권한 적용 기간')}
+                  labelVariant="subtitle"
+                  labelColor="gray.90"
+                  fullWidth
+                  value={[
+                    goodsDetailData?.companySetting?.usageBeginDate && !isEditUsageBeginDate
+                      ? formatDateString(goodsDetailData.companySetting.usageBeginDate)
+                      : formatDateString(companyPermission?.usageBeginDate || ''),
+                    goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
+                      ? formatDateString(goodsDetailData.companySetting.usageEndDate)
+                      : formatDateString(companyPermission?.usageEndDate || ''),
+                  ]}
+                  onChange={({ startDate, endDate }: AdminDateRangeType) => {
+                    setCompanyPermission((prev) => {
+                      const updated = {
+                        isViewable: prev.isViewable,
+                        isDownloadable: prev.isDownloadable,
+                        usageBeginDate: startDate ? startDate.format('YYYYMMDD') : '',
+                        usageEndDate: endDate ? endDate.format('YYYYMMDD') : '',
+                      }
+                      return updated
+                    })
+                    setIsEditUsageBeginDate(true)
+                    setIsEditUsageEndDate(true)
                   }}
+                  fieldType="date-range"
+                  required={isDetailPermissionSetting}
                 />
-                <Typography component={'div'} mx={'8px'} color="gray.50" variant="breadcrumbs">
-                  ~
-                </Typography>
-                <AdminDatePicker
-                  readOnly={
-                    !isDetailPermissionSetting ||
-                    (isDetailPermissionSetting && !(companyPermission.isViewable || companyPermission.isDownloadable))
-                  }
-                  size="h26"
-                  value={(() => {
-                    const year =
-                      goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
-                        ? goodsDetailData?.companySetting?.usageEndDate.slice(0, 4)
-                        : companyPermission?.usageEndDate?.slice(0, 4)
-                    const month =
-                      goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
-                        ? goodsDetailData?.companySetting?.usageEndDate.slice(4, 6)
-                        : companyPermission?.usageEndDate?.slice(4, 6)
-                    const day =
-                      goodsDetailData?.companySetting?.usageEndDate && !isEditUsageEndDate
-                        ? goodsDetailData?.companySetting?.usageEndDate.slice(6, 8)
-                        : companyPermission?.usageEndDate?.slice(6, 8)
-
-                    return dayjs(`${year}-${month}-${day}`)
-                  })()}
-                  onChange={(value) => {
-                    handleChangeCompanyDate(value, 'usageEndDate')
-                  }}
-                />
-              </Box>
-            </Box>
+              </Grid>
+            </Grid>
           </>
         )}
         {permission === 'INDIVIDUAL' && (
@@ -760,95 +727,96 @@ const AdminCustomerCompanyProductDetailPage = () => {
             />
           </Box>
         )}
-      </AdminSkeleton>
-      <MIConfirm
-        open={openConfirmActive}
-        title={<>{isActive ? t('미사용으로 변경하시겠습니까?') : t('사용으로 변경하시겠습니까?')}</>}
-        width={450}
-        handleClose={() => {
-          setOpenConfirmActive(false)
-        }}
-        actions={[
-          {
-            label: t('취소'),
-            variant: 'outlined',
-            color: 'gray',
-            onClick: () => {
-              setOpenConfirmActive(false)
-            },
-          },
-          {
-            label: t('변경'),
-            variant: 'filled',
-            color: 'primary',
-            onClick: async () => {
-              await handleChangeActive()
-            },
-          },
-        ]}
-      >
-        {isActive
-          ? t('변경 시 해당 프로바이더와 연계된 상품도 비활성화됩니다.')
-          : t('변경 시 해당 프로바이더와 연계된 상품도 활성화됩니다.')}
-      </MIConfirm>
 
-      <MIConfirm
-        open={openCancelConfirm}
-        title={t('취소하시겠습니까?')}
-        width={450}
-        handleClose={() => {
-          setOpenConfirmActive(false)
-        }}
-        actions={[
-          {
-            label: t('이어서 작성'),
-            variant: 'outlined',
-            color: 'gray',
-            onClick: () => {
-              setOpenCancelConfirm(false)
+        <MIConfirm
+          open={openConfirmActive}
+          title={<>{isActive ? t('미사용으로 변경하시겠습니까?') : t('사용으로 변경하시겠습니까?')}</>}
+          width={450}
+          handleClose={() => {
+            setOpenConfirmActive(false)
+          }}
+          actions={[
+            {
+              label: t('취소'),
+              variant: 'outlined',
+              color: 'gray',
+              onClick: () => {
+                setOpenConfirmActive(false)
+              },
             },
-          },
-          {
-            label: t('취소 및 이동'),
-            variant: 'filled',
-            color: 'primary',
-            onClick: () => {
-              setOpenCancelConfirm(false)
-              setIsDetailPermissionSetting(false)
+            {
+              label: t('변경'),
+              variant: 'filled',
+              color: 'primary',
+              onClick: async () => {
+                await handleChangeActive()
+              },
             },
-          },
-        ]}
-      >
-        {t('취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.')}
-      </MIConfirm>
+          ]}
+        >
+          {isActive
+            ? t('변경 시 해당 프로바이더와 연계된 상품도 비활성화됩니다.')
+            : t('변경 시 해당 프로바이더와 연계된 상품도 활성화됩니다.')}
+        </MIConfirm>
 
-      <MIConfirm
-        open={openSaveConfirm}
-        title={t('저장하시겠습니까?')}
-        width={450}
-        handleClose={() => {
-          setOpenSaveConfirm(false)
-        }}
-        actions={[
-          {
-            label: t('취소'),
-            variant: 'outlined',
-            color: 'gray',
-            onClick: () => {
-              setOpenSaveConfirm(false)
+        <MIConfirm
+          open={openCancelConfirm}
+          title={t('취소하시겠습니까?')}
+          width={450}
+          handleClose={() => {
+            setOpenConfirmActive(false)
+          }}
+          actions={[
+            {
+              label: t('이어서 작성'),
+              variant: 'outlined',
+              color: 'gray',
+              onClick: () => {
+                setOpenCancelConfirm(false)
+              },
             },
-          },
-          {
-            label: t('저장'),
-            variant: 'filled',
-            color: 'primary',
-            onClick: async () => {
-              await updatePermissions()
+            {
+              label: t('취소 및 이동'),
+              variant: 'filled',
+              color: 'primary',
+              onClick: () => {
+                setOpenCancelConfirm(false)
+                setIsDetailPermissionSetting(false)
+              },
             },
-          },
-        ]}
-      />
-    </Box>
+          ]}
+        >
+          {t('취소 및 화면 이동 시 변경 내용은 저장되지 않습니다.')}
+        </MIConfirm>
+
+        <MIConfirm
+          open={openSaveConfirm}
+          title={t('저장하시겠습니까?')}
+          width={450}
+          handleClose={() => {
+            setOpenSaveConfirm(false)
+          }}
+          actions={[
+            {
+              label: t('취소'),
+              variant: 'outlined',
+              color: 'gray',
+              onClick: () => {
+                setOpenSaveConfirm(false)
+              },
+            },
+            {
+              label: t('저장'),
+              variant: 'filled',
+              color: 'primary',
+              onClick: async () => {
+                await updatePermissions()
+              },
+            },
+          ]}
+        />
+      </Box>
+    </AdminSkeleton>
   )
 }
 
