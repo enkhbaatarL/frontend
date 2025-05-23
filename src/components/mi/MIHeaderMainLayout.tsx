@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography'
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { useEffect, useMemo, useState } from 'react'
-import { NavigateFunction, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import style from './MIHeaderMainLayout.module.scss'
 
