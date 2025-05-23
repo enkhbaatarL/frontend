@@ -156,13 +156,13 @@ const MarketDataPage = () => {
                   noRowMessage: '등록된 내용이 없습니다.',
                   columns: [
                     {
-                      field: 'providerNm',
-                      headerName: 'Data Provider',
-                      flex: 1,
+                      field: 'goodsDataNm',
+                      headerName: 'Data Name',
+                      flex: 2,
                       renderCell: (param) => <MITableCell value={param.value} typography={{ variant: 'tableBody1' }} />,
                     },
-                    { field: 'goodsDataNm', headerName: 'Data Name', flex: 2 },
-                    { field: 'goodsDataExpn', headerName: 'Description', flex: 2 },
+                    { field: 'goodsDataSrcNm', headerName: 'Datasource', flex: 1 },
+                    { field: 'lastValue', headerName: 'Value', flex: 1 },
                     {
                       field: 'modifyDt',
                       headerName: 'Last Updated',
