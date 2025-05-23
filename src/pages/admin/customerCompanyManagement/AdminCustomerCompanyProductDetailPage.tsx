@@ -555,15 +555,13 @@ const AdminCustomerCompanyProductDetailPage = () => {
           }
         >
           <Box minWidth={'210px'}>
-            <Typography component={'p'} variant="subtitle" color="gray.90" mb="12px">
-              <Box>
-                {t('권한 유형')}
-                {isDetailPermissionSetting && (
-                  <Typography component={'sup'} variant="asterisk" color="point.red1">
-                    *
-                  </Typography>
-                )}
-              </Box>
+            <Typography component={'div'} variant="subtitle" color="gray.90" mb="12px">
+              {t('권한 유형')}
+              {isDetailPermissionSetting && (
+                <Typography component={'sup'} variant="asterisk" color="point.red1">
+                  *
+                </Typography>
+              )}
             </Typography>
             <RadioGroup
               row
