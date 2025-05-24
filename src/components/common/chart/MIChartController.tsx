@@ -57,7 +57,10 @@ export default function MIChartController({
     return options
   }, [isCandlestick])
 
-  const selectedChart = useMemo(() => chartTypeOptions.find((option) => option.value === chartType) ?? chartTypeOptions[0], [chartType])
+  const selectedChart = useMemo(
+    () => chartTypeOptions.find((option) => option.value === chartType) ?? chartTypeOptions[0],
+    [chartType, chartTypeOptions],
+  )
 
   const [selectedTime, setSelectedTime] = useState({
     value: 'day',
@@ -108,7 +111,7 @@ export default function MIChartController({
         <Box display={'flex'} gap={'4px'} sx={{ cursor: 'pointer' }}>
           {[
             { label: 'MA5', color: 'green' },
-            { label: 'MA20', color: 'red' },
+            { label: 'MA20', color: 'pink' },
             { label: 'MA60', color: 'orange' },
             { label: 'MA120', color: 'purple' },
           ].map(({ label, color }) => (
@@ -118,6 +121,7 @@ export default function MIChartController({
               color={color as MIChipProps['color']}
               type={displayDataInfo?.MA[label] ? 'filled' : 'outlined'}
               onClick={() => onDisplayDataInfoChange?.({ label, isShow: !displayDataInfo?.MA[label] })}
+              disableHover
             />
           ))}
         </Box>

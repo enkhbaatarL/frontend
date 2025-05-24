@@ -21,10 +21,11 @@ export interface MIChipProps extends Omit<ChipProps, 'size' | 'color'> {
   color?: MIChipColor
   type?: 'filled' | 'outlined'
   fontType?: TypographyProps['variant']
+  disableHover?: boolean
 }
 
 export default function MIChip(props: Readonly<MIChipProps>) {
-  const { size = 'h20', color = 'blue', label, type = 'filled', sx, fontType, ...originStyle } = props
+  const { size = 'h20', color = 'blue', label, type = 'filled', sx, fontType, disableHover = false, ...originStyle } = props
 
   const getSizeStyle = (size: MIChipSize) => {
     if (size === 'h20')
@@ -49,36 +50,52 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           backgroundColor: type === 'outlined' ? '#FFFFFF' : '#1C7ED61A',
           color: '#1967D2',
           borderColor: '#1C7ED61A',
-          '&:hover': {
-            backgroundColor: '#1C7ED61A',
-          },
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#1C7ED61A',
+              },
+            }),
         }
       if (color === 'purple')
         return {
           backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F3EFF9',
           color: '#7451DD',
           borderColor: type === 'outlined' ? 'rgba(112, 72, 232, 0.10)' : 'tranparent',
-          '&:hover': {
-            backgroundColor: '#F3EFF9',
-          },
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#F3EFF9',
+              },
+            }),
         }
       if (color === 'orange')
         return {
           backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F261001A',
           color: '#EB670F',
           borderColor: type === 'outlined' ? 'rgba(247, 103, 7, 0.10)' : 'tranparent',
-          '&:hover': {
-            backgroundColor: '#F261001A',
-          },
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#F261001A',
+              },
+            }),
         }
       if (color === 'green')
         return {
           backgroundColor: type === 'outlined' ? '#FFFFFF' : '#2A8D3E1A',
           color: '#2A8D3E',
           borderColor: type === 'outlined' ? 'rgba(42, 141, 62, 0.10)' : 'tranparent',
-          '&:hover': {
-            backgroundColor: '#2A8D3E1A',
-          },
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#2A8D3E1A',
+              },
+            }),
         }
       if (color === 'green-climb')
         return {
@@ -91,52 +108,95 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F03E3E1A',
           color: '#DF4B4A',
           borderColor: type === 'outlined' ? 'rgba(240, 62, 62, 0.10)' : 'tranparent',
-          '&:hover': {
-            backgroundColor: '#F03E3E1A',
-          },
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#F03E3E1A',
+              },
+            }),
         }
       if (color === 'red-decline')
         return {
           backgroundColor: '#CC4D501A',
           color: '#CC4D50',
           borderColor: 'tranparent',
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#CC4D501A',
+              },
+            }),
         }
       if (color === 'pink')
         return {
           backgroundColor: type === 'outlined' ? '#FFFFFF' : '#D6336C1A',
           color: '#D6336C',
           borderColor: type === 'outlined' ? 'rgba(240, 62, 62, 0.10)' : 'tranparent',
-          '&:hover': {
-            backgroundColor: '#D6336C1A',
-          },
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#D6336C1A',
+              },
+            }),
         }
       if (color === 'gray')
         return {
           color: '#495057',
           backgroundColor: '#E9ECEF',
           borderColor: '#4950571A',
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#E9ECEF',
+              },
+            }),
         }
       if (color === 'white')
         return {
           color: '#495057',
           backgroundColor: '#FFFFFF',
           borderColor: '#DEE2E6',
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#FFFFFF',
+              },
+            }),
         }
       if (color === 'gray-border')
         return {
           color: '#495057',
           backgroundColor: '#FFFFFF',
           borderColor: '#DEE2E6',
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#FFFFFF',
+              },
+            }),
         }
       if (color === 'primary')
         return {
           color: '#495057',
           backgroundColor: '#FFFFFF',
           borderColor: '#DEE2E6',
+          ...(disableHover
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: '#FFFFFF',
+              },
+            }),
         }
       return {}
     },
-    [type],
+    [type, disableHover],
   )
 
   const textStyle = useMemo((): TypographyProps => {
@@ -167,7 +227,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
       ...getColorStyle(color),
       ...sx,
     }),
-    [size, color, sx, type],
+    [size, getColorStyle, color, sx],
   )
 
   return (

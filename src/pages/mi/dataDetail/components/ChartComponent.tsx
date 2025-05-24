@@ -110,7 +110,7 @@ const ChartComponent = ({
 
   return (
     <>
-      <Box borderRadius={1} maxWidth={'100%'} border={'1px solid'} borderColor={'gray.30'}>
+      <Box borderRadius={1} maxWidth={'100%'} border={'1px solid'} borderColor={'gray.30'} sx={{ userSelect: 'none' }}>
         {/*Chart header*/}
         <Grid
           px={3}
