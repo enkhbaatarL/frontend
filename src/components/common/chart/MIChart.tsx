@@ -2,6 +2,7 @@ import { Box, CircularProgress } from '@mui/material'
 import { Chart, Point, Tooltip } from 'chart.js'
 import { FinancialDataPoint } from 'chart.js/auto'
 import { CandlestickController, CandlestickElement, OhlcController, OhlcElement } from 'chartjs-chart-financial'
+import zoomPlugin from 'chartjs-plugin-zoom'
 import dayjs from 'dayjs'
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -42,7 +43,7 @@ interface MIChartProps {
   chartType?: ChartType
 }
 
-Chart.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement)
+Chart.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement, zoomPlugin)
 
 Tooltip.positioners.pointerPositioner = function (_elements, eventPosition) {
   return {
@@ -416,6 +417,29 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
           },
           crosshairLinePlugin: {
             onPointerMove: externalTooltipHandler,
+          },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x',
+              modifierKey: null,
+            },
+            zoom: {
+              wheel: {
+                enabled: true,
+                modifierKey: 'ctrl',
+              },
+              pinch: {
+                enabled: true,
+              },
+              mode: 'x',
+            },
+            limits: {
+              x: {
+                min: mainDatasets?.[0]?.data[0]?.x,
+                max: mainDatasets?.[0]?.data[mainDatasets[0].data.length - 1]?.x,
+              },
+            },
           },
         },
       },
