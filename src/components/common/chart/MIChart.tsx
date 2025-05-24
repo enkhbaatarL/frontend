@@ -1,4 +1,4 @@
-import { Box, CircularProgress } from '@mui/material'
+import { Box } from '@mui/material'
 import { Chart, Point, Tooltip } from 'chart.js'
 import { FinancialDataPoint } from 'chart.js/auto'
 import { CandlestickController, CandlestickElement, OhlcController, OhlcElement } from 'chartjs-chart-financial'
@@ -89,30 +89,9 @@ const bbLabels: {
 const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, ref) => {
   const { height, interval = 'day', mainData, chartType = ChartType.LINE, indicators = [], comparisonCharts = [] } = props
   const chartRef = useRef<HTMLCanvasElement>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [chartInstance, setChartInstance] = useState<Chart | null>(null)
   const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
   const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
-
-  const externalTooltipHandler = useCallback(
-    (context: { tooltip: { x: number; y: number; content: Record<string, number | null> } | null }) => {
-      const { tooltip: chartTooltip } = context
-
-      if (!chartTooltip) {
-        setTooltip((prev) => ({ ...prev, visible: false }))
-
-        return
-      }
-
-      setTooltip({
-        visible: true,
-        top: chartTooltip.y - 4,
-        left: chartTooltip.x + 6,
-        content: chartTooltip.content,
-      })
-    },
-    [],
-  )
 
   const mainDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'main'), [mainData?.data?.series])
   const closeDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'close'), [mainData?.data?.series])
@@ -303,8 +282,27 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
     return axes
   }, [comparisonChartUnits])
 
+  const externalTooltipHandler = useCallback(
+    (context: { tooltip: { x: number; y: number; content: Record<string, number | null> } | null }) => {
+      const { tooltip: chartTooltip } = context
+
+      if (!chartTooltip) {
+        setTooltip((prev) => ({ ...prev, visible: false }))
+
+        return
+      }
+
+      setTooltip({
+        visible: true,
+        top: chartTooltip.y - 4,
+        left: chartTooltip.x + 6,
+        content: chartTooltip.content,
+      })
+    },
+    [],
+  )
+
   const createChart = () => {
-    setIsLoading(true)
     if (chartInstance) {
       chartInstance.destroy()
       setChartInstance(null)
@@ -446,7 +444,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
     })
 
     setChartInstance(newChartInstance)
-    setIsLoading(false)
   }
 
   useEffect(() => {
@@ -478,22 +475,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
       }}
       onContextMenu={disableContextMenu}
     >
-      {isLoading && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <CircularProgress sx={{ color: 'gray.40' }} />
-        </Box>
-      )}
       <Box
         sx={{
           position: 'absolute',
@@ -509,7 +490,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
           }}
         />
       </Box>
-
       <canvas ref={chartRef} />
       <MIChartTooltip {...tooltip} />
     </Box>

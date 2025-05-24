@@ -1,6 +1,6 @@
 import LocalSeeOutlinedIcon from '@mui/icons-material/LocalSeeOutlined'
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
-import { Box, Grid2 as Grid, Stack, Switch, Tooltip, Typography } from '@mui/material'
+import { Box, CircularProgress, Grid2 as Grid, Stack, Switch, Tooltip, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -66,7 +66,7 @@ const ChartComponent = ({
     [selectedDataSource],
   )
 
-  const { data: chartData } = useQuery({
+  const { data: chartData, isLoading } = useQuery({
     queryKey: ['productDataStructuredChartData', goodsNo, goodsDataNo, goodsDataSourceNo],
     queryFn: () => dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, goodsDataSourceNo!, {}),
     refetchOnWindowFocus: false,
@@ -110,7 +110,19 @@ const ChartComponent = ({
 
   return (
     <>
-      <Box borderRadius={1} maxWidth={'100%'} border={'1px solid'} borderColor={'gray.30'} sx={{ userSelect: 'none' }}>
+      <Box borderRadius={1} maxWidth={'100%'} border={'1px solid'} borderColor={'gray.30'} sx={{ position: 'relative' }}>
+        {isLoading && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1,
+            }}
+          />
+        )}
         {/*Chart header*/}
         <Grid
           px={3}
@@ -237,18 +249,37 @@ const ChartComponent = ({
               }
             }}
           />
-          <MIChart
-            ref={miChartRef}
-            height={'100%'}
-            chartType={chartType}
-            mainData={{
-              data: chartData?.mainChart,
-              unit: chartData?.mainChart.unitCd ?? '',
-            }}
-            indicators={chartData?.indicators}
-            comparisonCharts={chartData?.comparisonCharts}
-            displayDataInfo={displayDataInfo}
-          />
+          <Box height={'100%'}>
+            {isLoading ? (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CircularProgress sx={{ color: 'gray.40' }} />
+              </Box>
+            ) : (
+              <MIChart
+                ref={miChartRef}
+                height={'100%'}
+                chartType={chartType}
+                mainData={{
+                  data: chartData?.mainChart,
+                  unit: chartData?.mainChart.unitCd ?? '',
+                }}
+                indicators={chartData?.indicators}
+                comparisonCharts={chartData?.comparisonCharts}
+                displayDataInfo={displayDataInfo}
+              />
+            )}
+          </Box>
         </Box>
 
         {/*Chart footer*/}
