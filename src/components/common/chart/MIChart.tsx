@@ -333,7 +333,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
           fillBetween: {
             labels: ['Upper BB', 'Lower BB'],
             fillColor: 'rgba(206, 212, 218, 0.1)',
-            hidden: !props.displayDataInfo.BB,
           },
           legend: {
             display: false,
