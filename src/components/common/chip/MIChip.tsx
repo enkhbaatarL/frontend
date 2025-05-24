@@ -10,6 +10,7 @@ type MIChipColor =
   | 'green-climb'
   | 'red'
   | 'red-decline'
+  | 'pink'
   | 'gray'
   | 'white'
   | 'gray-border'
@@ -56,7 +57,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
         return {
           backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F3EFF9',
           color: '#7451DD',
-          borderColor: type === 'outlined' ? 'rgba(112, 72, 232, 0.10)' : '#F3EFF9',
+          borderColor: type === 'outlined' ? 'rgba(112, 72, 232, 0.10)' : 'tranparent',
           '&:hover': {
             backgroundColor: '#F3EFF9',
           },
@@ -65,7 +66,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
         return {
           backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F261001A',
           color: '#EB670F',
-          borderColor: type === 'outlined' ? 'rgba(247, 103, 7, 0.10)' : '#F261001A',
+          borderColor: type === 'outlined' ? 'rgba(247, 103, 7, 0.10)' : 'tranparent',
           '&:hover': {
             backgroundColor: '#F261001A',
           },
@@ -74,7 +75,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
         return {
           backgroundColor: type === 'outlined' ? '#FFFFFF' : '#2A8D3E1A',
           color: '#2A8D3E',
-          borderColor: type === 'outlined' ? 'rgba(42, 141, 62, 0.10)' : '#2A8D3E1A',
+          borderColor: type === 'outlined' ? 'rgba(42, 141, 62, 0.10)' : 'tranparent',
           '&:hover': {
             backgroundColor: '#2A8D3E1A',
           },
@@ -89,7 +90,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
         return {
           backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F03E3E1A',
           color: '#DF4B4A',
-          borderColor: type === 'outlined' ? 'rgba(240, 62, 62, 0.10)' : '#F03E3E1A',
+          borderColor: type === 'outlined' ? 'rgba(240, 62, 62, 0.10)' : 'tranparent',
           '&:hover': {
             backgroundColor: '#F03E3E1A',
           },
@@ -99,6 +100,15 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           backgroundColor: '#CC4D501A',
           color: '#CC4D50',
           borderColor: 'tranparent',
+        }
+      if (color === 'pink')
+        return {
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#D6336C1A',
+          color: '#D6336C',
+          borderColor: type === 'outlined' ? 'rgba(240, 62, 62, 0.10)' : 'tranparent',
+          '&:hover': {
+            backgroundColor: '#D6336C1A',
+          },
         }
       if (color === 'gray')
         return {

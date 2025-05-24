@@ -198,6 +198,7 @@ const ChartComponent = ({
           <MIChartController
             chartType={chartType}
             setChartType={setChartType}
+            isCandlestick={chartData?.mainChart.chartType === ChartType.CANDLE}
             searchFilter={searchFilter}
             setSearchFilter={setSearchFilter}
             unitList={chartData?.metadata.changeableUnitCd ?? []}

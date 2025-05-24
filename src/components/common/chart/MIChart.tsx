@@ -1,6 +1,8 @@
 import { Box, CircularProgress } from '@mui/material'
-import Chart, { FinancialDataPoint, Tooltip } from 'chart.js/auto'
+import { Chart, Point, Tooltip } from 'chart.js'
+import { FinancialDataPoint } from 'chart.js/auto'
 import { CandlestickController, CandlestickElement, OhlcController, OhlcElement } from 'chartjs-chart-financial'
+import dayjs from 'dayjs'
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import '@/lib/chart/adapterDayjs'
@@ -12,7 +14,7 @@ import crosshairLinePlugin from '@/lib/chart/plugins/crosshairLinePlugin'
 import priceIndicatorPlugin from '@/lib/chart/plugins/priceIndicatorPlugin'
 import verticalAxisDecoratorPlugin from '@/lib/chart/plugins/verticalAxisDecoratorPlugin'
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
-import { ChartType, ChartData, Indicator } from '@/types/dataDetailChart'
+import { ChartData, ChartType, Indicator } from '@/types/dataDetailChart'
 import { disableContextMenu } from '@/utils/mouse'
 
 export interface DisplayDataInfo {
@@ -53,7 +55,7 @@ const maColors: {
   [key: string]: string
 } = {
   ma_5: '#2A8D3E',
-  ma_20: '#DF4B4A',
+  ma_20: '#D6336C',
   ma_60: '#EB670F',
   ma_120: '#7451DD',
 }
@@ -87,16 +89,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
   const { height, interval = 'day', mainData, chartType = ChartType.LINE, indicators = [], comparisonCharts = [] } = props
   const chartRef = useRef<HTMLCanvasElement>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [chartInstance, setChartInstance] = useState<Chart<
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any,
-    | FinancialDataPoint[]
-    | {
-        x: number | string
-        y: number | null
-      }[],
-    unknown
-  > | null>(null)
+  const [chartInstance, setChartInstance] = useState<Chart | null>(null)
   const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
   const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
 
@@ -120,32 +113,108 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
     [],
   )
 
-  const mainDatasets = useMemo(() => {
-    const mainDataSeries = mainData?.data?.series.find((series) => series.seriesId === 'main')
+  const mainDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'main'), [mainData?.data?.series])
+  const closeDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'close'), [mainData?.data?.series])
+  const openDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'open'), [mainData?.data?.series])
+  const highDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'high'), [mainData?.data?.series])
+  const lowDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'low'), [mainData?.data?.series])
 
+  const mainDatasets = useMemo(() => {
     if (chartType === ChartType.LINE) {
-      return {
-        label: mainDataSeries?.label ?? '',
-        data:
-          mainDataSeries?.values.map((value, index) => ({
-            x: mainData?.data?.timestamps[index] ?? '',
-            y: value ?? null,
-          })) ?? [],
-        type: 'line',
-        borderColor: '#2F62A3',
-        borderWidth: 3,
-        pointRadius: 0,
-        fill: false,
-        tension: 0.1,
-        yAxisID: 'y',
-        metadata: {
-          isMain: true,
-        },
+      if (mainData?.data?.chartType === ChartType.LINE) {
+        return [
+          {
+            label: mainDataSeries?.label ?? '',
+            data:
+              mainDataSeries?.values.map((value, index) => ({
+                x: dayjs(mainData?.data?.timestamps[index]).valueOf(),
+                y: value ?? null,
+              })) ?? [],
+            type: 'line',
+            borderColor: '#2F62A3',
+            borderWidth: 3,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.1,
+            yAxisID: 'y',
+            metadata: {
+              isMain: true,
+            },
+          },
+        ]
+      }
+
+      if (mainData?.data?.chartType === ChartType.CANDLE) {
+        return [closeDataSeries, openDataSeries, highDataSeries, lowDataSeries].map((series, index) => ({
+          label: series?.label ?? '',
+          data:
+            series?.values.map((value, index) => ({
+              x: dayjs(mainData?.data?.timestamps[index]).valueOf(),
+              y: value ?? null,
+            })) ?? [],
+          type: 'line',
+          borderColor: ['#2F62A3', '#498B47', '#CC4D50', '#5a5a5a'][index],
+          borderWidth: 3,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.1,
+          yAxisID: 'y',
+          metadata: {
+            isMain: true,
+          },
+        }))
       }
     }
 
+    if (chartType === ChartType.CANDLE) {
+      return [
+        {
+          label: closeDataSeries?.label ?? '',
+          data:
+            closeDataSeries?.values.map((value, index) => ({
+              x: dayjs(mainData?.data?.timestamps[index]).valueOf(),
+              c: value,
+              o: openDataSeries?.values[index] ?? 0,
+              h: highDataSeries?.values[index] ?? 0,
+              l: lowDataSeries?.values[index] ?? 0,
+            })) ?? [],
+          type: 'candlestick',
+          colors: {
+            up: '#498B47',
+            down: '#CC4D50',
+            unchanged: '#5a5a5a',
+          },
+          borderColors: {
+            up: '#498B47',
+            down: '#CC4D50',
+            unchanged: '#5a5a5a',
+          },
+          backgroundColors: {
+            up: '#498B47',
+            down: '#CC4D50',
+            unchanged: '#5a5a5a',
+          },
+          borderWidth: 1,
+          yAxisID: 'y',
+          metadata: {
+            isMain: true,
+          },
+        },
+      ]
+    }
+
     return null
-  }, [mainData?.data, chartType])
+  }, [
+    chartType,
+    mainData?.data?.chartType,
+    mainData?.data?.timestamps,
+    mainDataSeries?.label,
+    mainDataSeries?.values,
+    closeDataSeries,
+    openDataSeries,
+    highDataSeries,
+    lowDataSeries,
+  ])
 
   const indicatorDatasets = useMemo(() => {
     const ma = indicators.find((indicator) => indicator.indicatorType === 'MOVING_AVERAGE')
@@ -156,7 +225,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
         .map((series) => ({
           label: maLabels[series.seriesId],
           data: series.values.map((value, index) => ({
-            x: ma.timestamps[index],
+            x: dayjs(ma.timestamps[index]).valueOf(),
             y: value,
           })),
           type: 'line',
@@ -172,21 +241,28 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
           const numB = parseInt(b.label.replace('MA', ''))
           return numA - numB
         }),
-      BB: bb?.series.map((series) => ({
-        label: bbLabels[series.seriesId],
-        data: series.values.map((value, index) => ({
-          x: bb.timestamps[index],
-          y: value,
-        })),
-        type: 'line',
-        borderColor: props.displayDataInfo.BB ? bbColors[series.seriesId] : 'transparent',
-        borderWidth: 1,
-        pointRadius: 0,
-        fill: false,
-        tension: 0.1,
-      })),
+      BB: bb?.series.map((series) => {
+        const label = bbLabels[series.seriesId]
+        const isMiddleBBInCandle = label === 'Middle BB' && chartType === ChartType.CANDLE
+        const borderColor = isMiddleBBInCandle ? '#F0D92D' : bbColors[series.seriesId]
+        const borderWidth = isMiddleBBInCandle ? 2 : 1
+
+        return {
+          label,
+          data: series.values.map((value, index) => ({
+            x: dayjs(bb.timestamps[index]).valueOf(),
+            y: value,
+          })),
+          type: 'line',
+          borderColor: props.displayDataInfo.BB ? borderColor : 'transparent',
+          borderWidth,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.1,
+        }
+      }),
     }
-  }, [indicators, props.displayDataInfo])
+  }, [chartType, indicators, props.displayDataInfo.BB, props.displayDataInfo.MA])
 
   const comparisonDatasets = useMemo(() => {
     const colors = ['#0CA678', '#FF973C', '#5191F5', '#8F5B5D', '#819E9A', '#7D68A4']
@@ -194,7 +270,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
     return comparisonCharts.map((chart, index) => ({
       label: chart.series[0].label,
       data: chart.series[0].values.map((value, idx) => ({
-        x: chart.timestamps[idx],
+        x: dayjs(chart.timestamps[idx]).valueOf(),
         y: value,
       })),
       type: 'line',
@@ -244,7 +320,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
       label: string
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: any
-      data: FinancialDataPoint[] | { x: number | string; y: number | null }[]
+      data: FinancialDataPoint[] | Point[]
       colors?: Record<string, string>
       borderColors?: Record<string, string>
       borderColor?: string
@@ -256,14 +332,15 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
       metadata?: Record<string, number | string | boolean>
     }> = []
 
-    if (mainDatasets !== null) datasets.push(mainDatasets)
-    if (indicatorDatasets.MA) datasets.push(...indicatorDatasets.MA)
+    if (mainDatasets !== null) datasets.push(...mainDatasets)
     if (indicatorDatasets.BB) datasets.push(...indicatorDatasets.BB)
+    if (indicatorDatasets.MA) datasets.push(...indicatorDatasets.MA)
     if (comparisonDatasets.length) {
       datasets.push(...comparisonDatasets)
     }
 
     const newChartInstance = new Chart(ctx, {
+      type: 'candlestick',
       data: {
         datasets,
       },
@@ -332,7 +409,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
           },
           fillBetween: {
             labels: ['Upper BB', 'Lower BB'],
-            fillColor: 'rgba(206, 212, 218, 0.1)',
+            fillColor: 'rgba(206, 212, 218, 0.12)',
           },
           legend: {
             display: false,
@@ -356,7 +433,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
     ) {
       createChart()
     }
-  }, [mainData.data, indicatorDatasets, comparisonDatasets, interval, mainData.unit, subYAxes])
+  }, [mainData.data, indicatorDatasets, comparisonDatasets, interval, mainData.unit, subYAxes, chartType])
 
   useEffect(() => {
     if (ref && typeof ref === 'function') {

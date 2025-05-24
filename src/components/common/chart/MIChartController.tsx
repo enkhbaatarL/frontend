@@ -14,6 +14,7 @@ import { ChartType } from '@/types/dataDetailChart'
 interface MIChartControllerProps {
   chartType: ChartType
   setChartType: Dispatch<SetStateAction<ChartType>>
+  isCandlestick?: boolean
   unitList: string[]
   searchFilter: IProductDataStructuredChartRequest
   setSearchFilter: Dispatch<SetStateAction<IProductDataStructuredChartRequest>>
@@ -21,22 +22,10 @@ interface MIChartControllerProps {
   onDisplayDataInfoChange?: (value: { label: string; isShow: boolean }) => void
 }
 
-const chartTypeOptions = [
-  {
-    value: ChartType.LINE,
-    label: 'Line',
-    icon: <ShowChartIcon />,
-  },
-  {
-    value: ChartType.CANDLE,
-    label: 'Candles',
-    icon: <CandlestickChartOutlineIcon />,
-  },
-]
-
 export default function MIChartController({
   chartType,
   setChartType,
+  isCandlestick = false,
   unitList,
   searchFilter,
   setSearchFilter,
@@ -47,6 +36,26 @@ export default function MIChartController({
     value: unit,
     label: unit,
   }))
+
+  const chartTypeOptions = useMemo(() => {
+    const options = [
+      {
+        value: ChartType.LINE,
+        label: 'Line',
+        icon: <ShowChartIcon />,
+      },
+    ]
+
+    if (isCandlestick) {
+      options.push({
+        value: ChartType.CANDLE,
+        label: 'Candles',
+        icon: <CandlestickChartOutlineIcon />,
+      })
+    }
+
+    return options
+  }, [isCandlestick])
 
   const selectedChart = useMemo(() => chartTypeOptions.find((option) => option.value === chartType) ?? chartTypeOptions[0], [chartType])
 
