@@ -8,7 +8,6 @@ import bgmImg from '@/assets/bgmarket.jpg'
 import psImg from '@/assets/productsymbol.png'
 import MILine from '@/components/common/divider/MILine'
 import MIInput from '@/components/common/input/MIInput'
-import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import useSearchFilter from '@/hooks/useSearchFilter.tsx'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
@@ -158,17 +157,15 @@ const MarketDataPage = () => {
                     {
                       field: 'goodsDataNm',
                       headerName: 'Data Name',
-                      flex: 2,
-                      renderCell: (param) => <MITableCell value={param.value} typography={{ variant: 'tableBody1' }} />,
+                      flex: 3,
                     },
-                    { field: 'goodsDataSrcNm', headerName: 'Datasource', flex: 1 },
-                    { field: 'lastValue', headerName: 'Value', flex: 1 },
+                    { field: 'goodsDataSrcNm', headerName: 'Datasource', flex: 1, align: 'center' },
+                    { field: 'lastValue', headerName: 'Value', flex: 1, align: 'center' },
                     {
                       field: 'modifyDt',
                       headerName: 'Last Updated',
                       flex: 1,
                       align: 'center',
-                      renderCell: (param) => <MITableCell value={param.value} typography={{ variant: 'tableBody2', color: '#868E96' }} />,
                     },
                   ],
                   rowId: 'goodsDataNo',
