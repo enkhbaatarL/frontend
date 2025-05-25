@@ -196,7 +196,7 @@ const MarketDataPage = () => {
                       align: 'center',
                     },
                   ],
-                  rowId: 'goodsDataNo',
+                  rowId: 'goodsDataSrcNo',
                   rows: data?.detail,
                   onRowClick: (row) => {
                     navigate(`/mi/data-detail/${row.row.goodsNo}/${row.row.goodsDataNo}`)

@@ -48,6 +48,17 @@ export interface IDataCatalogRequest extends IPaginationRequest {
 
 export interface IDataCatalogItem {
   providerNo: number
+  goodsNo: number
+  goodsDataNo: number
+  goodsDataNm: string
+  goodsDataSrcNo: number
+  goodsDataSrcNm: string
+  lastValue: string
+  modifyDt: string
+}
+
+export interface IRecentViewedItem {
+  providerNo: number
   providerNm: string
   goodsNo: number
   goodsNm: string
@@ -94,8 +105,8 @@ const marketDataService = {
   /**
    * 최근 조회한 데이터 목록을 조회합니다.
    */
-  async getRecentViewed(): Promise<IDataCatalogItem[]> {
-    const response: AxiosResponse<ICommonResponse<IDataCatalogItem[]>> = await api.get('mi/market-data/recent-viewed')
+  async getRecentViewed(): Promise<IRecentViewedItem[]> {
+    const response: AxiosResponse<ICommonResponse<IRecentViewedItem[]>> = await api.get('mi/market-data/recent-viewed')
 
     return response.data.data
   },
