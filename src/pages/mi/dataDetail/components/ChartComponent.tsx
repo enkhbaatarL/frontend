@@ -10,7 +10,9 @@ import MIChart from '@/components/common/chart/MIChart'
 import MIChartController from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
+import { UserRole } from '@/service/admin/members.ts'
 import dataDetailService, { IProductDataStructuredChartRequest, IProductDataStructuredData } from '@/service/mi/dataDetail'
+import useAuthStore from '@/store/useAuthStore.ts'
 import { ChartRange, ChartType } from '@/types/dataDetailChart'
 
 interface ChartComponentProps {
@@ -40,6 +42,8 @@ const ChartComponent = ({
     () => structuredDataList?.find((item) => item.goodsDataSourceNo === goodsDataSourceNo),
     [goodsDataSourceNo, structuredDataList],
   )
+
+  const { user } = useAuthStore()
 
   const selectedDataSourceOption = useMemo(
     () => ({
@@ -128,6 +132,7 @@ const ChartComponent = ({
             type={'outlined'}
             contentType={'icon'}
             startIcon={<NotificationsNoneIcon fontSize={'small'} />}
+            disabled={user?.userRoleCd === UserRole.ADMIN}
             onClick={handleAlarmSetting}
           />
 
