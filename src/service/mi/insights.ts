@@ -41,7 +41,7 @@ export interface IInsightsInfo {
 const insightsService = {
   /**
    * Focused 목록을 조회합니다.
-   * @param parmas - {customerCompanyNo: 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호}
+   * @param companyNo - {companyNo: 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호}
    */
   async getFocusedList(companyNo: number): Promise<ICommonResponse<IFocusedInfo>> {
     const response: AxiosResponse<ICommonResponse<IFocusedInfo>> = await api.get(`/mi/insights/companies/${companyNo}/focused-data`)
