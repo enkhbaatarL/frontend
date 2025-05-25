@@ -1,4 +1,3 @@
-import SearchIcon from '@mui/icons-material/Search'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef } from 'react'
@@ -7,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import bgmImg from '@/assets/bgmarket.jpg'
 import psImg from '@/assets/productsymbol.png'
 import MILine from '@/components/common/divider/MILine'
-import MIInput from '@/components/common/input/MIInput'
+import MISearchInput from '@/components/common/input/MISearchInput.tsx'
 import MITableUser from '@/components/common/table/MITableUser'
 import useSearchFilter from '@/hooks/useSearchFilter.tsx'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
@@ -69,6 +68,26 @@ const MarketDataPage = () => {
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
 
+  // 자동완성을 위한 제안 데이터
+  const searchSuggestions = useMemo(() => {
+    const suggestions: string[] = []
+
+    // 중복 제거 및 정렬
+    return [...new Set(suggestions)].sort()
+  }, [])
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateFilter('keyword', e.target.value)
+  }
+
+  const handleSearch = (searchTerm: string) => {
+    updateFilterWithSearch('keyword', searchTerm)
+  }
+
+  const handleSearchClear = () => {
+    updateFilterWithSearch('keyword', '')
+  }
+
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
       initialFetchRef.current = true
@@ -129,16 +148,17 @@ const MarketDataPage = () => {
           <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
             Data Catalog
           </Typography>
-          <MIInput
+          <MISearchInput
             width={458}
             maxWidth={'100%'}
             placeholder="Search for Data"
             size="h46"
-            startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
             value={filter?.keyword ?? ''}
-            onChange={(e) => updateFilter('keyword', e.target.value)}
-            onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}
-            onClear={() => updateFilterWithSearch('keyword', '')}
+            onChange={handleSearchChange}
+            onSearch={handleSearch}
+            onClear={handleSearchClear}
+            suggestions={searchSuggestions}
+            storageKey="market-data-search-history"
           />
         </Box>
         <Grid
@@ -160,7 +180,7 @@ const MarketDataPage = () => {
                 hidePagination={data?.totalElements === 0 || !data?.totalElements}
                 tableProps={{
                   disableHover: true,
-                  noRowMessage: '등록된 내용이 없습니다.',
+                  noRowMessage: 'No results Found',
                   columns: [
                     {
                       field: 'goodsDataNm',
