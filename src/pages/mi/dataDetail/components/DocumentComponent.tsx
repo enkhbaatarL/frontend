@@ -12,13 +12,14 @@ interface DocumentItemProps {
   extension: string
   isPdfViewable: boolean
   isDownloadable: boolean
+  fileSize: number
 }
 
 interface DocumentComponentProps {
   data: DocumentItemProps[]
 }
 
-const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable, fileNo }: DocumentItemProps) => {
+const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable, fileNo, fileSize }: DocumentItemProps) => {
   const handleViewPdf = () => {
     window.open(
       `/pdf-viewer/${fileNo}`,
@@ -33,7 +34,7 @@ const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable
       const fileBlob = await fileService.downloadFile({
         fileNo,
         fileNm: fileName,
-        fileSize: 0, // 파일 크기 정보가 없음
+        fileSize,
       })
 
       downloadFile(fileBlob, fileName)
@@ -83,6 +84,7 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => (
           isPdfViewable={item.isPdfViewable}
           isDownloadable={item.isDownloadable}
           fileNo={item.fileNo}
+          fileSize={item.fileSize}
         />
       ))}
     </Box>
