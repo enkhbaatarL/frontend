@@ -120,7 +120,7 @@ const ComponentTestPage = () => {
         <Flex gap={6}>
           <div>Admin Table No Data</div>
           <div style={{ width: '600px', height: '300px' }}>
-            <AdminTable getRowId={(row) => row.companyCd} columns={columns} noRowMessage="표시할 데이터가 없습니다." />
+            <AdminTable getRowId={(row) => row.companyCd} columns={columns} noRowMessage="검색 결과가 없습니다.." />
           </div>
         </Flex>
         <Flex gap={6}>

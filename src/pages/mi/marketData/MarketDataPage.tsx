@@ -1,4 +1,3 @@
-import SearchIcon from '@mui/icons-material/Search'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef } from 'react'
@@ -7,8 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import bgmImg from '@/assets/bgmarket.jpg'
 import psImg from '@/assets/productsymbol.png'
 import MILine from '@/components/common/divider/MILine'
-import MIInput from '@/components/common/input/MIInput'
-import MITableCell from '@/components/common/table/MITableCell'
+import MISearchInput from '@/components/common/input/MISearchInput.tsx'
 import MITableUser from '@/components/common/table/MITableUser'
 import useSearchFilter from '@/hooks/useSearchFilter.tsx'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
@@ -39,9 +37,8 @@ const MarketDataPage = () => {
     IDataCatalogRequest,
     IPaginationResponse<IDataCatalogItem>
   >(
-    marketDataService.getDataCatalog,
+    (params) => marketDataService.getDataCatalog(customerCompanyNo, params),
     {
-      customerCompanyNo,
       keyword: '',
     },
     {
@@ -53,6 +50,14 @@ const MarketDataPage = () => {
     },
   )
 
+  useEffect(() => {
+    if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
+      initialFetchRef.current = true
+      // customerCompanyNo는 이미 위의 useSearchFilter에서 처리되므로 여기서는 검색만 실행
+      updateFilterWithSearch('keyword', filter?.keyword ?? '')
+    }
+  }, [accessCompanyInfo, updateFilterWithSearch, filter?.keyword])
+
   // Recent Viewed
   const { data: recentViewedList } = useQuery({
     queryKey: ['recentViewed'],
@@ -63,12 +68,33 @@ const MarketDataPage = () => {
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
 
+  // 자동완성을 위한 제안 데이터
+  const searchSuggestions = useMemo(() => {
+    const suggestions: string[] = []
+
+    // 중복 제거 및 정렬
+    return [...new Set(suggestions)].sort()
+  }, [])
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateFilter('keyword', e.target.value)
+  }
+
+  const handleSearch = (searchTerm: string) => {
+    updateFilterWithSearch('keyword', searchTerm)
+  }
+
+  const handleSearchClear = () => {
+    updateFilterWithSearch('keyword', '')
+  }
+
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
       initialFetchRef.current = true
-      updateFilterWithSearch('customerCompanyNo', accessCompanyInfo.customerCompanyNo)
+      // customerCompanyNo는 이미 위의 useSearchFilter에서 처리되므로 여기서는 검색만 실행
+      updateFilterWithSearch('keyword', filter?.keyword ?? '')
     }
-  }, [accessCompanyInfo, updateFilterWithSearch])
+  }, [accessCompanyInfo, updateFilterWithSearch, filter?.keyword])
 
   return (
     <>
@@ -122,16 +148,17 @@ const MarketDataPage = () => {
           <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
             Data Catalog
           </Typography>
-          <MIInput
+          <MISearchInput
             width={458}
             maxWidth={'100%'}
             placeholder="Search for Data"
             size="h46"
-            startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
             value={filter?.keyword ?? ''}
-            onChange={(e) => updateFilter('keyword', e.target.value)}
-            onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}
-            onClear={() => updateFilterWithSearch('keyword', '')}
+            onChange={handleSearchChange}
+            onSearch={handleSearch}
+            onClear={handleSearchClear}
+            suggestions={searchSuggestions}
+            storageKey="market-data-search-history"
           />
         </Box>
         <Grid
@@ -153,25 +180,23 @@ const MarketDataPage = () => {
                 hidePagination={data?.totalElements === 0 || !data?.totalElements}
                 tableProps={{
                   disableHover: true,
-                  noRowMessage: '등록된 내용이 없습니다.',
+                  noRowMessage: 'No results Found',
                   columns: [
                     {
-                      field: 'providerNm',
-                      headerName: 'Data Provider',
-                      flex: 1,
-                      renderCell: (param) => <MITableCell value={param.value} typography={{ variant: 'tableBody1' }} />,
+                      field: 'goodsDataNm',
+                      headerName: 'Data Name',
+                      flex: 3,
                     },
-                    { field: 'goodsDataNm', headerName: 'Data Name', flex: 2 },
-                    { field: 'goodsDataExpn', headerName: 'Description', flex: 2 },
+                    { field: 'goodsDataSrcNm', headerName: 'Datasource', flex: 1, align: 'center' },
+                    { field: 'lastValue', headerName: 'Value', flex: 1, align: 'center' },
                     {
                       field: 'modifyDt',
                       headerName: 'Last Updated',
                       flex: 1,
                       align: 'center',
-                      renderCell: (param) => <MITableCell value={param.value} typography={{ variant: 'tableBody2', color: '#868E96' }} />,
                     },
                   ],
-                  rowId: 'goodsDataNo',
+                  rowId: 'goodsDataSrcNo',
                   rows: data?.detail,
                   onRowClick: (row) => {
                     navigate(`/mi/data-detail/${row.row.goodsNo}/${row.row.goodsDataNo}`)

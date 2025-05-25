@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
-import { ICommonResponse } from '@/types/api'
+
 export interface IFile {
   fileNo: number
   fileNm: string
@@ -9,14 +9,34 @@ export interface IFile {
   fileUrl: string
 }
 
+interface IFileDownloadRequest {
+  fileNo: number
+  fileNm: string
+  fileSize: number
+}
+
 const fileService = {
   /**
    * 파일을 다운로드합니다.
-   * @param fileNo
+   * @param fileData - 파일 정보 객체
    */
-  async downloadFile(fileNo: number): Promise<IFile> {
-    const response: AxiosResponse<ICommonResponse<IFile>> = await api.get(`/admin/file-management/${fileNo}`)
-    return response.data.data
+  async downloadFile(fileData: IFileDownloadRequest): Promise<Blob> {
+    const response: AxiosResponse<Blob> = await api.post('file-management/download/file', fileData, {
+      responseType: 'blob',
+    })
+    return response.data
+  },
+
+  /**
+   * 1개 이상의 파일을 zip으로 압축하여 다운로드합니다.
+   * @param prefix - 다운 받을 파일명의 Prefix
+   * @param fileNos - 다운 받을 파일번호
+   */
+  async downloadFiles(fileNos: string, prefix?: string) {
+    return await api.get('/admin/file-management/download', {
+      params: { fileNos, prefix },
+      responseType: 'blob',
+    })
   },
 }
 

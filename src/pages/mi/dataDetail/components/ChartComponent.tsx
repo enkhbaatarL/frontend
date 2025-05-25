@@ -108,6 +108,10 @@ const ChartComponent = ({
     setTimeRangeSelected((prev) => (prev === value ? '' : value))
   }, [])
 
+  const handleAlarmSetting = () => {
+    setIsOpenSetting(true)
+  }
+
   return (
     <>
       <Box borderRadius={1} maxWidth={'100%'} border={'1px solid'} borderColor={'gray.30'} sx={{ position: 'relative' }}>
@@ -153,6 +157,7 @@ const ChartComponent = ({
             type={'outlined'}
             contentType={'icon'}
             startIcon={<NotificationsNoneIcon fontSize={'small'} />}
+            onClick={handleAlarmSetting}
           />
 
           <MIButton
@@ -321,7 +326,7 @@ const ChartComponent = ({
         </Grid>
       </Box>
 
-      <SettingModalComponent open={isOpenSetting} onClose={() => setIsOpenSetting(false)} />
+      <SettingModalComponent open={isOpenSetting} onClose={() => setIsOpenSetting(false)} goodsDataSourceNo={goodsDataSourceNo} />
     </>
   )
 }

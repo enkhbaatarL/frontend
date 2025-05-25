@@ -1,8 +1,10 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { useEffect, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MILine from '@/components/common/divider/MILine'
 import fileService from '@/service/admin/file'
+import { downloadFile } from '@/utils/file'
 interface DocumentItemProps {
   fileNo: number
   fileName: string
@@ -10,13 +12,14 @@ interface DocumentItemProps {
   extension: string
   isPdfViewable: boolean
   isDownloadable: boolean
+  fileSize: number
 }
 
 interface DocumentComponentProps {
   data: DocumentItemProps[]
 }
 
-const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable, fileNo }: DocumentItemProps) => {
+const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable, fileNo, fileSize }: DocumentItemProps) => {
   const handleViewPdf = () => {
     window.open(
       `/pdf-viewer/${fileNo}`,
@@ -25,9 +28,19 @@ const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable
     )
   }
 
-  // 파일 다운로드
+  // 파일 다운로드 (1개)
   const handleDownloadFile = async () => {
-    await fileService.downloadFile(fileNo)
+    try {
+      const fileBlob = await fileService.downloadFile({
+        fileNo,
+        fileNm: fileName,
+        fileSize,
+      })
+
+      downloadFile(fileBlob, fileName)
+    } catch (error) {
+      console.error('파일 다운로드 중 오류가 발생했습니다:', error)
+    }
   }
 
   return (
@@ -56,28 +69,50 @@ const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable
   )
 }
 
-const DocumentComponent = ({ data }: DocumentComponentProps) => (
-  <Grid gap={2.5} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
-    <Typography component="div" color="gray.90" variant="titleBox">
-      Document
-    </Typography>
-    <Box>
-      {data?.map((item, index) => (
-        <DocumentItem
-          key={index}
-          fileName={item.fileName}
-          date={item.date}
-          extension={item.extension}
-          isPdfViewable={item.isPdfViewable}
-          isDownloadable={item.isDownloadable}
-          fileNo={item.fileNo}
-        />
-      ))}
-    </Box>
-    <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'}>
-      Download All
-    </MIButton>
-  </Grid>
-)
+const DocumentComponent = ({ data }: DocumentComponentProps) => {
+  const [fileNos, setFileNos] = useState<string>('')
+
+  // 파일 다운로드 (여러개)
+  const handleDownloadFiles = async () => {
+    try {
+      const response = await fileService.downloadFiles(fileNos, 'test')
+      downloadFile(response.data, 'test.zip')
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  useEffect(() => {
+    if (data.length > 0) {
+      const fileNos = data.map((item) => item.fileNo)
+      setFileNos(fileNos.join(','))
+    }
+  }, [data])
+
+  return (
+    <Grid gap={2.5} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
+      <Typography component="div" color="gray.90" variant="titleBox">
+        Document
+      </Typography>
+      <Box>
+        {data?.map((item, index) => (
+          <DocumentItem
+            key={index}
+            fileName={item.fileName}
+            date={item.date}
+            extension={item.extension}
+            isPdfViewable={item.isPdfViewable}
+            isDownloadable={item.isDownloadable}
+            fileNo={item.fileNo}
+            fileSize={item.fileSize}
+          />
+        ))}
+      </Box>
+      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'} onClick={handleDownloadFiles}>
+        Download All
+      </MIButton>
+    </Grid>
+  )
+}
 
 export default DocumentComponent

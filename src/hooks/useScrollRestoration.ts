@@ -26,9 +26,7 @@ export const useScrollRestoration = ({ minHeight = '100vh', urls }: { minHeight?
 
   /** 스크롤이 랜더링 중인 화면의 스크롤 보다 큰경우 preHeight 지정  */
   const preRenderMinHeight = useMemo(() => {
-    const maxScrollY = document.documentElement.scrollHeight - window.innerHeight
-    const scrollSaved = savedY + window.innerHeight
-    if (scrollSaved <= maxScrollY) return minHeight
+    if (!savedY) return minHeight
     return `${savedY + window.innerHeight}px`
   }, [minHeight, savedY])
 

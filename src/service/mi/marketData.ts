@@ -43,11 +43,21 @@ export interface IMarketData {
 }
 
 export interface IDataCatalogRequest extends IPaginationRequest {
-  customerCompanyNo?: number
   keyword?: string
 }
 
 export interface IDataCatalogItem {
+  providerNo: number
+  goodsNo: number
+  goodsDataNo: number
+  goodsDataNm: string
+  goodsDataSrcNo: number
+  goodsDataSrcNm: string
+  lastValue: string
+  modifyDt: string
+}
+
+export interface IRecentViewedItem {
   providerNo: number
   providerNm: string
   goodsNo: number
@@ -78,11 +88,12 @@ const marketDataService = {
 
   /**
    * 데이터 카탈로그를 조회합니다.
-   * @param params - { customerCompanyNo: 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호, page: 페이지 번호, size: 페이지당 항목 수, keyword: 데이타명 검색 }
+   * @param customerCompanyNo
+   * @param params - {page: 페이지 번호, size: 페이지당 항목 수, keyword: 데이타명 검색 }
    */
-  async getDataCatalog(params: Partial<IDataCatalogRequest>): Promise<IPaginationResponse<IDataCatalogItem>> {
+  async getDataCatalog(customerCompanyNo: number, params: Partial<IDataCatalogRequest>): Promise<IPaginationResponse<IDataCatalogItem>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IDataCatalogItem>>> = await api.get(
-      `mi/market-data/companies/${params.customerCompanyNo}/data-catalog`,
+      `mi/market-data/companies/${customerCompanyNo}/data-catalog`,
       {
         params,
       },
@@ -94,8 +105,8 @@ const marketDataService = {
   /**
    * 최근 조회한 데이터 목록을 조회합니다.
    */
-  async getRecentViewed(): Promise<IDataCatalogItem[]> {
-    const response: AxiosResponse<ICommonResponse<IDataCatalogItem[]>> = await api.get('mi/market-data/recent-viewed')
+  async getRecentViewed(): Promise<IRecentViewedItem[]> {
+    const response: AxiosResponse<ICommonResponse<IRecentViewedItem[]>> = await api.get('mi/market-data/recent-viewed')
 
     return response.data.data
   },

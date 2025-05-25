@@ -50,6 +50,7 @@ const AdminMemberManagementUsersPage = () => {
   const {
     filter,
     updateFilter,
+    updateMultiFilter,
     pagination,
     updateSize,
     updatePage,
@@ -203,7 +204,7 @@ const AdminMemberManagementUsersPage = () => {
           <MISelect
             value={filter.companyNo}
             onChange={(e) => {
-              updateFilter([
+              updateMultiFilter([
                 ['companyNo', e.target.value as string],
                 ['departmentNm', ''],
               ])
