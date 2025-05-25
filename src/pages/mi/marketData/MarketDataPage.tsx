@@ -38,9 +38,8 @@ const MarketDataPage = () => {
     IDataCatalogRequest,
     IPaginationResponse<IDataCatalogItem>
   >(
-    marketDataService.getDataCatalog,
+    (params) => marketDataService.getDataCatalog(customerCompanyNo, params),
     {
-      customerCompanyNo,
       keyword: '',
     },
     {
@@ -51,6 +50,14 @@ const MarketDataPage = () => {
       initialFetch: false,
     },
   )
+
+  useEffect(() => {
+    if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
+      initialFetchRef.current = true
+      // customerCompanyNo는 이미 위의 useSearchFilter에서 처리되므로 여기서는 검색만 실행
+      updateFilterWithSearch('keyword', filter?.keyword ?? '')
+    }
+  }, [accessCompanyInfo, updateFilterWithSearch, filter?.keyword])
 
   // Recent Viewed
   const { data: recentViewedList } = useQuery({
@@ -65,9 +72,10 @@ const MarketDataPage = () => {
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
       initialFetchRef.current = true
-      updateFilterWithSearch('customerCompanyNo', accessCompanyInfo.customerCompanyNo)
+      // customerCompanyNo는 이미 위의 useSearchFilter에서 처리되므로 여기서는 검색만 실행
+      updateFilterWithSearch('keyword', filter?.keyword ?? '')
     }
-  }, [accessCompanyInfo, updateFilterWithSearch])
+  }, [accessCompanyInfo, updateFilterWithSearch, filter?.keyword])
 
   return (
     <>
