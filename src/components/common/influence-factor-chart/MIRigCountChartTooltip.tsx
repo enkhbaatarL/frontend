@@ -3,7 +3,7 @@ import { useMemo, useRef } from 'react'
 
 import DataIcon from './icons/DataIcon'
 
-import { formatPrice } from '@/utils/number'
+import { formatValue } from '@/utils/number'
 
 const ChartToolTipItem = (props: { label: string; value: number; category: string; color: string; minWidth: number }) => {
   const { value, color, minWidth } = props
@@ -19,7 +19,7 @@ const ChartToolTipItem = (props: { label: string; value: number; category: strin
         value
       </Typography>
       <Typography variant="body2SB14" color="gray.90">
-        {formatPrice(value)}
+        {formatValue(value)}
       </Typography>
     </Box>
   )
@@ -45,7 +45,7 @@ export default function MIRigCountChartTooltip({
   minWidth,
   borderBottom,
   borderRight,
-}: MIRigCountChartTooltipProps) {
+}: Readonly<MIRigCountChartTooltipProps>) {
   const tooltipContainerRef = useRef<HTMLElement>(null)
   const position = useMemo(() => {
     let newTop: number = top

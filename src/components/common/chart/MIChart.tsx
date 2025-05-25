@@ -12,7 +12,7 @@ import MIChartTooltip from './MIChartTooltip'
 
 import fillBetweenPlugin from '@/lib/chart/line/plugins/fillBetweenPlugin'
 import crosshairLinePlugin from '@/lib/chart/plugins/crosshairLinePlugin'
-import priceIndicatorPlugin from '@/lib/chart/plugins/priceIndicatorPlugin'
+import priceIndicatorPlugin from '@/lib/chart/plugins/valueIndicatorPlugin'
 import verticalAxisDecoratorPlugin from '@/lib/chart/plugins/verticalAxisDecoratorPlugin'
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
 import { ChartData, ChartType, Indicator } from '@/types/dataDetailChart'
@@ -490,7 +490,9 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
           }}
         />
       </Box>
-      <canvas ref={chartRef} />
+      <Box height={'100%'}>
+        <canvas ref={chartRef} />
+      </Box>
       <MIChartTooltip {...tooltip} />
     </Box>
   )

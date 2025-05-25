@@ -7,7 +7,7 @@ import ForecastErrorIcon from './icons/ForecastErrorIcon'
 import ForecastIcon from './icons/ForecastIcon'
 
 import theme from '@/theming'
-import { formatPrice } from '@/utils/number'
+import { formatValue } from '@/utils/number'
 
 const ChartToolTipItem = (props: { label: string; value: number; category: string; color: string; minWidth: number }) => {
   const { label, value, category, color, minWidth } = props
@@ -35,11 +35,11 @@ const ChartToolTipItem = (props: { label: string; value: number; category: strin
       {category === DATA_CATEGORIES.FORECAST_ERROR ? (
         <Typography variant="body2M14" color={value > 0 ? '#3C8A36' : '#A9141A'}>
           {value > 0 ? '+' : ''}
-          {formatPrice(value)}
+          {formatValue(value)}
         </Typography>
       ) : (
         <Typography variant="body2M14" color="gray.70">
-          {formatPrice(value)}
+          {formatValue(value)}
         </Typography>
       )}
     </Box>
@@ -66,7 +66,7 @@ export default function MIForecastChartTooltip({
   minWidth,
   borderBottom,
   borderRight,
-}: MIForecastChartTooltipProps) {
+}: Readonly<MIForecastChartTooltipProps>) {
   const tooltipContainerRef = useRef<HTMLElement>(null)
   const position = useMemo(() => {
     let newTop: number = top

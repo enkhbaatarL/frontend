@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { ReactNode } from 'react'
 
-import { formatPrice } from '@/utils/number'
+import { formatValue } from '@/utils/number'
 
 const ChartToolTipItem = (props: { label: ReactNode; value: number; color: string }) => {
   const { label, value, color } = props
@@ -12,7 +12,7 @@ const ChartToolTipItem = (props: { label: ReactNode; value: number; color: strin
         {label}
       </Typography>
       <Typography variant="chartToolTipNumber" color={color}>
-        {formatPrice(value)}
+        {formatValue(value)}
       </Typography>
     </Box>
   )
@@ -51,7 +51,7 @@ export default function MIChartTooltip({
         left,
         pointerEvents: 'none',
         padding: '14px',
-        zIndex: 10,
+        zIndex: 1000,
         borderRadius: '4px',
         border: '1px solid #DEE2E6',
         backgroundColor: '#ffffff',
