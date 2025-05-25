@@ -31,7 +31,7 @@ const AdminBoardsNoticeRegistrationPageHeader = ({
   </Flex>
 )
 
-const AdminBoardsNoticeRegistrationlPage = () => {
+const AdminBoardsNoticeRegistrationPage = () => {
   const { setCustomComponent } = useAdminHeader()
   const { showSnackbar } = useSnackbar()
   const navigate = useNavigate()
@@ -160,4 +160,4 @@ const AdminBoardsNoticeRegistrationlPage = () => {
   )
 }
 
-export default AdminBoardsNoticeRegistrationlPage
+export default AdminBoardsNoticeRegistrationPage

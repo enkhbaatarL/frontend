@@ -202,7 +202,7 @@ const AdminTableNoRowsOverlay = ({ noRowMessage, ...props }: HTMLAttributes<HTML
     <Box display="flex" flexDirection="column" rowGap="10px" alignItems="center">
       <ErrorOutlineIcon />
       <Typography variant="body6" color="gray.60">
-        {noRowMessage ?? t('표시할 데이터가 없습니다')}
+        {noRowMessage ?? t('검색 결과가 없습니다.')}
       </Typography>
     </Box>
   </Box>

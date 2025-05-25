@@ -17,12 +17,14 @@ import MIInput from '@/components/common/input/MIInput'
 import MISelect from '@/components/common/select/MISelect'
 import MITabs from '@/components/common/tabs/MITabs'
 import useSnackbar from '@/hooks/useSnackbar'
+import notificationService from '@/service/mi/notification.ts'
 
 interface SettingModalProps {
   open: boolean
   onClose: () => void
   onRegister?: () => void
   isNotification?: boolean
+  goodsDataSourceNo?: number
 }
 
 interface TransactionItem {
@@ -32,111 +34,25 @@ interface TransactionItem {
   numberData: number
   status: 'increase' | 'decrease'
   value: string
+  unit: string
+  unit2: string
+  description: string
 }
 
-const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotification = false, onRegister }) => {
-  const [transactions, setTransactions] = useState<TransactionItem[]>([
-    {
-      id: '1',
-      title: '번호롤',
-      dataName: '선택한정형데이터명',
-      numberData: 10,
-      status: 'increase',
-      value: '상승',
-    },
-    {
-      id: '2',
-      title: '번호롤',
-      dataName: '선택한정형데이터명',
-      numberData: 10,
-      status: 'increase',
-      value: '상승',
-    },
-    {
-      id: '3',
-      title: '번호롤',
-      dataName: '선택한정형데이터명',
-      numberData: 20,
-      status: 'increase',
-      value: '상승',
-    },
-    {
-      id: '4',
-      title: '번호롤',
-      dataName: '선택한정형데이터명',
-      numberData: 3,
-      status: 'decrease',
-      value: '하락',
-    },
-    {
-      id: '5',
-      title: '번호롤',
-      dataName: '선택한정형데이터명',
-      numberData: 5,
-      status: 'decrease',
-      value: '하락',
-    },
-    {
-      id: '6',
-      title: '번호롤',
-      dataName: '선택한정형데이터명',
-      numberData: 20,
-      status: 'decrease',
-      value: '하락',
-    },
-    {
-      id: '7',
-      title: '번호롤',
-      dataName: '선택한정형데이터명',
-      numberData: 20,
-      status: 'decrease',
-      value: '하락',
-    },
-    {
-      id: '8',
-      title: '번호롤',
-      dataName: '선택한정형데이터명',
-      numberData: 20,
-      status: 'decrease',
-      value: '하락',
-    },
-    {
-      id: '9',
-      title: '번호롤',
-      dataName: '선택한정형데이터명',
-      numberData: 20,
-      status: 'decrease',
-      value: '하락',
-    },
-    {
-      id: '10',
-      title: '번호롤',
-      dataName: '선택한정형데이터명',
-      numberData: 20,
-      status: 'decrease',
-      value: '하락',
-    },
-  ])
-  const [hideFooter, setHideFooter] = useState(false)
-  const { showSnackbar } = useSnackbar()
-  const handleDelete = (id: string) => {
-    setTransactions((prevTransactions) => prevTransactions.filter((transaction) => transaction.id !== id))
-    showSnackbar('삭제되었습니다.', { variant: 'success' })
-  }
-  const handleClose = () => {
-    onClose()
-    setHideFooter(false)
-  }
-  const handleRegister = () => {
-    onRegister?.()
-    handleClose()
-  }
+interface NotificationSettingItem {
+  userGoodsNotificationSettingNo: number
+  criticalValueSettingUnitNm: string
+  goodsDataSourceNm: string
+  criticalValueSettingVol: number
+  notificationCriticalValueSeparateCd: string
+}
 
-  useEffect(() => {
-    if (open) {
-      setHideFooter(false)
-    }
-  }, [open])
+const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotification = false, onRegister, goodsDataSourceNo }) => {
+  const [transactions, setTransactions] = useState<TransactionItem[]>([])
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false)
+  const [hideFooter, setHideFooter] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { showSnackbar } = useSnackbar()
 
   const form = useForm({
     defaultValues: {
@@ -166,7 +82,157 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       },
     },
   })
+
+  const transformNotificationData = (data: NotificationSettingItem[]): TransactionItem[] =>
+    data.map((item) => {
+      const isRate = ['INCRATE', 'DECRATE'].includes(item.notificationCriticalValueSeparateCd)
+      const isIncrease = ['INCRATE', 'UPPER'].includes(item.notificationCriticalValueSeparateCd)
+
+      let description = ''
+      switch (item.notificationCriticalValueSeparateCd) {
+        case 'UPPER':
+          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 이상으로 상승`
+          break
+        case 'LOWER':
+          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 이하로 하락`
+          break
+        case 'INCRATE':
+          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 상승률 초과`
+          break
+        case 'DECRATE':
+          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 하락률 초과`
+          break
+        default:
+          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm})`
+      }
+
+      return {
+        id: item.userGoodsNotificationSettingNo.toString(),
+        title: isRate ? '변동률' : '임계값',
+        dataName: item.goodsDataSourceNm,
+        numberData: item.criticalValueSettingVol,
+        status: isIncrease ? 'increase' : 'decrease',
+        value: isIncrease ? '상승' : '하락',
+        unit: item.criticalValueSettingUnitNm,
+        unit2: isRate ? '초과' : isIncrease ? '이상' : '이하',
+        description,
+      }
+    })
+
+  const handleDelete = async (id: string) => {
+    if (!goodsDataSourceNo) {
+      showSnackbar('상품 데이터 소스 정보가 없습니다.', { variant: 'error' })
+      return
+    }
+
+    try {
+      const response = await notificationService.deleteNotificationSetting(goodsDataSourceNo, id)
+
+      if (response.status) {
+        setTransactions((prevTransactions) => prevTransactions.filter((transaction) => transaction.id !== id))
+        showSnackbar('삭제되었습니다.', { variant: 'success' })
+      } else {
+        showSnackbar(response.message || '알림 삭제에 실패했습니다.', { variant: 'error' })
+      }
+    } catch (error) {
+      console.error('알림 삭제 오류:', error)
+      showSnackbar('알림 삭제 중 오류가 발생했습니다.', { variant: 'error' })
+    }
+  }
+
+  const handleClose = () => {
+    onClose()
+    setHideFooter(false)
+  }
+
+  const fetchNotificationSettings = async () => {
+    if (!goodsDataSourceNo) return
+
+    try {
+      setIsLoadingTransactions(true)
+      const response = await notificationService.getGoodsDataNotificationSettingList(goodsDataSourceNo, {
+        page: 1,
+        size: 20,
+      })
+
+      if (response.detail) {
+        const transformedData = transformNotificationData(response.detail)
+        setTransactions(transformedData)
+      }
+    } catch (error) {
+      console.error('알림 설정 목록 조회 오류:', error)
+      showSnackbar('알림 설정 목록을 불러오는데 실패했습니다.', { variant: 'error' })
+    } finally {
+      setIsLoadingTransactions(false)
+    }
+  }
+
+  const handleRegister = async () => {
+    if (!goodsDataSourceNo) {
+      showSnackbar('상품 데이터 소스 정보가 없습니다.', { variant: 'error' })
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+
+      const formValues = form.state.values
+
+      // notificationCriticalValueSeparateCd 값 결정
+      let notificationCriticalValueSeparateCd: string
+
+      if (formValues.standard === 'rate' && formValues.status === 'rise') {
+        notificationCriticalValueSeparateCd = 'INCRATE'
+      } else if (formValues.standard === 'rate' && formValues.status === 'fall') {
+        notificationCriticalValueSeparateCd = 'DECRATE'
+      } else if (formValues.standard === 'threshold' && formValues.status === 'rise') {
+        notificationCriticalValueSeparateCd = 'UPPER'
+      } else if (formValues.standard === 'threshold' && formValues.status === 'fall') {
+        notificationCriticalValueSeparateCd = 'LOWER'
+      } else {
+        showSnackbar('알림 설정 값이 올바르지 않습니다.', { variant: 'error' })
+        return
+      }
+
+      const requestBody = {
+        notificationCriticalValueSeparateCd,
+        criticalValueSettingVol: Number(formValues.ratio),
+      }
+
+      const response = await notificationService.registerNotificationSetting(goodsDataSourceNo, requestBody)
+
+      if (response.status) {
+        showSnackbar('등록되었습니다.', { variant: 'success' })
+        onRegister?.()
+
+        // 등록 후 목록 새로고침
+        await fetchNotificationSettings()
+
+        handleClose()
+
+        // 폼 초기화
+        form.reset()
+      } else {
+        showSnackbar(response.message || '알림 등록에 실패했습니다.', { variant: 'error' })
+      }
+    } catch (error) {
+      console.error('알림 등록 오류:', error)
+      showSnackbar('알림 등록 중 오류가 발생했습니다.', { variant: 'error' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  useEffect(() => {
+    if (open) {
+      setHideFooter(false)
+      // 모달이 열릴 때 알림 설정 목록 조회
+      fetchNotificationSettings()
+    }
+  }, [open, goodsDataSourceNo])
+
   const formCanSubmit = useStore(form.store, (state) => state.isDirty && state.canSubmit)
+
   const tabsData = [
     {
       label: '알람 설정',
@@ -235,7 +301,13 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       ),
       content: (
         <>
-          {transactions && transactions.length === 0 ? (
+          {isLoadingTransactions ? (
+            <Box display={'flex'} alignItems={'center'} justifyContent={'center'} height={460}>
+              <Typography variant="body3SB12" color="gray.60">
+                로딩 중...
+              </Typography>
+            </Box>
+          ) : transactions && transactions.length === 0 ? (
             <Box
               display={'flex'}
               borderBottom={'1px solid'}
@@ -276,7 +348,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
                         <MIChip label={item.value} color={item.status === 'increase' ? 'green-climb' : 'red-decline'} size={'h20'} />
                       </Grid>
                       <Typography variant="body2R14" component="div" mt={1} color={'gray.70'}>
-                        ({item.dataName})이 ({item.numberData}%) 상승률 초과
+                        {item.description}
                       </Typography>
                     </Box>
                     <MIButton
@@ -309,7 +381,13 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       hideFooter={hideFooter}
       actions={[
         { label: '취소', variant: 'outlined', color: 'gray', onClick: handleClose },
-        { label: '등록', disabled: !formCanSubmit, variant: 'filled', color: 'primary', onClick: handleRegister },
+        {
+          label: '등록',
+          disabled: !formCanSubmit || isSubmitting,
+          variant: 'filled',
+          color: 'primary',
+          onClick: handleRegister,
+        },
       ]}
     >
       <MITabs onChange={(value) => setHideFooter(!!value)} arrayItem={visibleTabs} />

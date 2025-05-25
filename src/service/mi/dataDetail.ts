@@ -25,6 +25,7 @@ export interface IProductDataUnstructuredData {
   extension: string
   isPdfViewable: boolean
   isDownloadable: boolean
+  fileSize: number
   auditInfo: IAuditInfo
 }
 export interface IProductDataStructuredData {
