@@ -1,14 +1,24 @@
+import { Box } from '@mui/material'
 import { ChartType, Plugin, Chart, Point, FinancialDataPoint } from 'chart.js/auto'
 import dayjs from 'dayjs'
+import { ReactNode } from 'react'
+
 // EmptyObject type matches what Chart.js actually passes
 type EmptyObject = Record<string, never>
 
 interface CrosshairLinePlugin extends Plugin {
   id: string
   mousePosition: { x: number; y: number } | null
-  tooltipContent: Record<string, { label?: string; value?: number; color?: string; date: string }>
+  tooltipContent: Record<string, { label?: ReactNode; value?: number; color?: string; date: string }>
   afterDraw(chart: Chart<ChartType>, args: EmptyObject, options: unknown): void
 }
+
+const LegendIcon = () => (
+  <svg width="22" height="23" viewBox="0 0 22 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 11.5L20 11.5" stroke="#40597A" strokeWidth="2" strokeLinecap="round" />
+    <circle cx="11" cy="11.5" r="3.25" fill="white" stroke="#40597A" strokeWidth="1.5" />
+  </svg>
+)
 
 const crosshairLinePlugin: CrosshairLinePlugin = {
   id: 'crosshairLinePlugin',
@@ -35,7 +45,7 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
           y: event.clientY - rect.top,
         }
 
-        const sameIndexPoints = chart.getElementsAtEventForMode(event, 'index', { axis: 'x', intersect: false }, false)
+        const sameIndexPoints = chart.getElementsAtEventForMode(event, 'nearest', { axis: 'x', intersect: false }, false)
 
         const mainDataPoint = sameIndexPoints[0]
         const comparisonDataPoints = sameIndexPoints.slice(1)
@@ -46,12 +56,21 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
           comparisonDataPoints.forEach((point) => {
             const ds = chart.data.datasets[point.datasetIndex]
 
-            if (ds?.label && !['Upper BB', 'Middle BB', 'Lower BB'].includes(ds.label)) {
+            if (
+              ds?.label &&
+              ds.borderColor !== 'transparent'
+              // && !['Upper BB', 'Middle BB', 'Lower BB'].includes(ds.label)
+            ) {
               const key = `${ds.label}_${point.datasetIndex}`
               plugin.tooltipContent[key] = {
-                label: ds.label,
+                label: (
+                  <Box display="flex" alignItems="center" height="20px" gap="2px">
+                    <LegendIcon />
+                    <Box mt="1px">{ds.label}</Box>
+                  </Box>
+                ),
                 color: ds.borderColor as string,
-                value: (ds?.data[point.index || 0] as Point).y || (ds?.data[point.index || 0] as FinancialDataPoint).c,
+                value: (ds?.data[point.index || 0] as Point).y ?? (ds?.data[point.index || 0] as FinancialDataPoint).c,
                 date: dayjs((ds?.data[point.index || 0] as Point).x).format('YYYY-MM-DD'),
               }
             }
@@ -60,10 +79,15 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
 
         if (mainDataPoint) {
           plugin.tooltipContent.mainData = {
-            label: chart.data.datasets[mainDataPoint.datasetIndex].label,
+            label: (
+              <Box display="flex" alignItems="center" height="20px" gap="2px">
+                <LegendIcon />
+                <Box mt="1px">{chart.data.datasets[mainDataPoint.datasetIndex].label}</Box>
+              </Box>
+            ),
             color: chart.data.datasets[mainDataPoint.datasetIndex].borderColor as string,
             value:
-              (chart.data.datasets[mainDataPoint.datasetIndex]?.data[mainDataPoint.index || 0] as Point).y ||
+              (chart.data.datasets[mainDataPoint.datasetIndex]?.data[mainDataPoint.index || 0] as Point).y ??
               (chart.data.datasets[mainDataPoint.datasetIndex]?.data[mainDataPoint.index || 0] as FinancialDataPoint).c,
             date: dayjs((chart.data.datasets[mainDataPoint.datasetIndex]?.data[mainDataPoint.index || 0] as Point).x).format('YYYY-MM-DD'),
           }
@@ -99,7 +123,11 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
     options: {
       onPointerMove: (context: {
         chart: Chart
-        tooltip: { x: number; y: number; content: Record<string, { label?: string; value?: number; color?: string; date: string }> } | null
+        tooltip: {
+          x: number
+          y: number
+          content: Record<string, { label?: ReactNode; value?: number; color?: string; date: string }>
+        } | null
       }) => void
     },
   ) {

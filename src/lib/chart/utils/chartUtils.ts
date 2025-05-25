@@ -10,6 +10,12 @@ export const getDatasetMetaData = (chart: Chart<'line'>, label: string) => {
   return chart.getDatasetMeta(targetIndex)
 }
 
+export const getDatasetBorderColor = (chart: Chart<'line'>, label: string) => {
+  const { datasets } = chart.data
+
+  return datasets.find((dataset) => dataset.label === label)?.borderColor
+}
+
 export const generateYAxis = (params: {
   unit: string
   position: 'left' | 'right'

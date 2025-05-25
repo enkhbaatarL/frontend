@@ -1,6 +1,6 @@
 import { Chart, Plugin, Point } from 'chart.js'
 
-import { getDatasetMetaData } from '@/lib/chart/utils/chartUtils'
+import { getDatasetBorderColor, getDatasetMetaData } from '@/lib/chart/utils/chartUtils'
 
 interface ChartMeta {
   data: Point[]
@@ -45,7 +45,7 @@ const fillBetweenPlugin: Plugin<'line'> = {
     const metaData2 = getDatasetMetaData(chart, options.labels[1])
 
     if (!metaData1 || !metaData2) return
-    if (metaData1.hidden || metaData2.hidden) return
+    if ([getDatasetBorderColor(chart, options.labels[0]), getDatasetBorderColor(chart, options.labels[1])].includes('transparent')) return
 
     const fillColor = options.fillColor ?? 'rgba(0, 0, 255, 0.3)'
 

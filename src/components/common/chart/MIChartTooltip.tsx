@@ -1,17 +1,18 @@
 import { Box, Typography } from '@mui/material'
+import { ReactNode } from 'react'
 
-import { formatPrice } from '@/utils/number'
+import { formatValue } from '@/utils/number'
 
-const ChartToolTipItem = (props: { label: string; value: number; color: string }) => {
+const ChartToolTipItem = (props: { label: ReactNode; value: number; color: string }) => {
   const { label, value, color } = props
 
   return (
-    <Box sx={{ minWidth: '152px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Box sx={{ minWidth: '152px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px' }}>
       <Typography variant="body3M12" color="gray.60">
         {label}
       </Typography>
       <Typography variant="chartToolTipNumber" color={color}>
-        {formatPrice(value)}
+        {formatValue(value)}
       </Typography>
     </Box>
   )
@@ -50,7 +51,7 @@ export default function MIChartTooltip({
         left,
         pointerEvents: 'none',
         padding: '14px',
-        zIndex: 10,
+        zIndex: 1000,
         borderRadius: '4px',
         border: '1px solid #DEE2E6',
         backgroundColor: '#ffffff',
@@ -64,14 +65,14 @@ export default function MIChartTooltip({
           </Typography>
         </Box>
       )}
-      {mainData?.value && <ChartToolTipItem label={mainData.label as string} value={mainData.value} color="common.black" />}
-      {MA5?.value && <ChartToolTipItem label="MA5" value={MA5.value} color={MA5.color as string} />}
-      {MA20?.value && <ChartToolTipItem label="MA20" value={MA20.value} color={MA20.color as string} />}
-      {MA60?.value && <ChartToolTipItem label="MA60" value={MA60.value} color={MA60.color as string} />}
-      {MA120?.value && <ChartToolTipItem label="MA120" value={MA120.value} color={MA120.color as string} />}
+      {mainData?.value !== undefined && <ChartToolTipItem label={mainData.label as string} value={mainData.value} color="common.black" />}
+      {MA5?.value !== undefined && <ChartToolTipItem label="MA5" value={MA5.value} color={MA5.color as string} />}
+      {MA20?.value !== undefined && <ChartToolTipItem label="MA20" value={MA20.value} color={MA20.color as string} />}
+      {MA60?.value !== undefined && <ChartToolTipItem label="MA60" value={MA60.value} color={MA60.color as string} />}
+      {MA120?.value !== undefined && <ChartToolTipItem label="MA120" value={MA120.value} color={MA120.color as string} />}
 
       {comparisonItems.map((item, idx) => {
-        if (!item?.value) return null
+        if (item?.value === undefined) return null
         return <ChartToolTipItem key={idx} label={item.label as string} value={item.value} color={item.color as string} />
       })}
     </Box>
