@@ -7,7 +7,7 @@ const ChartToolTipItem = (props: { label: ReactNode; value: number; color: strin
   const { label, value, color } = props
 
   return (
-    <Box sx={{ minWidth: '152px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Box sx={{ minWidth: '152px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px' }}>
       <Typography variant="body3M12" color="gray.60">
         {label}
       </Typography>

@@ -93,11 +93,28 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
   const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
   const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
 
-  const mainDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'main'), [mainData?.data?.series])
-  const closeDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'close'), [mainData?.data?.series])
-  const openDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'open'), [mainData?.data?.series])
-  const highDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'high'), [mainData?.data?.series])
-  const lowDataSeries = useMemo(() => mainData?.data?.series.find((series) => series.seriesId === 'low'), [mainData?.data?.series])
+  const {
+    mainDataSeries,
+    closeDataSeries,
+    openDataSeries,
+    highDataSeries,
+    lowDataSeries,
+    volumeDataSeries, // 거래량
+    refDataSeries,
+  } = useMemo(() => {
+    const series = mainData?.data?.series || []
+    const excludeSeriesIds = ['main', 'close', 'open', 'high', 'low', 'volume']
+
+    return {
+      mainDataSeries: series.find((s) => s.seriesId === 'main'),
+      closeDataSeries: series.find((s) => s.seriesId === 'close'),
+      openDataSeries: series.find((s) => s.seriesId === 'open'),
+      highDataSeries: series.find((s) => s.seriesId === 'high'),
+      lowDataSeries: series.find((s) => s.seriesId === 'low'),
+      volumeDataSeries: series.find((s) => s.seriesId === 'volume'),
+      refDataSeries: series.filter((s) => !excludeSeriesIds.includes(s.seriesId)),
+    }
+  }, [mainData?.data?.series])
 
   const mainDatasets = useMemo(() => {
     if (chartType === ChartType.LINE) {
@@ -121,6 +138,36 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
               isMain: true,
             },
           },
+          ...refDataSeries.map((series) => ({
+            label: series.label,
+            data: series.values.map((value, index) => ({
+              x: dayjs(mainData?.data?.timestamps[index]).valueOf(),
+              y: value ?? null,
+            })),
+            type: 'line',
+            borderWidth: 0,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.1,
+            yAxisID: 'y',
+          })),
+          ...(volumeDataSeries
+            ? [
+              {
+                label: volumeDataSeries.label,
+                data: volumeDataSeries.values.map((value, index) => ({
+                  x: dayjs(mainData?.data?.timestamps[index]).valueOf(),
+                  y: value ?? null,
+                })),
+                type: 'line',
+                borderWidth: 0,
+                pointRadius: 0,
+                fill: false,
+                tension: 0.1,
+                yAxisID: 'y',
+              },
+            ]
+            : []),
         ]
       }
 
