@@ -1,5 +1,6 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -129,7 +130,8 @@ const MarketDataPage = () => {
               <Grid key={`market-data-chart-${index}`} size={index <= 1 ? 6 : 3}>
                 <MarketDataChart data={chartData} size={index <= 1 ? 'large' : 'small'} locked={!chartData.isPermitted} />
               </Grid>
-            )) ?? (
+            ))}
+            {normalizedChartData?.length === 0 && (
               <Grid size={3}>
                 <Typography>No results found</Typography>
               </Grid>
@@ -240,14 +242,14 @@ const MarketDataPage = () => {
                       </Typography>
                       <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
                       <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
-                        {item.modifyDt}
+                        {dayjs(item.recentViewedDt).format('MMM DD-YY')}
                       </Typography>
                     </Grid>
                   </Box>
                 ))
               ) : (
                 <Typography color="gray.60" textAlign="center" py={4} component="div" variant="body2">
-                  최근 조회한 데이터가 없습니다.
+                  No results found
                 </Typography>
               )}
             </Box>
