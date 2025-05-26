@@ -6,6 +6,8 @@ import KeyboardArrowUpIcon from '../icons/KeyboardArrowUpIcon'
 
 import theme from '@/theming'
 
+const FOLDING_REFERENCE_POINT = 3
+
 export default function MIChartLegendToggle(
   props: Readonly<{ labels: string[]; colors?: string[]; onChange?: (index: number, isShow: boolean) => void }>,
 ) {
@@ -16,7 +18,7 @@ export default function MIChartLegendToggle(
   }
 
   const showedItems = useMemo(() => {
-    if (props.labels.length <= 3) return props.labels
+    if (props.labels.length <= FOLDING_REFERENCE_POINT) return props.labels
 
     return isOpen ? props.labels : props.labels.slice(0, 1)
   }, [isOpen, props.labels])
@@ -56,7 +58,7 @@ export default function MIChartLegendToggle(
           </Box>
         ))}
       </Box>
-      {props.labels.length > 3 && (
+      {props.labels.length > FOLDING_REFERENCE_POINT && (
         <Box
           onClick={toggleExpand}
           sx={{

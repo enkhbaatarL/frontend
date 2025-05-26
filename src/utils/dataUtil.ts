@@ -23,3 +23,12 @@ export const formatFileSize = (bytes: number, options: { fixedUnit?: (typeof uni
 
   return `${(bytes / Math.pow(1024, unitIndex)).toFixed(fixedDecimal)} ${unit[unitIndex]}`
 }
+
+export const removeObjectEmptyValues = <T extends object>(obj: T): Partial<T> =>
+  Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => {
+      if (value === '' || value === null || value === undefined) return false
+      if (Array.isArray(value) && value.length === 0) return false
+      return true
+    }),
+  ) as Partial<T>

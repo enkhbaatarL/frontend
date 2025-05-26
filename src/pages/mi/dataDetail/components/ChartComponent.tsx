@@ -1,12 +1,12 @@
 import LocalSeeOutlinedIcon from '@mui/icons-material/LocalSeeOutlined'
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
-import { Box, Grid2 as Grid, Stack, Switch, Tooltip, Typography } from '@mui/material'
+import { Box, CircularProgress, Grid2 as Grid, Stack, Switch, Tooltip, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
-import MIChart from '@/components/common/chart/MIChart'
+import MIChart, { DisplayDataInfo } from '@/components/common/chart/MIChart'
 import MIChartController from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
@@ -22,6 +22,8 @@ interface ChartComponentProps {
   setGoodsDataSourceNo: Dispatch<SetStateAction<number | undefined>>
   structuredDataList?: IProductDataStructuredData[]
   modifyDt?: string
+  goodsDataNm?: string
+  isDownloadable?: boolean
 }
 
 const ChartComponent = ({
@@ -31,9 +33,24 @@ const ChartComponent = ({
   setGoodsDataSourceNo,
   structuredDataList,
   modifyDt,
+  goodsDataNm,
+  isDownloadable,
 }: ChartComponentProps) => {
+  const miChartRef = useRef<HTMLCanvasElement | null>(null)
+
   const [chartType, setChartType] = useState<ChartType>(ChartType.LINE)
   const [isInitialState, setIsInitialState] = useState(true)
+
+  const [displayDataInfo, setDisplayDataInfo] = useState<DisplayDataInfo>({
+    BB: true,
+    MA: {
+      MA5: true,
+      MA20: true,
+      MA60: true,
+      MA120: true,
+    },
+  })
+
   const [searchFilter, setSearchFilter] = useState<IProductDataStructuredChartRequest>({
     range: ChartRange.MONTH,
   })
@@ -53,7 +70,7 @@ const ChartComponent = ({
     [selectedDataSource],
   )
 
-  const { data: chartData } = useQuery({
+  const { data: chartData, isLoading } = useQuery({
     queryKey: ['productDataStructuredChartData', goodsNo, goodsDataNo, goodsDataSourceNo],
     queryFn: () => dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, goodsDataSourceNo!, {}),
     refetchOnWindowFocus: false,
@@ -101,7 +118,19 @@ const ChartComponent = ({
 
   return (
     <>
-      <Box borderRadius={1} maxWidth={'100%'} border={'1px solid'} borderColor={'gray.30'}>
+      <Box borderRadius={1} maxWidth={'100%'} border={'1px solid'} borderColor={'gray.30'} sx={{ position: 'relative' }}>
+        {isLoading && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1,
+            }}
+          />
+        )}
         {/*Chart header*/}
         <Grid
           px={3}
@@ -142,6 +171,28 @@ const ChartComponent = ({
             type={'outlined'}
             contentType={'icon'}
             startIcon={<LocalSeeOutlinedIcon fontSize={'small'} />}
+            onClick={() => {
+              if (!miChartRef.current) return
+
+              const canvas = miChartRef.current
+
+              const tempCanvas = document.createElement('canvas')
+              tempCanvas.width = canvas.width
+              tempCanvas.height = canvas.height
+              const tempCtx = tempCanvas.getContext('2d')
+
+              if (!tempCtx) return
+
+              tempCtx.fillStyle = '#ffffff'
+              tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
+              tempCtx.drawImage(canvas, 0, 0)
+
+              const link = document.createElement('a')
+              link.download = `${goodsDataNm ?? 'chart'}-${chartData?.metadata.currentUnitCd}-${dayjs().format('YYYYMMDD')}.png`
+              link.href = tempCanvas.toDataURL('image/png')
+              link.click()
+            }}
+            disabled={!isDownloadable}
           />
 
           <Tooltip title={'그래프 설정 초기화'}>
@@ -169,20 +220,76 @@ const ChartComponent = ({
           <MIChartController
             chartType={chartType}
             setChartType={setChartType}
+            isCandlestick={chartData?.mainChart.chartType === ChartType.CANDLE}
             searchFilter={searchFilter}
             setSearchFilter={setSearchFilter}
             unitList={chartData?.metadata.changeableUnitCd ?? []}
-          />
-          <MIChart
-            height={'100%'}
-            chartType={chartType}
-            mainData={{
-              data: chartData?.mainChart,
-              unit: chartData?.mainChart.unitCd ?? '',
+            displayDataInfo={displayDataInfo}
+            onDisplayDataInfoChange={({ label, isShow }) => {
+              if (label === 'BB') {
+                setDisplayDataInfo((prev) => ({
+                  ...prev,
+                  BB: isShow,
+                }))
+              } else if (label === 'MA') {
+                setDisplayDataInfo((prev) => ({
+                  ...prev,
+                  MA: {
+                    MA5: isShow,
+                    MA20: isShow,
+                    MA60: isShow,
+                    MA120: isShow,
+                  },
+                }))
+              } else {
+                setDisplayDataInfo((prev) => {
+                  const updatedMA = {
+                    ...prev.MA,
+                    [label]: isShow,
+                  }
+
+                  const isAnyMAVisible = Object.values(updatedMA).some((value) => value)
+
+                  return {
+                    ...prev,
+                    MA: updatedMA,
+                    ...(isAnyMAVisible ? {} : { BB: prev.BB }),
+                  }
+                })
+              }
             }}
-            indicators={chartData?.indicators}
-            comparisonCharts={chartData?.comparisonCharts}
           />
+          <Box height={'100%'}>
+            {isLoading ? (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CircularProgress sx={{ color: 'gray.40' }} />
+              </Box>
+            ) : (
+              <MIChart
+                ref={miChartRef}
+                height={'100%'}
+                chartType={chartType}
+                mainData={{
+                  data: chartData?.mainChart,
+                  unit: chartData?.mainChart.unitCd ?? '',
+                }}
+                indicators={chartData?.indicators}
+                comparisonCharts={chartData?.comparisonCharts}
+                displayDataInfo={displayDataInfo}
+              />
+            )}
+          </Box>
         </Box>
 
         {/*Chart footer*/}

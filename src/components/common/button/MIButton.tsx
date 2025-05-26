@@ -253,7 +253,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
             whiteSpace: 'nowrap',
             transition: 'all 0.3s',
             borderRadius: '4px',
-            cursor: 'pointer',
+            cursor: !disabled ? 'pointer' : 'default',
             fontFamily: theme.typography.fontFamily,
             ...styleBaseSize,
             ...styleBaseType[type],

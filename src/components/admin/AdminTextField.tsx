@@ -39,7 +39,13 @@ const AdminTextField = ({
         {labelSub}
       </Typography>
     )}
-    <TextField variant="outlined" hiddenLabel placeholder={placeholder ?? t('입력하세요')} {...props} />
+    <TextField
+      variant="outlined"
+      hiddenLabel
+      placeholder={placeholder ?? t('입력하세요')}
+      {...props}
+      value={'value' in props ? (props.value ?? '') : undefined}
+    />
   </FormControl>
 )
 

@@ -33,7 +33,7 @@ const PolicyPage = () => {
   const content = useMemo(() => DOMPurify.sanitize(privacyPolicyDetail?.poltacCntt ?? ''), [privacyPolicyDetail?.poltacCntt])
 
   return (
-    <>
+    <Box maxWidth="1380px" margin="auto" paddingX={7.5}>
       <Grid flex={1} justifyContent="space-between" container pt={10} px={7.5}>
         <Typography color="gray.90" component="div" variant="heading2">
           개인정보 처리방침
@@ -49,7 +49,7 @@ const PolicyPage = () => {
       <Box className="contentHtml" padding={7.5} component="div">
         {parse(content)}
       </Box>
-    </>
+    </Box>
   )
 }
 

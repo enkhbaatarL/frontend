@@ -1,7 +1,10 @@
-import { Box, CircularProgress } from '@mui/material'
-import Chart, { FinancialDataPoint, Tooltip } from 'chart.js/auto'
+import { Box } from '@mui/material'
+import { Chart, Point, Tooltip } from 'chart.js'
+import { FinancialDataPoint } from 'chart.js/auto'
 import { CandlestickController, CandlestickElement, OhlcController, OhlcElement } from 'chartjs-chart-financial'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import zoomPlugin from 'chartjs-plugin-zoom'
+import dayjs from 'dayjs'
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import '@/lib/chart/adapterDayjs'
 import MIChartLegendToggle from './MIChartLegendToggle'
@@ -9,11 +12,22 @@ import MIChartTooltip from './MIChartTooltip'
 
 import fillBetweenPlugin from '@/lib/chart/line/plugins/fillBetweenPlugin'
 import crosshairLinePlugin from '@/lib/chart/plugins/crosshairLinePlugin'
-import priceIndicatorPlugin from '@/lib/chart/plugins/priceIndicatorPlugin'
+import priceIndicatorPlugin from '@/lib/chart/plugins/valueIndicatorPlugin'
 import verticalAxisDecoratorPlugin from '@/lib/chart/plugins/verticalAxisDecoratorPlugin'
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
-import { ChartType, ChartData, Indicator } from '@/types/dataDetailChart'
+import { ChartData, ChartType, Indicator } from '@/types/dataDetailChart'
 import { disableContextMenu } from '@/utils/mouse'
+
+export interface DisplayDataInfo {
+  BB: boolean
+  MA: {
+    [key: string]: boolean
+    MA5: boolean
+    MA20: boolean
+    MA60: boolean
+    MA120: boolean
+  }
+}
 
 interface MIChartProps {
   mainData: {
@@ -22,13 +36,14 @@ interface MIChartProps {
   }
   indicators?: Indicator[]
   comparisonCharts?: ChartData[]
+  displayDataInfo: DisplayDataInfo
   width?: string | number
   height?: string | number
   interval?: 'day' | 'month' | 'year'
   chartType?: ChartType
 }
 
-Chart.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement)
+Chart.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement, zoomPlugin)
 
 Tooltip.positioners.pointerPositioner = function (_elements, eventPosition) {
   return {
@@ -41,7 +56,7 @@ const maColors: {
   [key: string]: string
 } = {
   ma_5: '#2A8D3E',
-  ma_20: '#DF4B4A',
+  ma_20: '#D6336C',
   ma_60: '#EB670F',
   ma_120: '#7451DD',
 }
@@ -71,21 +86,250 @@ const bbLabels: {
   bb_lower: 'Lower BB',
 }
 
-export default function MIChart(props: Readonly<MIChartProps>) {
+const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, ref) => {
   const { height, interval = 'day', mainData, chartType = ChartType.LINE, indicators = [], comparisonCharts = [] } = props
   const chartRef = useRef<HTMLCanvasElement>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [chartInstance, setChartInstance] = useState<Chart<
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any,
-    | FinancialDataPoint[]
-    | {
-        x: number | string
-        y: number | null
-      }[],
-    unknown
-  > | null>(null)
+  const [chartInstance, setChartInstance] = useState<Chart | null>(null)
   const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
+  const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
+
+  const {
+    mainDataSeries,
+    closeDataSeries,
+    openDataSeries,
+    highDataSeries,
+    lowDataSeries,
+    volumeDataSeries, // 거래량
+    refDataSeries,
+  } = useMemo(() => {
+    const series = mainData?.data?.series || []
+    const excludeSeriesIds = ['main', 'close', 'open', 'high', 'low', 'volume']
+
+    return {
+      mainDataSeries: series.find((s) => s.seriesId === 'main'),
+      closeDataSeries: series.find((s) => s.seriesId === 'close'),
+      openDataSeries: series.find((s) => s.seriesId === 'open'),
+      highDataSeries: series.find((s) => s.seriesId === 'high'),
+      lowDataSeries: series.find((s) => s.seriesId === 'low'),
+      volumeDataSeries: series.find((s) => s.seriesId === 'volume'),
+      refDataSeries: series.filter((s) => !excludeSeriesIds.includes(s.seriesId)),
+    }
+  }, [mainData?.data?.series])
+
+  const mainDatasets = useMemo(() => {
+    if (chartType === ChartType.LINE) {
+      if (mainData?.data?.chartType === ChartType.LINE) {
+        return [
+          {
+            label: mainDataSeries?.label ?? '',
+            data:
+              mainDataSeries?.values.map((value, index) => ({
+                x: dayjs(mainData?.data?.timestamps[index]).valueOf(),
+                y: value ?? null,
+              })) ?? [],
+            type: 'line',
+            borderColor: '#2F62A3',
+            borderWidth: 3,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.1,
+            yAxisID: 'y',
+            metadata: {
+              isMain: true,
+            },
+          },
+          ...refDataSeries.map((series) => ({
+            label: series.label,
+            data: series.values.map((value, index) => ({
+              x: dayjs(mainData?.data?.timestamps[index]).valueOf(),
+              y: value ?? null,
+            })),
+            type: 'line',
+            borderWidth: 0,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.1,
+            yAxisID: 'y',
+          })),
+          ...(volumeDataSeries
+            ? [
+              {
+                label: volumeDataSeries.label,
+                data: volumeDataSeries.values.map((value, index) => ({
+                  x: dayjs(mainData?.data?.timestamps[index]).valueOf(),
+                  y: value ?? null,
+                })),
+                type: 'line',
+                borderWidth: 0,
+                pointRadius: 0,
+                fill: false,
+                tension: 0.1,
+                yAxisID: 'y',
+              },
+            ]
+            : []),
+        ]
+      }
+
+      if (mainData?.data?.chartType === ChartType.CANDLE) {
+        return [closeDataSeries, openDataSeries, highDataSeries, lowDataSeries].map((series, index) => ({
+          label: series?.label ?? '',
+          data:
+            series?.values.map((value, index) => ({
+              x: dayjs(mainData?.data?.timestamps[index]).valueOf(),
+              y: value ?? null,
+            })) ?? [],
+          type: 'line',
+          borderColor: ['#2F62A3', '#498B47', '#CC4D50', '#5a5a5a'][index],
+          borderWidth: series?.seriesId === 'close' ? 3 : 0,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.1,
+          yAxisID: 'y',
+          metadata: {
+            isMain: true,
+          },
+        }))
+      }
+    }
+
+    if (chartType === ChartType.CANDLE) {
+      return [
+        {
+          label: closeDataSeries?.label ?? '',
+          data:
+            closeDataSeries?.values.map((value, index) => ({
+              x: dayjs(mainData?.data?.timestamps[index]).valueOf(),
+              c: value,
+              o: openDataSeries?.values[index] ?? 0,
+              h: highDataSeries?.values[index] ?? 0,
+              l: lowDataSeries?.values[index] ?? 0,
+            })) ?? [],
+          type: 'candlestick',
+          colors: {
+            up: '#498B47',
+            down: '#CC4D50',
+            unchanged: '#5a5a5a',
+          },
+          borderColors: {
+            up: '#498B47',
+            down: '#CC4D50',
+            unchanged: '#5a5a5a',
+          },
+          backgroundColors: {
+            up: '#498B47',
+            down: '#CC4D50',
+            unchanged: '#5a5a5a',
+          },
+          borderWidth: 1,
+          yAxisID: 'y',
+          metadata: {
+            isMain: true,
+          },
+        },
+      ]
+    }
+
+    return null
+  }, [
+    chartType,
+    mainData?.data?.chartType,
+    mainData?.data?.timestamps,
+    mainDataSeries?.label,
+    mainDataSeries?.values,
+    refDataSeries,
+    volumeDataSeries,
+    closeDataSeries,
+    openDataSeries,
+    highDataSeries,
+    lowDataSeries,
+  ])
+
+  const indicatorDatasets = useMemo(() => {
+    const ma = indicators.find((indicator) => indicator.indicatorType === 'MOVING_AVERAGE')
+    const bb = indicators.find((indicator) => indicator.indicatorType === 'BOLLINGER_BANDS')
+
+    return {
+      MA: ma?.series
+        .map((series) => ({
+          label: maLabels[series.seriesId],
+          data: series.values.map((value, index) => ({
+            x: dayjs(ma.timestamps[index]).valueOf(),
+            y: value,
+          })),
+          type: 'line',
+          borderColor: props.displayDataInfo.MA[maLabels[series.seriesId]] ? maColors[series.seriesId] : 'transparent',
+          borderWidth: 1,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.1,
+          yAxisID: 'y',
+        }))
+        .sort((a, b) => {
+          const numA = parseInt(a.label.replace('MA', ''))
+          const numB = parseInt(b.label.replace('MA', ''))
+          return numA - numB
+        }),
+      BB: bb?.series.map((series) => {
+        const label = bbLabels[series.seriesId]
+        const isMiddleBBInCandle = label === 'Middle BB' && chartType === ChartType.CANDLE
+        const borderColor = isMiddleBBInCandle ? '#F0D92D' : bbColors[series.seriesId]
+        const borderWidth = isMiddleBBInCandle ? 2 : 1
+
+        return {
+          label,
+          data: series.values.map((value, index) => ({
+            x: dayjs(bb.timestamps[index]).valueOf(),
+            y: value,
+          })),
+          type: 'line',
+          borderColor: props.displayDataInfo.BB ? borderColor : 'transparent',
+          borderWidth,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.1,
+        }
+      }),
+    }
+  }, [chartType, indicators, props.displayDataInfo.BB, props.displayDataInfo.MA])
+
+  const comparisonDatasets = useMemo(() => {
+    const colors = ['#0CA678', '#FF973C', '#5191F5', '#8F5B5D', '#819E9A', '#7D68A4']
+
+    return comparisonCharts.map((chart, index) => ({
+      label: chart.series[0].label,
+      data: chart.series[0].values.map((value, idx) => ({
+        x: dayjs(chart.timestamps[idx]).valueOf(),
+        y: value,
+      })),
+      type: 'line',
+      pointRadius: 0,
+      borderColor: hideComparisonChartIndexList.includes(index) ? 'transparent' : colors[index % colors.length],
+      borderWidth: 3,
+      fill: false,
+      tension: 0.1,
+      yAxisID: chart.unitCd,
+      metaData: {
+        chipColor: colors[index % colors.length],
+      },
+    }))
+  }, [comparisonCharts, hideComparisonChartIndexList])
+
+  const comparisonChartUnits = useMemo(() => comparisonCharts.map((chart) => chart.unitCd), [comparisonCharts])
+
+  const subYAxes = useMemo(() => {
+    const axes: Record<string, ReturnType<typeof generateYAxis>> = {}
+
+    comparisonChartUnits.forEach((unit, index) => {
+      axes[unit] = generateYAxis({
+        position: 'right',
+        unit,
+        borderColor: index === 0 ? undefined : '#DEE2E6',
+      })
+    })
+
+    return axes
+  }, [comparisonChartUnits])
 
   const externalTooltipHandler = useCallback(
     (context: { tooltip: { x: number; y: number; content: Record<string, number | null> } | null }) => {
@@ -107,111 +351,7 @@ export default function MIChart(props: Readonly<MIChartProps>) {
     [],
   )
 
-  const mainDatasets = useMemo(() => {
-    const mainDataSeries = mainData?.data?.series.find((series) => series.seriesId === 'main')
-
-    if (chartType === ChartType.LINE) {
-      return {
-        label: mainDataSeries?.label ?? '',
-        data:
-          mainDataSeries?.values.map((value, index) => ({
-            x: mainData?.data?.timestamps[index] ?? '',
-            y: value ?? null,
-          })) ?? [],
-        type: 'line',
-        borderColor: '#2F62A3',
-        borderWidth: 3,
-        pointRadius: 0,
-        fill: false,
-        tension: 0.1,
-        yAxisID: 'y',
-        metadata: {
-          isMain: true,
-        },
-      }
-    }
-
-    return null
-  }, [mainData?.data, chartType])
-
-  const indicatorDatasets = useMemo(() => {
-    const ma = indicators.find((indicator) => indicator.indicatorType === 'MOVING_AVERAGE')
-    const bb = indicators.find((indicator) => indicator.indicatorType === 'BOLLINGER_BANDS')
-
-    return {
-      MA: ma?.series
-        .map((series) => ({
-          label: maLabels[series.seriesId],
-          data: series.values.map((value, index) => ({
-            x: ma.timestamps[index],
-            y: value,
-          })),
-          type: 'line',
-          borderColor: maColors[series.seriesId],
-          borderWidth: 1,
-          pointRadius: 0,
-          fill: false,
-          tension: 0.1,
-          yAxisID: 'y',
-        }))
-        .sort((a, b) => {
-          const numA = parseInt(a.label.replace('MA', ''))
-          const numB = parseInt(b.label.replace('MA', ''))
-          return numA - numB
-        }),
-      BB: bb?.series.map((series) => ({
-        label: bbLabels[series.seriesId],
-        data: series.values.map((value, index) => ({
-          x: bb.timestamps[index],
-          y: value,
-        })),
-        type: 'line',
-        borderColor: bbColors[series.seriesId],
-        borderWidth: 1,
-        pointRadius: 0,
-        fill: false,
-        tension: 0.1,
-      })),
-    }
-  }, [indicators])
-
-  const comparisonDatasets = useMemo(() => {
-    const colors = ['#0CA678', '#FF973C', '#5191F5', '#8F5B5D', '#819E9A', '#7D68A4']
-
-    return comparisonCharts.map((chart, index) => ({
-      label: chart.series[0].label,
-      data: chart.series[0].values.map((value, idx) => ({
-        x: chart.timestamps[idx],
-        y: value,
-      })),
-      type: 'line',
-      pointRadius: 0,
-      borderColor: colors[index % colors.length],
-      borderWidth: 3,
-      fill: false,
-      tension: 0.1,
-      yAxisID: chart.unitCd,
-    }))
-  }, [comparisonCharts])
-
-  const comparisonChartUnits = useMemo(() => comparisonCharts.map((chart) => chart.unitCd), [comparisonCharts])
-
-  const subYAxes = useMemo(() => {
-    const axes: Record<string, ReturnType<typeof generateYAxis>> = {}
-
-    comparisonChartUnits.forEach((unit, index) => {
-      axes[unit] = generateYAxis({
-        position: 'right',
-        unit,
-        borderColor: index === 0 ? undefined : '#DEE2E6',
-      })
-    })
-
-    return axes
-  }, [comparisonChartUnits])
-
   const createChart = () => {
-    setIsLoading(true)
     if (chartInstance) {
       chartInstance.destroy()
       setChartInstance(null)
@@ -228,7 +368,7 @@ export default function MIChart(props: Readonly<MIChartProps>) {
       label: string
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: any
-      data: FinancialDataPoint[] | { x: number | string; y: number | null }[]
+      data: FinancialDataPoint[] | Point[]
       colors?: Record<string, string>
       borderColors?: Record<string, string>
       borderColor?: string
@@ -240,14 +380,15 @@ export default function MIChart(props: Readonly<MIChartProps>) {
       metadata?: Record<string, number | string | boolean>
     }> = []
 
-    if (mainDatasets !== null) datasets.push(mainDatasets)
-    if (indicatorDatasets.MA) datasets.push(...indicatorDatasets.MA)
+    if (mainDatasets !== null) datasets.push(...mainDatasets)
     if (indicatorDatasets.BB) datasets.push(...indicatorDatasets.BB)
+    if (indicatorDatasets.MA) datasets.push(...indicatorDatasets.MA)
     if (comparisonDatasets.length) {
       datasets.push(...comparisonDatasets)
     }
 
     const newChartInstance = new Chart(ctx, {
+      type: 'candlestick',
       data: {
         datasets,
       },
@@ -316,7 +457,7 @@ export default function MIChart(props: Readonly<MIChartProps>) {
           },
           fillBetween: {
             labels: ['Upper BB', 'Lower BB'],
-            fillColor: 'rgba(206, 212, 218, 0.1)',
+            fillColor: 'rgba(206, 212, 218, 0.12)',
           },
           legend: {
             display: false,
@@ -324,12 +465,34 @@ export default function MIChart(props: Readonly<MIChartProps>) {
           crosshairLinePlugin: {
             onPointerMove: externalTooltipHandler,
           },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x',
+              modifierKey: null,
+            },
+            zoom: {
+              wheel: {
+                enabled: true,
+                modifierKey: 'ctrl',
+              },
+              pinch: {
+                enabled: true,
+              },
+              mode: 'x',
+            },
+            limits: {
+              x: {
+                min: mainDatasets?.[0]?.data[0]?.x,
+                max: mainDatasets?.[0]?.data[mainDatasets[0].data.length - 1]?.x,
+              },
+            },
+          },
         },
       },
     })
 
     setChartInstance(newChartInstance)
-    setIsLoading(false)
   }
 
   useEffect(() => {
@@ -340,7 +503,15 @@ export default function MIChart(props: Readonly<MIChartProps>) {
     ) {
       createChart()
     }
-  }, [mainData.data, indicatorDatasets, comparisonDatasets, interval, mainData.unit, subYAxes])
+  }, [mainData.data, indicatorDatasets, comparisonDatasets, interval, mainData.unit, subYAxes, chartType])
+
+  useEffect(() => {
+    if (ref && typeof ref === 'function') {
+      ref(chartRef.current)
+    } else if (ref) {
+      ref.current = chartRef.current
+    }
+  }, [ref])
 
   return (
     <Box
@@ -353,22 +524,6 @@ export default function MIChart(props: Readonly<MIChartProps>) {
       }}
       onContextMenu={disableContextMenu}
     >
-      {isLoading && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <CircularProgress sx={{ color: 'gray.40' }} />
-        </Box>
-      )}
       <Box
         sx={{
           position: 'absolute',
@@ -378,18 +533,20 @@ export default function MIChart(props: Readonly<MIChartProps>) {
       >
         <MIChartLegendToggle
           labels={comparisonDatasets.map((data) => data.label)}
-          colors={comparisonDatasets.map((data) => data.borderColor)}
+          colors={comparisonDatasets.map((data) => data.metaData?.chipColor)}
           onChange={(index, isShow) => {
-            if (chartInstance) {
-              // TODO: 그래프 on/off 기능 구현
-              console.log(index, isShow)
-            }
+            setHideComparisonChartIndexList((prev) => (isShow ? prev.filter((item) => item !== index) : [...prev, index]))
           }}
         />
       </Box>
-
-      <canvas ref={chartRef} />
+      <Box height={'100%'}>
+        <canvas ref={chartRef} />
+      </Box>
       <MIChartTooltip {...tooltip} />
     </Box>
   )
-}
+})
+
+MIChart.displayName = 'MIChart'
+
+export default MIChart

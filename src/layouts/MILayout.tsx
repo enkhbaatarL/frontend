@@ -53,16 +53,14 @@ const mainPages: Page[] = [
 ]
 
 const MILayout = () => {
-  const [isScrolled, setIsScrolled] = useState(true)
   const [showNoticePopup, setShowNoticePopup] = useState(false)
   const [noticeData, setNoticeData] = useState<INoticePopupInfo | null>(null)
   const [noticeDetailData, setNoticeDetailData] = useState<INoticeDetailInfo | null>(null)
   const [outletKey, setOutletKey] = useState(0)
   const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
   const location = useLocation()
-
   const { saveScroll, currentScroll, preRenderMinHeight } = useScrollRestoration({ urls: mainPages.map((m) => m.url) })
-
+  const [isScrolled, setIsScrolled] = useState(currentScroll !== 0)
   useEffect(() => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
@@ -172,7 +170,7 @@ const MILayout = () => {
           sx={{
             paddingTop,
             flex: 1,
-            // transition: 'padding-top 0.15s linear', 화면 꿀렁거려서 주석
+            transition: 'padding-top 0.15s linear',
           }}
         >
           <Outlet key={outletKey} />
