@@ -229,6 +229,11 @@ const MIHeaderNotice = () => {
     handleCloseNoticeMenu()
   }
 
+  const handleNotificationClick = () => {
+    navigate('/mi/notifications')
+    handleCloseNoticeMenu()
+  }
+
   const tabsData = [
     {
       label: 'Recent Alerts',
@@ -249,7 +254,7 @@ const MIHeaderNotice = () => {
             ))}
           </ScrollWrapper>
           <Box sx={{ margin: '0 -20px' }} borderTop={'1px solid #E9ECEF'} p={5}>
-            <MIButton width={'100%'} color={'gray'} type={'outlined'} contentType={'text'} size={'h42'}>
+            <MIButton width={'100%'} color={'gray'} type={'outlined'} contentType={'text'} size={'h42'} onClick={handleNotificationClick}>
               Manage My Alerts
             </MIButton>
           </Box>
