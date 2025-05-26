@@ -286,7 +286,7 @@ const MIHeaderNotice = () => {
             ) : (
               <Box display="flex" justifyContent="center" alignItems="center" p={5}>
                 <Typography variant="body2R14" color="gray.60">
-                  Alert 가 없습니다.
+                  No results found
                 </Typography>
               </Box>
             )}

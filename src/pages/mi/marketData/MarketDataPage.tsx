@@ -260,7 +260,7 @@ const MarketDataPage = () => {
                 ))
               ) : (
                 <Typography color="gray.60" textAlign="center" py={4} component="div" variant="body2">
-                  최근 조회한 데이터가 없습니다.
+                  No results found
                 </Typography>
               )}
             </Box>
