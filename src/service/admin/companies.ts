@@ -161,6 +161,14 @@ export interface IUserPermissionInfo {
   extension: IExtension
 }
 
+export interface IUserPaginationResponse<T> extends IPaginationResponse<T> {
+  extension?: {
+    numberOfUsers: number
+    numberOfDownloadable: number
+    numberOfViewable: number
+  }
+}
+
 export interface IIndividualSettings {
   userNo: number
   isViewable: boolean
