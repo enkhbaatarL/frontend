@@ -138,7 +138,8 @@ const MarketDataPage = () => {
               <Grid key={`market-data-chart-${index}`} size={index <= 1 ? 6 : 3}>
                 <MarketDataChart data={chartData} size={index <= 1 ? 'large' : 'small'} locked={!chartData.isPermitted} />
               </Grid>
-            )) ?? (
+            ))}
+            {normalizedChartData?.length === 0 && (
               <Grid size={3}>
                 <Typography>No results found</Typography>
               </Grid>
