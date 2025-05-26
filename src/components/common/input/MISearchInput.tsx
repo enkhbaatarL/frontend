@@ -62,8 +62,8 @@ const MISearchInput = ({
   const handleSearch = (searchTerm: string) => {
     if (searchTerm.trim()) {
       addToHistory(searchTerm)
-      onSearch?.(searchTerm)
     }
+    onSearch?.(searchTerm)
     setShowDropdown(false)
   }
 
