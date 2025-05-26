@@ -6,7 +6,7 @@ export const useSearchHistory = (storageKey = 'search-history', maxHistory = 10)
   // 초기 로드
   useEffect(() => {
     try {
-      const savedHistory = sessionStorage.getItem(storageKey)
+      const savedHistory = localStorage.getItem(storageKey)
       if (savedHistory) {
         setHistory(JSON.parse(savedHistory))
       }
@@ -26,7 +26,7 @@ export const useSearchHistory = (storageKey = 'search-history', maxHistory = 10)
         const newHistory = [searchTerm, ...filtered].slice(0, maxHistory)
 
         try {
-          sessionStorage.setItem(storageKey, JSON.stringify(newHistory))
+          localStorage.setItem(storageKey, JSON.stringify(newHistory))
         } catch (error) {
           console.error('Failed to save search history:', error)
         }
@@ -43,7 +43,7 @@ export const useSearchHistory = (storageKey = 'search-history', maxHistory = 10)
       setHistory((prev) => {
         const newHistory = prev.filter((item) => item !== searchTerm)
         try {
-          sessionStorage.setItem(storageKey, JSON.stringify(newHistory))
+          localStorage.setItem(storageKey, JSON.stringify(newHistory))
         } catch (error) {
           console.error('Failed to update search history:', error)
         }
@@ -57,7 +57,7 @@ export const useSearchHistory = (storageKey = 'search-history', maxHistory = 10)
   const clearHistory = useCallback(() => {
     setHistory([])
     try {
-      sessionStorage.removeItem(storageKey)
+      localStorage.removeItem(storageKey)
     } catch (error) {
       console.error('Failed to clear search history:', error)
     }
