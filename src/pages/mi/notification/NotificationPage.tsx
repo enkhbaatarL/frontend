@@ -15,7 +15,9 @@ const NotificationPage = () => {
   const handleClickDetail = () => {
     alert('redirect to detail')
   }
+
   const [isOpenSetting, setIsOpenSetting] = useState(false)
+  const [selectedGoodsDataSourceNo, setSelectedGoodsDataSourceNo] = useState<number | undefined>(undefined)
 
   const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch } = useSearchFilter<
     INotificationRequest,
@@ -30,6 +32,16 @@ const NotificationPage = () => {
       size: 20,
     },
   )
+
+  const handleOpenSettingModal = (goodsDataSourceNo: number) => {
+    setSelectedGoodsDataSourceNo(goodsDataSourceNo)
+    setIsOpenSetting(true)
+  }
+
+  const handleCloseSettingModal = () => {
+    setIsOpenSetting(false)
+    setSelectedGoodsDataSourceNo(undefined)
+  }
 
   return (
     <>
@@ -89,7 +101,7 @@ const NotificationPage = () => {
                       color="blue"
                       onClick={(e) => {
                         e.stopPropagation()
-                        setIsOpenSetting(true)
+                        handleOpenSettingModal(params.row.goodsDataSourceNo)
                       }}
                       sx={{
                         cursor: 'pointer',
@@ -116,7 +128,12 @@ const NotificationPage = () => {
             }}
           />
         </Box>
-        <SettingModalComponent isNotification open={isOpenSetting} onClose={() => setIsOpenSetting(false)} />
+        <SettingModalComponent
+          isNotification
+          open={isOpenSetting}
+          onClose={handleCloseSettingModal}
+          goodsDataSourceNo={selectedGoodsDataSourceNo}
+        />
       </Box>
     </>
   )
