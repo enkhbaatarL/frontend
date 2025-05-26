@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
 import Flex from '@/components/common/display/Flex'
+import MIInput from '@/components/common/input/MIInput'
 import authService from '@/service/common/auth'
 import useAuthStore from '@/store/useAuthStore'
 
@@ -51,6 +52,8 @@ const LoginPage = () => {
   const [devAdmin, setDevAdmin] = useState<string>(devTokens.admin[0].value)
   const [devOperator, setDevOperator] = useState<string>(devTokens.operator[0].value)
 
+  const [tempAuthFilter, setTempAuthFilter] = useState<boolean>(false) // TODO: 임시 용도로 SSO 작업 시 제거 필요
+
   const ssoLogin = () => {
     // TODO: SSO login 작성
   }
@@ -78,86 +81,101 @@ const LoginPage = () => {
 
   return (
     <Flex direction="column" gap={20} className="full-height" justify="center" align="center">
-      <Flex direction="column" gap={20} align="center">
-        <Flex gap={10}>
-          <MIButton
-            contentType="select"
-            type="outlined"
-            valueSelect={devTokens.user.find((option) => option.value === devUser)}
-            options={devTokens.user}
-            width="160px"
-            minWidth="160px"
-            onChange={(option) => {
-              setDevUser(option.value)
+      {tempAuthFilter ? (
+        <Flex direction="column" gap={20} align="center">
+          <Flex gap={10}>
+            <MIButton
+              contentType="select"
+              type="outlined"
+              valueSelect={devTokens.user.find((option) => option.value === devUser)}
+              options={devTokens.user}
+              width="160px"
+              minWidth="160px"
+              onChange={(option) => {
+                setDevUser(option.value)
+              }}
+            />
+            <MIButton
+              onClick={async () => {
+                await setUserInfo(devUser)
+                navigate('mi')
+              }}
+              width="120px"
+            >
+              사용자 로그인
+            </MIButton>
+          </Flex>
+          <Divider sx={{ width: '100%' }} />
+          <Flex gap={10}>
+            <MIButton
+              contentType="select"
+              type="outlined"
+              valueSelect={devTokens.admin.find((option) => option.value === devAdmin)}
+              options={devTokens.admin}
+              width="160px"
+              minWidth="160px"
+              onChange={(option) => {
+                setDevAdmin(option.value)
+              }}
+            />
+            <MIButton
+              onClick={async () => {
+                await setUserInfo(devAdmin)
+                navigate('admin')
+              }}
+              width="120px"
+            >
+              Admin 로그인
+            </MIButton>
+          </Flex>
+          <Flex gap={10}>
+            <MIButton
+              contentType="select"
+              type="outlined"
+              valueSelect={devTokens.operator.find((option) => option.value === devOperator)}
+              options={devTokens.operator}
+              width="160px"
+              minWidth="160px"
+              onChange={(option) => {
+                setDevOperator(option.value)
+              }}
+            />
+            <MIButton
+              onClick={async () => {
+                await setUserInfo(devOperator)
+                navigate('admin/data-providers/providers')
+              }}
+              width="120px"
+            >
+              운영자 로그인
+            </MIButton>
+          </Flex>
+          <Divider sx={{ width: '100%' }} />
+          <Flex gap={10}>
+            <MIButton
+              onClick={() => {
+                navigate('/test')
+              }}
+              type="outlined"
+            >
+              Component Test
+            </MIButton>
+          </Flex>
+        </Flex>
+      ) : (
+        <Flex direction="column" gap={20} align="center" style={{ width: '300px' }}>
+          <MIInput
+            fullWidth
+            label="비밀번호"
+            type="password"
+            onChange={(e) => {
+              if (e.target.value === 'mitest1234') {
+                setTempAuthFilter(true)
+              }
             }}
           />
-          <MIButton
-            onClick={async () => {
-              await setUserInfo(devUser)
-              navigate('mi')
-            }}
-            width="120px"
-          >
-            사용자 로그인
-          </MIButton>
         </Flex>
-        <Divider sx={{ width: '100%' }} />
-        <Flex gap={10}>
-          <MIButton
-            contentType="select"
-            type="outlined"
-            valueSelect={devTokens.admin.find((option) => option.value === devAdmin)}
-            options={devTokens.admin}
-            width="160px"
-            minWidth="160px"
-            onChange={(option) => {
-              setDevAdmin(option.value)
-            }}
-          />
-          <MIButton
-            onClick={async () => {
-              await setUserInfo(devAdmin)
-              navigate('admin')
-            }}
-            width="120px"
-          >
-            Admin 로그인
-          </MIButton>
-        </Flex>
-        <Flex gap={10}>
-          <MIButton
-            contentType="select"
-            type="outlined"
-            valueSelect={devTokens.operator.find((option) => option.value === devOperator)}
-            options={devTokens.operator}
-            width="160px"
-            minWidth="160px"
-            onChange={(option) => {
-              setDevOperator(option.value)
-            }}
-          />
-          <MIButton
-            onClick={async () => {
-              await setUserInfo(devOperator)
-              navigate('admin/data-providers/providers')
-            }}
-            width="120px"
-          >
-            운영자 로그인
-          </MIButton>
-        </Flex>
-        <Divider sx={{ width: '100%' }} />
-        <Flex gap={10}>
-          <MIButton
-            onClick={() => {
-              navigate('/test')
-            }}
-            type="outlined"
-          >
-            Component Test
-          </MIButton>
-        </Flex>
-      </Flex>
+      )}
     </Flex>
   )
 }
