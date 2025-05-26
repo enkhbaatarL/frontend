@@ -35,7 +35,7 @@ import companiesService, {
   IUserPermissionInfo,
   IUserPaginationResponse,
 } from '@/service/admin/companies'
-import { IPaginationRequest, IPaginationResponse } from '@/types/api'
+import { IPaginationRequest } from '@/types/api'
 
 const AdminCustomerCompanyProductDetailPageHeader = (props: {
   onChange: (value: boolean) => void

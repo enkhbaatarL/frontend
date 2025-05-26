@@ -214,7 +214,6 @@ const AdminNotificationListPage = () => {
       ),
     },
   ]
-
   const handleCheckErrorLog = (errorLog: string) => setViewErrorReasonModal({ open: false, errorLog })
   return (
     <div>
@@ -255,7 +254,7 @@ const AdminNotificationListPage = () => {
             />
           </div>
         </MIField>
-        <MIField label={t('발송 경과')}>
+        <MIField label={t('발송 결과')}>
           <MISelect
             value={filter.isSendSuccess}
             onChange={(e) => updateFilter('isSendSuccess', e.target.value as boolean | '')}
@@ -272,11 +271,11 @@ const AdminNotificationListPage = () => {
         >
           <Box sx={containerStyles}>
             <Box sx={statusContainerStyles}>
-              <StatusItem icon={<EmailIcon />} title="발송" value={extension.totalEmailSendCnt} />
+              <StatusItem icon={<EmailIcon />} title="발송" value={extension.totalEmailSendCnt ?? 0} />
               <VerticalDivider />
-              <StatusItem icon={<SuccessIcon />} title="성공" value={extension.totalEmailSuccessCnt} />
+              <StatusItem icon={<SuccessIcon />} title="성공" value={extension.totalEmailSuccessCnt ?? 0} />
               <VerticalDivider />
-              <StatusItem icon={<FailIcon />} title="실패" value={extension.totalEmailFailCnt} />
+              <StatusItem icon={<FailIcon />} title="실패" value={extension.totalEmailFailCnt ?? 0} />
             </Box>
             <Typography variant="body3M12" color="gray.60">
               Last Updated {extension.lastUpdatedDt}

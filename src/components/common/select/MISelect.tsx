@@ -11,7 +11,7 @@ import theme from '@/theming'
 
 type OptionType = {
   label: ReactNode
-  value: string | number
+  value: string | number | boolean
   disabled?: boolean
 }
 
@@ -26,12 +26,12 @@ type MISelectProps = {
   sx?: SxProps<Theme>
   multiple?: boolean
   fullWidth?: boolean
-  value?: string | number
+  value?: string | number | boolean
   width?: string | number
   disabled?: boolean
   readOnly?: boolean
   type?: 'button' | 'input'
-  onChange?: (e: { target: { value: string | number | (string | number)[] } }) => void
+  onChange?: (e: { target: { value: string | number | boolean | (string | number | boolean)[] } }) => void
   options?: readonly OptionType[]
   useAllOption?: boolean
   showClearIcon?: boolean
@@ -133,7 +133,7 @@ const MISelect = ({
   disabled,
   readOnly,
   onChange,
-  showClearIcon,
+  showClearIcon = true,
   options,
   useAllOption = true,
   width,
@@ -244,7 +244,9 @@ const MISelect = ({
     [minWidth, sizeSelect, shouldShowClearButton, showValue, type, sx],
   )
 
-  const getSelectedOption = (value: string | number | (string | number)[] | undefined): OptionType | OptionType[] | null => {
+  const getSelectedOption = (
+    value: string | number | boolean | (string | number | boolean)[] | undefined,
+  ): OptionType | OptionType[] | null => {
     if (!options) return null
 
     if (multiple) {
