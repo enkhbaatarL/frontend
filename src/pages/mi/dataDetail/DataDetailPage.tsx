@@ -2,13 +2,15 @@ import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
+import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 
 import bshImg from '@/assets/bgsubheader.png'
 import MIButton from '@/components/common/button/MIButton'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import MILine from '@/components/common/divider/MILine'
+import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
@@ -28,7 +30,7 @@ interface ITableRow {
 
 const DataDetailPage = () => {
   const pathParams = useParams()
-
+  const { state } = useLocation()
   const [goodsDataSourceNo, setGoodsDataSourceNo] = useState<number>()
 
   const [startDate, setStartDate] = useState<string>(dayjs().subtract(1, 'month').format('YYYYMMDD'))
@@ -71,6 +73,10 @@ const DataDetailPage = () => {
 
   const hasStructuredDataList = useMemo(() => (structuredDataList ?? []).length > 0, [structuredDataList])
   const hasUnstructuredData = useMemo(() => (unstructuredDataList ?? []).length > 0, [unstructuredDataList])
+  const hasDescription = useMemo(
+    () => productData?.goodsDataExpn || productData?.goodsDataSummaryCntt,
+    [productData?.goodsDataExpn, productData?.goodsDataSummaryCntt],
+  )
 
   // 정형데이터 raw 목록
   const { data: rawGoodsData } = useQuery({
@@ -167,12 +173,12 @@ const DataDetailPage = () => {
   }, [endDate, goodsDataNo, goodsDataSourceNo, goodsNo, rawPage, rawSize, startDate])
 
   useEffect(() => {
-    const { goodsDataSourceNo: initGoodsDataSourceNo } = structuredDataList?.[0] ?? {}
+    const routeGoodsDataSourceNo = state?.goodsDataSrcNo
+    const firstItemDataSourceNo = structuredDataList?.[0]?.goodsDataSourceNo
 
-    if (initGoodsDataSourceNo) {
-      setGoodsDataSourceNo(initGoodsDataSourceNo)
-    }
-  }, [structuredDataList])
+    if (routeGoodsDataSourceNo) setGoodsDataSourceNo(routeGoodsDataSourceNo)
+    else if (firstItemDataSourceNo) setGoodsDataSourceNo(firstItemDataSourceNo)
+  }, [state?.goodsDataSrcNo, structuredDataList])
 
   return (
     <>
@@ -253,7 +259,28 @@ const DataDetailPage = () => {
                 <MILine />
               </>
             )}
-            <DescriptionComponent description={productData?.goodsDataExpn} summary={productData?.goodsDataSummaryCntt} />
+            {hasDescription && (
+              <DescriptionComponent description={productData?.goodsDataExpn} summary={productData?.goodsDataSummaryCntt} />
+            )}
+            {!hasStructuredDataList && !hasDescription && (
+              <Box
+                display={'flex'}
+                borderBottom={'1px solid'}
+                borderColor={'gray.30'}
+                alignItems={'center'}
+                justifyContent={'center'}
+                bgcolor={'gray.5'}
+                textAlign={'center'}
+                height={800}
+              >
+                <Box display="flex" flexDirection="column" rowGap="10px" alignItems="center">
+                  <ErrorOutlineIcon />
+                  <Typography variant="body3SB12" color="gray.60">
+                    {t('이 콘텐츠는 본문을 제공하지 않습니다.')}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
           </Grid>
           <Grid
             sx={{

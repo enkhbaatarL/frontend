@@ -132,6 +132,7 @@ export const datePickerTextStyleSx = (size?: Size) => ({
   '& .MuiInputBase-root .MuiInputAdornment-root': {
     marginLeft: '4px',
     marginRight: 0,
+    caretColor: 'transparent',
   },
   '& .MuiInputBase-root': {
     borderRadius: '4px',

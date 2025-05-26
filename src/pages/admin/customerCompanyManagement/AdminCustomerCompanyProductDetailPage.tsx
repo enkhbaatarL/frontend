@@ -33,8 +33,9 @@ import companiesService, {
   IUpdateUserPermissionRequest,
   IDetail,
   IUserPermissionInfo,
+  IUserPaginationResponse,
 } from '@/service/admin/companies'
-import { IPaginationRequest, IPaginationResponse } from '@/types/api'
+import { IPaginationRequest } from '@/types/api'
 
 const AdminCustomerCompanyProductDetailPageHeader = (props: {
   onChange: (value: boolean) => void
@@ -116,7 +117,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
     updatePage,
     data: userPermissions,
     isLoading: userPermissionsLoading,
-  } = useSearchFilter<IPaginationRequest, IPaginationResponse<IUserPermissionInfo>>(
+  } = useSearchFilter<IPaginationRequest, IUserPaginationResponse<IUserPermissionInfo>>(
     (params) => companiesService.getUserPermissions(Number(companyNo), Number(providerNo), Number(goodsNo), params),
     {
       page: 1,

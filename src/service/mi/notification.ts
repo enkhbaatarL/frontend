@@ -22,6 +22,31 @@ export interface IRegisterNotificationSettingRequest {
   criticalValueSettingVol: number
 }
 
+export interface INotificationRequest extends IPaginationRequest {
+  search: string
+}
+
+export interface INotificationInfo {
+  goodsDataNo: number
+  goodsDataNm: string
+  goodsDataSourceNo: number
+  goodsDataSourceNm: string
+  settingNotificationCount: number
+}
+
+export interface INotificationHistory {
+  emailSendSn: number
+  emailTitleNm: string
+  emailCntt: string
+  emailSendDtm: string
+  isEmailInquiry: boolean
+  notificationCriticalValueSeparateCd: string
+  criticalValueSettingVol: number
+  criticalValueSettingUnitNm: string
+  goodsDataSourceNm: string
+  goodsDataSourceNo: number
+}
+
 const notificationService = {
   /**
    * 정형 데이터 알림 설정 리스트를 조회합니다.
@@ -88,6 +113,34 @@ const notificationService = {
       `mi/notification-management/goodsdata/${goodsDataSourceNo}/notification-settings/${notificationSettingNo}`,
     )
     return response.data
+  },
+  /**
+   * 알림 설정한 정형 데이터 목록을 조회합니다.
+   * @param params - { page: 페이지 번호, size: 페이지당 항목 수, search }
+   */
+  async getNotificationSettingDataList(params: Partial<INotificationRequest>): Promise<IPaginationResponse<INotificationInfo>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<INotificationInfo>>> = await api.get(
+      'mi/notification-management/notification-settings',
+      {
+        params,
+      },
+    )
+
+    return response.data.data
+  },
+  /**
+   * 알림 발송 내역 리스트를 조회합니다.
+   * @param params - { page: 페이지 번호, size: 페이지당 항목 수, search }
+   */
+  async getNotificationHistory(params: Partial<IPaginationRequest>): Promise<IPaginationResponse<INotificationHistory>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<INotificationHistory>>> = await api.get(
+      'mi/notification-management/notifications',
+      {
+        params,
+      },
+    )
+
+    return response.data.data
   },
 }
 

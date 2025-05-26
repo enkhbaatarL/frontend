@@ -37,7 +37,7 @@ const useSearchFilter = <Req, Res>(
   const { state } = useLocation()
   const navigate = useNavigate()
   const [filter, setFilter] = useState<Partial<Req>>(initialFilter)
-  const [pagination, setPagination] = useState(initialPagination)
+  const [pagination, setPagination] = useState((state?.pagination as PageFilter) ?? initialPagination)
   const [fetchParams, setFetchParams] = useState<Partial<Req> | null>(null)
   const isPureState = isEqual(initialFilter, filter)
 
@@ -52,12 +52,12 @@ const useSearchFilter = <Req, Res>(
   const blockerAction = useCallback(
     () =>
       new Promise<boolean>((resolve) => {
-        if (!isEqual(initialFilter, fetchParams)) {
-          navigate('.', { state: { params: fetchParams }, replace: true })
+        if (!isEqual(initialFilter, fetchParams) || !isEqual(initialPagination, pagination)) {
+          navigate('.', { state: { params: fetchParams, pagination }, replace: true })
         }
         resolve(false)
       }),
-    [initialFilter, fetchParams, navigate],
+    [initialFilter, fetchParams, initialPagination, pagination, navigate],
   )
 
   useBlocker({ onSave: blockerAction })

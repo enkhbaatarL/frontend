@@ -9,6 +9,7 @@ import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
+import NotificationPage from '@/pages/mi/notification/NotificationPage.tsx'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import MIProvider from '@/providers/MIProvider'
 
@@ -64,6 +65,10 @@ const MIRoutes: RouteObject = {
     {
       path: 'privacy-policy',
       element: <PolicyPage />,
+    },
+    {
+      path: 'notifications',
+      element: <NotificationPage />,
     },
   ],
 }

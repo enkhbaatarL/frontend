@@ -1,5 +1,6 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -68,16 +69,8 @@ const MarketDataPage = () => {
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
 
-  // 자동완성을 위한 제안 데이터
-  const searchSuggestions = useMemo(() => {
-    const suggestions: string[] = []
-
-    // 중복 제거 및 정렬
-    return [...new Set(suggestions)].sort()
-  }, [])
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateFilter('keyword', e.target.value)
+  const handleSearchChange = (value: string) => {
+    updateFilter('keyword', value)
   }
 
   const handleSearch = (searchTerm: string) => {
@@ -137,7 +130,8 @@ const MarketDataPage = () => {
               <Grid key={`market-data-chart-${index}`} size={index <= 1 ? 6 : 3}>
                 <MarketDataChart data={chartData} size={index <= 1 ? 'large' : 'small'} locked={!chartData.isPermitted} />
               </Grid>
-            )) ?? (
+            ))}
+            {normalizedChartData?.length === 0 && (
               <Grid size={3}>
                 <Typography>No results found</Typography>
               </Grid>
@@ -149,16 +143,12 @@ const MarketDataPage = () => {
             Data Catalog
           </Typography>
           <MISearchInput
-            width={458}
-            maxWidth={'100%'}
-            placeholder="Search for Data"
-            size="h46"
+            storageKey={'market-data'}
             value={filter?.keyword ?? ''}
             onChange={handleSearchChange}
+            placeholder={'Search for Data'}
             onSearch={handleSearch}
             onClear={handleSearchClear}
-            suggestions={searchSuggestions}
-            storageKey="market-data-search-history"
           />
         </Box>
         <Grid
@@ -198,8 +188,8 @@ const MarketDataPage = () => {
                   ],
                   rowId: 'goodsDataSrcNo',
                   rows: data?.detail,
-                  onRowClick: (row) => {
-                    navigate(`/mi/data-detail/${row.row.goodsNo}/${row.row.goodsDataNo}`)
+                  onRowClick: ({ row }) => {
+                    navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`, { state: { goodsDataSrcNo: row.goodsDataSrcNo } })
                   },
                 }}
                 paginationProps={{
@@ -252,14 +242,14 @@ const MarketDataPage = () => {
                       </Typography>
                       <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
                       <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
-                        {item.modifyDt}
+                        {dayjs(item.recentViewedDt).format('MMM DD-YY')}
                       </Typography>
                     </Grid>
                   </Box>
                 ))
               ) : (
                 <Typography color="gray.60" textAlign="center" py={4} component="div" variant="body2">
-                  최근 조회한 데이터가 없습니다.
+                  No results found
                 </Typography>
               )}
             </Box>

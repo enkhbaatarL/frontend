@@ -61,11 +61,10 @@ export interface IRecentViewedItem {
   providerNo: number
   providerNm: string
   goodsNo: number
-  goodsNm: string
   goodsDataNo: number
   goodsDataNm: string
   goodsDataExpn: string
-  modifyDt: string
+  recentViewedDt: string
 }
 
 /**
