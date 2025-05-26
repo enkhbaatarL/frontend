@@ -222,6 +222,7 @@ const MIInput = ({
           slotProps={{
             input: inputProps,
           }}
+          autoComplete="off"
           sx={{
             '& .MuiInputBase-root': {
               alignItems: props.multiline ? 'flex-start' : 'center',

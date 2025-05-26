@@ -68,16 +68,8 @@ const MarketDataPage = () => {
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
 
-  // 자동완성을 위한 제안 데이터
-  const searchSuggestions = useMemo(() => {
-    const suggestions: string[] = []
-
-    // 중복 제거 및 정렬
-    return [...new Set(suggestions)].sort()
-  }, [])
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateFilter('keyword', e.target.value)
+  const handleSearchChange = (value: string) => {
+    updateFilter('keyword', value)
   }
 
   const handleSearch = (searchTerm: string) => {
@@ -149,16 +141,12 @@ const MarketDataPage = () => {
             Data Catalog
           </Typography>
           <MISearchInput
-            width={458}
-            maxWidth={'100%'}
-            placeholder="Search for Data"
-            size="h46"
+            storageKey={'market-data'}
             value={filter?.keyword ?? ''}
             onChange={handleSearchChange}
+            placeholder={'Search for Data'}
             onSearch={handleSearch}
             onClear={handleSearchClear}
-            suggestions={searchSuggestions}
-            storageKey="market-data-search-history"
           />
         </Box>
         <Grid

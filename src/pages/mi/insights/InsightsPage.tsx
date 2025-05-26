@@ -1,22 +1,19 @@
-import SearchIcon from '@mui/icons-material/Search'
-import { Box, FormControlLabel, FormGroup, Grid2 as Grid, MenuItem, Typography } from '@mui/material'
+import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import InsightsDocumentItem from './components/InsightsDocumentItem'
 
 import psImg from '@/assets/productsymbol.png'
 import shiImg from '@/assets/subheaderinsight.jpg'
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
-import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import MIInput from '@/components/common/input/MIInput'
+import MISearchInput from '@/components/common/input/MISearchInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
 import insightsService, { IAdvancedFilter, IAdvancedFilterItem, IInsightsInfo, IInsightsRequest } from '@/service/mi/insights'
 import useAuthStore from '@/store/useAuthStore'
-import theme from '@/theming'
 import { IPaginationResponse } from '@/types/api'
 
 export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT'
@@ -36,11 +33,6 @@ const InsightsPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
   const [keyword, setKeyword] = useState('')
-  const [open, setOpen] = useState(false)
-  const [filteredHistories, setFilteredHistories] = useState<string[]>([])
-  const anchorEl = useRef<HTMLElement>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
   // 포커스 목록
   const { data: focusedList } = useQuery({
@@ -187,64 +179,15 @@ const InsightsPage = () => {
     })
   }
 
-  // 검색 내역
-  const showHistory = () => {
-    const history = localStorage.getItem('insightsHistory')
-    if (history) {
-      try {
-        const parsedHistory = JSON.parse(history)
-        setOpen(true)
-        setFilteredHistories(parsedHistory)
-      } catch (error) {
-        console.error(error)
-      }
-    }
-  }
-
   // 검색
   const handleSearch = (value: string) => {
     updateFilterWithSearch('keyword', value)
     setKeyword(value)
-    setOpen(false)
-
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      const existing = localStorage.getItem('insightsHistory')
-      const parsed = existing ? JSON.parse(existing) : []
-
-      if (!value.trim()) return
-
-      const filtered = parsed.filter((item: string) => item !== value)
-      const newHistories = [value, ...filtered]
-
-      localStorage.setItem('insightsHistory', JSON.stringify(newHistories))
-    }, 2000)
   }
 
   const handleInputChange = (value: string) => {
-    setKeyword(value)
     updateFilter('keyword', value)
-
-    const history = localStorage.getItem('insightsHistory')
-    if (history) {
-      try {
-        const parsed = JSON.parse(history) as string[]
-        parsed.map((item) => {
-          if (item === value) {
-            setOpen(false)
-            return
-          }
-        })
-        const filtered = parsed.filter((item) => item.includes(value))
-        setFilteredHistories(filtered)
-        setOpen(value.trim().length > 0 && filtered.length > 0)
-      } catch (error) {
-        console.error(error)
-      }
-    } else {
-      setFilteredHistories([])
-      setOpen(false)
-    }
+    setKeyword(value)
   }
 
   useEffect(() => {
@@ -254,19 +197,6 @@ const InsightsPage = () => {
       setCheckedValues([])
     }
   }, [filter.filters])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (anchorEl.current && dropdownRef.current && !anchorEl.current.contains(target) && !dropdownRef.current.contains(target)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
 
   return (
     <>
@@ -319,66 +249,18 @@ const InsightsPage = () => {
           <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
             Insights
           </Typography>
-          <MIInput
-            width={458}
-            maxWidth={'100%'}
-            placeholder="Search for insights"
-            size="h46"
+          <MISearchInput
+            storageKey={'insights'}
             value={keyword}
-            onChange={(e) => {
-              handleInputChange(e.target.value)
-            }}
-            onKeyDown={({ key, target }) => key === 'Enter' && handleSearch((target as HTMLInputElement).value)}
+            onChange={handleInputChange}
+            placeholder={'Search for insights'}
+            onSearch={handleSearch}
             onClear={() => {
               updateFilterWithSearch('keyword', '')
               setKeyword('')
-              setOpen(false)
             }}
-            startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
-            onFocusInput={showHistory}
-            inputRef={anchorEl}
           />
         </Box>
-        {open && filteredHistories.length > 0 && (
-          <Box
-            ref={dropdownRef}
-            sx={{
-              backgroundColor: '#fff',
-              position: 'absolute',
-              top: '164%',
-              left: '70px',
-              width: '30%',
-              zIndex: 10,
-              border: '1px solid #DEE2E6',
-              boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.2)',
-              borderRadius: '8px',
-              overflow: 'hidden',
-              padding: '8px 0',
-            }}
-          >
-            <ScrollWrapper maxHeight={'215px'}>
-              {filteredHistories.map((item) => (
-                <MenuItem
-                  key={item}
-                  onClick={() => {
-                    setKeyword(item)
-                    updateFilterWithSearch('keyword', item)
-                    setOpen(false)
-                  }}
-                  sx={{
-                    padding: '8px 12px',
-                    '&:hover': {
-                      backgroundColor: theme.palette.gray[5],
-                      fontWeight: '500 !important',
-                    },
-                  }}
-                >
-                  <Typography variant="body2R14">{item}</Typography>
-                </MenuItem>
-              ))}
-            </ScrollWrapper>
-          </Box>
-        )}
         <Grid
           container
           sx={{

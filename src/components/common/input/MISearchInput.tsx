@@ -1,196 +1,134 @@
-import ClearIcon from '@mui/icons-material/Clear'
 import SearchIcon from '@mui/icons-material/Search'
-import { Box, Paper, List, ListItem, ListItemText, ClickAwayListener, Typography } from '@mui/material'
-import { useState, useEffect, useRef } from 'react'
+import { Box, MenuItem, Typography } from '@mui/material'
+import { disassembleToGroups } from 'es-hangul'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIInput from '@/components/common/input/MIInput'
-import { useSearchHistory } from '@/hooks/useSearchHistory'
+import theme from '@/theming'
 
-interface MISearchInputProps {
-  value?: string
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onSearch?: (searchTerm: string) => void
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
-  onClear?: () => void
+interface Props {
+  storageKey: string
+  value: string
+  onChange: (value: string) => void
   placeholder?: string
-  suggestions?: string[]
-  width?: number | string
-  maxWidth?: number | string
-  size?: 'h26' | 'h34' | 'h36' | 'h46'
-  storageKey?: string
+  onSearch: (value: string) => void
+  onClear: () => void
 }
 
-const MISearchInput = ({
-  value = '',
-  onChange,
-  onSearch,
-  onKeyDown,
-  onClear,
-  placeholder = 'Search for Data',
-  suggestions = [],
-  width,
-  maxWidth,
-  size = 'h46',
-  storageKey = 'search-history',
-}: MISearchInputProps) => {
-  const [showDropdown, setShowDropdown] = useState(false)
-  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
-  const containerRef = useRef<HTMLDivElement>(null)
+const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onClear }: Props) => {
+  const [history, setHistory] = useState<string[]>(JSON.parse(localStorage.getItem(`${storageKey}-search-history`) ?? '[]'))
+  const [isFocused, setIsFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const { history, addToHistory, removeFromHistory } = useSearchHistory(storageKey)
+  const inputBlur = useCallback(() => {
+    setTimeout(() => {
+      inputRef.current?.blur()
+    }, 100)
+  }, [])
 
-  // 자동완성 필터링
+  const addHistory = useCallback(
+    (newValue: string) => {
+      if (!newValue || history.includes(newValue)) return
+
+      setHistory((prev) => [...prev, newValue])
+    },
+    [history],
+  )
+
+  const filteredHistories = useMemo(() => {
+    const result = history.filter((item) => disassembleToGroups(item).flat().join().startsWith(disassembleToGroups(value).flat().join())) // 초중성 분리하여 검색
+    return result.slice(0, 10)
+  }, [history, value])
+
+  const openHistoryList = useMemo(
+    () => history.length > 0 && isFocused && filteredHistories.length > 0,
+    [history.length, isFocused, filteredHistories],
+  )
+
   useEffect(() => {
-    if (!value.trim()) {
-      setFilteredSuggestions(history)
-      return
+    if (storageKey) {
+      localStorage.setItem(`${storageKey}-search-history`, JSON.stringify(history))
     }
+  }, [history, storageKey])
 
-    const historyMatches = history.filter((item) => item.toLowerCase().includes(value.toLowerCase()))
+  useEffect(() => {
+    if (!storageKey) return
 
-    const suggestionMatches = suggestions.filter(
-      (item) => item.toLowerCase().includes(value.toLowerCase()) && !history.some((h) => h.toLowerCase() === item.toLowerCase()),
-    )
+    const savedHistory = localStorage.getItem(`${storageKey}-search-history`)
 
-    setFilteredSuggestions([...historyMatches, ...suggestionMatches])
-  }, [value, history, suggestions])
-
-  const handleInputFocus = () => {
-    setShowDropdown(true)
-  }
-
-  const handleSearch = (searchTerm: string) => {
-    if (searchTerm.trim()) {
-      addToHistory(searchTerm)
+    if (savedHistory) {
+      setHistory(JSON.parse(savedHistory))
     }
-    onSearch?.(searchTerm)
-    setShowDropdown(false)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSearch(value)
-    }
-    onKeyDown?.(e)
-  }
-
-  const handleSuggestionClick = (suggestion: string) => {
-    const syntheticEvent = {
-      target: { value: suggestion },
-    } as React.ChangeEvent<HTMLInputElement>
-
-    onChange?.(syntheticEvent)
-    handleSearch(suggestion)
-  }
-
-  const handleRemoveFromHistory = (item: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    removeFromHistory(item)
-  }
-
-  const handleClickAway = () => {
-    setShowDropdown(false)
-  }
-
-  const handleClear = () => {
-    onClear?.()
-    setShowDropdown(false)
-  }
+  }, [storageKey])
 
   return (
-    <ClickAwayListener onClickAway={handleClickAway}>
-      <Box ref={containerRef} sx={{ position: 'relative', width, maxWidth }}>
-        <MIInput
-          value={value}
-          onChange={onChange}
-          onKeyDown={handleKeyDown}
-          onFocusInput={handleInputFocus}
-          onClear={handleClear}
-          placeholder={placeholder}
-          size={size}
-          width={width}
-          maxWidth={maxWidth}
-          startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
-        />
+    <Box position={'relative'}>
+      <MIInput
+        inputRef={inputRef}
+        width={458}
+        maxWidth={'100%'}
+        placeholder={placeholder}
+        size="h46"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value)
+        }}
+        onKeyDown={({ key, target }) => {
+          if (key === 'Enter') {
+            const value = (target as HTMLInputElement).value
+            inputBlur()
 
-        {/* 자동완성 드롭다운 */}
-        {showDropdown && (
-          <Paper
-            sx={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              zIndex: 1000,
-              mt: 0.5,
-              maxHeight: '300px',
-              overflow: 'auto',
-              border: '1px solid #DEE2E6',
-              borderRadius: '4px',
-              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
-            }}
-          >
-            {filteredSuggestions.length > 0 ? (
-              <List sx={{ py: 0 }}>
-                {filteredSuggestions.map((item, index) => {
-                  const isFromHistory = history.includes(item)
-                  return (
-                    <ListItem
-                      key={`${item}-${index}`}
-                      onClick={() => handleSuggestionClick(item)}
-                      sx={{
-                        cursor: 'pointer',
-                        py: 1,
-                        px: 2,
-                        '&:hover': {
-                          backgroundColor: '#F8F9FA',
-                        },
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        borderBottom: index < filteredSuggestions.length - 1 ? '1px solid #F1F3F5' : 'none',
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                        {isFromHistory}
-                        <ListItemText
-                          primary={item}
-                          sx={{
-                            '& .MuiListItemText-primary': {
-                              fontSize: '14px',
-                              color: '#495057',
-                            },
-                          }}
-                        />
-                      </Box>
-                      {isFromHistory && (
-                        <ClearIcon
-                          onClick={(e) => handleRemoveFromHistory(item, e)}
-                          sx={{
-                            fontSize: '16px',
-                            color: '#CED4DA',
-                            cursor: 'pointer',
-                            '&:hover': {
-                              color: '#868E96',
-                            },
-                          }}
-                        />
-                      )}
-                    </ListItem>
-                  )
-                })}
-              </List>
-            ) : (
-              <Box sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  {value ? '검색 결과가 없습니다.' : '검색 이력이 없습니다.'}
-                </Typography>
-              </Box>
-            )}
-          </Paper>
-        )}
-      </Box>
-    </ClickAwayListener>
+            addHistory(value)
+            onSearch(value)
+          }
+        }}
+        onClear={onClear}
+        startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+      />
+      {openHistoryList && (
+        <Box
+          sx={{
+            backgroundColor: '#fff',
+            position: 'absolute',
+            top: '52px',
+            left: '0px',
+            width: '458px',
+            zIndex: 10,
+            border: '1px solid #DEE2E6',
+            boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.1)',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            padding: '8px 0',
+          }}
+        >
+          <ScrollWrapper maxHeight={'215px'}>
+            {filteredHistories.map((item) => (
+              <MenuItem
+                key={item}
+                onMouseDown={(e) => {
+                  e.preventDefault() // 포커스 변경 방지
+                  inputBlur()
+                  onChange(item)
+                  onSearch(item)
+                }}
+                sx={{
+                  padding: '8px 12px',
+                  '&:hover': {
+                    backgroundColor: theme.palette.gray[5],
+                    fontWeight: '500 !important',
+                  },
+                }}
+              >
+                <Typography variant="body2R14">{item}</Typography>
+              </MenuItem>
+            ))}
+          </ScrollWrapper>
+        </Box>
+      )}
+    </Box>
   )
 }
 
