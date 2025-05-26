@@ -1,5 +1,6 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -252,7 +253,7 @@ const MarketDataPage = () => {
                       </Typography>
                       <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
                       <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
-                        {item.modifyDt}
+                        {dayjs(item.recentViewedDt).format('MMM DD-YY')}
                       </Typography>
                     </Grid>
                   </Box>
