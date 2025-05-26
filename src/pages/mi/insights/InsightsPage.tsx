@@ -301,7 +301,7 @@ const InsightsPage = () => {
             <Grid container direction={'column'} gap={8}>
               {insights?.map((report, index) => <InsightsDocumentItem key={index} report={report} />)}
             </Grid>
-            {insightsData && (
+            {insightsData && insightsData.totalElements > 0 && (
               <MIPagination data={insightsData} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />
             )}
             {insights?.length === 0 && (
