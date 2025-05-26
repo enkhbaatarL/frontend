@@ -17,6 +17,10 @@ export interface IApiKeyInfo {
   auditInfo: IAuditInfo
 }
 
+export interface IDecryptedClientSecretKey {
+  clientSecretKey: string
+}
+
 const systemService = {
   /**
    * API Key 목록을 조회합니다.
@@ -35,6 +39,17 @@ const systemService = {
    */
   async reissueClientSecretKey(clientAccessRegNo: number): Promise<ICommonResponse<null>> {
     const response: AxiosResponse<ICommonResponse<null>> = await api.patch(`/admin/system-management/client-access/${clientAccessRegNo}`)
+
+    return response.data
+  },
+  /**
+   * 복호화된 클라이언트 Secret-Key를 조회합니다.
+   * @param clientAccessRegNo - 클라이언트 접근 번호
+   */
+  async getDecryptedClientSecretKey(clientAccessRegNo: number): Promise<ICommonResponse<IDecryptedClientSecretKey>> {
+    const response: AxiosResponse<ICommonResponse<IDecryptedClientSecretKey>> = await api.get(
+      `/admin/system-management/client-access/client-access/${clientAccessRegNo}/reveal-secret`,
+    )
 
     return response.data
   },

@@ -12,6 +12,8 @@ import MIButton from '@/components/common/button/MIButton'
 import MIChip from '@/components/common/chip/MIChip'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
+import MIField from '@/components/common/input/MIField'
+import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
 // import MITableLayout from '@/components/common/table/MITableLayout'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
@@ -37,9 +39,9 @@ const AdminApiPage = () => {
   const [isReissueModalOpen, setIsReissueModalOpen] = useState(false)
   const [_isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [clientAccessRegNo, setClientAccessRegNo] = useState<number | null>(null)
-
+  const [decodedSecretKey, setDecodedSecretKey] = useState<string | null>(null)
   // State for view secret modal
-  const [_viewSecretModal, setViewSecretModal] = useState<{ open: boolean; secret: string }>({ open: false, secret: '' })
+  const [viewSecretModal, setViewSecretModal] = useState(false)
 
   // Function to copy client secret to clipboard
   // const handleCopyClientSecret = useCallback(
@@ -49,6 +51,19 @@ const AdminApiPage = () => {
   //   },
   //   [showSnackbar],
   // )
+
+  // Client Secret 보기
+  const handleViewSecret = async (clientAccessRegNo: number) => {
+    try {
+      const response = await systemService.getDecryptedClientSecretKey(clientAccessRegNo)
+      if (response.status) {
+        setDecodedSecretKey(response.data.clientSecretKey)
+        setViewSecretModal(true)
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   const {
     pagination,
@@ -60,10 +75,6 @@ const AdminApiPage = () => {
     page: 1,
     size: 20,
   })
-
-  useEffect(() => {
-    console.log('apiKeyList', apiKeyList)
-  }, [apiKeyList])
 
   const columns: GridColDef[] = [
     {
@@ -105,7 +116,6 @@ const AdminApiPage = () => {
       align: 'left',
       renderCell(params) {
         const maskedValue = params.value ? '*'.repeat(params.value.length) : '********'
-
         return <MITableCell value={maskedValue} />
       },
     },
@@ -123,7 +133,7 @@ const AdminApiPage = () => {
               type="outlined"
               onClick={(e) => {
                 e.stopPropagation()
-                setViewSecretModal({ open: true, secret: params.row.clientSecret })
+                handleViewSecret(params.row.clientAccessRegNo)
               }}
             >
               <Typography variant="body3SB12" color="gray.70">
@@ -213,7 +223,7 @@ const AdminApiPage = () => {
               }}
             >
               <Typography variant="body3SB12" color="gray.70">
-                재발행
+                {t('재발행')}
               </Typography>
             </MIButton>
           </MITableCell>
@@ -279,6 +289,14 @@ const AdminApiPage = () => {
     }
   }
 
+  // Client Secret 복사
+  const handleCopyClientSecret = () => {
+    if (decodedSecretKey) {
+      navigator.clipboard.writeText(decodedSecretKey)
+      showSnackbar(t('복사되었습니다.'), { variant: 'success' })
+    }
+  }
+
   useEffect(() => {
     setCustomComponent(<AdminApiPageHeader onCreateClick={() => setIsCreateModalOpen(true)} />)
     setCustomTitle(
@@ -311,9 +329,6 @@ const AdminApiPage = () => {
         onConfirm={handleCreateApiKey}
         existingClientIds={data.map((item) => item.clientId)}
       /> */}
-
-      {/* Reissue API Key Modal */}
-      {/* <ApiKeyReissueModal open={isReissueModalOpen} handleClose={() => setIsReissueModalOpen(false)} /> */}
 
       {/* Delete API Key Modal */}
       {/* <AdminConfirm
@@ -397,13 +412,47 @@ const AdminApiPage = () => {
             },
           },
           {
-            label: '재발행',
+            label: t('재발행'),
             variant: 'filled',
             color: 'primary',
             onClick: () => handleReIssueApiKey(),
           },
         ]}
       ></MIConfirm>
+      <MIConfirm
+        open={viewSecretModal}
+        title={t('Client Secret 보기')}
+        width={450}
+        handleClose={() => setViewSecretModal(false)}
+        actions={[
+          {
+            label: t('Key 복사'),
+            variant: 'filled',
+            color: 'primary',
+            onClick: () => handleCopyClientSecret(),
+          },
+        ]}
+      >
+        <Typography variant="body1R16" color="gray.60" sx={{ mb: 3, display: 'block' }} fontSize="14px">
+          {t('안전한 사용을 위해 공개된 곳에 공유하거나 삽입하지 마세요.')}
+        </Typography>
+        <MIField>
+          <MIInput
+            value={decodedSecretKey}
+            readOnly
+            size="h34"
+            sx={{
+              background: '#F1F3F5',
+              borderRadius: '6px',
+              fontFamily: 'monospace',
+              fontSize: '12px',
+              color: '#343A40',
+              width: '100%',
+              mb: 2,
+            }}
+          />
+        </MIField>
+      </MIConfirm>
     </Box>
   )
 }
