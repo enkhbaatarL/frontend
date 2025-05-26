@@ -7,6 +7,7 @@ import InsightsDocumentItem from './components/InsightsDocumentItem'
 import psImg from '@/assets/productsymbol.png'
 import shiImg from '@/assets/subheaderinsight.jpg'
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
+import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon.tsx'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
@@ -305,9 +306,21 @@ const InsightsPage = () => {
               <MIPagination data={insightsData} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />
             )}
             {insights?.length === 0 && (
-              <Grid size={3}>
-                <Typography>No results found</Typography>
-              </Grid>
+              <Box
+                display={'flex'}
+                alignItems={'center'}
+                justifyContent={'center'}
+                width={'100%'}
+                height={'732px'}
+                sx={{ backgroundColor: '#F8F9FA', border: '1px solid #DEE2E6', borderRadius: '4px' }}
+              >
+                <Box display={'flex'} flexDirection={'column'} height={'fit-content'} alignItems={'center'}>
+                  <ErrorOutlineIcon />
+                  <Typography variant="body3SB12" color="gray.60" mt={'10px'}>
+                    No results found
+                  </Typography>
+                </Box>
+              </Box>
             )}
           </Box>
           <Box
