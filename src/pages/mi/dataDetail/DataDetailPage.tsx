@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
 import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 
 import bshImg from '@/assets/bgsubheader.png'
 import MIButton from '@/components/common/button/MIButton'
@@ -30,7 +30,7 @@ interface ITableRow {
 
 const DataDetailPage = () => {
   const pathParams = useParams()
-
+  const { state } = useLocation()
   const [goodsDataSourceNo, setGoodsDataSourceNo] = useState<number>()
 
   const [startDate, setStartDate] = useState<string>(dayjs().subtract(1, 'month').format('YYYYMMDD'))
@@ -173,12 +173,12 @@ const DataDetailPage = () => {
   }, [endDate, goodsDataNo, goodsDataSourceNo, goodsNo, rawPage, rawSize, startDate])
 
   useEffect(() => {
-    const { goodsDataSourceNo: initGoodsDataSourceNo } = structuredDataList?.[0] ?? {}
+    const routeGoodsDataSourceNo = state?.goodsDataSrcNo
+    const firstItemDataSourceNo = structuredDataList?.[0]?.goodsDataSourceNo
 
-    if (initGoodsDataSourceNo) {
-      setGoodsDataSourceNo(initGoodsDataSourceNo)
-    }
-  }, [structuredDataList])
+    if (routeGoodsDataSourceNo) setGoodsDataSourceNo(routeGoodsDataSourceNo)
+    else if (firstItemDataSourceNo) setGoodsDataSourceNo(firstItemDataSourceNo)
+  }, [state?.goodsDataSrcNo, structuredDataList])
 
   return (
     <>

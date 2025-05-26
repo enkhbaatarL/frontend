@@ -198,8 +198,8 @@ const MarketDataPage = () => {
                   ],
                   rowId: 'goodsDataSrcNo',
                   rows: data?.detail,
-                  onRowClick: (row) => {
-                    navigate(`/mi/data-detail/${row.row.goodsNo}/${row.row.goodsDataNo}`)
+                  onRowClick: ({ row }) => {
+                    navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`, { state: { goodsDataSrcNo: row.goodsDataSrcNo } })
                   },
                 }}
                 paginationProps={{
