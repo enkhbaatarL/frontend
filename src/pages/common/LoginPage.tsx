@@ -30,6 +30,11 @@ const devTokens = {
   ],
   user: [
     {
+      label: 'SK E&S', // USER-SKEN-SKENS002@SKENS.com
+      value:
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0VOUzAwMkBTS0VOUy5jb20iLCJpYXQiOjE3NDgyMjkzNDQsInVzZXJObyI6MTAwMDA4MiwiY29tcGFueU5vIjoyMDEzLCJjb21wYW55Q2QiOiJTS0VOUyIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImNvbXBhbnlEb21haW4iOiJFTl9MTkciLCJleHAiOjIxMDgyMjkzNDR9.OjQXaOMXr6ZILxx-NsMv33sU9Lq9AJRiTjIWmdgd4Fk',
+    },
+    {
       label: 'SK HY', // USER-SKHY-SKHY001@SKHY.com
       value:
         'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAxQFNLSFkuY29tIiwiaWF0IjoxNzQ3MDM1MjA5LCJ1c2VyTm8iOjEwMDAwNTMsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImNvbXBhbnlEb21haW4iOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjIxMDcwMzUyMDl9.-UXBxtc-wzkf8X6lB7M09t0KWQQbGiqI-fzMTo4o-6M',
@@ -150,17 +155,18 @@ const LoginPage = () => {
               운영자 로그인
             </MIButton>
           </Flex>
-          <Divider sx={{ width: '100%' }} />
-          <Flex gap={10}>
-            <MIButton
-              onClick={() => {
-                navigate('/test')
-              }}
-              type="outlined"
-            >
-              Component Test
-            </MIButton>
-          </Flex>
+          {/*<Divider sx={{ width: '100%' }} />*/}
+          {/* TODO: 제거 필요 */}
+          {/*<Flex gap={10}>*/}
+          {/*  <MIButton*/}
+          {/*    onClick={() => {*/}
+          {/*      navigate('/test')*/}
+          {/*    }}*/}
+          {/*    type="outlined"*/}
+          {/*  >*/}
+          {/*    Component Test*/}
+          {/*  </MIButton>*/}
+          {/*</Flex>*/}
         </Flex>
       ) : (
         <Flex direction="column" gap={20} align="center" style={{ width: '300px' }}>
