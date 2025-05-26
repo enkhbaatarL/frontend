@@ -29,6 +29,15 @@ const systemService = {
 
     return response.data.data
   },
+  /**
+   * 클라이언트 Secret-Key를 재발급합니다.
+   * @param clientAccessRegNo - 클라이언트 접근 번호
+   */
+  async reissueClientSecretKey(clientAccessRegNo: number): Promise<ICommonResponse<null>> {
+    const response: AxiosResponse<ICommonResponse<null>> = await api.patch(`/admin/system-management/client-access/${clientAccessRegNo}`)
+
+    return response.data
+  },
 }
 
 export default systemService

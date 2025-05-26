@@ -17,6 +17,7 @@ import MITableCell from '@/components/common/table/MITableCell'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 // import useAdminSnackbar from '@/hooks/useAdminSnackbar'
 import useSearchFilter from '@/hooks/useSearchFilter'
+import useSnackbar from '@/hooks/useSnackbar'
 import systemService, { IApiKeyInfo } from '@/service/admin/system'
 import { IPaginationRequest, IPaginationResponse } from '@/types/api'
 
@@ -30,11 +31,12 @@ const AdminApiPageHeader = ({ onCreateClick }: { onCreateClick: () => void }) =>
 // Main component
 const AdminApiPage = () => {
   const { setCustomComponent, setCustomTitle } = useAdminHeader()
+  const { showSnackbar } = useSnackbar()
   // const { showSnackbar } = useAdminSnackbar()
   const [_isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isReissueModalOpen, setIsReissueModalOpen] = useState(false)
   const [_isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [_selectedKeyId, setSelectedKeyId] = useState<string | null>(null)
+  const [clientAccessRegNo, setClientAccessRegNo] = useState<number | null>(null)
 
   // State for view secret modal
   const [_viewSecretModal, setViewSecretModal] = useState<{ open: boolean; secret: string }>({ open: false, secret: '' })
@@ -53,6 +55,7 @@ const AdminApiPage = () => {
     updateSize,
     updatePage,
     data: apiKeyList,
+    refetch,
   } = useSearchFilter<IPaginationRequest, IPaginationResponse<IApiKeyInfo>>((params) => systemService.getApiKeyList(params), {
     page: 1,
     size: 20,
@@ -205,7 +208,7 @@ const AdminApiPage = () => {
               type="outlined"
               onClick={(e) => {
                 e.stopPropagation()
-                setSelectedKeyId(params.row.id)
+                setClientAccessRegNo(params.row.clientAccessRegNo)
                 setIsReissueModalOpen(true)
               }}
             >
@@ -230,7 +233,7 @@ const AdminApiPage = () => {
               fontSize="small"
               onClick={(e) => {
                 e.stopPropagation()
-                setSelectedKeyId(params.row.id)
+                setClientAccessRegNo(params.row.clientAccessRegNo)
                 setIsDeleteModalOpen(true)
               }}
             />
@@ -259,8 +262,21 @@ const AdminApiPage = () => {
   // }
 
   // 재발행
-  const handleReIssueApiKey = () => {
-    console.log('handleReIssueApiKey')
+  const handleReIssueApiKey = async () => {
+    try {
+      if (!clientAccessRegNo) {
+        throw new Error('clientAccessRegNo is required')
+      }
+      const response = await systemService.reissueClientSecretKey(clientAccessRegNo)
+      setIsReissueModalOpen(false)
+      setClientAccessRegNo(null)
+      if (response.status) {
+        showSnackbar(t('재발행되었습니다.'), { variant: 'success' })
+        await refetch()
+      }
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   useEffect(() => {
@@ -387,9 +403,7 @@ const AdminApiPage = () => {
             onClick: () => handleReIssueApiKey(),
           },
         ]}
-      >
-        {t('등록 취소 시 입력된 내용은 저장되지 않습니다.')}
-      </MIConfirm>
+      ></MIConfirm>
     </Box>
   )
 }
