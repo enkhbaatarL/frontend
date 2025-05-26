@@ -23,6 +23,7 @@ import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import dataProviderService, { IProviderGoodsDataRegisterRequest } from '@/service/admin/dataProvider'
+
 export interface FileInfo {
   id?: string
   name: string
@@ -47,6 +48,7 @@ const AdminDataRegistration = () => {
   const { setCustomComponent, setCustomTitle } = useAdminHeader()
   const navigate = useNavigate()
   const { providerNo, goodsNo, dataNo } = useParams()
+
   /** 수정모드시 수정하는 데이터 No */
   const [editDataNo, setEditDataNo] = useState<number | null>(null)
   const [isEdit, setIsEdit] = useState<boolean>(!!dataNo)
@@ -61,9 +63,11 @@ const AdminDataRegistration = () => {
   const [openRegisterErrorFileAlert, setOpenRegisterErrorFileAlert] = useState(false)
   /** 등록 버튼 클릭 시 confirm 다이어로그 trigger */
   const [openRegisterSuccessFileAlert, setOpenRegisterSuccessFileAlert] = useState(false)
-
   /** 비정형 체크박스 해제시 파일 삭제 다이어로그 trigger */
   const [openUnstructuredConfirm, setOpenUnstructuredConfirm] = useState(false)
+
+  /** 데이터 등록/수정 중 상태 */
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   /** 정형화 업로드 파일 목록 */
   const [filesStructured, setFilesStructured] = useState<AdminDataUploadFileInfo[]>([])
@@ -128,13 +132,15 @@ const AdminDataRegistration = () => {
   })
 
   const onRegister = useCallback(() => {
+    if (isSubmitting) return
+
     const checkFilesStatusClean = () => [...filesStructured, ...filesUnstructured].every((m) => m.status === 'pass')
     if (!checkFilesStatusClean()) {
       setOpenRegisterErrorFileAlert(true)
       return
     }
     setOpenRegisterSuccessFileAlert(true)
-  }, [filesStructured, filesUnstructured])
+  }, [filesStructured, filesUnstructured, isSubmitting])
 
   // GET 데이터명 목록
   const { data: getDataList = [] } = useQuery({
@@ -185,7 +191,7 @@ const AdminDataRegistration = () => {
   useEffect(() => {
     setCustomComponent(
       <AdminDataProvidersListPageHeader
-        disabled={!formCanSubmit}
+        disabled={!formCanSubmit || isSubmitting}
         onRegister={onRegister}
         onCancel={() => {
           setOpenCancelConfirmation(true)
@@ -196,7 +202,7 @@ const AdminDataRegistration = () => {
     return () => {
       setCustomComponent(null)
     }
-  }, [setCustomComponent, formCanSubmit, onRegister])
+  }, [setCustomComponent, formCanSubmit, onRegister, isSubmitting])
 
   useEffect(() => {
     if (dataNo) setEditDataNo(Number(dataNo))
@@ -222,6 +228,7 @@ const AdminDataRegistration = () => {
     onSuccess: () => showSnackbar('저장되었습니다.', { variant: 'success' }),
     onError: () => showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' }),
     onSettled: () => {
+      setIsSubmitting(false)
       setOpenRegisterSuccessFileAlert(false)
       navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}`)
     },
@@ -237,6 +244,7 @@ const AdminDataRegistration = () => {
     },
     onError: () => showSnackbar('문제가 발생했습니다.', { variant: 'error', body: '나중에 다시 시도해 주세요.' }),
     onSettled: () => {
+      setIsSubmitting(false)
       setOpenRegisterSuccessFileAlert(false)
       navigate(`/admin/data-providers/providers/product-detail/${providerNo}/${goodsNo}`)
     },
@@ -244,6 +252,10 @@ const AdminDataRegistration = () => {
 
   /** 데이터 등록 */
   const onRegisterGoodsData = () => {
+    if (isSubmitting) return
+
+    setIsSubmitting(true)
+
     const { langCategoryList, docCategoryList, fileTypes, goodsDataExpn, ...rest } = form.state.values
     const getConfirmedUnstructuredFiles = () => {
       const combinedFiles = [...filesUnstructured, ...(dataDetail?.unstructuredDataList ?? [])]
@@ -562,9 +574,10 @@ const AdminDataRegistration = () => {
             onClick: () => setOpenRegisterSuccessFileAlert(false),
           },
           {
-            label: <Typography variant="body2SB14">등록</Typography>,
+            label: <Typography variant="body2SB14">{isSubmitting ? '등록 중...' : '등록'}</Typography>,
             variant: 'filled',
             color: 'primary',
+            disabled: isSubmitting,
             onClick: () => {
               onRegisterGoodsData()
             },
