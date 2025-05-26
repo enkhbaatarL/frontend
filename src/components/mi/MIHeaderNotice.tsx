@@ -10,8 +10,9 @@ import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIButton from '@/components/common/button/MIButton'
 import NoticeIcon from '@/components/common/icons/NoticeIcon'
 import MITabs from '@/components/common/tabs/MITabs'
-import useMockNotice from '@/hooks/useMockNotice'
+import { UserRole } from '@/service/admin/members'
 import boardService, { INoticeInfo } from '@/service/mi/board'
+import notificationService, { INotificationHistory } from '@/service/mi/notification'
 import useAuthStore from '@/store/useAuthStore.ts'
 
 interface NoticeItemProps {
@@ -191,7 +192,9 @@ const MIHeaderNotice = () => {
   const [anchorElNotice, setAnchorElNotice] = useState<null | HTMLElement>(null)
   const [notices, setNotices] = useState<INoticeInfo[]>([])
   const [isLoadingNotices, setIsLoadingNotices] = useState(false)
-  const { accessCompanyInfo } = useAuthStore()
+  const [alerts, setAlerts] = useState<INotificationHistory[]>([])
+  const [alertsIsLoading, setAlertsIsLoading] = useState(false)
+  const { user, accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
   const handleOpenNoticeMenu = (event: ReactMouseEvent<HTMLElement>) => {
@@ -224,6 +227,27 @@ const MIHeaderNotice = () => {
     fetchNotices()
   }, [anchorElNotice, customerCompanyNo])
 
+  // 알림 내역 데이터 로드 (USER 권한만)
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      if (anchorElNotice && user?.userRoleCd === UserRole.USER) {
+        try {
+          setAlertsIsLoading(true)
+          const response = await notificationService.getNotificationHistory({ page: 1, size: 10 })
+          if (response.detail) {
+            setAlerts(response.detail)
+          }
+        } catch (error) {
+          console.error('Failed to fetch notification history:', error)
+        } finally {
+          setAlertsIsLoading(false)
+        }
+      }
+    }
+
+    fetchAlerts()
+  }, [anchorElNotice, user?.userRoleCd])
+
   const handleNoticeClick = (noticeNo: number) => {
     navigate(`/mi/notices/${noticeNo}`)
     handleCloseNoticeMenu()
@@ -240,21 +264,43 @@ const MIHeaderNotice = () => {
       content: (
         <>
           <ScrollWrapper sx={{ margin: '0 -20px' }} maxHeight={556}>
-            {useMockNotice(10).map((notice) => (
-              <AlertItem
-                id={notice.id}
-                key={notice.id}
-                trend={notice.trend}
-                title={notice.title}
-                subtitle={notice.subtitle}
-                date={notice.date}
-                isRead={notice.isRead}
-                onClick={(id) => console.log(id)}
-              />
-            ))}
+            {alertsIsLoading ? (
+              <Box display="flex" justifyContent="center" alignItems="center" p={5}>
+                <Typography variant="body2R14" color="gray.60">
+                  Loading...
+                </Typography>
+              </Box>
+            ) : alerts.length > 0 ? (
+              alerts.map((alert) => (
+                <AlertItem
+                  id={alert.emailSendSn}
+                  key={alert.emailSendSn}
+                  trend={['INCRATE', 'UPPER'].includes(alert.notificationCriticalValueSeparateCd) ? 'up' : 'down'}
+                  title={alert.emailTitleNm}
+                  subtitle={alert.goodsDataSourceNm}
+                  date={dayjs(alert.emailSendDtm).format('YYYY-MM-DD HH:mm')}
+                  isRead={alert.isEmailInquiry}
+                  onClick={(id) => console.log(id)}
+                />
+              ))
+            ) : (
+              <Box display="flex" justifyContent="center" alignItems="center" p={5}>
+                <Typography variant="body2R14" color="gray.60">
+                  Alert 가 없습니다.
+                </Typography>
+              </Box>
+            )}
           </ScrollWrapper>
           <Box sx={{ margin: '0 -20px' }} borderTop={'1px solid #E9ECEF'} p={5}>
-            <MIButton width={'100%'} color={'gray'} type={'outlined'} contentType={'text'} size={'h42'} onClick={handleNotificationClick}>
+            <MIButton
+              disabled={user?.userRoleCd !== UserRole.USER}
+              width={'100%'}
+              color={'gray'}
+              type={'outlined'}
+              contentType={'text'}
+              size={'h42'}
+              onClick={handleNotificationClick}
+            >
               Manage My Alerts
             </MIButton>
           </Box>
@@ -277,11 +323,11 @@ const MIHeaderNotice = () => {
                 <NoticeItem
                   id={notice.bulletinNo}
                   key={notice.bulletinNo}
-                  trend={'down'} // API에서 trend 정보가 없으므로 기본값 사용
+                  trend={'down'} // 미사용
                   title={notice.bulletinTitleName}
                   subtitle={notice.bulletinCategorySeparateCode}
                   date={dayjs(notice.auditInfo?.createDt).format('YYYY-MM-DD HH:mm')}
-                  isRead={notice.isRead} // 읽음 상태 정보가 없으므로 기본값 사용
+                  isRead={notice.isRead}
                   onClick={handleNoticeClick}
                 />
               ))
