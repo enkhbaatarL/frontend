@@ -1,5 +1,4 @@
 import ClearIcon from '@mui/icons-material/Clear'
-import HistoryIcon from '@mui/icons-material/History'
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Paper, List, ListItem, ListItemText, ClickAwayListener, Typography } from '@mui/material'
 import { useState, useEffect, useRef } from 'react'
@@ -153,7 +152,7 @@ const MISearchInput = ({
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                        {isFromHistory && <HistoryIcon sx={{ color: '#868E96', fontSize: '16px', mr: 1 }} />}
+                        {isFromHistory}
                         <ListItemText
                           primary={item}
                           sx={{
