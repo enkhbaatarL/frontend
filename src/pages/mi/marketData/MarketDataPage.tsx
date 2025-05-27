@@ -7,7 +7,9 @@ import { useNavigate } from 'react-router-dom'
 import bgmImg from '@/assets/bgmarket.jpg'
 import psImg from '@/assets/productsymbol.png'
 import MILine from '@/components/common/divider/MILine'
+import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
+import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
@@ -177,15 +179,13 @@ const MarketDataPage = () => {
                 tableProps={{
                   disableHover: true,
                   noRowMessage: 'No results Found',
+                  getRowClassName: (params) => (!params.row.isViewable ? 'no-click' : ''),
                   columns: [
                     {
                       field: 'goodsDataNm',
                       headerName: 'Data Name',
                       flex: 1,
                       minWidth: 300,
-                      renderCell: ({ row }) => (
-                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { cursor: 'pointer' }) }}>{row.goodsDataNm}</span>
-                      ),
                     },
                     {
                       field: 'goodsDataSrcNm',
@@ -193,9 +193,6 @@ const MarketDataPage = () => {
                       flex: 1,
                       align: 'left',
                       minWidth: 300,
-                      renderCell: ({ row }) => (
-                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { cursor: 'pointer' }) }}>{row.goodsDataSrcNm}</span>
-                      ),
                     },
                     {
                       field: 'lastValue',
@@ -204,9 +201,33 @@ const MarketDataPage = () => {
                       align: 'center',
                       minWidth: 150,
                       renderCell: ({ row }) => (
-                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { fontWeight: 'bold', cursor: 'pointer' }) }}>
-                          {row.lastValue}
-                        </span>
+                        <Box position="relative">
+                          <Box
+                            sx={{
+                              filter: !row.isViewable ? 'blur(2px)' : 'none',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            {row.isViewable ? row.lastValue : '123.45'}
+                          </Box>
+                          {!row.isViewable && (
+                            <Box
+                              display={'flex'}
+                              alignItems={'center'}
+                              justifyContent={'center'}
+                              position={'absolute'}
+                              top={-1}
+                              sx={{
+                                inset: '0px -6px',
+                                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                color: 'gray.60',
+                                borderRadius: '4px',
+                              }}
+                            >
+                              <LockOutlinedIcon style={{ width: '16px', height: '16px' }} />
+                            </Box>
+                          )}
+                        </Box>
                       ),
                     },
                     {
@@ -216,9 +237,12 @@ const MarketDataPage = () => {
                       minWidth: 200,
                       align: 'center',
                       renderCell: ({ row }) => (
-                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { cursor: 'pointer' }) }}>
-                          {dayjs(row.modifyDt).format('YYYY-MM-DD')}
-                        </span>
+                        <MITableCell
+                          value={dayjs(row.modifyDt).format('YYYY-MM-DD')}
+                          typography={{
+                            color: 'gray.60',
+                          }}
+                        />
                       ),
                     },
                   ],
