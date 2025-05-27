@@ -45,7 +45,6 @@ export default function MITabs({
   }
 
   const tabId = useMemo(() => value ?? innerTabId, [value, innerTabId])
-
   const styleBaseSize = useMemo(() => {
     const typography = {
       h70: theme.typography.body1M16,

@@ -1,26 +1,62 @@
 import CloseIcon from '@mui/icons-material/Close'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
-import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+import ReportComponent from './components/ReportComponent'
+import UpdatedData from './components/UpdatedData'
+import { dashboardMapper } from './lib/dashboardMapper'
 
 import psImg from '@/assets/productsymbol.png'
 import MIButton from '@/components/common/button/MIButton'
 import MITabs from '@/components/common/tabs/MITabs'
 import HistoryComponent from '@/pages/mi/dashboard/components/HistoryComponent'
 import LatestData from '@/pages/mi/dashboard/components/LatestData'
-import ReportComponent from '@/pages/mi/dashboard/components/ReportComponent'
+import dashboardDataService from '@/service/mi/dashboardData'
+import useAuthStore from '@/store/useAuthStore'
 
 const MIDashboardPage = () => {
   const [showBanner, setShowBanner] = useState(true)
+  const navigate = useNavigate()
+  const { accessCompanyInfo } = useAuthStore()
+
+  const companyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? -1, [accessCompanyInfo?.customerCompanyNo])
+
+  const shouldHideDashboard = useMemo(() => dashboardMapper[companyNo]?.hide, [companyNo])
+
   const tabsData = [
     {
       label: 'Report',
-      content: <ReportComponent />,
+      content: <ReportComponent companyNo={companyNo} />,
     },
     {
       label: 'History',
       content: <HistoryComponent />,
     },
   ]
+
+  useEffect(() => {
+    if (shouldHideDashboard) navigate('/mi')
+  }, [navigate, shouldHideDashboard])
+
+  // 우측 latestInsights 리스트 조회
+  const { data: latestInsightsList = [] } = useQuery({
+    queryKey: ['getdashboardLatestInsights', companyNo],
+    queryFn: async () => await dashboardDataService.getdashboardLatestInsights(companyNo!),
+    enabled: !!companyNo || companyNo !== 1,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  // 우측 marketData 리스트 조회
+  const { data: marketDataList = [] } = useQuery({
+    queryKey: ['getdashboardMakterDatas', companyNo],
+    queryFn: async () => await dashboardDataService.getdashboardMakterDatas(companyNo!),
+    enabled: !!companyNo || companyNo !== 1,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
 
   return (
     <Box bgcolor={'#F2F5F7'} position={'relative'}>
@@ -104,8 +140,8 @@ const MIDashboardPage = () => {
             direction="column"
             flexShrink={0}
           >
-            <LatestData />
-            <LatestData />
+            <UpdatedData dataList={marketDataList} />
+            <LatestData dataList={latestInsightsList} />
           </Grid>
         </Grid>
       </Box>
