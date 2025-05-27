@@ -57,7 +57,7 @@ const LoginPage = () => {
   const [devAdmin, setDevAdmin] = useState<string>(devTokens.admin[0].value)
   const [devOperator, setDevOperator] = useState<string>(devTokens.operator[0].value)
 
-  const [tempAuthFilter, setTempAuthFilter] = useState<boolean>(false) // TODO: 임시 용도로 SSO 작업 시 제거 필요
+  const [tempAuthFilter, setTempAuthFilter] = useState<boolean>(window.location.hostname === 'localhost') // TODO: 임시 용도로 SSO 작업 시 제거 필요
 
   const ssoLogin = () => {
     // TODO: SSO login 작성
@@ -155,18 +155,6 @@ const LoginPage = () => {
               운영자 로그인
             </MIButton>
           </Flex>
-          {/*<Divider sx={{ width: '100%' }} />*/}
-          {/* TODO: 제거 필요 */}
-          {/*<Flex gap={10}>*/}
-          {/*  <MIButton*/}
-          {/*    onClick={() => {*/}
-          {/*      navigate('/test')*/}
-          {/*    }}*/}
-          {/*    type="outlined"*/}
-          {/*  >*/}
-          {/*    Component Test*/}
-          {/*  </MIButton>*/}
-          {/*</Flex>*/}
         </Flex>
       ) : (
         <Flex direction="column" gap={20} align="center" style={{ width: '300px' }}>
