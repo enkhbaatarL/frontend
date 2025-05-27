@@ -1,25 +1,23 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import { Box, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
+import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-// import AdminConfirm from '@/components/admin/AdminConfirm'
-// import ApiKeyCreateModal from '@/components/admin/ApiKeyCreateModal'
 import AdminTable from '@/components/admin/AdminTable'
 import MIButton from '@/components/common/button/MIButton'
-import MIChip from '@/components/common/chip/MIChip'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
 import MIInput from '@/components/common/input/MIInput'
+import MISelect from '@/components/common/select/MISelect'
 import MITableCell from '@/components/common/table/MITableCell'
-// import MITableLayout from '@/components/common/table/MITableLayout'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
-// import useAdminSnackbar from '@/hooks/useAdminSnackbar'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
+import companiesService from '@/service/admin/companies'
 import systemService, { IApiKeyInfo } from '@/service/admin/system'
 import { IPaginationRequest, IPaginationResponse } from '@/types/api'
 
@@ -34,23 +32,15 @@ const AdminApiPageHeader = ({ onCreateClick }: { onCreateClick: () => void }) =>
 const AdminApiPage = () => {
   const { setCustomComponent, setCustomTitle } = useAdminHeader()
   const { showSnackbar } = useSnackbar()
-  // const { showSnackbar } = useAdminSnackbar()
-  const [_isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isReissueModalOpen, setIsReissueModalOpen] = useState(false)
   const [_isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [clientAccessRegNo, setClientAccessRegNo] = useState<number | null>(null)
   const [decodedSecretKey, setDecodedSecretKey] = useState<string | null>(null)
-  // State for view secret modal
   const [viewSecretModal, setViewSecretModal] = useState(false)
-
-  // Function to copy client secret to clipboard
-  // const handleCopyClientSecret = useCallback(
-  //   (secret: string) => {
-  //     showSnackbar('Client Secret가 복사되었습니다.', { variant: 'success' })
-  //     setViewSecretModal({ open: false, secret })
-  //   },
-  //   [showSnackbar],
-  // )
+  const [selectedCompany, setSelectedCompany] = useState<string>('')
+  const [clientId, setClientId] = useState<string>('')
+  const [isError, setIsError] = useState<boolean>(false)
 
   // Client Secret 보기
   const handleViewSecret = async (clientAccessRegNo: number) => {
@@ -65,6 +55,7 @@ const AdminApiPage = () => {
     }
   }
 
+  // API Key 목록 조회
   const {
     pagination,
     updateSize,
@@ -76,6 +67,25 @@ const AdminApiPage = () => {
     size: 20,
   })
 
+  // 고객사 조회
+  const { data: customerCompanyList } = useQuery({
+    queryKey: ['customerCompanyList'],
+    queryFn: async () => await companiesService.getCompanyList(),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  const companyOptions = useMemo(() => {
+    const customerCompanies = customerCompanyList?.find((item) => item.companyType === 'CUSTOMER')?.companies || []
+
+    const companyOptions = customerCompanies.map((company) => ({
+      value: company.companyNo,
+      label: company.companyNm,
+    }))
+
+    return companyOptions
+  }, [customerCompanyList])
+
   const columns: GridColDef[] = [
     {
       field: 'customerCompanyNm',
@@ -84,19 +94,6 @@ const AdminApiPage = () => {
       align: 'left',
       renderCell(params) {
         return <MITableCell value={params.value} typography={{ variant: 'tableBody1' }} />
-      },
-    },
-    {
-      field: 'isOwnerCompany',
-      headerName: '구분',
-      width: 80,
-      align: 'center',
-      renderCell(params) {
-        return (
-          <MITableCell>
-            <MIChip label={params.value ? '관리자사' : '고객사'} color={params.value ? 'blue' : 'orange'} size="h20" />
-          </MITableCell>
-        )
       },
     },
     {
@@ -253,24 +250,6 @@ const AdminApiPage = () => {
     },
   ]
 
-  // Handle API key creation
-  // const handleCreateApiKey = (_clientId: string, companySelection: string) => {
-  //   createApiKey({
-  //     companyName: companySelection,
-  //     category: '고객사',
-  //     registrant: 'Admin User',
-  //     modifier: 'Admin User',
-  //   })
-  //   // showSnackbar('API Key가 생성되었습니다.', { variant: 'success' })
-  // }
-
-  // Handle API key deletion
-  // const handleDeleteApiKey = () => {
-  //   if (selectedKeyId) {
-  //     setIsDeleteModalOpen(false)
-  //   }
-  // }
-
   // 재발행
   const handleReIssueApiKey = async () => {
     try {
@@ -294,6 +273,30 @@ const AdminApiPage = () => {
     if (decodedSecretKey) {
       navigator.clipboard.writeText(decodedSecretKey)
       showSnackbar(t('복사되었습니다.'), { variant: 'success' })
+    }
+  }
+
+  // Key 생성
+  const handleCreateApiKey = async () => {
+    try {
+      const response = await systemService.createClientAccess({
+        customerCompanyNo: Number(selectedCompany),
+        clientCertId: clientId,
+      })
+      if (response.status) {
+        showSnackbar(t('생성되었습니다.'), { variant: 'success' })
+        setIsCreateModalOpen(false)
+        setSelectedCompany('')
+        setClientId('')
+        setIsError(false)
+        await refetch()
+      } else {
+        if (response.code === 'RSC-003') {
+          setIsError(true)
+        }
+      }
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -321,15 +324,6 @@ const AdminApiPage = () => {
         onSizeChange={updateSize}
         onPageChange={updatePage}
       />
-
-      {/* Create API Key Modal */}
-      {/* <ApiKeyCreateModal
-        open={isCreateModalOpen}
-        handleClose={() => setIsCreateModalOpen(false)}
-        onConfirm={handleCreateApiKey}
-        existingClientIds={data.map((item) => item.clientId)}
-      /> */}
-
       {/* Delete API Key Modal */}
       {/* <AdminConfirm
         open={isDeleteModalOpen}
@@ -359,43 +353,6 @@ const AdminApiPage = () => {
         ]}
       >
         API Key는 삭제 후 되돌릴 수 없습니다.
-      </AdminConfirm> */}
-      {/* View Client Secret Modal */}
-      {/* <AdminConfirm
-        open={viewSecretModal.open}
-        title="Client Secret 보기"
-        width={480}
-        handleClose={() => setViewSecretModal({ open: false, secret: '' })}
-        actions={[
-          {
-            label: 'Key 복사',
-            variant: 'filled',
-            color: 'primary',
-            onClick: () => handleCopyClientSecret(viewSecretModal.secret),
-          },
-        ]}
-      >
-        <Box>
-          <Typography variant="body1R16" color="gray.60" sx={{ mb: 3, display: 'block' }}>
-            안전한 사용을 위해 공개된 곳에 공유하거나 삽입하지 마세요.
-          </Typography>
-          <MIField>
-            <MIInput
-              value={viewSecretModal.secret}
-              readOnly
-              size="h34"
-              sx={{
-                background: '#F1F3F5',
-                borderRadius: '6px',
-                fontFamily: 'monospace',
-                fontSize: '16px',
-                color: '#343A40',
-                width: '100%',
-                mb: 2,
-              }}
-            />
-          </MIField>
-        </Box>
       </AdminConfirm> */}
       <MIConfirm
         open={isReissueModalOpen}
@@ -452,6 +409,56 @@ const AdminApiPage = () => {
             }}
           />
         </MIField>
+      </MIConfirm>
+      <MIConfirm
+        open={isCreateModalOpen}
+        title={t('API Key 생성')}
+        width={450}
+        handleClose={() => setIsCreateModalOpen(false)}
+        actions={[
+          {
+            label: t('취소'),
+            variant: 'outlined',
+            color: 'gray',
+            onClick: () => {
+              setIsCreateModalOpen(false)
+            },
+          },
+          {
+            label: t('생성'),
+            variant: 'filled',
+            color: 'primary',
+            onClick: () => handleCreateApiKey(),
+          },
+        ]}
+      >
+        <Box sx={{ width: '100%', mt: 2 }}>
+          <MIField label={t('고객사 선택')} required labelSize="sm"></MIField>
+          <MISelect
+            fullWidth
+            value={selectedCompany}
+            options={companyOptions}
+            onChange={(e) => setSelectedCompany(e.target.value as string)}
+            useAllOption={false}
+          />
+          <Box mt={5}>
+            <MIField
+              label="Client ID"
+              required
+              labelSize="sm"
+              subText={t('영문 대소문자 및 "-"만 입력 가능합니다. 동일한 고객사에 API Key를 추가하는 경우 ID를 다르게 입력해 주세요.')}
+            >
+              <MIInput
+                size="h34"
+                placeholder={t('입력하세요')}
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value as string)}
+                error={isError}
+                errorMessage={isError ? t('중복되는 Client ID 입니다.') : ''}
+              />
+            </MIField>
+          </Box>
+        </Box>
       </MIConfirm>
     </Box>
   )

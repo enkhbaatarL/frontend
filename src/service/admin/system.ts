@@ -53,6 +53,15 @@ const systemService = {
 
     return response.data
   },
+  /**
+   * 클라이언트 접속 정보를 등록합니다.
+   * @param body - { customerCompanyNo: 고객회사 번호, clientCertId: 클라이언트 인증 ID }
+   */
+  async createClientAccess(body: { customerCompanyNo: number; clientCertId: string }): Promise<ICommonResponse<null>> {
+    const response: AxiosResponse<ICommonResponse<null>> = await api.post('/admin/system-management/client-access', body)
+
+    return response.data
+  },
 }
 
 export default systemService
