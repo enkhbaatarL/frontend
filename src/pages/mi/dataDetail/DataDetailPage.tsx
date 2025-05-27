@@ -74,7 +74,7 @@ const DataDetailPage = () => {
   const hasStructuredDataList = useMemo(() => (structuredDataList ?? []).length > 0, [structuredDataList])
   const hasUnstructuredData = useMemo(() => (unstructuredDataList ?? []).length > 0, [unstructuredDataList])
   const hasDescription = useMemo(
-    () => productData?.goodsDataExpn || productData?.goodsDataSummaryCntt,
+    () => !!productData?.goodsDataExpn || !!productData?.goodsDataSummaryCntt,
     [productData?.goodsDataExpn, productData?.goodsDataSummaryCntt],
   )
 
@@ -265,8 +265,9 @@ const DataDetailPage = () => {
             {!hasStructuredDataList && !hasDescription && (
               <Box
                 display={'flex'}
-                borderBottom={'1px solid'}
+                border={'1px solid'}
                 borderColor={'gray.30'}
+                borderRadius={'4px'}
                 alignItems={'center'}
                 justifyContent={'center'}
                 bgcolor={'gray.5'}
