@@ -10,9 +10,9 @@ import MIChart, { DisplayDataInfo } from '@/components/common/chart/MIChart'
 import MIChartController from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
-import { UserRole } from '@/service/admin/members.ts'
+import { UserRole } from '@/service/admin/members'
 import dataDetailService, { IProductDataStructuredChartRequest, IProductDataStructuredData } from '@/service/mi/dataDetail'
-import useAuthStore from '@/store/useAuthStore.ts'
+import useAuthStore from '@/store/useAuthStore'
 import { ChartRange, ChartType } from '@/types/dataDetailChart'
 
 interface ChartComponentProps {

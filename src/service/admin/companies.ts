@@ -190,6 +190,15 @@ export interface IUpdateUserPermissionResponse {
 export interface IRegisterOwnerCompanyRequest {
   companyCd: string
 }
+export interface ICompaniesInfo {
+  companyNo: number
+  companyCd: string
+  companyNm: string
+}
+export interface ICustomerCompanyList {
+  companyType: string
+  companies: ICompaniesInfo[]
+}
 /**
  * 고객사 서비스
  */
@@ -463,6 +472,14 @@ const companiesService = {
     )
 
     return response.data
+  },
+  /**
+   * 드랍다운 메뉴 필터에 쓰일 테이블 고객사, 관리사 목록을 조회합니다.
+   */
+  async getCompanyList(): Promise<ICustomerCompanyList[]> {
+    const response: AxiosResponse<ICommonResponse<ICustomerCompanyList[]>> = await api.get('/admin/company-management/companies/all')
+
+    return response.data.data
   },
 }
 

@@ -13,7 +13,7 @@ import MITabs from '@/components/common/tabs/MITabs'
 import { UserRole } from '@/service/admin/members'
 import boardService, { INoticeInfo } from '@/service/mi/board'
 import notificationService, { INotificationHistory } from '@/service/mi/notification'
-import useAuthStore from '@/store/useAuthStore.ts'
+import useAuthStore from '@/store/useAuthStore'
 
 interface NoticeItemProps {
   id: number

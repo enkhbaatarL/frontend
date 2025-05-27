@@ -2,13 +2,13 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { Chart, Tick } from 'chart.js'
 import dayjs from 'dayjs'
-import { FC, useCallback, useEffect, useRef } from 'react'
+import { FC, memo, useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIChip from '@/components/common/chip/MIChip'
 import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
-import { IMarketData } from '@/service/mi/marketData.ts'
+import { IMarketData } from '@/service/mi/marketData'
 
 interface MarketDataChartProps {
   data?: IMarketData
@@ -393,4 +393,4 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
   )
 }
 
-export default MarketDataChart
+export default memo(MarketDataChart)

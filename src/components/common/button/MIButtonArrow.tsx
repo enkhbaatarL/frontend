@@ -1,17 +1,17 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import { Box, SxProps, Theme } from '@mui/material'
-import { PropsWithChildren, MouseEvent } from 'react'
+import { PropsWithChildren } from 'react'
 
 import theme from '@/theming'
 
 export interface MIButtonProps {
   direction: 'right' | 'left'
-  onClick?: (event: MouseEvent<HTMLButtonElement>) => void
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
   sx?: SxProps<Theme>
 }
 
-const MIButtonArrow = (props: PropsWithChildren<MIButtonProps>) => {
+export default function MIButtonArrow(props: PropsWithChildren<MIButtonProps>) {
   const { direction = 'right', onClick, sx } = props
 
   return (
@@ -49,5 +49,3 @@ const MIButtonArrow = (props: PropsWithChildren<MIButtonProps>) => {
     </Box>
   )
 }
-
-export default MIButtonArrow

@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
 import boardService from '@/service/mi/board'
-import useAuthStore from '@/store/useAuthStore.ts'
+import useAuthStore from '@/store/useAuthStore'
 
 export default function NoticesDetailPage() {
   const navigate = useNavigate()

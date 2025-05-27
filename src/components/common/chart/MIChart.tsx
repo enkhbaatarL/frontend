@@ -180,7 +180,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
               y: value ?? null,
             })) ?? [],
           type: 'line',
-          borderColor: ['#2F62A3', '#498B47', '#CC4D50', '#5a5a5a'][index],
+          borderColor: ['#40597A', '#7A8790', '#9DAFB9', '#C7CED4'][index],
           borderWidth: series?.seriesId === 'close' ? 3 : 0,
           pointRadius: 0,
           fill: false,
@@ -294,7 +294,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
   }, [chartType, indicators, props.displayDataInfo.BB, props.displayDataInfo.MA])
 
   const comparisonDatasets = useMemo(() => {
-    const colors = ['#0CA678', '#FF973C', '#5191F5', '#8F5B5D', '#819E9A', '#7D68A4']
+    const colors = [/*'#40597A',*/ '#26757B', '#EFA460', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434']
 
     return comparisonCharts.map((chart, index) => ({
       label: chart.series[0].label,

@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios'
 
-import api from '@/lib/axios.ts'
-import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api.ts'
+import api from '@/lib/axios'
+import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 export interface IRawDataPoint {
   date: string

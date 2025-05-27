@@ -2,14 +2,14 @@ import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
 import { useState } from 'react'
 
-import MIChip from '@/components/common/chip/MIChip.tsx'
-import MIInput from '@/components/common/input/MIInput.tsx'
-import MITableCell from '@/components/common/table/MITableCell.tsx'
-import MITableUser from '@/components/common/table/MITableUser.tsx'
-import useSearchFilter from '@/hooks/useSearchFilter.tsx'
-import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent.tsx'
-import notificationService, { INotificationInfo, INotificationRequest } from '@/service/mi/notification.ts'
-import { IPaginationResponse } from '@/types/api.ts'
+import MIChip from '@/components/common/chip/MIChip'
+import MIInput from '@/components/common/input/MIInput'
+import MITableCell from '@/components/common/table/MITableCell'
+import MITableUser from '@/components/common/table/MITableUser'
+import useSearchFilter from '@/hooks/useSearchFilter'
+import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
+import notificationService, { INotificationInfo, INotificationRequest } from '@/service/mi/notification'
+import { IPaginationResponse } from '@/types/api'
 
 const NotificationPage = () => {
   const handleClickDetail = () => {

@@ -10,7 +10,7 @@ import AdminButton from '@/components/admin/AdminButton'
 import AdminCheckboxField from '@/components/admin/AdminCheckboxField'
 import AdminChip from '@/components/admin/AdminChip'
 import AdminDatePicker from '@/components/admin/AdminDatePicker'
-import AdminField, { AdminDateRangeType } from '@/components/admin/AdminField.tsx'
+import AdminField, { AdminDateRangeType } from '@/components/admin/AdminField'
 import AdminSkeleton, {
   AdminCustomerCompanyProductDetail1Skeleton,
   AdminCustomerCompanyProductDetail2Skeleton,

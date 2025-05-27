@@ -19,7 +19,7 @@ export interface IUserDetail {
   companyNo: number
 }
 
-interface IAccessCompanyInfo {
+export interface IAccessCompanyInfo {
   customerCompanyNo: number
   customerCompanyNm: string
 }
