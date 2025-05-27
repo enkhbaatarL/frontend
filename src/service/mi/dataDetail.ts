@@ -32,6 +32,11 @@ export interface IProductDataStructuredData {
   goodsDataSourceNo: number
   goodsDataSourceNm: string
   minInterval: MinInterval
+  allowedPeriods: {
+    range: ChartRange
+    defaultInterval: ChartInterval
+    intervals: ChartInterval[]
+  }[]
 }
 export interface IProductDataStructuredRequest extends IPaginationRequest {
   startDate: string

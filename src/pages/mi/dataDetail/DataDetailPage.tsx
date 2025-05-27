@@ -218,7 +218,6 @@ const DataDetailPage = () => {
                   goodsDataSourceNo={goodsDataSourceNo}
                   setGoodsDataSourceNo={setGoodsDataSourceNo}
                   structuredDataList={structuredDataList}
-                  modifyDt={productData?.auditInfo?.modifyDt}
                   goodsDataNm={productData?.goodsDataNm}
                   isDownloadable={productData?.isDownloadable}
                 />

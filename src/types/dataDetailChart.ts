@@ -36,6 +36,7 @@ export interface ChartMetadata {
   currentInterval: ChartInterval
   initialChartType: ChartType
   changeableUnitCd: string[]
+  latestDate: string
 }
 
 export interface ChartSeries {

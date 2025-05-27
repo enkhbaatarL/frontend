@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo } from 'react'
 
 import MIChartViewToggle from './MIChartViewToogle'
 import CandlestickChartOutlineIcon from '../icons/CandlestickChartOutlineIcon'
@@ -9,13 +9,16 @@ import MIButton from '@/components/common/button/MIButton'
 import { DisplayDataInfo } from '@/components/common/chart/MIChart'
 import MIChip, { MIChipProps } from '@/components/common/chip/MIChip'
 import { IProductDataStructuredChartRequest } from '@/service/mi/dataDetail'
-import { ChartType } from '@/types/dataDetailChart'
+import { ChartInterval, ChartType } from '@/types/dataDetailChart'
 
 interface MIChartControllerProps {
   chartType: ChartType
   setChartType: Dispatch<SetStateAction<ChartType>>
   isCandlestick?: boolean
   unitList: string[]
+  chartInterval: ChartInterval
+  setChartInterval: Dispatch<SetStateAction<ChartInterval>>
+  chartIntervalOptions: { label: string; value: string }[]
   searchFilter: IProductDataStructuredChartRequest
   setSearchFilter: Dispatch<SetStateAction<IProductDataStructuredChartRequest>>
   displayDataInfo?: DisplayDataInfo
@@ -27,6 +30,9 @@ export default function MIChartController({
   setChartType,
   isCandlestick = false,
   unitList,
+  chartInterval,
+  setChartInterval,
+  chartIntervalOptions,
   searchFilter,
   setSearchFilter,
   displayDataInfo,
@@ -62,34 +68,16 @@ export default function MIChartController({
     [chartType, chartTypeOptions],
   )
 
-  const [selectedTime, setSelectedTime] = useState({
-    value: 'day',
-    label: '1 day',
-  })
-
   return (
     <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
       <Box display={'flex'} alignItems={'center'} gap={'10px'}>
         <MIButton
           type={'ghost'}
           color={'gray'}
-          valueSelect={selectedTime}
+          valueSelect={chartIntervalOptions.find((option) => option.value === chartInterval) ?? chartIntervalOptions[0]}
           contentType={'select'}
-          onChange={(option) => setSelectedTime(option)}
-          options={[
-            {
-              value: 'day',
-              label: '1 day',
-            },
-            {
-              value: 'week',
-              label: '1 week',
-            },
-            {
-              value: 'month',
-              label: '1 month',
-            },
-          ]}
+          onChange={({ value }) => setChartInterval(value as ChartInterval)}
+          options={chartIntervalOptions}
           minWidth={84}
         />
         <Box display={'flex'} gap={'6px'}>
