@@ -140,7 +140,7 @@ const MIDashboardPage = () => {
             direction="column"
             flexShrink={0}
           >
-            <UpdatedData />
+            <UpdatedData dataList={marketDataList} />
             <LatestData dataList={latestInsightsList} />
           </Grid>
         </Grid>

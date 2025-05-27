@@ -52,7 +52,7 @@ const FactorItem = (props: {
     if (barRef.current?.clientWidth && textRef.current?.clientWidth && align === 'right') {
       setOffetRight(Math.min(barRef.current?.clientWidth - textRef.current?.clientWidth, 0))
     }
-  }, [barRef.current, textRef.current, align])
+  }, [align])
 
   return (
     <Box
@@ -100,7 +100,6 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
       setLoadingFactorGraph(false)
     }, 1000)
   }
-
   return (
     <Box>
       <Box display={'flex'} flexDirection={'column'} gap="12px" mb="12px" px="12px" py="24px">
