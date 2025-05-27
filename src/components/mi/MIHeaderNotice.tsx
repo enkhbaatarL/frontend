@@ -86,8 +86,23 @@ const AlertItem = ({ id, trend, title, subtitle, date, isRead, onClick }: Notice
       sx={{ margin: 0 }}
       className={isRead ? 'readText' : ''}
       primary={
-        <Typography color={isRead ? 'gray.60' : 'gray.90'} variant="body2SB14" fontWeight={500}>
-          {title}
+        <Typography
+          color={isRead ? 'gray.60' : 'gray.90'}
+          variant="body2SB14"
+          fontWeight={500}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            maxWidth: '280px',
+            '& > span': {
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            },
+          }}
+        >
+          <span>{title}</span>
         </Typography>
       }
       secondary={
@@ -169,8 +184,23 @@ const NoticeItem = ({ id, title, subtitle, date, isRead, onClick }: NoticeItemPr
       sx={{ margin: 0 }}
       className={isRead ? 'readText' : ''}
       primary={
-        <Typography color={isRead ? 'gray.60' : 'gray.90'} variant="body2SB14" fontWeight={500}>
-          {title}
+        <Typography
+          color={isRead ? 'gray.60' : 'gray.90'}
+          variant="body2SB14"
+          fontWeight={500}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            maxWidth: '280px',
+            '& > span': {
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            },
+          }}
+        >
+          <span>{title}</span>
         </Typography>
       }
       secondary={
@@ -276,9 +306,9 @@ const MIHeaderNotice = () => {
                   id={alert.emailSendSn}
                   key={alert.emailSendSn}
                   trend={['INCRATE', 'UPPER'].includes(alert.notificationCriticalValueSeparateCd) ? 'up' : 'down'}
-                  title={alert.emailTitleNm}
-                  subtitle={alert.goodsDataSourceNm}
-                  date={dayjs(alert.emailSendDtm).format('YYYY-MM-DD HH:mm')}
+                  title={alert.goodsDataSourceNm}
+                  subtitle={alert.criticalValueSettingVol.toString().concat(alert.criticalValueSettingUnitNm)}
+                  date={dayjs(alert.emailSendDtm).format('YYYY-MM-DD')}
                   isRead={alert.isEmailInquiry}
                   onClick={(id) => console.log(id)}
                 />
@@ -326,7 +356,7 @@ const MIHeaderNotice = () => {
                   trend={'down'} // 미사용
                   title={notice.bulletinTitleName}
                   subtitle={notice.bulletinCategorySeparateCode}
-                  date={dayjs(notice.auditInfo?.createDt).format('YYYY-MM-DD HH:mm')}
+                  date={dayjs(notice.auditInfo?.createDt).format('YYYY-MM-DD')}
                   isRead={notice.isRead}
                   onClick={handleNoticeClick}
                 />
