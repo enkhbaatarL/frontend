@@ -1,7 +1,7 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import bgmImg from '@/assets/bgmarket.jpg'
@@ -69,17 +69,23 @@ const MarketDataPage = () => {
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
 
-  const handleSearchChange = (value: string) => {
-    updateFilter('keyword', value)
-  }
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      updateFilter('keyword', value)
+    },
+    [updateFilter],
+  )
 
-  const handleSearch = (searchTerm: string) => {
-    updateFilterWithSearch('keyword', searchTerm)
-  }
+  const handleSearch = useCallback(
+    (searchTerm: string) => {
+      updateFilterWithSearch('keyword', searchTerm)
+    },
+    [updateFilterWithSearch],
+  )
 
-  const handleSearchClear = () => {
+  const handleSearchClear = useCallback(() => {
     updateFilterWithSearch('keyword', '')
-  }
+  }, [updateFilterWithSearch])
 
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
