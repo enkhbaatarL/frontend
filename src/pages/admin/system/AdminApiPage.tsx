@@ -339,36 +339,6 @@ const AdminApiPage = () => {
         onSizeChange={updateSize}
         onPageChange={updatePage}
       />
-      {/* Delete API Key Modal */}
-      {/* <AdminConfirm
-        open={isDeleteModalOpen}
-        title={
-          <Box display={'flex'} alignItems={'center'}>
-            <Box component="span" sx={{ color: 'error.main', marginRight: '12px', display: 'inline-flex', alignItems: 'center' }}>
-              <ErrorIcon color="error" fontSize="medium" />
-            </Box>
-            API Key를 삭제하시겠습니까?
-          </Box>
-        }
-        width={450}
-        handleClose={() => setIsDeleteModalOpen(false)}
-        actions={[
-          {
-            label: '취소',
-            variant: 'outlined',
-            color: 'gray',
-            onClick: () => setIsDeleteModalOpen(false),
-          },
-          {
-            label: '삭제',
-            variant: 'filled',
-            color: 'red',
-            onClick: handleDeleteApiKey,
-          },
-        ]}
-      >
-        API Key는 삭제 후 되돌릴 수 없습니다.
-      </AdminConfirm> */}
       <MIConfirm
         open={isReissueModalOpen}
         title={t('API Key를 재발행 하시겠습니까?')}
