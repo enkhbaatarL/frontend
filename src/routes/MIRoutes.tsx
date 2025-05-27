@@ -1,7 +1,9 @@
+import { useMemo } from 'react'
 import { Navigate, RouteObject } from 'react-router-dom'
 
 import MILayout from '@/layouts/MILayout'
 import PolicyPage from '@/pages/common/PolicyPage'
+import { dashboardMapper } from '@/pages/mi/dashboard/lib/dashboardMapper'
 import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
 import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
@@ -12,6 +14,13 @@ import NoticesPage from '@/pages/mi/notice/NoticesPage'
 import NotificationPage from '@/pages/mi/notification/NotificationPage.tsx'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import MIProvider from '@/providers/MIProvider'
+import useAuthStore from '@/store/useAuthStore'
+
+const MIMainRedirect = () => {
+  const { accessCompanyInfo: company } = useAuthStore()
+  const shouldHideDashboard = useMemo(() => dashboardMapper[company?.customerCompanyNo ?? -1]?.hide, [company?.customerCompanyNo])
+  return <Navigate to={shouldHideDashboard ? 'signal-map' : 'dashboard'} replace />
+}
 
 const MIRoutes: RouteObject = {
   path: '/mi',
@@ -23,7 +32,7 @@ const MIRoutes: RouteObject = {
   children: [
     {
       index: true,
-      element: <Navigate to="dashboard" replace />,
+      element: <MIMainRedirect />,
     },
     {
       path: 'dashboard',

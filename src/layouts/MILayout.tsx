@@ -7,6 +7,7 @@ import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
 import { useScrollRestoration } from '@/hooks/useScrollRestoration'
 import DailyChart from '@/pages/mi/dashboard/components/DailyChart'
+import { dashboardMapper } from '@/pages/mi/dashboard/lib/dashboardMapper'
 import MIProvider from '@/providers/MIProvider'
 import boardService, { INoticeDetailInfo, INoticePopupInfo } from '@/service/mi/board'
 import useAuthStore from '@/store/useAuthStore'
@@ -64,6 +65,16 @@ const MILayout = () => {
   useEffect(() => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
+
+  const shouldHideDashboard = useMemo(
+    () => dashboardMapper[accessCompanyInfo?.customerCompanyNo ?? -1]?.hide,
+    [accessCompanyInfo?.customerCompanyNo],
+  )
+
+  const fixedMainPages = useMemo(
+    () => (!shouldHideDashboard ? mainPages : mainPages.filter((page) => page.url !== '/mi/dashboard')),
+    [shouldHideDashboard],
+  )
 
   useEffect(() => setIsScrolled(currentScroll > 0), [currentScroll])
 
@@ -163,7 +174,7 @@ const MILayout = () => {
         }}
       >
         <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
-          <MIHeaderMainLayout pages={mainPages} onMoveTab={(callback) => saveScroll(callback)} />
+          <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />
           {showDailyChart && <DailyChart data={dailyChartData} />}
         </div>
         <Box
