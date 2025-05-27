@@ -294,7 +294,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
   }, [chartType, indicators, props.displayDataInfo.BB, props.displayDataInfo.MA])
 
   const comparisonDatasets = useMemo(() => {
-    const colors = ['#40597A', '#26757B', '#EFA460', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434']
+    const colors = [/*'#40597A',*/ '#26757B', '#EFA460', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434']
 
     return comparisonCharts.map((chart, index) => ({
       label: chart.series[0].label,
