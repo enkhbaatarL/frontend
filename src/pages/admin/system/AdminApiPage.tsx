@@ -34,7 +34,7 @@ const AdminApiPage = () => {
   const { showSnackbar } = useSnackbar()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isReissueModalOpen, setIsReissueModalOpen] = useState(false)
-  const [_isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [clientAccessRegNo, setClientAccessRegNo] = useState<number | null>(null)
   const [decodedSecretKey, setDecodedSecretKey] = useState<string | null>(null)
   const [viewSecretModal, setViewSecretModal] = useState(false)
@@ -300,6 +300,21 @@ const AdminApiPage = () => {
     }
   }
 
+  // API Key 삭제
+  const handleDeleteApiKey = async () => {
+    try {
+      const response = await systemService.deleteClientAccess(Number(clientAccessRegNo))
+      if (response.status) {
+        showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
+        setIsDeleteModalOpen(false)
+        setClientAccessRegNo(null)
+        await refetch()
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   useEffect(() => {
     setCustomComponent(<AdminApiPageHeader onCreateClick={() => setIsCreateModalOpen(true)} />)
     setCustomTitle(
@@ -459,6 +474,30 @@ const AdminApiPage = () => {
             </MIField>
           </Box>
         </Box>
+      </MIConfirm>
+      <MIConfirm
+        open={isDeleteModalOpen}
+        title={t('API Key를 삭제하시겠습니까?')}
+        width={450}
+        handleClose={() => setIsDeleteModalOpen(false)}
+        actions={[
+          {
+            label: t('취소'),
+            variant: 'outlined',
+            color: 'gray',
+            onClick: () => setIsDeleteModalOpen(false),
+          },
+          {
+            label: t('삭제'),
+            variant: 'filled',
+            color: 'primary',
+            onClick: () => handleDeleteApiKey(),
+          },
+        ]}
+      >
+        <Typography variant="body1R16" color="gray.60" sx={{ mb: 3, display: 'block' }} fontSize="14px">
+          {t('API Key는 삭제 후 되돌릴 수 없습니다.')}
+        </Typography>
       </MIConfirm>
     </Box>
   )

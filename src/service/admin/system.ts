@@ -62,6 +62,15 @@ const systemService = {
 
     return response.data
   },
+  /**
+   * API Key를 삭제합니다.
+   * @param clientAccessRegNo - 클라이언트 접속 등록 번호
+   */
+  async deleteClientAccess(clientAccessRegNo: number): Promise<ICommonResponse<null>> {
+    const response: AxiosResponse<ICommonResponse<null>> = await api.delete(`/admin/system-management/client-access/${clientAccessRegNo}`)
+
+    return response.data
+  },
 }
 
 export default systemService
