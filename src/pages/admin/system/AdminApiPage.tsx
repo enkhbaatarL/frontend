@@ -21,14 +21,12 @@ import companiesService from '@/service/admin/companies'
 import systemService, { IApiKeyInfo } from '@/service/admin/system'
 import { IPaginationRequest, IPaginationResponse } from '@/types/api'
 
-// Header component with Create Key button
 const AdminApiPageHeader = ({ onCreateClick }: { onCreateClick: () => void }) => (
   <Flex gap={4}>
     <MIButton onClick={onCreateClick}>{t('Key 생성')}</MIButton>
   </Flex>
 )
 
-// Main component
 const AdminApiPage = () => {
   const { setCustomComponent, setCustomTitle } = useAdminHeader()
   const { showSnackbar } = useSnackbar()
@@ -90,7 +88,8 @@ const AdminApiPage = () => {
     {
       field: 'customerCompanyNm',
       headerName: '회사명',
-      width: 100,
+      flex: 1,
+      minWidth: 100,
       align: 'left',
       renderCell(params) {
         return <MITableCell value={params.value} typography={{ variant: 'tableBody1' }} />
@@ -99,7 +98,8 @@ const AdminApiPage = () => {
     {
       field: 'clientCertId',
       headerName: 'Client ID',
-      width: 150,
+      flex: 1,
+      minWidth: 150,
       align: 'left',
       renderCell(params) {
         return <MITableCell value={params.value} />
@@ -109,7 +109,7 @@ const AdminApiPage = () => {
       field: 'clientSecretKey',
       headerName: 'Client Secret',
       flex: 1,
-      width: 150,
+      minWidth: 150,
       align: 'left',
       renderCell(params) {
         const maskedValue = params.value ? '*'.repeat(params.value.length) : '********'
@@ -119,7 +119,8 @@ const AdminApiPage = () => {
     {
       field: 'viewSecret',
       headerName: 'Client Secret 보기',
-      width: 150,
+      flex: 1,
+      minWidth: 150,
       align: 'center',
       renderCell(params) {
         return (
@@ -144,7 +145,7 @@ const AdminApiPage = () => {
     {
       field: 'createDt',
       headerName: '등록일',
-      minWidth: 94,
+      minWidth: 130,
       flex: 0.5,
       align: 'center',
       renderCell(params) {
@@ -163,7 +164,7 @@ const AdminApiPage = () => {
     {
       field: 'createUserNm',
       headerName: '등록자',
-      minWidth: 94,
+      minWidth: 130,
       flex: 0.5,
       align: 'left',
       renderCell(params) {
@@ -174,7 +175,7 @@ const AdminApiPage = () => {
     {
       field: 'modifyDt',
       headerName: '수정일',
-      minWidth: 94,
+      minWidth: 130,
       flex: 0.5,
       align: 'center',
       renderCell(params) {
@@ -192,7 +193,7 @@ const AdminApiPage = () => {
     {
       field: 'modifyUserNm',
       headerName: '수정자',
-      minWidth: 94,
+      minWidth: 130,
       flex: 0.5,
       align: 'left',
       renderCell(params) {
@@ -203,7 +204,8 @@ const AdminApiPage = () => {
     {
       field: 'reissue',
       headerName: '재발행',
-      width: 94,
+      minWidth: 100,
+      flex: 0.5,
       align: 'center',
       renderCell(params) {
         return (
@@ -230,7 +232,8 @@ const AdminApiPage = () => {
     {
       field: 'delete',
       headerName: '',
-      width: 50,
+      minWidth: 50,
+      flex: 1,
       align: 'center',
       renderCell(params) {
         return (
