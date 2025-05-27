@@ -8,7 +8,7 @@ interface Props {
 const DescriptionComponent = ({ description, summary }: Props) => (
   <Box>
     {summary && (
-      <Typography mb={9.5} component="div" lineHeight={1.6} color="gray.90" variant="body1M16">
+      <Typography mb={9.5} component="div" lineHeight={1.6} color="gray.90" variant="body1M16" sx={{ whiteSpace: 'pre-line' }}>
         {summary}
       </Typography>
     )}
