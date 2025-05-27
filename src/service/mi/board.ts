@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
-import { IFile } from '@/service/admin/file.ts'
+import { IFile } from '@/service/admin/file'
 import { IAuditInfo } from '@/service/admin/members'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 import { IFilterItem } from '@/types/common'

@@ -8,6 +8,15 @@ declare module '@mui/material/styles' {
     ochre: Palette['primary']
     gray: Record<number, string>
     coolGray: Record<number, string>
+    commonColor: Record<string, string>
+    mari: Record<string, string>
+    contentText: Record<string, string>
+    contentIcon: Record<string, string>
+    contentBorder: Record<string, string>
+    contentBG: Record<string, string>
+    chartMonochrome4: Record<string, string>
+    chartMonochrome7: Record<string, string>
+    chartMulti: Record<string, string>
     point: Record<string, string>
     chart: Record<string, string>
     content: Record<string, string>
@@ -17,6 +26,15 @@ declare module '@mui/material/styles' {
     ochre?: PaletteOptions['primary']
     gray?: Record<number, string>
     coolGray?: Record<number, string>
+    commonColor?: Record<string, string>
+    mari?: Record<string, string>
+    contentText?: Record<string, string>
+    contentIcon?: Record<string, string>
+    contentBorder?: Record<string, string>
+    contentBG?: Record<string, string>
+    chartMonochrome4?: Record<string, string>
+    chartMonochrome7?: Record<string, string>
+    chartMulti?: Record<string, string>
     point?: Record<string, string>
     chart?: Record<string, string>
     content: Record<string, string>
@@ -28,6 +46,15 @@ declare module '@mui/material/Button' {
     ochre: true
     gray: true
     coolGray: true
+    commonColor: true
+    mari: true
+    contentText: true
+    contentIcon: true
+    contentBorder: true
+    contentBG: true
+    chartMonochrome4: true
+    chartMonochrome7: true
+    chartMulti: true
     point: true
     chart: true
   }
@@ -40,6 +67,15 @@ declare module '@mui/material/IconButton' {
     'gray.40': true
     'gray.60': true
     coolGray: true
+    commonColor: true
+    mari: true
+    contentText: true
+    contentIcon: true
+    contentBorder: true
+    contentBG: true
+    chartMonochrome4: true
+    chartMonochrome7: true
+    chartMulti: true
     'point.red1': true
     // Add any other custom colors you need
   }
@@ -58,6 +94,9 @@ declare module '@mui/material/styles' {
     subtext3: CSSProperties
     subtext4: CSSProperties
     subtext5: CSSProperties
+    mariButton: CSSProperties
+    messageText1: CSSProperties
+    messageText2: CSSProperties
     body1: CSSProperties
     body1M16: CSSProperties
     body1SB16: CSSProperties
@@ -102,6 +141,8 @@ declare module '@mui/material/styles' {
     titleCardInsight: CSSProperties
     sectionTitleTXL: CSSProperties
     textAI: CSSProperties
+    mariDescription: CSSProperties
+    mariParagraph: CSSProperties
   }
 
   // allow configuration using `createTheme()`
@@ -117,6 +158,9 @@ declare module '@mui/material/styles' {
     subtext3?: CSSProperties
     subtext4?: CSSProperties
     subtext5?: CSSProperties
+    mariButton?: CSSProperties
+    messageText1?: CSSProperties
+    messageText2?: CSSProperties
     body1?: CSSProperties
     body1M16?: CSSProperties
     body1SB16?: CSSProperties
@@ -140,6 +184,7 @@ declare module '@mui/material/styles' {
     chip1?: CSSProperties
     chipM?: CSSProperties
     chip2?: CSSProperties
+    mariChip?: CSSProperties
     breadcrumbs?: CSSProperties
     subtitle?: CSSProperties
     subtext?: CSSProperties
@@ -161,6 +206,8 @@ declare module '@mui/material/styles' {
     titleCardInsight: CSSProperties
     sectionTitleTXL: CSSProperties
     textAI: CSSProperties
+    mariDescription: CSSProperties
+    mariParagraph: CSSProperties
   }
 }
 
@@ -178,6 +225,9 @@ declare module '@mui/material/Typography' {
     subtext3: true
     subtext4: true
     subtext5: true
+    mariButton: true
+    messageText1: true
+    messageText2: true
     body1: true
     body1M16: true
     body1SB16: true
@@ -201,6 +251,7 @@ declare module '@mui/material/Typography' {
     chip1: true
     chipM: true
     chip2: true
+    mariChip: true
     h1: false
     breadcrumbs: true
     subtitle: true
@@ -223,6 +274,8 @@ declare module '@mui/material/Typography' {
     titleCardInsight: true
     sectionTitleTXL: true
     textAI: true
+    mariDescription: true
+    mariParagraph: true
   }
 }
 
@@ -256,7 +309,7 @@ const theme = createTheme({
       red1: '#F03E3E',
       green1: '#0CA678',
       orange2: '#F76707',
-      purple2: '#7451DD',
+      purple2: '#7048E8',
     },
     chart: {
       blue2: '#5191F5',
@@ -275,6 +328,8 @@ const theme = createTheme({
       iconActive: '#343A40',
       iconDisabled: '#CED4DA',
       textDisabled: '#ADB5BD',
+      textNormal: '#495057',
+      textBlack: '#212529',
     },
     gray: {
       5: '#F8F9FA',
@@ -302,6 +357,56 @@ const theme = createTheme({
     background: {
       default: '#F8F9FA',
       paper: '#FFFFFF',
+    },
+    commonColor: {
+      White: '#FFFFFF',
+      Black: '#000000',
+      Primary: '#2E3F5E',
+      Primaryservice: '#414C93',
+      Primarylight1: '#F0F4FF',
+      Primarylight2: '#DFE5FB',
+    },
+    mari: {
+      Primary: '#364FC7',
+      MariBG: '#F9F8F6',
+    },
+    contentText: {
+      Normal: '#495057',
+      Disabled: '#ADB5BD',
+      Placeholder: '#CED4DA',
+      Error: '#F03E3E',
+      White: '#FFFFFF',
+      Black: '#212529',
+      Subtext: '#868E96',
+    },
+    contentIcon: {
+      Activew: '#FFFFFF',
+      Activeb: '#343A40',
+      ActivePrimary: '#2E3F5E',
+      Hover: '#343A40',
+      Disabled: '#CED4DA',
+      Enabled: '#868E96',
+      Error: '#F03E3E',
+    },
+    contentBorder: {
+      Primaryactive: '#2E3F5E',
+      Active: '#868E96',
+      Normal: '#DEE2E6',
+      Hover: '#ced4da',
+      Disabled: '#E9ECEF',
+      Error: '#F03E3E',
+      Inverse: '#FFFFFF',
+      Chartdash: '#B5B5B5',
+      ChartSolid: '#8B8B8B',
+    },
+    contentBG: {
+      Primaryactive: '#F8F9FA',
+      PrimaryFade: '#ECEDF4',
+      Active: '#E9ECEF',
+      Hover: '#F0F3F6',
+      Disabled: '#F1F3F5',
+      Tooltip: '#202D44',
+      Maribtnhover: '#EDECEA',
     },
   },
   spacing: 4, // 1 spacing = 4px
@@ -512,6 +617,12 @@ const theme = createTheme({
       fontWeight: 600,
       lineHeight: '1.4',
     },
+    mariChip: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.4',
+    },
     breadcrumbs: {
       fontSize: '13px',
       fontStyle: 'normal',
@@ -535,6 +646,24 @@ const theme = createTheme({
       fontStyle: 'normal',
       fontWeight: 700,
       lineHeight: '1.4',
+    },
+    mariButton: {
+      fontSize: '18px',
+      fontStyle: 'normal',
+      fontWeight: 700,
+      lineHeight: '1.4',
+    },
+    messageText1: {
+      fontSize: '20px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1.2',
+    },
+    messageText2: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.6',
     },
     asterisk: {
       fontSize: '12px',
@@ -653,6 +782,20 @@ const theme = createTheme({
       fontStyle: 'normal',
       fontWeight: 600,
       letterSpacing: '-0.4px',
+    },
+    mariDescription: {
+      fontSize: '12px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.4',
+      letterSpacing: '-0.24px',
+    },
+    mariParagraph: {
+      fontSize: '16px',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      lineHeight: '1.5',
+      letterSpacing: '-0.16px',
     },
   },
   components,

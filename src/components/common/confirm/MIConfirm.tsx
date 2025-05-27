@@ -8,8 +8,10 @@ import CloseIcon from '@/components/common/icons/CloseIcon'
 interface ActionButton {
   label: ReactNode
   variant?: 'filled' | 'outlined' | 'ghost'
-  color?: 'primary' | 'gray' | 'white' | 'red'
+  color?: 'primary' | 'gray' | 'white' | 'red' | `#${string}`
+  hoverBgColor?: 'primary' | 'gray' | 'gray2' | 'white' | 'red' | `#${string}`
   disabled?: boolean
+  disableHoverColor?: boolean
   onClick: () => void | Promise<void>
 }
 
@@ -22,6 +24,7 @@ interface Props {
   justifyContentAction?: 'space-between' | 'end' | 'start' | 'center'
   actions?: ActionButton[]
   hideFooter?: boolean
+  zIndex?: number
 }
 
 const MIConfirm = ({
@@ -33,9 +36,10 @@ const MIConfirm = ({
   justifyContentAction = 'end',
   hideFooter = false,
   actions = [{ label: t('확인'), variant: 'filled', color: 'primary', onClick: handleClose }],
+  zIndex = 1600,
 }: Props) => {
   useEffect(() => {
-    const className = 'admin-confirm-open'
+    const className = 'mi-confirm-open'
 
     if (open) {
       document.body.classList.add(className)
@@ -77,6 +81,9 @@ const MIConfirm = ({
       }}
       open={open}
       onClose={handleClose}
+      sx={{
+        zIndex: zIndex ?? 1600,
+      }}
     >
       <DialogTitle>
         <span style={{ fontWeight: children ? 700 : 600 }}>{title}</span>
@@ -100,6 +107,7 @@ const MIConfirm = ({
               color={action.color ?? 'primary'}
               onClick={action.onClick}
               disabled={action.disabled}
+              hoverBgColor={action.hoverBgColor}
             >
               {action.label}
             </MIButton>

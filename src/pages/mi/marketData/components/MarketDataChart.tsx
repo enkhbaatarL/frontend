@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import MIChip from '@/components/common/chip/MIChip'
 import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
-import { IMarketData } from '@/service/mi/marketData.ts'
+import { IMarketData } from '@/service/mi/marketData'
 
 interface MarketDataChartProps {
   data?: IMarketData

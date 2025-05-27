@@ -1,0 +1,12 @@
+import { SVGProps } from 'react'
+
+export default function OpenDropdownIcon(svgProps: Readonly<SVGProps<SVGSVGElement>>) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...svgProps}>
+      <path
+        d="M6.77083 7.50001L10.0042 10.7333L13.2375 7.50001C13.5625 7.17501 14.0875 7.17501 14.4125 7.50001C14.7375 7.82501 14.7375 8.35001 14.4125 8.67501L10.5875 12.5C10.2625 12.825 9.7375 12.825 9.4125 12.5L5.5875 8.67501C5.2625 8.35001 5.2625 7.82501 5.5875 7.50001C5.9125 7.18334 6.44583 7.17501 6.77083 7.50001Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}

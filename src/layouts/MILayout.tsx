@@ -2,6 +2,7 @@ import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
+import MIAgentButton from '@/components/common/agent/MIAgentButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
@@ -144,6 +145,7 @@ const MILayout = () => {
   ]
 
   const showDailyChart = useMemo(() => location.pathname === '/mi/dashboard', [location.pathname])
+  const showMiAgent = true ///
 
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
@@ -173,6 +175,7 @@ const MILayout = () => {
             transition: 'padding-top 0.15s linear',
           }}
         >
+          {showMiAgent && <MIAgentButton />}
           <Outlet key={outletKey} />
         </Box>
 

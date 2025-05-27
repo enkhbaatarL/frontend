@@ -7,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminFaqForm from '@/components/admin/AdminFaqForm'
-import AdminSkeleton, { AdminFaqFormSkeleton } from '@/components/admin/AdminSkeleton.tsx'
+import AdminSkeleton, { AdminFaqFormSkeleton } from '@/components/admin/AdminSkeleton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
