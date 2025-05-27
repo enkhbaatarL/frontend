@@ -152,6 +152,7 @@ const AdminApiPage = () => {
         const { createUserNm, createUserDeptNm, createUserCpnyNm, createDt } = params.row.auditInfo
         return (
           <MITableCell
+            tooltip
             tooltipContent={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`}
             value={dayjs(createDt).format('YYYY-MM-DD')}
             typography={{
