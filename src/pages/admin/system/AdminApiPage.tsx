@@ -149,11 +149,9 @@ const AdminApiPage = () => {
       flex: 0.5,
       align: 'center',
       renderCell(params) {
-        const { createUserNm, createUserDeptNm, createUserCpnyNm, createDt } = params.row.auditInfo
+        const { createDt } = params.row.auditInfo
         return (
           <MITableCell
-            tooltip
-            tooltipContent={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`}
             value={dayjs(createDt).format('YYYY-MM-DD')}
             typography={{
               color: 'gray.60',
@@ -169,8 +167,8 @@ const AdminApiPage = () => {
       flex: 0.5,
       align: 'left',
       renderCell(params) {
-        const { createUserNm } = params.row.auditInfo
-        return <MITableCell>{createUserNm}</MITableCell>
+        const { createUserNm, createUserDeptNm, createUserCpnyNm } = params.row.auditInfo
+        return <MITableCell value={createUserNm} tooltip tooltipContent={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`} />
       },
     },
     {
@@ -198,8 +196,8 @@ const AdminApiPage = () => {
       flex: 0.5,
       align: 'left',
       renderCell(params) {
-        const { createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm } = params.row.auditInfo
-        return <MITableCell value={modifyUserNm} tooltip tooltipContent={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`} />
+        const { modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm } = params.row.auditInfo
+        return <MITableCell value={modifyUserNm} tooltip tooltipContent={`${modifyUserNm} / ${modifyUserDeptNm} / ${modifyUserCpnyNm}`} />
       },
     },
     {
@@ -233,7 +231,7 @@ const AdminApiPage = () => {
     {
       field: 'delete',
       headerName: '',
-      minWidth: 50,
+      maxWidth: 50,
       flex: 1,
       align: 'center',
       renderCell(params) {

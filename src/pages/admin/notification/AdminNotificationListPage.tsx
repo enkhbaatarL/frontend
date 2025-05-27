@@ -149,7 +149,7 @@ const AdminNotificationListPage = () => {
       field: 'userNm',
       headerName: '발송 대상',
       flex: 2,
-      minWidth: 200,
+      maxWidth: 150,
       renderCell: ({ row }) => (
         <MITableCell value={row.userNm} tooltip tooltipContent={`${row.userNm} / ${row.departmentNm} / ${row.customerCompanyNm}`} />
       ),
@@ -158,7 +158,7 @@ const AdminNotificationListPage = () => {
       field: 'isSendSuccess',
       headerName: '발송 결과',
       flex: 1,
-      minWidth: 100,
+      maxWidth: 120,
       align: 'center',
       renderCell: (params) => {
         if (params.value === false) {
@@ -175,7 +175,7 @@ const AdminNotificationListPage = () => {
       field: 'emailSendErrorCntt',
       headerName: '실패 사유 상세',
       flex: 1.5,
-      minWidth: 150,
+      maxWidth: 120,
       align: 'center',
       renderCell: ({ row }) => {
         if (row.isSendSuccess === true) return <></>
@@ -203,7 +203,7 @@ const AdminNotificationListPage = () => {
       field: 'emailSendDtm',
       headerName: '발송 일시',
       flex: 1.5,
-      minWidth: 150,
+      maxWidth: 200,
       align: 'center',
       renderCell: (params) => (
         <MITableCell>
