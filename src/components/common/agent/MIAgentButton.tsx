@@ -8,6 +8,8 @@ import MIAgentChatWindow from './MIAgentChatWindow'
 
 import type React from 'react'
 
+import mariIcon from '@/assets/mariicon.svg'
+
 const GradientBox = styled(Box)(() => ({
   background: '#1D1F20',
   position: 'relative',
@@ -224,7 +226,7 @@ const MIAgentButton: React.FC<MIAgentButtonProps> = ({ top = 126 }) => {
         >
           <GradientBox>
             <Button
-              startIcon={<img width={36} height={36} src="/src/assets/mariicon.svg" alt="Mari Icon" />}
+              startIcon={<img width={36} height={36} src={mariIcon} alt="Mari Icon" />}
               sx={{
                 position: 'relative',
                 overflow: 'hidden',

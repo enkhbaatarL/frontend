@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { useState } from 'react'
 
+import aiIcon from '@/assets/ai.svg'
 import MIButton from '@/components/common/button/MIButton.tsx'
 import MIButtonViewMore from '@/components/common/button/MIButtonViewMore.tsx'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon.tsx'
@@ -12,7 +13,7 @@ const MISummaryDownloadReport = () => {
     <Box borderRadius={'4px'} border={'1px solid #E5EDFA'} bgcolor={'#F6F9FD'} padding={5} mt={10} mb={6}>
       <Box display={'flex'} mb={5} alignItems={'center'} justifyContent={'space-between'}>
         <Typography component={'div'} variant={'textAI'}>
-          <img style={{ verticalAlign: 'sub', marginRight: '4px' }} src="/src/assets/ai.svg" alt="" />
+          <img style={{ verticalAlign: 'sub', marginRight: '4px' }} src={aiIcon} alt="" />
           Summary
         </Typography>
         <MIButton size={'h34'} type={'outlined'} color={'gray'} startIcon={<FileDownloadIcon />}>
@@ -47,7 +48,7 @@ const MISummaryDownloadReport = () => {
         변동은 지속될 수 있습니다. 하지만 중장기적으로는 공급 확대와 인프라 다변화가 가격 안정화에 기여할 것으로 보이며, Henry Hub, TTF 등
         주요 지표 가격의 변동 폭도 이전보다 좁아질 가능성이 큽니다. 결과적으로 LNG 시장은 기존의 단기 수급 변동 중심에서 벗어나, 중장기 전략
         수립과 포트폴리오 전환의 영역으로 진입하고 있습니다. 가격뿐만 아니라 탄소 배출, 계약 유연성, 수송비 등 복합 요인이 시장 경쟁력을
-        좌우하게 되며, LNG는 단순한 가교연료를 넘어 ‘전략적 에너지 자산’으로 재정의되고 있습니다.
+        좌우하게 되며, LNG는 단순한 가교연료를 넘어 &apos;전략적 에너지 자산&apos;으로 재정의되고 있습니다.
       </Typography>
       <MIButtonViewMore onClick={() => setShowMore(!showMore)} state={showMore ? 'less' : 'more'} />
     </Box>

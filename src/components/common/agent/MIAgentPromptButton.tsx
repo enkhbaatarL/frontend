@@ -1,6 +1,12 @@
 import { Box, styled } from '@mui/material'
 import React, { useMemo, useCallback } from 'react'
 
+import loadingDisabledIcon from '@/assets/agent/loading-disabled.svg'
+import sendActivatedIcon from '@/assets/agent/send-activated.svg'
+import sendDisabledIcon from '@/assets/agent/send-disabled.svg'
+import stopActivatedIcon from '@/assets/agent/stop-activated.svg'
+import stopDisabledIcon from '@/assets/agent/stop-disabled.svg'
+import unableDisabledIcon from '@/assets/agent/unable-disabled.svg'
 import MiAgentSpinner from '@/components/common/icons/MiAgentSpinner'
 
 export interface MIAgentPromptButtonProps {
@@ -31,10 +37,23 @@ const MIAgentPromptButton: React.FC<MIAgentPromptButtonProps> = ({ inputStatus =
 
   const getImageSrc = useCallback(() => {
     if (disabled) {
-      return '/src/assets/agent/unable-disabled.svg'
+      return unableDisabledIcon
     }
 
-    return `/src/assets/agent/${inputStatus}.svg`
+    switch (inputStatus) {
+      case 'send-activated':
+        return sendActivatedIcon
+      case 'send-disabled':
+        return sendDisabledIcon
+      case 'stop-activated':
+        return stopActivatedIcon
+      case 'stop-disabled':
+        return stopDisabledIcon
+      case 'loading-disabled':
+        return loadingDisabledIcon
+      default:
+        return sendActivatedIcon
+    }
   }, [inputStatus, disabled])
 
   const handleSendMsg = () => {

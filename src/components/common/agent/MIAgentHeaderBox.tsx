@@ -5,6 +5,8 @@ import CloseChatIcon from '../icons/agent/CloseChatIcon'
 import CollapseIcon from '../icons/agent/CollapseIcon'
 import ExpandIcon from '../icons/agent/ExpandIcon'
 
+import mariIcon from '@/assets/mariicon.svg'
+
 export interface MIAgentHeaderBoxProps {
   minimized?: boolean
   onExpand?: () => void
@@ -25,7 +27,7 @@ const MIAgentHeaderBox: React.FC<MIAgentHeaderBoxProps> = ({ minimized = true, o
     }}
   >
     <Tooltip title={'New Chat'} placement="right-start">
-      <img width={32} height={32} src="/src/assets/mariicon.svg" alt="Mari Icon" style={{ marginLeft: '16px' }} />
+      <img width={32} height={32} src={mariIcon} alt="Mari Icon" style={{ marginLeft: '16px' }} />
     </Tooltip>
 
     <Box display="flex" alignItems="center" gap="8px">
