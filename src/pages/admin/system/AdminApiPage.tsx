@@ -76,12 +76,10 @@ const AdminApiPage = () => {
   const companyOptions = useMemo(() => {
     const customerCompanies = customerCompanyList?.find((item) => item.companyType === 'CUSTOMER')?.companies || []
 
-    const companyOptions = customerCompanies.map((company) => ({
+    return customerCompanies.map((company) => ({
       value: company.companyNo,
       label: company.companyNm,
     }))
-
-    return companyOptions
   }, [customerCompanyList])
 
   const columns: GridColDef[] = [
@@ -273,8 +271,10 @@ const AdminApiPage = () => {
   // Client Secret 복사
   const handleCopyClientSecret = () => {
     if (decodedSecretKey) {
-      navigator.clipboard.writeText(decodedSecretKey)
-      showSnackbar(t('복사되었습니다.'), { variant: 'success' })
+      navigator.clipboard.writeText(decodedSecretKey).then(() => {
+        showSnackbar(t('복사되었습니다.'), { variant: 'success' })
+        setViewSecretModal(false)
+      })
     }
   }
 
@@ -292,10 +292,8 @@ const AdminApiPage = () => {
         setClientId('')
         setIsError(false)
         await refetch()
-      } else {
-        if (response.code === 'RSC-003') {
-          setIsError(true)
-        }
+      } else if (response.code === 'RSC-003') {
+        setIsError(true)
       }
     } catch (error) {
       console.error(error)
@@ -351,9 +349,7 @@ const AdminApiPage = () => {
             label: t('취소'),
             variant: 'outlined',
             color: 'gray',
-            onClick: () => {
-              setIsReissueModalOpen(false)
-            },
+            onClick: () => setIsReissueModalOpen(false),
           },
           {
             label: t('재발행'),
@@ -420,7 +416,7 @@ const AdminApiPage = () => {
         ]}
       >
         <Box sx={{ width: '100%', mt: 2 }}>
-          <MIField label={t('고객사 선택')} required labelSize="sm"></MIField>
+          <MIField label={t('고객사 선택')} required labelSize="sm" />
           <MISelect
             fullWidth
             value={selectedCompany}
@@ -439,7 +435,7 @@ const AdminApiPage = () => {
                 size="h34"
                 placeholder={t('입력하세요')}
                 value={clientId}
-                onChange={(e) => setClientId(e.target.value as string)}
+                onChange={(e) => setClientId(e.target.value)}
                 error={isError}
                 errorMessage={isError ? t('중복되는 Client ID 입니다.') : ''}
               />
