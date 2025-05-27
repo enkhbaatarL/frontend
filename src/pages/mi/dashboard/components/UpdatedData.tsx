@@ -79,16 +79,18 @@ const DataItem = ({
           {`${isPositive ? '+' : ''}${change} (${isPositive ? '+' : ''}${changePercent}%)`}
         </Typography>
       </Grid>
-
-      <Grid container wrap="nowrap" alignItems="center" gap="5px">
-        {[lastUpdateDt, unit, currency].map((text, idx) => (
-          <Box key={idx} display="flex" alignItems="center">
-            {idx > 0 && <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />}
-            <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60">
-              {text}
-            </Typography>
-          </Box>
-        ))}
+      <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
+        <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
+          {lastUpdateDt}
+        </Typography>
+        <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
+        <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
+          {unit}
+        </Typography>
+        <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
+        <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
+          {currency}
+        </Typography>
       </Grid>
     </Box>
   )
