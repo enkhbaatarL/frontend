@@ -1,24 +1,67 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Chart, { ChartType, Plugin } from 'chart.js/auto'
+import Chart, { ChartType, InteractionItem, Plugin } from 'chart.js/auto'
 import dayjs from 'dayjs'
 
 import { DATA_CATEGORIES, GRADIENT_COLORS, HOVER_INDICATOR, LINE_STYLES } from '../constants'
 
+// Define interaction states
+export enum PointInteractionState {
+  NONE = 'none',
+  HOVER = 'hover',
+  HOVER_NEAR = 'hover_near',
+  CLICKED = 'clicked',
+}
+
 interface VerticalLineAndHighlightPlugin extends Plugin<ChartType> {
   mousePosition: { x: number; y: number } | null
+  seletedPoint: InteractionItem | null
   tooltipContent: { label?: string; value?: number; category?: string; color?: string }[]
+  interactionState: PointInteractionState
+  nearestPoint: InteractionItem | null
+  clearSelectedPoint: () => void
+  _options: any
+  _chart: Chart | null
 }
 
 export interface PointerMoveEventContext {
+  plugin: VerticalLineAndHighlightPlugin
   chart: Chart
-  tooltip: { x: number; y: number; label: string; content: { label?: string; value?: number; category?: string; color?: string }[] } | null
+  tooltip: {
+    x: number
+    y: number
+    viewDetail?: boolean
+    label: string
+    content: { label?: string; value?: number; category?: string; color?: string }[]
+  } | null
 }
 
 // Create a custom plugin to draw the vertical line and background highlight
 const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
   id: 'verticalLineAndHighlight',
   mousePosition: null,
+  seletedPoint: null,
   tooltipContent: [],
+  interactionState: PointInteractionState.NONE,
+  nearestPoint: null,
+  _options: {},
+  _chart: null,
+
+  clearSelectedPoint() {
+    this.seletedPoint = null
+    this.interactionState = PointInteractionState.NONE
+    this._options.onViewForecastPoint?.(null)
+    this.mousePosition = null
+    this.tooltipContent = []
+    this._options.onPointerMove?.({
+      plugin: this,
+      chart: this._chart,
+      tooltip: null,
+    })
+
+    if (this._chart) {
+      this._chart.update()
+    }
+  },
 
   afterInit(chart, _args, options) {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -247,18 +290,20 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
           }
 
           options.onPointerMove?.({
+            plugin: this,
             chart,
             tooltip: {
               x: this.mousePosition.x,
               y: this.mousePosition.y,
               label,
+              viewDetail: false,
               content: this.tooltipContent,
             },
           })
         } else {
           options.onPointerMove?.({
+            plugin: this,
             chart,
-
             tooltip: null,
           })
         }

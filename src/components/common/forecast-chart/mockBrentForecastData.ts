@@ -75,77 +75,96 @@ export const generateChartMonths = (options: ChartMonthOptions = {}): ChartMonth
   return { originalMonths, months }
 }
 
-export const actualData = [null, 87, 87, 83, 75, 78, 77, 75, 82, 78, 74, 70, 67, null, null]
-
-// Futures data (with null padding)
-export const futuresM1Data = [null, 87.5, 84, 81, 74.5, 75, 76, 75.5, 80.5, 77.5, 72, 69.5, 69, null, null]
-
-export const futuresM2Data = [null, 86, 83, 80, 73, 75.5, 76.5, 76, 79, 75, 71, 68, 67, null, null]
-
 /**
- * Options for generating mock futures data
+ * Options for generating mock actual data
  */
-export interface MockFuturesOptions {
-  /** Minimum variance from actual data (default: -3) */
-  varianceMin?: number
-  /** Maximum variance from actual data (default: 3) */
-  varianceMax?: number
-  /** Bias for trending direction (negative for bearish, positive for bullish, default: 0) */
-  trendBias?: number
-  /** Whether to maintain null values in the same positions (default: true) */
-  maintainNulls?: boolean
-  /** Volatility factor (0-1, default: 0.5) */
+export interface MockActualDataOptions {
+  /** Base price to start from (default: 80) */
+  basePrice?: number
+  /** Minimum monthly change (default: -5) */
+  minChange?: number
+  /** Maximum monthly change (default: 5) */
+  maxChange?: number
+  /** Volatility factor (0-1, default: 0.6) */
   volatility?: number
+  /** Number of null values at the beginning (default: 1) */
+  leadingNulls?: number
+  /** Number of null values at the end (default: 2) */
+  trailingNulls?: number
+  /** Seasonal factor - adds a slight seasonal pattern (0-1, default: 0.3) */
+  seasonality?: number
+  /** Trend direction (-1 to 1, negative for downtrend, positive for uptrend, default: 0) */
+  trend?: number
 }
 
 /**
- * Scenario configuration for generating futures data
- */
-export interface FuturesScenario {
-  /** Name identifier for the scenario */
-  name: string
-  /** Options for generating this scenario */
-  options: MockFuturesOptions
-}
-
-/**
- * Generate mock futures data based on actual data with configurable parameters
- * @param baseData - The base actual data array
+ * Generates mock actual data based on months
+ * @param months - Array of month strings
  * @param options - Configuration options for mock data generation
- * @returns Generated mock futures data
+ * @returns Generated mock actual data array
  */
-export const generateMockFuturesData = (baseData: (number | null)[], options: MockFuturesOptions = {}): (number | null)[] => {
-  const { varianceMin = -3, varianceMax = 3, trendBias = 0, maintainNulls = true, volatility = 0.5 } = options
+export const generateMockActualData = (months: string[], options: MockActualDataOptions = {}): (number | null)[] => {
+  const {
+    basePrice = 80,
+    minChange = -5,
+    maxChange = 5,
+    volatility = 0.6,
+    leadingNulls = 1,
+    trailingNulls = 2,
+    seasonality = 0.3,
+    trend = 0,
+  } = options
 
-  return baseData.map((value, index) => {
-    // Maintain null values if specified
-    if (value === null && maintainNulls) {
-      return null
-    }
+  const result: (number | null)[] = []
+  let currentPrice = basePrice
 
-    // Skip if value is null but we're not maintaining nulls
-    if (value === null) {
-      // eslint-disable-next-line no-param-reassign
-      value = 0
-    }
+  // Calculate how many actual data points we need
+  const dataPointCount = months.length
+  const actualDataPointCount = dataPointCount - leadingNulls - trailingNulls
 
-    // Calculate variance based on volatility
-    const varianceRange = varianceMax - varianceMin
-    const randomFactor = Math.random() * volatility
-    const variance = varianceMin + randomFactor * varianceRange
+  // Add leading nulls
+  for (let i = 0; i < leadingNulls; i++) {
+    result.push(null)
+  }
 
-    // Apply trend bias (increases/decreases over time)
-    const trendEffect = (index / baseData.length) * trendBias
+  // Generate actual data points
+  for (let i = 0; i < actualDataPointCount; i++) {
+    // Calculate month index (0-11) for seasonality
+    const monthStr = months[i + leadingNulls]
+    const monthIndex = parseInt(monthStr.split('-')[1]) - 1 // Extract month from YYYY-MM format
 
-    // Calculate final mock value
-    const mockValue = value + variance + trendEffect
+    // Seasonal factor: higher in winter months (Dec-Feb), lower in summer (Jun-Aug)
+    // Northern hemisphere seasons
+    const winterPeak = monthIndex <= 1 || monthIndex === 11 ? 1 : 0 // Dec, Jan, Feb
+    const summerDip = monthIndex >= 5 && monthIndex <= 7 ? -1 : 0 // Jun, Jul, Aug
+    const seasonalFactor = (winterPeak + summerDip) * seasonality
 
-    // Round to 0.5 increments for more realistic futures pricing
-    return Math.round(mockValue * 2) / 2
-  })
+    // Random change with volatility
+    const changeRange = maxChange - minChange
+    const randomChange = minChange + Math.random() * changeRange * volatility
+
+    // Apply trend (increases effect over time)
+    const trendEffect = (i / actualDataPointCount) * trend * 2
+
+    // Calculate new price with all factors
+    currentPrice += randomChange + seasonalFactor + trendEffect
+
+    // Ensure price doesn't go below a reasonable floor (e.g., 30)
+    currentPrice = Math.max(30, currentPrice)
+
+    // Round to whole numbers for actual data
+    result.push(Math.round(currentPrice))
+  }
+
+  // Add trailing nulls
+  for (let i = 0; i < trailingNulls; i++) {
+    result.push(null)
+  }
+
+  return result
 }
 
-export const generateForecastDatasets = (months: string[]) => {
+const generateForecastByMonth = (actualData: (number | null)[], months: string[]) => {
   // Create a forecast line for each month (including the last one)
   const forecastDatasets = []
 
@@ -164,7 +183,7 @@ export const generateForecastDatasets = (months: string[]) => {
   return forecastDatasets
 }
 
-export const generateSingleForecastDatasets = (months: string[]) => {
+const generateForecastByYear = (actualData: (number | null)[], months: string[]) => {
   // Create a forecast line for each month (including the last one)
   const forecastData: Array<number | null> = Array(months.length)
     .fill(null)
@@ -180,4 +199,23 @@ export const generateSingleForecastDatasets = (months: string[]) => {
   forecastData.push((actualData[2] as number) * (0.95 + Math.random() * 0.1))
 
   return [forecastData]
+}
+
+export const generateForecastDataset = (
+  months: string[],
+  options?: {
+    forecastByMonth?: boolean
+    hasForecast?: boolean
+    actualDataIsEmpty?: boolean
+  },
+) => {
+  const { forecastByMonth = true, actualDataIsEmpty = false } = options ?? {}
+
+  const actualData = generateMockActualData(months)
+  const forecastData = forecastByMonth ? generateForecastByMonth(actualData, months) : generateForecastByYear(actualData, months)
+
+  return {
+    data: actualDataIsEmpty ? [] : actualData,
+    forecastData,
+  }
 }

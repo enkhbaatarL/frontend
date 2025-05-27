@@ -45,16 +45,17 @@ const ChartToolTipItem = (props: { label: string; value: number; category: strin
     </Box>
   )
 }
-
 export interface MIForecastChartTooltipProps {
   minWidth: number
   visible?: boolean
+  viewDetail?: boolean
   top?: number
   left?: number
   label?: string
   content: { label?: string; value?: number; category?: string; color?: string }[]
   borderBottom: number
   borderRight: number
+  onClose?: () => void
 }
 
 export default function MIForecastChartTooltip({

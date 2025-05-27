@@ -58,6 +58,7 @@ declare module '@mui/material/styles' {
     subtext3: CSSProperties
     subtext4: CSSProperties
     subtext5: CSSProperties
+    messageText1: React.CSSProperties
     body1: CSSProperties
     body1M16: CSSProperties
     body1SB16: CSSProperties
@@ -117,6 +118,7 @@ declare module '@mui/material/styles' {
     subtext3?: CSSProperties
     subtext4?: CSSProperties
     subtext5?: CSSProperties
+    messageText1?: React.CSSProperties
     body1?: CSSProperties
     body1M16?: CSSProperties
     body1SB16?: CSSProperties
@@ -178,6 +180,7 @@ declare module '@mui/material/Typography' {
     subtext3: true
     subtext4: true
     subtext5: true
+    messageText1: true
     body1: true
     body1M16: true
     body1SB16: true
@@ -653,6 +656,12 @@ const theme = createTheme({
       fontStyle: 'normal',
       fontWeight: 600,
       letterSpacing: '-0.4px',
+    },
+    messageText1: {
+      fontSize: '20px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1.2',
     },
   },
   components,

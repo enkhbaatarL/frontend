@@ -23,6 +23,14 @@ const dashboardDataService = {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/latest-insights`)
     return response.data.data
   },
+  /**
+   * 대시보드 Market Data 목록을 조회합니다.
+   * @param companyNo - 고객사 번호
+   */
+  async getdashboardMakterDatas(companyNo: number): Promise<IDashboardLastInsightsInfo[]> {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/market-datas`)
+    return response.data.data
+  },
 }
 
 export default dashboardDataService

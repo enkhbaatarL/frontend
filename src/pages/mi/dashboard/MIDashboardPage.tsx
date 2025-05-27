@@ -49,6 +49,15 @@ const MIDashboardPage = () => {
     gcTime: 0,
   })
 
+  // 우측 marketData 리스트 조회
+  const { data: marketDataList = [] } = useQuery({
+    queryKey: ['getdashboardMakterDatas', companyNo],
+    queryFn: async () => await dashboardDataService.getdashboardMakterDatas(companyNo!),
+    enabled: !!companyNo || companyNo !== 1,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
   return (
     <Box bgcolor={'#F2F5F7'} position={'relative'}>
       {showBanner && (
