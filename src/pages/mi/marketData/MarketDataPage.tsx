@@ -181,21 +181,53 @@ const MarketDataPage = () => {
                     {
                       field: 'goodsDataNm',
                       headerName: 'Data Name',
-                      flex: 3,
+                      flex: 1,
+                      minWidth: 300,
+                      renderCell: ({ row }) => (
+                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { cursor: 'pointer' }) }}>{row.goodsDataNm}</span>
+                      ),
                     },
-                    { field: 'goodsDataSrcNm', headerName: 'Datasource', flex: 1, align: 'center' },
-                    { field: 'lastValue', headerName: 'Value', flex: 1, align: 'center' },
+                    {
+                      field: 'goodsDataSrcNm',
+                      headerName: 'Datasource',
+                      flex: 1,
+                      align: 'left',
+                      minWidth: 300,
+                      renderCell: ({ row }) => (
+                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { cursor: 'pointer' }) }}>{row.goodsDataSrcNm}</span>
+                      ),
+                    },
+                    {
+                      field: 'lastValue',
+                      headerName: 'Value',
+                      flex: 1,
+                      align: 'center',
+                      minWidth: 150,
+                      renderCell: ({ row }) => (
+                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { fontWeight: 'bold', cursor: 'pointer' }) }}>
+                          {row.lastValue}
+                        </span>
+                      ),
+                    },
                     {
                       field: 'modifyDt',
                       headerName: 'Last Updated',
                       flex: 1,
+                      minWidth: 200,
                       align: 'center',
+                      renderCell: ({ row }) => (
+                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { cursor: 'pointer' }) }}>
+                          {dayjs(row.modifyDt).format('YYYY-MM-DD')}
+                        </span>
+                      ),
                     },
                   ],
                   rowId: 'goodsDataSrcNo',
                   rows: data?.detail,
                   onRowClick: ({ row }) => {
-                    navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`, { state: { goodsDataSrcNo: row.goodsDataSrcNo } })
+                    if (row.isViewable) {
+                      navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`, { state: { goodsDataSrcNo: row.goodsDataSrcNo } })
+                    }
                   },
                 }}
                 paginationProps={{
