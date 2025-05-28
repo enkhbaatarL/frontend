@@ -74,8 +74,8 @@ const bbColors: {
   [key: string]: string
 } = {
   bb_upper: '#DF4B4A',
-  bb_middle: '#2A8D3E',
-  bb_lower: '#1967D2',
+  bb_middle: '#4263EB',
+  bb_lower: '#37B24D',
 }
 
 const bbLabels: {
@@ -270,28 +270,21 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
           const numB = parseInt(b.label.replace('MA', ''))
           return numA - numB
         }),
-      BB: bb?.series.map((series) => {
-        const label = bbLabels[series.seriesId]
-        const isMiddleBBInCandle = label === 'Middle BB' && chartType === ChartType.CANDLE
-        const borderColor = isMiddleBBInCandle ? '#F0D92D' : bbColors[series.seriesId]
-        const borderWidth = isMiddleBBInCandle ? 2 : 1
-
-        return {
-          label,
-          data: series.values.map((value, index) => ({
-            x: dayjs(bb.timestamps[index]).valueOf(),
-            y: value,
-          })),
-          type: 'line',
-          borderColor: props.displayDataInfo.BB ? borderColor : 'transparent',
-          borderWidth,
-          pointRadius: 0,
-          fill: false,
-          tension: 0.1,
-        }
-      }),
+      BB: bb?.series.map((series) => ({
+        label: bbLabels[series.seriesId],
+        data: series.values.map((value, index) => ({
+          x: dayjs(bb.timestamps[index]).valueOf(),
+          y: value,
+        })),
+        type: 'line',
+        borderColor: props.displayDataInfo.BB ? bbColors[series.seriesId] : 'transparent',
+        borderWidth: 1,
+        pointRadius: 0,
+        fill: false,
+        tension: 0.1,
+      })),
     }
-  }, [chartType, indicators, props.displayDataInfo.BB, props.displayDataInfo.MA])
+  }, [indicators, props.displayDataInfo.BB, props.displayDataInfo.MA])
 
   const comparisonDatasets = useMemo(() => {
     const colors = [/*'#40597A',*/ '#26757B', '#EFA460', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434']
