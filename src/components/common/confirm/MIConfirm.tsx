@@ -36,7 +36,7 @@ const MIConfirm = ({
   justifyContentAction = 'end',
   hideFooter = false,
   actions = [{ label: t('확인'), variant: 'filled', color: 'primary', onClick: handleClose }],
-  zIndex = 1600,
+  zIndex,
 }: Props) => {
   useEffect(() => {
     const className = 'mi-confirm-open'
@@ -82,7 +82,7 @@ const MIConfirm = ({
       open={open}
       onClose={handleClose}
       sx={{
-        zIndex: zIndex ?? 1600,
+        zIndex,
       }}
     >
       <DialogTitle>

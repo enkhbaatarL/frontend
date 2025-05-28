@@ -282,6 +282,7 @@ const MIAgentChatWindow = ({
           </>
         }
         width={450}
+        zIndex={1600}
         handleClose={() => {
           setIsOpenDelete(false)
         }}
