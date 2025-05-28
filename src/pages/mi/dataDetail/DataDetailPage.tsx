@@ -209,7 +209,7 @@ const DataDetailPage = () => {
           container
           gap={6}
         >
-          <Grid container direction="column" flexGrow={1} gap={9.5}>
+          <Grid container direction="column" flexGrow={1} gap={5}>
             {hasStructuredDataList && (
               <>
                 <ChartComponent
@@ -221,24 +221,22 @@ const DataDetailPage = () => {
                   goodsDataNm={productData?.goodsDataNm}
                   isDownloadable={productData?.isDownloadable}
                 />
+                <Grid container justifyContent="space-between">
+                  <Box maxWidth={465} marginTop={5}>
+                    <MIDateRangePicker onChange={handleDateChange} startDate={startDate} endDate={endDate} />
+                  </Box>
+                  <MIButton
+                    toolTip={'엑셀 다운로드'}
+                    type="outlined"
+                    color="gray"
+                    contentType="icon"
+                    startIcon={<FileDownloadIcon />}
+                    onClick={downloadRawData}
+                  />
+                </Grid>
                 {rawGoodsData && (
                   <Box width={'100%'}>
                     <MITableUser<ITableRow>
-                      tableHeader={
-                        <Grid container justifyContent="space-between">
-                          <Box maxWidth={465}>
-                            <MIDateRangePicker onChange={handleDateChange} startDate={startDate} endDate={endDate} />
-                          </Box>
-                          <MIButton
-                            toolTip={'엑셀 다운로드'}
-                            type="outlined"
-                            color="gray"
-                            contentType="icon"
-                            startIcon={<FileDownloadIcon />}
-                            onClick={downloadRawData}
-                          />
-                        </Grid>
-                      }
                       tableProps={{
                         disableHover: true,
                         noRowMessage: '등록된 내용이 없습니다.',
@@ -253,6 +251,23 @@ const DataDetailPage = () => {
                         onSizeChange: (size) => setRawSize(size),
                       }}
                     />
+                  </Box>
+                )}
+                {!rawGoodsData?.detail && (
+                  <Box
+                    display={'flex'}
+                    alignItems={'center'}
+                    justifyContent={'center'}
+                    width={'100%'}
+                    height={'732px'}
+                    sx={{ backgroundColor: '#F8F9FA', border: '1px solid #DEE2E6', borderRadius: '4px' }}
+                  >
+                    <Box display={'flex'} flexDirection={'column'} height={'fit-content'} alignItems={'center'}>
+                      <ErrorOutlineIcon />
+                      <Typography variant="body3SB12" color="gray.60" mt={'10px'}>
+                        No results found
+                      </Typography>
+                    </Box>
                   </Box>
                 )}
                 <MILine />
