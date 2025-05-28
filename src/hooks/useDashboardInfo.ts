@@ -65,9 +65,10 @@ export const useDashboardInfo = () => {
 
   const currentTable = useMemo(() => dashboardMapper[accessCompanyInfo?.customerCompanyNo ?? -1], [accessCompanyInfo?.customerCompanyNo])
 
-  const shouldHideDashboard = useMemo(() => currentTable.hide, [currentTable])
+  const shouldHideDashboard = useMemo(() => currentTable?.hide, [currentTable])
 
   const rawData = useMemo<RawDataItem[]>(() => {
+    if (!currentTable) return []
     const baseData: RawDataItem[] = currentTable.tableRows.map((row) => ({
       model: row,
       data: [20, 20, 20, 20, 20, 10, 20, 20, 20, 20, 20, 20], //TODO
@@ -81,7 +82,7 @@ export const useDashboardInfo = () => {
       },
     ]
     return [...baseData, ...(currentTable.errorRate ? errorRateData : [])]
-  }, [currentTable.errorRate, currentTable.tableRows])
+  }, [currentTable])
 
   const rows = useMemo<DataRow[]>(
     () =>
@@ -102,9 +103,10 @@ export const useDashboardInfo = () => {
   )
 
   const columns = useMemo(() => {
+    if (!currentTable) return []
     const baseColumn = {
       field: 'model',
-      headerName: currentTable.tableUnitName,
+      headerName: currentTable.tableUnitName ?? '',
       width: 100,
       type: 'string',
       align: 'center',
@@ -118,6 +120,6 @@ export const useDashboardInfo = () => {
     }))
 
     return [baseColumn, ...monthColumns]
-  }, [currentTable.tableUnitName, monthHeaders])
+  }, [currentTable, monthHeaders])
   return { shouldHideDashboard, columns, rows }
 }
