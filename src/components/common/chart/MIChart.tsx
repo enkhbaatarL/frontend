@@ -39,7 +39,7 @@ interface MIChartProps {
   displayDataInfo: DisplayDataInfo
   width?: string | number
   height?: string | number
-  interval?: 'day' | 'month' | 'year'
+  interval?: 'hour' | 'day' | 'month' | 'year'
   chartType?: ChartType
 }
 
@@ -87,7 +87,7 @@ const bbLabels: {
 }
 
 const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, ref) => {
-  const { height, interval = 'day', mainData, chartType = ChartType.LINE, indicators = [], comparisonCharts = [] } = props
+  const { height, interval = 'hour', mainData, chartType = ChartType.LINE, indicators = [], comparisonCharts = [] } = props
   const chartRef = useRef<HTMLCanvasElement>(null)
   const [chartInstance, setChartInstance] = useState<Chart | null>(null)
   const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
@@ -402,6 +402,11 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
             type: 'time',
             time: {
               unit: interval,
+              displayFormats: {
+                day: 'M월',
+                month: 'YYYY년 MM월',
+                year: 'YYYY년',
+              },
               options: {
                 locale: 'ko',
               },
@@ -427,6 +432,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
             afterTickToLabelConversion(axis: any) {
               if (axis.ticks.length > 0) {
                 axis.ticks[0].label = ''
+                // axis.ticks[axis.ticks.length - 1].label = ''
               }
             },
             ticks: {

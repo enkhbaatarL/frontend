@@ -345,11 +345,9 @@ const ChartComponent = ({
               </MIButton>
             </Grid>
           )}
-          {chartData?.metadata.latestDate && (
-            <Typography ml={'auto'} variant={'body3M12'} color={'gray.60'}>
-              Updated Date : {dayjs(chartData?.metadata.latestDate).format('YYYY-MM-DD')}
-            </Typography>
-          )}
+          <Typography ml={'auto'} variant={'body3M12'} color={'gray.60'}>
+            {chartData?.metadata.latestDate && <>Updated Date : {dayjs(chartData?.metadata.latestDate).format('YYYY-MM-DD')}</>}
+          </Typography>
         </Grid>
       </Box>
 
