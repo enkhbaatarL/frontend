@@ -74,7 +74,7 @@ export const datePickerLayoutStyleSx = {
     margin: 0,
   },
   '& .MuiDayCalendar-weekDayLabel': {
-    '&:nth-child(1)': {
+    '&:nth-of-type(1)': {
       color: theme.palette.point.red1,
     },
     ...theme.typography.body3M12,

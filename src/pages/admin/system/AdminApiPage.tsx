@@ -76,12 +76,10 @@ const AdminApiPage = () => {
   const companyOptions = useMemo(() => {
     const customerCompanies = customerCompanyList?.find((item) => item.companyType === 'CUSTOMER')?.companies || []
 
-    const companyOptions = customerCompanies.map((company) => ({
+    return customerCompanies.map((company) => ({
       value: company.companyNo,
       label: company.companyNm,
     }))
-
-    return companyOptions
   }, [customerCompanyList])
 
   const columns: GridColDef[] = [
@@ -109,7 +107,8 @@ const AdminApiPage = () => {
       field: 'clientSecretKey',
       headerName: 'Client Secret',
       flex: 1,
-      minWidth: 150,
+      width: 120,
+      maxWidth: 200,
       align: 'left',
       renderCell(params) {
         const maskedValue = params.value ? '*'.repeat(params.value.length) : '********'
@@ -149,11 +148,9 @@ const AdminApiPage = () => {
       flex: 0.5,
       align: 'center',
       renderCell(params) {
-        const { createUserNm, createUserDeptNm, createUserCpnyNm, createDt } = params.row.auditInfo
+        const { createDt } = params.row.auditInfo
         return (
           <MITableCell
-            tooltip
-            tooltipContent={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`}
             value={dayjs(createDt).format('YYYY-MM-DD')}
             typography={{
               color: 'gray.60',
@@ -169,8 +166,8 @@ const AdminApiPage = () => {
       flex: 0.5,
       align: 'left',
       renderCell(params) {
-        const { createUserNm } = params.row.auditInfo
-        return <MITableCell>{createUserNm}</MITableCell>
+        const { createUserNm, createUserDeptNm, createUserCpnyNm } = params.row.auditInfo
+        return <MITableCell value={createUserNm} tooltip tooltipContent={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`} />
       },
     },
     {
@@ -198,8 +195,8 @@ const AdminApiPage = () => {
       flex: 0.5,
       align: 'left',
       renderCell(params) {
-        const { createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm } = params.row.auditInfo
-        return <MITableCell value={modifyUserNm} tooltip tooltipContent={`${createUserNm} / ${createUserDeptNm} / ${createUserCpnyNm}`} />
+        const { modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm } = params.row.auditInfo
+        return <MITableCell value={modifyUserNm} tooltip tooltipContent={`${modifyUserNm} / ${modifyUserDeptNm} / ${modifyUserCpnyNm}`} />
       },
     },
     {
@@ -233,7 +230,7 @@ const AdminApiPage = () => {
     {
       field: 'delete',
       headerName: '',
-      minWidth: 50,
+      maxWidth: 50,
       flex: 1,
       align: 'center',
       renderCell(params) {
@@ -275,8 +272,10 @@ const AdminApiPage = () => {
   // Client Secret 복사
   const handleCopyClientSecret = () => {
     if (decodedSecretKey) {
-      navigator.clipboard.writeText(decodedSecretKey)
-      showSnackbar(t('복사되었습니다.'), { variant: 'success' })
+      navigator.clipboard.writeText(decodedSecretKey).then(() => {
+        showSnackbar(t('복사되었습니다.'), { variant: 'success' })
+        setViewSecretModal(false)
+      })
     }
   }
 
@@ -294,10 +293,8 @@ const AdminApiPage = () => {
         setClientId('')
         setIsError(false)
         await refetch()
-      } else {
-        if (response.code === 'RSC-003') {
-          setIsError(true)
-        }
+      } else if (response.code === 'RSC-003') {
+        setIsError(true)
       }
     } catch (error) {
       console.error(error)
@@ -353,9 +350,7 @@ const AdminApiPage = () => {
             label: t('취소'),
             variant: 'outlined',
             color: 'gray',
-            onClick: () => {
-              setIsReissueModalOpen(false)
-            },
+            onClick: () => setIsReissueModalOpen(false),
           },
           {
             label: t('재발행'),
@@ -422,7 +417,7 @@ const AdminApiPage = () => {
         ]}
       >
         <Box sx={{ width: '100%', mt: 2 }}>
-          <MIField label={t('고객사 선택')} required labelSize="sm"></MIField>
+          <MIField label={t('고객사 선택')} required labelSize="sm" />
           <MISelect
             fullWidth
             value={selectedCompany}
@@ -441,7 +436,7 @@ const AdminApiPage = () => {
                 size="h34"
                 placeholder={t('입력하세요')}
                 value={clientId}
-                onChange={(e) => setClientId(e.target.value as string)}
+                onChange={(e) => setClientId(e.target.value)}
                 error={isError}
                 errorMessage={isError ? t('중복되는 Client ID 입니다.') : ''}
               />

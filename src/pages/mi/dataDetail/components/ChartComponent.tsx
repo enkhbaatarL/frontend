@@ -1,19 +1,19 @@
 import LocalSeeOutlinedIcon from '@mui/icons-material/LocalSeeOutlined'
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
-import { Box, CircularProgress, Grid2 as Grid, Stack, Switch, Tooltip, Typography } from '@mui/material'
+import { Box, CircularProgress, Grid2 as Grid, Stack, Switch, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIChart, { DisplayDataInfo } from '@/components/common/chart/MIChart'
 import MIChartController from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
-import { UserRole } from '@/service/admin/members.ts'
+import { UserRole } from '@/service/admin/members'
 import dataDetailService, { IProductDataStructuredChartRequest, IProductDataStructuredData } from '@/service/mi/dataDetail'
-import useAuthStore from '@/store/useAuthStore.ts'
-import { ChartRange, ChartType } from '@/types/dataDetailChart'
+import useAuthStore from '@/store/useAuthStore'
+import { ChartInterval, ChartRange, ChartType } from '@/types/dataDetailChart'
 
 interface ChartComponentProps {
   goodsNo: number
@@ -21,9 +21,28 @@ interface ChartComponentProps {
   goodsDataSourceNo?: number
   setGoodsDataSourceNo: Dispatch<SetStateAction<number | undefined>>
   structuredDataList?: IProductDataStructuredData[]
-  modifyDt?: string
   goodsDataNm?: string
   isDownloadable?: boolean
+}
+
+const CHART_RANGE_LABELS: Record<ChartRange, string> = {
+  [ChartRange.WEEK]: '1 Week',
+  [ChartRange.MONTH]: '1 Month',
+  [ChartRange.THREE_MONTHS]: '3 Months',
+  [ChartRange.SIX_MONTHS]: '6 Months',
+  [ChartRange.YEAR]: '1 Year',
+  [ChartRange.TWO_YEARS]: '2 Year',
+  [ChartRange.CUSTOM]: 'Custom',
+}
+
+const INTERVAL_LABELS: Record<ChartInterval, string> = {
+  [ChartInterval.DAY]: '1 day',
+  [ChartInterval.WEEK]: '1 week',
+  [ChartInterval.TWO_WEEKS]: '2 week',
+  [ChartInterval.MONTH]: '1 month',
+  [ChartInterval.THREE_MONTHS]: '3 months',
+  [ChartInterval.SIX_MONTHS]: '6 months',
+  [ChartInterval.YEAR]: '1 year',
 }
 
 const ChartComponent = ({
@@ -32,11 +51,14 @@ const ChartComponent = ({
   goodsDataSourceNo,
   setGoodsDataSourceNo,
   structuredDataList,
-  modifyDt,
   goodsDataNm,
   isDownloadable,
 }: ChartComponentProps) => {
   const miChartRef = useRef<HTMLCanvasElement | null>(null)
+
+  const [selectedRange, setSelectedRange] = useState<ChartRange>(ChartRange.WEEK)
+  const [chartInterval, setChartInterval] = useState<ChartInterval>(ChartInterval.DAY)
+  const [useSaveLastSetting, setUseSaveLastSetting] = useState(false)
 
   const [chartType, setChartType] = useState<ChartType>(ChartType.LINE)
   const [isInitialState, setIsInitialState] = useState(true)
@@ -78,6 +100,23 @@ const ChartComponent = ({
     enabled: !!goodsDataSourceNo,
   })
 
+  const chartIntervalOptions = useMemo(
+    () =>
+      selectedDataSource?.allowedPeriods
+        .find((item) => item.range === selectedRange)
+        ?.intervals.map((interval) => ({
+          value: interval,
+          label: INTERVAL_LABELS[interval],
+        })) ?? [],
+    [selectedDataSource, selectedRange],
+  )
+
+  useEffect(() => {
+    const defaultInterval =
+      selectedDataSource?.allowedPeriods.find((item) => item.range === selectedRange)?.defaultInterval ?? ChartInterval.DAY
+    setChartInterval(defaultInterval)
+  }, [selectedDataSource, selectedRange])
+
   useEffect(() => {
     if (chartData && isInitialState) {
       setSearchFilter({
@@ -85,32 +124,19 @@ const ChartComponent = ({
         unitCd: chartData.metadata.currentUnitCd,
       })
       setChartType(chartData.metadata.initialChartType)
+      setSelectedRange(selectedDataSource?.allowedPeriods[0].range ?? ChartRange.WEEK)
       setIsInitialState(false)
     }
-  }, [chartData, isInitialState, searchFilter])
+  }, [chartData, isInitialState, selectedDataSource?.allowedPeriods])
 
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
-  const [timeRangeSelected, setTimeRangeSelected] = useState<string>('')
   const [isOpenSetting, setIsOpenSetting] = useState(false)
-
-  const timeRanges = [
-    { label: '1 Week', value: '1w' },
-    { label: '1 Month', value: '1m' },
-    { label: '3 Months', value: '3m' },
-    { label: '6 Months', value: '6m' },
-    { label: '1 Year', value: '1y' },
-    { label: '2 Year', value: '2y' },
-    { label: 'Custom', value: 'custom' },
-  ]
 
   const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
     setStartDate(startDate?.format('YYYYMMDD') ?? '')
     setEndDate(endDate?.format('YYYYMMDD') ?? '')
   }
-  const handleSelectTimeRange = useCallback((value: string) => {
-    setTimeRangeSelected((prev) => (prev === value ? '' : value))
-  }, [])
 
   const handleAlarmSetting = () => {
     setIsOpenSetting(true)
@@ -195,24 +221,17 @@ const ChartComponent = ({
             disabled={!isDownloadable}
           />
 
-          <Tooltip title={'그래프 설정 초기화'}>
-            <Stack direction="row" alignItems="center" sx={{ ml: 'auto' }}>
-              <Switch
-                checked={isOpenSetting}
-                onChange={(e) => {
-                  e.preventDefault()
-                  setIsOpenSetting(e.target.checked)
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault()
-                  setIsOpenSetting((prev) => !prev)
-                }}
-              />
-              <Typography variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
-                Save last setting
-              </Typography>
-            </Stack>
-          </Tooltip>
+          <Stack direction="row" alignItems="center" sx={{ ml: 'auto' }}>
+            <Switch
+              checked={useSaveLastSetting}
+              onChange={(_) => {
+                setUseSaveLastSetting((prev) => !prev)
+              }}
+            />
+            <Typography variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
+              Save last setting
+            </Typography>
+          </Stack>
         </Grid>
 
         {/*Chart content*/}
@@ -221,6 +240,9 @@ const ChartComponent = ({
             chartType={chartType}
             setChartType={setChartType}
             isCandlestick={chartData?.mainChart.chartType === ChartType.CANDLE}
+            chartInterval={chartInterval}
+            setChartInterval={setChartInterval}
+            chartIntervalOptions={chartIntervalOptions}
             searchFilter={searchFilter}
             setSearchFilter={setSearchFilter}
             unitList={chartData?.metadata.changeableUnitCd ?? []}
@@ -303,19 +325,19 @@ const ChartComponent = ({
           borderColor={'gray.30'}
           minHeight={51}
         >
-          {timeRanges.map((item, index) => (
+          {selectedDataSource?.allowedPeriods.map(({ range }) => (
             <MIButton
-              active={timeRangeSelected === item.value}
-              onClick={() => handleSelectTimeRange(item.value)}
-              key={index}
+              active={selectedRange === range}
+              onClick={() => setSelectedRange(range)}
+              key={range}
               color={'gray'}
               type={'ghost'}
               size={'h28'}
             >
-              {item.label}
+              {CHART_RANGE_LABELS[range]}
             </MIButton>
           ))}
-          {timeRangeSelected === 'custom' && (
+          {selectedRange === ChartRange.CUSTOM && (
             <Grid container maxWidth={357} wrap={'nowrap'} alignItems={'center'} direction={'row'} ml={2.5} gap={2.5}>
               <MIDateRangePicker sizeInput={'h26'} onChange={handleDateChange} />
               <MIButton onClick={() => console.log(startDate, endDate)} size={'h28'}>
@@ -323,9 +345,9 @@ const ChartComponent = ({
               </MIButton>
             </Grid>
           )}
-          {modifyDt && (
+          {chartData?.metadata.latestDate && (
             <Typography ml={'auto'} variant={'body3M12'} color={'gray.60'}>
-              Updated Date : {dayjs(modifyDt).format('YYYY-MM-DD')}
+              Updated Date : {dayjs(chartData?.metadata.latestDate).format('YYYY-MM-DD')}
             </Typography>
           )}
         </Grid>

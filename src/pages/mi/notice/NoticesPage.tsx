@@ -10,7 +10,7 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import boardService, { INoticeInfo, INoticeRequest } from '@/service/mi/board'
-import useAuthStore from '@/store/useAuthStore.ts'
+import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
 
 const NoticesPage = () => {

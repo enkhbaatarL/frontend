@@ -17,7 +17,7 @@ import MIInput from '@/components/common/input/MIInput'
 import MISelect from '@/components/common/select/MISelect'
 import MITabs from '@/components/common/tabs/MITabs'
 import useSnackbar from '@/hooks/useSnackbar'
-import notificationService from '@/service/mi/notification.ts'
+import notificationService from '@/service/mi/notification'
 
 interface SettingModalProps {
   open: boolean

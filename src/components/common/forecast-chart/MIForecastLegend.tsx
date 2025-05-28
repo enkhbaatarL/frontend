@@ -8,9 +8,10 @@ import ForecastLegendIcon from './icons/ForecastLegendIcon'
 interface MIForecastLegendProps {
   datasets: Array<ChartDataset & { category: string; hidden?: boolean }>
   onToggleDataset: (index: number) => void
+  showActual?: boolean
 }
 
-export default function MIForecastLegend({ datasets, onToggleDataset }: Readonly<MIForecastLegendProps>) {
+export default function MIForecastLegend({ datasets, onToggleDataset, showActual = true }: Readonly<MIForecastLegendProps>) {
   return (
     <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} px="24px" py="10px">
       <Box display={'flex'} alignItems={'center'} gap="10px">
@@ -46,21 +47,22 @@ export default function MIForecastLegend({ datasets, onToggleDataset }: Readonly
           )
         })}
       </Box>
-
-      <Box display={'flex'} alignItems={'center'} gap="10px">
-        <Box display={'flex'} alignItems={'center'} p="4px" gap="2px">
-          <ActualLegendIcon />
-          <Typography variant="body2SB14" color="gray.70">
-            Actual
-          </Typography>
+      {showActual && (
+        <Box display={'flex'} alignItems={'center'} gap="10px">
+          <Box display={'flex'} alignItems={'center'} p="4px" gap="2px">
+            <ActualLegendIcon />
+            <Typography variant="body2SB14" color="gray.70">
+              Actual
+            </Typography>
+          </Box>
+          <Box display={'flex'} alignItems={'center'} p="4px" gap="2px">
+            <ForecastLegendIcon />
+            <Typography variant="body2SB14" color="gray.70">
+              Forecast
+            </Typography>
+          </Box>
         </Box>
-        <Box display={'flex'} alignItems={'center'} p="4px" gap="2px">
-          <ForecastLegendIcon />
-          <Typography variant="body2SB14" color="gray.70">
-            Forecast
-          </Typography>
-        </Box>
-      </Box>
+      )}
     </Box>
   )
 }

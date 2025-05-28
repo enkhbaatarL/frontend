@@ -8,7 +8,7 @@ import theme from '@/theming'
 export type MIButtonSize = 'h42' | 'h34' | 'h32' | 'h28'
 export type MIButtonType = 'filled' | 'outlined' | 'ghost'
 export type MIButtonContentType = 'text' | 'link' | 'icon' | 'select'
-export type MIButtonColor = 'primary' | 'gray' | 'gray2' | 'white' | 'red'
+export type MIButtonColor = 'primary' | 'gray' | 'gray2' | 'white' | 'red' | `#${string}`
 
 export interface MIButtonProps {
   toolTip?: string | ReactElement
@@ -20,6 +20,7 @@ export interface MIButtonProps {
   startIcon?: ReactElement
   hoverIcon?: ReactElement
   color?: MIButtonColor
+  hoverBgColor?: MIButtonColor
   disabled?: boolean
   disablePortal?: boolean
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void
@@ -28,11 +29,25 @@ export interface MIButtonProps {
   minWidth?: number | string
   padding?: number | string
   active?: boolean
+  disableHoverColor?: boolean
   valueSelect?: {
     icon?: JSX.Element
     label: string
     value: string
   }
+  placement?:
+    | 'bottom-end'
+    | 'bottom-start'
+    | 'bottom'
+    | 'left-end'
+    | 'left-start'
+    | 'left'
+    | 'right-end'
+    | 'right-start'
+    | 'right'
+    | 'top-end'
+    | 'top-start'
+    | 'top'
   offsetTop?: string | number
   options?: {
     icon?: JSX.Element
@@ -44,6 +59,7 @@ export interface MIButtonProps {
 export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
   const {
     toolTip,
+    placement,
     size = 'h34',
     children,
     type = 'filled',
@@ -63,6 +79,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
     onChange,
     onClick,
     toolTipProps = {},
+    hoverBgColor = '',
   } = props
 
   const [isActive, setIsActive] = useState(false)
@@ -126,13 +143,17 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
     return {
       filled: {
         color: theme.palette.common.white,
-        border: `1px solid ${colors[color]}`,
+        border: 'none',
         background:
           isActive || active
             ? `linear-gradient(0deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.10)), ${colors[color]}`
-            : colors[color],
+            : color.includes('#')
+              ? color
+              : colors[color],
         '&:hover': {
-          background: `linear-gradient(0deg, rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.20)), ${colors[color]}`,
+          background: hoverBgColor
+            ? hoverBgColor
+            : `linear-gradient(0deg, rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.20)), ${color.includes('#') ? color : colors[color]}`,
         },
         '&:disabled': {
           borderColor: theme.palette.gray[10],
@@ -198,7 +219,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
           },
         },
         '&:hover': {
-          //background: theme.palette.content['backgroundHover'],
+          background: theme.palette.content['backgroundHover'],
           svg: {
             color: theme.palette.content['iconHover'],
             path: {
@@ -229,10 +250,10 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
         },
       },
     }
-  }, [isActive, active, color])
+  }, [isActive, active, color, hoverBgColor])
 
   const renderButtonContent = () => (
-    <Tooltip title={toolTip} {...toolTipProps}>
+    <Tooltip placement={placement} title={toolTip} {...toolTipProps}>
       <span>
         <Box
           component="button"
@@ -276,8 +297,8 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
                   path: {
                     fill: '#343A40 !important',
                   },
+                  fontSize: size === 'h28' ? '14px' : '20px',
                 }}
-                fontSize="small"
               />
             </>
           ) : (

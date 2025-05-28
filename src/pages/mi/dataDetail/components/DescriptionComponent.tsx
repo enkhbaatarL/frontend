@@ -7,15 +7,15 @@ interface Props {
 
 const DescriptionComponent = ({ description, summary }: Props) => (
   <Box>
-    {description && (
-      <Typography mb={9.5} component="div" lineHeight={1.6} color="gray.90" variant="body1M16">
-        {description}
+    {summary && (
+      <Typography mb={9.5} component="div" lineHeight={1.6} color="gray.90" variant="body1M16" sx={{ whiteSpace: 'pre-line' }}>
+        {summary}
       </Typography>
     )}
-    {summary && (
+    {description && (
       <Grid container direction="column" gap={2}>
         <Typography component="div" lineHeight={1.6} color="gray.70" variant="body1R16" sx={{ whiteSpace: 'pre-line' }}>
-          {summary}
+          {description}
         </Typography>
       </Grid>
     )}

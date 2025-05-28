@@ -8,7 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminCompanySelectorIconButton from '@/components/admin/AdminCompanySelectorIconButton'
-import AdminSkeleton from '@/components/admin/AdminSkeleton.tsx'
+import AdminSkeleton from '@/components/admin/AdminSkeleton'
 import AdminTable, { AdminTableAction, AdminTableCell } from '@/components/admin/AdminTable'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DetailItem from '@/components/common/detail-item/DetailItem'

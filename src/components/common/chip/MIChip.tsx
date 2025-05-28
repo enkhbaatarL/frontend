@@ -19,7 +19,7 @@ type MIChipColor =
 export interface MIChipProps extends Omit<ChipProps, 'size' | 'color'> {
   size?: MIChipSize
   color?: MIChipColor
-  type?: 'filled' | 'outlined'
+  type?: 'filled' | 'outlined' | 'mari'
   fontType?: TypographyProps['variant']
   disableHover?: boolean
 }
@@ -47,7 +47,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
     (color: MIChipColor) => {
       if (color === 'blue')
         return {
-          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#1C7ED61A',
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : type === 'mari' ? 'transparent' : '#D6E4F7',
           color: '#1967D2',
           borderColor: '#1C7ED61A',
           ...(disableHover
@@ -60,7 +60,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
         }
       if (color === 'purple')
         return {
-          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F3EFF9',
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : type === 'mari' ? 'transparent' : '#EDE7FE',
           color: '#7451DD',
           borderColor: type === 'outlined' ? 'rgba(112, 72, 232, 0.10)' : 'tranparent',
           ...(disableHover
@@ -73,7 +73,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
         }
       if (color === 'orange')
         return {
-          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F261001A',
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : type === 'mari' ? 'transparent' : '#FFEADA',
           color: '#EB670F',
           borderColor: type === 'outlined' ? 'rgba(247, 103, 7, 0.10)' : 'tranparent',
           ...(disableHover
@@ -86,7 +86,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
         }
       if (color === 'green')
         return {
-          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#2A8D3E1A',
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : type === 'mari' ? 'transparent' : '#CAEDD1',
           color: '#2A8D3E',
           borderColor: type === 'outlined' ? 'rgba(42, 141, 62, 0.10)' : 'tranparent',
           ...(disableHover
@@ -99,13 +99,13 @@ export default function MIChip(props: Readonly<MIChipProps>) {
         }
       if (color === 'green-climb')
         return {
-          backgroundColor: '#498B471A',
+          backgroundColor: 'rgba(73, 139, 71, 0.10)',
           color: '#498B47',
           borderColor: 'tranparent',
         }
       if (color === 'red')
         return {
-          backgroundColor: type === 'outlined' ? '#FFFFFF' : '#F03E3E1A',
+          backgroundColor: type === 'outlined' ? '#FFFFFF' : type === 'mari' ? 'transparent' : '#FFE6E6',
           color: '#DF4B4A',
           borderColor: type === 'outlined' ? 'rgba(240, 62, 62, 0.10)' : 'tranparent',
           ...(disableHover
@@ -118,7 +118,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
         }
       if (color === 'red-decline')
         return {
-          backgroundColor: '#CC4D501A',
+          backgroundColor: 'rgba(204, 77, 80, 0.10)',
           color: '#CC4D50',
           borderColor: 'tranparent',
           ...(disableHover
@@ -145,8 +145,8 @@ export default function MIChip(props: Readonly<MIChipProps>) {
       if (color === 'gray')
         return {
           color: '#495057',
-          backgroundColor: '#E9ECEF',
-          borderColor: '#4950571A',
+          backgroundColor: type === 'mari' ? 'transparent' : '#E9ECEF',
+          borderColor: type === 'mari' ? '#DEE2E6' : 'transparent',
           ...(disableHover
             ? {}
             : {
@@ -202,16 +202,16 @@ export default function MIChip(props: Readonly<MIChipProps>) {
   const textStyle = useMemo((): TypographyProps => {
     if (size === 'h20')
       return {
-        variant: fontType ?? 'chip2',
+        variant: type === 'mari' ? 'mariChip' : (fontType ?? 'chip2'),
       }
 
     if (size === 'h24')
       return {
-        variant: fontType ?? 'chip1',
+        variant: type === 'mari' ? 'mariChip' : (fontType ?? 'chip1'),
       }
 
     return {}
-  }, [size, fontType])
+  }, [size, type, fontType])
 
   // Size style follow the design
   const chipStyle = useMemo(
@@ -219,7 +219,7 @@ export default function MIChip(props: Readonly<MIChipProps>) {
       '& .MuiChip-label': {
         padding: 0,
       },
-      borderRadius: '100px',
+      borderRadius: type === 'mari' ? '2px' : '100px',
       height: 'auto',
       border: '1px solid transparent',
       boxSizing: 'border-box',

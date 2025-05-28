@@ -1,5 +1,6 @@
 import { Navigate, RouteObject } from 'react-router-dom'
 
+import { useDashboardInfo } from '@/hooks/useDashboardInfo'
 import MILayout from '@/layouts/MILayout'
 import PolicyPage from '@/pages/common/PolicyPage'
 import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
@@ -9,9 +10,14 @@ import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
-import NotificationPage from '@/pages/mi/notification/NotificationPage.tsx'
+import NotificationPage from '@/pages/mi/notification/NotificationPage'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import MIProvider from '@/providers/MIProvider'
+
+const MIMainRedirect = () => {
+  const shouldHideDashboard = useDashboardInfo()
+  return <Navigate to={shouldHideDashboard ? 'signal-map' : 'dashboard'} replace />
+}
 
 const MIRoutes: RouteObject = {
   path: '/mi',
@@ -23,7 +29,7 @@ const MIRoutes: RouteObject = {
   children: [
     {
       index: true,
-      element: <Navigate to="dashboard" replace />,
+      element: <MIMainRedirect />,
     },
     {
       path: 'dashboard',

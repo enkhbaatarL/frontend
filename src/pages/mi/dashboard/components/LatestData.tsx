@@ -1,85 +1,79 @@
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import dayjs from 'dayjs'
+import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
 import MILine from '@/components/common/divider/MILine'
 interface DocumentItemProps {
-  title: string
-  date: string
-  name: string
+  goodsDataNm: string
+  modifyDt: string
+  providerNm: string
   id: number
   index: number
+  onClick: () => void
 }
 
-const DataItem = ({ title, date, name, index }: DocumentItemProps) => (
+interface LatestInsightsData {
+  providerNo: number
+  providerNm: string
+  goodsNo: number
+  goodsNm: string
+  goodsDataNo: number
+  goodsDataNm: string
+  modifyDt: string
+}
+
+const DataItem = ({ goodsDataNm, modifyDt, providerNm, index, onClick }: DocumentItemProps) => (
   <Box paddingY={3} borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'}>
     <Typography
-      onClick={() => alert('redirect to detail')}
+      onClick={onClick}
       fontWeight={600}
       color="gray.70"
       component="div"
       sx={{ WebkitLineClamp: 1, cursor: 'pointer' }}
       variant="fileName"
     >
-      {title}
+      {goodsDataNm}
     </Typography>
     <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
       <Typography lineHeight={1.6} color="gray.60" variant="body2">
-        {name}
+        {providerNm}
       </Typography>
       <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
       <Typography whiteSpace="nowrap" lineHeight={1.6} color="gray.60" variant="body2">
-        {date}
+        {dayjs(modifyDt).format('YYYY-MM-DD ')}
       </Typography>
     </Grid>
   </Box>
 )
 
-const LatestData = () => {
-  const documentData = [
-    {
-      id: 1,
-      title: 'LNG Tranding Analytics : Supply tracker',
-      date: '2025-04-11',
-      name: 'Wood Mackenzie',
-    },
-    {
-      id: 2,
-      title: 'LNG Tranding Analytics : Supply tracker',
-      date: '2025-03-26',
-      name: 'Wood Mackenzie',
-    },
-    {
-      id: 3,
-      title: 'LNG Tranding Analytics : Supply tracker',
-      date: '2025-03-26',
-      name: 'Wood Mackenzie',
-    },
-    {
-      id: 4,
-      title: 'LNG Tranding Analytics : Supply tracker',
-      date: '2025-03-26',
-      name: 'Wood Mackenzie',
-    },
-    {
-      id: 5,
-      title: 'LNG Tranding Analytics : Supply tracker',
-      date: '2025-03-26',
-      name: 'Wood Mackenzie',
-    },
-  ]
+const LatestData = ({ dataList }: { dataList: LatestInsightsData[] }) => {
+  const navigate = useNavigate()
+
+  const onClickRow = (row: LatestInsightsData) => {
+    navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`)
+  }
 
   return (
     <Grid gap={2.5} bgcolor={'#fff'} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
       <Typography component="div" color="gray.90" variant="titleBox">
-        Latest Data
+        Latest Insights
       </Typography>
       <Box>
-        {documentData?.map((item, index) => (
-          <DataItem key={item.id} index={index} id={item.id} title={item.title} date={item.date} name={item.name} />
+        {dataList?.map((item, index) => (
+          <DataItem
+            key={item.goodsDataNo}
+            index={index}
+            id={item.goodsDataNo}
+            goodsDataNm={item.goodsDataNm}
+            modifyDt={item.modifyDt}
+            providerNm={item.providerNm}
+            onClick={() => onClickRow(item)}
+          />
         ))}
       </Box>
-      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'}>
+      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'} onClick={() => navigate('/mi/insights')}>
         View all
         <KeyboardArrowRightIcon
           sx={{
@@ -93,5 +87,4 @@ const LatestData = () => {
     </Grid>
   )
 }
-
 export default LatestData

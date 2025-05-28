@@ -1,20 +1,22 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import bgmImg from '@/assets/bgmarket.jpg'
 import psImg from '@/assets/productsymbol.png'
 import MILine from '@/components/common/divider/MILine'
-import MISearchInput from '@/components/common/input/MISearchInput.tsx'
+import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
+import MISearchInput from '@/components/common/input/MISearchInput'
+import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
-import useSearchFilter from '@/hooks/useSearchFilter.tsx'
+import useSearchFilter from '@/hooks/useSearchFilter'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
-import marketDataService, { IDataCatalogItem, IDataCatalogRequest, IMarketData } from '@/service/mi/marketData.ts'
-import useAuthStore from '@/store/useAuthStore.ts'
+import marketDataService, { IDataCatalogItem, IDataCatalogRequest, IMarketData } from '@/service/mi/marketData'
+import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
-import { IPaginationResponse } from '@/types/api.ts'
+import { IPaginationResponse } from '@/types/api'
 
 const MarketDataPage = () => {
   const { accessCompanyInfo } = useAuthStore()
@@ -69,17 +71,23 @@ const MarketDataPage = () => {
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
 
-  const handleSearchChange = (value: string) => {
-    updateFilter('keyword', value)
-  }
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      updateFilter('keyword', value)
+    },
+    [updateFilter],
+  )
 
-  const handleSearch = (searchTerm: string) => {
-    updateFilterWithSearch('keyword', searchTerm)
-  }
+  const handleSearch = useCallback(
+    (searchTerm: string) => {
+      updateFilterWithSearch('keyword', searchTerm)
+    },
+    [updateFilterWithSearch],
+  )
 
-  const handleSearchClear = () => {
+  const handleSearchClear = useCallback(() => {
     updateFilterWithSearch('keyword', '')
-  }
+  }, [updateFilterWithSearch])
 
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
@@ -171,15 +179,13 @@ const MarketDataPage = () => {
                 tableProps={{
                   disableHover: true,
                   noRowMessage: 'No results Found',
+                  getRowClassName: (params) => (!params.row.isViewable ? 'no-click' : ''),
                   columns: [
                     {
                       field: 'goodsDataNm',
                       headerName: 'Data Name',
                       flex: 1,
                       minWidth: 300,
-                      renderCell: ({ row }) => (
-                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { cursor: 'pointer' }) }}>{row.goodsDataNm}</span>
-                      ),
                     },
                     {
                       field: 'goodsDataSrcNm',
@@ -187,9 +193,6 @@ const MarketDataPage = () => {
                       flex: 1,
                       align: 'left',
                       minWidth: 300,
-                      renderCell: ({ row }) => (
-                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { cursor: 'pointer' }) }}>{row.goodsDataSrcNm}</span>
-                      ),
                     },
                     {
                       field: 'lastValue',
@@ -198,9 +201,33 @@ const MarketDataPage = () => {
                       align: 'center',
                       minWidth: 150,
                       renderCell: ({ row }) => (
-                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { fontWeight: 'bold', cursor: 'pointer' }) }}>
-                          {row.lastValue}
-                        </span>
+                        <Box position="relative" sx={{ userSelect: 'none' }}>
+                          <Box
+                            sx={{
+                              filter: !row.isViewable ? 'blur(3px)' : 'none',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            {row.isViewable ? row.lastValue : '888.88'}
+                          </Box>
+                          {!row.isViewable && (
+                            <Box
+                              display={'flex'}
+                              alignItems={'center'}
+                              justifyContent={'center'}
+                              position={'absolute'}
+                              top={-1}
+                              sx={{
+                                inset: '-2px -8px',
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                color: 'gray.60',
+                                borderRadius: '4px',
+                              }}
+                            >
+                              <LockOutlinedIcon style={{ width: '16px', height: '16px' }} />
+                            </Box>
+                          )}
+                        </Box>
                       ),
                     },
                     {
@@ -210,9 +237,12 @@ const MarketDataPage = () => {
                       minWidth: 200,
                       align: 'center',
                       renderCell: ({ row }) => (
-                        <span style={{ ...(!row.isViewable ? { filter: 'blur(4px)' } : { cursor: 'pointer' }) }}>
-                          {dayjs(row.modifyDt).format('YYYY-MM-DD')}
-                        </span>
+                        <MITableCell
+                          value={dayjs(row.modifyDt).format('YYYY-MM-DD')}
+                          typography={{
+                            color: 'gray.60',
+                          }}
+                        />
                       ),
                     },
                   ],
