@@ -47,14 +47,13 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
   )
 
   useEffect(() => {
+    if (!storageKey) return
     if (storageKey) {
       localStorage.setItem(`${storageKey}-search-history`, JSON.stringify(history))
     }
   }, [history, storageKey])
 
   useEffect(() => {
-    if (!storageKey) return
-
     const savedHistory = localStorage.getItem(`${storageKey}-search-history`)
 
     if (savedHistory) {

@@ -134,50 +134,50 @@ const MIAgentConversation = ({
         <Box px={3} key={id}>
           <MIAgentMessagePrompt content={item.text} />
           {item.answer &&
-              (item.text === '분과별 추천 주제 관련 질문 1' ? (
-                <MIAgentAnswer
-                  loadMoreRefer={handleLoadMoreRefer}
-                  scrollBottom={handleScrollBottom}
-                  recommendationQuestion={recommendationQuestion}
-                  referLink={referLinks}
-                  sources={sources}
-                  content={markdownContent}
-                  handleSendMessage={handleSendMessage}
-                  errorType="DATA_ACCESS_DENIED"
-                />
-              ) : item.text === '분과별 추천 주제 관련 질문 2' ? (
-                <MIAgentAnswer
-                  loadMoreRefer={handleLoadMoreRefer}
-                  scrollBottom={handleScrollBottom}
-                  recommendationQuestion={recommendationQuestion}
-                  referLink={referLinks}
-                  sources={sources}
-                  content={markdownContent}
-                  handleSendMessage={handleSendMessage}
-                  errorType="DATA_NOT_FOUND"
-                />
-              ) : item.text === '분과별 추천 주제 관련 질문 3' ? (
-                <MIAgentAnswer
-                  loadMoreRefer={handleLoadMoreRefer}
-                  scrollBottom={handleScrollBottom}
-                  recommendationQuestion={[]}
-                  referLink={referLinks}
-                  sources={sources}
-                  content={markdownContent}
-                  handleSendMessage={handleSendMessage}
-                  errorType="LLM_RESPONSE_ERROR"
-                />
-              ) : (
-                <MIAgentAnswer
-                  loadMoreRefer={handleLoadMoreRefer}
-                  scrollBottom={handleScrollBottom}
-                  recommendationQuestion={recommendationQuestion}
-                  referLink={referLinks}
-                  sources={sources}
-                  content={markdownContent}
-                  handleSendMessage={handleSendMessage}
-                />
-              ))}
+            (item.text === '분과별 추천 주제 관련 질문 1' ? (
+              <MIAgentAnswer
+                loadMoreRefer={handleLoadMoreRefer}
+                scrollBottom={handleScrollBottom}
+                recommendationQuestion={recommendationQuestion}
+                referLink={referLinks}
+                sources={sources}
+                content={markdownContent}
+                handleSendMessage={handleSendMessage}
+                errorType="DATA_ACCESS_DENIED"
+              />
+            ) : item.text === '분과별 추천 주제 관련 질문 2' ? (
+              <MIAgentAnswer
+                loadMoreRefer={handleLoadMoreRefer}
+                scrollBottom={handleScrollBottom}
+                recommendationQuestion={recommendationQuestion}
+                referLink={referLinks}
+                sources={sources}
+                content={markdownContent}
+                handleSendMessage={handleSendMessage}
+                errorType="DATA_NOT_FOUND"
+              />
+            ) : item.text === '분과별 추천 주제 관련 질문 3' ? (
+              <MIAgentAnswer
+                loadMoreRefer={handleLoadMoreRefer}
+                scrollBottom={handleScrollBottom}
+                recommendationQuestion={[]}
+                referLink={referLinks}
+                sources={sources}
+                content={markdownContent}
+                handleSendMessage={handleSendMessage}
+                errorType="LLM_RESPONSE_ERROR"
+              />
+            ) : (
+              <MIAgentAnswer
+                loadMoreRefer={handleLoadMoreRefer}
+                scrollBottom={handleScrollBottom}
+                recommendationQuestion={recommendationQuestion}
+                referLink={referLinks}
+                sources={sources}
+                content={markdownContent}
+                handleSendMessage={handleSendMessage}
+              />
+            ))}
         </Box>
       ))}
     </Box>

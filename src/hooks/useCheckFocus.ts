@@ -1,28 +1,27 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function useCheckFocus() {
   const ref = useRef<HTMLElement>(null)
-  const outFocusListener = useRef<EventListenerOrEventListenerObject>(null)
   const [isFocus, setIsFocus] = useState(false)
 
-  const registerClickOutListener = () => {
-    setIsFocus(true)
-    outFocusListener.current = (e) => {
-      const focused = ref.current === e.target || ref.current?.contains(e.target as HTMLElement)
-
-      if (outFocusListener.current && !focused) {
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
         setIsFocus(false)
-        window.document.removeEventListener('click', outFocusListener.current)
-        outFocusListener.current = null
+      } else {
+        setIsFocus(true)
       }
     }
-    window.document.addEventListener('click', outFocusListener.current)
-  }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   return {
     ref,
     isFocus,
     setIsFocus,
-    registerClickOutListener,
   }
 }
