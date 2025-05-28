@@ -1,4 +1,3 @@
-import ClearIcon from '@mui/icons-material/Clear'
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, MenuItem, Typography } from '@mui/material'
 import { disassembleToGroups } from 'es-hangul'
@@ -85,19 +84,6 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
         }}
         onClear={onClear}
         startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
-        endIcon={
-          <ClearIcon
-            onClick={onClear}
-            sx={{
-              fontSize: '16px',
-              color: '#CED4DA',
-              cursor: 'pointer',
-              '&:hover': {
-                color: '#868E96',
-              },
-            }}
-          />
-        }
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
       />

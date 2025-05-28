@@ -48,7 +48,7 @@ const MIInput = ({
   ...props
 }: MIInputProps) => {
   const [innerValue, setInnerValue] = useState<string>(String(value) || '')
-  const { ref: containerRef, isFocus, registerClickOutListener } = useCheckFocus()
+  const { ref: containerRef, isFocus } = useCheckFocus()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -85,8 +85,7 @@ const MIInput = ({
     if (onFocusInput) {
       onFocusInput()
     }
-    registerClickOutListener()
-  }, [onFocusInput, registerClickOutListener])
+  }, [onFocusInput])
 
   const styleBaseSize = useMemo(() => {
     switch (size) {
