@@ -179,8 +179,9 @@ const MILayout = () => {
         <Box
           sx={{
             paddingTop,
+            paddingBottom: isScrolled ? '46px' : 0,
             flex: 1,
-            transition: 'padding-top 0.15s linear',
+            transition: 'padding-top 0.15s linear padding-bottom 0.15s linear',
           }}
         >
           {showMiAgent && <MIAgentButton />}
