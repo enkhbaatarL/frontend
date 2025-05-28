@@ -35,20 +35,18 @@ const verticalAxisDecoratorPlugin: Plugin = {
 
       //Extend the x-axis
       ctx.save()
-      ctx.translate(0.5, 0.5) // Fix blur issue when drawing line in canvas
-
       if (position === 'left') {
         ctx.beginPath()
-        ctx.moveTo(right, bottom)
-        ctx.lineTo(right - width, bottom)
+        ctx.moveTo(Math.round(right), Math.round(bottom))
+        ctx.lineTo(Math.round(right - width), Math.round(bottom))
         ctx.lineWidth = 1
         ctx.strokeStyle = AXIS_BORDER_COLOR
         ctx.stroke()
 
         //Draw divider beside unit
         ctx.beginPath()
-        ctx.moveTo(right, bottom)
-        ctx.lineTo(right, bottom + UNIT_BOX_HEIGHT)
+        ctx.moveTo(Math.round(right) + 0.5, Math.round(bottom) + 0.5)
+        ctx.lineTo(Math.round(right) + 0.5, Math.round(bottom + UNIT_BOX_HEIGHT) + 0.5)
         ctx.lineWidth = 1
         ctx.strokeStyle = UNIT_BORDER_COLOR
         ctx.stroke()
@@ -66,19 +64,23 @@ const verticalAxisDecoratorPlugin: Plugin = {
 
         ctx.fillStyle = COLOR
         const adjustedLineHeight = UNIT_LINE_HEIGHT * (fontSize / DEFAULT_FONT_SIZE)
-        ctx.fillText(unit, right - (textMetrics.width + UNIT_PADDING_RIGHT), bottom + (adjustedLineHeight + UNIT_PADDING_TOP))
+        ctx.fillText(
+          unit,
+          Math.round(right - (textMetrics.width + UNIT_PADDING_RIGHT)) + 0.5,
+          Math.round(bottom + (adjustedLineHeight + UNIT_PADDING_TOP)) + 0.5,
+        )
       } else {
         ctx.beginPath()
-        ctx.moveTo(left, bottom)
-        ctx.lineTo(left + width, bottom)
+        ctx.moveTo(Math.round(left) + 0.5, Math.round(bottom))
+        ctx.lineTo(Math.round(left + width) + 0.5, Math.round(bottom))
         ctx.lineWidth = 1
         ctx.strokeStyle = AXIS_BORDER_COLOR
         ctx.stroke()
 
         //Draw divider beside unit
         ctx.beginPath()
-        ctx.moveTo(left, bottom)
-        ctx.lineTo(left, bottom + UNIT_BOX_HEIGHT)
+        ctx.moveTo(Math.round(left) + 0.2, Math.round(bottom) + 0.5)
+        ctx.lineTo(Math.round(left) + 0.2, Math.round(bottom + UNIT_BOX_HEIGHT) + 0.5)
         ctx.lineWidth = 1
         ctx.strokeStyle = UNIT_BORDER_COLOR
         ctx.stroke()
@@ -96,7 +98,7 @@ const verticalAxisDecoratorPlugin: Plugin = {
 
         ctx.fillStyle = COLOR
         const adjustedLineHeight = UNIT_LINE_HEIGHT * (fontSize / DEFAULT_FONT_SIZE)
-        ctx.fillText(unit, left + UNIT_PADDING_RIGHT, bottom + (adjustedLineHeight + UNIT_PADDING_TOP))
+        ctx.fillText(unit, Math.round(left + UNIT_PADDING_RIGHT) + 0.5, Math.round(bottom + (adjustedLineHeight + UNIT_PADDING_TOP)))
       }
 
       ctx.restore()
