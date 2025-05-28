@@ -178,7 +178,7 @@ const MarketDataPage = () => {
                 hidePagination={data?.totalElements === 0 || !data?.totalElements}
                 tableProps={{
                   disableHover: true,
-                  noRowMessage: 'No results Found',
+                  noRowMessage: 'No results found',
                   getRowClassName: (params) => (!params.row.isViewable ? 'no-click' : ''),
                   columns: [
                     {

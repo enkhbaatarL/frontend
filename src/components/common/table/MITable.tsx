@@ -24,7 +24,7 @@ const createNoRowsOverlay = (message?: string) => {
       <Box display="flex" flexDirection="column" rowGap="10px" alignItems="center">
         <ErrorOutlineIcon />
         <Typography variant="body6" color="gray.60">
-          {message ?? t('검색 결과가 없습니다.')}
+          {message ?? t('No results found')}
         </Typography>
       </Box>
     </Box>
