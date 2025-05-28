@@ -66,7 +66,7 @@ const NotificationPage = () => {
           <MITableUser
             hidePagination={data?.totalElements === 0 || !data?.totalElements}
             tableProps={{
-              noRowMessage: '등록된 내용이 없습니다.',
+              noRowMessage: '설정된 알람이 없습니다.',
               rowId: 'goodsDataNo',
               rows: data?.detail,
               onRowClick: handleClickDetail,
