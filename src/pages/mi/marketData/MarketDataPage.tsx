@@ -201,14 +201,14 @@ const MarketDataPage = () => {
                       align: 'center',
                       minWidth: 150,
                       renderCell: ({ row }) => (
-                        <Box position="relative">
+                        <Box position="relative" sx={{ userSelect: 'none' }}>
                           <Box
                             sx={{
-                              filter: !row.isViewable ? 'blur(2px)' : 'none',
+                              filter: !row.isViewable ? 'blur(3px)' : 'none',
                               fontWeight: 'bold',
                             }}
                           >
-                            {row.isViewable ? row.lastValue : '123.45'}
+                            {row.isViewable ? row.lastValue : '888.88'}
                           </Box>
                           {!row.isViewable && (
                             <Box
@@ -218,8 +218,8 @@ const MarketDataPage = () => {
                               position={'absolute'}
                               top={-1}
                               sx={{
-                                inset: '0px -6px',
-                                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                inset: '-2px -8px',
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
                                 color: 'gray.60',
                                 borderRadius: '4px',
                               }}

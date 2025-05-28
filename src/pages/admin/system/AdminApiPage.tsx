@@ -107,7 +107,8 @@ const AdminApiPage = () => {
       field: 'clientSecretKey',
       headerName: 'Client Secret',
       flex: 1,
-      minWidth: 150,
+      width: 120,
+      maxWidth: 200,
       align: 'left',
       renderCell(params) {
         const maskedValue = params.value ? '*'.repeat(params.value.length) : '********'

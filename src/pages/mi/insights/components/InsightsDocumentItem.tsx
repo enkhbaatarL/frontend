@@ -66,10 +66,33 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
         {report.types?.map((type) => <MIBage key={type} size={'h20'} color={type as MIChipColor} label={convertToType(type)} />)}
       </Box>
       <Box>
-        <Typography color="gray.90" fontSize={20} component="div" variant="body4">
+        <Typography
+          color="gray.90"
+          fontSize={20}
+          component="div"
+          variant="body4"
+          sx={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: 'vertical',
+          }}
+        >
           {report.title}
         </Typography>
-        <Typography color="gray.60" component="div" variant="body1R16">
+        <Typography
+          color="gray.60"
+          component="div"
+          variant="body1R16"
+          sx={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: 'vertical',
+          }}
+        >
           {report.subtitle}
         </Typography>
       </Box>

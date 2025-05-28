@@ -256,14 +256,13 @@ const AdminDataRegistration = () => {
 
     setIsSubmitting(true)
 
-    const { langCategoryList, docCategoryList, fileTypes, goodsDataExpn, ...rest } = form.state.values
+    const { langCategoryList, docCategoryList, fileTypes, ...rest } = form.state.values
     const getConfirmedUnstructuredFiles = () => {
       const combinedFiles = [...filesUnstructured, ...(dataDetail?.unstructuredDataList ?? [])]
       return combinedFiles.filter((f) => !deletedUnstructeredFiles.includes(f.fileNo))
     }
     const requestBody = {
       ...rest,
-      ...(isEdit ? { goodsExpn: goodsDataExpn } : { goodsDataExpn }),
       langCategoryList: langCategoryList.map((m) => ({
         codeId: m,
       })),
@@ -571,6 +570,7 @@ const AdminDataRegistration = () => {
             label: <Typography variant="body2SB14">취소</Typography>,
             variant: 'outlined',
             color: 'gray',
+            disabled: isSubmitting,
             onClick: () => setOpenRegisterSuccessFileAlert(false),
           },
           {

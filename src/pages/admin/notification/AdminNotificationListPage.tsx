@@ -2,7 +2,7 @@ import { Box, Divider, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
-import { useMemo, useState } from 'react'
+import { ReactNode, useMemo, useState } from 'react'
 
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
 import AdminSkeleton from '@/components/admin/AdminSkeleton'
@@ -13,7 +13,6 @@ import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIDatePicker from '@/components/common/datepicker/MIDatePicker'
 import EmailIcon from '@/components/common/icons/table/EmailIcon'
 import FailIcon from '@/components/common/icons/table/FailIcon'
-import InfoIcon from '@/components/common/icons/table/InfoIcon'
 import SuccessIcon from '@/components/common/icons/table/SuccessIcon'
 import MIField from '@/components/common/input/MIField'
 import MISelect from '@/components/common/select/MISelect'
@@ -34,7 +33,7 @@ interface MITableStatusSummaryProps {
 }
 
 interface StatusItemProps {
-  icon: React.ReactNode
+  icon: ReactNode
   title: string
   value: number
 }
@@ -229,13 +228,13 @@ const AdminNotificationListPage = () => {
         disabledSearch={!filter.endDate || !filter.startDate || isSearchedState}
         disabledReset={isInitialState}
       >
-        <MIField label="기간" required subIcon={<InfoIcon />} sx={{ width: '400px !important' }}>
+        <MIField label="기간" required sx={{ width: '400px !important' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 260 }}>
             <MIDatePicker
               value={startDate ?? null}
               defaultValue={null}
               onChange={(value) => {
-                if (!value) updateFilter('startDate', undefined)
+                if (!value) updateFilter('startDate')
                 else updateFilter('startDate', dayjs(value).format('YYYYMMDD'))
               }}
               format="YYYY-MM-DD"
@@ -246,7 +245,7 @@ const AdminNotificationListPage = () => {
               value={endDate ?? null}
               defaultValue={null}
               onChange={(value) => {
-                if (!value) updateFilter('endDate', undefined)
+                if (!value) updateFilter('endDate')
                 else updateFilter('endDate', dayjs(value).format('YYYYMMDD'))
               }}
               format="YYYY-MM-DD"
