@@ -23,7 +23,7 @@ const MIDashboardPage = () => {
 
   const companyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? -1, [accessCompanyInfo?.customerCompanyNo])
 
-  const shouldHideDashboard = useDashboardInfo()
+  const { shouldHideDashboard } = useDashboardInfo()
 
   const tabsData = [
     {
