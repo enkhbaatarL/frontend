@@ -9,6 +9,7 @@ import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import useSearchFilter from '@/hooks/useSearchFilter'
+import { usePageSkeleton, SKELETON_CONFIGS } from '@/hooks/useSkeleton'
 import boardService, { INoticeInfo, INoticeRequest } from '@/service/mi/board'
 import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
@@ -18,7 +19,7 @@ const NoticesPage = () => {
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
   const initialFetchRef = useRef(false)
 
-  const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch } = useSearchFilter<
+  const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch, isLoading } = useSearchFilter<
     INoticeRequest,
     IPaginationResponse<INoticeInfo>
   >(
@@ -36,6 +37,11 @@ const NoticesPage = () => {
     },
   )
 
+  const { shouldShowSkeleton, SkeletonComponent } = usePageSkeleton('BoardPageSkeleton', isLoading, {
+    ...SKELETON_CONFIGS.FAST_LOADING,
+    delayThreshold: 200,
+  })
+
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
       initialFetchRef.current = true
@@ -44,6 +50,10 @@ const NoticesPage = () => {
   }, [accessCompanyInfo, updateFilterWithSearch])
 
   const navigate = useNavigate()
+
+  if (shouldShowSkeleton) {
+    return <SkeletonComponent />
+  }
 
   return (
     <Box maxWidth={'1380px'} margin={'auto'} paddingX={7.5}>
@@ -68,6 +78,7 @@ const NoticesPage = () => {
           hidePagination={data?.totalElements === 0 || !data?.totalElements}
           tableProps={{
             disableHover: true,
+            loading: isLoading,
             onRowClick: (row) => {
               navigate(`/mi/notices/${row.id}`)
             },

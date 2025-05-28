@@ -60,6 +60,12 @@ export default function MITable<T extends GridRowModel>(props: Readonly<MITableP
       slots={{
         noRowsOverlay,
       }}
+      slotProps={{
+        loadingOverlay: {
+          variant: 'skeleton',
+          noRowsVariant: 'skeleton',
+        },
+      }}
       getRowId={(row) => row[rowId]}
       rows={rows ?? []}
       columns={memoizedColumns}

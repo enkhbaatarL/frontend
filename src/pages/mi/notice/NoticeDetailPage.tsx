@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
+import { SKELETON_CONFIGS, usePageSkeleton } from '@/hooks/useSkeleton.ts'
 import boardService from '@/service/mi/board'
 import useAuthStore from '@/store/useAuthStore'
 
@@ -13,13 +14,22 @@ export default function NoticesDetailPage() {
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['noticeDetail', noticeNo],
     queryFn: async () => await boardService.getNoticeDetail(noticeNo, { customerCompanyNo }),
     refetchOnWindowFocus: false,
     gcTime: 0,
     enabled: !!noticeNo,
   })
+
+  const { shouldShowSkeleton, SkeletonComponent } = usePageSkeleton('BoardDetailPageSkeleton', isLoading, {
+    ...SKELETON_CONFIGS.FAST_LOADING,
+    delayThreshold: 200,
+  })
+
+  if (shouldShowSkeleton) {
+    return <SkeletonComponent />
+  }
 
   return (
     <Box maxWidth={'1380px'} margin={'auto'} paddingX={7.5}>

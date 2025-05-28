@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography'
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 import style from './MIHeaderMainLayout.module.scss'
 
@@ -44,6 +44,7 @@ interface MIHeaderMainLayoutProps {
 
 const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, accessCompanyInfo, setAccessCompanyInfo } = useAuthStore()
 
   const [selectedCompany, setSelectedCompany] = useState({
@@ -77,6 +78,20 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
       })
     }
   }, [selectedCompany, setAccessCompanyInfo])
+
+  // 안전한 네비게이션 함수
+  const safeNavigate = (targetPath: string) => {
+    if (location.pathname !== targetPath) {
+      navigate(targetPath)
+    }
+  }
+
+  // 탭 이동 시 사용할 핸들러
+  const handleTabClick = (page: Page) => {
+    if (location.pathname !== page.url) {
+      onMoveTab(() => navigate(page.url))
+    }
+  }
 
   return (
     <div className={clsx(style.GNBHeader)}>
@@ -140,9 +155,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
                 href=""
                 onClick={(e) => {
                   e.preventDefault()
-                  if (location.pathname !== board.url) {
-                    navigate(board.url)
-                  }
+                  safeNavigate(board.url)
                 }}
                 color="gray.70"
                 padding="4px 12px"
@@ -162,7 +175,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
               sx={{ display: 'flex', mr: 7.5, cursor: 'pointer' }}
               onClick={(e) => {
                 e.preventDefault()
-                navigate('/')
+                safeNavigate('/')
               }}
             >
               <img src={logoImg} alt="AI Market Insights" />
@@ -174,7 +187,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
                   key={page.label}
                   onClick={(e) => {
                     e.preventDefault()
-                    onMoveTab(() => navigate(page.url))
+                    handleTabClick(page)
                   }}
                   sx={{
                     position: 'relative',
