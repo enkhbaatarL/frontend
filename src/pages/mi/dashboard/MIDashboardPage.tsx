@@ -1,14 +1,12 @@
-import CloseIcon from '@mui/icons-material/Close'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import ReportComponent from './components/ReportComponent'
 import UpdatedData from './components/UpdatedData'
 
 import psImg from '@/assets/productsymbol.png'
-import MIButton from '@/components/common/button/MIButton'
 import MITabs from '@/components/common/tabs/MITabs'
 import { useDashboardInfo } from '@/hooks/useDashboardInfo'
 import HistoryComponent from '@/pages/mi/dashboard/components/HistoryComponent'
@@ -17,7 +15,6 @@ import dashboardDataService from '@/service/mi/dashboardData'
 import useAuthStore from '@/store/useAuthStore'
 
 const MIDashboardPage = () => {
-  const [showBanner, setShowBanner] = useState(true)
   const navigate = useNavigate()
   const { accessCompanyInfo } = useAuthStore()
 
@@ -60,48 +57,36 @@ const MIDashboardPage = () => {
 
   return (
     <Box bgcolor={'#F2F5F7'} position={'relative'}>
-      {showBanner && (
-        <Box
-          paddingX={7.5}
-          paddingTop={6.25}
-          paddingBottom={7.5}
-          sx={{
-            background: `url(${psImg}) right / 33% no-repeat,linear-gradient(271deg, #71738F 1.64%, #475083 99.32%)`,
-            zIndex: 0,
-            position: 'relative',
-          }}
-        >
-          <Box position={'relative'} maxWidth={'1380px'} margin={'auto'}>
-            <Box
-              sx={{
-                position: 'absolute',
-                top: -18,
-                right: 0,
-                zIndex: 2,
-              }}
-            >
-              <MIButton
-                contentType={'icon'}
-                size={'h42'}
-                type={'ghost'}
-                color={'gray'}
-                onClick={() => setShowBanner(false)}
-                startIcon={<CloseIcon sx={{ color: '#fff', path: { fill: '#fff !important' } }} />}
-              />
-            </Box>
-            <Typography mb={3} component={'div'} color="white" variant="tableHeaderSemibold">
-              New Product
-            </Typography>
-            <Typography color="white" mb={2} component="h1" fontWeight={600} variant="heading3">
-              Smart Market Intelligence
-            </Typography>
-            <Typography color="#CED4DA" variant="subtext1">
-              Gain even more insights with AI-driven intelligence for better decisions.
-            </Typography>
-          </Box>
+      <Box
+        paddingX={7.5}
+        paddingTop={6.25}
+        paddingBottom={7.5}
+        sx={{
+          background: `url(${psImg}) right / 33% no-repeat,linear-gradient(271deg, #71738F 1.64%, #475083 99.32%)`,
+          zIndex: 0,
+          position: 'relative',
+        }}
+      >
+        <Box position={'relative'} maxWidth={'1380px'} margin={'auto'}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: -18,
+              right: 0,
+              zIndex: 2,
+            }}
+          ></Box>
+          <Typography mb={3} component={'div'} color="white" variant="tableHeaderSemibold">
+            New Product
+          </Typography>
+          <Typography color="white" mb={2} component="h1" fontWeight={600} variant="heading3">
+            Smart Market Intelligence
+          </Typography>
+          <Typography color="#CED4DA" variant="subtext1">
+            Gain even more insights with AI-driven intelligence for better decisions.
+          </Typography>
         </Box>
-      )}
-
+      </Box>
       <Box maxWidth={'1380px'} margin={'auto'} paddingTop={10} paddingX={7.5}>
         <Grid
           sx={{

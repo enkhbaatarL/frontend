@@ -153,8 +153,39 @@ const MILayout = () => {
   }
 
   const dailyChartData = [
-    { product: 'Wheat Flour', country: 'Ukraine', name: 'Wheat Flour in Ukraine', change: 0.0035 },
-    { product: 'Rice', country: 'China', name: 'Rice in China', change: -0.237 },
+    {
+      product: 'Wheat Flour',
+      country: 'Ukraine',
+      name: 'Wheat Flour in Ukraine',
+      value: 123,
+      change: 0.0035,
+      date: '2025-05-27',
+      changeUnit: 'WoW',
+      unit: 'USD',
+      isPermitted: true,
+    },
+    {
+      product: 'Rice',
+      country: 'China',
+      name: 'Rice in China',
+      value: 345,
+      change: -0.237,
+      date: '2025-05-28',
+      changeUnit: 'DoD',
+      unit: 'USD',
+      isPermitted: true,
+    },
+    {
+      product: 'Happy',
+      country: 'Korea',
+      name: 'Happy in Korea',
+      value: 678,
+      change: 1.234,
+      date: '2025-05-29',
+      changeUnit: 'WoW',
+      unit: 'USD',
+      isPermitted: false,
+    },
   ]
 
   const showDailyChart = useMemo(() => location.pathname === '/mi/dashboard', [location.pathname])
@@ -163,7 +194,7 @@ const MILayout = () => {
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
 
-    return `${defaultPadding + (showDailyChart ? 50 : 0)}px`
+    return `${defaultPadding + (showDailyChart ? 76 : 0)}px`
   }, [showDailyChart, isScrolled])
 
   return (
@@ -189,6 +220,7 @@ const MILayout = () => {
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
             <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />
             {showDailyChart && <DailyChart data={dailyChartData} />}
+            {showMiAgent && <MIAgentButton top={126 + (showDailyChart ? 76 : 0)} />}
           </div>
           <Box
             sx={{
@@ -197,7 +229,6 @@ const MILayout = () => {
               transition: 'padding-top 0.15s linear',
             }}
           >
-            {showMiAgent && <MIAgentButton />}
             <Outlet key={outletKey} />
           </Box>
           <MIFooter />
