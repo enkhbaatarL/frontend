@@ -1,7 +1,8 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
+import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIAgentButton from '@/components/common/agent/MIAgentButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
@@ -55,13 +56,17 @@ const mainPages: Page[] = [
 ]
 
 const MILayout = () => {
+  const scrollRef = useRef<HTMLDivElement>(null)
   const [showNoticePopup, setShowNoticePopup] = useState(false)
   const [noticeData, setNoticeData] = useState<INoticePopupInfo | null>(null)
   const [noticeDetailData, setNoticeDetailData] = useState<INoticeDetailInfo | null>(null)
   const [outletKey, setOutletKey] = useState(0)
   const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
   const location = useLocation()
-  const { saveScroll, currentScroll, preRenderMinHeight } = useScrollRestoration({ urls: mainPages.map((m) => m.url) })
+  const { saveScroll, currentScroll, preRenderMinHeight } = useScrollRestoration({
+    urls: mainPages.map((m) => m.url),
+    ref: scrollRef,
+  })
   const [isScrolled, setIsScrolled] = useState(currentScroll !== 0)
   useEffect(() => {
     setOutletKey((prevKey) => prevKey + 1)
@@ -163,63 +168,72 @@ const MILayout = () => {
 
   return (
     <MIProvider>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: preRenderMinHeight,
-          minWidth: '1440px',
-          boxSizing: 'border-box',
+      <ScrollWrapper
+        ref={scrollRef}
+        styScroll={{
+          zIndex: 1200,
+          right: 0,
+          width: '10px',
         }}
+        maxHeight={'100vh'}
       >
-        <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
-          <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />
-          {showDailyChart && <DailyChart data={dailyChartData} />}
-        </div>
-        <Box
-          sx={{
-            paddingTop,
-            flex: 1,
-            transition: 'padding-top 0.15s linear',
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: preRenderMinHeight,
+            minWidth: '1440px',
+            boxSizing: 'border-box',
           }}
         >
-          {showMiAgent && <MIAgentButton />}
-          <Outlet key={outletKey} />
-        </Box>
-
-        <MIFooter />
-
-        {/* 공지사항 팝업 */}
-        {noticeData && noticeDetailData && (
-          <MIConfirm
-            open={showNoticePopup}
-            title={noticeDetailData.bulletinTitleNm}
-            width={800}
-            handleClose={handleClose}
-            actions={[
-              {
-                label: '오늘 하루 보지 않기',
-                variant: 'outlined',
-                color: 'gray',
-                onClick: handleDontShowToday,
-              },
-              {
-                label: '닫기',
-                variant: 'filled',
-                color: 'primary',
-                onClick: handleClose,
-              },
-            ]}
+          <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
+            <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />
+            {showDailyChart && <DailyChart data={dailyChartData} />}
+          </div>
+          <Box
+            sx={{
+              paddingTop,
+              flex: 1,
+              transition: 'padding-top 0.15s linear',
+            }}
           >
-            {noticeDetailData.fileUrl && <img style={{ display: 'block' }} width="100%" src={noticeDetailData.fileUrl} alt="" />}
-            <Grid direction="column" paddingY={5} gap={4} container>
-              <Typography variant="body3R14" component="div" color="gray.90">
-                {noticeDetailData.bulletinCntt}
-              </Typography>
-            </Grid>
-          </MIConfirm>
-        )}
-      </div>
+            {showMiAgent && <MIAgentButton />}
+            <Outlet key={outletKey} />
+          </Box>
+          <MIFooter />
+        </div>
+      </ScrollWrapper>
+
+      {/* 공지사항 팝업 */}
+      {noticeData && noticeDetailData && (
+        <MIConfirm
+          open={showNoticePopup}
+          title={noticeDetailData.bulletinTitleNm}
+          width={800}
+          handleClose={handleClose}
+          actions={[
+            {
+              label: '오늘 하루 보지 않기',
+              variant: 'outlined',
+              color: 'gray',
+              onClick: handleDontShowToday,
+            },
+            {
+              label: '닫기',
+              variant: 'filled',
+              color: 'primary',
+              onClick: handleClose,
+            },
+          ]}
+        >
+          {noticeDetailData.fileUrl && <img style={{ display: 'block' }} width="100%" src={noticeDetailData.fileUrl} alt="" />}
+          <Grid direction="column" paddingY={5} gap={4} container>
+            <Typography variant="body3R14" component="div" color="gray.90">
+              {noticeDetailData.bulletinCntt}
+            </Typography>
+          </Grid>
+        </MIConfirm>
+      )}
     </MIProvider>
   )
 }

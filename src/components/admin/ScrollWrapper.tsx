@@ -1,16 +1,7 @@
 import { Box, SxProps, Theme } from '@mui/material'
-import { useRef, useEffect, useState, useCallback, ReactNode, CSSProperties, MouseEvent } from 'react'
+import { useRef, useEffect, useState, useCallback, ReactNode, CSSProperties, MouseEvent, forwardRef } from 'react'
 
-const ScrollWrapper = ({
-  children,
-  className,
-  offsetTop = 0,
-  maxHeight = 268,
-  scrollToBottomTrigger,
-  scrollToBottomOffset,
-  sx,
-  styScroll,
-}: {
+interface ScrollWrapperProps {
   children: ReactNode
   className?: string
   offsetTop?: number
@@ -19,224 +10,234 @@ const ScrollWrapper = ({
   scrollToBottomOffset?: number | string | boolean
   sx?: SxProps<Theme>
   styScroll?: CSSProperties
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const thumbRef = useRef<HTMLDivElement>(null)
-  const childrenRef = useRef<HTMLDivElement>(null)
-  const [thumbHeight, setThumbHeight] = useState(0)
-  const [isScrollable, setIsScrollable] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
-  const [startY, setStartY] = useState(0)
-  const [startScrollTop, setStartScrollTop] = useState(0)
+}
 
-  const syncThumb = useCallback(() => {
-    const container = containerRef.current
+const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
+  ({ children, className, offsetTop = 0, maxHeight = 268, scrollToBottomTrigger, scrollToBottomOffset, sx, styScroll }, ref) => {
+    const containerRef = useRef<HTMLDivElement>(null)
+    const thumbRef = useRef<HTMLDivElement>(null)
+    const childrenRef = useRef<HTMLDivElement>(null)
+    const [thumbHeight, setThumbHeight] = useState(0)
+    const [isScrollable, setIsScrollable] = useState(false)
+    const [isDragging, setIsDragging] = useState(false)
+    const [startY, setStartY] = useState(0)
+    const [startScrollTop, setStartScrollTop] = useState(0)
 
-    if (!container) return
-
-    const scrollHeight = container.scrollHeight
-    const clientHeight = container.clientHeight
-    const scrollTop = container.scrollTop
-
-    const scrollable = scrollHeight > clientHeight
-
-    setIsScrollable(scrollable)
-
-    if (!scrollable) {
-      setThumbHeight(0)
-
-      return
-    }
-
-    const height = (clientHeight / scrollHeight) * clientHeight
-
-    setThumbHeight(height)
-
-    const thumb = thumbRef.current
-
-    if (thumb) {
-      thumb.style.top = `${(scrollTop / scrollHeight) * clientHeight + offsetTop}px`
-    }
-  }, [offsetTop])
-
-  // Handle mouse down on the thumb
-  const handleMouseDown = useCallback((e: MouseEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    const container = containerRef.current
-
-    if (!container) return
-
-    setIsDragging(true)
-    setStartY(e.clientY)
-    setStartScrollTop(container.scrollTop)
-  }, [])
-
-  // Handle mouse move while dragging
-  const handleMouseMove = useCallback(
-    (e: globalThis.MouseEvent) => {
-      if (!isDragging) return
-
+    const syncThumb = useCallback(() => {
       const container = containerRef.current
 
       if (!container) return
 
-      const deltaY = e.clientY - startY
       const scrollHeight = container.scrollHeight
       const clientHeight = container.clientHeight
+      const scrollTop = container.scrollTop
 
-      // Calculate the scroll ratio based on thumb movement
-      const scrollRatio = scrollHeight / clientHeight
-      const newScrollTop = startScrollTop + deltaY * scrollRatio
+      const scrollable = scrollHeight > clientHeight
 
-      // Update container scroll position
-      container.scrollTop = Math.max(0, Math.min(newScrollTop, scrollHeight - clientHeight))
-    },
-    [isDragging, startY, startScrollTop],
-  )
+      setIsScrollable(scrollable)
 
-  // Handle mouse up to stop dragging
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
-  }, [])
+      if (!scrollable) {
+        setThumbHeight(0)
 
-  // Add event listeners for dragging
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      // Add a class to prevent text selection while dragging
-      document.body.classList.add('no-select')
-    } else {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-      document.body.classList.remove('no-select')
-    }
+        return
+      }
 
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-      document.body.classList.remove('no-select')
-    }
-  }, [isDragging, handleMouseMove, handleMouseUp])
+      const height = (clientHeight / scrollHeight) * clientHeight
 
-  // Set up scroll event listeners
-  useEffect(() => {
-    const container = containerRef.current
-    const children = childrenRef.current
+      setThumbHeight(height)
 
-    if (!container || !children) return () => {}
+      const thumb = thumbRef.current
 
-    syncThumb()
+      if (thumb) {
+        thumb.style.top = `${(scrollTop / scrollHeight) * clientHeight + offsetTop}px`
+      }
+    }, [offsetTop])
 
-    container.addEventListener('scroll', syncThumb)
-    window.addEventListener('resize', syncThumb)
+    // Handle mouse down on the thumb
+    const handleMouseDown = useCallback((e: MouseEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      const container = containerRef.current
 
-    // Observe container height changes
-    const resizeObserver = new ResizeObserver(() => {
+      if (!container) return
+
+      setIsDragging(true)
+      setStartY(e.clientY)
+      setStartScrollTop(container.scrollTop)
+    }, [])
+
+    // Handle mouse move while dragging
+    const handleMouseMove = useCallback(
+      (e: globalThis.MouseEvent) => {
+        if (!isDragging) return
+
+        const container = containerRef.current
+
+        if (!container) return
+
+        const deltaY = e.clientY - startY
+        const scrollHeight = container.scrollHeight
+        const clientHeight = container.clientHeight
+
+        // Calculate the scroll ratio based on thumb movement
+        const scrollRatio = scrollHeight / clientHeight
+        const newScrollTop = startScrollTop + deltaY * scrollRatio
+
+        // Update container scroll position
+        container.scrollTop = Math.max(0, Math.min(newScrollTop, scrollHeight - clientHeight))
+      },
+      [isDragging, startY, startScrollTop],
+    )
+
+    // Handle mouse up to stop dragging
+    const handleMouseUp = useCallback(() => {
+      setIsDragging(false)
+    }, [])
+
+    // Add event listeners for dragging
+    useEffect(() => {
+      if (isDragging) {
+        document.addEventListener('mousemove', handleMouseMove)
+        document.addEventListener('mouseup', handleMouseUp)
+        // Add a class to prevent text selection while dragging
+        document.body.classList.add('no-select')
+      } else {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+        document.body.classList.remove('no-select')
+      }
+
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+        document.body.classList.remove('no-select')
+      }
+    }, [isDragging, handleMouseMove, handleMouseUp])
+
+    // Set up scroll event listeners
+    useEffect(() => {
+      const container = containerRef.current
+      const children = childrenRef.current
+
+      if (!container || !children) return () => {}
+
       syncThumb()
-    })
 
-    resizeObserver.observe(children)
+      container.addEventListener('scroll', syncThumb)
+      window.addEventListener('resize', syncThumb)
 
-    return () => {
-      container.removeEventListener('scroll', syncThumb)
-      window.removeEventListener('resize', syncThumb)
-      resizeObserver.disconnect()
-    }
-  }, [children, syncThumb])
+      // Observe container height changes
+      const resizeObserver = new ResizeObserver(() => {
+        syncThumb()
+      })
 
-  // Handle scrollToBottomTrigger
-  useEffect(() => {
-    const container = containerRef.current
+      resizeObserver.observe(children)
 
-    if (!container) return
+      return () => {
+        container.removeEventListener('scroll', syncThumb)
+        window.removeEventListener('resize', syncThumb)
+        resizeObserver.disconnect()
+      }
+    }, [children, syncThumb])
 
-    if (scrollToBottomTrigger) container.scrollTop = container.scrollHeight
-  }, [scrollToBottomTrigger])
+    // Handle scrollToBottomTrigger
+    useEffect(() => {
+      const container = containerRef.current
 
-  // Handle scrollToBottomOffset
-  useEffect(() => {
-    const container = containerRef.current
+      if (!container) return
 
-    if (!container) return
+      if (scrollToBottomTrigger) container.scrollTop = container.scrollHeight
+    }, [scrollToBottomTrigger])
 
-    const newScrollTop = container.scrollTop + 80
+    // Handle scrollToBottomOffset
+    useEffect(() => {
+      const container = containerRef.current
 
-    if (scrollToBottomOffset) container.scrollTop = Math.min(newScrollTop, container.scrollHeight - container.clientHeight)
-  }, [scrollToBottomOffset])
+      if (!container) return
 
-  return (
-    <Box sx={{ position: 'relative', maxHeight, overflow: 'hidden', padding: `${offsetTop}px 0`, ...sx }}>
-      <Box
-        className={`disabledScroll ${className ?? ''}`}
-        ref={containerRef}
-        sx={{
-          maxHeight,
-          overflowY: 'auto',
-          paddingRight: '0',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-        }}
-      >
-        <div ref={childrenRef}>{children}</div>
-      </Box>
-      {isScrollable && (
+      const newScrollTop = container.scrollTop + 80
+
+      if (scrollToBottomOffset) container.scrollTop = Math.min(newScrollTop, container.scrollHeight - container.clientHeight)
+    }, [scrollToBottomOffset])
+
+    return (
+      <Box sx={{ position: 'relative', maxHeight, overflow: 'hidden', padding: `${offsetTop}px 0`, ...sx }}>
         <Box
-          ref={thumbRef}
-          onMouseDown={handleMouseDown}
+          className={`disabledScroll ${className ?? ''}`}
+          ref={(node: HTMLDivElement | null) => {
+            containerRef.current = node
+            if (typeof ref === 'function') ref(node)
+            else if (ref) ref.current = node
+          }}
           sx={{
-            position: 'absolute',
-            top: `${offsetTop}px`,
-            right: 4,
-            width: 4,
-            bottom: 30,
-            height: `${thumbHeight}px`,
-            backgroundColor: '#CED4DA',
-            borderRadius: '10px',
-            transition: isDragging ? 'none' : 'top 0.1s',
-            cursor: 'pointer',
-            userSelect: 'none',
-            ...styScroll,
-            // Add hover effect
-            ':hover': {
+            maxHeight,
+            overflowY: 'auto',
+            paddingRight: '0',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}
+        >
+          <div ref={childrenRef}>{children}</div>
+        </Box>
+        {isScrollable && (
+          <Box
+            ref={thumbRef}
+            onMouseDown={handleMouseDown}
+            sx={{
+              position: 'absolute',
+              top: `${offsetTop}px`,
+              right: 4,
+              width: 4,
+              bottom: 30,
+              height: `${thumbHeight}px`,
+              backgroundColor: '#CED4DA',
+              borderRadius: '10px',
+              transition: isDragging ? 'none' : 'top 0.1s',
+              cursor: 'pointer',
+              userSelect: 'none',
               ...styScroll,
-              backgroundColor: '#ADB5BD',
-            },
-          }}
-        ></Box>
-      )}
-      {/* Add track area for mouse scrolling */}
-      {isScrollable && (
-        <button
-          type="button"
-          style={{
-            position: 'absolute',
-            top: `${offsetTop}px`,
-            right: 0,
-            width: 12,
-            bottom: 0,
-            cursor: 'pointer',
-            zIndex: 1,
-            border: 'none',
-            background: 'transparent',
-            padding: 0,
-          }}
-          onClick={(e) => {
-            const container = containerRef.current
+              // Add hover effect
+              ':hover': {
+                ...styScroll,
+                backgroundColor: '#ADB5BD',
+              },
+            }}
+          ></Box>
+        )}
+        {/* Add track area for mouse scrolling */}
+        {isScrollable && (
+          <button
+            type="button"
+            style={{
+              position: 'absolute',
+              top: `${offsetTop}px`,
+              right: 0,
+              width: 12,
+              bottom: 0,
+              cursor: 'pointer',
+              zIndex: 1,
+              border: 'none',
+              background: 'transparent',
+              padding: 0,
+            }}
+            onClick={(e) => {
+              const container = containerRef.current
 
-            if (!container) return
+              if (!container) return
 
-            const rect = e.currentTarget.getBoundingClientRect()
-            const clickRatio = (e.clientY - rect.top) / rect.height
-            const scrollHeight = container.scrollHeight
-            const clientHeight = container.clientHeight
+              const rect = e.currentTarget.getBoundingClientRect()
+              const clickRatio = (e.clientY - rect.top) / rect.height
+              const scrollHeight = container.scrollHeight
+              const clientHeight = container.clientHeight
 
-            container.scrollTop = (scrollHeight - clientHeight) * clickRatio
-          }}
-        />
-      )}
-    </Box>
-  )
-}
+              container.scrollTop = (scrollHeight - clientHeight) * clickRatio
+            }}
+          />
+        )}
+      </Box>
+    )
+  },
+)
+
+ScrollWrapper.displayName = 'ScrollWrapper'
 
 export default ScrollWrapper
