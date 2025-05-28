@@ -5,7 +5,7 @@ import Divider from '@mui/material/Divider'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
-import { Updater, useForm, useStore } from '@tanstack/react-form'
+import { Updater, useField, useForm, useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -93,12 +93,13 @@ const AdminDataRegistration = () => {
           if (Array.isArray(v)) return v.length === 0
           return !v
         }
+        const shouldValidateDocCategory = filesUnstructured.length > 0
         return {
           fields: {
             goodsDataNm: isEmpty(value.goodsDataNm),
             goodsDataSummaryCntt: isEmpty(value.goodsDataSummaryCntt),
-            docCategoryList: isEmpty(value.docCategoryList),
-            langCategoryList: isEmpty(value.langCategoryList),
+            docCategoryList: shouldValidateDocCategory ? isEmpty(value.docCategoryList) : false,
+            langCategoryList: shouldValidateDocCategory ? isEmpty(value.langCategoryList) : false,
           },
         }
       },
@@ -295,6 +296,8 @@ const AdminDataRegistration = () => {
       setOpenUnstructuredConfirm(true)
     } else {
       setFilesUnstructured([])
+      form.resetField('docCategoryList')
+      form.resetField('langCategoryList')
       updateFn()
     }
   }
@@ -302,6 +305,8 @@ const AdminDataRegistration = () => {
   /** 비정형 데이터 파일 초기화 */
   const clearUnstructedSavedFiles = () => {
     setOpenUnstructuredConfirm(false)
+    form.resetField('docCategoryList')
+    form.resetField('langCategoryList')
     setDeletedUnstructeredFiles(dataDetail?.unstructuredDataList.map((m) => m.fileNo) ?? [])
     setFilesUnstructured([])
     form.setFieldValue('fileTypes', (prev) => prev.filter((f) => f !== 'unstructured'))
@@ -447,77 +452,95 @@ const AdminDataRegistration = () => {
               ))}
           </Grid>
         </MIField>
-        <form.Field name="docCategoryList">
-          {(field) => (
-            <MIField labelSize="lg" label="Document Types" subText="도큐먼트 타입을 선택하세요. 중복 선택이 가능합니다." required>
-              <FormGroup row>
-                {providerDocumentTypeOptions.map((val) => (
-                  <FormControlLabel
-                    key={val.codeId}
-                    control={
-                      <AdminCheckbox
-                        checked={field.state.value.includes(val.codeId)}
-                        onChange={(e) => {
-                          const isChecked = e.target.checked
-                          const newValue = isChecked
-                            ? [...field.state.value, val.codeId]
-                            : field.state.value.filter((v) => v !== val.codeId)
-
-                          field.handleChange(newValue)
-                        }}
-                      />
-                    }
-                    value={val.codeId}
-                    label={val.codeNm}
-                  />
-                ))}
-              </FormGroup>
-            </MIField>
-          )}
-        </form.Field>
-        <form.Field name="langCategoryList">
-          {(field) => (
-            <MIField labelSize="lg" label="Languages" subText="도큐먼트의 언어를 선택하세요. 중복 선택이 가능합니다." required>
-              <FormGroup row>
-                {providerLanguageOptions.map((val) => (
-                  <FormControlLabel
-                    key={val.codeId}
-                    control={
-                      <AdminCheckbox
-                        checked={field.state.value.includes(val.codeId)}
-                        onChange={(e) => {
-                          const isChecked = e.target.checked
-                          const newValue = isChecked
-                            ? [...field.state.value, val.codeId]
-                            : field.state.value.filter((v) => v !== val.codeId)
-
-                          field.handleChange(newValue)
-                        }}
-                      />
-                    }
-                    value={val.codeId}
-                    label={val.codeNm}
-                  />
-                ))}
-              </FormGroup>
-            </MIField>
-          )}
-        </form.Field>
         <Divider sx={{ backgroundColor: '#DEE2E6', height: '0px' }} />
         <form.Field name="fileTypes">
           {(field) => (
-            <AdminDataRegiUploadComponent
-              fileTypes={form.state.values.fileTypes}
-              onChange={(updater: Updater<string[]>, checkType, checked) =>
-                onChangeCheckbox(checkType, checked, () => field.handleChange(updater))
-              }
-              setFilesStructured={setFilesStructured}
-              setFilesUnstructured={setFilesUnstructured}
-              savedDataInfo={savedDataInfo}
-              filesStructured={filesStructured}
-              filesUnstructured={filesUnstructured}
-              onDeleteUnstructuredData={(fileNo) => setDeletedUnstructeredFiles((prev) => [...prev, fileNo])}
-            />
+            <>
+              <AdminDataRegiUploadComponent
+                fileTypes={field.state.value}
+                onChange={(updater: Updater<string[]>, checkType, checked) =>
+                  onChangeCheckbox(checkType, checked, () => field.setValue(updater))
+                }
+                setFilesStructured={setFilesStructured}
+                setFilesUnstructured={setFilesUnstructured}
+                savedDataInfo={savedDataInfo}
+                filesStructured={filesStructured}
+                filesUnstructured={filesUnstructured}
+                onDeleteUnstructuredData={(fileNo) => setDeletedUnstructeredFiles((prev) => [...prev, fileNo])}
+              />
+              {field.state.value.includes('unstructured') && (
+                <>
+                  <form.Field name="docCategoryList">
+                    {(subfield) => (
+                      <MIField
+                        labelSize="lg"
+                        label="Document Types"
+                        subText="도큐먼트 타입을 선택하세요. 중복 선택이 가능합니다."
+                        required
+                        sx={{ paddingLeft: '36px' }}
+                      >
+                        <FormGroup row>
+                          {providerDocumentTypeOptions.map((val) => (
+                            <FormControlLabel
+                              key={val.codeId}
+                              control={
+                                <AdminCheckbox
+                                  checked={subfield.state.value.includes(val.codeId)}
+                                  onChange={(e) => {
+                                    const isChecked = e.target.checked
+                                    const newValue = isChecked
+                                      ? [...subfield.state.value, val.codeId]
+                                      : subfield.state.value.filter((v) => v !== val.codeId)
+
+                                    subfield.handleChange(newValue)
+                                  }}
+                                />
+                              }
+                              value={val.codeId}
+                              label={val.codeNm}
+                            />
+                          ))}
+                        </FormGroup>
+                      </MIField>
+                    )}
+                  </form.Field>
+                  <form.Field name="langCategoryList">
+                    {(subfield) => (
+                      <MIField
+                        labelSize="lg"
+                        label="Languages"
+                        subText="도큐먼트의 언어를 선택하세요. 중복 선택이 가능합니다."
+                        required
+                        sx={{ paddingLeft: '36px' }}
+                      >
+                        <FormGroup row>
+                          {providerLanguageOptions.map((val) => (
+                            <FormControlLabel
+                              key={val.codeId}
+                              control={
+                                <AdminCheckbox
+                                  checked={subfield.state.value.includes(val.codeId)}
+                                  onChange={(e) => {
+                                    const isChecked = e.target.checked
+                                    const newValue = isChecked
+                                      ? [...subfield.state.value, val.codeId]
+                                      : subfield.state.value.filter((v) => v !== val.codeId)
+
+                                    subfield.handleChange(newValue)
+                                  }}
+                                />
+                              }
+                              value={val.codeId}
+                              label={val.codeNm}
+                            />
+                          ))}
+                        </FormGroup>
+                      </MIField>
+                    )}
+                  </form.Field>
+                </>
+              )}
+            </>
           )}
         </form.Field>
       </Box>
