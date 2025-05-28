@@ -295,7 +295,7 @@ const MIHeaderNotice = () => {
         <>
           <ScrollWrapper sx={{ margin: '0 -20px' }} maxHeight={556}>
             {alertsIsLoading ? (
-              <Box display="flex" justifyContent="center" alignItems="center" p={5}>
+              <Box display="flex" justifyContent="center" alignItems="center" p={5} height={400}>
                 <Typography variant="body2R14" color="gray.60">
                   Loading...
                 </Typography>
@@ -314,7 +314,7 @@ const MIHeaderNotice = () => {
                 />
               ))
             ) : (
-              <Box display="flex" justifyContent="center" alignItems="center" p={5}>
+              <Box display="flex" justifyContent="center" alignItems="center" p={5} height={400}>
                 <Typography variant="body2R14" color="gray.60">
                   No results found
                 </Typography>
@@ -343,7 +343,7 @@ const MIHeaderNotice = () => {
         <>
           <ScrollWrapper sx={{ margin: '0 -20px' }} maxHeight={638}>
             {isLoadingNotices ? (
-              <Box display="flex" justifyContent="center" alignItems="center" p={5}>
+              <Box display="flex" justifyContent="center" alignItems="center" p={5} height={400}>
                 <Typography variant="body2R14" color="gray.60">
                   Loading...
                 </Typography>
@@ -362,9 +362,9 @@ const MIHeaderNotice = () => {
                 />
               ))
             ) : (
-              <Box display="flex" justifyContent="center" alignItems="center" p={5}>
+              <Box display="flex" justifyContent="center" alignItems="center" p={5} height={400}>
                 <Typography variant="body2R14" color="gray.60">
-                  공지사항이 없습니다.
+                  No results found
                 </Typography>
               </Box>
             )}
