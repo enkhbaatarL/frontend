@@ -1,6 +1,7 @@
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import dayjs from 'dayjs'
+import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
 import MILine from '@/components/common/divider/MILine'
@@ -10,6 +11,7 @@ interface DocumentItemProps {
   providerNm: string
   id: number
   index: number
+  onClick: () => void
 }
 
 interface LatestInsightsData {
@@ -22,10 +24,10 @@ interface LatestInsightsData {
   modifyDt: string
 }
 
-const DataItem = ({ goodsDataNm, modifyDt, providerNm, index }: DocumentItemProps) => (
+const DataItem = ({ goodsDataNm, modifyDt, providerNm, index, onClick }: DocumentItemProps) => (
   <Box paddingY={3} borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'}>
     <Typography
-      onClick={() => alert('redirect to detail')}
+      onClick={onClick}
       fontWeight={600}
       color="gray.70"
       component="div"
@@ -46,35 +48,43 @@ const DataItem = ({ goodsDataNm, modifyDt, providerNm, index }: DocumentItemProp
   </Box>
 )
 
-const LatestData = ({ dataList }: { dataList: LatestInsightsData[] }) => (
-  <Grid gap={2.5} bgcolor={'#fff'} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
-    <Typography component="div" color="gray.90" variant="titleBox">
-      Latest Insights
-    </Typography>
-    <Box>
-      {dataList?.map((item, index) => (
-        <DataItem
-          key={item.goodsDataNo}
-          index={index}
-          id={item.goodsDataNo}
-          goodsDataNm={item.goodsDataNm}
-          modifyDt={item.modifyDt}
-          providerNm={item.providerNm}
-        />
-      ))}
-    </Box>
-    <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'}>
-      View all
-      <KeyboardArrowRightIcon
-        sx={{
-          verticalAlign: 'sub',
-          color: '#868E96',
-          ml: '8px',
-        }}
-        fontSize={'small'}
-      />
-    </MIButton>
-  </Grid>
-)
+const LatestData = ({ dataList }: { dataList: LatestInsightsData[] }) => {
+  const navigate = useNavigate()
 
+  const onClickRow = (row: LatestInsightsData) => {
+    navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`)
+  }
+
+  return (
+    <Grid gap={2.5} bgcolor={'#fff'} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
+      <Typography component="div" color="gray.90" variant="titleBox">
+        Latest Insights
+      </Typography>
+      <Box>
+        {dataList?.map((item, index) => (
+          <DataItem
+            key={item.goodsDataNo}
+            index={index}
+            id={item.goodsDataNo}
+            goodsDataNm={item.goodsDataNm}
+            modifyDt={item.modifyDt}
+            providerNm={item.providerNm}
+            onClick={() => onClickRow(item)}
+          />
+        ))}
+      </Box>
+      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'} onClick={() => navigate('/mi/insights')}>
+        View all
+        <KeyboardArrowRightIcon
+          sx={{
+            verticalAlign: 'sub',
+            color: '#868E96',
+            ml: '8px',
+          }}
+          fontSize={'small'}
+        />
+      </MIButton>
+    </Grid>
+  )
+}
 export default LatestData

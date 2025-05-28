@@ -5,6 +5,9 @@ import { DATA_CATEGORIES } from './constants'
 import DataIcon from './icons/DataIcon'
 import ForecastErrorIcon from './icons/ForecastErrorIcon'
 import ForecastIcon from './icons/ForecastIcon'
+import MIButton from '../button/MIButton'
+import CloseIcon from '../icons/CloseIcon'
+import InfoOutlineIcon from '../icons/InfoOutlineIcon'
 
 import theme from '@/theming'
 import { formatValue } from '@/utils/number'
@@ -45,6 +48,7 @@ const ChartToolTipItem = (props: { label: string; value: number; category: strin
     </Box>
   )
 }
+
 export interface MIForecastChartTooltipProps {
   minWidth: number
   visible?: boolean
@@ -60,6 +64,7 @@ export interface MIForecastChartTooltipProps {
 
 export default function MIForecastChartTooltip({
   visible,
+  viewDetail = false,
   top = 0,
   left = 0,
   label,
@@ -67,6 +72,7 @@ export default function MIForecastChartTooltip({
   minWidth,
   borderBottom,
   borderRight,
+  onClose,
 }: Readonly<MIForecastChartTooltipProps>) {
   const tooltipContainerRef = useRef<HTMLElement>(null)
   const position = useMemo(() => {
@@ -90,12 +96,12 @@ export default function MIForecastChartTooltip({
       top: newTop,
       left: newLeft,
     }
-  }, [top, left, tooltipContainerRef.current])
+  }, [top, left, borderRight, borderBottom])
 
   if (!visible) return null
 
   const futuresContent = content.filter((item) => item.category === DATA_CATEGORIES.FUTURE)
-  const actualContent = content.filter((item) => item.category !== DATA_CATEGORIES.FUTURE)
+  const dataContent = content.filter((item) => item.category !== DATA_CATEGORIES.FUTURE)
 
   return (
     <Box
@@ -104,19 +110,28 @@ export default function MIForecastChartTooltip({
         position: 'absolute',
         top: position.top,
         left: position.left,
-        pointerEvents: 'none',
+        pointerEvents: viewDetail ? 'auto' : 'none',
         padding: '14px',
         zIndex: 10,
         borderRadius: '4px',
-        border: '1px solid #DEE2E6',
-        backgroundColor: 'rgba(255, 255, 255, 0.90)',
+        border: '1px solid',
+        borderColor: viewDetail ? theme.palette.gray[60] : theme.palette.gray[30],
+        backgroundColor: viewDetail ? theme.palette.gray[5] : 'rgba(255, 255, 255, 0.90)',
         boxShadow: '0px 1px 8px 0px rgba(0, 0, 0, 0.10);',
       }}
     >
-      <Typography variant="subtext3" color="gray.90" mb="8px">
-        {label}
-      </Typography>
-      {actualContent.map((item) => (
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '8px' }}>
+        <Typography variant="subtext3" color="gray.90">
+          {label}
+        </Typography>
+        {viewDetail && (
+          <MIButton type="ghost" contentType="icon" size="h32" onClick={onClose}>
+            <CloseIcon />
+          </MIButton>
+        )}
+      </Box>
+
+      {dataContent.map((item) => (
         <ChartToolTipItem
           minWidth={minWidth}
           key={item.label}
@@ -126,6 +141,7 @@ export default function MIForecastChartTooltip({
           color={item.color ?? ''}
         />
       ))}
+
       {futuresContent.length > 0 && <Box sx={{ background: theme.palette.gray[30], width: '100%', height: '1px' }} my="2px" />}
 
       {futuresContent.map((item) => (
@@ -138,6 +154,15 @@ export default function MIForecastChartTooltip({
           minWidth={minWidth}
         />
       ))}
+
+      {!viewDetail && (
+        <Box display={'flex'} alignItems={'center'} padding={'6px 4px'} gap={'4px'} mt={'8px'}>
+          <InfoOutlineIcon width="18" height="18" color="#868E96" display={'block'} />
+          <Typography variant="subtext2" color="gray.70">
+            예측 데이터 포인트 클릭 시 상세 정보 조회
+          </Typography>
+        </Box>
+      )}
     </Box>
   )
 }
