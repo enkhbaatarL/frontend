@@ -19,6 +19,7 @@ interface DashboardMapperDetail {
   hide?: boolean
   tableRows: string[]
   tableUnitName: string
+  errorRate?: boolean
 }
 
 const dashboardMapper: Record<number, DashboardMapperDetail> = {
@@ -26,15 +27,17 @@ const dashboardMapper: Record<number, DashboardMapperDetail> = {
   2008: { tableRows: ['Server', 'Automobile', 'PC', 'Mobile'], tableUnitName: 'Millions Units' },
   // 이노베이션 E&S
   2013: {
-    tableRows: ['Forecast', 'Actual', 'Futures M+1', 'Futures M+2', 'Futures M+3', 'Futures M+4', '오차율(%)'],
+    tableRows: ['Forecast', 'Actual', 'Futures M+1', 'Futures M+2', 'Futures M+3', 'Futures M+4'],
     tableUnitName: 'USD/MMBtu',
+    errorRate: true,
   },
   // 가스
   2014: { tableRows: [], tableUnitName: '', hide: true },
   // 하이닉스
   2015: {
-    tableRows: ['Forecast', 'Actual', 'Futures M+1', 'Futures M+2', 'Futures M+3', 'Futures M+4', '오차율(%)'],
+    tableRows: ['Forecast', 'Actual', 'Futures M+1', 'Futures M+2', 'Futures M+3', 'Futures M+4'],
     tableUnitName: 'USD/Gb',
+    errorRate: true,
   },
   //텔레콤
   2016: { tableRows: [], tableUnitName: '' },
@@ -43,7 +46,7 @@ const dashboardMapper: Record<number, DashboardMapperDetail> = {
   // 이노베이션
   2019: { tableRows: [], tableUnitName: '' },
   // 에너지
-  2020: { tableRows: ['Forecast', 'Actual', 'Futures M+1', 'Futures M+2', '오차율(%)'], tableUnitName: 'USD/bbl' },
+  2020: { tableRows: ['Forecast', 'Actual', 'Futures M+1', 'Futures M+2'], tableUnitName: 'USD/bbl', errorRate: true },
   //on
   2021: { tableRows: ['IONIQ 5', 'EV6', 'eGV70', 'ID.4'], tableUnitName: 'Vehicles' },
 }
@@ -59,27 +62,26 @@ export const useDashboardInfo = () => {
     [],
   )
   const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
-  const shouldHideDashboard = useMemo(
-    () => dashboardMapper[accessCompanyInfo?.customerCompanyNo ?? -1]?.hide,
-    [accessCompanyInfo?.customerCompanyNo],
-  )
 
-  const rawData = useMemo<RawDataItem[]>(
-    () => [
-      { model: 'Forecast', data: [20, 20, 20, 20, 20, 10, 20, 20, 20, 20, 20, 20] },
-      { model: 'Actual', data: [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, null, null] },
-      { model: 'M1', data: [20, 20, 20, 20, 20, 10, 20, 20, 20, 20, null, null] },
-      { model: 'M2', data: [10, 10, 10, 10, 10, 10, 10, 10, 20, 20, null, null] },
-      { model: 'M3', data: [10, 10, 10, 10, 10, 10, 10, 10, 20, 20, null, null] },
+  const currentTable = useMemo(() => dashboardMapper[accessCompanyInfo?.customerCompanyNo ?? -1], [accessCompanyInfo?.customerCompanyNo])
+
+  const shouldHideDashboard = useMemo(() => currentTable.hide, [currentTable])
+
+  const rawData = useMemo<RawDataItem[]>(() => {
+    const baseData: RawDataItem[] = currentTable.tableRows.map((row) => ({
+      model: row,
+      data: [20, 20, 20, 20, 20, 10, 20, 20, 20, 20, 20, 20], //TODO
+    }))
+    const errorRateData: RawDataItem[] = [
       {
         model: '오차율 (%)',
         id: 'errorRate',
-        data: [-0.04, 0.07, -0.04, 0.07, -0.04, 0.07, 0.07, 0.07, -0.04, 0.07, null, null],
+        data: [-0.04, 0.07, -0.04, 0.07, -0.04, 0.07, 0.07, 0.07, -0.04, 0.07, null, null], //TODO
         tooltipContent: errorRateTooltipContent,
       },
-    ],
-    [],
-  )
+    ]
+    return [...baseData, ...(currentTable.errorRate ? errorRateData : [])]
+  }, [currentTable.errorRate, currentTable.tableRows])
 
   const rows = useMemo<DataRow[]>(
     () =>
@@ -102,7 +104,7 @@ export const useDashboardInfo = () => {
   const columns = useMemo(() => {
     const baseColumn = {
       field: 'model',
-      headerName: '',
+      headerName: currentTable.tableUnitName,
       width: 100,
       type: 'string',
       align: 'center',
@@ -116,6 +118,6 @@ export const useDashboardInfo = () => {
     }))
 
     return [baseColumn, ...monthColumns]
-  }, [monthHeaders])
+  }, [currentTable.tableUnitName, monthHeaders])
   return { shouldHideDashboard, columns, rows }
 }
