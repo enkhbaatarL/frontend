@@ -15,7 +15,7 @@ import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import MIProvider from '@/providers/MIProvider'
 
 const MIMainRedirect = () => {
-  const shouldHideDashboard = useDashboardInfo()
+  const { shouldHideDashboard } = useDashboardInfo()
   return <Navigate to={shouldHideDashboard ? 'signal-map' : 'dashboard'} replace />
 }
 

@@ -67,7 +67,7 @@ const MILayout = () => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
 
-  const shouldHideDashboard = useDashboardInfo()
+  const { shouldHideDashboard } = useDashboardInfo()
 
   const fixedMainPages = useMemo(
     () => (!shouldHideDashboard ? mainPages : mainPages.filter((page) => page.url !== '/mi/dashboard')),
