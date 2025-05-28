@@ -2,11 +2,9 @@
 
 import { Box, Button } from '@mui/material'
 import { styled } from '@mui/system'
-import { useEffect, useRef, useState } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 
 import MIAgentChatWindow from './MIAgentChatWindow'
-
-import type React from 'react'
 
 import mariIcon from '@/assets/mariicon.svg'
 
@@ -17,13 +15,18 @@ const GradientBox = styled(Box)(() => ({
   width: '140px',
   height: '56px',
   color: 'white',
-  boxShadow: '2px 4px 40px 0px #276ACF4D',
+  boxShadow: '2px 4px 40px 0px #276ACF4D, 0 0 0 1px rgba(0, 0, 0, 0.1)',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(0px)',
+    boxShadow: '4px 8px 50px 0px #276ACF6D, 0 0 0 1px rgba(0, 0, 0, 0.15)',
+  },
   '&::before': {
     content: '""',
     position: 'absolute',
-    inset: '-2px', // Shorthand for top, right, bottom, left
+    inset: '-2px -3px',
     borderRadius: '200px',
-    padding: '2px', // Creates the border width
+    padding: '2px 3px',
     background:
       'conic-gradient(from 0deg, #7DE5F3 0%, #A9E7F6 5%, #6DAFD9 15%, #518EE1 30%, #6DAFD9 45%, #7DE5F3 60%, #BDF7FF 75%, #F8FDFE 90%, #BDF7FF 95%, #7DE5F3 100%)',
     WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
@@ -31,11 +34,12 @@ const GradientBox = styled(Box)(() => ({
     maskComposite: 'exclude',
     zIndex: -1,
     opacity: 0,
-    animation: 'none',
+    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+    filter: 'brightness(1.2) contrast(1.2)',
   },
   '&:hover::before': {
     opacity: 1,
-    animation: 'rotateGradientBorder 1.5s linear infinite',
+    animation: 'rotateGradientBorder 2s cubic-bezier(0.4, 0, 0.2, 1) infinite',
   },
   '@keyframes rotateGradientBorder': {
     '0%': {
@@ -150,25 +154,25 @@ export interface MIAgentButtonProps {
   right?: number
 }
 
-const MIAgentButton: React.FC<MIAgentButtonProps> = ({ top = 126 }) => {
-  const [showChatWindow, setshowChatWindow] = useState(false)
-  const [windowExpaned, setwindowExpaned] = useState<boolean>(false)
+const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
+  const [showChatWindow, setShowChatWindow] = useState(false)
+  const [windowExpend, setWindowExpend] = useState<boolean>(false)
   const [isClosing, setIsClosing] = useState(false)
-  const [offsetLeft, setoffsetLeft] = useState(0)
+  const [offsetLeft, setOffsetLeft] = useState(0)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const ref = useRef<HTMLButtonElement>(null)
 
   const handleClose = () => {
-    setwindowExpaned(false)
+    setWindowExpend(false)
     setIsClosing(true)
     setTimeout(() => {
-      setshowChatWindow(false)
+      setShowChatWindow(false)
       setIsClosing(false)
     }, 500) // Match this with the transition duration
   }
 
   const onExpandWindow = (expanded: boolean | ((prevState: boolean) => boolean)) => {
-    setwindowExpaned(expanded)
+    setWindowExpend(expanded)
   }
 
   // Update button position when mounted and on window resize
@@ -178,7 +182,7 @@ const MIAgentButton: React.FC<MIAgentButtonProps> = ({ top = 126 }) => {
       const topBar: any = document.getElementsByClassName('MuiToolbar-root')
 
       if (topBar.length > 0 && topBar[0]?.offsetLeft) {
-        setoffsetLeft(topBar[0]?.offsetLeft)
+        setOffsetLeft(topBar[0]?.offsetLeft)
       }
     }
 
@@ -210,8 +214,8 @@ const MIAgentButton: React.FC<MIAgentButtonProps> = ({ top = 126 }) => {
         sx={{
           position: 'fixed',
           top,
-          right: offsetLeft,
-          zIndex: 1500,
+          right: right ?? offsetLeft,
+          zIndex: showChatWindow ? 1500 : 999, // chat 영역 활성화 시 헤더보다 높게 조정
         }}
       >
         <Box
@@ -239,9 +243,17 @@ const MIAgentButton: React.FC<MIAgentButtonProps> = ({ top = 126 }) => {
                 fontStyle: 'normal',
                 fontWeight: '700',
                 lineHeight: '1.4',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  background: 'linear-gradient(100.9deg, #5A7DC9 15.49%, #25276C 101.21%)',
+                  transform: 'scale(1.02)',
+                },
+                '&:active': {
+                  transform: 'scale(0.98)',
+                },
               }}
               disableRipple
-              onClick={() => setshowChatWindow(true)}
+              onClick={() => setShowChatWindow(true)}
               ref={buttonRef}
             >
               <GradientText>Ask Mari</GradientText>
@@ -250,7 +262,10 @@ const MIAgentButton: React.FC<MIAgentButtonProps> = ({ top = 126 }) => {
         </Box>
         <Box
           sx={{
-            transform: isClosing ? 'scale(0.1)' : showChatWindow ? 'scale(1)' : 'scale(0.1)',
+            transform: (() => {
+              if (isClosing) return 'scale(0.1)'
+              return showChatWindow ? 'scale(1)' : 'scale(0.1)'
+            })(),
             opacity: showChatWindow && !isClosing ? 1 : 0,
             width: 'auto',
             height: 'auto',
@@ -260,11 +275,11 @@ const MIAgentButton: React.FC<MIAgentButtonProps> = ({ top = 126 }) => {
             borderRadius: '12px',
             position: 'fixed',
             transformOrigin: 'top right',
-            top: windowExpaned ? top - 56 : top,
+            top: windowExpend ? top - 56 : top,
             right: offsetLeft,
           }}
         >
-          <MIAgentChatWindow onChangeExpand={onExpandWindow} windowExpaned={windowExpaned} onClose={handleClose} />
+          <MIAgentChatWindow onChangeExpand={onExpandWindow} windowExpaned={windowExpend} onClose={handleClose} />
         </Box>
       </Box>
     </>
