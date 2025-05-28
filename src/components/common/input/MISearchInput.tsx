@@ -27,18 +27,18 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
     }, 100)
   }, [])
 
-  const addHistory = useCallback(
-    (newValue: string) => {
-      if (!newValue || history.includes(newValue)) return
+  const addHistory = useCallback((newValue: string) => {
+    if (!newValue) return
 
-      setHistory((prev) => [...prev, newValue])
-    },
-    [history],
-  )
+    setHistory((prev) => {
+      const uniqueHistory = Array.from(new Set([...prev, newValue]))
+      return uniqueHistory.sort((a, b) => a.localeCompare(b))
+    })
+  }, [])
 
   const filteredHistories = useMemo(() => {
     const result = history.filter((item) => disassembleToGroups(item).flat().join().startsWith(disassembleToGroups(value).flat().join())) // 초중성 분리하여 검색
-    return result.slice(0, 10)
+    return result.sort((a, b) => a.length - b.length).slice(0, 10)
   }, [history, value])
 
   const openHistoryList = useMemo(
@@ -47,13 +47,14 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
   )
 
   useEffect(() => {
-    if (!storageKey) return
     if (storageKey) {
       localStorage.setItem(`${storageKey}-search-history`, JSON.stringify(history))
     }
   }, [history, storageKey])
 
   useEffect(() => {
+    if (!storageKey) return
+
     const savedHistory = localStorage.getItem(`${storageKey}-search-history`)
 
     if (savedHistory) {
@@ -78,8 +79,10 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
             const value = (target as HTMLInputElement).value
             inputBlur()
 
-            addHistory(value)
-            onSearch(value)
+            setTimeout(() => {
+              addHistory(value)
+              onSearch(value)
+            }, 100)
           }
         }}
         onClear={onClear}
