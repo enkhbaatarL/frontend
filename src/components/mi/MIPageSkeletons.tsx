@@ -49,24 +49,86 @@ export const MIPageSkeletons = {
 
   // Market Data 패턴
   MarketData: () => (
-    <SkeletonWrapper.Container>
-      {/* 필터 영역 */}
-      <SkeletonWrapper.Row gap={2} sx={{ mb: 3 }}>
-        <MIBaseSkeleton.Button width={120} />
-        <MIBaseSkeleton.Button width={150} />
-        <MIBaseSkeleton.Button width={100} />
-        <Box ml="auto">
-          <MIBaseSkeleton.Button width={80} />
+    <Box>
+      <MIBaseSkeleton.BaseElement width={'100%'} height={'216px'} />
+      <Box
+        minWidth={'1380px'}
+        width={'1380px'}
+        margin={'auto'}
+        display={'flex'}
+        flexDirection={'column'}
+        gap={'38px'}
+        paddingTop={'50px'}
+        paddingBottom={'24px'}
+      >
+        <MIBaseSkeleton.BaseElement width={'294px'} height={'50px'} />
+        <Box width={'1380px'} height={'916px'} gap={'20px'} paddingBottom={'17px'}>
+          <SkeletonWrapper.Row gap={'20px'} sx={{ paddingBottom: '20px' }}>
+            <MIBaseSkeleton.Card width={'680px'} height={'446px'} />
+            <MIBaseSkeleton.Card width={'680px'} height={'446px'} />
+          </SkeletonWrapper.Row>
+          <SkeletonWrapper.Row gap={'20px'} sx={{ paddingBottom: '20px' }}>
+            <MIBaseSkeleton.Card width={'330px'} height={'215px'} />
+            <MIBaseSkeleton.Card width={'330px'} height={'215px'} />
+            <MIBaseSkeleton.Card width={'330px'} height={'215px'} />
+            <MIBaseSkeleton.Card width={'330px'} height={'215px'} />
+          </SkeletonWrapper.Row>
+          <SkeletonWrapper.Row gap={'20px'}>
+            <MIBaseSkeleton.Card width={'330px'} height={'215px'} />
+            <MIBaseSkeleton.Card width={'330px'} height={'215px'} />
+            <MIBaseSkeleton.Card width={'330px'} height={'215px'} />
+            <MIBaseSkeleton.Card width={'330px'} height={'215px'} />
+          </SkeletonWrapper.Row>
         </Box>
-      </SkeletonWrapper.Row>
-
-      {/* 차트 카드들 */}
-      <SkeletonWrapper.Grid columns={2} gap={3}>
-        {Array.from({ length: 6 }, (_, i) => (
-          <MIBaseSkeleton.Card key={i} height={300} />
-        ))}
-      </SkeletonWrapper.Grid>
-    </SkeletonWrapper.Container>
+        <MIBaseSkeleton.BaseElement width={'294px'} height={'50px'} />
+        <MIBaseSkeleton.BaseElement width={'458px'} height={'46px'} />
+      </Box>
+      <Box
+        minWidth={'1380px'}
+        width={'1380px'}
+        margin={'auto'}
+        display={'flex'}
+        flexDirection={'column'}
+        paddingTop={'30px'}
+        borderTop={'1px solid #DEE2E6'}
+      >
+        <SkeletonWrapper.Row gap={'24px'}>
+          <MIBaseSkeleton.Table width={'1070px'} height={'532px'} />
+          <Box border="1px solid #DEE2E6" width={'286px'} height={'532px'} borderRadius={'4px'}>
+            <Box width={'238px'} height={'484px'} margin={'auto'} padding={'24px'}>
+              <Box paddingBottom={'10px'}>
+                <MIBaseSkeleton.BaseElement2 width={'161px'} height={'24px'} />
+              </Box>
+              <Box width={'100%'} borderBottom={'1px solid #DEE2E6'} py={'15px'}>
+                <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                <MIBaseSkeleton.BaseElement2 width={'100%'} height={'22px'} sx={{ marginTop: '2px' }} />
+                <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ marginTop: '4px' }} />
+              </Box>
+              <Box width={'100%'} borderBottom={'1px solid #DEE2E6'} py={'15px'}>
+                <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                <MIBaseSkeleton.BaseElement2 width={'100%'} height={'22px'} sx={{ marginTop: '2px' }} />
+                <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ marginTop: '4px' }} />
+              </Box>
+              <Box width={'100%'} borderBottom={'1px solid #DEE2E6'} py={'15px'}>
+                <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                <MIBaseSkeleton.BaseElement2 width={'100%'} height={'22px'} sx={{ marginTop: '2px' }} />
+                <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ marginTop: '4px' }} />
+              </Box>
+              <Box width={'100%'} borderBottom={'1px solid #DEE2E6'} py={'15px'}>
+                <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                <MIBaseSkeleton.BaseElement2 width={'100%'} height={'22px'} sx={{ marginTop: '2px' }} />
+                <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ marginTop: '4px' }} />
+              </Box>
+              <Box width={'100%'} py={'15px'}>
+                <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                <MIBaseSkeleton.BaseElement2 width={'100%'} height={'22px'} sx={{ marginTop: '2px' }} />
+                <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ marginTop: '4px' }} />
+              </Box>
+            </Box>
+          </Box>
+        </SkeletonWrapper.Row>
+      </Box>
+    </Box>
   ),
 
   // Insights 검색/리스트 패턴

@@ -67,6 +67,16 @@ export const MIBaseSkeleton = {
   BaseElement: ({ width = '100%', height = '100%', sx }: BaseSkeletonProps) => (
     <Skeleton variant="rectangular" width={width} height={height} sx={{ borderRadius: '2px', ...sx }} />
   ),
+
+  // 테이블 영역
+  Table: ({ width = '100%', height = '100%', sx }: BaseSkeletonProps) => (
+    <Skeleton variant="rectangular" width={width} height={height} sx={{ borderRadius: '4px', ...sx }} />
+  ),
+
+  // 이미지/차트 영역
+  BaseElement2: ({ width = '100%', height = '100%', sx }: BaseSkeletonProps) => (
+    <Skeleton variant="rectangular" width={width} height={height} sx={{ ...sx }} />
+  ),
 }
 
 // 스켈레톤 래퍼 컴포넌트들
@@ -79,7 +89,7 @@ export const SkeletonWrapper = {
   ),
 
   // 수평 배치
-  Row: ({ children, gap = 2, sx }: SkeletonWrapperProps) => (
+  Row: ({ children, gap, sx }: SkeletonWrapperProps) => (
     <Box display="flex" alignItems="center" gap={gap} sx={sx}>
       {children}
     </Box>
