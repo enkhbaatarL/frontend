@@ -6,11 +6,11 @@ import { useNavigate } from 'react-router-dom'
 
 import ReportComponent from './components/ReportComponent'
 import UpdatedData from './components/UpdatedData'
-import { dashboardMapper } from './lib/dashboardMapper'
 
 import psImg from '@/assets/productsymbol.png'
 import MIButton from '@/components/common/button/MIButton'
 import MITabs from '@/components/common/tabs/MITabs'
+import { useDashboardInfo } from '@/hooks/useDashboardInfo'
 import HistoryComponent from '@/pages/mi/dashboard/components/HistoryComponent'
 import LatestData from '@/pages/mi/dashboard/components/LatestData'
 import dashboardDataService from '@/service/mi/dashboardData'
@@ -23,12 +23,12 @@ const MIDashboardPage = () => {
 
   const companyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? -1, [accessCompanyInfo?.customerCompanyNo])
 
-  const shouldHideDashboard = useMemo(() => dashboardMapper[companyNo]?.hide, [companyNo])
+  const shouldHideDashboard = useDashboardInfo()
 
   const tabsData = [
     {
       label: 'Report',
-      content: <ReportComponent companyNo={companyNo} />,
+      content: <ReportComponent />,
     },
     {
       label: 'History',

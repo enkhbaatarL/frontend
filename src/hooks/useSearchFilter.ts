@@ -18,7 +18,7 @@ const removeEmptyValues = <T extends Record<string, unknown>>(obj: T): Partial<T
       .map(([k, v]) => [k, v]),
   ) as Partial<T>
 
-const diffCheck = <T,>(a: T, b: T) =>
+const diffCheck = <T>(a: T, b: T) =>
   isEqual(
     removeEmptyValues(omit(a as DiffCheckObject<T>, ['page', 'size'])),
     removeEmptyValues(omit(b as DiffCheckObject<T>, ['page', 'size'])),

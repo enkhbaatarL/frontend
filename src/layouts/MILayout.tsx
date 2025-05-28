@@ -6,9 +6,9 @@ import MIAgentButton from '@/components/common/agent/MIAgentButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
+import { useDashboardInfo } from '@/hooks/useDashboardInfo'
 import { useScrollRestoration } from '@/hooks/useScrollRestoration'
 import DailyChart from '@/pages/mi/dashboard/components/DailyChart'
-import { dashboardMapper } from '@/pages/mi/dashboard/lib/dashboardMapper'
 import MIProvider from '@/providers/MIProvider'
 import boardService, { INoticeDetailInfo, INoticePopupInfo } from '@/service/mi/board'
 import useAuthStore from '@/store/useAuthStore'
@@ -67,10 +67,7 @@ const MILayout = () => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
 
-  const shouldHideDashboard = useMemo(
-    () => dashboardMapper[accessCompanyInfo?.customerCompanyNo ?? -1]?.hide,
-    [accessCompanyInfo?.customerCompanyNo],
-  )
+  const shouldHideDashboard = useDashboardInfo()
 
   const fixedMainPages = useMemo(
     () => (!shouldHideDashboard ? mainPages : mainPages.filter((page) => page.url !== '/mi/dashboard')),

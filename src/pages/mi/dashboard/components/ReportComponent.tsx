@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material'
-import { useState } from 'react'
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
+import { useMemo, useState } from 'react'
 
 import MISummaryDownloadReport from './MISummaryDownloadReport'
 
@@ -10,8 +11,9 @@ import { generateChartMonths, generateForecastDataset } from '@/components/commo
 import CloseIcon from '@/components/common/icons/CloseIcon'
 import MIInfluenceFactorChart from '@/components/common/influence-factor-chart/MIInfluenceFactorChart'
 import MISegmented from '@/components/common/segmentedbtn/MISegmented'
+import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
-import { useMockDataReport } from '@/hooks/useMockDataReport'
+import { DataRow, useDashboardInfo } from '@/hooks/useDashboardInfo'
 import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
 import theme from '@/theming'
 export type MonthItem = {
@@ -43,15 +45,49 @@ export const monthsData: MonthItem[] = [
   { label: 'Aug 2024', value: '2024-08' },
 ]
 
-const ReportComponent = ({ companyNo }: { companyNo: number }) => {
+const ReportComponent = () => {
   const [monthSelect, setMonthSelect] = useState('2025-04')
-  const { rows, columns } = useMockDataReport()
   const { months } = generateChartMonths()
   const [selectedCase, setSelectedCase] = useState('case1')
-
+  const { rows, columns } = useDashboardInfo()
   const [selectedContent, setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
   const [showDetailChart, setShowDetailChart] = useState(false)
-  console.log('-companyNo:', companyNo)
+
+  const tableColumn = useMemo<GridColDef[]>(() => {
+    const columnFormat = columns.map((m) => ({
+      ...m,
+      renderCell: (param: GridRenderCellParams<DataRow, string>) => {
+        const isModel = param.field === 'model'
+        const tooltipContent = isModel && param.row.tooltipContent
+        const isErrorRate = param.row.id === 'errorRate'
+        const value = param.value as string | number
+        if (tooltipContent) {
+          return (
+            <MITableCell
+              tooltip={param.value === '오차율 (%)'}
+              tooltipContent={
+                <Typography variant={'subtext'} sx={{ whiteSpace: 'pre-line' }}>
+                  {tooltipContent}
+                </Typography>
+              }
+              typography={{ variant: 'tableBody1' }}
+              value={value}
+            />
+          )
+        }
+        const { color, value: displayValue } = (() => {
+          const defaultResult = { color: '#212529', value }
+          if (!isErrorRate || typeof value !== 'number') return defaultResult
+          if (value > 0) return { color: '#498B47', value: `+${value.toFixed(2)}` }
+          if (value < 0) return { color: '#CC4D50', value: `${value.toFixed(2)}` }
+          return defaultResult
+        })()
+        return <span style={{ color, fontWeight: isErrorRate || isModel ? 600 : 400 }}>{displayValue}</span>
+      },
+    }))
+
+    return columnFormat as GridColDef[]
+  }, [columns])
   return (
     <Box>
       <Box paddingY={7.5} textAlign="center">
@@ -268,7 +304,7 @@ const ReportComponent = ({ companyNo }: { companyNo: number }) => {
           <MITableUser
             tableProps={{
               noRowMessage: '등록된 내용이 없습니다.',
-              columns,
+              columns: tableColumn,
               rows,
               rowId: 'id',
             }}

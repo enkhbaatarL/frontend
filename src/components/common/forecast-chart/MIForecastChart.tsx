@@ -237,7 +237,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
     }
 
     prepareData()
-  }, [])
+  }, [forecastDatasets])
 
   const axes = useMemo(() => {
     const color: Record<string, string> = {

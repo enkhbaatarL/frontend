@@ -1,33 +1,22 @@
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
 import MILine from '@/components/common/divider/MILine'
 import { MarketDataItemInfo } from '@/service/mi/dashboardData'
 
-interface ItemProps {
-  goodsDataNm: string
-  lastValue: number
+type MarketMetaDataSummary = MarketDataItemInfo['marketMetaDataSummary']
+
+interface ProcessedMarketMetaDataSummary extends MarketMetaDataSummary {
   change: number
   changePercent: number
-  lastUpdateDt: string
-  currency: string
   direction: string
   unit: string
 }
 
-const getMinimumAvailableChange = ({
-  lastValue,
-  dodChangeValue,
-  wowChangeValue,
-  momChangeValue,
-}: {
-  lastValue: number
-  dodChangeValue: number | null
-  wowChangeValue: number | null
-  momChangeValue: number | null
-}) => {
+const getMinimumAvailableChange = ({ lastValue, dodChangeValue, wowChangeValue, momChangeValue }: MarketMetaDataSummary) => {
   let changeEntry: { unit: string; change: number }
   if (dodChangeValue !== null) {
     changeEntry = { unit: 'DoD', change: dodChangeValue }
@@ -42,24 +31,15 @@ const getMinimumAvailableChange = ({
   return { unit, change, changePercent, direction }
 }
 
-const DataItem = ({
-  goodsDataNm,
-  lastValue,
-  change,
-  changePercent,
-  lastUpdateDt,
-  currency,
-  direction,
-  unit,
-  index,
-}: ItemProps & { index: number }) => {
+const DataItem = ({ data, index, onClick }: { data: ProcessedMarketMetaDataSummary; index: number; onClick: () => void }) => {
+  const { goodsDataNm, lastValue, change, changePercent, lastUpdateDt, currency, direction, unit } = data
   const isPositive = direction === 'up'
   const color = isPositive ? '#3C8A36' : direction === 'down' ? '#A9141A' : 'gray.60'
 
   return (
     <Box paddingY={3} borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'}>
       <Typography
-        onClick={() => alert('redirect to detail')}
+        onClick={onClick}
         fontWeight={600}
         color="gray.70"
         component="div"
@@ -97,7 +77,8 @@ const DataItem = ({
 }
 
 const UpdatedData = ({ dataList }: { dataList: MarketDataItemInfo[] }) => {
-  const mappedList = useMemo(
+  const navigate = useNavigate()
+  const mappedList: ProcessedMarketMetaDataSummary[] = useMemo(
     () =>
       dataList.map((data) => {
         const summary = data.marketMetaDataSummary
@@ -106,13 +87,17 @@ const UpdatedData = ({ dataList }: { dataList: MarketDataItemInfo[] }) => {
     [dataList],
   )
 
+  const onClickRow = (row: ProcessedMarketMetaDataSummary) => {
+    navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`, { state: { goodsDataSrcNo: row.goodsDataSourceNo } })
+  }
+
   return (
     <Grid gap={2.5} bgcolor="#fff" container direction="column" p={6} borderRadius={1} border="1px solid" borderColor="gray.30">
       <Typography component="div" color="gray.90" variant="titleBox">
         Updated Data
       </Typography>
-      <Box>{mappedList?.map((item, index) => <DataItem key={index} {...item} index={index} />)}</Box>
-      <MIButton width="100%" contentType="text" color="gray2" type="outlined" size="h42">
+      <Box>{mappedList?.map((item, index) => <DataItem key={index} data={item} index={index} onClick={() => onClickRow(item)} />)}</Box>
+      <MIButton width="100%" contentType="text" color="gray2" type="outlined" size="h42" onClick={() => navigate('/mi/market-data')}>
         View all
         <KeyboardArrowRightIcon sx={{ verticalAlign: 'sub', color: '#868E96', ml: '8px' }} fontSize="small" />
       </MIButton>
