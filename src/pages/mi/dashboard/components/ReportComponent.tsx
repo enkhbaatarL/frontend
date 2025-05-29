@@ -13,7 +13,7 @@ import MIInfluenceFactorChart from '@/components/common/influence-factor-chart/M
 import MISegmented from '@/components/common/segmentedbtn/MISegmented'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
-import { DataRow, useDashboardInfo } from '@/hooks/useDashboardInfo'
+import { DataRow, useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
 import theme from '@/theming'
 export type MonthItem = {
@@ -49,7 +49,7 @@ const ReportComponent = () => {
   const [monthSelect, setMonthSelect] = useState('2025-04')
   const { months } = generateChartMonths()
   const [selectedCase, setSelectedCase] = useState('case1')
-  const { rows, columns } = useDashboardInfo()
+  const { dashboardRows: rows, dashboardColumns: columns } = useCompanyCondition()
   const [selectedContent, setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
   const [showDetailChart, setShowDetailChart] = useState(false)
 

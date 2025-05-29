@@ -23,3 +23,5 @@ export interface IFilterItem {
   key: string
   value: string
 }
+
+export type MiPagesType = 'dashboard' | 'insights' | 'market-data' | 'signal-map'

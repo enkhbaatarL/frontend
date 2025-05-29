@@ -20,10 +20,11 @@ import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
 import { UserRole } from '@/service/admin/members'
 import companiesService from '@/service/mi/companies'
 import useAuthStore from '@/store/useAuthStore'
+import { MiPagesType } from '@/types/common'
 
 export interface Page {
   label: string
-  url: string
+  url: MiPagesType
 }
 
 const boards = [
@@ -174,7 +175,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
                   key={page.label}
                   onClick={(e) => {
                     e.preventDefault()
-                    onMoveTab(() => navigate(page.url))
+                    onMoveTab(() => navigate(`/mi/${page.url}`))
                   }}
                   sx={{
                     position: 'relative',
@@ -192,7 +193,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
                 >
                   <Typography
                     sx={{ textAlign: 'center' }}
-                    color={location.pathname.startsWith(page.url) ? 'coolGray.80' : 'gray.70'}
+                    color={location.pathname.startsWith(`/mi/${page.url}`) ? 'coolGray.80' : 'gray.70'}
                     variant="body1M16"
                   >
                     {page.label}
@@ -207,7 +208,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
                       width: 'calc(100% - 0px)',
                       height: '2px',
                       backgroundColor: '#2E3F5E',
-                      opacity: location.pathname.startsWith(page.url) ? 1 : 0,
+                      opacity: location.pathname.startsWith(`/mi/${page.url}`) ? 1 : 0,
                       transition: 'opacity 0.5s ease',
                     }}
                   />
