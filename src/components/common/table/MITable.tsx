@@ -37,7 +37,7 @@ export default function MITable<T extends GridRowModel>(props: Readonly<MITableP
   const ROW_HEIGHT = 40
   const HEADER_HEIGHT = 36
 
-  const { columns, rows, noRowMessage, rowId, disableHover = false, ...dataGridProps } = props
+  const { columns, rows, noRowMessage, rowId, loading, disableHover = false, ...dataGridProps } = props
 
   const memoizedColumns = useMemo(
     () =>
@@ -66,8 +66,9 @@ export default function MITable<T extends GridRowModel>(props: Readonly<MITableP
           noRowsVariant: 'skeleton',
         },
       }}
+      loading={loading}
       getRowId={(row) => row[rowId]}
-      rows={rows ?? []}
+      rows={rows}
       columns={memoizedColumns}
       rowHeight={ROW_HEIGHT}
       columnHeaderHeight={HEADER_HEIGHT}
