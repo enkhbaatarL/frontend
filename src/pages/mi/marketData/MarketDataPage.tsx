@@ -70,11 +70,6 @@ const MarketDataPage = () => {
     gcTime: 0,
   })
 
-  const isActuallyLoading = useMemo(
-    () => dashboardListIsLoading || isLoading || recentViewedIsLoading,
-    [dashboardListIsLoading, recentViewedIsLoading],
-  )
-
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
 
   const handleSearchChange = useCallback(
@@ -102,6 +97,8 @@ const MarketDataPage = () => {
       updateFilterWithSearch('keyword', filter?.keyword ?? '')
     }
   }, [accessCompanyInfo, updateFilterWithSearch, filter?.keyword])
+
+  const isActuallyLoading = useMemo(() => dashboardListIsLoading || recentViewedIsLoading, [dashboardListIsLoading, recentViewedIsLoading])
 
   return (
     <MISkeleton variant={'marketData'} loading={isActuallyLoading}>
