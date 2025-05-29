@@ -7,7 +7,7 @@ import MIAgentButton from '@/components/common/agent/MIAgentButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
-import { useDashboardInfo } from '@/hooks/useDashboardInfo'
+import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import { useScrollRestoration } from '@/hooks/useScrollRestoration'
 import DailyChart from '@/pages/mi/dashboard/components/DailyChart'
 import MIProvider from '@/providers/MIProvider'
@@ -39,19 +39,19 @@ const getCookie = (name: string): string | null => {
 const mainPages: Page[] = [
   {
     label: 'MI Dashboard',
-    url: '/mi/dashboard',
+    url: 'dashboard',
   },
   {
     label: 'Signal Map',
-    url: '/mi/signal-map',
+    url: 'signal-map',
   },
   {
     label: 'Market Data',
-    url: '/mi/market-data',
+    url: 'market-data',
   },
   {
     label: 'Insights',
-    url: '/mi/insights',
+    url: 'insights',
   },
 ]
 
@@ -68,16 +68,17 @@ const MILayout = () => {
     ref: scrollRef,
   })
   const [isScrolled, setIsScrolled] = useState(currentScroll !== 0)
+
+  const { extractPage } = useCompanyCondition()
+
   useEffect(() => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
 
-  const { shouldHideDashboard } = useDashboardInfo()
-
-  const fixedMainPages = useMemo(
-    () => (!shouldHideDashboard ? mainPages : mainPages.filter((page) => page.url !== '/mi/dashboard')),
-    [shouldHideDashboard],
-  )
+  const fixedMainPages = useMemo(() => {
+    if (extractPage === undefined) return []
+    return mainPages.filter(({ url }) => !extractPage.includes(url))
+  }, [extractPage])
 
   useEffect(() => setIsScrolled(currentScroll > 0), [currentScroll])
 

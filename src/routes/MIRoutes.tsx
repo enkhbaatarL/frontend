@@ -1,6 +1,6 @@
 import { Navigate, RouteObject } from 'react-router-dom'
 
-import { useDashboardInfo } from '@/hooks/useDashboardInfo'
+import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MILayout from '@/layouts/MILayout'
 import PolicyPage from '@/pages/common/PolicyPage'
 import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
@@ -15,8 +15,9 @@ import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import MIProvider from '@/providers/MIProvider'
 
 const MIMainRedirect = () => {
-  const { shouldHideDashboard } = useDashboardInfo()
-  return <Navigate to={shouldHideDashboard ? 'signal-map' : 'dashboard'} replace />
+  const { miHome } = useCompanyCondition()
+  const homeUrl = miHome() ?? 'dashboard'
+  return <Navigate to={homeUrl} replace />
 }
 
 const MIRoutes: RouteObject = {
@@ -36,16 +37,17 @@ const MIRoutes: RouteObject = {
       element: <MIDashboardPage />,
     },
     {
-      path: 'insights',
-      element: <InsightsPage />,
+      path: 'signal-map',
+      element: <SignalMapPage />,
     },
     {
       path: 'market-data',
       element: <MarketDataPage />,
     },
+
     {
-      path: 'signal-map',
-      element: <SignalMapPage />,
+      path: 'insights',
+      element: <InsightsPage />,
     },
     {
       path: 'data-detail/:goodsNo/:goodsDataNo',

@@ -1,26 +1,20 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo } from 'react'
 
 import ReportComponent from './components/ReportComponent'
 import UpdatedData from './components/UpdatedData'
 
 import psImg from '@/assets/productsymbol.png'
 import MITabs from '@/components/common/tabs/MITabs'
-import { useDashboardInfo } from '@/hooks/useDashboardInfo'
 import HistoryComponent from '@/pages/mi/dashboard/components/HistoryComponent'
 import LatestData from '@/pages/mi/dashboard/components/LatestData'
 import dashboardDataService from '@/service/mi/dashboardData'
 import useAuthStore from '@/store/useAuthStore'
 
 const MIDashboardPage = () => {
-  const navigate = useNavigate()
   const { accessCompanyInfo } = useAuthStore()
-
   const companyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? -1, [accessCompanyInfo?.customerCompanyNo])
-
-  const { shouldHideDashboard } = useDashboardInfo()
 
   const tabsData = [
     {
@@ -32,10 +26,6 @@ const MIDashboardPage = () => {
       content: <HistoryComponent />,
     },
   ]
-
-  useEffect(() => {
-    if (shouldHideDashboard) navigate('/mi')
-  }, [navigate, shouldHideDashboard])
 
   // 우측 latestInsights 리스트 조회
   const { data: latestInsightsList = [] } = useQuery({
