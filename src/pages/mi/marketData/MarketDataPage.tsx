@@ -72,7 +72,7 @@ const MarketDataPage = () => {
 
   const isActuallyLoading = useMemo(
     () => dashboardListIsLoading || isLoading || recentViewedIsLoading,
-    [dashboardListIsLoading, isLoading, recentViewedIsLoading],
+    [dashboardListIsLoading, recentViewedIsLoading],
   )
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
@@ -184,6 +184,7 @@ const MarketDataPage = () => {
                 hidePagination={data?.totalElements === 0 || !data?.totalElements}
                 tableProps={{
                   disableHover: true,
+                  loading: isLoading,
                   noRowMessage: 'No results found',
                   getRowClassName: (params) => (!params.row.isViewable ? 'no-click' : ''),
                   columns: [
