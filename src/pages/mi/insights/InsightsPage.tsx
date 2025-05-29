@@ -11,6 +11,7 @@ import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
+import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
 import insightsService, { IAdvancedFilter, IAdvancedFilterItem, IInsightsInfo, IInsightsRequest } from '@/service/mi/insights'
@@ -35,8 +36,11 @@ const InsightsPage = () => {
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
   const [keyword, setKeyword] = useState('')
 
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [hasInitialData, setHasInitialData] = useState(false)
+
   // 포커스 목록
-  const { data: focusedList } = useQuery({
+  const { data: focusedList, isLoading: focusedIsLoading } = useQuery({
     queryKey: ['insights'],
     queryFn: async () => await insightsService.getFocusedList(customerCompanyNo),
     refetchOnWindowFocus: false,
@@ -44,7 +48,7 @@ const InsightsPage = () => {
   })
 
   // 필터
-  const { data: filterList } = useQuery({
+  const { data: filterList, isLoading: filterIsLoading } = useQuery({
     queryKey: ['filterList'],
     queryFn: async () => await insightsService.getAdvancedFilterData(),
     refetchOnWindowFocus: false,
@@ -83,6 +87,7 @@ const InsightsPage = () => {
     pagination,
     updatePage,
     updateSize,
+    isLoading: insightsIsLoading,
   } = useSearchFilter<IInsightsRequest, IPaginationResponse<IInsightsInfo>>(
     (params) => insightsService.getInsightsData(customerCompanyNo, params),
     {
@@ -199,8 +204,54 @@ const InsightsPage = () => {
     }
   }, [filter.filters])
 
+  const isActuallyLoading = useMemo(
+    () => isInitialLoading || focusedIsLoading || filterIsLoading || (insightsIsLoading && !hasInitialData),
+    [isInitialLoading, focusedIsLoading, filterIsLoading, insightsIsLoading, hasInitialData],
+  )
+
+  useEffect(() => {
+    const initializeData = async () => {
+      if (filterList?.data && !filter.filters) {
+        try {
+          const updates: Partial<IInsightsRequest> = {}
+
+          if (!filter.sort) {
+            updates.sort = 'NEWEST'
+          }
+
+          if (!filter.period) {
+            updates.period = 'ALL_DATES'
+          }
+
+          if (Object.keys(updates).length > 0) {
+            Object.entries(updates).forEach(([key, value]) => {
+              updateFilterWithSearch(key as keyof IInsightsRequest, value)
+            })
+          }
+
+          setHasInitialData(true)
+        } catch (error) {
+          console.error('초기 데이터 로딩 실패:', error)
+        } finally {
+          setIsInitialLoading(false)
+        }
+      } else if (filterList?.data && filter.sort && filter.period) {
+        setIsInitialLoading(false)
+        setHasInitialData(true)
+      }
+    }
+
+    initializeData()
+  }, [filterList, filter.filters, filter.sort, filter.period, updateFilterWithSearch])
+
+  useEffect(() => {
+    if (insightsData?.detail && insightsData.detail.length > 0) {
+      setHasInitialData(true)
+    }
+  }, [insightsData])
+
   return (
-    <>
+    <MISkeleton variant={'insights'} loading={isActuallyLoading}>
       <Box
         paddingY={14}
         sx={{
@@ -362,7 +413,7 @@ const InsightsPage = () => {
           </Box>
         </Grid>
       </Box>
-    </>
+    </MISkeleton>
   )
 }
 
