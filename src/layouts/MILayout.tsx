@@ -82,9 +82,10 @@ const MILayout = () => {
   useEffect(() => setIsScrolled(currentScroll > 0), [currentScroll])
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 0)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    const currentRef = scrollRef.current
+    const handleScroll = () => setIsScrolled((currentRef?.scrollTop ?? 0) > 0)
+    currentRef?.addEventListener('scroll', handleScroll)
+    return () => currentRef?.removeEventListener('scroll', handleScroll)
   }, [])
 
   useEffect(() => {
@@ -227,7 +228,7 @@ const MILayout = () => {
               paddingTop,
               paddingBottom: isScrolled ? '46px' : 0,
               flex: 1,
-              transition: 'padding-top 0.15s linear padding-bottom 0.15s linear',
+              transition: 'padding 0.15s linear',
             }}
           >
             <Outlet key={outletKey} />
