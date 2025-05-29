@@ -14,6 +14,7 @@ import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
+import MISkeleton from '@/components/mi/MISkeleton'
 import queryClient from '@/lib/queryClient'
 import ChartComponent from '@/pages/mi/dataDetail/components/ChartComponent'
 import DescriptionComponent from '@/pages/mi/dataDetail/components/DescriptionComponent'
@@ -48,7 +49,7 @@ const DataDetailPage = () => {
   )
 
   // 데이터 정보
-  const { data: productData } = useQuery({
+  const { data: productData, isLoading: productDataIsLoading } = useQuery({
     queryKey: ['productData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductData(goodsNo, goodsDataNo),
     refetchOnWindowFocus: false,
@@ -56,7 +57,7 @@ const DataDetailPage = () => {
   })
 
   // 정형데이터 목록
-  const { data: structuredDataList } = useQuery({
+  const { data: structuredDataList, isLoading: structuredDataListIsLoading } = useQuery({
     queryKey: ['productDataUnstructuredData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductDataStructuredDataList(goodsNo, goodsDataNo),
     refetchOnWindowFocus: false,
@@ -64,7 +65,7 @@ const DataDetailPage = () => {
   })
 
   // 비정형데이터 목록
-  const { data: unstructuredDataList } = useQuery({
+  const { data: unstructuredDataList, isLoading: unstructuredDateListIsLoading } = useQuery({
     queryKey: ['productDataStructuredData', goodsNo, goodsDataNo],
     queryFn: () => dataDetailService.getProductDataUnstructuredDataList(goodsNo, goodsDataNo),
     refetchOnWindowFocus: false,
@@ -79,7 +80,7 @@ const DataDetailPage = () => {
   )
 
   // 정형데이터 raw 목록
-  const { data: rawGoodsData } = useQuery({
+  const { data: rawGoodsData, isLoading: rawGoodsDataIsLoading } = useQuery({
     queryKey: ['productDataStructuredRawData', goodsNo, goodsDataNo, goodsDataSourceNo, rawPage, rawSize, startDate, endDate],
     queryFn: () =>
       dataDetailService.getProductDataStructuredRawData(goodsNo, goodsDataNo, goodsDataSourceNo!, {
@@ -92,6 +93,11 @@ const DataDetailPage = () => {
     gcTime: 0,
     enabled: !!goodsDataSourceNo,
   })
+
+  const isActuallyLoading = useMemo(
+    () => productDataIsLoading || structuredDataListIsLoading || unstructuredDateListIsLoading || rawGoodsDataIsLoading,
+    [productDataIsLoading, structuredDataListIsLoading, unstructuredDateListIsLoading, rawGoodsDataIsLoading],
+  )
 
   const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
     setStartDate(startDate?.format('YYYYMMDD') ?? '')
@@ -181,7 +187,7 @@ const DataDetailPage = () => {
   }, [state?.goodsDataSrcNo, structuredDataList])
 
   return (
-    <>
+    <MISkeleton variant={'dataDetail'} loading={isActuallyLoading}>
       {productData && (
         <Box paddingY={21} sx={{ background: ` url(${bshImg}) lightgray 50% / cover no-repeat` }}>
           <Box paddingX={7.5} boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
@@ -336,7 +342,7 @@ const DataDetailPage = () => {
           </Grid>
         </Grid>
       </Box>
-    </>
+    </MISkeleton>
   )
 }
 

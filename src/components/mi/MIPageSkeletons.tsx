@@ -227,49 +227,56 @@ export const MIPageSkeletons = {
 
   // Data Detail 상세 페이지 패턴
   DataDetail: () => (
-    <SkeletonWrapper.Container>
-      {/* 브레드크럼과 제목 */}
-      <SkeletonWrapper.Column gap={2} sx={{ mb: 4 }}>
-        <SkeletonWrapper.Row gap={1}>
-          <MIBaseSkeleton.TextLine width={80} height={12} />
-          <MIBaseSkeleton.TextLine width={20} height={12} />
-          <MIBaseSkeleton.TextLine width={120} height={12} />
-        </SkeletonWrapper.Row>
-        <MIBaseSkeleton.Title width={300} height={28} />
-        <SkeletonWrapper.Row gap={1}>
-          <MIBaseSkeleton.Chip width={80} />
-          <MIBaseSkeleton.Chip width={100} />
-          <MIBaseSkeleton.Chip width={60} />
-        </SkeletonWrapper.Row>
-      </SkeletonWrapper.Column>
-
-      {/* 메인 컨텐츠 */}
-      <SkeletonWrapper.Row gap={4} sx={{ alignItems: 'flex-start' }}>
-        {/* 왼쪽 메인 영역 */}
-        <Box flex={2}>
-          <SkeletonWrapper.Column gap={3}>
-            <MIBaseSkeleton.Card height={400} />
-            <MIBaseSkeleton.Card height={300} />
-          </SkeletonWrapper.Column>
-        </Box>
-
-        {/* 오른쪽 사이드바 */}
-        <Box flex={1}>
-          <SkeletonWrapper.Column gap={2}>
-            <Box p={2} border="1px solid #E9ECEF" borderRadius="8px">
-              <SkeletonWrapper.Column gap={2}>
-                <MIBaseSkeleton.Subtitle width={120} />
-                <MIBaseSkeleton.TextLine width="100%" height={14} />
-                <MIBaseSkeleton.TextLine width="80%" height={14} />
-                <MIBaseSkeleton.TextLine width="60%" height={14} />
-              </SkeletonWrapper.Column>
+    <Box>
+      <MIBaseSkeleton.BaseElement width={'100%'} height={'298px'} />
+      <Box
+        minWidth={'1380px'}
+        width={'1380px'}
+        margin={'auto'}
+        display={'flex'}
+        flexDirection={'column'}
+        height={'1498px'}
+        marginTop={'40px'}
+      >
+        <SkeletonWrapper.Row gap={'24px'}>
+          <Box width={'1070px'} height={'1498px'}>
+            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'806px'} sx={{ marginBottom: '38px' }} />
+            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'346px'} sx={{ marginBottom: '38px' }} />
+            <Box borderBottom={'1px solid #DEE2E6'} width={'100%'} height={'0px'} marginBottom={'38px'}></Box>
+            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'52px'} sx={{ marginBottom: '38px' }} />
+            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'142px'} />
+          </Box>
+          <Box alignSelf={'flex-start'}>
+            <Box border="1px solid #DEE2E6" width={'286px'} height={'286px'} borderRadius={'4px'}>
+              <Box width={'238px'} height={'484px'} margin={'auto'} padding={'24px'}>
+                <MIBaseSkeleton.BaseElement2 width={'238px'} height={'24px'} sx={{ marginBottom: '10px' }} />
+                <Box pt={'12px'} pb={'12px'}>
+                  <MIBaseSkeleton.BaseElement2 width={'238px'} height={'24px'} />
+                  <MIBaseSkeleton.BaseElement2 width={'112px'} height={'24px'} sx={{ marginTop: '4px' }} />
+                </Box>
+                <Box pt={'12px'} pb={'12px'} marginBottom={'10px'}>
+                  <MIBaseSkeleton.BaseElement2 width={'238px'} height={'24px'} />
+                  <MIBaseSkeleton.BaseElement2 width={'112px'} height={'24px'} sx={{ marginTop: '4px' }} />
+                </Box>
+                <MIBaseSkeleton.BaseElement2 width={'238px'} height={'42px'} />
+              </Box>
             </Box>
-            <MIBaseSkeleton.Card height={200} />
-            <MIBaseSkeleton.Card height={150} />
-          </SkeletonWrapper.Column>
-        </Box>
-      </SkeletonWrapper.Row>
-    </SkeletonWrapper.Container>
+            <Box border="1px solid #DEE2E6" width={'286px'} height={'158px'} borderRadius={'4px'} mt={'24px'}>
+              <Box width={'238px'} height={'484px'} margin={'auto'} padding={'24px'}>
+                <MIBaseSkeleton.BaseElement2 width={'238px'} height={'24px'} />
+                <MIBaseSkeleton.BaseElement2 width={'238px'} height={'24px'} sx={{ marginTop: '22px' }} />
+                <MIBaseSkeleton.BaseElement2 width={'112px'} height={'24px'} sx={{ marginTop: '4px' }} />
+              </Box>
+            </Box>
+            <Box pt={'12px'} pb={'12px'}>
+              <MIBaseSkeleton.BaseElement2 width={'286px'} height={'24px'} />
+              <MIBaseSkeleton.BaseElement2 width={'238px'} height={'24px'} sx={{ marginTop: '4px' }} />
+              <MIBaseSkeleton.BaseElement2 width={'203px'} height={'24px'} sx={{ marginTop: '4px' }} />
+            </Box>
+          </Box>
+        </SkeletonWrapper.Row>
+      </Box>
+    </Box>
   ),
 
   // 게시판 스켈레톤
