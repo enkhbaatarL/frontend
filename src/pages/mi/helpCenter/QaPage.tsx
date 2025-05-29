@@ -2,35 +2,44 @@ import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import MIAccordion from '@/components/common/accordion/MIAccordion'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MIInput from '@/components/common/input/MIInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MITabs from '@/components/common/tabs/MITabs'
+import MISkeleton from '@/components/mi/MISkeleton'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import boardService, { IFaqDetailInfo, IFaqRequest } from '@/service/mi/board'
 import { IPaginationResponse } from '@/types/api'
 
 const QaPage = () => {
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [hasInitialData, setHasInitialData] = useState(false)
+
   const convQaItem = (item: IFaqDetailInfo) => ({
     key: item.bulletinNo,
     title: item.bulletinTitleNm,
     content: item.bulletinCntt,
   })
 
-  const { data: filterOptions } = useQuery({
+  const { data: filterOptions, isLoading: isFilterLoading } = useQuery({
     queryKey: ['getFaqFilter'],
     queryFn: async () => await boardService.getFaqFilter(),
     refetchOnWindowFocus: false,
-    gcTime: 0,
   })
 
-  const { filter, updateFilter, updateFilterWithSearch, data, pagination, updatePage, updateSize } = useSearchFilter<
-    IFaqRequest,
-    IPaginationResponse<IFaqDetailInfo>
-  >(
+  const {
+    filter,
+    updateFilter,
+    updateFilterWithSearch,
+    data,
+    pagination,
+    updatePage,
+    updateSize,
+    isLoading: isDataLoading,
+  } = useSearchFilter<IFaqRequest, IPaginationResponse<IFaqDetailInfo>>(
     boardService.getFaq,
     {
       category: '',
@@ -43,6 +52,11 @@ const QaPage = () => {
     {
       initialFetch: false,
     },
+  )
+
+  const isActuallyLoading = useMemo(
+    () => isInitialLoading || isFilterLoading || (isDataLoading && !hasInitialData),
+    [isInitialLoading, isFilterLoading, isDataLoading, hasInitialData],
   )
 
   const isEmpty = useMemo(() => !data?.detail || data.detail.length === 0, [data?.detail])
@@ -87,34 +101,56 @@ const QaPage = () => {
   }, [filterOptions?.category, filter.category])
 
   useEffect(() => {
-    if (filterOptions?.category[0] && !filter.category) {
-      updateFilterWithSearch('category', filterOptions.category[0].key)
+    const initializeData = async () => {
+      if (filterOptions?.category[0] && !filter.category) {
+        try {
+          updateFilterWithSearch('category', filterOptions.category[0].key)
+          setHasInitialData(true)
+        } catch (error) {
+          console.error('초기 데이터 로딩 실패:', error)
+        } finally {
+          setIsInitialLoading(false)
+        }
+      } else if (filterOptions && filter.category) {
+        setIsInitialLoading(false)
+        setHasInitialData(true)
+      }
     }
-  }, [filterOptions, filter.category, updateFilter, updateFilterWithSearch])
+
+    initializeData()
+  }, [filterOptions, filter.category, updateFilterWithSearch])
+
+  useEffect(() => {
+    if (data?.detail && data.detail.length > 0) {
+      setHasInitialData(true)
+    }
+  }, [data])
 
   return (
-    <Box maxWidth="1380px" margin="auto" paddingX={7.5}>
-      <Box paddingTop={10}>
-        <Typography variant="heading2" component="div" mb={5} color="gray.90">
-          Help Center
-        </Typography>
-        <MIInput
-          width={458}
-          maxWidth="100%"
-          placeholder="Search for help center"
-          size="h46"
-          startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
-          value={filter?.keyword ?? ''}
-          onChange={(e) => updateFilter('keyword', e.target.value)}
-          onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}
-          onClear={() => updateFilterWithSearch('keyword', '')}
-        />
+    <MISkeleton loading={isActuallyLoading} variant="boardPage">
+      <Box maxWidth="1380px" margin="auto" paddingX={7.5}>
+        <Box paddingTop={10}>
+          <Typography variant="heading2" component="div" mb={5} color="gray.90">
+            Help Center
+          </Typography>
+          <MIInput
+            width={458}
+            maxWidth="100%"
+            placeholder="Search for help center"
+            size="h46"
+            startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
+            value={filter?.keyword ?? ''}
+            onChange={(e) => updateFilter('keyword', e.target.value)}
+            onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}
+            onClear={() => updateFilterWithSearch('keyword', '')}
+          />
+        </Box>
+        <Box paddingTop={5} paddingBottom={5}>
+          <MITabs size="h52" arrayItem={tabsData} onChange={handleTabChange} value={activeTab} />
+          {!isEmpty && <MIPagination data={data} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />}
+        </Box>
       </Box>
-      <Box paddingTop={5} paddingBottom={5}>
-        <MITabs size="h52" arrayItem={tabsData} onChange={handleTabChange} value={activeTab} />
-        {!isEmpty && <MIPagination data={data} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />}
-      </Box>
-    </Box>
+    </MISkeleton>
   )
 }
 

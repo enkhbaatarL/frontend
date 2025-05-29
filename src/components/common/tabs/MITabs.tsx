@@ -72,6 +72,7 @@ export default function MITabs({
         sx={{
           width: widthTab,
           margin: 'auto',
+          marginBottom: 4,
           borderBottom: isNotice ? 0 : 1,
           borderColor: '#DEE2E6',
           backgroundColor: isNotice ? '#F1F3F5' : 'transparent',

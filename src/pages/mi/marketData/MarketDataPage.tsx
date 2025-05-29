@@ -11,6 +11,7 @@ import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
+import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
 import marketDataService, { IDataCatalogItem, IDataCatalogRequest, IMarketData } from '@/service/mi/marketData'
@@ -27,7 +28,7 @@ const MarketDataPage = () => {
   const initialFetchRef = useRef(false)
 
   // Data Dashboard
-  const { data: dashboardList } = useQuery<IMarketData[]>({
+  const { data: dashboardList, isLoading: dashboardListIsLoading } = useQuery<IMarketData[]>({
     queryKey: ['marketDashboard', customerCompanyNo],
     queryFn: async () => await marketDataService.getMarketDatas(customerCompanyNo),
     refetchOnWindowFocus: false,
@@ -36,7 +37,7 @@ const MarketDataPage = () => {
   })
 
   // Data Catalog
-  const { data, filter, updateFilter, updateFilterWithSearch, pagination, updatePage, updateSize } = useSearchFilter<
+  const { data, filter, updateFilter, updateFilterWithSearch, pagination, updatePage, updateSize, isLoading } = useSearchFilter<
     IDataCatalogRequest,
     IPaginationResponse<IDataCatalogItem>
   >(
@@ -56,18 +57,23 @@ const MarketDataPage = () => {
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
       initialFetchRef.current = true
-      // customerCompanyNo는 이미 위의 useSearchFilter에서 처리되므로 여기서는 검색만 실행
+      // customerCompanyNo는 이미 위의 useSearchFilter 에서 처리되므로 여기서는 검색만 실행
       updateFilterWithSearch('keyword', filter?.keyword ?? '')
     }
   }, [accessCompanyInfo, updateFilterWithSearch, filter?.keyword])
 
   // Recent Viewed
-  const { data: recentViewedList } = useQuery({
+  const { data: recentViewedList, isLoading: recentViewedIsLoading } = useQuery({
     queryKey: ['recentViewed'],
     queryFn: async () => await marketDataService.getRecentViewed(),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
+
+  const isActuallyLoading = useMemo(
+    () => dashboardListIsLoading || isLoading || recentViewedIsLoading,
+    [dashboardListIsLoading, isLoading, recentViewedIsLoading],
+  )
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
 
@@ -92,13 +98,13 @@ const MarketDataPage = () => {
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
       initialFetchRef.current = true
-      // customerCompanyNo는 이미 위의 useSearchFilter에서 처리되므로 여기서는 검색만 실행
+      // customerCompanyNo 는 이미 위의 useSearchFilter 에서 처리되므로 여기서는 검색만 실행
       updateFilterWithSearch('keyword', filter?.keyword ?? '')
     }
   }, [accessCompanyInfo, updateFilterWithSearch, filter?.keyword])
 
   return (
-    <>
+    <MISkeleton variant={'marketData'} loading={isActuallyLoading}>
       <Box
         paddingY={14}
         sx={{
@@ -178,7 +184,7 @@ const MarketDataPage = () => {
                 hidePagination={data?.totalElements === 0 || !data?.totalElements}
                 tableProps={{
                   disableHover: true,
-                  noRowMessage: 'No results Found',
+                  noRowMessage: 'No results found',
                   getRowClassName: (params) => (!params.row.isViewable ? 'no-click' : ''),
                   columns: [
                     {
@@ -318,7 +324,7 @@ const MarketDataPage = () => {
           </Box>
         </Grid>
       </Box>
-    </>
+    </MISkeleton>
   )
 }
 

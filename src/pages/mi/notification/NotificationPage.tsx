@@ -6,6 +6,7 @@ import MIChip from '@/components/common/chip/MIChip'
 import MIInput from '@/components/common/input/MIInput'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
+import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import notificationService, { INotificationInfo, INotificationRequest } from '@/service/mi/notification'
@@ -19,7 +20,7 @@ const NotificationPage = () => {
   const [isOpenSetting, setIsOpenSetting] = useState(false)
   const [selectedGoodsDataSourceNo, setSelectedGoodsDataSourceNo] = useState<number | undefined>(undefined)
 
-  const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch } = useSearchFilter<
+  const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch, isLoading } = useSearchFilter<
     INotificationRequest,
     IPaginationResponse<INotificationInfo>
   >(
@@ -44,8 +45,8 @@ const NotificationPage = () => {
   }
 
   return (
-    <>
-      <Box maxWidth={'1380px'} margin={'auto'} py={10} px={7.5}>
+    <MISkeleton loading={isLoading} variant="boardPage">
+      <Box maxWidth={'1380px'} margin={'auto'} paddingX={7.5}>
         <Box paddingTop={10}>
           <Typography mb={5} color="gray.90" component="h2" variant="heading2">
             My Notifications
@@ -66,7 +67,7 @@ const NotificationPage = () => {
           <MITableUser
             hidePagination={data?.totalElements === 0 || !data?.totalElements}
             tableProps={{
-              noRowMessage: '등록된 내용이 없습니다.',
+              noRowMessage: '설정된 알람이 없습니다.',
               rowId: 'goodsDataNo',
               rows: data?.detail,
               onRowClick: handleClickDetail,
@@ -135,7 +136,7 @@ const NotificationPage = () => {
           goodsDataSourceNo={selectedGoodsDataSourceNo}
         />
       </Box>
-    </>
+    </MISkeleton>
   )
 }
 
