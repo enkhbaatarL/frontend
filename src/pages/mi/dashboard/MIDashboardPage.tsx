@@ -31,7 +31,7 @@ const MIDashboardPage = () => {
   const { data: latestInsightsList = [] } = useQuery({
     queryKey: ['getdashboardLatestInsights', companyNo],
     queryFn: async () => await dashboardDataService.getdashboardLatestInsights(companyNo!),
-    enabled: !!companyNo || companyNo !== 1,
+    enabled: !!companyNo || companyNo !== -1,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -40,7 +40,7 @@ const MIDashboardPage = () => {
   const { data: marketDataList = [] } = useQuery({
     queryKey: ['getdashboardMakterDatas', companyNo],
     queryFn: async () => await dashboardDataService.getdashboardMakterDatas(companyNo!),
-    enabled: !!companyNo || companyNo !== 1,
+    enabled: !!companyNo || companyNo !== -1,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
