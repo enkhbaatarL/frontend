@@ -175,24 +175,54 @@ export const MIPageSkeletons = {
 
   // Signal Map 패턴
   SignalMap: () => (
-    <SkeletonWrapper.Container>
-      {/* 컨트롤 패널 */}
-      <SkeletonWrapper.Row gap={2} sx={{ mb: 3 }}>
-        <MIBaseSkeleton.Button width={120} />
-        <MIBaseSkeleton.Button width={100} />
-        <MIBaseSkeleton.Button width={80} />
-        <Box ml="auto">
-          <SkeletonWrapper.Row gap={1}>
-            <MIBaseSkeleton.Icon />
-            <MIBaseSkeleton.Icon />
-            <MIBaseSkeleton.Icon />
-          </SkeletonWrapper.Row>
-        </Box>
-      </SkeletonWrapper.Row>
+    <Box paddingTop={'50px'}>
+      <Box
+        minWidth={'1380px'}
+        width={'1380px'}
+        margin={'auto'}
+        display={'flex'}
+        flexDirection={'column'}
+        gap={'10px'}
+        height={'96px'}
+        alignItems={'center'}
+        marginBottom={'40px'}
+      >
+        <MIBaseSkeleton.InputField width={'806px'} height={'56px'} />
+        <MIBaseSkeleton.BaseElement2 width={'482px'} height={'30px'} />
+      </Box>
 
-      {/* 메인 맵 영역 */}
-      <MIBaseSkeleton.Card height={600} />
-    </SkeletonWrapper.Container>
+      <Box
+        width={'1380px'}
+        margin={'auto'}
+        display={'flex'}
+        flexDirection={'column'}
+        height={'64px'}
+        borderTop={'1px solid #DEE2E6'}
+        paddingTop={'24px'}
+      >
+        <SkeletonWrapper.Row sx={{ justifyContent: 'space-between' }}>
+          <SkeletonWrapper.Row gap={'14px'}>
+            <MIBaseSkeleton.Table width={'160px'} height={'40px'} />
+            <MIBaseSkeleton.Table width={'160px'} height={'40px'} />
+          </SkeletonWrapper.Row>
+          <MIBaseSkeleton.Table width={'265px'} height={'40px'} />
+        </SkeletonWrapper.Row>
+      </Box>
+      <Box minWidth={'1380px'} width={'1380px'} margin={'auto'} display={'flex'} flexDirection={'column'} gap={'20px'} height={'1159px'}>
+        <Box width={'1380px'} height={'916px'} gap={'20px'} paddingBottom={'17px'}>
+          <SkeletonWrapper.Row gap={'24px'} sx={{ paddingBottom: '20px' }}>
+            <MIBaseSkeleton.BaseElement2 width={'678px'} height={'37px'} />
+            <MIBaseSkeleton.BaseElement2 width={'678px'} height={'37px'} />
+          </SkeletonWrapper.Row>
+          <SkeletonWrapper.Grid columns={2} gap={'24px'} sx={{ paddingBottom: '20px' }}>
+            <MIBaseSkeleton.BaseElement2 width={'678px'} height={'497px'} />
+            <MIBaseSkeleton.BaseElement2 width={'678px'} height={'497px'} />
+            <MIBaseSkeleton.BaseElement2 width={'678px'} height={'497px'} />
+            <MIBaseSkeleton.BaseElement2 width={'678px'} height={'497px'} />
+          </SkeletonWrapper.Grid>
+        </Box>
+      </Box>
+    </Box>
   ),
 
   // Data Detail 상세 페이지 패턴
