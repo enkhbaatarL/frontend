@@ -15,7 +15,7 @@ interface MIChartControllerProps {
   chartType: ChartType
   setChartType: Dispatch<SetStateAction<ChartType>>
   isCandlestick?: boolean
-  unitList: string[]
+  unitList: string[] | null
   chartInterval: ChartInterval
   setChartInterval: Dispatch<SetStateAction<ChartInterval>>
   chartIntervalOptions: { label: string; value: string }[]
@@ -38,10 +38,11 @@ export default function MIChartController({
   displayDataInfo,
   onDisplayDataInfoChange,
 }: Readonly<MIChartControllerProps>) {
-  const unitOptions = unitList.map((unit) => ({
-    value: unit,
-    label: unit,
-  }))
+  const unitOptions =
+    unitList?.map((unit) => ({
+      value: unit,
+      label: unit,
+    })) ?? []
 
   const chartTypeOptions = useMemo(() => {
     const options = [
@@ -127,20 +128,22 @@ export default function MIChartController({
           options={chartTypeOptions}
           minWidth="130px"
         />
-        <MIButton
-          type={'ghost'}
-          color={'gray'}
-          contentType={'select'}
-          valueSelect={{
-            value: searchFilter.unitCd ?? '',
-            label: searchFilter.unitCd ?? '',
-          }}
-          onChange={({ value }) => {
-            setSearchFilter((prev) => ({ ...prev, unitCd: value }))
-          }}
-          options={unitOptions}
-          minWidth="95px"
-        />
+        {unitList && (
+          <MIButton
+            type={'ghost'}
+            color={'gray'}
+            contentType={'select'}
+            valueSelect={{
+              value: searchFilter.unitCd ?? '',
+              label: searchFilter.unitCd ?? '',
+            }}
+            onChange={({ value }) => {
+              setSearchFilter((prev) => ({ ...prev, unitCd: value }))
+            }}
+            options={unitOptions}
+            minWidth="95px"
+          />
+        )}
       </Box>
     </Box>
   )

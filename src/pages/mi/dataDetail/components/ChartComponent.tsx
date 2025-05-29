@@ -56,7 +56,7 @@ const ChartComponent = ({
 }: ChartComponentProps) => {
   const miChartRef = useRef<HTMLCanvasElement | null>(null)
 
-  const [selectedRange, setSelectedRange] = useState<ChartRange>(ChartRange.WEEK)
+  const [selectedRange, setSelectedRange] = useState<ChartRange>(ChartRange.MONTH)
   const [chartInterval, setChartInterval] = useState<ChartInterval>(ChartInterval.DAY)
   const [useSaveLastSetting, setUseSaveLastSetting] = useState(false)
 
@@ -77,6 +77,10 @@ const ChartComponent = ({
     range: ChartRange.MONTH,
   })
 
+  const [startDate, setStartDate] = useState<string>(dayjs().format('YYYYMMDD'))
+  const [endDate, setEndDate] = useState<string>(dayjs().add(1, 'year').format('YYYYMMDD'))
+  const [isOpenSetting, setIsOpenSetting] = useState(false)
+
   const selectedDataSource = useMemo(
     () => structuredDataList?.find((item) => item.goodsDataSourceNo === goodsDataSourceNo),
     [goodsDataSourceNo, structuredDataList],
@@ -92,9 +96,19 @@ const ChartComponent = ({
     [selectedDataSource],
   )
 
+  const defaultInterval = useMemo(
+    () => selectedDataSource?.allowedPeriods.find((item) => item.range === selectedRange)?.defaultInterval ?? ChartInterval.DAY,
+    [selectedDataSource, selectedRange],
+  )
+
   const { data: chartData, isLoading } = useQuery({
-    queryKey: ['productDataStructuredChartData', goodsNo, goodsDataNo, goodsDataSourceNo],
-    queryFn: () => dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, goodsDataSourceNo!, {}),
+    queryKey: ['productDataStructuredChartData', goodsNo, goodsDataNo, goodsDataSourceNo, chartInterval, selectedRange, startDate, endDate],
+    queryFn: () =>
+      dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, goodsDataSourceNo!, {
+        range: selectedRange,
+        interval: chartInterval,
+        ...(selectedRange === ChartRange.CUSTOM && { startDate, endDate }),
+      }),
     refetchOnWindowFocus: false,
     gcTime: 0,
     enabled: !!goodsDataSourceNo,
@@ -111,6 +125,11 @@ const ChartComponent = ({
     [selectedDataSource, selectedRange],
   )
 
+  const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
+    setStartDate(startDate?.format('YYYYMMDD') ?? '')
+    setEndDate(endDate?.format('YYYYMMDD') ?? '')
+  }
+
   useEffect(() => {
     const defaultInterval =
       selectedDataSource?.allowedPeriods.find((item) => item.range === selectedRange)?.defaultInterval ?? ChartInterval.DAY
@@ -124,23 +143,32 @@ const ChartComponent = ({
         unitCd: chartData.metadata.currentUnitCd,
       })
       setChartType(chartData.metadata.initialChartType)
-      setSelectedRange(selectedDataSource?.allowedPeriods[0].range ?? ChartRange.WEEK)
       setIsInitialState(false)
     }
   }, [chartData, isInitialState, selectedDataSource?.allowedPeriods])
 
-  const [startDate, setStartDate] = useState<string>('')
-  const [endDate, setEndDate] = useState<string>('')
-  const [isOpenSetting, setIsOpenSetting] = useState(false)
+  const xInterval = useMemo(() => {
+    switch (chartData?.metadata.currentInterval) {
+      case ChartInterval.DAY:
+      case ChartInterval.WEEK:
+      case ChartInterval.TWO_WEEKS:
+        return 'day'
+      case ChartInterval.MONTH:
+      case ChartInterval.THREE_MONTHS:
+      case ChartInterval.SIX_MONTHS:
+        return 'week'
+      case ChartInterval.YEAR:
+        return 'month'
+      default:
+        return 'day'
+    }
+  }, [chartData?.metadata.currentInterval])
 
-  const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
-    setStartDate(startDate?.format('YYYYMMDD') ?? '')
-    setEndDate(endDate?.format('YYYYMMDD') ?? '')
-  }
-
-  const handleAlarmSetting = () => {
-    setIsOpenSetting(true)
-  }
+  useEffect(() => {
+    if (defaultInterval) {
+      setChartInterval(defaultInterval)
+    }
+  }, [defaultInterval])
 
   return (
     <>
@@ -188,7 +216,7 @@ const ChartComponent = ({
             contentType={'icon'}
             startIcon={<NotificationsNoneIcon fontSize={'small'} />}
             disabled={user?.userRoleCd === UserRole.ADMIN}
-            onClick={handleAlarmSetting}
+            onClick={() => setIsOpenSetting(true)}
           />
 
           <MIButton
@@ -302,6 +330,7 @@ const ChartComponent = ({
                 ref={miChartRef}
                 height={'100%'}
                 chartType={chartType}
+                interval={xInterval as 'day' | 'week' | 'month' | 'year'}
                 mainData={{
                   data: chartData?.mainChart,
                   unit: chartData?.mainChart.unitCd ?? '',
@@ -324,6 +353,7 @@ const ChartComponent = ({
           borderTop={'1px solid'}
           borderColor={'gray.30'}
           minHeight={51}
+          gap={0.5}
         >
           {selectedDataSource?.allowedPeriods.map(({ range }) => (
             <MIButton
@@ -338,11 +368,8 @@ const ChartComponent = ({
             </MIButton>
           ))}
           {selectedRange === ChartRange.CUSTOM && (
-            <Grid container maxWidth={357} wrap={'nowrap'} alignItems={'center'} direction={'row'} ml={2.5} gap={2.5}>
-              <MIDateRangePicker sizeInput={'h26'} onChange={handleDateChange} />
-              <MIButton onClick={() => console.log(startDate, endDate)} size={'h28'}>
-                확인
-              </MIButton>
+            <Grid container maxWidth={357} wrap={'nowrap'} alignItems={'center'} direction={'row'} ml={2.5}>
+              <MIDateRangePicker sizeInput={'h26'} onChange={handleDateChange} startDate={startDate} endDate={endDate} />
             </Grid>
           )}
           <Typography ml={'auto'} variant={'body3M12'} color={'gray.60'}>
