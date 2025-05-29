@@ -221,6 +221,7 @@ const MILayout = () => {
       >
         <div
           style={{
+            background: showDailyChart ? '#F2F5F7' : undefined,
             display: 'flex',
             flexDirection: 'column',
             minHeight: preRenderMinHeight,
