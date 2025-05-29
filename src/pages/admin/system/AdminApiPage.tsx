@@ -38,7 +38,7 @@ const AdminApiPage = () => {
   const [viewSecretModal, setViewSecretModal] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState<string>('')
 
-  const [isOwnerCompany, setIsOwnerCompany] = useState<boolean | undefined>()
+  const [companyType, setCompanyType] = useState<'customer' | 'manager'>('customer')
   const [clientId, setClientId] = useState<string>('')
   const [isError, setIsError] = useState<boolean>(false)
 
@@ -66,23 +66,6 @@ const AdminApiPage = () => {
     page: 1,
     size: 20,
   })
-
-  // 고객사 조회
-  const { data: customerCompanyList } = useQuery({
-    queryKey: ['customerCompanyList'],
-    queryFn: async () => await companiesService.getCompanyList(),
-    refetchOnWindowFocus: false,
-    gcTime: 0,
-  })
-
-  const companyOptions = useMemo(() => {
-    const customerCompanies = customerCompanyList?.find((item) => item.companyType === 'CUSTOMER')?.companies || []
-
-    return customerCompanies.map((company) => ({
-      value: company.companyNo,
-      label: company.companyNm,
-    }))
-  }, [customerCompanyList])
 
   const columns: GridColDef[] = [
     {
@@ -303,7 +286,6 @@ const AdminApiPage = () => {
       const response = await systemService.createClientAccess({
         customerCompanyNo: Number(selectedCompany),
         clientCertId: clientId,
-        isOwnerCompany: isOwnerCompany!,
       })
       if (response.status) {
         showSnackbar(t('생성되었습니다.'), { variant: 'success' })
@@ -320,6 +302,23 @@ const AdminApiPage = () => {
     }
   }
 
+  // 컴페니 조회
+  const { data: companyList = { customer: [], manager: [] } } = useQuery({
+    queryKey: ['getCompanyList'],
+    queryFn: async () => await companiesService.getCompanyList(),
+    select: (res) =>
+      res.reduce(
+        (acc, cur) => {
+          const key = cur.companyType.toLowerCase()
+          acc[key] = cur.companies.map((c) => ({
+            value: c.companyNo,
+            label: c.companyNm,
+          }))
+          return acc
+        },
+        {} as Record<string, { value: number; label: string }[]>,
+      ),
+  })
   // API Key 삭제
   const handleDeleteApiKey = async () => {
     try {
@@ -350,18 +349,17 @@ const AdminApiPage = () => {
   }, [setCustomComponent, setCustomTitle])
 
   const canCreate = useMemo(() => {
-    const invalid = [isOwnerCompany, selectedCompany, clientId].some((param) => param === undefined || param === '')
+    const invalid = [selectedCompany, clientId].some((param) => param === undefined || param === '')
     return !invalid
-  }, [clientId, isOwnerCompany, selectedCompany])
+  }, [clientId, selectedCompany])
 
   const clearParamValues = useCallback(() => {
     setClientId('')
-    setIsOwnerCompany(undefined)
+    setCompanyType('customer')
     setSelectedCompany('')
   }, [])
 
   useEffect(() => clearParamValues(), [clearParamValues, isCreateModalOpen])
-
   return (
     <Box px={3} py={2.5}>
       <AdminTable
@@ -453,13 +451,13 @@ const AdminApiPage = () => {
           <MIField label={t('구분')} required labelSize="sm" />
           <MISelect
             fullWidth
-            value={isOwnerCompany}
+            value={companyType}
             options={[
-              { label: '고객사', value: false },
-              { label: '관리사', value: true },
+              { label: '고객사', value: 'customer' },
+              { label: '관리사', value: 'manager' },
             ]}
             placeholder="선택하세요. (고객사/관리사)"
-            onChange={(e) => setIsOwnerCompany(e.target.value as boolean)}
+            onChange={(e) => setCompanyType(e.target.value as 'customer' | 'manager')}
             useAllOption={false}
           />
           <Box sx={{ width: '100%', mt: 5 }}>
@@ -467,7 +465,7 @@ const AdminApiPage = () => {
             <MISelect
               fullWidth
               value={selectedCompany}
-              options={companyOptions}
+              options={companyList[companyType]}
               onChange={(e) => setSelectedCompany(e.target.value as string)}
               useAllOption={false}
             />
