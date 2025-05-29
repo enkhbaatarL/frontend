@@ -1,5 +1,5 @@
 import SearchIcon from '@mui/icons-material/Search'
-import { Box, Typography } from '@mui/material'
+import { Box, Skeleton, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
@@ -60,12 +60,15 @@ const QaPage = () => {
   )
 
   const isEmpty = useMemo(() => !data?.detail || data.detail.length === 0, [data?.detail])
+  const tabsData = useMemo(() => {
+    if (!filterOptions?.category) return []
 
-  const tabsData = useMemo(
-    () =>
-      filterOptions?.category.map((item) => ({
-        label: item.value,
-        content: isEmpty ? (
+    return filterOptions.category.map((item) => {
+      let content
+      if (!data?.detail) {
+        content = <Skeleton variant="rectangular" width="100%" height="100%" sx={{ borderRadius: '4px', minHeight: '500px' }} />
+      } else if (isEmpty) {
+        content = (
           <Box
             display="flex"
             alignItems="center"
@@ -82,12 +85,14 @@ const QaPage = () => {
               </Typography>
             </Box>
           </Box>
-        ) : (
-          <MIAccordion isBorder items={data?.detail.map(convQaItem) ?? []} />
-        ),
-      })) ?? [],
-    [data?.detail, filterOptions?.category, isEmpty],
-  )
+        )
+      } else {
+        content = <MIAccordion isBorder items={data.detail.map(convQaItem)} />
+      }
+
+      return { label: item.value, content }
+    })
+  }, [data?.detail, filterOptions?.category, isEmpty])
 
   const handleTabChange = (newValue: number) => {
     if (filterOptions?.category[newValue]) {
