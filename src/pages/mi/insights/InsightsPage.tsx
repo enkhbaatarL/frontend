@@ -11,6 +11,7 @@ import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
@@ -351,12 +352,41 @@ const InsightsPage = () => {
               />
             </Grid>
             <Grid container direction={'column'} gap={8}>
-              {insights?.map((report, index) => <InsightsDocumentItem key={index} report={report} />)}
+              {!isActuallyLoading && (insightsIsLoading || (insightsData && !insights)) ? (
+                <Box>
+                  <Box padding={'10px'} marginBottom={'32px'}>
+                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                  </Box>
+                  <Box padding={'10px'} marginBottom={'32px'}>
+                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                  </Box>
+                  <Box padding={'10px'} marginBottom={'32px'}>
+                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                  </Box>
+                  <Box padding={'10px'}>
+                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                  </Box>
+                </Box>
+              ) : (
+                insights?.map((report, index) => <InsightsDocumentItem key={index} report={report} />)
+              )}
             </Grid>
             {insightsData && insightsData.totalElements > 0 && (
               <MIPagination data={insightsData} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />
             )}
-            {insights?.length === 0 && (
+            {!insightsIsLoading && insights?.length === 0 && (
               <Box
                 display={'flex'}
                 alignItems={'center'}
