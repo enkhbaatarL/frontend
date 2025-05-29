@@ -5,7 +5,6 @@ import { t } from 'i18next'
 import { ReactNode, useMemo, useState } from 'react'
 
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
-import AdminSkeleton from '@/components/admin/AdminSkeleton'
 import AdminTable from '@/components/admin/AdminTable'
 import MIButton from '@/components/common/button/MIButton'
 import MIChip from '@/components/common/chip/MIChip'
@@ -262,7 +261,7 @@ const AdminNotificationListPage = () => {
           ></MISelect>
         </MIField>
       </AdminSearchFilter>
-      <AdminSkeleton loading={isLoading} table>
+      <>
         <div
           style={{
             marginTop: 30,
@@ -318,7 +317,7 @@ const AdminNotificationListPage = () => {
             </Typography>
           </Box>
         </MIConfirm>
-      </AdminSkeleton>
+      </>
     </div>
   )
 }
