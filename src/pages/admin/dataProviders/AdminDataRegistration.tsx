@@ -483,6 +483,7 @@ const AdminDataRegistration = () => {
                           {providerDocumentTypeOptions.map((val) => (
                             <FormControlLabel
                               key={val.codeId}
+                              style={{ height: '35px' }}
                               control={
                                 <AdminCheckbox
                                   checked={subfield.state.value.includes(val.codeId)}
@@ -516,6 +517,7 @@ const AdminDataRegistration = () => {
                         <FormGroup row>
                           {providerLanguageOptions.map((val) => (
                             <FormControlLabel
+                              style={{ height: '35px' }}
                               key={val.codeId}
                               control={
                                 <AdminCheckbox
