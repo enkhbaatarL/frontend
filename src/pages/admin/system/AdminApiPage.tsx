@@ -2,6 +2,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import { Box, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
+import { AxiosError } from 'axios'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -295,10 +296,11 @@ const AdminApiPage = () => {
         setClientId('')
         setIsError(false)
         await refetch()
-      } else if (response.code === 'RSC-003') {
-        setIsError(true)
       }
     } catch (error) {
+      if (error instanceof AxiosError && error.response?.data?.code === 'RSC-003') {
+        setIsError(true)
+      }
       console.error(error)
     }
   }
@@ -472,7 +474,7 @@ const AdminApiPage = () => {
               useAllOption={false}
             />
           </Box>
-          <Box mt={5}>
+          <Box mt={5} mb={5}>
             <MIField
               label="Client ID"
               required
