@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
+    "dev-vdi": "vite --host --mode vdi",
     "mock": "npm-run-all --parallel mock-server mock-api mock-dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

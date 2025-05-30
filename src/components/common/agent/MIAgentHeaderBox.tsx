@@ -16,6 +16,7 @@ export interface MIAgentHeaderBoxProps {
 const MIAgentHeaderBox: React.FC<MIAgentHeaderBoxProps> = ({ minimized = true, onExpand = () => {}, onClose = () => {} }) => (
   <Box
     width="100%"
+    minHeight="70px"
     height="70px"
     alignItems="center"
     bgcolor="#F9F8F6"
@@ -26,12 +27,26 @@ const MIAgentHeaderBox: React.FC<MIAgentHeaderBoxProps> = ({ minimized = true, o
       borderRadius: '12px',
     }}
   >
-    <Tooltip title={'New Chat'} placement="right-start">
-      <img width={32} height={32} src={mariIcon} alt="Mari Icon" style={{ marginLeft: '16px' }} />
+    <Tooltip title={'New Chat'} placement="right-start" disableInteractive>
+      <Box
+        sx={{
+          cursor: 'pointer',
+          transition: 'all 0.2s cubic-bezier(0, 0.55, 0.45, 1)',
+          '&:hover': {
+            transform: 'scale(1.04)',
+          },
+          '&:active': {
+            transform: 'scale(1.01)',
+          },
+        }}
+        onClick={() => console.log('New chat clicked')}
+      >
+        <img width={32} height={32} src={mariIcon} alt="Mari Icon" style={{ marginLeft: '16px' }} />
+      </Box>
     </Tooltip>
 
     <Box display="flex" alignItems="center" gap="8px">
-      <Tooltip title={minimized ? 'mini chat' : 'Maximize'} placement="right-start">
+      <Tooltip title={minimized ? 'mini chat' : 'Maximize'} placement="right-start" disableInteractive>
         <Box
           width={34}
           height={34}
@@ -52,7 +67,7 @@ const MIAgentHeaderBox: React.FC<MIAgentHeaderBoxProps> = ({ minimized = true, o
           {minimized ? <CollapseIcon /> : <ExpandIcon />}
         </Box>
       </Tooltip>
-      <Tooltip title={'Close'} placement="right-start">
+      <Tooltip title={'Close'} placement="right-start" disableInteractive>
         <Box
           width={34}
           height={34}

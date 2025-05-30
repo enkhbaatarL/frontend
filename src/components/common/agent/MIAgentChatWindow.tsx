@@ -1,6 +1,6 @@
 import ErrorIcon from '@mui/icons-material/Error'
 import { Box } from '@mui/material'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 
 import MIAgentGreetingMessage from './MIAgentGreetingMessage'
 import MIAgentHeaderBox from './MIAgentHeaderBox'
@@ -8,7 +8,7 @@ import MIAgentHistory, { ChatItem } from './MIAgentHistory'
 import MIAgentPromptInputBox, { MIAgentPromptState } from './MIAgentPromptInputBox'
 import MIAgentStatus, { MIAgentStatusType } from './MIAgentStatus'
 
-import ScrollWrapper from '@/components/admin/ScrollWrapper'
+/// import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIAgentConversation from '@/components/common/agent/MIAgentConversation'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -21,9 +21,10 @@ export interface ChatMessage {
 }
 
 export interface MIAgentChatWindowProps {
+  top: number
   onClose?: () => void
   onChangeExpand?: (expanded: boolean) => void
-  windowExpaned?: boolean
+  windowExpend?: boolean
   disabled?: boolean
   defaultSidebarExpanded?: boolean
   defaultInputStatus?: MIAgentPromptState
@@ -31,8 +32,9 @@ export interface MIAgentChatWindowProps {
 }
 
 const MIAgentChatWindow = ({
+  top,
   onClose,
-  windowExpaned = false,
+  windowExpend = false,
   onChangeExpand,
   defaultSidebarExpanded = true,
   defaultInputStatus = 'send-disabled',
@@ -48,8 +50,8 @@ const MIAgentChatWindow = ({
   const [sentSuccess, setSentSuccess] = useState(false)
   const [getAnswer, setGetAnswer] = useState(false)
   const [modePosition, setModePosition] = useState<'top' | 'bottom'>('bottom')
-  const [deletingChatItem, setdeletingChatItem] = useState<ChatItem | null>()
-  const [chatList, setchatList] = useState([
+  const [deletingChatItem, setDeletingChatItem] = useState<ChatItem | null>()
+  const [chatList, setChatList] = useState([
     {
       id: '0',
       title: 'New Chat',
@@ -86,14 +88,14 @@ const MIAgentChatWindow = ({
     setTimeout(() => {
       const scrollInChat = document.getElementsByClassName('chat-window-scroll')
 
-      if (windowExpaned || (scrollInChat?.length > 0 && scrollInChat[0].scrollHeight > 650 && modePosition !== 'top')) {
+      if (windowExpend || (scrollInChat?.length > 0 && scrollInChat[0].scrollHeight > 650 && modePosition !== 'top')) {
         setModePosition('top')
-      } else if (!windowExpaned && scrollInChat.length > 0 && scrollInChat[0].scrollHeight < 650 && modePosition !== 'bottom') {
+      } else if (!windowExpend && scrollInChat.length > 0 && scrollInChat[0].scrollHeight < 650 && modePosition !== 'bottom') {
         setModePosition('bottom')
       }
     }, 500)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, windowExpaned])
+  }, [messages, windowExpend])
 
   // call AI api here
   const handleSendMessage = (message?: string) => {
@@ -167,7 +169,7 @@ const MIAgentChatWindow = ({
   }
 
   const toggleExpand = () => {
-    onChangeExpand?.(!windowExpaned)
+    onChangeExpand?.(!windowExpend)
   }
 
   const toggleSidebar = () => {
@@ -175,10 +177,10 @@ const MIAgentChatWindow = ({
   }
 
   const handleEditChatTitle = (chatId: string, newTitle: string) => {
-    setchatList((prev) => [...prev.map((item) => (item.id === chatId ? { ...item, title: newTitle } : item))])
+    setChatList((prev) => [...prev.map((item) => (item.id === chatId ? { ...item, title: newTitle } : item))])
   }
 
-  const handleScrollBotom = () => {
+  const handleScrollBottom = () => {
     setSentSuccess(true)
     setTimeout(() => {
       setSentSuccess(false)
@@ -187,39 +189,41 @@ const MIAgentChatWindow = ({
 
   const handleOpenDeleteModal = (item: ChatItem) => {
     setIsOpenDelete(true)
-    setdeletingChatItem(item)
+    setDeletingChatItem(item)
   }
 
+  const isMessagesEmpty = useMemo(() => messages?.length === 0, [messages])
+
   return (
-    <Box>
+    <Box sx={{ userSelect: 'none' }}>
       <Box
         sx={{
           display: 'flex',
-          width: windowExpaned ? '1380px' : '640px',
-          height: windowExpaned ? '778px' : 'auto',
-          transition: 'width 0.3s ease, height 0.3s ease',
+          width: windowExpend ? '1380px' : '640px',
+          height: windowExpend ? `calc(100vh - ${top + 96}px)` : '480px', /// TODO: 헤더 올라간 영역도 계산 필요
+          transition: 'width 0.4s cubic-bezier(0.33, 1, 0.68, 1), height 0.54s cubic-bezier(0.33, 1, 0.68, 1)',
           minWidth: '640px',
           maxWidth: '1380px',
-          minHeight: '434px',
-          maxHeight: '778px',
+          minHeight: '480px',
+          maxHeight: '2048px',
           position: 'relative',
           borderRadius: '12px',
           border: '1px solid  #DEE2E6',
           background: '#F9F8F6',
           /* Shadow/Mari/Mari shadow */
           boxShadow: '2px 4px 20px 0px rgba(65, 76, 147, 0.10)',
+          overflow: 'hidden',
         }}
       >
         {/* History area */}
-        {windowExpaned && (
-          <MIAgentHistory
-            chatItems={chatList}
-            isExpanded={isSidebarExpanded}
-            onExpand={toggleSidebar}
-            onEditChatTitle={handleEditChatTitle}
-            onOpenDelete={handleOpenDeleteModal}
-          />
-        )}
+        <MIAgentHistory
+          windowExpend={windowExpend}
+          chatItems={chatList}
+          isExpanded={isSidebarExpanded}
+          onExpand={toggleSidebar}
+          onEditChatTitle={handleEditChatTitle}
+          onOpenDelete={handleOpenDeleteModal}
+        />
         {/* Content area */}
         <Box
           sx={{
@@ -233,7 +237,7 @@ const MIAgentChatWindow = ({
           {/* Header area */}
           <MIAgentHeaderBox
             onExpand={toggleExpand}
-            minimized={windowExpaned}
+            minimized={windowExpend}
             onClose={() => {
               onClose?.()
               onChangeExpand?.(false)
@@ -241,20 +245,33 @@ const MIAgentChatWindow = ({
           />
           {/* Response area */}
           <Box flex={'1'} justifyContent={'space-between'} display={'flex'} flexDirection={'column'}>
-            <ScrollWrapper
-              scrollToBottomTrigger={sentSuccess}
-              scrollToBottomOffset={getAnswer}
-              maxHeight={!windowExpaned || (inputStatus !== 'send-activated' && inputStatus !== 'send-disabled') ? 500 : 564}
-              className="chat-window-scroll"
-            >
-              <Box>
-                {messages && messages.length > 0 ? (
-                  <MIAgentConversation messages={messages} scrollToBottom={handleScrollBotom} handleSendMessage={handleSendMessage} />
-                ) : (
+            {/*<ScrollWrapper*/}
+            {/*  scrollToBottomTrigger={sentSuccess}*/}
+            {/*  scrollToBottomOffset={getAnswer}*/}
+            {/*  // maxHeight={!windowExpend || (inputStatus !== 'send-activated' && inputStatus !== 'send-disabled') ? 500 : 564}*/}
+            {/*  className="chat-window-scroll"*/}
+            {/*>*/}
+            <Box position={'relative'} sx={{ height: '100%', overflowY: isMessagesEmpty ? 'hidden' : 'auto', padding: '12px' }}>
+              {!isMessagesEmpty ? (
+                <MIAgentConversation messages={messages} scrollToBottom={handleScrollBottom} handleSendMessage={handleSendMessage} />
+              ) : (
+                <Box
+                  position={'absolute'}
+                  width={'100%'}
+                  overflow={'hidden'}
+                  sx={{
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    paddingBottom: windowExpend ? '80px' : '0px',
+                    transition: 'padding-bottom 0.4s cubic-bezier(0.33, 1, 0.68, 1)',
+                  }}
+                >
                   <MIAgentGreetingMessage handleSendMessage={handleSendMessage} />
-                )}
-              </Box>
-            </ScrollWrapper>
+                </Box>
+              )}
+            </Box>
+            {/*</ScrollWrapper>*/}
             {inputStatus !== 'send-activated' && inputStatus !== 'send-disabled' && <MIAgentStatus status={agentStatus} />}
           </Box>
           {/* Footer area */}
@@ -293,7 +310,7 @@ const MIAgentChatWindow = ({
             color: 'gray',
             onClick: () => {
               setIsOpenDelete(false)
-              setdeletingChatItem(null)
+              setDeletingChatItem(null)
             },
           },
           {
@@ -303,7 +320,7 @@ const MIAgentChatWindow = ({
             hoverBgColor: '#BD3D37',
             onClick: () => {
               setIsOpenDelete(false)
-              setchatList((prev) => [...prev.filter((it) => it.id !== deletingChatItem?.id)])
+              setChatList((prev) => [...prev.filter((it) => it.id !== deletingChatItem?.id)])
               showSnackbar('삭제되었습니다. ', { variant: 'success' })
             },
           },
