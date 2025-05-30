@@ -41,6 +41,10 @@ interface MIChartProps {
   height?: string | number
   interval?: 'day' | 'week' | 'month' | 'year'
   chartType?: ChartType
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setComparisonDataSource?: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  comparisonDataSource?: any
 }
 
 Chart.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement, zoomPlugin)
@@ -87,7 +91,7 @@ const bbLabels: {
 }
 
 const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, ref) => {
-  const { height, interval, mainData, chartType = ChartType.LINE, indicators = [], comparisonCharts = [] } = props
+  const { height, interval, mainData, chartType = ChartType.LINE, indicators = [], comparisonCharts = [], setComparisonDataSource } = props
   const chartRef = useRef<HTMLCanvasElement>(null)
   const [chartInstance, setChartInstance] = useState<Chart | null>(null)
   const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
@@ -289,6 +293,12 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
   const comparisonDatasets = useMemo(() => {
     const colors = [/*'#40597A',*/ '#26757B', '#EFA460', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434']
 
+    comparisonCharts.map((chart, index) => {
+      if (!chart.series[0].isVisible) {
+        setHideComparisonChartIndexList((prev) => [...prev, index])
+      }
+    })
+
     return comparisonCharts.map((chart, index) => ({
       label: chart.series[0].label,
       data: chart.series[0].values.map((value, idx) => ({
@@ -297,7 +307,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
       })),
       type: 'line',
       pointRadius: 0,
-      borderColor: hideComparisonChartIndexList.includes(index) ? 'transparent' : colors[index % colors.length],
+      // borderColor: hideComparisonChartIndexList.includes(index) ? 'transparent' : colors[index % colors.length],
+      borderColor: !chart.series[0].isVisible ? 'transparent' : colors[index % colors.length],
       borderWidth: 3,
       fill: false,
       tension: 0.1,
@@ -306,7 +317,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
         chipColor: colors[index % colors.length],
       },
     }))
-  }, [comparisonCharts, hideComparisonChartIndexList])
+    // }, [comparisonCharts, hideComparisonChartIndexList])
+  }, [comparisonCharts])
 
   const comparisonChartUnits = useMemo(() => comparisonCharts.map((chart) => chart.unitCd), [comparisonCharts])
 
@@ -343,6 +355,14 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>((props, re
     },
     [],
   )
+
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setComparisonDataSource((prev: any) => prev.map((item: any, index: number) => ({
+      ...item,
+      isVisible: !hideComparisonChartIndexList.includes(index),
+    })))
+  }, [hideComparisonChartIndexList])
 
   const createChart = () => {
     if (chartInstance) {

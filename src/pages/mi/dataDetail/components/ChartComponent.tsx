@@ -80,6 +80,9 @@ const ChartComponent = ({
   const [startDate, setStartDate] = useState<string>(dayjs().format('YYYYMMDD'))
   const [endDate, setEndDate] = useState<string>(dayjs().add(1, 'year').format('YYYYMMDD'))
   const [isOpenSetting, setIsOpenSetting] = useState(false)
+  const [indicator, setIndicator] = useState<string[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [comparisonDataSource, setComparisonDataSource] = useState<any[]>([])
 
   const selectedDataSource = useMemo(
     () => structuredDataList?.find((item) => item.goodsDataSourceNo === goodsDataSourceNo),
@@ -102,12 +105,23 @@ const ChartComponent = ({
   )
 
   const { data: chartData, isLoading } = useQuery({
-    queryKey: ['productDataStructuredChartData', goodsNo, goodsDataNo, goodsDataSourceNo, chartInterval, selectedRange, startDate, endDate],
+    queryKey: [
+      'productDataStructuredChartData',
+      goodsNo,
+      goodsDataNo,
+      goodsDataSourceNo,
+      chartInterval,
+      selectedRange,
+      startDate,
+      endDate,
+      searchFilter.unitCd,
+    ],
     queryFn: () =>
       dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, goodsDataSourceNo!, {
         range: selectedRange,
         interval: chartInterval,
         ...(selectedRange === ChartRange.CUSTOM && { startDate, endDate }),
+        unitCd: searchFilter.unitCd,
       }),
     refetchOnWindowFocus: false,
     gcTime: 0,
@@ -130,23 +144,6 @@ const ChartComponent = ({
     setEndDate(endDate?.format('YYYYMMDD') ?? '')
   }
 
-  useEffect(() => {
-    const defaultInterval =
-      selectedDataSource?.allowedPeriods.find((item) => item.range === selectedRange)?.defaultInterval ?? ChartInterval.DAY
-    setChartInterval(defaultInterval)
-  }, [selectedDataSource, selectedRange])
-
-  useEffect(() => {
-    if (chartData && isInitialState) {
-      setSearchFilter({
-        interval: chartData.metadata.currentInterval,
-        unitCd: chartData.metadata.currentUnitCd,
-      })
-      setChartType(chartData.metadata.initialChartType)
-      setIsInitialState(false)
-    }
-  }, [chartData, isInitialState, selectedDataSource?.allowedPeriods])
-
   const xInterval = useMemo(() => {
     switch (chartData?.metadata.currentInterval) {
       case ChartInterval.DAY:
@@ -164,11 +161,63 @@ const ChartComponent = ({
     }
   }, [chartData?.metadata.currentInterval])
 
+  // 차트 개인화 설정
+  const handleSaveLastSetting = () => {
+    // TODO: 요기다가 requestbody를 보내면 되는데... 아 머리아파
+    console.log('range => ', selectedRange)
+    console.log('interval => ', chartInterval)
+    console.log('chartType => ', chartType)
+    console.log('unitCd => ', searchFilter.unitCd)
+    console.log('indicators => ', indicator)
+    // dataDetailService.setProductDataStructuredChartPersonalization(goodsNo, goodsDataNo, goodsDataSourceNo!, {
+    //   chartConditionCd: 'RANGE',
+    //   chartConditionVal: selectedRange,
+    // })
+  }
+
+  useEffect(() => {
+    console.log('indicator', indicator)
+  }, [indicator])
+
+  useEffect(() => {
+    const defaultInterval =
+      selectedDataSource?.allowedPeriods.find((item) => item.range === selectedRange)?.defaultInterval ?? ChartInterval.DAY
+    setChartInterval(defaultInterval)
+  }, [selectedDataSource, selectedRange])
+
+  useEffect(() => {
+    if (chartData && isInitialState) {
+      setSearchFilter({
+        interval: chartData.metadata.currentInterval,
+        unitCd: chartData.metadata.currentUnitCd,
+      })
+      setChartType(chartData.metadata.initialChartType)
+      setIsInitialState(false)
+    }
+  }, [chartData, isInitialState, selectedDataSource?.allowedPeriods])
+
   useEffect(() => {
     if (defaultInterval) {
       setChartInterval(defaultInterval)
     }
   }, [defaultInterval])
+
+  useEffect(() => {
+    if (chartData?.comparisonCharts && searchFilter.unitCd) {
+      chartData?.comparisonCharts.map((item) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setComparisonDataSource((prev: any) => [
+          ...prev,
+          {
+            label: item.series[0].label,
+            data: item.series[0].values,
+            goodsDataSourceNo: item.goodsDataSourceNo,
+            isVisible: item.series[0].isVisible,
+          },
+        ])
+      })
+    }
+  }, [chartData?.comparisonCharts])
 
   return (
     <>
@@ -254,6 +303,7 @@ const ChartComponent = ({
               checked={useSaveLastSetting}
               onChange={(_) => {
                 setUseSaveLastSetting((prev) => !prev)
+                handleSaveLastSetting()
               }}
             />
             <Typography variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
@@ -276,6 +326,8 @@ const ChartComponent = ({
             unitList={chartData?.metadata.changeableUnitCd ?? []}
             displayDataInfo={displayDataInfo}
             onDisplayDataInfoChange={({ label, isShow }) => {
+              setIndicator((prev) => (isShow ? [...prev, label] : prev.filter((item) => item !== label)))
+
               if (label === 'BB') {
                 setDisplayDataInfo((prev) => ({
                   ...prev,
@@ -338,6 +390,8 @@ const ChartComponent = ({
                 indicators={chartData?.indicators}
                 comparisonCharts={chartData?.comparisonCharts}
                 displayDataInfo={displayDataInfo}
+                comparisonDataSource={comparisonDataSource}
+                setComparisonDataSource={setComparisonDataSource}
               />
             )}
           </Box>
