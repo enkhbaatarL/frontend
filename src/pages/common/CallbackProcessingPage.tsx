@@ -30,8 +30,11 @@ const CallbackProcessingPage = () => {
       axios
         .get('/api/v1/saml2/callback', {
           params: { sessionId },
+          withCredentials: true,
         })
         .then(async (res) => {
+          console.log('res', res)
+
           const authToken = res.headers['set-cookie']?.find((cookie) => cookie.startsWith('Authorization='))
           const refreshToken = res.headers['set-cookie']?.find((cookie) => cookie.startsWith('X-Refresh-Token='))
 
