@@ -26,9 +26,10 @@ export interface IAccessCompanyInfo {
 
 interface AuthState {
   token: string | null
+  refreshToken: string | null
   user: IUserDetail | null
   accessCompanyInfo: IAccessCompanyInfo | null
-  setToken: (token: string) => void
+  setToken: (token: string, refreshToken?: string) => void
   setUser: (user: IUserDetail | null) => void
   setAccessCompanyInfo: (accessCompanyInfo: IAccessCompanyInfo | null) => void
   clearAuth: () => void
@@ -38,9 +39,10 @@ const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
+      refreshToken: null,
       user: null,
       accessCompanyInfo: null,
-      setToken: (token) => set({ token }),
+      setToken: (token, refreshToken) => set({ token, refreshToken }),
       setUser: (user) => set({ user }),
       setAccessCompanyInfo: (accessCompanyInfo) => set({ accessCompanyInfo }),
       clearAuth: () => set({ token: null, user: null, accessCompanyInfo: null }),
