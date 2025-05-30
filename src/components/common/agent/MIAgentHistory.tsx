@@ -36,6 +36,7 @@ export interface ChatItem {
 }
 
 export interface MiAgentHistoryProps {
+  windowExpend: boolean
   chatItems: ChatItem[]
   onSelectChat?: (chatId: string) => void
   onNewChat?: () => void
@@ -329,6 +330,7 @@ const HistoryItem = React.memo(
 HistoryItem.displayName = 'HistoryItem'
 
 const MiAgentHistory: React.FC<MiAgentHistoryProps> = ({
+  windowExpend,
   chatItems,
   onSelectChat = () => {},
   // onNewChat = () => {},
@@ -355,15 +357,17 @@ const MiAgentHistory: React.FC<MiAgentHistoryProps> = ({
       flexDirection: 'column',
       justifyContent: 'space-between',
       height: '100%',
-      width: isExpanded ? '200px' : '68px',
-      transition: 'width 0.3s ease',
+      width: windowExpend ? (isExpanded ? '200px' : '68px') : '0px',
+      transition: 'width 0.3s cubic-bezier(0.65, 0, 0.35, 1), height 0.3s cubic-bezier(0.65, 0, 0.35, 1)',
       backgroundColor: 'white',
       borderTopLeftRadius: '12px',
       borderBottomLeftRadius: '12px',
       boxSizing: 'border-box',
       position: 'relative',
+      overflow: 'hidden',
+      whiteSpace: 'nowrap',
     }),
-    [isExpanded],
+    [isExpanded, windowExpend],
   )
 
   // History icon styles memoized
@@ -394,7 +398,7 @@ const MiAgentHistory: React.FC<MiAgentHistoryProps> = ({
         </Box>
       </Tooltip>
 
-      <List sx={{ flex: 1, overflow: 'auto', paddingX: '12px', boxSizing: 'border-box', width: '100%', textAlign: 'left' }}>
+      <List sx={{ flex: 1, overflow: 'hidden', paddingX: '12px', boxSizing: 'border-box', width: '100%', textAlign: 'left' }}>
         {isExpanded && (
           <>
             <Typography

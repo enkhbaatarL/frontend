@@ -16,17 +16,21 @@ const GradientBox = styled(Box)(() => ({
   height: '56px',
   color: 'white',
   boxShadow: '2px 4px 40px 0px #276ACF4D, 0 0 0 1px rgba(0, 0, 0, 0.1)',
-  transition: 'all 0.3s ease',
+  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
   '&:hover': {
-    transform: 'translateY(0px)',
+    transform: 'scale(1.02)',
     boxShadow: '4px 8px 50px 0px #276ACF6D, 0 0 0 1px rgba(0, 0, 0, 0.15)',
+  },
+  '&:active': {
+    transform: 'scale(0.98)',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
   },
   '&::before': {
     content: '""',
     position: 'absolute',
-    inset: '-2px -3px',
+    inset: '-2px',
     borderRadius: '200px',
-    padding: '2px 3px',
+    padding: '2px',
     background:
       'conic-gradient(from 0deg, #7DE5F3 0%, #A9E7F6 5%, #6DAFD9 15%, #518EE1 30%, #6DAFD9 45%, #7DE5F3 60%, #BDF7FF 75%, #F8FDFE 90%, #BDF7FF 95%, #7DE5F3 100%)',
     WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
@@ -35,11 +39,11 @@ const GradientBox = styled(Box)(() => ({
     zIndex: -1,
     opacity: 0,
     transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-    filter: 'brightness(1.2) contrast(1.2)',
+    filter: 'blur(0.5px) brightness(1.1)',
   },
   '&:hover::before': {
-    opacity: 1,
-    animation: 'rotateGradientBorder 2s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+    opacity: 0.9,
+    animation: 'rotateGradientBorder 4s linear infinite',
   },
   '@keyframes rotateGradientBorder': {
     '0%': {
@@ -138,15 +142,6 @@ const GradientText = styled('span')({
   backgroundClip: 'text',
   color: 'transparent',
   display: 'inline-block',
-  // animation: 'textShine 3s linear infinite',
-  // '@keyframes textShine': {
-  //   '0%': {
-  //     backgroundPosition: '0% center',
-  //   },
-  //   '100%': {
-  //     backgroundPosition: '200% center',
-  //   },
-  // },
 })
 
 export interface MIAgentButtonProps {
@@ -168,7 +163,7 @@ const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
     setTimeout(() => {
       setShowChatWindow(false)
       setIsClosing(false)
-    }, 500) // Match this with the transition duration
+    }, 400)
   }
 
   const onExpandWindow = (expanded: boolean | ((prevState: boolean) => boolean)) => {
@@ -191,6 +186,20 @@ const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
 
     return () => window.removeEventListener('resize', updateToolBarPosition)
   }, [])
+
+  useEffect(() => {
+    const escapeHandler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showChatWindow) {
+        handleClose()
+      }
+    }
+
+    window.addEventListener('keydown', escapeHandler)
+
+    return () => {
+      window.removeEventListener('keydown', escapeHandler)
+    }
+  }, [showChatWindow])
 
   return (
     <>
@@ -244,13 +253,9 @@ const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
                 fontStyle: 'normal',
                 fontWeight: '700',
                 lineHeight: '1.4',
-                transition: 'all 0.2s ease-in-out',
+                transition: 'all 0.2s cubic-bezier(0, 0.55, 0.45, 1)',
                 '&:hover': {
                   background: 'linear-gradient(100.9deg, #5A7DC9 15.49%, #25276C 101.21%)',
-                  transform: 'scale(1.02)',
-                },
-                '&:active': {
-                  transform: 'scale(0.98)',
                 },
               }}
               disableRipple
@@ -271,16 +276,18 @@ const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
             width: 'auto',
             height: 'auto',
             visibility: showChatWindow || isClosing ? 'visible' : 'hidden',
-            transition: 'all 0.5s ease',
+            /// transition: 'all 0.4s cubic-bezier(0, 0.55, 0.45, 1)',
+            transition:
+              'width 0.4s cubic-bezier(0, 0.55, 0.45, 1), height 0.4s cubic-bezier(0, 0.55, 0.45, 1), opacity 0.4s cubic-bezier(0, 0.55, 0.45, 1), transform 0.4s cubic-bezier(0, 0.55, 0.45, 1)',
             pointerEvents: showChatWindow && !isClosing ? 'auto' : 'none',
             borderRadius: '12px',
             position: 'fixed',
             transformOrigin: 'top right',
-            top: windowExpend ? top - 56 : top,
+            /// top: windowExpend ? top - 56 : top,
             right: offsetLeft,
           }}
         >
-          <MIAgentChatWindow onChangeExpand={onExpandWindow} windowExpaned={windowExpend} onClose={handleClose} />
+          <MIAgentChatWindow top={top} onChangeExpand={onExpandWindow} windowExpend={windowExpend} onClose={handleClose} />
         </Box>
       </Box>
     </>
