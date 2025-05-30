@@ -48,7 +48,7 @@ const devTokens = {
 }
 
 const LoginPage = () => {
-  const isProd = false
+  const isProd = window.location.hostname === 'mi.sk.com'
 
   const navigate = useNavigate()
   const { setUser, setToken, clearAuth } = useAuthStore()
@@ -60,7 +60,7 @@ const LoginPage = () => {
   const [tempAuthFilter, setTempAuthFilter] = useState<boolean>(window.location.hostname === 'localhost') // TODO: 임시 용도로 SSO 작업 시 제거 필요
 
   const ssoLogin = () => {
-    // TODO: SSO login 작성
+    navigate('api/v1/saml2/login/user')
   }
 
   const setUserInfo = useCallback(
@@ -155,15 +155,19 @@ const LoginPage = () => {
               운영자 로그인
             </MIButton>
           </Flex>
+          <Divider sx={{ width: '100%' }} />
+          <MIButton onClick={ssoLogin} width="120px">
+            SSO 로그인
+          </MIButton>
         </Flex>
       ) : (
-        <Flex direction="column" gap={20} align="center" style={{ width: '300px' }}>
+        <Flex direction="row" gap={20} align="center" style={{ width: '300px' }}>
           <MIInput
             fullWidth
             label="비밀번호"
             type="password"
             onChange={(e) => {
-              if (e.target.value === 'mitest1234') {
+              if (e.target.value === 'mitest1234' || e.target.value === 'ㅡㅑㅅㄷㄴㅅ1234') {
                 setTempAuthFilter(true)
               }
             }}
