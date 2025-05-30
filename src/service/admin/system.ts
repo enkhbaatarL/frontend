@@ -15,6 +15,7 @@ export interface IApiKeyInfo {
   certTypeNm: string
   certMethodNm: string
   auditInfo: IAuditInfo
+  isOwnerCompany: boolean
 }
 
 export interface IDecryptedClientSecretKey {

@@ -280,7 +280,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
     <Box
       borderRadius={1}
       sx={{
-        padding: 6,
+        padding: '20px',
         borderRadius: '4px',
         border: '1px solid',
         borderColor: '#E9ECEF',

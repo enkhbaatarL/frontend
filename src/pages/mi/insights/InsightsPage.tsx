@@ -285,7 +285,7 @@ const InsightsPage = () => {
         <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
           Focused
         </Typography>
-        <Grid mb={17.5} container spacing={6}>
+        <Grid mb={17.5} container spacing={'16px'}>
           {reports?.map((report, index) => (
             <Grid size={3} key={index}>
               <InsightsCardBtn index={index} report={report} />

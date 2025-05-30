@@ -4,9 +4,9 @@ import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import AdminTable from '@/components/admin/AdminTable'
+import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import MIButton from '@/components/common/button/MIButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
@@ -37,6 +37,8 @@ const AdminApiPage = () => {
   const [decodedSecretKey, setDecodedSecretKey] = useState<string | null>(null)
   const [viewSecretModal, setViewSecretModal] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState<string>('')
+
+  const [companyType, setCompanyType] = useState<'customer' | 'manager'>('customer')
   const [clientId, setClientId] = useState<string>('')
   const [isError, setIsError] = useState<boolean>(false)
 
@@ -66,23 +68,6 @@ const AdminApiPage = () => {
     size: 20,
   })
 
-  // 고객사 조회
-  const { data: customerCompanyList } = useQuery({
-    queryKey: ['customerCompanyList'],
-    queryFn: async () => await companiesService.getCompanyList(),
-    refetchOnWindowFocus: false,
-    gcTime: 0,
-  })
-
-  const companyOptions = useMemo(() => {
-    const customerCompanies = customerCompanyList?.find((item) => item.companyType === 'CUSTOMER')?.companies || []
-
-    return customerCompanies.map((company) => ({
-      value: company.companyNo,
-      label: company.companyNm,
-    }))
-  }, [customerCompanyList])
-
   const columns: GridColDef[] = [
     {
       field: 'customerCompanyNm',
@@ -94,6 +79,22 @@ const AdminApiPage = () => {
         return <MITableCell value={params.value} typography={{ variant: 'tableBody1' }} />
       },
     },
+    {
+      field: 'isOwnerCompany',
+      headerName: t('구분'),
+      maxWidth: 80,
+      align: 'center',
+      renderCell: (param) => {
+        const color = param.value ? 'blue' : 'orange'
+        const label = param.value ? t('관리회사') : t('고객사')
+        return (
+          <AdminTableCell type="chip" chip={{ color }}>
+            {label}
+          </AdminTableCell>
+        )
+      },
+    },
+
     {
       field: 'clientCertId',
       headerName: 'Client ID',
@@ -302,6 +303,23 @@ const AdminApiPage = () => {
     }
   }
 
+  // 컴페니 조회
+  const { data: companyList = { customer: [], manager: [] } } = useQuery({
+    queryKey: ['getCompanyList'],
+    queryFn: async () => await companiesService.getCompanyList(),
+    select: (res) =>
+      res.reduce(
+        (acc, cur) => {
+          const key = cur.companyType.toLowerCase()
+          acc[key] = cur.companies.map((c) => ({
+            value: c.companyNo,
+            label: c.companyNm,
+          }))
+          return acc
+        },
+        {} as Record<string, { value: number; label: string }[]>,
+      ),
+  })
   // API Key 삭제
   const handleDeleteApiKey = async () => {
     try {
@@ -331,6 +349,18 @@ const AdminApiPage = () => {
     }
   }, [setCustomComponent, setCustomTitle])
 
+  const canCreate = useMemo(() => {
+    const invalid = [selectedCompany, clientId].some((param) => param === undefined || param === '')
+    return !invalid
+  }, [clientId, selectedCompany])
+
+  const clearParamValues = useCallback(() => {
+    setClientId('')
+    setCompanyType('customer')
+    setSelectedCompany('')
+  }, [])
+
+  useEffect(() => clearParamValues(), [clearParamValues, isCreateModalOpen])
   return (
     <Box px={3} py={2.5}>
       <AdminTable
@@ -414,19 +444,34 @@ const AdminApiPage = () => {
             label: t('생성'),
             variant: 'filled',
             color: 'primary',
+            disabled: !canCreate,
             onClick: () => handleCreateApiKey(),
           },
         ]}
       >
         <Box sx={{ width: '100%', mt: 2 }}>
-          <MIField label={t('고객사 선택')} required labelSize="sm" />
+          <MIField label={t('구분')} required labelSize="sm" />
           <MISelect
             fullWidth
-            value={selectedCompany}
-            options={companyOptions}
-            onChange={(e) => setSelectedCompany(e.target.value as string)}
+            value={companyType}
+            options={[
+              { label: '고객사', value: 'customer' },
+              { label: '관리사', value: 'manager' },
+            ]}
+            placeholder="선택하세요. (고객사/관리사)"
+            onChange={(e) => setCompanyType(e.target.value as 'customer' | 'manager')}
             useAllOption={false}
           />
+          <Box sx={{ width: '100%', mt: 5 }}>
+            <MIField label={t('회사 선택')} required labelSize="sm" />
+            <MISelect
+              fullWidth
+              value={selectedCompany}
+              options={companyList[companyType]}
+              onChange={(e) => setSelectedCompany(e.target.value as string)}
+              useAllOption={false}
+            />
+          </Box>
           <Box mt={5}>
             <MIField
               label="Client ID"

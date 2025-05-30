@@ -151,10 +151,10 @@ const MarketDataPage = () => {
           Data Dashboard
         </Typography>
         <Grid mb={17.5} container spacing={5}>
-          <Grid width={'100%'} container direction={'row'} gap={5}>
+          <Grid width={'100%'} container direction={'row'} gap={'16px'}>
             {normalizedChartData?.map((chartData, index) => (
               // 2개: 큰 차트, 8개: 작은 차트
-              <Grid key={`market-data-chart-${index}`} size={index <= 1 ? 6 : 3}>
+              <Grid key={`market-data-chart-${index}`} size={index <= 1 ? 6 : 3} sx={{ width: index <= 1 ? '682px' : '333px' }}>
                 <MarketDataChart data={chartData} size={index <= 1 ? 'large' : 'small'} locked={!chartData.isPermitted} />
               </Grid>
             ))}

@@ -55,6 +55,8 @@ const mainPages: Page[] = [
   },
 ]
 
+const headerTopHeight = 36
+
 const MILayout = () => {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showNoticePopup, setShowNoticePopup] = useState(false)
@@ -199,6 +201,13 @@ const MILayout = () => {
     return `${defaultPadding + (showDailyChart ? 76 : 0)}px`
   }, [showDailyChart, isScrolled])
 
+  const mariAgentTopPosition = useMemo(() => {
+    const scrolledGap = isScrolled ? -headerTopHeight : 0
+    const dailyChartGap = showDailyChart ? 76 : 0
+
+    return 126 + scrolledGap + dailyChartGap
+  }, [showDailyChart, isScrolled])
+
   return (
     <MIProvider>
       <ScrollWrapper
@@ -212,6 +221,7 @@ const MILayout = () => {
       >
         <div
           style={{
+            background: showDailyChart ? '#F2F5F7' : undefined,
             display: 'flex',
             flexDirection: 'column',
             minHeight: preRenderMinHeight,
@@ -219,15 +229,15 @@ const MILayout = () => {
             boxSizing: 'border-box',
           }}
         >
+          {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
             <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />
             {showDailyChart && <DailyChart data={dailyChartData} />}
-            {showMiAgent && <MIAgentButton top={126 + (showDailyChart ? 76 : 0)} />}
           </div>
           <Box
             sx={{
               paddingTop,
-              paddingBottom: isScrolled ? '46px' : 0,
+              paddingBottom: isScrolled ? `${headerTopHeight}px` : 0,
               flex: 1,
               transition: 'padding 0.15s linear',
             }}

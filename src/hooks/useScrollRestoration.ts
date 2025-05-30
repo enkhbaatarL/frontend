@@ -36,9 +36,8 @@ interface ScrollRestorationReturn {
  */
 export const useScrollRestoration = ({ minHeight = '100vh', urls, ref }: ScrollRestorationProps): ScrollRestorationReturn => {
   const { pathname } = useLocation()
-
   /** 스크롤을 적용할 url 주소인지 여부 */
-  const isTarget = useMemo(() => urls.includes(pathname), [pathname, urls])
+  const isTarget = useMemo(() => urls.includes(pathname.replace('/mi/', '')), [pathname, urls])
 
   /** 저장된 scrollY */
   const savedY = useMemo(() => (isTarget ? Number(sessionStorage.getItem(`scroll-${pathname}`) ?? 0) : 0), [isTarget, pathname])

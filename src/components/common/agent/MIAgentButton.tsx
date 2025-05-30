@@ -214,6 +214,7 @@ const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
         sx={{
           position: 'fixed',
           top,
+          transition: 'top 0.15s linear',
           right: right ?? offsetLeft,
           zIndex: showChatWindow ? 1500 : 999, // chat 영역 활성화 시 헤더보다 높게 조정
         }}
