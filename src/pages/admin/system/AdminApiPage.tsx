@@ -60,6 +60,7 @@ const AdminApiPage = () => {
     updatePage,
     data: apiKeyList,
     refetch,
+    isLoading,
   } = useSearchFilter<IPaginationRequest, IPaginationResponse<IApiKeyInfo>>((params) => systemService.getApiKeyList(params), {
     page: 1,
     size: 20,
@@ -339,6 +340,7 @@ const AdminApiPage = () => {
         size={pagination?.size}
         onSizeChange={updateSize}
         onPageChange={updatePage}
+        isLoading={isLoading}
       />
       <MIConfirm
         open={isReissueModalOpen}

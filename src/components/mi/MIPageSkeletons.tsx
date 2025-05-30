@@ -1,11 +1,6 @@
 import { Box } from '@mui/material'
 
 import { MIBaseSkeleton, SkeletonWrapper } from './MIBaseSkeleton.tsx'
-
-interface ListSkeletonProps {
-  itemCount?: number
-}
-
 interface TableSkeletonProps {
   rows?: number
   columns?: number
@@ -131,46 +126,135 @@ export const MIPageSkeletons = {
     </Box>
   ),
 
-  // Insights 검색/리스트 패턴
-  Insights: ({ itemCount = 8 }: ListSkeletonProps) => (
-    <SkeletonWrapper.Container>
-      {/* 검색 영역 */}
-      <SkeletonWrapper.Column gap={3} sx={{ mb: 4 }}>
-        <MIBaseSkeleton.Title width={200} />
-        <SkeletonWrapper.Row gap={2}>
-          <MIBaseSkeleton.InputField width={400} height={46} />
-          <MIBaseSkeleton.Button width={100} height={46} />
-        </SkeletonWrapper.Row>
-
-        {/* 필터 칩들 */}
-        <SkeletonWrapper.Row gap={1}>
-          {Array.from({ length: 5 }, (_, i) => (
-            <MIBaseSkeleton.Chip key={i} width={80} />
-          ))}
-        </SkeletonWrapper.Row>
-      </SkeletonWrapper.Column>
-
-      {/* 검색 결과 리스트 */}
-      <SkeletonWrapper.Column gap={2}>
-        {Array.from({ length: itemCount }, (_, i) => (
-          <Box key={i} p={3} border="1px solid #E9ECEF" borderRadius="8px">
-            <SkeletonWrapper.Column gap={1}>
-              <SkeletonWrapper.Row gap={1}>
-                <MIBaseSkeleton.Chip width={60} height={18} />
-                <MIBaseSkeleton.Chip width={80} height={18} />
-              </SkeletonWrapper.Row>
-              <MIBaseSkeleton.Title width="70%" height={20} />
-              <MIBaseSkeleton.TextLine width="90%" height={14} />
-              <MIBaseSkeleton.TextLine width="60%" height={14} />
-              <SkeletonWrapper.Row gap={1} sx={{ mt: 1 }}>
-                <MIBaseSkeleton.TextLine width={100} height={12} />
-                <MIBaseSkeleton.TextLine width={80} height={12} />
-              </SkeletonWrapper.Row>
-            </SkeletonWrapper.Column>
+  // Insights 패턴
+  Insights: () => (
+    <Box>
+      <MIBaseSkeleton.BaseElement width={'100%'} height={'216px'} />
+      <Box
+        minWidth={'1380px'}
+        width={'1380px'}
+        margin={'auto'}
+        display={'flex'}
+        flexDirection={'column'}
+        gap={'38px'}
+        paddingTop={'50px'}
+        paddingBottom={'70px'}
+      >
+        <MIBaseSkeleton.BaseElement width={'294px'} height={'50px'} />
+        <Box width={'1380px'} height={'584px'} gap={'16px'}>
+          <SkeletonWrapper.Row gap={'16px'} sx={{ paddingBottom: '16px' }}>
+            <MIBaseSkeleton.Table width={'327px'} height={'340px'} />
+            <MIBaseSkeleton.Table width={'327px'} height={'340px'} />
+            <MIBaseSkeleton.Table width={'327px'} height={'340px'} />
+            <MIBaseSkeleton.Table width={'327px'} height={'340px'} />
+          </SkeletonWrapper.Row>
+          <SkeletonWrapper.Row gap={'16px'}>
+            <MIBaseSkeleton.Table width={'327px'} height={'220px'} />
+            <MIBaseSkeleton.Table width={'327px'} height={'220px'} />
+            <MIBaseSkeleton.Table width={'327px'} height={'220px'} />
+            <MIBaseSkeleton.Table width={'327px'} height={'220px'} />
+          </SkeletonWrapper.Row>
+        </Box>
+      </Box>
+      <Box minWidth={'1380px'} width={'1380px'} margin={'auto'} display={'flex'} flexDirection={'column'}>
+        <MIBaseSkeleton.BaseElement width={'294px'} height={'50px'} sx={{ marginBottom: '36px' }} />
+        <MIBaseSkeleton.BaseElement width={'458px'} height={'46px'} sx={{ marginBottom: '24px' }} />
+        <SkeletonWrapper.Row gap={'24px'} sx={{ height: '728px', pt: '24px', borderTop: '1px solid #DEE2E6', alignItems: 'flex-start' }}>
+          <Box width={'1010px'} height={'684px'}>
+            <SkeletonWrapper.Row gap={'14px'} sx={{ mb: '24px' }}>
+              <MIBaseSkeleton.BaseElement2 width={'160px'} height={'40px'} />
+              <MIBaseSkeleton.BaseElement2 width={'160px'} height={'40px'} />
+            </SkeletonWrapper.Row>
+            <Box padding={'10px'} marginBottom={'32px'}>
+              <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+              <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+              <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+              <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+            </Box>
+            <Box padding={'10px'} marginBottom={'32px'}>
+              <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+              <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+              <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+              <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+            </Box>
+            <Box padding={'10px'} marginBottom={'32px'}>
+              <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+              <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+              <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+              <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+            </Box>
+            <Box padding={'10px'}>
+              <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+              <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+              <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+              <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+            </Box>
           </Box>
-        ))}
-      </SkeletonWrapper.Column>
-    </SkeletonWrapper.Container>
+          <Box border="1px solid #DEE2E6" width={'298px'} height={'680px'} borderRadius={'4px'} pt={'24px'} pl={'24px'}>
+            <Box width={'298px'} marginBottom={'24px'}>
+              <MIBaseSkeleton.InputField width={'218px'} height={'24px'} sx={{ marginBottom: '14px' }} />
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+            </Box>
+            <Box width={'298px'} marginBottom={'24px'}>
+              <MIBaseSkeleton.InputField width={'218px'} height={'24px'} sx={{ marginBottom: '14px' }} />
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+            </Box>
+            <Box width={'298px'} marginBottom={'24px'}>
+              <MIBaseSkeleton.InputField width={'218px'} height={'24px'} sx={{ marginBottom: '14px' }} />
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+            </Box>
+            <Box width={'298px'} marginBottom={'24px'}>
+              <MIBaseSkeleton.InputField width={'218px'} height={'24px'} sx={{ marginBottom: '14px' }} />
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+            </Box>
+          </Box>
+        </SkeletonWrapper.Row>
+      </Box>
+    </Box>
   ),
 
   // Signal Map 패턴

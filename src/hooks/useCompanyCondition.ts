@@ -74,7 +74,7 @@ export const useCompanyCondition = () => {
   const { accessCompanyInfo, user } = useAuthStore()
   const currentCompanyInfo: CustomizeMapperDetail | undefined = useMemo(() => {
     const comNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo ?? -1
-    return companyMapper[comNo]
+    return companyMapper[comNo] ?? {}
   }, [accessCompanyInfo?.customerCompanyNo, user?.companyNo])
 
   const extractPage = useMemo(() => {

@@ -1,7 +1,7 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useRef, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import bgmImg from '@/assets/bgmarket.jpg'
@@ -26,6 +26,8 @@ const MarketDataPage = () => {
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
   const initialFetchRef = useRef(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [hasInitialData, setHasInitialData] = useState(false)
 
   // Data Dashboard
   const { data: dashboardList, isLoading: dashboardListIsLoading } = useQuery<IMarketData[]>({
@@ -54,14 +56,6 @@ const MarketDataPage = () => {
     },
   )
 
-  useEffect(() => {
-    if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
-      initialFetchRef.current = true
-      // customerCompanyNo는 이미 위의 useSearchFilter 에서 처리되므로 여기서는 검색만 실행
-      updateFilterWithSearch('keyword', filter?.keyword ?? '')
-    }
-  }, [accessCompanyInfo, updateFilterWithSearch, filter?.keyword])
-
   // Recent Viewed
   const { data: recentViewedList, isLoading: recentViewedIsLoading } = useQuery({
     queryKey: ['recentViewed'],
@@ -69,11 +63,6 @@ const MarketDataPage = () => {
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
-
-  const isActuallyLoading = useMemo(
-    () => dashboardListIsLoading || isLoading || recentViewedIsLoading,
-    [dashboardListIsLoading, isLoading, recentViewedIsLoading],
-  )
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
 
@@ -96,12 +85,36 @@ const MarketDataPage = () => {
   }, [updateFilterWithSearch])
 
   useEffect(() => {
-    if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
-      initialFetchRef.current = true
-      // customerCompanyNo 는 이미 위의 useSearchFilter 에서 처리되므로 여기서는 검색만 실행
-      updateFilterWithSearch('keyword', filter?.keyword ?? '')
+    const initializeData = async () => {
+      if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
+        try {
+          initialFetchRef.current = true
+          updateFilterWithSearch('keyword', filter?.keyword ?? '')
+          setHasInitialData(true)
+        } catch (error) {
+          console.error('초기 데이터 로딩 실패:', error)
+        } finally {
+          setIsInitialLoading(false)
+        }
+      } else if (accessCompanyInfo?.customerCompanyNo && initialFetchRef.current) {
+        setIsInitialLoading(false)
+        setHasInitialData(true)
+      }
     }
+
+    initializeData()
   }, [accessCompanyInfo, updateFilterWithSearch, filter?.keyword])
+
+  useEffect(() => {
+    if (data?.detail && data.detail.length > 0) {
+      setHasInitialData(true)
+    }
+  }, [data])
+
+  const isActuallyLoading = useMemo(
+    () => isInitialLoading || dashboardListIsLoading || recentViewedIsLoading || (isLoading && !hasInitialData),
+    [isInitialLoading, dashboardListIsLoading, recentViewedIsLoading, hasInitialData, isLoading],
+  )
 
   return (
     <MISkeleton variant={'marketData'} loading={isActuallyLoading}>
@@ -184,6 +197,7 @@ const MarketDataPage = () => {
                 hidePagination={data?.totalElements === 0 || !data?.totalElements}
                 tableProps={{
                   disableHover: true,
+                  loading: isLoading,
                   noRowMessage: 'No results found',
                   getRowClassName: (params) => (!params.row.isViewable ? 'no-click' : ''),
                   columns: [

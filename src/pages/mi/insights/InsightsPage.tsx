@@ -11,6 +11,8 @@ import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
+import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
 import insightsService, { IAdvancedFilter, IAdvancedFilterItem, IInsightsInfo, IInsightsRequest } from '@/service/mi/insights'
@@ -35,8 +37,11 @@ const InsightsPage = () => {
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
   const [keyword, setKeyword] = useState('')
 
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [hasInitialData, setHasInitialData] = useState(false)
+
   // 포커스 목록
-  const { data: focusedList } = useQuery({
+  const { data: focusedList, isLoading: focusedIsLoading } = useQuery({
     queryKey: ['insights'],
     queryFn: async () => await insightsService.getFocusedList(customerCompanyNo),
     refetchOnWindowFocus: false,
@@ -44,7 +49,7 @@ const InsightsPage = () => {
   })
 
   // 필터
-  const { data: filterList } = useQuery({
+  const { data: filterList, isLoading: filterIsLoading } = useQuery({
     queryKey: ['filterList'],
     queryFn: async () => await insightsService.getAdvancedFilterData(),
     refetchOnWindowFocus: false,
@@ -83,6 +88,7 @@ const InsightsPage = () => {
     pagination,
     updatePage,
     updateSize,
+    isLoading: insightsIsLoading,
   } = useSearchFilter<IInsightsRequest, IPaginationResponse<IInsightsInfo>>(
     (params) => insightsService.getInsightsData(customerCompanyNo, params),
     {
@@ -199,8 +205,54 @@ const InsightsPage = () => {
     }
   }, [filter.filters])
 
+  const isActuallyLoading = useMemo(
+    () => isInitialLoading || focusedIsLoading || filterIsLoading || (insightsIsLoading && !hasInitialData),
+    [isInitialLoading, focusedIsLoading, filterIsLoading, insightsIsLoading, hasInitialData],
+  )
+
+  useEffect(() => {
+    const initializeData = async () => {
+      if (filterList?.data && !filter.filters) {
+        try {
+          const updates: Partial<IInsightsRequest> = {}
+
+          if (!filter.sort) {
+            updates.sort = 'NEWEST'
+          }
+
+          if (!filter.period) {
+            updates.period = 'ALL_DATES'
+          }
+
+          if (Object.keys(updates).length > 0) {
+            Object.entries(updates).forEach(([key, value]) => {
+              updateFilterWithSearch(key as keyof IInsightsRequest, value)
+            })
+          }
+
+          setHasInitialData(true)
+        } catch (error) {
+          console.error('초기 데이터 로딩 실패:', error)
+        } finally {
+          setIsInitialLoading(false)
+        }
+      } else if (filterList?.data && filter.sort && filter.period) {
+        setIsInitialLoading(false)
+        setHasInitialData(true)
+      }
+    }
+
+    initializeData()
+  }, [filterList, filter.filters, filter.sort, filter.period, updateFilterWithSearch])
+
+  useEffect(() => {
+    if (insightsData?.detail && insightsData.detail.length > 0) {
+      setHasInitialData(true)
+    }
+  }, [insightsData])
+
   return (
-    <>
+    <MISkeleton variant={'insights'} loading={isActuallyLoading}>
       <Box
         paddingY={14}
         sx={{
@@ -300,12 +352,41 @@ const InsightsPage = () => {
               />
             </Grid>
             <Grid container direction={'column'} gap={8}>
-              {insights?.map((report, index) => <InsightsDocumentItem key={index} report={report} />)}
+              {!isActuallyLoading && (insightsIsLoading || (insightsData && !insights)) ? (
+                <Box>
+                  <Box padding={'10px'} marginBottom={'32px'}>
+                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                  </Box>
+                  <Box padding={'10px'} marginBottom={'32px'}>
+                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                  </Box>
+                  <Box padding={'10px'} marginBottom={'32px'}>
+                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                  </Box>
+                  <Box padding={'10px'}>
+                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
+                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
+                  </Box>
+                </Box>
+              ) : (
+                insights?.map((report, index) => <InsightsDocumentItem key={index} report={report} />)
+              )}
             </Grid>
             {insightsData && insightsData.totalElements > 0 && (
               <MIPagination data={insightsData} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />
             )}
-            {insights?.length === 0 && (
+            {!insightsIsLoading && insights?.length === 0 && (
               <Box
                 display={'flex'}
                 alignItems={'center'}
@@ -362,7 +443,7 @@ const InsightsPage = () => {
           </Box>
         </Grid>
       </Box>
-    </>
+    </MISkeleton>
   )
 }
 

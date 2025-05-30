@@ -3,7 +3,7 @@ import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 
 import bshImg from '@/assets/bgsubheader.png'
@@ -39,6 +39,8 @@ const DataDetailPage = () => {
 
   const [rawSize, setRawSize] = useState<number>(10)
   const [rawPage, setRawPage] = useState<number>(1)
+
+  const isInitialLoad = useRef(true)
 
   const { goodsNo, goodsDataNo } = useMemo(
     () => ({
@@ -94,10 +96,15 @@ const DataDetailPage = () => {
     enabled: !!goodsDataSourceNo,
   })
 
-  const isActuallyLoading = useMemo(
-    () => productDataIsLoading || structuredDataListIsLoading || unstructuredDateListIsLoading || rawGoodsDataIsLoading,
-    [productDataIsLoading, structuredDataListIsLoading, unstructuredDateListIsLoading, rawGoodsDataIsLoading],
-  )
+  const isActuallyLoading = useMemo(() => {
+    const isInitialLoading = productDataIsLoading || structuredDataListIsLoading || unstructuredDateListIsLoading || rawGoodsDataIsLoading
+
+    if (!isInitialLoading && isInitialLoad.current) {
+      isInitialLoad.current = false
+    }
+
+    return isInitialLoad.current && isInitialLoading
+  }, [productDataIsLoading, structuredDataListIsLoading, unstructuredDateListIsLoading, rawGoodsDataIsLoading])
 
   const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
     setStartDate(startDate?.format('YYYYMMDD') ?? '')
@@ -249,6 +256,7 @@ const DataDetailPage = () => {
                         columns: columns as GridColDef[],
                         rowId: 'id',
                         rows,
+                        loading: rawGoodsDataIsLoading, // 테이블 자체 로딩 상태
                       }}
                       paginationProps={{
                         data: rawGoodsData as unknown as IPaginationResponse<ITableRow>,
@@ -259,7 +267,7 @@ const DataDetailPage = () => {
                     />
                   </Box>
                 )}
-                {!rawGoodsData?.detail && (
+                {!rawGoodsData?.detail && !rawGoodsDataIsLoading && (
                   <Box
                     display={'flex'}
                     alignItems={'center'}

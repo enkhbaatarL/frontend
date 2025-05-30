@@ -23,7 +23,7 @@ interface Props {
   custom?: ReactNode
 }
 
-const MISkeleton = ({ loading, children, variant = 'dashboard', itemCount, rows, columns, fieldCount, custom }: Props) => {
+const MISkeleton = ({ loading, children, variant = 'dashboard', rows, columns, fieldCount, custom }: Props) => {
   if (!loading) {
     return children
   }
@@ -39,7 +39,7 @@ const MISkeleton = ({ loading, children, variant = 'dashboard', itemCount, rows,
     case 'marketData':
       return <MIPageSkeletons.MarketData />
     case 'insights':
-      return <MIPageSkeletons.Insights itemCount={itemCount} />
+      return <MIPageSkeletons.Insights />
     case 'signalMap':
       return <MIPageSkeletons.SignalMap />
     case 'dataDetail':
