@@ -2,6 +2,7 @@ import { omit } from 'lodash-es'
 import { createBrowserRouter, RouteObject, RouterProvider } from 'react-router-dom'
 
 import ProtectedRoute from '@/components/common/ProtectedRoute'
+import CallbackProcessingPage from '@/pages/common/CallbackProcessingPage'
 import LoginPage from '@/pages/common/LoginPage'
 import PdfViewerPage from '@/pages/common/PdfViewerPage'
 import AdminRoutes from '@/routes/AdminRoutes'
@@ -21,6 +22,10 @@ const commonRoutes: ICustomRouteObject[] = [
   {
     ...MIRoutes,
     element: <ProtectedRoute>{MIRoutes.element}</ProtectedRoute>,
+  },
+  {
+    path: 'callback',
+    element: <CallbackProcessingPage />,
   },
   {
     path: 'pdf-viewer/:fileId',

@@ -60,7 +60,7 @@ const LoginPage = () => {
   const [tempAuthFilter, setTempAuthFilter] = useState<boolean>(window.location.hostname === 'localhost') // TODO: 임시 용도로 SSO 작업 시 제거 필요
 
   const ssoLogin = () => {
-    navigate('api/v1/saml2/login/user')
+    window.location.href = 'api/v1/saml2/login/user'
   }
 
   const setUserInfo = useCallback(
