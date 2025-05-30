@@ -1,4 +1,10 @@
 import { Chart } from 'chart.js'
+import dayjs from 'dayjs'
+
+export const getFormattedDateFromChart = (chart: Chart, index: number, format?: string): string => {
+  const dateLabel = chart.scales.x.getLabelForValue(index)
+  return dayjs(Number(dateLabel)).format(format ?? 'YYYY-MM-DD')
+}
 
 export const getDatasetMetaData = (chart: Chart<'line'>, label: string) => {
   const { datasets } = chart.data
@@ -29,8 +35,7 @@ export const generateYAxis = (params: {
     text: params.label ?? '',
   },
   afterFit(axis: { width: number }) {
-    // Set a fixed width for the y-axis
-    axis.width = Math.max(67, axis.width) // Set to desired width in pixels
+    axis.width = Math.max(67, axis.width)
   },
   position: params.position ?? 'right',
   grid: {
@@ -43,19 +48,47 @@ export const generateYAxis = (params: {
   },
   ticks: {
     padding: 12,
-    color: params.isMain ? '#2E3F5E' : '#868E96', // Change this to your desired color
+    color: params.isMain ? '#2E3F5E' : '#868E96',
     font: {
-      size: 14, // Font size in pixels
-      family: 'Pretendard,sans-serif', // Font family
-      weight: '500', // Optional: font weight
+      size: 14,
+      family: 'Pretendard,sans-serif',
+      weight: 'normal' as const,
     },
     stepSize: 1,
     beginAtZero: true,
-    callback(value: number, index: number, ticks: number[]) {
-      // Hide the first tick (index 0)
+    maxTicksLimit: 16,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    callback(tickValue: string | number, index: number, ticks: any[]) {
       if (index === 0 || index === ticks.length - 1) return ''
-
-      return value.toLocaleString()
+      return Number(tickValue).toLocaleString()
     },
   },
+  afterDataLimits(scale: { min: number; max: number }) {
+    const range = scale.max - scale.min
+    scale.min = scale.min - range * 0.1
+    scale.max = scale.max + range * 0.1
+  },
 })
+
+export const getWeekOfMonth = (date: dayjs.Dayjs) => {
+  const firstDay = date.startOf('month')
+  const offset = firstDay.day()
+  return Math.ceil((date.date() + offset) / 7)
+}
+
+export const getChartLabel = (date: dayjs.Dayjs, interval: 'day' | 'week' | 'month' | 'year'): string => {
+  switch (interval) {
+    case 'day':
+      return date.format('D일')
+    case 'week': {
+      const week = getWeekOfMonth(date)
+      return `${date.format('M월')} ${week}주차`
+    }
+    case 'month':
+      return date.format('M월')
+    case 'year':
+      return date.format('YYYY년')
+    default:
+      return date.format()
+  }
+}

@@ -38,12 +38,6 @@ export default function MIChartController({
   displayDataInfo,
   onDisplayDataInfoChange,
 }: Readonly<MIChartControllerProps>) {
-  const unitOptions =
-    unitList?.map((unit) => ({
-      value: unit,
-      label: unit,
-    })) ?? []
-
   const chartTypeOptions = useMemo(() => {
     const options = [
       {
@@ -135,12 +129,17 @@ export default function MIChartController({
             contentType={'select'}
             valueSelect={{
               value: searchFilter.unitCd ?? '',
-              label: searchFilter.unitCd ?? '',
+              label: searchFilter.unitCd?.split('#').at(-1) ?? '',
             }}
             onChange={({ value }) => {
               setSearchFilter((prev) => ({ ...prev, unitCd: value }))
             }}
-            options={unitOptions}
+            options={
+              unitList?.map((unit) => ({
+                value: unit,
+                label: unit.split('#').at(-1) ?? unit,
+              })) ?? []
+            }
             minWidth="95px"
           />
         )}

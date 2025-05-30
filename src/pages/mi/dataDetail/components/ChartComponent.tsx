@@ -77,12 +77,9 @@ const ChartComponent = ({
     range: ChartRange.MONTH,
   })
 
-  const [startDate, setStartDate] = useState<string>(dayjs().format('YYYYMMDD'))
-  const [endDate, setEndDate] = useState<string>(dayjs().add(1, 'year').format('YYYYMMDD'))
+  const [startDate, setStartDate] = useState(dayjs().subtract(1, 'year').format('YYYYMMDD'))
+  const [endDate, setEndDate] = useState(dayjs().format('YYYYMMDD'))
   const [isOpenSetting, setIsOpenSetting] = useState(false)
-  const [indicator, setIndicator] = useState<string[]>([])
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [comparisonDataSource, setComparisonDataSource] = useState<any[]>([])
 
   const selectedDataSource = useMemo(
     () => structuredDataList?.find((item) => item.goodsDataSourceNo === goodsDataSourceNo),
@@ -97,11 +94,6 @@ const ChartComponent = ({
       value: String(selectedDataSource?.goodsDataSourceNo ?? 0),
     }),
     [selectedDataSource],
-  )
-
-  const defaultInterval = useMemo(
-    () => selectedDataSource?.allowedPeriods.find((item) => item.range === selectedRange)?.defaultInterval ?? ChartInterval.DAY,
-    [selectedDataSource, selectedRange],
   )
 
   const { data: chartData, isLoading } = useQuery({
@@ -144,46 +136,11 @@ const ChartComponent = ({
     setEndDate(endDate?.format('YYYYMMDD') ?? '')
   }
 
-  const xInterval = useMemo(() => {
-    switch (chartData?.metadata.currentInterval) {
-      case ChartInterval.DAY:
-      case ChartInterval.WEEK:
-      case ChartInterval.TWO_WEEKS:
-        return 'day'
-      case ChartInterval.MONTH:
-      case ChartInterval.THREE_MONTHS:
-      case ChartInterval.SIX_MONTHS:
-        return 'week'
-      case ChartInterval.YEAR:
-        return 'month'
-      default:
-        return 'day'
-    }
-  }, [chartData?.metadata.currentInterval])
-
-  // 차트 개인화 설정
-  const handleSaveLastSetting = () => {
-    // TODO: 요기다가 requestbody를 보내면 되는데... 아 머리아파
-    console.log('range => ', selectedRange)
-    console.log('interval => ', chartInterval)
-    console.log('chartType => ', chartType)
-    console.log('unitCd => ', searchFilter.unitCd)
-    console.log('indicators => ', indicator)
-    // dataDetailService.setProductDataStructuredChartPersonalization(goodsNo, goodsDataNo, goodsDataSourceNo!, {
-    //   chartConditionCd: 'RANGE',
-    //   chartConditionVal: selectedRange,
-    // })
+  const handleRangeChange = (range: ChartRange) => {
+    const newInterval = selectedDataSource?.allowedPeriods.find((item) => item.range === range)?.defaultInterval ?? ChartInterval.DAY
+    setSelectedRange(range)
+    setChartInterval(newInterval)
   }
-
-  useEffect(() => {
-    console.log('indicator', indicator)
-  }, [indicator])
-
-  useEffect(() => {
-    const defaultInterval =
-      selectedDataSource?.allowedPeriods.find((item) => item.range === selectedRange)?.defaultInterval ?? ChartInterval.DAY
-    setChartInterval(defaultInterval)
-  }, [selectedDataSource, selectedRange])
 
   useEffect(() => {
     if (chartData && isInitialState) {
@@ -196,28 +153,23 @@ const ChartComponent = ({
     }
   }, [chartData, isInitialState, selectedDataSource?.allowedPeriods])
 
-  useEffect(() => {
-    if (defaultInterval) {
-      setChartInterval(defaultInterval)
+  const xInterval = useMemo(() => {
+    switch (chartData?.metadata.currentInterval) {
+      case ChartInterval.DAY:
+        return 'day'
+      case ChartInterval.WEEK:
+      case ChartInterval.TWO_WEEKS:
+        return 'week'
+      case ChartInterval.MONTH:
+      case ChartInterval.THREE_MONTHS:
+      case ChartInterval.SIX_MONTHS:
+        return 'month'
+      case ChartInterval.YEAR:
+        return 'year'
+      default:
+        return 'day'
     }
-  }, [defaultInterval])
-
-  useEffect(() => {
-    if (chartData?.comparisonCharts && searchFilter.unitCd) {
-      chartData?.comparisonCharts.map((item) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setComparisonDataSource((prev: any) => [
-          ...prev,
-          {
-            label: item.series[0].label,
-            data: item.series[0].values,
-            goodsDataSourceNo: item.goodsDataSourceNo,
-            isVisible: item.series[0].isVisible,
-          },
-        ])
-      })
-    }
-  }, [chartData?.comparisonCharts])
+  }, [chartData?.metadata.currentInterval])
 
   return (
     <>
@@ -303,7 +255,6 @@ const ChartComponent = ({
               checked={useSaveLastSetting}
               onChange={(_) => {
                 setUseSaveLastSetting((prev) => !prev)
-                handleSaveLastSetting()
               }}
             />
             <Typography variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
@@ -326,8 +277,6 @@ const ChartComponent = ({
             unitList={chartData?.metadata.changeableUnitCd ?? []}
             displayDataInfo={displayDataInfo}
             onDisplayDataInfoChange={({ label, isShow }) => {
-              setIndicator((prev) => (isShow ? [...prev, label] : prev.filter((item) => item !== label)))
-
               if (label === 'BB') {
                 setDisplayDataInfo((prev) => ({
                   ...prev,
@@ -382,16 +331,15 @@ const ChartComponent = ({
                 ref={miChartRef}
                 height={'100%'}
                 chartType={chartType}
-                interval={xInterval as 'day' | 'week' | 'month' | 'year'}
+                interval={xInterval}
                 mainData={{
                   data: chartData?.mainChart,
-                  unit: chartData?.mainChart.unitCd ?? '',
+                  unit: chartData?.metadata.currentUnitCd ?? '',
                 }}
                 indicators={chartData?.indicators}
                 comparisonCharts={chartData?.comparisonCharts}
+                currentRangeBetween={chartData?.metadata.currentRangeBetween ?? []}
                 displayDataInfo={displayDataInfo}
-                comparisonDataSource={comparisonDataSource}
-                setComparisonDataSource={setComparisonDataSource}
               />
             )}
           </Box>
@@ -412,7 +360,7 @@ const ChartComponent = ({
           {selectedDataSource?.allowedPeriods.map(({ range }) => (
             <MIButton
               active={selectedRange === range}
-              onClick={() => setSelectedRange(range)}
+              onClick={() => handleRangeChange(range)}
               key={range}
               color={'gray'}
               type={'ghost'}

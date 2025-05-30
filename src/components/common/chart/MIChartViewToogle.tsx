@@ -13,7 +13,6 @@ export default function MIChartViewToggle(
     value?: boolean
     onChange?: (state: { label: string; isShow: boolean }) => void
     maxWidth?: number
-    isVisible?: boolean
   }>,
 ) {
   const [isShow, setIsShow] = useState(props.value ?? true)

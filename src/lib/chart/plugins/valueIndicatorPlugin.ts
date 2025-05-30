@@ -1,7 +1,7 @@
 import { Chart, ChartType, InteractionItem, Plugin, Point } from 'chart.js'
 import { FinancialDataPoint } from 'chart.js/auto'
-import dayjs from 'dayjs'
 
+import { getFormattedDateFromChart } from '@/lib/chart/utils/chartUtils'
 import { formatValue } from '@/utils/number'
 
 const createIndicatorContainer = (id: string) => {
@@ -153,7 +153,7 @@ const priceIndicatorPlugin: ValueIndicatorPlugin = {
       dateBox.style.fontWeight = '500'
       dateBox.style.fontFamily = 'Pretendard'
       dateBox.style.whiteSpace = 'nowrap'
-      dateBox.textContent = dayjs(this.focusedPoints[0].x).format('YYYY-MM-DD')
+      dateBox.textContent = getFormattedDateFromChart(chart, this.focusedPoints[0].interactionPoint.index)
       mainIndicatorContainer.appendChild(dateBox)
 
       // 값 표시

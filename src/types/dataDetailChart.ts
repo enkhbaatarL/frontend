@@ -34,6 +34,8 @@ export interface ChartMetadata {
   currency: string
   currentUnitCd: string
   currentInterval: ChartInterval
+  currentRange: ChartRange
+  currentRangeBetween: string[]
   initialChartType: ChartType
   changeableUnitCd: string[]
   latestDate: string
