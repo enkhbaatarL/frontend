@@ -200,7 +200,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               yAxisID: 'y',
               metadata: {
                 isMain: true,
-                chipColor: '#2F62A3',
+                chipColor: 'common.black',
               },
             },
             ...refDataSeries.map((series) => ({
@@ -223,7 +223,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               yAxisID: 'y',
               metadata: {
                 isMain: true,
-                chipColor: '#2F62A3',
+                chipColor: 'common.black',
               },
             })),
             ...(volumeDataSeries
@@ -263,7 +263,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             yAxisID: 'y',
             metadata: {
               isMain: true,
-              chipColor: '#40597A',
+              chipColor: ['#40597A', '#7A8790', '#9DAFB9', '#C7CED4'][index],
             },
           }))
         }
@@ -308,7 +308,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             yAxisID: 'y',
             metadata: {
               isMain: true,
-              chipColor: '#498B47',
+              chipColor: 'common.black',
             },
           },
         ]
@@ -337,7 +337,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
 
       return {
         MA: ma?.series
-          .map((series) => ({
+          .map((series, index) => ({
             label: maLabels[series.seriesId],
             data: series.values.map((value, index) => ({
               x: index,
@@ -353,6 +353,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             metadata: {
               isMain: true,
               chipColor: maColors[series.seriesId],
+              hasDivider: index === 0,
             },
           }))
           .sort((a, b) => {
@@ -360,7 +361,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             const numB = parseInt(b.label.replace('MA', ''))
             return numA - numB
           }),
-        BB: bb?.series.map((series) => ({
+        BB: bb?.series.map((series, index) => ({
           label: bbLabels[series.seriesId],
           data: series.values.map((value, index) => ({
             x: index,
@@ -375,6 +376,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           metadata: {
             isMain: true,
             chipColor: bbColors[series.seriesId],
+            hasDivider: index === 0,
           },
         })),
       }
@@ -401,6 +403,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         yAxisID: chart.unitCd ?? 'y',
         metadata: {
           chipColor: colors[index % colors.length],
+          hasDivider: index === 0,
         },
       }))
     }, [comparisonCharts, hideComparisonChartIndexList, timestampToIndex])

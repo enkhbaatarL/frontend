@@ -54,7 +54,7 @@ export const generateYAxis = (params: {
       family: 'Pretendard,sans-serif',
       weight: 'normal' as const,
     },
-    stepSize: 1,
+    // stepSize: 1,
     beginAtZero: true,
     maxTicksLimit: 16,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

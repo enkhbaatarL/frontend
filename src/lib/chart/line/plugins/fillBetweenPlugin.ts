@@ -49,7 +49,13 @@ const fillBetweenPlugin: Plugin<'line'> = {
 
     const fillColor = options.fillColor ?? 'rgba(0, 0, 255, 0.3)'
 
+    ctx.save()
+    const { left, top, right, bottom } = chart.chartArea
+    ctx.beginPath()
+    ctx.rect(left, top, right - left, bottom - top)
+    ctx.clip()
     drawFillBetweenLines(ctx, metaData1, metaData2, fillColor)
+    ctx.restore()
   },
 }
 

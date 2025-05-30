@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Divider, Typography } from '@mui/material'
 import { ReactNode } from 'react'
 
 import { formatValue } from '@/utils/number'
@@ -27,11 +27,11 @@ export default function MIChartTooltip({
   visible?: boolean
   top?: number
   left?: number
-  content: Record<string, { label?: string; value?: number; color?: string; date: string }>
+  content: Record<string, { label?: string; value?: number; color?: string; date: string; hasDivider?: boolean }>
 }>) {
   if (!visible) return null
 
-  const items: Array<{ label?: string; value?: number; color?: string; date: string }> = []
+  const items: Array<{ label?: string; value?: number; color?: string; date: string; hasDivider?: boolean }> = []
 
   Object.entries(content).forEach(([, value]) => {
     items.push(value)
@@ -60,7 +60,10 @@ export default function MIChartTooltip({
         </Typography>
       </Box>
       {items.map((item, idx) => (
-        <ChartToolTipItem key={idx} label={item.label as string} value={item.value} color={item.color as string} />
+        <>
+          {item.hasDivider && <Divider sx={{ my: '8px', borderColor: '#DEE2E6' }} />}
+          <ChartToolTipItem key={idx} label={item.label as string} value={item.value} color={item.color as string} />
+        </>
       ))}
     </Box>
   )

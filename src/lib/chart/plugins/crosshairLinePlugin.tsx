@@ -9,6 +9,7 @@ declare module 'chart.js' {
     metadata?: {
       chipColor?: string
       isMain?: boolean
+      hasDivider?: boolean
     }
   }
 }
@@ -18,7 +19,7 @@ type EmptyObject = Record<string, never>
 interface CrosshairLinePlugin extends Plugin {
   id: string
   mousePosition: { x: number; y: number } | null
-  tooltipContent: Record<string, { label?: ReactNode; value?: number; color?: string; date: string }>
+  tooltipContent: Record<string, { label?: ReactNode; value?: number; color?: string; date: string; hasDivider?: boolean }>
   afterDraw(chart: Chart<ChartType>, args: EmptyObject, options: unknown): void
 }
 
@@ -85,6 +86,7 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
             color: dataset.metadata?.chipColor as string,
             value,
             date: formattedDate,
+            hasDivider: dataset.metadata?.hasDivider,
           }
         })
 

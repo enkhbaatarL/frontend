@@ -185,6 +185,10 @@ const priceIndicatorPlugin: ValueIndicatorPlugin = {
           const yPixel = chart.scales[yAxisId].getPixelForValue(value)
           const adjustedTop = getNonOverlappingTop(mainIndicatorContainer as HTMLElement, yPixel - 10, boxHeight)
 
+          if (adjustedTop < chartArea.top || adjustedTop + boxHeight > chartArea.bottom) {
+            return
+          }
+
           valueBox.style.left = `${chartArea.left - valueBox.offsetWidth - 4}px`
           valueBox.style.top = `${adjustedTop}px`
 
@@ -228,6 +232,10 @@ const priceIndicatorPlugin: ValueIndicatorPlugin = {
 
       const boxHeight = labelBox.offsetHeight ?? 20
       const adjustedTop = getNonOverlappingTop(comparisonIndicatorContainer as HTMLElement, yPixel - 10, boxHeight)
+
+      if (adjustedTop < chartArea.top || adjustedTop + boxHeight > chartArea.bottom) {
+        return
+      }
 
       labelBox.style.left = `${scale.left + 3}px`
       labelBox.style.top = `${adjustedTop}px`
