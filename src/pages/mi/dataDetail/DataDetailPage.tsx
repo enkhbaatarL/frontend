@@ -3,7 +3,7 @@ import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 
 import bshImg from '@/assets/bgsubheader.png'
@@ -14,6 +14,7 @@ import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
 import MISkeleton from '@/components/mi/MISkeleton'
 import queryClient from '@/lib/queryClient'
 import ChartComponent from '@/pages/mi/dataDetail/components/ChartComponent'
@@ -40,7 +41,8 @@ const DataDetailPage = () => {
   const [rawSize, setRawSize] = useState<number>(10)
   const [rawPage, setRawPage] = useState<number>(1)
 
-  const isInitialLoad = useRef(true)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [hasInitialData, setHasInitialData] = useState(false)
 
   const { goodsNo, goodsDataNo } = useMemo(
     () => ({
@@ -95,21 +97,6 @@ const DataDetailPage = () => {
     gcTime: 0,
     enabled: !!goodsDataSourceNo,
   })
-
-  const isActuallyLoading = useMemo(() => {
-    const isInitialLoading = productDataIsLoading || structuredDataListIsLoading || unstructuredDateListIsLoading || rawGoodsDataIsLoading
-
-    if (!isInitialLoading && isInitialLoad.current) {
-      isInitialLoad.current = false
-    }
-
-    return isInitialLoad.current && isInitialLoading
-  }, [productDataIsLoading, structuredDataListIsLoading, unstructuredDateListIsLoading, rawGoodsDataIsLoading])
-
-  const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
-    setStartDate(startDate?.format('YYYYMMDD') ?? '')
-    setEndDate(endDate?.format('YYYYMMDD') ?? '')
-  }
 
   const downloadRawData = async () => {
     if (!goodsDataSourceNo) return
@@ -193,6 +180,54 @@ const DataDetailPage = () => {
     else if (firstItemDataSourceNo) setGoodsDataSourceNo(firstItemDataSourceNo)
   }, [state?.goodsDataSrcNo, structuredDataList])
 
+  const isActuallyLoading = useMemo(
+    () =>
+      isInitialLoading ||
+      productDataIsLoading ||
+      structuredDataListIsLoading ||
+      unstructuredDateListIsLoading ||
+      (rawGoodsDataIsLoading && !hasInitialData),
+    [
+      isInitialLoading,
+      productDataIsLoading,
+      structuredDataListIsLoading,
+      unstructuredDateListIsLoading,
+      rawGoodsDataIsLoading,
+      hasInitialData,
+    ],
+  )
+
+  const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
+    setStartDate(startDate?.format('YYYYMMDD') ?? '')
+    setEndDate(endDate?.format('YYYYMMDD') ?? '')
+  }
+
+  useEffect(() => {
+    const initializeData = async () => {
+      if (productData && structuredDataList && unstructuredDataList && !hasInitialData) {
+        try {
+          // 기본 상태 설정이 완료되었음을 표시
+          setHasInitialData(true)
+        } catch (error) {
+          console.error('초기 데이터 로딩 실패:', error)
+        } finally {
+          setIsInitialLoading(false)
+        }
+      } else if (productData && structuredDataList !== undefined && unstructuredDataList !== undefined) {
+        setIsInitialLoading(false)
+        setHasInitialData(true)
+      }
+    }
+
+    initializeData()
+  }, [productData, structuredDataList, unstructuredDataList, hasInitialData])
+
+  useEffect(() => {
+    if (rawGoodsData?.detail && rawGoodsData.detail.length > 0) {
+      setHasInitialData(true)
+    }
+  }, [rawGoodsData])
+
   return (
     <MISkeleton variant={'dataDetail'} loading={isActuallyLoading}>
       {productData && (
@@ -252,11 +287,10 @@ const DataDetailPage = () => {
                     <MITableUser<ITableRow>
                       tableProps={{
                         disableHover: true,
-                        noRowMessage: '등록된 내용이 없습니다.',
+                        noRowMessage: 'No results found',
                         columns: columns as GridColDef[],
                         rowId: 'id',
                         rows,
-                        loading: rawGoodsDataIsLoading, // 테이블 자체 로딩 상태
                       }}
                       paginationProps={{
                         data: rawGoodsData as unknown as IPaginationResponse<ITableRow>,
@@ -267,21 +301,9 @@ const DataDetailPage = () => {
                     />
                   </Box>
                 )}
-                {!rawGoodsData?.detail && !rawGoodsDataIsLoading && (
-                  <Box
-                    display={'flex'}
-                    alignItems={'center'}
-                    justifyContent={'center'}
-                    width={'100%'}
-                    height={'732px'}
-                    sx={{ backgroundColor: '#F8F9FA', border: '1px solid #DEE2E6', borderRadius: '4px' }}
-                  >
-                    <Box display={'flex'} flexDirection={'column'} height={'fit-content'} alignItems={'center'}>
-                      <ErrorOutlineIcon />
-                      <Typography variant="body3SB12" color="gray.60" mt={'10px'}>
-                        No results found
-                      </Typography>
-                    </Box>
+                {!rawGoodsData && hasInitialData && (
+                  <Box>
+                    <MIBaseSkeleton.BaseElement2 width={'100%'} height={'497px'} />
                   </Box>
                 )}
                 <MILine />

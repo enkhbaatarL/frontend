@@ -8,10 +8,10 @@ import MIAgentHistory, { ChatItem } from './MIAgentHistory'
 import MIAgentPromptInputBox, { MIAgentPromptState } from './MIAgentPromptInputBox'
 import MIAgentStatus, { MIAgentStatusType } from './MIAgentStatus'
 
-/// import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIAgentConversation from '@/components/common/agent/MIAgentConversation'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import useSnackbar from '@/hooks/useSnackbar'
+
 export interface ChatMessage {
   id: string
   text: string
@@ -47,6 +47,7 @@ const MIAgentChatWindow = ({
   const [agentStatus, setAgentStatus] = useState<MIAgentStatusType>(defaultAgentStatus)
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(defaultSidebarExpanded)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [sentSuccess, setSentSuccess] = useState(false)
   const [getAnswer, setGetAnswer] = useState(false)
   const [modePosition, setModePosition] = useState<'top' | 'bottom'>('bottom')
@@ -82,20 +83,32 @@ const MIAgentChatWindow = ({
   const [isOpenDelete, setIsOpenDelete] = useState(false)
   const { showSnackbar } = useSnackbar()
 
-  // Scroll to bottom when messages change
+  // Auto scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    setTimeout(() => {
-      const scrollInChat = document.getElementsByClassName('chat-window-scroll')
+    if (sentSuccess || getAnswer) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages, sentSuccess, getAnswer])
 
-      if (windowExpend || (scrollInChat?.length > 0 && scrollInChat[0].scrollHeight > 650 && modePosition !== 'top')) {
-        setModePosition('top')
-      } else if (!windowExpend && scrollInChat.length > 0 && scrollInChat[0].scrollHeight < 650 && modePosition !== 'bottom') {
-        setModePosition('bottom')
+  // Update mode position based on content height
+  useEffect(() => {
+    const updateModePosition = () => {
+      if (scrollContainerRef.current) {
+        const { scrollHeight, clientHeight } = scrollContainerRef.current
+        const hasOverflow = scrollHeight > clientHeight
+
+        if (windowExpend || (hasOverflow && modePosition !== 'top')) {
+          setModePosition('top')
+        } else if (!windowExpend && !hasOverflow && modePosition !== 'bottom') {
+          setModePosition('bottom')
+        }
       }
-    }, 500)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, windowExpend])
+    }
+
+    // Delay to ensure DOM is updated
+    const timeoutId = setTimeout(updateModePosition, 100)
+    return () => clearTimeout(timeoutId)
+  }, [messages, windowExpend, modePosition])
 
   // call AI api here
   const handleSendMessage = (message?: string) => {
@@ -200,7 +213,7 @@ const MIAgentChatWindow = ({
         sx={{
           display: 'flex',
           width: windowExpend ? '1380px' : '640px',
-          height: windowExpend ? `calc(100vh - ${top + 96}px)` : '480px', /// TODO: 헤더 올라간 영역도 계산 필요
+          height: windowExpend || !isMessagesEmpty ? `calc(100vh - ${top + 96}px)` : '480px',
           transition: 'width 0.4s cubic-bezier(0.33, 1, 0.68, 1), height 0.54s cubic-bezier(0.33, 1, 0.68, 1)',
           minWidth: '640px',
           maxWidth: '1380px',
@@ -232,28 +245,66 @@ const MIAgentChatWindow = ({
             backgroundColor: '#F9F8F6',
             width: '100%',
             borderRadius: '12px',
+            minHeight: 0,
+            overflow: 'hidden',
           }}
         >
           {/* Header area */}
-          <MIAgentHeaderBox
-            onExpand={toggleExpand}
-            minimized={windowExpend}
-            onClose={() => {
-              onClose?.()
-              onChangeExpand?.(false)
-            }}
-          />
+          <Box sx={{ flexShrink: 0 }}>
+            <MIAgentHeaderBox
+              onExpand={toggleExpand}
+              minimized={windowExpend}
+              onClose={() => {
+                onClose?.()
+                onChangeExpand?.(false)
+              }}
+            />
+          </Box>
           {/* Response area */}
-          <Box flex={'1'} justifyContent={'space-between'} display={'flex'} flexDirection={'column'}>
-            {/*<ScrollWrapper*/}
-            {/*  scrollToBottomTrigger={sentSuccess}*/}
-            {/*  scrollToBottomOffset={getAnswer}*/}
-            {/*  // maxHeight={!windowExpend || (inputStatus !== 'send-activated' && inputStatus !== 'send-disabled') ? 500 : 564}*/}
-            {/*  className="chat-window-scroll"*/}
-            {/*>*/}
-            <Box position={'relative'} sx={{ height: '100%', overflowY: isMessagesEmpty ? 'hidden' : 'auto', padding: '12px' }}>
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0, // This is important for flex items to shrink
+              overflow: 'hidden',
+            }}
+          >
+            <Box
+              ref={scrollContainerRef}
+              sx={{
+                flex: 1,
+                overflowY: isMessagesEmpty ? 'hidden' : 'auto',
+                overflowX: 'hidden',
+                padding: '12px',
+                minHeight: 0, // This is important for flex items to shrink
+                position: 'relative',
+                // Custom scrollbar styling
+                '&::-webkit-scrollbar': {
+                  width: '6px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                  borderRadius: '3px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: '#CED4DA',
+                  borderRadius: '3px',
+                  '&:hover': {
+                    background: '#ADB5BD',
+                  },
+                },
+                // For Firefox
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#CED4DA transparent',
+              }}
+            >
               {!isMessagesEmpty ? (
-                <MIAgentConversation messages={messages} scrollToBottom={handleScrollBottom} handleSendMessage={handleSendMessage} />
+                <>
+                  <MIAgentConversation messages={messages} scrollToBottom={handleScrollBottom} handleSendMessage={handleSendMessage} />
+                  {/* Invisible element for scrolling to bottom */}
+                  <div ref={messagesEndRef} />
+                </>
               ) : (
                 <Box
                   position={'absolute'}
@@ -271,11 +322,20 @@ const MIAgentChatWindow = ({
                 </Box>
               )}
             </Box>
-            {/*</ScrollWrapper>*/}
-            {inputStatus !== 'send-activated' && inputStatus !== 'send-disabled' && <MIAgentStatus status={agentStatus} />}
+            {inputStatus !== 'send-activated' && inputStatus !== 'send-disabled' && (
+              <Box sx={{ flexShrink: 0 }}>
+                <MIAgentStatus status={agentStatus} />
+              </Box>
+            )}
           </Box>
           {/* Footer area */}
-          <Box padding={'12px'} height={'120px'}>
+          <Box
+            sx={{
+              padding: '12px',
+              height: '120px',
+              flexShrink: 0, // Prevent footer from shrinking
+            }}
+          >
             <MIAgentPromptInputBox
               inputStatus={inputStatus}
               agentStatus={agentStatus}
