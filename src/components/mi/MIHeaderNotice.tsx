@@ -24,6 +24,7 @@ interface NoticeItemProps {
   isRead: boolean
   onClick?: (id: number) => void
 }
+
 const AlertItem = ({ id, trend, title, subtitle, date, isRead, onClick }: NoticeItemProps) => (
   <ListItem
     onClick={() => onClick?.(id)}
@@ -219,6 +220,7 @@ const NoticeItem = ({ id, title, subtitle, date, isRead, onClick }: NoticeItemPr
 
 const MIHeaderNotice = () => {
   const navigate = useNavigate()
+  const [isNoticeMenuOpen, setIsNoticeMenuOpen] = useState(false)
   const [anchorElNotice, setAnchorElNotice] = useState<null | HTMLElement>(null)
   const [notices, setNotices] = useState<INoticeInfo[]>([])
   const [isLoadingNotices, setIsLoadingNotices] = useState(false)
@@ -227,13 +229,21 @@ const MIHeaderNotice = () => {
   const { user, accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
-  const handleOpenNoticeMenu = (event: ReactMouseEvent<HTMLElement>) => {
-    setAnchorElNotice(event.currentTarget)
+  const handleToggleNoticeMenu = (event: ReactMouseEvent<HTMLElement>) => {
+    if (isNoticeMenuOpen) {
+      setIsNoticeMenuOpen(false)
+      setAnchorElNotice(null)
+    } else {
+      setIsNoticeMenuOpen(true)
+      setAnchorElNotice(event.currentTarget)
+    }
   }
 
   const handleCloseNoticeMenu = () => {
+    setIsNoticeMenuOpen(false)
     setAnchorElNotice(null)
   }
+
   const anchorEl = useRef<HTMLElement>(null)
 
   // 공지사항 데이터 로드
@@ -393,6 +403,7 @@ const MIHeaderNotice = () => {
   useEffect(() => {
     const handleClickOutside = (event: globalThis.MouseEvent) => {
       if (anchorEl.current && !anchorEl.current.contains(event.target as Node)) {
+        setIsNoticeMenuOpen(false)
         setAnchorElNotice(null)
       }
     }
@@ -406,19 +417,12 @@ const MIHeaderNotice = () => {
 
   return (
     <Box position={'relative'} ref={anchorEl}>
-      <MIButton
-        onClick={handleOpenNoticeMenu}
-        color="gray"
-        active={Boolean(anchorElNotice)}
-        contentType={'icon'}
-        size={'h28'}
-        type={'ghost'}
-      >
+      <MIButton onClick={handleToggleNoticeMenu} color="gray" active={isNoticeMenuOpen} contentType={'icon'} size={'h28'} type={'ghost'}>
         <Badge className="BadgeDote" variant="dot" color="error">
           <NotificationsIcon />
         </Badge>
       </MIButton>
-      {Boolean(anchorElNotice) && (
+      {isNoticeMenuOpen && (
         <Box
           sx={{
             position: 'absolute',
