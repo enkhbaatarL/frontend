@@ -1,4 +1,4 @@
-import { Chart } from 'chart.js'
+import { Chart, ChartTypeRegistry } from 'chart.js'
 import dayjs from 'dayjs'
 
 export const getFormattedDateFromChart = (chart: Chart, index: number, format?: string): string => {
@@ -6,7 +6,7 @@ export const getFormattedDateFromChart = (chart: Chart, index: number, format?: 
   return dayjs(Number(dateLabel)).format(format ?? 'YYYY-MM-DD')
 }
 
-export const getDatasetMetaData = (chart: Chart<'line'>, label: string) => {
+export const getDatasetMetaData = <T extends keyof ChartTypeRegistry>(chart: Chart<T>, label: string) => {
   const { datasets } = chart.data
 
   const targetIndex = datasets.findIndex((dataset) => dataset.label === label)
@@ -16,7 +16,7 @@ export const getDatasetMetaData = (chart: Chart<'line'>, label: string) => {
   return chart.getDatasetMeta(targetIndex)
 }
 
-export const getDatasetBorderColor = (chart: Chart<'line'>, label: string) => {
+export const getDatasetBorderColor = <T extends keyof ChartTypeRegistry>(chart: Chart<T>, label: string) => {
   const { datasets } = chart.data
 
   return datasets.find((dataset) => dataset.label === label)?.borderColor

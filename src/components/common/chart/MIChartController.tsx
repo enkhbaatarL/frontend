@@ -137,7 +137,7 @@ export default function MIChartController({
             options={
               unitList?.map((unit) => ({
                 value: unit,
-                label: unit.split('#').at(-1) ?? unit,
+                label: unit?.split('#').at(-1) ?? unit ?? '',
               })) ?? []
             }
             minWidth="95px"

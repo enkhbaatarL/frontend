@@ -1,4 +1,4 @@
-import { Chart, Plugin, Point } from 'chart.js'
+import { Chart, Plugin, Point, ChartTypeRegistry } from 'chart.js'
 
 import { getDatasetBorderColor, getDatasetMetaData } from '@/lib/chart/utils/chartUtils'
 
@@ -36,10 +36,12 @@ const drawFillBetweenLines = (ctx: CanvasRenderingContext2D, metaData1: ChartMet
   ctx.restore()
 }
 
-const fillBetweenPlugin: Plugin<'line'> = {
+const fillBetweenPlugin: Plugin<keyof ChartTypeRegistry, Options> = {
   id: 'fillBetween',
-  beforeDraw: (chart: Chart<'line'>, _args: unknown, options: Options) => {
+  beforeDraw: (chart: Chart<keyof ChartTypeRegistry>, _args: unknown, options: Options) => {
     const { ctx } = chart
+
+    if (!options?.labels || options.labels.length < 2) return
 
     const metaData1 = getDatasetMetaData(chart, options.labels[0])
     const metaData2 = getDatasetMetaData(chart, options.labels[1])

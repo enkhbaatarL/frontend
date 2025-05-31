@@ -1,10 +1,11 @@
 import { Box } from '@mui/material'
-import { Chart, Point, Tooltip, ChartTypeRegistry, ChartDataset, Plugin } from 'chart.js'
+import { Chart as ChartJS, Point, Tooltip, ChartDataset } from 'chart.js'
 import { FinancialDataPoint } from 'chart.js/auto'
 import { CandlestickController, CandlestickElement, OhlcController, OhlcElement } from 'chartjs-chart-financial'
 import zoomPlugin from 'chartjs-plugin-zoom'
 import dayjs from 'dayjs'
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Chart } from 'react-chartjs-2'
 
 import '@/lib/chart/adapterDayjs'
 import MIChartLegendToggle from './MIChartLegendToggle'
@@ -44,7 +45,7 @@ interface MIChartProps {
   currentRangeBetween: string[]
 }
 
-Chart.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement, zoomPlugin)
+ChartJS.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement, zoomPlugin)
 
 Tooltip.positioners.pointerPositioner = function (_elements, eventPosition) {
   return {
@@ -89,10 +90,6 @@ const bbLabels: {
 
 type ChartDatasetType = ChartDataset<'line' | 'candlestick', (Point | FinancialDataPoint)[]>
 
-type ChartTypeValue = 'line' | 'candlestick'
-type ChartDataType = (Point | FinancialDataPoint | null)[]
-type ChartPluginType = Plugin<keyof ChartTypeRegistry, ChartDataType>
-
 const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
   (
     {
@@ -107,8 +104,9 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     },
     ref,
   ) => {
+    const mainChartRef = useRef<ChartJS | null>(null)
+
     const chartRef = useRef<HTMLCanvasElement>(null)
-    const [chartInstance, setChartInstance] = useState<Chart | null>(null)
     const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
     const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
 
@@ -193,6 +191,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
                 chipColor: 'common.black',
               },
             },
+            // NOTE: ref, volume 데이터는 표시하지 않음 - hidden: true 지정 (y축 범위 문제)
             ...refDataSeries.map((series) => ({
               label: series.label,
               data:
@@ -212,6 +211,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               tension: 0.1,
               spanGaps: true,
               yAxisID: 'y',
+              hidden: true,
               metadata: {
                 isMain: true,
                 chipColor: 'common.black',
@@ -232,6 +232,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
                   tension: 0.1,
                   spanGaps: true,
                   yAxisID: 'y',
+                  hidden: true,
                 },
               ]
               : []),
@@ -247,7 +248,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
                 y: value ?? null,
               })) ?? sortedTimestamps.map((_, index) => ({ x: index, y: null })),
             type: 'line',
-            borderColor: ['#40597A', '#7A8790', '#9DAFB9', '#C7CED4'][index],
+            borderColor: ['#40597A', '#7A8790', '#9DAFB9', '#B1BEC6'][index], // 가시성 문제로 #C7CED4 -> #B1BEC6 적용
             borderWidth: series?.seriesId === 'close' ? 3 : 0,
             pointRadius: 0,
             fill: false,
@@ -256,7 +257,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             yAxisID: 'y',
             metadata: {
               isMain: true,
-              chipColor: ['#40597A', '#7A8790', '#9DAFB9', '#C7CED4'][index],
+              chipColor: ['#40597A', '#7A8790', '#9DAFB9', '#B1BEC6'][index],
             },
           }))
         }
@@ -330,7 +331,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
 
       return {
         MA: ma?.series
-          .map((series, index) => ({
+          .map((series) => ({
             label: maLabels[series.seriesId],
             data: series.values.map((value, index) => ({
               x: index,
@@ -347,7 +348,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             metadata: {
               isMain: true,
               chipColor: maColors[series.seriesId],
-              hasDivider: index === 0,
+              hasDivider: maLabels[series.seriesId] === 'MA5',
             },
           }))
           .sort((a, b) => {
@@ -355,25 +356,30 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             const numB = parseInt(b.label.replace('MA', ''))
             return numA - numB
           }),
-        BB: bb?.series.map((series, index) => ({
-          label: bbLabels[series.seriesId],
-          data: series.values.map((value, index) => ({
-            x: index,
-            y: value ?? null,
-          })),
-          type: 'line',
-          borderColor: displayDataInfo.BB ? bbColors[series.seriesId] : 'transparent',
-          borderWidth: 1,
-          pointRadius: 0,
-          fill: false,
-          tension: 0.1,
-          spanGaps: true,
-          metadata: {
-            isMain: true,
-            chipColor: bbColors[series.seriesId],
-            hasDivider: index === 0,
-          },
-        })),
+        BB: bb?.series
+          .map((series) => ({
+            label: bbLabels[series.seriesId],
+            data: series.values.map((value, index) => ({
+              x: index,
+              y: value ?? null,
+            })),
+            type: 'line',
+            borderColor: displayDataInfo.BB ? bbColors[series.seriesId] : 'transparent',
+            borderWidth: 1,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.1,
+            spanGaps: true,
+            metadata: {
+              isMain: true,
+              chipColor: bbColors[series.seriesId],
+              hasDivider: bbLabels[series.seriesId] === 'Upper BB',
+            },
+          }))
+          .sort((a, b) => {
+            const order: Record<string, number> = { 'Upper BB': 0, 'Middle BB': 1, 'Lower BB': 2 }
+            return order[a.label] - order[b.label]
+          }),
       }
     }, [indicators, displayDataInfo.BB, displayDataInfo.MA])
 
@@ -454,141 +460,112 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       [mainDatasets],
     )
 
-    const createChart = () => {
-      if (chartInstance) {
-        chartInstance.destroy()
-        setChartInstance(null)
-      }
+    const mainDataset = useMemo(() => {
+      const datasets = []
 
-      const ctx = chartRef.current
-      if (!ctx) return
-      const existingChart = Chart.getChart(ctx)
-      if (existingChart) {
-        existingChart.destroy()
-      }
+      if (mainDatasets !== null) datasets.push(...mainDatasets)
+      if (indicatorDatasets.BB) datasets.push(...indicatorDatasets.BB)
+      if (indicatorDatasets.MA) datasets.push(...indicatorDatasets.MA)
+      if (comparisonDatasets.length) datasets.push(...comparisonDatasets)
 
-      const datasets: ChartDatasetType[] = []
+      return datasets as ChartDatasetType[]
+    }, [comparisonDatasets, indicatorDatasets.BB, indicatorDatasets.MA, mainDatasets])
 
-      if (mainDatasets !== null) datasets.push(...(mainDatasets as ChartDatasetType[]))
-      if (indicatorDatasets.BB) datasets.push(...(indicatorDatasets.BB as ChartDatasetType[]))
-      if (indicatorDatasets.MA) datasets.push(...(indicatorDatasets.MA as ChartDatasetType[]))
-      if (comparisonDatasets.length) {
-        datasets.push(...(comparisonDatasets as ChartDatasetType[]))
-      }
-
-      const chartTypeValue: ChartTypeValue = chartType === MIChartType.CANDLE ? 'candlestick' : 'line'
-
-      const newChartInstance = new Chart(ctx, {
-        type: chartTypeValue,
-        data: {
-          datasets,
-        },
-        plugins: [verticalAxisDecoratorPlugin, crosshairLinePlugin, priceIndicatorPlugin, fillBetweenPlugin as ChartPluginType],
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false,
-          scales: {
-            x: {
-              type: 'category',
-              labels: sortedTimestamps.map((timestamp) => timestamp.toString()),
-              title: {
-                display: false,
-              },
-              grid: {
-                color: '#ADB5BD',
-                drawTicks: false,
-              },
-              border: {
-                dash: [2, 2],
-                width: 1,
-                color: '#2E3F5E',
-              },
-              afterTickToLabelConversion(axis) {
-                if (axis.ticks.length > 0) {
-                  axis.ticks[0].label = ''
-                  axis.ticks[axis.ticks.length - 1].label = ''
-                }
-              },
-              ticks: {
-                maxTicksLimit: 12,
-                padding: 12,
-                color: '#2E3F5E',
-                font: {
-                  size: 14,
-                  family: 'Pretendard,sans-serif',
-                  weight: 'bold' as const,
-                },
-                callback(tickValue: string | number) {
-                  const index = typeof tickValue === 'string' ? parseInt(tickValue) : tickValue
-                  const timestamp = sortedTimestamps[index]
-                  const date = dayjs(Number(timestamp))
-                  return getChartLabel(date, interval)
-                },
-              },
-            },
-            y: {
-              ...generateYAxis({
-                isMain: true,
-                position: 'left',
-                unit: mainData.unit.split('#').at(-1) ?? mainData.unit,
-                borderColor: '#DEE2E6',
-              }),
-              min: isEmptyChart ? 0 : undefined,
-              max: isEmptyChart ? 0 : undefined,
-            },
-            ...subYAxes,
-          },
-          plugins: {
-            tooltip: {
-              enabled: false,
-            },
-            verticalAxisDecorator: {
-              yIDs: ['y', ...Object.keys(subYAxes)],
-            },
-            fillBetween: {
-              labels: ['Upper BB', 'Lower BB'],
-              fillColor: 'rgba(206, 212, 218, 0.12)',
-            },
-            legend: {
+    const chartOptions = useMemo(
+      () => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 0 },
+        scales: {
+          x: {
+            type: 'category' as const,
+            labels: sortedTimestamps.map((timestamp) => timestamp.toString()),
+            title: {
               display: false,
             },
-            crosshairLinePlugin: {
-              onPointerMove: externalTooltipHandler,
+            grid: {
+              color: '#ADB5BD',
+              drawTicks: false,
             },
-            zoom: {
-              pan: {
-                enabled: true,
-                mode: 'x',
-                modifierKey: null,
+            border: {
+              dash: [2, 2],
+              width: 1,
+              color: '#2E3F5E',
+            },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            afterTickToLabelConversion(axis: any) {
+              if (axis.ticks.length > 0) {
+                axis.ticks[0].label = ''
+                axis.ticks[axis.ticks.length - 1].label = ''
+              }
+            },
+            ticks: {
+              maxTicksLimit: 12,
+              padding: 12,
+              color: '#2E3F5E',
+              font: {
+                size: 14,
+                family: 'Pretendard,sans-serif',
+                weight: 'bold' as const,
               },
-              zoom: {
-                wheel: {
-                  enabled: true,
-                  modifierKey: 'ctrl',
-                },
-                pinch: {
-                  enabled: true,
-                },
-                mode: 'x',
+              callback(tickValue: string | number) {
+                const index = typeof tickValue === 'string' ? parseInt(tickValue) : tickValue
+                const timestamp = sortedTimestamps[index]
+                const date = dayjs(Number(timestamp))
+                return getChartLabel(date, interval)
               },
             },
           },
+          y: {
+            ...generateYAxis({
+              isMain: true,
+              position: 'left',
+              unit: mainData?.unit?.split('#').at(-1) ?? mainData?.unit ?? '',
+              borderColor: '#DEE2E6',
+            }),
+            min: isEmptyChart ? 0 : undefined,
+            max: isEmptyChart ? 0 : undefined,
+          },
+          ...subYAxes,
         },
-      })
-
-      setChartInstance(newChartInstance)
-    }
-
-    useEffect(() => {
-      if (
-        mainData.data &&
-        (!indicators.length || indicatorDatasets.MA || indicatorDatasets.BB) &&
-        (comparisonCharts.length === 0 || comparisonDatasets.length > 0)
-      ) {
-        createChart()
-      }
-    }, [mainData.data, indicatorDatasets, comparisonDatasets, interval, mainData.unit, subYAxes, chartType])
+        plugins: {
+          tooltip: {
+            enabled: false,
+          },
+          verticalAxisDecorator: {
+            yIDs: ['y', ...Object.keys(subYAxes)],
+          },
+          fillBetween: {
+            labels: ['Upper BB', 'Lower BB'],
+            fillColor: 'rgba(206, 212, 218, 0.12)',
+          },
+          legend: {
+            display: false,
+          },
+          crosshairLinePlugin: {
+            onPointerMove: externalTooltipHandler || (() => {}),
+          },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x',
+              modifierKey: null,
+            },
+            zoom: {
+              wheel: {
+                enabled: true,
+                modifierKey: 'ctrl',
+              },
+              pinch: {
+                enabled: true,
+              },
+              mode: 'x',
+            },
+          },
+        },
+      }),
+      [externalTooltipHandler, interval, isEmptyChart, mainData.unit, sortedTimestamps, subYAxes],
+    )
 
     useEffect(() => {
       if (ref && typeof ref === 'function') {
@@ -612,8 +589,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         <Box
           sx={{
             position: 'absolute',
-            top: `${(chartInstance?.chartArea?.top ?? 0) - 1}px`,
-            left: `${(chartInstance?.chartArea?.left ?? 0) + 10}px`,
+            top: `${mainChartRef?.current?.chartArea?.top ?? 0}px`,
+            left: `${(mainChartRef?.current?.chartArea?.left ?? 0) + 10}px`,
           }}
         >
           <MIChartLegendToggle
@@ -628,7 +605,13 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           />
         </Box>
         <Box height={'100%'}>
-          <canvas ref={chartRef} />
+          <Chart
+            ref={mainChartRef}
+            type={'candlestick'}
+            data={{ datasets: mainDataset }}
+            options={chartOptions}
+            plugins={[verticalAxisDecoratorPlugin, crosshairLinePlugin, priceIndicatorPlugin, fillBetweenPlugin]}
+          />
         </Box>
         <MIChartTooltip {...tooltip} />
       </Box>
