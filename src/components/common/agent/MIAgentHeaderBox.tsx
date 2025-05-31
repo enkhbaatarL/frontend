@@ -1,5 +1,5 @@
 import { Box, Tooltip } from '@mui/material'
-import React from 'react'
+import React, { useState } from 'react'
 
 import CloseChatIcon from '../icons/agent/CloseChatIcon'
 import CollapseIcon from '../icons/agent/CollapseIcon'
@@ -13,84 +13,100 @@ export interface MIAgentHeaderBoxProps {
   onClose?: () => void
 }
 
-const MIAgentHeaderBox: React.FC<MIAgentHeaderBoxProps> = ({ minimized = true, onExpand = () => {}, onClose = () => {} }) => (
-  <Box
-    width="100%"
-    minHeight="70px"
-    height="70px"
-    alignItems="center"
-    bgcolor="#F9F8F6"
-    display="flex"
-    justifyContent="space-between"
-    sx={{
-      userSelect: 'none',
-      borderRadius: '12px',
-    }}
-  >
-    <Tooltip title={'New Chat'} placement="right-start" disableInteractive>
-      <Box
-        sx={{
-          cursor: 'pointer',
-          transition: 'all 0.2s cubic-bezier(0, 0.55, 0.45, 1)',
-          '&:hover': {
-            transform: 'scale(1.04)',
-          },
-          '&:active': {
-            transform: 'scale(1.01)',
-          },
-        }}
-        onClick={() => console.log('New chat clicked')}
-      >
-        <img width={32} height={32} src={mariIcon} alt="Mari Icon" style={{ marginLeft: '16px' }} />
-      </Box>
-    </Tooltip>
+const MIAgentHeaderBox: React.FC<MIAgentHeaderBoxProps> = ({ minimized = true, onExpand = () => {}, onClose = () => {} }) => {
+  const [closeTooltipOpen, setCloseTooltipOpen] = useState(false)
 
-    <Box display="flex" alignItems="center" gap="8px">
-      <Tooltip title={minimized ? 'mini chat' : 'Maximize'} placement="right-start" disableInteractive>
+  const handleClose = () => {
+    setCloseTooltipOpen(false)
+    onClose()
+  }
+
+  return (
+    <Box
+      width="100%"
+      minHeight="70px"
+      height="70px"
+      alignItems="center"
+      bgcolor="#F9F8F6"
+      display="flex"
+      justifyContent="space-between"
+      sx={{
+        userSelect: 'none',
+        borderRadius: '12px',
+      }}
+    >
+      <Tooltip title={'New Chat'} placement="right-start" disableInteractive>
         <Box
-          width={34}
-          height={34}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          onClick={onExpand}
-          color={'contentIcon.Enabled'}
           sx={{
+            cursor: 'pointer',
+            transition: 'all 0.2s cubic-bezier(0, 0.55, 0.45, 1)',
             '&:hover': {
-              backgroundColor: '#EDECEA',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              color: '#000',
+              transform: 'scale(1.04)',
+            },
+            '&:active': {
+              transform: 'scale(1.01)',
             },
           }}
+          onClick={() => console.log('New chat clicked')}
         >
-          {minimized ? <CollapseIcon /> : <ExpandIcon />}
+          <img width={32} height={32} src={mariIcon} alt="Mari Icon" style={{ marginLeft: '16px' }} />
         </Box>
       </Tooltip>
-      <Tooltip title={'Close'} placement="right-start" disableInteractive>
-        <Box
-          width={34}
-          height={34}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          color={'contentIcon.Enabled'}
-          sx={{
-            marginRight: '12px',
-            '&:hover': {
-              backgroundColor: '#EDECEA',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              color: '#000',
-            },
-          }}
-          onClick={onClose}
+
+      <Box display="flex" alignItems="center" gap="8px">
+        <Tooltip title={minimized ? 'mini chat' : 'Maximize'} placement="right-start" disableInteractive>
+          <Box
+            width={34}
+            height={34}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            onClick={onExpand}
+            color={'contentIcon.Enabled'}
+            sx={{
+              '&:hover': {
+                backgroundColor: '#EDECEA',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                color: '#000',
+              },
+            }}
+          >
+            {minimized ? <CollapseIcon /> : <ExpandIcon />}
+          </Box>
+        </Tooltip>
+        <Tooltip
+          title={'Close'}
+          placement="right-start"
+          disableInteractive
+          open={closeTooltipOpen}
+          onOpen={() => setCloseTooltipOpen(true)}
+          onClose={() => setCloseTooltipOpen(false)}
         >
-          <CloseChatIcon />
-        </Box>
-      </Tooltip>
+          <Box
+            width={34}
+            height={34}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            color={'contentIcon.Enabled'}
+            sx={{
+              marginRight: '12px',
+              '&:hover': {
+                backgroundColor: '#EDECEA',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                color: '#000',
+              },
+            }}
+            onClick={handleClose}
+          >
+            <CloseChatIcon />
+          </Box>
+        </Tooltip>
+      </Box>
     </Box>
-  </Box>
-)
+  )
+}
 
 export default MIAgentHeaderBox
