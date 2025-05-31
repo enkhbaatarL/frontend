@@ -3,7 +3,7 @@ import { AxiosResponse } from 'axios'
 import api from '@/lib/axios'
 import { IAuditInfo } from '@/service/admin/members'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
-import { ChartInterval, ChartRange, DataDetailChart, MinInterval } from '@/types/dataDetailChart'
+import { ChartInterval, ChartMetadata, ChartRange, DataDetailChart, MinInterval } from '@/types/dataDetailChart'
 
 export interface ICategoryDataInfo {
   categoryHighCd: string
@@ -50,6 +50,7 @@ export interface IProductDataStructuredRawDataDownloadRequest {
   endDate: string
 }
 export interface IProductDataStructuredChartRequest {
+  goodsDataSourceNo?: number
   interval?: ChartInterval
   range?: ChartRange
   startDate?: string
@@ -101,6 +102,20 @@ const dataDetailService = {
       `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources`,
     )
 
+    return response.data.data
+  },
+
+  /**
+   * 상품 정형 데이터(데이터소스) 차트의 메타데이터를 조회합니다.
+   * 상품 VIEW권한이 필요합니다.
+   * @param goodsNo
+   * @param goodsDataNo
+   * @param goodsDataSourceNo
+   */
+  async getProductDataStructuredChartMetaData(goodsNo: number, goodsDataNo: number, goodsDataSourceNo: number): Promise<ChartMetadata> {
+    const response: AxiosResponse<ICommonResponse<ChartMetadata>> = await api.get(
+      `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/metadata`,
+    )
     return response.data.data
   },
 

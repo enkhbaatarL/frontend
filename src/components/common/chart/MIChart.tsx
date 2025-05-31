@@ -31,10 +31,8 @@ export interface DisplayDataInfo {
 }
 
 interface MIChartProps {
-  mainData: {
-    unit: string
-    data?: ChartData
-  }
+  unitCd?: string
+  mainChart?: ChartData
   indicators?: Indicator[]
   comparisonCharts?: ChartData[]
   displayDataInfo: DisplayDataInfo
@@ -95,7 +93,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     {
       height,
       interval,
-      mainData,
+      unitCd,
+      mainChart,
       chartType = MIChartType.LINE,
       indicators = [],
       comparisonCharts = [],
@@ -113,7 +112,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     const { sortedTimestamps, timestampToIndex } = useMemo(() => {
       const allTimestamps = new Set<number>()
 
-      mainData?.data?.timestamps?.forEach((timestamp: string) => allTimestamps.add(dayjs(timestamp).valueOf()))
+      mainChart?.timestamps?.forEach((timestamp: string) => allTimestamps.add(dayjs(timestamp).valueOf()))
       comparisonCharts.forEach((chart) =>
         chart.timestamps?.forEach((timestamp: string) => {
           allTimestamps.add(dayjs(timestamp).valueOf())
@@ -122,8 +121,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       indicators.forEach((indicator) => {
         indicator.series.forEach((series) => {
           series.values.forEach((_, index) => {
-            if (mainData?.data?.timestamps?.[index]) {
-              allTimestamps.add(dayjs(mainData.data.timestamps[index]).valueOf())
+            if (mainChart?.timestamps?.[index]) {
+              allTimestamps.add(dayjs(mainChart?.timestamps[index]).valueOf())
             }
           })
         })
@@ -139,7 +138,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       const timestampMap = new Map(sorted.map((timestamp, idx) => [timestamp, idx]))
 
       return { sortedTimestamps: sorted, timestampToIndex: timestampMap }
-    }, [mainData.data?.timestamps, comparisonCharts, indicators, currentRangeBetween])
+    }, [mainChart?.timestamps, comparisonCharts, indicators, currentRangeBetween])
 
     const {
       mainDataSeries,
@@ -150,7 +149,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       volumeDataSeries, // 거래량
       refDataSeries,
     } = useMemo(() => {
-      const series = mainData?.data?.series || []
+      const series = mainChart?.series || []
       const excludeSeriesIds = ['main', 'close', 'open', 'high', 'low', 'volume']
 
       return {
@@ -162,17 +161,17 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         volumeDataSeries: series.find((s) => s.seriesId === 'volume'),
         refDataSeries: series.filter((s) => !excludeSeriesIds.includes(s.seriesId)),
       }
-    }, [mainData?.data?.series])
+    }, [mainChart?.series])
 
     const mainDatasets = useMemo(() => {
       if (chartType === MIChartType.LINE) {
-        if (mainData?.data?.chartType === MIChartType.LINE) {
+        if (mainChart?.chartType === MIChartType.LINE) {
           return [
             {
-              label: mainData?.data?.goodsDataSourceName ?? '',
+              label: mainChart?.goodsDataSourceName ?? '',
               data:
                 mainDataSeries?.values?.map((value, index) => {
-                  const timestamp = dayjs(mainData?.data?.timestamps[index]).valueOf()
+                  const timestamp = dayjs(mainChart?.timestamps[index]).valueOf()
                   return {
                     x: timestampToIndex.get(timestamp) ?? index,
                     y: value ?? null,
@@ -198,7 +197,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
                 series.values.length === 0
                   ? sortedTimestamps.map((_, index) => ({ x: index, y: null }))
                   : series.values.map((value, index) => {
-                    const timestamp = dayjs(mainData?.data?.timestamps[index]).valueOf()
+                    const timestamp = dayjs(mainChart?.timestamps[index]).valueOf()
                     return {
                       x: timestampToIndex.get(timestamp) ?? index,
                       y: value ?? null,
@@ -239,9 +238,9 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           ]
         }
 
-        if (mainData?.data?.chartType === MIChartType.CANDLE) {
+        if (mainChart?.chartType === MIChartType.CANDLE) {
           return [closeDataSeries, openDataSeries, highDataSeries, lowDataSeries].map((series, index) => ({
-            label: `${mainData?.data?.goodsDataSourceName} (${series?.seriesId})`,
+            label: `${mainChart?.goodsDataSourceName} (${series?.seriesId})`,
             data:
               series?.values.map((value, index) => ({
                 x: index,
@@ -266,7 +265,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       if (chartType === MIChartType.CANDLE) {
         return [
           {
-            label: mainData?.data?.goodsDataSourceName ?? '',
+            label: mainChart?.goodsDataSourceName ?? '',
             data:
               closeDataSeries?.values.map((value, index) => ({
                 x: index,
@@ -311,9 +310,9 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       return null
     }, [
       chartType,
-      mainData?.data?.chartType,
-      mainData?.data?.goodsDataSourceName,
-      mainData?.data?.timestamps,
+      mainChart?.chartType,
+      mainChart?.goodsDataSourceName,
+      mainChart?.timestamps,
       mainDataSeries?.values,
       sortedTimestamps,
       refDataSeries,
@@ -520,7 +519,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             ...generateYAxis({
               isMain: true,
               position: 'left',
-              unit: mainData?.unit?.split('#').at(-1) ?? mainData?.unit ?? '',
+              unit: unitCd?.split('#').at(-1) ?? unitCd ?? '',
               borderColor: '#DEE2E6',
             }),
             min: isEmptyChart ? 0 : undefined,
@@ -564,7 +563,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           },
         },
       }),
-      [externalTooltipHandler, interval, isEmptyChart, mainData.unit, sortedTimestamps, subYAxes],
+      [externalTooltipHandler, interval, isEmptyChart, sortedTimestamps, subYAxes, unitCd],
     )
 
     useEffect(() => {

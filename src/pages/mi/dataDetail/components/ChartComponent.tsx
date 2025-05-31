@@ -21,7 +21,6 @@ interface ChartComponentProps {
   goodsDataSourceNo?: number
   setGoodsDataSourceNo: Dispatch<SetStateAction<number | undefined>>
   structuredDataList?: IProductDataStructuredData[]
-  goodsDataNm?: string
   isDownloadable?: boolean
 }
 
@@ -51,13 +50,11 @@ const ChartComponent = ({
   goodsDataSourceNo,
   setGoodsDataSourceNo,
   structuredDataList,
-  goodsDataNm,
   isDownloadable,
 }: ChartComponentProps) => {
   const miChartRef = useRef<HTMLCanvasElement | null>(null)
 
-  const [selectedRange, setSelectedRange] = useState<ChartRange>(ChartRange.MONTH)
-  const [chartInterval, setChartInterval] = useState<ChartInterval>(ChartInterval.DAY)
+  const [searchFilter, setSearchFilter] = useState<IProductDataStructuredChartRequest>({})
   const [useSaveLastSetting, setUseSaveLastSetting] = useState(false)
 
   const [chartType, setChartType] = useState<ChartType>(ChartType.LINE)
@@ -71,10 +68,6 @@ const ChartComponent = ({
       MA60: true,
       MA120: true,
     },
-  })
-
-  const [searchFilter, setSearchFilter] = useState<IProductDataStructuredChartRequest>({
-    range: ChartRange.MONTH,
   })
 
   const [startDate, setStartDate] = useState(dayjs().subtract(1, 'year').format('YYYYMMDD'))
@@ -96,39 +89,47 @@ const ChartComponent = ({
     [selectedDataSource],
   )
 
-  const { data: chartData, isLoading } = useQuery({
-    queryKey: [
-      'productDataStructuredChartData',
-      goodsNo,
-      goodsDataNo,
-      goodsDataSourceNo,
-      chartInterval,
-      selectedRange,
-      startDate,
-      endDate,
-      searchFilter.unitCd,
-    ],
-    queryFn: () =>
-      dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, goodsDataSourceNo!, {
-        range: selectedRange,
-        interval: chartInterval,
-        ...(selectedRange === ChartRange.CUSTOM && { startDate, endDate }),
-        unitCd: searchFilter.unitCd,
-      }),
+  const { data: chartMetaData } = useQuery({
+    queryKey: ['productDataStructuredChartMetaData', goodsNo, goodsDataNo, goodsDataSourceNo],
+    queryFn: () => dataDetailService.getProductDataStructuredChartMetaData(goodsNo, goodsDataNo, goodsDataSourceNo!),
     refetchOnWindowFocus: false,
     gcTime: 0,
     enabled: !!goodsDataSourceNo,
   })
 
+  const { data: chartData, isLoading } = useQuery({
+    queryKey: [
+      'productDataStructuredChartData',
+      goodsNo,
+      goodsDataNo,
+      searchFilter.goodsDataSourceNo,
+      searchFilter.interval,
+      searchFilter.range,
+      startDate,
+      endDate,
+      searchFilter.unitCd,
+    ],
+    queryFn: () =>
+      dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, searchFilter.goodsDataSourceNo!, {
+        range: searchFilter.range,
+        interval: searchFilter.interval,
+        ...(searchFilter.range === ChartRange.CUSTOM && { startDate, endDate }),
+        unitCd: searchFilter.unitCd,
+      }),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+    enabled: !isInitialState,
+  })
+
   const chartIntervalOptions = useMemo(
     () =>
       selectedDataSource?.allowedPeriods
-        .find((item) => item.range === selectedRange)
+        .find((item) => item.range === searchFilter.range)
         ?.intervals.map((interval) => ({
           value: interval,
           label: INTERVAL_LABELS[interval],
         })) ?? [],
-    [selectedDataSource, selectedRange],
+    [selectedDataSource, searchFilter.range],
   )
 
   const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
@@ -138,23 +139,30 @@ const ChartComponent = ({
 
   const handleRangeChange = (range: ChartRange) => {
     const newInterval = selectedDataSource?.allowedPeriods.find((item) => item.range === range)?.defaultInterval ?? ChartInterval.DAY
-    setSelectedRange(range)
-    setChartInterval(newInterval)
+    setSearchFilter((prev) => ({
+      ...prev,
+      range,
+      interval: newInterval,
+      startDate: range === ChartRange.CUSTOM ? startDate : undefined,
+      endDate: range === ChartRange.CUSTOM ? endDate : undefined,
+    }))
   }
 
   useEffect(() => {
-    if (chartData && isInitialState) {
+    if (chartMetaData) {
       setSearchFilter({
-        interval: chartData.metadata.currentInterval,
-        unitCd: chartData.metadata.currentUnitCd,
+        goodsDataSourceNo,
+        interval: chartMetaData.currentInterval,
+        unitCd: chartMetaData.currentUnitCd,
+        range: chartMetaData.currentRange,
       })
-      setChartType(chartData.metadata.initialChartType)
+      setChartType(chartMetaData.initialChartType)
       setIsInitialState(false)
     }
-  }, [chartData, isInitialState, selectedDataSource?.allowedPeriods])
+  }, [chartMetaData])
 
   const xInterval = useMemo(() => {
-    switch (chartData?.metadata.currentInterval) {
+    switch (chartMetaData?.currentInterval) {
       case ChartInterval.DAY:
         return 'day'
       case ChartInterval.WEEK:
@@ -169,7 +177,7 @@ const ChartComponent = ({
       default:
         return 'day'
     }
-  }, [chartData?.metadata.currentInterval])
+  }, [chartMetaData?.currentInterval])
 
   return (
     <>
@@ -243,11 +251,11 @@ const ChartComponent = ({
               tempCtx.drawImage(canvas, 0, 0)
 
               const link = document.createElement('a')
-              link.download = `${goodsDataNm ?? 'chart'}-${chartData?.metadata.currentUnitCd}-${dayjs().format('YYYYMMDD')}.png`
+              link.download = `${chartData?.mainChart.goodDataName}-${chartData?.mainChart.goodsDataSourceName}-${searchFilter.unitCd}-${dayjs().format('YYYYMMDD')}.png`
               link.href = tempCanvas.toDataURL('image/png')
               link.click()
             }}
-            disabled={!isDownloadable}
+            disabled={!isDownloadable || !chartData}
           />
 
           <Stack direction="row" alignItems="center" sx={{ ml: 'auto' }}>
@@ -269,12 +277,17 @@ const ChartComponent = ({
             chartType={chartType}
             setChartType={setChartType}
             isCandlestick={chartData?.mainChart.chartType === ChartType.CANDLE}
-            chartInterval={chartInterval}
-            setChartInterval={setChartInterval}
+            chartInterval={searchFilter.interval ?? ChartInterval.DAY}
+            setChartInterval={(interval: ChartInterval) => {
+              setSearchFilter((prev) => ({
+                ...prev,
+                interval,
+              }))
+            }}
             chartIntervalOptions={chartIntervalOptions}
             searchFilter={searchFilter}
             setSearchFilter={setSearchFilter}
-            unitList={chartData?.metadata.changeableUnitCd ?? []}
+            unitList={chartMetaData?.changeableUnitCd ?? []}
             displayDataInfo={displayDataInfo}
             onDisplayDataInfoChange={({ label, isShow }) => {
               if (label === 'BB') {
@@ -332,13 +345,11 @@ const ChartComponent = ({
                 height={'100%'}
                 chartType={chartType}
                 interval={xInterval}
-                mainData={{
-                  data: chartData?.mainChart,
-                  unit: chartData?.metadata.currentUnitCd ?? '',
-                }}
+                unitCd={searchFilter.unitCd}
+                mainChart={chartData?.mainChart}
                 indicators={chartData?.indicators}
                 comparisonCharts={chartData?.comparisonCharts}
-                currentRangeBetween={chartData?.metadata.currentRangeBetween ?? []}
+                currentRangeBetween={chartMetaData?.currentRangeBetween ?? []}
                 displayDataInfo={displayDataInfo}
               />
             )}
@@ -359,7 +370,7 @@ const ChartComponent = ({
         >
           {selectedDataSource?.allowedPeriods.map(({ range }) => (
             <MIButton
-              active={selectedRange === range}
+              active={searchFilter.range === range}
               onClick={() => handleRangeChange(range)}
               key={range}
               color={'gray'}
@@ -369,13 +380,13 @@ const ChartComponent = ({
               {CHART_RANGE_LABELS[range]}
             </MIButton>
           ))}
-          {selectedRange === ChartRange.CUSTOM && (
+          {searchFilter.range === ChartRange.CUSTOM && (
             <Grid container maxWidth={357} wrap={'nowrap'} alignItems={'center'} direction={'row'} ml={2.5}>
               <MIDateRangePicker sizeInput={'h26'} onChange={handleDateChange} startDate={startDate} endDate={endDate} />
             </Grid>
           )}
           <Typography ml={'auto'} variant={'body3M12'} color={'gray.60'}>
-            {chartData?.metadata.latestDate && <>Updated Date : {dayjs(chartData?.metadata.latestDate).format('YYYY-MM-DD')}</>}
+            {chartMetaData?.latestDate && <>Updated Date : {dayjs(chartMetaData?.latestDate).format('YYYY-MM-DD')}</>}
           </Typography>
         </Grid>
       </Box>

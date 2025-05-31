@@ -266,7 +266,6 @@ const DataDetailPage = () => {
                   goodsDataSourceNo={goodsDataSourceNo}
                   setGoodsDataSourceNo={setGoodsDataSourceNo}
                   structuredDataList={structuredDataList}
-                  goodsDataNm={productData?.goodsDataNm}
                   isDownloadable={productData?.isDownloadable}
                 />
                 <Grid container justifyContent="space-between">

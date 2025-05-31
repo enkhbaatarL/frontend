@@ -17,7 +17,7 @@ interface MIChartControllerProps {
   isCandlestick?: boolean
   unitList: string[] | null
   chartInterval: ChartInterval
-  setChartInterval: Dispatch<SetStateAction<ChartInterval>>
+  setChartInterval: (interval: ChartInterval) => void
   chartIntervalOptions: { label: string; value: string }[]
   searchFilter: IProductDataStructuredChartRequest
   setSearchFilter: Dispatch<SetStateAction<IProductDataStructuredChartRequest>>
