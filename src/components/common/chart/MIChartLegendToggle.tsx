@@ -14,6 +14,7 @@ interface MIChartLegendToggleProps {
     goodsDataSourceName: string
   }[]
   colors?: string[]
+  hideComparisonChartIndexList: number[]
   onChange?: (index: number, isShow: boolean) => void
 }
 
@@ -58,6 +59,7 @@ const MIChartLegendToggle = (props: Readonly<MIChartLegendToggleProps>) => {
               <MIChartViewToggle
                 label={goodsDataSourceName}
                 color={props.colors?.[index]}
+                isShow={!props.hideComparisonChartIndexList.includes(index)}
                 onChange={({ isShow }) => {
                   props.onChange?.(index, isShow)
                 }}

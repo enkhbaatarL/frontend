@@ -78,13 +78,14 @@ export default function MIChartController({
         <Box display={'flex'} gap={'6px'}>
           <MIChartViewToggle
             label="BB"
+            isShow={displayDataInfo?.BB ?? false}
             onChange={(value) => {
               onDisplayDataInfoChange?.(value)
             }}
           />
           <MIChartViewToggle
             label="MA"
-            value={Object.values(displayDataInfo?.MA ?? {}).some((value) => value)}
+            isShow={Object.values(displayDataInfo?.MA ?? {}).some((value) => value)}
             onChange={(value) => {
               onDisplayDataInfoChange?.(value)
             }}

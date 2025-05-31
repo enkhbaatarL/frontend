@@ -69,6 +69,7 @@ const ChartComponent = ({
       MA120: true,
     },
   })
+  const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
 
   const [startDate, setStartDate] = useState(dayjs().subtract(1, 'year').format('YYYYMMDD'))
   const [endDate, setEndDate] = useState(dayjs().format('YYYYMMDD'))
@@ -110,7 +111,7 @@ const ChartComponent = ({
       searchFilter.unitCd,
     ],
     queryFn: () =>
-      dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, searchFilter.goodsDataSourceNo!, {
+      dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, searchFilter.goodsDataSourceNo ?? 0, {
         range: searchFilter.range,
         interval: searchFilter.interval,
         ...(searchFilter.range === ChartRange.CUSTOM && { startDate, endDate }),
@@ -118,7 +119,7 @@ const ChartComponent = ({
       }),
     refetchOnWindowFocus: false,
     gcTime: 0,
-    enabled: !isInitialState,
+    enabled: !isInitialState && !!searchFilter.goodsDataSourceNo,
   })
 
   const chartIntervalOptions = useMemo(
@@ -148,19 +149,6 @@ const ChartComponent = ({
     }))
   }
 
-  useEffect(() => {
-    if (chartMetaData) {
-      setSearchFilter({
-        goodsDataSourceNo,
-        interval: chartMetaData.currentInterval,
-        unitCd: chartMetaData.currentUnitCd,
-        range: chartMetaData.currentRange,
-      })
-      setChartType(chartMetaData.initialChartType)
-      setIsInitialState(false)
-    }
-  }, [chartMetaData])
-
   const xInterval = useMemo(() => {
     switch (chartMetaData?.currentInterval) {
       case ChartInterval.DAY:
@@ -178,6 +166,28 @@ const ChartComponent = ({
         return 'day'
     }
   }, [chartMetaData?.currentInterval])
+
+  useEffect(() => {
+    if (chartMetaData) {
+      setSearchFilter({
+        goodsDataSourceNo,
+        interval: chartMetaData.currentInterval,
+        unitCd: chartMetaData.currentUnitCd,
+        range: chartMetaData.currentRange,
+      })
+      setChartType(chartMetaData.initialChartType)
+      setIsInitialState(false)
+    }
+  }, [chartMetaData])
+
+  useEffect(() => {
+    if (chartData?.comparisonCharts) {
+      const hideList = chartData.comparisonCharts
+        .map(({ series }, index) => (series[0].isVisible ? null : index))
+        .filter((item) => item !== null)
+      setHideComparisonChartIndexList(hideList)
+    }
+  }, [chartData?.comparisonCharts])
 
   return (
     <>
@@ -351,6 +361,10 @@ const ChartComponent = ({
                 comparisonCharts={chartData?.comparisonCharts}
                 currentRangeBetween={chartMetaData?.currentRangeBetween ?? []}
                 displayDataInfo={displayDataInfo}
+                hideComparisonChartIndexList={hideComparisonChartIndexList}
+                setHideComparisonChartIndexList={(index, isShow) => {
+                  setHideComparisonChartIndexList((prev) => (isShow ? prev.filter((item) => item !== index) : [...prev, index]))
+                }}
               />
             )}
           </Box>

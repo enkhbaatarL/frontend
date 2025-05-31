@@ -41,6 +41,8 @@ interface MIChartProps {
   interval: 'day' | 'week' | 'month' | 'year'
   chartType?: MIChartType
   currentRangeBetween: string[]
+  hideComparisonChartIndexList: number[]
+  setHideComparisonChartIndexList: (index: number, isShow: boolean) => void
 }
 
 ChartJS.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement, zoomPlugin)
@@ -100,6 +102,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       comparisonCharts = [],
       currentRangeBetween,
       displayDataInfo,
+      hideComparisonChartIndexList,
+      setHideComparisonChartIndexList,
     },
     ref,
   ) => {
@@ -107,7 +111,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
 
     const chartRef = useRef<HTMLCanvasElement>(null)
     const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
-    const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
 
     const { sortedTimestamps, timestampToIndex } = useMemo(() => {
       const allTimestamps = new Set<number>()
@@ -588,8 +591,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         <Box
           sx={{
             position: 'absolute',
-            top: `${mainChartRef?.current?.chartArea?.top ?? 0}px`,
-            left: `${(mainChartRef?.current?.chartArea?.left ?? 0) + 10}px`,
+            top: '20px',
+            left: '78px',
           }}
         >
           <MIChartLegendToggle
@@ -598,9 +601,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               goodsDataSourceName: data.label,
             }))}
             colors={comparisonDatasets.map((data) => data.metadata?.chipColor)}
-            onChange={(index, isShow) => {
-              setHideComparisonChartIndexList((prev) => (isShow ? prev.filter((item) => item !== index) : [...prev, index]))
-            }}
+            hideComparisonChartIndexList={hideComparisonChartIndexList}
+            onChange={setHideComparisonChartIndexList}
           />
         </Box>
         <Box height={'100%'}>
