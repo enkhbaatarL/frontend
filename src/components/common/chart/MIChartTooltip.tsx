@@ -1,5 +1,5 @@
 import { Box, Divider, Typography } from '@mui/material'
-import { ReactNode } from 'react'
+import { Fragment, ReactNode } from 'react'
 
 import { formatValue } from '@/utils/number'
 
@@ -8,7 +8,7 @@ const ChartToolTipItem = (props: { label: ReactNode; value?: number; color: stri
 
   return (
     <Box sx={{ minWidth: '152px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px' }}>
-      <Typography variant="body3M12" color="gray.60">
+      <Typography variant="body3M12" color="gray.60" noWrap>
         {label}
       </Typography>
       <Typography variant="chartToolTipNumber" color={value === undefined ? undefined : color}>
@@ -60,10 +60,10 @@ export default function MIChartTooltip({
         </Typography>
       </Box>
       {items.map((item, idx) => (
-        <>
+        <Fragment key={idx}>
           {item.hasDivider && <Divider sx={{ my: '8px', borderColor: '#DEE2E6' }} />}
-          <ChartToolTipItem key={idx} label={item.label as string} value={item.value} color={item.color as string} />
-        </>
+          <ChartToolTipItem label={item.label as string} value={item.value} color={item.color as string} />
+        </Fragment>
       ))}
     </Box>
   )

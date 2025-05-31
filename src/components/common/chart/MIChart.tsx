@@ -15,19 +15,8 @@ import crosshairLinePlugin from '@/lib/chart/plugins/crosshairLinePlugin'
 import priceIndicatorPlugin from '@/lib/chart/plugins/valueIndicatorPlugin'
 import verticalAxisDecoratorPlugin from '@/lib/chart/plugins/verticalAxisDecoratorPlugin'
 import { generateYAxis, getChartLabel } from '@/lib/chart/utils/chartUtils'
-import { ChartType as MIChartType, Indicator } from '@/types/dataDetailChart'
+import { ChartData, ChartType as MIChartType, Indicator } from '@/types/dataDetailChart'
 import { disableContextMenu } from '@/utils/mouse'
-
-interface CustomChartData {
-  timestamps: string[]
-  series: Array<{
-    seriesId: string
-    label: string
-    values: (number | null)[]
-  }>
-  chartType?: MIChartType
-  unitCd?: string
-}
 
 export interface DisplayDataInfo {
   BB: boolean
@@ -43,10 +32,10 @@ export interface DisplayDataInfo {
 interface MIChartProps {
   mainData: {
     unit: string
-    data?: CustomChartData
+    data?: ChartData
   }
   indicators?: Indicator[]
-  comparisonCharts?: CustomChartData[]
+  comparisonCharts?: ChartData[]
   displayDataInfo: DisplayDataInfo
   width?: string | number
   height?: string | number
@@ -182,7 +171,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         if (mainData?.data?.chartType === MIChartType.LINE) {
           return [
             {
-              label: mainDataSeries?.label ?? '',
+              label: mainData?.data?.goodsDataSourceName ?? '',
               data:
                 mainDataSeries?.values?.map((value, index) => {
                   const timestamp = dayjs(mainData?.data?.timestamps[index]).valueOf()
@@ -197,6 +186,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               pointRadius: 0,
               fill: false,
               tension: 0.1,
+              spanGaps: true,
               yAxisID: 'y',
               metadata: {
                 isMain: true,
@@ -220,6 +210,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               pointRadius: 0,
               fill: false,
               tension: 0.1,
+              spanGaps: true,
               yAxisID: 'y',
               metadata: {
                 isMain: true,
@@ -239,6 +230,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
                   pointRadius: 0,
                   fill: false,
                   tension: 0.1,
+                  spanGaps: true,
                   yAxisID: 'y',
                 },
               ]
@@ -248,7 +240,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
 
         if (mainData?.data?.chartType === MIChartType.CANDLE) {
           return [closeDataSeries, openDataSeries, highDataSeries, lowDataSeries].map((series, index) => ({
-            label: series?.label ?? '',
+            label: `${mainData?.data?.goodsDataSourceName} (${series?.seriesId})`,
             data:
               series?.values.map((value, index) => ({
                 x: index,
@@ -260,6 +252,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             pointRadius: 0,
             fill: false,
             tension: 0.1,
+            spanGaps: true,
             yAxisID: 'y',
             metadata: {
               isMain: true,
@@ -272,7 +265,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       if (chartType === MIChartType.CANDLE) {
         return [
           {
-            label: closeDataSeries?.label ?? '',
+            label: mainData?.data?.goodsDataSourceName ?? '',
             data:
               closeDataSeries?.values.map((value, index) => ({
                 x: index,
@@ -318,8 +311,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     }, [
       chartType,
       mainData?.data?.chartType,
+      mainData?.data?.goodsDataSourceName,
       mainData?.data?.timestamps,
-      mainDataSeries?.label,
       mainDataSeries?.values,
       sortedTimestamps,
       refDataSeries,
@@ -349,6 +342,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             pointRadius: 0,
             fill: false,
             tension: 0.1,
+            spanGaps: true,
             yAxisID: 'y',
             metadata: {
               isMain: true,
@@ -373,6 +367,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           pointRadius: 0,
           fill: false,
           tension: 0.1,
+          spanGaps: true,
           metadata: {
             isMain: true,
             chipColor: bbColors[series.seriesId],
@@ -386,7 +381,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       const colors = ['#26757B', '#EFA460', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434']
 
       return comparisonCharts.map((chart, index) => ({
-        label: chart.series[0].label,
+        label: chart.goodsDataSourceName,
         data: chart.series[0].values.map((value, idx) => {
           const timestamp = dayjs(chart.timestamps[idx]).valueOf()
           return {
@@ -400,10 +395,12 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         borderWidth: 3,
         fill: false,
         tension: 0.1,
+        spanGaps: true,
         yAxisID: chart.unitCd ?? 'y',
         metadata: {
           chipColor: colors[index % colors.length],
           hasDivider: index === 0,
+          goodDataName: chart.goodDataName,
         },
       }))
     }, [comparisonCharts, hideComparisonChartIndexList, timestampToIndex])
@@ -620,7 +617,10 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           }}
         >
           <MIChartLegendToggle
-            labels={comparisonDatasets.map((data) => data.label)}
+            labels={comparisonDatasets.map((data) => ({
+              goodDataName: data.metadata?.goodDataName ?? '',
+              goodsDataSourceName: data.label,
+            }))}
             colors={comparisonDatasets.map((data) => data.metadata?.chipColor)}
             onChange={(index, isShow) => {
               setHideComparisonChartIndexList((prev) => (isShow ? prev.filter((item) => item !== index) : [...prev, index]))

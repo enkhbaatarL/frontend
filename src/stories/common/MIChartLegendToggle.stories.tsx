@@ -22,18 +22,22 @@ type Story = StoryObj<typeof meta>
 
 export const DefaultLegendToggle: Story = {
   args: {
-    labels: ['비교군 데이터명 비교군 데이터명', '비교군 데이터명', '비교군 데이터명 비교군 데이터명'],
+    labels: [
+      { goodDataName: '비교군 데이터명', goodsDataSourceName: '비교군 데이터 소스명 비교군 데이터소스명' },
+      { goodDataName: '비교군 데이터명', goodsDataSourceName: '비교군 데이터 소스명' },
+      { goodDataName: '비교군 데이터명', goodsDataSourceName: '비교군 데이터 소스명 비교군 데이터소스명' },
+    ],
   },
 }
 
 export const LegendToggleWithMoreThan3Legend: Story = {
   args: {
     labels: [
-      '비교군 데이터명 비교군 데이터명',
-      '비교군 데이터명',
-      '비교군 데이터명 비교군 데이터명',
-      '비교군 데이터명',
-      '비교군 데이터명 비교군 데이터명',
+      { goodDataName: '비교군 데이터명', goodsDataSourceName: '비교군 데이터 소스명 비교군 데이터소스명' },
+      { goodDataName: '비교군 데이터명', goodsDataSourceName: '비교군 데이터 소스명' },
+      { goodDataName: '비교군 데이터명', goodsDataSourceName: '비교군 데이터 소스명 비교군 데이터소스명' },
+      { goodDataName: '비교군 데이터명', goodsDataSourceName: '비교군 데이터 소스명' },
+      { goodDataName: '비교군 데이터명', goodsDataSourceName: '비교군 데이터 소스명 비교군 데이터소스명' },
     ],
   },
 }

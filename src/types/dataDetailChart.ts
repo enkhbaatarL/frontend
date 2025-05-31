@@ -51,6 +51,8 @@ export interface ChartSeries {
 
 export interface ChartData {
   goodsDataSourceNo: number
+  goodDataName: string
+  goodsDataSourceName: string
   unitCd: string
   chartType: ChartType
   timestamps: string[]

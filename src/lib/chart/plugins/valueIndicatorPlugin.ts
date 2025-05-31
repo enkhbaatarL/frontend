@@ -75,27 +75,31 @@ const priceIndicatorPlugin: ValueIndicatorPlugin = {
           y: event.clientY - rect.top,
         }
 
-        const nearestPoints = chart.getElementsAtEventForMode(event, 'nearest', { axis: 'x', intersect: false }, false)
+        const xScale = chart.scales.x
+        const xScaleIndex = xScale.getValueForPixel(this.mousePosition.x)
 
-        if (nearestPoints.length) {
-          const focusedPoints = nearestPoints.map((p) => {
-            const data = chart.data.datasets[p.datasetIndex].data[p.index]
+        if (xScaleIndex === undefined) return
+
+        this.focusedPoints = chart.data.datasets
+          .map((dataset, datasetIndex) => {
+            const data = dataset.data[xScaleIndex]
+
+            if (!data) return null
 
             return {
-              label: chart.data.datasets[p.datasetIndex].label,
-              backgroundColor: chart.data.datasets[p.datasetIndex].borderColor as string,
+              label: dataset.label,
+              backgroundColor: dataset.borderColor as string,
               x: (data as Point).x,
               y: (data as FinancialDataPoint).c || (data as Point).y,
-              yAxisID: (chart.data.datasets[p.datasetIndex] as { yAxisID: string }).yAxisID,
-              interactionPoint: p,
+              yAxisID: (dataset as { yAxisID: string }).yAxisID,
+              interactionPoint: {
+                datasetIndex,
+                index: xScaleIndex,
+                element: chart.getDatasetMeta(datasetIndex).data[xScaleIndex],
+              },
             }
           })
-
-          this.focusedPoints = focusedPoints.filter((item) => !['MA5', 'MA20', 'MA60', 'MA120'].includes(item.label ?? ''))
-        }
-        if (chart.ctx) {
-          chart.draw()
-        }
+          .filter((point): point is NonNullable<typeof point> => point !== null)
       } catch (err) {
         console.error(err)
       }
@@ -157,44 +161,36 @@ const priceIndicatorPlugin: ValueIndicatorPlugin = {
       mainIndicatorContainer.appendChild(dateBox)
 
       // 값 표시
-      let displayedFirstYValue = false
-      this.focusedPoints.forEach((p) => {
-        if (['Upper BB', 'Middle BB', 'Lower BB'].includes(p.label ?? '')) return
+      const p = this.focusedPoints[0]
 
-        const yAxisId = p.yAxisID ?? 'y'
-        const value = p.y
-        if (!value) return
+      const yAxisId = p.yAxisID ?? 'y'
+      const value = p.y
 
-        if (yAxisId === 'y') {
-          if (displayedFirstYValue) return
+      if (!value || yAxisId !== 'y') return
 
-          const valueBox = document.createElement('div')
-          valueBox.style.position = 'absolute'
-          valueBox.style.backgroundColor = '#2E3F5E'
-          valueBox.style.color = 'white'
-          valueBox.style.padding = '2px 8px'
-          valueBox.style.borderRadius = '2px'
-          valueBox.style.fontSize = '14px'
-          valueBox.style.fontWeight = '500'
-          valueBox.style.fontFamily = 'Pretendard'
-          valueBox.style.whiteSpace = 'nowrap'
-          valueBox.textContent = formatValue(value)
-          mainIndicatorContainer?.appendChild(valueBox)
+      const valueBox = document.createElement('div')
+      valueBox.style.position = 'absolute'
+      valueBox.style.backgroundColor = '#2E3F5E'
+      valueBox.style.color = 'white'
+      valueBox.style.padding = '2px 8px'
+      valueBox.style.borderRadius = '2px'
+      valueBox.style.fontSize = '14px'
+      valueBox.style.fontWeight = '500'
+      valueBox.style.fontFamily = 'Pretendard'
+      valueBox.style.whiteSpace = 'nowrap'
+      valueBox.textContent = formatValue(value)
+      mainIndicatorContainer?.appendChild(valueBox)
 
-          const boxHeight = valueBox.offsetHeight ?? 20
-          const yPixel = chart.scales[yAxisId].getPixelForValue(value)
-          const adjustedTop = getNonOverlappingTop(mainIndicatorContainer as HTMLElement, yPixel - 10, boxHeight)
+      const boxHeight = valueBox.offsetHeight ?? 20
+      const yPixel = chart.scales[yAxisId].getPixelForValue(value)
+      const adjustedTop = getNonOverlappingTop(mainIndicatorContainer as HTMLElement, yPixel - 10, boxHeight)
 
-          if (adjustedTop < chartArea.top || adjustedTop + boxHeight > chartArea.bottom) {
-            return
-          }
+      if (adjustedTop < chartArea.top || adjustedTop + boxHeight > chartArea.bottom) {
+        return
+      }
 
-          valueBox.style.left = `${chartArea.left - valueBox.offsetWidth - 4}px`
-          valueBox.style.top = `${adjustedTop}px`
-
-          displayedFirstYValue = true
-        }
-      })
+      valueBox.style.left = `${chartArea.left - valueBox.offsetWidth - 4}px`
+      valueBox.style.top = `${adjustedTop}px`
     }
 
     // 오른쪽 라벨: 항상 표시
