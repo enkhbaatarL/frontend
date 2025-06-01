@@ -202,7 +202,7 @@ const dataDetailService = {
     goodsNo: number,
     goodsDataNo: number,
     goodsDataSourceNo: number,
-    body: IProductDataStructuredChartPersonalizationRequest,
+    body: IProductDataStructuredChartPersonalizationRequest[],
   ) {
     const response = await api.put(
       `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/charts-personalize`,

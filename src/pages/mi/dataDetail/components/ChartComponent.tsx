@@ -3,7 +3,8 @@ import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
 import { Box, CircularProgress, Grid2 as Grid, Stack, Switch, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
-import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
+import { debounce } from 'lodash-es'
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIChart, { DisplayDataInfo } from '@/components/common/chart/MIChart'
@@ -11,9 +12,13 @@ import MIChartController from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import { UserRole } from '@/service/admin/members'
-import dataDetailService, { IProductDataStructuredChartRequest, IProductDataStructuredData } from '@/service/mi/dataDetail'
+import dataDetailService, {
+  IProductDataStructuredChartRequest,
+  IProductDataStructuredData,
+  IProductDataStructuredChartPersonalizationRequest,
+} from '@/service/mi/dataDetail'
 import useAuthStore from '@/store/useAuthStore'
-import { ChartInterval, ChartRange, ChartType } from '@/types/dataDetailChart'
+import { ChartInterval, ChartRange, ChartType, DataDetailChart } from '@/types/dataDetailChart'
 
 interface ChartComponentProps {
   goodsNo: number
@@ -44,6 +49,9 @@ const INTERVAL_LABELS: Record<ChartInterval, string> = {
   [ChartInterval.YEAR]: '1 year',
 }
 
+// 성능 이슈로 개인화 설정 저장 -> 디바운스 처리
+const debouncedSaveLastSetting = debounce(dataDetailService.setProductDataStructuredChartPersonalization, 5000)
+
 const ChartComponent = ({
   goodsNo,
   goodsDataNo,
@@ -56,6 +64,7 @@ const ChartComponent = ({
 
   const [searchFilter, setSearchFilter] = useState<IProductDataStructuredChartRequest>({})
   const [useSaveLastSetting, setUseSaveLastSetting] = useState(false)
+  const [previousRange, setPreviousRange] = useState<ChartRange | undefined>(undefined)
 
   const [chartType, setChartType] = useState<ChartType>(ChartType.LINE)
   const [isInitialState, setIsInitialState] = useState(true)
@@ -70,6 +79,52 @@ const ChartComponent = ({
     },
   })
   const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
+
+  const indicatorLastSetting = useMemo(
+    () => [
+      ...(displayDataInfo.BB
+        ? [
+          {
+            chartConditionCd: 'INDICATOR',
+            chartConditionVal: 'BB',
+          },
+        ]
+        : []),
+      ...(displayDataInfo.MA.MA5
+        ? [
+          {
+            chartConditionCd: 'INDICATOR',
+            chartConditionVal: 'MA_5',
+          },
+        ]
+        : []),
+      ...(displayDataInfo.MA.MA20
+        ? [
+          {
+            chartConditionCd: 'INDICATOR',
+            chartConditionVal: 'MA_20',
+          },
+        ]
+        : []),
+      ...(displayDataInfo.MA.MA60
+        ? [
+          {
+            chartConditionCd: 'INDICATOR',
+            chartConditionVal: 'MA_60',
+          },
+        ]
+        : []),
+      ...(displayDataInfo.MA.MA120
+        ? [
+          {
+            chartConditionCd: 'INDICATOR',
+            chartConditionVal: 'MA_120',
+          },
+        ]
+        : []),
+    ],
+    [displayDataInfo],
+  )
 
   const [startDate, setStartDate] = useState(dayjs().subtract(1, 'year').format('YYYYMMDD'))
   const [endDate, setEndDate] = useState(dayjs().format('YYYYMMDD'))
@@ -98,7 +153,7 @@ const ChartComponent = ({
     enabled: !!goodsDataSourceNo,
   })
 
-  const { data: chartData, isLoading } = useQuery({
+  const { data: chartData, isLoading } = useQuery<DataDetailChart>({
     queryKey: [
       'productDataStructuredChartData',
       goodsNo,
@@ -110,17 +165,40 @@ const ChartComponent = ({
       endDate,
       searchFilter.unitCd,
     ],
-    queryFn: () =>
-      dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, searchFilter.goodsDataSourceNo ?? 0, {
+    queryFn: async () => {
+      const result = await dataDetailService.getProductDataStructuredChartData(goodsNo, goodsDataNo, searchFilter.goodsDataSourceNo ?? 0, {
         range: searchFilter.range,
         interval: searchFilter.interval,
         ...(searchFilter.range === ChartRange.CUSTOM && { startDate, endDate }),
         unitCd: searchFilter.unitCd,
-      }),
+      })
+
+      if (useSaveLastSetting) {
+        // eslint-disable-next-line no-use-before-define
+        await saveLastSetting()
+      }
+
+      return result
+    },
     refetchOnWindowFocus: false,
     gcTime: 0,
     enabled: !isInitialState && !!searchFilter.goodsDataSourceNo,
   })
+
+  const comparisonLastSettings = useMemo(
+    () =>
+      chartData?.comparisonCharts
+        ?.map((chart, index) =>
+          !hideComparisonChartIndexList.includes(index)
+            ? {
+              chartConditionCd: 'COMP_DATA_SOURCE',
+              chartConditionVal: String(chart.goodsDataSourceNo),
+            }
+            : null,
+        )
+        .filter((item): item is IProductDataStructuredChartPersonalizationRequest => item !== null) ?? [],
+    [chartData?.comparisonCharts, hideComparisonChartIndexList],
+  )
 
   const chartIntervalOptions = useMemo(
     () =>
@@ -133,6 +211,46 @@ const ChartComponent = ({
     [selectedDataSource, searchFilter.range],
   )
 
+  const saveLastSetting = useCallback(async () => {
+    await debouncedSaveLastSetting(goodsNo, goodsDataNo, searchFilter.goodsDataSourceNo ?? 0, [
+      {
+        chartConditionCd: 'RANGE',
+        chartConditionVal: searchFilter.range === ChartRange.CUSTOM ? (previousRange ?? ChartRange.MONTH) : (searchFilter.range as string),
+      },
+      {
+        chartConditionCd: 'INTERVAL',
+        chartConditionVal: searchFilter.interval as string,
+      },
+      {
+        chartConditionCd: 'UNIT_CD',
+        chartConditionVal: searchFilter.unitCd as string,
+      },
+      {
+        chartConditionCd: 'CHART',
+        chartConditionVal: chartType as string,
+      },
+      ...indicatorLastSetting,
+      ...comparisonLastSettings,
+    ])
+  }, [
+    goodsNo,
+    goodsDataNo,
+    searchFilter.goodsDataSourceNo,
+    searchFilter.range,
+    searchFilter.interval,
+    searchFilter.unitCd,
+    chartType,
+    indicatorLastSetting,
+    comparisonLastSettings,
+    previousRange,
+  ])
+
+  useEffect(() => {
+    if (useSaveLastSetting) {
+      saveLastSetting().then()
+    }
+  }, [indicatorLastSetting, comparisonLastSettings, useSaveLastSetting])
+
   const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
     setStartDate(startDate?.format('YYYYMMDD') ?? '')
     setEndDate(endDate?.format('YYYYMMDD') ?? '')
@@ -140,6 +258,9 @@ const ChartComponent = ({
 
   const handleRangeChange = (range: ChartRange) => {
     const newInterval = selectedDataSource?.allowedPeriods.find((item) => item.range === range)?.defaultInterval ?? ChartInterval.DAY
+    if (range === ChartRange.CUSTOM && searchFilter.range !== ChartRange.CUSTOM) {
+      setPreviousRange(searchFilter.range)
+    }
     setSearchFilter((prev) => ({
       ...prev,
       range,
@@ -187,7 +308,36 @@ const ChartComponent = ({
         .filter((item) => item !== null)
       setHideComparisonChartIndexList(hideList)
     }
-  }, [chartData?.comparisonCharts])
+
+    if (chartData?.indicators) {
+      const BB = chartData.indicators.find(({ indicatorType }) => indicatorType === 'BOLLINGER_BANDS')
+      const MA = chartData.indicators.find(({ indicatorType }) => indicatorType === 'MOVING_AVERAGE')
+
+      setDisplayDataInfo({
+        BB: BB?.series[0].isVisible ?? false,
+        MA: {
+          MA5: MA?.series.find(({ seriesId }) => seriesId === 'ma_5')?.isVisible ?? false,
+          MA20: MA?.series.find(({ seriesId }) => seriesId === 'ma_20')?.isVisible ?? false,
+          MA60: MA?.series.find(({ seriesId }) => seriesId === 'ma_60')?.isVisible ?? false,
+          MA120: MA?.series.find(({ seriesId }) => seriesId === 'ma_120')?.isVisible ?? false,
+        },
+      })
+    }
+  }, [chartData?.indicators, chartData?.comparisonCharts])
+
+  // 1. 컴포넌트 언마운트 혹은 페이지 이탈 시
+  // 2. 개인화 디바운스가 존재 하면 즉시 실행
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      await debouncedSaveLastSetting.flush()
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      debouncedSaveLastSetting.flush()?.then()
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [])
 
   return (
     <>
