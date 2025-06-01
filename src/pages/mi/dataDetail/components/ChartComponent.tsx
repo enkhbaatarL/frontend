@@ -70,12 +70,12 @@ const ChartComponent = ({
   const [isInitialState, setIsInitialState] = useState(true)
 
   const [displayDataInfo, setDisplayDataInfo] = useState<DisplayDataInfo>({
-    BB: true,
+    BB: false,
     MA: {
-      MA5: true,
-      MA20: true,
-      MA60: true,
-      MA120: true,
+      MA5: false,
+      MA20: false,
+      MA60: false,
+      MA120: false,
     },
   })
   const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
@@ -147,7 +147,10 @@ const ChartComponent = ({
 
   const { data: chartMetaData } = useQuery({
     queryKey: ['productDataStructuredChartMetaData', goodsNo, goodsDataNo, goodsDataSourceNo],
-    queryFn: () => dataDetailService.getProductDataStructuredChartMetaData(goodsNo, goodsDataNo, goodsDataSourceNo!),
+    queryFn: async () => {
+      await debouncedSaveLastSetting.flush()
+      return dataDetailService.getProductDataStructuredChartMetaData(goodsNo, goodsDataNo, goodsDataSourceNo!)
+    },
     refetchOnWindowFocus: false,
     gcTime: 0,
     enabled: !!goodsDataSourceNo,
