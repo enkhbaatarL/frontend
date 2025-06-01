@@ -109,7 +109,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
   ) => {
     const mainChartRef = useRef<ChartJS | null>(null)
 
-    const chartRef = useRef<HTMLCanvasElement>(null)
     const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
 
     const { sortedTimestamps, timestampToIndex } = useMemo(() => {
@@ -571,9 +570,9 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
 
     useEffect(() => {
       if (ref && typeof ref === 'function') {
-        ref(chartRef.current)
+        ref(mainChartRef.current?.canvas ?? null)
       } else if (ref) {
-        ref.current = chartRef.current
+        ref.current = mainChartRef.current?.canvas ?? null
       }
     }, [ref])
 
