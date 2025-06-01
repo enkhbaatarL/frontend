@@ -28,6 +28,10 @@ const commonRoutes: ICustomRouteObject[] = [
     element: <CallbackProcessingPage />,
   },
   {
+    path: 'saml2/authenticate',
+    element: <CallbackProcessingPage />,
+  },
+  {
     path: 'pdf-viewer/:fileId',
     element: <PdfViewerPage />,
   },

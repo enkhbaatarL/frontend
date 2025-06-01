@@ -27,21 +27,27 @@ const CallbackProcessingPage = () => {
   )
 
   useEffect(() => {
-    if (sessionId) {
-      axios
-        .get('/api/v1/saml2/callback', {
-          params: { sessionId },
-          withCredentials: true,
-        })
-        .then(async (res) => {
-          const authToken = res.data.data.accessToken
-          const refreshToken = res.data.data.refreshToken
-
-          if (authToken && refreshToken) {
-            await setUserInfo(authToken, refreshToken)
-          }
-        })
+    if (!sessionId) {
+      navigate('/error/auth', { replace: true })
+      return
     }
+
+    axios
+      .get('/api/v1/saml2/callback', {
+        params: { sessionId },
+        withCredentials: true,
+      })
+      .then(async (res) => {
+        const authToken = res.data.data.accessToken
+        const refreshToken = res.data.data.refreshToken
+
+        if (authToken && refreshToken) {
+          await setUserInfo(authToken, refreshToken)
+        }
+      })
+      .catch(() => {
+        navigate('/error/auth', { replace: true })
+      })
   }, [sessionId])
 
   useEffect(() => {
@@ -49,13 +55,13 @@ const CallbackProcessingPage = () => {
       switch (user?.userRoleCd) {
         case UserRole.ADMIN:
         case UserRole.OPERATOR:
-          navigate('admin')
+          navigate('/admin')
           break
         case UserRole.USER:
-          navigate('mi')
+          navigate('/mi')
           break
         default:
-          navigate('error/auth', { replace: true })
+          navigate('/error/auth', { replace: true })
       }
     }
   }, [user?.userRoleCd])

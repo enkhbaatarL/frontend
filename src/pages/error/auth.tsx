@@ -24,7 +24,7 @@ const UnifiedAuthenticationErrorPage = () => (
         variant="contained"
         color="primary"
         onClick={() => {
-          window.location.href = 'api/v1/saml2/login/user'
+          window.location.href = '/api/v1/saml2/login/user'
         }}
       >
         Try again
