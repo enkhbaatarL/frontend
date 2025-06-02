@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { isEmpty } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
@@ -19,6 +19,7 @@ import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useNavigationToast from '@/hooks/useNavigationToast.ts'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService from '@/service/admin/companies'
@@ -46,8 +47,6 @@ const AdminMemberManagementUsersPage = () => {
   const [deleteUserRequest, setDeleteUserRequest] = useState<number>()
 
   const [selectedUser, setSelectedUser] = useState<Partial<IUserInfo>>({})
-
-  const location = useLocation()
 
   const {
     filter,
@@ -199,28 +198,7 @@ const AdminMemberManagementUsersPage = () => {
     }
   }, [setCustomComponent])
 
-  useEffect(() => {
-    const state = location.state as {
-      successMessage?: string
-      errorMessage?: string
-    } | null
-
-    if (state?.successMessage) {
-      showSnackbar(state.successMessage, {
-        variant: 'success',
-      })
-
-      window.history.replaceState(null, document.title, location.pathname + location.search)
-    }
-
-    if (state?.errorMessage) {
-      showSnackbar(state.errorMessage, {
-        variant: 'error',
-      })
-
-      window.history.replaceState(null, document.title, location.pathname + location.search)
-    }
-  }, [location.state, location.pathname, location.search, showSnackbar])
+  useNavigationToast()
 
   return (
     <AdminSkeleton loading={filterOptionsIsLoading} table>

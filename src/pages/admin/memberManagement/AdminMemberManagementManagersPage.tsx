@@ -20,6 +20,7 @@ import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useNavigationToast from '@/hooks/useNavigationToast.ts'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService from '@/service/admin/companies'
@@ -236,30 +237,7 @@ const AdminMemberManagementManagersPage = () => {
     },
   ]
 
-  useEffect(() => {
-    const state = location.state as {
-      successMessage?: string
-      errorMessage?: string
-    } | null
-
-    if (state?.successMessage) {
-      showSnackbar(state.successMessage, {
-        variant: 'success',
-      })
-
-      // state 정리
-      window.history.replaceState(null, document.title, location.pathname + location.search)
-    }
-
-    if (state?.errorMessage) {
-      showSnackbar(state.errorMessage, {
-        variant: 'error',
-      })
-
-      // state 정리
-      window.history.replaceState(null, document.title, location.pathname + location.search)
-    }
-  }, [location.state, location.pathname, location.search, showSnackbar])
+  useNavigationToast()
 
   useEffect(() => {
     setCustomComponent(<AdminManagementManagersPageHeader />)
