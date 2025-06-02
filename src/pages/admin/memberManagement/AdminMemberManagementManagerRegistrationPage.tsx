@@ -124,7 +124,7 @@ const AdminMemberManagementManagersRegistrationPage = () => {
         navigate('/admin/member-mgmt/managers', {
           replace: true,
           state: {
-            successMessage: t('관리자가 등록되었습니다.'),
+            successMessage: t('등록되었습니다.'),
           },
         })
       } else {
