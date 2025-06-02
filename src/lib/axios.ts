@@ -62,10 +62,12 @@ const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
   if (status && status >= 400) {
     switch (code) {
       // ==========TODO
-      // case 'AUTH-001': // 인증 필요
-      // case 'AUTH-002': // 잘못된 자격증명
-      // case 'AUTH-006': // 계정 잠김  계정이 잠겼습니다. 관리자에게 문의하세요.
-      // case 'AUTH-004': // 토큰 무효
+      case 'AUTH-001': // 인증 필요
+        navigateFn('/error', { state: { code, status, hiddenButton: true, icon: 'lock', title: 'SK MI Platform' }, replace: true })
+        break
+        // case 'AUTH-002': // 잘못된 자격증명
+        // case 'AUTH-006': // 계정 잠김  계정이 잠겼습니다. 관리자에게 문의하세요.
+        // case 'AUTH-004': // 토큰 무효
 
       case 'AUTH-003': // 토큰 만료
         errorHandlerOptions?.showSnackbar?.(t('세션이 만료되었습니다. 다시 로그인해주세요.'), {
@@ -73,6 +75,7 @@ const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
         })
         navigateFn('/login')
         break
+
       case 'SYS-999': // 401 unknown Error
       case 'AUTH-005': // 권한 부족
       case 'AUTH-007': // 접근 거부
