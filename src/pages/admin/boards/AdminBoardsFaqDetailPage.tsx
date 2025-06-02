@@ -48,12 +48,24 @@ const AdminBoardsFaqDetailPage = () => {
       const response = await boardService.deleteFaq(faqNo)
 
       if (response.status) {
-        showSnackbar(t('게시글이 삭제되었습니다.'), { variant: 'success' })
-        navigate('/admin/boards/faq', { replace: true })
+        navigate('/admin/boards/faq', {
+          replace: true,
+          state: {
+            successMessage: t('삭제되었습니다.'),
+          },
+        })
+      } else {
+        showSnackbar('문제가 발생했습니다.', {
+          variant: 'error',
+          body: '나중에 다시 시도해 주세요.',
+        })
       }
     } catch (error) {
       console.error(error)
-      showSnackbar(t('게시글 삭제에 실패했습니다.'), { variant: 'error' })
+      showSnackbar('문제가 발생했습니다.', {
+        variant: 'error',
+        body: '나중에 다시 시도해 주세요.',
+      })
     }
   }, [faqNo, navigate, showSnackbar])
 

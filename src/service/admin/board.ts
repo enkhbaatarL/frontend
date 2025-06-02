@@ -142,10 +142,11 @@ const boardService = {
    * @param faqNo - FAQ 번호
    * @param body - { bulletinCategorySeparateCd: 카테고리 코드, bulletinTitleNm: 제목(질문), bulletinCntt: 내용(답변) }
    */
-  async updateFaq(faqNo: number | string | undefined, body: IFaqDetailInfo): Promise<void> {
+  async updateFaq(faqNo: number | string | undefined, body: IFaqDetailInfo): Promise<ICommonResponse<null>> {
     if (!faqNo) throw new Error('faqNo is required')
 
-    await api.patch(`admin/bulletinboard-management/faq/${faqNo}`, body)
+    const response: AxiosResponse<ICommonResponse<null>> = await api.patch(`admin/bulletinboard-management/faq/${faqNo}`, body)
+    return response.data
   },
   /**
    * 공지사항 필터를 조회합니다.
