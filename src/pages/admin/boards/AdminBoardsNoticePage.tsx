@@ -19,6 +19,7 @@ import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useNavigationToast from '@/hooks/useNavigationToast.ts'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
 import boardService, { INoticeInfo, INoticeRequest } from '@/service/admin/board'
@@ -209,6 +210,8 @@ const AdminBoardsNoticePage = () => {
       setCustomComponent(null)
     }
   }, [setCustomComponent])
+
+  useNavigationToast()
 
   return (
     <AdminSkeleton loading={filterOptionsIsLoading} table>

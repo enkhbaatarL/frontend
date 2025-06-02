@@ -209,16 +209,17 @@ const boardService = {
    * @param noticeNo - 공지사항 번호
    * @param body - 공지사항 수정 정보
    */
-  async updateNotice(noticeNo: number | string | undefined, body: INoticeDetailInfo): Promise<void> {
+  async updateNotice(noticeNo: number | string | undefined, body: INoticeDetailInfo): Promise<ICommonResponse<null>> {
     if (!noticeNo) throw new Error('noticeNo is required')
 
     const { targetList, fileList, ...rest } = body
 
-    await api.patch(`admin/bulletinboard-management/notices/${noticeNo}`, {
+    const response: AxiosResponse<ICommonResponse<null>> = await api.patch(`admin/bulletinboard-management/notices/${noticeNo}`, {
       ...rest,
       target: targetList.map((item) => item.customerCompanyNo),
       fileNo: fileList?.[0]?.fileNo ?? undefined,
     })
+    return response.data
   },
   /** 공지사항 이미지 파일 업로드 */
   async uploadNoticeFile(formData: FormData): Promise<IFile> {
