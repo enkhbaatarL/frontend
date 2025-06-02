@@ -36,6 +36,36 @@ export interface MarketDataItemInfo {
   isPermitted: boolean
   marketMetaDataSummary: MarketMetaDataSummary
 }
+interface ChartLine {
+  isPermitted: boolean
+  dataType: 'FUTURE' | 'ACTUAL'
+  rawData: {
+    date: string
+    value: number
+  }[]
+}
+
+interface DashboardChart {
+  chartLineDescription: string
+  chartLineType: string
+  actualChartLines: ChartLine
+  forecastChartLines: ChartLine
+}
+
+export interface DashboardChartInfo {
+  dashboardMetadata: {
+    marketIndexAnalysisTargetCd: string
+    lastUpdateDt: string
+    currency: string
+    currentUnitCd: string
+    baseDate: string
+  }
+  charts: DashboardChart[]
+  dashboardDataSources: {
+    goodsDataSourceNo: number
+    dashboardLineName: string
+  }[]
+}
 
 /**
  * 대시보드 서비스
@@ -55,6 +85,18 @@ const dashboardDataService = {
    */
   async getdashboardMakterDatas(companyNo: number): Promise<MarketDataItemInfo[]> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/market-datas`)
+    return response.data.data
+  },
+
+  /**
+   * 대시보드 차트 데이터르 조회합니다.
+   * @param companyNo - 고객사 번호
+   * @param date - 조회할 년월
+   */
+  async getdashboardChart(companyNo: number, date: string): Promise<DashboardChartInfo> {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart`, {
+      params: { date },
+    })
     return response.data.data
   },
 }

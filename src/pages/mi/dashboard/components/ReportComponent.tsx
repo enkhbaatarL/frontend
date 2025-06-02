@@ -1,5 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
+import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
 
 import MISummaryDownloadReport from './MISummaryDownloadReport'
@@ -7,7 +9,7 @@ import MISummaryDownloadReport from './MISummaryDownloadReport'
 import MIButton from '@/components/common/button/MIButton'
 import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
 import MIForecastChart from '@/components/common/forecast-chart/MIForecastChart'
-import { generateChartMonths, generateForecastDataset } from '@/components/common/forecast-chart/mockBrentForecastData'
+import { generateChartMonths } from '@/components/common/forecast-chart/mockBrentForecastData'
 import CloseIcon from '@/components/common/icons/CloseIcon'
 import MIInfluenceFactorChart from '@/components/common/influence-factor-chart/MIInfluenceFactorChart'
 import MISegmented from '@/components/common/segmentedbtn/MISegmented'
@@ -15,6 +17,7 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import { DataRow, useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
+import dashboardDataService from '@/service/mi/dashboardData'
 import theme from '@/theming'
 export type MonthItem = {
   label: string
@@ -34,7 +37,9 @@ const PopupIndicatorIcon = () => (
 )
 
 export const monthsData: MonthItem[] = [
-  { label: 'Apr 2025 • Latest', value: '2025-04' },
+  { label: 'Jun 2025 • Latest', value: '2025-06' },
+  { label: 'May 2025', value: '2025-05' },
+  { label: 'Apr 2025', value: '2025-04' },
   { label: 'Mar 2025', value: '2025-03' },
   { label: 'Feb 2025', value: '2025-02' },
   { label: 'Jan 2025', value: '2025-01' },
@@ -45,13 +50,51 @@ export const monthsData: MonthItem[] = [
   { label: 'Aug 2024', value: '2024-08' },
 ]
 
-const ReportComponent = () => {
+const chartLineColorMap = ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485']
+
+const ReportComponent = ({ companyNo }: { companyNo: number }) => {
   const [monthSelect, setMonthSelect] = useState('2025-04')
   const { months } = generateChartMonths()
   const [selectedCase, setSelectedCase] = useState('case1')
   const { dashboardRows: rows, dashboardColumns: columns } = useCompanyCondition()
   const [selectedContent, setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
   const [showDetailChart, setShowDetailChart] = useState(false)
+
+  // chartData  조회
+  const { data: dashboardChartInfo } = useQuery({
+    queryKey: ['getdashboardChart', companyNo],
+    queryFn: async () => await dashboardDataService.getdashboardChart(companyNo!, monthSelect.replace('-', '')),
+    enabled: !!companyNo || companyNo !== -1,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  const { topLabel, lastUpdated } = useMemo(() => {
+    const metadata = dashboardChartInfo?.dashboardMetadata
+    return !metadata
+      ? { topLabel: '', lastUpated: '' }
+      : {
+        topLabel: `Unit: ${metadata.currency}/${metadata.currentUnitCd}`,
+        lastUpdated: dayjs(metadata.lastUpdateDt ?? undefined).format('MMMM D,YYYY'),
+      }
+  }, [dashboardChartInfo])
+
+  const forecastDatasets = useMemo(() => {
+    const charts = dashboardChartInfo?.charts ?? []
+    const result = charts?.map((chart, index) => {
+      const chartDatas = chart.actualChartLines.rawData ?? []
+      const forcastDatas = chart.forecastChartLines.rawData ?? []
+      return {
+        label: chart.chartLineDescription,
+        color: chartLineColorMap[index] ?? undefined,
+        hidePoint: true,
+        type: chart.actualChartLines?.dataType,
+        data: chartDatas.map((m) => (m.value > 600 ? 2.6 : m.value)),
+        forecastData: [forcastDatas.map((m) => m.value)],
+      }
+    })
+    return result
+  }, [dashboardChartInfo])
 
   const tableColumn = useMemo<GridColDef[]>(() => {
     const columnFormat = columns.map((m) => ({
@@ -88,6 +131,7 @@ const ReportComponent = () => {
 
     return columnFormat as GridColDef[]
   }, [columns])
+
   return (
     <Box>
       <Box paddingY={7.5} textAlign="center">
@@ -104,44 +148,25 @@ const ReportComponent = () => {
         <MISummaryDownloadReport />
 
         <Box mb="42px" pb="30px">
-          <MIForecastChart
-            onViewDetail={(content, label) => {
-              setSelectedContent({
-                date: label ?? '',
-                label: content.label ?? '',
-                value: Number(content.value).toFixed(2) ?? 0,
-                category: content.category ?? '',
-              })
-              setShowDetailChart(true)
-            }}
-            forecastDatasets={[
-              {
-                ...generateForecastDataset(months, { forecastByMonth: false }),
-                label: 'Actual data 1',
-                color: '#40597A',
-                hidePoint: true,
-              },
-              {
-                ...generateForecastDataset(months),
-                label: 'Actual data 2',
-                color: '#26757B',
-                hidePoint: true,
-                type: 'future',
-              },
-              {
-                ...generateForecastDataset(months),
-                label: 'Actual data 3',
-                color: '#EFA460',
-                hidePoint: true,
-                type: 'future',
-              },
-            ]}
-            months={months}
-            height={598}
-            bottomLabel="First Unit"
-            topLabel="Unit: USD/bbl"
-            lastUpated="April 29, 2025"
-          />
+          {forecastDatasets.length !== 0 && (
+            <MIForecastChart
+              onViewDetail={(content, label) => {
+                setSelectedContent({
+                  date: label ?? '',
+                  label: content.label ?? '',
+                  value: Number(content.value).toFixed(2) ?? 0,
+                  category: content.category ?? '',
+                })
+                setShowDetailChart(true)
+              }}
+              forecastDatasets={forecastDatasets}
+              months={months}
+              height={598}
+              bottomLabel=""
+              topLabel={topLabel}
+              lastUpdated={lastUpdated}
+            />
+          )}
         </Box>
         {showDetailChart && (
           <Box p="12px" mb="24px" sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
