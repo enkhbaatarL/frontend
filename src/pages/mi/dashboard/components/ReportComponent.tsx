@@ -306,7 +306,7 @@ const ReportComponent = () => {
             </Box>
           </Box>
         )}
-        <Box width={'100%'} mb="40px">
+        <Box width={'100%'}>
           <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} py="6px" mb="20px">
             <Typography variant="infoDocument" color="gray.90">
               Data Table
