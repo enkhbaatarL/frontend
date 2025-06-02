@@ -77,7 +77,7 @@ const MIDashboardPage = () => {
           </Typography>
         </Box>
       </Box>
-      <Box maxWidth={'1380px'} margin={'auto'} paddingTop={10} paddingX={7.5}>
+      <Box maxWidth={'1380px'} margin={'auto'} paddingTop={'30px'}>
         <Grid
           sx={{
             flexWrap: {

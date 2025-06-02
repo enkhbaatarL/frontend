@@ -89,7 +89,7 @@ const ReportComponent = () => {
     return columnFormat as GridColDef[]
   }, [columns])
   return (
-    <Box>
+    <Box maxWidth={'1070px'}>
       <Box paddingY={7.5} textAlign="center">
         <Typography component={'div'} color="gray.90" variant="heading0">
           BEV Forecast
@@ -144,150 +144,164 @@ const ReportComponent = () => {
           />
         </Box>
         {showDetailChart && (
-          <Box p="12px" mb="24px" sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
+          <Box width={'1006px'} mb="24px" gap={'6px'} sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
             <Box sx={{ position: 'absolute', top: '0px', left: '50%', transform: 'translate(-50%, -100%)', '& svg': { display: 'block' } }}>
               <PopupIndicatorIcon />
             </Box>
-            <Box px="12px" py="6px" mb="10px" display={'flex'} justifyContent={'space-between'}>
-              <Box>
-                <Box
-                  mb="8px"
-                  sx={{
-                    display: 'inline-block',
-                    backgroundColor: theme.palette.common.white,
-                    padding: '0 8px',
-                    borderRadius: '100px',
+            <Box p={'12px'}>
+              <Box px={'12px'} pt={'12px'} pb={'10px'} display={'flex'} justifyContent={'space-between'}>
+                <Box>
+                  <Box
+                    mb="8px"
+                    sx={{
+                      display: 'inline-flex',
+                      backgroundColor: theme.palette.common.white,
+                      padding: '0 8px',
+                      borderRadius: '100px',
+                      alignItems: 'center',
+                    }}
+                    height={'20px'}
+                  >
+                    <Typography variant="chip2" color="#495057">
+                      Drill-down
+                    </Typography>
+                  </Box>
+                  <Box mb="8px">
+                    <Typography variant="body2" color="#495057">
+                      {selectedContent?.label} / {selectedContent?.date}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="messageText1" color="#212529" sx={{ marginRight: '2px' }}>
+                      {selectedContent?.value}
+                    </Typography>
+                    <Typography variant="body2SB14" color="#212529">
+                      USD/bb
+                    </Typography>
+                  </Box>
+                </Box>
+                <MIButton
+                  type="ghost"
+                  contentType="icon"
+                  size="h32"
+                  onClick={() => {
+                    setShowDetailChart(false)
                   }}
                 >
-                  <Typography variant="chip2" color="#495057">
-                    Drill-down
-                  </Typography>
-                </Box>
-                <Box mb="8px">
-                  <Typography variant="body2" color="#495057">
-                    {selectedContent?.label} / {selectedContent?.date}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="messageText1" color="#212529">
-                    {selectedContent?.value}
-                  </Typography>
-                  <Typography variant="body2SB14" color="#212529">
-                    USD/bb
-                  </Typography>
-                </Box>
-              </Box>
-              <MIButton
-                type="ghost"
-                contentType="icon"
-                size="h32"
-                onClick={() => {
-                  setShowDetailChart(false)
-                }}
-              >
-                <CloseIcon />
-              </MIButton>
-            </Box>
-
-            <Box p="24px" sx={{ backgroundColor: theme.palette.common.white, border: '1px solid #868E96', borderRadius: '4px' }}>
-              <Box display={'flex'} gap="6px">
-                <HorizontalChartIcon />
-                <Typography component={'div'} variant="infoDocument" color="gray.90" mb="24px">
-                  주요 요인 분석
-                </Typography>
-              </Box>
-              <Box display={'flex'} gap={'10px'}>
-                {[
-                  {
-                    value: 'case1',
-                    label: 'Category 1',
-                  },
-                  {
-                    value: 'case2',
-                    label: 'Category 2',
-                  },
-                  {
-                    value: 'case3',
-                    label: 'Category 3',
-                  },
-                  {
-                    value: 'case4',
-                    label: 'Category 4',
-                  },
-                ].map((data, index) => (
-                  <MISegmented size="h30" active={data.value === selectedCase} onClick={() => setSelectedCase(data.value)} key={index}>
-                    {data.label}
-                  </MISegmented>
-                ))}
-              </Box>
-              <Box px="12px" py="18px">
-                <Typography variant="body2R14" color="#495057">
-                  선택한 요인 분류에 대한 설명이 필요한 경우 여기에 작성합니다. Lorem ipsum dolor sit amet consectetur adipiscing elit.
-                  Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu
-                  aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada
-                  lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra
-                  inceptos himenaeos.
-                </Typography>
+                  <CloseIcon />
+                </MIButton>
               </Box>
 
-              <Box>
-                <MIInfluenceFactorChart
-                  height={150}
-                  decreasingFactors={[
-                    {
-                      label: 'Decreasing Factor 1',
-                      value: 85.0,
-                      color: '#A9141A',
-                    },
-                    {
-                      label: 'D Factor 2',
-                      value: 40.0,
-                      color: '#5B6773',
-                    },
-                    {
-                      label: 'D Factor 3',
-                      value: 30.0,
-                      color: '#7A8790',
-                    },
-                    {
-                      label: 'D Factor 4',
-                      value: 20.0,
-                      color: '#8C98A0',
-                    },
-                    {
-                      label: 'D Factor 5',
-                      value: 5.0,
-                      color: '#9DAFB9',
-                    },
-                  ]}
-                  increasingFactors={[
-                    {
-                      label: 'Increasing Factor 1',
-                      value: 100.0,
-                      color: '#3C8A36',
-                    },
-                    {
-                      label: 'Rig count',
-                      value: 80.0,
-                      color: '#5B6773',
-                    },
-                    {
-                      label: 'I Factor 3',
-                      value: 65.0,
-                      color: '#7A8790',
-                    },
-                    {
-                      label: 'I Factor 4',
-                      value: 35.0,
-                      color: '#8C98A0',
-                    },
-                    {
-                      label: 'I Factor 5',
-                      value: 1.0,
-                      color: '#9DAFB9',
-                    },
-                  ]}
-                />
+              <Box p={'6px'} mt={'10px'}>
+                <Box maxWidth={'994px'} p={'24px'} sx={{ backgroundColor: theme.palette.common.white, borderRadius: '4px' }}>
+                  <Box display={'flex'} gap="6px" mb={'12px'}>
+                    <HorizontalChartIcon />
+                    <Typography component={'div'} variant="infoDocument" color="gray.90">
+                      주요 요인 분석
+                    </Typography>
+                  </Box>
+                  <Box
+                    display={'flex'}
+                    gap={'10px'}
+                    maxWidth={'946px'}
+                    maxHeight={'100%'}
+                    flexWrap={'wrap'}
+                    paddingTop={'10px'}
+                    paddingBottom={'10px'}
+                  >
+                    {[
+                      {
+                        value: 'case1',
+                        label: 'Category 1',
+                      },
+                      {
+                        value: 'case2',
+                        label: 'Category 2',
+                      },
+                      {
+                        value: 'case3',
+                        label: 'Category 3',
+                      },
+                      {
+                        value: 'case4',
+                        label: 'Category 4',
+                      },
+                    ].map((data, index) => (
+                      <MISegmented size="h30" active={data.value === selectedCase} onClick={() => setSelectedCase(data.value)} key={index}>
+                        {data.label}
+                      </MISegmented>
+                    ))}
+                  </Box>
+                  <Box padding={'18px 12px 18px 12px'}>
+                    <Typography variant="body2R14" color="#495057">
+                      선택한 요인 분류에 대한 설명이 필요한 경우 여기에 작성합니다. Lorem ipsum dolor sit amet consectetur adipiscing elit.
+                      Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo
+                      eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl
+                      malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per
+                      conubia nostra inceptos himenaeos.
+                    </Typography>
+                  </Box>
+
+                  <Box mt={'12px'}>
+                    <MIInfluenceFactorChart
+                      height={150}
+                      decreasingFactors={[
+                        {
+                          label: 'Decreasing Factor 1',
+                          value: 85.0,
+                          color: '#A9141A',
+                        },
+                        {
+                          label: 'D Factor 2',
+                          value: 40.0,
+                          color: '#5B6773',
+                        },
+                        {
+                          label: 'D Factor 3',
+                          value: 30.0,
+                          color: '#7A8790',
+                        },
+                        {
+                          label: 'D Factor 4',
+                          value: 20.0,
+                          color: '#8C98A0',
+                        },
+                        {
+                          label: 'D Factor 5',
+                          value: 5.0,
+                          color: '#9DAFB9',
+                        },
+                      ]}
+                      increasingFactors={[
+                        {
+                          label: 'Increasing Factor 1',
+                          value: 100.0,
+                          color: '#3C8A36',
+                        },
+                        {
+                          label: 'Rig count',
+                          value: 80.0,
+                          color: '#5B6773',
+                        },
+                        {
+                          label: 'I Factor 3',
+                          value: 65.0,
+                          color: '#7A8790',
+                        },
+                        {
+                          label: 'I Factor 4',
+                          value: 35.0,
+                          color: '#8C98A0',
+                        },
+                        {
+                          label: 'I Factor 5',
+                          value: 1.0,
+                          color: '#9DAFB9',
+                        },
+                      ]}
+                    />
+                  </Box>
+                </Box>
               </Box>
             </Box>
           </Box>
