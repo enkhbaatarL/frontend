@@ -490,7 +490,7 @@ const ChartComponent = ({
             }}
           />
           <Box height={'100%'}>
-            {isLoading ? (
+            {!chartData || !chartMetaData ? (
               <Box
                 sx={{
                   position: 'absolute',
