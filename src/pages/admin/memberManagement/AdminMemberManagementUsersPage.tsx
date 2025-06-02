@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { isEmpty } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
@@ -46,6 +46,8 @@ const AdminMemberManagementUsersPage = () => {
   const [deleteUserRequest, setDeleteUserRequest] = useState<number>()
 
   const [selectedUser, setSelectedUser] = useState<Partial<IUserInfo>>({})
+
+  const location = useLocation()
 
   const {
     filter,
@@ -196,6 +198,29 @@ const AdminMemberManagementUsersPage = () => {
       setCustomComponent(null)
     }
   }, [setCustomComponent])
+
+  useEffect(() => {
+    const state = location.state as {
+      successMessage?: string
+      errorMessage?: string
+    } | null
+
+    if (state?.successMessage) {
+      showSnackbar(state.successMessage, {
+        variant: 'success',
+      })
+
+      window.history.replaceState(null, document.title, location.pathname + location.search)
+    }
+
+    if (state?.errorMessage) {
+      showSnackbar(state.errorMessage, {
+        variant: 'error',
+      })
+
+      window.history.replaceState(null, document.title, location.pathname + location.search)
+    }
+  }, [location.state, location.pathname, location.search, showSnackbar])
 
   return (
     <AdminSkeleton loading={filterOptionsIsLoading} table>
