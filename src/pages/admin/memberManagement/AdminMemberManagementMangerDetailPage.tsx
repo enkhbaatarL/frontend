@@ -2,7 +2,7 @@ import ErrorIcon from '@mui/icons-material/Error'
 import { Box } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import AdminAccessControlForm from '@/components/admin/AdminAccessControlForm'
@@ -32,6 +32,7 @@ const AdminMemberManagementMangerDetailPage = () => {
   const navigate = useNavigate()
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const { data, isError, isLoading } = useQuery({
     queryKey: ['managerDetail', userNo],
@@ -66,6 +67,39 @@ const AdminMemberManagementMangerDetailPage = () => {
     }
   }, [data, navigate, setCustomComponent, userNo])
 
+  const handleDeleteUser = useCallback(async () => {
+    if (!userNo || isDeleting) return
+
+    setIsDeleting(true)
+
+    try {
+      const response = await membersService.deleteAdmin(Number(userNo))
+
+      if (response.status) {
+        navigate('/admin/member-mgmt/managers', {
+          replace: true,
+          state: {
+            successMessage: t('삭제되었습니다.'),
+          },
+        })
+      } else {
+        showSnackbar('문제가 발생했습니다.', {
+          variant: 'error',
+          body: '나중에 다시 시도해 주세요.',
+        })
+      }
+    } catch (error) {
+      console.error(error)
+      showSnackbar('문제가 발생했습니다.', {
+        variant: 'error',
+        body: '나중에 다시 시도해 주세요.',
+      })
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteModal(false)
+    }
+  }, [userNo, isDeleting, showSnackbar, navigate])
+
   return (
     <AdminSkeleton
       loading={isLoading}
@@ -99,6 +133,7 @@ const AdminMemberManagementMangerDetailPage = () => {
             label: t('취소'),
             variant: 'outlined',
             color: 'gray',
+            disabled: isDeleting,
             onClick: () => {
               setShowDeleteModal(false)
             },
@@ -107,9 +142,9 @@ const AdminMemberManagementMangerDetailPage = () => {
             label: t('삭제'),
             variant: 'filled',
             color: 'red',
-            onClick: () => {
-              setShowDeleteModal(false)
-              showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
+            disabled: isDeleting,
+            onClick: async () => {
+              await handleDeleteUser()
             },
           },
         ]}
