@@ -78,7 +78,9 @@ const ChartComponent = ({
       MA120: true,
     },
   })
+
   const [hideComparisonChartIndexList, setHideComparisonChartIndexList] = useState<number[]>([])
+  const [isChangeDisplayDataInfo, setIsChangeDisplayDataInfo] = useState(false)
 
   const indicatorLastSetting = useMemo(
     () => [
@@ -302,6 +304,7 @@ const ChartComponent = ({
   }, [chartMetaData])
 
   useEffect(() => {
+    if (isChangeDisplayDataInfo) return
     if (chartData?.comparisonCharts) {
       const hideList = chartData.comparisonCharts
         .map(({ series }, index) => (series[0].isVisible ? null : index))
@@ -455,6 +458,7 @@ const ChartComponent = ({
                   ...prev,
                   BB: isShow,
                 }))
+                setIsChangeDisplayDataInfo(true)
               } else if (label === 'MA') {
                 setDisplayDataInfo((prev) => ({
                   ...prev,
@@ -465,6 +469,7 @@ const ChartComponent = ({
                     MA120: isShow,
                   },
                 }))
+                setIsChangeDisplayDataInfo(true)
               } else {
                 setDisplayDataInfo((prev) => {
                   const updatedMA = {
@@ -480,6 +485,7 @@ const ChartComponent = ({
                     ...(isAnyMAVisible ? {} : { BB: prev.BB }),
                   }
                 })
+                setIsChangeDisplayDataInfo(true)
               }
             }}
           />
