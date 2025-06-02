@@ -9,7 +9,7 @@ export interface IFile {
   fileUrl: string
 }
 
-interface IFileDownloadRequest {
+export interface IFileDownloadRequest {
   fileNo: number
   fileNm: string
   fileSize: number
@@ -30,13 +30,14 @@ const fileService = {
   /**
    * 1개 이상의 파일을 zip으로 압축하여 다운로드합니다.
    * @param prefix - 다운 받을 파일명의 Prefix
-   * @param fileNos - 다운 받을 파일번호
+   * @param fileData - 파일 정보 객체
    */
-  async downloadFiles(fileNos: string, prefix?: string) {
-    return await api.get('/admin/file-management/download', {
-      params: { fileNos, prefix },
+  async downloadFiles(prefix?: string, fileData?: IFileDownloadRequest[]) {
+    const response: AxiosResponse<Blob> = await api.post('/file-management/download', fileData, {
+      params: { prefix },
       responseType: 'blob',
     })
+    return response.data
   },
 }
 
