@@ -45,7 +45,35 @@ export interface IDashboardInfo {
 export interface IDashboardChartDates {
   dates: string[]
 }
-
+interface IDashboardChartMetadata {
+  marketIndexAnalysisTargetCd: string
+  lastUpdateDt: string
+  currency: string
+  currentUnitCd: string
+  baseDate: string
+  dataTableType: string
+}
+interface IChartLineRawData {
+  resultDate: string
+  predictDate: string
+  value: number
+}
+interface IChartLine {
+  isPermitted: boolean
+  dataType: string
+  goodsDataSourceNo: number
+  rawData: IChartLineRawData[]
+}
+interface IDashboardChart {
+  chartLineDescription: string
+  chartLineType: string
+  actualChartLines: IChartLine
+  forecastChartLines: IChartLine
+}
+export interface IDashboardChartData {
+  dashboardMetadata: IDashboardChartMetadata
+  charts: IDashboardChart[]
+}
 /**
  * 대시보드 서비스
  */
@@ -88,6 +116,15 @@ const dashboardDataService = {
    */
   async getdashboardChartDates(companyNo: number): Promise<IDashboardChartDates> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/chart-dates`)
+    return response.data.data
+  },
+  /**
+   * 대시보드 차트 데이터를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param date - 조회할 년월
+   */
+  async getdashboardChartData(companyNo: number, date: string): Promise<IDashboardChartData> {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart`, { params: { date } })
     return response.data.data
   },
 }

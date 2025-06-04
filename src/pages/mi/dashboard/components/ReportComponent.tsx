@@ -14,7 +14,6 @@ import MIInfluenceFactorChart from '@/components/common/influence-factor-chart/M
 import MISegmented from '@/components/common/segmentedbtn/MISegmented'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
-import { DataRow, useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
 import dashboardDataService from '@/service/mi/dashboardData'
 import useAuthStore from '@/store/useAuthStore'
@@ -36,23 +35,10 @@ const PopupIndicatorIcon = () => (
   </svg>
 )
 
-export const monthsData: MonthItem[] = [
-  { label: 'Apr 2025 • Latest', value: '2025-04' },
-  { label: 'Mar 2025', value: '2025-03' },
-  { label: 'Feb 2025', value: '2025-02' },
-  { label: 'Jan 2025', value: '2025-01' },
-  { label: 'Dec 2024', value: '2024-12' },
-  { label: 'Nov 2024', value: '2024-11' },
-  { label: 'Oct 2024', value: '2024-10' },
-  { label: 'Sep 2024', value: '2024-09' },
-  { label: 'Aug 2024', value: '2024-08' },
-]
-
 const ReportComponent = () => {
-  const [monthSelect, setMonthSelect] = useState('2025-04')
+  const [monthSelect, setMonthSelect] = useState('')
   const { months } = generateChartMonths()
   const [selectedCase, setSelectedCase] = useState('case1')
-  const { dashboardRows: rows, dashboardColumns: columns } = useCompanyCondition()
   const [selectedContent, setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
   const [showDetailChart, setShowDetailChart] = useState(false)
   const { accessCompanyInfo, user } = useAuthStore()
@@ -71,6 +57,19 @@ const ReportComponent = () => {
     queryFn: () => dashboardDataService.getdashboardChartDates(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
     refetchOnWindowFocus: false,
     gcTime: 0,
+  })
+
+  // 대시보드 차트 데이터
+  const { data: chartData } = useQuery({
+    queryKey: ['dashboardChartData', monthSelect],
+    queryFn: () =>
+      dashboardDataService.getdashboardChartData(
+        accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0,
+        monthSelect.replace('-', '').slice(0, 6),
+      ),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+    enabled: !!monthSelect,
   })
 
   const monthsData = useMemo(
@@ -94,41 +93,104 @@ const ReportComponent = () => {
     [chartDates],
   )
 
-  const tableColumn = useMemo<GridColDef[]>(() => {
-    const columnFormat = columns.map((m) => ({
-      ...m,
-      renderCell: (param: GridRenderCellParams<DataRow, string>) => {
-        const isModel = param.field === 'model'
-        const tooltipContent = isModel && param.row.tooltipContent
-        const isErrorRate = param.row.id === 'errorRate'
-        const value = param.value as string | number
-        if (tooltipContent) {
-          return (
-            <MITableCell
-              tooltip={param.value === '오차율 (%)'}
-              tooltipContent={
-                <Typography variant={'subtext'} sx={{ whiteSpace: 'pre-line' }}>
-                  {tooltipContent}
-                </Typography>
-              }
-              typography={{ variant: 'tableBody1' }}
-              value={value}
-            />
-          )
-        }
-        const { color, value: displayValue } = (() => {
-          const defaultResult = { color: '#212529', value }
-          if (!isErrorRate || typeof value !== 'number') return defaultResult
-          if (value > 0) return { color: '#498B47', value: `+${value.toFixed(2)}` }
-          if (value < 0) return { color: '#CC4D50', value: `${value.toFixed(2)}` }
-          return defaultResult
-        })()
-        return <span style={{ color, fontWeight: isErrorRate || isModel ? 600 : 400 }}>{displayValue}</span>
-      },
-    }))
+  const formatDate = (date: string) => {
+    const [year, month] = date.split('-')
+    const shortYear = year.slice(2)
+    return `${shortYear}-${month}`
+  }
 
-    return columnFormat as GridColDef[]
-  }, [columns])
+  const tableColumns = useMemo<GridColDef[]>(() => {
+    if (!chartData) return []
+
+    const isForecastSingleLayer = chartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
+
+    if (isForecastSingleLayer) {
+      const currencyColumn: GridColDef = {
+        field: chartData.dashboardMetadata.currency,
+        headerName: `${chartData.dashboardMetadata.currency  }/${  chartData.dashboardMetadata.currentUnitCd}`,
+        flex: 1.5,
+        align: 'center',
+      }
+
+      const dataColumns: GridColDef[] = chartData.charts[0].actualChartLines.rawData.map((chart) => ({
+        field: chart.resultDate,
+        headerName: formatDate(chart.resultDate),
+        flex: 1,
+        align: 'center',
+        renderCell: (params: GridRenderCellParams) => <MITableCell value={params.value} />,
+      }))
+
+      return [currencyColumn, ...dataColumns]
+    }
+
+    return []
+  }, [chartData])
+
+  const tableRows = useMemo(() => {
+    if (!chartData) return []
+
+    const isForecastSingleLayer = chartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
+
+    if (isForecastSingleLayer) {
+      const forecastRows = chartData.charts
+        .filter((chart) => chart.forecastChartLines.dataType === 'FORECAST')
+        .map((chart) => {
+          const rowData = chart.forecastChartLines.rawData.reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value,
+            }),
+            {},
+          )
+
+          return {
+            id: chart.forecastChartLines.dataType,
+            [chartData.dashboardMetadata.currency]:
+              chart.forecastChartLines.dataType[0] + chart.forecastChartLines.dataType.slice(1).toLowerCase(),
+            ...rowData,
+          }
+        })
+
+      const actualRows = chartData.charts
+        .filter((chart) => chart.actualChartLines.dataType === 'ACTUAL')
+        .map((chart) => {
+          const rowData = chart.actualChartLines.rawData.reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value,
+            }),
+            {},
+          )
+
+          return {
+            id: chart.actualChartLines.dataType,
+            [chartData.dashboardMetadata.currency]:
+              chart.actualChartLines.dataType[0] + chart.actualChartLines.dataType.slice(1).toLowerCase(),
+            ...rowData,
+          }
+        })
+      const futureRows = chartData.charts
+        .filter((chart) => chart.actualChartLines.dataType === 'FUTURE')
+        .map((chart) => {
+          const rowData = chart.actualChartLines.rawData.reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value,
+            }),
+            {},
+          )
+
+          return {
+            id: chart.chartLineDescription,
+            [chartData.dashboardMetadata.currency]: chart.chartLineDescription,
+            ...rowData,
+          }
+        })
+      return [...forecastRows, ...actualRows, ...futureRows]
+    }
+
+    return []
+  }, [chartData])
 
   const formatDataInfoDate = useMemo(() => {
     const date = new Date(dataInfo?.lastUpdateDt ?? '')
@@ -139,6 +201,12 @@ const ReportComponent = () => {
 
     return `${month} ${day}, ${year}`
   }, [dataInfo])
+
+  useEffect(() => {
+    if (monthSelect === '') {
+      setMonthSelect(monthsData?.[0]?.value ?? '')
+    }
+  }, [monthsData])
 
   return (
     <Box>
@@ -357,14 +425,16 @@ const ReportComponent = () => {
               <MIButton startIcon={<DataTrendChartDownloadIcon />} onClick={() => {}} contentType={'icon'} type="outlined" />
             </Box>
           </Box>
-          <MITableUser
-            tableProps={{
-              noRowMessage: '등록된 내용이 없습니다.',
-              columns: tableColumn,
-              rows,
-              rowId: 'id',
-            }}
-          />
+          {chartData && (
+            <MITableUser
+              tableProps={{
+                noRowMessage: '등록된 내용이 없습니다.',
+                columns: tableColumns,
+                rows: tableRows,
+                rowId: 'id',
+              }}
+            />
+          )}
         </Box>
       </Box>
     </Box>
