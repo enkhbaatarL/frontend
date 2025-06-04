@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
-import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 
 import MISummaryDownloadReport from './MISummaryDownloadReport'
 
@@ -15,6 +16,8 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import { DataRow, useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
+import dashboardDataService from '@/service/mi/dashboardData'
+import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
 export type MonthItem = {
   label: string
@@ -52,6 +55,44 @@ const ReportComponent = () => {
   const { dashboardRows: rows, dashboardColumns: columns } = useCompanyCondition()
   const [selectedContent, setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
   const [showDetailChart, setShowDetailChart] = useState(false)
+  const { accessCompanyInfo, user } = useAuthStore()
+
+  // 대시보드 기본 정보
+  const { data: dataInfo } = useQuery({
+    queryKey: ['dashboardInfo'],
+    queryFn: () => dashboardDataService.getdashboardInfo(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  // 대시보드 차트 조회 가능한 날짜 리스트
+  const { data: chartDates } = useQuery({
+    queryKey: ['dashboardChartDates'],
+    queryFn: () => dashboardDataService.getdashboardChartDates(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  const monthsData = useMemo(
+    () =>
+      chartDates?.dates.map((date, index) => {
+        const dateObj = new Date(date)
+
+        const month = dateObj.toLocaleString('en-US', { month: 'short' })
+        const year = dateObj.getFullYear()
+        if (index === 0) {
+          return {
+            label: `${month} ${year} • Latest`,
+            value: date,
+          }
+        }
+        return {
+          label: `${month} ${year}`,
+          value: date,
+        }
+      }),
+    [chartDates],
+  )
 
   const tableColumn = useMemo<GridColDef[]>(() => {
     const columnFormat = columns.map((m) => ({
@@ -88,19 +129,34 @@ const ReportComponent = () => {
 
     return columnFormat as GridColDef[]
   }, [columns])
+
+  const formatDataInfoDate = useMemo(() => {
+    const date = new Date(dataInfo?.lastUpdateDt ?? '')
+
+    const day = date.getDate()
+    const month = date.toLocaleString('en-US', { month: 'long' })
+    const year = date.getFullYear()
+
+    return `${month} ${day}, ${year}`
+  }, [dataInfo])
+
   return (
     <Box>
-      <Box paddingY={7.5} textAlign="center">
-        <Typography component={'div'} color="gray.90" variant="heading0">
-          BEV Forecast
-        </Typography>
-        <Typography component={'div'} color="#495057" variant="subtext0">
-          MI Model for Battery-Electric Vehicle Scales Volume
-        </Typography>
-      </Box>
+      {dataInfo && (
+        <>
+          <Box paddingY={7.5} textAlign="center">
+            <Typography component={'div'} color="gray.90" variant="heading0">
+              {dataInfo.chartPredictSettingNm}
+            </Typography>
+            <Typography component={'div'} color="#495057" variant="subtext0">
+              Updated {formatDataInfoDate}
+            </Typography>
+          </Box>
+        </>
+      )}
 
       <Box>
-        <MonthSelector selected={monthSelect} onSelect={setMonthSelect} months={monthsData} />
+        <MonthSelector selected={monthSelect} onSelect={setMonthSelect} months={monthsData ?? []} />
         <MISummaryDownloadReport />
 
         <Box mb="42px" pb="30px">
