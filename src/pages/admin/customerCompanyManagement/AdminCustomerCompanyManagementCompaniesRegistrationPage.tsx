@@ -62,10 +62,6 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
     [data],
   )
 
-  const navigateToList = useCallback(() => {
-    navigate('/admin/customer-company/companies', { replace: true })
-  }, [navigate])
-
   const onCancel = () => {
     setShowCancelDialog(true)
   }
@@ -80,12 +76,19 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
 
     setShowConfirmDialog(false)
     if (response.status) {
-      navigateToList()
-      showSnackbar(t('등록되었습니다.'), { variant: 'success' })
+      navigate('/admin/customer-company/companies', {
+        replace: true,
+        state: {
+          successMessage: t('등록되었습니다.'),
+        },
+      })
     } else {
-      showSnackbar(t('등록되었습니다.'), { variant: 'success' })
+      showSnackbar('문제가 발생했습니다.', {
+        variant: 'error',
+        body: '나중에 다시 시도해 주세요.',
+      })
     }
-  }, [navigateToList, selectedCompany?.label, selectedCompany?.value, showSnackbar, usageBeginDate, usageEndDate])
+  }, [navigate, selectedCompany?.label, selectedCompany?.value, showSnackbar, usageBeginDate, usageEndDate])
 
   const saveAble = useMemo(
     () => selectedCompany !== null && usageBeginDate !== null && usageEndDate !== null,
@@ -153,7 +156,7 @@ const AdminCustomerCompanyManagementCompaniesRegistrationPage = () => {
             color: 'primary',
             onClick: () => {
               setShowCancelDialog(false)
-              navigateToList()
+              navigate('/admin/customer-company/companies')
             },
           },
         ]}

@@ -45,11 +45,26 @@ const AdminBoardsFaqRegistrationPage = () => {
 
   const handleSave = async () => {
     try {
-      await boardService.registerFaq(formData)
-      showSnackbar(t('등록되었습니다.'), { variant: 'success' })
-      navigate('/admin/boards/faq')
+      const response = await boardService.registerFaq(formData)
+      if (response.status) {
+        navigate('/admin/boards/faq', {
+          replace: true,
+          state: {
+            successMessage: t('등록되었습니다.'),
+          },
+        })
+      } else {
+        showSnackbar('문제가 발생했습니다.', {
+          variant: 'error',
+          body: '나중에 다시 시도해 주세요.',
+        })
+      }
     } catch (error) {
       console.error(error)
+      showSnackbar('문제가 발생했습니다.', {
+        variant: 'error',
+        body: '나중에 다시 시도해 주세요.',
+      })
     }
   }
 
