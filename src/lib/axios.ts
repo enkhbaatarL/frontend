@@ -60,7 +60,7 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
   const code = error.response?.data?.code
   const statusText = error.response?.statusText ?? t('알 수 없는 오류')
 
-  const { refreshToken } = useAuthStore.getState()
+  const { refreshToken: savedToken } = useAuthStore.getState()
 
   if (status && status >= 400) {
     switch (code) {
@@ -75,11 +75,11 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
       case 'AUTH-003': // 토큰 만료
         try {
           const originalRequest = error.config
-          if (originalRequest && refreshToken) {
-            const refreshRes = await authService.postTokenReissue(refreshToken)
-            const newAccessToken = refreshRes.headers['Authorization'].replace('Bearer ', '')
-            useAuthStore.setState({ token: newAccessToken })
-            originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
+          if (originalRequest && savedToken) {
+            const refreshRes = await authService.postTokenReissue(savedToken)
+            const { accessToken, refreshToken } = refreshRes.data.data
+            useAuthStore.setState({ token: accessToken, refreshToken })
+            originalRequest.headers['Authorization'] = `Bearer ${accessToken}`
             return api(originalRequest)
           } else {
             errorHandlerOptions?.showSnackbar?.(t('세션이 만료되었습니다. 다시 로그인해주세요.'), {
