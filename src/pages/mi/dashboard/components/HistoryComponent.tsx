@@ -10,6 +10,7 @@ import MISelect from '@/components/common/select/MISelect'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import dashboardDataService, { DashboardBasicInfo, IDashboardHistoryDetail } from '@/service/mi/dashboardData.ts'
+import { downloadFile } from '@/utils/file.ts'
 
 interface HistoryComponentProps {
   basicInfo?: DashboardBasicInfo
@@ -52,12 +53,10 @@ const HistoryComponent = ({ basicInfo }: HistoryComponentProps) => {
     enabled: !!selectedSettingDetailNo && !!selectedFulfillDate,
   })
 
-  // 원시 데이터를 테이블에 맞게 가공
   const processedTableData = useMemo((): ProcessedHistoryData[] => {
     if (!historyDetailList) return []
 
     return historyDetailList.map((item: IDashboardHistoryDetail) => {
-      // predictPeriodUnitSeparateCd에 따른 날짜 포맷 결정
       const getDateFormat = () => {
         const unitCode = metaData?.data?.predictPeriodUnitSeparateCd
         if (unitCode === 'M') {
@@ -104,19 +103,13 @@ const HistoryComponent = ({ basicInfo }: HistoryComponentProps) => {
     if (!selectedSettingDetailNo || !selectedFulfillDate) return
 
     try {
-      const blob = await dashboardDataService.getDashboardHistoryDetailDownload(selectedSettingDetailNo, {
+      const response = await dashboardDataService.getDashboardHistoryDetailDownload(selectedSettingDetailNo, {
         fulfillDate: selectedFulfillDate,
       })
 
       // 파일 다운로드 처리
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `history_${selectedFulfillDate}.xlsx`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+      const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedSettingDetailNo}.xlsx`
+      downloadFile(response.data, fileName)
     } catch (error) {
       console.error('Download failed:', error)
     }

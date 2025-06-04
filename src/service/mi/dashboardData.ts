@@ -137,10 +137,8 @@ const dashboardDataService = {
    * @param settingDetailNo
    * @param params - { fulfillDate: 예측수행일자 }
    */
-  async getDashboardHistoryDetailDownload(settingDetailNo: number, params: IDashboardHistoryDetailRequest): Promise<Blob> {
-    const response: AxiosResponse<Blob> = await api.get(`mi/dashboard/histories/setting-details/${settingDetailNo}`, { params })
-
-    return response.data
+  async getDashboardHistoryDetailDownload(settingDetailNo: number, params: IDashboardHistoryDetailRequest) {
+    return await api.get(`mi/dashboard/histories/setting-details/${settingDetailNo}/download`, { params, responseType: 'blob' })
   },
 }
 
