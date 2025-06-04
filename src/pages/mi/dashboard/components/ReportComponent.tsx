@@ -1,23 +1,22 @@
 import { Box, Typography } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
-import dayjs from 'dayjs'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import MISummaryDownloadReport from './MISummaryDownloadReport'
 
 import MIButton from '@/components/common/button/MIButton'
 import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
 import MIForecastChart from '@/components/common/forecast-chart/MIForecastChart'
-import { generateChartMonths } from '@/components/common/forecast-chart/mockBrentForecastData'
+import { generateChartMonths, generateForecastDataset } from '@/components/common/forecast-chart/mockBrentForecastData'
 import CloseIcon from '@/components/common/icons/CloseIcon'
 import MIInfluenceFactorChart from '@/components/common/influence-factor-chart/MIInfluenceFactorChart'
 import MISegmented from '@/components/common/segmentedbtn/MISegmented'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
-import { DataRow, useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
 import dashboardDataService from '@/service/mi/dashboardData'
+import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
 export type MonthItem = {
   label: string
@@ -36,137 +35,235 @@ const PopupIndicatorIcon = () => (
   </svg>
 )
 
-export const monthsData: MonthItem[] = [
-  { label: 'Jun 2025 • Latest', value: '2025-06' },
-  { label: 'May 2025', value: '2025-05' },
-  { label: 'Apr 2025', value: '2025-04' },
-  { label: 'Mar 2025', value: '2025-03' },
-  { label: 'Feb 2025', value: '2025-02' },
-  { label: 'Jan 2025', value: '2025-01' },
-  { label: 'Dec 2024', value: '2024-12' },
-  { label: 'Nov 2024', value: '2024-11' },
-  { label: 'Oct 2024', value: '2024-10' },
-  { label: 'Sep 2024', value: '2024-09' },
-  { label: 'Aug 2024', value: '2024-08' },
-]
-
-const chartLineColorMap = ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485']
-
-const ReportComponent = ({ companyNo }: { companyNo: number }) => {
-  const [monthSelect, setMonthSelect] = useState('2025-04')
+const ReportComponent = () => {
+  const [monthSelect, setMonthSelect] = useState('')
   const { months } = generateChartMonths()
   const [selectedCase, setSelectedCase] = useState('case1')
-  const { dashboardRows: rows, dashboardColumns: columns } = useCompanyCondition()
   const [selectedContent, setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
   const [showDetailChart, setShowDetailChart] = useState(false)
+  const { accessCompanyInfo, user } = useAuthStore()
 
-  // chartData  조회
-  const { data: dashboardChartInfo } = useQuery({
-    queryKey: ['getdashboardChart', companyNo],
-    queryFn: async () => await dashboardDataService.getdashboardChart(companyNo!, monthSelect.replace('-', '')),
-    enabled: !!companyNo || companyNo !== -1,
+  // 대시보드 기본 정보
+  const { data: dataInfo } = useQuery({
+    queryKey: ['dashboardInfo'],
+    queryFn: () => dashboardDataService.getdashboardInfo(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
 
-  const { topLabel, lastUpdated } = useMemo(() => {
-    const metadata = dashboardChartInfo?.dashboardMetadata
-    return !metadata
-      ? { topLabel: '', lastUpated: '' }
-      : {
-        topLabel: `Unit: ${metadata.currency}/${metadata.currentUnitCd}`,
-        lastUpdated: dayjs(metadata.lastUpdateDt ?? undefined).format('MMMM D,YYYY'),
-      }
-  }, [dashboardChartInfo])
+  // 대시보드 차트 조회 가능한 날짜 리스트
+  const { data: chartDates } = useQuery({
+    queryKey: ['dashboardChartDates'],
+    queryFn: () => dashboardDataService.getdashboardChartDates(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
 
-  const forecastDatasets = useMemo(() => {
-    const charts = dashboardChartInfo?.charts ?? []
-    const result = charts?.map((chart, index) => {
-      const chartDatas = chart.actualChartLines.rawData ?? []
-      const forcastDatas = chart.forecastChartLines.rawData ?? []
-      return {
-        label: chart.chartLineDescription,
-        color: chartLineColorMap[index] ?? undefined,
-        hidePoint: true,
-        type: chart.actualChartLines?.dataType,
-        data: chartDatas.map((m) => (m.value > 600 ? 2.6 : m.value)),
-        forecastData: [forcastDatas.map((m) => m.value)],
-      }
-    })
-    return result
-  }, [dashboardChartInfo])
+  // 대시보드 차트 데이터
+  const { data: chartData } = useQuery({
+    queryKey: ['dashboardChartData', monthSelect],
+    queryFn: () =>
+      dashboardDataService.getdashboardChartData(
+        accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0,
+        monthSelect.replace('-', '').slice(0, 6),
+      ),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+    enabled: !!monthSelect,
+  })
 
-  const tableColumn = useMemo<GridColDef[]>(() => {
-    const columnFormat = columns.map((m) => ({
-      ...m,
-      renderCell: (param: GridRenderCellParams<DataRow, string>) => {
-        const isModel = param.field === 'model'
-        const tooltipContent = isModel && param.row.tooltipContent
-        const isErrorRate = param.row.id === 'errorRate'
-        const value = param.value as string | number
-        if (tooltipContent) {
-          return (
-            <MITableCell
-              tooltip={param.value === '오차율 (%)'}
-              tooltipContent={
-                <Typography variant={'subtext'} sx={{ whiteSpace: 'pre-line' }}>
-                  {tooltipContent}
-                </Typography>
-              }
-              typography={{ variant: 'tableBody1' }}
-              value={value}
-            />
-          )
+  const monthsData = useMemo(
+    () =>
+      chartDates?.dates.map((date, index) => {
+        const dateObj = new Date(date)
+
+        const month = dateObj.toLocaleString('en-US', { month: 'short' })
+        const year = dateObj.getFullYear()
+        if (index === 0) {
+          return {
+            label: `${month} ${year} • Latest`,
+            value: date,
+          }
         }
-        const { color, value: displayValue } = (() => {
-          const defaultResult = { color: '#212529', value }
-          if (!isErrorRate || typeof value !== 'number') return defaultResult
-          if (value > 0) return { color: '#498B47', value: `+${value.toFixed(2)}` }
-          if (value < 0) return { color: '#CC4D50', value: `${value.toFixed(2)}` }
-          return defaultResult
-        })()
-        return <span style={{ color, fontWeight: isErrorRate || isModel ? 600 : 400 }}>{displayValue}</span>
-      },
-    }))
+        return {
+          label: `${month} ${year}`,
+          value: date,
+        }
+      }),
+    [chartDates],
+  )
+  const formatDate = (date: string) => {
+    const [year, month] = date.split('-')
+    const shortYear = year.slice(2)
+    return `${shortYear}-${month}`
+  }
 
-    return columnFormat as GridColDef[]
-  }, [columns])
+  const tableColumns = useMemo<GridColDef[]>(() => {
+    if (!chartData) return []
+
+    const isForecastSingleLayer = chartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
+
+    if (isForecastSingleLayer) {
+      const currencyColumn: GridColDef = {
+        field: chartData.dashboardMetadata.currency,
+        headerName: `${chartData.dashboardMetadata.currency}/${chartData.dashboardMetadata.currentUnitCd}`,
+        flex: 1.5,
+        align: 'center',
+      }
+
+      const dataColumns: GridColDef[] = chartData.charts[0].actualChartLines.rawData.map((chart) => ({
+        field: chart.resultDate,
+        headerName: formatDate(chart.resultDate),
+        flex: 1,
+        align: 'center',
+        renderCell: (params: GridRenderCellParams) => <MITableCell value={params.value} />,
+      }))
+
+      return [currencyColumn, ...dataColumns]
+    }
+
+    return []
+  }, [chartData])
+
+  const tableRows = useMemo(() => {
+    if (!chartData) return []
+
+    const isForecastSingleLayer = chartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
+
+    if (isForecastSingleLayer) {
+      const forecastRows = chartData.charts
+        .filter((chart) => chart.forecastChartLines.dataType === 'FORECAST')
+        .map((chart) => {
+          const rowData = chart.forecastChartLines.rawData.reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value,
+            }),
+            {},
+          )
+
+          return {
+            id: chart.forecastChartLines.dataType,
+            [chartData.dashboardMetadata.currency]:
+              chart.forecastChartLines.dataType[0] + chart.forecastChartLines.dataType.slice(1).toLowerCase(),
+            ...rowData,
+          }
+        })
+
+      const actualRows = chartData.charts
+        .filter((chart) => chart.actualChartLines.dataType === 'ACTUAL')
+        .map((chart) => {
+          const rowData = chart.actualChartLines.rawData.reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value,
+            }),
+            {},
+          )
+
+          return {
+            id: chart.actualChartLines.dataType,
+            [chartData.dashboardMetadata.currency]:
+              chart.actualChartLines.dataType[0] + chart.actualChartLines.dataType.slice(1).toLowerCase(),
+            ...rowData,
+          }
+        })
+      const futureRows = chartData.charts
+        .filter((chart) => chart.actualChartLines.dataType === 'FUTURE')
+        .map((chart) => {
+          const rowData = chart.actualChartLines.rawData.reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value,
+            }),
+            {},
+          )
+
+          return {
+            id: chart.chartLineDescription,
+            [chartData.dashboardMetadata.currency]: chart.chartLineDescription,
+            ...rowData,
+          }
+        })
+      return [...forecastRows, ...actualRows, ...futureRows]
+    }
+
+    return []
+  }, [chartData])
+
+  const formatDataInfoDate = useMemo(() => {
+    const date = new Date(dataInfo?.lastUpdateDt ?? '')
+
+    const day = date.getDate()
+    const month = date.toLocaleString('en-US', { month: 'long' })
+    const year = date.getFullYear()
+
+    return `${month} ${day}, ${year}`
+  }, [dataInfo])
+
+  useEffect(() => {
+    if (monthSelect === '') {
+      setMonthSelect(monthsData?.[0]?.value ?? '')
+    }
+  }, [monthsData])
 
   return (
     <Box maxWidth={'1070px'}>
-      <Box paddingY={7.5} textAlign="center">
-        <Typography component={'div'} color="gray.90" variant="heading0">
-          BEV Forecast
-        </Typography>
-        <Typography component={'div'} color="#495057" variant="subtext0">
-          MI Model for Battery-Electric Vehicle Scales Volume
-        </Typography>
-      </Box>
+      {dataInfo && (
+        <>
+          <Box paddingY={7.5} textAlign="center">
+            <Typography component={'div'} color="gray.90" variant="heading0">
+              {dataInfo.chartPredictSettingNm}
+            </Typography>
+            <Typography component={'div'} color="#495057" variant="subtext0">
+              Updated {formatDataInfoDate}
+            </Typography>
+          </Box>
+        </>
+      )}
 
       <Box>
-        <MonthSelector selected={monthSelect} onSelect={setMonthSelect} months={monthsData} />
+        <MonthSelector selected={monthSelect} onSelect={setMonthSelect} months={monthsData ?? []} />
         <MISummaryDownloadReport />
 
         <Box mb="42px" pb="30px">
-          {forecastDatasets.length !== 0 && (
-            <MIForecastChart
-              onViewDetail={(content, label) => {
-                setSelectedContent({
-                  date: label ?? '',
-                  label: content.label ?? '',
-                  value: Number(content.value).toFixed(2) ?? 0,
-                  category: content.category ?? '',
-                })
-                setShowDetailChart(true)
-              }}
-              forecastDatasets={forecastDatasets}
-              months={months}
-              height={598}
-              bottomLabel=""
-              topLabel={topLabel}
-              lastUpdated={lastUpdated}
-            />
-          )}
+          <MIForecastChart
+            onViewDetail={(content, label) => {
+              setSelectedContent({
+                date: label ?? '',
+                label: content.label ?? '',
+                value: Number(content.value).toFixed(2) ?? 0,
+                category: content.category ?? '',
+              })
+              setShowDetailChart(true)
+            }}
+            forecastDatasets={[
+              {
+                ...generateForecastDataset(months, { forecastByMonth: false }),
+                label: 'Actual data 1',
+                color: '#40597A',
+                hidePoint: true,
+              },
+              {
+                ...generateForecastDataset(months),
+                label: 'Actual data 2',
+                color: '#26757B',
+                hidePoint: true,
+                type: 'FUTURE',
+              },
+              {
+                ...generateForecastDataset(months),
+                label: 'Actual data 3',
+                color: '#EFA460',
+                hidePoint: true,
+                type: 'FUTURE',
+              },
+            ]}
+            months={months}
+            height={598}
+            bottomLabel="First Unit"
+            topLabel="Unit: USD/bbl"
+          />
         </Box>
         {showDetailChart && (
           <Box width={'1006px'} mb="24px" gap={'6px'} sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
@@ -340,14 +437,16 @@ const ReportComponent = ({ companyNo }: { companyNo: number }) => {
               <MIButton startIcon={<DataTrendChartDownloadIcon />} onClick={() => {}} contentType={'icon'} type="outlined" />
             </Box>
           </Box>
-          <MITableUser
-            tableProps={{
-              noRowMessage: '등록된 내용이 없습니다.',
-              columns: tableColumn,
-              rows,
-              rowId: 'id',
-            }}
-          />
+          {chartData && (
+            <MITableUser
+              tableProps={{
+                noRowMessage: '등록된 내용이 없습니다.',
+                columns: tableColumns,
+                rows: tableRows,
+                rowId: 'id',
+              }}
+            />
+          )}
         </Box>
       </Box>
     </Box>

@@ -5,13 +5,27 @@ import { useNavigate } from 'react-router-dom'
 import arBgImg from '@/assets/asset-report-bg.png'
 import bgCardImg from '@/assets/bgcard.png'
 import cmrBgImg from '@/assets/commodity-market-report-bg.png'
+import cntryBgImg from '@/assets/country-report-bg.png'
 import diBgImg from '@/assets/deal-insight-bg.png'
+import horizonsBgImg from '@/assets/horizons-bg.png'
 import iBgImg from '@/assets/insight-bg.png'
 import pshImg from '@/assets/product_symbol_hover.png'
+import rsrchBgImg from '@/assets/research-presentation-bg.png'
+import edBgImg from '@/assets/the-edge-bg.png'
 import MIBage from '@/components/common/bage/MIBage'
 import MILine from '@/components/common/divider/MILine'
 
-export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT' | 'A_INFORM'
+export type ReportType =
+  | 'A_INSIGHT'
+  | 'A_CMMDT_MRKT_RPT'
+  | 'A_CMPY_RPT'
+  | 'A_ASST_RPT'
+  | 'A_DEAL_INSIGHT'
+  | 'A_INFORM'
+  | 'A_RSRCH_PRSNTTN'
+  | 'A_CNTRY_RPT'
+  | 'A_HORIZONS'
+  | 'A_EDGE'
 export interface Report {
   type: ReportType
   title: string
@@ -45,6 +59,14 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
         return `url(${iBgImg})`
       case 'A_CMPY_RPT':
         return `url(${iBgImg})`
+      case 'A_EDGE':
+        return `url(${edBgImg})`
+      case 'A_RSRCH_PRSNTTN':
+        return `url(${rsrchBgImg})`
+      case 'A_CNTRY_RPT':
+        return `url(${cntryBgImg})`
+      case 'A_HORIZONS':
+        return `url(${horizonsBgImg})`
       default:
         return `url(${bgCardImg})`
     }
@@ -62,8 +84,18 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
         return 'Insight'
       case 'A_CMPY_RPT':
         return 'Company Report'
-      default:
+      case 'A_EDGE':
+        return 'The Edge'
+      case 'A_RSRCH_PRSNTTN':
+        return 'Research Presentation'
+      case 'A_CNTRY_RPT':
+        return 'Country Report'
+      case 'A_HORIZONS':
+        return 'Horizons'
+      case 'A_INFORM':
         return 'Inform'
+      default:
+        return ''
     }
   }, [report.type])
 

@@ -25,7 +25,7 @@ const MIDashboardPage = () => {
   const tabsData = [
     {
       label: 'Report',
-      content: <ReportComponent companyNo={companyNo} />,
+      content: <ReportComponent />,
     },
     {
       label: 'History',
