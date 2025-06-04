@@ -246,6 +246,7 @@ const HistoryComponent = ({ basicInfo }: HistoryComponentProps) => {
                       justifyContent: 'end',
                       alignItems: 'center',
                       backgroundColor: !param.row.isBaselineMaximum && !param.row.isBaselineMinimum ? 'unset' : '#F9F8F6',
+                      filter: !param.row.isBaselinePermitted ? 'blur(3px)' : 'none',
                       '.MuiSvgIcon-root': {
                         verticalAlign: 'text-top',
                         marginRight: '4px',
