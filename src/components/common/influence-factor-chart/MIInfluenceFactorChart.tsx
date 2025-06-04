@@ -210,13 +210,13 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
                 label: 'Actual data 1',
                 color: '#40597A',
                 hidePoint: true,
-                type: 'future',
+                type: 'FUTURE',
               },
             ]}
             months={months}
             height={448}
             topLabel="Unit: Rigs"
-            lastUpated="April 29, 2025"
+            lastUpdated="April 29, 2025"
             hideControl
             hideLegend
             showForecastTrend={false}

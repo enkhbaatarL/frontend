@@ -84,6 +84,14 @@ const LoginPage = () => {
     return null
   }
 
+  const onLogin = async () => {
+    const { accessToken: _accessToken } = await authService.postLogin({
+      loginUserId: 'SKE000@SKE.com',
+    })
+    await setUserInfo(devUser)
+    navigate('mi')
+  }
+
   return (
     <Flex direction="column" gap={20} className="full-height" justify="center" align="center">
       {tempAuthFilter ? (
@@ -100,13 +108,7 @@ const LoginPage = () => {
                 setDevUser(option.value)
               }}
             />
-            <MIButton
-              onClick={async () => {
-                await setUserInfo(devUser)
-                navigate('mi')
-              }}
-              width="120px"
-            >
+            <MIButton onClick={onLogin} width="120px">
               사용자 로그인
             </MIButton>
           </Flex>
