@@ -19,8 +19,15 @@ const UnifiedAuthenticationErrorPage = () => (
       </Typography>
     </Grid>
     <Grid display="flex" gap={3}>
-      <AdminButton size="h42" variant="contained" color="primary">
-          Try again
+      <AdminButton
+        size="h42"
+        variant="contained"
+        color="primary"
+        onClick={() => {
+          window.location.href = '/api/v1/saml2/login/user'
+        }}
+      >
+        Try again
       </AdminButton>
     </Grid>
   </Grid>

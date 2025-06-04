@@ -52,23 +52,6 @@ const MIConfirm = ({
     }
   }, [open])
 
-  useEffect(() => {
-    const preventScroll = (e: Event) => e.preventDefault()
-
-    if (open) {
-      window.addEventListener('wheel', preventScroll, { passive: false })
-      window.addEventListener('touchmove', preventScroll, { passive: false })
-    } else {
-      window.removeEventListener('wheel', preventScroll)
-      window.removeEventListener('touchmove', preventScroll)
-    }
-
-    return () => {
-      window.removeEventListener('wheel', preventScroll)
-      window.removeEventListener('touchmove', preventScroll)
-    }
-  }, [open])
-
   return (
     <Dialog
       slotProps={{
