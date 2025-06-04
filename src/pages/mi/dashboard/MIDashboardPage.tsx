@@ -16,6 +16,12 @@ const MIDashboardPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const companyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? -1, [accessCompanyInfo?.customerCompanyNo])
 
+  const { data: basicInfo } = useQuery({
+    queryKey: ['basicInfo', companyNo],
+    queryFn: async () => await dashboardDataService.getDashboardBasicInfo(companyNo!),
+    enabled: !!companyNo || companyNo !== -1,
+  })
+
   const tabsData = [
     {
       label: 'Report',
@@ -23,7 +29,7 @@ const MIDashboardPage = () => {
     },
     {
       label: 'History',
-      content: <HistoryComponent />,
+      content: <HistoryComponent basicInfo={basicInfo} />,
     },
   ]
 
