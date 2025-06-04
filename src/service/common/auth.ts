@@ -14,6 +14,17 @@ const authService = {
 
     return response.data.data
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async postTokenReissue(token: string): Promise<any> {
+    const response: AxiosResponse<ICommonResponse<IUserDetail>> = await api.post('auth/token-generation', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      withCredentials: true,
+    })
+
+    return response.data.data
+  },
 }
 
 export default authService

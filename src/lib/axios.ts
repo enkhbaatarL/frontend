@@ -3,6 +3,7 @@ import { t } from 'i18next'
 import { NavigateFunction } from 'react-router-dom'
 
 import { ISnackbarOptions } from '@/hooks/useSnackbar'
+import authService from '@/service/common/auth'
 import useAuthStore from '@/store/useAuthStore'
 export interface HttpResponse<T> {
   status: number
@@ -54,10 +55,12 @@ api.interceptors.request.use((req) => {
 
   return req
 })
-const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
+const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
   const status = error.response?.status
   const code = error.response?.data?.code
   const statusText = error.response?.statusText ?? t('알 수 없는 오류')
+
+  const { refreshToken } = useAuthStore.getState()
 
   if (status && status >= 400) {
     switch (code) {
@@ -70,12 +73,27 @@ const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
         // case 'AUTH-004': // 토큰 무효
 
       case 'AUTH-003': // 토큰 만료
-        errorHandlerOptions?.showSnackbar?.(t('세션이 만료되었습니다. 다시 로그인해주세요.'), {
-          variant: 'warning',
-        })
-        navigateFn('/login')
+        try {
+          const originalRequest = error.config
+          if (originalRequest && refreshToken) {
+            const refreshRes = await authService.postTokenReissue(refreshToken)
+            const newAccessToken = refreshRes.headers['Authorization'].replace('Bearer ', '')
+            useAuthStore.setState({ token: newAccessToken })
+            originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
+            return api(originalRequest)
+          } else {
+            errorHandlerOptions?.showSnackbar?.(t('세션이 만료되었습니다. 다시 로그인해주세요.'), {
+              variant: 'warning',
+            })
+            navigateFn('/login')
+          }
+        } catch {
+          errorHandlerOptions?.showSnackbar?.(t('세션이 만료되었습니다. 다시 로그인해주세요.'), {
+            variant: 'warning',
+          })
+          navigateFn('/login')
+        }
         break
-
       case 'SYS-999': // 401 unknown Error
       case 'AUTH-005': // 권한 부족
       case 'AUTH-007': // 접근 거부
