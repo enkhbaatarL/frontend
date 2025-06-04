@@ -344,13 +344,13 @@ const DataDetailPage = () => {
             {hasUnstructuredData && (
               <DocumentComponent
                 data={
-                  unstructuredDataList?.map(({ fileNo, fileName, auditInfo, extension, isPdfViewable, isDownloadable, fileSize }) => ({
+                  unstructuredDataList?.map(({ fileNo, fileName, auditInfo, extension, isPdfViewable, fileSize }) => ({
                     fileNo,
                     fileName,
                     date: dayjs(auditInfo.modifyDt).format('YYYY-MM-DD'),
                     extension,
                     isPdfViewable,
-                    isDownloadable,
+                    isDownloadable: productData?.isDownloadable,
                     fileSize,
                   })) ?? []
                 }

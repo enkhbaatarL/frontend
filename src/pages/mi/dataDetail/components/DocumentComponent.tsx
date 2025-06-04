@@ -11,7 +11,7 @@ interface DocumentItemProps {
   date: string
   extension: string
   isPdfViewable: boolean
-  isDownloadable: boolean
+  isDownloadable: boolean | undefined
   fileSize: number
 }
 
@@ -107,7 +107,15 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => {
           />
         ))}
       </Box>
-      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'} onClick={handleDownloadFiles}>
+      <MIButton
+        width={'100%'}
+        contentType={'text'}
+        color={'gray2'}
+        type={'outlined'}
+        size={'h42'}
+        onClick={handleDownloadFiles}
+        disabled={!data.some((item) => item.isDownloadable)}
+      >
         Download All
       </MIButton>
     </Grid>
