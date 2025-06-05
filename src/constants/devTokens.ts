@@ -1,0 +1,55 @@
+const devTokens = {
+  admin: [
+    {
+      label: 'SK C&C', // ADMIN-SKCC-SKCC000@SKCC.com
+      value:
+        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ3MDM1MDkwLCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImlzT3RoZXJTZXJ2aWNlQWNjZXNzUG9zc2libGUiOnRydWUsImNvbXBhbnlEb21haW4iOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjIxMDcwMzUwOTB9.QELadPU-mRzhW8WmCXSNvH9au6pfuxJMi9B2I-4Z6qw',
+    },
+  ],
+  operator: [
+    {
+      label: 'SK HY', // OPERATOR-SKHY-SKHY000@SKHY.com
+      value:
+        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAwQFNLSFkuY29tIiwiaWF0IjoxNzQ3MDM1MTQxLCJ1c2VyTm8iOjEwMDAwNDUsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJPUEVSQVRPUiIsImlzT3RoZXJTZXJ2aWNlQWNjZXNzUG9zc2libGUiOmZhbHNlLCJjb21wYW55RG9tYWluIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwiZXhwIjoyMTA3MDM1MTQxfQ.v9L037tbZGE1xdACXI2eTpSQeKH1MpdvkLehMXQ3g-g',
+    },
+    {
+      label: 'SK GAS', // OPERATOR-SKGAS-SKGAS000@SKGAS.com
+      value:
+        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMEBTS0dBUy5jb20iLCJpYXQiOjE3NDcwMzUxNzUsInVzZXJObyI6MTAwMDA1MSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJPUEVSQVRPUiIsImlzT3RoZXJTZXJ2aWNlQWNjZXNzUG9zc2libGUiOmZhbHNlLCJjb21wYW55RG9tYWluIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwiZXhwIjoyMTA3MDM1MTc1fQ.QGS0yJLL-OchU7-B2do3QrgL0X4q5LSWBoGZxsbLiqk',
+    },
+  ],
+  user: [
+    {
+      label: 'SK Siltron', // USER-SKSL-SKSL001@SKSL.com
+      value:
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS1NMMDAxQFNLU0wuY29tIiwiaWF0IjoxNzQ5MDg1NTA1LCJ1c2VyTm8iOjEwMDAwOTEsImNvbXBhbnlObyI6MjAwOCwiY29tcGFueUNkIjoiU0tTTCIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImNvbXBhbnlEb21haW4iOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjE3ODUwODU1MDV9.PIM-j6pk3fxhiJpTWV2Rqku42zOMqYvCLi0SIcjwIMw',
+    },
+    {
+      label: 'SK Innovation', // USER-SKI-SKI001@SKI.com
+      value:
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0kwMDFAU0tJLmNvbSIsImlhdCI6MTc0OTA4NjgyMiwidXNlck5vIjoxMDAwMTAxLCJjb21wYW55Tm8iOjIwMTksImNvbXBhbnlDZCI6IlNLSSIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImNvbXBhbnlEb21haW4iOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjE3ODUwODY4MjJ9.XXZbjXnSvs4NhiVtZ80T_7Kkccd9pVyfVh5SxuzaknI',
+    },
+    {
+      label: 'SK Innovation E&S', // USER-SKENS-SKENS002@SKENS.com
+      value:
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0VOUzAwMkBTS0VOUy5jb20iLCJpYXQiOjE3NDkwODQ1MzcsInVzZXJObyI6MTAwMDA4MiwiY29tcGFueU5vIjoyMDEzLCJjb21wYW55Q2QiOiJTS0VOUyIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImNvbXBhbnlEb21haW4iOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjE3ODUwODQ1Mzd9.vqcAi3GRZs_B0p_avWxibxkW861fgj5aczKx9HlGCVc',
+    },
+    {
+      label: 'SK Telecom', // USER-SKT-SKT001@SKT.com
+      value:
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS1QwMDFAU0tULmNvbSIsImlhdCI6MTc0OTA4NjAxNiwidXNlck5vIjoxMDAwMDY3LCJjb21wYW55Tm8iOjIwMTYsImNvbXBhbnlDZCI6IlNLVCIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImNvbXBhbnlEb21haW4iOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjE3ODUwODYwMTZ9.M0J0WEMs0Rmc8AaiP1Uk0blFapO4lYDWkjoIU6JzbTE',
+    },
+    {
+      label: 'SK Hynix', // USER-SKHY-SKHY001@SKHY.com
+      value:
+        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAxQFNLSFkuY29tIiwiaWF0IjoxNzQ3MDM1MjA5LCJ1c2VyTm8iOjEwMDAwNTMsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImNvbXBhbnlEb21haW4iOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjIxMDcwMzUyMDl9.-UXBxtc-wzkf8X6lB7M09t0KWQQbGiqI-fzMTo4o-6M',
+    },
+    {
+      label: 'SK Gas', // USER-SKGAS-SKGAS001@SKGAS.com
+      value:
+        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMUBTS0dBUy5jb20iLCJpYXQiOjE3NDcwMzUxMTIsInVzZXJObyI6MTAwMDA4NSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImNvbXBhbnlEb21haW4iOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjIxMDcwMzUxMTJ9.wM4wIH-ekQmcMoIZs_SMQoh4c98WaYJvZcxllnH8XP4',
+    },
+  ],
+}
+
+export default devTokens
