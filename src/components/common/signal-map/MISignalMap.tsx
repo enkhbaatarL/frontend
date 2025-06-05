@@ -1,15 +1,15 @@
 import { Chart as ChartJS, ScriptableContext, Tooltip, TooltipModel, ActiveElement, Point } from 'chart.js'
 import { TreemapController, TreemapElement, TreemapScriptableContext } from 'chartjs-chart-treemap'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import customLabelPlugin from '@/lib/chart/treemap/plugins/customLabelPlugin'
 
 ChartJS.register(TreemapController, TreemapElement)
 
 interface Props {
-  data: {
-    sector: string
-    change: number
+  mapData: {
+    instrumentNm: string
+    correlationCalculationVal: number
   }[]
   thresholdLevels?: number
   useAnimation?: boolean
@@ -88,10 +88,12 @@ Tooltip.positioners.myCustomPositioner = function (_elements: ActiveElement[], e
   }
 }
 
-const MISignalMap = ({ data = [], thresholdLevels = 6, useAnimation = false }: Props) => {
+const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }: Props) => {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
   const chartInstanceRef = useRef<{ destroy:() => void }>(null)
+
+  const data = useMemo(() => mapData.map((m) => ({ sector: m.instrumentNm, change: m.correlationCalculationVal })), [mapData])
 
   const formatChange = (change: number | undefined) => (typeof change === 'number' ? `${change.toFixed(2)}%` : 'N/A')
 

@@ -15,7 +15,7 @@ type OptionType = {
   disabled?: boolean
 }
 
-type MISelectSize = 'h26' | 'h36' | 'h34'
+type MISelectSize = 'h26' | 'h36' | 'h34' | 'h40'
 type MISelectProps = {
   label?: string
   placeholder?: string
@@ -66,6 +66,12 @@ const CustomArrowIcon = ({
       return {
         width: 28,
         height: 28,
+      }
+    }
+    if (sizeSelect === 'h40') {
+      return {
+        width: 32,
+        height: 32,
       }
     }
 
@@ -165,6 +171,12 @@ const MISelect = ({
     if (sizeSelect === 'h36') {
       return {
         padding: '5.5px 12px',
+        fontSize: '14px',
+      }
+    }
+    if (sizeSelect === 'h40') {
+      return {
+        padding: '7px 12px',
         fontSize: '14px',
       }
     }
