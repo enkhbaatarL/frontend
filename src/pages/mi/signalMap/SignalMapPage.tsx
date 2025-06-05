@@ -71,7 +71,7 @@ const SignalMapPage = () => {
 
   const { data: signalData } = useQuery({
     queryKey: ['getSignalMapData', period, companyFilter],
-    queryFn: async () => await signalMapService.getSignalMapData(customerCompanyNo, { period, filter: companyFilter }),
+    queryFn: async () => await signalMapService.getSignalMapData(customerCompanyNo, { period }),
     enabled: !!period,
     select: (res) => res.data,
   })
