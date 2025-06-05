@@ -122,7 +122,7 @@ const HistoryComponent = ({ basicInfo }: HistoryComponentProps) => {
           {basicInfo?.chartPredictSettingNm}
         </Typography>
         <Typography component={'div'} color="#495057" variant="subtext0">
-          Last Updated {dayjs(basicInfo?.lastUpdateDt).format('MMM D, YYYY')}
+          Updated {dayjs(basicInfo?.lastUpdateDt).format('MMMM D, YYYY')}
         </Typography>
       </Box>
 

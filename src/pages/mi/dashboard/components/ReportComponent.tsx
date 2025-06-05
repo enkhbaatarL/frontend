@@ -7,17 +7,18 @@ import MISummaryDownloadReport from './MISummaryDownloadReport'
 
 import MIButton from '@/components/common/button/MIButton'
 import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
-import MIForecastChart from '@/components/common/forecast-chart/MIForecastChart'
-import { generateChartMonths, generateForecastDataset } from '@/components/common/forecast-chart/mockBrentForecastData'
+import { generateChartMonths } from '@/components/common/forecast-chart/mockBrentForecastData'
 import CloseIcon from '@/components/common/icons/CloseIcon'
 import MIInfluenceFactorChart from '@/components/common/influence-factor-chart/MIInfluenceFactorChart'
 import MISegmented from '@/components/common/segmentedbtn/MISegmented'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
+import CompanyChartRenderer from '@/pages/mi/dashboard/components/CompanyChartRenderer'
 import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
 import dashboardDataService from '@/service/mi/dashboardData'
 import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
+
 export type MonthItem = {
   label: string
   value: string
@@ -35,7 +36,11 @@ const PopupIndicatorIcon = () => (
   </svg>
 )
 
-const ReportComponent = () => {
+interface ReportComponentProps {
+  companyNo: number | undefined
+}
+
+const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   const [monthSelect, setMonthSelect] = useState('')
   const { months } = generateChartMonths()
   const [selectedCase, setSelectedCase] = useState('case1')
@@ -92,6 +97,7 @@ const ReportComponent = () => {
       }),
     [chartDates],
   )
+
   const formatDate = (date: string) => {
     const [year, month] = date.split('-')
     const shortYear = year.slice(2)
@@ -201,6 +207,16 @@ const ReportComponent = () => {
     return `${month} ${day}, ${year}`
   }, [dataInfo])
 
+  const handleViewDetail = (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => {
+    setSelectedContent({
+      date: label ?? '',
+      label: content.label ?? '',
+      value: Number(content.value).toFixed(2) ?? '0',
+      category: content.category ?? '',
+    })
+    setShowDetailChart(true)
+  }
+
   useEffect(() => {
     if (monthSelect === '') {
       setMonthSelect(monthsData?.[0]?.value ?? '')
@@ -226,45 +242,9 @@ const ReportComponent = () => {
         <MonthSelector selected={monthSelect} onSelect={setMonthSelect} months={monthsData ?? []} />
         <MISummaryDownloadReport />
 
-        <Box mb="42px" pb="30px">
-          <MIForecastChart
-            onViewDetail={(content, label) => {
-              setSelectedContent({
-                date: label ?? '',
-                label: content.label ?? '',
-                value: Number(content.value).toFixed(2) ?? 0,
-                category: content.category ?? '',
-              })
-              setShowDetailChart(true)
-            }}
-            forecastDatasets={[
-              {
-                ...generateForecastDataset(months, { forecastByMonth: false }),
-                label: 'Actual data 1',
-                color: '#40597A',
-                hidePoint: true,
-              },
-              {
-                ...generateForecastDataset(months),
-                label: 'Actual data 2',
-                color: '#26757B',
-                hidePoint: true,
-                type: 'FUTURE',
-              },
-              {
-                ...generateForecastDataset(months),
-                label: 'Actual data 3',
-                color: '#EFA460',
-                hidePoint: true,
-                type: 'FUTURE',
-              },
-            ]}
-            months={months}
-            height={598}
-            bottomLabel="First Unit"
-            topLabel="Unit: USD/bbl"
-          />
-        </Box>
+        {/* CompanyChartRenderer에 props로 받은 companyNo 전달 */}
+        <CompanyChartRenderer companyNo={companyNo} months={months} onViewDetail={handleViewDetail} />
+
         {showDetailChart && (
           <Box width={'1006px'} mb="24px" gap={'6px'} sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
             <Box sx={{ position: 'absolute', top: '0px', left: '50%', transform: 'translate(-50%, -100%)', '& svg': { display: 'block' } }}>
