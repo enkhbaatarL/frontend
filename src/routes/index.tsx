@@ -1,5 +1,5 @@
 import { omit } from 'lodash-es'
-import { createBrowserRouter, RouteObject, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
 
 import ProtectedRoute from '@/components/common/ProtectedRoute'
 import CallbackProcessingPage from '@/pages/common/CallbackProcessingPage'
@@ -36,6 +36,10 @@ const commonRoutes: ICustomRouteObject[] = [
     element: <PdfViewerPage />,
   },
   { ...ErrorRoutes },
+  {
+    path: '/*',
+    element: <Navigate to="/error/404" replace={true} />,
+  },
 ]
 
 const convertToRouteObject = (route: ICustomRouteObject): RouteObject => {

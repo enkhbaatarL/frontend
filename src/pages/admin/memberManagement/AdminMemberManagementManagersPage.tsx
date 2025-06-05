@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { isEmpty } from 'lodash-es'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
@@ -20,6 +20,7 @@ import Flex from '@/components/common/display/Flex'
 import MIField from '@/components/common/input/MIField'
 import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useNavigationToast from '@/hooks/useNavigationToast.ts'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
 import companiesService from '@/service/admin/companies'
@@ -43,6 +44,8 @@ const AdminMemberManagementManagersPage = () => {
   const { showSnackbar } = useSnackbar()
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [selectedUserForDelete, setSelectedUserForDelete] = useState<IAdminUserInfo | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -100,6 +103,36 @@ const AdminMemberManagementManagersPage = () => {
       value: departmentNm,
     }))
   }, [filter.companyNo, filterOptions, location.search, updateFilter])
+
+  const handleDeleteUser = useCallback(async () => {
+    if (!selectedUserForDelete || isDeleting) return
+
+    setIsDeleting(true)
+
+    try {
+      const response = await membersService.deleteAdmin(selectedUserForDelete.userNo)
+
+      if (response.status) {
+        showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
+        search()
+      } else {
+        showSnackbar('문제가 발생했습니다.', {
+          variant: 'error',
+          body: '나중에 다시 시도해 주세요.',
+        })
+      }
+    } catch (error) {
+      console.error(error)
+      showSnackbar('문제가 발생했습니다.', {
+        variant: 'error',
+        body: '나중에 다시 시도해 주세요.',
+      })
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteModal(false)
+      setSelectedUserForDelete(null)
+    }
+  }, [selectedUserForDelete, isDeleting, showSnackbar, search])
 
   const columns: GridColDef[] = [
     {
@@ -193,13 +226,18 @@ const AdminMemberManagementManagersPage = () => {
             {
               label: t('삭제'),
               icon: <DeleteIcon fontSize="small" />,
-              onClick: () => setShowDeleteModal(true),
+              onClick: () => {
+                setSelectedUserForDelete(row)
+                setShowDeleteModal(true)
+              },
             },
           ]}
         />
       ),
     },
   ]
+
+  useNavigationToast()
 
   useEffect(() => {
     setCustomComponent(<AdminManagementManagersPageHeader />)
@@ -282,29 +320,40 @@ const AdminMemberManagementManagersPage = () => {
         }
         width={450}
         handleClose={() => {
-          setShowDeleteModal(false)
+          if (!isDeleting) {
+            setShowDeleteModal(false)
+            setSelectedUserForDelete(null)
+          }
         }}
         actions={[
           {
             label: t('취소'),
             variant: 'outlined',
             color: 'gray',
+            disabled: isDeleting,
             onClick: () => {
               setShowDeleteModal(false)
+              setSelectedUserForDelete(null)
             },
           },
           {
             label: t('삭제'),
             variant: 'filled',
             color: 'red',
-            onClick: () => {
-              setShowDeleteModal(false)
-              showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
+            disabled: isDeleting,
+            onClick: async () => {
+              await handleDeleteUser()
             },
           },
         ]}
       >
-        {t('삭제 시 관리자의 모든 권한이 즉시 해제됩니다.')}
+        {selectedUserForDelete && (
+          <>
+            <strong>{selectedUserForDelete.userNm}</strong> 관리자를 삭제하시겠습니까?
+            <br />
+            {t('삭제 시 관리자의 모든 권한이 즉시 해제됩니다.')}
+          </>
+        )}
       </MIConfirm>
     </AdminSkeleton>
   )

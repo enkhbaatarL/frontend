@@ -14,6 +14,23 @@ const authService = {
 
     return response.data.data
   },
+
+  async postTokenReissue(token: string): Promise<{ accessToken: string }> {
+    const response = await api.post('auth/token-generation', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      withCredentials: true,
+    })
+
+    return response.data.data
+  },
+
+  async postLogin(body: { loginUserId: string }): Promise<{ accessToken: string }> {
+    const response = await api.post('test/login/user', body)
+
+    return response.data.data
+  },
 }
 
 export default authService

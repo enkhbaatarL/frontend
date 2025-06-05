@@ -233,11 +233,27 @@ const AdminMemberManagementUserRegistrationPage = () => {
   const handleRegisterUser = async () => {
     try {
       const request = registeredUsers.map((v) => v.imCd)
-      await membersService.registerUser({ imCd: request })
-      showSnackbar(t('등록되었습니다.'), { variant: 'success' })
-      navigate('/admin/member-mgmt/users')
+      const response = await membersService.registerUser({ imCd: request })
+
+      if (response.status) {
+        navigate('/admin/member-mgmt/users', {
+          replace: true,
+          state: {
+            successMessage: t('등록되었습니다.'),
+          },
+        })
+      } else {
+        showSnackbar('문제가 발생했습니다.', {
+          variant: 'error',
+          body: '나중에 다시 시도해 주세요.',
+        })
+      }
     } catch (error) {
       console.error(error)
+      showSnackbar('문제가 발생했습니다.', {
+        variant: 'error',
+        body: '나중에 다시 시도해 주세요.',
+      })
     }
   }
 

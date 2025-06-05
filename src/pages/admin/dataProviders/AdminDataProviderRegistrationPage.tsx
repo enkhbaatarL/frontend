@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { useForm, useStore } from '@tanstack/react-form'
 import { t } from 'i18next'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
@@ -59,22 +59,36 @@ export default function AdminDataProviderRegistrationPage() {
 
   const formValues = useStore(form.store, (state) => state.values)
 
-  const onSave = useCallback(async () => {
-    const response = await dataProviderService.registerProvider({
-      providerNm: formValues.name, // 데이터 프로바이더 명
-      providerId: formValues.code, // 고유 코드
-      providerExpn: formValues.description, // 데이터 프로바이더 설명
-      isUsed: true,
-    })
+  const handleSave = async () => {
+    try {
+      const response = await dataProviderService.registerProvider({
+        providerNm: formValues.name, // 데이터 프로바이더 명
+        providerId: formValues.code, // 고유 코드
+        providerExpn: formValues.description, // 데이터 프로바이더 설명
+        isUsed: true,
+      })
 
-    setIsOpenRegistration(false)
-    if (response.status) {
-      navigate('/admin/data-providers/providers')
-      showSnackbar(t('등록되었습니다.'), { variant: 'success' })
-    } else {
-      showSnackbar(t('등록되었습니다.'), { variant: 'success' })
+      if (response.status) {
+        navigate('/admin/data-providers/providers', {
+          replace: true,
+          state: {
+            successMessage: t('등록되었습니다.'),
+          },
+        })
+      } else {
+        showSnackbar('문제가 발생했습니다.', {
+          variant: 'error',
+          body: '나중에 다시 시도해 주세요.',
+        })
+      }
+    } catch (error) {
+      console.error(error)
+      showSnackbar('문제가 발생했습니다.', {
+        variant: 'error',
+        body: '나중에 다시 시도해 주세요.',
+      })
     }
-  }, [formValues.code, formValues.description, formValues.name, navigate, showSnackbar])
+  }
 
   useEffect(() => {
     setCustomComponent(
@@ -195,7 +209,10 @@ export default function AdminDataProviderRegistrationPage() {
             label: <Typography variant="body2SB14">등록</Typography>,
             variant: 'filled',
             color: 'primary',
-            onClick: () => onSave(),
+            onClick: async () => {
+              setIsOpenRegistration(false)
+              await handleSave()
+            },
           },
         ]}
       >

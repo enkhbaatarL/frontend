@@ -1,9 +1,10 @@
-import Axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import Axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { t } from 'i18next'
 import { NavigateFunction } from 'react-router-dom'
 
 import { ISnackbarOptions } from '@/hooks/useSnackbar'
 import useAuthStore from '@/store/useAuthStore'
+import useDialog from '@/store/useDialog'
 export interface HttpResponse<T> {
   status: number
   code: string
@@ -42,11 +43,9 @@ const api: AxiosInstance = Axios.create({
 api.interceptors.request.use((req) => {
   if (req.headers !== undefined) {
     const { token, user, accessCompanyInfo } = useAuthStore.getState()
-
     if (token) {
       req.headers['Authorization'] = `Bearer ${token}`
     }
-
     if (user?.isOtherServiceAccessPossible && accessCompanyInfo?.customerCompanyNo) {
       req.headers['X-Company-No'] = accessCompanyInfo.customerCompanyNo.toString()
     }
@@ -54,7 +53,67 @@ api.interceptors.request.use((req) => {
 
   return req
 })
-const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
+
+let isRefreshing = false
+let requestQueue: (() => void)[] = []
+
+/** 토큰만료 재발급 process */
+const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> => {
+  const { token: savedToken } = useAuthStore.getState()
+  const processQueue = () => {
+    requestQueue.forEach((callback) => callback())
+    requestQueue = []
+  }
+  const errorNavigate = () => {
+    requestQueue = []
+    const { onShow } = useDialog.getState()
+    const handleDelete = () => {
+      onShow({
+        title: t('세션이 만료되었습니다.'),
+        actions: [
+          {
+            label: 'Login',
+            onClick: async () => {
+              useDialog.getState().onHide()
+              navigateFn('/')
+            },
+          },
+        ],
+      })
+    }
+    handleDelete()
+  }
+  if (!savedToken) return errorNavigate()
+  if (isRefreshing) {
+    return new Promise((resolve) => {
+      requestQueue.push(() => resolve())
+    })
+  }
+  isRefreshing = true
+  try {
+    const originalRequest = config
+    if (originalRequest) requestQueue.push(() => api(originalRequest))
+    const response = await fetch('/api/v1/auth/token-generation', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${savedToken}` },
+      credentials: 'include',
+    })
+    if (!response.ok) return errorNavigate()
+    const data = await response.json()
+    const newToken = data?.data?.accessToken
+    useAuthStore.setState({ token: newToken })
+    processQueue()
+  } catch {
+    errorNavigate()
+  } finally {
+    requestQueue = []
+    isRefreshing = false
+  }
+
+  return Promise.resolve()
+}
+
+const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
   const status = error.response?.status
   const code = error.response?.data?.code
   const statusText = error.response?.statusText ?? t('알 수 없는 오류')
@@ -62,16 +121,14 @@ const errorHandler = (error: AxiosError<HttpResponse<unknown>>) => {
   if (status && status >= 400) {
     switch (code) {
       // ==========TODO
-      // case 'AUTH-001': // 인증 필요
+      case 'AUTH-001': // 인증 필요
+        navigateFn('/error', { state: { code, status, hiddenButton: true, icon: 'lock', title: 'SK MI Platform' }, replace: true })
+        break
       // case 'AUTH-002': // 잘못된 자격증명
       // case 'AUTH-006': // 계정 잠김  계정이 잠겼습니다. 관리자에게 문의하세요.
       // case 'AUTH-004': // 토큰 무효
-
       case 'AUTH-003': // 토큰 만료
-        errorHandlerOptions?.showSnackbar?.(t('세션이 만료되었습니다. 다시 로그인해주세요.'), {
-          variant: 'warning',
-        })
-        navigateFn('/login')
+        await reissueToken(error.config)
         break
       case 'SYS-999': // 401 unknown Error
       case 'AUTH-005': // 권한 부족

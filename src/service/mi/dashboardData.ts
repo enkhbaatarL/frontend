@@ -1,4 +1,7 @@
+import { AxiosResponse } from 'axios'
+
 import api from '@/lib/axios.ts'
+import { ICommonResponse } from '@/types/api.ts'
 
 export interface IDashboardLastInsightsInfo {
   modifyDt: string
@@ -36,7 +39,117 @@ export interface MarketDataItemInfo {
   isPermitted: boolean
   marketMetaDataSummary: MarketMetaDataSummary
 }
+interface ChartLine {
+  isPermitted: boolean
+  dataType: 'FUTURE' | 'ACTUAL'
+  rawData: {
+    date: string
+    value: number
+  }[]
+}
 
+interface DashboardChart {
+  chartLineDescription: string
+  chartLineType: string
+  actualChartLines: ChartLine
+  forecastChartLines: ChartLine
+}
+
+export interface DashboardChartInfo {
+  dashboardMetadata: {
+    marketIndexAnalysisTargetCd: string
+    lastUpdateDt: string
+    currency: string
+    currentUnitCd: string
+    baseDate: string
+  }
+  charts: DashboardChart[]
+  dashboardDataSources: {
+    goodsDataSourceNo: number
+    dashboardLineName: string
+  }[]
+}
+
+export interface SettingDetail {
+  settingDetailNo: number
+  settingDetailExpn: string
+  priceType: string
+  priceTypeNm: string
+}
+
+export interface HistoryMetaDataTarget {
+  fulfillmentDates: string[]
+  settingDetails: SettingDetail[]
+}
+
+export interface HistoryMetaData {
+  predictTargetSettingNm: string
+  predictPeriodUnitSeparateCd: string
+  currency: string
+  unit: string
+  targets: HistoryMetaDataTarget[]
+}
+export interface DashboardBasicInfo {
+  chartPredictSettingNm: string
+  lastUpdateDt: string
+}
+export interface IDashboardHistoryDetailRequest {
+  fulfillDate: string
+}
+export interface IDashboardHistoryDetailStat {
+  price: number
+  changeRate: number
+  isMaximum: boolean
+  isMinimum: boolean
+}
+export interface IDashboardHistoryDetailBaseline {
+  type: string
+  stat: IDashboardHistoryDetailStat
+  isPermitted: boolean
+}
+export interface IDashboardHistoryDetail {
+  date: string
+  baseline: IDashboardHistoryDetailBaseline
+  counterpart?: IDashboardHistoryDetailBaseline
+}
+
+export interface IDashboardInfo {
+  chartPredictSettingNm: string
+  lastUpdateDt: string
+}
+
+export interface IDashboardChartDates {
+  dates: string[]
+}
+interface IDashboardChartMetadata {
+  marketIndexAnalysisTargetCd: string
+  lastUpdateDt: string
+  currency: string
+  currentUnitCd: string
+  baseDate: string
+  dataTableType: string
+}
+interface IChartLineRawData {
+  resultDate: string
+  predictDate: string
+  value: number
+}
+interface IChartLine {
+  isPermitted: boolean
+  dataType: string
+  goodsDataSourceNo: number
+  rawData: IChartLineRawData[]
+}
+interface IDashboardChart {
+  chartLineDescription: string
+  chartLineType: string
+  actualChartLines: IChartLine
+  forecastChartLines: IChartLine
+}
+export interface IDashboardChartData {
+  dashboardMetadata: IDashboardChartMetadata
+  charts: IDashboardChart[]
+}
 /**
  * 대시보드 서비스
  */
@@ -56,6 +169,88 @@ const dashboardDataService = {
   async getdashboardMakterDatas(companyNo: number): Promise<MarketDataItemInfo[]> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/market-datas`)
     return response.data.data
+  },
+  /**
+   * 대시보드 데이터 존재 여부를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   */
+  async getdashboardDataExists(companyNo: number): Promise<boolean> {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/data/exists`)
+    return response.data.data
+  },
+  /**
+   * 대시보드 기본 정보를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   */
+  async getdashboardInfo(companyNo: number): Promise<IDashboardInfo> {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/info`)
+    return response.data.data
+  },
+  /**
+   * 대시보드 차트 조회 가능한 날짜 리스트를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   */
+  async getdashboardChartDates(companyNo: number): Promise<IDashboardChartDates> {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart-dates`)
+    return response.data.data
+  },
+  /**
+   * 대시보드 차트 데이터를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param date - 조회할 년월
+   */
+  async getdashboardChartData(companyNo: number, date: string): Promise<IDashboardChartData> {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart`, { params: { date } })
+    return response.data.data
+  },
+
+  /**
+   * 대시보드 차트 데이터르 조회합니다.
+   * @param companyNo - 고객사 번호
+   * @param date - 조회할 년월
+   */
+  async getdashboardChart(companyNo: number, date: string): Promise<DashboardChartInfo> {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart`, {
+      params: { date },
+    })
+    return response.data.data
+  },
+  /**
+   * 대시보드 대시보드 기본 정보를 조회합니다.
+   * @param companyNo - 고객사 번호
+   */
+  async getDashboardBasicInfo(companyNo: number): Promise<DashboardBasicInfo> {
+    const response: AxiosResponse<ICommonResponse<DashboardBasicInfo>> = await api.get(`mi/dashboard/companies/${companyNo}/info`)
+    return response.data.data
+  },
+  /**
+   * 대시보드 히스토리 메타데이터를 조회합니다.
+   */
+  async getHistoryMetadata(): Promise<ICommonResponse<HistoryMetaData>> {
+    const response: AxiosResponse<ICommonResponse<HistoryMetaData>> = await api.get('mi/dashboard/histories/metadata')
+
+    return response.data
+  },
+  /**
+   * 대시보드 히스토리 상세 데이터를 조회합니다. (예측가 + 실제가 or 선물가 조합으로 데이터가 생성됩니다.)
+   * @param settingDetailNo
+   * @param params - { fulfillDate: 예측수행일자 }
+   */
+  async getDashboardHistoryDetail(settingDetailNo: number, params: IDashboardHistoryDetailRequest): Promise<IDashboardHistoryDetail[]> {
+    const response: AxiosResponse<ICommonResponse<IDashboardHistoryDetail[]>> = await api.get(
+      `mi/dashboard/histories/setting-details/${settingDetailNo}`,
+      { params },
+    )
+
+    return response.data.data
+  },
+  /**
+   * 대시보드 히스토리 상세 데이터를 다운로드 합니다.
+   * @param settingDetailNo
+   * @param params - { fulfillDate: 예측수행일자 }
+   */
+  async getDashboardHistoryDetailDownload(settingDetailNo: number, params: IDashboardHistoryDetailRequest) {
+    return await api.get(`mi/dashboard/histories/setting-details/${settingDetailNo}/download`, { params, responseType: 'blob' })
   },
 }
 

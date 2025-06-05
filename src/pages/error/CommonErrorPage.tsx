@@ -3,11 +3,13 @@ import { useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
+import AuthorityIcon from '@/components/common/icons/AuthorityIcon'
 import ErrorIcon from '@/components/common/icons/ErrorIcon'
 
 const codeMapper = (status: number, code?: string): string => {
   if (code) {
     const map: Record<string, string> = {
+      'AUTH-001': '접근 권한이 없습니다. \n관리자에게 시스템 사용자 등록을 요청해 주세요',
       'SYS-999': '문제가 발생했습니다.\n나중에 다시 시도하시거나 이전 페이지로 돌아가세요.',
       'AUTH-004': '제공된 토큰이 유효하지 않거나 형식이 잘못되었습니다.',
       'AUTH-005': '이 작업을 수행할 권한이 없습니다.',
@@ -15,33 +17,40 @@ const codeMapper = (status: number, code?: string): string => {
     }
     return map[code] ?? '알 수 없는 오류가 발생했습니다.'
   }
-
   if (status === 404) {
     return '페이지를 찾을 수 없습니다.\n나중에 다시 시도하시거나 이전 페이지로 돌아가세요.'
   }
   return '문제가 발생했습니다.\n나중에 다시 시도하시거나 이전 페이지로 돌아가세요.'
 }
 
-const getErrorInfo = (state: { status?: number; code?: string; hiddenButton?: boolean }, pathname: string) => {
+const getErrorInfo = (state: { status?: number; code?: string }, pathname: string, paramsCode?: string) => {
   const fallbackStatus = (() => {
     const last = pathname.split('/').filter(Boolean).pop()
     return last && !isNaN(Number(last)) ? Number(last) : 0
   })()
-
-  const status = state?.status ?? fallbackStatus
-  const message = codeMapper(status, state?.code)
-  const hiddenButton = state?.hiddenButton ?? false
-
-  return { status, message, hiddenButton }
+  const statusCode = state?.status ?? fallbackStatus
+  const message = codeMapper(statusCode, state?.code ?? paramsCode)
+  // 많아지면 분리 필요
+  const additionalVar = paramsCode === 'AUTH-001' ? { hiddenButton: true, icon: 'lock', title: 'SK MI Platform' } : {}
+  return { statusCode, message, ...additionalVar }
 }
 
 const CommonErrorPage = () => {
   const { state, pathname } = useLocation()
   const navigate = useNavigate()
+  const { search } = useLocation()
+  const paramsCode = new URLSearchParams(search).get('errorCode') ?? undefined
+  const { statusCode, message, hiddenButton, icon, title } = useMemo(
+    () => ({
+      hiddenButton: state?.hiddenButton ?? false,
+      icon: state?.icon ?? 'warning',
+      title: state?.title,
+      ...getErrorInfo(state, pathname, paramsCode),
+    }),
+    [state, pathname, paramsCode],
+  )
 
-  const { status, message, hiddenButton } = useMemo(() => getErrorInfo(state, pathname), [state, pathname])
-  const isAuthError = typeof status === 'number' && status >= 400 && status < 500
-
+  const isAuthError = typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500
   const renderButtons = () => (
     <Grid display="flex" gap={3}>
       <AdminButton size="h42" variant={isAuthError ? 'contained' : 'outlined'} color="primary" onClick={() => navigate(-1)}>
@@ -58,9 +67,9 @@ const CommonErrorPage = () => {
   return (
     <Grid container height="100vh" width="100vw" alignItems="center" justifyContent="center" direction="column" spacing={5}>
       <Grid container direction="column" alignItems="center" spacing={0}>
-        <ErrorIcon />
+        {icon === 'lock' ? <AuthorityIcon /> : <ErrorIcon />}
         <Typography variant="heading1" color="gray.90">
-          {status === 0 ? 'Error' : status}
+          {title ?? (statusCode === 0 ? 'Error' : statusCode)}
         </Typography>
       </Grid>
       <Grid textAlign={'center'}>

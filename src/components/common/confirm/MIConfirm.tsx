@@ -5,7 +5,7 @@ import { ReactNode, useEffect } from 'react'
 import MIButton from '@/components/common/button/MIButton'
 import CloseIcon from '@/components/common/icons/CloseIcon'
 
-interface ActionButton {
+export interface ActionButton {
   label: ReactNode
   variant?: 'filled' | 'outlined' | 'ghost'
   color?: 'primary' | 'gray' | 'white' | 'red' | `#${string}`

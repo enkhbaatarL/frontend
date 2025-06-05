@@ -9,6 +9,7 @@ import MIChip from '@/components/common/chip/MIChip'
 import Flex from '@/components/common/display/Flex'
 import MITableCell from '@/components/common/table/MITableCell'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
+import useNavigationToast from '@/hooks/useNavigationToast.ts'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import dataProviderService, { IProviderListInfo } from '@/service/admin/dataProvider'
 import { IPaginationRequest, IPaginationResponse } from '@/types/api'
@@ -79,6 +80,8 @@ const AdminDataProvidersListPage = () => {
       setCustomComponent(null)
     }
   }, [setCustomComponent])
+
+  useNavigationToast()
 
   return (
     <AdminSkeleton loading={isLoading} custom={<AdminDataProviderTableSkeleton />}>

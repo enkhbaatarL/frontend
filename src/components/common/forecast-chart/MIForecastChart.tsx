@@ -42,7 +42,7 @@ export interface ForecastDataset {
   color: string
   label: string
   hidePoint?: boolean
-  type?: 'actualData' | 'future'
+  type?: 'FUTURE' | 'ACTUAL'
   yAxisID?: string
 }
 export interface MIForecastChartProps {
@@ -54,7 +54,7 @@ export interface MIForecastChartProps {
   isMIAgent?: boolean
   bottomLabel?: string
   topLabel?: string
-  lastUpated?: string
+  lastUpdated?: string
   hideControl?: boolean
   hideLegend?: boolean
   inactive?: boolean
@@ -71,7 +71,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
     isMIAgent = false,
     bottomLabel = '',
     topLabel = '',
-    lastUpated = '',
+    lastUpdated = '',
     hideControl = false,
     hideLegend = false,
     inactive = false,
@@ -164,6 +164,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
   }
 
   useEffect(() => {
+    if (forecastDatasets.length === 0) return
     const generateForecastDataSet = (rawDatasets: Array<ForecastDataset>) => {
       const datasets: Array<ChartDataset<'line'> & { category: string; yAxisID: string }> = []
       const imagesInfo: Record<string, string> = {}
@@ -173,7 +174,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
         const label = dataset.label
         const color = dataset.color
         const forecastData = dataset.forecastData ?? []
-        const type = dataset.type || 'actualData'
+        const type = dataset.type || 'ACTUAL'
         const yAxisID = dataset.yAxisID || 'y'
 
         datasets.push({
@@ -196,7 +197,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
           imagesInfo[`${label} Forecast Hover`] = createHoverPointDiamonSVG(color)
         }
 
-        if (type === 'actualData') {
+        if (type === 'ACTUAL') {
           forecastData.forEach((data) => {
             datasets.push({
               label: `${label} Forecast`,
@@ -257,8 +258,8 @@ export default function MIForecastChart(props: MIForecastChartProps) {
       newAxes[key] = {
         display: true,
         position: key === 'y' ? 'left' : 'right',
-        min: 40,
-        max: 100,
+        // min: 40,
+        // max: 100,
         label: {
           display: true,
         },
@@ -267,7 +268,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
         },
         ticks: {
           display: true,
-          stepSize: 5,
+          // stepSize: 5,
           callback: (value: number) => Number(value).toFixed(1),
           font: {
             family: 'Pretendard',
@@ -425,9 +426,9 @@ export default function MIForecastChart(props: MIForecastChartProps) {
           sx={{ borderBottom: '1px solid', borderColor: theme.palette.gray[30] }}
         >
           <Box>
-            {lastUpated && (
+            {lastUpdated && (
               <Typography variant="body3M12" color="gray.60">
-                Last Updated : {lastUpated}
+                Last Updated : {lastUpdated}
               </Typography>
             )}
           </Box>

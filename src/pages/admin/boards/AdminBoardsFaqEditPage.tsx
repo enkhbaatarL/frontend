@@ -49,11 +49,26 @@ const AdminBoardsFaqEditPage = () => {
   const handleSave = useCallback(async () => {
     if (faqNo) {
       try {
-        await boardService.updateFaq(faqNo, formData)
-        navigate('/admin/boards/faq', { replace: true })
-        showSnackbar(t('저장되었습니다.'), { variant: 'success' })
+        const response = await boardService.updateFaq(faqNo, formData)
+        if (response.status) {
+          navigate('/admin/boards/faq', {
+            replace: true,
+            state: {
+              successMessage: t('저장되었습니다.'),
+            },
+          })
+        } else {
+          showSnackbar('문제가 발생했습니다.', {
+            variant: 'error',
+            body: '나중에 다시 시도해 주세요.',
+          })
+        }
       } catch (error) {
         console.error('Error updating manager details:', error)
+        showSnackbar('문제가 발생했습니다.', {
+          variant: 'error',
+          body: '나중에 다시 시도해 주세요.',
+        })
       }
     }
   }, [faqNo, formData, navigate, showSnackbar])
