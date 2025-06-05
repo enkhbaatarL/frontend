@@ -55,10 +55,6 @@ const SignalMapPage = () => {
   const [period, setPeriod] = useState<string>('')
   const [companyFilter, setCompanyFilter] = useState<string>('')
 
-  useEffect(() => {
-    setTimeout(() => setFakeLoading(false), 1000)
-  }, [])
-
   const { data: periodOptions = [] } = useQuery({
     queryKey: ['getPeriodsFilters'],
     queryFn: async () => await signalMapService.getPeriodsFilters(customerCompanyNo),
@@ -77,6 +73,10 @@ const SignalMapPage = () => {
     enabled: !!period,
     select: (res) => res.data,
   })
+
+  useEffect(() => {
+    if (signalData) setFakeLoading(false)
+  }, [signalData])
 
   const getSortedList = (list?: MapCategory[]) => {
     if (!list) return []
