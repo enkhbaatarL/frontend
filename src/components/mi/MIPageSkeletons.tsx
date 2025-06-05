@@ -1,6 +1,9 @@
 import { Box } from '@mui/material'
 
 import { MIBaseSkeleton, SkeletonWrapper } from './MIBaseSkeleton.tsx'
+
+import theme from '@/theming'
+
 interface TableSkeletonProps {
   rows?: number
   columns?: number
@@ -13,33 +16,230 @@ interface FormSkeletonProps {
 export const MIPageSkeletons = {
   // MI Dashboard 패턴
   Dashboard: () => (
-    <SkeletonWrapper.Container>
-      {/* 페이지 헤더 */}
-      <SkeletonWrapper.Column gap={1} sx={{ mb: 4 }}>
-        <MIBaseSkeleton.Title width={250} />
-        <MIBaseSkeleton.TextLine width={400} height={14} />
-      </SkeletonWrapper.Column>
+    <Box>
+      <MIBaseSkeleton.BaseElement2 width={'100%'} height={'147px'} />
+      <Box minWidth={'1380px'} width={'1380px'} margin={'auto'} display={'flex'} flexDirection={'column'} marginTop={'30px'}>
+        <SkeletonWrapper.Row gap={'24px'}>
+          <Box width={'1070px'} height={'auto'} bgcolor={'#FFFFFF'} padding={'24px 20px 24px 20px'}>
+            <Box width={'1030px'} gap={'30px'} display={'flex'} flexDirection={'column'}>
+              <MIBaseSkeleton.Table width={'161px'} height={'42px'} sx={{ alignSelf: 'center' }} />
+              <MIBaseSkeleton.Table width={'100%'} height={'85px'} sx={{ alignSelf: 'center' }} />
+              <SkeletonWrapper.Row gap={'8px'} sx={{ justifyContent: 'flex-start' }}>
+                <MIBaseSkeleton.InputField width={'158px'} height={'38px'} />
+                <MIBaseSkeleton.InputField width={'97px'} height={'38px'} />
+                <MIBaseSkeleton.InputField width={'96px'} height={'38px'} />
+                <MIBaseSkeleton.InputField width={'95px'} height={'38px'} />
+                <MIBaseSkeleton.InputField width={'98px'} height={'38px'} />
+                <MIBaseSkeleton.InputField width={'98px'} height={'38px'} />
+                <MIBaseSkeleton.InputField width={'95px'} height={'38px'} />
+                <MIBaseSkeleton.InputField width={'97px'} height={'38px'} />
+                <MIBaseSkeleton.InputField width={'98px'} height={'38px'} />
+              </SkeletonWrapper.Row>
+            </Box>
 
-      {/* 통계 카드들 (4개) */}
-      <SkeletonWrapper.Grid columns={4} gap={3} sx={{ mb: 4 }}>
-        {Array.from({ length: 4 }, (_, i) => (
-          <MIBaseSkeleton.Card key={i} height={120} />
-        ))}
-      </SkeletonWrapper.Grid>
-
-      {/* 메인 차트와 사이드 위젯 */}
-      <SkeletonWrapper.Row gap={3} sx={{ alignItems: 'flex-start' }}>
-        <Box flex={2}>
-          <MIBaseSkeleton.Card height={400} />
-        </Box>
-        <Box flex={1}>
-          <SkeletonWrapper.Column gap={2}>
-            <MIBaseSkeleton.Card height={190} />
-            <MIBaseSkeleton.Card height={190} />
-          </SkeletonWrapper.Column>
-        </Box>
-      </SkeletonWrapper.Row>
-    </SkeletonWrapper.Container>
+            <Box width={'1030px'} mt={'40px'} gap={'24px'} display={'flex'} flexDirection={'column'}>
+              <MIBaseSkeleton.BaseElement2 width={'100%'} height={'276px'} />
+              <Box width={'100%'} display={'flex'} flexDirection={'column'} gap={'16px'}>
+                <MIBaseSkeleton.BaseElement2 width={'100%'} height={'656px'} />
+                <Box
+                  width={'100%'}
+                  gap={'6px'}
+                  height={'auto'}
+                  sx={{
+                    borderRadius: '4px',
+                    backgroundColor: '#E9ECEF',
+                    position: 'relative',
+                    animation: 'animation-c7515d 2s ease-in-out 0.5s infinite',
+                    '@keyframes skeleton-loading': {
+                      '0%': {
+                        opacity: 1,
+                      },
+                      '50%': {
+                        opacity: 0.4,
+                      },
+                      '100%': {
+                        opacity: 1,
+                      },
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: '0px',
+                      left: '50%',
+                      transform: 'translate(-50%, -100%)',
+                      '& svg': { display: 'block' },
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="16" viewBox="0 0 28 16" fill="none">
+                      <path d="M14 0L27.5 16H0.5L14 0Z" fill="#E9ECEF" />
+                    </svg>
+                  </Box>
+                  <Box p={'12px'} height={'auto'}>
+                    <Box height={'92px'}></Box>
+                    <Box p={'6px'} mt={'10px'} height={'auto'}>
+                      <Box
+                        maxWidth={'994px'}
+                        height={'auto'}
+                        gap={'12px'}
+                        p={'24px'}
+                        sx={{ backgroundColor: theme.palette.common.white, borderRadius: '4px' }}
+                      >
+                        <Box maxWidth={'946px'} height={'32px'} display={'flex'} alignItems={'center'}>
+                          <MIBaseSkeleton.BaseElement2 width={'132px'} height={'25px'} />
+                        </Box>
+                        <Box maxWidth={'946px'} height={'443px'}>
+                          <SkeletonWrapper.Row gap={'10px'} sx={{ width: '100%', height: '50px', justifyContent: 'flex-start' }}>
+                            <MIBaseSkeleton.InputField width={'97px'} height={'30px'} />
+                            <MIBaseSkeleton.InputField width={'98px'} height={'30px'} />
+                            <MIBaseSkeleton.InputField width={'98px'} height={'30px'} />
+                            <MIBaseSkeleton.InputField width={'98px'} height={'30px'} />
+                          </SkeletonWrapper.Row>
+                          <MIBaseSkeleton.BaseElement2 width={'946px'} height={'116px'} />
+                          <Box
+                            height={'auto'}
+                            padding={'24px 12px 24px 12px'}
+                            gap={'24px'}
+                            display={'flex'}
+                            flexDirection={'column'}
+                            justifyContent={'space-between'}
+                          >
+                            <MIBaseSkeleton.BaseElement2 width={'922px'} height={'20px'} />
+                            <MIBaseSkeleton.BaseElement2 width={'922px'} height={'185px'} />
+                          </Box>
+                        </Box>
+                        <Box
+                          maxWidth={'946px'}
+                          height={'auto'}
+                          border="1px solid #868E96"
+                          sx={{
+                            animation: 'animation-c7515d 2s ease-in-out 0.5s infinite',
+                            '@keyframes skeleton-loading': {
+                              '0%': {
+                                opacity: 1,
+                              },
+                              '50%': {
+                                opacity: 0.4,
+                              },
+                              '100%': {
+                                opacity: 1,
+                              },
+                            },
+                          }}
+                          p={'24px'}
+                          gap={'12px'}
+                          display={'flex'}
+                          flexDirection={'column'}
+                        >
+                          <Box maxWidth={'898px'} height={'32px'} display={'flex'} alignItems={'center'}>
+                            <MIBaseSkeleton.BaseElement2 width={'138px'} height={'25px'} />
+                          </Box>
+                          <MIBaseSkeleton.Table width={'898px'} height={'116px'} />
+                          <MIBaseSkeleton.BaseElement2 width={'898px'} height={'448px'} />
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+              <Box width={'100%'} height={'288px'} gap={'20px'} display={'flex'} flexDirection={'column'}>
+                <MIBaseSkeleton.BaseElement2 width={'280px'} height={'32px'} sx={{ alignSelf: 'flex-start' }} />
+                <MIBaseSkeleton.BaseElement2 width={'100%'} height={'236px'} />
+              </Box>
+            </Box>
+          </Box>
+          <Box alignSelf={'flex-start'} width={'286px'} gap={'12px'} display={'flex'} flexDirection={'column'}>
+            <Box
+              border="1px solid #DEE2E6"
+              width={'auto'}
+              height={'auto'}
+              borderRadius={'4px'}
+              gap={'20px'}
+              bgcolor={'#FFFFFF'}
+              display={'flex'}
+              flexDirection={'column'}
+              padding={'24px'}
+            >
+              <Box width={'238px'} gap={'10px'} display={'flex'} flexDirection={'column'}>
+                <MIBaseSkeleton.BaseElement2 width={'161px'} height={'24px'} sx={{ alignSelf: 'flex-start' }} />
+                <Box width={'238px'} height={'420px'}>
+                  <Box width={'238px'} borderBottom="1px solid #DEE2E6" pt={'12px'} pb={'12px'}>
+                    <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                    <MIBaseSkeleton.BaseElement2 width={'238px'} height={'22px'} sx={{ mt: '2px' }} />
+                    <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ mt: '4px' }} />
+                  </Box>
+                  <Box width={'238px'} borderBottom="1px solid #DEE2E6" pt={'12px'} pb={'12px'}>
+                    <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                    <MIBaseSkeleton.BaseElement2 width={'238px'} height={'22px'} sx={{ mt: '2px' }} />
+                    <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ mt: '4px' }} />
+                  </Box>
+                  <Box width={'238px'} borderBottom="1px solid #DEE2E6" pt={'12px'} pb={'12px'}>
+                    <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                    <MIBaseSkeleton.BaseElement2 width={'238px'} height={'22px'} sx={{ mt: '2px' }} />
+                    <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ mt: '4px' }} />
+                  </Box>
+                  <Box width={'238px'} borderBottom="1px solid #DEE2E6" pt={'12px'} pb={'12px'}>
+                    <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                    <MIBaseSkeleton.BaseElement2 width={'238px'} height={'22px'} sx={{ mt: '2px' }} />
+                    <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ mt: '4px' }} />
+                  </Box>
+                  <Box width={'238px'} pt={'12px'} pb={'12px'}>
+                    <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                    <MIBaseSkeleton.BaseElement2 width={'238px'} height={'22px'} sx={{ mt: '2px' }} />
+                    <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ mt: '4px' }} />
+                  </Box>
+                </Box>
+                <MIBaseSkeleton.BaseElement2 width={'238px'} height={'42px'} />
+              </Box>
+            </Box>
+            <Box
+              border="1px solid #DEE2E6"
+              width={'auto'}
+              height={'auto'}
+              borderRadius={'4px'}
+              gap={'20px'}
+              bgcolor={'#FFFFFF'}
+              display={'flex'}
+              flexDirection={'column'}
+              padding={'24px'}
+            >
+              <Box width={'238px'} gap={'10px'} display={'flex'} flexDirection={'column'}>
+                <MIBaseSkeleton.BaseElement2 width={'161px'} height={'24px'} sx={{ alignSelf: 'flex-start' }} />
+                <Box width={'238px'} height={'420px'}>
+                  <Box width={'238px'} borderBottom="1px solid #DEE2E6" pt={'12px'} pb={'12px'}>
+                    <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                    <MIBaseSkeleton.BaseElement2 width={'238px'} height={'22px'} sx={{ mt: '2px' }} />
+                    <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ mt: '4px' }} />
+                  </Box>
+                  <Box width={'238px'} borderBottom="1px solid #DEE2E6" pt={'12px'} pb={'12px'}>
+                    <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                    <MIBaseSkeleton.BaseElement2 width={'238px'} height={'22px'} sx={{ mt: '2px' }} />
+                    <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ mt: '4px' }} />
+                  </Box>
+                  <Box width={'238px'} borderBottom="1px solid #DEE2E6" pt={'12px'} pb={'12px'}>
+                    <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                    <MIBaseSkeleton.BaseElement2 width={'238px'} height={'22px'} sx={{ mt: '2px' }} />
+                    <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ mt: '4px' }} />
+                  </Box>
+                  <Box width={'238px'} borderBottom="1px solid #DEE2E6" pt={'12px'} pb={'12px'}>
+                    <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                    <MIBaseSkeleton.BaseElement2 width={'238px'} height={'22px'} sx={{ mt: '2px' }} />
+                    <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ mt: '4px' }} />
+                  </Box>
+                  <Box width={'238px'} pt={'12px'} pb={'12px'}>
+                    <MIBaseSkeleton.BaseElement2 width={'106px'} height={'22px'} />
+                    <MIBaseSkeleton.BaseElement2 width={'238px'} height={'22px'} sx={{ mt: '2px' }} />
+                    <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} sx={{ mt: '4px' }} />
+                  </Box>
+                </Box>
+                <MIBaseSkeleton.BaseElement2 width={'238px'} height={'42px'} />
+              </Box>
+            </Box>
+          </Box>
+        </SkeletonWrapper.Row>
+      </Box>
+    </Box>
   ),
 
   // Market Data 패턴
