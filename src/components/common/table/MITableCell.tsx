@@ -1,4 +1,4 @@
-import { Box, Tooltip, Typography, TypographyProps } from '@mui/material'
+import { Box, SxProps, Theme, Tooltip, Typography, TypographyProps } from '@mui/material'
 import { Instance } from '@popperjs/core'
 import { PropsWithChildren, useRef, MouseEvent, ReactNode } from 'react'
 
@@ -8,13 +8,14 @@ export interface MITableCellProps extends PropsWithChildren {
   disabled?: boolean
   typography?: TypographyProps
   tooltip?: boolean
-  tooltipContent?: string | ReactNode
+  tooltipContent?: ReactNode
   onClick?: () => void
   value?: string | number
   cursorPointer?: boolean
+  sx?: SxProps<Theme>
 }
 export default function MITableCell(props: Readonly<MITableCellProps>) {
-  const { tooltip = false, tooltipContent, value, onClick, typography, children, cursorPointer } = props
+  const { tooltip = false, tooltipContent, value, onClick, typography, children, cursorPointer, sx } = props
   const { ref, isEllipsis } = useEllipsisDetection()
   const positionRef = useRef<{ x: number; y: number }>({
     x: 0,
@@ -44,7 +45,7 @@ export default function MITableCell(props: Readonly<MITableCellProps>) {
       }}
     >
       {children ? (
-        <Box ref={ref} onMouseMove={handleMouseMove} padding={'10px 12px'}>
+        <Box sx={{ ...sx }} ref={ref} onMouseMove={handleMouseMove} padding={'10px 12px'}>
           {children}
         </Box>
       ) : (
