@@ -3,7 +3,7 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { Badge, Box, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import { useState, MouseEvent as ReactMouseEvent, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
@@ -221,7 +221,6 @@ const NoticeItem = ({ id, title, subtitle, date, isRead, onClick }: NoticeItemPr
 const MIHeaderNotice = () => {
   const navigate = useNavigate()
   const [isNoticeMenuOpen, setIsNoticeMenuOpen] = useState(false)
-  const [anchorElNotice, setAnchorElNotice] = useState<null | HTMLElement>(null)
   const [notices, setNotices] = useState<INoticeInfo[]>([])
   const [isLoadingNotices, setIsLoadingNotices] = useState(false)
   const [alerts, setAlerts] = useState<INotificationHistory[]>([])
@@ -229,27 +228,30 @@ const MIHeaderNotice = () => {
   const { user, accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
-  const handleToggleNoticeMenu = (event: ReactMouseEvent<HTMLElement>) => {
+  // 읽지 않은 알림이나 공지사항이 있는지 확인
+  const hasUnreadItems = useMemo(() => {
+    const hasUnreadNotices = notices.some((notice) => !notice.isRead)
+    const hasUnreadAlerts = alerts.some((alert) => !alert.isEmailInquiry)
+    return hasUnreadNotices || hasUnreadAlerts
+  }, [notices, alerts])
+
+  const handleToggleNoticeMenu = () => {
     if (isNoticeMenuOpen) {
       setIsNoticeMenuOpen(false)
-      setAnchorElNotice(null)
     } else {
       setIsNoticeMenuOpen(true)
-      setAnchorElNotice(event.currentTarget)
     }
   }
 
   const handleCloseNoticeMenu = () => {
     setIsNoticeMenuOpen(false)
-    setAnchorElNotice(null)
   }
 
   const anchorEl = useRef<HTMLElement>(null)
 
-  // 공지사항 데이터 로드
   useEffect(() => {
     const fetchNotices = async () => {
-      if (anchorElNotice) {
+      if (customerCompanyNo) {
         try {
           setIsLoadingNotices(true)
           const response = await boardService.getNotice({ customerCompanyNo })
@@ -265,12 +267,11 @@ const MIHeaderNotice = () => {
     }
 
     fetchNotices()
-  }, [anchorElNotice, customerCompanyNo])
+  }, [customerCompanyNo])
 
-  // 알림 내역 데이터 로드 (USER 권한만)
   useEffect(() => {
     const fetchAlerts = async () => {
-      if (anchorElNotice && user?.userRoleCd === UserRole.USER) {
+      if (user?.userRoleCd === UserRole.USER) {
         try {
           setAlertsIsLoading(true)
           const response = await notificationService.getNotificationHistory({ page: 1, size: 10 })
@@ -286,7 +287,7 @@ const MIHeaderNotice = () => {
     }
 
     fetchAlerts()
-  }, [anchorElNotice, user?.userRoleCd])
+  }, [user?.userRoleCd])
 
   const handleNoticeClick = (noticeNo: number) => {
     navigate(`/mi/notices/${noticeNo}`)
@@ -404,7 +405,6 @@ const MIHeaderNotice = () => {
     const handleClickOutside = (event: globalThis.MouseEvent) => {
       if (anchorEl.current && !anchorEl.current.contains(event.target as Node)) {
         setIsNoticeMenuOpen(false)
-        setAnchorElNotice(null)
       }
     }
 
@@ -418,9 +418,13 @@ const MIHeaderNotice = () => {
   return (
     <Box position={'relative'} ref={anchorEl}>
       <MIButton onClick={handleToggleNoticeMenu} color="gray" active={isNoticeMenuOpen} contentType={'icon'} size={'h28'} type={'ghost'}>
-        <Badge className="BadgeDote" variant="dot" color="error">
+        {hasUnreadItems ? (
+          <Badge className="BadgeDote" variant="dot" color="error">
+            <NotificationsIcon />
+          </Badge>
+        ) : (
           <NotificationsIcon />
-        </Badge>
+        )}
       </MIButton>
       {isNoticeMenuOpen && (
         <Box

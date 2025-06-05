@@ -113,16 +113,32 @@ const AdminMemberManagementManagersRegistrationPage = () => {
 
   const handleRegisterManager = useCallback(async () => {
     try {
-      await membersService.registerManager({
+      const response = await membersService.registerManager({
         imCd: selectedAdmin.imCd ?? '',
         userRoleCd: managerInfo.userRoleCd ?? UserRole.ADMIN,
         isOtherServiceAccessPossible: managerInfo.isOtherServiceAccessPossible,
         accessAllowedIpAddress: managerInfo.accessAllowedIpAddress ?? [],
       })
-      showSnackbar(t('등록되었습니다.'), { variant: 'success' })
-      navigate('/admin/member-mgmt/managers')
+
+      if (response.status) {
+        navigate('/admin/member-mgmt/managers', {
+          replace: true,
+          state: {
+            successMessage: t('등록되었습니다.'),
+          },
+        })
+      } else {
+        showSnackbar('문제가 발생했습니다.', {
+          variant: 'error',
+          body: '나중에 다시 시도해 주세요.',
+        })
+      }
     } catch (error) {
       console.error(error)
+      showSnackbar('문제가 발생했습니다.', {
+        variant: 'error',
+        body: '나중에 다시 시도해 주세요.',
+      })
     }
   }, [
     managerInfo.accessAllowedIpAddress,

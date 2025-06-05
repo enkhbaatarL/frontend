@@ -16,14 +16,20 @@ const MIDashboardPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const companyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? -1, [accessCompanyInfo?.customerCompanyNo])
 
+  const { data: basicInfo } = useQuery({
+    queryKey: ['basicInfo', companyNo],
+    queryFn: async () => await dashboardDataService.getDashboardBasicInfo(companyNo!),
+    enabled: !!companyNo || companyNo !== -1,
+  })
+
   const tabsData = [
     {
       label: 'Report',
-      content: <ReportComponent companyNo={companyNo} />,
+      content: <ReportComponent />,
     },
     {
       label: 'History',
-      content: <HistoryComponent />,
+      content: <HistoryComponent basicInfo={basicInfo} />,
     },
   ]
 
@@ -77,7 +83,7 @@ const MIDashboardPage = () => {
           </Typography>
         </Box>
       </Box>
-      <Box maxWidth={'1380px'} margin={'auto'} paddingTop={10} paddingX={7.5}>
+      <Box maxWidth={'1380px'} margin={'auto'} paddingTop={'30px'}>
         <Grid
           sx={{
             flexWrap: {

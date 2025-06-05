@@ -44,6 +44,11 @@ const devTokens = {
       value:
         'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMUBTS0dBUy5jb20iLCJpYXQiOjE3NDcwMzUxMTIsInVzZXJObyI6MTAwMDA4NSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImNvbXBhbnlEb21haW4iOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjIxMDcwMzUxMTJ9.wM4wIH-ekQmcMoIZs_SMQoh4c98WaYJvZcxllnH8XP4',
     },
+    {
+      label: 'SK HOY',
+      value:
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJob3lvdW5nQHR3b2xpbmVjb2RlLmNvbSIsImlhdCI6MTc0ODMxMDY3MiwidXNlck5vIjoxMDAwMDMyLCJjb21wYW55Tm8iOjIwMDksImNvbXBhbnlDZCI6IlNLQ0NUVFRUIiwicm9sZSI6IlVTRVIiLCJpc090aGVyU2VydmljZUFjY2Vzc1Bvc3NpYmxlIjpmYWxzZSwiY29tcGFueURvbWFpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MCIsImV4cCI6MTc0ODM0NjY3Mn0.o6Mm9X9lFH9HvUOPFV1wWsmx7ACiqtjQ6wMA06I7vfY',
+    },
   ],
 }
 
@@ -60,7 +65,7 @@ const LoginPage = () => {
   const [tempAuthFilter, setTempAuthFilter] = useState<boolean>(window.location.hostname === 'localhost') // TODO: 임시 용도로 SSO 작업 시 제거 필요
 
   const ssoLogin = () => {
-    window.location.href = 'api/v1/saml2/login/user'
+    window.location.href = '/api/v1/saml2/login/user'
   }
 
   const setUserInfo = useCallback(

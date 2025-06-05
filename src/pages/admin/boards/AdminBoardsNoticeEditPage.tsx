@@ -68,12 +68,27 @@ const AdminBoardsNoticeEditPage = () => {
   const handleSave = useCallback(async () => {
     if (noticeNo) {
       try {
-        await boardService.updateNotice(noticeNo, formData)
-        navigate('/admin/boards/notice', { replace: true })
-        showSnackbar(t('저장되었습니다.'), { variant: 'success' })
+        const response = await boardService.updateNotice(noticeNo, formData)
+
+        if (response.status) {
+          navigate('/admin/boards/notice', {
+            replace: true,
+            state: {
+              successMessage: t('저장되었습니다.'),
+            },
+          })
+        } else {
+          showSnackbar('문제가 발생했습니다.', {
+            variant: 'error',
+            body: '나중에 다시 시도해 주세요.',
+          })
+        }
       } catch (error) {
         console.error('Error updating notice details:', error)
-        showSnackbar(t('저장에 실패했습니다.'), { variant: 'error' })
+        showSnackbar('문제가 발생했습니다.', {
+          variant: 'error',
+          body: '나중에 다시 시도해 주세요.',
+        })
       }
     }
   }, [noticeNo, formData, navigate, showSnackbar])
