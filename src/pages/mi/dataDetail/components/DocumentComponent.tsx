@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MILine from '@/components/common/divider/MILine'
-import fileService from '@/service/admin/file'
+import fileService, { IFileDownloadRequest } from '@/service/admin/file'
 import { downloadFile } from '@/utils/file'
 interface DocumentItemProps {
   fileNo: number
@@ -11,7 +11,7 @@ interface DocumentItemProps {
   date: string
   extension: string
   isPdfViewable: boolean
-  isDownloadable: boolean
+  isDownloadable: boolean | undefined
   fileSize: number
 }
 
@@ -70,13 +70,13 @@ const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable
 }
 
 const DocumentComponent = ({ data }: DocumentComponentProps) => {
-  const [fileNos, setFileNos] = useState<string>('')
+  const [fileData, setFileData] = useState<IFileDownloadRequest[]>([])
 
   // 파일 다운로드 (여러개)
   const handleDownloadFiles = async () => {
     try {
-      const response = await fileService.downloadFiles(fileNos, 'test')
-      downloadFile(response.data, 'test.zip')
+      const response = await fileService.downloadFiles('file', fileData)
+      downloadFile(response, 'file.zip')
     } catch (error) {
       console.error(error)
     }
@@ -84,8 +84,7 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => {
 
   useEffect(() => {
     if (data.length > 0) {
-      const fileNos = data.map((item) => item.fileNo)
-      setFileNos(fileNos.join(','))
+      setFileData(data.map((item) => ({ fileNo: item.fileNo, fileNm: item.fileName, fileSize: item.fileSize })))
     }
   }, [data])
 
@@ -108,7 +107,15 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => {
           />
         ))}
       </Box>
-      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'} onClick={handleDownloadFiles}>
+      <MIButton
+        width={'100%'}
+        contentType={'text'}
+        color={'gray2'}
+        type={'outlined'}
+        size={'h42'}
+        onClick={handleDownloadFiles}
+        disabled={!data.some((item) => item.isDownloadable)}
+      >
         Download All
       </MIButton>
     </Grid>
