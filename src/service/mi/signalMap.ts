@@ -3,7 +3,7 @@ import { IAdvancedFilterItem } from './insights'
 import api from '@/lib/axios'
 import { ICommonResponse } from '@/types/api'
 
-interface MapCategory {
+export interface MapCategory {
   categoryName: string
   items: {
     categoryName: string

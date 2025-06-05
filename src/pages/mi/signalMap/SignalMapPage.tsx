@@ -9,7 +9,7 @@ import MIColorRange from '@/components/common/colorrange/MIColorRange'
 import MISelect from '@/components/common/select/MISelect'
 import MISignalMap from '@/components/common/signal-map/MISignalMap'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
-import signalMapService from '@/service/mi/signalMap'
+import signalMapService, { MapCategory } from '@/service/mi/signalMap'
 import useAuthStore from '@/store/useAuthStore'
 
 interface SectionHeaderProps {
@@ -55,7 +55,9 @@ const SignalMapPage = () => {
   const [period, setPeriod] = useState<string>('')
   const [companyFilter, setCompanyFilter] = useState<string>('')
 
-  setTimeout(() => setFakeLoading(false), 1000)
+  useEffect(() => {
+    setTimeout(() => setFakeLoading(false), 1000)
+  }, [])
 
   const { data: periodOptions = [] } = useQuery({
     queryKey: ['getPeriodsFilters'],
@@ -75,6 +77,11 @@ const SignalMapPage = () => {
     enabled: !!period,
     select: (res) => res.data,
   })
+
+  const getSortedList = (list?: MapCategory[]) => {
+    if (!list) return []
+    return list.sort((a, b) => a.categoryName.localeCompare(b.categoryName))
+  }
 
   const formattedDate = useMemo(() => {
     if (!signalData?.updatedDt) return ''
@@ -136,7 +143,7 @@ const SignalMapPage = () => {
           </Box>
           <MIColorRange />
         </Box>
-        {chunk(signalData?.list ?? [], 2).map((row, rowIdx) => (
+        {chunk(getSortedList(signalData?.list), 2).map((row, rowIdx) => (
           <Box
             key={rowIdx}
             sx={{
@@ -146,21 +153,24 @@ const SignalMapPage = () => {
               mb: 5,
             }}
           >
-            {row.map((root, colIdx) => (
-              <Box key={colIdx}>
-                <Box mb={5}>
-                  <SectionHeader title={root.categoryName} itemCount={root.items.length} boldTitle />
-                </Box>
-                {root.items.map((subCatogory, cateIdx) => (
-                  <Box mb={6} key={cateIdx}>
-                    <SectionHeader title={subCatogory.categoryName} itemCount={subCatogory.items.length} />
-                    <Box height="460px" marginTop="6px">
-                      <MISignalMap mapData={subCatogory.items} useAnimation />
-                    </Box>
+            {row.map((root, colIdx) => {
+              const subItems = root?.items.sort((a, b) => a.categoryName.localeCompare(b.categoryName))
+              return (
+                <Box key={colIdx}>
+                  <Box mb={5}>
+                    <SectionHeader title={root.categoryName} itemCount={root.items.length} boldTitle />
                   </Box>
-                ))}
-              </Box>
-            ))}
+                  {subItems.map((subCatogory, cateIdx) => (
+                    <Box mb={6} key={cateIdx}>
+                      <SectionHeader title={subCatogory.categoryName} itemCount={subCatogory.items.length} />
+                      <Box height="460px" marginTop="6px">
+                        <MISignalMap mapData={subCatogory.items} useAnimation />
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              )
+            })}
           </Box>
         ))}
       </Box>
