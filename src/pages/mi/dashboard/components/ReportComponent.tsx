@@ -222,7 +222,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     try {
       const response = await dashboardDataService.getdashboardChartDataDownload(
         accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0,
-        monthSelect,
+        monthSelect.replace('-', '').slice(0, 6),
       )
       downloadFile(response.data, 'Data Table.xlsx')
     } catch (error) {
