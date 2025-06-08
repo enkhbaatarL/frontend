@@ -1,8 +1,6 @@
 import { Box, Typography, Radio, RadioGroup, FormControlLabel, FormControl, Stack, TextField } from '@mui/material'
 import { t } from 'i18next'
-import { useEffect, useMemo, useState, useRef } from 'react'
-
-import type React from 'react'
+import { useEffect, useMemo, useState, useRef, ChangeEvent } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import { useScroll } from '@/contexts/ScrollContext'
@@ -11,27 +9,27 @@ import { FeedbackCd } from '@/service/mi/agent'
 const FeedbackOptions = [
   {
     id: FeedbackCd.BUG_ISSUE,
-    label: '버그문제',
+    label: t('버그문제'),
   },
   {
     id: FeedbackCd.NO_POSSIBLE_RESPONSE,
-    label: '가능한 응답이 없음',
+    label: t('가능한 응답이 없음'),
   },
   {
     id: FeedbackCd.NOT_FOLLOW_REQUEST,
-    label: '요청에 제대로 따르지 않음',
+    label: t('요청에 제대로 따르지 않음'),
   },
   {
     id: FeedbackCd.INACCURATE_INFORMATION,
-    label: '정보가 정확하지 않음',
+    label: t('정보가 정확하지 않음'),
   },
   {
     id: FeedbackCd.INCOMPLETE_RESPONSE,
-    label: '응답이 완전하지 않음',
+    label: t('응답이 완전하지 않음'),
   },
   {
     id: FeedbackCd.OTHER,
-    label: '기타',
+    label: t('기타'),
   },
 ]
 
@@ -77,7 +75,7 @@ const MIAgentFeedbackBak = ({ onSubmit, onCancel }: MIAgentFeedbackProps) => {
     }
   }, [scrollRef])
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     setFeedbackCd(event.target.value as FeedbackCd)
   }
 

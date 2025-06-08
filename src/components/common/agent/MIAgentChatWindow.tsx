@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
 import { t } from 'i18next'
-import { useState, useMemo, useCallback, useLayoutEffect, useEffect } from 'react'
+import { useState, useMemo, useCallback, useLayoutEffect, useEffect, UIEvent } from 'react'
 
 import MIAgentConversation from '@/components/common/agent/MIAgentConversation'
 import MIAgentGreetingMessage from '@/components/common/agent/MIAgentGreetingMessage'
@@ -14,14 +14,6 @@ import useMIAgent from '@/hooks/useMIAgent'
 import useSnackbar from '@/hooks/useSnackbar'
 import MIAgentScrollProvider from '@/providers/MIAgentScrollProvider'
 import agentService from '@/service/mi/agent'
-
-export interface ChatMessage {
-  id: string
-  text: string
-  user: string
-  answer: string
-  timestamp: Date
-}
 
 export interface MIAgentChatWindowProps {
   top: number
@@ -51,7 +43,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
   const isGenerating = useMemo(() => animationComplete.length > 0 && !animationComplete[animationComplete.length - 1], [animationComplete])
 
   const handleScroll = useCallback(
-    async (e: React.UIEvent<HTMLDivElement>) => {
+    async (e: UIEvent<HTMLDivElement>) => {
       if (initialHistoryLoading || isGenerating) return
       const { scrollTop } = e.currentTarget
 
@@ -75,7 +67,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     if (shouldCheckScroll && !isGenerating) {
       const container = scrollRef.current
       if (container && container.scrollTop === 0) {
-        handleScroll({ currentTarget: container } as React.UIEvent<HTMLDivElement>)
+        handleScroll({ currentTarget: container } as UIEvent<HTMLDivElement>).then()
       }
       setShouldCheckScroll(false)
     }

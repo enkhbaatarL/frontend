@@ -1,5 +1,5 @@
 import { Box, Tooltip } from '@mui/material'
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 
 import CloseChatIcon from '../icons/agent/CloseChatIcon'
 import CollapseIcon from '../icons/agent/CollapseIcon'
@@ -14,7 +14,7 @@ export interface MIAgentHeaderBoxProps {
   onClose?: () => void
 }
 
-const MIAgentHeaderBox: React.FC<MIAgentHeaderBoxProps> = ({ minimized = true, newChat, onExpand = () => {}, onClose = () => {} }) => {
+const MIAgentHeaderBox = ({ minimized = true, newChat, onExpand = () => {}, onClose = () => {} }: MIAgentHeaderBoxProps) => {
   const [closeTooltipOpen, setCloseTooltipOpen] = useState(false)
   const [expandTooltipOpen, setExpandTooltipOpen] = useState(false)
 

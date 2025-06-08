@@ -1,5 +1,5 @@
 import { Box, Typography, List, ListItem, Tooltip } from '@mui/material'
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo, memo } from 'react'
 
 import HistoryIcon from '../icons/agent/HistoryIcon'
 
@@ -33,7 +33,7 @@ const historyIconStyles = {
   },
 }
 
-const MiAgentHistory: React.FC<MiAgentHistoryProps> = ({
+const MiAgentHistory = ({
   loading,
   chatRooms,
   onSelectChat = () => {},
@@ -41,7 +41,7 @@ const MiAgentHistory: React.FC<MiAgentHistoryProps> = ({
   onEditTitle,
   onDelete,
   disabled,
-}) => {
+}: MiAgentHistoryProps) => {
   const [isExpanded, setIsExpanded] = useState(true)
 
   const containerStyles = useMemo(
@@ -166,4 +166,4 @@ const MiAgentHistory: React.FC<MiAgentHistoryProps> = ({
   )
 }
 
-export default React.memo(MiAgentHistory)
+export default memo(MiAgentHistory)

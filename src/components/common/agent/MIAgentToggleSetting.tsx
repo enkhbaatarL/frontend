@@ -1,5 +1,4 @@
 import { Typography, Switch, Box, styled, SwitchProps } from '@mui/material'
-import React from 'react'
 
 // import { MIAgentToggleSettingItem } from './MIAgentInputBoxDropdown'
 // import theme from '@/theming'
@@ -71,7 +70,7 @@ export interface MIAgentToggleSettingItemProps {
   onChangeSelectedItem: (item: MIAgentToggleSettingOption) => void
 }
 
-const MIAgentToggleSettingItem: React.FC<MIAgentToggleSettingItemProps> = ({ item, onChangeSelectedItem }) => (
+const MIAgentToggleSettingItem = ({ item, onChangeSelectedItem }: MIAgentToggleSettingItemProps) => (
   <Box
     sx={{
       display: 'flex',
@@ -119,7 +118,7 @@ const MIAgentToggleSettingItem: React.FC<MIAgentToggleSettingItemProps> = ({ ite
   </Box>
 )
 
-const MIAgentToggleSetting: React.FC<MIAgentToggleSettingProps> = ({ items, onChangeSelectedItem }) => (
+const MIAgentToggleSetting = ({ items, onChangeSelectedItem }: MIAgentToggleSettingProps) => (
   <Box
     sx={{
       maxWidth: 400,

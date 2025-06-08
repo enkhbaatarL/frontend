@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import React, { useMemo, useCallback } from 'react'
+import { useMemo, useCallback } from 'react'
 
 import loadingDisabledIcon from '@/assets/agent/loading-disabled.svg'
 import sendActivatedIcon from '@/assets/agent/send-activated.svg'
@@ -15,7 +15,7 @@ export interface MIAgentPromptButtonProps {
   onSendMessage: () => void
 }
 
-const MIAgentPromptButton: React.FC<MIAgentPromptButtonProps> = ({ inputStatus = 'send-activated', disabled, onSendMessage }) => {
+const MIAgentPromptButton = ({ inputStatus = 'send-activated', disabled, onSendMessage }: MIAgentPromptButtonProps) => {
   const isInteractive = useMemo(() => inputStatus === 'send-activated' || inputStatus === 'stop-activated', [inputStatus])
 
   const getImageSrc = useCallback(() => {
