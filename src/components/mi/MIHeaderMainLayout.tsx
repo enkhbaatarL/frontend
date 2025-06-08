@@ -17,6 +17,7 @@ import logoImg from '@/assets/logo.svg'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
 import MIHeaderNotice from '@/components/mi/MIHeaderNotice'
 import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
+import useEnvironment from '@/hooks/useEnvironment.ts'
 import { UserRole } from '@/service/admin/members'
 import companiesService from '@/service/mi/companies'
 import useAuthStore from '@/store/useAuthStore'
@@ -44,6 +45,7 @@ interface MIHeaderMainLayoutProps {
 }
 
 const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
+  const { isProd } = useEnvironment()
   const navigate = useNavigate()
   const location = useLocation()
   const { user, accessCompanyInfo, setAccessCompanyInfo } = useAuthStore()
@@ -169,7 +171,11 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
               sx={{ display: 'flex', mr: 7.5, cursor: 'pointer' }}
               onClick={(e) => {
                 e.preventDefault()
-                safeNavigate('/')
+                if (isProd) {
+                  safeNavigate('/mi')
+                } else {
+                  safeNavigate('/')
+                }
               }}
             >
               <img src={logoImg} alt="AI Market Insights" />

@@ -60,11 +60,11 @@ const HistoryComponent = ({ basicInfo }: HistoryComponentProps) => {
       const getDateFormat = () => {
         const unitCode = metaData?.data?.predictPeriodUnitSeparateCd
         if (unitCode === 'M') {
-          return 'YYYY년 MM월'
+          return 'YY년 MM월'
         } else if (unitCode === 'D') {
           return 'MM월 DD일'
         }
-        return 'YYYY-MM-DD' // 기본값
+        return 'YY-MM-DD' // 기본값
       }
 
       return {
@@ -229,33 +229,31 @@ const HistoryComponent = ({ basicInfo }: HistoryComponentProps) => {
               align: 'right',
               flex: 1,
               renderCell: (param) => (
-                <MITableCell>
-                  <Box
-                    sx={{
-                      width: '100%',
-                      cursor: 'pointer',
-                      color: 'gray.70',
-                      display: 'flex',
-                      justifyContent: 'end',
-                      alignItems: 'center',
-                      backgroundColor: !param.row.isBaselineMaximum && !param.row.isBaselineMinimum ? 'unset' : '#F9F8F6',
-                      filter: !param.row.isBaselinePermitted ? 'blur(3px)' : 'none',
-                      '.MuiSvgIcon-root': {
-                        verticalAlign: 'text-top',
-                        marginRight: '4px',
+                <MITableCell
+                  sx={{
+                    width: '100%',
+                    cursor: 'pointer',
+                    color: 'gray.70',
+                    display: 'flex',
+                    justifyContent: 'end',
+                    alignItems: 'center',
+                    backgroundColor: !param.row.isBaselineMaximum && !param.row.isBaselineMinimum ? 'unset' : '#F9F8F6',
+                    filter: !param.row.isBaselinePermitted ? 'blur(3px)' : 'none',
+                    '.MuiSvgIcon-root': {
+                      verticalAlign: 'text-top',
+                      marginRight: '4px',
+                    },
+                    '.MuiChip-label': {
+                      '.MuiTypography-root': {
+                        fontWeight: 600,
                       },
-                      '.MuiChip-label': {
-                        '.MuiTypography-root': {
-                          fontWeight: 600,
-                        },
-                      },
-                    }}
-                  >
-                    {param.row.isBaselineMaximum ? <UpIcon /> : param.row.isBaselineMinimum ? <DownIcon /> : ''}
-                    <Typography variant={'tableBody2'} color={'gray.90'}>
-                      {param.value}
-                    </Typography>
-                  </Box>
+                    },
+                  }}
+                >
+                  {param.row.isBaselineMaximum ? <UpIcon /> : param.row.isBaselineMinimum ? <DownIcon /> : ''}
+                  <Typography variant={'tableBody2'} color={'gray.90'}>
+                    {param.value}
+                  </Typography>
                 </MITableCell>
               ),
             },
@@ -272,7 +270,7 @@ const HistoryComponent = ({ basicInfo }: HistoryComponentProps) => {
                       fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
                       color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
                     >
-                      {param.value || '-'}
+                      {param.value > 0 ? '+'.concat(param.value) : param.value}
                     </Typography>
                   </Box>
                 </MITableCell>
@@ -284,19 +282,41 @@ const HistoryComponent = ({ basicInfo }: HistoryComponentProps) => {
               align: 'right' as const,
               flex: 1,
               renderCell: (param) => (
-                <MITableCell>
+                <MITableCell
+                  sx={{
+                    width: '100%',
+                    cursor: 'pointer',
+                    color: 'gray.70',
+                    display: 'flex',
+                    justifyContent: 'end',
+                    alignItems: 'center',
+                    backgroundColor: !param.row.isCounterpartMaximum && !param.row.isCounterpartMinimum ? 'unset' : '#F9F8F6',
+                    '.MuiSvgIcon-root': {
+                      verticalAlign: 'text-top',
+                      marginRight: '4px',
+                    },
+                    '.MuiChip-label': {
+                      '.MuiTypography-root': {
+                        fontWeight: 600,
+                      },
+                    },
+                    ...(!param.row.isCounterpartMaximum && !param.row.isCounterpartMinimum
+                      ? {}
+                      : {
+                        '.MuiTypography-root.MuiTypography-tableBody2': {
+                          fontWeight: 600,
+                        },
+                      }),
+                  }}
+                >
                   <Box
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      gap: 1,
                       filter: !param.row.isCounterpartPermitted ? 'blur(3px)' : 'none',
                     }}
                   >
                     {param.row.isCounterpartMaximum ? <UpIcon /> : param.row.isCounterpartMinimum ? <DownIcon /> : ''}
                     <Typography variant={'tableBody2'} color={'gray.90'}>
-                      {param.value || '-'}
+                      {param.value}
                     </Typography>
                   </Box>
                 </MITableCell>
@@ -315,7 +335,7 @@ const HistoryComponent = ({ basicInfo }: HistoryComponentProps) => {
                       fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
                       color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
                     >
-                      {param.value || '-'}
+                      {param.value > 0 ? '+'.concat(param.value) : param.value}
                     </Typography>
                   </Box>
                 </MITableCell>

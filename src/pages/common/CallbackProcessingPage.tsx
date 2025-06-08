@@ -15,12 +15,12 @@ const CallbackProcessingPage = () => {
   const navigate = useNavigate()
 
   const setUserInfo = useCallback(
-    async (token: string, refreshToken?: string) => {
+    async (token: string) => {
       const userDetail = await authService.getUserDetail(token)
 
       if (userDetail) {
         setUser(userDetail)
-        setToken(token, refreshToken)
+        setToken(token)
       }
     },
     [setUser, setToken],
@@ -39,10 +39,9 @@ const CallbackProcessingPage = () => {
       })
       .then(async (res) => {
         const authToken = res.data.data.accessToken
-        const refreshToken = res.data.data.refreshToken
 
-        if (authToken && refreshToken) {
-          await setUserInfo(authToken, refreshToken)
+        if (authToken) {
+          await setUserInfo(authToken)
         }
       })
       .catch(() => {

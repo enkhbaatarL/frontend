@@ -3,9 +3,11 @@ import Link from '@mui/material/Link'
 import { useNavigate } from 'react-router-dom'
 
 import logowImg from '@/assets/logow.svg'
+import useEnvironment from '@/hooks/useEnvironment.ts'
 
 const MIFooter = () => {
   const navigate = useNavigate()
+  const { isProd } = useEnvironment()
 
   return (
     <footer>
@@ -25,7 +27,11 @@ const MIFooter = () => {
               href="/"
               onClick={(e) => {
                 e.preventDefault()
-                navigate('/')
+                if (isProd) {
+                  navigate('/mi')
+                } else {
+                  navigate('/')
+                }
               }}
             >
               <img src={logowImg} alt="" />

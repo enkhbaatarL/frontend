@@ -6,6 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import HomeIcon from '@/components/common/icons/HomeIcon'
 import useAdminMenuItems from '@/hooks/useAdminMenuItems'
 import useAdminPageInfo from '@/hooks/useAdminPageInfo'
+import useEnvironment from '@/hooks/useEnvironment.ts'
 import { ICustomRouteObject } from '@/types/common'
 
 const replaceParamsInPath = (template: string, params: Record<string, string | undefined>) =>
@@ -22,6 +23,7 @@ const AdminBreadcrumbs = () => {
   const { adminPageInfo } = useAdminPageInfo()
   const adminMenuItems = useAdminMenuItems()
   const pathSegments = adminPageInfo.path.split('/').filter(Boolean)
+  const { isProd } = useEnvironment()
 
   const getBreadcrumbLabel = (items: ICustomRouteObject[], path: string): string | undefined => {
     for (const item of items) {
@@ -47,7 +49,18 @@ const AdminBreadcrumbs = () => {
   return (
     <nav>
       <Breadcrumbs color="gray.60" aria-label="breadcrumb" sx={{ fontWeight: 400, fontSize: '13px' }}>
-        <Link color="gray.60" variant="breadcrumbs" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+        <Link
+          color="gray.60"
+          variant="breadcrumbs"
+          onClick={() => {
+            if (isProd) {
+              navigate('/admin')
+            } else {
+              navigate('/')
+            }
+          }}
+          style={{ cursor: 'pointer' }}
+        >
           <HomeIcon />
         </Link>
         {pathSegments.slice(1).map((segment, index) => {
