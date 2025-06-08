@@ -1,58 +1,101 @@
 import { Box, Typography, Radio, RadioGroup, FormControlLabel, FormControl, Stack, TextField } from '@mui/material'
-import { useState } from 'react'
+import { t } from 'i18next'
+import { useEffect, useMemo, useState, useRef } from 'react'
 
 import type React from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
+import { useScroll } from '@/contexts/ScrollContext'
+import { FeedbackCd } from '@/service/mi/agent'
 
-// Styled Paper component with dashed border
-// const DashedPaper = styled(Paper)(({ theme }) => ({
-//   padding: theme.spacing(3),
-//   borderRadius: theme.shape.borderRadius,
-//   border: `1px dashed ${theme.palette.divider}`,
-// }))
-
-export interface FeedbackOption {
-  id: string
-  label: string
-}
+const FeedbackOptions = [
+  {
+    id: FeedbackCd.BUG_ISSUE,
+    label: '버그문제',
+  },
+  {
+    id: FeedbackCd.NO_POSSIBLE_RESPONSE,
+    label: '가능한 응답이 없음',
+  },
+  {
+    id: FeedbackCd.NOT_FOLLOW_REQUEST,
+    label: '요청에 제대로 따르지 않음',
+  },
+  {
+    id: FeedbackCd.INACCURATE_INFORMATION,
+    label: '정보가 정확하지 않음',
+  },
+  {
+    id: FeedbackCd.INCOMPLETE_RESPONSE,
+    label: '응답이 완전하지 않음',
+  },
+  {
+    id: FeedbackCd.OTHER,
+    label: '기타',
+  },
+]
 
 export interface MIAgentFeedbackProps {
-  title?: string
-  description?: string
-  options: FeedbackOption[]
-  onSubMIt: (selectedOption: string) => void
+  onSubmit: (feedbackCd: FeedbackCd, feedbackComment?: string) => Promise<void>
   onCancel: () => void
-  onChange?: (value: string) => void
-  subMItButtonText?: string
-  cancelButtonText?: string
 }
 
-const MIAgentFeedback: React.FC<MIAgentFeedbackProps> = ({
-  title = 'Feedback',
-  description = '어떤 점이 불만족스러우셨나요? 알려주시면 개선하겠습니다.',
-  options,
-  onSubMIt,
-  onCancel,
-  onChange,
-  subMItButtonText = '확인',
-  cancelButtonText = '취소',
-}) => {
-  const [selectedOption, setSelectedOption] = useState<string>('')
+const MIAgentFeedbackBak = ({ onSubmit, onCancel }: MIAgentFeedbackProps) => {
+  const [feedbackCd, setFeedbackCd] = useState<FeedbackCd>()
+  const [comment, setComment] = useState('')
+  const [buttonDisabled, setButtonDisabled] = useState(false)
+  const { scrollRef } = useScroll()
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!boxRef.current || !scrollRef.current) return () => {}
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const _entry of entries) {
+        const box = boxRef.current
+        const scroll = scrollRef.current
+
+        if (!box || !scroll) return
+
+        const boxRect = box.getBoundingClientRect()
+        const scrollRect = scroll.getBoundingClientRect()
+
+        if (boxRect.bottom > scrollRect.bottom) {
+          const scrollTop = scroll.scrollTop + (boxRect.bottom - scrollRect.bottom)
+          scroll.scrollTo({
+            top: scrollTop,
+            behavior: 'smooth',
+          })
+        }
+      }
+    })
+
+    resizeObserver.observe(boxRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [scrollRef])
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (onChange) onChange(event.target.value as string)
-    setSelectedOption(event.target.value)
+    setFeedbackCd(event.target.value as FeedbackCd)
   }
 
-  const handleSubMIt = () => {
-    if (selectedOption) {
-      onSubMIt(selectedOption)
+  const handleSubMIt = async () => {
+    if (feedbackCd) {
+      const feedbackComment = feedbackCd === FeedbackCd.OTHER ? comment.trim() : undefined
+
+      setButtonDisabled(true)
+      await onSubmit(feedbackCd, feedbackComment)
+      setButtonDisabled(false)
     }
   }
 
+  const disabledSubmit = useMemo(() => !feedbackCd || (feedbackCd === FeedbackCd.OTHER && !comment), [feedbackCd, comment])
+
   return (
     <Box
+      ref={boxRef}
       sx={{
         display: 'flex',
         width: '100%',
@@ -74,16 +117,16 @@ const MIAgentFeedback: React.FC<MIAgentFeedbackProps> = ({
     >
       <Box mb={7.5}>
         <Typography variant="contentTitle" color="gray.70" component={'div'}>
-          {title}
+          Feedback
         </Typography>
         <Typography variant="body2R14" color="gray.60">
-          {description}
+          {t('어떤 점이 불만족스러우셨나요? 알려주시면 개선하겠습니다.')}
         </Typography>
       </Box>
 
-      <FormControl component="fieldset">
-        <RadioGroup value={selectedOption} onChange={handleChange}>
-          {options.map((option) => (
+      <FormControl component="fieldset" sx={{ mb: 2 }}>
+        <RadioGroup value={feedbackCd ?? ''} onChange={handleChange}>
+          {FeedbackOptions.map((option) => (
             <FormControlLabel
               key={option.id}
               value={option.id}
@@ -99,18 +142,27 @@ const MIAgentFeedback: React.FC<MIAgentFeedbackProps> = ({
         </RadioGroup>
       </FormControl>
 
-      {selectedOption === 'other' && <TextField fullWidth={true} placeholder="불만족 사유 입력" rows={4} multiline></TextField>}
+      {feedbackCd === FeedbackCd.OTHER && (
+        <TextField
+          fullWidth={true}
+          placeholder={t('불만족 사유 입력')}
+          rows={4}
+          multiline
+          sx={{ mb: 2 }}
+          onChange={(e) => setComment(e.target.value)}
+        />
+      )}
 
       <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 3, width: '100%' }}>
-        <MIButton type={'outlined'} color={'gray'} size="h34" onClick={onCancel}>
-          {cancelButtonText}
+        <MIButton type={'outlined'} color={'gray'} size="h34" onClick={onCancel} disabled={buttonDisabled}>
+          {t('취소')}
         </MIButton>
-        <MIButton type={'filled'} color={'primary'} size="h34" onClick={handleSubMIt} disabled={!selectedOption}>
-          {subMItButtonText}
+        <MIButton type={'filled'} color={'primary'} size="h34" onClick={handleSubMIt} disabled={disabledSubmit || buttonDisabled}>
+          {t('확인')}
         </MIButton>
       </Stack>
     </Box>
   )
 }
 
-export default MIAgentFeedback
+export default MIAgentFeedbackBak

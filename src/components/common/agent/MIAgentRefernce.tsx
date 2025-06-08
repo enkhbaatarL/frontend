@@ -94,8 +94,8 @@ const MIAgentRefernce = ({ referLink, onclick }: { referLink: ReferLink[]; oncli
   return (
     <>
       {referLink && (
-        <Box display="flex" alignItems="start" flexDirection="column" gap={1.5}>
-          <Typography py={1} component="div" variant="mariParagraph" color="gray.90">
+        <Box display="flex" alignItems="start" flexDirection="column" gap={1.5} pt={1.5}>
+          <Typography py={1} component="div" variant="mariParagraph" color="gray.90" pt={1.5}>
             해당 정보는 다음의 데이터를 참고하였습니다.
           </Typography>
 

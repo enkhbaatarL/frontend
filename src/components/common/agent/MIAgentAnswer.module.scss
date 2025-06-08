@@ -1,109 +1,157 @@
 .MiAgentAnswer{
   text-align: left;
   h1 {
-  color: #212529;
-  font-size: 32px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 150%;
-  letter-spacing: -0.32px;
-  margin: 12px 0;
-}
+    color: #212529;
+    font-size: 32px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 150%;
+    letter-spacing: -0.32px;
+    margin: 12px 0;
+  }
 
-h2 {
-  color: #212529;
-  font-size: 18px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 150%;
-  letter-spacing: -0.18px;
-}
+  h2 {
+    color: #212529;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 150%;
+    letter-spacing: -0.18px;
+  }
 
-hr {
-  display: block;
-  height: 1px;
-  border: 0;
-  border-top: 1px solid #ccc;
-  padding: 0;
-  margin: 24px 0;
-}
+  hr {
+    display: block;
+    height: 1px;
+    border: 0;
+    border-top: 1px solid #ccc;
+    padding: 0;
+    margin: 24px 0;
+  }
 
-h3 {
-  color: #212529;
-  font-size: 16px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 150%;
-  letter-spacing: -0.18px;
-}
-
-p {
-  color: #212529;
-  font-size: 16px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 150%;
-  letter-spacing: -0.16px;
-  margin: 14px 0;
-}
-
-.test ul {
-  margin: 0;
-  padding-left: 24px;
-
-  li {
-    margin: 14px 0;
+  h3 {
     color: #212529;
     font-size: 16px;
     font-style: normal;
-    font-weight: 400;
+    font-weight: 700;
+    line-height: 150%;
+    letter-spacing: -0.18px;
+  }
+
+  p {
+    color: #212529;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 500;
     line-height: 150%;
     letter-spacing: -0.16px;
+    margin: 14px 0;
   }
-}
 
-a {
-  color: #212529;
-  font-weight: 500;
-}
+  .test ul {
+    margin: 0;
+    padding-left: 24px;
 
-table {
-  width: 100%;
-  border: 0;
-  border-spacing: 0;
-  background-color: #FFFFFF;
-  margin-bottom: 24px;
-
-  thead {
-    tr {
-      background: #F8F9FA;
-
-      th {
-        border-bottom: 1px solid #CED4DA;
-        text-align: left;
-        color: #868E96;
-        font-size: 13px;
-        font-style: normal;
-        font-weight: 600;
-        line-height: 140%;
-        padding: 8px 12px;
-      }
+    li {
+      margin: 14px 0;
+      color: #212529;
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: 150%;
+      letter-spacing: -0.16px;
     }
   }
 
-  tbody {
-    tr {
-      td {
-        border-bottom: 1px solid #DEE2E6;
-        overflow: hidden;
-        color: #212529;
-        font-size: 14px;
-        font-style: normal;
-        font-weight: 400;
-        padding: 10px 12px;
-        line-height: 140%;
+  a {
+    color: #212529;
+    font-weight: 500;
+  }
+
+  table {
+    width: 100%;
+    border-spacing: 0;
+    margin-bottom: 24px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid;
+    border-color: #DEE2E6;
+    background-color: white;
+
+    thead {
+      tr {
+        background: #F8F9FA;
+
+        th {
+          border-bottom: 1px solid #CED4DA;
+          text-align: left;
+          color: #868E96;
+          font-size: 13px;
+          font-style: normal;
+          font-weight: 600;
+          line-height: 140%;
+          padding: 8px 12px;
+        }
+      }
+    }
+
+    tbody {
+      tr {
+        td {
+          border-bottom: 1px solid #DEE2E6;
+          overflow: hidden;
+          color: #212529;
+          font-size: 14px;
+          font-style: normal;
+          font-weight: 400;
+          padding: 10px 12px;
+          line-height: 140%;
+        }
+        
+        &:last-child td {
+          border-bottom: none;
+        }
       }
     }
   }
 }
+
+.fadeInUp {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.graphPlaceholder {
+  transition: opacity 0.3s ease-out;
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }

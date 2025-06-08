@@ -1,157 +1,200 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Divider } from '@mui/material'
 import clsx from 'clsx'
-import React, { useRef } from 'react'
+import { ButtonHTMLAttributes, useEffect, useState, useRef, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
 
-import style from './MIAgentAnswer.module.scss'
-import MIAgentLineChart from './MIAgentLineChart'
+import style from '@/components/common/agent/MIAgentAnswer.module.scss'
+import MIAgentLineChart from '@/components/common/agent/MIAgentLineChart'
+import MIAgentRelatedData from '@/components/common/agent/MIAgentRelatedData'
+import MIAgentSources from '@/components/common/agent/MIAgentSources'
+import { MIAgentTableDownloadButton } from '@/components/common/agent/MIAgentTableDownloadButton'
+import { useScroll } from '@/contexts/ScrollContext'
+import { useTypingEffect } from '@/hooks/useTypingEffect'
+import { IChatQnaAnswerBundle } from '@/service/mi/agent'
 
-import MIAgentAnswerTool from '@/components/common/agent/MIAgentAnswerTool'
-import MIAgentRecommenQuestion from '@/components/common/agent/MIAgentRecommenQuestion'
-import MIAgentRefernce from '@/components/common/agent/MIAgentRefernce'
-import MIButton from '@/components/common/button/MIButton'
-
-// Define types
-type ReferLink = {
-  label: string
-  url: string
+interface Props {
+  isNewChat?: boolean
+  bundles?: IChatQnaAnswerBundle[]
+  chatRoomTitle?: string
+  animationComplete?: boolean
+  onAnimationComplete?: () => void
 }
 
-type ErrorType = 'DATA_ACCESS_DENIED' | 'DATA_NOT_FOUND' | 'LLM_RESPONSE_ERROR' | ''
-
-interface MIAgentAnswerProps {
-  content: string
-  showMarkdown?: boolean
-  showChart?: boolean
-  errorType?: ErrorType
-  sources?: string[]
-  referLink?: ReferLink[]
-  recommendationQuestion?: string[]
-  loadMoreRefer?: () => void
-  scrollBottom?: () => void
-  handleSendMessage: (message?: string) => void
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  'data-table-id'?: string
 }
 
-// Error message mapping
-const ERROR_MESSAGES = {
-  DATA_ACCESS_DENIED: {
-    primary: '질문하신 내용에 접근 가능한 권한이 없습니다.',
-    secondary: '대신 이런 정보는 어떠세요?',
-  },
-  DATA_NOT_FOUND: {
-    primary: '죄송합니다. 해당 질문에 대해 답변이 어렵습니다.',
-    secondary: '대시 관심있을실 만한 다른 질문을 도와드릴게요.',
-  },
-  LLM_RESPONSE_ERROR: {
-    primary: '지금은 서버 연결이 원활하지 않습니다.',
-    secondary: '잠시 후 다시 시도해 주세요.',
-  },
-}
+const downloadButtonTemplate = (tableId: string) => `
+  <div style="text-align: right; margin-bottom: 8px">
+    <button 
+      data-table-id="${tableId}"
+      style="cursor: pointer; background: none; border: 0" 
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M4.16683 17.5C3.93072 17.5 3.7328 17.4201 3.57308 17.2604C3.41336 17.1007 3.3335 16.9028 3.3335 16.6667C3.3335 16.4306 3.41336 16.2326 3.57308 16.0729C3.7328 15.9132 3.93072 15.8333 4.16683 15.8333H15.8335C16.0696 15.8333 16.2675 15.9132 16.4272 16.0729C16.587 16.2326 16.6668 16.4306 16.6668 16.6667C16.6668 16.9028 16.587 17.1007 16.4272 17.2604C16.2675 17.4201 16.0696 17.5 15.8335 17.5H4.16683ZM10.0002 13.8125C9.88905 13.8125 9.78488 13.7951 9.68766 13.7604C9.59044 13.7257 9.50016 13.6667 9.41683 13.5833L6.41683 10.5833C6.26405 10.4306 6.18766 10.2361 6.18766 10C6.18766 9.76389 6.26405 9.56944 6.41683 9.41667C6.56961 9.26389 6.76405 9.1875 7.00016 9.1875C7.23627 9.1875 7.43072 9.26389 7.5835 9.41667L9.16683 11V3.33333C9.16683 3.09722 9.24669 2.89931 9.40641 2.73958C9.56613 2.57986 9.76405 2.5 10.0002 2.5C10.2363 2.5 10.4342 2.57986 10.5939 2.73958C10.7536 2.89931 10.8335 3.09722 10.8335 3.33333V11L12.4168 9.41667C12.5696 9.26389 12.7641 9.1875 13.0002 9.1875C13.2363 9.1875 13.4307 9.26389 13.5835 9.41667C13.7363 9.56944 13.8127 9.76389 13.8127 10C13.8127 10.2361 13.7363 10.4306 13.5835 10.5833L10.5835 13.5833C10.5002 13.6667 10.4099 13.7257 10.3127 13.7604C10.2154 13.7951 10.1113 13.8125 10.0002 13.8125Z" fill="#868E96"/>
+      </svg>
+    </button>
+  </div>
+`
 
-const MIAgentAnswer: React.FC<MIAgentAnswerProps> = ({
-  content,
-  showMarkdown = true,
-  showChart = true,
-  errorType = '',
-  sources = [],
-  referLink = [],
-  recommendationQuestion = [],
-  loadMoreRefer,
-  scrollBottom,
-  handleSendMessage,
-}) => {
-  const markdownRef = useRef<HTMLDivElement>(null)
+export const tableIdRegex = /<!-- tableId:{([^}]+)} -->/g
 
-  // Helper functions
-  const handleCopyPlainText = () => {
-    if (!markdownRef.current) return
+// 테이블 ID 주석을 찾아서 다운로드 버튼으로 치환
+const getContent = (content: string) => content.replace(tableIdRegex, (_, tableId) => downloadButtonTemplate(tableId))
 
-    const plainText = markdownRef.current.innerText
+const createMarkdownComponents = (bundle: IChatQnaAnswerBundle, chatRoomTitle?: string) => ({
+  button: (props: ButtonProps) => <MIAgentTableDownloadButton bundle={bundle} chatRoomTitle={chatRoomTitle} {...props} />,
+})
 
-    navigator.clipboard
-      .writeText(plainText)
-      .then(() => console.log('Plain text copied'))
-      .catch((err) => console.error('Copy failed:', err))
-  }
+const NewChatAnswer = ({ bundles, chatRoomTitle, onAnimationComplete }: Props) => {
+  const { typedText, startTyping, isTyping } = useTypingEffect(0.1, 60)
+  const [currentBundleIndex, setCurrentBundleIndex] = useState(0)
+  const [visibleGraphIndex, setVisibleGraphIndex] = useState<number | null>(null)
+  const answerRef = useRef<HTMLDivElement>(null)
+  const { scrollToBottom } = useScroll()
 
-  const handleScrollBottom = () => {
-    scrollBottom?.()
-  }
+  const showGraphs = useMemo(() => {
+    if (!bundles) return []
+    const graphs = new Array(bundles.length).fill(false)
+    if (visibleGraphIndex !== null) {
+      graphs[visibleGraphIndex] = true
+    }
+    return graphs
+  }, [bundles, visibleGraphIndex])
 
-  const handleLoadMoreRefer = () => {
-    handleScrollBottom()
-    loadMoreRefer?.()
-  }
+  const hasVisibleGraphs = useMemo(() => showGraphs.some((show) => show), [showGraphs])
 
-  // Custom components for ReactMarkdown
-  const markdownComponents = {
-    button: ({ title, children }: { title?: string; children?: React.ReactNode }) => (
-      <MIButton placement="right" type="ghost" color="gray" contentType="icon" toolTip={title}>
-        {children}
-      </MIButton>
-    ),
-  }
+  useEffect(() => {
+    if (bundles && bundles.length > 0) {
+      setCurrentBundleIndex(0)
+      setVisibleGraphIndex(null)
+      startTyping(bundles[0].content ?? '').then()
+    }
+  }, [bundles])
 
-  // Render error message if there's an error
-  const renderErrorMessage = () => {
-    if (!errorType) return null
+  useEffect(() => {
+    if (!isTyping && bundles && currentBundleIndex < bundles.length) {
+      const timer = setTimeout(() => {
+        setVisibleGraphIndex(currentBundleIndex)
 
-    const message = ERROR_MESSAGES[errorType]
+        if (currentBundleIndex + 1 < bundles.length) {
+          setTimeout(() => {
+            setCurrentBundleIndex((prev) => prev + 1)
+            startTyping(bundles[currentBundleIndex + 1].content ?? '').then()
+          }, 100)
+        } else {
+          setTimeout(() => {
+            onAnimationComplete?.()
+          }, 100)
+        }
+      }, 300)
 
-    if (!message) return null
+      return () => clearTimeout(timer)
+    }
 
-    return (
-      <Box>
-        <Typography variant="mariParagraph" color="contentText.Black">
-          {message.primary}
-        </Typography>
-        <br />
-        <Typography variant="mariParagraph" color="contentText.Black">
-          {message.secondary}
-        </Typography>
-      </Box>
-    )
-  }
+    return () => {}
+  }, [isTyping, bundles, currentBundleIndex, onAnimationComplete, startTyping])
+
+  useEffect(() => {
+    if ((isTyping || hasVisibleGraphs || typedText) && answerRef.current) {
+      requestAnimationFrame(() => {
+        scrollToBottom()
+      })
+    }
+  }, [typedText, isTyping, hasVisibleGraphs])
+
+  if (!bundles || bundles.length === 0) return null
 
   return (
-    <Box className={clsx(style.MiAgentAnswer)}>
-      {/* Content section */}
-      {showMarkdown && errorType === '' && (
-        <div ref={markdownRef}>
-          <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-            {content}
-          </ReactMarkdown>
-        </div>
-      )}
-
-      {/* Error message section */}
-      {renderErrorMessage()}
-
-      {/* Chart section */}
-      {showChart && errorType === '' && <MIAgentLineChart />}
-
-      {/* Recommendation section */}
-      {recommendationQuestion.length > 0 && (
-        <MIAgentRecommenQuestion recommenQuestion={recommendationQuestion} handleSendMessage={handleSendMessage} />
-      )}
-
-      {/* Reference section */}
-      {referLink.length > 0 && errorType === '' && <MIAgentRefernce onclick={handleLoadMoreRefer} referLink={referLink} />}
-
-      {/* Tools section */}
-      <MIAgentAnswerTool
-        scrolToBottom={handleScrollBottom}
-        onClick={(action) => {
-          if (action === 'copy') {
-            handleCopyPlainText()
-          }
-        }}
-        sources={sources}
-      />
+    <Box className={clsx(style.MiAgentAnswer)} ref={answerRef}>
+      {bundles.slice(0, currentBundleIndex + 1).map((bundle, index) => (
+        <Box key={index}>
+          {index === currentBundleIndex ? (
+            <ReactMarkdown
+              components={createMarkdownComponents(bundle, chatRoomTitle)}
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {getContent(typedText)}
+            </ReactMarkdown>
+          ) : (
+            <ReactMarkdown
+              components={createMarkdownComponents(bundle, chatRoomTitle)}
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {getContent(bundle.content ?? '')}
+            </ReactMarkdown>
+          )}
+          {(bundle.series ?? []).length > 0 && (
+            <>
+              {showGraphs[index] ? (
+                <Box className={clsx({ [style.fadeInUp]: true })}>
+                  <MIAgentLineChart series={bundle.series} />
+                </Box>
+              ) : (
+                index === currentBundleIndex &&
+                !isTyping && (
+                  <Box
+                    className={style.graphPlaceholder}
+                    style={{
+                      height: '490px',
+                      backgroundColor: '#fff',
+                      border: '1px solid',
+                      borderColor: '#DEE2E6',
+                      borderRadius: '6px',
+                      opacity: 0.5,
+                    }}
+                  />
+                )
+              )}
+            </>
+          )}
+          {(bundle.relatedData ?? []).length > 0 && showGraphs[index] && (
+            <Box className={clsx({ [style.fadeInUp]: true })}>
+              <MIAgentRelatedData relatedData={bundle.relatedData} />
+            </Box>
+          )}
+          {(bundle.sources ?? []).length > 0 && showGraphs[index] && (
+            <Box className={clsx({ [style.fadeInUp]: true })}>
+              <MIAgentSources sources={bundle.sources} />
+            </Box>
+          )}
+          {index < currentBundleIndex && <Divider sx={{ my: '18px !important' }} />}
+        </Box>
+      ))}
     </Box>
   )
+}
+
+const ExistingChatAnswer = ({ bundles, chatRoomTitle }: Props) => (
+  <Box className={clsx(style.MiAgentAnswer)}>
+    {bundles?.map((bundle, index) => (
+      <Box key={index}>
+        {bundle.content && (
+          <ReactMarkdown
+            components={createMarkdownComponents(bundle, chatRoomTitle)}
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
+          >
+            {getContent(bundle.content)}
+          </ReactMarkdown>
+        )}
+        {(bundle.series ?? []).length > 0 && <MIAgentLineChart series={bundle.series} />}
+        {(bundle.relatedData ?? []).length > 0 && <MIAgentRelatedData relatedData={bundle.relatedData} />}
+        {(bundle.sources ?? []).length > 0 && <MIAgentSources sources={bundle.sources} />}
+        {index < bundles?.length - 1 && <Divider sx={{ my: '18px !important' }} />}
+      </Box>
+    ))}
+  </Box>
+)
+
+const MIAgentAnswer = (props: Props) => {
+  if (!props.bundles || props.bundles.length === 0) return null
+
+  return props.isNewChat ? <NewChatAnswer {...props} /> : <ExistingChatAnswer {...props} />
 }
 
 export default MIAgentAnswer

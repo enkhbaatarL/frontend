@@ -1,68 +1,23 @@
 import { Box, Typography } from '@mui/material'
-
-import type React from 'react'
+import { t } from 'i18next'
 
 import CheckIcon from '@/components/common/icons/agent/CheckIcon'
 import GeneratingIcon from '@/components/common/icons/agent/GeneratingIcon'
-import MariIcon from '@/components/common/icons/agent/MariIcon'
-import SearchIcon from '@/components/common/icons/agent/SearchIcon'
-
-// Status types for the MI Agent interaction
-export type MIAgentStatusType = 'planning' | 'searching' | 'generating' | 'complete'
+import { MIAgentState } from '@/hooks/useMIAgent'
 
 export interface MIAgentStatusProps {
-  status: MIAgentStatusType
-  planningText?: string
-  searchingText?: string
-  generatingText?: string
-  completeText?: string
+  status: MIAgentState
 }
 
-const MIAgentStatus: React.FC<MIAgentStatusProps> = ({
-  status,
-  planningText = '생각중',
-  searchingText = '검색 중',
-  generatingText = '답변 생성 중',
-  completeText = '완료',
-}) => {
-  // Get the appropriate icon and text based on status
-  const getStatusContent = () => {
-    switch (status) {
-      case 'searching':
-        return {
-          icon: <SearchIcon />,
-          text: searchingText,
-          color: 'gray.50',
-        }
-      case 'generating':
-        return {
-          icon: <GeneratingIcon />,
-          text: generatingText,
-          color: 'gray.50',
-        }
-      case 'complete':
-        return {
-          icon: <CheckIcon />,
-          text: completeText,
-          color: 'mari.Primary',
-        }
-      default: // planning
-        return {
-          icon: <MariIcon />,
-          text: planningText,
-          color: 'gray.50',
-        }
-    }
-  }
-
-  const { icon, text, color } = getStatusContent()
+const MIAgentStatus = ({ status }: MIAgentStatusProps) => {
+  if (status === null) return null
 
   return (
     <Box
       sx={{
         display: 'flex',
         alignItems: 'center',
-        color,
+        color: status === 'generating' ? 'gray.50' : 'mari.Primary',
         gap: '4px',
         padding: '18px 12px',
         boxSizing: 'border-box',
@@ -73,24 +28,24 @@ const MIAgentStatus: React.FC<MIAgentStatusProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          // animation: status !== 'complete' ? 'pulse 1.5s infinite' : 'none',
-          // '@keyframes pulse': {
-          //   '0%': {
-          //     opacity: 0.7,
-          //   },
-          //   '50%': {
-          //     opacity: 1,
-          //   },
-          //   '100%': {
-          //     opacity: 0.7,
-          //   },
-          // },
+          animation: status !== 'complete' ? 'pulse 1s infinite' : 'none',
+          '@keyframes pulse': {
+            '0%': {
+              opacity: 0.7,
+            },
+            '50%': {
+              opacity: 1,
+            },
+            '100%': {
+              opacity: 0.7,
+            },
+          },
         }}
       >
-        {icon}
+        {status === 'generating' ? <GeneratingIcon /> : <CheckIcon />}
       </Box>
       <Typography variant="body2" fontWeight="medium">
-        {text}
+        {status === 'generating' ? t('답변 생성 중') : status === 'complete' ? t('완료') : null}
       </Typography>
     </Box>
   )

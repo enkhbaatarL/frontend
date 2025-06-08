@@ -1,165 +1,158 @@
 import { Box, Stack, Typography } from '@mui/material'
-import Chart from 'chart.js/auto'
-import { useEffect, useRef } from 'react'
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
+import dayjs from 'dayjs'
+import { useMemo, useState } from 'react'
+import { Line } from 'react-chartjs-2'
 
-export default function MIAgentLineChart() {
-  const chartRef = useRef<HTMLCanvasElement>(null)
-  const chartInstance = useRef<Chart | null>(null)
+import { IChatQnaAnswerBundle } from '@/service/mi/agent'
 
-  const legendItems = [
-    { id: 'hhp', label: 'HHP', color: '#2E3F5E', active: true, filled: true },
-    { id: 'hhpPrediction', label: 'HHP 예측', color: '#CC4D50', active: true, filled: false },
-    { id: 'm1', label: '설명기 M1', color: '#153870', active: false, filled: true },
-    { id: 'm2', label: '설명기 M2', color: '#6428AD', active: false, filled: true },
-    { id: 'm3', label: '설명기 M3', color: '#C3C3C3', active: false, filled: true },
-    { id: 'm4', label: '설명기 M4', color: '#C91F7D', active: false, filled: true },
-  ]
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
-  useEffect(() => {
-    if (!chartRef.current) return () => {}
+interface Props {
+  series: IChatQnaAnswerBundle['series']
+}
 
-    // Destroy previous chart instance if it exists
-    if (chartInstance.current) {
-      chartInstance.current.destroy()
-    }
+const colors = ['#2E3F5E', '#CC4D50', '#153870', '#6428AD', '#C3C3C3', '#C91F7D']
 
-    const ctx = chartRef.current.getContext('2d')
+const MIAgentLineChart = ({ series }: Props) => {
+  const [activeLegends, setActiveLegends] = useState<number[]>(series?.map((_, index) => index) || [])
 
-    if (!ctx) return () => {}
+  const maxValue = useMemo(() => Math.max(...activeLegends.flatMap((index) => series?.[index]?.values || [])), [series, activeLegends])
 
-    // Sample data matching the pattern in the image
-    const labels = ['24-08', '24-09', '24-10', '24-11', '24-12', '25-01', '25-02', '25-03', '25-04', '25-05', '25-06', '25-07']
-    const actualData = [0.2, 0.6, 0.4, 0.2, 0.5, 0.3, 0.5, 0.3, 0.2, 0.3, 0.4, 0.3]
-    const predictedData = [0.3, 0.25, 0.15, 0.15, 0.2, 0.2, 0.2, 0.15, 0.15, 0.2, 0.35, 0.2]
-    const m1Data = [0.1, 0.25, 0.15, 0.15, 0.2, 0.2, 0.2, 0.7, 0.15, 0.2, 0.35, 0.2]
-    const m2Data = [0.25, 0.25, 0.15, 0.1, 0.2, 0.2, 0.5, 0.15, 0.15, 0.6, 0.35, 0.2]
-    const m3Data = [0.6, 0.25, 0.15, 0.13, 0.2, 0.1, 0.2, 0.13, 0.15, 0.11, 0.22, 0.2]
-    const m4Data = [0.05, 0.25, 0.15, 0.15, 0.2, 0.2, 0.2, 0.15, 0.15, 0.2, 0.11, 0.2]
+  const minValue = useMemo(() => Math.min(...activeLegends.flatMap((index) => series?.[index]?.values || [])), [series, activeLegends])
 
-    // @ts-expect-error: Chart.js types not recognized correctly but runtime is fine
-    chartInstance.current = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'HHP',
-            data: actualData,
-            borderColor: '#2E3F5E',
-            backgroundColor: '#2E3F5E',
-            borderWidth: 2,
-            pointStyle: 'circle',
-            pointRadius: 5,
-            pointBackgroundColor: '#2E3F5E',
-            tension: 0.1,
-            fill: false,
-          },
-          {
-            label: 'HHP 예측',
-            data: predictedData,
-            borderColor: '#CC4D50',
-            borderWidth: 2,
-            borderDash: [5, 5],
-            pointStyle: 'circle',
-            pointRadius: 5,
-            pointBackgroundColor: 'white',
-            pointBorderColor: '#CC4D50',
-            pointBorderWidth: 1.5,
-            tension: 0.1,
-            fill: false,
-          },
-          {
-            label: '설명기 M1',
-            data: m1Data,
-            borderColor: '#CBD5E0',
-            backgroundColor: '#CBD5E0',
-            hidden: true,
-          },
-          {
-            label: '설명기 M2',
-            data: m2Data,
-            borderColor: '#E9D8FD',
-            backgroundColor: '#E9D8FD',
-            hidden: true,
-          },
-          {
-            label: '설명기 M3',
-            data: m3Data,
-            borderColor: '#F7FAFC',
-            backgroundColor: '#F7FAFC',
-            hidden: true,
-          },
-          {
-            label: '설명기 M4',
-            data: m4Data,
-            borderColor: '#FED7E2',
-            backgroundColor: '#FED7E2',
-            hidden: true,
-          },
-        ],
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 0,
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            grid: {
-              color: 'rgba(0, 0, 0, 0.1)',
-            },
-            ticks: {
-              font: {
-                size: 14,
-                weight: 500,
-              },
-              color: '#2E3F5E',
-            },
+      layout: {
+        padding: {
+          top: 26,
+          right: 32,
+          bottom: 38,
+          left: 8,
+        },
+      },
+      scales: {
+        x: {
+          type: 'category' as const,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)',
           },
-          y: {
-            beginAtZero: true,
-            grid: {
-              color: 'rgba(0, 0, 0, 0.1)',
+          ticks: {
+            font: {
+              size: 14,
+              weight: 500,
             },
-            ticks: {
-              font: {
-                size: 14,
-                weight: 500,
-              },
-              color: '#2E3F5E',
+            callback(tickValue: string | number) {
+              const index = Number(tickValue)
+              const timestamp = series?.[0]?.timestamps?.[index]
+              if (timestamp) {
+                const date = dayjs(timestamp)
+                const firstDate = dayjs(series?.[0]?.timestamps?.[0])
+                if (date.year() === firstDate.year()) {
+                  return date.format('MM-DD')
+                }
+                return date.format('YYYY-MM')
+              }
+              return tickValue
             },
+            color: '#2E3F5E',
+            padding: 8,
           },
         },
-        plugins: {
-          legend: {
-            display: false,
+        y: {
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)',
+          },
+          ticks: {
+            font: {
+              size: 14,
+              weight: 500,
+            },
+            color: '#2E3F5E',
+            padding: 10,
           },
         },
       },
-    })
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
+    }),
+    [series],
+  )
 
-    return () => {
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-      }
-    }
-  }, [])
+  const chartOptions = {
+    ...options,
+    scales: {
+      ...options.scales,
+      y: {
+        ...options.scales.y,
+        suggestedMax: maxValue * 1.01,
+        suggestedMin: minValue * 0.99,
+      },
+    },
+  }
+
+  const data = {
+    labels: series?.[0]?.timestamps || [],
+    datasets:
+      series?.map((item, index) => ({
+        label: item.legend,
+        data: item.values,
+        borderColor: colors[index % colors.length],
+        backgroundColor: colors[index % colors.length],
+        borderWidth: 2,
+        pointStyle: 'circle',
+        pointRadius: 5,
+        pointBackgroundColor: index === 1 ? 'white' : colors[index % colors.length],
+        pointBorderColor: colors[index % colors.length],
+        pointBorderWidth: index === 1 ? 1.5 : 0,
+        borderDash: index === 1 ? [5, 5] : [],
+        tension: 0.1,
+        hidden: !activeLegends.includes(index),
+        fill: false,
+      })) || [],
+  }
+
+  const legendItems =
+    series?.map((item, index) => ({
+      id: index,
+      label: item.legend,
+      color: colors[index % colors.length],
+      active: activeLegends.includes(index),
+      filled: index !== 1,
+    })) || []
+
+  const handleLegendClick = (index: number) => {
+    setActiveLegends((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]))
+  }
 
   return (
-    <Box width={'100%'} mb={'87px'} style={{ height: '400px', backgroundColor: '#fff' }}>
-      <canvas ref={chartRef}></canvas>
-      {/* Custom legend with circular markers and faded appearance */}
+    <Box
+      width={'100%'}
+      style={{ height: '490px', backgroundColor: '#fff', border: '1px solid', borderColor: '#DEE2E6' }}
+      borderRadius={'6px'}
+      overflow={'hidden'}
+    >
+      <Line data={data} options={chartOptions} />
       <Stack
         direction="row"
-        py={2.5}
-        // mt={2.5}
+        mt={-8}
         spacing={3}
         justifyContent="center"
         flexWrap="wrap"
         sx={{
-          pt: '18px',
           gap: 2,
           '& > *': {
             display: 'flex',
             alignItems: 'center',
+            cursor: 'pointer',
           },
           backgroundColor: '#fff',
         }}
@@ -167,6 +160,7 @@ export default function MIAgentLineChart() {
         {legendItems.map((item) => (
           <Box
             key={item.id}
+            onClick={() => handleLegendClick(item.id)}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -192,3 +186,5 @@ export default function MIAgentLineChart() {
     </Box>
   )
 }
+
+export default MIAgentLineChart

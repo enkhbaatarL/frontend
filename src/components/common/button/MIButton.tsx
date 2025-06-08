@@ -209,7 +209,13 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
       ghost: {
         color: colors[color],
         border: '1px solid transparent',
-        background: active ? theme.palette.content['backgroundHover'] : isActive ? theme.palette.gray[5] : 'transparent',
+        background: disabled
+          ? 'transparent'
+          : active
+            ? theme.palette.content['backgroundHover']
+            : isActive
+              ? theme.palette.gray[5]
+              : 'transparent',
         svg: {
           color: active ? theme.palette.content['iconActive'] : theme.palette.content['iconEnabled'],
           transition: 'all 0.3s',
@@ -219,7 +225,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
           },
         },
         '&:hover': {
-          background: theme.palette.content['backgroundHover'],
+          background: disabled ? 'transparent' : theme.palette.content['backgroundHover'],
           svg: {
             color: theme.palette.content['iconHover'],
             path: {
@@ -228,7 +234,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
           },
         },
         '&:active': {
-          background: theme.palette.content['backgroundHover'],
+          background: disabled ? 'transparent' : theme.palette.content['backgroundHover'],
           borderColor: color === 'gray2' ? theme.palette.gray[70] : 'transparent',
           color: theme.palette.gray[90],
           svg: {
@@ -239,7 +245,6 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
           },
         },
         '&:disabled': {
-          //borderColor: theme.palette.gray[10],
           color: theme.palette.gray[50],
           '& svg': {
             color: theme.palette.content['iconDisabled'],
@@ -250,7 +255,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
         },
       },
     }
-  }, [isActive, active, color, hoverBgColor])
+  }, [isActive, active, color, hoverBgColor, disabled])
 
   const renderButtonContent = () => (
     <Tooltip placement={placement} title={toolTip} {...toolTipProps}>

@@ -59,6 +59,7 @@ export interface MIAgentToggleSettingOption {
   title: string
   subtitle: string
   checked: boolean
+  disabled?: boolean
 }
 export interface MIAgentToggleSettingProps {
   items: MIAgentToggleSettingOption[]
@@ -91,14 +92,14 @@ const MIAgentToggleSettingItem: React.FC<MIAgentToggleSettingItemProps> = ({ ite
         variant="subtext3"
         sx={{
           textAlign: 'left',
+          color: item.disabled ? 'contentText.Disabled' : 'contentText.Black',
         }}
-        color="contentText.Black"
       >
         {item.title}
       </Typography>
       <Typography
         variant="body3"
-        color="contentText.Normal"
+        color={item.disabled ? 'contentText.Disabled' : 'contentText.Normal'}
         sx={{
           textAlign: 'left',
         }}
@@ -108,8 +109,11 @@ const MIAgentToggleSettingItem: React.FC<MIAgentToggleSettingItemProps> = ({ ite
     </Box>
     <CustomSwitch
       checked={item.checked}
+      disabled={item.disabled}
       onChange={() => {
-        onChangeSelectedItem?.(item)
+        if (!item.disabled) {
+          onChangeSelectedItem?.(item)
+        }
       }}
     />
   </Box>
@@ -131,7 +135,13 @@ const MIAgentToggleSetting: React.FC<MIAgentToggleSettingProps> = ({ items, onCh
           justifyContent: 'center',
         }}
       >
-        <MIAgentToggleSettingItem item={{ ...item }} onChangeSelectedItem={onChangeSelectedItem} />
+        <MIAgentToggleSettingItem
+          item={{
+            ...item,
+            disabled: item.disabled ?? false,
+          }}
+          onChangeSelectedItem={onChangeSelectedItem}
+        />
         {index < items.length - 1 && (
           <Box sx={{ width: '100%', height: '0.5px', backgroundColor: 'contentBorder.Normal', marginY: '8px' }} />
         )}

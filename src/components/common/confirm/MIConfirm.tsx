@@ -25,6 +25,7 @@ interface Props {
   actions?: ActionButton[]
   hideFooter?: boolean
   zIndex?: number
+  disableClose?: boolean
 }
 
 const MIConfirm = ({
@@ -37,6 +38,7 @@ const MIConfirm = ({
   hideFooter = false,
   actions = [{ label: t('확인'), variant: 'filled', color: 'primary', onClick: handleClose }],
   zIndex,
+  disableClose = false,
 }: Props) => {
   useEffect(() => {
     const className = 'mi-confirm-open'
@@ -63,7 +65,12 @@ const MIConfirm = ({
         },
       }}
       open={open}
-      onClose={handleClose}
+      onClose={(_, reason) => {
+        if (reason === 'backdropClick' && disableClose) {
+          return
+        }
+        handleClose()
+      }}
       sx={{
         zIndex,
       }}
@@ -71,7 +78,20 @@ const MIConfirm = ({
       <DialogTitle>
         <span style={{ fontWeight: children ? 700 : 600 }}>{title}</span>
         {children && (
-          <MIButton startIcon={<CloseIcon />} size={'h32'} type={'ghost'} contentType={'icon'} color={'gray'} onClick={handleClose} />
+          <MIButton
+            startIcon={<CloseIcon />}
+            size={'h32'}
+            type={'ghost'}
+            contentType={'icon'}
+            color={'gray'}
+            onClick={() => {
+              if (disableClose) {
+                return
+              }
+              handleClose()
+            }}
+            disabled={disableClose}
+          />
         )}
       </DialogTitle>
 

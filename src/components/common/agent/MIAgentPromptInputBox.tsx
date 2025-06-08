@@ -1,101 +1,67 @@
 import { Box, Input } from '@mui/material'
-import { ChangeEvent, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useRef, useState, KeyboardEvent, useMemo } from 'react'
 
-import MIAgentInputBoxDropdown from './MIAgentInputBoxDropdown'
-import MIAgentPromptButton from './MIAgentPromptButton'
-import { MIAgentStatusType } from './MIAgentStatus'
-import { MIAgentToggleSettingOption } from './MIAgentToggleSetting'
+import MIAgentInputBoxDropdown from '@/components/common/agent/MIAgentInputBoxDropdown'
+import MIAgentPromptButton from '@/components/common/agent/MIAgentPromptButton'
 
-export type MIAgentPromptState =
-  | 'send-activated'
-  | 'send-disabled'
-  | 'stop-activated'
-  | 'stop-disabled'
-  | 'loading-disabled'
-  | 'unable-disabled'
-
-export interface MIAgentPromptInputBoxProps {
-  inputStatus: MIAgentPromptState
-  agentStatus: MIAgentStatusType
-  onChangeState?: (state: MIAgentPromptState) => void
-  onChangeInput?: (inputValue: string) => void
-  onKeyPress?: (e: React.KeyboardEvent) => void
-  onSendMessage: () => void
-  width?: string | number
+interface Props {
+  onSendMessage: (message: string) => void
   placeholder?: string
-  inputValue: string
-  maxLength: number
-  disabled: boolean
-  modePosition?: 'top' | 'bottom'
+  isGenerating?: boolean
 }
 
-const MIAgentPromptInputBox = ({
-  inputStatus = 'send-disabled',
-  agentStatus,
-  onChangeState,
-  onChangeInput,
-  onKeyPress,
-  placeholder = '무엇이 궁금하세요?',
-  inputValue,
-  maxLength,
-  disabled,
-  onSendMessage,
-  modePosition = 'bottom',
-}: MIAgentPromptInputBoxProps) => {
-  const [promptText, setPromptText] = useState<string>(inputValue)
+const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금하세요?', isGenerating = false }: Props) => {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isComposing, setIsComposing] = useState(false)
+  const [isInputFocused, setIsInputFocused] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const isFocused = promptText !== '' || isDropdownOpen
-  const isPrompting = disabled || (inputStatus !== 'send-activated' && inputStatus !== 'send-disabled' && agentStatus !== 'complete')
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [selectedMode, setselectedMode] = useState<MIAgentToggleSettingOption>({
-    id: '1',
-    title: 'MI Dataset',
-    subtitle: '메타모델 및 구데이터이 검색',
-    checked: false,
-  })
-
-  const [selectModeOption, setselectModeOption] = useState([
+  const [selectModeOption] = useState([
     {
       id: '1',
       title: 'MI Dataset',
-      subtitle: '메타모델 및 구데이터이 검색',
+      subtitle: '메타모델 및 구독데이터 검색',
       checked: false,
+      disabled: true,
     },
-    { id: '2', title: 'Web Search', subtitle: '실시간 웹 검색', checked: true },
+    {
+      id: '2',
+      title: 'Web Search',
+      subtitle: '실시간 웹 검색',
+      checked: true,
+      disabled: true,
+    },
   ])
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (maxLength && typeof promptText === 'string' && e.target.value.length > maxLength) return
-    setPromptText(e.target.value)
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current)
-    }
+  const [promptText, setPromptText] = useState('')
 
-    // Debounce onChange
-    debounceRef.current = setTimeout(() => {
-      const inputText = e.target.value
+  const handleSendMessage = () => {
+    onSendMessage(promptText)
+    setPromptText('')
+    inputRef.current?.blur()
+  }
 
-      onChangeInput?.(inputText)
-
-      // Enable send button if text is entered
-      if (inputText && inputStatus === 'send-disabled') {
-        onChangeState?.('send-activated')
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
+      e.preventDefault()
+      if (promptText.trim()) {
+        handleSendMessage()
       }
-    }, 300)
+    }
   }
 
-  useEffect(() => {
-    if (!inputValue) {
-      setPromptText('')
+  const isFocused = useMemo(() => promptText !== '' || isDropdownOpen || isInputFocused, [promptText, isDropdownOpen, isInputFocused])
+
+  const inputStatus = useMemo(() => {
+    if (isGenerating) {
+      return 'loading-disabled'
     }
 
-    return () => {}
-  }, [inputValue])
+    if (promptText === '') {
+      return 'send-disabled'
+    }
 
-  const handleChangeSelectedItem = (item: MIAgentToggleSettingOption) => {
-    setselectedMode?.({ ...item })
-    setselectModeOption?.((prev) => [...prev.map((it) => (it.id === item.id ? { ...it, checked: !it.checked } : it))])
-  }
+    return 'send-activated'
+  }, [promptText, isGenerating])
 
   return (
     <Box
@@ -105,31 +71,30 @@ const MIAgentPromptInputBox = ({
         flexDirection: 'column',
         alignItems: 'flex-start',
         borderRadius: '12px',
-        // Always use 2px border, but make it transparent when not focused/hovered
         border: '2px solid',
-        // Use transparent border when not focused to avoid size jumping
-        borderColor: isFocused ? '#748FFC' : 'transparent',
-        // Add a 1px inner border when not focused
-        outline: isFocused ? 'none' : '1px solid #E0E0E0',
+        borderColor: isFocused ? '#748FFC' : '#E0E0E0',
+        outline: 'none',
         boxShadow: isFocused ? '2px 4px 20px 0px rgba(39, 106, 207, 0.25)' : 'none',
-        transition: 'border-color 0.2s, box-shadow 0.2s, outline 0.2s',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
         backgroundColor: '#fff',
         '&:hover': {
           borderColor: '#748FFC',
           outline: 'none',
-          boxShadow: isPrompting ? 'none' : '2px 4px 20px 0px rgba(39, 106, 207, 0.25)',
+          boxShadow: isGenerating ? 'none' : '2px 4px 20px 0px rgba(39, 106, 207, 0.25)',
         },
         boxSizing: 'border-box',
-        pointerEvents: isPrompting ? 'none' : 'initial',
+        cursor: 'text',
+        pointerEvents: isGenerating ? 'none' : 'initial',
+        userSelect: 'none',
+      }}
+      onClick={() => {
+        inputRef.current?.focus()
       }}
     >
       <Box padding="20px" width={'100%'} boxSizing={'border-box'} height={'62px'}>
         <Input
-          placeholder={
-            inputStatus !== 'send-activated' && inputStatus !== 'send-disabled' && agentStatus !== 'complete'
-              ? '답변을 생성중입니다'
-              : placeholder
-          }
+          inputRef={inputRef}
+          placeholder={isGenerating ? '답변을 생성중입니다' : placeholder}
           value={promptText}
           sx={{
             width: '100%',
@@ -138,16 +103,22 @@ const MIAgentPromptInputBox = ({
               fontStyle: 'normal',
               fontWeight: '400',
               lineHeight: '1.4',
-              color: isPrompting ? 'contentText.Placeholder' : '#333333',
+              color: isGenerating ? 'contentText.Placeholder' : '#333333',
               '& .Mui-disabled': {
                 webkitTextFillColor: 'contentText.Placeholder',
               },
             },
           }}
           disableUnderline
-          onChange={handleInputChange}
-          onKeyDown={onKeyPress ? onKeyPress : () => {}}
-          disabled={disabled || (inputStatus !== 'send-activated' && inputStatus !== 'send-disabled' && agentStatus !== 'complete')}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            setPromptText(e.target.value)
+          }}
+          onKeyDown={handleKeyDown}
+          onCompositionStart={() => setIsComposing(true)}
+          onCompositionEnd={() => setIsComposing(false)}
+          onFocus={() => setIsInputFocused(true)}
+          onBlur={() => setIsInputFocused(false)}
+          disabled={isGenerating}
         />
       </Box>
       <Box
@@ -163,16 +134,18 @@ const MIAgentPromptInputBox = ({
         width={'100%'}
         height={'58px'}
       >
-        <MIAgentInputBoxDropdown
-          isOpen={isDropdownOpen}
-          onOpenChange={setIsDropdownOpen}
-          settingsItems={selectModeOption}
-          selectedItem={selectedMode}
-          onChangeSelectedItem={handleChangeSelectedItem}
-          disabled={disabled || (inputStatus !== 'send-activated' && inputStatus !== 'send-disabled' && agentStatus !== 'complete')}
-          modePosition={modePosition}
-        />
-        <MIAgentPromptButton inputStatus={inputStatus} disabled={disabled} onSendMessage={onSendMessage} />
+        <Box onClick={(e) => e.stopPropagation()}>
+          <MIAgentInputBoxDropdown
+            isOpen={isDropdownOpen}
+            onOpenChange={setIsDropdownOpen}
+            settingsItems={selectModeOption}
+            selectedItem={null}
+            onChangeSelectedItem={() => {}}
+            modePosition={'top'}
+            disabled={isGenerating}
+          />
+        </Box>
+        <MIAgentPromptButton onSendMessage={handleSendMessage} inputStatus={inputStatus} disabled={isGenerating} />
       </Box>
     </Box>
   )

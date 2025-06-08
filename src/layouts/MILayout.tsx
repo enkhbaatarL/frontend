@@ -193,7 +193,7 @@ const MILayout = () => {
   ]
 
   const showDailyChart = useMemo(() => location.pathname === '/mi/dashboard', [location.pathname])
-  const showMiAgent = true ///
+  const showMiAgent = true // MEMO: 상반기 개발(~ 25년 06/30) 기준 -> 항상 표시
 
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106

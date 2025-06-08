@@ -276,18 +276,18 @@ const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
             width: 'auto',
             height: 'auto',
             visibility: showChatWindow || isClosing ? 'visible' : 'hidden',
-            /// transition: 'all 0.4s cubic-bezier(0, 0.55, 0.45, 1)',
             transition:
               'width 0.4s cubic-bezier(0, 0.55, 0.45, 1), height 0.4s cubic-bezier(0, 0.55, 0.45, 1), opacity 0.4s cubic-bezier(0, 0.55, 0.45, 1), transform 0.4s cubic-bezier(0, 0.55, 0.45, 1)',
             pointerEvents: showChatWindow && !isClosing ? 'auto' : 'none',
             borderRadius: '12px',
             position: 'fixed',
             transformOrigin: 'top right',
-            /// top: windowExpend ? top - 56 : top,
             right: offsetLeft,
           }}
         >
-          <MIAgentChatWindow top={top} onChangeExpand={onExpandWindow} windowExpend={windowExpend} onClose={handleClose} />
+          {showChatWindow && (
+            <MIAgentChatWindow top={top} onChangeExpand={onExpandWindow} windowExpend={windowExpend} onClose={handleClose} />
+          )}
         </Box>
       </Box>
     </>

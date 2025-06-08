@@ -20,7 +20,7 @@ export interface MIAgentInputBoxDropdownProps {
   onOpenChange?: (isOpen: boolean) => void
   onChangeSelectedItem: (item: MIAgentToggleSettingOption) => void
   settingsItems?: MIAgentToggleSettingOption[]
-  selectedItem: MIAgentToggleSettingOption
+  selectedItem: MIAgentToggleSettingOption | null
   modePosition?: 'top' | 'bottom'
 }
 
@@ -80,17 +80,17 @@ const MIAgentInputBoxDropdown = ({
           paddingX: '8px',
           paddingY: '7px',
           border: '1px solid',
-          borderColor: isHovered
-            ? 'contentBorder.Hover'
-            : isDropdownOpen
-              ? 'contentBorder.Primaryactive'
+          borderColor: isDropdownOpen
+            ? 'contentBorder.Primaryactive'
+            : isHovered
+              ? 'contentBorder.Hover'
               : disabled
                 ? 'contentBorder.Disabled'
                 : 'contentBorder.Normal',
           '&:hover': {
             cursor: 'pointer',
           },
-          transition: 'border-color 0.2s ease',
+          transition: 'all 0.8s ease',
           width: '90px',
           height: '34px',
           boxSizing: 'border-box',
@@ -99,10 +99,10 @@ const MIAgentInputBoxDropdown = ({
         onMouseLeave={() => setIsHovered(false)}
         onClick={handleToggleDropdown}
         color={
-          isHovered
-            ? 'contentIcon.Hover'
-            : isDropdownOpen
-              ? 'contentIcon.Activeb'
+          isDropdownOpen
+            ? 'contentIcon.Activeb'
+            : isHovered
+              ? 'contentIcon.Hover'
               : disabled
                 ? 'contentIcon.Disabled'
                 : 'contentIcon.Enabled'
@@ -127,9 +127,14 @@ const MIAgentInputBoxDropdown = ({
             zIndex: 1000,
             padding: '10px 12px',
             boxSizing: 'border-box',
+            cursor: 'default',
           }}
         >
-          <MIAgentToggleSetting items={settingsItems} selectedItem={selectedItem} onChangeSelectedItem={onChangeSelectedItem} />
+          <MIAgentToggleSetting
+            items={settingsItems}
+            selectedItem={selectedItem || settingsItems[0]}
+            onChangeSelectedItem={onChangeSelectedItem}
+          />
         </Box>
       )}
     </Box>

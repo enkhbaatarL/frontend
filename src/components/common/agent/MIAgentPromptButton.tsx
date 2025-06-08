@@ -1,4 +1,4 @@
-import { Box, styled } from '@mui/material'
+import { Box } from '@mui/material'
 import React, { useMemo, useCallback } from 'react'
 
 import loadingDisabledIcon from '@/assets/agent/loading-disabled.svg'
@@ -7,30 +7,13 @@ import sendDisabledIcon from '@/assets/agent/send-disabled.svg'
 import stopActivatedIcon from '@/assets/agent/stop-activated.svg'
 import stopDisabledIcon from '@/assets/agent/stop-disabled.svg'
 import unableDisabledIcon from '@/assets/agent/unable-disabled.svg'
-import MiAgentSpinner from '@/components/common/icons/MiAgentSpinner'
+import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 
 export interface MIAgentPromptButtonProps {
   inputStatus?: 'send-activated' | 'send-disabled' | 'stop-activated' | 'stop-disabled' | 'loading-disabled' | 'unable-disabled'
   disabled?: boolean
   onSendMessage: () => void
 }
-
-const Spinner = styled(Box)({
-  width: '32px',
-  height: '32px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  animation: 'spin 1s linear infinite',
-  '@keyframes spin': {
-    '0%': {
-      transform: 'rotate(0deg)',
-    },
-    '100%': {
-      transform: 'rotate(360deg)',
-    },
-  },
-})
 
 const MIAgentPromptButton: React.FC<MIAgentPromptButtonProps> = ({ inputStatus = 'send-activated', disabled, onSendMessage }) => {
   const isInteractive = useMemo(() => inputStatus === 'send-activated' || inputStatus === 'stop-activated', [inputStatus])
@@ -74,13 +57,7 @@ const MIAgentPromptButton: React.FC<MIAgentPromptButtonProps> = ({ inputStatus =
       }}
       onClick={handleSendMsg}
     >
-      {inputStatus === 'loading-disabled' ? (
-        <Spinner>
-          <MiAgentSpinner />
-        </Spinner>
-      ) : (
-        <img src={getImageSrc()} width={32} height={32} alt={inputStatus} />
-      )}
+      {inputStatus === 'loading-disabled' ? <MIAgentSpinner /> : <img src={getImageSrc()} width={32} height={32} alt={inputStatus} />}
     </Box>
   )
 }
