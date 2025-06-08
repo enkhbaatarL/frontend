@@ -113,11 +113,6 @@ export interface IDashboardHistoryDetail {
   counterpart?: IDashboardHistoryDetailBaseline
 }
 
-export interface IDashboardInfo {
-  chartPredictSettingNm: string
-  lastUpdateDt: string
-}
-
 export interface IDashboardChartDates {
   dates: string[]
 }
@@ -174,23 +169,15 @@ const dashboardDataService = {
    * 대시보드 데이터 존재 여부를 조회합니다.
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    */
-  async getdashboardDataExists(companyNo: number): Promise<boolean> {
+  async getDashboardDataExists(companyNo: number): Promise<boolean> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/data/exists`)
-    return response.data.data
-  },
-  /**
-   * 대시보드 기본 정보를 조회합니다.
-   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
-   */
-  async getdashboardInfo(companyNo: number): Promise<IDashboardInfo> {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/info`)
     return response.data.data
   },
   /**
    * 대시보드 차트 조회 가능한 날짜 리스트를 조회합니다.
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    */
-  async getdashboardChartDates(companyNo: number): Promise<IDashboardChartDates> {
+  async getDashboardChartDates(companyNo: number): Promise<IDashboardChartDates> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/chart-dates`)
     return response.data.data
   },
@@ -199,7 +186,7 @@ const dashboardDataService = {
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    * @param date - 조회할 년월
    */
-  async getdashboardChartData(companyNo: number, date: string): Promise<IDashboardChartData> {
+  async getDashboardChartData(companyNo: number, date: string): Promise<IDashboardChartData> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/chart`, { params: { date } })
     return response.data.data
   },
@@ -251,6 +238,18 @@ const dashboardDataService = {
    */
   async getDashboardHistoryDetailDownload(settingDetailNo: number, params: IDashboardHistoryDetailRequest) {
     return await api.get(`mi/dashboard/histories/setting-details/${settingDetailNo}/download`, { params, responseType: 'blob' })
+  },
+  /**
+   * 대시보드 차트 데이터를 다운로드합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param date - 조회할 년월
+   */
+  async getdashboardChartDataDownload(companyNo: number, date: string) {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart/file-download`, {
+      params: { date },
+      responseType: 'blob',
+    })
+    return response
   },
 }
 

@@ -18,7 +18,7 @@ import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
 import dashboardDataService from '@/service/mi/dashboardData'
 import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
-
+import { downloadFile } from '@/utils/file'
 export type MonthItem = {
   label: string
   value: string
@@ -51,7 +51,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   // 대시보드 기본 정보
   const { data: dataInfo } = useQuery({
     queryKey: ['dashboardInfo'],
-    queryFn: () => dashboardDataService.getdashboardInfo(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
+    queryFn: () => dashboardDataService.getDashboardBasicInfo(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -59,7 +59,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   // 대시보드 차트 조회 가능한 날짜 리스트
   const { data: chartDates } = useQuery({
     queryKey: ['dashboardChartDates'],
-    queryFn: () => dashboardDataService.getdashboardChartDates(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
+    queryFn: () => dashboardDataService.getDashboardChartDates(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -68,7 +68,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   const { data: chartData } = useQuery({
     queryKey: ['dashboardChartData', monthSelect],
     queryFn: () =>
-      dashboardDataService.getdashboardChartData(
+      dashboardDataService.getDashboardChartData(
         accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0,
         monthSelect.replace('-', '').slice(0, 6),
       ),
@@ -215,6 +215,19 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
       category: content.category ?? '',
     })
     setShowDetailChart(true)
+  }
+
+  // 데이터 테이블 다운로드
+  const downloadDataTable = async () => {
+    try {
+      const response = await dashboardDataService.getdashboardChartDataDownload(
+        accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0,
+        monthSelect,
+      )
+      downloadFile(response.data, 'Data Table.xlsx')
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   useEffect(() => {
@@ -414,7 +427,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
               Data Table
             </Typography>
             <Box>
-              <MIButton startIcon={<DataTrendChartDownloadIcon />} onClick={() => {}} contentType={'icon'} type="outlined" />
+              <MIButton startIcon={<DataTrendChartDownloadIcon />} onClick={downloadDataTable} contentType={'icon'} type="outlined" />
             </Box>
           </Box>
           {chartData && (
