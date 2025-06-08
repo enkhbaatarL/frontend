@@ -36,7 +36,7 @@ const getMinimumAvailableChange = ({ lastValue, dodChangeValue, wowChangeValue, 
 
 const DataItem = ({ data, index, onClick }: { data: ProcessedMarketDataItem; index: number; onClick: () => void }) => {
   const { isPermitted, marketMetaDataSummary: summary } = data
-  const { goodsDataNm, lastValue, change, changePercent, lastUpdateDt, currency, direction, unit } = summary
+  const { goodsDataSourceNm, lastValue, change, changePercent, lastUpdateDt, currency, direction, unit } = summary
   const isPositive = direction === 'up'
   const color = isPositive ? '#3C8A36' : direction === 'down' ? '#A9141A' : 'gray.60'
 
@@ -51,7 +51,7 @@ const DataItem = ({ data, index, onClick }: { data: ProcessedMarketDataItem; ind
         variant="fileName"
         sx={{ WebkitLineClamp: 1, cursor: isPermitted ? 'pointer' : 'auto' }}
       >
-        {goodsDataNm}
+        {goodsDataSourceNm}
       </Typography>
       <Box sx={{ position: 'relative' }}>
         <Box sx={{ filter: !isPermitted ? 'blur(5px)' : 'none' }}>
@@ -124,7 +124,9 @@ const UpdatedData = ({ dataList }: { dataList: MarketDataItemInfo[] }) => {
       <Typography component="div" color="gray.90" variant="titleBox">
         Updated Data
       </Typography>
-      <Box>{mappedList?.map((item, index) => <DataItem key={index} data={item} index={index} onClick={() => onClickRow(item)} />)}</Box>
+      <Box>
+        {mappedList?.slice(0, 5).map((item, index) => <DataItem key={index} data={item} index={index} onClick={() => onClickRow(item)} />)}
+      </Box>
       <MIButton width="100%" contentType="text" color="gray2" type="outlined" size="h42" onClick={() => navigate('/mi/market-data')}>
         View all
         <KeyboardArrowRightIcon sx={{ verticalAlign: 'sub', color: '#868E96', ml: '8px' }} fontSize="small" />

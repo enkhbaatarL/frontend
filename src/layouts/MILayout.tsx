@@ -1,5 +1,4 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
-import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
@@ -9,12 +8,13 @@ import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
+import { useMarketData } from '@/contexts/MarketDataContext'
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import { useScrollRestoration } from '@/hooks/useScrollRestoration'
 import DailyChart from '@/pages/mi/dashboard/components/DailyChart'
+import { MarketDataProvider } from '@/providers/MarketDataProvider'
 import MIProvider from '@/providers/MIProvider'
 import boardService, { INoticeDetailInfo, INoticePopupInfo } from '@/service/mi/board'
-import dashboardDataService from '@/service/mi/dashboardData.ts'
 import useAuthStore from '@/store/useAuthStore'
 
 // 쿠키 설정 함수
@@ -73,6 +73,7 @@ const MILayout = () => {
     ref: scrollRef,
   })
   const [isScrolled, setIsScrolled] = useState(currentScroll !== 0)
+  const { marketDataList, marketDataIsLoading } = useMarketData()
 
   const { extractPage } = useCompanyCondition()
 
@@ -159,31 +160,24 @@ const MILayout = () => {
     setShowNoticePopup(false)
   }
 
-  const companyNo = accessCompanyInfo?.customerCompanyNo
-
-  const { data: marketDataList, isLoading: marketDataIsLoading } = useQuery({
-    queryKey: ['getDashboardMarketData', companyNo],
-    queryFn: async () => await dashboardDataService.getDashboardMarketDatas(companyNo!),
-    enabled: !!companyNo || companyNo !== -1,
-    refetchOnWindowFocus: false,
-    gcTime: 0,
-  })
-
-  const showDailyChart = useMemo(() => location.pathname === '/mi/dashboard', [location.pathname])
+  const showDailyChart = useMemo(
+    () => location.pathname === '/mi/dashboard' && marketDataList.length > 0,
+    [location.pathname, marketDataList],
+  )
   const showMiAgent = true // MEMO: 상반기 개발(~ 25년 06/30) 기준 -> 항상 표시
 
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
 
-    return `${defaultPadding + (showDailyChart ? 76 : 0)}px`
-  }, [showDailyChart, isScrolled])
+    return `${defaultPadding + (showDailyChart || marketDataIsLoading ? 76 : 0)}px`
+  }, [showDailyChart, isScrolled, marketDataIsLoading])
 
   const mariAgentTopPosition = useMemo(() => {
     const scrolledGap = isScrolled ? -headerTopHeight : 0
-    const dailyChartGap = showDailyChart ? 76 : 0
+    const dailyChartGap = showDailyChart || marketDataIsLoading ? 76 : 0
 
     return 126 + scrolledGap + dailyChartGap
-  }, [showDailyChart, isScrolled])
+  }, [showDailyChart, isScrolled, marketDataIsLoading])
 
   return (
     <MIProvider>
@@ -209,11 +203,9 @@ const MILayout = () => {
           {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
             <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />
-            {showDailyChart && (
-              <MISkeleton variant={'dailyChart'} loading={marketDataIsLoading}>
-                <DailyChart data={marketDataList} />
-              </MISkeleton>
-            )}
+            <MISkeleton variant={'dailyChart'} loading={marketDataIsLoading}>
+              {showDailyChart && <DailyChart data={marketDataList} />}
+            </MISkeleton>
           </div>
           <Box
             sx={{
@@ -263,4 +255,10 @@ const MILayout = () => {
   )
 }
 
-export default MILayout
+const MILayoutWithProvider = () => (
+  <MarketDataProvider>
+    <MILayout />
+  </MarketDataProvider>
+)
+
+export default MILayoutWithProvider

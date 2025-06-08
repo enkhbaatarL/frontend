@@ -1,6 +1,6 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 
 import ReportComponent from './components/ReportComponent'
 import UpdatedData from './components/UpdatedData'
@@ -8,6 +8,7 @@ import UpdatedData from './components/UpdatedData'
 import psImg from '@/assets/productsymbol.png'
 import MITabs from '@/components/common/tabs/MITabs'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
+import { useMarketData } from '@/contexts/MarketDataContext'
 import HistoryComponent from '@/pages/mi/dashboard/components/HistoryComponent'
 import LatestData from '@/pages/mi/dashboard/components/LatestData'
 import dashboardDataService from '@/service/mi/dashboardData'
@@ -15,6 +16,7 @@ import useAuthStore from '@/store/useAuthStore'
 
 const MIDashboardPage = () => {
   const { accessCompanyInfo } = useAuthStore()
+  const { setMarketDataList, setMarketDataIsLoading } = useMarketData()
   const companyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? -1, [accessCompanyInfo?.customerCompanyNo])
 
   const { data: basicInfo, isLoading: basicInfoIsLoading } = useQuery({
@@ -36,7 +38,7 @@ const MIDashboardPage = () => {
 
   // 우측 latestInsights 리스트 조회
   const { data: latestInsightsList = [] } = useQuery({
-    queryKey: ['getdashboardLatestInsights', companyNo],
+    queryKey: ['getDashboardLatestInsights', companyNo],
     queryFn: async () => await dashboardDataService.getDashboardLatestInsights(companyNo!),
     enabled: !!companyNo || companyNo !== -1,
     refetchOnWindowFocus: false,
@@ -44,13 +46,33 @@ const MIDashboardPage = () => {
   })
 
   // 우측 marketData 리스트 조회
-  const { data: marketDataList = [] } = useQuery({
-    queryKey: ['getdashboardMakterDatas', companyNo],
+  const {
+    data: marketDataList,
+    isError: marketDataListError,
+    isLoading: marketDataListIsLoading,
+  } = useQuery({
+    queryKey: ['getDashboardMarKetDatas', companyNo],
     queryFn: async () => await dashboardDataService.getDashboardMarketDatas(companyNo!),
     enabled: !!companyNo || companyNo !== -1,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
+
+  useEffect(() => {
+    setMarketDataIsLoading(marketDataListIsLoading)
+  }, [marketDataListIsLoading, setMarketDataIsLoading])
+
+  useEffect(() => {
+    if (marketDataListError) {
+      setMarketDataList([])
+    }
+  }, [marketDataListError, setMarketDataList])
+
+  useEffect(() => {
+    if (marketDataList) {
+      setMarketDataList(marketDataList)
+    }
+  }, [marketDataList, setMarketDataList])
 
   return (
     <MISkeleton variant={'dashboard'} loading={basicInfoIsLoading}>
@@ -80,7 +102,7 @@ const MIDashboardPage = () => {
             <Typography color="white" mb={2} component="h1" fontWeight={600} variant="heading3">
               Smart Market Intelligence
             </Typography>
-            <Typography color="#CED4DA" variant="subtext1">
+            <Typography color="white" variant="body2">
               Gain even more insights with AI-driven intelligence for better decisions.
             </Typography>
           </Box>
@@ -123,8 +145,8 @@ const MIDashboardPage = () => {
               direction="column"
               flexShrink={0}
             >
-              <UpdatedData dataList={marketDataList} />
-              <LatestData dataList={latestInsightsList} />
+              {(marketDataList?.length ?? 0) > 0 && <UpdatedData dataList={marketDataList ?? []} />}
+              {latestInsightsList.length > 0 && <LatestData dataList={latestInsightsList} />}
             </Grid>
           </Grid>
         </Box>

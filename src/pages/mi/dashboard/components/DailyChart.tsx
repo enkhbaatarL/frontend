@@ -67,6 +67,7 @@ const DailyChart = ({ data = [] }: Props) => {
         overflowX: 'hidden',
         bgcolor: '#fff',
         borderBottom: '1px solid #DEE2E6',
+        height: '76px',
       }}
     >
       <Marquee pauseOnHover={true} gradient={false} speed={20} style={{ height: '76px', backgroundColor: '#fff' }} autoFill>
@@ -77,7 +78,7 @@ const DailyChart = ({ data = [] }: Props) => {
           const isPermitted = item.isPermitted
 
           const displayData = {
-            goodsDataNm: summary.goodsDataNm,
+            goodsDataSourceNm: summary.goodsDataSourceNm,
             lastValue: isPermitted ? summary.lastValue : 0.0,
             change: isPermitted ? summary.change : 0.0,
             changePercent: isPermitted ? summary.changePercent : 0.0,
@@ -109,7 +110,7 @@ const DailyChart = ({ data = [] }: Props) => {
                 sx={{ WebkitLineClamp: 1 }}
                 variant="fileName"
               >
-                {displayData.goodsDataNm}
+                {displayData.goodsDataSourceNm}
               </Typography>
               <Box sx={{ position: 'relative' }}>
                 <Box sx={{ filter: !isPermitted ? 'blur(3px)' : 'none' }}>
