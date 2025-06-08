@@ -9,11 +9,13 @@ import { MarketDataItemInfo } from '@/service/mi/dashboardData'
 
 type MarketMetaDataSummary = MarketDataItemInfo['marketMetaDataSummary']
 
-interface ProcessedMarketMetaDataSummary extends MarketMetaDataSummary {
-  change: number
-  changePercent: number
-  direction: string
-  unit: string
+interface ProcessedMarketDataItem extends MarketDataItemInfo {
+  marketMetaDataSummary: MarketMetaDataSummary & {
+    change: number
+    changePercent: number
+    direction: string
+    unit: string
+  }
 }
 
 const getMinimumAvailableChange = ({ lastValue, dodChangeValue, wowChangeValue, momChangeValue }: MarketMetaDataSummary) => {
@@ -38,18 +40,24 @@ interface Props {
 const DailyChart = ({ data = [] }: Props) => {
   const navigate = useNavigate()
 
-  const mappedList: ProcessedMarketMetaDataSummary[] = useMemo(
+  const mappedList: ProcessedMarketDataItem[] = useMemo(
     () =>
       data.map((item) => {
         const summary = item.marketMetaDataSummary
-        return { ...summary, ...getMinimumAvailableChange(summary) }
+        return {
+          ...item,
+          marketMetaDataSummary: {
+            ...summary,
+            ...getMinimumAvailableChange(summary),
+          },
+        }
       }),
     [data],
   )
 
-  const onClickItem = (item: ProcessedMarketMetaDataSummary) => {
-    navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`, {
-      state: { goodsDataSrcNo: item.goodsDataSourceNo },
+  const onClickItem = (item: ProcessedMarketDataItem) => {
+    navigate(`/mi/data-detail/${item.marketMetaDataSummary.goodsNo}/${item.marketMetaDataSummary.goodsDataNo}`, {
+      state: { goodsDataSrcNo: item.marketMetaDataSummary.goodsDataSourceNo },
     })
   }
 
@@ -63,18 +71,19 @@ const DailyChart = ({ data = [] }: Props) => {
     >
       <Marquee pauseOnHover={true} gradient={false} speed={20} style={{ height: '76px', backgroundColor: '#fff' }} autoFill>
         {mappedList.map((item, idx) => {
-          const isPositive = item.direction === 'up'
-          const color = isPositive ? '#3C8A36' : item.direction === 'down' ? '#A9141A' : 'gray.60'
-          const isPermitted = true // 기본값을 true로 설정
+          const summary = item.marketMetaDataSummary
+          const isPositive = summary.direction === 'up'
+          const color = isPositive ? '#3C8A36' : summary.direction === 'down' ? '#A9141A' : 'gray.60'
+          const isPermitted = item.isPermitted
 
           const displayData = {
-            goodsDataNm: item.goodsDataNm,
-            lastValue: isPermitted ? item.lastValue : 0.0,
-            change: isPermitted ? item.change : 0.0,
-            changePercent: isPermitted ? item.changePercent : 0.0,
-            lastUpdateDt: isPermitted ? item.lastUpdateDt : '9999-99-99',
-            unit: isPermitted ? item.unit : 'N/A',
-            currency: isPermitted ? item.currency : 'N/A',
+            goodsDataNm: summary.goodsDataNm,
+            lastValue: isPermitted ? summary.lastValue : 0.0,
+            change: isPermitted ? summary.change : 0.0,
+            changePercent: isPermitted ? summary.changePercent : 0.0,
+            lastUpdateDt: isPermitted ? summary.lastUpdateDt : '9999-99-99',
+            unit: isPermitted ? summary.unit : 'N/A',
+            currency: isPermitted ? summary.currency : 'N/A',
           }
 
           return (

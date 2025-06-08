@@ -5,15 +5,18 @@ import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
 import MILine from '@/components/common/divider/MILine'
+import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { MarketDataItemInfo } from '@/service/mi/dashboardData'
 
 type MarketMetaDataSummary = MarketDataItemInfo['marketMetaDataSummary']
 
-interface ProcessedMarketMetaDataSummary extends MarketMetaDataSummary {
-  change: number
-  changePercent: number
-  direction: string
-  unit: string
+interface ProcessedMarketDataItem extends MarketDataItemInfo {
+  marketMetaDataSummary: MarketMetaDataSummary & {
+    change: number
+    changePercent: number
+    direction: string
+    unit: string
+  }
 }
 
 const getMinimumAvailableChange = ({ lastValue, dodChangeValue, wowChangeValue, momChangeValue }: MarketMetaDataSummary) => {
@@ -31,64 +34,89 @@ const getMinimumAvailableChange = ({ lastValue, dodChangeValue, wowChangeValue, 
   return { unit, change, changePercent, direction }
 }
 
-const DataItem = ({ data, index, onClick }: { data: ProcessedMarketMetaDataSummary; index: number; onClick: () => void }) => {
-  const { goodsDataNm, lastValue, change, changePercent, lastUpdateDt, currency, direction, unit } = data
+const DataItem = ({ data, index, onClick }: { data: ProcessedMarketDataItem; index: number; onClick: () => void }) => {
+  const { isPermitted, marketMetaDataSummary: summary } = data
+  const { goodsDataNm, lastValue, change, changePercent, lastUpdateDt, currency, direction, unit } = summary
   const isPositive = direction === 'up'
   const color = isPositive ? '#3C8A36' : direction === 'down' ? '#A9141A' : 'gray.60'
 
   return (
-    <Box paddingY={3} borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'}>
+    <Box paddingY={3} borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'} position="relative">
       <Typography
-        onClick={onClick}
+        onClick={isPermitted ? onClick : undefined}
         fontWeight={600}
         color="gray.70"
         component="div"
         mb="2px"
         variant="fileName"
-        sx={{ WebkitLineClamp: 1, cursor: 'pointer' }}
+        sx={{ WebkitLineClamp: 1, cursor: isPermitted ? 'pointer' : 'auto' }}
       >
         {goodsDataNm}
       </Typography>
-
-      <Grid mb={1} container wrap="nowrap" alignItems="center" gap="5px">
-        <Typography lineHeight={1.6} color="gray.90" variant="body2">
-          {lastValue}
-        </Typography>
-        <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
-        <Typography lineHeight={1.6} color={color} variant="body2">
-          {`${isPositive ? '+' : ''}${change} (${isPositive ? '+' : ''}${changePercent}%)`}
-        </Typography>
-      </Grid>
-      <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
-        <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
-          {lastUpdateDt}
-        </Typography>
-        <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
-        <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
-          {unit}
-        </Typography>
-        <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
-        <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
-          {currency}
-        </Typography>
-      </Grid>
+      <Box sx={{ position: 'relative' }}>
+        <Box sx={{ filter: !isPermitted ? 'blur(5px)' : 'none' }}>
+          <Grid mb={1} container wrap="nowrap" alignItems="center" gap="5px">
+            <Typography lineHeight={1.6} color="gray.90" variant="body2">
+              {isPermitted ? lastValue : 0.0}
+            </Typography>
+            <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
+            <Typography lineHeight={1.6} color={isPermitted ? color : 'gray.60'} variant="body2">
+              {isPermitted ? `${isPositive ? '+' : ''}${change} (${isPositive ? '+' : ''}${changePercent}%)` : '+0.00 (+0.00%)'}
+            </Typography>
+          </Grid>
+          <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
+            <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
+              {isPermitted ? lastUpdateDt : '9999-99-99'}
+            </Typography>
+            <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
+            <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
+              {isPermitted ? unit : 'N/A'}
+            </Typography>
+            <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
+            <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
+              {isPermitted ? currency : 'N/A'}
+            </Typography>
+          </Grid>
+        </Box>
+        {!isPermitted && (
+          <Box
+            display={'flex'}
+            alignItems={'center'}
+            justifyContent={'center'}
+            position={'absolute'}
+            sx={{ inset: '0px -6px', backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#868E96' }}
+          >
+            <LockOutlinedIcon width={22} height={22} />
+          </Box>
+        )}
+      </Box>
     </Box>
   )
 }
 
 const UpdatedData = ({ dataList }: { dataList: MarketDataItemInfo[] }) => {
   const navigate = useNavigate()
-  const mappedList: ProcessedMarketMetaDataSummary[] = useMemo(
+  const mappedList: ProcessedMarketDataItem[] = useMemo(
     () =>
       dataList.map((data) => {
         const summary = data.marketMetaDataSummary
-        return { ...summary, ...getMinimumAvailableChange(summary) }
+        return {
+          ...data,
+          marketMetaDataSummary: {
+            ...summary,
+            ...getMinimumAvailableChange(summary),
+          },
+        }
       }),
     [dataList],
   )
 
-  const onClickRow = (row: ProcessedMarketMetaDataSummary) => {
-    navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`, { state: { goodsDataSrcNo: row.goodsDataSourceNo } })
+  const onClickRow = (row: ProcessedMarketDataItem) => {
+    if (row.isPermitted) {
+      navigate(`/mi/data-detail/${row.marketMetaDataSummary.goodsNo}/${row.marketMetaDataSummary.goodsDataNo}`, {
+        state: { goodsDataSrcNo: row.marketMetaDataSummary.goodsDataSourceNo },
+      })
+    }
   }
 
   return (
