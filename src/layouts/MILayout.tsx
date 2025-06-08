@@ -1,4 +1,5 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
@@ -7,11 +8,13 @@ import MIAgentButton from '@/components/common/agent/MIAgentButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
+import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import { useScrollRestoration } from '@/hooks/useScrollRestoration'
 import DailyChart from '@/pages/mi/dashboard/components/DailyChart'
 import MIProvider from '@/providers/MIProvider'
 import boardService, { INoticeDetailInfo, INoticePopupInfo } from '@/service/mi/board'
+import dashboardDataService from '@/service/mi/dashboardData.ts'
 import useAuthStore from '@/store/useAuthStore'
 
 // 쿠키 설정 함수
@@ -156,41 +159,15 @@ const MILayout = () => {
     setShowNoticePopup(false)
   }
 
-  const dailyChartData = [
-    {
-      product: 'Wheat Flour',
-      country: 'Ukraine',
-      name: 'Wheat Flour in Ukraine',
-      value: 123,
-      change: 0.0035,
-      date: '2025-05-27',
-      changeUnit: 'WoW',
-      unit: 'USD',
-      isPermitted: true,
-    },
-    {
-      product: 'Rice',
-      country: 'China',
-      name: 'Rice in China',
-      value: 345,
-      change: -0.237,
-      date: '2025-05-28',
-      changeUnit: 'DoD',
-      unit: 'USD',
-      isPermitted: true,
-    },
-    {
-      product: 'Happy',
-      country: 'Korea',
-      name: 'Happy in Korea',
-      value: 678,
-      change: 1.234,
-      date: '2025-05-29',
-      changeUnit: 'WoW',
-      unit: 'USD',
-      isPermitted: false,
-    },
-  ]
+  const companyNo = accessCompanyInfo?.customerCompanyNo
+
+  const { data: marketDataList, isLoading: marketDataIsLoading } = useQuery({
+    queryKey: ['getDashboardMarketData', companyNo],
+    queryFn: async () => await dashboardDataService.getdashboardMakterDatas(companyNo!),
+    enabled: !!companyNo || companyNo !== -1,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
 
   const showDailyChart = useMemo(() => location.pathname === '/mi/dashboard', [location.pathname])
   const showMiAgent = true ///
@@ -232,7 +209,11 @@ const MILayout = () => {
           {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
             <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />
-            {showDailyChart && <DailyChart data={dailyChartData} />}
+            {showDailyChart && (
+              <MISkeleton variant={'dailyChart'} loading={marketDataIsLoading}>
+                <DailyChart data={marketDataList} />
+              </MISkeleton>
+            )}
           </div>
           <Box
             sx={{

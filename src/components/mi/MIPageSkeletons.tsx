@@ -1,4 +1,5 @@
 import { Box } from '@mui/material'
+import Marquee from 'react-fast-marquee'
 
 import { MIBaseSkeleton, SkeletonWrapper } from './MIBaseSkeleton.tsx'
 
@@ -707,5 +708,36 @@ export const MIPageSkeletons = {
         </SkeletonWrapper.Row>
       </SkeletonWrapper.Column>
     </SkeletonWrapper.Container>
+  ),
+
+  // Daily chart 패턴
+  DailyChart: () => (
+    <Box
+      sx={{
+        overflowX: 'hidden',
+        bgcolor: '#fff',
+        borderBottom: '1px solid #DEE2E6',
+      }}
+    >
+      <Marquee pauseOnHover={true} gradient={false} speed={20} style={{ height: '76px', backgroundColor: '#fff' }} autoFill>
+        <Box
+          flexShrink={0}
+          bgcolor={'#fff'}
+          mx={'35px'}
+          p={3}
+          sx={{
+            cursor: 'auto',
+            userSelect: 'none',
+          }}
+          gap={'4px'}
+          display={'flex'}
+          flexDirection={'column'}
+        >
+          <MIBaseSkeleton.InputField width={'98px'} height={'14px'} />
+          <MIBaseSkeleton.BaseElement2 width={'189px'} height={'20px'} />
+          <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} />
+        </Box>
+      </Marquee>
+    </Box>
   ),
 }

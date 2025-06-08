@@ -16,6 +16,7 @@ interface Props {
     | 'helpCenter'
     | 'table'
     | 'form'
+    | 'dailyChart'
   itemCount?: number
   rows?: number
   columns?: number
@@ -52,6 +53,8 @@ const MISkeleton = ({ loading, children, variant = 'dashboard', rows, columns, f
       return <MIPageSkeletons.Table rows={rows} columns={columns} />
     case 'form':
       return <MIPageSkeletons.Form fieldCount={fieldCount} />
+    case 'dailyChart':
+      return <MIPageSkeletons.DailyChart />
     default:
       return <MIPageSkeletons.Dashboard />
   }

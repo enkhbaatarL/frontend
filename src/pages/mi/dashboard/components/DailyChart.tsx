@@ -1,26 +1,57 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { useMemo } from 'react'
 import Marquee from 'react-fast-marquee'
 import { useNavigate } from 'react-router-dom'
 
 import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
+import { MarketDataItemInfo } from '@/service/mi/dashboardData'
 
-interface Props {
-  data: {
-    product: string
-    country: string
-    name: string
-    value: number
-    change: number
-    date: string
-    changeUnit: string
-    unit: string
-    isPermitted: boolean
-  }[]
+type MarketMetaDataSummary = MarketDataItemInfo['marketMetaDataSummary']
+
+interface ProcessedMarketMetaDataSummary extends MarketMetaDataSummary {
+  change: number
+  changePercent: number
+  direction: string
+  unit: string
 }
 
-const DailyChart = ({ data }: Props) => {
+const getMinimumAvailableChange = ({ lastValue, dodChangeValue, wowChangeValue, momChangeValue }: MarketMetaDataSummary) => {
+  let changeEntry: { unit: string; change: number }
+  if (dodChangeValue !== null) {
+    changeEntry = { unit: 'DoD', change: dodChangeValue }
+  } else if (wowChangeValue !== null) {
+    changeEntry = { unit: 'WoW', change: wowChangeValue }
+  } else {
+    changeEntry = { unit: 'MoM', change: momChangeValue ?? 0 }
+  }
+  const { unit, change } = changeEntry
+  const changePercent = lastValue !== 0 ? +((change / (lastValue - change)) * 100).toFixed(2) : 0
+  const direction = change > 0 ? 'up' : change < 0 ? 'down' : 'flat'
+  return { unit, change, changePercent, direction }
+}
+
+interface Props {
+  data?: MarketDataItemInfo[]
+}
+
+const DailyChart = ({ data = [] }: Props) => {
   const navigate = useNavigate()
+
+  const mappedList: ProcessedMarketMetaDataSummary[] = useMemo(
+    () =>
+      data.map((item) => {
+        const summary = item.marketMetaDataSummary
+        return { ...summary, ...getMinimumAvailableChange(summary) }
+      }),
+    [data],
+  )
+
+  const onClickItem = (item: ProcessedMarketMetaDataSummary) => {
+    navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`, {
+      state: { goodsDataSrcNo: item.goodsDataSourceNo },
+    })
+  }
 
   return (
     <Box
@@ -31,14 +62,19 @@ const DailyChart = ({ data }: Props) => {
       }}
     >
       <Marquee pauseOnHover={true} gradient={false} speed={20} style={{ height: '76px', backgroundColor: '#fff' }} autoFill>
-        {[...data].map((item, idx) => {
-          const dataItem = {
-            ...item,
-            value: item.isPermitted ? item.value : 0.0,
-            change: item.isPermitted ? item.change : 0.0,
-            date: item.isPermitted ? item.date : '9999-99-99',
-            changeUnit: item.isPermitted ? item.changeUnit : 'N/A',
-            unit: item.isPermitted ? item.unit : 'N/A',
+        {mappedList.map((item, idx) => {
+          const isPositive = item.direction === 'up'
+          const color = isPositive ? '#3C8A36' : item.direction === 'down' ? '#A9141A' : 'gray.60'
+          const isPermitted = true // 기본값을 true로 설정
+
+          const displayData = {
+            goodsDataNm: item.goodsDataNm,
+            lastValue: isPermitted ? item.lastValue : 0.0,
+            change: isPermitted ? item.change : 0.0,
+            changePercent: isPermitted ? item.changePercent : 0.0,
+            lastUpdateDt: isPermitted ? item.lastUpdateDt : '9999-99-99',
+            unit: isPermitted ? item.unit : 'N/A',
+            currency: isPermitted ? item.currency : 'N/A',
           }
 
           return (
@@ -48,9 +84,9 @@ const DailyChart = ({ data }: Props) => {
               bgcolor={'#fff'}
               mx={'35px'}
               p={3}
-              onClick={item.isPermitted ? () => navigate('/mi/data-detail/70008/12956') : undefined} // TODO: 임시 연결 제거
+              onClick={isPermitted ? () => onClickItem(item) : undefined}
               sx={{
-                cursor: item.isPermitted ? 'pointer' : 'auto',
+                cursor: isPermitted ? 'pointer' : 'auto',
                 userSelect: 'none',
               }}
             >
@@ -64,37 +100,33 @@ const DailyChart = ({ data }: Props) => {
                 sx={{ WebkitLineClamp: 1 }}
                 variant="fileName"
               >
-                {dataItem.name}
+                {displayData.goodsDataNm}
               </Typography>
               <Box sx={{ position: 'relative' }}>
-                <Box sx={{ filter: !dataItem.isPermitted ? 'blur(3px)' : 'none' }}>
+                <Box sx={{ filter: !isPermitted ? 'blur(3px)' : 'none' }}>
                   <Grid mb={1} container wrap="nowrap" alignItems="center" gap={'4px'}>
                     <Typography lineHeight={1.4} color="gray.90" variant="body2">
-                      {dataItem.value}
+                      {displayData.lastValue}
                     </Typography>
-                    <Typography
-                      lineHeight={1.4}
-                      color={!dataItem.isPermitted ? 'gray.90' : dataItem.change > 0 ? '#498B47' : '#CC4D50'}
-                      variant="body2"
-                    >
-                      {`${dataItem.change > 0 ? '+' : ''}${dataItem.change} (${dataItem.change > 0 ? '+' : ''}${dataItem.change}%)`}
+                    <Typography lineHeight={1.4} color={!isPermitted ? 'gray.90' : color} variant="body2">
+                      {`${isPositive ? '+' : ''}${displayData.change} (${isPositive ? '+' : ''}${displayData.changePercent}%)`}
                     </Typography>
                   </Grid>
                   <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
                     <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
-                      {dataItem.date}
+                      {displayData.lastUpdateDt}
                     </Typography>
                     <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
                     <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
-                      {dataItem.changeUnit}
+                      {displayData.unit}
                     </Typography>
                     <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
                     <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
-                      {dataItem.unit}
+                      {displayData.currency}
                     </Typography>
                   </Grid>
                 </Box>
-                {!dataItem.isPermitted && (
+                {!isPermitted && (
                   <Box
                     display={'flex'}
                     alignItems={'center'}
