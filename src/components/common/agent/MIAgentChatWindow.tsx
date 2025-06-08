@@ -39,6 +39,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
   })
   const [animationComplete, setAnimationComplete] = useState<boolean[]>([])
   const [shouldCheckScroll, setShouldCheckScroll] = useState(false)
+  const [isRetrying, setIsRetrying] = useState(false)
 
   const isGenerating = useMemo(() => animationComplete.length > 0 && !animationComplete[animationComplete.length - 1], [animationComplete])
 
@@ -87,13 +88,17 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
           requestAnimationFrame(() => {
             setTimeout(scrollToBottom, 100)
           })
-          setShouldCheckScroll(true)
+          // retry 기능을 사용할 때만 스크롤 체크
+          if (isRetrying) {
+            setShouldCheckScroll(true)
+            setIsRetrying(false)
+          }
         }
 
         return newState
       })
     },
-    [MIAgent, scrollToBottom],
+    [MIAgent, scrollToBottom, isRetrying],
   )
 
   const handleAnimationStarted = useCallback((index: number) => {
@@ -120,7 +125,10 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     requestAnimationFrame(async () => {
       scrollToBottom()
       const index = MIAgent.conversations.findIndex((conv) => conv.qnaNo === qnaNo)
-      if (index !== -1) handleAnimationStarted(index)
+      if (index !== -1) {
+        setIsRetrying(true)
+        handleAnimationStarted(index)
+      }
       setTimeout(() => {
         MIAgent.retry(qnaNo)
       }, 100)
