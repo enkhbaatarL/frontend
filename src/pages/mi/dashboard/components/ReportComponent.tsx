@@ -220,7 +220,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   // 데이터 테이블 다운로드
   const downloadDataTable = async () => {
     try {
-      const response = await dashboardDataService.getdashboardChartDataDownload(
+      const response = await dashboardDataService.getDashboardChartDataDownload(
         accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0,
         monthSelect.replace('-', '').slice(0, 6),
       )

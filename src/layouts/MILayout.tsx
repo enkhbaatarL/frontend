@@ -163,7 +163,7 @@ const MILayout = () => {
 
   const { data: marketDataList, isLoading: marketDataIsLoading } = useQuery({
     queryKey: ['getDashboardMarketData', companyNo],
-    queryFn: async () => await dashboardDataService.getdashboardMakterDatas(companyNo!),
+    queryFn: async () => await dashboardDataService.getDashboardMarketDatas(companyNo!),
     enabled: !!companyNo || companyNo !== -1,
     refetchOnWindowFocus: false,
     gcTime: 0,

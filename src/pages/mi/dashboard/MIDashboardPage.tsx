@@ -37,7 +37,7 @@ const MIDashboardPage = () => {
   // 우측 latestInsights 리스트 조회
   const { data: latestInsightsList = [] } = useQuery({
     queryKey: ['getdashboardLatestInsights', companyNo],
-    queryFn: async () => await dashboardDataService.getdashboardLatestInsights(companyNo!),
+    queryFn: async () => await dashboardDataService.getDashboardLatestInsights(companyNo!),
     enabled: !!companyNo || companyNo !== -1,
     refetchOnWindowFocus: false,
     gcTime: 0,
@@ -46,7 +46,7 @@ const MIDashboardPage = () => {
   // 우측 marketData 리스트 조회
   const { data: marketDataList = [] } = useQuery({
     queryKey: ['getdashboardMakterDatas', companyNo],
-    queryFn: async () => await dashboardDataService.getdashboardMakterDatas(companyNo!),
+    queryFn: async () => await dashboardDataService.getDashboardMarketDatas(companyNo!),
     enabled: !!companyNo || companyNo !== -1,
     refetchOnWindowFocus: false,
     gcTime: 0,

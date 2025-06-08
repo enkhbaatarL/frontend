@@ -153,7 +153,7 @@ const dashboardDataService = {
    * 대시보드 Latest Insights 목록을 조회합니다.
    * @param companyNo - 고객사 번호
    */
-  async getdashboardLatestInsights(companyNo: number): Promise<IDashboardLastInsightsInfo[]> {
+  async getDashboardLatestInsights(companyNo: number): Promise<IDashboardLastInsightsInfo[]> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/latest-insights`)
     return response.data.data
   },
@@ -161,7 +161,7 @@ const dashboardDataService = {
    * 대시보드 Market Data 목록을 조회합니다.
    * @param companyNo - 고객사 번호
    */
-  async getdashboardMakterDatas(companyNo: number): Promise<MarketDataItemInfo[]> {
+  async getDashboardMarketDatas(companyNo: number): Promise<MarketDataItemInfo[]> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/market-datas`)
     return response.data.data
   },
@@ -196,7 +196,7 @@ const dashboardDataService = {
    * @param companyNo - 고객사 번호
    * @param date - 조회할 년월
    */
-  async getdashboardChart(companyNo: number, date: string): Promise<DashboardChartInfo> {
+  async getDashboardChart(companyNo: number, date: string): Promise<DashboardChartInfo> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/chart`, {
       params: { date },
     })
@@ -244,7 +244,7 @@ const dashboardDataService = {
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    * @param date - 조회할 년월
    */
-  async getdashboardChartDataDownload(companyNo: number, date: string) {
+  async getDashboardChartDataDownload(companyNo: number, date: string) {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/chart/file-download`, {
       params: { date },
       responseType: 'blob',
