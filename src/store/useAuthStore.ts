@@ -26,7 +26,6 @@ export interface IAccessCompanyInfo {
 
 interface AuthState {
   token: string | null
-  refreshToken: string | null
   user: IUserDetail | null
   accessCompanyInfo: IAccessCompanyInfo | null
   setToken: (token: string) => void
@@ -39,7 +38,6 @@ const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
-      refreshToken: null,
       user: null,
       accessCompanyInfo: null,
       setToken: (token) => set({ token }),
