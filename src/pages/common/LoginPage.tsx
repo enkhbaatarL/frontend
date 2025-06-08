@@ -6,11 +6,12 @@ import MIButton from '@/components/common/button/MIButton'
 import Flex from '@/components/common/display/Flex'
 import MIInput from '@/components/common/input/MIInput'
 import devTokens from '@/constants/devTokens'
+import useEnvironment from '@/hooks/useEnvironment'
 import authService from '@/service/common/auth'
 import useAuthStore from '@/store/useAuthStore'
 
 const LoginPage = () => {
-  const isProd = window.location.hostname === 'mi.sk.com'
+  const { isProd, isLocal } = useEnvironment()
 
   const navigate = useNavigate()
   const { setUser, setToken, clearAuth } = useAuthStore()
@@ -19,7 +20,7 @@ const LoginPage = () => {
   const [devAdmin, setDevAdmin] = useState<string>(devTokens.admin[0].value)
   const [devOperator, setDevOperator] = useState<string>(devTokens.operator[0].value)
 
-  const [tempAuthFilter, setTempAuthFilter] = useState<boolean>(window.location.hostname === 'localhost') // TODO: 임시 용도로 SSO 작업 시 제거 필요
+  const [tempAuthFilter, setTempAuthFilter] = useState<boolean>(isLocal) // TODO: 임시 용도로 SSO 작업 시 제거 필요
 
   const ssoLogin = () => {
     window.location.href = '/api/v1/saml2/login/user'
