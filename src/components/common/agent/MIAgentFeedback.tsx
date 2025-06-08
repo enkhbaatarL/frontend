@@ -6,33 +6,6 @@ import MIButton from '@/components/common/button/MIButton'
 import { useScroll } from '@/contexts/ScrollContext'
 import { FeedbackCd } from '@/service/mi/agent'
 
-const FeedbackOptions = [
-  {
-    id: FeedbackCd.BUG_ISSUE,
-    label: t('버그문제'),
-  },
-  {
-    id: FeedbackCd.NO_POSSIBLE_RESPONSE,
-    label: t('가능한 응답이 없음'),
-  },
-  {
-    id: FeedbackCd.NOT_FOLLOW_REQUEST,
-    label: t('요청에 제대로 따르지 않음'),
-  },
-  {
-    id: FeedbackCd.INACCURATE_INFORMATION,
-    label: t('정보가 정확하지 않음'),
-  },
-  {
-    id: FeedbackCd.INCOMPLETE_RESPONSE,
-    label: t('응답이 완전하지 않음'),
-  },
-  {
-    id: FeedbackCd.OTHER,
-    label: t('기타'),
-  },
-]
-
 export interface MIAgentFeedbackProps {
   onSubmit: (feedbackCd: FeedbackCd, feedbackComment?: string) => Promise<void>
   onCancel: () => void
@@ -44,6 +17,36 @@ const MIAgentFeedbackBak = ({ onSubmit, onCancel }: MIAgentFeedbackProps) => {
   const [buttonDisabled, setButtonDisabled] = useState(false)
   const { scrollRef } = useScroll()
   const boxRef = useRef<HTMLDivElement>(null)
+
+  const FeedbackOptions = useMemo(
+    () => [
+      {
+        id: FeedbackCd.BUG_ISSUE,
+        label: t('버그문제'),
+      },
+      {
+        id: FeedbackCd.NO_POSSIBLE_RESPONSE,
+        label: t('가능한 응답이 없음'),
+      },
+      {
+        id: FeedbackCd.NOT_FOLLOW_REQUEST,
+        label: t('요청에 제대로 따르지 않음'),
+      },
+      {
+        id: FeedbackCd.INACCURATE_INFORMATION,
+        label: t('정보가 정확하지 않음'),
+      },
+      {
+        id: FeedbackCd.INCOMPLETE_RESPONSE,
+        label: t('응답이 완전하지 않음'),
+      },
+      {
+        id: FeedbackCd.OTHER,
+        label: t('기타'),
+      },
+    ],
+    [],
+  )
 
   useEffect(() => {
     if (!boxRef.current || !scrollRef.current) return () => {}
@@ -59,7 +62,7 @@ const MIAgentFeedbackBak = ({ onSubmit, onCancel }: MIAgentFeedbackProps) => {
         const scrollRect = scroll.getBoundingClientRect()
 
         if (boxRect.bottom > scrollRect.bottom) {
-          const scrollTop = scroll.scrollTop + (boxRect.bottom - scrollRect.bottom)
+          const scrollTop = scroll.scrollTop + (boxRect.bottom - scrollRect.bottom) + 4 // 여백 4px 추가
           scroll.scrollTo({
             top: scrollTop,
             behavior: 'smooth',
