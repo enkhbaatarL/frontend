@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { ButtonHTMLAttributes } from 'react'
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-js-style'
 
 import MIButton from '@/components/common/button/MIButton'
 import { IChatQnaAnswerBundle } from '@/service/mi/agent'
