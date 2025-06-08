@@ -268,8 +268,8 @@ const DataDetailPage = () => {
                   structuredDataList={structuredDataList}
                   isDownloadable={productData?.isDownloadable}
                 />
-                <Grid container justifyContent="space-between">
-                  <Box maxWidth={465} marginTop={5}>
+                <Grid container justifyContent="space-between" marginTop={5}>
+                  <Box maxWidth={465}>
                     <MIDateRangePicker onChange={handleDateChange} startDate={startDate} endDate={endDate} />
                   </Box>
                   <MIButton

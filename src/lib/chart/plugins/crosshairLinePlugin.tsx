@@ -41,67 +41,130 @@ const crosshairLinePlugin: CrosshairLinePlugin = {
       onPointerMove: (context: { chart: Chart; tooltip: { x: number; y: number; content: Record<string, number | null> } | null }) => void
     },
   ) {
+    let isModifierKeyPressed = false
+    let lastMousePosition: { x: number; y: number } | null = null
+
+    const updateCrosshairPosition = (mouseX: number, mouseY: number, xScaleIndex: number) => {
+      // Ctrl(or Cmd)키
+      // O: 가장 가까운 데이터 포인트에 크로스라인 표시
+      // X: 마우스 위치에 크로스라인 표시
+
+      // TODO: 확정 문의 필요
+      if (!isModifierKeyPressed) {
+        this.mousePosition = {
+          x: mouseX,
+          y: mouseY,
+        }
+      } else {
+        const mainDataset = chart.data.datasets[0]
+        if (!mainDataset) return
+
+        const nearestPoint = mainDataset.data.find((p) => {
+          if (typeof p !== 'object' || p === null) return false
+          return 'x' in p && p.x === xScaleIndex
+        }) as Point | FinancialDataPoint | undefined
+
+        if (!nearestPoint) return
+
+        let yValue: number | undefined
+        if ('y' in nearestPoint && nearestPoint.y !== null) {
+          yValue = nearestPoint.y
+        } else if ('c' in nearestPoint && nearestPoint.c !== null) {
+          yValue = nearestPoint.c
+        }
+
+        if (yValue === undefined) return
+
+        const yScale = chart.scales.y
+        const yPixel = yScale.getPixelForValue(yValue)
+
+        this.mousePosition = {
+          x: chart.scales.x.getPixelForValue(xScaleIndex),
+          y: yPixel,
+        }
+      }
+
+      this.tooltipContent = {}
+      const formattedDate = getFormattedDateFromChart(chart, xScaleIndex)
+
+      chart.data.datasets.forEach((dataset, index) => {
+        const point = dataset.data.find((p) => {
+          if (typeof p !== 'object' || p === null) return false
+          return 'x' in p && p.x === xScaleIndex
+        }) as Point | FinancialDataPoint | undefined
+
+        let value: number | undefined
+
+        if (point) {
+          if ('y' in point && point.y !== null) {
+            value = point.y
+          } else if ('c' in point && point.c !== null) {
+            value = point.c
+          }
+        }
+
+        this.tooltipContent[index] = {
+          label: (
+            <Box display="flex" alignItems="center" height="20px" gap="2px">
+              <LegendIcon />
+              <Box mt="1px">{dataset.label}</Box>
+            </Box>
+          ),
+          color: dataset.metadata?.chipColor as string,
+          value,
+          date: formattedDate,
+          hasDivider: dataset.metadata?.hasDivider,
+        }
+      })
+
+      if (chart.ctx) {
+        chart.draw()
+      }
+    }
+
     chart.canvas.addEventListener('mousemove', (event: MouseEvent) => {
       try {
         const rect = chart.canvas?.getBoundingClientRect()
-
         if (!rect) return
 
-        this.mousePosition = {
-          x: event.clientX - rect.left,
-          y: event.clientY - rect.top,
-        }
+        const mouseX = event.clientX - rect.left
+        const mouseY = event.clientY - rect.top
+        lastMousePosition = { x: mouseX, y: mouseY }
 
         const xScale = chart.scales.x
-        const xScaleIndex = xScale.getValueForPixel(this.mousePosition.x)
+        const xScaleIndex = xScale.getValueForPixel(mouseX)
 
         if (xScaleIndex === undefined) return
 
-        this.tooltipContent = {}
-        const formattedDate = getFormattedDateFromChart(chart, xScaleIndex)
-
-        chart.data.datasets.forEach((dataset, index) => {
-          const point = dataset.data.find((p) => {
-            if (typeof p !== 'object' || p === null) return false
-            return 'x' in p && p.x === xScaleIndex
-          }) as Point | FinancialDataPoint | undefined
-
-          let value: number | undefined
-
-          if (point) {
-            if ('y' in point && point.y !== null) {
-              value = point.y
-            } else if ('c' in point && point.c !== null) {
-              value = point.c
-            }
-          }
-
-          this.tooltipContent[index] = {
-            label: (
-              <Box display="flex" alignItems="center" height="20px" gap="2px">
-                <LegendIcon />
-                <Box mt="1px">{dataset.label}</Box>
-              </Box>
-            ),
-            color: dataset.metadata?.chipColor as string,
-            value,
-            date: formattedDate,
-            hasDivider: dataset.metadata?.hasDivider,
-          }
-        })
-
-        if (chart.ctx) {
-          chart.draw()
-        }
+        updateCrosshairPosition(mouseX, mouseY, xScaleIndex)
       } catch (err) {
         console.error(err)
       }
     })
 
+    const handleKeyEvent = (event: KeyboardEvent) => {
+      if (event.key === 'Control' || event.key === 'Meta') {
+        isModifierKeyPressed = event.type === 'keydown'
+
+        if (lastMousePosition) {
+          const xScale = chart.scales.x
+          const xScaleIndex = xScale.getValueForPixel(lastMousePosition.x)
+
+          if (xScaleIndex === undefined) return
+
+          updateCrosshairPosition(lastMousePosition.x, lastMousePosition.y, xScaleIndex)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyEvent)
+    window.addEventListener('keyup', handleKeyEvent)
+
     chart.canvas.addEventListener('mouseout', () => {
       try {
         this.mousePosition = null
         this.tooltipContent = {}
+        lastMousePosition = null
         options.onPointerMove({
           chart,
           tooltip: null,
