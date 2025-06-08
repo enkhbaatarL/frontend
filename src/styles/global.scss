@@ -399,3 +399,7 @@ input::placeholder, textarea::placeholder {
     }
   }
 }
+
+.notistack-SnackbarContainer.mi-snackbar {
+  z-index: 10000;
+}

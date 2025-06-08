@@ -1,8 +1,8 @@
 import { SnackbarProvider } from 'notistack'
 import { ReactNode, useState, useMemo } from 'react'
 
-import AdminSnackbar from '@/components/admin/AdminSnackbar'
 import AxiosErrorHandler from '@/components/common/AxiosErrorHandler'
+import MISnackbar from '@/components/common/snackbar/MISnackbar'
 import { AdminHeaderContext } from '@/contexts/AdminHeaderContext'
 import { Nullable } from '@/types/common'
 
@@ -27,10 +27,10 @@ const AdminProvider = ({ children }: { children: ReactNode }) => {
           horizontal: 'center',
         }}
         Components={{
-          success: AdminSnackbar,
-          error: AdminSnackbar,
-          info: AdminSnackbar,
-          warning: AdminSnackbar,
+          success: MISnackbar,
+          error: MISnackbar,
+          info: MISnackbar,
+          warning: MISnackbar,
         }}
       >
         <AxiosErrorHandler />

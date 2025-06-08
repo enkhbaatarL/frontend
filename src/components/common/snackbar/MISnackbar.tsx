@@ -13,7 +13,7 @@ interface AdminSnackbarProps extends CustomContentProps {
   body?: ReactNode
 }
 
-const AdminSnackbar = forwardRef<HTMLDivElement, AdminSnackbarProps>((props, ref) => {
+const MISnackbar = forwardRef<HTMLDivElement, AdminSnackbarProps>((props, ref) => {
   const { id, message, variant, body } = props
 
   const handleClose = useCallback(() => {
@@ -25,7 +25,11 @@ const AdminSnackbar = forwardRef<HTMLDivElement, AdminSnackbarProps>((props, ref
   return (
     <SnackbarContent ref={ref} role="alert">
       <Alert
-        sx={{ alignItems: body ? 'start' : 'center' }}
+        sx={{
+          alignItems: body ? 'start' : 'center',
+          maxWidth: '500px',
+          width: '100%',
+        }}
         iconMapping={{
           success: <SuccessIconSm />,
           error: <ErrorIconSm />,
@@ -52,6 +56,6 @@ const AdminSnackbar = forwardRef<HTMLDivElement, AdminSnackbarProps>((props, ref
   )
 })
 
-AdminSnackbar.displayName = 'AdminSnackbar'
+MISnackbar.displayName = 'MISnackbar'
 
-export default AdminSnackbar
+export default MISnackbar

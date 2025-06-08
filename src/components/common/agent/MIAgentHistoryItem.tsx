@@ -8,7 +8,7 @@ import MIConfirm from '@/components/common/confirm/MIConfirm'
 import DeleteIcon from '@/components/common/icons/agent/DeleteIcon'
 import EditIcon from '@/components/common/icons/agent/EditIcon'
 import MoreIcon from '@/components/common/icons/agent/MoreIcon'
-import CloseIcon from '@/components/common/icons/CloseIcon'
+import MIInputClearIcon from '@/components/common/input/MIInputClearIcon'
 import { IChatRoomRes } from '@/service/mi/agent'
 
 interface Props {
@@ -260,7 +260,7 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
                       setIsEditing(false)
                     }}
                   >
-                    <CloseIcon />
+                    <MIInputClearIcon />
                   </Box>
                 </InputAdornment>
               ) : null

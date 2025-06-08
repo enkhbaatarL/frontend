@@ -2,6 +2,7 @@ import { SnackbarProvider } from 'notistack'
 import { ReactNode } from 'react'
 
 import AxiosErrorHandler from '@/components/common/AxiosErrorHandler'
+import MISnackbar from '@/components/common/snackbar/MISnackbar'
 
 interface MIProviderProps {
   children: ReactNode
@@ -16,14 +17,15 @@ const MIProvider = ({ children }: MIProviderProps) => (
       vertical: 'bottom',
       horizontal: 'center',
     }}
-    Components={
-      {
-        // success: MiSnackbar,
-        // error: MiSnackbar,
-        // info: MiSnackbar,
-        // warning: MiSnackbar,
-      }
-    }
+    Components={{
+      success: MISnackbar,
+      error: MISnackbar,
+      info: MISnackbar,
+      warning: MISnackbar,
+    }}
+    classes={{
+      containerRoot: 'mi-snackbar',
+    }}
   >
     <AxiosErrorHandler />
     {children}

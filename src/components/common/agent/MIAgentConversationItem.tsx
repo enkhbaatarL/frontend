@@ -58,7 +58,7 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
       onAnimationComplete()
 
       if (conversation.statusCd === ChatRoomErrorStatus.FAIL_FORBIDDEN_WORDS) {
-        showSnackbar('입력하신 내용에 서비스 이용 제한 단어가 포함되어 있습니다', {
+        showSnackbar('입력하신 내용에 서비스 이용 제한 단어가 포함되어 있습니다.', {
           variant: 'error',
         })
       }

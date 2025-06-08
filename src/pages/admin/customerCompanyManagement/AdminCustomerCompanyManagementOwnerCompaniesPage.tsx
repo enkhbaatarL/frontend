@@ -11,12 +11,12 @@ import { useNavigate } from 'react-router-dom'
 
 import AdminButton from '@/components/admin/AdminButton'
 import AdminSearchFilter from '@/components/admin/AdminSearchFilter'
-import AdminSnackbar from '@/components/admin/AdminSnackbar'
 import AdminTable, { AdminTableCell } from '@/components/admin/AdminTable'
 import AdminTextField from '@/components/admin/AdminTextField'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import Flex from '@/components/common/display/Flex'
 import MISelect from '@/components/common/select/MISelect'
+import MISnackbar from '@/components/common/snackbar/MISnackbar'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -231,10 +231,10 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
           horizontal: 'center',
         }}
         Components={{
-          success: AdminSnackbar,
-          error: AdminSnackbar,
-          info: AdminSnackbar,
-          warning: AdminSnackbar,
+          success: MISnackbar,
+          error: MISnackbar,
+          info: MISnackbar,
+          warning: MISnackbar,
         }}
       />
 
