@@ -20,7 +20,11 @@ const LoginPage = () => {
   const [devAdmin, setDevAdmin] = useState<string>(devTokens.admin[0].value)
   const [devOperator, setDevOperator] = useState<string>(devTokens.operator[0].value)
 
-  const [tempAuthFilter, setTempAuthFilter] = useState<boolean>(isLocal) // TODO: 임시 용도로 SSO 작업 시 제거 필요
+  const [password, setPassword] = useState<string>('')
+  const [tempAuthFilter, setTempAuthFilter] = useState<boolean>(() => {
+    const isDevAuthenticated = localStorage.getItem('mi-dev-authenticated') === 'true'
+    return isLocal || isDevAuthenticated
+  })
 
   const ssoLogin = () => {
     window.location.href = '/api/v1/saml2/login/user'
@@ -37,6 +41,16 @@ const LoginPage = () => {
     },
     [setUser, setToken],
   )
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value
+    setPassword(inputValue)
+
+    if (inputValue === 'mitest1234' || inputValue === 'ㅡㅑㅅㄷㄴㅅ1234') {
+      localStorage.setItem('mi-dev-authenticated', 'true')
+      setTempAuthFilter(true)
+    }
+  }
 
   useEffect(() => {
     clearAuth()
@@ -125,16 +139,7 @@ const LoginPage = () => {
         </Flex>
       ) : (
         <Flex direction="row" gap={20} align="center" style={{ width: '300px' }}>
-          <MIInput
-            fullWidth
-            label="비밀번호"
-            type="password"
-            onChange={(e) => {
-              if (e.target.value === 'mitest1234' || e.target.value === 'ㅡㅑㅅㄷㄴㅅ1234') {
-                setTempAuthFilter(true)
-              }
-            }}
-          />
+          <MIInput fullWidth label="비밀번호" type="password" value={password} onChange={handlePasswordChange} />
         </Flex>
       )}
     </Flex>
