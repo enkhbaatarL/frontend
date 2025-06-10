@@ -2,12 +2,13 @@ import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import chunk from 'lodash-es/chunk'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 
 import smImg from '@/assets/product_symbol_hover.png'
 import MIColorRange from '@/components/common/colorrange/MIColorRange'
 import MISelect from '@/components/common/select/MISelect'
 import MISignalMap from '@/components/common/signal-map/MISignalMap'
+import { MIBaseSkeleton, SkeletonWrapper } from '@/components/mi/MIBaseSkeleton.tsx'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import signalMapService, { MapCategory } from '@/service/mi/signalMap'
 import useAuthStore from '@/store/useAuthStore'
@@ -50,33 +51,30 @@ const SectionHeader = ({ title, itemCount, subCategories, boldTitle = false }: S
 const SignalMapPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
-  const [fakeLoading, setFakeLoading] = useState<boolean>(true)
 
   const [period, setPeriod] = useState<string>('')
   const [companyFilter, setCompanyFilter] = useState<string>('')
+  const [isRenderingComplete, setIsRenderingComplete] = useState(false)
+  const [hasInitialData, setHasInitialData] = useState(false)
 
-  const { data: periodOptions = [] } = useQuery({
+  const { data: periodOptions = [], isLoading: periodOptionsIsLoading } = useQuery({
     queryKey: ['getPeriodsFilters'],
     queryFn: async () => await signalMapService.getPeriodsFilters(customerCompanyNo),
     select: (res) => res.data.map((m) => ({ label: m.codeNm, value: m.codeId })),
   })
 
-  const { data: companyOptions = [] } = useQuery({
+  const { data: companyOptions = [], isLoading: companyOptionsIsLoading } = useQuery({
     queryKey: ['getCompanyFilters'],
     queryFn: async () => await signalMapService.getCompanyFilters(customerCompanyNo),
     select: (res) => res.data.map((options) => ({ label: options, value: options })),
   })
 
-  const { data: signalData } = useQuery({
+  const { data: signalData, isLoading: signalDataIsLoading } = useQuery({
     queryKey: ['getSignalMapData', period, companyFilter],
     queryFn: async () => await signalMapService.getSignalMapData(customerCompanyNo, { period }),
     enabled: !!period,
     select: (res) => res.data,
   })
-
-  useEffect(() => {
-    if (signalData) setFakeLoading(false)
-  }, [signalData])
 
   const getSortedList = (list?: MapCategory[]) => {
     if (!list) return []
@@ -96,17 +94,51 @@ const SignalMapPage = () => {
     setCompanyFilter(companyOptions?.[0]?.value ?? '')
   }, [companyOptions])
 
+  useEffect(() => {
+    setIsRenderingComplete(false)
+  }, [period, companyFilter])
+
+  useLayoutEffect(() => {
+    if (signalData && !signalDataIsLoading) {
+      setIsRenderingComplete(true)
+      setHasInitialData(true)
+    }
+  }, [signalData, signalDataIsLoading])
+
+  const isActuallyLoading = useMemo(
+    () => periodOptionsIsLoading || companyOptionsIsLoading || (signalDataIsLoading && !hasInitialData),
+    [periodOptionsIsLoading, companyOptionsIsLoading, signalDataIsLoading, hasInitialData],
+  )
+
   return (
-    <MISkeleton variant={'signalMap'} loading={fakeLoading}>
-      <Box paddingX={7.5} paddingTop="50px" paddingBottom="40px" textAlign="center">
-        <Typography color="gray.90" variant="heading0">
-          {signalData?.title}
-        </Typography>
-        <br />
-        <Typography color="#495057" variant="subtext0">
-          {formattedDate}
-        </Typography>
-      </Box>
+    <MISkeleton variant={'signalMap'} loading={isActuallyLoading}>
+      {!isRenderingComplete ? (
+        <Box
+          minWidth={'1380px'}
+          width={'1380px'}
+          margin={'auto'}
+          display={'flex'}
+          flexDirection={'column'}
+          gap={'10px'}
+          height={'96px'}
+          alignItems={'center'}
+          marginBottom={'40px'}
+          marginTop={'50px'}
+        >
+          <MIBaseSkeleton.InputField width={'806px'} height={'56px'} />
+          <MIBaseSkeleton.BaseElement2 width={'482px'} height={'30px'} />
+        </Box>
+      ) : (
+        <Box paddingX={7.5} paddingTop="50px" paddingBottom="40px" textAlign="center">
+          <Typography color="gray.90" variant="heading0">
+            {signalData?.title}
+          </Typography>
+          <br />
+          <Typography color="#495057" variant="subtext0">
+            {formattedDate}
+          </Typography>
+        </Box>
+      )}
       <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin="auto">
         <Box
           paddingTop="24px"
@@ -134,7 +166,7 @@ const SignalMapPage = () => {
               <MISelect
                 value={companyFilter}
                 sizeSelect="h40"
-                width={160}
+                width={180}
                 useAllOption
                 onChange={(e) => setCompanyFilter(e.target.value as string)}
                 options={companyOptions}
@@ -173,6 +205,30 @@ const SignalMapPage = () => {
             })}
           </Box>
         ))}
+        {!isRenderingComplete && (
+          <Box
+            minWidth={'1380px'}
+            width={'1380px'}
+            margin={'auto'}
+            display={'flex'}
+            flexDirection={'column'}
+            gap={'20px'}
+            height={'1159px'}
+          >
+            <Box width={'1380px'} height={'916px'} gap={'20px'} paddingBottom={'17px'}>
+              <SkeletonWrapper.Row gap={'24px'} sx={{ paddingBottom: '20px' }}>
+                <MIBaseSkeleton.BaseElement2 width={'678px'} height={'37px'} />
+                <MIBaseSkeleton.BaseElement2 width={'678px'} height={'37px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Grid columns={2} gap={'24px'} sx={{ paddingBottom: '20px' }}>
+                <MIBaseSkeleton.BaseElement2 width={'678px'} height={'497px'} />
+                <MIBaseSkeleton.BaseElement2 width={'678px'} height={'497px'} />
+                <MIBaseSkeleton.BaseElement2 width={'678px'} height={'497px'} />
+                <MIBaseSkeleton.BaseElement2 width={'678px'} height={'497px'} />
+              </SkeletonWrapper.Grid>
+            </Box>
+          </Box>
+        )}
       </Box>
     </MISkeleton>
   )
