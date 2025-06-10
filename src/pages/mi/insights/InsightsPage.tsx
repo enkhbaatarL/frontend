@@ -1,6 +1,6 @@
 import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import InsightsDocumentItem from './components/InsightsDocumentItem'
 
@@ -32,53 +32,53 @@ export interface Report {
   goodsDataNo?: number
 }
 
+const skeletonFields = [
+  { width: '49px', height: '20px', marginBottom: '10px' },
+  { width: '659px', height: '24px', marginBottom: '6px' },
+  { width: '248px', height: '19px', marginBottom: '6px' },
+  { width: '130px', height: '19px', marginBottom: '6px' },
+]
+
+// 기간 옵션
+const periodOptions = [
+  { label: 'All dates', value: 'ALL_DATES' },
+  { label: '1 day', value: 'ONE_DAY' },
+  { label: '1 week', value: 'ONE_WEEK' },
+  { label: '1 month', value: 'ONE_MONTH' },
+  { label: '3 month', value: 'THREE_MONTH' },
+  { label: '6 month', value: 'SIX_MONTH' },
+  { label: '12 month', value: 'TWELVE_MONTH' },
+]
+
+const renderSkeletonGroup = (key: number, removeMarginBottom = false) => (
+  <Box key={key} padding="10px" marginBottom={removeMarginBottom ? undefined : '32px'}>
+    {skeletonFields.map((field, idx) => (
+      <MIBaseSkeleton.InputField key={idx} width={field.width} height={field.height} sx={{ marginBottom: field.marginBottom }} />
+    ))}
+  </Box>
+)
+
 const InsightsPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
-  const [keyword, setKeyword] = useState('')
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [hasInitialData, setHasInitialData] = useState(false)
 
   // 포커스 목록
   const { data: focusedList, isLoading: focusedIsLoading } = useQuery({
-    queryKey: ['insights'],
+    queryKey: ['getFocusedList', customerCompanyNo],
     queryFn: async () => await insightsService.getFocusedList(customerCompanyNo),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
-
   // 필터
   const { data: filterList, isLoading: filterIsLoading } = useQuery({
-    queryKey: ['filterList'],
+    queryKey: ['getAdvancedFilterData'],
     queryFn: async () => await insightsService.getAdvancedFilterData(),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
-
-  // 정렬 옵션
-  const sortOptions = useMemo(
-    () => [
-      { label: 'Newest', value: 'NEWEST' },
-      { label: 'Oldest', value: 'OLDEST' },
-      { label: 'Most relevant', value: 'MOST_RELEVANT', disabled: !keyword },
-    ],
-    [keyword],
-  )
-
-  // 기간 옵션
-  const periodOptions = useMemo(
-    () => [
-      { label: 'All dates', value: 'ALL_DATES' },
-      { label: '1 day', value: 'ONE_DAY' },
-      { label: '1 week', value: 'ONE_WEEK' },
-      { label: '1 month', value: 'ONE_MONTH' },
-      { label: '3 month', value: 'THREE_MONTH' },
-      { label: '6 month', value: 'SIX_MONTH' },
-      { label: '12 month', value: 'TWELVE_MONTH' },
-    ],
-    [],
-  )
 
   const {
     filter,
@@ -101,61 +101,60 @@ const InsightsPage = () => {
       page: 1,
       size: 10,
     },
+    {
+      initialFetch: true,
+    },
+  )
+
+  // 정렬 옵션
+  const sortOptions = useMemo(
+    () => [
+      { label: 'Newest', value: 'NEWEST' },
+      { label: 'Oldest', value: 'OLDEST' },
+      { label: 'Most relevant', value: 'MOST_RELEVANT', disabled: !filter?.keyword },
+    ],
+    [filter?.keyword],
   )
 
   // focused
-  const reports = useMemo(() => {
-    if (focusedList && Array.isArray(focusedList.data)) {
-      return focusedList.data.map((item) => ({
-        type: item.goodsDataCategoryCd,
+  const reports = useMemo(
+    () =>
+      (focusedList?.data ?? []).map((item) => ({
+        type: item.goodsDataCategoryCd as ReportType,
         title: item.goodsDataNm,
         date: item.modifyDt,
         source: item.providerNm,
-        typeId: item.goodsDataNo,
+        typeId: String(item.goodsDataNo),
         goodsNo: item.goodsNo,
-      }))
-    }
-    return []
-  }, [focusedList])
-
-  const convertToFilters = (filterList: IAdvancedFilter) => {
-    const { documentTypes, providers, languages } = filterList
-
-    const buildOptions = (arr: IAdvancedFilterItem[]) =>
-      arr.map((item: IAdvancedFilterItem) => ({
-        label: item.codeNm,
-        value: item.codeId,
+      })),
+    [focusedList],
+  )
+  const convertToFilters = (filterInfo: IAdvancedFilter) => {
+    const buildOptions = (arr: IAdvancedFilterItem[] = []) =>
+      arr.map(({ codeNm, codeId }) => ({
+        label: codeNm,
+        value: codeId,
       }))
 
-    return [
-      {
-        title: 'Document Types',
-        options: buildOptions(documentTypes as IAdvancedFilterItem[]),
-      },
-      {
-        title: 'Providers',
-        options: buildOptions(providers as IAdvancedFilterItem[]),
-      },
-      {
-        title: 'Languages',
-        options: buildOptions(languages),
-      },
+    const sections = [
+      { title: 'Document Types', items: filterInfo.documentTypes },
+      { title: 'Providers', items: filterInfo.providers },
+      { title: 'Languages', items: filterInfo.languages },
     ]
+
+    return sections.map(({ title, items }) => ({
+      title,
+      options: buildOptions(items),
+    }))
   }
 
-  const filters = useMemo(() => {
-    if (filterList) {
-      return convertToFilters(filterList.data)
-    }
-    return []
-  }, [filterList])
+  const filters = useMemo(() => (filterList ? convertToFilters(filterList.data) : []), [filterList])
 
-  const convertToTypes = (category: string) => {
-    const categoryList = category.split(',')
-
-    const matchedDocumentTypes = filterList?.data.documentTypes.filter((type) => categoryList.includes(type.codeId))
-    return matchedDocumentTypes?.map((type) => type.codeId)
-  }
+  const convertToTypes = useCallback(
+    (category: string) =>
+      filterList?.data?.documentTypes?.filter((type) => category.split(',').includes(type.codeId)).map((type) => type.codeId),
+    [filterList?.data?.documentTypes],
+  )
 
   // insights
   const insights = useMemo(() => {
@@ -174,36 +173,12 @@ const InsightsPage = () => {
     return []
   }, [convertToTypes, insightsData])
 
-  const [_checkedValues, setCheckedValues] = useState<string[]>([])
-
   const handleFilterChange = (value: string) => {
-    setCheckedValues((prev) => {
-      const isChecked = prev.includes(value)
-      const newValues = isChecked ? prev.filter((v) => v !== value) : [...prev, value]
+    const currentFilters = (filter?.filters ?? '').split(',').filter(Boolean)
+    const updatedFilters = currentFilters.includes(value) ? currentFilters.filter((v) => v !== value) : [...currentFilters, value]
 
-      updateFilterWithSearch('filters', newValues.join(','))
-      return newValues
-    })
+    updateFilterWithSearch('filters', updatedFilters.join(','))
   }
-
-  // 검색
-  const handleSearch = (value: string) => {
-    updateFilterWithSearch('keyword', value)
-    setKeyword(value)
-  }
-
-  const handleInputChange = (value: string) => {
-    updateFilter('keyword', value)
-    setKeyword(value)
-  }
-
-  useEffect(() => {
-    if (filter.filters) {
-      setCheckedValues(filter.filters.split(','))
-    } else {
-      setCheckedValues([])
-    }
-  }, [filter.filters])
 
   const isActuallyLoading = useMemo(
     () => isInitialLoading || focusedIsLoading || filterIsLoading || (insightsIsLoading && !hasInitialData),
@@ -211,44 +186,15 @@ const InsightsPage = () => {
   )
 
   useEffect(() => {
-    const initializeData = async () => {
-      if (filterList?.data && !filter.filters) {
-        try {
-          const updates: Partial<IInsightsRequest> = {}
-
-          if (!filter.sort) {
-            updates.sort = 'NEWEST'
-          }
-
-          if (!filter.period) {
-            updates.period = 'ALL_DATES'
-          }
-
-          if (Object.keys(updates).length > 0) {
-            Object.entries(updates).forEach(([key, value]) => {
-              updateFilterWithSearch(key as keyof IInsightsRequest, value)
-            })
-          }
-
-          setHasInitialData(true)
-        } catch (error) {
-          console.error('초기 데이터 로딩 실패:', error)
-        } finally {
-          setIsInitialLoading(false)
-        }
-      } else if (filterList?.data && filter.sort && filter.period) {
-        setIsInitialLoading(false)
-        setHasInitialData(true)
-      }
+    const shouldMarkAsInitialized = filterList?.data && (!filter.filters || (filter.sort && filter.period))
+    if (shouldMarkAsInitialized) {
+      setHasInitialData(true)
+      setIsInitialLoading(false)
     }
-
-    initializeData()
-  }, [filterList, filter.filters, filter.sort, filter.period, updateFilterWithSearch])
+  }, [filterList, filter.filters, filter.sort, filter.period])
 
   useEffect(() => {
-    if (insightsData?.detail && insightsData.detail.length > 0) {
-      setHasInitialData(true)
-    }
+    if (insightsData?.detail?.length) setHasInitialData(true)
   }, [insightsData])
 
   return (
@@ -304,14 +250,11 @@ const InsightsPage = () => {
           </Typography>
           <MISearchInput
             storageKey={'insights'}
-            value={keyword}
-            onChange={handleInputChange}
+            value={filter.keyword ?? ''}
+            onChange={(value) => updateFilter('keyword', value)}
             placeholder={'Search for insights'}
-            onSearch={handleSearch}
-            onClear={() => {
-              updateFilterWithSearch('keyword', '')
-              setKeyword('')
-            }}
+            onSearch={(value) => updateFilterWithSearch('keyword', value)}
+            onClear={() => updateFilterWithSearch('keyword', '')}
           />
         </Box>
         <Grid
@@ -328,57 +271,20 @@ const InsightsPage = () => {
                 minWidth={160}
                 fullWidth
                 options={sortOptions}
-                value={filter.sort ? String(filter.sort) : 'NEWEST'}
-                onChange={(e) => {
-                  if (!e.target.value) {
-                    updateFilterWithSearch('sort', 'NEWEST')
-                  } else {
-                    updateFilterWithSearch('sort', String(e.target.value))
-                  }
-                }}
+                value={filter.sort || 'NEWEST'}
+                onChange={(e) => updateFilterWithSearch('sort', String(e.target.value ?? 'NEWEST'))}
               />
               <MISelect
                 minWidth={160}
                 fullWidth
                 options={periodOptions}
-                value={filter.period ? String(filter.period) : 'ALL_DATES'}
-                onChange={(e) => {
-                  if (!e.target.value) {
-                    updateFilterWithSearch('period', 'ALL_DATES')
-                  } else {
-                    updateFilterWithSearch('period', String(e.target.value))
-                  }
-                }}
+                value={filter.period || 'ALL_DATES'}
+                onChange={(e) => updateFilterWithSearch('period', String(e.target.value ?? 'ALL_DATES'))}
               />
             </Grid>
             <Grid container direction={'column'} gap={8}>
               {!isActuallyLoading && (insightsIsLoading || (insightsData && !insights)) ? (
-                <Box>
-                  <Box padding={'10px'} marginBottom={'32px'}>
-                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
-                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
-                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
-                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
-                  </Box>
-                  <Box padding={'10px'} marginBottom={'32px'}>
-                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
-                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
-                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
-                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
-                  </Box>
-                  <Box padding={'10px'} marginBottom={'32px'}>
-                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
-                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
-                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
-                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
-                  </Box>
-                  <Box padding={'10px'}>
-                    <MIBaseSkeleton.InputField width={'49px'} height={'20px'} sx={{ marginBottom: '10px' }} />
-                    <MIBaseSkeleton.InputField width={'659px'} height={'24px'} sx={{ marginBottom: '6px' }} />
-                    <MIBaseSkeleton.InputField width={'248px'} height={'19px'} sx={{ marginBottom: '6px' }} />
-                    <MIBaseSkeleton.InputField width={'130px'} height={'19px'} sx={{ marginBottom: '6px' }} />
-                  </Box>
-                </Box>
+                <Box>{[0, 1, 2, 3].map((i) => renderSkeletonGroup(i, i === 3))}</Box>
               ) : (
                 insights?.map((report, index) => <InsightsDocumentItem key={index} report={report} />)
               )}
@@ -411,34 +317,36 @@ const InsightsPage = () => {
             }}
           >
             <Grid container border={'1px solid'} borderColor={'gray.30'} borderRadius={1} gap={6} padding={6} flexShrink={0}>
-              {filters?.map((section) => (
-                <Box key={section.title}>
-                  <Typography mb={3.5} color="gray.90" component="h2" variant="titleBox">
-                    {section.title}
-                  </Typography>
-                  <FormGroup>
-                    {section.options.map((option: { label: string; value: string }) => (
-                      <FormControlLabel
-                        key={option.value}
-                        sx={{
-                          p: '6.82px 8px',
-                          mr: 0,
-                          '.MuiTypography-root': { fontSize: '16px', lineHeight: 1.4 },
-                        }}
-                        control={
-                          <AdminCheckbox
-                            value={option.value}
-                            onChange={(e) => {
-                              handleFilterChange(e.target.value)
-                            }}
-                          />
-                        }
-                        label={option.label}
-                      />
-                    ))}
-                  </FormGroup>
-                </Box>
-              ))}
+              {filters?.map((section) => {
+                const checkedValues = (filter?.filters ?? '').split(',')
+                return (
+                  <Box key={section.title}>
+                    <Typography mb={3.5} color="gray.90" component="h2" variant="titleBox">
+                      {section.title}
+                    </Typography>
+                    <FormGroup>
+                      {section.options.map((option: { label: string; value: string }) => (
+                        <FormControlLabel
+                          key={option.value}
+                          sx={{
+                            p: '6.82px 8px',
+                            mr: 0,
+                            '.MuiTypography-root': { fontSize: '16px', lineHeight: 1.4 },
+                          }}
+                          control={
+                            <AdminCheckbox
+                              checked={checkedValues.includes(option.value)}
+                              value={option.value}
+                              onChange={(e) => handleFilterChange(e.target.value)}
+                            />
+                          }
+                          label={option.label}
+                        />
+                      ))}
+                    </FormGroup>
+                  </Box>
+                )
+              })}
             </Grid>
           </Box>
         </Grid>
