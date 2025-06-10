@@ -58,15 +58,15 @@ const PolicyPage = () => {
       <Box className="contentHtml" padding={7.5} component="div">
         {privacyPolicyDetailIsLoading ? (
           <Box>
-            <MIBaseSkeleton.TextLine width={'100%'} height={'45px'} />
+            <MIBaseSkeleton.Table width={'1300px'} height={'45px'} />
             {Array.from({ length: 3 }, (_, index) => (
               <Box key={index} marginTop={'40px'}>
-                <MIBaseSkeleton.Title width={'200px'} height={'23px'} />
-                <MIBaseSkeleton.TextLine width={'1200px'} height={'22px'} sx={{ mt: '20px' }} />
-                <MIBaseSkeleton.TextLine width={'1300px'} height={'22px'} sx={{ mt: '20px' }} />
-                <MIBaseSkeleton.TextLine width={'1000px'} height={'22px'} sx={{ mt: '20px' }} />
-                <MIBaseSkeleton.TextLine width={'1050px'} height={'22px'} sx={{ mt: '20px' }} />
-                <MIBaseSkeleton.TextLine width={'600px'} height={'22px'} sx={{ mt: '20px' }} />
+                <MIBaseSkeleton.Table width={'200px'} height={'23px'} />
+                <MIBaseSkeleton.Table width={'1200px'} height={'17px'} sx={{ mt: '20px' }} />
+                <MIBaseSkeleton.Table width={'1300px'} height={'17px'} sx={{ mt: '20px' }} />
+                <MIBaseSkeleton.Table width={'1000px'} height={'17px'} sx={{ mt: '20px' }} />
+                <MIBaseSkeleton.Table width={'1050px'} height={'17px'} sx={{ mt: '20px' }} />
+                <MIBaseSkeleton.Table width={'600px'} height={'17px'} sx={{ mt: '20px' }} />
               </Box>
             ))}
           </Box>
