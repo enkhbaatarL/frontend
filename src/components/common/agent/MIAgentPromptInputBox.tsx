@@ -3,6 +3,7 @@ import { ChangeEvent, useRef, useState, KeyboardEvent, useMemo } from 'react'
 
 import MIAgentInputBoxDropdown from '@/components/common/agent/MIAgentInputBoxDropdown'
 import MIAgentPromptButton from '@/components/common/agent/MIAgentPromptButton'
+import GradientOverlay from '@/components/common/gradient/GradientOverlay'
 
 interface Props {
   onSendMessage: (message: string) => void
@@ -92,6 +93,7 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금�
       }}
     >
       <Box padding="20px 20px 0" width={'100%'} boxSizing={'border-box'} minHeight={'62px'} position="relative">
+        <GradientOverlay />
         <TextareaAutosize
           ref={inputRef}
           placeholder={isGenerating ? '답변을 생성중입니다' : placeholder}

@@ -1,6 +1,6 @@
 import { Box, Divider } from '@mui/material'
 import clsx from 'clsx'
-import { ButtonHTMLAttributes, useEffect, useState, useRef, useMemo } from 'react'
+import { ButtonHTMLAttributes, useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
@@ -18,9 +18,10 @@ interface Props {
   isNewChat?: boolean
   bundles?: IChatQnaAnswerBundle[]
   chatRoomTitle?: string
-  animationComplete?: boolean
   onAnimationComplete?: () => void
 }
+
+type AnimationState = 'idle' | 'typing' | 'graph' | 'link' | 'complete'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   'data-table-id'?: string
@@ -48,153 +49,123 @@ const createMarkdownComponents = (bundle: IChatQnaAnswerBundle, chatRoomTitle?: 
   button: (props: ButtonProps) => <MIAgentTableDownloadButton bundle={bundle} chatRoomTitle={chatRoomTitle} {...props} />,
 })
 
-const NewChatAnswer = ({ bundles, chatRoomTitle, onAnimationComplete }: Props) => {
-  const { typedText, startTyping, isTyping } = useTypingEffect(4, 60)
-  const [currentBundleIndex, setCurrentBundleIndex] = useState(0)
-  const [visibleGraphIndex, setVisibleGraphIndex] = useState<number | null>(null)
+const updateAnimationState = (index: number, state: AnimationState, add?: AnimationState) => (prev: AnimationState[]) => {
+  const newState = [...prev]
+  newState[index] = state
+  return add ? [...newState, add] : newState
+}
+
+const isAfter = (targetState: AnimationState, state: AnimationState) => {
+  const stateList: AnimationState[] = ['idle', 'typing', 'graph', 'link', 'complete']
+  return stateList.indexOf(targetState) > stateList.indexOf(state)
+}
+
+const MIAgentAnswer = ({ bundles, chatRoomTitle, onAnimationComplete, isNewChat }: Props) => {
+  const { typedText, startTyping } = useTypingEffect(4, 60)
+  const [animationStateList, setAnimationStateList] = useState<AnimationState[]>(
+    isNewChat ? ['idle'] : [...(bundles ?? []).map(() => 'complete' as AnimationState)],
+  )
+
   const answerRef = useRef<HTMLDivElement>(null)
   const { scrollToBottom } = useScroll()
 
-  const showGraphs = useMemo(() => {
-    if (!bundles) return []
-    const graphs = new Array(bundles.length).fill(false)
-    if (visibleGraphIndex !== null) {
-      graphs[visibleGraphIndex] = true
-    }
-    return graphs
-  }, [bundles, visibleGraphIndex])
+  useEffect(() => {
+    animationStateList.forEach((state, index) => {
+      const content = bundles?.[index]?.content
 
-  const hasVisibleGraphs = useMemo(() => showGraphs.some((show) => show), [showGraphs])
+      if (!content) return
+
+      if (state === 'idle') {
+        setAnimationStateList(updateAnimationState(index, 'typing'))
+        startTyping(content).then(() => {
+          setTimeout(() => setAnimationStateList(updateAnimationState(index, 'graph')), 100)
+        })
+      }
+
+      if (state === 'graph') {
+        setTimeout(() => setAnimationStateList(updateAnimationState(index, 'link')), 600)
+      }
+
+      if (state === 'link') {
+        setTimeout(() => setAnimationStateList(updateAnimationState(index, 'complete', 'idle')), 300)
+      }
+    })
+
+    scrollToBottom()
+  }, [animationStateList])
 
   useEffect(() => {
-    if (bundles && bundles.length > 0) {
-      setCurrentBundleIndex(0)
-      setVisibleGraphIndex(null)
-      startTyping(bundles[0].content ?? '').then()
+    if (animationStateList.length > (bundles?.length ?? 0)) {
+      animationStateList.pop()
+      onAnimationComplete?.()
     }
-  }, [bundles])
+  }, [animationStateList, bundles, onAnimationComplete])
 
   useEffect(() => {
-    if (!isTyping && bundles && currentBundleIndex < bundles.length) {
-      const timer = setTimeout(() => {
-        setVisibleGraphIndex(currentBundleIndex)
-
-        if (currentBundleIndex + 1 < bundles.length) {
-          setTimeout(() => {
-            setCurrentBundleIndex((prev) => prev + 1)
-            startTyping(bundles[currentBundleIndex + 1].content ?? '').then()
-          }, 100)
-        } else {
-          setTimeout(() => {
-            onAnimationComplete?.()
-          }, 100)
-        }
-      }, 300)
-
-      return () => clearTimeout(timer)
+    // 타이핑 중에는 스크롤 하단 유지
+    if (typedText) {
+      scrollToBottom()
     }
-
-    return () => {}
-  }, [isTyping, bundles, currentBundleIndex, onAnimationComplete, startTyping])
-
-  useEffect(() => {
-    if ((isTyping || hasVisibleGraphs || typedText) && answerRef.current) {
-      requestAnimationFrame(() => {
-        scrollToBottom()
-      })
-    }
-  }, [typedText, isTyping, hasVisibleGraphs])
+  }, [typedText])
 
   if (!bundles || bundles.length === 0) return null
 
   return (
     <Box className={clsx(style.MiAgentAnswer)} ref={answerRef}>
-      {bundles.slice(0, currentBundleIndex + 1).map((bundle, index) => (
-        <Box key={index}>
-          {index === currentBundleIndex ? (
+      {bundles.map((bundle, index) => {
+        const animationState = {
+          value: animationStateList[index],
+          isAfter: (state: AnimationState) => isAfter(animationStateList[index], state),
+        }
+
+        if (!animationState.value) return null
+
+        const hasSeries = (bundle.series ?? []).length > 0
+        const hasRelatedData = (bundle.relatedData ?? []).length > 0
+        const hasSources = (bundle.sources ?? []).length > 0
+
+        let content = '' // idle
+
+        if (animationState.value === 'typing') {
+          content = getContent(typedText)
+        } else if (animationState.value !== 'idle') {
+          content = getContent(bundle.content ?? '')
+        }
+
+        return (
+          <Box key={index}>
+            {index !== 0 && <Divider sx={{ my: '18px !important' }} />}
             <ReactMarkdown
               components={createMarkdownComponents(bundle, chatRoomTitle)}
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
             >
-              {getContent(typedText)}
+              {content}
             </ReactMarkdown>
-          ) : (
-            <ReactMarkdown
-              components={createMarkdownComponents(bundle, chatRoomTitle)}
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
-            >
-              {getContent(bundle.content ?? '')}
-            </ReactMarkdown>
-          )}
-          {(bundle.series ?? []).length > 0 && (
-            <>
-              {showGraphs[index] ? (
-                <Box className={clsx({ [style.fadeInUp]: true })}>
-                  <MIAgentLineChart series={bundle.series} />
-                </Box>
-              ) : (
-                index === currentBundleIndex &&
-                !isTyping && (
-                  <Box
-                    className={style.graphPlaceholder}
-                    style={{
-                      height: '490px',
-                      backgroundColor: '#fff',
-                      border: '1px solid',
-                      borderColor: '#DEE2E6',
-                      borderRadius: '6px',
-                      opacity: 0.5,
-                    }}
-                  />
-                )
-              )}
-            </>
-          )}
-          {(bundle.relatedData ?? []).length > 0 && showGraphs[index] && (
-            <Box className={clsx({ [style.fadeInUp]: true })}>
-              <MIAgentRelatedData relatedData={bundle.relatedData} />
-            </Box>
-          )}
-          {(bundle.sources ?? []).length > 0 && showGraphs[index] && (
-            <Box className={clsx({ [style.fadeInUp]: true })}>
-              <MIAgentSources sources={bundle.sources} />
-            </Box>
-          )}
-          {index < currentBundleIndex && <Divider sx={{ my: '18px !important' }} />}
-        </Box>
-      ))}
+            {hasSeries && (
+              <Box className={clsx({ [style.fadeInUp]: true })} display={animationState.isAfter('typing') ? 'block' : 'none'}>
+                <MIAgentLineChart series={bundle.series} />
+              </Box>
+            )}
+            {animationState.isAfter('graph') && (
+              <>
+                {hasRelatedData && (
+                  <Box className={clsx({ [style.fadeInUp]: true })}>
+                    <MIAgentRelatedData relatedData={bundle.relatedData} />
+                  </Box>
+                )}
+                {hasSources && (
+                  <Box className={clsx({ [style.fadeInUp]: true })}>
+                    <MIAgentSources sources={bundle.sources} />
+                  </Box>
+                )}
+              </>
+            )}
+          </Box>
+        )
+      })}
     </Box>
   )
-}
-
-const ExistingChatAnswer = ({ bundles, chatRoomTitle }: Props) => (
-  <Box className={clsx(style.MiAgentAnswer)}>
-    {bundles?.map((bundle, index) => (
-      <Box key={index}>
-        {bundle.content && (
-          <ReactMarkdown
-            components={createMarkdownComponents(bundle, chatRoomTitle)}
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeRaw]}
-          >
-            {getContent(bundle.content)}
-          </ReactMarkdown>
-        )}
-        {(bundle.series ?? []).length > 0 && <MIAgentLineChart series={bundle.series} />}
-        {(bundle.relatedData ?? []).length > 0 && <MIAgentRelatedData relatedData={bundle.relatedData} />}
-        {(bundle.sources ?? []).length > 0 && <MIAgentSources sources={bundle.sources} />}
-        {index < bundles?.length - 1 && <Divider sx={{ my: '18px !important' }} />}
-      </Box>
-    ))}
-  </Box>
-)
-
-const MIAgentAnswer = (props: Props) => {
-  if (!props.bundles || props.bundles.length === 0) return null
-
-  return props.isNewChat ? <NewChatAnswer {...props} /> : <ExistingChatAnswer {...props} />
 }
 
 export default MIAgentAnswer

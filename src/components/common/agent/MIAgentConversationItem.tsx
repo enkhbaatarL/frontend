@@ -74,7 +74,6 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
             isNewChat={conversation.isNew}
             bundles={conversation.answer?.bundles}
             chatRoomTitle={chatRoom?.title}
-            animationComplete={animationComplete}
             onAnimationComplete={onAnimationComplete}
           />
           {(!conversation.isNew || animationComplete) && (
