@@ -1,4 +1,5 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import dayjs from 'dayjs'
 import { useMemo } from 'react'
 import Marquee from 'react-fast-marquee'
 import { useNavigate } from 'react-router-dom'
@@ -82,7 +83,7 @@ const DailyChart = ({ data = [] }: Props) => {
             lastValue: isPermitted ? summary.lastValue : 0.0,
             change: isPermitted ? summary.change : 0.0,
             changePercent: isPermitted ? summary.changePercent : 0.0,
-            lastUpdateDt: isPermitted ? summary.lastUpdateDt : '9999-99-99',
+            lastUpdateDt: isPermitted ? dayjs(summary.lastUpdateDt).format('MMMM D, YYYY') : 'MMMM D, YYYY',
             unit: isPermitted ? summary.unit : 'N/A',
             currency: isPermitted ? summary.currency : 'N/A',
           }

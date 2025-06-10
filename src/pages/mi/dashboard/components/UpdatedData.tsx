@@ -1,5 +1,6 @@
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import dayjs from 'dayjs'
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -66,7 +67,7 @@ const DataItem = ({ data, index, onClick }: { data: ProcessedMarketDataItem; ind
           </Grid>
           <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
             <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
-              {isPermitted ? lastUpdateDt : '9999-99-99'}
+              {isPermitted ? dayjs(lastUpdateDt).format('MMMM D, YYYY') : 'MMMM D, YYYY'}
             </Typography>
             <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
             <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
