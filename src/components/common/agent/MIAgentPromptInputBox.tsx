@@ -3,7 +3,7 @@ import { ChangeEvent, useRef, useState, KeyboardEvent, useMemo } from 'react'
 
 import MIAgentInputBoxDropdown from '@/components/common/agent/MIAgentInputBoxDropdown'
 import MIAgentPromptButton from '@/components/common/agent/MIAgentPromptButton'
-import GradientOverlay from '@/components/common/gradient/GradientOverlay'
+import GradientOverlayScroll from '@/components/common/gradient/GradientOverlayScroll'
 
 interface Props {
   onSendMessage: (message: string) => void
@@ -93,38 +93,42 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금�
       }}
     >
       <Box padding="20px 20px 0" width={'100%'} boxSizing={'border-box'} minHeight={'62px'} position="relative">
-        <GradientOverlay />
-        <TextareaAutosize
-          ref={inputRef}
-          placeholder={isGenerating ? '답변을 생성중입니다' : placeholder}
-          value={promptText}
-          maxLength={2000}
-          className={'MIScrollbar'}
-          style={{
-            width: '100%',
-            fontSize: '16px',
-            fontStyle: 'normal',
-            fontWeight: '400',
-            lineHeight: '1.4',
-            color: isGenerating ? '#CED4DA' : '#333333',
-            border: 'none',
-            resize: 'none',
-            outline: 'none',
-            backgroundColor: 'transparent',
-            overflowY: 'auto',
-          }}
-          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
-            setPromptText(e.target.value)
-          }}
-          onKeyDown={handleKeyDown}
-          onCompositionStart={() => setIsComposing(true)}
-          onCompositionEnd={() => setIsComposing(false)}
-          onFocus={() => setIsInputFocused(true)}
-          onBlur={() => setIsInputFocused(false)}
-          disabled={isGenerating}
-          minRows={1}
-          maxRows={6}
-        />
+        <GradientOverlayScroll
+          top={{ display: true, height: 18, color: '#ffffff', offset: 0 }}
+          bottom={{ display: true, height: 18, color: '#ffffff', offset: 6 }}
+        >
+          <TextareaAutosize
+            ref={inputRef}
+            placeholder={isGenerating ? '답변을 생성중입니다' : placeholder}
+            value={promptText}
+            maxLength={2000}
+            className={'MIScrollbar'}
+            style={{
+              width: '100%',
+              fontSize: '16px',
+              fontStyle: 'normal',
+              fontWeight: '400',
+              lineHeight: '1.4',
+              color: isGenerating ? '#CED4DA' : '#333333',
+              border: 'none',
+              resize: 'none',
+              outline: 'none',
+              backgroundColor: 'transparent',
+              overflowY: 'auto',
+            }}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+              setPromptText(e.target.value)
+            }}
+            onKeyDown={handleKeyDown}
+            onCompositionStart={() => setIsComposing(true)}
+            onCompositionEnd={() => setIsComposing(false)}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
+            disabled={isGenerating}
+            minRows={1}
+            maxRows={6}
+          />
+        </GradientOverlayScroll>
       </Box>
       <Box
         paddingX="20px"
