@@ -38,7 +38,6 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
   // 선택된 값들을 상태로 관리
   const [selectedFulfillDate, setSelectedFulfillDate] = useState<string>('')
   const [selectedSettingDetailNo, setSelectedSettingDetailNo] = useState<number | null>(null)
-  const [showDownload, setshowDownload] = useState(false)
 
   const { data: metaData } = useQuery({
     queryKey: ['getDashboardHistoryMetaData'],
@@ -57,18 +56,16 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
     enabled: !!selectedSettingDetailNo && !!selectedFulfillDate,
   })
 
-  const getDateFormat = () => {
+  // 날짜 포맷과 다운로드 표시 여부를 메모화
+  const { dateFormat, showDownload } = useMemo(() => {
     const unitCode = metaData?.data?.predictPeriodUnitSeparateCd
     if (unitCode === 'M') {
-      setshowDownload(true)
-      return 'YY년 MM월'
+      return { dateFormat: 'YY년 MM월', showDownload: true }
     } else if (unitCode === 'D') {
-      setshowDownload(false)
-      return 'MM월 DD일'
+      return { dateFormat: 'MM월 DD일', showDownload: false }
     }
-    setshowDownload(false)
-    return 'YY-MM-DD' // 기본값
-  }
+    return { dateFormat: 'YY-MM-DD', showDownload: false }
+  }, [metaData?.data?.predictPeriodUnitSeparateCd])
 
   const processedTableData = useMemo((): ProcessedHistoryData[] => {
     if (!historyDetailList) return []
@@ -86,7 +83,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
       isCounterpartMaximum: item.counterpart?.stat?.isMaximum ?? false,
       isCounterpartMinimum: item.counterpart?.stat?.isMinimum ?? false,
     }))
-  }, [historyDetailList, metaData?.data?.predictPeriodUnitSeparateCd])
+  }, [historyDetailList])
 
   // 메타데이터가 로드되면 기본값 설정
   useEffect(() => {
@@ -137,7 +134,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
     {
       field: 'date',
       headerName: 'Date',
-      renderCell: (param) => <MITableCell value={dayjs(param.value).format(getDateFormat())} typography={{ variant: 'tableBody1' }} />,
+      renderCell: (param) => <MITableCell value={dayjs(param.value).format(dateFormat)} typography={{ variant: 'tableBody1' }} />,
     },
     {
       field: 'baselinePrice',
