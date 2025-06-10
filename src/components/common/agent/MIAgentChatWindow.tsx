@@ -230,11 +230,11 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
         sx={{
           display: 'flex',
           width: windowExpend ? '1380px' : '640px',
-          height: windowExpend || hasConversations ? `calc(100vh - ${top + 96}px)` : '480px',
+          height: windowExpend || hasConversations ? `calc(100vh - ${top + 96}px)` : '544px',
           transition: 'width 0.4s cubic-bezier(0.33, 1, 0.68, 1), height 0.54s cubic-bezier(0.33, 1, 0.68, 1)',
           minWidth: '640px',
           maxWidth: `calc(100vw - ${62}px)`,
-          minHeight: '480px',
+          minHeight: '544px',
           maxHeight: '2048px',
           position: 'relative',
           borderRadius: '12px',
@@ -393,7 +393,6 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
           <Box
             sx={{
               padding: '12px',
-              height: '120px',
               flexShrink: 0,
             }}
           >

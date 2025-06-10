@@ -274,7 +274,13 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
           />
         </ListItemButton>
       ) : (
-        <TitleTooltip title={item.title} placement="right" disableInteractive open={isTextTruncated && !tooltipOpen && isHover}>
+        <TitleTooltip
+          title={item.title}
+          placement="bottom-start"
+          disableInteractive
+          followCursor
+          open={isTextTruncated && !tooltipOpen && isHover}
+        >
           <ListItemButton
             selected={selected}
             onClick={() => {

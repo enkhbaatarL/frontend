@@ -4,8 +4,18 @@ type Props = {
 }
 const MIAgentMessagePrompt = ({ content }: Props) => (
   <Box p={3} display={'flex'} justifyContent={'end'}>
-    <Box maxWidth={470} borderRadius={'30px'} px={4} py={1} border={'1px solid'} borderColor={'gray.30'} bgcolor={'white'}>
-      <Typography py={2} display={'inline-block'} variant={'body1R16'} color={'gray.90'}>
+    <Box
+      borderRadius={'23px'}
+      px={4}
+      py={2}
+      mb={3}
+      border={'1px solid'}
+      borderColor={'gray.30'}
+      bgcolor={'white'}
+      whiteSpace={'pre-wrap'}
+      sx={{ maxWidth: '78%' }}
+    >
+      <Typography py={'6px'} display={'inline-block'} variant={'body1R16'} color={'gray.90'}>
         {content}
       </Typography>
     </Box>
