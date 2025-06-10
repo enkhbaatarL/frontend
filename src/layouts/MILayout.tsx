@@ -164,7 +164,10 @@ const MILayout = () => {
     () => location.pathname === '/mi/dashboard' && marketDataList.length > 0,
     [location.pathname, marketDataList],
   )
-  const showMiAgent = true // MEMO: 상반기 개발(~ 25년 06/30) 기준 -> 항상 표시
+
+  // MEMO: 상반기 개발(~ 25.06.30) 기준
+  // -> 개인정보 처리방침 제외
+  const showMiAgent = !['/mi/privacy-policy'].includes(location.pathname)
 
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
