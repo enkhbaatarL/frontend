@@ -167,8 +167,13 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
 
       requestAnimationFrame(() => {
         container.scrollTo({
-          top: newScrollTop,
+          top: newScrollTop - 12, // 12px 여백 추가(marginY)
           behavior: isScrollingDown ? 'smooth' : 'instant',
+        })
+
+        setScrollToAnchor({
+          id: null,
+          behavior: 'instant',
         })
       })
 

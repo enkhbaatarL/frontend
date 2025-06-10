@@ -2,6 +2,7 @@ import { Box } from '@mui/material'
 import { useLayoutEffect, useRef, UIEvent } from 'react'
 
 import MIAgentConversationItem from '@/components/common/agent/MIAgentConversationItem'
+import GradientOverlay from '@/components/common/gradient/GradientOverlay'
 import { useScroll } from '@/contexts/ScrollContext'
 import { IChatRoom, IConversation } from '@/hooks/useMIAgent'
 
@@ -30,22 +31,24 @@ const MIAgentConversation = ({ conversations, chatRoom, onRetry, animationComple
       overflow={'hidden'}
       sx={{
         height: '100%',
+        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        padding: '12px',
+        paddingX: '12px',
         userSelect: loading ? 'none' : 'auto',
         WebkitUserSelect: loading ? 'none' : 'auto',
       }}
     >
+      <GradientOverlay color={'#F9F8F6'} />
       <Box
         ref={containerRef}
         sx={{
           height: '100%',
           flex: 1,
+          paddingY: '12px',
           overflowY: 'auto',
           scrollbarWidth: 'thin',
           scrollbarColor: '#CED4DA transparent',
-          // opacity: loading ? 0.7 : 1,
           pointerEvents: loading ? 'none' : 'auto',
           touchAction: loading ? 'none' : 'auto',
           userSelect: loading ? 'none' : 'auto',

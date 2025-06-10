@@ -39,9 +39,9 @@ const RelatedDataBtn = ({ goodsDatasourceNm, goodsNo, goodsDataNo, goodsDatasour
         let currentText = goodsDatasourceNm
         while (textElement.scrollWidth > 320 && currentText.length > 0) {
           currentText = currentText.slice(0, -1)
-          textElement.textContent = `${currentText  }...`
+          textElement.textContent = `${currentText}...`
         }
-        setDisplayText(`${currentText  }...`)
+        setDisplayText(`${currentText}...`)
         setIsEllipsis(true)
       } else {
         setDisplayText(goodsDatasourceNm)

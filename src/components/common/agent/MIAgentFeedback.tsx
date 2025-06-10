@@ -62,7 +62,7 @@ const MIAgentFeedbackBak = ({ onSubmit, onCancel }: MIAgentFeedbackProps) => {
         const scrollRect = scroll.getBoundingClientRect()
 
         if (boxRect.bottom > scrollRect.bottom) {
-          const scrollTop = scroll.scrollTop + (boxRect.bottom - scrollRect.bottom) + 4 // 여백 4px 추가
+          const scrollTop = scroll.scrollTop + (boxRect.bottom - scrollRect.bottom) + 18 // 여백 18px 추가 (marginY 보정)
           scroll.scrollTo({
             top: scrollTop,
             behavior: 'smooth',
