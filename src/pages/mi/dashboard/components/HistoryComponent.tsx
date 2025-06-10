@@ -46,7 +46,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
   })
 
   // 히스토리 상세 데이터를 가져오는 쿼리
-  const { data: historyDetailList } = useQuery({
+  const { data: historyDetailList, isLoading: historyDetailListIsLoading } = useQuery({
     queryKey: ['getDashboardHistoryDetail', selectedSettingDetailNo, selectedFulfillDate],
     queryFn: async () => {
       if (!selectedSettingDetailNo || !selectedFulfillDate) return null
@@ -415,6 +415,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
             columns,
             rowId: 'date',
             rows: processedTableData,
+            loading: historyDetailListIsLoading,
           }}
         />
       ) : (
@@ -426,6 +427,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
             columns: columns.slice(0, -1),
             rowId: 'date',
             rows: processedTableData,
+            loading: historyDetailListIsLoading,
           }}
         />
       )}
