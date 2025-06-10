@@ -114,6 +114,12 @@ export const useTypingEffect = (speed: number = 20, lineDelay: number = 500) => 
             isWaitingRef.current = true
             waitStartTimeRef.current = currentTime
           }
+
+          // 프레임 생략 로직 추가
+          const framesToSkip = Math.floor(elapsed / speed) - 1
+          if (framesToSkip > 0) {
+            currentStepRef.current = Math.min(currentStepRef.current + framesToSkip, stepsRef.current.length - 1)
+          }
         }
 
         animationFrameRef.current = requestAnimationFrame(animate)

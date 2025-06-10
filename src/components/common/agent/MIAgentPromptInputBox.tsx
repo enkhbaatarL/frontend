@@ -1,4 +1,4 @@
-import { Box, Input } from '@mui/material'
+import { Box, TextareaAutosize } from '@mui/material'
 import { ChangeEvent, useRef, useState, KeyboardEvent, useMemo } from 'react'
 
 import MIAgentInputBoxDropdown from '@/components/common/agent/MIAgentInputBoxDropdown'
@@ -10,8 +10,8 @@ interface Props {
   isGenerating?: boolean
 }
 
-const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금하세요?', isGenerating = false }: Props) => {
-  const inputRef = useRef<HTMLInputElement>(null)
+const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금하세요?', isGenerating }: Props) => {
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const [isComposing, setIsComposing] = useState(false)
   const [isInputFocused, setIsInputFocused] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -40,7 +40,7 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금�
     inputRef.current?.blur()
   }
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
       e.preventDefault()
       if (promptText.trim()) {
@@ -91,26 +91,27 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금�
         inputRef.current?.focus()
       }}
     >
-      <Box padding="20px" width={'100%'} boxSizing={'border-box'} height={'62px'}>
-        <Input
-          inputRef={inputRef}
+      <Box padding="20px 20px 0" width={'100%'} boxSizing={'border-box'} minHeight={'62px'} position="relative">
+        <TextareaAutosize
+          ref={inputRef}
           placeholder={isGenerating ? '답변을 생성중입니다' : placeholder}
           value={promptText}
-          sx={{
+          maxLength={2000}
+          className={'MIScrollbar'}
+          style={{
             width: '100%',
-            '& .MuiInputBase-input': {
-              fontSize: '16px',
-              fontStyle: 'normal',
-              fontWeight: '400',
-              lineHeight: '1.4',
-              color: isGenerating ? 'contentText.Placeholder' : '#333333',
-              '& .Mui-disabled': {
-                webkitTextFillColor: 'contentText.Placeholder',
-              },
-            },
+            fontSize: '16px',
+            fontStyle: 'normal',
+            fontWeight: '400',
+            lineHeight: '1.4',
+            color: isGenerating ? '#CED4DA' : '#333333',
+            border: 'none',
+            resize: 'none',
+            outline: 'none',
+            backgroundColor: 'transparent',
+            overflowY: 'auto',
           }}
-          disableUnderline
-          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
             setPromptText(e.target.value)
           }}
           onKeyDown={handleKeyDown}
@@ -119,6 +120,8 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금�
           onFocus={() => setIsInputFocused(true)}
           onBlur={() => setIsInputFocused(false)}
           disabled={isGenerating}
+          minRows={1}
+          maxRows={6}
         />
       </Box>
       <Box
