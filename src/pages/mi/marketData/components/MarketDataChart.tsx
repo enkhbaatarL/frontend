@@ -200,11 +200,10 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
                       family: 'Pretendard',
                       weight: 400,
                     },
-                    callback(tickValue: string | number, index: number, ticks: Tick[]) {
+                    callback(_tickValue: string | number, index: number, ticks: Tick[]) {
                       if (index === 0 || index === ticks.length - 1) {
-                        const value = typeof tickValue === 'number' ? tickValue : parseFloat(tickValue)
-
-                        return dayjs(value).format('MMM DD, YYYY')
+                        const labels = data?.mainChart?.rawData?.map((point) => point.date) || []
+                        return labels[index] ? dayjs(labels[index]).format('MMM DD, YYYY') : ''
                       }
 
                       return ''
