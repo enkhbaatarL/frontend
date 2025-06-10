@@ -66,7 +66,7 @@ const NoticesPage = () => {
         <MITableUser
           hidePagination={data?.totalElements === 0 || !data?.totalElements}
           tableProps={{
-            disableHover: true,
+            disableHover: false,
             loading: isLoading,
             onRowClick: (row) => {
               navigate(`/mi/notices/${row.id}`)

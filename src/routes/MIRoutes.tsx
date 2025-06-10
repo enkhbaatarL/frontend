@@ -17,7 +17,7 @@ import MIProvider from '@/providers/MIProvider'
 const MIMainRedirect = () => {
   const { miHome } = useCompanyCondition()
   const homeUrl = miHome() ?? 'dashboard'
-  return <Navigate to={homeUrl} replace />
+  return <Navigate to={homeUrl} state={{ noticePopup: true }} replace />
 }
 
 const MIRoutes: RouteObject = {

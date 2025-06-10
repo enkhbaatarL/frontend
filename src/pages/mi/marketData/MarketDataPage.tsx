@@ -52,10 +52,9 @@ const MarketDataPage = () => {
       size: 10,
     },
     {
-      initialFetch: false,
+      initialFetch: true,
     },
   )
-
   // Recent Viewed
   const { data: recentViewedList, isLoading: recentViewedIsLoading } = useQuery({
     queryKey: ['recentViewed'],
@@ -89,7 +88,6 @@ const MarketDataPage = () => {
       if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
         try {
           initialFetchRef.current = true
-          updateFilterWithSearch('keyword', filter?.keyword ?? '')
           setHasInitialData(true)
         } catch (error) {
           console.error('초기 데이터 로딩 실패:', error)
@@ -103,7 +101,7 @@ const MarketDataPage = () => {
     }
 
     initializeData()
-  }, [accessCompanyInfo, updateFilterWithSearch, filter?.keyword])
+  }, [accessCompanyInfo?.customerCompanyNo, filter?.keyword])
 
   useEffect(() => {
     if (data?.detail && data.detail.length > 0) {

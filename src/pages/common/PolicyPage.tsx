@@ -6,20 +6,25 @@ import { useEffect, useMemo, useState } from 'react'
 import './Policy.scss'
 
 import MISelect from '@/components/common/select/MISelect'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
 import policyService from '@/service/mi/policyService'
 
 const PolicyPage = () => {
   const [policyNo, setPolicyNo] = useState<number | 'latest'>('latest')
 
   // GET 개인정보 처리방침 목록 조회 API
-  const { data: privacyPolicyList = [] } = useQuery({
+  const { data: privacyPolicyList = [], isLoading: privacyPolicyListIsLoading } = useQuery({
     queryKey: ['privacyPolicyList'],
     queryFn: async () => await policyService.getPrivacyPolicies(),
     select: (list) => list.map((m) => ({ ...m, label: m.poltacVerNm, value: m.poltacNo })),
   })
 
-  // GET 개인정보 처리방침 목록 조회 API
-  const { data: privacyPolicyDetail, refetch: refetchDetail } = useQuery({
+  // GET 개인정보 처리방침 상세 조회 API
+  const {
+    data: privacyPolicyDetail,
+    refetch: refetchDetail,
+    isLoading: privacyPolicyDetailIsLoading,
+  } = useQuery({
     queryKey: ['getPrivacyPolicyDetail', policyNo],
     queryFn: async () => await policyService.getPrivacyPolicyDetail(policyNo),
   })
@@ -38,16 +43,36 @@ const PolicyPage = () => {
         <Typography color="gray.90" component="div" variant="heading2">
           개인정보 처리방침
         </Typography>
-        <MISelect
-          width={164}
-          options={privacyPolicyList}
-          showClearIcon={false}
-          value={policyNo === 'latest' ? privacyPolicyDetail?.poltacNo : String(policyNo)}
-          onChange={(e) => setPolicyNo(Number(e.target.value))}
-        ></MISelect>
+        {privacyPolicyListIsLoading ? (
+          <MIBaseSkeleton.BaseElement2 width={'164px'} height={'34px'} />
+        ) : (
+          <MISelect
+            width={164}
+            options={privacyPolicyList}
+            showClearIcon={false}
+            value={policyNo === 'latest' ? privacyPolicyDetail?.poltacNo : String(policyNo)}
+            onChange={(e) => setPolicyNo(Number(e.target.value))}
+          ></MISelect>
+        )}
       </Grid>
       <Box className="contentHtml" padding={7.5} component="div">
-        {parse(content)}
+        {privacyPolicyDetailIsLoading ? (
+          <Box>
+            <MIBaseSkeleton.Table width={'1300px'} height={'45px'} />
+            {Array.from({ length: 3 }, (_, index) => (
+              <Box key={index} marginTop={'40px'}>
+                <MIBaseSkeleton.Table width={'200px'} height={'23px'} />
+                <MIBaseSkeleton.Table width={'1200px'} height={'17px'} sx={{ mt: '20px' }} />
+                <MIBaseSkeleton.Table width={'1300px'} height={'17px'} sx={{ mt: '20px' }} />
+                <MIBaseSkeleton.Table width={'1000px'} height={'17px'} sx={{ mt: '20px' }} />
+                <MIBaseSkeleton.Table width={'1050px'} height={'17px'} sx={{ mt: '20px' }} />
+                <MIBaseSkeleton.Table width={'600px'} height={'17px'} sx={{ mt: '20px' }} />
+              </Box>
+            ))}
+          </Box>
+        ) : (
+          parse(content)
+        )}
       </Box>
     </Box>
   )

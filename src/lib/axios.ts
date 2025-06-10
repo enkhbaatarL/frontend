@@ -116,7 +116,7 @@ const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> 
 const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
   const status = error.response?.status
   const code = error.response?.data?.code
-  const statusText = error.response?.statusText ?? t('알 수 없는 오류')
+  const statusText = error.response?.statusText || t('알 수 없는 오류')
 
   if (status && status >= 400) {
     switch (code) {
@@ -137,6 +137,7 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
         break
       default:
         errorHandlerOptions?.showSnackbar?.(`Error: ${statusText}`, { variant: 'error' })
+        console.error(error)
         break
     }
   }

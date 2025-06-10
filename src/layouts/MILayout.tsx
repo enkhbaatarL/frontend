@@ -109,56 +109,32 @@ const MILayout = () => {
 
   useEffect(() => {
     const fetchNotice = async () => {
-      try {
-        // 로컬스토리지에서 오늘 이미 조회했는지 확인
-        const today = new Date().toDateString()
-        const lastFetchDate = localStorage.getItem('notice_last_fetch_date')
-
-        if (lastFetchDate === today) {
-          return
-        }
-
-        const latestNotice = await boardService.getNoticePopup()
-
-        if (!latestNotice) {
-          localStorage.setItem('notice_last_fetch_date', today)
-          return
-        }
-
-        setNoticeData(latestNotice)
-
-        // 쿠키를 확인하여 오늘 하루 보지 않기를 선택했는지 확인
-        const todayDontShow = getCookie(`notice_dont_show_${latestNotice.bulletinNo}`)
-
-        if (!todayDontShow || todayDontShow !== today) {
-          // 상세 정보도 가져오기
-          const detailResponse = await boardService.getNoticeDetail(latestNotice.bulletinNo)
-          setNoticeDetailData(detailResponse)
-          setShowNoticePopup(true)
-        }
-
-        localStorage.setItem('notice_last_fetch_date', today)
-      } catch (error) {
-        console.error('Failed to fetch notice:', error)
+      const today = new Date().toDateString()
+      const notice = await boardService.getNoticePopup()
+      setNoticeData(notice)
+      // 쿠키를 확인하여 오늘 하루 보지 않기를 선택했는지 확인
+      const cookieKey = `notice_dont_show_${notice.bulletinNo}`
+      const dontShowToday = getCookie(cookieKey) === today
+      if (!dontShowToday) {
+        // 상세 정보도 가져오기
+        const detail = await boardService.getNoticeDetail(notice.bulletinNo)
+        setNoticeDetailData(detail)
+        setShowNoticePopup(true)
       }
     }
-
-    fetchNotice()
-  }, [])
+    if (location.state?.noticePopup) fetchNotice()
+  }, [location.state])
 
   const handleDontShowToday = () => {
     if (noticeData) {
       const today = new Date().toDateString()
-
       // 쿠키 설정 (1일 후 만료)
       setCookie(`notice_dont_show_${noticeData.bulletinNo}`, today, 1)
     }
     setShowNoticePopup(false)
   }
 
-  const handleClose = () => {
-    setShowNoticePopup(false)
-  }
+  const handleClose = () => setShowNoticePopup(false)
 
   const showDailyChart = useMemo(
     () => location.pathname === '/mi/dashboard' && marketDataList.length > 0,

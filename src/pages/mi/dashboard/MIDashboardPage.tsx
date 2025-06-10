@@ -32,7 +32,7 @@ const MIDashboardPage = () => {
     },
     {
       label: 'History',
-      content: <HistoryComponent basicInfo={basicInfo} />,
+      content: <HistoryComponent companyNo={companyNo} basicInfo={basicInfo} />,
     },
   ]
 

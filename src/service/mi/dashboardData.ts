@@ -251,6 +251,18 @@ const dashboardDataService = {
     })
     return response
   },
+  /**
+   * 대시보드 Summary 데이터를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param date - 조회할 년월
+   */
+  async getDashboardSummaryFileDownload(companyNo: number, date: string) {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/summary/file-download`, {
+      params: { date },
+      responseType: 'blob',
+    })
+    return response
+  },
 }
 
 export default dashboardDataService
