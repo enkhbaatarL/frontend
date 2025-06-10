@@ -87,12 +87,6 @@ export const useTypingEffect = (speed: number = 20, lineDelay: number = 500) => 
       isWaitingRef.current = false
 
       const animate = (currentTime: number) => {
-        if (currentStepRef.current >= stepsRef.current.length) {
-          setIsTyping(false)
-          resolve()
-          return
-        }
-
         if (isWaitingRef.current) {
           if (currentTime - waitStartTimeRef.current >= lineDelay) {
             isWaitingRef.current = false
@@ -118,8 +112,15 @@ export const useTypingEffect = (speed: number = 20, lineDelay: number = 500) => 
           // 프레임 생략 로직 추가
           const framesToSkip = Math.floor(elapsed / speed) - 1
           if (framesToSkip > 0) {
-            currentStepRef.current = Math.min(currentStepRef.current + framesToSkip, stepsRef.current.length - 1)
+            currentStepRef.current = Math.min(currentStepRef.current + framesToSkip, stepsRef.current.length)
           }
+        }
+
+        if (currentStepRef.current >= stepsRef.current.length) {
+          setTypedText(stepsRef.current[stepsRef.current.length - 1])
+          setIsTyping(false)
+          resolve()
+          return
         }
 
         animationFrameRef.current = requestAnimationFrame(animate)
