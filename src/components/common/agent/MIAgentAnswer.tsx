@@ -49,7 +49,7 @@ const createMarkdownComponents = (bundle: IChatQnaAnswerBundle, chatRoomTitle?: 
 })
 
 const NewChatAnswer = ({ bundles, chatRoomTitle, onAnimationComplete }: Props) => {
-  const { typedText, startTyping, isTyping } = useTypingEffect(0.1, 60)
+  const { typedText, startTyping, isTyping } = useTypingEffect(4, 60)
   const [currentBundleIndex, setCurrentBundleIndex] = useState(0)
   const [visibleGraphIndex, setVisibleGraphIndex] = useState<number | null>(null)
   const answerRef = useRef<HTMLDivElement>(null)
