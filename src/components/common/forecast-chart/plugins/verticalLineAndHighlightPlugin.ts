@@ -212,7 +212,10 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
           this.interactionState = PointInteractionState.CLICKED
           options.onViewForecastPoint?.(forecastPoint.datasetIndex)
 
-          const activePoint = (chart.tooltip as any)._active[0]
+          const activePoint = (chart.tooltip as any)?._active?.[0]
+
+          if (!activePoint) return
+
           const currentIndex = activePoint.index
           const months = chart.data.labels || []
 

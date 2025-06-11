@@ -395,16 +395,17 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
   }
 
   useEffect(() => {
-    if (forecastDatasets.length > 0 && hoverDotsLoaded) {
+    if (forecastDatasets.length > 0 && hoverDotsLoaded && chartRef.current) {
       createChart()
     }
 
     return () => {
-      if (chartInstance) {
-        chartInstance.current?.destroy()
+      if (chartInstance.current) {
+        chartInstance.current.destroy()
+        chartInstance.current = null
       }
     }
-  }, [forecastDatasets, hoverDotsLoaded, hoverDotImagesRef.current, datasets])
+  }, [forecastDatasets, hoverDotsLoaded, datasets, createChart])
 
   const handleDownload = () => {
     if (!chartRef.current) return

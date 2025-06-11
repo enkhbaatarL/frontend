@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import CloseIcon from '@/components/common/icons/CloseIcon'
@@ -53,6 +53,12 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
       }),
     enabled: !!companyNo && !!categorySelect && !!monthSelect && !!selectedContent.goodsDataSourceNo,
   })
+
+  useEffect(() => {
+    if (categoryList?.explanatoryLevelNms[0]) {
+      setCategorySelect(categoryList.explanatoryLevelNms[0])
+    }
+  }, [categoryList])
 
   return (
     <Box width={'1028px'} mb="24px" mt="35px" sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
