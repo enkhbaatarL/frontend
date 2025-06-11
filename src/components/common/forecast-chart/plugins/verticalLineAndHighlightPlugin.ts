@@ -443,12 +443,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                 const mouseIsNear = isNearestPoint(point)
 
                 // For forecast points, handle different interaction states
-                if (
-                  (dataset as any).category === DATA_CATEGORIES.FORECAST &&
-                  dataset.data[currentIndex - 1] !== null &&
-                  img &&
-                  this.mousePosition
-                ) {
+                if (dataset.category === DATA_CATEGORIES.FORECAST && dataset.data[currentIndex - 1] !== null && img && this.mousePosition) {
                   // Add to tooltip content regardless
                   if (!nearestPointIsForecast || (nearestPointIsForecast && nearestPoint.datasetIndex === datasetIndex))
                     this.tooltipContent.push({
@@ -459,7 +454,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                     })
                 }
                 if (
-                  (dataset as any).category === DATA_CATEGORIES.ACTUAL &&
+                  dataset.category === DATA_CATEGORIES.ACTUAL &&
                   !dataset.hidden &&
                   img &&
                   !this.selectedPoint &&
@@ -475,7 +470,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                 }
 
                 if (
-                  (dataset as any).category === DATA_CATEGORIES.FUTURE &&
+                  dataset.category === DATA_CATEGORIES.FUTURE &&
                   !dataset.hidden &&
                   img &&
                   !this.selectedPoint &&
@@ -491,7 +486,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                 }
 
                 if (
-                  (dataset as any).category === DATA_CATEGORIES.FORECAST &&
+                  dataset.category === DATA_CATEGORIES.FORECAST &&
                   dataset.data[currentIndex - 1] !== null &&
                   nearestPoint?.datasetIndex !== datasetIndex &&
                   img &&

@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material'
+import { Box, CircularProgress, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 
@@ -32,7 +32,7 @@ const PopupIndicatorIcon = () => (
 const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: DrillDownPopupProps) => {
   const [categorySelect, setCategorySelect] = useState('')
 
-  const { data: categoryList } = useQuery({
+  const { data: categoryList, isLoading: isLoadingCategoryList } = useQuery({
     queryKey: ['dashboardFactorCategory', monthSelect, selectedContent.goodsDataSourceNo],
     queryFn: () =>
       dashboardDataService.getDashboardFactorCategory(companyNo ?? 0, {
@@ -43,7 +43,7 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
   })
 
   // factor
-  const { data: factors } = useQuery({
+  const { data: factors, isLoading: isLoadingFactors } = useQuery({
     queryKey: ['dashboardFactors', categorySelect, monthSelect, selectedContent.goodsDataSourceNo],
     queryFn: () =>
       dashboardDataService.getDashboardFactors(companyNo ?? 0, {
@@ -62,7 +62,7 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
 
   return (
     <Box width={'1028px'} mb="24px" mt="35px" sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
-      <Box sx={{ position: 'absolute', top: '0px', left: '50%', transform: 'translate(-50%, -100%)', '& svg': { display: 'block' } }}>
+      <Box sx={{ position: 'absolute', top: '3px', left: '50%', transform: 'translate(-50%, -100%)', '& svg': { display: 'block' } }}>
         <PopupIndicatorIcon />
       </Box>
       <Box p={'12px'}>
@@ -119,21 +119,35 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
               paddingTop={'10px'}
               paddingBottom={'10px'}
             >
-              {categoryList?.explanatoryLevelNms.map((data: string, index: number) => (
-                <MISegmented size="h30" active={data === categorySelect} onClick={() => setCategorySelect(data)} key={index}>
-                  {data}
-                </MISegmented>
+              {isLoadingCategoryList ? (
+                <Box display={'flex'} alignItems={'center'} justifyContent={'center'} width={'100%'}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                categoryList?.explanatoryLevelNms.map((data: string, index: number) => (
+                  <MISegmented size="h30" active={data === categorySelect} onClick={() => setCategorySelect(data)} key={index}>
+                    {data}
+                  </MISegmented>
+                ))
+              )}
+            </Box>
+            {!isLoadingCategoryList &&
+              (isLoadingFactors ? (
+                <Box display={'flex'} alignItems={'center'} justifyContent={'center'} width={'100%'} height={'320px'}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <>
+                  <Box padding={'18px 12px 18px 12px'}>
+                    <Typography variant="body2R14" color="#495057">
+                      {factors?.categorySummary}
+                    </Typography>
+                  </Box>
+                  <Box mt={'12px'}>
+                    <MIInfluenceFactorChart increasingFactors={factors?.plusFactors} decreasingFactors={factors?.minusFactors} />
+                  </Box>
+                </>
               ))}
-            </Box>
-            <Box padding={'18px 12px 18px 12px'}>
-              <Typography variant="body2R14" color="#495057">
-                {factors?.categorySummary}
-              </Typography>
-            </Box>
-
-            <Box mt={'12px'}>
-              <MIInfluenceFactorChart increasingFactors={factors?.plusFactors} decreasingFactors={factors?.minusFactors} />
-            </Box>
           </Box>
         </Box>
       </Box>

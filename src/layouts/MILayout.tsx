@@ -112,9 +112,7 @@ const MILayout = () => {
       try {
         const notice = await boardService.getNoticePopup()
 
-        if (!notice || !notice.bulletinNo) {
-          return
-        }
+        if (!notice?.bulletinNo) return
 
         setNoticeData(notice)
 
@@ -188,7 +186,7 @@ const MILayout = () => {
             background: showDailyChart ? '#F2F5F7' : undefined,
             display: 'flex',
             flexDirection: 'column',
-            minHeight: preRenderMinHeight,
+            minHeight: location.pathname === '/mi/dashboard' ? undefined : preRenderMinHeight,
             minWidth: '1440px',
             boxSizing: 'border-box',
           }}
