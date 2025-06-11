@@ -179,6 +179,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
                 },
               },
               x: {
+                type: 'time',
                 display: true,
                 title: {
                   display: false,
@@ -200,6 +201,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
                       family: 'Pretendard',
                       weight: 400,
                     },
+                    source: 'labels',
                     callback(tickValue: string | number, index: number, ticks: Tick[]) {
                       if (index === 0 || index === ticks.length - 1) {
                         const value = typeof tickValue === 'number' ? tickValue : parseFloat(tickValue)
