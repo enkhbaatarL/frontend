@@ -182,7 +182,7 @@ const ForecastChart = (props: ForecastChartProps) => {
 
         datasets.push({
           label,
-          data: actualData,
+          data: actualData.length > 0 ? [null, ...actualData, null] : [],
           borderColor: color,
           backgroundColor: color,
           pointBackgroundColor: color,
@@ -209,7 +209,7 @@ const ForecastChart = (props: ForecastChartProps) => {
 
           datasets.push({
             label: `${dataset.label} Forecast`,
-            data: dataset.data,
+            data: dataset.data.length > 0 ? [null, ...dataset.data, null] : [],
             borderColor: dataset.color,
             backgroundColor: dataset.color,
             pointStyle: dataset.hidePoint ? 'circle' : 'rectRot',
@@ -328,7 +328,7 @@ const ForecastChart = (props: ForecastChartProps) => {
           type={'line'}
           data={{
             datasets,
-            labels: months,
+            labels: months.length > 0 ? [null, ...months, null] : [],
           }}
           options={{
             responsive: true,
@@ -376,9 +376,14 @@ const ForecastChart = (props: ForecastChartProps) => {
                   },
                   color: theme.palette.gray[60],
                   padding: 8,
-                  callback: (_value: string | number, index: number) => {
-                    if (index === 0 || index === months.length - 1) return ''
-                    return dayjs(months[index], 'YYYY-MM').format('YY-MM')
+                  callback: (_value: string | number, index: number, ticks: unknown[]) => {
+                    if (index === 0 || index === ticks.length - 1) return ''
+
+                    const originalIndex = index - 1
+                    const monthValue = months[originalIndex]
+
+                    if (!monthValue) return ''
+                    return dayjs(monthValue, 'YYYY-MM').format('YY-MM')
                   },
                 },
               },
@@ -500,7 +505,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
         if (chart.actualChartLines.dataType === 'FUTURE') {
           const values = chart.actualChartLines.rawData.map((item) => item.value)
           return {
-            data: [null, ...values, null],
+            data: values,
             label: label[index],
             color: colorMap[index],
             hidePoint: true,
@@ -519,7 +524,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
         if (chart.actualChartLines.dataType === 'ACTUAL') {
           const value = chart.forecastChartLines.rawData.map((item) => item.value)
           return {
-            data: [null, ...value, null],
+            data: value,
             label: label[index],
             color: colorMap[index],
             hidePoint: true,
@@ -539,7 +544,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
         if (chart.actualChartLines.dataType === 'ACTUAL') {
           const value = chart.actualChartLines.rawData.map((item) => item.value)
           return {
-            data: [null, ...value, null],
+            data: value,
             label: label[index],
             color: colorMap[index],
             hidePoint: true,
@@ -558,10 +563,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
     setTopLabel(`${data.dashboardMetadata.currency}/${data.dashboardMetadata.currentUnitCd}`)
   }, [data])
 
-  const dates = useMemo(() => {
-    const rawDates = data.charts[0].actualChartLines.rawData.map((item) => item.resultDate)
-    return [null, ...rawDates, null]
-  }, [data])
+  const dates = useMemo(() => data.charts[0].actualChartLines.rawData.map((item) => item.resultDate), [data])
 
   return (
     <ForecastChart

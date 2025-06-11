@@ -262,17 +262,6 @@ const dashboardDataService = {
    */
   async getDashboardChartData(companyNo: number, date: string): Promise<IDashboardChartData> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/chart`, { params: { date } })
-
-    // forecastChartLines.rawData.value 랜덤값 지정
-    response.data.data.charts[0].forecastChartLines.rawData.forEach((rawData: IChartLineRawData) => {
-      rawData.value = Math.random() * 100
-    }) ///
-
-    // actualChartLines.rawData.value 랜덤값 지정
-    response.data.data.charts[0].actualChartLines.rawData.forEach((rawData: IChartLineRawData) => {
-      rawData.value = Math.random() * 100
-    }) /// 개발용으로 랜덤값 지정했음
-
     return response.data.data
   },
 

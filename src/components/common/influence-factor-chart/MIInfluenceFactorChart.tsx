@@ -314,7 +314,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
             {!goodsNo || !goodsDataNo ? (
               <Box display={'inline-flex'} padding={'6px 15px'} fontSize={'14px'} columnGap={'8px'} fontWeight={600}>
                 <LineChartGraphIcon />
-                <div>{selectedBar}</div>
+                <Box>{goodsDataSourceNm}</Box>
               </Box>
             ) : (
               <MIButton
@@ -327,7 +327,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
                 startIcon={<LineChartGraphIcon />}
                 endIcon={<CheveronRightIcon />}
               >
-                {selectedBar}
+                {goodsDataSourceNm}
               </MIButton>
             )}
 
