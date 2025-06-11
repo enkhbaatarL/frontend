@@ -93,6 +93,10 @@ const ForecastChart = (props: ForecastChartProps) => {
   const [tooltip, setTooltip] = useState<MIForecastChartTooltipProps>(initialTooltip)
   const [isOpenSetting, setIsOpenSetting] = useState(false)
 
+  useEffect(() => {
+    verticalLineAndHighlightPlugin.reset()
+  }, [selectedContent])
+
   const externalTooltipHandler = useCallback(
     (context: PointerMoveEventContext) => {
       const { tooltip: chartTooltip, plugin } = context

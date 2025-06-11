@@ -35,7 +35,13 @@ const CompanyChartRenderer = ({ companyNo, months, selectedContent, onSelectedCo
 
   return (
     <Box pb="24px">
-      <ChartComponent months={months} selectedContent={selectedContent} onSelectedContent={onSelectedContent} data={data} />
+      <ChartComponent
+        key={data?.charts[0]?.actualChartLines?.rawData?.[0]?.resultDate}
+        months={months}
+        selectedContent={selectedContent}
+        onSelectedContent={onSelectedContent}
+        data={data}
+      />
     </Box>
   )
 }

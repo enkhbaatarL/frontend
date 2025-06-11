@@ -36,6 +36,10 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   const [selectedContent, setSelectedContent] = useState<SelectedReportChartContent | null>(null)
   const { accessCompanyInfo, user } = useAuthStore()
 
+  const resetState = () => {
+    setSelectedContent(null)
+  }
+
   // 대시보드 기본 정보
   const { data: dataInfo } = useQuery({
     queryKey: ['dashboardInfo'],
@@ -225,6 +229,10 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     }
   }, [monthsData])
 
+  useEffect(() => {
+    if (monthSelect) resetState()
+  }, [monthSelect])
+
   return (
     <Box maxWidth={'1070px'}>
       {dataInfo && (
@@ -261,14 +269,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           }}
         >
           {selectedContent && (
-            <DrillDownPopup
-              monthSelect={monthSelect}
-              selectedContent={selectedContent}
-              onClose={() => {
-                setSelectedContent(null)
-              }}
-              companyNo={companyNo}
-            />
+            <DrillDownPopup monthSelect={monthSelect} selectedContent={selectedContent} onClose={resetState} companyNo={companyNo} />
           )}
         </Box>
         <Box width={'100%'}>

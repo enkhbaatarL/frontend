@@ -51,6 +51,19 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
     this.markerImage.src = createMakerSVG('#868E96')
   }
 
+  reset() {
+    this.mousePosition = null
+    this.selectedPoint = null
+    this.tooltipContent = []
+    this.interactionState = PointInteractionState.NONE
+    this._options.onViewForecastPoint?.(null)
+    this._options.onPointerMove?.({
+      plugin: this,
+      chart: this._chart,
+      tooltip: null,
+    })
+  }
+
   clearSelectedPoint() {
     this.selectedPoint = null
     this.interactionState = PointInteractionState.NONE
@@ -443,16 +456,37 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                 const mouseIsNear = isNearestPoint(point)
 
                 // For forecast points, handle different interaction states
-                if (dataset.category === DATA_CATEGORIES.FORECAST && dataset.data[currentIndex - 1] !== null && img && this.mousePosition) {
+                if (dataset.category === DATA_CATEGORIES.FORECAST && img && this.mousePosition) {
                   // Add to tooltip content regardless
-                  if (!nearestPointIsForecast || (nearestPointIsForecast && nearestPoint.datasetIndex === datasetIndex))
-                    this.tooltipContent.push({
+                  if (!nearestPointIsForecast || (nearestPointIsForecast && nearestPoint.datasetIndex === datasetIndex)) {
+                    const content = {
                       label: dataset?.label,
                       value: dataset?.data[currentIndex] as number,
                       category: DATA_CATEGORIES.FORECAST,
                       color: data[datasetIndex - 1]?.borderColor as string,
-                    })
+                      goodsDataSourceNo: dataset.metadata?.goodsDataSourceNo,
+                    }
+                    this.tooltipContent.push(content)
+                  }
                 }
+
+                if (
+                  dataset.category === DATA_CATEGORIES.FORECAST &&
+                  dataset.data[currentIndex] !== null &&
+                  nearestPoint?.datasetIndex !== datasetIndex &&
+                  img &&
+                  this.mousePosition
+                ) {
+                  if (this.interactionState === PointInteractionState.CLICKED && mouseIsNear) {
+                    ctx.drawImage(hoverImages[`${dataset.label} Active`], xPos, yPos, size, size)
+                  } else if (this.interactionState === PointInteractionState.HOVER_NEAR && mouseIsNear) {
+                    // Draw a subtle highlight circle around the point
+                    ctx.drawImage(hoverImages[`${dataset.label} Hover`], xPos, yPos, size, size)
+                  } else {
+                    ctx.drawImage(img, xPos, yPos, size, size)
+                  }
+                }
+
                 if (
                   dataset.category === DATA_CATEGORIES.ACTUAL &&
                   !dataset.hidden &&
@@ -483,23 +517,6 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                     category: DATA_CATEGORIES.FUTURE,
                     color: dataset?.borderColor as string,
                   })
-                }
-
-                if (
-                  dataset.category === DATA_CATEGORIES.FORECAST &&
-                  dataset.data[currentIndex - 1] !== null &&
-                  nearestPoint?.datasetIndex !== datasetIndex &&
-                  img &&
-                  this.mousePosition
-                ) {
-                  if (this.interactionState === PointInteractionState.CLICKED && mouseIsNear) {
-                    ctx.drawImage(hoverImages[`${dataset.label} Active`], xPos, yPos, size, size)
-                  } else if (this.interactionState === PointInteractionState.HOVER_NEAR && mouseIsNear) {
-                    // Draw a subtle highlight circle around the point
-                    ctx.drawImage(hoverImages[`${dataset.label} Hover`], xPos, yPos, size, size)
-                  } else {
-                    ctx.drawImage(img, xPos, yPos, size, size)
-                  }
                 }
               }
             })
