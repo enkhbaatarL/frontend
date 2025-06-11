@@ -407,7 +407,11 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         metadata: {
           chipColor: colors[index % colors.length],
           hasDivider: index === 0,
-          goodDataName: chart.goodDataName,
+          goodsNo: chart.goodsNo,
+          goodsDataNo: chart.goodsDataNo,
+          goodsDataName: chart.goodsDataName,
+          goodsDataSourceNo: chart.goodsDataSourceNo,
+          goodsDataSourceName: chart.goodsDataSourceName,
         },
       }))
     }, [comparisonCharts, hideComparisonChartIndexList, timestampToIndex])
@@ -595,9 +599,12 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           }}
         >
           <MIChartLegendToggle
-            labels={comparisonDatasets.map((data) => ({
-              goodDataName: data.metadata?.goodDataName ?? '',
-              goodsDataSourceName: data.label,
+            goodsInfoList={comparisonDatasets.map((data) => ({
+              goodsNo: data.metadata?.goodsNo ?? 0,
+              goodsDataNo: data.metadata?.goodsDataNo ?? 0,
+              goodsDataName: data.metadata?.goodsDataName ?? '',
+              goodsDataSourceNo: data.metadata?.goodsDataSourceNo ?? 0,
+              goodsDataSourceName: data.metadata?.goodsDataSourceName ?? '',
             }))}
             colors={comparisonDatasets.map((data) => data.metadata?.chipColor)}
             hideComparisonChartIndexList={hideComparisonChartIndexList}

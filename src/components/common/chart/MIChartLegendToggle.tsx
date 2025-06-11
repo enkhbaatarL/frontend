@@ -1,18 +1,14 @@
-import { Box, Tooltip } from '@mui/material'
+import { Box } from '@mui/material'
 import { useMemo, useState } from 'react'
 
-import MIChartViewToggle from './MIChartViewToogle'
-import KeyboardArrowUpIcon from '../icons/KeyboardArrowUpIcon'
-
+import MIChartViewToggleAndLinkDetail, { GoodsInfo } from '@/components/common/chart/MIChartViewToggleAndLinkDetail'
+import KeyboardArrowUpIcon from '@/components/common/icons/KeyboardArrowUpIcon'
 import theme from '@/theming'
 
 const FOLDING_REFERENCE_POINT = 3
 
 interface MIChartLegendToggleProps {
-  labels: {
-    goodDataName: string
-    goodsDataSourceName: string
-  }[]
+  goodsInfoList: GoodsInfo[]
   colors?: string[]
   hideComparisonChartIndexList: number[]
   onChange?: (index: number, isShow: boolean) => void
@@ -26,49 +22,49 @@ const MIChartLegendToggle = (props: Readonly<MIChartLegendToggleProps>) => {
   }
 
   const showedItems = useMemo(() => {
-    if (props.labels.length <= FOLDING_REFERENCE_POINT) return props.labels
+    if (props.goodsInfoList.length <= FOLDING_REFERENCE_POINT) return props.goodsInfoList
 
-    return isOpen ? props.labels : props.labels.slice(0, 1)
-  }, [isOpen, props.labels])
+    return isOpen ? props.goodsInfoList : props.goodsInfoList.slice(0, 1)
+  }, [isOpen, props.goodsInfoList])
 
   return (
     <Box display={'flex'} alignItems={'flex-start'} gap={'8px'}>
       <Box display={'flex'} flexDirection={'column'} rowGap={'4px'}>
-        {showedItems.map(({ goodDataName, goodsDataSourceName }, index) => (
-          <Tooltip key={index} title={`${goodDataName} • ${goodsDataSourceName}`} placement="top" arrow disableInteractive>
-            <Box
-              display={'flex'}
-              alignItems={'center'}
-              sx={{
-                boxSizing: 'border-box',
-                height: '34px',
-                padding: '4px 10px',
-                border: `1px solid ${theme.palette.gray[20]}`,
-                borderRadius: '4px',
-                width: 'fit-content',
-                transition: '.3s',
-                backgroundColor: theme.palette.common.white,
-                '&:hover': {
-                  backgroundColor: theme.palette.content.backgroundHover,
-                  '& svg': {
-                    color: `${theme.palette.gray[70]}`,
-                  },
+        {showedItems.map((goodsInfo, index) => (
+          <Box
+            key={index}
+            display={'flex'}
+            alignItems={'center'}
+            sx={{
+              boxSizing: 'border-box',
+              height: '34px',
+              padding: '4px 10px',
+              border: `1px solid ${theme.palette.gray[20]}`,
+              borderRadius: '4px',
+              width: 'fit-content',
+              transition: '.3s',
+              backgroundColor: theme.palette.common.white,
+              '&:hover': {
+                backgroundColor: theme.palette.content.backgroundHover,
+                '& svg': {
+                  color: `${theme.palette.gray[70]}`,
                 },
+              },
+              cursor: 'pointer',
+            }}
+          >
+            <MIChartViewToggleAndLinkDetail
+              goodsInfo={goodsInfo}
+              color={props.colors?.[index]}
+              isShow={!props.hideComparisonChartIndexList.includes(index)}
+              onChange={({ isShow }) => {
+                props.onChange?.(index, isShow)
               }}
-            >
-              <MIChartViewToggle
-                label={goodsDataSourceName}
-                color={props.colors?.[index]}
-                isShow={!props.hideComparisonChartIndexList.includes(index)}
-                onChange={({ isShow }) => {
-                  props.onChange?.(index, isShow)
-                }}
-              />
-            </Box>
-          </Tooltip>
+            />
+          </Box>
         ))}
       </Box>
-      {props.labels.length > FOLDING_REFERENCE_POINT && (
+      {props.goodsInfoList.length > FOLDING_REFERENCE_POINT && (
         <Box
           onClick={toggleExpand}
           sx={{

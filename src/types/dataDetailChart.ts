@@ -50,8 +50,10 @@ export interface ChartSeries {
 }
 
 export interface ChartData {
+  goodsNo?: number
+  goodsDataNo?: number
+  goodsDataName: string
   goodsDataSourceNo: number
-  goodDataName: string
   goodsDataSourceName: string
   unitCd: string
   chartType: ChartType

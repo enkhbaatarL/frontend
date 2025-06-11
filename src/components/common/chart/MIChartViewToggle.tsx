@@ -1,8 +1,7 @@
 import { Box, Typography } from '@mui/material'
 
-import VisibilityIcon from '../icons/VisibilityIcon'
-import VisibilityOffIcon from '../icons/VisibilityOffIcon'
-
+import VisibilityIcon from '@/components/common/icons/VisibilityIcon'
+import VisibilityOffIcon from '@/components/common/icons/VisibilityOffIcon'
 import theme from '@/theming'
 
 export default function MIChartViewToggle(

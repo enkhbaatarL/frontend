@@ -1,13 +1,12 @@
 import { Box } from '@mui/material'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 
-import MIChartViewToggle from './MIChartViewToogle'
-import CandlestickChartOutlineIcon from '../icons/CandlestickChartOutlineIcon'
-import ShowChartIcon from '../icons/ShowChartIcon'
-
 import MIButton from '@/components/common/button/MIButton'
 import { DisplayDataInfo } from '@/components/common/chart/MIChart'
+import MIChartViewToggle from '@/components/common/chart/MIChartViewToggle'
 import MIChip, { MIChipProps } from '@/components/common/chip/MIChip'
+import CandlestickChartOutlineIcon from '@/components/common/icons/CandlestickChartOutlineIcon'
+import ShowChartIcon from '@/components/common/icons/ShowChartIcon'
 import { IProductDataStructuredChartRequest } from '@/service/mi/dataDetail'
 import { ChartInterval, ChartType } from '@/types/dataDetailChart'
 
