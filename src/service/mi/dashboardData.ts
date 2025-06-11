@@ -162,6 +162,32 @@ export interface IDashboardSummaries {
   summaries: IDashboardSummary[]
   isFileDownload: boolean
 }
+export interface ICategoryList {
+  explanatoryLevelNms: string[]
+}
+export interface IDashboardFactorsRequest {
+  predictDate: string
+  goodsDataSourceNo: number
+  explanatoryLevelNm: string
+}
+export interface IFactor {
+  marketIndexAnalysisTargetCd: string
+  predictionFulfillDt: string
+  predictionInputMnemonicDetailCd: string
+  predictionInputMnemonicCd: string
+  explanatoryLevelDetailNm: string
+  explanatoryScore: number
+  explanatoryRnk: number
+  mnemonicCd: string
+  explanatoryDirectionSymbolNm: string
+  dirRank: number
+}
+export interface IDashboardFactorsResponse {
+  explanatoryLevelNm: string
+  categorySummary: string
+  plusFactors: IFactor
+  minusFactors: IFactor
+}
 
 /**
  * 대시보드 서비스
@@ -206,6 +232,17 @@ const dashboardDataService = {
    */
   async getDashboardChartData(companyNo: number, date: string): Promise<IDashboardChartData> {
     const response = await api.get(`mi/dashboard/companies/${companyNo}/chart`, { params: { date } })
+
+    // forecastChartLines.rawData.value 랜덤값 지정
+    response.data.data.charts[0].forecastChartLines.rawData.forEach((rawData: IChartLineRawData) => {
+      rawData.value = Math.random() * 100
+    }) ///
+
+    // actualChartLines.rawData.value 랜덤값 지정
+    response.data.data.charts[0].actualChartLines.rawData.forEach((rawData: IChartLineRawData) => {
+      rawData.value = Math.random() * 100
+    }) /// 개발용으로 랜덤값 지정했음
+
     return response.data.data
   },
 
@@ -297,7 +334,22 @@ const dashboardDataService = {
    * @param params - { predictDate: 예측 날짜, goodsDataSourceNo: 데이터 소스 번호 }
    */
   async getDashboardFactorCategory(companyNo: number, params: IDashboardFactorCategoryRequest) {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart/factor/category`, { params })
+    const response: AxiosResponse<ICommonResponse<ICategoryList>> = await api.get(
+      `mi/dashboard/companies/${companyNo}/chart/factor/category`,
+      { params },
+    )
+    return response.data.data
+  },
+  /**
+   * 대시보드 차트 주요 요인 분석 카테고리를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictDate: 예측 날짜, goodsDataSourceNo: 데이터 소스 번호 }
+   */
+  async getDashboardFactors(companyNo: number, params: IDashboardFactorsRequest) {
+    const response: AxiosResponse<ICommonResponse<IDashboardFactorsResponse>> = await api.get(
+      `mi/dashboard/companies/${companyNo}/chart/factors`,
+      { params },
+    )
     return response.data.data
   },
 }
