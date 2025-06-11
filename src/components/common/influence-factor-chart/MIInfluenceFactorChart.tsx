@@ -8,6 +8,8 @@ import MIForecastChart from '../forecast-chart/MIForecastChart'
 import { generateChartMonths, generateForecastDataset } from '../forecast-chart/mockBrentForecastData'
 import CloseIcon from '../icons/CloseIcon'
 
+import { IFactor } from '@/service/mi/dashboardData.ts'
+
 const CheveronRightIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
     <path
@@ -27,23 +29,17 @@ const LineChartGraphIcon = () => (
 
 export interface InfluenceFactor {
   label: string
-  value: number
+  explanatoryScore: number
   color: string
 }
 interface MIInfluenceFactorChartProps {
-  decreasingFactors: Array<InfluenceFactor>
-  increasingFactors: Array<InfluenceFactor>
+  decreasingFactors?: IFactor[]
+  increasingFactors?: IFactor[]
   height: number
   onHandleChangeRigCountInfluence?: (isShowing: boolean) => void
 }
 
-const FactorItem = (props: {
-  factor: InfluenceFactor
-  align?: 'left' | 'right'
-  onClick?: () => void
-  deactive?: boolean
-  isFocus?: boolean
-}) => {
+const FactorItem = (props: { factor: IFactor; align?: 'left' | 'right'; onClick?: () => void; deactive?: boolean; isFocus?: boolean }) => {
   const { factor, align = 'left' } = props
   const barRef = useRef<HTMLElement>(null)
   const textRef = useRef<HTMLElement>(null)
@@ -72,7 +68,7 @@ const FactorItem = (props: {
   return (
     <Box
       onClick={() => props?.onClick?.()}
-      sx={{ width: `${factor.value}%`, position: 'relative', opacity: props.deactive ? 0.3 : 1 }}
+      sx={{ width: `${factor.explanatoryScore}%`, position: 'relative', opacity: props.deactive ? 0.3 : 1 }}
       display={'flex'}
       flexDirection={'column'}
       pb="21px"
@@ -80,7 +76,7 @@ const FactorItem = (props: {
       onMouseLeave={handleMouseLeave}
     >
       <Tooltip
-        title={factor.label}
+        title={factor.explanatoryLevelDetailNm}
         placement="top-end"
         slotProps={{
           popper: {
@@ -105,7 +101,7 @@ const FactorItem = (props: {
           <Box
             ref={barRef}
             sx={{
-              background: factor.color,
+              background: 'red',
               width: '100%',
               height: '8px',
               borderRadius: '2px',
@@ -138,10 +134,10 @@ const FactorItem = (props: {
             }}
           >
             <Typography variant="body2R14" color="gray.70" fontWeight={props.isFocus || isHovered ? 600 : 400} noWrap>
-              {factor.label}
+              {factor.explanatoryLevelDetailNm}
             </Typography>
             <Typography variant="subtext2" color="#3C8A36" fontWeight={props.isFocus || isHovered ? 600 : 400}>
-              {factor.value.toFixed(1)}
+              {factor.explanatoryScore}
             </Typography>
           </Box>
         </Box>
@@ -151,7 +147,7 @@ const FactorItem = (props: {
 }
 
 export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProps) {
-  const { decreasingFactors = [], increasingFactors = [], onHandleChangeRigCountInfluence } = props
+  const { decreasingFactors, increasingFactors, onHandleChangeRigCountInfluence } = props
   const [selectedBar, setSeletedBar] = useState('')
   const { months } = generateChartMonths()
   const [loadingFactorGraph, setLoadingFactorGraph] = useState(false)
@@ -178,26 +174,26 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
         </Box>
         <Box display={'flex'} width={'100%'} sx={{ overflow: 'hidden' }}>
           <Box display={'flex'} flexDirection={'column'} alignItems={'flex-end'} gap={'10px'} flex={1} width={'100%'}>
-            {decreasingFactors.map((item) => (
+            {decreasingFactors?.map((item) => (
               <FactorItem
-                key={item.label}
-                deactive={item.label !== selectedBar && !!selectedBar}
-                isFocus={item.label === selectedBar}
+                key={item.explanatoryLevelDetailNm}
+                deactive={item.explanatoryLevelDetailNm !== selectedBar && !!selectedBar}
+                isFocus={item.explanatoryLevelDetailNm === selectedBar}
                 factor={item}
-                onClick={() => changeBar(item.label)}
+                onClick={() => changeBar(item.explanatoryLevelDetailNm)}
               ></FactorItem>
             ))}
           </Box>
           <Box height={'fit-contnent'} width={'2px'} sx={{ backgroundColor: '#D6D6D6' }} mx="24px" />
           <Box display={'flex'} flexDirection={'column'} gap={'10px'} flex={1}>
-            {increasingFactors.map((item) => (
+            {increasingFactors?.map((item) => (
               <FactorItem
-                key={item.label}
-                deactive={item.label !== selectedBar && !!selectedBar}
+                key={item.explanatoryLevelDetailNm}
+                deactive={item.explanatoryLevelDetailNm !== selectedBar && !!selectedBar}
                 factor={item}
-                isFocus={item.label === selectedBar}
+                isFocus={item.explanatoryLevelDetailNm === selectedBar}
                 align="right"
-                onClick={() => changeBar(item.label)}
+                onClick={() => changeBar(item.explanatoryLevelDetailNm)}
               ></FactorItem>
             ))}
           </Box>

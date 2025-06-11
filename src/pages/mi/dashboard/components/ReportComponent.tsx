@@ -243,7 +243,15 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           />
         )}
 
-        {selectedContent && <DrillDownPopup monthSelect={monthSelect} />}
+        {selectedContent && (
+          <DrillDownPopup
+            monthSelect={monthSelect}
+            selectedContent={selectedContent}
+            onClose={() => {
+              setSelectedContent(null)
+            }}
+          />
+        )}
         <Box width={'100%'}>
           <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} py="6px" mb="20px">
             <Typography variant="infoDocument" color="gray.90">

@@ -185,8 +185,8 @@ export interface IFactor {
 export interface IDashboardFactorsResponse {
   explanatoryLevelNm: string
   categorySummary: string
-  plusFactors: IFactor
-  minusFactors: IFactor
+  plusFactors: IFactor[]
+  minusFactors: IFactor[]
 }
 
 /**

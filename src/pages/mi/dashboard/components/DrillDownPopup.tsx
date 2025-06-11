@@ -4,12 +4,16 @@ import { useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import CloseIcon from '@/components/common/icons/CloseIcon'
+import MIInfluenceFactorChart from '@/components/common/influence-factor-chart/MIInfluenceFactorChart.tsx'
 import MISegmented from '@/components/common/segmentedbtn/MISegmented'
+import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 import dashboardDataService from '@/service/mi/dashboardData.ts'
 import theme from '@/theming'
 
 interface DrillDownPopupProps {
   monthSelect: string
+  selectedContent: SelectedReportChartContent
+  onClose: () => void
 }
 
 const HorizontalChartIcon = () => (
@@ -24,7 +28,7 @@ const PopupIndicatorIcon = () => (
   </svg>
 )
 
-const DrillDownPopup = ({ monthSelect }: DrillDownPopupProps) => {
+const DrillDownPopup = ({ monthSelect, selectedContent, onClose }: DrillDownPopupProps) => {
   const [categorySelect, setCategorySelect] = useState('')
 
   const { data: categoryList } = useQuery({
@@ -37,15 +41,16 @@ const DrillDownPopup = ({ monthSelect }: DrillDownPopupProps) => {
   })
 
   // factor
-  /*  const { data: factors } = useQuery({
+  const { data: factors } = useQuery({
     queryKey: ['dashboardFactors', categorySelect],
-    queryFn: () => dashboardDataService.getDashboardFactors(2013, {
-      predictDate: '20250511',
-      goodsDataSourceNo: 63,
-      explanatoryLevelNm: categorySelect,
-    }),
+    queryFn: () =>
+      dashboardDataService.getDashboardFactors(2013, {
+        predictDate: '20250511',
+        goodsDataSourceNo: 63,
+        explanatoryLevelNm: categorySelect,
+      }),
     enabled: !!categorySelect,
-  })*/
+  })
 
   return (
     <Box width={'1028px'} mb="24px" mt="35px" sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
@@ -72,19 +77,19 @@ const DrillDownPopup = ({ monthSelect }: DrillDownPopupProps) => {
             </Box>
             <Box mb="8px">
               <Typography variant="body2" color="#495057">
-                {/* {selectedContent?.label} / {selectedContent?.date} */}
+                {selectedContent?.label} / {selectedContent?.date}
               </Typography>
             </Box>
             <Box>
               <Typography variant="messageText1" color="#212529" sx={{ marginRight: '2px' }}>
-                {/* {selectedContent?.value} */}
+                {selectedContent?.value}
               </Typography>
               <Typography variant="body2SB14" color="#212529">
                 USD/bb
               </Typography>
             </Box>
           </Box>
-          <MIButton type="ghost" contentType="icon" size="h32" onClick={() => {}}>
+          <MIButton type="ghost" contentType="icon" size="h32" onClick={onClose}>
             <CloseIcon />
           </MIButton>
         </Box>
@@ -124,63 +129,7 @@ const DrillDownPopup = ({ monthSelect }: DrillDownPopupProps) => {
             </Box>
 
             <Box mt={'12px'}>
-              {/* <MIInfluenceFactorChart
-                  height={150}
-                  decreasingFactors={[
-                    {
-                      label: 'Decreasing Factor 1',
-                      value: 85.0,
-                      color: '#A9141A',
-                    },
-                    {
-                      label: 'D Factor 2',
-                      value: 40.0,
-                      color: '#5B6773',
-                    },
-                    {
-                      label: 'D Factor 3',
-                      value: 30.0,
-                      color: '#7A8790',
-                    },
-                    {
-                      label: 'D Factor 4',
-                      value: 20.0,
-                      color: '#8C98A0',
-                    },
-                    {
-                      label: 'D Factor 5',
-                      value: 5.0,
-                      color: '#9DAFB9',
-                    },
-                  ]}
-                  increasingFactors={[
-                    {
-                      label: 'Increasing Factor 1',
-                      value: 100.0,
-                      color: '#3C8A36',
-                    },
-                    {
-                      label: 'Rig count',
-                      value: 80.0,
-                      color: '#5B6773',
-                    },
-                    {
-                      label: 'I Factor 3',
-                      value: 65.0,
-                      color: '#7A8790',
-                    },
-                    {
-                      label: 'I Factor 4',
-                      value: 35.0,
-                      color: '#8C98A0',
-                    },
-                    {
-                      label: 'I Factor 5',
-                      value: 1.0,
-                      color: '#9DAFB9',
-                    },
-                  ]}
-                /> */}
+              {<MIInfluenceFactorChart height={150} decreasingFactors={factors?.minusFactors} increasingFactors={factors?.plusFactors} />}
             </Box>
           </Box>
         </Box>
