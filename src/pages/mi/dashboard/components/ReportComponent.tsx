@@ -19,9 +19,16 @@ import dashboardDataService from '@/service/mi/dashboardData'
 import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
 import { downloadFile } from '@/utils/file'
+
 export type MonthItem = {
   label: string
   value: string
+}
+
+export interface SelectedReportChartContent {
+  label: string
+  date: string
+  value: number
 }
 
 const HorizontalChartIcon = () => (
@@ -44,8 +51,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   const [monthSelect, setMonthSelect] = useState('')
   const { months } = generateChartMonths()
   const [selectedCase, setSelectedCase] = useState('case1')
-  const [selectedContent, _setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
-  const [showDetailChart, setShowDetailChart] = useState(false)
+  const [selectedContent, setSelectedContent] = useState<SelectedReportChartContent | null>(null)
   const { accessCompanyInfo, user } = useAuthStore()
 
   // 대시보드 기본 정보
@@ -207,16 +213,6 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     return `${month} ${day}, ${year}`
   }, [dataInfo])
 
-  // const handleViewDetail = (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => {
-  //   setSelectedContent({
-  //     date: label ?? '',
-  //     label: content.label ?? '',
-  //     value: Number(content.value).toFixed(2) ?? '0',
-  //     category: content.category ?? '',
-  //   })
-  //   setShowDetailChart(true)
-  // }
-
   // 데이터 테이블 다운로드
   const downloadDataTable = async () => {
     try {
@@ -239,16 +235,14 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   return (
     <Box maxWidth={'1070px'}>
       {dataInfo && (
-        <>
-          <Box paddingY={7.5} textAlign="center">
-            <Typography component={'div'} color="gray.90" variant="heading0">
-              {dataInfo.chartPredictSettingNm}
-            </Typography>
-            <Typography component={'div'} color="#495057" variant="subtext0">
-              Updated {formatDataInfoDate}
-            </Typography>
-          </Box>
-        </>
+        <Box paddingY={7.5} textAlign="center">
+          <Typography component={'div'} color="gray.90" variant="heading0">
+            {dataInfo.chartPredictSettingNm}
+          </Typography>
+          <Typography component={'div'} color="#495057" variant="subtext0">
+            Updated {formatDataInfoDate}
+          </Typography>
+        </Box>
       )}
 
       <Box>
@@ -257,10 +251,16 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
 
         {/* CompanyChartRenderer에 props로 받은 companyNo 전달 */}
         {chartData && (
-          <CompanyChartRenderer companyNo={companyNo} months={months} onViewDetail={() => setShowDetailChart(true)} data={chartData} />
+          <CompanyChartRenderer
+            data={chartData}
+            companyNo={companyNo}
+            months={months}
+            selectedContent={selectedContent}
+            onSelectedContent={setSelectedContent}
+          />
         )}
 
-        {showDetailChart && (
+        {selectedContent && (
           <Box width={'1006px'} mb="24px" gap={'6px'} sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
             <Box sx={{ position: 'absolute', top: '0px', left: '50%', transform: 'translate(-50%, -100%)', '& svg': { display: 'block' } }}>
               <PopupIndicatorIcon />
@@ -302,7 +302,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
                   contentType="icon"
                   size="h32"
                   onClick={() => {
-                    setShowDetailChart(false)
+                    setSelectedContent(null)
                   }}
                 >
                   <CloseIcon />

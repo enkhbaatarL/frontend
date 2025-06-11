@@ -21,15 +21,16 @@ import loadImages, {
   createMakerSVG,
 } from '@/components/common/forecast-chart/utils/loadImage'
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
+import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import { IDashboardChartData } from '@/service/mi/dashboardData'
 import theme from '@/theming'
 import { convertToRgbaWithOpacity } from '@/utils/color'
 
 interface InnovationForecastChartProps {
-  months: (string | null)[]
-  onViewDetail: (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => void
   data: IDashboardChartData
+  selectedContent: SelectedReportChartContent | null
+  onSelectedContent: (content: SelectedReportChartContent | null) => void
 }
 
 export interface ForecastDataset {
@@ -56,7 +57,19 @@ export interface ForecastChartProps {
   hideLegend?: boolean
   inactive?: boolean
   showVerticalLine?: boolean
-  onViewDetail?: (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => void
+  selectedContent: SelectedReportChartContent | null
+  onSelectedContent: (content: SelectedReportChartContent | null) => void
+}
+
+const initialTooltip: MIForecastChartTooltipProps = {
+  minWidth: 293,
+  visible: false,
+  viewDetail: false,
+  top: 0,
+  left: 0,
+  label: '',
+  content: [],
+  onClose: () => {},
 }
 
 const ForecastChart = (props: ForecastChartProps) => {
@@ -64,7 +77,7 @@ const ForecastChart = (props: ForecastChartProps) => {
     height,
     forecastDatasets,
     months,
-    showForecastTrend = true,
+    showForecastTrend = false,
     isMIAgent = false,
     bottomLabel = '',
     topLabel = '',
@@ -73,53 +86,49 @@ const ForecastChart = (props: ForecastChartProps) => {
     hideLegend = false,
     inactive = false,
     showVerticalLine = true,
+    selectedContent,
   } = props
   const chartRef = useRef<ChartJS | null>(null)
 
-  const [tooltip, setTooltip] = useState<MIForecastChartTooltipProps>({
-    minWidth: 293,
-    visible: false,
-    viewDetail: false,
-    top: 0,
-    left: 0,
-    label: '',
-    content: [],
-    borderBottom: 0,
-    borderRight: 0,
-    onClose: () => {},
-  })
+  const [tooltip, setTooltip] = useState<MIForecastChartTooltipProps>(initialTooltip)
   const [isOpenSetting, setIsOpenSetting] = useState(false)
 
-  const externalTooltipHandler = useCallback((context: PointerMoveEventContext) => {
-    const { tooltip: chartTooltip, plugin, chart } = context
+  const externalTooltipHandler = useCallback(
+    (context: PointerMoveEventContext) => {
+      const { tooltip: chartTooltip, plugin } = context
 
-    if (!chartTooltip) {
-      setTooltip((prev) => ({ ...prev, visible: false }))
+      if (!chartTooltip) {
+        setTooltip((prev) => ({ ...prev, visible: false }))
 
-      return
-    }
+        return
+      }
 
-    if (chartTooltip.viewDetail) {
-      props.onViewDetail?.(chartTooltip.content[0], chartTooltip.label)
-    }
+      if (chartTooltip.viewDetail) {
+        props.onSelectedContent({
+          label: chartTooltip.content[0].label ?? '',
+          date: chartTooltip.label,
+          value: Number((chartTooltip.content[0].value ?? 0).toFixed(2)),
+        })
+      }
 
-    setTooltip({
-      minWidth: 293,
-      visible: true,
-      viewDetail: chartTooltip.viewDetail,
-      top: chartTooltip.y,
-      left: chartTooltip.x + 20 + 20,
-      label: chartTooltip.label,
-      content: chartTooltip.content,
-      borderBottom: chart.chartArea.bottom,
-      borderRight: chart.chartArea.right,
-      onClose: () => {
-        plugin.clearSelectedPoint()
-      },
-    })
-  }, [])
+      setTooltip({
+        minWidth: 293,
+        visible: true,
+        viewDetail: chartTooltip.viewDetail,
+        top: chartTooltip.y,
+        left: chartTooltip.x + 20 + 20,
+        label: chartTooltip.label,
+        content: chartTooltip.content,
+        onClose: () => {
+          plugin.clearSelectedPoint()
+          props.onSelectedContent(null)
+        },
+      })
+    },
+    [props],
+  )
 
-  const viewForecastPointHanlder = (selectedDatasetIndex: number | null) => {
+  const viewForecastPointHandler = (selectedDatasetIndex: number | null) => {
     const newDatasets = chartRef?.current?.data.datasets ?? []
 
     if (selectedDatasetIndex) {
@@ -156,6 +165,7 @@ const ForecastChart = (props: ForecastChartProps) => {
 
     setDatasets(newDatasets)
   }
+
   useEffect(() => {
     if (forecastDatasets.length === 0) return
     const generateForecastDataSet = (rawDatasets: Array<ForecastDataset>) => {
@@ -166,8 +176,8 @@ const ForecastChart = (props: ForecastChartProps) => {
         const actualData = dataset.data
         const label = dataset.label
         const color = dataset.color
-        const type = dataset.type || 'actualData'
-        const yAxisID = dataset.yAxisID || 'y'
+        const type = dataset.type ?? 'actualData'
+        const yAxisID = dataset.yAxisID ?? 'y'
 
         datasets.push({
           label,
@@ -210,7 +220,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             hidden: false,
             category: 'forecast',
             pointRadius: dataset.hidePoint ? 0 : 3,
-            yAxisID: dataset.yAxisID || 'y',
+            yAxisID: dataset.yAxisID ?? 'y',
             spanGaps: true,
           })
         }
@@ -232,6 +242,10 @@ const ForecastChart = (props: ForecastChartProps) => {
 
     prepareData()
   }, [forecastDatasets])
+
+  useEffect(() => {
+    if (!selectedContent) tooltip.onClose?.()
+  }, [selectedContent])
 
   return (
     <Box width={'100%'} maxWidth={'100%'} sx={{ boxSizing: 'border-box' }}>
@@ -334,6 +348,11 @@ const ForecastChart = (props: ForecastChartProps) => {
               line: {
                 spanGaps: true,
               },
+              point: {
+                hoverRadius: 0,
+                hitRadius: 0,
+                radius: 0,
+              },
             },
             scales: {
               x: {
@@ -418,7 +437,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                 verticalLinedIndex: 11, // 수직선 그릴 위치
                 maxIndex: 11, // 수직선 끝 위치
                 onPointerMove: externalTooltipHandler, // 마우스 이동 시 호출
-                onViewForecastPoint: viewForecastPointHanlder, // 포인트 클릭 시 호출
+                onViewForecastPoint: viewForecastPointHandler, // 포인트 클릭 시 호출
                 hoverImages: hoverDotImagesRef.current, // 마우스 오버 시 마커 이미지
                 showForecastTrend, // 예측 라인 표시 여부
               },
@@ -450,7 +469,7 @@ const ForecastChart = (props: ForecastChartProps) => {
   )
 }
 
-const InnovationForecastChart = ({ onViewDetail, data }: InnovationForecastChartProps) => {
+const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: InnovationForecastChartProps) => {
   const [forecastDatasets, setForecastDatasets] = useState<ForecastDataset[]>([
     {
       data: [],
@@ -539,7 +558,8 @@ const InnovationForecastChart = ({ onViewDetail, data }: InnovationForecastChart
 
   return (
     <ForecastChart
-      onViewDetail={onViewDetail}
+      selectedContent={selectedContent}
+      onSelectedContent={onSelectedContent}
       forecastDatasets={forecastDatasets}
       months={dates}
       lastUpdated={lastUpdated}
@@ -549,4 +569,4 @@ const InnovationForecastChart = ({ onViewDetail, data }: InnovationForecastChart
   )
 }
 
-export default InnovationForecastChart
+export default EnSForecastChart

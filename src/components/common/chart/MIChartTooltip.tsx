@@ -18,7 +18,7 @@ const ChartToolTipItem = (props: { label: ReactNode; value?: number; color: stri
   )
 }
 
-export default function MIChartTooltip({
+const MIChartTooltip = ({
   visible,
   top,
   left,
@@ -28,7 +28,7 @@ export default function MIChartTooltip({
   top?: number
   left?: number
   content: Record<string, { label?: string; value?: number; color?: string; date: string; hasDivider?: boolean }>
-}>) {
+}>) => {
   if (!visible) return null
 
   const items: Array<{ label?: string; value?: number; color?: string; date: string; hasDivider?: boolean }> = []
@@ -68,3 +68,5 @@ export default function MIChartTooltip({
     </Box>
   )
 }
+
+export default MIChartTooltip

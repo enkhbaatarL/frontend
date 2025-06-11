@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Chart, { ChartType, Plugin } from 'chart.js/auto'
-import dayjs from 'dayjs'
+
+import { formatDate } from '@/utils/date'
 
 interface verticalLinePlugin extends Plugin<ChartType> {
   mousePosition: { x: number; y: number } | null
@@ -49,7 +50,7 @@ const verticalLinePlugin: verticalLinePlugin = {
           tooltip: null,
         })
       } catch (err) {
-        console.log(err)
+        console.error(err)
       }
     })
   },
@@ -138,7 +139,7 @@ const verticalLinePlugin: verticalLinePlugin = {
           let label: string = ''
 
           if (months[currentIndex]) {
-            label = dayjs(months[currentIndex] as string, 'YY-MM').format('MMMM YYYY')
+            label = formatDate(months[currentIndex], 'MMMM YYYY')
           }
 
           options.onPointerMove?.({

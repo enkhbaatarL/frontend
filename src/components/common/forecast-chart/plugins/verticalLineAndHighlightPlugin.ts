@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Chart, { ChartType, InteractionItem, Plugin } from 'chart.js/auto'
-import dayjs from 'dayjs'
+import Chart, { ActiveElement, ChartType, InteractionItem, Plugin } from 'chart.js/auto'
 
-import { DATA_CATEGORIES, HOVER_INDICATOR, LINE_STYLES } from '../constants'
+import { DATA_CATEGORIES, HOVER_INDICATOR, LINE_STYLES } from '@/components/common/forecast-chart/constants'
+import { formatDate } from '@/utils/date'
 
 // Define interaction states
 export enum PointInteractionState {
@@ -12,20 +12,18 @@ export enum PointInteractionState {
   CLICKED = 'clicked',
 }
 
-interface VerticalLineAndHighlightPlugin extends Plugin<ChartType> {
+interface IVerticalLineAndHighlightPlugin extends Plugin<ChartType> {
   mousePosition: { x: number; y: number } | null
-  seletedPoint: InteractionItem | null
-  tooltipContent: { label?: string; value?: number; category?: string; color?: string; fullSize: boolean }[]
+  selectedPoint: InteractionItem | null
+  tooltipContent: { label?: string; value?: number; category?: string; color?: string }[]
   interactionState: PointInteractionState
-  nearestPoint: InteractionItem | null
   clearSelectedPoint: () => void
-  tooltip?: any
   _options: any
   _chart: Chart | null
 }
 
 export interface PointerMoveEventContext {
-  plugin: VerticalLineAndHighlightPlugin
+  plugin: IVerticalLineAndHighlightPlugin
   chart: Chart
   tooltip: {
     x: number
@@ -36,19 +34,18 @@ export interface PointerMoveEventContext {
   } | null
 }
 
-// Create a custom plugin to draw the vertical line and background highlight
-const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
-  id: 'verticalLineAndHighlight',
-  mousePosition: null,
-  seletedPoint: null,
-  tooltipContent: [],
-  interactionState: PointInteractionState.NONE,
-  nearestPoint: null,
-  _options: {},
-  _chart: null,
+// Class-based plugin implementation for isolated instances
+class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin {
+  id = 'verticalLineAndHighlight'
+  mousePosition: { x: number; y: number } | null = null
+  selectedPoint: InteractionItem | null = null
+  tooltipContent: { label?: string; value?: number; category?: string; color?: string }[] = []
+  interactionState: PointInteractionState = PointInteractionState.NONE
+  _options: any = {}
+  _chart: Chart | null = null
 
   clearSelectedPoint() {
-    this.seletedPoint = null
+    this.selectedPoint = null
     this.interactionState = PointInteractionState.NONE
     this._options.onViewForecastPoint?.(null)
     this.mousePosition = null
@@ -59,14 +56,16 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
       tooltip: null,
     })
 
-    if (this._chart) {
+    if (this._chart && this._chart.canvas?.style) {
+      // Reset cursor when clearing selected point
+      this._chart.canvas.style.cursor = 'default'
       this._chart.update()
     }
-  },
+  }
 
   afterInit(
-    chart,
-    _args,
+    chart: Chart,
+    _args: unknown,
     options: {
       enable: boolean
       verticalLinedIndex: number
@@ -90,7 +89,8 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
     if (!plugin) return
 
     chart.canvas.addEventListener('mousemove', (event: MouseEvent) => {
-      if (plugin.seletedPoint) return
+      if (plugin.selectedPoint) return
+
       try {
         const rect = chart.canvas?.getBoundingClientRect()
 
@@ -122,8 +122,17 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
           } else {
             plugin.interactionState = PointInteractionState.HOVER_NEAR
           }
+
+          // Set cursor to pointer for clickable forecast points
+          if (chart.canvas?.style) {
+            chart.canvas.style.cursor = 'pointer' // TODO: 전체 영역 포인터 문제 수정 필요
+          }
         } else {
           plugin.interactionState = PointInteractionState.NONE
+          // Reset cursor to default when not over clickable forecast points
+          if (chart.canvas?.style) {
+            chart.canvas.style.cursor = 'default'
+          }
         }
 
         // Trigger chart update to redraw with new state
@@ -133,19 +142,23 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
         plugin.mousePosition = null
         plugin.tooltipContent = []
         plugin.interactionState = PointInteractionState.NONE
-        plugin.nearestPoint = null
+        // Reset cursor on error
+        if (chart.canvas?.style) {
+          chart.canvas.style.cursor = 'default'
+        }
       }
     })
 
     chart.canvas.addEventListener('mouseout', () => {
       plugin.interactionState = PointInteractionState.NONE
-      if (plugin.seletedPoint) return
+      if (plugin.selectedPoint) return
+
       try {
         plugin.mousePosition = null
         plugin.tooltipContent = []
-        plugin.nearestPoint = null
-        if (plugin.tooltip && typeof plugin.tooltip === 'object' && 'fullSize' in plugin.tooltip) {
-          plugin.tooltip.fullSize = false
+        // Reset cursor when mouse leaves chart
+        if (chart.canvas?.style) {
+          chart.canvas.style.cursor = 'default'
         }
         options.onPointerMove?.({
           plugin,
@@ -153,15 +166,23 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
           tooltip: null,
         })
 
-        if (chart?.canvas && chart.canvas.ownerDocument) {
-          chart.update()
-        }
+        // Trigger chart update to redraw with new state
+        chart.update()
       } catch (error) {
         console.error('Error in mouseout event:', error)
+        // Reset cursor on error
+        if (chart.canvas?.style) {
+          chart.canvas.style.cursor = 'default'
+        }
       }
     })
 
-    chart.canvas.addEventListener('click', (event) => {
+    chart.canvas.addEventListener('click', (event: any) => {
+      // 이미 선택된 포인트가 있다면 클릭 이벤트를 무시
+      if (this.selectedPoint) {
+        return
+      }
+
       try {
         const rect = chart.canvas?.getBoundingClientRect()
 
@@ -182,8 +203,8 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
         )
 
         if (forecastPoint) {
-          plugin.seletedPoint = forecastPoint
-          plugin.interactionState = PointInteractionState.CLICKED
+          this.selectedPoint = forecastPoint
+          this.interactionState = PointInteractionState.CLICKED
           options.onViewForecastPoint?.(forecastPoint.datasetIndex)
 
           const activePoint = (chart.tooltip as any)._active[0]
@@ -191,19 +212,19 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
           const months = chart.data.labels || []
 
           options.onPointerMove?.({
-            plugin,
+            plugin: this,
             chart,
             tooltip: {
               x,
               y,
-              label: dayjs(months[currentIndex] as string, 'YY-MM').format('MMMM YYYY'),
+              label: formatDate(months[currentIndex], 'MMMM YYYY'),
               viewDetail: true,
               content: [
                 {
-                  label: chart.data.datasets[plugin.seletedPoint.datasetIndex].label,
-                  value: chart.data.datasets[plugin.seletedPoint.datasetIndex].data[plugin.seletedPoint.index] as number,
+                  label: chart.data.datasets[this.selectedPoint.datasetIndex].label,
+                  value: chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
                   category: DATA_CATEGORIES.FORECAST,
-                  color: chart.data.datasets[plugin.seletedPoint.datasetIndex].borderColor as string,
+                  color: chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
                 },
               ],
             },
@@ -213,16 +234,11 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
         console.error('Error in click event:', error)
       }
     })
-
-    // chart.canvas.addEventListener('mouseup', function () {
-    //   plugin.seletedPoint = null
-    //   options.onViewForecastPoint?.(null)
-    // })
-  },
+  }
 
   afterDraw(
-    chart,
-    _args,
+    chart: Chart,
+    _args: unknown,
     options: {
       enable: boolean
       verticalLinedIndex: number
@@ -242,11 +258,10 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
     const { ctx } = chart
 
     const verticalLineIndex = options.verticalLinedIndex
-    // const showForecastTrend = options.showForecastTrend
+    const showForecastTrend = options.showForecastTrend
     const showVerticalLine = options.showVerticalLine ?? true
 
     const months = chart.data.labels || []
-    const actualDataset = chart.data.datasets.find((item) => (item as any).category === DATA_CATEGORIES.ACTUAL)
 
     const hoverImages: Record<string, HTMLImageElement> = {}
 
@@ -254,21 +269,6 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
       Object.entries(options?.hoverImages).forEach(([key, image]) => {
         hoverImages[key] = image
       })
-    }
-
-    // Draw if selected point is selected from previous click
-    if (this.seletedPoint && chart.data.datasets?.[this.seletedPoint.datasetIndex]?.label) {
-      const activeImage = hoverImages[`${chart.data.datasets[this.seletedPoint.datasetIndex].label} Active`]
-
-      if (activeImage) {
-        ctx.drawImage(
-          activeImage,
-          this.seletedPoint.element.x - HOVER_INDICATOR.SIZE / 2,
-          this.seletedPoint.element.y - HOVER_INDICATOR.SIZE / 2,
-          HOVER_INDICATOR.SIZE,
-          HOVER_INDICATOR.SIZE,
-        )
-      }
     }
 
     const topY = chart.scales.y.top
@@ -294,6 +294,21 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
       ctx.restore()
     }
 
+    // Draw if selected point is selected from previous click
+    if (this.selectedPoint && chart.data.datasets?.[this.selectedPoint.datasetIndex]?.label) {
+      const activeImage = hoverImages[`${chart.data.datasets[this.selectedPoint.datasetIndex].label} Active`]
+
+      if (activeImage) {
+        ctx.drawImage(
+          activeImage,
+          this.selectedPoint.element.x - HOVER_INDICATOR.SIZE / 2,
+          this.selectedPoint.element.y - HOVER_INDICATOR.SIZE / 2,
+          HOVER_INDICATOR.SIZE,
+          HOVER_INDICATOR.SIZE,
+        )
+      }
+    }
+
     // Draw hover vertical line and highlight
     if ((chart.tooltip as any)?._active?.length) {
       const activePoint = (chart.tooltip as any)._active[0]
@@ -302,129 +317,178 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
       const { x } = activePoint.element
       const currentIndex = activePoint.index
 
-      // Draw hover vertical line
+      const isNearestPoint = (point: { x: number; y: number }) => {
+        if (!point) return false
+        if (!this.mousePosition) return false
+        if (!point.x) return false
+        if (!point.y) return false
 
-      ctx.save()
-      ctx.beginPath()
-      ctx.moveTo(x, topY)
-      ctx.lineTo(x, bottomY)
-      ctx.lineWidth = LINE_STYLES.HOVER_LINE.LINE_WIDTH
-      ctx.strokeStyle = LINE_STYLES.HOVER_LINE.STROKE_STYLE
-      ctx.stroke()
-      ctx.restore()
+        return Math.abs(point.x - this.mousePosition.x) < 10 && Math.abs(point.y - this.mousePosition.y) < 10
+      }
 
-      // Only highlight if we're within the main data range (excluding padding)
-      // and not at the first month
-      if (currentIndex >= HOVER_INDICATOR.MIN_INDEX && !this.seletedPoint) {
-        // Reset tooltip content
-        this.tooltipContent = []
+      if (this.mousePosition && !this.selectedPoint) {
+        const chartArea = chart.chartArea
+        const isMouseInChart =
+          this.mousePosition.x >= chartArea.left &&
+          this.mousePosition.x <= chartArea.right &&
+          this.mousePosition.y >= chartArea.top &&
+          this.mousePosition.y <= chartArea.bottom
 
-        // Get the previous month's x position
-        // const index = chart.data.datasets.findIndex((dataset) => dataset.data.length > 0)
-        // const prevX = chart.getDatasetMeta(index).data[currentIndex - 1].x
+        if (isMouseInChart) {
+          // Find the nearest point
+          const nearestPoint = activePoints.reduce((prev: ActiveElement, curr: ActiveElement) => {
+            if (!prev.element.x || !prev.element.y || !curr.element.x || !curr.element.y || !this.mousePosition) return prev
 
-        // if (showForecastTrend && currentIndex > 1) {
-        //   // Create gradient for background highlight
-        //   const gradient = ctx.createLinearGradient(0, topY, 0, bottomY)
+            const prevDistance = Math.abs(prev.element.x - this.mousePosition.x)
+            const currDistance = Math.abs(curr.element.x - this.mousePosition.x)
 
-        //   gradient.addColorStop(0, 'rgba(5, 91, 229, 0)') // Less opacity at top
-        //   gradient.addColorStop(1, 'rgba(5, 91, 229, 0.15)') // More opacity at bottom
+            return currDistance < prevDistance ? curr : prev
+          })
 
-        //   // Draw background highlight with gradient
-        //   ctx.save()
-        //   ctx.fillStyle = gradient
-        //   ctx.fillRect(prevX, topY, x - prevX, bottomY - topY)
-        //   ctx.restore()
-        // }
+          // Draw hover vertical line at the nearest point
+          ctx.save()
+          ctx.beginPath()
+          ctx.moveTo(nearestPoint.element.x, topY)
+          ctx.lineTo(nearestPoint.element.x, bottomY)
+          ctx.lineWidth = LINE_STYLES.HOVER_LINE.LINE_WIDTH
+          ctx.strokeStyle = LINE_STYLES.HOVER_LINE.STROKE_STYLE
+          ctx.stroke()
+          ctx.restore()
 
-        let renderNerestPoint = () => {}
+          // Only highlight if we're within the main data range (excluding padding)
+          // and not at the first month
+          if (nearestPoint.index >= HOVER_INDICATOR.MIN_INDEX && !this.selectedPoint) {
+            // Reset tooltip content
+            this.tooltipContent = []
 
-        const isNearestPoint = (point: { x: number; y: number }) => {
-          if (!point) return false
-          if (!this.mousePosition) return false
-          if (!point.x) return false
-          if (!point.y) return false
+            // Get the previous month's x position
+            const index = chart.data.datasets.findIndex((dataset: any) => dataset.data.length > 0)
+            const prevX = chart.getDatasetMeta(index).data[currentIndex - 1].x
 
-          const distance = Math.sqrt(Math.pow(point.x - this.mousePosition?.x, 2) + Math.pow(point.y - this.mousePosition.y, 2))
+            // Find forecast for this month
+            let forecastValue = 0
 
-          return distance < HOVER_INDICATOR.SIZE / 2
-        }
+            const mainDataset = chart.data.datasets.find((dataset) => (dataset as any).category === DATA_CATEGORIES.ACTUAL)
+            const forecastDatasets = chart.data.datasets.filter(
+              (dataset) =>
+                (dataset as any).category === DATA_CATEGORIES.FORECAST &&
+                dataset.label ===
+                  `${mainDataset?.label} Forecast
+            `,
+            )
 
-        chart.data.datasets.forEach((dataset, datasetIndex) => {
-          const datasetMeta = chart.getDatasetMeta(datasetIndex)
+            // Look for a forecast that ends at our current month
+            if (forecastDatasets && forecastDatasets.length > 1) {
+              for (let i = 1; i < months.length - 2; i++) {
+                if (i + 1 === currentIndex) {
+                  // This is a forecast that ends at our current month
+                  const forecastDataset = forecastDatasets[i - 1] // Adjust index for the padding
 
-          if (!datasetMeta.hidden && datasetMeta.data[currentIndex] && dataset.data[currentIndex] !== null) {
-            const point = datasetMeta.data[currentIndex]
-            const size = HOVER_INDICATOR.SIZE
-            const xPos = point.x - size / 2
-            const yPos = point.y - size / 2
-            const img = hoverImages[`${dataset.label}`]
-
-            const mouseIsNear = isNearestPoint(point)
-
-            // For forecast points, handle different interaction states
-            if (
-              (dataset as any).category === DATA_CATEGORIES.FORECAST &&
-              dataset.data[currentIndex - 1] !== null &&
-              img &&
-              this.mousePosition
-            ) {
-              if (this.interactionState === PointInteractionState.CLICKED && mouseIsNear) {
-                ctx.drawImage(hoverImages[`${dataset.label} Active`], xPos, yPos, size, size)
-              } else if (this.interactionState === PointInteractionState.HOVER_NEAR && mouseIsNear) {
-                // Draw a subtle highlight circle around the point
-                ctx.drawImage(hoverImages[`${dataset.label} Hover`], xPos, yPos, size, size)
-              } else {
-                ctx.drawImage(img, xPos, yPos, size, size)
+                  if (forecastDataset && forecastDataset.data[currentIndex] !== null) {
+                    forecastValue = forecastDataset.data[currentIndex] as number
+                    break
+                  }
+                }
               }
-              // Add to tooltip content regardless
-              this.tooltipContent.push({
-                label: dataset?.label,
-                value: dataset?.data[currentIndex] as number,
-                category: DATA_CATEGORIES.FORECAST,
-                color: actualDataset?.borderColor as string,
-                fullSize: false,
-              })
-            }
-            if (
-              (dataset as any).category === DATA_CATEGORIES.ACTUAL &&
-              !(dataset as any).hidden &&
-              img &&
-              !this.seletedPoint &&
-              this.interactionState !== PointInteractionState.HOVER_NEAR
-            ) {
-              ctx.drawImage(img, xPos, yPos, size, size)
-              this.tooltipContent.push({
-                label: dataset?.label,
-                value: dataset?.data[currentIndex] as number,
-                category: DATA_CATEGORIES.ACTUAL,
-                color: dataset?.borderColor as string,
-                fullSize: false,
-              })
+            } else {
+              forecastValue = forecastDatasets[0]?.data[currentIndex] as number
             }
 
-            if (
-              (dataset as any).category === DATA_CATEGORIES.FUTURE &&
-              !(dataset as any).hidden &&
-              img &&
-              !this.seletedPoint &&
-              this.interactionState !== PointInteractionState.HOVER_NEAR
-            ) {
-              ctx.drawImage(img, xPos, yPos, size, size)
-              this.tooltipContent.push({
-                label: dataset?.label,
-                value: dataset?.data[currentIndex] as number,
-                category: DATA_CATEGORIES.FUTURE,
-                color: dataset?.borderColor as string,
-                fullSize: false,
-              })
+            const prevData = (mainDataset?.data[currentIndex - 1] as number) ?? 0
+            const currentData = (mainDataset?.data[currentIndex] as number) ?? 0
+
+            if (mainDataset?.data && showForecastTrend && currentIndex > 1 && prevData && currentData) {
+              // Determine if forecast is greater than actual
+
+              const isForecastRight = (forecastValue - prevData) * (currentData - prevData) > 0
+
+              // isForecastGreater = forecastValue !== null && forecastValue > actualDataset?.data?.[currentIndex]
+              // Create gradient for background highlight
+              const gradient = ctx.createLinearGradient(0, topY, 0, bottomY)
+
+              if (isForecastRight) {
+                // Green gradient for forecast > actual
+                gradient.addColorStop(0, 'rgba(5, 91, 229, 0)') // Less opacity at top
+                gradient.addColorStop(1, 'rgba(5, 91, 229, 0.15)') // More opacity at bottom
+              } else {
+                // Red gradient for forecast < actual
+                gradient.addColorStop(0, 'rgba(145, 145, 145, 0.00)') // Less opacity at top
+                gradient.addColorStop(1, 'rgba(145, 145, 145, 0.15)') // More opacity at bottom
+              }
+
+              // Draw background highlight with gradient
+              ctx.save()
+              ctx.fillStyle = gradient
+              ctx.fillRect(prevX, topY, x - prevX, bottomY - topY)
+              ctx.restore()
             }
 
-            if (mouseIsNear) {
-              renderNerestPoint = () => {
+            const nearestPointIsForecast = (chart.data.datasets[nearestPoint?.datasetIndex] as any)?.category === DATA_CATEGORIES.FORECAST
+
+            chart.data.datasets.forEach((dataset: any, datasetIndex: any, data: any) => {
+              const datasetMeta = chart.getDatasetMeta(datasetIndex)
+
+              if (!datasetMeta.hidden && datasetMeta.data[currentIndex] && dataset.data[currentIndex] !== null) {
+                const point = datasetMeta.data[currentIndex]
+                const size = HOVER_INDICATOR.SIZE
+                const xPos = point.x - size / 2
+                const yPos = point.y - size / 2
+                const img = hoverImages[`${dataset.label}`]
+
+                const mouseIsNear = isNearestPoint(point)
+
+                // For forecast points, handle different interaction states
                 if (
                   (dataset as any).category === DATA_CATEGORIES.FORECAST &&
                   dataset.data[currentIndex - 1] !== null &&
+                  img &&
+                  this.mousePosition
+                ) {
+                  // Add to tooltip content regardless
+                  if (!nearestPointIsForecast || (nearestPointIsForecast && nearestPoint.datasetIndex === datasetIndex))
+                    this.tooltipContent.push({
+                      label: dataset?.label,
+                      value: dataset?.data[currentIndex] as number,
+                      category: DATA_CATEGORIES.FORECAST,
+                      color: data[datasetIndex - 1]?.borderColor as string,
+                    })
+                }
+                if (
+                  (dataset as any).category === DATA_CATEGORIES.ACTUAL &&
+                  !dataset.hidden &&
+                  img &&
+                  !this.selectedPoint &&
+                  !nearestPointIsForecast
+                ) {
+                  // ctx.drawImage(img, xPos, yPos, size, size)
+                  this.tooltipContent.push({
+                    label: dataset?.label,
+                    value: dataset?.data[currentIndex] as number,
+                    category: DATA_CATEGORIES.ACTUAL,
+                    color: dataset?.borderColor as string,
+                  })
+                }
+
+                if (
+                  (dataset as any).category === DATA_CATEGORIES.FUTURE &&
+                  !dataset.hidden &&
+                  img &&
+                  !this.selectedPoint &&
+                  !nearestPointIsForecast
+                ) {
+                  // ctx.drawImage(img, xPos, yPos, size, size)
+                  this.tooltipContent.push({
+                    label: dataset?.label,
+                    value: dataset?.data[currentIndex] as number,
+                    category: DATA_CATEGORIES.FUTURE,
+                    color: dataset?.borderColor as string,
+                  })
+                }
+
+                if (
+                  (dataset as any).category === DATA_CATEGORIES.FORECAST &&
+                  dataset.data[currentIndex - 1] !== null &&
+                  nearestPoint?.datasetIndex !== datasetIndex &&
                   img &&
                   this.mousePosition
                 ) {
@@ -437,59 +501,33 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
                     ctx.drawImage(img, xPos, yPos, size, size)
                   }
                 }
+              }
+            })
 
-                if (
-                  (dataset as any).category === DATA_CATEGORIES.ACTUAL &&
-                  !(dataset as any).hidden &&
-                  img &&
-                  !this.seletedPoint &&
-                  this.interactionState !== PointInteractionState.HOVER_NEAR
-                ) {
-                  ctx.drawImage(img, xPos, yPos, size, size)
-                }
+            if (nearestPointIsForecast && this.mousePosition) {
+              const dataset = chart.data.datasets[nearestPoint.datasetIndex]
+              const datasetMeta = chart.getDatasetMeta(nearestPoint.datasetIndex)
+              const point = datasetMeta.data[nearestPoint.index]
+              const size = HOVER_INDICATOR.SIZE
+              const xPos = point.x - size / 2
+              const yPos = point.y - size / 2
+              const img = hoverImages[`${dataset.label}`]
 
-                if (
-                  (dataset as any).category === DATA_CATEGORIES.FUTURE &&
-                  !(dataset as any).hidden &&
-                  img &&
-                  !this.seletedPoint &&
-                  this.interactionState !== PointInteractionState.HOVER_NEAR
-                ) {
-                  ctx.drawImage(img, xPos, yPos, size, size)
-                }
+              if (this.interactionState === PointInteractionState.CLICKED) {
+                ctx.drawImage(hoverImages[`${dataset.label} Active`], xPos, yPos, size, size)
+              } else if (this.interactionState === PointInteractionState.HOVER_NEAR) {
+                // Draw a subtle highlight circle around the point
+                ctx.drawImage(hoverImages[`${dataset.label} Hover`], xPos, yPos, size, size)
+              } else {
+                ctx.drawImage(img, xPos, yPos, size, size)
               }
             }
           }
-        })
 
-        renderNerestPoint()
-      }
-
-      if (this.mousePosition && !this.seletedPoint) {
-        const chartArea = chart.chartArea
-        const mouseIsNear = activePoints.some((point: InteractionItem) => {
-          if (!point.element) return false
-          if (!this.mousePosition) return false
-          if (!point.element.x) return false
-          if (!point.element.y) return false
-
-          const distance = Math.sqrt(
-            Math.pow(point.element.x - this.mousePosition?.x, 2) + Math.pow(point.element.y - this.mousePosition.y, 2),
-          )
-
-          return distance < HOVER_INDICATOR.SIZE / 2
-        })
-        const isMouseInChart =
-          this.mousePosition.x >= chartArea.left &&
-          this.mousePosition.x <= chartArea.right &&
-          this.mousePosition.y >= chartArea.top &&
-          this.mousePosition.y <= chartArea.bottom
-
-        if (isMouseInChart && mouseIsNear) {
           let label: string = ''
 
           if (months[currentIndex]) {
-            label = dayjs(months[currentIndex] as string, 'YY-MM').format('MMMM YYYY')
+            label = formatDate(months[currentIndex], 'MMMM YYYY')
           }
 
           options.onPointerMove?.({
@@ -512,7 +550,11 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
         }
       }
     }
-  },
+  }
 }
 
+// Create a singleton instance for backward compatibility
+const verticalLineAndHighlightPlugin = new VerticalLineAndHighlightPlugin()
+
+// Export the singleton instance as default
 export default verticalLineAndHighlightPlugin

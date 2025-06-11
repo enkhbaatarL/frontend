@@ -112,7 +112,7 @@ export default async function loadImages(payload: Record<string, string>) {
         resolve([key, image])
       }
       image.onerror = (e) => {
-        console.log(e)
+        console.error(e)
         resolve([key, null]) // Resolve anyway to not block other images
       }
     })

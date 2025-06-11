@@ -1,14 +1,16 @@
 import MIForecastChart from '@/components/common/forecast-chart/MIForecastChart'
 import { generateForecastDataset } from '@/components/common/forecast-chart/mockBrentForecastData'
+import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 
 interface DefaultForecastChartProps {
   months: string[]
-  onViewDetail: (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => void
+  selectedContent: SelectedReportChartContent | null
+  onSelectedContent: (content: SelectedReportChartContent | null) => void
 }
 
-const DefaultForecastChart = ({ months, onViewDetail }: DefaultForecastChartProps) => (
+const DefaultForecastChart = ({ months, selectedContent: _, onSelectedContent }: DefaultForecastChartProps) => (
   <MIForecastChart
-    onViewDetail={onViewDetail}
+    onSelectedContent={onSelectedContent}
     forecastDatasets={[
       {
         ...generateForecastDataset(months, { forecastByMonth: false }),

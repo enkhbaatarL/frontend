@@ -221,6 +221,7 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
             hideLegend
             showForecastTrend={false}
             showVerticalLine={false}
+            onSelectedContent={() => {}}
           />
         </Box>
       )}

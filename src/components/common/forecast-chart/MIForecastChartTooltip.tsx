@@ -1,14 +1,13 @@
 import { Box, Typography } from '@mui/material'
 import { useMemo, useRef } from 'react'
 
-import { DATA_CATEGORIES } from './constants'
-import DataIcon from './icons/DataIcon'
-import ForecastErrorIcon from './icons/ForecastErrorIcon'
-import ForecastIcon from './icons/ForecastIcon'
-import MIButton from '../button/MIButton'
-import CloseIcon from '../icons/CloseIcon'
-import InfoOutlineIcon from '../icons/InfoOutlineIcon'
-
+import MIButton from '@/components/common/button/MIButton'
+import { DATA_CATEGORIES } from '@/components/common/forecast-chart/constants'
+import DataIcon from '@/components/common/forecast-chart/icons/DataIcon'
+import ForecastErrorIcon from '@/components/common/forecast-chart/icons/ForecastErrorIcon'
+import ForecastIcon from '@/components/common/forecast-chart/icons/ForecastIcon'
+import CloseIcon from '@/components/common/icons/CloseIcon'
+import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import theme from '@/theming'
 import { formatValue } from '@/utils/number'
 
@@ -29,7 +28,7 @@ const ChartToolTipItem = (props: { label: string; value: number; category: strin
   return (
     <Box sx={{ minWidth: `${minWidth}px`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <Typography component={'div'} variant="body2M14" color="gray.70" px="4px" py="5px" display={'flex'} alignItems={'center'}>
-        <Box mr="6px" color={color ?? 'inherit'}>
+        <Box mr="6px" color={color ?? 'inherit'} display={'flex'} alignItems={'center'}>
           {icon}
         </Box>
 
@@ -57,12 +56,12 @@ export interface MIForecastChartTooltipProps {
   left?: number
   label?: string
   content: { label?: string; value?: number; category?: string; color?: string }[]
-  borderBottom: number
-  borderRight: number
+  borderBottom?: number
+  borderRight?: number
   onClose?: () => void
 }
 
-export default function MIForecastChartTooltip({
+const MIForecastChartTooltip = ({
   visible,
   viewDetail = false,
   top = 0,
@@ -73,22 +72,22 @@ export default function MIForecastChartTooltip({
   borderBottom,
   borderRight,
   onClose,
-}: Readonly<MIForecastChartTooltipProps>) {
+}: Readonly<MIForecastChartTooltipProps>) => {
   const tooltipContainerRef = useRef<HTMLElement>(null)
+
   const position = useMemo(() => {
     let newTop: number = top
-
     let newLeft: number = left
 
     if (tooltipContainerRef.current === null) return { top: newTop, left: newLeft }
 
     const { clientWidth = 0, clientHeight = 0 } = tooltipContainerRef.current
 
-    if (left + clientWidth > borderRight) {
+    if (borderRight && left + clientWidth > borderRight) {
       newLeft = borderRight - clientWidth
     }
 
-    if (top + clientHeight > borderBottom) {
+    if (borderBottom && top + clientHeight > borderBottom) {
       newTop = borderBottom - clientHeight
     }
 
@@ -111,16 +110,18 @@ export default function MIForecastChartTooltip({
         top: position.top,
         left: position.left,
         pointerEvents: viewDetail ? 'auto' : 'none',
-        padding: '14px',
+        padding: '8px 16px',
         zIndex: 10,
         borderRadius: '4px',
         border: '1px solid',
         borderColor: viewDetail ? theme.palette.gray[60] : theme.palette.gray[30],
         backgroundColor: viewDetail ? theme.palette.gray[5] : 'rgba(255, 255, 255, 0.90)',
         boxShadow: '0px 1px 8px 0px rgba(0, 0, 0, 0.10);',
+        willChange: 'background-color, border-color',
+        transition: 'background-color 0.4s ease-in-out, border-color 0.4s ease-in-out',
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '8px' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '4px', ml: '4px', height: '32px' }}>
         <Typography variant="subtext3" color="gray.90">
           {label}
         </Typography>
@@ -166,3 +167,5 @@ export default function MIForecastChartTooltip({
     </Box>
   )
 }
+
+export default MIForecastChartTooltip
