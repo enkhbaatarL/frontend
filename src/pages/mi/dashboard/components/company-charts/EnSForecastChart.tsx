@@ -500,7 +500,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
         if (chart.actualChartLines.dataType === 'FUTURE') {
           const values = chart.actualChartLines.rawData.map((item) => item.value)
           return {
-            data: values,
+            data: [null, ...values, null],
             label: label[index],
             color: colorMap[index],
             hidePoint: true,
@@ -519,7 +519,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
         if (chart.actualChartLines.dataType === 'ACTUAL') {
           const value = chart.forecastChartLines.rawData.map((item) => item.value)
           return {
-            data: value,
+            data: [null, ...value, null],
             label: label[index],
             color: colorMap[index],
             hidePoint: true,
@@ -539,7 +539,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
         if (chart.actualChartLines.dataType === 'ACTUAL') {
           const value = chart.actualChartLines.rawData.map((item) => item.value)
           return {
-            data: value,
+            data: [null, ...value, null],
             label: label[index],
             color: colorMap[index],
             hidePoint: true,
