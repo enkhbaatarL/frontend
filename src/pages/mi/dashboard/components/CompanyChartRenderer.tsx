@@ -20,10 +20,23 @@ interface CompanyChartRendererProps {
   companyNo: number | undefined
   months: string[]
   data: IDashboardChartData
-  onViewDetail: (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => void
+  onViewDetail: (
+    content: { label?: string; value?: number; category?: string; color?: string; date?: string },
+    label: string,
+    goodsDataSourceNo?: number,
+  ) => void
+  showDetailChart?: boolean
+  setShowDetailChart: (showDetailChart: boolean) => void
 }
 
-export const CompanyChartRenderer = ({ companyNo, months, onViewDetail, data }: CompanyChartRendererProps) => {
+export const CompanyChartRenderer = ({
+  companyNo,
+  months,
+  onViewDetail,
+  data,
+  showDetailChart,
+  setShowDetailChart,
+}: CompanyChartRendererProps) => {
   const ChartComponent = useMemo(() => {
     if (!companyNo) return DefaultForecastChart
 
@@ -33,7 +46,13 @@ export const CompanyChartRenderer = ({ companyNo, months, onViewDetail, data }: 
 
   return (
     <Box mb="42px" pb="30px">
-      <ChartComponent months={months} onViewDetail={onViewDetail} data={data} />
+      <ChartComponent
+        months={months}
+        onViewDetail={onViewDetail}
+        data={data}
+        showDrillDown={showDetailChart}
+        setShowDrillDown={setShowDetailChart}
+      />
     </Box>
   )
 }
