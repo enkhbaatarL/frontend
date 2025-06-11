@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
@@ -126,7 +127,14 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
             </Box>
 
             <Box mt={'12px'}>
-              <MIInfluenceFactorChart increasingFactors={factors?.plusFactors} decreasingFactors={factors?.minusFactors} />
+              <MIInfluenceFactorChart
+                increasingFactors={factors?.plusFactors}
+                decreasingFactors={factors?.minusFactors}
+                companyNo={companyNo}
+                goodsDataSourceNo={selectedContent.goodsDataSourceNo}
+                predictDate={monthSelect.split('-').join('')}
+                date={dayjs(selectedContent.date).format('YYYYMM')}
+              />
             </Box>
           </Box>
         </Box>

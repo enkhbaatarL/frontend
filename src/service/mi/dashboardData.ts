@@ -188,6 +188,36 @@ export interface IDashboardFactorsResponse {
   plusFactors: IFactor[]
   minusFactors: IFactor[]
 }
+export interface IGraphMetaData {
+  currency: string
+  currentUnitCd: string
+}
+export interface IRawData {
+  resultDate: string
+  predictDate: string
+  value: number
+}
+export interface IDatasource {
+  goodsDataSourceNo: number
+  goodsDataSourceNm: string
+  goodsNo: number
+  goodsDataNo: number
+}
+export interface IDashboardFactorGraphRequest {
+  goodsDataSourceNo: number
+  predictDate: string
+  date: string
+  mnemonicCd: string
+  explanatoryLevelNm: string
+  predictionInputMnemonicCd: string
+  marketIndexAnalysisTargetCd: string
+}
+export interface IDashboardFactorGraphResponse {
+  summary: string
+  graphMetadata: IGraphMetaData
+  rawData: IRawData[]
+  datasource: IDatasource
+}
 
 /**
  * 대시보드 서비스
@@ -341,13 +371,25 @@ const dashboardDataService = {
     return response.data.data
   },
   /**
-   * 대시보드 차트 주요 요인 분석 카테고리를 조회합니다.
+   * 대시보드 차트 주요 요인 분석 데이터를 조회합니다.
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    * @param params - { predictDate: 예측 날짜, goodsDataSourceNo: 데이터 소스 번호 }
    */
   async getDashboardFactors(companyNo: number, params: IDashboardFactorsRequest) {
     const response: AxiosResponse<ICommonResponse<IDashboardFactorsResponse>> = await api.get(
       `mi/dashboard/companies/${companyNo}/chart/factors`,
+      { params },
+    )
+    return response.data.data
+  },
+  /**
+   * 대시보드 차트 주요 요인 분석 그래프를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictDate: 예측 날짜, goodsDataSourceNo: 데이터 소스 번호, explanatoryLevelNm: 카테고리 }
+   */
+  async getDashboardFactorGraph(companyNo: number, params: IDashboardFactorGraphRequest) {
+    const response: AxiosResponse<ICommonResponse<IDashboardFactorGraphResponse>> = await api.get(
+      `mi/dashboard/companies/${companyNo}/chart/factor/graph`,
       { params },
     )
     return response.data.data

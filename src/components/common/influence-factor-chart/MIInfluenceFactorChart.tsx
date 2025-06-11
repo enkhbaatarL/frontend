@@ -5,10 +5,10 @@ import { useNavigate } from 'react-router-dom'
 import LoadingBox from './LoadingBox'
 import MIButton from '../button/MIButton'
 import MIForecastChart from '../forecast-chart/MIForecastChart'
-import { generateChartMonths, generateForecastDataset } from '../forecast-chart/mockBrentForecastData'
+import { generateChartMonths } from '../forecast-chart/mockBrentForecastData'
 import CloseIcon from '../icons/CloseIcon'
 
-import { IFactor } from '@/service/mi/dashboardData.ts'
+import dashboardDataService, { IFactor, IDashboardFactorGraphRequest } from '@/service/mi/dashboardData.ts'
 
 const CheveronRightIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -32,10 +32,15 @@ export interface InfluenceFactor {
   explanatoryScore: number
   color: string
 }
+
 interface MIInfluenceFactorChartProps {
   decreasingFactors?: IFactor[]
   increasingFactors?: IFactor[]
   onHandleChangeRigCountInfluence?: (isShowing: boolean) => void
+  companyNo: number | undefined
+  goodsDataSourceNo: number | undefined
+  predictDate: string
+  date: string
 }
 
 const FactorItem = (props: {
@@ -156,21 +161,80 @@ const FactorItem = (props: {
 export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactorChartProps>) {
   const { decreasingFactors, increasingFactors, onHandleChangeRigCountInfluence } = props
   const [selectedBar, setSelectedBar] = useState('')
+  const [factorSummary, setFactorSummary] = useState('') // API 응답의 summary를 저장할 state 추가
   const { months } = generateChartMonths()
+  const [chartMonths, setChartMonths] = useState<string[]>()
+  const [chartData, setChartData] = useState<number[]>([])
   const [loadingFactorGraph, setLoadingFactorGraph] = useState(false)
   const navigate = useNavigate()
+  const [factorUnit, setFactorUnit] = useState('')
 
   const redirectToDataVisualization = () => {
     navigate('/user/data-visualization')
   }
 
-  const changeBar = (value: string) => {
+  // API 호출을 담당하는 별도 함수
+  const fetchFactorGraphData = async (factor: IFactor) => {
+    const requestParams: IDashboardFactorGraphRequest = {
+      goodsDataSourceNo: props.goodsDataSourceNo ?? 0,
+      predictDate: props.predictDate,
+      date: props.date,
+      mnemonicCd: factor.mnemonicCd,
+      explanatoryLevelNm: factor.explanatoryLevelDetailNm,
+      predictionInputMnemonicCd: factor.predictionInputMnemonicCd,
+      marketIndexAnalysisTargetCd: factor.marketIndexAnalysisTargetCd,
+    }
+
+    try {
+      const response = await dashboardDataService.getDashboardFactorGraph(props.companyNo ?? 0, requestParams)
+
+      if (response.summary) {
+        setFactorSummary(response.summary)
+      }
+
+      if (response.graphMetadata) {
+        setFactorUnit(`Unit: ${response.graphMetadata.currency}/${response.graphMetadata.currentUnitCd}`)
+      }
+
+      // response.rawdata.resultDate를 chartMonths에 저장
+      if (response.rawData) {
+        const monthList: string[] = []
+        const dataList: number[] = []
+        response.rawData.map((data) => {
+          monthList.push(data.resultDate)
+          dataList.push(data.value)
+        })
+        setChartMonths(monthList)
+        setChartData(dataList)
+      }
+
+      console.log(months)
+      return response
+    } catch (error) {
+      console.error('Error fetching dashboard factor graph:', error)
+      throw error
+    }
+  }
+
+  // 바 변경을 담당하는 함수 (UI 상태 관리에 집중)
+  const changeBar = async (bar: IFactor) => {
     setLoadingFactorGraph(true)
-    setSelectedBar(value)
+    setSelectedBar(bar.explanatoryLevelDetailNm)
+    setFactorSummary('') // 새로운 요소 선택 시 이전 summary 초기화
+    setChartMonths(months) // 새로운 요소 선택 시 차트 데이터 초기화
     onHandleChangeRigCountInfluence?.(true)
-    setTimeout(() => {
-      setLoadingFactorGraph(false)
-    }, 1000)
+
+    try {
+      await fetchFactorGraphData(bar)
+    } catch (error) {
+      // 에러 처리 (필요시)
+      console.error('Failed to load factor graph data:', error)
+    } finally {
+      // 로딩 상태를 일정 시간 후 해제 (기존 setTimeout 로직 유지)
+      setTimeout(() => {
+        setLoadingFactorGraph(false)
+      }, 1000)
+    }
   }
 
   const incColorMap = ['#2E7D32', '#388E3C', '#43A047', '#66BB6A', '#81C784']
@@ -200,7 +264,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
                 deactive={item.explanatoryLevelDetailNm !== selectedBar && !!selectedBar}
                 isFocus={item.explanatoryLevelDetailNm === selectedBar}
                 factor={item}
-                onClick={() => changeBar(item.explanatoryLevelDetailNm)}
+                onClick={() => changeBar(item)}
                 barColor={item.dirRank < 5 ? decColorMap[item.dirRank - 1] : decColorMap[4]}
                 maxFactorValue={maxFactorValue}
               />
@@ -215,7 +279,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
                 factor={item}
                 isFocus={item.explanatoryLevelDetailNm === selectedBar}
                 align="right"
-                onClick={() => changeBar(item.explanatoryLevelDetailNm)}
+                onClick={() => changeBar(item)}
                 barColor={item.dirRank < 5 ? incColorMap[item.dirRank - 1] : decColorMap[4]}
                 maxFactorValue={maxFactorValue}
               />
@@ -253,6 +317,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
               size="h32"
               onClick={() => {
                 setSelectedBar('')
+                setFactorSummary('') // 닫을 때 summary도 초기화
                 onHandleChangeRigCountInfluence?.(false)
               }}
             >
@@ -286,11 +351,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
             </Box>
             <Box>
               <Typography variant="body2R14" color="gray.70">
-                리그 가동률이 평년 대비 약 12% 회복되었습니다. 이는 새로운 공급을 의미하며, 시장 공급 증가로 이어질 전망입니다. Lorem ipsum
-                dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi
-                pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus
-                bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti
-                sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+                {factorSummary}
               </Typography>
             </Box>
           </Box>
@@ -298,16 +359,16 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
           <MIForecastChart
             forecastDatasets={[
               {
-                ...generateForecastDataset(months, { forecastByMonth: false }),
+                data: chartData,
                 label: 'Actual data 1',
                 color: '#40597A',
                 hidePoint: true,
                 type: 'future',
               },
             ]}
-            months={months}
+            months={chartMonths}
             height={448}
-            topLabel="Unit: Rigs"
+            topLabel={factorUnit}
             lastUpdated="April 29, 2025"
             hideControl
             hideLegend

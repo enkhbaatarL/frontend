@@ -53,7 +53,7 @@ export interface MIForecastChartRef {
 
 export interface MIForecastChartProps {
   height: number | string
-  months: string[]
+  months: string[] | undefined
   forecastDatasets: Array<ForecastDataset>
   showForecastTrend?: boolean
   hidePoint?: boolean
