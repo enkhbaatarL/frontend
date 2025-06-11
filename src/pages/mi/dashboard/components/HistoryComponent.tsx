@@ -110,7 +110,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
       })
 
       // 파일 다운로드 처리
-      const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedSettingDetailNo}_${selectedFulfillDate}.xlsx`
+      const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedFulfillDate}.xlsx`
       downloadFile(response.data, fileName)
     } catch (error) {
       console.error('Download failed:', error)
@@ -120,10 +120,10 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
   // 리포트 다운로드
   const handleDownload2 = async (date: string) => {
     try {
-      const response = await dashboardDataService.getDashboardSummaryFileDownload(companyNo, date)
+      const response = await dashboardDataService.getDashboardSummaryFileDownload(companyNo, selectedFulfillDate, date)
 
       // 파일 다운로드 처리
-      const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedSettingDetailNo}_${selectedFulfillDate}.xlsx`
+      const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedFulfillDate}.zip`
       downloadFile(response.data, fileName)
     } catch (error) {
       console.error('Download failed:', error)

@@ -145,6 +145,16 @@ export interface IDashboardChartData {
   dashboardMetadata: IDashboardChartMetadata
   charts: IDashboardChart[]
 }
+export interface IDashboardSummary {
+  explanatoryTitleContent: string
+  explanatorySummaryContent: string
+  explanatoryFilePath: string
+}
+export interface IDashboardSummaries {
+  summaries: IDashboardSummary[]
+  isFileDownload: boolean
+}
+
 /**
  * 대시보드 서비스
  */
@@ -245,23 +255,33 @@ const dashboardDataService = {
    * @param date - 조회할 년월
    */
   async getDashboardChartDataDownload(companyNo: number, date: string) {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart/file-download`, {
+    return await api.get(`mi/dashboard/companies/${companyNo}/chart/file-download`, {
       params: { date },
       responseType: 'blob',
     })
-    return response
+  },
+  /**
+   * 대시보드 Summary 데이터를 다운로드 합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param date - YYYYMMDD
+   * @param predictDate - YYYYMM
+   */
+  async getDashboardSummaryFileDownload(companyNo: number, date: string, predictDate: string) {
+    return await api.get(`mi/dashboard/companies/${companyNo}/summary/file-download`, {
+      params: { date, predictDate },
+      responseType: 'blob',
+    })
   },
   /**
    * 대시보드 Summary 데이터를 조회합니다.
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
-   * @param date - 조회할 년월
+   * @param date - YYYYMMDD
    */
-  async getDashboardSummaryFileDownload(companyNo: number, date: string) {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/summary/file-download`, {
+  async getDashboardSummary(companyNo: number, date: string): Promise<IDashboardSummaries> {
+    const response: AxiosResponse<ICommonResponse<IDashboardSummaries>> = await api.get(`mi/dashboard/companies/${companyNo}/summary`, {
       params: { date },
-      responseType: 'blob',
     })
-    return response
+    return response.data.data
   },
 }
 
