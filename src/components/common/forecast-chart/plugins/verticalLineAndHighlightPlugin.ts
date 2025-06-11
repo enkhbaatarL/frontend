@@ -242,7 +242,7 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
     const { ctx } = chart
 
     const verticalLineIndex = options.verticalLinedIndex
-    const showForecastTrend = options.showForecastTrend
+    // const showForecastTrend = options.showForecastTrend
     const showVerticalLine = options.showVerticalLine ?? true
 
     const months = chart.data.labels || []
@@ -320,22 +320,22 @@ const verticalLineAndHighlightPlugin: VerticalLineAndHighlightPlugin = {
         this.tooltipContent = []
 
         // Get the previous month's x position
-        const index = chart.data.datasets.findIndex((dataset) => dataset.data.length > 0)
-        const prevX = chart.getDatasetMeta(index).data[currentIndex - 1].x
+        // const index = chart.data.datasets.findIndex((dataset) => dataset.data.length > 0)
+        // const prevX = chart.getDatasetMeta(index).data[currentIndex - 1].x
 
-        if (showForecastTrend && currentIndex > 1) {
-          // Create gradient for background highlight
-          const gradient = ctx.createLinearGradient(0, topY, 0, bottomY)
+        // if (showForecastTrend && currentIndex > 1) {
+        //   // Create gradient for background highlight
+        //   const gradient = ctx.createLinearGradient(0, topY, 0, bottomY)
 
-          gradient.addColorStop(0, 'rgba(5, 91, 229, 0)') // Less opacity at top
-          gradient.addColorStop(1, 'rgba(5, 91, 229, 0.15)') // More opacity at bottom
+        //   gradient.addColorStop(0, 'rgba(5, 91, 229, 0)') // Less opacity at top
+        //   gradient.addColorStop(1, 'rgba(5, 91, 229, 0.15)') // More opacity at bottom
 
-          // Draw background highlight with gradient
-          ctx.save()
-          ctx.fillStyle = gradient
-          ctx.fillRect(prevX, topY, x - prevX, bottomY - topY)
-          ctx.restore()
-        }
+        //   // Draw background highlight with gradient
+        //   ctx.save()
+        //   ctx.fillStyle = gradient
+        //   ctx.fillRect(prevX, topY, x - prevX, bottomY - topY)
+        //   ctx.restore()
+        // }
 
         let renderNerestPoint = () => {}
 

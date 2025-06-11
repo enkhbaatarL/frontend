@@ -51,7 +51,7 @@ const drawTextWithBackground = (ctx: CanvasRenderingContext2D, options: TextWith
     fontFamily,
     fontWeight,
     textColor,
-    backgroundColor = 'red',
+    backgroundColor = '',
     paddingLeft = 0,
     paddingRight = 0,
     paddingTop = 0,
@@ -94,10 +94,10 @@ const gridAndAxesPlugin: Plugin<ChartType> = {
   beforeDraw(chart: Chart, _agrs, options: { bottomLabel?: string; topLabel?: string }) {
     const ctx: CanvasRenderingContext2D = chart.ctx
     const chartArea: ChartArea = chart.chartArea
-    const scales = chart.scales
+    // const scales = chart.scales
     const months = chart.data.labels as string[]
     const { top, bottom, left, right } = chartArea
-    const yScale = scales.y
+    // const yScale = scales.y
 
     // Calculate extended axis length (10% on each side)
     const axisExtension = (right - left) * 0.1
@@ -108,26 +108,26 @@ const gridAndAxesPlugin: Plugin<ChartType> = {
     ctx.save()
 
     // 1. Draw dashed grid lines
-    ctx.setLineDash([2, 2])
-    ctx.lineWidth = 1
-    ctx.strokeStyle = '#B5B5B5'
+    // ctx.setLineDash([2, 2])
+    // ctx.lineWidth = 1
+    // ctx.strokeStyle = '#B5B5B5'
 
     // Draw horizontal grid lines (y-axis)
-    const yMin = yScale.min
-    const yMax = yScale.max
-    const yStep = 5 // Same as the stepSize in the options
+    // const yMin = yScale.min
+    // const yMax = yScale.max
+    // const yStep = 5 // Same as the stepSize in the options
 
-    for (let y = yMin; y < yMax; y += yStep) {
-      const yPixel = yScale.getPixelForValue(y)
+    // for (let y = yMin; y < yMax; y += yStep) {
+    //   const yPixel = yScale.getPixelForValue(y)
 
-      // Only draw if within chart area
-      if (yPixel >= top && yPixel <= bottom) {
-        ctx.beginPath()
-        ctx.moveTo(left, yPixel)
-        ctx.lineTo(right, yPixel)
-        ctx.stroke()
-      }
-    }
+    //   // Only draw if within chart area
+    //   if (yPixel >= top && yPixel <= bottom) {
+    //     ctx.beginPath()
+    //     ctx.moveTo(left, yPixel)
+    //     ctx.lineTo(right, yPixel)
+    //     ctx.stroke()
+    //   }
+    // }
 
     // Draw vertical grid lines (x-axis) - only for the actual data points
     for (let i = 1; i < months.length - 1; i++) {
@@ -140,8 +140,8 @@ const gridAndAxesPlugin: Plugin<ChartType> = {
         // Only draw if within chart area
         if (x >= left && x <= right) {
           ctx.beginPath()
-          ctx.moveTo(x, top)
-          ctx.lineTo(x, bottom)
+          // ctx.moveTo(x, top)
+          // ctx.lineTo(x, bottom)
           ctx.stroke()
         }
       }
@@ -149,8 +149,8 @@ const gridAndAxesPlugin: Plugin<ChartType> = {
 
     // 2. Draw solid axes
     ctx.setLineDash([]) // Reset to solid line
-    ctx.lineWidth = 1.5
-    ctx.strokeStyle = '#8B8B8B'
+    // ctx.lineWidth = 1.5
+    // ctx.strokeStyle = '#8B8B8B'
 
     // Draw extended x-axis (horizontal line at bottom)
     ctx.beginPath()
@@ -160,8 +160,8 @@ const gridAndAxesPlugin: Plugin<ChartType> = {
 
     // Draw y-axis (vertical line at left)
     ctx.beginPath()
-    ctx.moveTo(left, top)
-    ctx.lineTo(left, bottom)
+    // ctx.moveTo(left, top)
+    // ctx.lineTo(left, bottom)
     ctx.stroke()
 
     if (options.bottomLabel) {
