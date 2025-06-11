@@ -74,10 +74,10 @@ const NotificationPage = () => {
               onRowClick: handleClickDetail,
               columns: [
                 {
-                  field: 'goodsDataNo',
+                  field: 'notificationType',
                   headerName: '구분',
                   width: 120,
-                  renderCell: (params) => <MITableCell value={params.value} />,
+                  renderCell: (params) => <MITableCell value={params.value === 'ACTUAL' ? 'Data' : 'MI'} />,
                 },
                 {
                   field: 'goodsDataNm',

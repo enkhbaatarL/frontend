@@ -15,6 +15,7 @@ export interface INotificationSettingDetailInfo {
   notificationCriticalValueSeparateCd: string
   criticalValueSettingVol: number
   criticalValueSettingUnitNm: string
+  notificationType: string
 }
 
 export interface IRegisterNotificationSettingRequest {
