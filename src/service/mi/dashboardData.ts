@@ -144,6 +144,14 @@ interface IDashboardChart {
 export interface IDashboardChartData {
   dashboardMetadata: IDashboardChartMetadata
   charts: IDashboardChart[]
+  dashboardDataSources: {
+    goodsDataSourceNo: number
+    dashboardLineName: string
+  }[]
+}
+export interface IDashboardFactorCategoryRequest {
+  predictDate: string
+  goodsDataSourceNo: number
 }
 export interface IDashboardSummary {
   explanatoryTitleContent: string
@@ -281,6 +289,15 @@ const dashboardDataService = {
     const response: AxiosResponse<ICommonResponse<IDashboardSummaries>> = await api.get(`mi/dashboard/companies/${companyNo}/summary`, {
       params: { date },
     })
+    return response.data.data
+  },
+  /**
+   * 대시보드 차트 주요 요인 분석 카테고리를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictDate: 예측 날짜, goodsDataSourceNo: 데이터 소스 번호 }
+   */
+  async getDashboardFactorCategory(companyNo: number, params: IDashboardFactorCategoryRequest) {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart/factor/category`, { params })
     return response.data.data
   },
 }

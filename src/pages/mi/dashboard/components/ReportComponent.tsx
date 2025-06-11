@@ -8,29 +8,17 @@ import MISummaryDownloadReport from './MISummaryDownloadReport'
 import MIButton from '@/components/common/button/MIButton'
 import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
 import { generateChartMonths } from '@/components/common/forecast-chart/mockBrentForecastData'
-import CloseIcon from '@/components/common/icons/CloseIcon'
-import PopupIndicator from '@/components/common/influence-factor-chart/icons/PopupIndicatorIcon.tsx'
-import MIInfluenceFactorChart from '@/components/common/influence-factor-chart/MIInfluenceFactorChart'
-import MISegmented from '@/components/common/segmentedbtn/MISegmented'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import CompanyChartRenderer from '@/pages/mi/dashboard/components/CompanyChartRenderer'
 import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
 import dashboardDataService from '@/service/mi/dashboardData'
 import useAuthStore from '@/store/useAuthStore'
-import theme from '@/theming'
 import { downloadFile } from '@/utils/file'
 export type MonthItem = {
   label: string
   value: string
 }
-
-const HorizontalChartIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <path d="M4 18L14 18M4 12L20 12M4 6L10 6" stroke="#343A40" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
-
 interface ReportComponentProps {
   companyNo: number | undefined
 }
@@ -38,16 +26,15 @@ interface ReportComponentProps {
 const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   const [monthSelect, setMonthSelect] = useState('')
   const { months } = generateChartMonths()
-  const [selectedCase, setSelectedCase] = useState('case1')
-  const [selectedContent, _setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
+  const [_selectedContent, setSelectedContent] = useState<{
+    label?: string
+    value?: string
+    category?: string
+    date?: string
+    goodsDataSourceNo?: number
+  } | null>(null)
   const [showDetailChart, setShowDetailChart] = useState(false)
   const { accessCompanyInfo, user } = useAuthStore()
-
-  const [showRigCountInfluence, setShowRigCountInfluence] = useState(false)
-
-  const onHandleChangeRigCountInfluence = (isShowing: boolean) => {
-    setShowRigCountInfluence(isShowing)
-  }
 
   // 대시보드 기본 정보
   const { data: dataInfo } = useQuery({
@@ -77,6 +64,8 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     gcTime: 0,
     enabled: !!monthSelect,
   })
+
+  const goodsDataSourceNo = useMemo(() => chartData?.dashboardDataSources[0].goodsDataSourceNo, [chartData])
 
   const monthsData = useMemo(
     () =>
@@ -118,12 +107,12 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         align: 'center',
       }
 
-      const dataColumns: GridColDef[] = chartData.charts[0].actualChartLines.rawData.map((chart) => ({
+      const dataColumns: GridColDef[] = chartData.charts[0].actualChartLines?.rawData?.map((chart) => ({
         field: chart.resultDate,
         headerName: formatDate(chart.resultDate),
         flex: 1,
         align: 'center',
-        renderCell: (params: GridRenderCellParams) => <MITableCell value={params.value} />,
+        renderCell: (params: GridRenderCellParams) => <MITableCell value={params.value ?? '-'} />,
       }))
 
       return [currencyColumn, ...dataColumns]
@@ -208,15 +197,16 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     return `${month} ${day}, ${year}`
   }, [dataInfo])
 
-  // const handleViewDetail = (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => {
-  //   setSelectedContent({
-  //     date: label ?? '',
-  //     label: content.label ?? '',
-  //     value: Number(content.value).toFixed(2) ?? '0',
-  //     category: content.category ?? '',
-  //   })
-  //   setShowDetailChart(true)
-  // }
+  const handleViewDetail = (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => {
+    setSelectedContent({
+      date: label ?? '',
+      label: content.label ?? '',
+      value: Number(content.value).toFixed(2) ?? '0',
+      category: content.category ?? '',
+      goodsDataSourceNo: goodsDataSourceNo ?? 0,
+    })
+    setShowDetailChart(true)
+  }
 
   // 데이터 테이블 다운로드
   const downloadDataTable = async () => {
@@ -258,167 +248,17 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
 
         {/* CompanyChartRenderer에 props로 받은 companyNo 전달 */}
         {chartData && (
-          <CompanyChartRenderer companyNo={companyNo} months={months} onViewDetail={() => setShowDetailChart(true)} data={chartData} />
+          <CompanyChartRenderer
+            companyNo={companyNo}
+            months={months}
+            onViewDetail={handleViewDetail}
+            data={chartData}
+            showDetailChart={showDetailChart}
+            setShowDetailChart={setShowDetailChart}
+          />
         )}
 
-        {showDetailChart && (
-          <Box p="12px" mb="24px" sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
-            <Box sx={{ position: 'absolute', top: '0px', left: '50%', transform: 'translate(-50%, -100%)', '& svg': { display: 'block' } }}>
-              <PopupIndicator />
-            </Box>
-            <Box px="12px" py="6px" mb="10px" display={'flex'} justifyContent={'space-between'}>
-              <Box>
-                <Box
-                  mb="8px"
-                  sx={{
-                    display: 'inline-block',
-                    backgroundColor: theme.palette.common.white,
-                    padding: '0 8px',
-                    borderRadius: '100px',
-                  }}
-                >
-                  <Typography variant="chip2" color="#495057">
-                    Drill-down
-                  </Typography>
-                </Box>
-                <Box mb="8px">
-                  <Typography variant="body2" color="#495057">
-                    {selectedContent?.label} / {selectedContent?.date}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="messageText1" color="#212529">
-                    {selectedContent?.value}
-                  </Typography>
-                  <Typography variant="body2SB14" color="#212529">
-                    GWh
-                  </Typography>
-                </Box>
-              </Box>
-              <MIButton
-                type="ghost"
-                contentType="icon"
-                size="h32"
-                onClick={() => {
-                  setShowDetailChart(false)
-                }}
-              >
-                <CloseIcon />
-              </MIButton>
-            </Box>
-
-            <Box
-              p="24px"
-              sx={{
-                backgroundColor: theme.palette.common.white,
-                border: '1px solid',
-                borderColor: showRigCountInfluence ? 'gray.20' : 'gray.60',
-                borderRadius: '4px',
-              }}
-            >
-              <Box display={'flex'} gap="6px">
-                <HorizontalChartIcon />
-                <Typography component={'div'} variant="infoDocument" color="gray.90" mb="24px">
-                  주요 요인 분석
-                </Typography>
-              </Box>
-              <Box display={'flex'} gap={'10px'}>
-                {[
-                  {
-                    value: 'case1',
-                    label: 'Grid Stability',
-                  },
-                  {
-                    value: 'case2',
-                    label: 'Renewable Integration',
-                  },
-                  {
-                    value: 'case3',
-                    label: 'Policy Support',
-                  },
-                  {
-                    value: 'case4',
-                    label: 'Technology Cost',
-                  },
-                ].map((data, index) => (
-                  <MISegmented size="h30" active={data.value === selectedCase} onClick={() => setSelectedCase(data.value)} key={index}>
-                    {data.label}
-                  </MISegmented>
-                ))}
-              </Box>
-              <Box px="12px" py="18px">
-                <Typography variant="body2R14" color="#495057">
-                  에너지 저장 시스템의 주요 영향 요인에 대한 분석입니다. 그리드 안정성, 재생에너지 통합, 정책 지원, 기술 비용 등이 배터리
-                  저장 용량 예측에 미치는 영향을 평가합니다. 각 요인은 에너지 저장 시장의 성장과 발전에 중요한 역할을 하며, 향후 시장 전망에
-                  직접적인 영향을 미칩니다.
-                </Typography>
-              </Box>
-
-              <Box>
-                <MIInfluenceFactorChart
-                  height={150}
-                  decreasingFactors={[
-                    {
-                      label: 'High Installation Cost',
-                      value: 75.0,
-                      color: '#A9141A',
-                    },
-                    {
-                      label: 'Grid Infrastructure',
-                      value: 45.0,
-                      color: '#5B6773',
-                    },
-                    {
-                      label: 'Regulatory Barriers',
-                      value: 35.0,
-                      color: '#7A8790',
-                    },
-                    {
-                      label: 'Technology Maturity',
-                      value: 25.0,
-                      color: '#8C98A0',
-                    },
-                    {
-                      label: 'Market Competition',
-                      value: 15.0,
-                      color: '#9DAFB9',
-                    },
-                  ]}
-                  increasingFactors={[
-                    {
-                      label: 'Renewable Energy Growth',
-                      value: 95.0,
-                      color: '#2E7D32',
-                    },
-                    {
-                      label: 'Grid Modernization',
-                      value: 85.0,
-                      color: '#388E3C',
-                    },
-                    {
-                      label: 'Policy Incentives',
-                      value: 70.0,
-                      color: '#43A047',
-                    },
-                    {
-                      label: 'Cost Reduction',
-                      value: 60.0,
-                      color: '#66BB6A',
-                    },
-                    {
-                      label: 'Energy Security',
-                      value: 50.0,
-                      color: '#81C784',
-                    },
-                  ]}
-                  onHandleChangeRigCountInfluence={onHandleChangeRigCountInfluence}
-                />
-              </Box>
-            </Box>
-          </Box>
-        )}
-
-        <Box width={'100%'} mb="40px">
+        <Box width={'100%'}>
           <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} py="6px" mb="20px">
             <Typography variant="infoDocument" color="gray.90">
               Data Table
@@ -429,9 +269,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           </Box>
           {chartData && (
             <MITableUser
-              hidePagination={true}
               tableProps={{
-                disableHover: true,
                 noRowMessage: '등록된 내용이 없습니다.',
                 columns: tableColumns,
                 rows: tableRows,
