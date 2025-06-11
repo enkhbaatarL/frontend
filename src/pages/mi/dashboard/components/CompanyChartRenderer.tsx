@@ -25,7 +25,7 @@ interface CompanyChartRendererProps {
   onSelectedContent: (content: SelectedReportChartContent | null) => void
 }
 
-export const CompanyChartRenderer = ({ companyNo, months, selectedContent, onSelectedContent, data }: CompanyChartRendererProps) => {
+const CompanyChartRenderer = ({ companyNo, months, selectedContent, onSelectedContent, data }: CompanyChartRendererProps) => {
   const ChartComponent = useMemo(() => {
     if (!companyNo) return DefaultForecastChart
 
