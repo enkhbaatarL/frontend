@@ -8,6 +8,7 @@ import MIButtonViewMore from '@/components/common/button/MIButtonViewMore.tsx'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon.tsx'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import dashboardDataService, { IDashboardSummary } from '@/service/mi/dashboardData.ts'
+import { downloadFile } from '@/utils/file.ts'
 
 interface MISummaryDownloadReportProps {
   companyNo: number | undefined
@@ -25,24 +26,22 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
     enabled: !!companyNo && !!monthSelect,
   })
 
-  // summaries 데이터를 렌더링하는 함수
   const renderSummaryContent = () => {
     if (!data?.summaries || data.summaries.length === 0) {
-      return '데이터가 없습니다.'
+      return ''
     }
 
     return data.summaries.map((summary: IDashboardSummary, index: number) => (
       <Typography key={index} variant="subtext5" color="#242424" component="div">
         {index !== 0 && summary.explanatoryTitleContent}
-        <br />
+        {index !== 0 && <br />}
         {summary.explanatorySummaryContent}
       </Typography>
     ))
   }
 
-  // 텍스트 높이를 체크하여 버튼 표시 여부 결정
   useEffect(() => {
-    if (contentRef.current && data?.summaries) {
+    if (contentRef.current && data?.summaries && !isLoading) {
       const element = contentRef.current
 
       // 임시로 line-clamp 제거하여 전체 높이 측정
@@ -56,8 +55,8 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
 
       const fullHeight = element.scrollHeight
 
-      // 다시 3줄로 제한하여 높이 측정
-      element.style.webkitLineClamp = '3'
+      // 다시 4줄로 제한하여 높이 측정
+      element.style.webkitLineClamp = '4'
       element.style.display = '-webkit-box'
       element.style.webkitBoxOrient = 'vertical'
 
@@ -68,10 +67,21 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
       element.style.display = originalDisplay
       element.style.webkitBoxOrient = originalWebkitBoxOrient
 
-      // 전체 높이가 3줄 높이보다 크면 버튼 표시
+      // 전체 높이가 4줄 높이보다 크면 버튼 표시
       setShouldShowButton(fullHeight > clampedHeight)
     }
   }, [data?.summaries])
+
+  const handleDownload = async () => {
+    try {
+      const response = await dashboardDataService.getDashboardSummaryFileDownload(companyNo ?? 0, monthSelect.split('-').join(''))
+
+      const fileName = `Report_${monthSelect.split('-').join('')}.zip`
+      downloadFile(response.data, fileName)
+    } catch (error) {
+      console.error('Download failed:', error)
+    }
+  }
 
   return (
     <MISkeleton variant={'dashboardSummary'} loading={isLoading}>
@@ -81,7 +91,14 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
             <img style={{ verticalAlign: 'sub', marginRight: '4px' }} src={aiIcon} alt="" />
             Summary
           </Typography>
-          <MIButton size={'h34'} type={'outlined'} color={'gray'} startIcon={<FileDownloadIcon />} disabled={!data?.isFileDownload}>
+          <MIButton
+            size={'h34'}
+            type={'outlined'}
+            color={'gray'}
+            startIcon={<FileDownloadIcon />}
+            disabled={!data?.isFileDownload}
+            onClick={handleDownload}
+          >
             Download Full Report
           </MIButton>
         </Box>

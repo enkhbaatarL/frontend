@@ -266,7 +266,7 @@ const dashboardDataService = {
    * @param date - YYYYMMDD
    * @param predictDate - YYYYMM
    */
-  async getDashboardSummaryFileDownload(companyNo: number, date: string, predictDate: string) {
+  async getDashboardSummaryFileDownload(companyNo: number, date: string, predictDate?: string) {
     return await api.get(`mi/dashboard/companies/${companyNo}/summary/file-download`, {
       params: { date, predictDate },
       responseType: 'blob',
