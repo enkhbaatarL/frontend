@@ -113,25 +113,20 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
               paddingTop={'10px'}
               paddingBottom={'10px'}
             >
-              {categoryList &&
-                categoryList.explanatoryLevelNms.map((data: string, index: number) => (
-                  <MISegmented size="h30" active={data === categorySelect} onClick={() => setCategorySelect(data)} key={index}>
-                    {data}
-                  </MISegmented>
-                ))}
+              {categoryList?.explanatoryLevelNms.map((data: string, index: number) => (
+                <MISegmented size="h30" active={data === categorySelect} onClick={() => setCategorySelect(data)} key={index}>
+                  {data}
+                </MISegmented>
+              ))}
             </Box>
             <Box padding={'18px 12px 18px 12px'}>
               <Typography variant="body2R14" color="#495057">
-                선택한 요인 분류에 대한 설명이 필요한 경우 여기에 작성합니다. Lorem ipsum dolor sit amet consectetur adipiscing elit.
-                Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu
-                aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada
-                lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra
-                inceptos himenaeos.
+                {factors?.categorySummary}
               </Typography>
             </Box>
 
             <Box mt={'12px'}>
-              {<MIInfluenceFactorChart height={150} decreasingFactors={factors?.minusFactors} increasingFactors={factors?.plusFactors} />}
+              <MIInfluenceFactorChart increasingFactors={factors?.plusFactors} decreasingFactors={factors?.minusFactors} />
             </Box>
           </Box>
         </Box>

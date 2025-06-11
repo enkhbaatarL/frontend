@@ -1,5 +1,5 @@
 import { Box, Tooltip, Typography } from '@mui/material'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import LoadingBox from './LoadingBox'
@@ -35,7 +35,6 @@ export interface InfluenceFactor {
 interface MIInfluenceFactorChartProps {
   decreasingFactors?: IFactor[]
   increasingFactors?: IFactor[]
-  height: number
   onHandleChangeRigCountInfluence?: (isShowing: boolean) => void
 }
 
@@ -46,20 +45,21 @@ const FactorItem = (props: {
   deactive?: boolean
   isFocus?: boolean
   barColor: string
+  maxFactorValue: number
 }) => {
-  const { factor, align = 'left' } = props
+  const { factor, align = 'left', maxFactorValue } = props
   const barRef = useRef<HTMLElement>(null)
   const textRef = useRef<HTMLElement>(null)
-  const [offsetRight, setOffetRight] = useState(0)
-  const [offsetLeft, setOffetLeft] = useState(0)
+  const [offsetRight, setOffsetRight] = useState(0)
+  const [offsetLeft, setOffsetLeft] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
 
   useEffect(() => {
     if (barRef.current?.clientWidth && textRef.current?.clientWidth && align === 'right') {
-      setOffetRight(Math.min(barRef.current?.clientWidth - textRef.current?.clientWidth, 0))
+      setOffsetRight(Math.min(barRef.current?.clientWidth - textRef.current?.clientWidth, 0))
     }
     if (barRef.current?.clientWidth && textRef.current?.clientWidth && align === 'left') {
-      setOffetLeft(Math.min(barRef.current?.clientWidth - textRef.current?.clientWidth, 0))
+      setOffsetLeft(Math.min(barRef.current?.clientWidth - textRef.current?.clientWidth, 0))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [barRef.current, textRef.current, align])
@@ -75,7 +75,7 @@ const FactorItem = (props: {
   return (
     <Box
       onClick={() => props?.onClick?.()}
-      sx={{ width: `${factor.explanatoryScore}%`, position: 'relative', opacity: props.deactive ? 0.3 : 1 }}
+      sx={{ width: `${(factor.explanatoryScore / maxFactorValue) * 100}%`, position: 'relative', opacity: props.deactive ? 0.3 : 1 }}
       display={'flex'}
       flexDirection={'column'}
       pb="21px"
@@ -153,9 +153,9 @@ const FactorItem = (props: {
   )
 }
 
-export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProps) {
+export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactorChartProps>) {
   const { decreasingFactors, increasingFactors, onHandleChangeRigCountInfluence } = props
-  const [selectedBar, setSeletedBar] = useState('')
+  const [selectedBar, setSelectedBar] = useState('')
   const { months } = generateChartMonths()
   const [loadingFactorGraph, setLoadingFactorGraph] = useState(false)
   const navigate = useNavigate()
@@ -166,7 +166,7 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
 
   const changeBar = (value: string) => {
     setLoadingFactorGraph(true)
-    setSeletedBar(value)
+    setSelectedBar(value)
     onHandleChangeRigCountInfluence?.(true)
     setTimeout(() => {
       setLoadingFactorGraph(false)
@@ -175,6 +175,15 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
 
   const incColorMap = ['#2E7D32', '#388E3C', '#43A047', '#66BB6A', '#81C784']
   const decColorMap = ['#A9141A', '#5B6773', '#7A8790', '#8C98A0', '#9DAFB9']
+
+  const maxFactorValue = useMemo(() => {
+    const maxValue = Math.max(
+      ...(decreasingFactors?.map((item) => item.explanatoryScore) ?? []),
+      ...(increasingFactors?.map((item) => item.explanatoryScore) ?? []),
+    )
+
+    return maxValue
+  }, [decreasingFactors, increasingFactors])
 
   return (
     <Box>
@@ -193,7 +202,8 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
                 factor={item}
                 onClick={() => changeBar(item.explanatoryLevelDetailNm)}
                 barColor={item.dirRank < 5 ? decColorMap[item.dirRank - 1] : decColorMap[4]}
-              ></FactorItem>
+                maxFactorValue={maxFactorValue}
+              />
             ))}
           </Box>
           <Box height={'fit-contnent'} width={'2px'} sx={{ backgroundColor: '#D6D6D6' }} mx="24px" />
@@ -207,7 +217,8 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
                 align="right"
                 onClick={() => changeBar(item.explanatoryLevelDetailNm)}
                 barColor={item.dirRank < 5 ? incColorMap[item.dirRank - 1] : decColorMap[4]}
-              ></FactorItem>
+                maxFactorValue={maxFactorValue}
+              />
             ))}
           </Box>
         </Box>
@@ -241,7 +252,7 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
               contentType="icon"
               size="h32"
               onClick={() => {
-                setSeletedBar('')
+                setSelectedBar('')
                 onHandleChangeRigCountInfluence?.(false)
               }}
             >
