@@ -9,6 +9,7 @@ import MIButton from '@/components/common/button/MIButton'
 import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
 import { generateChartMonths } from '@/components/common/forecast-chart/mockBrentForecastData'
 import CloseIcon from '@/components/common/icons/CloseIcon'
+import PopupIndicator from '@/components/common/influence-factor-chart/icons/PopupIndicatorIcon.tsx'
 import MIInfluenceFactorChart from '@/components/common/influence-factor-chart/MIInfluenceFactorChart'
 import MISegmented from '@/components/common/segmentedbtn/MISegmented'
 import MITableCell from '@/components/common/table/MITableCell'
@@ -30,12 +31,6 @@ const HorizontalChartIcon = () => (
   </svg>
 )
 
-const PopupIndicatorIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="16" viewBox="0 0 28 16" fill="none">
-    <path d="M14 0L27.5 16H0.5L14 0Z" fill="#E9ECEF" />
-  </svg>
-)
-
 interface ReportComponentProps {
   companyNo: number | undefined
 }
@@ -47,6 +42,12 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   const [selectedContent, _setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
   const [showDetailChart, setShowDetailChart] = useState(false)
   const { accessCompanyInfo, user } = useAuthStore()
+
+  const [showRigCountInfluence, setShowRigCountInfluence] = useState(false)
+
+  const onHandleChangeRigCountInfluence = (isShowing: boolean) => {
+    setShowRigCountInfluence(isShowing)
+  }
 
   // 대시보드 기본 정보
   const { data: dataInfo } = useQuery({
@@ -261,169 +262,163 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         )}
 
         {showDetailChart && (
-          <Box width={'1006px'} mb="24px" gap={'6px'} sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
+          <Box p="12px" mb="24px" sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
             <Box sx={{ position: 'absolute', top: '0px', left: '50%', transform: 'translate(-50%, -100%)', '& svg': { display: 'block' } }}>
-              <PopupIndicatorIcon />
+              <PopupIndicator />
             </Box>
-            <Box p={'12px'}>
-              <Box px={'12px'} pt={'12px'} pb={'10px'} display={'flex'} justifyContent={'space-between'}>
-                <Box>
-                  <Box
-                    mb="8px"
-                    sx={{
-                      display: 'inline-flex',
-                      backgroundColor: theme.palette.common.white,
-                      padding: '0 8px',
-                      borderRadius: '100px',
-                      alignItems: 'center',
-                    }}
-                    height={'20px'}
-                  >
-                    <Typography variant="chip2" color="#495057">
-                      Drill-down
-                    </Typography>
-                  </Box>
-                  <Box mb="8px">
-                    <Typography variant="body2" color="#495057">
-                      {selectedContent?.label} / {selectedContent?.date}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="messageText1" color="#212529" sx={{ marginRight: '2px' }}>
-                      {selectedContent?.value}
-                    </Typography>
-                    <Typography variant="body2SB14" color="#212529">
-                      USD/bb
-                    </Typography>
-                  </Box>
-                </Box>
-                <MIButton
-                  type="ghost"
-                  contentType="icon"
-                  size="h32"
-                  onClick={() => {
-                    setShowDetailChart(false)
+            <Box px="12px" py="6px" mb="10px" display={'flex'} justifyContent={'space-between'}>
+              <Box>
+                <Box
+                  mb="8px"
+                  sx={{
+                    display: 'inline-block',
+                    backgroundColor: theme.palette.common.white,
+                    padding: '0 8px',
+                    borderRadius: '100px',
                   }}
                 >
-                  <CloseIcon />
-                </MIButton>
+                  <Typography variant="chip2" color="#495057">
+                    Drill-down
+                  </Typography>
+                </Box>
+                <Box mb="8px">
+                  <Typography variant="body2" color="#495057">
+                    {selectedContent?.label} / {selectedContent?.date}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="messageText1" color="#212529">
+                    {selectedContent?.value}
+                  </Typography>
+                  <Typography variant="body2SB14" color="#212529">
+                    GWh
+                  </Typography>
+                </Box>
+              </Box>
+              <MIButton
+                type="ghost"
+                contentType="icon"
+                size="h32"
+                onClick={() => {
+                  setShowDetailChart(false)
+                }}
+              >
+                <CloseIcon />
+              </MIButton>
+            </Box>
+
+            <Box
+              p="24px"
+              sx={{
+                backgroundColor: theme.palette.common.white,
+                border: '1px solid',
+                borderColor: showRigCountInfluence ? 'gray.20' : 'gray.60',
+                borderRadius: '4px',
+              }}
+            >
+              <Box display={'flex'} gap="6px">
+                <HorizontalChartIcon />
+                <Typography component={'div'} variant="infoDocument" color="gray.90" mb="24px">
+                  주요 요인 분석
+                </Typography>
+              </Box>
+              <Box display={'flex'} gap={'10px'}>
+                {[
+                  {
+                    value: 'case1',
+                    label: 'Grid Stability',
+                  },
+                  {
+                    value: 'case2',
+                    label: 'Renewable Integration',
+                  },
+                  {
+                    value: 'case3',
+                    label: 'Policy Support',
+                  },
+                  {
+                    value: 'case4',
+                    label: 'Technology Cost',
+                  },
+                ].map((data, index) => (
+                  <MISegmented size="h30" active={data.value === selectedCase} onClick={() => setSelectedCase(data.value)} key={index}>
+                    {data.label}
+                  </MISegmented>
+                ))}
+              </Box>
+              <Box px="12px" py="18px">
+                <Typography variant="body2R14" color="#495057">
+                  에너지 저장 시스템의 주요 영향 요인에 대한 분석입니다. 그리드 안정성, 재생에너지 통합, 정책 지원, 기술 비용 등이 배터리
+                  저장 용량 예측에 미치는 영향을 평가합니다. 각 요인은 에너지 저장 시장의 성장과 발전에 중요한 역할을 하며, 향후 시장 전망에
+                  직접적인 영향을 미칩니다.
+                </Typography>
               </Box>
 
-              <Box p={'6px'} mt={'10px'}>
-                <Box maxWidth={'994px'} p={'24px'} sx={{ backgroundColor: theme.palette.common.white, borderRadius: '4px' }}>
-                  <Box display={'flex'} gap="6px" mb={'12px'}>
-                    <HorizontalChartIcon />
-                    <Typography component={'div'} variant="infoDocument" color="gray.90">
-                      주요 요인 분석
-                    </Typography>
-                  </Box>
-                  <Box
-                    display={'flex'}
-                    gap={'10px'}
-                    maxWidth={'946px'}
-                    maxHeight={'100%'}
-                    flexWrap={'wrap'}
-                    paddingTop={'10px'}
-                    paddingBottom={'10px'}
-                  >
-                    {[
-                      {
-                        value: 'case1',
-                        label: 'Category 1',
-                      },
-                      {
-                        value: 'case2',
-                        label: 'Category 2',
-                      },
-                      {
-                        value: 'case3',
-                        label: 'Category 3',
-                      },
-                      {
-                        value: 'case4',
-                        label: 'Category 4',
-                      },
-                    ].map((data, index) => (
-                      <MISegmented size="h30" active={data.value === selectedCase} onClick={() => setSelectedCase(data.value)} key={index}>
-                        {data.label}
-                      </MISegmented>
-                    ))}
-                  </Box>
-                  <Box padding={'18px 12px 18px 12px'}>
-                    <Typography variant="body2R14" color="#495057">
-                      선택한 요인 분류에 대한 설명이 필요한 경우 여기에 작성합니다. Lorem ipsum dolor sit amet consectetur adipiscing elit.
-                      Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo
-                      eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl
-                      malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per
-                      conubia nostra inceptos himenaeos.
-                    </Typography>
-                  </Box>
-
-                  <Box mt={'12px'}>
-                    <MIInfluenceFactorChart
-                      height={150}
-                      decreasingFactors={[
-                        {
-                          label: 'Decreasing Factor 1',
-                          value: 85.0,
-                          color: '#A9141A',
-                        },
-                        {
-                          label: 'D Factor 2',
-                          value: 40.0,
-                          color: '#5B6773',
-                        },
-                        {
-                          label: 'D Factor 3',
-                          value: 30.0,
-                          color: '#7A8790',
-                        },
-                        {
-                          label: 'D Factor 4',
-                          value: 20.0,
-                          color: '#8C98A0',
-                        },
-                        {
-                          label: 'D Factor 5',
-                          value: 5.0,
-                          color: '#9DAFB9',
-                        },
-                      ]}
-                      increasingFactors={[
-                        {
-                          label: 'Increasing Factor 1',
-                          value: 100.0,
-                          color: '#3C8A36',
-                        },
-                        {
-                          label: 'Rig count',
-                          value: 80.0,
-                          color: '#5B6773',
-                        },
-                        {
-                          label: 'I Factor 3',
-                          value: 65.0,
-                          color: '#7A8790',
-                        },
-                        {
-                          label: 'I Factor 4',
-                          value: 35.0,
-                          color: '#8C98A0',
-                        },
-                        {
-                          label: 'I Factor 5',
-                          value: 1.0,
-                          color: '#9DAFB9',
-                        },
-                      ]}
-                    />
-                  </Box>
-                </Box>
+              <Box>
+                <MIInfluenceFactorChart
+                  height={150}
+                  decreasingFactors={[
+                    {
+                      label: 'High Installation Cost',
+                      value: 75.0,
+                      color: '#A9141A',
+                    },
+                    {
+                      label: 'Grid Infrastructure',
+                      value: 45.0,
+                      color: '#5B6773',
+                    },
+                    {
+                      label: 'Regulatory Barriers',
+                      value: 35.0,
+                      color: '#7A8790',
+                    },
+                    {
+                      label: 'Technology Maturity',
+                      value: 25.0,
+                      color: '#8C98A0',
+                    },
+                    {
+                      label: 'Market Competition',
+                      value: 15.0,
+                      color: '#9DAFB9',
+                    },
+                  ]}
+                  increasingFactors={[
+                    {
+                      label: 'Renewable Energy Growth',
+                      value: 95.0,
+                      color: '#2E7D32',
+                    },
+                    {
+                      label: 'Grid Modernization',
+                      value: 85.0,
+                      color: '#388E3C',
+                    },
+                    {
+                      label: 'Policy Incentives',
+                      value: 70.0,
+                      color: '#43A047',
+                    },
+                    {
+                      label: 'Cost Reduction',
+                      value: 60.0,
+                      color: '#66BB6A',
+                    },
+                    {
+                      label: 'Energy Security',
+                      value: 50.0,
+                      color: '#81C784',
+                    },
+                  ]}
+                  onHandleChangeRigCountInfluence={onHandleChangeRigCountInfluence}
+                />
               </Box>
             </Box>
           </Box>
         )}
-        <Box width={'100%'}>
+
+        <Box width={'100%'} mb="40px">
           <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} py="6px" mb="20px">
             <Typography variant="infoDocument" color="gray.90">
               Data Table
@@ -434,7 +429,9 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           </Box>
           {chartData && (
             <MITableUser
+              hidePagination={true}
               tableProps={{
+                disableHover: true,
                 noRowMessage: '등록된 내용이 없습니다.',
                 columns: tableColumns,
                 rows: tableRows,

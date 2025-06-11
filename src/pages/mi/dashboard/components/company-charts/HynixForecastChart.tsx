@@ -21,14 +21,14 @@ const HynixForecastChart = ({ months, onViewDetail }: HynixForecastChartProps) =
         label: 'Market Average',
         color: '#43A047',
         hidePoint: true,
-        type: 'FUTURE',
+        type: 'future',
       },
       {
         ...generateForecastDataset(months),
         label: 'Industry Forecast',
         color: '#FB8C00',
         hidePoint: true,
-        type: 'FUTURE',
+        type: 'future',
       },
     ]}
     months={months}

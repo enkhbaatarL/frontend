@@ -21,14 +21,14 @@ const DefaultForecastChart = ({ months, onViewDetail }: DefaultForecastChartProp
         label: 'Actual data 2',
         color: '#26757B',
         hidePoint: true,
-        type: 'FUTURE',
+        type: 'future',
       },
       {
         ...generateForecastDataset(months),
         label: 'Actual data 3',
         color: '#EFA460',
         hidePoint: true,
-        type: 'FUTURE',
+        type: 'future',
       },
     ]}
     months={months}

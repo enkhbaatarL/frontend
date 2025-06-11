@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Tooltip, Typography } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -34,6 +34,7 @@ interface MIInfluenceFactorChartProps {
   decreasingFactors: Array<InfluenceFactor>
   increasingFactors: Array<InfluenceFactor>
   height: number
+  onHandleChangeRigCountInfluence?: (isShowing: boolean) => void
 }
 
 const FactorItem = (props: {
@@ -47,56 +48,124 @@ const FactorItem = (props: {
   const barRef = useRef<HTMLElement>(null)
   const textRef = useRef<HTMLElement>(null)
   const [offsetRight, setOffetRight] = useState(0)
+  const [offsetLeft, setOffetLeft] = useState(0)
+  const [isHovered, setIsHovered] = useState(false)
 
   useEffect(() => {
     if (barRef.current?.clientWidth && textRef.current?.clientWidth && align === 'right') {
       setOffetRight(Math.min(barRef.current?.clientWidth - textRef.current?.clientWidth, 0))
     }
-  }, [align])
+    if (barRef.current?.clientWidth && textRef.current?.clientWidth && align === 'left') {
+      setOffetLeft(Math.min(barRef.current?.clientWidth - textRef.current?.clientWidth, 0))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [barRef.current, textRef.current, align])
+
+  const handleMouseEnter = () => {
+    setIsHovered(true)
+  }
+
+  const handleMouseLeave = () => {
+    setIsHovered(false)
+  }
 
   return (
     <Box
       onClick={() => props?.onClick?.()}
-      sx={{ width: `${factor.value}%`, position: 'relative', cursor: 'pointer', opacity: props.deactive ? 0.3 : 1 }}
+      sx={{ width: `${factor.value}%`, position: 'relative', opacity: props.deactive ? 0.3 : 1 }}
       display={'flex'}
       flexDirection={'column'}
-      pb="18px"
+      pb="21px"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
-      <Box ref={barRef} sx={{ backgroundColor: factor.color, width: '100%', height: '8px', borderRadius: '2px' }} />
-      <Box
-        ref={textRef}
-        display={'flex'}
-        alignItems={'baseline'}
-        gap="2px"
-        sx={{ position: 'absolute', right: `${offsetRight}px`, bottom: 0, width: 'max-content' }}
+      <Tooltip
+        title={factor.label}
+        placement="top-end"
+        slotProps={{
+          popper: {
+            modifiers: [
+              {
+                name: 'offset',
+                options: {
+                  offset: [0, -6],
+                },
+              },
+            ],
+          },
+        }}
       >
-        <Typography variant="body2" color="gray.70" lineHeight={'10px'} fontWeight={props.isFocus ? 600 : 400}>
-          {factor.label}
-        </Typography>
-        <Typography variant="subtext2" color="#3C8A36" lineHeight={'10px'} fontWeight={props.isFocus ? 600 : 400}>
-          {factor.value.toFixed(1)}
-        </Typography>
-      </Box>
+        <Box
+          sx={{
+            '&:hover': {
+              cursor: 'pointer',
+            },
+          }}
+        >
+          <Box
+            ref={barRef}
+            sx={{
+              background: factor.color,
+              width: '100%',
+              height: '8px',
+              borderRadius: '2px',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '8px',
+                background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.00) 0%, rgba(0, 0, 0, 0.50) 100%)',
+                opacity: isHovered ? 1 : 0,
+                borderRadius: '2px',
+              },
+            }}
+          />
+          <Box
+            ref={textRef}
+            display={'flex'}
+            alignItems={'baseline'}
+            gap="2px"
+            sx={{
+              position: 'absolute',
+              right: align === 'right' ? `${offsetRight}px` : 'unset',
+              left: align === 'left' ? `${offsetLeft}px` : 'unset',
+              bottom: 0,
+              width: 'max-content',
+              maxWidth: '200px',
+              height: '17px',
+            }}
+          >
+            <Typography variant="body2R14" color="gray.70" fontWeight={props.isFocus || isHovered ? 600 : 400} noWrap>
+              {factor.label}
+            </Typography>
+            <Typography variant="subtext2" color="#3C8A36" fontWeight={props.isFocus || isHovered ? 600 : 400}>
+              {factor.value.toFixed(1)}
+            </Typography>
+          </Box>
+        </Box>
+      </Tooltip>
     </Box>
   )
 }
 
 export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProps) {
-  const { decreasingFactors = [], increasingFactors = [] } = props
+  const { decreasingFactors = [], increasingFactors = [], onHandleChangeRigCountInfluence } = props
   const [selectedBar, setSeletedBar] = useState('')
   const { months } = generateChartMonths()
   const [loadingFactorGraph, setLoadingFactorGraph] = useState(false)
   const navigate = useNavigate()
 
-  //Use react router
   const redirectToDataVisualization = () => {
     navigate('/user/data-visualization')
   }
 
   const changeBar = (value: string) => {
     setLoadingFactorGraph(true)
+    setSeletedBar(value)
+    onHandleChangeRigCountInfluence?.(true)
     setTimeout(() => {
-      setSeletedBar(value)
       setLoadingFactorGraph(false)
     }, 1000)
   }
@@ -149,21 +218,24 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
           }}
         >
           <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
-            <Box
-              display={'flex'}
-              alignItems={'center'}
-              sx={{
-                cursor: 'pointer',
-              }}
+            <MIButton
               onClick={redirectToDataVisualization}
+              type={'ghost'}
+              contentType={'text'}
+              startIcon={<LineChartGraphIcon />}
+              endIcon={<CheveronRightIcon />}
             >
-              <LineChartGraphIcon />
-              <Typography variant="infoDocument" color="gray.70" ml="6px">
-                {selectedBar}
-              </Typography>
-              <CheveronRightIcon />
-            </Box>
-            <MIButton type="ghost" contentType="icon" size="h32" onClick={() => setSeletedBar('')}>
+              {selectedBar}
+            </MIButton>
+            <MIButton
+              type="ghost"
+              contentType="icon"
+              size="h32"
+              onClick={() => {
+                setSeletedBar('')
+                onHandleChangeRigCountInfluence?.(false)
+              }}
+            >
               <CloseIcon />
             </MIButton>
           </Box>
@@ -210,7 +282,7 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
                 label: 'Actual data 1',
                 color: '#40597A',
                 hidePoint: true,
-                type: 'FUTURE',
+                type: 'future',
               },
             ]}
             months={months}

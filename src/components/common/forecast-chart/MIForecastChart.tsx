@@ -42,9 +42,14 @@ export interface ForecastDataset {
   color: string
   label: string
   hidePoint?: boolean
-  type?: 'FUTURE' | 'ACTUAL'
+  type?: 'actualData' | 'future'
   yAxisID?: string
 }
+
+export interface MIForecastChartRef {
+  closeTooltip: () => void
+}
+
 export interface MIForecastChartProps {
   height: number | string
   months: string[]
