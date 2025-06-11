@@ -109,20 +109,34 @@ const MILayout = () => {
 
   useEffect(() => {
     const fetchNotice = async () => {
-      const today = new Date().toDateString()
-      const notice = await boardService.getNoticePopup()
-      setNoticeData(notice)
-      // 쿠키를 확인하여 오늘 하루 보지 않기를 선택했는지 확인
-      const cookieKey = `notice_dont_show_${notice.bulletinNo}`
-      const dontShowToday = getCookie(cookieKey) === today
-      if (!dontShowToday) {
-        // 상세 정보도 가져오기
-        const detail = await boardService.getNoticeDetail(notice.bulletinNo)
-        setNoticeDetailData(detail)
-        setShowNoticePopup(true)
+      try {
+        const notice = await boardService.getNoticePopup()
+
+        if (!notice || !notice.bulletinNo) {
+          return
+        }
+
+        setNoticeData(notice)
+
+        // 쿠키를 확인하여 오늘 하루 보지 않기를 선택했는지 확인
+        const today = new Date().toDateString()
+        const cookieKey = `notice_dont_show_${notice.bulletinNo}`
+        const dontShowToday = getCookie(cookieKey) === today
+
+        if (!dontShowToday) {
+          // 상세 정보도 가져오기
+          const detail = await boardService.getNoticeDetail(notice.bulletinNo)
+          setNoticeDetailData(detail)
+          setShowNoticePopup(true)
+        }
+      } catch (error) {
+        console.error('공지사항 팝업을 불러오는 중 오류가 발생했습니다:', error)
       }
     }
-    if (location.state?.noticePopup) fetchNotice()
+
+    if (location.state?.noticePopup) {
+      fetchNotice()
+    }
   }, [location.state])
 
   const handleDontShowToday = () => {
