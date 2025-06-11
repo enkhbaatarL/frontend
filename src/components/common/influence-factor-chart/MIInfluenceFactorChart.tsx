@@ -149,7 +149,7 @@ const FactorItem = (props: {
           <Typography variant="body2R14" color="gray.70" fontWeight={props.isFocus ? 600 : 400} noWrap>
             {factor.explanatoryLevelDetailNm}
           </Typography>
-          <Typography variant="subtext2" color="#3C8A36" fontWeight={props.isFocus ? 600 : 400}>
+          <Typography variant="subtext2" color={align === 'right' ? '#3C8A36' : '#A9141A'} fontWeight={props.isFocus ? 600 : 400}>
             {factor.explanatoryScore}
           </Typography>
         </Box>
@@ -161,6 +161,7 @@ const FactorItem = (props: {
 export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactorChartProps>) {
   const { decreasingFactors, increasingFactors, onHandleChangeRigCountInfluence } = props
   const [selectedBar, setSelectedBar] = useState('')
+  const [influenceScore, setInfluenceScore] = useState(0)
   const [factorSummary, setFactorSummary] = useState('') // API 응답의 summary를 저장할 state 추가
   const { months } = generateChartMonths()
   const [chartMonths, setChartMonths] = useState<string[]>()
@@ -207,33 +208,10 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
         setChartMonths(monthList)
         setChartData(dataList)
       }
-
-      console.log(months)
       return response
     } catch (error) {
       console.error('Error fetching dashboard factor graph:', error)
       throw error
-    }
-  }
-
-  // 바 변경을 담당하는 함수 (UI 상태 관리에 집중)
-  const changeBar = async (bar: IFactor) => {
-    setLoadingFactorGraph(true)
-    setSelectedBar(bar.explanatoryLevelDetailNm)
-    setFactorSummary('') // 새로운 요소 선택 시 이전 summary 초기화
-    setChartMonths(months) // 새로운 요소 선택 시 차트 데이터 초기화
-    onHandleChangeRigCountInfluence?.(true)
-
-    try {
-      await fetchFactorGraphData(bar)
-    } catch (error) {
-      // 에러 처리 (필요시)
-      console.error('Failed to load factor graph data:', error)
-    } finally {
-      // 로딩 상태를 일정 시간 후 해제 (기존 setTimeout 로직 유지)
-      setTimeout(() => {
-        setLoadingFactorGraph(false)
-      }, 1000)
     }
   }
 
@@ -248,6 +226,25 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
       ),
     [decreasingFactors, increasingFactors],
   )
+
+  const changeBar = async (bar: IFactor, id: string) => {
+    setLoadingFactorGraph(true)
+    setSelectedBar(id)
+    setFactorSummary('')
+    setInfluenceScore(Number(((bar.explanatoryScore / maxFactorValue) * 10).toFixed(2))) // TODO: 점수 계산 방식 확인 필요
+    setChartMonths(months)
+    onHandleChangeRigCountInfluence?.(true)
+
+    try {
+      await fetchFactorGraphData(bar)
+    } catch (error) {
+      console.error('Failed to load factor graph data:', error)
+    } finally {
+      setTimeout(() => {
+        setLoadingFactorGraph(false)
+      }, 1000)
+    }
+  }
 
   return (
     <Box>
@@ -265,7 +262,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
                   key={`decreasing-${index}`}
                   isFocus={selectedBar ? `decreasing-${index}` === selectedBar : undefined}
                   factor={item}
-                  onClick={() => changeBar(item)}
+                  onClick={() => changeBar(item, `decreasing-${index}`)}
                   barColor={item.dirRank < 5 ? decColorMap[item.dirRank - 1] : decColorMap[4]}
                   maxFactorValue={maxFactorValue}
                 />
@@ -281,7 +278,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
                   factor={item}
                   isFocus={selectedBar ? `increasing-${index}` === selectedBar : undefined}
                   align="right"
-                  onClick={() => changeBar(item)}
+                  onClick={() => changeBar(item, `increasing-${index}`)}
                   barColor={item.dirRank < 5 ? incColorMap[item.dirRank - 1] : decColorMap[4]}
                   maxFactorValue={maxFactorValue}
                 />
@@ -318,12 +315,15 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
               contentType="icon"
               size="h32"
               onClick={() => {
-                setFactorSummary('') // 닫을 때 summary도 초기화
+                setFactorSummary('')
                 setSelectedBar('')
+                setInfluenceScore(0)
                 onHandleChangeRigCountInfluence?.(false)
               }}
             >
-              <CloseIcon />
+              <Box display="flex" alignItems="center" justifyContent="center">
+                <CloseIcon />
+              </Box>
             </MIButton>
           </Box>
 
@@ -342,13 +342,14 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
                 letterSpacing: '-0.4px',
                 borderRadius: '4px',
                 textAlign: 'center',
+                userSelect: 'none',
               }}
             >
               <Typography variant="subtext3" color="gray.70" whiteSpace={'nowrap'}>
                 영향력 점수
               </Typography>
               <Typography variant="sectionTitleTXL" color="gray.70">
-                8.5
+                {influenceScore}
               </Typography>
             </Box>
             <Box>
