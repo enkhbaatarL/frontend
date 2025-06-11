@@ -3,7 +3,11 @@ import clsx from 'clsx'
 import { ButtonHTMLAttributes, useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
+import rehypeStringify from 'rehype-stringify'
 import remarkGfm from 'remark-gfm'
+import remarkParse from 'remark-parse'
+import remarkRehype from 'remark-rehype'
+import { unified } from 'unified'
 
 import style from '@/components/common/agent/MIAgentAnswer.module.scss'
 import MIAgentLineChart from '@/components/common/agent/MIAgentLineChart'
@@ -19,6 +23,7 @@ interface Props {
   bundles?: IChatQnaAnswerBundle[]
   chatRoomTitle?: string
   onAnimationComplete?: () => void
+  onCreateCopyableContent?: (contents: { plain: string; html?: string }) => void
 }
 
 type AnimationState = 'idle' | 'typing' | 'graph' | 'link' | 'complete'
@@ -60,11 +65,17 @@ const isAfter = (targetState: AnimationState, state: AnimationState) => {
   return stateList.indexOf(targetState) > stateList.indexOf(state)
 }
 
-const MIAgentAnswer = ({ bundles, chatRoomTitle, onAnimationComplete, isNewChat }: Props) => {
+const markdownToHtml = async (markdown: string): Promise<string> => {
+  const result = await unified().use(remarkParse).use(remarkGfm).use(remarkRehype).use(rehypeRaw).use(rehypeStringify).process(markdown)
+  return result.toString()
+}
+
+const MIAgentAnswer = ({ bundles, chatRoomTitle, onAnimationComplete, isNewChat, onCreateCopyableContent }: Props) => {
   const { typedText, startTyping } = useTypingEffect(4, 60)
   const [animationStateList, setAnimationStateList] = useState<AnimationState[]>(
     isNewChat ? ['idle'] : [...(bundles ?? []).map(() => 'complete' as AnimationState)],
   )
+  const [chartImageUrls, setChartImageUrls] = useState<string[]>([])
 
   const answerRef = useRef<HTMLDivElement>(null)
   const { scrollToBottom } = useScroll()
@@ -100,6 +111,40 @@ const MIAgentAnswer = ({ bundles, chatRoomTitle, onAnimationComplete, isNewChat 
       onAnimationComplete?.()
     }
   }, [animationStateList, bundles, onAnimationComplete])
+
+  // 차트 이미지 URL이 변경될 때마다 복사 가능한 컨텐츠 업데이트
+  useEffect(() => {
+    if (bundles) {
+      const plain: string[] = []
+
+      Promise.all(
+        bundles.map(async (bundle, index) => {
+          const content = bundle.content?.replace(tableIdRegex, '')
+          const html: string[] = []
+
+          if (index !== 0) html.push('<hr />')
+
+          if (content) {
+            plain.push(content)
+            html.push(await markdownToHtml(content))
+          }
+
+          if (chartImageUrls[index]) {
+            html.push(`<img alt="" src="${chartImageUrls[index]}" style="max-width:100%;"><br>`)
+          }
+
+          return html
+        }),
+      ).then((htmlArrays) => {
+        const html = htmlArrays.flat()
+
+        onCreateCopyableContent?.({
+          plain: plain.join('\n---\n'),
+          html: html.join('\n'),
+        })
+      })
+    }
+  }, [bundles, chartImageUrls, onCreateCopyableContent])
 
   useEffect(() => {
     // 타이핑 중에는 스크롤 하단 유지
@@ -144,7 +189,18 @@ const MIAgentAnswer = ({ bundles, chatRoomTitle, onAnimationComplete, isNewChat 
             </ReactMarkdown>
             {hasSeries && (
               <Box className={clsx({ [style.fadeInUp]: true })} display={animationState.isAfter('typing') ? 'block' : 'none'}>
-                <MIAgentLineChart series={bundle.series} />
+                <MIAgentLineChart
+                  series={bundle.series}
+                  onChartImageUrl={(url) => {
+                    if (chartImageUrls[index] !== url) {
+                      setChartImageUrls((prev) => {
+                        const newUrls = [...prev]
+                        newUrls[index] = url
+                        return newUrls
+                      })
+                    }
+                  }}
+                />
               </Box>
             )}
             {animationState.isAfter('graph') && (
