@@ -375,9 +375,11 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
           }}
         >
           {/* Unit */}
-          <Typography variant="body2" color="#374151" sx={{ whiteSpace: 'nowrap', mr: '8px', lineHeight: '1.6' }}>
-            Unit: {metaData?.data.currency}/{metaData?.data.unit}
-          </Typography>
+          {metaData?.data.currency && metaData?.data.unit && (
+            <Typography variant="body2" color="#374151" sx={{ whiteSpace: 'nowrap', mr: '8px', lineHeight: '1.6' }}>
+              Unit: {metaData?.data.currency} / {metaData?.data.unit}
+            </Typography>
+          )}
 
           <Box
             onClick={handleDownload}
