@@ -1,7 +1,12 @@
 import { Box } from '@mui/material'
 
+type Target = 'top' | 'bottom'
+
 interface GradientOverlayProps {
+  targetList?: Target[]
   color?: string
+  topOffset?: number
+  bottomOffset?: number
 }
 
 const hexToRgbObj = (hex: string) => {
@@ -17,18 +22,18 @@ const hexToRgbObj = (hex: string) => {
  * @param color
  * @constructor
  */
-const GradientOverlay = ({ color }: GradientOverlayProps) => {
+const GradientOverlay = ({ targetList, color, topOffset, bottomOffset }: GradientOverlayProps) => {
   const { r, g, b } = color ? hexToRgbObj(color) : { r: 255, g: 255, b: 255 }
 
-  return ['top', 'bottom'].map((side) => (
+  return (targetList ?? ['top', 'bottom']).map((side) => (
     <Box
       key={side}
       sx={{
         position: 'absolute',
-        left: '24px',
-        right: '24px',
-        top: side === 'top' ? 0 : undefined,
-        bottom: side === 'bottom' ? 0 : undefined,
+        left: '22px',
+        right: '22px',
+        top: side === 'top' ? (topOffset ?? 0) : undefined,
+        bottom: side === 'bottom' ? (bottomOffset ?? 0) : undefined,
         height: '12px',
         pointerEvents: 'none',
         background: `linear-gradient(

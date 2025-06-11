@@ -39,7 +39,7 @@ const useSearchFilter = <Req, Res>(
   const [filter, setFilter] = useState<Partial<Req>>(initialFilter)
   const [pagination, setPagination] = useState((state?.pagination as PageFilter) ?? initialPagination)
   const [fetchParams, setFetchParams] = useState<Partial<Req> | null>(null)
-  const isPureState = isEqual(initialFilter, filter)
+  const [isPureState, setIsPureState] = useState(true)
 
   const isInitialState = useMemo(() => diffCheck(filter, initialFilter), [filter, initialFilter])
   const isSearchedState = useMemo(() => {
@@ -78,6 +78,7 @@ const useSearchFilter = <Req, Res>(
   const updateFilterWithSearch = useCallback(
     (key: string, value?: Req[keyof Req]) => {
       updateFilter(key, value)
+      setIsPureState(false)
       setFetchParams({ ...(fetchParams ?? {}), [key]: value })
       setPagination((prev) => ({ ...prev, page: 1 }))
     },
@@ -86,6 +87,7 @@ const useSearchFilter = <Req, Res>(
 
   const search = useCallback(() => {
     setPagination((prev) => ({ ...prev, page: 1 }))
+    setIsPureState(false)
     setFetchParams(removeObjectEmptyValues(filter))
   }, [filter])
 
@@ -110,8 +112,13 @@ const useSearchFilter = <Req, Res>(
 
   useEffect(() => {
     if (fetchParams !== null) return
-    if (savedParams) runInitialize(savedParams)
-    else if (options.initialFetch) runInitialize(initialFilter)
+    if (savedParams) {
+      // 뒤로가기 시 기존 정보 세팅
+      setIsPureState(false)
+      runInitialize(savedParams)
+    } else if (options.initialFetch) {
+      runInitialize(initialFilter)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.initialFetch, savedParams])
 
