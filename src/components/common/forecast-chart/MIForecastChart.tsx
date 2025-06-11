@@ -30,6 +30,7 @@ import loadImages, {
 } from './utils/loadImage'
 
 import useSnackbar from '@/hooks/useSnackbar'
+import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import theme from '@/theming'
 import { convertToRgbaWithOpacity } from '@/utils/color'
@@ -64,10 +65,10 @@ export interface MIForecastChartProps {
   hideLegend?: boolean
   inactive?: boolean
   showVerticalLine?: boolean
-  onViewDetail?: (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => void
+  onSelectedContent: (content: SelectedReportChartContent | null) => void
 }
 
-export default function MIForecastChart(props: MIForecastChartProps) {
+export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
   const {
     height,
     forecastDatasets,
@@ -110,7 +111,8 @@ export default function MIForecastChart(props: MIForecastChartProps) {
     }
 
     if (chartTooltip.viewDetail) {
-      props.onViewDetail?.(chartTooltip.content[0], chartTooltip.label)
+      // props.onViewDetail?.(chartTooltip.content[0], chartTooltip.label)
+      // TODO: onSelectedContent로 대체 필요
     }
 
     setTooltip({
@@ -179,8 +181,8 @@ export default function MIForecastChart(props: MIForecastChartProps) {
         const label = dataset.label
         const color = dataset.color
         const forecastData = dataset.forecastData ?? []
-        const type = dataset.type || 'ACTUAL'
-        const yAxisID = dataset.yAxisID || 'y'
+        const type = dataset.type ?? 'ACTUAL'
+        const yAxisID = dataset.yAxisID ?? 'y'
 
         datasets.push({
           label,
@@ -235,9 +237,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
 
       setDatasets(datasets)
 
-      const images = await loadImages(imagesInfo)
-
-      hoverDotImagesRef.current = images
+      hoverDotImagesRef.current = await loadImages(imagesInfo)
 
       setHoverDotsLoaded(true)
     }
@@ -315,7 +315,7 @@ export default function MIForecastChart(props: MIForecastChartProps) {
 
     if (!ctx) return
 
-    const newChartInstance = new Chart(ctx, {
+    chartInstance.current = new Chart(ctx, {
       type: 'line',
       data: {
         labels: months,
@@ -392,8 +392,6 @@ export default function MIForecastChart(props: MIForecastChartProps) {
         },
       },
     })
-
-    chartInstance.current = newChartInstance
   }
 
   useEffect(() => {

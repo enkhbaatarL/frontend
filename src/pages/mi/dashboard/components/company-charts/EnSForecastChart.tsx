@@ -20,24 +20,17 @@ import loadImages, {
   createHoverPointDiamonSVG,
   createMakerSVG,
 } from '@/components/common/forecast-chart/utils/loadImage'
-import CloseIcon from '@/components/common/icons/CloseIcon'
-import MISegmented from '@/components/common/segmentedbtn/MISegmented'
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
+import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import { IDashboardChartData } from '@/service/mi/dashboardData'
 import theme from '@/theming'
 import { convertToRgbaWithOpacity } from '@/utils/color'
 
 interface InnovationForecastChartProps {
-  months: (string | null)[]
-  onViewDetail: (
-    content: { label?: string; value?: number; category?: string; color?: string },
-    label: string,
-    goodsDataSourceNo?: number,
-  ) => void
   data: IDashboardChartData
-  showDrillDown?: boolean
-  setShowDrillDown: (showDrillDown: boolean) => void
+  selectedContent: SelectedReportChartContent | null
+  onSelectedContent: (content: SelectedReportChartContent | null) => void
 }
 
 export interface ForecastDataset {
@@ -64,36 +57,27 @@ export interface ForecastChartProps {
   hideLegend?: boolean
   inactive?: boolean
   showVerticalLine?: boolean
-  onViewDetail?: (
-    content: { label?: string; value?: number; category?: string; color?: string },
-    label: string,
-    goodsDataSourceNo?: number,
-  ) => void
-  showDrillDown?: boolean
+  selectedContent: SelectedReportChartContent | null
+  onSelectedContent: (content: SelectedReportChartContent | null) => void
 }
 
-interface DrillDownInnovationForecastChartProps {
-  setShowDrillDown: (showDrillDown: boolean) => void
+const initialTooltip: MIForecastChartTooltipProps = {
+  minWidth: 293,
+  visible: false,
+  viewDetail: false,
+  top: 0,
+  left: 0,
+  label: '',
+  content: [],
+  onClose: () => {},
 }
-
-const HorizontalChartIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <path d="M4 18L14 18M4 12L20 12M4 6L10 6" stroke="#343A40" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
-
-const PopupIndicatorIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="16" viewBox="0 0 28 16" fill="none">
-    <path d="M14 0L27.5 16H0.5L14 0Z" fill="#E9ECEF" />
-  </svg>
-)
 
 const ForecastChart = (props: ForecastChartProps) => {
   const {
     height,
     forecastDatasets,
     months,
-    showForecastTrend = true,
+    showForecastTrend = false,
     isMIAgent = false,
     bottomLabel = '',
     topLabel = '',
@@ -102,56 +86,49 @@ const ForecastChart = (props: ForecastChartProps) => {
     hideLegend = false,
     inactive = false,
     showVerticalLine = true,
+    selectedContent,
   } = props
   const chartRef = useRef<ChartJS | null>(null)
 
-  const [tooltip, setTooltip] = useState<MIForecastChartTooltipProps>({
-    minWidth: 293,
-    visible: false,
-    viewDetail: false,
-    top: 0,
-    left: 0,
-    label: '',
-    content: [],
-    borderBottom: 0,
-    borderRight: 0,
-    onClose: () => {},
-  })
+  const [tooltip, setTooltip] = useState<MIForecastChartTooltipProps>(initialTooltip)
   const [isOpenSetting, setIsOpenSetting] = useState(false)
-  const [_goodDataSourceNo, setGoodDataSourceNo] = useState<number | null>(null)
 
-  const externalTooltipHandler = useCallback((context: PointerMoveEventContext) => {
-    const { tooltip: chartTooltip, plugin, chart } = context
+  const externalTooltipHandler = useCallback(
+    (context: PointerMoveEventContext) => {
+      const { tooltip: chartTooltip, plugin } = context
 
-    if (!chartTooltip) {
-      setTooltip((prev) => ({ ...prev, visible: false }))
+      if (!chartTooltip) {
+        setTooltip((prev) => ({ ...prev, visible: false }))
 
-      return
-    }
+        return
+      }
 
-    if (chartTooltip.viewDetail) {
-      props.onViewDetail?.(chartTooltip.content[0], chartTooltip.label, Number(chartTooltip.content[1]))
-    }
+      if (chartTooltip.viewDetail) {
+        props.onSelectedContent({
+          label: chartTooltip.content[0].label ?? '',
+          date: chartTooltip.label,
+          value: Number((chartTooltip.content[0].value ?? 0).toFixed(2)),
+        })
+      }
 
-    setGoodDataSourceNo(Number(chartTooltip.content[1]))
+      setTooltip({
+        minWidth: 293,
+        visible: true,
+        viewDetail: chartTooltip.viewDetail,
+        top: chartTooltip.y,
+        left: chartTooltip.x + 20 + 20,
+        label: chartTooltip.label,
+        content: chartTooltip.content,
+        onClose: () => {
+          plugin.clearSelectedPoint()
+          props.onSelectedContent(null)
+        },
+      })
+    },
+    [props],
+  )
 
-    setTooltip({
-      minWidth: 293,
-      visible: true,
-      viewDetail: chartTooltip.viewDetail,
-      top: chartTooltip.y,
-      left: chartTooltip.x + 20 + 20,
-      label: chartTooltip.label,
-      content: chartTooltip.content,
-      borderBottom: chart.chartArea.bottom,
-      borderRight: chart.chartArea.right,
-      onClose: () => {
-        plugin.clearSelectedPoint()
-      },
-    })
-  }, [])
-
-  const viewForecastPointHanlder = (selectedDatasetIndex: number | null) => {
+  const viewForecastPointHandler = (selectedDatasetIndex: number | null) => {
     const newDatasets = chartRef?.current?.data.datasets ?? []
 
     if (selectedDatasetIndex) {
@@ -188,6 +165,7 @@ const ForecastChart = (props: ForecastChartProps) => {
 
     setDatasets(newDatasets)
   }
+
   useEffect(() => {
     if (forecastDatasets.length === 0) return
     const generateForecastDataSet = (rawDatasets: Array<ForecastDataset>) => {
@@ -198,8 +176,8 @@ const ForecastChart = (props: ForecastChartProps) => {
         const actualData = dataset.data
         const label = dataset.label
         const color = dataset.color
-        const type = dataset.type || 'actualData'
-        const yAxisID = dataset.yAxisID || 'y'
+        const type = dataset.type ?? 'actualData'
+        const yAxisID = dataset.yAxisID ?? 'y'
 
         datasets.push({
           label,
@@ -242,7 +220,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             hidden: false,
             category: 'forecast',
             pointRadius: dataset.hidePoint ? 0 : 3,
-            yAxisID: dataset.yAxisID || 'y',
+            yAxisID: dataset.yAxisID ?? 'y',
             spanGaps: true,
           })
         }
@@ -264,6 +242,10 @@ const ForecastChart = (props: ForecastChartProps) => {
 
     prepareData()
   }, [forecastDatasets])
+
+  useEffect(() => {
+    if (!selectedContent) tooltip.onClose?.()
+  }, [selectedContent])
 
   return (
     <Box width={'100%'} maxWidth={'100%'} sx={{ boxSizing: 'border-box' }}>
@@ -366,6 +348,11 @@ const ForecastChart = (props: ForecastChartProps) => {
               line: {
                 spanGaps: true,
               },
+              point: {
+                hoverRadius: 0,
+                hitRadius: 0,
+                radius: 0,
+              },
             },
             scales: {
               x: {
@@ -450,7 +437,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                 verticalLinedIndex: 11, // 수직선 그릴 위치
                 maxIndex: 11, // 수직선 끝 위치
                 onPointerMove: externalTooltipHandler, // 마우스 이동 시 호출
-                onViewForecastPoint: viewForecastPointHanlder, // 포인트 클릭 시 호출
+                onViewForecastPoint: viewForecastPointHandler, // 포인트 클릭 시 호출
                 hoverImages: hoverDotImagesRef.current, // 마우스 오버 시 마커 이미지
                 showForecastTrend, // 예측 라인 표시 여부
               },
@@ -482,178 +469,7 @@ const ForecastChart = (props: ForecastChartProps) => {
   )
 }
 
-const DrillDownInnovationForecastChart = ({ setShowDrillDown }: DrillDownInnovationForecastChartProps) => (
-  // const { data } = useQuery({
-  //   queryKey: ['dashboardFactorCategory'],
-  //   queryFn: () => dashboardDataService.getDashboardFactorCategory(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0, {
-  //     predictDate: monthSelect,
-  //     goodsDataSourceNo: chartData?.dashboardMetadata.goodsDataSourceNo,
-  //   }),
-  // })
-
-  <Box width={'1028px'} mb="24px" mt="35px" sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>
-    <Box sx={{ position: 'absolute', top: '0px', left: '50%', transform: 'translate(-50%, -100%)', '& svg': { display: 'block' } }}>
-      <PopupIndicatorIcon />
-    </Box>
-    <Box p={'12px'}>
-      <Box px={'12px'} pt={'12px'} pb={'10px'} display={'flex'} justifyContent={'space-between'}>
-        <Box>
-          <Box
-            mb="8px"
-            sx={{
-              display: 'inline-flex',
-              backgroundColor: theme.palette.common.white,
-              padding: '0 8px',
-              borderRadius: '100px',
-              alignItems: 'center',
-            }}
-            height={'20px'}
-          >
-            <Typography variant="chip2" color="#495057">
-              Drill-down
-            </Typography>
-          </Box>
-          <Box mb="8px">
-            <Typography variant="body2" color="#495057">
-              {/* {selectedContent?.label} / {selectedContent?.date} */}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="messageText1" color="#212529" sx={{ marginRight: '2px' }}>
-              {/* {selectedContent?.value} */}
-            </Typography>
-            <Typography variant="body2SB14" color="#212529">
-              USD/bb
-            </Typography>
-          </Box>
-        </Box>
-        <MIButton
-          type="ghost"
-          contentType="icon"
-          size="h32"
-          onClick={() => {
-            setShowDrillDown(false)
-          }}
-        >
-          <CloseIcon />
-        </MIButton>
-      </Box>
-
-      <Box p={'6px'} mt={'10px'}>
-        <Box maxWidth={'994px'} p={'24px'} sx={{ backgroundColor: theme.palette.common.white, borderRadius: '4px' }}>
-          <Box display={'flex'} gap="6px" mb={'12px'}>
-            <HorizontalChartIcon />
-            <Typography component={'div'} variant="infoDocument" color="gray.90">
-              주요 요인 분석
-            </Typography>
-          </Box>
-          <Box
-            display={'flex'}
-            gap={'10px'}
-            maxWidth={'946px'}
-            maxHeight={'100%'}
-            flexWrap={'wrap'}
-            paddingTop={'10px'}
-            paddingBottom={'10px'}
-          >
-            {[
-              {
-                value: 'case1',
-                label: 'Category 1',
-              },
-              {
-                value: 'case2',
-                label: 'Category 2',
-              },
-              {
-                value: 'case3',
-                label: 'Category 3',
-              },
-              {
-                value: 'case4',
-                label: 'Category 4',
-              },
-            ].map((data, index) => (
-              <MISegmented size="h30" active={true} onClick={() => {}} key={index}>
-                {data.label}
-              </MISegmented>
-            ))}
-          </Box>
-          <Box padding={'18px 12px 18px 12px'}>
-            <Typography variant="body2R14" color="#495057">
-              선택한 요인 분류에 대한 설명이 필요한 경우 여기에 작성합니다. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque
-              faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed
-              diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer
-              nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-            </Typography>
-          </Box>
-
-          <Box mt={'12px'}>
-            {/* <MIInfluenceFactorChart
-                height={150}
-                decreasingFactors={[
-                  {
-                    label: 'Decreasing Factor 1',
-                    value: 85.0,
-                    color: '#A9141A',
-                  },
-                  {
-                    label: 'D Factor 2',
-                    value: 40.0,
-                    color: '#5B6773',
-                  },
-                  {
-                    label: 'D Factor 3',
-                    value: 30.0,
-                    color: '#7A8790',
-                  },
-                  {
-                    label: 'D Factor 4',
-                    value: 20.0,
-                    color: '#8C98A0',
-                  },
-                  {
-                    label: 'D Factor 5',
-                    value: 5.0,
-                    color: '#9DAFB9',
-                  },
-                ]}
-                increasingFactors={[
-                  {
-                    label: 'Increasing Factor 1',
-                    value: 100.0,
-                    color: '#3C8A36',
-                  },
-                  {
-                    label: 'Rig count',
-                    value: 80.0,
-                    color: '#5B6773',
-                  },
-                  {
-                    label: 'I Factor 3',
-                    value: 65.0,
-                    color: '#7A8790',
-                  },
-                  {
-                    label: 'I Factor 4',
-                    value: 35.0,
-                    color: '#8C98A0',
-                  },
-                  {
-                    label: 'I Factor 5',
-                    value: 1.0,
-                    color: '#9DAFB9',
-                  },
-                ]}
-              /> */}
-          </Box>
-        </Box>
-      </Box>
-    </Box>
-  </Box>
-)
-
-const InnovationForecastChart = ({ onViewDetail, data, showDrillDown, setShowDrillDown }: InnovationForecastChartProps) => {
+const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: InnovationForecastChartProps) => {
   const [forecastDatasets, setForecastDatasets] = useState<ForecastDataset[]>([
     {
       data: [],
@@ -741,18 +557,16 @@ const InnovationForecastChart = ({ onViewDetail, data, showDrillDown, setShowDri
   }, [data])
 
   return (
-    <>
-      <ForecastChart
-        onViewDetail={onViewDetail}
-        forecastDatasets={forecastDatasets}
-        months={dates}
-        lastUpdated={lastUpdated}
-        height={530}
-        topLabel={`Unit: ${topLabel}`}
-      />
-      {showDrillDown && <DrillDownInnovationForecastChart setShowDrillDown={setShowDrillDown} />}
-    </>
+    <ForecastChart
+      selectedContent={selectedContent}
+      onSelectedContent={onSelectedContent}
+      forecastDatasets={forecastDatasets}
+      months={dates}
+      lastUpdated={lastUpdated}
+      height={530}
+      topLabel={`Unit: ${topLabel}`}
+    />
   )
 }
 
-export default InnovationForecastChart
+export default EnSForecastChart
