@@ -253,7 +253,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
 
       <Box>
         <MonthSelector selected={monthSelect} onSelect={setMonthSelect} months={monthsData ?? []} />
-        <MISummaryDownloadReport />
+        <MISummaryDownloadReport companyNo={companyNo} monthSelect={monthSelect} />
 
         {/* CompanyChartRenderer에 props로 받은 companyNo 전달 */}
         <CompanyChartRenderer companyNo={companyNo} months={months} onViewDetail={handleViewDetail} />

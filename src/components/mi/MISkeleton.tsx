@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
 import { MIPageSkeletons } from '@/components/mi/MIPageSkeletons'
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
     | 'table'
     | 'form'
     | 'dailyChart'
+    | 'dashboardSummary'
   itemCount?: number
   rows?: number
   columns?: number
@@ -55,6 +57,8 @@ const MISkeleton = ({ loading, children, variant = 'dashboard', rows, columns, f
       return <MIPageSkeletons.Form fieldCount={fieldCount} />
     case 'dailyChart':
       return <MIPageSkeletons.DailyChart />
+    case 'dashboardSummary':
+      return <MIBaseSkeleton.BaseElement2 width={'1028px'} height={'275px'} sx={{ mt: '40px', mb: '24px' }} />
     default:
       return <MIPageSkeletons.Dashboard />
   }

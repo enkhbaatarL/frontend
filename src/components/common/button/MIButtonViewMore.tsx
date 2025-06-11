@@ -1,13 +1,13 @@
 import ExpandLessRoundedIcon from '@mui/icons-material/ExpandLessRounded'
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
 import { Box, SxProps, Theme } from '@mui/material'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, MouseEvent } from 'react'
 
 import theme from '@/theming'
 
 export interface MIButtonViewMoreProps {
   state: 'more' | 'less'
-  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void
   sx?: SxProps<Theme>
 }
 
