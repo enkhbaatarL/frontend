@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { Line } from 'react-chartjs-2'
 
-import { IChatQnaAnswerBundle } from '@/service/mi/agent'
+import { IChatQnaAnswerBundle, SeriesType } from '@/service/mi/agent'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -114,7 +114,7 @@ const MIAgentLineChart = ({ series, onChartImageUrl }: Props) => {
         pointBackgroundColor: index === 1 ? 'white' : colors[index % colors.length],
         pointBorderColor: colors[index % colors.length],
         pointBorderWidth: index === 1 ? 1.5 : 0,
-        borderDash: index === 1 ? [5, 5] : [],
+        borderDash: item.type === SeriesType.FORECAST ? [5, 5] : [],
         tension: 0.1,
         hidden: !activeLegends.includes(index),
         fill: false,
