@@ -52,6 +52,7 @@ export interface MIForecastChartTooltipProps {
   minWidth: number
   visible?: boolean
   viewDetail?: boolean
+  isSimple?: boolean
   top?: number
   left?: number
   label?: string
@@ -64,6 +65,7 @@ export interface MIForecastChartTooltipProps {
 const MIForecastChartTooltip = ({
   visible,
   viewDetail = false,
+  isSimple = false,
   top = 0,
   left = 0,
   label,
@@ -156,7 +158,7 @@ const MIForecastChartTooltip = ({
         />
       ))}
 
-      {!viewDetail && (
+      {!viewDetail && !isSimple && (
         <Box display={'flex'} alignItems={'center'} padding={'6px 4px'} gap={'4px'} mt={'8px'}>
           <InfoOutlineIcon width="18" height="18" color="#868E96" display={'block'} />
           <Typography variant="subtext2" color="gray.70">

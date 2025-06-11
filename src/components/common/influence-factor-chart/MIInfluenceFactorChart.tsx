@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router-dom'
 
 import LoadingBox from './LoadingBox'
 import MIButton from '../button/MIButton'
-import MIForecastChart from '../forecast-chart/MIForecastChart'
 import { generateChartMonths } from '../forecast-chart/mockBrentForecastData'
 import CloseIcon from '../icons/CloseIcon'
 
+import MIDrillDownChart from '@/pages/mi/dashboard/components/MIDrillDownChart'
 import dashboardDataService, { IFactor, IDashboardFactorGraphRequest } from '@/service/mi/dashboardData.ts'
 
 const CheveronRightIcon = () => (
@@ -169,6 +169,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
   const [loadingFactorGraph, setLoadingFactorGraph] = useState(false)
   const navigate = useNavigate()
   const [factorUnit, setFactorUnit] = useState('')
+  const [goodsDataSourceNm, setGoodsDataSourceNm] = useState('')
 
   const redirectToDataVisualization = () => {
     navigate('/user/data-visualization')
@@ -195,6 +196,10 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
 
       if (response.graphMetadata) {
         setFactorUnit(`Unit: ${response.graphMetadata.currency}/${response.graphMetadata.currentUnitCd}`)
+      }
+
+      if (response.datasource) {
+        setGoodsDataSourceNm(response.datasource.goodsDataSourceNm ?? '')
       }
 
       // response.rawdata.resultDate를 chartMonths에 저장
@@ -359,25 +364,18 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
             </Box>
           </Box>
 
-          <MIForecastChart
-            forecastDatasets={[
+          <MIDrillDownChart
+            height={448}
+            months={chartMonths ?? []}
+            datasets={[
               {
                 data: chartData,
-                label: 'Actual data 1',
                 color: '#40597A',
-                hidePoint: true,
-                type: 'future',
+                label: goodsDataSourceNm,
+                type: 'actualData',
               },
             ]}
-            months={chartMonths}
-            height={448}
             topLabel={factorUnit}
-            lastUpdated="April 29, 2025"
-            hideControl
-            hideLegend
-            showForecastTrend={false}
-            showVerticalLine={false}
-            onSelectedContent={() => {}}
           />
         </Box>
       )}

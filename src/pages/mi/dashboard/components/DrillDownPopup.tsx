@@ -103,7 +103,7 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
           </MIButton>
         </Box>
 
-        <Box p={'6px'} mt={'10px'}>
+        <Box p={'6px'}>
           <Box maxWidth={'994px'} p={'24px'} sx={{ backgroundColor: theme.palette.common.white, borderRadius: '4px' }}>
             <Box display={'flex'} gap="6px" mb={'12px'}>
               <HorizontalChartIcon />

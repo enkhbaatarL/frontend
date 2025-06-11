@@ -245,8 +245,6 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         )}
 
         <Box
-          height={selectedContent ? 'auto' : 0}
-          overflow={'hidden'}
           sx={{
             transition: 'all 0.3s ease-in-out',
             opacity: selectedContent ? 1 : 0,
