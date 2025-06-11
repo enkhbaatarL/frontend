@@ -284,8 +284,8 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
     const bottomY = chart.scales.y.bottom
 
     // Draw fixed vertical line at the latest actual data point
-    if (chart.getDatasetMeta(0).data[verticalLineIndex] && showVerticalLine) {
-      const x = chart.getDatasetMeta(0).data[verticalLineIndex].x
+    if (chart.getDatasetMeta(1).data[verticalLineIndex] && showVerticalLine) {
+      const x = chart.getDatasetMeta(1).data[verticalLineIndex].x
 
       ctx.save()
 

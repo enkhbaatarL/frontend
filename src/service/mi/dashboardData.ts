@@ -133,7 +133,7 @@ interface IChartLine {
   isPermitted: boolean
   dataType: string
   goodsDataSourceNo: number
-  rawData: IChartLineRawData[]
+  rawData: IChartLineRawData[] | null
 }
 interface IDashboardChart {
   chartLineDescription: string

@@ -7,7 +7,6 @@ import MISummaryDownloadReport from './MISummaryDownloadReport'
 
 import MIButton from '@/components/common/button/MIButton'
 import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
-import { generateChartMonths } from '@/components/common/forecast-chart/mockBrentForecastData'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import CompanyChartRenderer from '@/pages/mi/dashboard/components/CompanyChartRenderer'
@@ -29,12 +28,11 @@ export interface SelectedReportChartContent {
   goodsDataSourceNo?: number
 }
 interface ReportComponentProps {
-  companyNo: number | undefined
+  companyNo?: number
 }
 
 const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   const [monthSelect, setMonthSelect] = useState('')
-  const { months } = generateChartMonths()
   const [selectedContent, setSelectedContent] = useState<SelectedReportChartContent | null>(null)
   const { accessCompanyInfo, user } = useAuthStore()
 
@@ -72,14 +70,20 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
       chartDates?.dates.map((date, index) => {
         const dateObj = new Date(date)
 
-        const month = dateObj.toLocaleString('en-US', { month: 'short' })
-        const year = dateObj.getFullYear()
         if (index === 0) {
+          const year = dateObj.getFullYear()
+          const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+          const day = String(dateObj.getDate()).padStart(2, '0')
+
           return {
-            label: `${month} ${year} • Latest`,
+            label: `${year}-${month}-${day} • Latest`,
             value: date,
           }
         }
+
+        const year = dateObj.getFullYear()
+        const month = dateObj.toLocaleString('en-US', { month: 'short' })
+
         return {
           label: `${month} ${year}`,
           value: date,
@@ -87,6 +91,11 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
       }),
     [chartDates],
   )
+
+  const chartMonths = useMemo(() => {
+    if (!chartData?.charts[0]?.actualChartLines?.rawData) return []
+    return chartData.charts[0].actualChartLines.rawData.map((data) => data.resultDate)
+  }, [chartData])
 
   const formatDate = (date: string) => {
     const [year, month] = date.split('-')
@@ -107,7 +116,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         align: 'center',
       }
 
-      const dataColumns: GridColDef[] = chartData.charts[0].actualChartLines.rawData.map((chart) => ({
+      const dataColumns: GridColDef[] = (chartData.charts[0].actualChartLines.rawData ?? []).map((chart) => ({
         field: chart.resultDate,
         headerName: formatDate(chart.resultDate),
         flex: 1,
@@ -130,7 +139,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
       const forecastRows = chartData.charts
         .filter((chart) => chart.forecastChartLines.dataType === 'FORECAST')
         .map((chart) => {
-          const rowData = chart.forecastChartLines.rawData.reduce(
+          const rowData = (chart.forecastChartLines.rawData ?? []).reduce(
             (acc, data) => ({
               ...acc,
               [data.resultDate]: data.value ?? '-',
@@ -149,7 +158,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
       const actualRows = chartData.charts
         .filter((chart) => chart.actualChartLines.dataType === 'ACTUAL')
         .map((chart) => {
-          const rowData = chart.actualChartLines.rawData.reduce(
+          const rowData = (chart.actualChartLines.rawData ?? []).reduce(
             (acc, data) => ({
               ...acc,
               [data.resultDate]: data.value ?? '-',
@@ -167,7 +176,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
       const futureRows = chartData.charts
         .filter((chart) => chart.actualChartLines.dataType === 'FUTURE')
         .map((chart) => {
-          const rowData = chart.actualChartLines.rawData.reduce(
+          const rowData = (chart.actualChartLines.rawData ?? []).reduce(
             (acc, data) => ({
               ...acc,
               [data.resultDate]: data.value ?? '-',
@@ -238,7 +247,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           <CompanyChartRenderer
             data={chartData}
             companyNo={companyNo}
-            months={months}
+            months={chartMonths}
             selectedContent={selectedContent}
             onSelectedContent={setSelectedContent}
           />

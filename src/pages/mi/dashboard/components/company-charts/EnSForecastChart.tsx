@@ -503,7 +503,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
     const datasets = data.charts
       .map((chart, index) => {
         if (chart.actualChartLines.dataType === 'FUTURE') {
-          const values = chart.actualChartLines.rawData.map((item) => item.value)
+          const values = (chart.actualChartLines.rawData ?? []).map((item) => item.value)
           return {
             data: values,
             label: label[index],
@@ -522,7 +522,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
     const forecastDatasets = data.charts
       .map((chart, index) => {
         if (chart.actualChartLines.dataType === 'ACTUAL') {
-          const value = chart.forecastChartLines.rawData.map((item) => item.value)
+          const value = (chart.forecastChartLines.rawData ?? []).map((item) => item.value)
           return {
             data: value,
             label: label[index],
@@ -542,7 +542,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
     const actualDatasets = data.charts
       .map((chart, index) => {
         if (chart.actualChartLines.dataType === 'ACTUAL') {
-          const value = chart.actualChartLines.rawData.map((item) => item.value)
+          const value = (chart.actualChartLines.rawData ?? []).map((item) => item.value)
           return {
             data: value,
             label: label[index],
@@ -563,7 +563,17 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
     setTopLabel(`${data.dashboardMetadata.currency}/${data.dashboardMetadata.currentUnitCd}`)
   }, [data])
 
-  const dates = useMemo(() => data.charts[0].actualChartLines.rawData.map((item) => item.resultDate), [data])
+  const dates = useMemo(() => {
+    for (const chart of data.charts) {
+      if (chart.actualChartLines.rawData && chart.actualChartLines.rawData.length > 0) {
+        return chart.actualChartLines.rawData.map((item) => item.resultDate)
+      }
+      if (chart.forecastChartLines.rawData && chart.forecastChartLines.rawData.length > 0) {
+        return chart.forecastChartLines.rawData.map((item) => item.resultDate)
+      }
+    }
+    return []
+  }, [data])
 
   return (
     <ForecastChart
