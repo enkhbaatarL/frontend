@@ -94,7 +94,9 @@ const ForecastChart = (props: ForecastChartProps) => {
   const [isOpenSetting, setIsOpenSetting] = useState(false)
 
   useEffect(() => {
-    verticalLineAndHighlightPlugin.reset()
+    if (selectedContent === null) {
+      verticalLineAndHighlightPlugin.reset()
+    }
   }, [selectedContent])
 
   const externalTooltipHandler = useCallback(
