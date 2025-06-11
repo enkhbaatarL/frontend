@@ -44,7 +44,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   const [monthSelect, setMonthSelect] = useState('')
   const { months } = generateChartMonths()
   const [selectedCase, setSelectedCase] = useState('case1')
-  const [selectedContent, setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
+  const [selectedContent, _setSelectedContent] = useState<{ label?: string; value?: string; category?: string; date?: string } | null>(null)
   const [showDetailChart, setShowDetailChart] = useState(false)
   const { accessCompanyInfo, user } = useAuthStore()
 
@@ -143,7 +143,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           const rowData = chart.forecastChartLines.rawData.reduce(
             (acc, data) => ({
               ...acc,
-              [data.resultDate]: data.value,
+              [data.resultDate]: data.value ?? '-',
             }),
             {},
           )
@@ -162,7 +162,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           const rowData = chart.actualChartLines.rawData.reduce(
             (acc, data) => ({
               ...acc,
-              [data.resultDate]: data.value,
+              [data.resultDate]: data.value ?? '-',
             }),
             {},
           )
@@ -180,7 +180,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           const rowData = chart.actualChartLines.rawData.reduce(
             (acc, data) => ({
               ...acc,
-              [data.resultDate]: data.value,
+              [data.resultDate]: data.value ?? '-',
             }),
             {},
           )
@@ -207,15 +207,15 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     return `${month} ${day}, ${year}`
   }, [dataInfo])
 
-  const handleViewDetail = (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => {
-    setSelectedContent({
-      date: label ?? '',
-      label: content.label ?? '',
-      value: Number(content.value).toFixed(2) ?? '0',
-      category: content.category ?? '',
-    })
-    setShowDetailChart(true)
-  }
+  // const handleViewDetail = (content: { label?: string; value?: number; category?: string; color?: string }, label: string) => {
+  //   setSelectedContent({
+  //     date: label ?? '',
+  //     label: content.label ?? '',
+  //     value: Number(content.value).toFixed(2) ?? '0',
+  //     category: content.category ?? '',
+  //   })
+  //   setShowDetailChart(true)
+  // }
 
   // 데이터 테이블 다운로드
   const downloadDataTable = async () => {
@@ -256,7 +256,9 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         <MISummaryDownloadReport />
 
         {/* CompanyChartRenderer에 props로 받은 companyNo 전달 */}
-        <CompanyChartRenderer companyNo={companyNo} months={months} onViewDetail={handleViewDetail} />
+        {chartData && (
+          <CompanyChartRenderer companyNo={companyNo} months={months} onViewDetail={() => setShowDetailChart(true)} data={chartData} />
+        )}
 
         {showDetailChart && (
           <Box width={'1006px'} mb="24px" gap={'6px'} sx={{ borderRadius: '4px', backgroundColor: '#E9ECEF', position: 'relative' }}>

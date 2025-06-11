@@ -16,7 +16,6 @@ export default function MIForecastLegend({ datasets, onToggleDataset, showActual
     <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} px="24px" py="10px">
       <Box display={'flex'} alignItems={'center'} gap="10px">
         {datasets.map((dataset, index) => {
-          // Skip forecast datasets
           if (dataset.category === DATA_CATEGORIES.FORECAST) return null
 
           return (
@@ -26,7 +25,7 @@ export default function MIForecastLegend({ datasets, onToggleDataset, showActual
               alignItems={'center'}
               p="4px"
               gap="2px"
-              onClick={() => index !== 0 && onToggleDataset(index)}
+              onClick={() => onToggleDataset(index)}
               sx={{ opacity: dataset.hidden ? 0.3 : 1, cursor: 'pointer' }}
             >
               <Box
