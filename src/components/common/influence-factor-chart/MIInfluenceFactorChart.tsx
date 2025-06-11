@@ -39,7 +39,14 @@ interface MIInfluenceFactorChartProps {
   onHandleChangeRigCountInfluence?: (isShowing: boolean) => void
 }
 
-const FactorItem = (props: { factor: IFactor; align?: 'left' | 'right'; onClick?: () => void; deactive?: boolean; isFocus?: boolean }) => {
+const FactorItem = (props: {
+  factor: IFactor
+  align?: 'left' | 'right'
+  onClick?: () => void
+  deactive?: boolean
+  isFocus?: boolean
+  barColor: string
+}) => {
   const { factor, align = 'left' } = props
   const barRef = useRef<HTMLElement>(null)
   const textRef = useRef<HTMLElement>(null)
@@ -101,7 +108,7 @@ const FactorItem = (props: { factor: IFactor; align?: 'left' | 'right'; onClick?
           <Box
             ref={barRef}
             sx={{
-              background: 'red',
+              background: props.barColor,
               width: '100%',
               height: '8px',
               borderRadius: '2px',
@@ -165,6 +172,10 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
       setLoadingFactorGraph(false)
     }, 1000)
   }
+
+  const incColorMap = ['#2E7D32', '#388E3C', '#43A047', '#66BB6A', '#81C784']
+  const decColorMap = ['#A9141A', '#5B6773', '#7A8790', '#8C98A0', '#9DAFB9']
+
   return (
     <Box>
       <Box display={'flex'} flexDirection={'column'} gap="12px" mb="12px" px="12px" py="24px">
@@ -181,6 +192,7 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
                 isFocus={item.explanatoryLevelDetailNm === selectedBar}
                 factor={item}
                 onClick={() => changeBar(item.explanatoryLevelDetailNm)}
+                barColor={item.dirRank < 5 ? decColorMap[item.dirRank - 1] : decColorMap[4]}
               ></FactorItem>
             ))}
           </Box>
@@ -194,6 +206,7 @@ export default function MIInfluenceFactorChart(props: MIInfluenceFactorChartProp
                 isFocus={item.explanatoryLevelDetailNm === selectedBar}
                 align="right"
                 onClick={() => changeBar(item.explanatoryLevelDetailNm)}
+                barColor={item.dirRank < 5 ? incColorMap[item.dirRank - 1] : decColorMap[4]}
               ></FactorItem>
             ))}
           </Box>

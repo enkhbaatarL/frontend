@@ -14,6 +14,7 @@ interface DrillDownPopupProps {
   monthSelect: string
   selectedContent: SelectedReportChartContent
   onClose: () => void
+  companyNo: number | undefined
 }
 
 const HorizontalChartIcon = () => (
@@ -28,28 +29,29 @@ const PopupIndicatorIcon = () => (
   </svg>
 )
 
-const DrillDownPopup = ({ monthSelect, selectedContent, onClose }: DrillDownPopupProps) => {
+const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: DrillDownPopupProps) => {
   const [categorySelect, setCategorySelect] = useState('')
 
   const { data: categoryList } = useQuery({
-    queryKey: ['dashboardFactorCategory'],
+    queryKey: ['dashboardFactorCategory', monthSelect, selectedContent.goodsDataSourceNo],
     queryFn: () =>
-      dashboardDataService.getDashboardFactorCategory(2013, {
-        predictDate: '20250511',
-        goodsDataSourceNo: 63,
+      dashboardDataService.getDashboardFactorCategory(companyNo ?? 0, {
+        predictDate: monthSelect.split('-').join(''),
+        goodsDataSourceNo: selectedContent.goodsDataSourceNo ?? 0,
       }),
+    enabled: !!companyNo && !!monthSelect && !!selectedContent.goodsDataSourceNo,
   })
 
   // factor
   const { data: factors } = useQuery({
-    queryKey: ['dashboardFactors', categorySelect],
+    queryKey: ['dashboardFactors', categorySelect, monthSelect, selectedContent.goodsDataSourceNo],
     queryFn: () =>
-      dashboardDataService.getDashboardFactors(2013, {
-        predictDate: '20250511',
-        goodsDataSourceNo: 63,
+      dashboardDataService.getDashboardFactors(companyNo ?? 0, {
+        predictDate: monthSelect.split('-').join(''),
+        goodsDataSourceNo: selectedContent.goodsDataSourceNo ?? 0,
         explanatoryLevelNm: categorySelect,
       }),
-    enabled: !!categorySelect,
+    enabled: !!companyNo && !!categorySelect && !!monthSelect && !!selectedContent.goodsDataSourceNo,
   })
 
   return (
@@ -72,7 +74,7 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose }: DrillDownPopu
               height={'20px'}
             >
               <Typography variant="chip2" color="#495057">
-                Drill-down {monthSelect}
+                Drill-down
               </Typography>
             </Box>
             <Box mb="8px">

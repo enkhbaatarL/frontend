@@ -251,6 +251,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             onClose={() => {
               setSelectedContent(null)
             }}
+            companyNo={companyNo}
           />
         )}
         <Box width={'100%'}>
