@@ -13,10 +13,11 @@ import MIAgentFeedback from '@/components/common/agent/MIAgentFeedback'
 import MIButtonMari from '@/components/common/button/MIButtonMari'
 import useSnackbar from '@/hooks/useSnackbar'
 import { FeedbackCd } from '@/service/mi/agent'
+import { multiContentsToClipboard } from '@/utils/clipboard'
 import delay from '@/utils/delay'
 
 interface MIAgentAnswerFooterProps {
-  copyableContent?: string
+  copyableContent?: { plain: string; html?: string }
   onFeedback: (isRecommended: boolean, feedbackCd?: FeedbackCd, feedbackComment?: string) => Promise<void>
   onRetry?: () => void
   initialFeedback?: 'like' | 'dislike'
@@ -60,16 +61,18 @@ const MIAgentAnswerFooter = ({ copyableContent, onFeedback, onRetry, initialFeed
             onClick={async () => {
               if (copyableContent) {
                 setIsLoading(true)
-                await navigator.clipboard.writeText(copyableContent)
-
-                await delay(500)
-                setIsLoading(false)
-                setCopied(true)
-
-                showSnackbar(t('클립보드에 복사되었습니다.'))
-
-                await delay(2000)
-                setCopied(false)
+                try {
+                  await multiContentsToClipboard(copyableContent.plain, copyableContent.html)
+                  showSnackbar(t('클립보드에 복사되었습니다.'))
+                  setCopied(true)
+                } catch (error) {
+                  showSnackbar(t('복사에 실패했습니다.'), { variant: 'error' })
+                  console.error('Failed to copy content:', error)
+                } finally {
+                  setIsLoading(false)
+                  await delay(2000)
+                  setCopied(false)
+                }
               }
             }}
             disabled={!copyableContent}
@@ -104,7 +107,6 @@ const MIAgentAnswerFooter = ({ copyableContent, onFeedback, onRetry, initialFeed
             icon={<RefreshRoundedIcon fontSize="small" />}
             tooltip={t('다시 답변')}
             onClick={onRetry}
-            // TODO: 기획 재 논의 후(retry 시 이후 대화 삭제) isLastChat 제거 필요
             disabled={disabled || !onRetry || !isLastChat} // MEMO: retry 조건에 따라 마지막 채팅일 경우에만 임시 활성화
           />
         </Grid>

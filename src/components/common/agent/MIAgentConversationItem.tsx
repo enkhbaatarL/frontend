@@ -1,9 +1,9 @@
 import { Box, Typography } from '@mui/material'
 import clsx from 'clsx'
 import { t } from 'i18next'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-import MIAgentAnswer, { tableIdRegex } from '@/components/common/agent/MIAgentAnswer'
+import MIAgentAnswer from '@/components/common/agent/MIAgentAnswer'
 import style from '@/components/common/agent/MIAgentAnswer.module.scss'
 import MIAgentAnswerFooter from '@/components/common/agent/MIAgentAnswerFooter'
 import MIAgentMessagePrompt from '@/components/common/agent/MIAgentMessagePrompt'
@@ -43,6 +43,7 @@ const ErrorMessage = ({ messages }: { messages: string[] }) => (
 
 const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationComplete, onAnimationComplete, isLastChat }: Props) => {
   const { showSnackbar } = useSnackbar()
+  const [clipboardContents, setClipboardContents] = useState<{ plain: string; html?: string }>({ plain: '' })
 
   const handleFeedback = useCallback(
     async (qnaNo: number, isRecommended: boolean, feedbackCd?: FeedbackCd, feedbackComment?: string) => {
@@ -75,14 +76,12 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
             bundles={conversation.answer?.bundles}
             chatRoomTitle={chatRoom?.title}
             onAnimationComplete={onAnimationComplete}
+            onCreateCopyableContent={setClipboardContents}
           />
           {(!conversation.isNew || animationComplete) && (
             <Box className={clsx({ [style.fadeInUp]: conversation.isNew })}>
               <MIAgentAnswerFooter
-                copyableContent={conversation.answer?.bundles
-                  ?.map((bundle) => bundle.content)
-                  .join('\n---\n')
-                  .replace(tableIdRegex, '')}
+                copyableContent={clipboardContents}
                 onFeedback={async (isRecommended, feedbackCd, feedbackComment) => {
                   if (conversation.qnaNo === null) return
                   await handleFeedback(conversation.qnaNo, isRecommended, feedbackCd, feedbackComment)
@@ -102,7 +101,9 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
         <>
           <ErrorMessage messages={getErrorMessage(conversation.statusCd)} />
           <MIAgentAnswerFooter
-            copyableContent={getErrorMessage(conversation.statusCd).join('\n')}
+            copyableContent={{
+              plain: getErrorMessage(conversation.statusCd).join('\n'),
+            }}
             onFeedback={async (isRecommended, feedbackCd, feedbackComment) => {
               if (conversation.qnaNo === null) return
               await handleFeedback(conversation.qnaNo, isRecommended, feedbackCd, feedbackComment)

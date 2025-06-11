@@ -105,6 +105,7 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금�
             className={'MIScrollbar'}
             style={{
               width: '100%',
+              fontFamily: 'Pretendard',
               fontSize: '16px',
               fontStyle: 'normal',
               fontWeight: '400',

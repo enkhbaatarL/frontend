@@ -14,13 +14,12 @@ interface Props {
 }
 
 interface RelatedDataBtnProps {
-  goodsDatasourceNm: string
   goodsNo: number
   goodsDataNo: number
-  goodsDatasourceNo: number
+  displayNm: string
 }
 
-const RelatedDataBtn = ({ goodsDatasourceNm, goodsNo, goodsDataNo, goodsDatasourceNo }: RelatedDataBtnProps) => {
+const RelatedDataBtn = ({ goodsNo, goodsDataNo, displayNm }: RelatedDataBtnProps) => {
   const navigate = useNavigate()
   const [isEllipsis, setIsEllipsis] = useState(false)
   const [displayText, setDisplayText] = useState('')
@@ -32,11 +31,11 @@ const RelatedDataBtn = ({ goodsDatasourceNm, goodsNo, goodsDataNo, goodsDatasour
     if (!textElement) return
 
     const checkTextWidth = () => {
-      textElement.textContent = goodsDatasourceNm
+      textElement.textContent = displayNm
       const fullWidth = textElement.scrollWidth
 
       if (fullWidth > 320) {
-        let currentText = goodsDatasourceNm
+        let currentText = displayNm
         while (textElement.scrollWidth > 320 && currentText.length > 0) {
           currentText = currentText.slice(0, -1)
           textElement.textContent = `${currentText}...`
@@ -44,19 +43,19 @@ const RelatedDataBtn = ({ goodsDatasourceNm, goodsNo, goodsDataNo, goodsDatasour
         setDisplayText(`${currentText}...`)
         setIsEllipsis(true)
       } else {
-        setDisplayText(goodsDatasourceNm)
+        setDisplayText(displayNm)
         setIsEllipsis(false)
       }
     }
 
     checkTextWidth()
-  }, [goodsDatasourceNm])
+  }, [displayNm])
 
   const button = (
     <Button
       onClick={(e) => {
         e.preventDefault()
-        navigate(`/mi/data-detail/${goodsNo}/${goodsDataNo}`, { state: { goodsDataSrcNo: goodsDatasourceNo } })
+        navigate(`/mi/data-detail/${goodsNo}/${goodsDataNo}`)
       }}
       endIcon={<KeyboardArrowRightRoundedIcon sx={{ color: '#868E96' }} fontSize={'small'} />}
       startIcon={<InsertChartRoundedIcon sx={{ color: '#343A40' }} fontSize={'small'} />}
@@ -97,7 +96,7 @@ const RelatedDataBtn = ({ goodsDatasourceNm, goodsNo, goodsDataNo, goodsDatasour
   )
 
   return isEllipsis ? (
-    <Tooltip title={goodsDatasourceNm} followCursor disableInteractive>
+    <Tooltip title={displayNm} followCursor disableInteractive>
       {button}
     </Tooltip>
   ) : (
@@ -135,13 +134,7 @@ const MIAgentRelatedData = ({ relatedData }: Props) => {
       </Typography>
 
       {relatedDataList?.map((item, index) => (
-        <RelatedDataBtn
-          key={index}
-          goodsDatasourceNm={item.goodsDatasourceNm}
-          goodsNo={item.goodsNo}
-          goodsDataNo={item.goodsDataNo}
-          goodsDatasourceNo={item.goodsDatasourceNo}
-        />
+        <RelatedDataBtn key={index} goodsNo={item.goodsNo} goodsDataNo={item.goodsDataNo} displayNm={item.displayNm} />
       ))}
       {!isShowMore && (
         <MIButton onClick={handleLoadMore} type="ghost" color="gray" size="h28" contentType="link" disabled={isLoading}>

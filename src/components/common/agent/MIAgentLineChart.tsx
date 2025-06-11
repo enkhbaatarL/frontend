@@ -1,20 +1,21 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 import dayjs from 'dayjs'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import { Line } from 'react-chartjs-2'
 
-import { IChatQnaAnswerBundle } from '@/service/mi/agent'
+import { IChatQnaAnswerBundle, SeriesType } from '@/service/mi/agent'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 interface Props {
   series: IChatQnaAnswerBundle['series']
+  onChartImageUrl?: (url: string) => void
 }
 
 const colors = ['#2E3F5E', '#CC4D50', '#153870', '#6428AD', '#C3C3C3', '#C91F7D']
 
-const MIAgentLineChart = ({ series }: Props) => {
+const MIAgentLineChart = ({ series, onChartImageUrl }: Props) => {
   const [activeLegends, setActiveLegends] = useState<number[]>(series?.map((_, index) => index) || [])
 
   const maxValue = useMemo(() => Math.max(...activeLegends.flatMap((index) => series?.[index]?.values || [])), [series, activeLegends])
@@ -113,7 +114,7 @@ const MIAgentLineChart = ({ series }: Props) => {
         pointBackgroundColor: index === 1 ? 'white' : colors[index % colors.length],
         pointBorderColor: colors[index % colors.length],
         pointBorderWidth: index === 1 ? 1.5 : 0,
-        borderDash: index === 1 ? [5, 5] : [],
+        borderDash: item.type === SeriesType.FORECAST ? [5, 5] : [],
         tension: 0.1,
         hidden: !activeLegends.includes(index),
         fill: false,
@@ -133,6 +134,18 @@ const MIAgentLineChart = ({ series }: Props) => {
     setActiveLegends((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]))
   }
 
+  const chartRef = useRef<ChartJS<'line'>>(null)
+
+  // 차트가 렌더링된 후 이미지 URL 생성
+  useEffect(() => {
+    if (chartRef.current && onChartImageUrl) {
+      const imageUrl = chartRef.current.toBase64Image()
+      onChartImageUrl(imageUrl)
+    }
+  }, [data, onChartImageUrl])
+
+  if (!data) return null
+
   return (
     <Box
       width={'100%'}
@@ -140,7 +153,7 @@ const MIAgentLineChart = ({ series }: Props) => {
       borderRadius={'6px'}
       overflow={'hidden'}
     >
-      <Line data={data} options={chartOptions} />
+      <Line ref={chartRef} data={data} options={chartOptions} />
       <Stack
         direction="row"
         mt={-8}

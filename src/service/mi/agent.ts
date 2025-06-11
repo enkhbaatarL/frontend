@@ -37,10 +37,21 @@ export interface IMajorQuestionRes {
   majorQuestion: string
 }
 
+export enum SeriesType {
+  ACTUAL = 'ACTUAL',
+  FORECAST = 'FORECAST',
+}
+
+export enum RelatedDataType {
+  STRUCTURED = 'STRUCTURED',
+  UNSTRUCTURED = 'UNSTRUCTURED',
+}
+
 export interface IChatQnaAnswerBundle {
   content?: string
   series?: {
     order: number
+    type: SeriesType
     legend: string
     timestamps: string[]
     values: number[]
@@ -61,12 +72,10 @@ export interface IChatQnaAnswerBundle {
   }[]
   relatedData?:
     | {
+        type: RelatedDataType
         goodsNo: number
-        goodsNm: string
         goodsDataNo: number
-        goodsDataNm: string
-        goodsDatasourceNo: number
-        goodsDatasourceNm: string
+        displayNm: string
       }[]
     | null
 }

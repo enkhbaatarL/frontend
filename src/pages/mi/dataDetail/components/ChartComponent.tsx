@@ -417,7 +417,7 @@ const ChartComponent = ({
               tempCtx.drawImage(canvas, 0, 0)
 
               const link = document.createElement('a')
-              link.download = `${chartData?.mainChart.goodDataName}-${chartData?.mainChart.goodsDataSourceName}-${searchFilter.unitCd}-${dayjs().format('YYYYMMDD')}.png`
+              link.download = `${chartData?.mainChart.goodsDataName}-${chartData?.mainChart.goodsDataSourceName}-${searchFilter.unitCd}-${dayjs().format('YYYYMMDD')}.png`
               link.href = tempCanvas.toDataURL('image/png')
               link.click()
             }}
