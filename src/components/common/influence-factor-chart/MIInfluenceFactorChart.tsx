@@ -169,13 +169,11 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
   const [loadingFactorGraph, setLoadingFactorGraph] = useState(false)
   const navigate = useNavigate()
   const [factorUnit, setFactorUnit] = useState('')
+  const [goodsNo, setGoodsNo] = useState(0)
+  const [goodsDataNo, setGoodsDataNo] = useState(0)
+  const [goodsDataSourceNo, setGoodsDataSourceNo] = useState(0)
   const [goodsDataSourceNm, setGoodsDataSourceNm] = useState('')
 
-  const redirectToDataVisualization = () => {
-    navigate('/user/data-visualization')
-  }
-
-  // API 호출을 담당하는 별도 함수
   const fetchFactorGraphData = async (factor: IFactor) => {
     const requestParams: IDashboardFactorGraphRequest = {
       goodsDataSourceNo: props.goodsDataSourceNo ?? 0,
@@ -213,6 +211,13 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
         setChartMonths(monthList)
         setChartData(dataList)
       }
+
+      if (response.datasource) {
+        setGoodsNo(response.datasource.goodsNo)
+        setGoodsDataNo(response.datasource.goodsDataNo)
+        setGoodsDataSourceNo(response.datasource.goodsDataSourceNo)
+      }
+
       return response
     } catch (error) {
       console.error('Error fetching dashboard factor graph:', error)
@@ -306,15 +311,26 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
           }}
         >
           <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
-            <MIButton
-              onClick={redirectToDataVisualization}
-              type={'ghost'}
-              contentType={'text'}
-              startIcon={<LineChartGraphIcon />}
-              endIcon={<CheveronRightIcon />}
-            >
-              {selectedBar}
-            </MIButton>
+            {!goodsNo || !goodsDataNo ? (
+              <Box display={'inline-flex'} padding={'6px 15px'} fontSize={'14px'} columnGap={'8px'} fontWeight={600}>
+                <LineChartGraphIcon />
+                <div>{selectedBar}</div>
+              </Box>
+            ) : (
+              <MIButton
+                onClick={(e) => {
+                  e.preventDefault()
+                  navigate(`/mi/data-detail/${goodsNo}/${goodsDataNo}`, { state: { goodsDataSrcNo: goodsDataSourceNo } })
+                }}
+                type={'ghost'}
+                contentType={'text'}
+                startIcon={<LineChartGraphIcon />}
+                endIcon={<CheveronRightIcon />}
+              >
+                {selectedBar}
+              </MIButton>
+            )}
+
             <MIButton
               type="ghost"
               contentType="icon"
