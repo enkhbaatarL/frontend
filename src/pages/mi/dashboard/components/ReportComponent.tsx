@@ -244,16 +244,26 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           />
         )}
 
-        {selectedContent && (
-          <DrillDownPopup
-            monthSelect={monthSelect}
-            selectedContent={selectedContent}
-            onClose={() => {
-              setSelectedContent(null)
-            }}
-            companyNo={companyNo}
-          />
-        )}
+        <Box
+          height={selectedContent ? 'auto' : 0}
+          overflow={'hidden'}
+          sx={{
+            transition: 'all 0.3s ease-in-out',
+            opacity: selectedContent ? 1 : 0,
+            transform: selectedContent ? 'translateY(0)' : 'translateY(-10px)',
+          }}
+        >
+          {selectedContent && (
+            <DrillDownPopup
+              monthSelect={monthSelect}
+              selectedContent={selectedContent}
+              onClose={() => {
+                setSelectedContent(null)
+              }}
+              companyNo={companyNo}
+            />
+          )}
+        </Box>
         <Box width={'100%'}>
           <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} py="6px" mb="20px">
             <Typography variant="infoDocument" color="gray.90">

@@ -47,7 +47,6 @@ const FactorItem = (props: {
   factor: IFactor
   align?: 'left' | 'right'
   onClick?: () => void
-  deactive?: boolean
   isFocus?: boolean
   barColor: string
   maxFactorValue: number
@@ -78,83 +77,84 @@ const FactorItem = (props: {
   }
 
   return (
-    <Box
-      onClick={() => props?.onClick?.()}
-      sx={{ width: `${(factor.explanatoryScore / maxFactorValue) * 100}%`, position: 'relative', opacity: props.deactive ? 0.3 : 1 }}
-      display={'flex'}
-      flexDirection={'column'}
-      pb="21px"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <Tooltip
-        title={factor.explanatoryLevelDetailNm}
-        placement="top-end"
-        slotProps={{
-          popper: {
-            modifiers: [
-              {
-                name: 'offset',
-                options: {
-                  offset: [0, -6],
-                },
+    <Tooltip
+      title={factor.explanatoryLevelDetailNm}
+      placement={`top-${align === 'left' ? 'end' : 'start'}`}
+      followCursor
+      slotProps={{
+        popper: {
+          modifiers: [
+            {
+              name: 'offset',
+              options: {
+                offset: [0, -6],
               },
-            ],
-          },
+            },
+          ],
+        },
+      }}
+    >
+      <Box
+        onClick={() => {
+          if (!props.isFocus) props?.onClick?.()
         }}
+        sx={{
+          width: `${(factor.explanatoryScore / maxFactorValue) * 100}%`,
+          position: 'relative',
+          opacity: props.isFocus === false ? 0.3 : 1,
+          cursor: !props.isFocus ? 'pointer' : 'default',
+          userSelect: 'none',
+        }}
+        display={'flex'}
+        flexDirection={'column'}
+        pb="21px"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <Box
+          ref={barRef}
           sx={{
-            '&:hover': {
-              cursor: 'pointer',
-            },
-          }}
-        >
-          <Box
-            ref={barRef}
-            sx={{
-              background: props.barColor,
+            background: props.barColor,
+            width: '100%',
+            height: '8px',
+            borderRadius: '2px',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
               width: '100%',
               height: '8px',
+              background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.00) 0%, rgba(0, 0, 0, 0.50) 100%)',
+              opacity: !props.isFocus && isHovered ? 0.8 : 0,
               borderRadius: '2px',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '8px',
-                background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.00) 0%, rgba(0, 0, 0, 0.50) 100%)',
-                opacity: isHovered ? 1 : 0,
-                borderRadius: '2px',
-              },
-            }}
-          />
-          <Box
-            ref={textRef}
-            display={'flex'}
-            alignItems={'baseline'}
-            gap="2px"
-            sx={{
-              position: 'absolute',
-              right: align === 'right' ? `${offsetRight}px` : 'unset',
-              left: align === 'left' ? `${offsetLeft}px` : 'unset',
-              bottom: 0,
-              width: 'max-content',
-              maxWidth: '200px',
-              height: '17px',
-            }}
-          >
-            <Typography variant="body2R14" color="gray.70" fontWeight={props.isFocus || isHovered ? 600 : 400} noWrap>
-              {factor.explanatoryLevelDetailNm}
-            </Typography>
-            <Typography variant="subtext2" color="#3C8A36" fontWeight={props.isFocus || isHovered ? 600 : 400}>
-              {factor.explanatoryScore}
-            </Typography>
-          </Box>
+            },
+          }}
+        />
+        <Box
+          ref={textRef}
+          display={'flex'}
+          alignItems={'baseline'}
+          gap="2px"
+          sx={{
+            position: 'absolute',
+            right: align === 'right' ? `${offsetRight}px` : 'unset',
+            left: align === 'left' ? `${offsetLeft}px` : 'unset',
+            bottom: 0,
+            width: 'max-content',
+            maxWidth: '200px',
+            height: '17px',
+          }}
+        >
+          <Typography variant="body2R14" color="gray.70" fontWeight={props.isFocus ? 600 : 400} noWrap>
+            {factor.explanatoryLevelDetailNm}
+          </Typography>
+          <Typography variant="subtext2" color="#3C8A36" fontWeight={props.isFocus ? 600 : 400}>
+            {factor.explanatoryScore}
+          </Typography>
         </Box>
-      </Tooltip>
-    </Box>
+      </Box>
+    </Tooltip>
   )
 }
 
@@ -240,14 +240,14 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
   const incColorMap = ['#2E7D32', '#388E3C', '#43A047', '#66BB6A', '#81C784']
   const decColorMap = ['#A9141A', '#5B6773', '#7A8790', '#8C98A0', '#9DAFB9']
 
-  const maxFactorValue = useMemo(() => {
-    const maxValue = Math.max(
-      ...(decreasingFactors?.map((item) => item.explanatoryScore) ?? []),
-      ...(increasingFactors?.map((item) => item.explanatoryScore) ?? []),
-    )
-
-    return maxValue
-  }, [decreasingFactors, increasingFactors])
+  const maxFactorValue = useMemo(
+    () =>
+      Math.max(
+        ...(decreasingFactors?.map((item) => item.explanatoryScore) ?? []),
+        ...(increasingFactors?.map((item) => item.explanatoryScore) ?? []),
+      ),
+    [decreasingFactors, increasingFactors],
+  )
 
   return (
     <Box>
@@ -258,32 +258,34 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
         </Box>
         <Box display={'flex'} width={'100%'} sx={{ overflow: 'hidden' }}>
           <Box display={'flex'} flexDirection={'column'} alignItems={'flex-end'} gap={'10px'} flex={1} width={'100%'}>
-            {decreasingFactors?.map((item) => (
-              <FactorItem
-                key={item.explanatoryLevelDetailNm}
-                deactive={item.explanatoryLevelDetailNm !== selectedBar && !!selectedBar}
-                isFocus={item.explanatoryLevelDetailNm === selectedBar}
-                factor={item}
-                onClick={() => changeBar(item)}
-                barColor={item.dirRank < 5 ? decColorMap[item.dirRank - 1] : decColorMap[4]}
-                maxFactorValue={maxFactorValue}
-              />
-            ))}
+            {decreasingFactors
+              ?.filter(({ explanatoryScore }) => explanatoryScore !== 0)
+              .map((item, index) => (
+                <FactorItem
+                  key={`decreasing-${index}`}
+                  isFocus={selectedBar ? `decreasing-${index}` === selectedBar : undefined}
+                  factor={item}
+                  onClick={() => changeBar(item)}
+                  barColor={item.dirRank < 5 ? decColorMap[item.dirRank - 1] : decColorMap[4]}
+                  maxFactorValue={maxFactorValue}
+                />
+              ))}
           </Box>
           <Box height={'fit-contnent'} width={'2px'} sx={{ backgroundColor: '#D6D6D6' }} mx="24px" />
           <Box display={'flex'} flexDirection={'column'} gap={'10px'} flex={1}>
-            {increasingFactors?.map((item) => (
-              <FactorItem
-                key={item.explanatoryLevelDetailNm}
-                deactive={item.explanatoryLevelDetailNm !== selectedBar && !!selectedBar}
-                factor={item}
-                isFocus={item.explanatoryLevelDetailNm === selectedBar}
-                align="right"
-                onClick={() => changeBar(item)}
-                barColor={item.dirRank < 5 ? incColorMap[item.dirRank - 1] : decColorMap[4]}
-                maxFactorValue={maxFactorValue}
-              />
-            ))}
+            {increasingFactors
+              ?.filter(({ explanatoryScore }) => explanatoryScore !== 0)
+              .map((item, index) => (
+                <FactorItem
+                  key={`increasing-${index}`}
+                  factor={item}
+                  isFocus={selectedBar ? `increasing-${index}` === selectedBar : undefined}
+                  align="right"
+                  onClick={() => changeBar(item)}
+                  barColor={item.dirRank < 5 ? incColorMap[item.dirRank - 1] : decColorMap[4]}
+                  maxFactorValue={maxFactorValue}
+                />
+              ))}
           </Box>
         </Box>
       </Box>
@@ -316,8 +318,8 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
               contentType="icon"
               size="h32"
               onClick={() => {
-                setSelectedBar('')
                 setFactorSummary('') // 닫을 때 summary도 초기화
+                setSelectedBar('')
                 onHandleChangeRigCountInfluence?.(false)
               }}
             >
@@ -342,7 +344,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
                 textAlign: 'center',
               }}
             >
-              <Typography variant="subtext3" color="gray.70">
+              <Typography variant="subtext3" color="gray.70" whiteSpace={'nowrap'}>
                 영향력 점수
               </Typography>
               <Typography variant="sectionTitleTXL" color="gray.70">
