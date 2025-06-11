@@ -18,7 +18,6 @@ import loadImages, {
   createHoverDiamonSVG,
   createHoverDotSVG,
   createHoverPointDiamonSVG,
-  createMakerSVG,
 } from '@/components/common/forecast-chart/utils/loadImage'
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
 import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
@@ -41,6 +40,7 @@ export interface ForecastDataset {
   hidePoint?: boolean
   type?: string
   yAxisID?: string
+  metadata?: Record<string, unknown>
 }
 
 export interface ForecastChartProps {
@@ -80,7 +80,7 @@ const ForecastChart = (props: ForecastChartProps) => {
     showForecastTrend = false,
     isMIAgent = false,
     bottomLabel = '',
-    topLabel = '',
+    topLabel,
     lastUpdated = '',
     hideControl = false,
     hideLegend = false,
@@ -108,6 +108,7 @@ const ForecastChart = (props: ForecastChartProps) => {
           label: chartTooltip.content[0].label ?? '',
           date: chartTooltip.label,
           value: Number((chartTooltip.content[0].value ?? 0).toFixed(2)),
+          goodsDataSourceNo: chartTooltip.content[0].goodsDataSourceNo,
         })
       }
 
@@ -191,6 +192,7 @@ const ForecastChart = (props: ForecastChartProps) => {
           pointRadius: dataset.hidePoint ? 0 : 3,
           yAxisID,
           spanGaps: true,
+          metadata: dataset.metadata,
         })
 
         if (color) {
@@ -222,25 +224,20 @@ const ForecastChart = (props: ForecastChartProps) => {
             pointRadius: dataset.hidePoint ? 0 : 3,
             yAxisID: dataset.yAxisID ?? 'y',
             spanGaps: true,
+            metadata: dataset.metadata,
           })
         }
       })
 
-      imagesInfo['marker'] = createMakerSVG('#868E96')
-
       return { datasets, imagesInfo }
     }
-    const prepareData = async () => {
-      const { datasets, imagesInfo } = generateForecastDataSet(forecastDatasets)
 
-      setDatasets(datasets)
+    const { datasets: forecastDataSet, imagesInfo } = generateForecastDataSet(forecastDatasets)
+    setDatasets(forecastDataSet)
 
-      const images = await loadImages(imagesInfo)
-
-      hoverDotImagesRef.current = images
-    }
-
-    prepareData()
+    loadImages(imagesInfo).then((result) => {
+      hoverDotImagesRef.current = result
+    })
   }, [forecastDatasets])
 
   useEffect(() => {
@@ -416,6 +413,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                   color: theme.palette.gray[60],
                   stepSize: 0.3,
                   padding: 8,
+                  maxTicksLimit: 10,
                 },
                 /* eslint-disable @typescript-eslint/no-explicit-any */
                 afterTickToLabelConversion(axis: any) {
@@ -507,6 +505,9 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
             color: colorMap[index],
             hidePoint: true,
             type: 'future',
+            metadata: {
+              goodsDataSourceNo: chart.actualChartLines.goodsDataSourceNo,
+            },
           }
         }
         return null
@@ -524,6 +525,9 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
             hidePoint: true,
             type: 'forecast',
             borderDash: [5, 5],
+            metadata: {
+              goodsDataSourceNo: chart.forecastChartLines.goodsDataSourceNo,
+            },
           }
         }
         return null
@@ -540,13 +544,16 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: Innovati
             color: colorMap[index],
             hidePoint: true,
             type: 'actualData',
+            metadata: {
+              goodsDataSourceNo: chart.actualChartLines.goodsDataSourceNo,
+            },
           }
         }
         return null
       })
       .filter(Boolean)
 
-    setForecastDatasets([...datasets, ...actualDatasets, ...forecastDatasets] as ForecastDataset[])
+    setForecastDatasets([...actualDatasets, ...forecastDatasets, ...datasets] as ForecastDataset[])
     setLastUpdated(formatDate(data.dashboardMetadata.lastUpdateDt))
     setTopLabel(`${data.dashboardMetadata.currency}/${data.dashboardMetadata.currentUnitCd}`)
   }, [data])

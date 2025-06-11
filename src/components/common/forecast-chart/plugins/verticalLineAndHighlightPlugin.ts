@@ -2,6 +2,7 @@
 import Chart, { ActiveElement, ChartType, InteractionItem, Plugin } from 'chart.js/auto'
 
 import { DATA_CATEGORIES, HOVER_INDICATOR, LINE_STYLES } from '@/components/common/forecast-chart/constants'
+import { createMakerSVG } from '@/components/common/forecast-chart/utils/loadImage'
 import { formatDate } from '@/utils/date'
 
 // Define interaction states
@@ -30,7 +31,7 @@ export interface PointerMoveEventContext {
     y: number
     viewDetail?: boolean
     label: string
-    content: { label?: string; value?: number; category?: string; color?: string }[]
+    content: { label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
   } | null
 }
 
@@ -43,6 +44,12 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
   interactionState: PointInteractionState = PointInteractionState.NONE
   _options: any = {}
   _chart: Chart | null = null
+  private readonly markerImage: HTMLImageElement
+
+  constructor() {
+    this.markerImage = new Image()
+    this.markerImage.src = createMakerSVG('#868E96')
+  }
 
   clearSelectedPoint() {
     this.selectedPoint = null
@@ -56,7 +63,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
       tooltip: null,
     })
 
-    if (this._chart && this._chart.canvas?.style) {
+    if (this._chart?.canvas?.style) {
       // Reset cursor when clearing selected point
       this._chart.canvas.style.cursor = 'default'
       this._chart.update()
@@ -89,8 +96,6 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
     if (!plugin) return
 
     chart.canvas.addEventListener('mousemove', (event: MouseEvent) => {
-      if (plugin.selectedPoint) return
-
       try {
         const rect = chart.canvas?.getBoundingClientRect()
 
@@ -124,8 +129,8 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
           }
 
           // Set cursor to pointer for clickable forecast points
-          if (chart.canvas?.style) {
-            chart.canvas.style.cursor = 'pointer' // TODO: 전체 영역 포인터 문제 수정 필요
+          if (chart.canvas?.style && !plugin.selectedPoint) {
+            chart.canvas.style.cursor = 'pointer'
           }
         } else {
           plugin.interactionState = PointInteractionState.NONE
@@ -225,6 +230,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                   value: chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
                   category: DATA_CATEGORIES.FORECAST,
                   color: chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
+                  goodsDataSourceNo: (chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
                 },
               ],
             },
@@ -280,8 +286,8 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
       ctx.save()
 
-      if (hoverImages['marker']) {
-        ctx.drawImage(hoverImages['marker'], x - 6, topY - 13, 13, 8)
+      if (this.markerImage) {
+        ctx.drawImage(this.markerImage, x - 6, topY - 13, 13, 8)
       }
 
       ctx.beginPath()
@@ -370,11 +376,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
             const mainDataset = chart.data.datasets.find((dataset) => (dataset as any).category === DATA_CATEGORIES.ACTUAL)
             const forecastDatasets = chart.data.datasets.filter(
-              (dataset) =>
-                (dataset as any).category === DATA_CATEGORIES.FORECAST &&
-                dataset.label ===
-                  `${mainDataset?.label} Forecast
-            `,
+              (dataset) => (dataset as any).category === DATA_CATEGORIES.FORECAST && dataset.label === `${mainDataset?.label} Forecast`,
             )
 
             // Look for a forecast that ends at our current month

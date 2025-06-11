@@ -26,6 +26,7 @@ export interface SelectedReportChartContent {
   label: string
   date: string
   value: number
+  goodsDataSourceNo?: number
 }
 interface ReportComponentProps {
   companyNo: number | undefined

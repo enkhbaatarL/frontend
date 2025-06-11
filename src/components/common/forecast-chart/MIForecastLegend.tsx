@@ -11,57 +11,57 @@ interface MIForecastLegendProps {
   showActual?: boolean
 }
 
-export default function MIForecastLegend({ datasets, onToggleDataset, showActual = true }: Readonly<MIForecastLegendProps>) {
-  return (
-    <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} px="24px" py="10px">
-      <Box display={'flex'} alignItems={'center'} gap="10px">
-        {datasets.map((dataset, index) => {
-          if (dataset.category === DATA_CATEGORIES.FORECAST) return null
-
-          return (
+const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true }: Readonly<MIForecastLegendProps>) => (
+  <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} px="24px" py="10px">
+    <Box display={'flex'} alignItems={'center'} gap="10px">
+      {datasets.map((dataset, index) => {
+        // MEMO: 인덱스 유지용으로 필터링 하지 않음
+        if (dataset.category === DATA_CATEGORIES.FORECAST) return null
+        return (
+          <Box
+            key={index}
+            display={'flex'}
+            alignItems={'center'}
+            p="4px"
+            gap="2px"
+            onClick={() => onToggleDataset(index)}
+            sx={{ opacity: dataset.hidden ? 0.3 : 1, cursor: 'pointer' }}
+          >
             <Box
-              key={index}
-              display={'flex'}
-              alignItems={'center'}
-              p="4px"
-              gap="2px"
-              onClick={() => onToggleDataset(index)}
-              sx={{ opacity: dataset.hidden ? 0.3 : 1, cursor: 'pointer' }}
-            >
-              <Box
-                sx={{
-                  width: '12px',
-                  height: '12px',
-                  margin: '4px',
-                  borderRadius: '2px',
-                  backgroundColor: dataset.backgroundColor as string,
-                  borderColor: dataset.borderColor as string,
-                  borderWidth: 1,
-                }}
-              />
-              <Typography variant="body2SB14" color="gray.70">
-                {dataset.label}
-              </Typography>
-            </Box>
-          )
-        })}
-      </Box>
-      {showActual && (
-        <Box display={'flex'} alignItems={'center'} gap="10px">
-          <Box display={'flex'} alignItems={'center'} p="4px" gap="2px">
-            <ActualLegendIcon />
+              sx={{
+                width: '12px',
+                height: '12px',
+                margin: '4px',
+                borderRadius: '2px',
+                backgroundColor: dataset.backgroundColor as string,
+                borderColor: dataset.borderColor as string,
+                borderWidth: 1,
+              }}
+            />
             <Typography variant="body2SB14" color="gray.70">
-              Actual
+              {dataset.label}
             </Typography>
           </Box>
-          <Box display={'flex'} alignItems={'center'} p="4px" gap="2px">
-            <ForecastLegendIcon />
-            <Typography variant="body2SB14" color="gray.70">
-              Forecast
-            </Typography>
-          </Box>
-        </Box>
-      )}
+        )
+      })}
     </Box>
-  )
-}
+    {showActual && (
+      <Box display={'flex'} alignItems={'center'} gap="10px">
+        <Box display={'flex'} alignItems={'center'} p="4px" gap="2px">
+          <ActualLegendIcon />
+          <Typography variant="body2SB14" color="gray.70">
+            Actual
+          </Typography>
+        </Box>
+        <Box display={'flex'} alignItems={'center'} p="4px" gap="2px">
+          <ForecastLegendIcon />
+          <Typography variant="body2SB14" color="gray.70">
+            Forecast
+          </Typography>
+        </Box>
+      </Box>
+    )}
+  </Box>
+)
+
+export default MIForecastLegend
