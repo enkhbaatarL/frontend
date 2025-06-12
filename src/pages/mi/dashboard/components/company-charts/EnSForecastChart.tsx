@@ -26,7 +26,7 @@ import { IDashboardChartData } from '@/service/mi/dashboardData'
 import theme from '@/theming'
 import { convertToRgbaWithOpacity } from '@/utils/color'
 
-interface InnovationForecastChartProps {
+interface EnSForecastChartProps {
   data: IDashboardChartData
   selectedContent: SelectedReportChartContent | null
   onSelectedContent: (content: SelectedReportChartContent | null) => void
@@ -160,6 +160,8 @@ const ForecastChart = (props: ForecastChartProps) => {
   const handleToggleDataset = (index: number) => {
     const newDatasets = [...datasets]
     const dataset = newDatasets[index]
+
+    if (selectedContent) return
 
     dataset.hidden = !dataset.hidden
 
@@ -327,7 +329,9 @@ const ForecastChart = (props: ForecastChartProps) => {
         </Box>
       )}
 
-      {!isMIAgent && !hideLegend && <MIForecastLegend datasets={datasets} onToggleDataset={handleToggleDataset} />}
+      {!isMIAgent && !hideLegend && (
+        <MIForecastLegend datasets={datasets} onToggleDataset={handleToggleDataset} selectedContent={selectedContent} />
+      )}
       <Box px="18px" height={height} sx={{ position: 'relative' }}>
         <Chart
           ref={chartRef}
@@ -478,7 +482,7 @@ const ForecastChart = (props: ForecastChartProps) => {
   )
 }
 
-const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: InnovationForecastChartProps) => {
+const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForecastChartProps) => {
   const [forecastDatasets, setForecastDatasets] = useState<ForecastDataset[]>([
     {
       data: [],
