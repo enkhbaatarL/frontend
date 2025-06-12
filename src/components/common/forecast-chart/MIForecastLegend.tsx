@@ -5,13 +5,16 @@ import { DATA_CATEGORIES } from './constants'
 import ActualLegendIcon from './icons/ActualLegendIcon'
 import ForecastLegendIcon from './icons/ForecastLegendIcon'
 
+import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
+
 interface MIForecastLegendProps {
   datasets: Array<ChartDataset & { category: string; hidden?: boolean }>
   onToggleDataset: (index: number) => void
   showActual?: boolean
+  selectedContent?: SelectedReportChartContent | null
 }
 
-const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true }: Readonly<MIForecastLegendProps>) => (
+const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, selectedContent }: Readonly<MIForecastLegendProps>) => (
   <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} px="24px" py="10px">
     <Box display={'flex'} alignItems={'center'} gap="10px">
       {datasets.map((dataset, index) => {
@@ -25,7 +28,7 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true }: Read
             p="4px"
             gap="2px"
             onClick={() => onToggleDataset(index)}
-            sx={{ opacity: dataset.hidden ? 0.3 : 1, cursor: 'pointer' }}
+            sx={{ opacity: dataset.hidden ? 0.3 : 1, cursor: selectedContent ? 'default' : 'pointer' }}
           >
             <Box
               sx={{
