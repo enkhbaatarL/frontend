@@ -19,6 +19,7 @@ import loadImages, {
   createHoverDotSVG,
   createHoverPointDiamonSVG,
 } from '@/components/common/forecast-chart/utils/loadImage'
+import RefreshIcon from '@/components/common/icons/RefreshIcon'
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
 import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
@@ -176,6 +177,16 @@ const ForecastChart = (props: ForecastChartProps) => {
     setDatasets(newDatasets)
   }
 
+  const handleRefresh = () => {
+    const newDatasets = [...datasets]
+    newDatasets.forEach((dataset) => {
+      if (dataset.hidden) {
+        dataset.hidden = false
+      }
+    })
+    setDatasets(newDatasets)
+  }
+
   useEffect(() => {
     if (forecastDatasets.length === 0) return
     const generateForecastDataSet = (rawDatasets: Array<ForecastDataset>) => {
@@ -255,10 +266,6 @@ const ForecastChart = (props: ForecastChartProps) => {
     if (!selectedContent) tooltip.onClose?.()
   }, [selectedContent])
 
-  useEffect(() => {
-    console.log('datasets ==> ', datasets)
-  }, [datasets])
-
   return (
     <Box width={'100%'} maxWidth={'100%'} sx={{ boxSizing: 'border-box' }}>
       {!hideControl && (
@@ -278,6 +285,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             )}
           </Box>
           <Box display={'flex'} alignItems={'center'} gap="10px">
+            <MIButton startIcon={<RefreshIcon />} onClick={handleRefresh} contentType={'icon'} type={isMIAgent ? 'ghost' : 'outlined'} />
             {!isMIAgent && (
               <MIButton
                 startIcon={<ChartNotificationIcon />}
