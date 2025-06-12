@@ -306,7 +306,7 @@ const AdminMemberManagementUserRegistrationPage = () => {
       </AdminSearchFilter>
       <Box className="content-body">
         <AdminTable
-          getRowId={(row) => row.userNm}
+          getRowId={(row) => row.imCd}
           columns={columns}
           data={data}
           isLoading={isLoading}
