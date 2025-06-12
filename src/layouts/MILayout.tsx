@@ -186,7 +186,7 @@ const MILayout = () => {
             background: showDailyChart ? '#F2F5F7' : undefined,
             display: 'flex',
             flexDirection: 'column',
-            minHeight: location.pathname === '/mi/dashboard' ? undefined : preRenderMinHeight,
+            minHeight: location.pathname === '/mi/dashboard' ? '100vh' : preRenderMinHeight,
             minWidth: '1440px',
             boxSizing: 'border-box',
           }}
