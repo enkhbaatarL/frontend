@@ -41,6 +41,7 @@ export interface ForecastDataset {
   type?: string
   yAxisID?: string
   metadata?: Record<string, unknown>
+  permission?: boolean
 }
 
 export interface ForecastChartProps {
@@ -155,13 +156,13 @@ const ForecastChart = (props: ForecastChartProps) => {
   }
 
   const hoverDotImagesRef = useRef<{ [key: string]: HTMLImageElement | null }>({})
-  const [datasets, setDatasets] = useState<Array<ChartDataset<'line'> & { category: string; yAxisID: string }>>([])
+  const [datasets, setDatasets] = useState<Array<ChartDataset<'line'> & { category: string; yAxisID: string; permission: boolean }>>([])
 
   const handleToggleDataset = (index: number) => {
     const newDatasets = [...datasets]
     const dataset = newDatasets[index]
-
     if (selectedContent) return
+    if (!dataset.permission) return
 
     dataset.hidden = !dataset.hidden
 
@@ -178,15 +179,15 @@ const ForecastChart = (props: ForecastChartProps) => {
   useEffect(() => {
     if (forecastDatasets.length === 0) return
     const generateForecastDataSet = (rawDatasets: Array<ForecastDataset>) => {
-      const datasets: Array<ChartDataset<'line'> & { category: string; yAxisID: string }> = []
+      const datasets: Array<ChartDataset<'line'> & { category: string; yAxisID: string; permission: boolean }> = []
       const imagesInfo: Record<string, string> = {}
-
       rawDatasets.forEach((dataset) => {
         const actualData = dataset.data
         const label = dataset.label
         const color = dataset.color
         const type = dataset.type ?? 'actualData'
         const yAxisID = dataset.yAxisID ?? 'y'
+        const permission = dataset.permission ?? true
 
         datasets.push({
           label,
@@ -201,6 +202,7 @@ const ForecastChart = (props: ForecastChartProps) => {
           yAxisID,
           spanGaps: true,
           metadata: dataset.metadata,
+          permission,
         })
 
         if (color) {
@@ -233,6 +235,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             yAxisID: dataset.yAxisID ?? 'y',
             spanGaps: true,
             metadata: dataset.metadata,
+            permission,
           })
         }
       })
@@ -251,6 +254,10 @@ const ForecastChart = (props: ForecastChartProps) => {
   useEffect(() => {
     if (!selectedContent) tooltip.onClose?.()
   }, [selectedContent])
+
+  useEffect(() => {
+    console.log('datasets ==> ', datasets)
+  }, [datasets])
 
   return (
     <Box width={'100%'} maxWidth={'100%'} sx={{ boxSizing: 'border-box' }}>
@@ -490,6 +497,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
       color: '',
       hidePoint: true,
       type: 'actualData',
+      permission: true,
     },
   ])
   const [lastUpdated, setLastUpdated] = useState<string>('')
@@ -523,6 +531,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
             metadata: {
               goodsDataSourceNo: chart.actualChartLines.goodsDataSourceNo,
             },
+            permission: chart.actualChartLines.isPermitted,
           }
         }
         return null
@@ -543,6 +552,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
             metadata: {
               goodsDataSourceNo: chart.forecastChartLines.goodsDataSourceNo,
             },
+            permission: chart.forecastChartLines.isPermitted,
           }
         }
         return null
@@ -562,6 +572,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
             metadata: {
               goodsDataSourceNo: chart.actualChartLines.goodsDataSourceNo,
             },
+            permission: chart.actualChartLines.isPermitted,
           }
         }
         return null
