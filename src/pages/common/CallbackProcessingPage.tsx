@@ -53,8 +53,10 @@ const CallbackProcessingPage = () => {
     if (user?.userRoleCd) {
       switch (user?.userRoleCd) {
         case UserRole.ADMIN:
-        case UserRole.OPERATOR:
           navigate('/admin')
+          break
+        case UserRole.OPERATOR:
+          navigate('/admin/data-providers/providers')
           break
         case UserRole.USER:
           navigate('/mi')

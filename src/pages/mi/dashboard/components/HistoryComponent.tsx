@@ -263,13 +263,13 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
         <MITableCell>
           <Box
             onClick={() => {
-              if (param.row.counterpartPrice !== '-') {
+              if (param.row.baselinePrice !== '-') {
                 handleDownload2(param.row.date)
               }
             }}
             sx={{
               padding: '4px 12px',
-              color: param.row.counterpartPrice === '-' ? 'content.iconDisabled' : 'content.iconEnabled',
+              color: param.row.baselinePrice === '-' ? 'content.iconDisabled' : 'content.iconEnabled',
               width: 'fit-content',
               float: 'right',
               borderRadius: '4px',
@@ -277,8 +277,8 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
               display: 'flex',
               alignItems: 'center',
               '&:hover': {
-                color: param.row.counterpartPrice === '-' ? 'content.iconDisabled' : 'content.iconHover',
-                backgroundColor: param.row.counterpartPrice === '-' ? 'unset' : 'contentBG.Hover',
+                color: param.row.baselinePrice === '-' ? 'content.iconDisabled' : 'content.iconHover',
+                backgroundColor: param.row.baselinePrice === '-' ? 'unset' : 'contentBG.Hover',
               },
             }}
           >
@@ -292,10 +292,10 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
             <Typography
               sx={{
                 fontWeight: '600 !important',
-                cursor: param.row.counterpartPrice === '-' ? 'not-allowed' : 'pointer !important',
+                cursor: param.row.baselinePrice === '-' ? 'not-allowed' : 'pointer !important',
               }}
               variant={'tableHeaderSemibold'}
-              color={param.row.counterpartPrice === '-' ? 'contentText.Disabled' : 'gray.70'}
+              color={param.row.baselinePrice === '-' ? 'contentText.Disabled' : 'gray.70'}
             >
               Download
             </Typography>
