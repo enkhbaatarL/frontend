@@ -194,6 +194,30 @@ const ForecastChart = (props: ForecastChartProps) => {
     [datasets, tooltip],
   )
 
+  const handleDownload = () => {
+    if (!chartRef.current) return
+
+    const canvas = chartRef.current.canvas
+
+    const link = document.createElement('a')
+    link.download = 'chart.png'
+
+    const tempCanvas = document.createElement('canvas')
+    tempCanvas.width = canvas.width
+    tempCanvas.height = canvas.height
+
+    const ctx = tempCanvas.getContext('2d')
+    if (ctx) {
+      ctx.fillStyle = '#FFFFFF'
+      ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
+
+      ctx.drawImage(canvas, 0, 0)
+    }
+
+    link.href = tempCanvas.toDataURL('image/png')
+    link.click()
+  }
+
   useEffect(() => {
     if (forecastDatasets.length === 0) return
     const generateForecastDataSet = (rawDatasets: Array<ForecastDataset>) => {
@@ -340,7 +364,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             />
             <MIButton
               startIcon={<ChartDownloadIcon />}
-              // onClick={handleDownload}
+              onClick={handleDownload}
               contentType={'icon'}
               type={'outlined'}
               toolTipProps={{
