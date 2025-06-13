@@ -16,7 +16,9 @@ import MIProvider from '@/providers/MIProvider'
 
 const MIMainRedirect = () => {
   const { miHome } = useCompanyCondition()
-  const homeUrl = miHome() ?? 'dashboard'
+  const homeUrl = miHome()
+  if (!homeUrl) return <></> // TODO: 스켈레톤 필요할거같음
+
   return <Navigate to={homeUrl} state={{ noticePopup: true }} replace />
 }
 
