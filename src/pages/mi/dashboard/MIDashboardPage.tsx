@@ -22,7 +22,7 @@ const MIDashboardPage = () => {
   const { data: basicInfo, isLoading: basicInfoIsLoading } = useQuery({
     queryKey: ['basicInfo', companyNo],
     queryFn: async () => await dashboardDataService.getDashboardBasicInfo(companyNo!),
-    enabled: !!companyNo || companyNo !== -1,
+    enabled: !!companyNo && companyNo !== -1,
   })
 
   const tabsData = [
@@ -40,7 +40,7 @@ const MIDashboardPage = () => {
   const { data: latestInsightsList = [] } = useQuery({
     queryKey: ['getDashboardLatestInsights', companyNo],
     queryFn: async () => await dashboardDataService.getDashboardLatestInsights(companyNo!),
-    enabled: !!companyNo || companyNo !== -1,
+    enabled: !!companyNo && companyNo !== -1,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -53,7 +53,7 @@ const MIDashboardPage = () => {
   } = useQuery({
     queryKey: ['getDashboardMarKetDatas', companyNo],
     queryFn: async () => await dashboardDataService.getDashboardMarketDatas(companyNo!),
-    enabled: !!companyNo || companyNo !== -1,
+    enabled: !!companyNo && companyNo !== -1,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
