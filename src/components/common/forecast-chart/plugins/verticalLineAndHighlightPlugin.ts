@@ -334,6 +334,15 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
     if (this.selectedPoint && chart.data.datasets?.[this.selectedPoint.datasetIndex]?.label) {
       const activeImage = hoverImages[`${chart.data.datasets[this.selectedPoint.datasetIndex].label} Active`]
 
+      ctx.save()
+      ctx.beginPath()
+      ctx.moveTo(this.selectedPoint.element.x, topY)
+      ctx.lineTo(this.selectedPoint.element.x, bottomY)
+      ctx.lineWidth = LINE_STYLES.HOVER_LINE.LINE_WIDTH
+      ctx.strokeStyle = LINE_STYLES.HOVER_LINE.STROKE_STYLE
+      ctx.stroke()
+      ctx.restore()
+
       if (activeImage) {
         ctx.drawImage(
           activeImage,
