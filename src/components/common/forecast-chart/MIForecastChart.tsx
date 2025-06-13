@@ -86,7 +86,7 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart>(null)
 
-  const { showSnackbar } = useSnackbar()
+  useSnackbar()
   const [tooltip, setTooltip] = useState<MIForecastChartTooltipProps>({
     minWidth: 293,
     visible: false,
@@ -504,7 +504,7 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
       <SettingModalComponent
         open={isOpenSetting}
         onClose={() => setIsOpenSetting(false)}
-        onRegister={() => showSnackbar('삭제되었습니다.', { variant: 'success' })}
+        goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: 1 }]}
       />
     </Box>
   )

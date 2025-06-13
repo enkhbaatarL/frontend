@@ -130,12 +130,14 @@ const NotificationPage = () => {
             }}
           />
         </Box>
-        <SettingModalComponent
-          isNotification
-          open={isOpenSetting}
-          onClose={handleCloseSettingModal}
-          goodsDataSourceNo={selectedGoodsDataSourceNo}
-        />
+        {selectedGoodsDataSourceNo && (
+          <SettingModalComponent
+            isNotification
+            open={isOpenSetting}
+            onClose={handleCloseSettingModal}
+            goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: selectedGoodsDataSourceNo }]}
+          />
+        )}
       </Box>
     </>
   )

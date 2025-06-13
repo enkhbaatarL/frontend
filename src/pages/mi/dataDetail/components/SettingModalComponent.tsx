@@ -24,7 +24,7 @@ interface SettingModalProps {
   onClose: () => void
   onRegister?: () => void
   isNotification?: boolean
-  goodsDataSourceNo?: number
+  goodsDataSourceNoList: { goodsDataSourceNm: string; goodsDataSourceNo: number }[]
 }
 
 interface TransactionItem {
@@ -47,12 +47,15 @@ interface NotificationSettingItem {
   notificationCriticalValueSeparateCd: string
 }
 
-const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotification = false, onRegister, goodsDataSourceNo }) => {
+const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotification = false, onRegister, goodsDataSourceNoList }) => {
   const [transactions, setTransactions] = useState<TransactionItem[]>([])
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false)
   const [hideFooter, setHideFooter] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { showSnackbar } = useSnackbar()
+  const [selectGoodsDataSourceNo, setGoodsDataSourceNo] = useState(() =>
+    goodsDataSourceNoList?.length === 1 ? goodsDataSourceNoList[0].goodsDataSourceNo : 0,
+  )
 
   const form = useForm({
     defaultValues: {
@@ -82,6 +85,12 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       },
     },
   })
+
+  useEffect(() => {
+    if (goodsDataSourceNoList?.length === 1 && selectGoodsDataSourceNo !== goodsDataSourceNoList[0].goodsDataSourceNo) {
+      setGoodsDataSourceNo(goodsDataSourceNoList[0].goodsDataSourceNo)
+    }
+  }, [goodsDataSourceNoList, selectGoodsDataSourceNo])
 
   const transformNotificationData = (data: NotificationSettingItem[]): TransactionItem[] =>
     data.map((item) => {
@@ -120,13 +129,13 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
     })
 
   const handleDelete = async (id: string) => {
-    if (!goodsDataSourceNo) {
+    if (!selectGoodsDataSourceNo) {
       showSnackbar('상품 데이터 소스 정보가 없습니다.', { variant: 'error' })
       return
     }
 
     try {
-      const response = await notificationService.deleteNotificationSetting(goodsDataSourceNo, id)
+      const response = await notificationService.deleteNotificationSetting(selectGoodsDataSourceNo, id)
 
       if (response.status) {
         setTransactions((prevTransactions) => prevTransactions.filter((transaction) => transaction.id !== id))
@@ -146,11 +155,11 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
   }
 
   const fetchNotificationSettings = async () => {
-    if (!goodsDataSourceNo) return
+    if (!selectGoodsDataSourceNo) return
 
     try {
       setIsLoadingTransactions(true)
-      const response = await notificationService.getGoodsDataNotificationSettingList(goodsDataSourceNo, {
+      const response = await notificationService.getGoodsDataNotificationSettingList(selectGoodsDataSourceNo, {
         page: 1,
         size: 20,
       })
@@ -168,7 +177,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
   }
 
   const handleRegister = async () => {
-    if (!goodsDataSourceNo) {
+    if (!selectGoodsDataSourceNo) {
       showSnackbar('상품 데이터 소스 정보가 없습니다.', { variant: 'error' })
       return
     }
@@ -199,7 +208,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
         criticalValueSettingVol: Number(formValues.ratio),
       }
 
-      const response = await notificationService.registerNotificationSetting(goodsDataSourceNo, requestBody)
+      const response = await notificationService.registerNotificationSetting(selectGoodsDataSourceNo, requestBody)
 
       if (response.status) {
         showSnackbar('등록되었습니다.', { variant: 'success' })
@@ -226,10 +235,9 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
   useEffect(() => {
     if (open) {
       setHideFooter(false)
-      // 모달이 열릴 때 알림 설정 목록 조회
       fetchNotificationSettings()
     }
-  }, [open, goodsDataSourceNo])
+  }, [open, selectGoodsDataSourceNo])
 
   const formCanSubmit = useStore(form.store, (state) => state.isDirty && state.canSubmit)
 
@@ -238,6 +246,24 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       label: '알람 설정',
       content: (
         <Grid container direction={'column'} pt={5} gap={5}>
+          {goodsDataSourceNoList?.length > 1 && (
+            <form.Field name="standard">
+              {() => (
+                <MIField labelSize="sm" required label="예측 타겟">
+                  <MISelect
+                    fullWidth
+                    type="button"
+                    value={String(selectGoodsDataSourceNo)}
+                    onChange={(e) => setGoodsDataSourceNo(Number(e.target.value))}
+                    options={goodsDataSourceNoList.map(({ goodsDataSourceNm, goodsDataSourceNo }) => ({
+                      label: goodsDataSourceNm,
+                      value: String(goodsDataSourceNo),
+                    }))}
+                  />
+                </MIField>
+              )}
+            </form.Field>
+          )}
           <form.Field name="standard">
             {(field) => (
               <MIField labelSize="sm" label="기준">

@@ -348,7 +348,11 @@ const MIDrillDownChart = (props: MIDrillDownChartProps) => {
         />
         <MIForecastChartTooltip {...tooltip} />
       </Box>
-      <SettingModalComponent open={isOpenSetting} onClose={() => setIsOpenSetting(false)} />
+      <SettingModalComponent
+        open={isOpenSetting}
+        onClose={() => setIsOpenSetting(false)}
+        goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: 1 }]}
+      />
     </Box>
   )
 }

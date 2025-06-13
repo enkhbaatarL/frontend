@@ -556,7 +556,7 @@ const ForecastChart = (props: ForecastChartProps) => {
       <SettingModalComponent
         open={isOpenSetting}
         onClose={() => setIsOpenSetting(false)}
-        // onRegister={() => showSnackbar('삭제되었습니다.', { variant: 'success' })}
+        goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: 1 }]}
       />
     </Box>
   )
