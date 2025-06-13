@@ -195,6 +195,51 @@ const ForecastChart = (props: ForecastChartProps) => {
     [datasets, tooltip],
   )
 
+  const handleDownload = () => {
+    if (!chartRef.current) return
+
+    const legendItems = datasets
+      .filter((dataset) => !dataset.hidden)
+      .map((dataset) => ({
+        label: dataset.label,
+        color: dataset.borderColor as string,
+      }))
+
+    const canvas = chartRef.current.canvas
+
+    const legendCanvas = document.createElement('canvas')
+    const legendCtx = legendCanvas.getContext('2d')
+    if (!legendCtx) return
+
+    const padding = 20
+    const legendItemHeight = 20
+    const legendHeight = legendItems.length * legendItemHeight + padding * 2
+
+    legendCanvas.width = canvas.width
+    legendCanvas.height = canvas.height + legendHeight
+
+    legendCtx.fillStyle = '#FFFFFF'
+    legendCtx.fillRect(0, 0, legendCanvas.width, legendCanvas.height)
+
+    legendCtx.drawImage(canvas, 0, 0)
+
+    legendCtx.font = '12px Pretendard'
+    legendItems.forEach((item, index) => {
+      const y = canvas.height + padding + index * legendItemHeight
+
+      legendCtx.fillStyle = item.color
+      legendCtx.fillRect(padding, y, 12, 12)
+
+      legendCtx.fillStyle = '#000000'
+      legendCtx.fillText(item.label ?? '', padding + 20, y + 10)
+    })
+
+    const link = document.createElement('a')
+    link.download = 'chart.png'
+    link.href = legendCanvas.toDataURL('image/png')
+    link.click()
+  }
+
   useEffect(() => {
     if (forecastDatasets.length === 0) return
     const generateForecastDataSet = (rawDatasets: Array<ForecastDataset>) => {
@@ -341,7 +386,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             />
             <MIButton
               startIcon={<ChartDownloadIcon />}
-              // onClick={handleDownload}
+              onClick={handleDownload}
               contentType={'icon'}
               type={'outlined'}
               toolTipProps={{
