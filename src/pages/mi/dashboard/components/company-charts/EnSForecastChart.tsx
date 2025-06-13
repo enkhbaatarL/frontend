@@ -177,15 +177,22 @@ const ForecastChart = (props: ForecastChartProps) => {
     setDatasets(newDatasets)
   }
 
-  const handleRefresh = () => {
-    const newDatasets = [...datasets]
-    newDatasets.forEach((dataset) => {
-      if (dataset.hidden) {
-        dataset.hidden = false
+  const handleRefresh = useCallback(
+    (resetChart?: boolean) => {
+      if (resetChart) {
+        const newDatasets = [...datasets]
+        newDatasets.forEach((dataset) => {
+          if (dataset.hidden) {
+            dataset.hidden = false
+          }
+        })
+        setDatasets(newDatasets)
       }
-    })
-    setDatasets(newDatasets)
-  }
+      tooltip.onClose?.()
+      verticalLineAndHighlightPlugin.reset()
+    },
+    [datasets, tooltip],
+  )
 
   useEffect(() => {
     if (forecastDatasets.length === 0) return
@@ -263,7 +270,9 @@ const ForecastChart = (props: ForecastChartProps) => {
   }, [forecastDatasets])
 
   useEffect(() => {
-    if (!selectedContent) tooltip.onClose?.()
+    if (!selectedContent) {
+      handleRefresh()
+    }
   }, [selectedContent])
 
   return (
@@ -285,60 +294,71 @@ const ForecastChart = (props: ForecastChartProps) => {
             )}
           </Box>
           <Box display={'flex'} alignItems={'center'} gap="10px">
-            <MIButton startIcon={<RefreshIcon />} onClick={handleRefresh} contentType={'icon'} type={isMIAgent ? 'ghost' : 'outlined'} />
-            {!isMIAgent && (
-              <MIButton
-                startIcon={<ChartNotificationIcon />}
-                onClick={() => setIsOpenSetting(true)}
-                contentType={'icon'}
-                type="outlined"
-                toolTipProps={{
-                  placement: 'bottom-start',
-                  slotProps: {
-                    popper: {
-                      modifiers: [
-                        {
-                          name: 'offset',
-                          options: {
-                            offset: [15, 0],
-                          },
+            <MIButton
+              startIcon={<RefreshIcon />}
+              onClick={() => handleRefresh(true)}
+              contentType={'icon'}
+              type={'outlined'}
+              toolTipProps={{
+                placement: 'top',
+                slotProps: {
+                  popper: {
+                    modifiers: [
+                      {
+                        name: 'offset',
+                        options: {
+                          offset: [0, -10],
                         },
-                      ],
-                    },
+                      },
+                    ],
                   },
-                }}
-                toolTip={
-                  <Typography
-                    variant={'subtext'}
-                    sx={{
-                      whiteSpace: 'pre-line',
-                      '& li': {
-                        paddingLeft: '20px',
-                        position: 'relative',
+                },
+              }}
+              toolTip={<Typography variant="subtext2">초기화</Typography>}
+            />
+            <MIButton
+              startIcon={<ChartNotificationIcon />}
+              onClick={() => setIsOpenSetting(true)}
+              contentType={'icon'}
+              type={'outlined'}
+              toolTipProps={{
+                placement: 'top',
+                slotProps: {
+                  popper: {
+                    modifiers: [
+                      {
+                        name: 'offset',
+                        options: {
+                          offset: [0, -10],
+                        },
                       },
-                      '& li:before': {
-                        content: '"•"',
-                        position: 'absolute',
-                        left: 5,
-                        color: '#FFFFFF',
-                      },
-                    }}
-                  >
-                    오차율(%) = {'{'}(Forecast - Actual) / Actual{'}'} × 100
-                    <ul>
-                      <li>오차율은 양수 : 예측이 더 높았음 (과대 예측)</li>
-                      <li>오차율은 음수 : 예측이 더 낮았음 (과소 예측)</li>
-                      <li>오차율 0% : 완벽 예측</li>
-                    </ul>
-                  </Typography>
-                }
-              />
-            )}
+                    ],
+                  },
+                },
+              }}
+              toolTip={<Typography variant="subtext2">알람 설정</Typography>}
+            />
             <MIButton
               startIcon={<ChartDownloadIcon />}
               // onClick={handleDownload}
               contentType={'icon'}
-              type={isMIAgent ? 'ghost' : 'outlined'}
+              type={'outlined'}
+              toolTipProps={{
+                placement: 'top',
+                slotProps: {
+                  popper: {
+                    modifiers: [
+                      {
+                        name: 'offset',
+                        options: {
+                          offset: [0, -10],
+                        },
+                      },
+                    ],
+                  },
+                },
+              }}
+              toolTip={<Typography variant="subtext2">다운로드</Typography>}
             />
           </Box>
         </Box>
@@ -441,7 +461,6 @@ const ForecastChart = (props: ForecastChartProps) => {
                     weight: 400,
                   },
                   color: theme.palette.gray[60],
-                  stepSize: 0.3,
                   padding: 8,
                   maxTicksLimit: 10,
                 },
