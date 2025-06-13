@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { Chart as ChartJS, ChartDataset } from 'chart.js'
 import dayjs from 'dayjs'
+import { debounce } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Chart } from 'react-chartjs-2'
 
@@ -25,6 +26,7 @@ import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/Repo
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import { IDashboardChartData } from '@/service/mi/dashboardData'
 import theme from '@/theming'
+import { downloadChart } from '@/utils/chartDownload'
 import { convertToRgbaWithOpacity } from '@/utils/color'
 
 interface EnSForecastChartProps {
@@ -61,6 +63,7 @@ export interface ForecastChartProps {
   showVerticalLine?: boolean
   selectedContent: SelectedReportChartContent | null
   onSelectedContent: (content: SelectedReportChartContent | null) => void
+  data?: IDashboardChartData
 }
 
 const initialTooltip: MIForecastChartTooltipProps = {
@@ -91,7 +94,7 @@ const ForecastChart = (props: ForecastChartProps) => {
     selectedContent,
   } = props
   const chartRef = useRef<ChartJS | null>(null)
-
+  const captureRef = useRef<HTMLDivElement | null>(null)
   const [tooltip, setTooltip] = useState<MIForecastChartTooltipProps>(initialTooltip)
   const [isOpenSetting, setIsOpenSetting] = useState(false)
 
@@ -195,50 +198,18 @@ const ForecastChart = (props: ForecastChartProps) => {
     [datasets, tooltip],
   )
 
-  const handleDownload = () => {
-    if (!chartRef.current) return
+  const handleDownload = useCallback(
+    debounce(async () => {
+      if (!chartRef.current || !captureRef.current || !props.data) return
 
-    const legendItems = datasets
-      .filter((dataset) => !dataset.hidden)
-      .map((dataset) => ({
-        label: dataset.label,
-        color: dataset.borderColor as string,
-      }))
-
-    const canvas = chartRef.current.canvas
-
-    const legendCanvas = document.createElement('canvas')
-    const legendCtx = legendCanvas.getContext('2d')
-    if (!legendCtx) return
-
-    const padding = 20
-    const legendItemHeight = 20
-    const legendHeight = legendItems.length * legendItemHeight + padding * 2
-
-    legendCanvas.width = canvas.width
-    legendCanvas.height = canvas.height + legendHeight
-
-    legendCtx.fillStyle = '#FFFFFF'
-    legendCtx.fillRect(0, 0, legendCanvas.width, legendCanvas.height)
-
-    legendCtx.drawImage(canvas, 0, 0)
-
-    legendCtx.font = '12px Pretendard'
-    legendItems.forEach((item, index) => {
-      const y = canvas.height + padding + index * legendItemHeight
-
-      legendCtx.fillStyle = item.color
-      legendCtx.fillRect(padding, y, 12, 12)
-
-      legendCtx.fillStyle = '#000000'
-      legendCtx.fillText(item.label ?? '', padding + 20, y + 10)
-    })
-
-    const link = document.createElement('a')
-    link.download = 'chart.png'
-    link.href = legendCanvas.toDataURL('image/png')
-    link.click()
-  }
+      await downloadChart({
+        filename: `${props.data.dashboardDataSources[0].dashboardLineName}_${props.data.dashboardMetadata.lastUpdateDt}`,
+        target: captureRef.current,
+        remove: ['.control-container'],
+      })
+    }, 300),
+    [props.data],
+  )
 
   useEffect(() => {
     if (forecastDatasets.length === 0) return
@@ -322,7 +293,7 @@ const ForecastChart = (props: ForecastChartProps) => {
   }, [selectedContent])
 
   return (
-    <Box width={'100%'} maxWidth={'100%'} sx={{ boxSizing: 'border-box' }}>
+    <Box ref={captureRef} width={'100%'} maxWidth={'100%'} sx={{ boxSizing: 'border-box' }}>
       {!hideControl && (
         <Box
           px="24px"
@@ -339,73 +310,76 @@ const ForecastChart = (props: ForecastChartProps) => {
               </Typography>
             )}
           </Box>
-          <Box display={'flex'} alignItems={'center'} gap="10px">
-            <MIButton
-              startIcon={<RefreshIcon />}
-              onClick={() => handleRefresh(true)}
-              contentType={'icon'}
-              type={'outlined'}
-              toolTipProps={{
-                placement: 'top',
-                slotProps: {
-                  popper: {
-                    modifiers: [
-                      {
-                        name: 'offset',
-                        options: {
-                          offset: [0, -10],
+          <Box className="control-container">
+            <Box display={'flex'} alignItems={'center'} gap="10px">
+              <MIButton
+                startIcon={<RefreshIcon />}
+                onClick={() => handleRefresh(true)}
+                contentType={'icon'}
+                type={'outlined'}
+                toolTipProps={{
+                  placement: 'top',
+                  slotProps: {
+                    popper: {
+                      modifiers: [
+                        {
+                          name: 'offset',
+                          options: {
+                            offset: [0, -10],
+                          },
                         },
-                      },
-                    ],
+                      ],
+                    },
                   },
-                },
-              }}
-              toolTip={<Typography variant="subtext2">초기화</Typography>}
-            />
-            <MIButton
-              startIcon={<ChartNotificationIcon />}
-              onClick={() => setIsOpenSetting(true)}
-              contentType={'icon'}
-              type={'outlined'}
-              toolTipProps={{
-                placement: 'top',
-                slotProps: {
-                  popper: {
-                    modifiers: [
-                      {
-                        name: 'offset',
-                        options: {
-                          offset: [0, -10],
+                }}
+                toolTip={<Typography variant="subtext2">초기화</Typography>}
+              />
+              <MIButton
+                startIcon={<ChartNotificationIcon />}
+                onClick={() => setIsOpenSetting(true)}
+                contentType={'icon'}
+                type={'outlined'}
+                toolTipProps={{
+                  placement: 'top',
+                  slotProps: {
+                    popper: {
+                      modifiers: [
+                        {
+                          name: 'offset',
+                          options: {
+                            offset: [0, -10],
+                          },
                         },
-                      },
-                    ],
+                      ],
+                    },
                   },
-                },
-              }}
-              toolTip={<Typography variant="subtext2">알람 설정</Typography>}
-            />
-            <MIButton
-              startIcon={<ChartDownloadIcon />}
-              onClick={handleDownload}
-              contentType={'icon'}
-              type={'outlined'}
-              toolTipProps={{
-                placement: 'top',
-                slotProps: {
-                  popper: {
-                    modifiers: [
-                      {
-                        name: 'offset',
-                        options: {
-                          offset: [0, -10],
+                }}
+                toolTip={<Typography variant="subtext2">알람 설정</Typography>}
+              />
+              <MIButton
+                startIcon={<ChartDownloadIcon />}
+                onClick={handleDownload}
+                contentType={'icon'}
+                type={'outlined'}
+                disabled={selectedContent !== null}
+                toolTipProps={{
+                  placement: 'top',
+                  slotProps: {
+                    popper: {
+                      modifiers: [
+                        {
+                          name: 'offset',
+                          options: {
+                            offset: [0, -10],
+                          },
                         },
-                      },
-                    ],
+                      ],
+                    },
                   },
-                },
-              }}
-              toolTip={<Typography variant="subtext2">다운로드</Typography>}
-            />
+                }}
+                toolTip={<Typography variant="subtext2">다운로드</Typography>}
+              />
+            </Box>
           </Box>
         </Box>
       )}
@@ -678,6 +652,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
       lastUpdated={lastUpdated}
       height={530}
       topLabel={`Unit: ${topLabel}`}
+      data={data}
     />
   )
 }
