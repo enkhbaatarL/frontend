@@ -197,24 +197,45 @@ const ForecastChart = (props: ForecastChartProps) => {
   const handleDownload = () => {
     if (!chartRef.current) return
 
+    const legendItems = datasets
+      .filter((dataset) => !dataset.hidden)
+      .map((dataset) => ({
+        label: dataset.label,
+        color: dataset.borderColor as string,
+      }))
+
     const canvas = chartRef.current.canvas
+
+    const legendCanvas = document.createElement('canvas')
+    const legendCtx = legendCanvas.getContext('2d')
+    if (!legendCtx) return
+
+    const padding = 20
+    const legendItemHeight = 20
+    const legendHeight = legendItems.length * legendItemHeight + padding * 2
+
+    legendCanvas.width = canvas.width
+    legendCanvas.height = canvas.height + legendHeight
+
+    legendCtx.fillStyle = '#FFFFFF'
+    legendCtx.fillRect(0, 0, legendCanvas.width, legendCanvas.height)
+
+    legendCtx.drawImage(canvas, 0, 0)
+
+    legendCtx.font = '12px Pretendard'
+    legendItems.forEach((item, index) => {
+      const y = canvas.height + padding + index * legendItemHeight
+
+      legendCtx.fillStyle = item.color
+      legendCtx.fillRect(padding, y, 12, 12)
+
+      legendCtx.fillStyle = '#000000'
+      legendCtx.fillText(item.label ?? '', padding + 20, y + 10)
+    })
 
     const link = document.createElement('a')
     link.download = 'chart.png'
-
-    const tempCanvas = document.createElement('canvas')
-    tempCanvas.width = canvas.width
-    tempCanvas.height = canvas.height
-
-    const ctx = tempCanvas.getContext('2d')
-    if (ctx) {
-      ctx.fillStyle = '#FFFFFF'
-      ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
-
-      ctx.drawImage(canvas, 0, 0)
-    }
-
-    link.href = tempCanvas.toDataURL('image/png')
+    link.href = legendCanvas.toDataURL('image/png')
     link.click()
   }
 
