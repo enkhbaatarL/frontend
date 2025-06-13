@@ -24,7 +24,7 @@ interface SettingModalProps {
   onClose: () => void
   onRegister?: () => void
   isNotification?: boolean
-  goodsDataSourceNoList: { goodsDataSourceNm: string; goodsDataSourceNo: number }[]
+  goodsDataSourceNoList: { goodsDataSourceNm: string; goodsDataSourceNo: number; type: string }[]
 }
 
 interface TransactionItem {
@@ -55,6 +55,9 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
   const { showSnackbar } = useSnackbar()
   const [selectGoodsDataSourceNo, setGoodsDataSourceNo] = useState(() =>
     goodsDataSourceNoList?.length === 1 ? goodsDataSourceNoList[0].goodsDataSourceNo : 0,
+  )
+  const [notificationType, setNotificationType] = useState(() =>
+    goodsDataSourceNoList?.length === 1 ? goodsDataSourceNoList[0].type : 'ACTUAL',
   )
 
   const form = useForm({
@@ -89,6 +92,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
   useEffect(() => {
     if (goodsDataSourceNoList?.length === 1 && selectGoodsDataSourceNo !== goodsDataSourceNoList[0].goodsDataSourceNo) {
       setGoodsDataSourceNo(goodsDataSourceNoList[0].goodsDataSourceNo)
+      setNotificationType(goodsDataSourceNoList[0].type)
     }
   }, [goodsDataSourceNoList, selectGoodsDataSourceNo])
 
@@ -206,6 +210,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       const requestBody = {
         notificationCriticalValueSeparateCd,
         criticalValueSettingVol: Number(formValues.ratio),
+        notificationType,
       }
 
       const response = await notificationService.registerNotificationSetting(selectGoodsDataSourceNo, requestBody)
@@ -254,7 +259,15 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
                     fullWidth
                     type="button"
                     value={String(selectGoodsDataSourceNo)}
-                    onChange={(e) => setGoodsDataSourceNo(Number(e.target.value))}
+                    onChange={(e) => {
+                      const selectedNo = Number(e.target.value)
+                      const selectedItem = goodsDataSourceNoList.find((item) => item.goodsDataSourceNo === selectedNo)
+
+                      setGoodsDataSourceNo(selectedNo)
+                      if (selectedItem) {
+                        setNotificationType(selectedItem.type)
+                      }
+                    }}
                     options={goodsDataSourceNoList.map(({ goodsDataSourceNm, goodsDataSourceNo }) => ({
                       label: goodsDataSourceNm,
                       value: String(goodsDataSourceNo),

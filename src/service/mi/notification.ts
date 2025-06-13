@@ -23,6 +23,7 @@ export interface INotificationSettingDetailInfo {
 export interface IRegisterNotificationSettingRequest {
   notificationCriticalValueSeparateCd: string
   criticalValueSettingVol: number
+  notificationType: string
 }
 
 export interface INotificationRequest extends IPaginationRequest {

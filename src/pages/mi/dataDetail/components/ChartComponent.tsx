@@ -568,7 +568,7 @@ const ChartComponent = ({
         <SettingModalComponent
           open={isOpenSetting}
           onClose={() => setIsOpenSetting(false)}
-          goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo }]}
+          goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo, type: 'ACTUAL' }]}
         />
       )}
     </>

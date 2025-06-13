@@ -351,7 +351,7 @@ const MIDrillDownChart = (props: MIDrillDownChartProps) => {
       <SettingModalComponent
         open={isOpenSetting}
         onClose={() => setIsOpenSetting(false)}
-        goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: 1 }]}
+        goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: 1, type: 'ACTUAL' }]}
       />
     </Box>
   )

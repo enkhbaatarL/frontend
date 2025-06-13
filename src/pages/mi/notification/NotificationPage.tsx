@@ -18,6 +18,7 @@ const NotificationPage = () => {
 
   const [isOpenSetting, setIsOpenSetting] = useState(false)
   const [selectedGoodsDataSourceNo, setSelectedGoodsDataSourceNo] = useState<number | undefined>(undefined)
+  const [notificationType, setNotificationType] = useState<string>('')
 
   const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch, isLoading } = useSearchFilter<
     INotificationRequest,
@@ -33,14 +34,16 @@ const NotificationPage = () => {
     },
   )
 
-  const handleOpenSettingModal = (goodsDataSourceNo: number) => {
+  const handleOpenSettingModal = (goodsDataSourceNo: number, notificationType: string) => {
     setSelectedGoodsDataSourceNo(goodsDataSourceNo)
+    setNotificationType(notificationType)
     setIsOpenSetting(true)
   }
 
   const handleCloseSettingModal = () => {
     setIsOpenSetting(false)
     setSelectedGoodsDataSourceNo(undefined)
+    setNotificationType('')
   }
 
   return (
@@ -103,7 +106,7 @@ const NotificationPage = () => {
                       color="blue"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleOpenSettingModal(params.row.goodsDataSourceNo)
+                        handleOpenSettingModal(params.row.goodsDataSourceNo, params.row.notificationType)
                       }}
                       sx={{
                         cursor: 'pointer',
@@ -135,7 +138,7 @@ const NotificationPage = () => {
             isNotification
             open={isOpenSetting}
             onClose={handleCloseSettingModal}
-            goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: selectedGoodsDataSourceNo }]}
+            goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: selectedGoodsDataSourceNo, type: notificationType }]}
           />
         )}
       </Box>

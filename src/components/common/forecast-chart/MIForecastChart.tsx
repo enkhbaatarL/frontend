@@ -504,7 +504,7 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
       <SettingModalComponent
         open={isOpenSetting}
         onClose={() => setIsOpenSetting(false)}
-        goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: 1 }]}
+        goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: 1, type: 'ACTUAL' }]}
       />
     </Box>
   )
