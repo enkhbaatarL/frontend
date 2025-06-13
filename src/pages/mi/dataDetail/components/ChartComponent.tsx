@@ -19,6 +19,7 @@ import dataDetailService, {
 } from '@/service/mi/dataDetail'
 import useAuthStore from '@/store/useAuthStore'
 import { ChartInterval, ChartRange, ChartType, DataDetailChart } from '@/types/dataDetailChart'
+import { downloadChart } from '@/utils/chartDownload'
 
 interface ChartComponentProps {
   goodsNo: number
@@ -61,6 +62,7 @@ const ChartComponent = ({
   isDownloadable,
 }: ChartComponentProps) => {
   const miChartRef = useRef<HTMLCanvasElement | null>(null)
+  const captureRef = useRef<HTMLDivElement | null>(null)
 
   const [searchFilter, setSearchFilter] = useState<IProductDataStructuredChartRequest>({})
   const [useSaveLastSetting, setUseSaveLastSetting] = useState(false)
@@ -400,26 +402,14 @@ const ChartComponent = ({
             type={'outlined'}
             contentType={'icon'}
             startIcon={<LocalSeeOutlinedIcon fontSize={'small'} />}
-            onClick={() => {
-              if (!miChartRef.current) return
+            onClick={async () => {
+              if (!captureRef.current) return
 
-              const canvas = miChartRef.current
-
-              const tempCanvas = document.createElement('canvas')
-              tempCanvas.width = canvas.width
-              tempCanvas.height = canvas.height
-              const tempCtx = tempCanvas.getContext('2d')
-
-              if (!tempCtx) return
-
-              tempCtx.fillStyle = '#ffffff'
-              tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
-              tempCtx.drawImage(canvas, 0, 0)
-
-              const link = document.createElement('a')
-              link.download = `${chartData?.mainChart.goodsDataName}-${chartData?.mainChart.goodsDataSourceName}-${searchFilter.unitCd}-${dayjs().format('YYYYMMDD')}.png`
-              link.href = tempCanvas.toDataURL('image/png')
-              link.click()
+              await downloadChart({
+                filename: `${chartData?.mainChart.goodsDataName}-${chartData?.mainChart.goodsDataSourceName}-${searchFilter.unitCd}-${dayjs().format('YYYYMMDD')}.png`,
+                target: captureRef.current,
+                remove: ['.control-container'],
+              })
             }}
             disabled={!isDownloadable || !chartData}
           />
@@ -438,7 +428,15 @@ const ChartComponent = ({
         </Grid>
 
         {/*Chart content*/}
-        <Box display={'flex'} maxWidth={'100%'} flexDirection={'column'} p={5} height={'700px'} sx={{ boxSizing: 'border-box' }}>
+        <Box
+          ref={captureRef}
+          display={'flex'}
+          maxWidth={'100%'}
+          flexDirection={'column'}
+          p={5}
+          height={'700px'}
+          sx={{ boxSizing: 'border-box' }}
+        >
           <MIChartController
             chartType={chartType}
             setChartType={setChartType}

@@ -109,7 +109,7 @@ export default function MIChartController({
           ))}
         </Box>
       </Box>
-      <Box display={'flex'} alignItems={'center'} gap={'10px'}>
+      <Box className="control-container" display={'flex'} alignItems={'center'} gap={'10px'}>
         <MIButton
           type={'ghost'}
           color={'gray'}
