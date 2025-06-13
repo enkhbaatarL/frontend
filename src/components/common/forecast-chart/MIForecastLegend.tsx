@@ -4,11 +4,12 @@ import { ChartDataset } from 'chart.js/auto'
 import { DATA_CATEGORIES } from './constants'
 import ActualLegendIcon from './icons/ActualLegendIcon'
 import ForecastLegendIcon from './icons/ForecastLegendIcon'
+import LockOutlinedIcon from '../icons/LockOutlinedIcon'
 
 import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 
 interface MIForecastLegendProps {
-  datasets: Array<ChartDataset & { category: string; hidden?: boolean }>
+  datasets: Array<ChartDataset & { category: string; hidden?: boolean; permission?: boolean }>
   onToggleDataset: (index: number) => void
   showActual?: boolean
   selectedContent?: SelectedReportChartContent | null
@@ -28,7 +29,7 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
             p="4px"
             gap="2px"
             onClick={() => onToggleDataset(index)}
-            sx={{ opacity: dataset.hidden ? 0.3 : 1, cursor: selectedContent ? 'default' : 'pointer' }}
+            sx={{ opacity: dataset.hidden ? 0.3 : 1, cursor: selectedContent || !dataset.permission ? 'default' : 'pointer' }}
           >
             <Box
               sx={{
@@ -44,6 +45,9 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
             <Typography variant="body2SB14" color="gray.70">
               {dataset.label}
             </Typography>
+            {!dataset.permission && (
+              <LockOutlinedIcon width={12} height={15} style={{ marginLeft: '3px', marginBottom: '1px' }} color="#868E96" />
+            )}
           </Box>
         )
       })}

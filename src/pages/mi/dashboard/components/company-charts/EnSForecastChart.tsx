@@ -19,6 +19,7 @@ import loadImages, {
   createHoverDotSVG,
   createHoverPointDiamonSVG,
 } from '@/components/common/forecast-chart/utils/loadImage'
+import RefreshIcon from '@/components/common/icons/RefreshIcon'
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
 import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
@@ -41,6 +42,7 @@ export interface ForecastDataset {
   type?: string
   yAxisID?: string
   metadata?: Record<string, unknown>
+  permission?: boolean
 }
 
 export interface ForecastChartProps {
@@ -155,13 +157,13 @@ const ForecastChart = (props: ForecastChartProps) => {
   }
 
   const hoverDotImagesRef = useRef<{ [key: string]: HTMLImageElement | null }>({})
-  const [datasets, setDatasets] = useState<Array<ChartDataset<'line'> & { category: string; yAxisID: string }>>([])
+  const [datasets, setDatasets] = useState<Array<ChartDataset<'line'> & { category: string; yAxisID: string; permission: boolean }>>([])
 
   const handleToggleDataset = (index: number) => {
     const newDatasets = [...datasets]
     const dataset = newDatasets[index]
-
     if (selectedContent) return
+    if (!dataset.permission) return
 
     dataset.hidden = !dataset.hidden
 
@@ -175,18 +177,28 @@ const ForecastChart = (props: ForecastChartProps) => {
     setDatasets(newDatasets)
   }
 
+  const handleRefresh = () => {
+    const newDatasets = [...datasets]
+    newDatasets.forEach((dataset) => {
+      if (dataset.hidden) {
+        dataset.hidden = false
+      }
+    })
+    setDatasets(newDatasets)
+  }
+
   useEffect(() => {
     if (forecastDatasets.length === 0) return
     const generateForecastDataSet = (rawDatasets: Array<ForecastDataset>) => {
-      const datasets: Array<ChartDataset<'line'> & { category: string; yAxisID: string }> = []
+      const datasets: Array<ChartDataset<'line'> & { category: string; yAxisID: string; permission: boolean }> = []
       const imagesInfo: Record<string, string> = {}
-
       rawDatasets.forEach((dataset) => {
         const actualData = dataset.data
         const label = dataset.label
         const color = dataset.color
         const type = dataset.type ?? 'actualData'
         const yAxisID = dataset.yAxisID ?? 'y'
+        const permission = dataset.permission ?? true
 
         datasets.push({
           label,
@@ -201,6 +213,7 @@ const ForecastChart = (props: ForecastChartProps) => {
           yAxisID,
           spanGaps: true,
           metadata: dataset.metadata,
+          permission,
         })
 
         if (color) {
@@ -233,6 +246,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             yAxisID: dataset.yAxisID ?? 'y',
             spanGaps: true,
             metadata: dataset.metadata,
+            permission,
           })
         }
       })
@@ -271,6 +285,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             )}
           </Box>
           <Box display={'flex'} alignItems={'center'} gap="10px">
+            <MIButton startIcon={<RefreshIcon />} onClick={handleRefresh} contentType={'icon'} type={isMIAgent ? 'ghost' : 'outlined'} />
             {!isMIAgent && (
               <MIButton
                 startIcon={<ChartNotificationIcon />}
@@ -490,6 +505,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
       color: '',
       hidePoint: true,
       type: 'actualData',
+      permission: true,
     },
   ])
   const [lastUpdated, setLastUpdated] = useState<string>('')
@@ -523,6 +539,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
             metadata: {
               goodsDataSourceNo: chart.actualChartLines.goodsDataSourceNo,
             },
+            permission: chart.actualChartLines.isPermitted,
           }
         }
         return null
@@ -543,6 +560,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
             metadata: {
               goodsDataSourceNo: chart.forecastChartLines.goodsDataSourceNo,
             },
+            permission: chart.forecastChartLines.isPermitted,
           }
         }
         return null
@@ -562,6 +580,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
             metadata: {
               goodsDataSourceNo: chart.actualChartLines.goodsDataSourceNo,
             },
+            permission: chart.actualChartLines.isPermitted,
           }
         }
         return null

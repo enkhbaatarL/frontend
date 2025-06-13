@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material'
-import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
+import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -7,6 +7,7 @@ import MISummaryDownloadReport from './MISummaryDownloadReport'
 
 import MIButton from '@/components/common/button/MIButton'
 import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
+import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import CompanyChartRenderer from '@/pages/mi/dashboard/components/CompanyChartRenderer'
@@ -125,7 +126,18 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         headerName: formatDate(chart.resultDate),
         flex: 1,
         align: 'center',
-        renderCell: (params: GridRenderCellParams) => <MITableCell value={params.value} />,
+        renderCell: ({ row }) => (
+          <>
+            {row.permission ? (
+              <MITableCell value={row[chart.resultDate]} />
+            ) : (
+              <Box position="relative" sx={{ userSelect: 'none' }}>
+                <Box sx={{ filter: 'blur(3px)' }}>{row[chart.resultDate]}</Box>
+                <LockOutlinedIcon style={{ width: '12px', height: '15px', color: '#868E96', position: 'absolute', top: 0, right: 5 }} />
+              </Box>
+            )}
+          </>
+        ),
       }))
 
       return [currencyColumn, ...dataColumns]
@@ -155,6 +167,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             id: chart.forecastChartLines.dataType,
             [chartData.dashboardMetadata.currency]:
               chart.forecastChartLines.dataType[0] + chart.forecastChartLines.dataType.slice(1).toLowerCase(),
+            permission: chart.forecastChartLines.isPermitted,
             ...rowData,
           }
         })
@@ -174,6 +187,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             id: chart.actualChartLines.dataType,
             [chartData.dashboardMetadata.currency]:
               chart.actualChartLines.dataType[0] + chart.actualChartLines.dataType.slice(1).toLowerCase(),
+            permission: chart.actualChartLines.isPermitted,
             ...rowData,
           }
         })
@@ -191,6 +205,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           return {
             id: chart.chartLineDescription,
             [chartData.dashboardMetadata.currency]: chart.chartLineDescription,
+            permission: chart.actualChartLines.isPermitted,
             ...rowData,
           }
         })
