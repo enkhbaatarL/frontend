@@ -82,7 +82,7 @@ const MILayout = () => {
   }, [accessCompanyInfo])
 
   const fixedMainPages = useMemo(() => {
-    if (extractPage === undefined) return []
+    if (!extractPage) return undefined
     return mainPages.filter(({ url }) => !extractPage.includes(url))
   }, [extractPage])
 
@@ -193,7 +193,7 @@ const MILayout = () => {
         >
           {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
-            <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />
+            {fixedMainPages && <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />}
             <MISkeleton variant={'dailyChart'} loading={marketDataIsLoading}>
               {showDailyChart && <DailyChart data={marketDataList} />}
             </MISkeleton>
