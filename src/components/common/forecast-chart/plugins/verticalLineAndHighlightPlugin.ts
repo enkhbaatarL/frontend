@@ -119,37 +119,46 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
         plugin.mousePosition = { x, y }
 
-        // Find the nearest forecast point
-        const points = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true)
-        const hoverDistance = 10 // Distance in pixels to consider "near" a point
+        const chartArea = chart.chartArea
+        const isMouseInChartArea = x >= chartArea.left && x <= chartArea.right && y >= chartArea.top && y <= chartArea.bottom
 
-        // Find forecast points from the first dataset
-        const forecastPoint = points.find(
-          (item) =>
-            (chart.data.datasets[item.datasetIndex] as any).category === DATA_CATEGORIES.FORECAST &&
-            Math.abs(item.element.x - x) < hoverDistance &&
-            Math.abs(item.element.y - y) < hoverDistance,
-        )
-
-        if (forecastPoint) {
-          const distance = Math.sqrt(Math.pow(forecastPoint.element.x - x, 2) + Math.pow(forecastPoint.element.y - y, 2))
-
-          // Update interaction state based on distance to point
-          if (distance > 10) {
-            plugin.interactionState = PointInteractionState.HOVER
-          } else {
-            plugin.interactionState = PointInteractionState.HOVER_NEAR
-          }
-
-          // Set cursor to pointer for clickable forecast points
-          if (chart.canvas?.style && !plugin.selectedPoint) {
+        if (plugin.selectedPoint && isMouseInChartArea) {
+          if (chart.canvas?.style) {
             chart.canvas.style.cursor = 'pointer'
           }
         } else {
-          plugin.interactionState = PointInteractionState.NONE
-          // Reset cursor to default when not over clickable forecast points
-          if (chart.canvas?.style) {
-            chart.canvas.style.cursor = 'default'
+          // Find the nearest forecast point
+          const points = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true)
+          const hoverDistance = 10 // Distance in pixels to consider "near" a point
+
+          // Find forecast points from the first dataset
+          const forecastPoint = points.find(
+            (item) =>
+              (chart.data.datasets[item.datasetIndex] as any).category === DATA_CATEGORIES.FORECAST &&
+              Math.abs(item.element.x - x) < hoverDistance &&
+              Math.abs(item.element.y - y) < hoverDistance,
+          )
+
+          if (forecastPoint) {
+            const distance = Math.sqrt(Math.pow(forecastPoint.element.x - x, 2) + Math.pow(forecastPoint.element.y - y, 2))
+
+            // Update interaction state based on distance to point
+            if (distance > 10) {
+              plugin.interactionState = PointInteractionState.HOVER
+            } else {
+              plugin.interactionState = PointInteractionState.HOVER_NEAR
+            }
+
+            // Set cursor to pointer for clickable forecast points
+            if (chart.canvas?.style && !plugin.selectedPoint) {
+              chart.canvas.style.cursor = 'pointer'
+            }
+          } else {
+            plugin.interactionState = PointInteractionState.NONE
+            // Reset cursor to default when not over clickable forecast points
+            if (chart.canvas?.style) {
+              chart.canvas.style.cursor = 'default'
+            }
           }
         }
 
@@ -196,11 +205,6 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
     })
 
     chart.canvas.addEventListener('click', (event: any) => {
-      // 이미 선택된 포인트가 있다면 클릭 이벤트를 무시
-      if (this.selectedPoint) {
-        return
-      }
-
       try {
         const rect = chart.canvas?.getBoundingClientRect()
 
@@ -208,6 +212,16 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
         const x = event.clientX - rect.left
         const y = event.clientY - rect.top
+
+        const chartArea = chart.chartArea
+        const isClickInChartArea = x >= chartArea.left && x <= chartArea.right && y >= chartArea.top && y <= chartArea.bottom
+
+        // 이미 선택된 포인트가 있고 차트 영역을 클릭했다면 초기화
+        if (this.selectedPoint && isClickInChartArea) {
+          this.reset()
+          chart.update()
+          return
+        }
 
         const points = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true)
         const distance = 10

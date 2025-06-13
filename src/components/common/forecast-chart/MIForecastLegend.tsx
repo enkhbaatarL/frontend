@@ -21,6 +21,13 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
       {datasets.map((dataset, index) => {
         // MEMO: 인덱스 유지용으로 필터링 하지 않음
         if (dataset.category === DATA_CATEGORIES.FORECAST) return null
+
+        let opacity = dataset.hidden ? 0.3 : 1
+
+        if (selectedContent) {
+          opacity = selectedContent.label === `${dataset.label} Forecast` ? 1 : 0.3
+        }
+
         return (
           <Box
             key={index}
@@ -29,7 +36,10 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
             p="4px"
             gap="2px"
             onClick={() => onToggleDataset(index)}
-            sx={{ opacity: dataset.hidden ? 0.3 : 1, cursor: selectedContent || !dataset.permission ? 'default' : 'pointer' }}
+            sx={{
+              opacity,
+              cursor: selectedContent || !dataset.permission ? 'default' : 'pointer',
+            }}
           >
             <Box
               sx={{
