@@ -202,6 +202,7 @@ export interface IDatasource {
   goodsDataSourceNm: string
   goodsNo: number
   goodsDataNo: number
+  isPermitted: boolean
 }
 export interface IDashboardFactorGraphRequest {
   goodsDataSourceNo: number

@@ -7,6 +7,7 @@ import MIButton from '../button/MIButton'
 import { generateChartMonths } from '../forecast-chart/mockBrentForecastData'
 import CloseIcon from '../icons/CloseIcon'
 
+import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import MIDrillDownChart from '@/pages/mi/dashboard/components/MIDrillDownChart'
 import dashboardDataService, { IFactor, IDashboardFactorGraphRequest } from '@/service/mi/dashboardData.ts'
 
@@ -42,6 +43,27 @@ interface MIInfluenceFactorChartProps {
   predictDate: string
   date: string
 }
+
+const createDummyData = (seed: string) =>
+  Array.from({ length: 12 }, (_, index) => {
+    const x = Math.sin(seed.charCodeAt(index % seed.length) + index) * 10000
+    return 1 + Math.abs(x - Math.floor(x))
+  })
+
+const dummyMonths = [
+  '1999-01',
+  '1999-02',
+  '1999-03',
+  '1999-04',
+  '1999-05',
+  '1999-06',
+  '1999-07',
+  '1999-08',
+  '1999-09',
+  '1999-10',
+  '1999-11',
+  '1999-12',
+]
 
 const FactorItem = (props: {
   factor: IFactor
@@ -173,6 +195,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
   const [goodsDataNo, setGoodsDataNo] = useState(0)
   const [goodsDataSourceNo, setGoodsDataSourceNo] = useState(0)
   const [goodsDataSourceNm, setGoodsDataSourceNm] = useState('')
+  const [isPermitted, setIsPermitted] = useState(true)
 
   const fetchFactorGraphData = async (factor: IFactor) => {
     const requestParams: IDashboardFactorGraphRequest = {
@@ -204,7 +227,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
       if (response.rawData) {
         const monthList: string[] = []
         const dataList: number[] = []
-        response.rawData.map((data) => {
+        response.rawData.forEach((data) => {
           monthList.push(data.resultDate)
           dataList.push(data.value)
         })
@@ -217,6 +240,8 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
         setGoodsDataNo(response.datasource.goodsDataNo)
         setGoodsDataSourceNo(response.datasource.goodsDataSourceNo)
       }
+
+      setIsPermitted(response.datasource?.isPermitted ?? false)
 
       return response
     } catch (error) {
@@ -241,7 +266,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
     setLoadingFactorGraph(true)
     setSelectedBar(id)
     setFactorSummary('')
-    setInfluenceScore(Number(((bar.explanatoryScore / maxFactorValue) * 10).toFixed(2))) // TODO: 점수 계산 방식 확인 필요
+    setInfluenceScore(Number(bar.explanatoryScore.toFixed(2)))
     setChartMonths(months)
     onHandleChangeRigCountInfluence?.(true)
 
@@ -310,9 +335,9 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
             borderRadius: '4px',
           }}
         >
-          <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
-            {!goodsNo || !goodsDataNo ? (
-              <Box display={'inline-flex'} padding={'6px 15px'} fontSize={'14px'} columnGap={'8px'} fontWeight={600}>
+          <Box display={'flex'} alignItems={'center'} justifyContent={'space-between'} sx={{ userSelect: 'none' }}>
+            {!isPermitted || !goodsNo || !goodsDataNo ? (
+              <Box display={'flex'} padding={'6px 15px'} fontSize={'14px'} columnGap={'8px'} fontWeight={600}>
                 <LineChartGraphIcon />
                 <Box>{goodsDataSourceNm}</Box>
               </Box>
@@ -379,20 +404,36 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
               </Typography>
             </Box>
           </Box>
-
-          <MIDrillDownChart
-            height={448}
-            months={chartMonths ?? []}
-            datasets={[
-              {
-                data: chartData,
-                color: '#40597A',
-                label: goodsDataSourceNm,
-                type: 'actualData',
-              },
-            ]}
-            topLabel={factorUnit}
-          />
+          <Box position={'relative'}>
+            <Box sx={{ filter: !isPermitted ? 'blur(6px)' : 'none' }}>
+              <MIDrillDownChart
+                height={448}
+                months={isPermitted ? (chartMonths ?? []) : dummyMonths}
+                datasets={[
+                  {
+                    data: isPermitted ? chartData : createDummyData(goodsDataSourceNm),
+                    color: '#40597A',
+                    label: goodsDataSourceNm,
+                    type: 'actualData',
+                  },
+                ]}
+                topLabel={factorUnit}
+                isPermitted={isPermitted}
+              />
+            </Box>
+            {!isPermitted && (
+              <Box
+                display={'flex'}
+                alignItems={'center'}
+                justifyContent={'center'}
+                position={'absolute'}
+                pb={'36px'}
+                sx={{ inset: '-4px -8px', backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#868E96' }}
+              >
+                <LockOutlinedIcon width={24} height={24} />
+              </Box>
+            )}
+          </Box>
         </Box>
       )}
     </Box>
