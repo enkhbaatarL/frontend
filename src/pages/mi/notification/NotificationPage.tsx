@@ -1,6 +1,7 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import MIChip from '@/components/common/chip/MIChip'
 import MIInput from '@/components/common/input/MIInput'
@@ -12,9 +13,7 @@ import notificationService, { INotificationInfo, INotificationRequest } from '@/
 import { IPaginationResponse } from '@/types/api'
 
 const NotificationPage = () => {
-  const handleClickDetail = () => {
-    alert('redirect to detail')
-  }
+  const navigate = useNavigate()
 
   const [isOpenSetting, setIsOpenSetting] = useState(false)
   const [selectedGoodsDataSourceNo, setSelectedGoodsDataSourceNo] = useState<number | undefined>(undefined)
@@ -73,8 +72,9 @@ const NotificationPage = () => {
               noRowMessage: '설정된 알람이 없습니다.',
               rowId: 'goodsDataNo',
               rows: data?.detail,
-
-              onRowClick: handleClickDetail,
+              onRowClick: ({ row }) => {
+                navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`, { state: { goodsDataSrcNo: row.goodsDataSourceNo } })
+              },
               columns: [
                 {
                   field: 'notificationType',
