@@ -5,6 +5,7 @@ import EnergyForecastChart from './company-charts/EnergyForecastChart'
 
 import DefaultForecastChart from '@/pages/mi/dashboard/components/company-charts/DefaultForecastChart'
 import EnSForecastChart from '@/pages/mi/dashboard/components/company-charts/EnSForecastChart'
+import GasForecastChart from '@/pages/mi/dashboard/components/company-charts/GasForecastChart.tsx'
 import HynixForecastChart from '@/pages/mi/dashboard/components/company-charts/HynixForecastChart'
 import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 import { IDashboardChartData } from '@/service/mi/dashboardData'
@@ -14,6 +15,8 @@ const CompanyChartComponents = {
   2015: HynixForecastChart, // Hynix
   2013: EnSForecastChart, // E&S
   2020: EnergyForecastChart, // 에너지
+  2014: GasForecastChart, // Gas
+
   // 필요에 따라  추가
 } as const
 

@@ -202,6 +202,7 @@ export interface IDatasource {
   goodsDataSourceNm: string
   goodsNo: number
   goodsDataNo: number
+  isPermitted: boolean
 }
 export interface IDashboardFactorGraphRequest {
   goodsDataSourceNo: number
@@ -381,6 +382,15 @@ const dashboardDataService = {
       `mi/dashboard/companies/${companyNo}/chart/factor/graph`,
       { params },
     )
+    return response.data.data
+  },
+
+  /**
+   * 대시보드 고객사 권한 여부를 확인합니다
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   */
+  async getDashboardAccess(companyNo: number) {
+    const response: AxiosResponse<ICommonResponse<boolean>> = await api.get(`mi/dashboard/companies/${companyNo}/data/exists`)
     return response.data.data
   },
 }

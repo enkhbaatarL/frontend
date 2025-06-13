@@ -27,6 +27,7 @@ export interface MIDrillDownChartProps {
   datasets: Array<DrillDownDataset>
   topLabel?: string
   bottomLabel?: string
+  isPermitted?: boolean
 }
 
 const initialTooltip: MIForecastChartTooltipProps = {
@@ -305,10 +306,10 @@ const MIDrillDownChart = (props: MIDrillDownChartProps) => {
                     weight: 400,
                   },
                   color: theme.palette.gray[60],
-                  stepSize: 0.3,
                   padding: 8,
                   maxTicksLimit: 10,
                 },
+                beginAtZero: !props.isPermitted,
                 /* eslint-disable @typescript-eslint/no-explicit-any */
                 afterTickToLabelConversion(axis: any) {
                   if (axis.ticks.length > 0) {
