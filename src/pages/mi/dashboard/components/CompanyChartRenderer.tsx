@@ -6,6 +6,7 @@ import EnSForecastChart from '@/pages/mi/dashboard/components/company-charts/EnS
 import GasForecastChart from '@/pages/mi/dashboard/components/company-charts/GasForecastChart.tsx'
 import HynixForecastChart from '@/pages/mi/dashboard/components/company-charts/HynixForecastChart'
 import OnForecastChart from '@/pages/mi/dashboard/components/company-charts/OnForecastChart.tsx'
+import SiltronForecastChart from '@/pages/mi/dashboard/components/company-charts/SiltronForecastChart.tsx'
 import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 import { IDashboardChartData } from '@/service/mi/dashboardData'
 
@@ -15,6 +16,7 @@ const CompanyChartComponents = {
   2013: EnSForecastChart, // E&S
   2014: GasForecastChart, // Gas
   2018: OnForecastChart, // ON
+  2008: SiltronForecastChart, // Siltron
 
   // 필요에 따라  추가
 } as const
