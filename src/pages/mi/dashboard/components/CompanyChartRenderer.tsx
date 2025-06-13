@@ -1,6 +1,8 @@
 import { Box } from '@mui/material'
 import { useMemo } from 'react'
 
+import EnergyForecastChart from './company-charts/EnergyForecastChart'
+
 import DefaultForecastChart from '@/pages/mi/dashboard/components/company-charts/DefaultForecastChart'
 import EnSForecastChart from '@/pages/mi/dashboard/components/company-charts/EnSForecastChart'
 import HynixForecastChart from '@/pages/mi/dashboard/components/company-charts/HynixForecastChart'
@@ -11,6 +13,7 @@ import { IDashboardChartData } from '@/service/mi/dashboardData'
 const CompanyChartComponents = {
   2015: HynixForecastChart, // Hynix
   2013: EnSForecastChart, // E&S
+  2020: EnergyForecastChart, // 에너지
   // 필요에 따라  추가
 } as const
 
