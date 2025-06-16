@@ -150,7 +150,7 @@ const ForecastChart = (props: ForecastChartProps) => {
 
       newDatasets.forEach((dataset) => {
         if (selectedDataset.label !== dataset.label && dataset.borderColor) {
-          dataset.borderColor = convertToRgbaWithOpacity(dataset.borderColor as string, 0.3) ///
+          dataset.borderColor = convertToRgbaWithOpacity(dataset.borderColor as string, 0.3)
         }
       })
     } else {

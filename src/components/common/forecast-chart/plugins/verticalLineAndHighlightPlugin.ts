@@ -132,12 +132,22 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
           const hoverDistance = 10 // Distance in pixels to consider "near" a point
 
           // Find forecast points from the first dataset
-          const forecastPoint = points.find(
-            (item) =>
-              (chart.data.datasets[item.datasetIndex] as any).category === DATA_CATEGORIES.FORECAST &&
-              Math.abs(item.element.x - x) < hoverDistance &&
-              Math.abs(item.element.y - y) < hoverDistance,
-          )
+          const forecastPoint = points.find((item) => {
+            const dataset = chart.data.datasets[item.datasetIndex] as any
+            const isForecastDatasets = dataset.category === DATA_CATEGORIES.FORECAST
+
+            if (dataset.data.filter((data: any) => data !== null).length === 2) {
+              const nonNullIndices = dataset.data
+                .map((data: any, index: number) => (data !== null ? index : -1))
+                .filter((index: number) => index !== -1)
+
+              if (item.index !== Math.max(...nonNullIndices)) {
+                return false
+              }
+            }
+
+            return isForecastDatasets && Math.abs(item.element.x - x) < hoverDistance && Math.abs(item.element.y - y) < hoverDistance
+          })
 
           if (forecastPoint) {
             const distance = Math.sqrt(Math.pow(forecastPoint.element.x - x, 2) + Math.pow(forecastPoint.element.y - y, 2))
@@ -227,12 +237,22 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
         const distance = 10
 
         // Find forecast points from the first dataset
-        const forecastPoint = points.find(
-          (item) =>
-            (chart.data.datasets[item.datasetIndex] as any).category === DATA_CATEGORIES.FORECAST &&
-            Math.abs(item.element.x - x) < distance &&
-            Math.abs(item.element.y - y) < distance,
-        )
+        const forecastPoint = points.find((item) => {
+          const dataset = chart.data.datasets[item.datasetIndex] as any
+          const isForecastDatasets = dataset.category === DATA_CATEGORIES.FORECAST
+
+          if (dataset.data.filter((data: any) => data !== null).length === 2) {
+            const nonNullIndices = dataset.data
+              .map((data: any, index: number) => (data !== null ? index : -1))
+              .filter((index: number) => index !== -1)
+
+            if (item.index !== Math.max(...nonNullIndices)) {
+              return false
+            }
+          }
+
+          return isForecastDatasets && Math.abs(item.element.x - x) < distance && Math.abs(item.element.y - y) < distance
+        })
 
         if (forecastPoint) {
           this.selectedPoint = forecastPoint
@@ -423,7 +443,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
               for (let i = 1; i < months.length - 2; i++) {
                 if (i + 1 === currentIndex) {
                   // This is a forecast that ends at our current month
-                  const forecastDataset = forecastDatasets[i - 1] // Adjust index for the padding
+                  const forecastDataset = forecastDatasets[i - 2] // Adjust index for the padding
 
                   if (forecastDataset && forecastDataset.data[currentIndex] !== null) {
                     forecastValue = forecastDataset.data[currentIndex] as number
@@ -480,16 +500,25 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
                 // For forecast points, handle different interaction states
                 if (dataset.category === DATA_CATEGORIES.FORECAST && img && this.mousePosition) {
-                  // Add to tooltip content regardless
+                  // Add to tooltip content only for the lowest index forecast point
                   if (!nearestPointIsForecast || (nearestPointIsForecast && nearestPoint.datasetIndex === datasetIndex)) {
-                    const content = {
-                      label: dataset?.label,
-                      value: dataset?.data[currentIndex] as number,
-                      category: DATA_CATEGORIES.FORECAST,
-                      color: data[datasetIndex - 1]?.borderColor as string,
-                      goodsDataSourceNo: dataset.metadata?.goodsDataSourceNo,
+                    // Find the lowest index forecast dataset
+                    const forecastDatasets = chart.data.datasets.filter(
+                      (ds: any) => ds.category === DATA_CATEGORIES.FORECAST && ds.data[currentIndex] !== null,
+                    )
+                    const lowestIndexDataset = forecastDatasets[0]
+
+                    // Only add to tooltip if this is the lowest index dataset
+                    if (dataset === lowestIndexDataset) {
+                      const content = {
+                        label: dataset?.label,
+                        value: dataset?.data[currentIndex] as number,
+                        category: DATA_CATEGORIES.FORECAST,
+                        color: data[datasetIndex - 1]?.borderColor as string,
+                        goodsDataSourceNo: dataset.metadata?.goodsDataSourceNo,
+                      }
+                      this.tooltipContent.push(content)
                     }
-                    this.tooltipContent.push(content)
                   }
                 }
 
@@ -500,6 +529,14 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                   img &&
                   this.mousePosition
                 ) {
+                  const nonNullIndices = dataset.data
+                    .map((data: any, index: number) => (data !== null ? index : -1))
+                    .filter((index: number) => index !== -1)
+
+                  if (dataset.data.filter((data: any) => data !== null).length === 2 && currentIndex !== Math.max(...nonNullIndices)) {
+                    return
+                  }
+
                   if (this.interactionState === PointInteractionState.CLICKED && mouseIsNear) {
                     ctx.drawImage(hoverImages[`${dataset.label} Active`], xPos, yPos, size, size)
                   } else if (this.interactionState === PointInteractionState.HOVER_NEAR && mouseIsNear) {
