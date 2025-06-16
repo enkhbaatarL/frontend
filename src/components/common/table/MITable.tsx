@@ -16,6 +16,7 @@ export interface MITableProps<T extends GridRowModel> extends DataGridProps {
   noRowMessage?: string
   hidePagination?: boolean
   disableHover?: boolean
+  unstable_rowSpanning?: boolean
 }
 
 const createNoRowsOverlay = (message?: string) => {

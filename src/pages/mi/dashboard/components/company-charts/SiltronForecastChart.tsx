@@ -570,7 +570,6 @@ const SiltronForecastChart = ({ selectedContent, onSelectedContent, data, userRo
     },
   ])
   const [lastUpdated, setLastUpdated] = useState<string>('')
-  const [topLabel, setTopLabel] = useState<string>('')
 
   // 색상 배열을 메모이제이션
   const colorMap = useMemo(() => ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485'], [])
@@ -654,7 +653,6 @@ const SiltronForecastChart = ({ selectedContent, onSelectedContent, data, userRo
 
     setForecastDatasets([...actualDatasets, ...forecastDatasets, ...datasets] as ForecastDataset[])
     setLastUpdated(formatDate(data.dashboardMetadata.lastUpdateDt))
-    setTopLabel(`${data.dashboardMetadata.currency}/${data.dashboardMetadata.currentUnitCd}`)
   }, [data, colorMap, formatDate])
 
   const dates = useMemo(() => {
@@ -679,7 +677,7 @@ const SiltronForecastChart = ({ selectedContent, onSelectedContent, data, userRo
       months={dates}
       lastUpdated={lastUpdated}
       height={530}
-      topLabel={`Unit: ${topLabel}`}
+      topLabel={'Unit: Millions Units'}
       goodsDataSourceNoList={data.dashboardDataSources.map(({ goodsDataSourceNo, dashboardLineName }) => ({
         goodsDataSourceNm: dashboardLineName,
         goodsDataSourceNo,

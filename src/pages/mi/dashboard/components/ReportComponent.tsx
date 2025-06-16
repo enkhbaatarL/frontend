@@ -141,6 +141,44 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
       }))
 
       return [currencyColumn, ...dataColumns]
+    } else {
+      const headerName = companyNo === 2008 ? 'Millions Units' : 'Vehicles'
+
+      const chartLineDescColumn: GridColDef = {
+        field: 'chartLineDescription',
+        headerName,
+        flex: 1.5,
+        align: 'center',
+        rowSpanValueGetter: (value) => value,
+      }
+
+      const dataType: GridColDef = {
+        field: 'dataType',
+        headerName: '',
+        flex: 1,
+        align: 'center',
+      }
+
+      const dataColumns: GridColDef[] = (chartData.charts[0].actualChartLines.rawData ?? []).map((chart) => ({
+        field: chart.resultDate,
+        headerName: formatDate(chart.resultDate),
+        flex: 1,
+        align: 'center',
+        rowSpanValueGetter: () => null,
+        renderCell: ({ row }) => (
+          <>
+            {row.permission ? (
+              <MITableCell value={row[chart.resultDate]} />
+            ) : (
+              <Box position="relative" sx={{ userSelect: 'none' }}>
+                <Box sx={{ filter: 'blur(3px)' }}>{row[chart.resultDate]}</Box>
+                <LockOutlinedIcon style={{ width: '12px', height: '15px', color: '#868E96', position: 'absolute', top: 0, right: 5 }} />
+              </Box>
+            )}
+          </>
+        ),
+      }))
+      return [chartLineDescColumn, dataType, ...dataColumns]
     }
 
     return []
@@ -204,12 +242,96 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
 
           return {
             id: chart.chartLineDescription,
-            [chartData.dashboardMetadata.currency]: chart.chartLineDescription,
+            [chart.chartLineDescription]: chart.chartLineDescription,
             permission: chart.actualChartLines.isPermitted,
             ...rowData,
           }
         })
       return [...forecastRows, ...actualRows, ...futureRows]
+    } else {
+      const allRows = chartData.charts.flatMap((chart) => {
+        const rows = []
+
+        // 1. Forecast Row
+        if (chart.forecastChartLines.dataType === 'FORECAST') {
+          const forecastRowData = (chart.forecastChartLines.rawData ?? []).reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value ?? '-',
+            }),
+            {},
+          )
+
+          rows.push({
+            id: chart.chartLineDescription.concat(chart.forecastChartLines.dataType),
+            chartLineDescription: chart.chartLineDescription,
+            dataType: 'Fcst',
+            permission: chart.forecastChartLines.isPermitted,
+            ...forecastRowData,
+          })
+        }
+
+        // 2. Actual Row
+        if (chart.actualChartLines.dataType === 'ACTUAL') {
+          const actualRowData = (chart.actualChartLines.rawData ?? []).reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value ?? '-',
+            }),
+            {},
+          )
+
+          rows.push({
+            id: chart.chartLineDescription.concat(chart.actualChartLines.dataType),
+            chartLineDescription: chart.chartLineDescription,
+            dataType: 'Act',
+            permission: chart.actualChartLines.isPermitted,
+            ...actualRowData,
+          })
+
+          const correspondingForecast = chartData.charts.find(
+            (forecastChart) =>
+              forecastChart.chartLineDescription === chart.chartLineDescription && forecastChart.forecastChartLines.dataType === 'FORECAST',
+          )
+
+          if (correspondingForecast) {
+            const errorRowData = (chart.actualChartLines.rawData ?? []).reduce((acc, actualData) => {
+              const forecastData = correspondingForecast.forecastChartLines.rawData?.find(
+                (fData) => fData.resultDate === actualData.resultDate,
+              )
+
+              let errorValue: string | number = '-'
+
+              if (
+                actualData.value !== null &&
+                actualData.value !== undefined &&
+                forecastData?.value !== null &&
+                forecastData?.value !== undefined &&
+                forecastData.value !== 0
+              ) {
+                errorValue = (actualData.value / forecastData.value - 1) * 100 // 백분율로 표시
+              }
+
+              return {
+                ...acc,
+                [actualData.resultDate]: errorValue,
+              }
+            }, {})
+
+            rows.push({
+              id: chart.chartLineDescription.concat('ERROR'),
+              chartLineDescription: chart.chartLineDescription,
+              dataType: 'Err%',
+              permission: chart.actualChartLines.isPermitted && correspondingForecast.forecastChartLines.isPermitted,
+              ...errorRowData,
+            })
+          }
+        }
+
+        return rows
+      })
+
+      return allRows
     }
 
     return []
@@ -237,6 +359,8 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
       console.error(error)
     }
   }
+
+  const shouldUseRowSpanning = useMemo(() => chartData?.dashboardMetadata.dataTableType !== 'FORECAST_SINGLE_LAYER', [chartData])
 
   useEffect(() => {
     if (monthSelect === '') {
@@ -304,6 +428,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
                 columns: tableColumns,
                 rows: tableRows,
                 rowId: 'id',
+                unstable_rowSpanning: shouldUseRowSpanning,
               }}
             />
           )}

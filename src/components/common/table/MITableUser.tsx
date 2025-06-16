@@ -10,6 +10,7 @@ export interface MITableUserProps<T extends GridRowModel> {
   tableProps: MITableProps<T>
   hidePagination?: boolean
   paginationProps?: MIPaginationProps<T>
+  unstable_rowSpanning?: boolean
 }
 
 export default function MITableUser<T extends GridRowModel>(props: Readonly<MITableUserProps<T>>) {
