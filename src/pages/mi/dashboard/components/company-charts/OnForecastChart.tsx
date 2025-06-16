@@ -527,7 +527,7 @@ const ForecastChart = (props: ForecastChartProps) => {
               verticalLineAndHighlight: {
                 showVerticalLine, // 수직선 보일지 여부
                 enable: !inactive, // 기능 활성화 여부
-                verticalLinedIndex: 11, // 수직선 그릴 위치
+                verticalLinedIndex: 9, // 수직선 그릴 위치
                 maxIndex: 11, // 수직선 끝 위치
                 onPointerMove: externalTooltipHandler, // 마우스 이동 시 호출
                 onViewForecastPoint: viewForecastPointHandler, // 포인트 클릭 시 호출
