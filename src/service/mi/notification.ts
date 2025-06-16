@@ -10,6 +10,8 @@ export interface INotificationSettingListRequest extends IPaginationRequest {
 export interface INotificationSettingDetailInfo {
   userGoodsNotificationSettingNo: number
   userNo: number
+  goodsNo: number
+  goodsDataNo: number
   goodsDataSourceNo: number
   goodsDataSourceNm: string
   notificationCriticalValueSeparateCd: string
@@ -21,6 +23,7 @@ export interface INotificationSettingDetailInfo {
 export interface IRegisterNotificationSettingRequest {
   notificationCriticalValueSeparateCd: string
   criticalValueSettingVol: number
+  notificationType: string
 }
 
 export interface INotificationRequest extends IPaginationRequest {

@@ -63,6 +63,7 @@ export interface ForecastChartProps {
   showVerticalLine?: boolean
   selectedContent: SelectedReportChartContent | null
   onSelectedContent: (content: SelectedReportChartContent | null) => void
+  goodsDataSourceNoList: { goodsDataSourceNm: string; goodsDataSourceNo: number; type: string }[]
   data?: IDashboardChartData
 }
 
@@ -92,6 +93,7 @@ const ForecastChart = (props: ForecastChartProps) => {
     inactive = false,
     showVerticalLine = true,
     selectedContent,
+    goodsDataSourceNoList = [],
   } = props
   const chartRef = useRef<ChartJS | null>(null)
   const captureRef = useRef<HTMLDivElement | null>(null)
@@ -527,11 +529,7 @@ const ForecastChart = (props: ForecastChartProps) => {
         <MIForecastChartTooltip {...tooltip} />
       </Box>
       {isMIAgent && <MIForecastLegend showActual={false} datasets={datasets} onToggleDataset={handleToggleDataset} />}
-      <SettingModalComponent
-        open={isOpenSetting}
-        onClose={() => setIsOpenSetting(false)}
-        // onRegister={() => showSnackbar('삭제되었습니다.', { variant: 'success' })}
-      />
+      <SettingModalComponent open={isOpenSetting} onClose={() => setIsOpenSetting(false)} goodsDataSourceNoList={goodsDataSourceNoList} />
     </Box>
   )
 }
@@ -653,6 +651,11 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
       height={530}
       topLabel={`Unit: ${topLabel}`}
       data={data}
+      goodsDataSourceNoList={data.dashboardDataSources.map(({ goodsDataSourceNo, dashboardLineName }) => ({
+        goodsDataSourceNm: dashboardLineName,
+        goodsDataSourceNo,
+        type: 'FORECAST',
+      }))}
     />
   )
 }

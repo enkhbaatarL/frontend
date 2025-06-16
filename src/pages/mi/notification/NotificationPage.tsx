@@ -1,6 +1,7 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import MIChip from '@/components/common/chip/MIChip'
 import MIInput from '@/components/common/input/MIInput'
@@ -12,12 +13,11 @@ import notificationService, { INotificationInfo, INotificationRequest } from '@/
 import { IPaginationResponse } from '@/types/api'
 
 const NotificationPage = () => {
-  const handleClickDetail = () => {
-    alert('redirect to detail')
-  }
+  const navigate = useNavigate()
 
   const [isOpenSetting, setIsOpenSetting] = useState(false)
   const [selectedGoodsDataSourceNo, setSelectedGoodsDataSourceNo] = useState<number | undefined>(undefined)
+  const [notificationType, setNotificationType] = useState<string>('')
 
   const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch, isLoading } = useSearchFilter<
     INotificationRequest,
@@ -33,14 +33,16 @@ const NotificationPage = () => {
     },
   )
 
-  const handleOpenSettingModal = (goodsDataSourceNo: number) => {
+  const handleOpenSettingModal = (goodsDataSourceNo: number, notificationType: string) => {
     setSelectedGoodsDataSourceNo(goodsDataSourceNo)
+    setNotificationType(notificationType)
     setIsOpenSetting(true)
   }
 
   const handleCloseSettingModal = () => {
     setIsOpenSetting(false)
     setSelectedGoodsDataSourceNo(undefined)
+    setNotificationType('')
   }
 
   return (
@@ -70,8 +72,9 @@ const NotificationPage = () => {
               noRowMessage: '설정된 알람이 없습니다.',
               rowId: 'goodsDataNo',
               rows: data?.detail,
-
-              onRowClick: handleClickDetail,
+              onRowClick: ({ row }) => {
+                navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`, { state: { goodsDataSrcNo: row.goodsDataSourceNo } })
+              },
               columns: [
                 {
                   field: 'notificationType',
@@ -103,7 +106,7 @@ const NotificationPage = () => {
                       color="blue"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleOpenSettingModal(params.row.goodsDataSourceNo)
+                        handleOpenSettingModal(params.row.goodsDataSourceNo, params.row.notificationType)
                       }}
                       sx={{
                         cursor: 'pointer',
@@ -130,12 +133,14 @@ const NotificationPage = () => {
             }}
           />
         </Box>
-        <SettingModalComponent
-          isNotification
-          open={isOpenSetting}
-          onClose={handleCloseSettingModal}
-          goodsDataSourceNo={selectedGoodsDataSourceNo}
-        />
+        {selectedGoodsDataSourceNo && (
+          <SettingModalComponent
+            isNotification
+            open={isOpenSetting}
+            onClose={handleCloseSettingModal}
+            goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: selectedGoodsDataSourceNo, type: notificationType }]}
+          />
+        )}
       </Box>
     </>
   )

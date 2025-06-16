@@ -562,7 +562,13 @@ const ChartComponent = ({
         </Grid>
       </Box>
 
-      <SettingModalComponent open={isOpenSetting} onClose={() => setIsOpenSetting(false)} goodsDataSourceNo={goodsDataSourceNo} />
+      {goodsDataSourceNo && (
+        <SettingModalComponent
+          open={isOpenSetting}
+          onClose={() => setIsOpenSetting(false)}
+          goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo, type: 'ACTUAL' }]}
+        />
+      )}
     </>
   )
 }

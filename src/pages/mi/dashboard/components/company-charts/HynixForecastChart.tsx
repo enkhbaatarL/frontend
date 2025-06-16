@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { Chart as ChartJS, ChartDataset } from 'chart.js'
 import dayjs from 'dayjs'
+import { debounce } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Chart } from 'react-chartjs-2'
 
@@ -25,6 +26,7 @@ import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/Repo
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent.tsx'
 import { IDashboardChartData } from '@/service/mi/dashboardData'
 import theme from '@/theming'
+import { downloadChart } from '@/utils/chartDownload'
 import { convertToRgbaWithOpacity } from '@/utils/color.ts'
 
 interface HynixForecastChartProps {
@@ -61,6 +63,8 @@ export interface ForecastChartProps {
   showVerticalLine?: boolean
   selectedContent: SelectedReportChartContent | null
   onSelectedContent: (content: SelectedReportChartContent | null) => void
+  goodsDataSourceNoList: { goodsDataSourceNm: string; goodsDataSourceNo: number; type: string }[]
+  data?: IDashboardChartData
 }
 
 const initialTooltip: MIForecastChartTooltipProps = {
@@ -89,11 +93,18 @@ const ForecastChart = (props: ForecastChartProps) => {
     inactive = false,
     showVerticalLine = true,
     selectedContent,
+    goodsDataSourceNoList = [],
   } = props
   const chartRef = useRef<ChartJS | null>(null)
-
+  const captureRef = useRef<HTMLDivElement | null>(null)
   const [tooltip, setTooltip] = useState<MIForecastChartTooltipProps>(initialTooltip)
   const [isOpenSetting, setIsOpenSetting] = useState(false)
+
+  const lastSelectedContentRef = useRef<SelectedReportChartContent | null>(null)
+
+  useEffect(() => {
+    lastSelectedContentRef.current = selectedContent
+  }, [selectedContent])
 
   useEffect(() => {
     if (selectedContent === null) {
@@ -107,17 +118,29 @@ const ForecastChart = (props: ForecastChartProps) => {
 
       if (!chartTooltip) {
         setTooltip((prev) => ({ ...prev, visible: false }))
-
         return
       }
 
       if (chartTooltip.viewDetail) {
-        props.onSelectedContent({
+        const newContent = {
           label: chartTooltip.content[0].label ?? '',
           date: chartTooltip.label,
           value: Number((chartTooltip.content[0].value ?? 0).toFixed(2)),
           goodsDataSourceNo: chartTooltip.content[0].goodsDataSourceNo,
-        })
+        }
+
+        const currentContent = lastSelectedContentRef.current
+
+        const isSameContent =
+          currentContent &&
+          currentContent.label === newContent.label &&
+          currentContent.date === newContent.date &&
+          currentContent.value === newContent.value &&
+          currentContent.goodsDataSourceNo === newContent.goodsDataSourceNo
+
+        if (!isSameContent) {
+          props.onSelectedContent(newContent)
+        }
       }
 
       setTooltip({
@@ -134,10 +157,9 @@ const ForecastChart = (props: ForecastChartProps) => {
         },
       })
     },
-    [props],
+    [props.onSelectedContent],
   )
-
-  const viewForecastPointHandler = (selectedDatasetIndex: number | null) => {
+  const viewForecastPointHandler = useCallback((selectedDatasetIndex: number | null) => {
     const newDatasets = chartRef?.current?.data.datasets ?? []
 
     if (selectedDatasetIndex) {
@@ -154,96 +176,72 @@ const ForecastChart = (props: ForecastChartProps) => {
       })
     }
     chartRef?.current?.update()
-  }
+  }, [])
 
   const hoverDotImagesRef = useRef<{ [key: string]: HTMLImageElement | null }>({})
   const [datasets, setDatasets] = useState<Array<ChartDataset<'line'> & { category: string; yAxisID: string; permission: boolean }>>([])
 
-  const handleToggleDataset = (index: number) => {
-    const newDatasets = [...datasets]
-    const dataset = newDatasets[index]
-    if (selectedContent) return
-    if (!dataset.permission) return
+  const handleToggleDataset = useCallback(
+    (index: number) => {
+      if (selectedContent) return
 
-    dataset.hidden = !dataset.hidden
+      setDatasets((prevDatasets) => {
+        const newDatasets = [...prevDatasets]
+        const dataset = newDatasets[index]
 
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    const forecast = newDatasets.filter((item: any) => item.label === `${dataset.label} Forecast`)
+        if (!dataset.permission) return prevDatasets
 
-    forecast.forEach((d) => {
-      d.hidden = dataset.hidden
-    })
+        dataset.hidden = !dataset.hidden
 
-    setDatasets(newDatasets)
-  }
+        /* eslint-disable @typescript-eslint/no-explicit-any */
+        const forecast = newDatasets.filter((item: any) => item.label === `${dataset.label} Forecast`)
 
-  const handleRefresh = useCallback(
-    (resetChart?: boolean) => {
-      if (resetChart) {
-        const newDatasets = [...datasets]
+        forecast.forEach((d) => {
+          d.hidden = dataset.hidden
+        })
+
+        return newDatasets
+      })
+    },
+    [selectedContent],
+  )
+
+  const handleRefresh = useCallback((resetChart?: boolean) => {
+    if (resetChart) {
+      setDatasets((prevDatasets) => {
+        const newDatasets = [...prevDatasets]
         newDatasets.forEach((dataset) => {
           if (dataset.hidden) {
             dataset.hidden = false
           }
         })
-        setDatasets(newDatasets)
-      }
-      tooltip.onClose?.()
-      verticalLineAndHighlightPlugin.reset()
-    },
-    [datasets, tooltip],
+        return newDatasets
+      })
+    }
+    setTooltip((prev) => ({ ...prev, visible: false }))
+    verticalLineAndHighlightPlugin.reset()
+  }, [])
+
+  const handleDownload = useCallback(
+    debounce(async () => {
+      if (!chartRef.current || !captureRef.current || !props.data) return
+
+      await downloadChart({
+        filename: `${props.data.dashboardDataSources[0].dashboardLineName}_${props.data.dashboardMetadata.lastUpdateDt}`,
+        target: captureRef.current,
+        remove: ['.control-container'],
+      })
+    }, 300),
+    [props.data],
   )
-
-  const handleDownload = () => {
-    if (!chartRef.current) return
-
-    const legendItems = datasets
-      .filter((dataset) => !dataset.hidden)
-      .map((dataset) => ({
-        label: dataset.label,
-        color: dataset.borderColor as string,
-      }))
-
-    const canvas = chartRef.current.canvas
-
-    const legendCanvas = document.createElement('canvas')
-    const legendCtx = legendCanvas.getContext('2d')
-    if (!legendCtx) return
-
-    const padding = 20
-    const legendItemHeight = 20
-    const legendHeight = legendItems.length * legendItemHeight + padding * 2
-
-    legendCanvas.width = canvas.width
-    legendCanvas.height = canvas.height + legendHeight
-
-    legendCtx.fillStyle = '#FFFFFF'
-    legendCtx.fillRect(0, 0, legendCanvas.width, legendCanvas.height)
-
-    legendCtx.drawImage(canvas, 0, 0)
-
-    legendCtx.font = '12px Pretendard'
-    legendItems.forEach((item, index) => {
-      const y = canvas.height + padding + index * legendItemHeight
-
-      legendCtx.fillStyle = item.color
-      legendCtx.fillRect(padding, y, 12, 12)
-
-      legendCtx.fillStyle = '#000000'
-      legendCtx.fillText(item.label ?? '', padding + 20, y + 10)
-    })
-
-    const link = document.createElement('a')
-    link.download = 'chart.png'
-    link.href = legendCanvas.toDataURL('image/png')
-    link.click()
-  }
 
   useEffect(() => {
     if (forecastDatasets.length === 0) return
+
     const generateForecastDataSet = (rawDatasets: Array<ForecastDataset>) => {
       const datasets: Array<ChartDataset<'line'> & { category: string; yAxisID: string; permission: boolean }> = []
       const imagesInfo: Record<string, string> = {}
+
       rawDatasets.forEach((dataset) => {
         const actualData = dataset.data
         const label = dataset.label
@@ -318,10 +316,10 @@ const ForecastChart = (props: ForecastChartProps) => {
     if (!selectedContent) {
       handleRefresh()
     }
-  }, [selectedContent])
+  }, [selectedContent, handleRefresh])
 
   return (
-    <Box width={'100%'} maxWidth={'100%'} sx={{ boxSizing: 'border-box' }}>
+    <Box ref={captureRef} width={'100%'} maxWidth={'100%'} sx={{ boxSizing: 'border-box' }}>
       {!hideControl && (
         <Box
           px="24px"
@@ -338,73 +336,76 @@ const ForecastChart = (props: ForecastChartProps) => {
               </Typography>
             )}
           </Box>
-          <Box display={'flex'} alignItems={'center'} gap="10px">
-            <MIButton
-              startIcon={<RefreshIcon />}
-              onClick={() => handleRefresh(true)}
-              contentType={'icon'}
-              type={'outlined'}
-              toolTipProps={{
-                placement: 'top',
-                slotProps: {
-                  popper: {
-                    modifiers: [
-                      {
-                        name: 'offset',
-                        options: {
-                          offset: [0, -10],
+          <Box className="control-container">
+            <Box display={'flex'} alignItems={'center'} gap="10px">
+              <MIButton
+                startIcon={<RefreshIcon />}
+                onClick={() => handleRefresh(true)}
+                contentType={'icon'}
+                type={'outlined'}
+                toolTipProps={{
+                  placement: 'top',
+                  slotProps: {
+                    popper: {
+                      modifiers: [
+                        {
+                          name: 'offset',
+                          options: {
+                            offset: [0, -10],
+                          },
                         },
-                      },
-                    ],
+                      ],
+                    },
                   },
-                },
-              }}
-              toolTip={<Typography variant="subtext2">초기화</Typography>}
-            />
-            <MIButton
-              startIcon={<ChartNotificationIcon />}
-              onClick={() => setIsOpenSetting(true)}
-              contentType={'icon'}
-              type={'outlined'}
-              toolTipProps={{
-                placement: 'top',
-                slotProps: {
-                  popper: {
-                    modifiers: [
-                      {
-                        name: 'offset',
-                        options: {
-                          offset: [0, -10],
+                }}
+                toolTip={<Typography variant="subtext2">초기화</Typography>}
+              />
+              <MIButton
+                startIcon={<ChartNotificationIcon />}
+                onClick={() => setIsOpenSetting(true)}
+                contentType={'icon'}
+                type={'outlined'}
+                toolTipProps={{
+                  placement: 'top',
+                  slotProps: {
+                    popper: {
+                      modifiers: [
+                        {
+                          name: 'offset',
+                          options: {
+                            offset: [0, -10],
+                          },
                         },
-                      },
-                    ],
+                      ],
+                    },
                   },
-                },
-              }}
-              toolTip={<Typography variant="subtext2">알람 설정</Typography>}
-            />
-            <MIButton
-              startIcon={<ChartDownloadIcon />}
-              onClick={handleDownload}
-              contentType={'icon'}
-              type={'outlined'}
-              toolTipProps={{
-                placement: 'top',
-                slotProps: {
-                  popper: {
-                    modifiers: [
-                      {
-                        name: 'offset',
-                        options: {
-                          offset: [0, -10],
+                }}
+                toolTip={<Typography variant="subtext2">알람 설정</Typography>}
+              />
+              <MIButton
+                startIcon={<ChartDownloadIcon />}
+                onClick={handleDownload}
+                contentType={'icon'}
+                type={'outlined'}
+                disabled={selectedContent !== null}
+                toolTipProps={{
+                  placement: 'top',
+                  slotProps: {
+                    popper: {
+                      modifiers: [
+                        {
+                          name: 'offset',
+                          options: {
+                            offset: [0, -10],
+                          },
                         },
-                      },
-                    ],
+                      ],
+                    },
                   },
-                },
-              }}
-              toolTip={<Typography variant="subtext2">다운로드</Typography>}
-            />
+                }}
+                toolTip={<Typography variant="subtext2">다운로드</Typography>}
+              />
+            </Box>
           </Box>
         </Box>
       )}
@@ -552,11 +553,7 @@ const ForecastChart = (props: ForecastChartProps) => {
         <MIForecastChartTooltip {...tooltip} />
       </Box>
       {isMIAgent && <MIForecastLegend showActual={false} datasets={datasets} onToggleDataset={handleToggleDataset} />}
-      <SettingModalComponent
-        open={isOpenSetting}
-        onClose={() => setIsOpenSetting(false)}
-        // onRegister={() => showSnackbar('삭제되었습니다.', { variant: 'success' })}
-      />
+      <SettingModalComponent open={isOpenSetting} onClose={() => setIsOpenSetting(false)} goodsDataSourceNoList={goodsDataSourceNoList} />
     </Box>
   )
 }
@@ -574,9 +571,12 @@ const HynixForecastChart = ({ selectedContent, onSelectedContent, data }: HynixF
   ])
   const [lastUpdated, setLastUpdated] = useState<string>('')
   const [topLabel, setTopLabel] = useState<string>('')
-  const colorMap = ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485']
 
-  const formatDate = (date: string) => {
+  // 색상 배열을 메모이제이션
+  const colorMap = useMemo(() => ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485'], [])
+
+  // 날짜 포맷팅 함수를 useCallback으로 메모이제이션
+  const formatDate = useCallback((date: string) => {
     const dateObj = new Date(date.replace(' ', 'T'))
 
     const day = dateObj.getDate()
@@ -584,8 +584,9 @@ const HynixForecastChart = ({ selectedContent, onSelectedContent, data }: HynixF
     const year = dateObj.getFullYear()
 
     return `${month} ${day}, ${year}`
-  }
+  }, [])
 
+  // data prop이 변경될 때만 실행되도록 수정
   useEffect(() => {
     if (!data) return
 
@@ -654,9 +655,11 @@ const HynixForecastChart = ({ selectedContent, onSelectedContent, data }: HynixF
     setForecastDatasets([...actualDatasets, ...forecastDatasets, ...datasets] as ForecastDataset[])
     setLastUpdated(formatDate(data.dashboardMetadata.lastUpdateDt))
     setTopLabel(`${data.dashboardMetadata.currency}/${data.dashboardMetadata.currentUnitCd}`)
-  }, [data])
+  }, [data, colorMap, formatDate])
 
   const dates = useMemo(() => {
+    if (!data) return []
+
     for (const chart of data.charts) {
       if (chart.actualChartLines.rawData && chart.actualChartLines.rawData.length > 0) {
         return chart.actualChartLines.rawData.map((item) => item.resultDate)
@@ -677,6 +680,12 @@ const HynixForecastChart = ({ selectedContent, onSelectedContent, data }: HynixF
       lastUpdated={lastUpdated}
       height={530}
       topLabel={`Unit: ${topLabel}`}
+      goodsDataSourceNoList={data.dashboardDataSources.map(({ goodsDataSourceNo, dashboardLineName }) => ({
+        goodsDataSourceNm: dashboardLineName,
+        goodsDataSourceNo,
+        type: 'FORECAST',
+      }))}
+      data={data}
     />
   )
 }
