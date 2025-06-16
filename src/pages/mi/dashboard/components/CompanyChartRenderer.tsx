@@ -30,9 +30,10 @@ interface CompanyChartRendererProps {
   data: IDashboardChartData
   selectedContent: SelectedReportChartContent | null
   onSelectedContent: (content: SelectedReportChartContent | null) => void
+  userRoleCd: string
 }
 
-const CompanyChartRenderer = ({ companyNo, months, selectedContent, onSelectedContent, data }: CompanyChartRendererProps) => {
+const CompanyChartRenderer = ({ companyNo, months, selectedContent, onSelectedContent, data, userRoleCd }: CompanyChartRendererProps) => {
   const ChartComponent = useMemo(() => {
     if (!companyNo) return DefaultForecastChart
 
@@ -48,6 +49,7 @@ const CompanyChartRenderer = ({ companyNo, months, selectedContent, onSelectedCo
         selectedContent={selectedContent}
         onSelectedContent={onSelectedContent}
         data={data}
+        userRoleCd={userRoleCd}
       />
     </Box>
   )

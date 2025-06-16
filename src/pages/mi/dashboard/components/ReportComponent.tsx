@@ -273,6 +273,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             months={chartMonths}
             selectedContent={selectedContent}
             onSelectedContent={setSelectedContent}
+            userRoleCd={user?.userRoleCd ?? ''}
           />
         )}
 

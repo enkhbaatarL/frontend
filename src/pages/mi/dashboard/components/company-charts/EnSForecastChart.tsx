@@ -33,6 +33,7 @@ interface EnSForecastChartProps {
   data: IDashboardChartData
   selectedContent: SelectedReportChartContent | null
   onSelectedContent: (content: SelectedReportChartContent | null) => void
+  userRoleCd: string
 }
 
 export interface ForecastDataset {
@@ -65,6 +66,7 @@ export interface ForecastChartProps {
   onSelectedContent: (content: SelectedReportChartContent | null) => void
   goodsDataSourceNoList: { goodsDataSourceNm: string; goodsDataSourceNo: number; type: string }[]
   data?: IDashboardChartData
+  userRoleCd: string
 }
 
 const initialTooltip: MIForecastChartTooltipProps = {
@@ -94,6 +96,7 @@ const ForecastChart = (props: ForecastChartProps) => {
     showVerticalLine = true,
     selectedContent,
     goodsDataSourceNoList = [],
+    userRoleCd = '',
   } = props
   const chartRef = useRef<ChartJS | null>(null)
   const captureRef = useRef<HTMLDivElement | null>(null)
@@ -357,6 +360,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                   },
                 }}
                 toolTip={<Typography variant="subtext2">알람 설정</Typography>}
+                disabled={userRoleCd !== 'USER'}
               />
               <MIButton
                 startIcon={<ChartDownloadIcon />}
@@ -534,7 +538,7 @@ const ForecastChart = (props: ForecastChartProps) => {
   )
 }
 
-const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForecastChartProps) => {
+const EnSForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd }: EnSForecastChartProps) => {
   const [forecastDatasets, setForecastDatasets] = useState<ForecastDataset[]>([
     {
       data: [],
@@ -656,6 +660,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data }: EnSForec
         goodsDataSourceNo,
         type: 'FORECAST',
       }))}
+      userRoleCd={userRoleCd}
     />
   )
 }
