@@ -18,14 +18,14 @@ export const useCompanyCondition = () => {
   const { data: deniedDashboardPage } = useQuery({
     queryKey: ['getDashboardAccess', comNo],
     queryFn: async () => await dashboardDataService.getDashboardDataExists(comNo!),
-    select: (res) => (res === true ? null : 'dashboard'),
+    select: (res) => (res === true ? [] : extractPages),
     enabled: !!comNo,
     refetchOnWindowFocus: false,
   })
 
   const extractPage: MiPagesType[] | undefined = useMemo(() => {
     if (deniedDashboardPage === undefined) return undefined
-    return !deniedDashboardPage ? [] : extractPages
+    return deniedDashboardPage
   }, [deniedDashboardPage])
 
   /**
