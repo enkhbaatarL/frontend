@@ -244,9 +244,13 @@ const dashboardDataService = {
    * 대시보드 데이터 존재 여부를 조회합니다.
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    */
-  async getDashboardDataExists(companyNo: number): Promise<boolean> {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/data/exists`)
-    return response.data.data
+  // async getDashboardDataExists(companyNo: number): Promise<boolean> {
+  //   const response = await api.get(`mi/dashboard/companies/${companyNo}/data/exists`)
+  //   return response.data.data
+  // },
+  // TODO: 임시 메소드 제거 및 기존 코드 활성화 필요 (오픈 전 모든 고객사 대시보드 테스트용)
+  async getDashboardDataExists(_: number): Promise<boolean> {
+    return true
   },
   /**
    * 대시보드 차트 조회 가능한 날짜 리스트를 조회합니다.
