@@ -31,6 +31,7 @@ interface EnergyForecastChartProps {
   data: IDashboardChartData
   selectedContent: SelectedReportChartContent | null
   onSelectedContent: (content: SelectedReportChartContent | null) => void
+  userRoleCd: string
 }
 
 export interface ForecastDataset {
@@ -61,6 +62,9 @@ export interface ForecastChartProps {
   showVerticalLine?: boolean
   selectedContent: SelectedReportChartContent | null
   onSelectedContent: (content: SelectedReportChartContent | null) => void
+  goodsDataSourceNoList: { goodsDataSourceNm: string; goodsDataSourceNo: number; type: string }[]
+  data?: IDashboardChartData
+  userRoleCd: string
 }
 
 const initialTooltip: MIForecastChartTooltipProps = {
@@ -89,6 +93,8 @@ const ForecastChart = (props: ForecastChartProps) => {
     inactive = false,
     showVerticalLine = true,
     selectedContent,
+    goodsDataSourceNoList = [],
+    userRoleCd = '',
   } = props
   const chartRef = useRef<ChartJS | null>(null)
 
@@ -395,6 +401,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                 },
               }}
               toolTip={<Typography variant="subtext2">알람 설정</Typography>}
+              disabled={userRoleCd !== 'USER'}
             />
             <MIButton
               startIcon={<ChartDownloadIcon />}
@@ -565,16 +572,12 @@ const ForecastChart = (props: ForecastChartProps) => {
         <MIForecastChartTooltip {...tooltip} />
       </Box>
       {isMIAgent && <MIForecastLegend showActual={false} datasets={datasets} onToggleDataset={handleToggleDataset} />}
-      <SettingModalComponent
-        open={isOpenSetting}
-        onClose={() => setIsOpenSetting(false)}
-        // onRegister={() => showSnackbar('삭제되었습니다.', { variant: 'success' })}
-      />
+      <SettingModalComponent open={isOpenSetting} onClose={() => setIsOpenSetting(false)} goodsDataSourceNoList={goodsDataSourceNoList} />
     </Box>
   )
 }
 
-const EnergyForecastChart = ({ selectedContent, onSelectedContent, data }: EnergyForecastChartProps) => {
+const EnergyForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd }: EnergyForecastChartProps) => {
   const [forecastDatasets, setForecastDatasets] = useState<ForecastDataset[]>([
     {
       data: [],
@@ -690,6 +693,13 @@ const EnergyForecastChart = ({ selectedContent, onSelectedContent, data }: Energ
       lastUpdated={lastUpdated}
       height={530}
       topLabel={`Unit: ${topLabel}`}
+      data={data}
+      goodsDataSourceNoList={data.dashboardDataSources.map(({ goodsDataSourceNo, dashboardLineName }) => ({
+        goodsDataSourceNm: dashboardLineName,
+        goodsDataSourceNo,
+        type: 'FORECAST',
+      }))}
+      userRoleCd={userRoleCd}
     />
   )
 }
