@@ -1,5 +1,6 @@
 import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
 import { useEffect, useRef } from 'react'
@@ -35,6 +36,13 @@ const NoticesPage = () => {
       initialFetch: false,
     },
   )
+
+  const { data: filterOptions } = useQuery({
+    queryKey: ['getNoticeFilter'],
+    queryFn: async () => await boardService.getNoticeFilter(),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
 
   useEffect(() => {
     if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
@@ -80,7 +88,7 @@ const NoticesPage = () => {
                 align: 'center',
                 renderCell: (params) => (
                   <MITableCell
-                    value={params.value}
+                    value={filterOptions?.category.find((item) => item.key === params.value)?.value ?? ''}
                     typography={{
                       fontWeight: params.row.isTopFixed ? 600 : 400,
                     }}
