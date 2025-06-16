@@ -1,6 +1,8 @@
 import { Box } from '@mui/material'
 import { useMemo } from 'react'
 
+import EnergyForecastChart from './company-charts/EnergyForecastChart'
+
 import DefaultForecastChart from '@/pages/mi/dashboard/components/company-charts/DefaultForecastChart'
 import EnSForecastChart from '@/pages/mi/dashboard/components/company-charts/EnSForecastChart'
 import GasForecastChart from '@/pages/mi/dashboard/components/company-charts/GasForecastChart.tsx'
@@ -14,6 +16,7 @@ import { IDashboardChartData } from '@/service/mi/dashboardData'
 const CompanyChartComponents = {
   2015: HynixForecastChart, // Hynix
   2013: EnSForecastChart, // E&S
+  2020: EnergyForecastChart, // 에너지
   2014: GasForecastChart, // Gas
   2018: OnForecastChart, // ON
   2008: SiltronForecastChart, // Siltron
