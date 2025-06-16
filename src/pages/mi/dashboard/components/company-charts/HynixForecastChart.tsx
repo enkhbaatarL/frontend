@@ -5,29 +5,29 @@ import { debounce } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Chart } from 'react-chartjs-2'
 
-import MIButton from '@/components/common/button/MIButton.tsx'
-import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon.tsx'
-import ChartNotificationIcon from '@/components/common/forecast-chart/icons/ChartNotificationIcon.tsx'
-import MIForecastChartTooltip, { MIForecastChartTooltipProps } from '@/components/common/forecast-chart/MIForecastChartTooltip.tsx'
-import MIForecastLegend from '@/components/common/forecast-chart/MIForecastLegend.tsx'
-import gridAndAxesPlugin from '@/components/common/forecast-chart/plugins/gridAndAxesPlugin.ts'
+import MIButton from '@/components/common/button/MIButton'
+import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
+import ChartNotificationIcon from '@/components/common/forecast-chart/icons/ChartNotificationIcon'
+import MIForecastChartTooltip, { MIForecastChartTooltipProps } from '@/components/common/forecast-chart/MIForecastChartTooltip'
+import MIForecastLegend from '@/components/common/forecast-chart/MIForecastLegend'
+import gridAndAxesPlugin from '@/components/common/forecast-chart/plugins/gridAndAxesPlugin'
 import verticalLineAndHighlightPlugin, {
   PointerMoveEventContext,
-} from '@/components/common/forecast-chart/plugins/verticalLineAndHighlightPlugin.ts'
+} from '@/components/common/forecast-chart/plugins/verticalLineAndHighlightPlugin'
 import loadImages, {
   createActiveDiamonSVG,
   createHoverDiamonSVG,
   createHoverDotSVG,
   createHoverPointDiamonSVG,
-} from '@/components/common/forecast-chart/utils/loadImage.ts'
-import RefreshIcon from '@/components/common/icons/RefreshIcon.tsx'
-import { generateYAxis } from '@/lib/chart/utils/chartUtils.ts'
+} from '@/components/common/forecast-chart/utils/loadImage'
+import RefreshIcon from '@/components/common/icons/RefreshIcon'
+import { generateYAxis } from '@/lib/chart/utils/chartUtils'
 import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
-import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent.tsx'
+import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import { IDashboardChartData } from '@/service/mi/dashboardData'
 import theme from '@/theming'
 import { downloadChart } from '@/utils/chartDownload'
-import { convertToRgbaWithOpacity } from '@/utils/color.ts'
+import { convertToRgbaWithOpacity } from '@/utils/color'
 
 interface HynixForecastChartProps {
   data: IDashboardChartData
@@ -253,22 +253,6 @@ const ForecastChart = (props: ForecastChartProps) => {
         const yAxisID = dataset.yAxisID ?? 'y'
         const permission = dataset.permission ?? true
 
-        datasets.push({
-          label,
-          data: actualData.length > 0 ? [null, ...actualData, null] : [],
-          borderColor: color,
-          backgroundColor: color,
-          pointBackgroundColor: color,
-          pointBorderColor: color,
-          tension: 0,
-          category: type,
-          pointRadius: dataset.hidePoint ? 0 : 3,
-          yAxisID,
-          spanGaps: true,
-          metadata: dataset.metadata,
-          permission,
-        })
-
         if (color) {
           imagesInfo[label] = createHoverDotSVG(color)
           imagesInfo[`${label} Forecast`] = createHoverDiamonSVG(color)
@@ -277,10 +261,6 @@ const ForecastChart = (props: ForecastChartProps) => {
         }
 
         if (type === 'forecast') {
-          const filteredDatasets = datasets.filter((d) => !d.category?.includes('forecast'))
-          datasets.length = 0
-          datasets.push(...filteredDatasets)
-
           datasets.push({
             label: `${dataset.label} Forecast`,
             data: dataset.data.length > 0 ? [null, ...dataset.data, null] : [],
@@ -297,6 +277,22 @@ const ForecastChart = (props: ForecastChartProps) => {
             category: 'forecast',
             pointRadius: dataset.hidePoint ? 0 : 3,
             yAxisID: dataset.yAxisID ?? 'y',
+            spanGaps: true,
+            metadata: dataset.metadata,
+            permission,
+          })
+        } else {
+          datasets.push({
+            label,
+            data: actualData.length > 0 ? [null, ...actualData, null] : [],
+            borderColor: color,
+            backgroundColor: color,
+            pointBackgroundColor: color,
+            pointBorderColor: color,
+            tension: 0,
+            category: type,
+            pointRadius: dataset.hidePoint ? 0 : 3,
+            yAxisID,
             spanGaps: true,
             metadata: dataset.metadata,
             permission,
@@ -617,7 +613,7 @@ const HynixForecastChart = ({ selectedContent, onSelectedContent, data, userRole
 
     const forecastDatasets = data.charts
       .map((chart, index) => {
-        if (chart.actualChartLines.dataType === 'ACTUAL') {
+        if (chart.forecastChartLines.dataType === 'FORECAST') {
           const value = (chart.forecastChartLines.rawData ?? []).map((item) => item.value)
           return {
             data: value,

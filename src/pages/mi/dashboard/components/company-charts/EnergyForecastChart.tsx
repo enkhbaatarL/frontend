@@ -229,22 +229,6 @@ const ForecastChart = (props: ForecastChartProps) => {
         const yAxisID = dataset.yAxisID ?? 'y'
         const permission = dataset.permission ?? true
 
-        datasets.push({
-          label,
-          data: actualData.length > 0 ? [null, ...actualData, null] : [],
-          borderColor: color,
-          backgroundColor: color,
-          pointBackgroundColor: color,
-          pointBorderColor: color,
-          tension: 0,
-          category: type,
-          pointRadius: dataset.hidePoint ? 0 : 3,
-          yAxisID,
-          spanGaps: true,
-          metadata: dataset.metadata,
-          permission,
-        })
-
         if (color) {
           imagesInfo[label] = createHoverDotSVG(color)
           imagesInfo[`${label} Forecast`] = createHoverDiamonSVG(color)
@@ -253,12 +237,9 @@ const ForecastChart = (props: ForecastChartProps) => {
         }
 
         if (type === 'forecast') {
-          const filteredDatasets = datasets.filter((d) => !d.category?.includes('forecast'))
-          datasets.length = 0
-          datasets.push(...filteredDatasets)
-
           dataset.data.forEach((_, index) => {
             if (index <= 1) return
+            const actualDataset = datasets.find((d) => d.label === dataset.label)
 
             datasets.push({
               label: `${dataset.label} Forecast`,
@@ -267,7 +248,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                   ? [
                     null,
                     ...dataset.data.map((subValue, subIndex) => {
-                      if (index - 1 === subIndex) return filteredDatasets[0].data[index]
+                      if (index - 1 === subIndex) return actualDataset?.data[index] ?? null
                       if (index === subIndex) return subValue
                       return null
                     }),
@@ -291,6 +272,22 @@ const ForecastChart = (props: ForecastChartProps) => {
               metadata: dataset.metadata,
               permission,
             })
+          })
+        } else {
+          datasets.push({
+            label,
+            data: actualData.length > 0 ? [null, ...actualData, null] : [],
+            borderColor: color,
+            backgroundColor: color,
+            pointBackgroundColor: color,
+            pointBorderColor: color,
+            tension: 0,
+            category: type,
+            pointRadius: dataset.hidePoint ? 0 : 3,
+            yAxisID,
+            spanGaps: true,
+            metadata: dataset.metadata,
+            permission,
           })
         }
       })
@@ -604,7 +601,7 @@ const EnergyForecastChart = ({ selectedContent, onSelectedContent, data, userRol
 
     const forecastDatasets = data.charts
       .map((chart, index) => {
-        if (chart.actualChartLines.dataType === 'ACTUAL') {
+        if (chart.forecastChartLines.dataType === 'FORECAST') {
           const value = (chart.forecastChartLines.rawData ?? []).map((item) => item.value)
           return {
             data: value,

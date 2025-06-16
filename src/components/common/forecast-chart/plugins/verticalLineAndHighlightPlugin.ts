@@ -16,7 +16,7 @@ export enum PointInteractionState {
 interface IVerticalLineAndHighlightPlugin extends Plugin<ChartType> {
   mousePosition: { x: number; y: number } | null
   selectedPoint: InteractionItem | null
-  tooltipContent: { label?: string; value?: number; category?: string; color?: string }[]
+  tooltipContent: { label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
   interactionState: PointInteractionState
   clearSelectedPoint: () => void
   _options: any
@@ -40,7 +40,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
   id = 'verticalLineAndHighlight'
   mousePosition: { x: number; y: number } | null = null
   selectedPoint: InteractionItem | null = null
-  tooltipContent: { label?: string; value?: number; category?: string; color?: string }[] = []
+  tooltipContent: { label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[] = []
   interactionState: PointInteractionState = PointInteractionState.NONE
   _options: any = {}
   _chart: Chart | null = null
@@ -96,6 +96,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
       hoverImages: Record<string, HTMLImageElement>
       showForecastTrend: boolean
       showVerticalLine?: boolean
+      showActualTag?: boolean
     },
   ) {
     this._options = options
@@ -305,6 +306,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
       hoverImages: Record<string, HTMLImageElement>
       showForecastTrend: boolean
       showVerticalLine?: boolean
+      showActualTag?: boolean
     },
   ) {
     const enable = options?.enable ?? true
@@ -486,7 +488,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
             const nearestPointIsForecast = (chart.data.datasets[nearestPoint?.datasetIndex] as any)?.category === DATA_CATEGORIES.FORECAST
 
-            chart.data.datasets.forEach((dataset: any, datasetIndex: any, data: any) => {
+            chart.data.datasets.forEach((dataset: any, datasetIndex: any) => {
               const datasetMeta = chart.getDatasetMeta(datasetIndex)
 
               if (!datasetMeta.hidden && datasetMeta.data[currentIndex] && dataset.data[currentIndex] !== null) {
@@ -502,23 +504,51 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                 if (dataset.category === DATA_CATEGORIES.FORECAST && img && this.mousePosition) {
                   // Add to tooltip content only for the lowest index forecast point
                   if (!nearestPointIsForecast || (nearestPointIsForecast && nearestPoint.datasetIndex === datasetIndex)) {
-                    // Find the lowest index forecast dataset
+                    // Group forecast datasets by name
                     const forecastDatasets = chart.data.datasets.filter(
                       (ds: any) => ds.category === DATA_CATEGORIES.FORECAST && ds.data[currentIndex] !== null,
                     )
-                    const lowestIndexDataset = forecastDatasets[0]
 
-                    // Only add to tooltip if this is the lowest index dataset
-                    if (dataset === lowestIndexDataset) {
-                      const content = {
-                        label: dataset?.label,
-                        value: dataset?.data[currentIndex] as number,
-                        category: DATA_CATEGORIES.FORECAST,
-                        color: data[datasetIndex - 1]?.borderColor as string,
-                        goodsDataSourceNo: dataset.metadata?.goodsDataSourceNo,
+                    // Group datasets by their base name (without "Forecast" suffix)
+                    const groupedDatasets = forecastDatasets.reduce((acc: any, ds: any) => {
+                      const baseName = ds.label.replace(' Forecast', '')
+                      acc[baseName] ??= []
+                      acc[baseName].push(ds)
+                      return acc
+                    }, {})
+
+                    // Sort datasets by their base name
+                    const sortedBaseNames = Object.keys(groupedDatasets).sort()
+
+                    // Create ordered tooltip content
+                    this.tooltipContent = []
+
+                    sortedBaseNames.forEach((baseName) => {
+                      // Add actual data first
+                      const actualDataset = chart.data.datasets.find(
+                        (ds: any) => ds.category === DATA_CATEGORIES.ACTUAL && ds.label === baseName,
+                      )
+                      if (actualDataset && actualDataset.data[currentIndex] !== null) {
+                        this.tooltipContent.push({
+                          label: options.showActualTag ? `${actualDataset.label} Actual` : actualDataset.label,
+                          value: actualDataset.data[currentIndex] as number,
+                          category: DATA_CATEGORIES.ACTUAL,
+                          color: actualDataset.borderColor as string,
+                        })
                       }
-                      this.tooltipContent.push(content)
-                    }
+
+                      // Then add forecast data
+                      const forecastDataset = groupedDatasets[baseName][0]
+                      if (forecastDataset) {
+                        this.tooltipContent.push({
+                          label: forecastDataset.label,
+                          value: forecastDataset.data[currentIndex] as number,
+                          category: DATA_CATEGORIES.FORECAST,
+                          color: forecastDataset.borderColor as string,
+                          goodsDataSourceNo: forecastDataset.metadata?.goodsDataSourceNo,
+                        })
+                      }
+                    })
                   }
                 }
 
