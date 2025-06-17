@@ -122,7 +122,7 @@ export default function MIChartController({
           options={chartTypeOptions}
           minWidth="130px"
         />
-        {unitList && (
+        {unitList && unitList.length > 0 && (
           <MIButton
             type={'ghost'}
             color={'gray'}
