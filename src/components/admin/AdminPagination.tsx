@@ -15,22 +15,15 @@ const groupSize = 5
 const AdminPagination = ({ page = 1, count = 0, onPageChange, disabled = false }: Props) => {
   const currentGroupStart = Math.floor((page - 1) / groupSize) * groupSize + 1
   const currentGroupEnd = Math.min(currentGroupStart + groupSize - 1, count)
-
   const pageNumbers = Array.from({ length: currentGroupEnd - currentGroupStart + 1 }, (_, index) => currentGroupStart + index)
-
   return pageNumbers.length !== 0 ? (
     <Box display="flex" alignItems="center" sx={{ justifyContent: 'center' }}>
-      <IconButton
-        size="small"
-        onClick={() => onPageChange?.(currentGroupStart > 1 ? currentGroupStart - groupSize : 1)}
-        disabled={disabled || page <= 1}
-        sx={{ margin: '0 4px' }}
-      >
+      <IconButton size="small" onClick={() => onPageChange?.(1)} disabled={disabled || page === 1} sx={{ margin: '0 4px' }}>
         <KeyboardDoubleArrowLeftIcon fontSize="small" />
       </IconButton>
       <IconButton
         size="small"
-        onClick={() => onPageChange?.(page > 1 ? page - 1 : 1)}
+        onClick={() => onPageChange?.(Math.max(currentGroupStart - 1, 1))}
         disabled={disabled || page <= 1}
         sx={{ margin: '0 4px' }}
       >
@@ -57,7 +50,7 @@ const AdminPagination = ({ page = 1, count = 0, onPageChange, disabled = false }
       ))}
       <IconButton
         size="small"
-        onClick={() => onPageChange?.(page < count ? page + 1 : count)}
+        onClick={() => onPageChange?.(Math.min(currentGroupEnd + 1, count))}
         disabled={disabled || page >= count}
         sx={{ margin: '0 4px', borderRadius: '4px' }}
       >
@@ -65,8 +58,8 @@ const AdminPagination = ({ page = 1, count = 0, onPageChange, disabled = false }
       </IconButton>
       <IconButton
         size="small"
-        onClick={() => onPageChange?.(currentGroupEnd < count ? currentGroupStart + groupSize : count)}
-        disabled={disabled || currentGroupEnd === page}
+        onClick={() => onPageChange?.(count)}
+        disabled={disabled || page === count}
         sx={{ margin: '0 4px', borderRadius: '4px' }}
       >
         <KeyboardDoubleArrowRightIcon fontSize="small" />
