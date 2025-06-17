@@ -53,7 +53,7 @@ const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, di
           </IconButton>
           <IconButton
             size="small"
-            onClick={() => onPageChange?.(page > 1 ? page - 1 : 1)}
+            onClick={() => onPageChange?.(Math.min(currentGroupStart - 5, count))}
             disabled={disabled || page <= 1}
             sx={{ margin: '0 4px', '&:hover': { color: 'primary.main', backgroundColor: 'transparent' } }}
           >
@@ -80,7 +80,7 @@ const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, di
           ))}
           <IconButton
             size="small"
-            onClick={() => onPageChange?.(page < count ? page + 1 : count)}
+            onClick={() => onPageChange?.(Math.min(currentGroupEnd + 1, count))}
             disabled={disabled || page >= count}
             sx={{ margin: '0 4px', '&:hover': { color: 'primary.main', backgroundColor: 'transparent' } }}
           >
