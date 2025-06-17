@@ -46,7 +46,7 @@ const AdminField = ({
   onChange,
   maxSize = 20,
   minWidth = 700,
-  acceptedType = ['image/jpg', 'image/png'],
+  acceptedType = ['image/jpg', 'image/jpeg', 'image/png'],
   multiple = false,
   multiline = false,
   defaultFiles = [],
