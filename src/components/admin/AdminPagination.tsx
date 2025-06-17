@@ -23,7 +23,7 @@ const AdminPagination = ({ page = 1, count = 0, onPageChange, disabled = false }
       <IconButton
         size="small"
         onClick={() => onPageChange?.(currentGroupStart > 1 ? currentGroupStart - groupSize : 1)}
-        disabled={disabled || currentGroupStart <= 1}
+        disabled={disabled || page <= 1}
         sx={{ margin: '0 4px' }}
       >
         <KeyboardDoubleArrowLeftIcon fontSize="small" />
@@ -66,7 +66,7 @@ const AdminPagination = ({ page = 1, count = 0, onPageChange, disabled = false }
       <IconButton
         size="small"
         onClick={() => onPageChange?.(currentGroupEnd < count ? currentGroupStart + groupSize : count)}
-        disabled={disabled || currentGroupEnd >= count}
+        disabled={disabled || currentGroupEnd === page}
         sx={{ margin: '0 4px', borderRadius: '4px' }}
       >
         <KeyboardDoubleArrowRightIcon fontSize="small" />
