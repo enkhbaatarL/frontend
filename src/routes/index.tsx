@@ -7,6 +7,7 @@ import LoginPage from '@/pages/common/LoginPage'
 import PdfViewerPage from '@/pages/common/PdfViewerPage'
 import AdminRoutes from '@/routes/AdminRoutes'
 import ErrorRoutes from '@/routes/ErrorRoutes'
+import { healthCheckRoutes } from '@/routes/HealthCheckRoutes'
 import MIRoutes from '@/routes/MIRoutes'
 import { ICustomRouteObject } from '@/types/common'
 
@@ -36,6 +37,7 @@ const commonRoutes: ICustomRouteObject[] = [
     element: <PdfViewerPage />,
   },
   { ...ErrorRoutes },
+  ...healthCheckRoutes,
   {
     path: '/*',
     element: <Navigate to="/error/404" replace={true} />,

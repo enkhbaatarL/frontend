@@ -83,7 +83,7 @@ const boardService = {
    * FAQ 필터를 조회합니다.
    */
   async getFaqFilter(): Promise<IFaqFilter> {
-    const response: AxiosResponse<ICommonResponse<IFaqFilter>> = await api.get('mi/bulletinboard/notice/filter')
+    const response: AxiosResponse<ICommonResponse<IFaqFilter>> = await api.get('mi/bulletinboard/faq/filter')
 
     return response.data.data
   },
