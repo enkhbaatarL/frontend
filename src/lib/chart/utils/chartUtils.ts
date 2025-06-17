@@ -1,6 +1,8 @@
 import { Chart, ChartTypeRegistry } from 'chart.js'
 import dayjs from 'dayjs'
 
+import { ChartRange } from '@/types/dataDetailChart'
+
 export const getFormattedDateFromChart = (chart: Chart, index: number, format?: string): string => {
   const dateLabel = chart.scales.x.getLabelForValue(index)
   return dayjs(Number(dateLabel)).format(format ?? 'YYYY-MM-DD')
@@ -77,19 +79,20 @@ export const getWeekOfMonth = (date: dayjs.Dayjs) => {
   return Math.ceil((date.date() + offset) / 7)
 }
 
-export const getChartLabel = (date: dayjs.Dayjs, interval: 'day' | 'week' | 'month' | 'year'): string => {
-  switch (interval) {
-    case 'day':
-      return date.format('D일')
-    case 'week': {
-      const week = getWeekOfMonth(date)
-      return `${date.format('M월')} ${week}주차`
-    }
-    case 'month':
-      return date.format('M월')
-    case 'year':
-      return date.format('YYYY년')
+export const getChartLabel = (date: dayjs.Dayjs, range?: ChartRange): string => {
+  if (!range) return date.format('YY-MM-DD')
+
+  switch (range) {
+    case ChartRange.WEEK:
+    case ChartRange.MONTH:
+      return date.format('YY-MM-DD')
+    case ChartRange.THREE_MONTHS:
+    case ChartRange.SIX_MONTHS:
+    case ChartRange.YEAR:
+    case ChartRange.TWO_YEARS:
+      return date.format('YY-MM')
+    case ChartRange.CUSTOM:
     default:
-      return date.format()
+      return date.format('YY-MM-DD')
   }
 }

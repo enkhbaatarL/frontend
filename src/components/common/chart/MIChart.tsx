@@ -16,7 +16,7 @@ import crosshairLinePlugin from '@/lib/chart/plugins/crosshairLinePlugin'
 import priceIndicatorPlugin from '@/lib/chart/plugins/valueIndicatorPlugin'
 import verticalAxisDecoratorPlugin from '@/lib/chart/plugins/verticalAxisDecoratorPlugin'
 import { generateYAxis, getChartLabel } from '@/lib/chart/utils/chartUtils'
-import { ChartData, ChartType as MIChartType, Indicator } from '@/types/dataDetailChart'
+import { ChartData, ChartType as MIChartType, Indicator, ChartRange } from '@/types/dataDetailChart'
 import { disableContextMenu } from '@/utils/mouse'
 
 export interface DisplayDataInfo {
@@ -38,7 +38,7 @@ interface MIChartProps {
   displayDataInfo: DisplayDataInfo
   width?: string | number
   height?: string | number
-  interval: 'day' | 'week' | 'month' | 'year'
+  chartRange?: ChartRange
   chartType?: MIChartType
   currentRangeBetween: string[]
   hideComparisonChartIndexList: number[]
@@ -94,7 +94,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
   (
     {
       height,
-      interval,
+      chartRange,
       unitCd,
       mainChart,
       chartType = MIChartType.LINE,
@@ -327,60 +327,62 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     ])
 
     const indicatorDatasets = useMemo(() => {
-      const ma = indicators.find((indicator) => indicator.indicatorType === 'MOVING_AVERAGE')
-      const bb = indicators.find((indicator) => indicator.indicatorType === 'BOLLINGER_BANDS')
+      const ma = indicators?.find((indicator) => indicator.indicatorType === 'MOVING_AVERAGE')
+      const bb = indicators?.find((indicator) => indicator.indicatorType === 'BOLLINGER_BANDS')
 
       return {
-        MA: ma?.series
-          .map((series) => ({
-            label: maLabels[series.seriesId],
-            data: series.values.map((value, index) => ({
-              x: index,
-              y: value ?? null,
-            })),
-            type: 'line',
-            borderColor: displayDataInfo.MA[maLabels[series.seriesId]] ? maColors[series.seriesId] : 'transparent',
-            borderWidth: 1,
-            pointRadius: 0,
-            fill: false,
-            tension: 0.1,
-            spanGaps: true,
-            yAxisID: 'y',
-            metadata: {
-              isMain: true,
-              chipColor: maColors[series.seriesId],
-              hasDivider: maLabels[series.seriesId] === 'MA5',
-            },
-          }))
-          .sort((a, b) => {
-            const numA = parseInt(a.label.replace('MA', ''))
-            const numB = parseInt(b.label.replace('MA', ''))
-            return numA - numB
-          }),
-        BB: bb?.series
-          .map((series) => ({
-            label: bbLabels[series.seriesId],
-            data: series.values.map((value, index) => ({
-              x: index,
-              y: value ?? null,
-            })),
-            type: 'line',
-            borderColor: displayDataInfo.BB ? bbColors[series.seriesId] : 'transparent',
-            borderWidth: 1,
-            pointRadius: 0,
-            fill: false,
-            tension: 0.1,
-            spanGaps: true,
-            metadata: {
-              isMain: true,
-              chipColor: bbColors[series.seriesId],
-              hasDivider: bbLabels[series.seriesId] === 'Upper BB',
-            },
-          }))
-          .sort((a, b) => {
-            const order: Record<string, number> = { 'Upper BB': 0, 'Middle BB': 1, 'Lower BB': 2 }
-            return order[a.label] - order[b.label]
-          }),
+        MA:
+          ma?.series
+            ?.map((series) => ({
+              label: maLabels[series.seriesId],
+              data: series.values.map((value, index) => ({
+                x: index,
+                y: value ?? null,
+              })),
+              type: 'line',
+              borderColor: displayDataInfo.MA[maLabels[series.seriesId]] ? maColors[series.seriesId] : 'transparent',
+              borderWidth: 1,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.1,
+              spanGaps: true,
+              yAxisID: 'y',
+              metadata: {
+                isMain: true,
+                chipColor: maColors[series.seriesId],
+                hasDivider: maLabels[series.seriesId] === 'MA5',
+              },
+            }))
+            .sort((a, b) => {
+              const numA = parseInt(a.label.replace('MA', ''))
+              const numB = parseInt(b.label.replace('MA', ''))
+              return numA - numB
+            }) ?? [],
+        BB:
+          bb?.series
+            ?.map((series) => ({
+              label: bbLabels[series.seriesId],
+              data: series.values.map((value, index) => ({
+                x: index,
+                y: value ?? null,
+              })),
+              type: 'line',
+              borderColor: displayDataInfo.BB ? bbColors[series.seriesId] : 'transparent',
+              borderWidth: 1,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.1,
+              spanGaps: true,
+              metadata: {
+                isMain: true,
+                chipColor: bbColors[series.seriesId],
+                hasDivider: bbLabels[series.seriesId] === 'Upper BB',
+              },
+            }))
+            .sort((a, b) => {
+              const order: Record<string, number> = { 'Upper BB': 0, 'Middle BB': 1, 'Lower BB': 2 }
+              return order[a.label] - order[b.label]
+            }) ?? [],
       }
     }, [indicators, displayDataInfo.BB, displayDataInfo.MA])
 
@@ -500,8 +502,19 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             afterTickToLabelConversion(axis: any) {
               if (axis.ticks.length > 0) {
-                axis.ticks[0].label = ''
-                axis.ticks[axis.ticks.length - 1].label = ''
+                const ctx = axis.chart.ctx
+                const chartArea = axis.chart.chartArea
+
+                if (ctx && chartArea) {
+                  const firstTick = axis.ticks[0]
+                  const firstLabelBoundary = axis.getPixelForTick(0) - chartArea.left - ctx.measureText(firstTick.label).width / 2
+                  if (firstLabelBoundary < 0) firstTick.label = ''
+
+                  const lastTick = axis.ticks[axis.ticks.length - 1]
+                  const lastLabelBoundary =
+                    axis.getPixelForTick(axis.ticks.length - 1) - chartArea.left + ctx.measureText(lastTick.label).width / 2
+                  if (lastLabelBoundary > axis.width) lastTick.label = ''
+                }
               }
             },
             ticks: {
@@ -516,8 +529,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               callback(tickValue: string | number) {
                 const index = typeof tickValue === 'string' ? parseInt(tickValue) : tickValue
                 const timestamp = sortedTimestamps[index]
-                const date = dayjs(Number(timestamp))
-                return getChartLabel(date, interval)
+                return getChartLabel(dayjs(Number(timestamp)), chartRange)
               },
             },
           },
@@ -569,7 +581,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           },
         },
       }),
-      [externalTooltipHandler, interval, isEmptyChart, sortedTimestamps, subYAxes, unitCd],
+      [externalTooltipHandler, chartRange, isEmptyChart, sortedTimestamps, subYAxes, unitCd],
     )
 
     useEffect(() => {

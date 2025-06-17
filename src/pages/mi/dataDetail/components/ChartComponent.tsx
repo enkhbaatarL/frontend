@@ -277,24 +277,6 @@ const ChartComponent = ({
     }))
   }
 
-  const xInterval = useMemo(() => {
-    switch (chartMetaData?.currentInterval) {
-      case ChartInterval.DAY:
-        return 'day'
-      case ChartInterval.WEEK:
-      case ChartInterval.TWO_WEEKS:
-        return 'week'
-      case ChartInterval.MONTH:
-      case ChartInterval.THREE_MONTHS:
-      case ChartInterval.SIX_MONTHS:
-        return 'month'
-      case ChartInterval.YEAR:
-        return 'year'
-      default:
-        return 'day'
-    }
-  }, [chartMetaData?.currentInterval])
-
   useEffect(() => {
     if (chartMetaData) {
       setSearchFilter({
@@ -322,16 +304,16 @@ const ChartComponent = ({
       const MA = chartData.indicators.find(({ indicatorType }) => indicatorType === 'MOVING_AVERAGE')
 
       setDisplayDataInfo({
-        BB: BB?.series[0].isVisible ?? false,
+        BB: BB?.series?.[0]?.isVisible ?? false,
         MA: {
-          MA5: MA?.series.find(({ seriesId }) => seriesId === 'ma_5')?.isVisible ?? false,
-          MA20: MA?.series.find(({ seriesId }) => seriesId === 'ma_20')?.isVisible ?? false,
-          MA60: MA?.series.find(({ seriesId }) => seriesId === 'ma_60')?.isVisible ?? false,
-          MA120: MA?.series.find(({ seriesId }) => seriesId === 'ma_120')?.isVisible ?? false,
+          MA5: MA?.series?.find(({ seriesId }) => seriesId === 'ma_5')?.isVisible ?? false,
+          MA20: MA?.series?.find(({ seriesId }) => seriesId === 'ma_20')?.isVisible ?? false,
+          MA60: MA?.series?.find(({ seriesId }) => seriesId === 'ma_60')?.isVisible ?? false,
+          MA120: MA?.series?.find(({ seriesId }) => seriesId === 'ma_120')?.isVisible ?? false,
         },
       })
     }
-  }, [chartData?.indicators, chartData?.comparisonCharts])
+  }, [chartData?.indicators, chartData?.comparisonCharts, isChangeDisplayDataInfo])
 
   // 1. 컴포넌트 언마운트 혹은 페이지 이탈 시
   // 2. 개인화 디바운스가 존재 하면 즉시 실행
@@ -511,7 +493,7 @@ const ChartComponent = ({
                 ref={miChartRef}
                 height={'100%'}
                 chartType={chartType}
-                interval={xInterval}
+                chartRange={searchFilter.range}
                 unitCd={searchFilter.unitCd}
                 mainChart={chartData?.mainChart}
                 indicators={chartData?.indicators}
