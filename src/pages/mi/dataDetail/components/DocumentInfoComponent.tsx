@@ -27,7 +27,7 @@ const DocumentInfoComponent = ({ data }: DocumentInfoComponentProps) => {
     () => [
       {
         label: 'Language',
-        value: data.categories.find((cat) => cat.categoryHighCd === 'LANGUAGES')?.value.join(', ') ?? '',
+        value: data.categories.find((cat) => cat.categoryHighCd === 'LANGUAGES')?.value.join(', ') ?? '-',
       },
     ],
     [data],
