@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Tooltip, Typography } from '@mui/material'
 import { ChartDataset } from 'chart.js/auto'
 
 import { DATA_CATEGORIES } from './constants'
@@ -28,7 +28,40 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
           opacity = selectedContent.label === `${dataset.label} Forecast` ? 1 : 0.3
         }
 
-        return (
+        return !dataset.permission ? (
+          <Tooltip placement={'top'} title={'접근 권한이 없는 데이터입니다.'}>
+            <Box
+              key={index}
+              display={'flex'}
+              alignItems={'center'}
+              p="4px"
+              gap="2px"
+              onClick={() => onToggleDataset(index)}
+              sx={{
+                opacity,
+                cursor: selectedContent || !dataset.permission ? 'default' : 'pointer',
+              }}
+            >
+              <Box
+                sx={{
+                  width: '12px',
+                  height: '12px',
+                  margin: '4px',
+                  borderRadius: '2px',
+                  backgroundColor: dataset.backgroundColor as string,
+                  borderColor: dataset.borderColor as string,
+                  borderWidth: 1,
+                }}
+              />
+              <Typography variant="body2SB14" color="gray.70">
+                {dataset.label}
+              </Typography>
+              {!dataset.permission && (
+                <LockOutlinedIcon width={12} height={15} style={{ marginLeft: '3px', marginBottom: '1px' }} color="#868E96" />
+              )}
+            </Box>
+          </Tooltip>
+        ) : (
           <Box
             key={index}
             display={'flex'}

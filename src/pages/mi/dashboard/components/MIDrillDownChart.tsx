@@ -10,6 +10,7 @@ import loadImages, { createHoverPointDiamonSVG } from '@/components/common/forec
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import theme from '@/theming'
+import { formatDate } from '@/utils/date'
 
 export interface DrillDownDataset {
   data: (number | null)[]
@@ -92,7 +93,7 @@ const MIDrillDownChart = (props: MIDrillDownChartProps) => {
             isSimple: true,
             top: y,
             left: x + 20 + 20,
-            label: originalLabel ?? chartLabel,
+            label: formatDate(originalLabel ?? chartLabel, 'MMMM YYYY'),
             content: [
               {
                 label: dataset?.label ?? '',
