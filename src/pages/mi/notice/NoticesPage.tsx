@@ -2,7 +2,6 @@ import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIInput from '@/components/common/input/MIInput'

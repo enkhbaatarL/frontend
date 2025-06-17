@@ -32,6 +32,12 @@ interface ReportComponentProps {
   companyNo?: number
 }
 
+const formatErrorRateValue = (value: number) => {
+  if (value > 0) return { color: '#498B47', displayValue: `+${value.toFixed(2)}` }
+  if (value < 0) return { color: '#CC4D50', displayValue: `${value.toFixed(2)}` }
+  return { color: '#212529', displayValue: value }
+}
+
 const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   const [monthSelect, setMonthSelect] = useState('')
   const [selectedContent, setSelectedContent] = useState<SelectedReportChartContent | null>(null)
@@ -126,18 +132,31 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         headerName: formatDate(chart.resultDate),
         flex: 1,
         align: 'center',
-        renderCell: ({ row }) => (
-          <>
-            {row.permission ? (
-              <MITableCell value={row[chart.resultDate]} />
-            ) : (
-              <Box position="relative" sx={{ userSelect: 'none' }}>
-                <Box sx={{ filter: 'blur(3px)' }}>{row[chart.resultDate]}</Box>
-                <LockOutlinedIcon style={{ width: '12px', height: '15px', color: '#868E96', position: 'absolute', top: 0, right: 5 }} />
-              </Box>
-            )}
-          </>
-        ),
+        renderCell: ({ row }) => {
+          const value = row[chart.resultDate]
+          if (row.id === 'ERROR_RATE') {
+            const { color, displayValue } = formatErrorRateValue(value)
+            return <MITableCell value={displayValue} typography={{ color }} />
+          }
+          if (row.permission) {
+            return <MITableCell value={value} />
+          }
+          return (
+            <Box position="relative" sx={{ userSelect: 'none' }}>
+              <Box sx={{ filter: 'blur(3px)' }}>{value}</Box>
+              <LockOutlinedIcon
+                style={{
+                  width: '12px',
+                  height: '15px',
+                  color: '#868E96',
+                  position: 'absolute',
+                  top: 0,
+                  right: 5,
+                }}
+              />
+            </Box>
+          )
+        },
       }))
 
       return [currencyColumn, ...dataColumns]
@@ -209,7 +228,36 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             ...rowData,
           }
         })
-      return [...forecastRows, ...actualRows, ...futureRows]
+
+      const getErrorObject = () => {
+        if (!forecastRows.length || !actualRows.length) return []
+        const isYYYYMMFormat = /^\d{4}-(0[1-9]|1[0-2])$/
+        return [
+          Object.keys(forecastRows?.[0] ?? {}).reduce(
+            (acc, col) => {
+              const forecastData = forecastRows[0] as Record<string, string | number | boolean>
+              const actualData = actualRows[0] as unknown as Record<string, string | number>
+              if (isYYYYMMFormat.test(col)) {
+                const rateValue = +((actualData[col] as number) / (forecastData[col] as number) - 1).toFixed(2)
+                acc[col] = isNaN(rateValue) ? actualData[col] : rateValue
+              } else {
+                if (col === 'permission') {
+                  acc[col] = actualData[col]
+                } else if (col === 'id') {
+                  acc[col] = 'ERROR_RATE'
+                } else {
+                  acc[col] = '오차율(%)'
+                }
+              }
+              return acc
+            },
+            {} as Record<string, string | number>,
+          ),
+        ]
+      }
+
+      const errorObject = getErrorObject()
+      return [...forecastRows, ...actualRows, ...futureRows, ...errorObject]
     }
 
     return []
