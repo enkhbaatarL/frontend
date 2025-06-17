@@ -261,7 +261,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
 
           return {
             id: chart.chartLineDescription,
-            [chart.chartLineDescription]: chart.chartLineDescription,
+            [chartData.dashboardMetadata.currency]: chart.chartLineDescription,
             permission: chart.actualChartLines.isPermitted,
             ...rowData,
           }
