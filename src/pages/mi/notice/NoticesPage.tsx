@@ -2,7 +2,6 @@ import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIInput from '@/components/common/input/MIInput'
@@ -16,7 +15,6 @@ import { IPaginationResponse } from '@/types/api'
 const NoticesPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
-  const initialFetchRef = useRef(false)
 
   const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch, isLoading } = useSearchFilter<
     INoticeRequest,
@@ -32,18 +30,12 @@ const NoticesPage = () => {
       size: 20,
     },
     {
-      initialFetch: false,
+      initialFetch: true,
     },
   )
 
-  useEffect(() => {
-    if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
-      initialFetchRef.current = true
-      updateFilterWithSearch('customerCompanyNo', accessCompanyInfo.customerCompanyNo)
-    }
-  }, [accessCompanyInfo, updateFilterWithSearch])
-
   const navigate = useNavigate()
+
   return (
     <Box maxWidth={'1380px'} margin={'auto'} paddingX={7.5}>
       <Box paddingTop={10}>
