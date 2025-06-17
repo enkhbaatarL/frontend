@@ -279,7 +279,7 @@ const DataDetailPage = () => {
                     contentType="icon"
                     startIcon={<FileDownloadIcon />}
                     onClick={downloadRawData}
-                    disabled={productData?.isDownloadable}
+                    disabled={!productData?.isDownloadable}
                   />
                 </Grid>
                 {rawGoodsData && (
