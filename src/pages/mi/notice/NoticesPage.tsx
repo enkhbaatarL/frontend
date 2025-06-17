@@ -1,12 +1,10 @@
-import SearchIcon from '@mui/icons-material/Search'
 import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { t } from 'i18next'
-import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import MIInput from '@/components/common/input/MIInput'
+import MISearchInput from '@/components/common/input/MISearchInput.tsx'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import useSearchFilter from '@/hooks/useSearchFilter'
@@ -17,15 +15,13 @@ import { IPaginationResponse } from '@/types/api'
 const NoticesPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
-  const initialFetchRef = useRef(false)
 
   const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch, isLoading } = useSearchFilter<
     INoticeRequest,
     IPaginationResponse<INoticeInfo>
   >(
-    boardService.getNotice,
+    (params) => boardService.getNotice({ customerCompanyNo, ...params }),
     {
-      customerCompanyNo,
       keyword: '',
     },
     {
@@ -33,7 +29,7 @@ const NoticesPage = () => {
       size: 20,
     },
     {
-      initialFetch: false,
+      initialFetch: true,
     },
   )
 
@@ -44,13 +40,6 @@ const NoticesPage = () => {
     gcTime: 0,
   })
 
-  useEffect(() => {
-    if (accessCompanyInfo?.customerCompanyNo && !initialFetchRef.current) {
-      initialFetchRef.current = true
-      updateFilterWithSearch('customerCompanyNo', accessCompanyInfo.customerCompanyNo)
-    }
-  }, [accessCompanyInfo, updateFilterWithSearch])
-
   const navigate = useNavigate()
   return (
     <Box maxWidth={'1380px'} margin={'auto'} paddingX={7.5}>
@@ -58,15 +47,12 @@ const NoticesPage = () => {
         <Typography variant="heading2" component="div" mb={5} color="gray.90">
           Notice
         </Typography>
-        <MIInput
-          width={458}
-          maxWidth={'100%'}
+        <MISearchInput
+          storageKey={'notices'}
           placeholder="Search for notice"
-          size="h46"
-          startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
-          value={filter?.keyword ?? ''}
-          onChange={(e) => updateFilter('keyword', e.target.value)}
-          onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}
+          value={filter.keyword ?? ''}
+          onChange={(value) => updateFilter('keyword', value)}
+          onSearch={(value) => updateFilterWithSearch('keyword', value)}
           onClear={() => updateFilterWithSearch('keyword', '')}
         />
       </Box>

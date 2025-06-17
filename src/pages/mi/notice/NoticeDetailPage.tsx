@@ -41,7 +41,7 @@ export default function NoticesDetailPage() {
             </Typography>
           </Grid>
           <MIButton
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/mi/notices')}
             color="gray"
             size="h42"
             startIcon={<KeyboardArrowLeftIcon sx={{ color: '#868E96', marginLeft: '-15px' }} fontSize="small" />}
