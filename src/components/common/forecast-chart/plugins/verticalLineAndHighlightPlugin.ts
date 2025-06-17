@@ -491,7 +491,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
             chart.data.datasets.forEach((dataset: any, datasetIndex: any) => {
               const datasetMeta = chart.getDatasetMeta(datasetIndex)
 
-              if (!datasetMeta.hidden && datasetMeta.data[currentIndex] && dataset.data[currentIndex] !== null) {
+              if (!datasetMeta.hidden && !dataset.hidden && datasetMeta.data[currentIndex] && dataset.data[currentIndex] !== null) {
                 const point = datasetMeta.data[currentIndex]
                 const size = HOVER_INDICATOR.SIZE
                 const xPos = point.x - size / 2
@@ -504,9 +504,9 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                 if (dataset.category === DATA_CATEGORIES.FORECAST && img && this.mousePosition) {
                   // Add to tooltip content only for the lowest index forecast point
                   if (!nearestPointIsForecast || (nearestPointIsForecast && nearestPoint.datasetIndex === datasetIndex)) {
-                    // Group forecast datasets by name
+                    // Group forecast datasets by name - hidden 상태 필터링 추가
                     const forecastDatasets = chart.data.datasets.filter(
-                      (ds: any) => ds.category === DATA_CATEGORIES.FORECAST && ds.data[currentIndex] !== null,
+                      (ds: any) => ds.category === DATA_CATEGORIES.FORECAST && ds.data[currentIndex] !== null && !ds.hidden, // hidden 상태 체크 추가
                     )
 
                     // Group datasets by their base name (without "Forecast" suffix)
@@ -524,9 +524,9 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                     this.tooltipContent = []
 
                     sortedBaseNames.forEach((baseName) => {
-                      // Add actual data first
+                      // Add actual data first - hidden 상태 체크 추가
                       const actualDataset = chart.data.datasets.find(
-                        (ds: any) => ds.category === DATA_CATEGORIES.ACTUAL && ds.label === baseName,
+                        (ds: any) => ds.category === DATA_CATEGORIES.ACTUAL && ds.label === baseName && !ds.hidden, // hidden 상태 체크 추가
                       )
                       if (actualDataset && actualDataset.data[currentIndex] !== null) {
                         this.tooltipContent.push({
@@ -556,6 +556,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                   dataset.category === DATA_CATEGORIES.FORECAST &&
                   dataset.data[currentIndex] !== null &&
                   nearestPoint?.datasetIndex !== datasetIndex &&
+                  !dataset.hidden &&
                   img &&
                   this.mousePosition
                 ) {
