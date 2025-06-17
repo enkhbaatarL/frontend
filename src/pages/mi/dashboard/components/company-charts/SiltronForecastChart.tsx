@@ -518,6 +518,18 @@ const ForecastChart = (props: ForecastChartProps) => {
                   }
                 },
               },
+              y1: generateYAxis({
+                position: 'right',
+                unit: '',
+                borderColor: '#DEE2E6',
+                color: '#EFA460',
+              }),
+              y2: generateYAxis({
+                position: 'right',
+                unit: '',
+                borderColor: '#DEE2E6',
+                color: '#7D68A4',
+              }),
             },
             plugins: {
               gridAndAxes: {
@@ -571,8 +583,13 @@ const SiltronForecastChart = ({ selectedContent, onSelectedContent, data, userRo
   ])
   const [lastUpdated, setLastUpdated] = useState<string>('')
 
-  // 색상 배열을 메모이제이션
-  const colorMap = useMemo(() => ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485'], [])
+  const chartMap = [
+    { color: '#40597A', description: 'Server', direction: 'y' },
+    { color: '#26757B', description: 'Auto', direction: 'y' },
+    { color: '#EFD485', description: 'AI Server', direction: 'y' },
+    { color: '#EFA460', description: 'PC', direction: 'y1' },
+    { color: '#7D68A4', description: 'SMP', direction: 'y2' },
+  ]
 
   // 날짜 포맷팅 함수를 useCallback으로 메모이제이션
   const formatDate = useCallback((date: string) => {
@@ -589,71 +606,72 @@ const SiltronForecastChart = ({ selectedContent, onSelectedContent, data, userRo
   useEffect(() => {
     if (!data) return
 
-    const label = data.charts.map((chart) => chart.chartLineDescription)
-    const datasets = data.charts
-      .map((chart, index) => {
-        if (chart.actualChartLines.dataType === 'FUTURE') {
-          const values = (chart.actualChartLines.rawData ?? []).map((item) => item.value)
-          return {
-            data: values,
-            label: label[index],
-            color: colorMap[index],
-            hidePoint: true,
-            type: 'future',
-            metadata: {
-              goodsDataSourceNo: chart.actualChartLines.goodsDataSourceNo,
-            },
-            permission: chart.actualChartLines.isPermitted,
-          }
-        }
-        return null
-      })
-      .filter(Boolean)
+    const allDatasets: ForecastDataset[] = []
 
-    const forecastDatasets = data.charts
-      .map((chart, index) => {
-        if (chart.forecastChartLines.dataType === 'FORECAST') {
-          const value = (chart.forecastChartLines.rawData ?? []).map((item) => item.value)
-          return {
-            data: value,
-            label: label[index],
-            color: colorMap[index],
-            hidePoint: true,
-            type: 'forecast',
-            borderDash: [5, 5],
-            metadata: {
-              goodsDataSourceNo: chart.forecastChartLines.goodsDataSourceNo,
-            },
-            permission: chart.forecastChartLines.isPermitted,
-          }
-        }
-        return null
-      })
-      .filter(Boolean)
+    // chartMap을 기준으로 데이터셋 생성
+    chartMap.forEach((mapItem) => {
+      // 해당 description과 매칭되는 chart 찾기
+      const matchingChart = data.charts.find((chart) => chart.chartLineDescription === mapItem.description)
 
-    const actualDatasets = data.charts
-      .map((chart, index) => {
-        if (chart.actualChartLines.dataType === 'ACTUAL') {
-          const value = (chart.actualChartLines.rawData ?? []).map((item) => item.value)
-          return {
-            data: value,
-            label: label[index],
-            color: colorMap[index],
-            hidePoint: true,
-            type: 'actualData',
-            metadata: {
-              goodsDataSourceNo: chart.actualChartLines.goodsDataSourceNo,
-            },
-            permission: chart.actualChartLines.isPermitted,
-          }
-        }
-        return null
-      })
-      .filter(Boolean)
+      if (!matchingChart) return
 
-    setForecastDatasets([...actualDatasets, ...forecastDatasets, ...datasets] as ForecastDataset[])
+      // 공통 속성 정의
+      const baseDataset = {
+        label: matchingChart.chartLineDescription,
+        color: mapItem.color,
+        hidePoint: true,
+        yAxisID: mapItem.direction,
+      }
+
+      // ACTUAL 데이터 처리
+      if (matchingChart.actualChartLines.dataType === 'ACTUAL') {
+        const actualValues = (matchingChart.actualChartLines.rawData ?? []).map((item) => item.value)
+
+        allDatasets.push({
+          ...baseDataset,
+          data: actualValues,
+          type: 'actualData',
+          metadata: {
+            goodsDataSourceNo: matchingChart.actualChartLines.goodsDataSourceNo,
+          },
+          permission: matchingChart.actualChartLines.isPermitted,
+        })
+      }
+
+      // FUTURE 데이터 처리
+      if (matchingChart.actualChartLines.dataType === 'FUTURE') {
+        const futureValues = (matchingChart.actualChartLines.rawData ?? []).map((item) => item.value)
+
+        allDatasets.push({
+          ...baseDataset,
+          data: futureValues,
+          type: 'future',
+          metadata: {
+            goodsDataSourceNo: matchingChart.actualChartLines.goodsDataSourceNo,
+          },
+          permission: matchingChart.actualChartLines.isPermitted,
+        })
+      }
+
+      // FORECAST 데이터 처리
+      if (matchingChart.forecastChartLines.dataType === 'FORECAST') {
+        const forecastValues = (matchingChart.forecastChartLines.rawData ?? []).map((item) => item.value)
+
+        allDatasets.push({
+          ...baseDataset,
+          data: forecastValues,
+          type: 'forecast',
+          metadata: {
+            goodsDataSourceNo: matchingChart.forecastChartLines.goodsDataSourceNo,
+          },
+          permission: matchingChart.forecastChartLines.isPermitted,
+        })
+      }
+    })
+
+    setForecastDatasets(allDatasets)
     setLastUpdated(formatDate(data.dashboardMetadata.lastUpdateDt))
-  }, [data, colorMap, formatDate])
+  }, [data, formatDate])
 
   const dates = useMemo(() => {
     if (!data) return []

@@ -28,6 +28,7 @@ export const generateYAxis = (params: {
   isMain?: boolean
   label?: string
   borderColor?: string
+  color?: string
 }) => ({
   unit: params.unit,
   title: {
@@ -48,7 +49,7 @@ export const generateYAxis = (params: {
   },
   ticks: {
     padding: 12,
-    color: params.isMain ? '#2E3F5E' : '#868E96',
+    color: params.isMain ? '#2E3F5E' : params.color,
     font: {
       size: 14,
       family: 'Pretendard,sans-serif',
