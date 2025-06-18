@@ -287,7 +287,7 @@ const ChartComponent = ({
       })
       setChartType(chartMetaData.initialChartType)
       setIsInitialState(false)
-      chartMetaData.changeableUnitCd = chartMetaData.changeableUnitCd.filter((value) => value !== '')
+      chartMetaData.changeableUnitCd = chartMetaData.changeableUnitCd.filter(Boolean)
     }
   }, [chartMetaData])
 
