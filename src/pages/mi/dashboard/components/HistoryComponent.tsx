@@ -11,6 +11,7 @@ import UpIcon from '@/components/common/icons/table/UpIcon'
 import MISelect from '@/components/common/select/MISelect'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
 import dashboardDataService, { DashboardBasicInfo, IDashboardHistoryDetail } from '@/service/mi/dashboardData.ts'
 import { downloadFile } from '@/utils/file.ts'
 
@@ -39,7 +40,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
   const [selectedFulfillDate, setSelectedFulfillDate] = useState<string>('')
   const [selectedSettingDetailNo, setSelectedSettingDetailNo] = useState<number | null>(null)
 
-  const { data: metaData } = useQuery({
+  const { data: metaData, isLoading: metaDataIsLoading } = useQuery({
     queryKey: ['getDashboardHistoryMetaData'],
     queryFn: async () => await dashboardDataService.getHistoryMetadata(),
   })
@@ -305,6 +306,8 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
     },
   ]
 
+  const isLoading = metaDataIsLoading || historyDetailListIsLoading
+
   return (
     <Box>
       <Box paddingTop={7.5} paddingBottom={10} textAlign="center">
@@ -405,28 +408,18 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
         </Box>
       </Box>
 
-      {showDownload ? (
-        <MITableUser
-          hidePagination={true}
-          tableProps={{
-            noRowMessage: '등록된 내용이 없습니다.',
-            disableHover: true,
-            columns,
-            rowId: 'date',
-            rows: processedTableData,
-            loading: historyDetailListIsLoading,
-          }}
-        />
+      {metaDataIsLoading ? (
+        <MIBaseSkeleton.BaseElement2 width={'100%'} height={'424px'} />
       ) : (
         <MITableUser
           hidePagination={true}
           tableProps={{
             noRowMessage: '등록된 내용이 없습니다.',
             disableHover: true,
-            columns: columns.slice(0, -1),
+            columns: showDownload ? columns : columns.slice(0, -1),
             rowId: 'date',
             rows: processedTableData,
-            loading: historyDetailListIsLoading,
+            loading: isLoading,
           }}
         />
       )}
