@@ -19,14 +19,16 @@ const createIndicatorContainer = (id: string) => {
   return container
 }
 
-const getNonOverlappingTop = (container: HTMLElement, desiredTop: number, height: number): number => {
+const getNonOverlappingTop = (container: HTMLElement, desiredTop: number, height: number, yAxisId: string): number => {
   const padding = 2
   let newTop = desiredTop
 
-  const existingRects = Array.from(container.children).map((child) => ({
-    top: (child as HTMLElement).offsetTop,
-    bottom: (child as HTMLElement).offsetTop + (child as HTMLElement).offsetHeight,
-  }))
+  const existingRects = Array.from(container.children)
+    .filter((child) => (child as HTMLElement).dataset.yAxisId === yAxisId)
+    .map((child) => ({
+      top: (child as HTMLElement).offsetTop,
+      bottom: (child as HTMLElement).offsetTop + (child as HTMLElement).offsetHeight,
+    }))
 
   while (existingRects.some((r) => newTop < r.bottom && newTop + height > r.top)) {
     newTop += height + padding
@@ -49,8 +51,8 @@ interface ValueIndicatorPlugin extends Plugin {
   afterDraw(chart: Chart<ChartType>, args: Record<string, never>, options: unknown): void
 }
 
-const priceIndicatorPlugin: ValueIndicatorPlugin = {
-  id: 'priceIndicatorPlugin',
+const valueIndicatorPlugin: ValueIndicatorPlugin = {
+  id: 'valueIndicatorPlugin',
   mousePosition: null,
   focusedPoints: [],
 
@@ -179,11 +181,12 @@ const priceIndicatorPlugin: ValueIndicatorPlugin = {
       valueBox.style.fontFamily = 'Pretendard'
       valueBox.style.whiteSpace = 'nowrap'
       valueBox.textContent = formatValue(value)
+      valueBox.dataset.yAxisId = yAxisId
       mainIndicatorContainer?.appendChild(valueBox)
 
       const boxHeight = valueBox.offsetHeight ?? 20
       const yPixel = chart.scales[yAxisId].getPixelForValue(value)
-      const adjustedTop = getNonOverlappingTop(mainIndicatorContainer as HTMLElement, yPixel - 10, boxHeight)
+      const adjustedTop = getNonOverlappingTop(mainIndicatorContainer as HTMLElement, yPixel - 10, boxHeight, yAxisId)
 
       if (adjustedTop < chartArea.top || adjustedTop + boxHeight > chartArea.bottom) {
         return
@@ -223,20 +226,24 @@ const priceIndicatorPlugin: ValueIndicatorPlugin = {
       labelBox.style.fontFamily = 'Pretendard'
       labelBox.style.whiteSpace = 'nowrap'
       labelBox.textContent = formatValue(value)
-
+      labelBox.dataset.yAxisId = yAxisId
       comparisonIndicatorContainer?.appendChild(labelBox)
 
       const boxHeight = labelBox.offsetHeight ?? 20
-      const adjustedTop = getNonOverlappingTop(comparisonIndicatorContainer as HTMLElement, yPixel - 10, boxHeight)
+      const adjustedTop = getNonOverlappingTop(comparisonIndicatorContainer as HTMLElement, yPixel - 10, boxHeight, yAxisId)
 
-      if (adjustedTop < chartArea.top || adjustedTop + boxHeight > chartArea.bottom) {
-        return
+      // y축 범위를 벗어나는 경우 최상단 또는 최하단에 고정
+      let finalTop = adjustedTop
+      if (adjustedTop < chartArea.top) {
+        finalTop = chartArea.top
+      } else if (adjustedTop + boxHeight > chartArea.bottom) {
+        finalTop = chartArea.bottom - boxHeight
       }
 
       labelBox.style.left = `${scale.left + 3}px`
-      labelBox.style.top = `${adjustedTop}px`
+      labelBox.style.top = `${finalTop}px`
     })
   },
 }
 
-export default priceIndicatorPlugin
+export default valueIndicatorPlugin

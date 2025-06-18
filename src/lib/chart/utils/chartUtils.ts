@@ -31,25 +31,33 @@ export const generateYAxis = (params: {
   label?: string
   borderColor?: string
   color?: string
+  scaleTop?: number
+  scaleBottom?: number
+  isVirtual?: boolean
 }) => ({
   unit: params.unit,
+  display: !params.isVirtual,
   title: {
     display: false,
     text: params.label ?? '',
   },
   afterFit(axis: { width: number }) {
-    axis.width = Math.max(67, axis.width)
+    axis.width = params.isVirtual ? 2 : 67
   },
   position: params.position ?? 'right',
   grid: {
+    display: !params.isVirtual,
     color: params.isMain ? '#DEE2E6' : 'transparent',
     drawTicks: false,
   },
   border: {
-    dash: [2, 2],
+    display: !params.isVirtual,
+    dash: params.isVirtual ? [] : [2, 2],
     color: params.borderColor ?? '#2E3F5E',
+    width: params.isVirtual ? 2 : undefined,
   },
   ticks: {
+    display: !params.isVirtual,
     padding: 12,
     color: params.isMain ? '#2E3F5E' : params.color,
     font: {
@@ -57,20 +65,23 @@ export const generateYAxis = (params: {
       family: 'Pretendard,sans-serif',
       weight: 'normal' as const,
     },
-    // stepSize: 1,
     beginAtZero: true,
     maxTicksLimit: 16,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    callback(tickValue: string | number, index: number, ticks: any[]) {
+    callback(tickValue: string | number, index: number, ticks: unknown[]) {
       if (index === 0 || index === ticks.length - 1) return ''
       return Number(tickValue).toLocaleString()
     },
   },
   afterDataLimits(scale: { min: number; max: number }) {
+    if (params.isVirtual) return
+
     const range = scale.max - scale.min
-    scale.min = scale.min - range * 0.1
-    scale.max = scale.max + range * 0.1
+    const topPadding = params.scaleTop ?? 0.1
+    const bottomPadding = params.scaleBottom ?? 0.1
+    scale.min = scale.min - range * bottomPadding
+    scale.max = scale.max + range * topPadding
   },
+  isVirtual: params.isVirtual,
 })
 
 export const getWeekOfMonth = (date: dayjs.Dayjs) => {

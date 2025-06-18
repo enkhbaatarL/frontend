@@ -13,8 +13,9 @@ import MIChartTooltip from './MIChartTooltip'
 
 import fillBetweenPlugin from '@/lib/chart/line/plugins/fillBetweenPlugin'
 import crosshairLinePlugin from '@/lib/chart/plugins/crosshairLinePlugin'
-import priceIndicatorPlugin from '@/lib/chart/plugins/valueIndicatorPlugin'
+import valueIndicatorPlugin from '@/lib/chart/plugins/valueIndicatorPlugin'
 import verticalAxisDecoratorPlugin from '@/lib/chart/plugins/verticalAxisDecoratorPlugin'
+import volumeTextPlugin from '@/lib/chart/plugins/volumeTextPlugin'
 import { generateYAxis, getChartLabel } from '@/lib/chart/utils/chartUtils'
 import { ChartData, ChartType as MIChartType, Indicator, ChartRange } from '@/types/dataDetailChart'
 import { disableContextMenu } from '@/utils/mouse'
@@ -88,7 +89,7 @@ const bbLabels: {
   bb_lower: 'Lower BB',
 }
 
-type ChartDatasetType = ChartDataset<'line' | 'candlestick', (Point | FinancialDataPoint)[]>
+type ChartDatasetType = ChartDataset<'line' | 'candlestick' | 'bar', (Point | FinancialDataPoint)[]>
 
 const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
   (
@@ -108,6 +109,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     ref,
   ) => {
     const mainChartRef = useRef<ChartJS | null>(null)
+    const volumeChartRef = useRef<ChartJS | null>(null)
 
     const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
 
@@ -218,25 +220,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
                 chipColor: 'common.black',
               },
             })),
-            ...(volumeDataSeries
-              ? [
-                {
-                  label: volumeDataSeries.label,
-                  data: volumeDataSeries.values.map((value, index) => ({
-                    x: index,
-                    y: value ?? null,
-                  })),
-                  type: 'line',
-                  borderWidth: 0,
-                  pointRadius: 0,
-                  fill: false,
-                  tension: 0.1,
-                  spanGaps: true,
-                  yAxisID: 'y',
-                  hidden: true,
-                },
-              ]
-              : []),
           ]
         }
 
@@ -405,7 +388,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         fill: false,
         tension: 0.1,
         spanGaps: true,
-        yAxisID: chart.unitCd ?? 'y',
+        yAxisID: `sub-${chart.unitCd?.split('#').at(-1) ?? ''}`,
         metadata: {
           chipColor: colors[index % colors.length],
           hasDivider: index === 0,
@@ -426,13 +409,24 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     const subYAxes = useMemo(() => {
       const axes: Record<string, ReturnType<typeof generateYAxis>> = {}
 
-      comparisonChartUnits.forEach((unit, index) => {
-        axes[unit] = generateYAxis({
+      comparisonChartUnits.forEach((unitCd, index) => {
+        const unit = unitCd.split('#').at(-1) ?? ''
+        axes[`sub-${unit}`] = generateYAxis({
           position: 'right',
           unit,
           borderColor: index === 0 ? undefined : '#DEE2E6',
         })
       })
+
+      if (Object.keys(axes).length === 0) {
+        axes['virtual'] = generateYAxis({
+          position: 'right',
+          unit: '',
+          borderColor: '#DEE2E6',
+          color: 'transparent',
+          isVirtual: true,
+        })
+      }
 
       return axes
     }, [comparisonChartUnits])
@@ -456,6 +450,26 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       },
       [],
     )
+
+    const isSynchronizing = useRef(false)
+    const syncChartScales = useCallback(({ chart }: { chart: ChartJS }) => {
+      if (isSynchronizing.current) return
+
+      try {
+        if (mainChartRef.current && volumeChartRef.current) {
+          isSynchronizing.current = true
+
+          const sourceScales = chart.scales.x
+          const targetChart = mainChartRef.current.scales.x === sourceScales ? volumeChartRef.current : mainChartRef.current
+
+          targetChart.zoomScale('x', { min: sourceScales.min, max: sourceScales.max }, 'none')
+        }
+      } catch (error) {
+        console.error(error)
+      } finally {
+        isSynchronizing.current = false
+      }
+    }, [])
 
     const isEmptyChart = useMemo(
       () =>
@@ -493,6 +507,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             grid: {
               color: '#ADB5BD',
               drawTicks: false,
+              offset: false,
             },
             border: {
               dash: [2, 2],
@@ -542,6 +557,27 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             }),
             min: isEmptyChart ? 0 : undefined,
             max: isEmptyChart ? 0 : undefined,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            afterTickToLabelConversion(axis: any) {
+              if (axis.ticks.length > 0) {
+                const ctx = axis.chart.ctx
+                const chartArea = axis.chart.chartArea
+
+                if (ctx && chartArea) {
+                  const firstTick = axis.ticks[0]
+                  const metrics = ctx.measureText(firstTick.label)
+                  const textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
+                  const firstLabelBoundary = axis.getPixelForTick(0) - chartArea.bottom - textHeight
+                  if (firstLabelBoundary < 0) firstTick.label = ''
+
+                  const lastTick = axis.ticks[axis.ticks.length - 1]
+                  const lastMetrics = ctx.measureText(lastTick.label)
+                  const lastTextHeight = lastMetrics.actualBoundingBoxAscent + lastMetrics.actualBoundingBoxDescent
+                  const lastLabelBoundary = axis.getPixelForTick(axis.ticks.length - 1) + lastTextHeight / 2
+                  if (lastLabelBoundary > axis.height) lastTick.label = ''
+                }
+              }
+            },
           },
           ...subYAxes,
         },
@@ -567,6 +603,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               enabled: true,
               mode: 'x',
               modifierKey: null,
+              onPan: syncChartScales,
             },
             zoom: {
               wheel: {
@@ -577,11 +614,91 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
                 enabled: true,
               },
               mode: 'x',
+              onZoom: syncChartScales,
             },
           },
         },
       }),
-      [externalTooltipHandler, chartRange, isEmptyChart, sortedTimestamps, subYAxes, unitCd],
+      [externalTooltipHandler, chartRange, isEmptyChart, sortedTimestamps, subYAxes, unitCd, syncChartScales],
+    )
+
+    const volumeDataset = useMemo(() => {
+      if (!volumeDataSeries) return [] as ChartDatasetType[]
+
+      return [
+        {
+          label: volumeDataSeries.label,
+          data: volumeDataSeries.values.map((value, index) => ({
+            x: index,
+            y: value ?? null,
+          })),
+          type: 'bar',
+          backgroundColor: volumeDataSeries.values.map((value, index) =>
+            index > 0 && value < volumeDataSeries.values[index - 1] ? 'rgba(169, 20, 26, 0.5)' : 'rgba(60, 138, 54, 0.5)',
+          ),
+          yAxisID: 'y',
+        },
+      ] as ChartDatasetType[]
+    }, [volumeDataSeries])
+
+    const hasVolume = useMemo(() => (volumeDataSeries?.values.length ?? 0) > 0, [volumeDataSeries?.values.length])
+
+    const volumeChartOptions = useMemo(
+      () => ({
+        ...chartOptions,
+        scales: {
+          ...chartOptions.scales,
+          y: {
+            ...generateYAxis({
+              isMain: true,
+              position: 'left',
+              unit: unitCd?.split('#').at(-1) ?? unitCd ?? '',
+              borderColor: '#DEE2E6',
+              scaleTop: 0.24,
+              scaleBottom: 0,
+            }),
+            min: 0,
+            max: Math.max(...(volumeDataSeries?.values ?? [0])),
+            afterTickToLabelConversion: chartOptions.scales.y.afterTickToLabelConversion,
+            ticks: {
+              maxTicksLimit: 4,
+              padding: 12,
+              color: '#2E3F5E',
+              font: {
+                size: 14,
+                family: 'Pretendard,sans-serif',
+                weight: 'normal' as const,
+              },
+              callback(tickValue: number | string) {
+                const value = typeof tickValue === 'string' ? parseFloat(tickValue) : tickValue
+                if (value >= 1000000) {
+                  return `${(value / 1000000).toFixed(0)}M`
+                }
+                if (value >= 1000) {
+                  return `${(value / 1000).toFixed(0)}K`
+                }
+                return value.toString()
+              },
+            },
+          },
+          ...Object.fromEntries(
+            Object.entries(subYAxes).map(([key, value]) => [
+              key,
+              {
+                ...value,
+                ticks: {
+                  ...value.ticks,
+                  display: false,
+                },
+              },
+            ]),
+          ),
+        },
+        plugins: {
+          ...chartOptions.plugins,
+        },
+      }),
+      [chartOptions, subYAxes, unitCd, volumeDataSeries?.values],
     )
 
     useEffect(() => {
@@ -623,15 +740,37 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             onChange={setHideComparisonChartIndexList}
           />
         </Box>
-        <Box height={'100%'}>
+        <Box height={hasVolume ? 'calc(100% - 142px)' : '100%'}>
           <Chart
             ref={mainChartRef}
             type={'candlestick'}
             data={{ datasets: mainDataset }}
             options={chartOptions}
-            plugins={[verticalAxisDecoratorPlugin, crosshairLinePlugin, priceIndicatorPlugin, fillBetweenPlugin]}
+            plugins={[verticalAxisDecoratorPlugin, crosshairLinePlugin, valueIndicatorPlugin, fillBetweenPlugin]}
           />
         </Box>
+        {hasVolume && (
+          <Box
+            position={'absolute'}
+            bottom={0}
+            left={0}
+            width={'100%'}
+            maxWidth={'100%'}
+            bgcolor={'white'}
+            overflow={'hidden'}
+            borderTop={'1px solid #DEE2E6'}
+          >
+            <Box mt={'-20px'} height={'203px'}>
+              <Chart
+                ref={volumeChartRef}
+                type={'candlestick'}
+                data={{ datasets: volumeDataset }}
+                options={volumeChartOptions}
+                plugins={[verticalAxisDecoratorPlugin, volumeTextPlugin]}
+              />
+            </Box>
+          </Box>
+        )}
         <MIChartTooltip {...tooltip} />
       </Box>
     )
