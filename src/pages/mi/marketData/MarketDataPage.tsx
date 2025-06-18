@@ -57,10 +57,11 @@ const MarketDataPage = () => {
   )
   // Recent Viewed
   const { data: recentViewedList, isLoading: recentViewedIsLoading } = useQuery({
-    queryKey: ['recentViewed'],
-    queryFn: async () => await marketDataService.getRecentViewed(),
+    queryKey: ['recentViewed', customerCompanyNo],
+    queryFn: async () => await marketDataService.getRecentViewed(customerCompanyNo),
     refetchOnWindowFocus: false,
     gcTime: 0,
+    enabled: !!customerCompanyNo,
   })
 
   const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
