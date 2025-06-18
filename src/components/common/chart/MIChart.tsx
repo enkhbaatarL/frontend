@@ -709,6 +709,12 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       }
     }, [ref])
 
+    useEffect(() => {
+      if (mainChartRef.current && volumeChartRef.current) {
+        syncChartScales({ chart: mainChartRef.current })
+      }
+    }, [syncChartScales])
+
     return (
       <Box
         height={height}
