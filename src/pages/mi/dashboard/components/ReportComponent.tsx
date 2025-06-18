@@ -134,7 +134,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         align: 'center',
         renderCell: ({ row }) => {
           const value = row[chart.resultDate]
-          if (row.id === 'ERROR_RATE') {
+          if (row.permission && row.id === 'ERROR_RATE') {
             const { color, displayValue } = formatErrorRateValue(value)
             return <MITableCell value={displayValue} typography={{ color }} />
           }
@@ -144,16 +144,17 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           return (
             <Box position="relative" sx={{ userSelect: 'none' }}>
               <Box sx={{ filter: 'blur(3px)' }}>{value}</Box>
-              <LockOutlinedIcon
-                style={{
-                  width: '12px',
-                  height: '15px',
-                  color: '#868E96',
-                  position: 'absolute',
-                  top: 0,
-                  right: 5,
-                }}
-              />
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <LockOutlinedIcon
+                  style={{
+                    width: '12px',
+                    height: '15px',
+                    color: '#868E96',
+                    position: 'absolute',
+                    top: 0,
+                  }}
+                />
+              </Box>
             </Box>
           )
         },
@@ -191,7 +192,9 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             ) : (
               <Box position="relative" sx={{ userSelect: 'none' }}>
                 <Box sx={{ filter: 'blur(3px)' }}>{row[chart.resultDate]}</Box>
-                <LockOutlinedIcon style={{ width: '12px', height: '15px', color: '#868E96', position: 'absolute', top: 0, right: 5 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <LockOutlinedIcon style={{ width: '12px', height: '15px', color: '#868E96', position: 'absolute', top: 0 }} />
+                </Box>
               </Box>
             )}
           </>
