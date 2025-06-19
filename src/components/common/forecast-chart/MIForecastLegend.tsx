@@ -53,7 +53,7 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
           </Typography>
         )}
 
-        {legends.left.map((dataset, index) => {
+        {legends.left.map((dataset) => {
           // Skip forecast datasets
           if (dataset.category === DATA_CATEGORIES.FORECAST) return null
 
@@ -64,14 +64,12 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
           }
 
           return !dataset.permission ? (
-            <Tooltip placement={'top'} title={'접근 권한이 없는 데이터입니다.'}>
+            <Tooltip key={`left-${dataset.index}`} title={'접근 권한이 없는 데이터입니다.'}>
               <Box
-                key={index}
                 display={'flex'}
                 alignItems={'center'}
                 p="4px"
                 gap="2px"
-                onClick={() => onToggleDataset(index)}
                 sx={{
                   opacity,
                   cursor: selectedContent || !dataset.permission ? 'default' : 'pointer',
@@ -98,12 +96,12 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
             </Tooltip>
           ) : (
             <Box
-              key={index}
+              key={`left-${dataset.index}`}
               display={'flex'}
               alignItems={'center'}
               p="4px"
               gap="2px"
-              onClick={() => onToggleDataset(index)}
+              onClick={() => onToggleDataset(dataset.index)}
               sx={{
                 opacity,
                 cursor: selectedContent || !dataset.permission ? 'default' : 'pointer',
@@ -142,7 +140,7 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
           </Typography>
         )}
 
-        {legends.right.map((dataset, index) => {
+        {legends.right.map((dataset) => {
           if (dataset.category === DATA_CATEGORIES.FORECAST) return null
 
           let opacity = dataset.hidden ? 0.3 : 1
@@ -152,14 +150,12 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
           }
 
           return !dataset.permission ? (
-            <Tooltip placement={'top'} title={'접근 권한이 없는 데이터입니다.'}>
+            <Tooltip key={`right-${dataset.index}`} title={'접근 권한이 없는 데이터입니다.'}>
               <Box
-                key={index}
                 display={'flex'}
                 alignItems={'center'}
                 p="4px"
                 gap="2px"
-                onClick={() => onToggleDataset(index)}
                 sx={{
                   opacity,
                   cursor: selectedContent || !dataset.permission ? 'default' : 'pointer',
@@ -186,12 +182,12 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
             </Tooltip>
           ) : (
             <Box
-              key={legends.left.length + index}
+              key={`right-${dataset.index}`}
               display={'flex'}
               alignItems={'center'}
               p="4px"
               gap="2px"
-              onClick={() => onToggleDataset(legends.left.length + index)}
+              onClick={() => onToggleDataset(dataset.index)}
               sx={{
                 opacity,
                 cursor: selectedContent || !dataset.permission ? 'default' : 'pointer',
