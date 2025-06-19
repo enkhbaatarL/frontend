@@ -1,7 +1,6 @@
 import { Chart, ChartType, InteractionItem, Plugin, Point } from 'chart.js'
 import { FinancialDataPoint } from 'chart.js/auto'
 
-import { getFormattedDateFromChart } from '@/lib/chart/utils/chartUtils'
 import { formatValue } from '@/utils/number'
 
 const createIndicatorContainer = (id: string) => {
@@ -110,12 +109,7 @@ const valueIndicatorPlugin: ValueIndicatorPlugin = {
     chart.canvas.addEventListener('mouseout', () => {
       try {
         if (!chart.canvas?.parentElement) return
-
         this.mousePosition = null
-        const mainIndicatorContainer = chart.canvas.parentElement?.querySelector('#main-indicator-container')
-        if (mainIndicatorContainer) {
-          mainIndicatorContainer.innerHTML = ''
-        }
         if (chart.ctx) {
           chart.draw()
         }
@@ -126,75 +120,12 @@ const valueIndicatorPlugin: ValueIndicatorPlugin = {
   },
 
   afterDraw(chart) {
-    const mainIndicatorContainer = chart.canvas.parentElement?.querySelector('#main-indicator-container')
     const comparisonIndicatorContainer = chart.canvas.parentElement?.querySelector('#comparison-indicator-container')
 
-    if (!mainIndicatorContainer || !comparisonIndicatorContainer) return
-
-    const chartArea = chart.chartArea
-
-    mainIndicatorContainer.innerHTML = ''
+    if (!comparisonIndicatorContainer) return
     comparisonIndicatorContainer.innerHTML = ''
 
-    // 메인 값,날짜 표시: crosshair가 있는 경우
-    if (
-      this.mousePosition &&
-      this.mousePosition.x >= chartArea.left &&
-      this.mousePosition.x <= chartArea.right &&
-      this.mousePosition.y >= chartArea.top &&
-      this.mousePosition.y <= chartArea.bottom &&
-      this.focusedPoints.length > 0
-    ) {
-      // 날짜 표시
-      const dateBox = document.createElement('div')
-      dateBox.id = 'date-indicator'
-      dateBox.style.position = 'absolute'
-      dateBox.style.left = `${this.focusedPoints[0].interactionPoint.element.x - 46}px`
-      dateBox.style.top = `${chartArea.bottom - 26}px`
-      dateBox.style.backgroundColor = '#2E3F5E'
-      dateBox.style.color = 'white'
-      dateBox.style.padding = '2px 8px'
-      dateBox.style.borderRadius = '2px'
-      dateBox.style.fontSize = '14px'
-      dateBox.style.fontWeight = '500'
-      dateBox.style.fontFamily = 'Pretendard'
-      dateBox.style.whiteSpace = 'nowrap'
-      dateBox.textContent = getFormattedDateFromChart(chart, this.focusedPoints[0].interactionPoint.index)
-      mainIndicatorContainer.appendChild(dateBox)
-
-      // 값 표시
-      const p = this.focusedPoints[0]
-
-      const yAxisId = p.yAxisID ?? 'y'
-      const value = p.y
-
-      if (!value || yAxisId !== 'y') return
-
-      const valueBox = document.createElement('div')
-      valueBox.style.position = 'absolute'
-      valueBox.style.backgroundColor = '#2E3F5E'
-      valueBox.style.color = 'white'
-      valueBox.style.padding = '2px 8px'
-      valueBox.style.borderRadius = '2px'
-      valueBox.style.fontSize = '14px'
-      valueBox.style.fontWeight = '500'
-      valueBox.style.fontFamily = 'Pretendard'
-      valueBox.style.whiteSpace = 'nowrap'
-      valueBox.textContent = formatValue(value)
-      valueBox.dataset.yAxisId = yAxisId
-      mainIndicatorContainer?.appendChild(valueBox)
-
-      const boxHeight = valueBox.offsetHeight ?? 20
-      const yPixel = chart.scales[yAxisId].getPixelForValue(value)
-      const adjustedTop = getNonOverlappingTop(mainIndicatorContainer as HTMLElement, yPixel - 10, boxHeight, yAxisId)
-
-      if (adjustedTop < chartArea.top || adjustedTop + boxHeight > chartArea.bottom) {
-        return
-      }
-
-      valueBox.style.left = `${chartArea.left - valueBox.offsetWidth - 4}px`
-      valueBox.style.top = `${adjustedTop}px`
-    }
+    const chartArea = chart.chartArea
 
     // 오른쪽 라벨: 항상 표시
     chart.data.datasets.forEach((dataset) => {

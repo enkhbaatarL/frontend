@@ -161,7 +161,7 @@ const MIDrillDownChart = (props: MIDrillDownChartProps) => {
   useEffect(() => {
     if (datasets.length === 0) return
     const generateChartDataSet = (rawDatasets: Array<DrillDownDataset>) => {
-      const datasets: Array<ChartDataset<'line'> & { category: string; yAxisID: string }> = []
+      const datasets: Array<ChartDataset<'line'> & { category: string; yAxisID: string; metadata?: Record<string, unknown> }> = []
       const imagesInfo: Record<string, string> = {}
 
       rawDatasets.forEach((dataset) => {

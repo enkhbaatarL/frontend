@@ -10,9 +10,9 @@ import { Chart } from 'react-chartjs-2'
 import '@/lib/chart/adapterDayjs'
 import MIChartLegendToggle from './MIChartLegendToggle'
 import MIChartTooltip from './MIChartTooltip'
+import MICrosshairLine, { MICrosshairLineHandle } from './MICrosshairLine'
 
 import fillBetweenPlugin from '@/lib/chart/line/plugins/fillBetweenPlugin'
-import crosshairLinePlugin from '@/lib/chart/plugins/crosshairLinePlugin'
 import valueIndicatorPlugin from '@/lib/chart/plugins/valueIndicatorPlugin'
 import verticalAxisDecoratorPlugin from '@/lib/chart/plugins/verticalAxisDecoratorPlugin'
 import volumeTextPlugin from '@/lib/chart/plugins/volumeTextPlugin'
@@ -110,6 +110,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
   ) => {
     const mainChartRef = useRef<ChartJS | null>(null)
     const volumeChartRef = useRef<ChartJS | null>(null)
+    const crosshairRef = useRef<MICrosshairLineHandle | null>(null)
 
     const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
 
@@ -432,7 +433,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     }, [comparisonChartUnits])
 
     const externalTooltipHandler = useCallback(
-      (context: { tooltip: { x: number; y: number; content: Record<string, number | null> } | null }) => {
+      (context: { tooltip: { x: number; y: number; content: Record<string, unknown> } | null }) => {
         const { tooltip: chartTooltip } = context
 
         if (!chartTooltip) {
@@ -595,9 +596,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           legend: {
             display: false,
           },
-          crosshairLinePlugin: {
-            onPointerMove: externalTooltipHandler || (() => {}),
-          },
           zoom: {
             pan: {
               enabled: true,
@@ -619,7 +617,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           },
         },
       }),
-      [externalTooltipHandler, chartRange, isEmptyChart, sortedTimestamps, subYAxes, unitCd, syncChartScales],
+      [chartRange, isEmptyChart, sortedTimestamps, subYAxes, unitCd, syncChartScales],
     )
 
     const volumeDataset = useMemo(() => {
@@ -725,12 +723,62 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           boxSizing: 'border-box',
         }}
         onContextMenu={disableContextMenu}
+        onMouseMove={(event) => {
+          event.stopPropagation()
+          const rect = mainChartRef.current?.canvas.getBoundingClientRect()
+          const canvasRect = crosshairRef.current?.getCanvasRect()
+          if (rect && canvasRect) {
+            const x = event.clientX - rect.left
+            const y = event.clientY - rect.top
+
+            if (x >= canvasRect.left && x <= canvasRect.right && y >= canvasRect.top && y <= canvasRect.bottom) {
+              const xScaleIndex = mainChartRef.current?.scales.x.getValueForPixel(x)
+              if (xScaleIndex !== undefined) {
+                crosshairRef.current?.updateCrosshairPosition(x, y, xScaleIndex)
+              }
+            } else {
+              crosshairRef.current?.handleMouseOut()
+            }
+          }
+        }}
+        onWheel={(event) => {
+          if (event.ctrlKey) {
+            event.stopPropagation()
+            mainChartRef.current?.canvas.dispatchEvent(
+              new WheelEvent(event.type, {
+                deltaMode: event.deltaMode,
+                deltaX: event.deltaX,
+                deltaY: event.deltaY,
+                deltaZ: event.deltaZ,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                ctrlKey: event.ctrlKey,
+                bubbles: false,
+                cancelable: true,
+                view: window,
+              }),
+            )
+
+            const rect = mainChartRef.current?.canvas.getBoundingClientRect()
+
+            if (rect) {
+              const x = event.clientX - rect.left
+              const y = event.clientY - rect.top
+
+              const xScaleIndex = mainChartRef.current?.scales.x.getValueForPixel(x)
+              if (xScaleIndex !== undefined) {
+                crosshairRef.current?.updateCrosshairPosition(x, y, xScaleIndex)
+              }
+            }
+          }
+        }}
       >
         <Box
           sx={{
             position: 'absolute',
             top: '20px',
             left: '78px',
+            zIndex: 20,
           }}
         >
           <MIChartLegendToggle
@@ -746,13 +794,13 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             onChange={setHideComparisonChartIndexList}
           />
         </Box>
-        <Box height={hasVolume ? 'calc(100% - 142px)' : '100%'}>
+        <Box height={hasVolume ? 'calc(100% - 142px)' : '100%'} sx={{ position: 'relative' }}>
           <Chart
             ref={mainChartRef}
             type={'candlestick'}
             data={{ datasets: mainDataset }}
             options={chartOptions}
-            plugins={[verticalAxisDecoratorPlugin, crosshairLinePlugin, valueIndicatorPlugin, fillBetweenPlugin]}
+            plugins={[verticalAxisDecoratorPlugin, valueIndicatorPlugin, fillBetweenPlugin]}
           />
         </Box>
         {hasVolume && (
@@ -777,6 +825,12 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             </Box>
           </Box>
         )}
+        <MICrosshairLine
+          ref={crosshairRef}
+          chartRef={mainChartRef}
+          volumeChartRef={hasVolume ? volumeChartRef : undefined}
+          onTooltipChange={externalTooltipHandler}
+        />
         <MIChartTooltip {...tooltip} />
       </Box>
     )

@@ -242,7 +242,9 @@ const ForecastChart = (props: ForecastChartProps) => {
     if (forecastDatasets.length === 0) return
 
     const generateForecastDataSet = (rawDatasets: Array<ForecastDataset>) => {
-      const datasets: Array<ChartDataset<'line'> & { category: string; yAxisID: string; permission: boolean }> = []
+      const datasets: Array<
+        ChartDataset<'line'> & { category: string; yAxisID: string; permission: boolean; metadata?: Record<string, unknown> }
+      > = []
       const imagesInfo: Record<string, string> = {}
 
       rawDatasets.forEach((dataset) => {
