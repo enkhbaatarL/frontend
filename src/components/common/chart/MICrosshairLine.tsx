@@ -2,6 +2,7 @@ import { Box } from '@mui/material'
 import { Chart as ChartJS, Point, FinancialDataPoint } from 'chart.js'
 import { ReactNode, useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef, RefObject } from 'react'
 
+import { setMousePosition } from '@/lib/chart/plugins/volumeTextPlugin'
 import { getFormattedDateFromChart } from '@/lib/chart/utils/chartUtils'
 import { formatValue } from '@/utils/number'
 
@@ -237,6 +238,11 @@ const MICrosshairLine = forwardRef<MICrosshairLineHandle, MICrosshairLineProps>(
       ctx.setLineDash([])
       ctx.restore()
 
+      if (volumeChartRef?.current) {
+        setMousePosition(finalMousePosition.x)
+        volumeChartRef.current.update('none')
+      }
+
       updateValueAndDateIndicators(chart, xScaleIndex, finalMousePosition)
 
       const tooltipContent: Record<string, TooltipContent> = {}
@@ -309,8 +315,13 @@ const MICrosshairLine = forwardRef<MICrosshairLineHandle, MICrosshairLineProps>(
       mainIndicatorContainer.innerHTML = ''
     }
 
+    setMousePosition(null)
+    if (volumeChartRef?.current) {
+      volumeChartRef.current.update('none')
+    }
+
     onTooltipChange({ tooltip: null })
-  }, [chartRef, onTooltipChange])
+  }, [chartRef, onTooltipChange, volumeChartRef])
 
   useEffect(() => {
     if (lastMousePosition && chartRef.current) {

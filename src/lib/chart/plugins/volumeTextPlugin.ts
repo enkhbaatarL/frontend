@@ -5,7 +5,18 @@ interface VolumeTextPlugin extends Plugin<ChartType> {
   afterDraw(chart: Chart<ChartType>, args: unknown, options: unknown): void
 }
 
+interface DataPoint {
+  x: number
+  y: number
+}
+
 const FONT = '500 14px Pretendard'
+
+let currentMouseX: number | null = null
+
+export const setMousePosition = (mouseX: number | null) => {
+  currentMouseX = mouseX
+}
 
 /**
  * Formats a number with comma separators for thousands
@@ -15,36 +26,28 @@ const FONT = '500 14px Pretendard'
 const formatVolumeNumber = (value: number): string => value.toLocaleString('ko-KR')
 
 /**
- * Calculates the total volume from the visible data points
+ * Finds the data point closest to the mouse x position
  * @param chart - The Chart.js instance
- * @returns Total volume of visible data points
+ * @param mouseX - Mouse x position in pixels
+ * @returns The volume value at the mouse position, or null if not found
  */
-const calculateTotalVolume = (chart: Chart): number => {
+const getVolumeAtMousePosition = (chart: Chart, mouseX: number): number | null => {
   const dataset = chart.data.datasets[0]
-
-  if (!dataset || !dataset.data) return 0
-
   const xScale = chart.scales.x
 
-  if (!xScale) return 0
+  if (!dataset || !dataset.data || !xScale) return null
 
-  const visibleMin = xScale.min
-  const visibleMax = xScale.max
+  const xScaleIndex = xScale.getValueForPixel(mouseX)
 
-  let totalVolume = 0
+  if (xScaleIndex === null || xScaleIndex === undefined) return null
 
-  // Sum up volume for all visible data points
-  dataset.data.forEach((dataPoint: unknown) => {
-    if (dataPoint && typeof dataPoint === 'object' && 'x' in dataPoint && 'y' in dataPoint) {
-      const x = (dataPoint as { x: number }).x
+  const dataPoint = dataset.data.find((p) => typeof p === 'object' && p !== null && 'x' in p && p.x === xScaleIndex) as
+    | DataPoint
+    | undefined
 
-      if (x >= visibleMin && x <= visibleMax && (dataPoint as { y: number }).y) {
-        totalVolume += (dataPoint as { y: number }).y
-      }
-    }
-  })
+  if (!dataPoint) return null
 
-  return totalVolume
+  return dataPoint.y
 }
 
 const volumeTextPlugin: VolumeTextPlugin = {
@@ -57,9 +60,14 @@ const volumeTextPlugin: VolumeTextPlugin = {
 
     ctx.save()
 
-    // Calculate total volume
-    const totalVolume = calculateTotalVolume(chart)
-    const volumeText = `거래량 ${formatVolumeNumber(totalVolume)}`
+    let volumeText = '거래량 -'
+
+    if (currentMouseX !== null && currentMouseX >= chartArea.left && currentMouseX <= chartArea.right) {
+      const volume = getVolumeAtMousePosition(chart, currentMouseX)
+      if (volume !== null) {
+        volumeText = `거래량 ${formatVolumeNumber(volume)}`
+      }
+    }
 
     // Set font and style
     ctx.font = FONT
