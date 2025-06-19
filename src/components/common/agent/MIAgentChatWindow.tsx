@@ -27,6 +27,57 @@ interface ScrollToAnchor {
   behavior: ScrollBehavior
 }
 
+interface SelectModeOption {
+  id: string
+  title: string
+  subtitle: string
+  checked: boolean
+  disabled: boolean
+}
+
+const LOCAL_STORAGE_KEY = 'mi-agent-select-mode-option'
+
+const DEFAULT_SELECT_MODE_OPTIONS: SelectModeOption[] = [
+  {
+    id: '1',
+    title: 'MI Dataset',
+    subtitle: '메타모델 및 구독데이터 검색',
+    checked: false,
+    disabled: true,
+  },
+  {
+    id: '2',
+    title: 'Web Search',
+    subtitle: '실시간 웹 검색',
+    checked: true,
+    disabled: false,
+  },
+]
+
+const loadSelectModeOptionsFromStorage = (): SelectModeOption[] => {
+  try {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY)
+    if (stored) {
+      const parsedOptions = JSON.parse(stored) as SelectModeOption[]
+      return DEFAULT_SELECT_MODE_OPTIONS.map((defaultOption) => {
+        const storedOption = parsedOptions.find((option) => option.id === defaultOption.id)
+        return storedOption ? { ...defaultOption, checked: storedOption.checked } : defaultOption
+      })
+    }
+  } catch (error) {
+    console.warn('Failed to load select mode options from localStorage:', error)
+  }
+  return DEFAULT_SELECT_MODE_OPTIONS
+}
+
+const saveSelectModeOptionsToStorage = (options: SelectModeOption[]) => {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(options))
+  } catch (error) {
+    console.warn('Failed to save select mode options to localStorage:', error)
+  }
+}
+
 const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChangeExpand }: MIAgentChatWindowProps) => {
   const { scrollRef, scrollToBottom } = useScroll()
   const MIAgent = useMIAgent()
@@ -40,6 +91,13 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
   const [animationComplete, setAnimationComplete] = useState<boolean[]>([])
   const [shouldCheckScroll, setShouldCheckScroll] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
+
+  const [selectModeOption, setSelectModeOption] = useState<SelectModeOption[]>(() => loadSelectModeOptionsFromStorage())
+
+  const updateSelectModeOption = useCallback((newOptions: SelectModeOption[]) => {
+    setSelectModeOption(newOptions)
+    saveSelectModeOptionsToStorage(newOptions)
+  }, [])
 
   const isGenerating = useMemo(() => animationComplete.length > 0 && !animationComplete[animationComplete.length - 1], [animationComplete])
 
@@ -109,14 +167,17 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     })
   }, [])
 
-  const handleSendMessage = async (message?: string) => {
+  const handleSendMessage = async (message: string) => {
     if (!message) return
+
+    const webSearchOption = selectModeOption.find((option) => option.id === '2')
+    const shouldWebSearch = webSearchOption?.checked ?? false
 
     requestAnimationFrame(async () => {
       scrollToBottom()
       handleAnimationStarted(MIAgent.conversations.length)
       setTimeout(() => {
-        MIAgent.inquire(message)
+        MIAgent.inquire(message, shouldWebSearch)
       }, 100)
     })
   }
@@ -401,7 +462,12 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
               flexShrink: 0,
             }}
           >
-            <MIAgentPromptInputBox onSendMessage={handleSendMessage} isGenerating={isGenerating} />
+            <MIAgentPromptInputBox
+              onSendMessage={handleSendMessage}
+              isGenerating={isGenerating}
+              selectModeOption={selectModeOption}
+              onSelectModeOptionChange={updateSelectModeOption}
+            />
           </Box>
         </Box>
       </Box>

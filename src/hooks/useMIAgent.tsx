@@ -95,7 +95,7 @@ const useMIAgent = () => {
   }, [])
 
   const inquire = useCallback(
-    async (message: string) => {
+    async (message: string, shouldWebSearch: boolean = false) => {
       try {
         setConversations((prev) => [...prev, getTempConversation(message)])
         setState('generating')
@@ -105,7 +105,7 @@ const useMIAgent = () => {
           }, 200)
         })
         const newChatRoomId = selectedChatRoom.id ?? uuid()
-        const newChat = await agentService.sendQna(newChatRoomId, message)
+        const newChat = await agentService.sendQna(newChatRoomId, message, shouldWebSearch)
         if (selectedChatRoom.isNew) {
           refetchChatRooms()
           setSelectedChatRoom((prev) => ({
@@ -121,7 +121,7 @@ const useMIAgent = () => {
         console.error('Error in inquire:', error)
       }
     },
-    [replaceConversations, scrollToBottom, selectedChatRoom.id],
+    [replaceConversations, scrollToBottom, selectedChatRoom.id, selectedChatRoom.isNew, refetchChatRooms],
   )
 
   const retry = useCallback(

@@ -5,22 +5,12 @@ import MIAgentToggleSetting, { MIAgentToggleSettingOption } from './MIAgentToggl
 
 import SettingIcon from '@/components/common/icons/SettingIcon'
 
-export interface MIAgentToggleSettingItem {
-  id: string
-  title: string
-  subtitle: string
-  checked: boolean
-  onChange: (checked: boolean) => void
-  onChangeSelectedItem: (item: MIAgentToggleSettingItem) => void
-}
-
 export interface MIAgentInputBoxDropdownProps {
   isOpen?: boolean
   disabled?: boolean
   onOpenChange?: (isOpen: boolean) => void
   onChangeSelectedItem: (item: MIAgentToggleSettingOption) => void
   settingsItems?: MIAgentToggleSettingOption[]
-  selectedItem: MIAgentToggleSettingOption | null
   modePosition?: 'top' | 'bottom'
 }
 
@@ -29,7 +19,6 @@ const MIAgentInputBoxDropdown = ({
   onOpenChange,
   settingsItems = [],
   disabled,
-  selectedItem,
   onChangeSelectedItem,
   modePosition = 'bottom',
 }: MIAgentInputBoxDropdownProps) => {
@@ -130,11 +119,7 @@ const MIAgentInputBoxDropdown = ({
             cursor: 'default',
           }}
         >
-          <MIAgentToggleSetting
-            items={settingsItems}
-            selectedItem={selectedItem || settingsItems[0]}
-            onChangeSelectedItem={onChangeSelectedItem}
-          />
+          <MIAgentToggleSetting items={settingsItems} onChangeSelectedItem={onChangeSelectedItem} />
         </Box>
       )}
     </Box>

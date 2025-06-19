@@ -7,10 +7,10 @@ import agentService from '@/service/mi/agent'
 import useAuthStore from '@/store/useAuthStore'
 
 interface Props {
-  handleSendMessage: (message?: string) => void
+  handleSendMessage: (message: string) => void
 }
 
-const BtnMessage = ({ text, onSendMessage }: { text: string; onSendMessage: (message?: string) => void }) => (
+const BtnMessage = ({ text, onSendMessage }: { text: string; onSendMessage: (message: string) => void }) => (
   <Button
     disableRipple
     sx={{
