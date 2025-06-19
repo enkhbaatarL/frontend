@@ -82,13 +82,6 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
     }
   }, [selectedCompany, setAccessCompanyInfo])
 
-  // 안전한 네비게이션 함수
-  const safeNavigate = (targetPath: string) => {
-    if (location.pathname !== targetPath) {
-      navigate(targetPath)
-    }
-  }
-
   return (
     <div className={clsx(style.GNBHeader)}>
       <Grid bgcolor="gray.10" className={`GNBTop ${clsx(style.headerTop)}`}>
@@ -117,6 +110,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
                     value: value as number,
                     label,
                   })
+                  navigate('/mi')
                 }}
                 disablePortal
               >
@@ -151,7 +145,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
                 href=""
                 onClick={(e) => {
                   e.preventDefault()
-                  safeNavigate(board.url)
+                  navigate(board.url)
                 }}
                 color="gray.70"
                 padding="4px 12px"
@@ -172,9 +166,9 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
               onClick={(e) => {
                 e.preventDefault()
                 if (isProd) {
-                  safeNavigate('/mi')
+                  navigate('/mi')
                 } else {
-                  safeNavigate('/')
+                  navigate('/')
                 }
               }}
             >

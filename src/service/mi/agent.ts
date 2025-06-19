@@ -145,10 +145,14 @@ const agentService = {
    * @param shouldWebSearch - 실시간 웹검색 여부
    */
   async sendQna(chatRoomId: string, question: string, shouldWebSearch: boolean): Promise<IChatQnaRes> {
-    const response: AxiosResponse<ICommonResponse<IChatQnaRes>> = await api.post(`mi/mari-agent/chat-rooms/${chatRoomId}/qna`, {
-      question,
-      shouldWebSearch,
-    })
+    const response: AxiosResponse<ICommonResponse<IChatQnaRes>> = await api.post(
+      `mi/mari-agent/chat-rooms/${chatRoomId}/qna`,
+      {
+        question,
+        shouldWebSearch,
+      },
+      { timeout: 180000 },
+    )
 
     return response.data.data
   },
