@@ -12,6 +12,7 @@ interface MIChartLegendToggleProps {
   colors?: string[]
   hideComparisonChartIndexList: number[]
   onChange?: (index: number, isShow: boolean) => void
+  setIsMouseHoverLegend?: (isMouseHoverLegend: boolean) => void
 }
 
 const MIChartLegendToggle = (props: Readonly<MIChartLegendToggleProps>) => {
@@ -28,79 +29,86 @@ const MIChartLegendToggle = (props: Readonly<MIChartLegendToggleProps>) => {
   }, [isOpen, props.goodsInfoList])
 
   return (
-    <Box display={'flex'} alignItems={'flex-start'} gap={'8px'}>
-      <Box display={'flex'} flexDirection={'column'} rowGap={'4px'}>
-        {showedItems.map((goodsInfo, index) => (
-          <Box
-            key={index}
-            display={'flex'}
-            alignItems={'center'}
-            sx={{
-              boxSizing: 'border-box',
-              height: '34px',
-              padding: '4px 10px',
-              border: `1px solid ${theme.palette.gray[20]}`,
-              borderRadius: '4px',
-              width: 'fit-content',
-              transition: '.3s',
-              backgroundColor: theme.palette.common.white,
-              '&:hover': {
-                backgroundColor: theme.palette.content.backgroundHover,
-                '& svg': {
-                  color: `${theme.palette.gray[70]}`,
-                },
-              },
-              cursor: 'pointer',
-            }}
-          >
-            <MIChartViewToggleAndLinkDetail
-              goodsInfo={goodsInfo}
-              color={props.colors?.[index]}
-              isShow={!props.hideComparisonChartIndexList.includes(index)}
-              onChange={({ isShow }) => {
-                props.onChange?.(index, isShow)
-              }}
-            />
-          </Box>
-        ))}
-      </Box>
-      {props.goodsInfoList.length > FOLDING_REFERENCE_POINT && (
+    <Box display={'flex'} flexDirection={'column'}>
+      {showedItems.map((goodsInfo, index) => (
         <Box
-          onClick={toggleExpand}
-          sx={{
-            background: theme.palette.common.white,
-            boxSizing: 'border-box',
-            width: '34px',
-            height: '34px',
-            cursor: 'pointer',
-            padding: '6px',
-            border: '1px solid',
-            borderColor: theme.palette.gray[8],
-            borderRadius: '4px',
-            transition: '.3s',
-            ...(isOpen
-              ? {
-                borderColor: theme.palette.primary.main,
-                backgroundColor: theme.palette.content.backgroundHover,
-                '& svg': {
-                  color: `${theme.palette.primary.main} !important`,
-                },
-              }
-              : {}),
-            '&:hover': {
-              borderColor: theme.palette.primary.main,
-              backgroundColor: theme.palette.content.backgroundHover,
-              '& svg': {
-                color: `${theme.palette.primary.main} !important`,
-              },
-            },
-          }}
+          key={index}
+          width={'fit-content'}
+          onMouseEnter={() => props.setIsMouseHoverLegend?.(true)}
+          onMouseLeave={() => props.setIsMouseHoverLegend?.(false)}
         >
-          <KeyboardArrowUpIcon
-            style={{ display: 'block', color: theme.palette.gray[60], transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}
-          />
+          <Box display={'flex'} alignItems={'center'} gap={'8px'}>
+            <Box
+              display={'flex'}
+              alignItems={'center'}
+              sx={{
+                boxSizing: 'border-box',
+                height: '34px',
+                padding: '4px 10px',
+                border: `1px solid ${theme.palette.gray[20]}`,
+                borderRadius: '4px',
+                width: 'fit-content',
+                transition: '.3s',
+                backgroundColor: theme.palette.common.white,
+                '&:hover': {
+                  backgroundColor: theme.palette.content.backgroundHover,
+                  '& svg': {
+                    color: `${theme.palette.gray[70]}`,
+                  },
+                },
+                cursor: 'pointer',
+              }}
+            >
+              <MIChartViewToggleAndLinkDetail
+                goodsInfo={goodsInfo}
+                color={props.colors?.[index]}
+                isShow={!props.hideComparisonChartIndexList.includes(index)}
+                onChange={({ isShow }) => {
+                  props.onChange?.(index, isShow)
+                }}
+              />
+            </Box>
+            {props.goodsInfoList.length > FOLDING_REFERENCE_POINT && index === 0 && (
+              <Box
+                onClick={toggleExpand}
+                sx={{
+                  background: theme.palette.common.white,
+                  boxSizing: 'border-box',
+                  width: '34px',
+                  height: '34px',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  border: '1px solid',
+                  borderColor: theme.palette.gray[8],
+                  borderRadius: '4px',
+                  transition: '.3s',
+                  ...(isOpen
+                    ? {
+                      borderColor: theme.palette.primary.main,
+                      backgroundColor: theme.palette.content.backgroundHover,
+                      '& svg': {
+                        color: `${theme.palette.primary.main} !important`,
+                      },
+                    }
+                    : {}),
+                  '&:hover': {
+                    borderColor: theme.palette.primary.main,
+                    backgroundColor: theme.palette.content.backgroundHover,
+                    '& svg': {
+                      color: `${theme.palette.primary.main} !important`,
+                    },
+                  },
+                }}
+              >
+                <KeyboardArrowUpIcon
+                  style={{ display: 'block', color: theme.palette.gray[60], transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}
+                />
+              </Box>
+            )}
+          </Box>
+          {index !== showedItems.length - 1 && <Box width={'100%'} height={'4px'} />}
         </Box>
-      )}
+      ))}
     </Box>
   )
 }

@@ -114,6 +114,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     const tooltipRef = useRef<HTMLDivElement | null>(null)
 
     const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
+    const [isMouseHoverLegend, setIsMouseHoverLegend] = useState(false)
 
     const { sortedTimestamps, timestampToIndex } = useMemo(() => {
       const allTimestamps = new Set<number>()
@@ -809,7 +810,9 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             const x = event.clientX - rect.left
             const y = event.clientY - rect.top
 
-            if (x >= canvasRect.left && x <= canvasRect.right && y >= canvasRect.top && y <= canvasRect.bottom) {
+            const isInsideCanvas = x >= canvasRect.left && x <= canvasRect.right && y >= canvasRect.top && y <= canvasRect.bottom
+
+            if (isInsideCanvas && !isMouseHoverLegend) {
               const xScaleIndex = mainChartRef.current?.scales.x.getValueForPixel(x)
               if (xScaleIndex !== undefined) {
                 crosshairRef.current?.updateCrosshairPosition(x, y, xScaleIndex)
@@ -870,6 +873,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             colors={comparisonDatasets.map((data) => data.metadata?.chipColor)}
             hideComparisonChartIndexList={hideComparisonChartIndexList}
             onChange={setHideComparisonChartIndexList}
+            setIsMouseHoverLegend={setIsMouseHoverLegend}
           />
         </Box>
         <Box height={hasVolume ? 'calc(100% - 142px)' : '100%'} sx={{ position: 'relative' }}>
