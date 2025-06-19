@@ -36,7 +36,7 @@ const api: AxiosInstance = Axios.create({
     'Access-Control-Allow-Origin': '*',
     'Cache-Control': 'no-cache',
   },
-  timeout: 120_000,
+  timeout: 20_000,
   withCredentials: true,
 })
 
