@@ -506,7 +506,8 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                   if (!nearestPointIsForecast || (nearestPointIsForecast && nearestPoint.datasetIndex === datasetIndex)) {
                     // Group forecast datasets by name - hidden 상태 필터링 추가
                     const forecastDatasets = chart.data.datasets.filter(
-                      (ds: any) => ds.category === DATA_CATEGORIES.FORECAST && ds.data[currentIndex] !== null && !ds.hidden, // hidden 상태 체크 추가
+                      (ds: any) =>
+                        ds.permission && ds.category === DATA_CATEGORIES.FORECAST && ds.data[currentIndex] !== null && !ds.hidden,
                     )
 
                     // Group datasets by their base name (without "Forecast" suffix)
@@ -526,7 +527,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                     sortedBaseNames.forEach((baseName) => {
                       // Add actual data first - hidden 상태 체크 추가
                       const actualDataset = chart.data.datasets.find(
-                        (ds: any) => ds.category === DATA_CATEGORIES.ACTUAL && ds.label === baseName && !ds.hidden, // hidden 상태 체크 추가
+                        (ds: any) => ds.permission && ds.category === DATA_CATEGORIES.ACTUAL && ds.label === baseName && !ds.hidden,
                       )
                       if (actualDataset && actualDataset.data[currentIndex] !== null) {
                         this.tooltipContent.push({
