@@ -445,7 +445,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       const axes: Record<string, ReturnType<typeof generateYAxis>> = {}
 
       comparisonChartUnits.forEach((unitCd, index) => {
-        const unit = unitCd.split('#').at(-1) ?? ''
+        const unit = unitCd?.split('#').at(-1) ?? ''
         axes[`sub-${unit}`] = generateYAxis({
           position: 'right',
           unit,
