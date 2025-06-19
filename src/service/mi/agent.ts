@@ -142,10 +142,12 @@ const agentService = {
    *
    * @param {string} chatRoomId - 채팅방 ID (새로운 대화 시작 시 UUID, 기존 대화 이어가기 시 기존 ID)
    * @param {string} question - 질문 내용
+   * @param shouldWebSearch - 실시간 웹검색 여부
    */
-  async sendQna(chatRoomId: string, question: string): Promise<IChatQnaRes> {
+  async sendQna(chatRoomId: string, question: string, shouldWebSearch: boolean): Promise<IChatQnaRes> {
     const response: AxiosResponse<ICommonResponse<IChatQnaRes>> = await api.post(`mi/mari-agent/chat-rooms/${chatRoomId}/qna`, {
       question,
+      shouldWebSearch,
     })
 
     return response.data.data

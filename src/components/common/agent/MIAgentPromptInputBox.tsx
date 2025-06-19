@@ -9,31 +9,41 @@ interface Props {
   onSendMessage: (message: string) => void
   placeholder?: string
   isGenerating?: boolean
+  selectModeOption: Array<{
+    id: string
+    title: string
+    subtitle: string
+    checked: boolean
+    disabled: boolean
+  }>
+  onSelectModeOptionChange: (
+    options: Array<{
+      id: string
+      title: string
+      subtitle: string
+      checked: boolean
+      disabled: boolean
+    }>,
+  ) => void
 }
 
-const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금하세요?', isGenerating }: Props) => {
+const MIAgentPromptInputBox = ({
+  onSendMessage,
+  placeholder = '무엇이 궁금하세요?',
+  isGenerating,
+  selectModeOption,
+  onSelectModeOptionChange,
+}: Props) => {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [isComposing, setIsComposing] = useState(false)
   const [isInputFocused, setIsInputFocused] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [selectModeOption] = useState([
-    {
-      id: '1',
-      title: 'MI Dataset',
-      subtitle: '메타모델 및 구독데이터 검색',
-      checked: false,
-      disabled: true,
-    },
-    {
-      id: '2',
-      title: 'Web Search',
-      subtitle: '실시간 웹 검색',
-      checked: true,
-      disabled: true,
-    },
-  ])
-
   const [promptText, setPromptText] = useState('')
+
+  const handleToggleOption = (toggledItem: { id: string }) => {
+    const newOptions = selectModeOption.map((item) => (item.id === toggledItem.id ? { ...item, checked: !item.checked } : item))
+    onSelectModeOptionChange(newOptions)
+  }
 
   const handleSendMessage = () => {
     onSendMessage(promptText)
@@ -149,8 +159,7 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder = '무엇이 궁금�
             isOpen={isDropdownOpen}
             onOpenChange={setIsDropdownOpen}
             settingsItems={selectModeOption}
-            selectedItem={null}
-            onChangeSelectedItem={() => {}}
+            onChangeSelectedItem={handleToggleOption}
             modePosition={'top'}
             disabled={isGenerating}
           />

@@ -10,6 +10,7 @@ import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/ico
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
+import { MIBaseSkeleton, SkeletonWrapper } from '@/components/mi/MIBaseSkeleton.tsx'
 import CompanyChartRenderer from '@/pages/mi/dashboard/components/CompanyChartRenderer'
 import DrillDownPopup from '@/pages/mi/dashboard/components/DrillDownPopup.tsx'
 import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
@@ -48,7 +49,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   }
 
   // 대시보드 기본 정보
-  const { data: dataInfo } = useQuery({
+  const { data: dataInfo, isLoading: dataInfoIsLoading } = useQuery({
     queryKey: ['dashboardInfo'],
     queryFn: () => dashboardDataService.getDashboardBasicInfo(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
     refetchOnWindowFocus: false,
@@ -56,7 +57,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   })
 
   // 대시보드 차트 조회 가능한 날짜 리스트
-  const { data: chartDates } = useQuery({
+  const { data: chartDates, isLoading: chartDatesIsLoading } = useQuery({
     queryKey: ['dashboardChartDates'],
     queryFn: () => dashboardDataService.getDashboardChartDates(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
     refetchOnWindowFocus: false,
@@ -64,7 +65,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   })
 
   // 대시보드 차트 데이터
-  const { data: chartData } = useQuery({
+  const { data: chartData, isLoading: chartDataIsLoading } = useQuery({
     queryKey: ['dashboardChartData', monthSelect],
     queryFn: () =>
       dashboardDataService.getDashboardChartData(
@@ -134,7 +135,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         align: 'center',
         renderCell: ({ row }) => {
           const value = row[chart.resultDate]
-          if (row.id === 'ERROR_RATE') {
+          if (row.permission && row.id === 'ERROR_RATE') {
             const { color, displayValue } = formatErrorRateValue(value)
             return <MITableCell value={displayValue} typography={{ color }} />
           }
@@ -144,16 +145,17 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           return (
             <Box position="relative" sx={{ userSelect: 'none' }}>
               <Box sx={{ filter: 'blur(3px)' }}>{value}</Box>
-              <LockOutlinedIcon
-                style={{
-                  width: '12px',
-                  height: '15px',
-                  color: '#868E96',
-                  position: 'absolute',
-                  top: 0,
-                  right: 5,
-                }}
-              />
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <LockOutlinedIcon
+                  style={{
+                    width: '12px',
+                    height: '15px',
+                    color: '#868E96',
+                    position: 'absolute',
+                    top: 0,
+                  }}
+                />
+              </Box>
             </Box>
           )
         },
@@ -191,7 +193,9 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             ) : (
               <Box position="relative" sx={{ userSelect: 'none' }}>
                 <Box sx={{ filter: 'blur(3px)' }}>{row[chart.resultDate]}</Box>
-                <LockOutlinedIcon style={{ width: '12px', height: '15px', color: '#868E96', position: 'absolute', top: 0, right: 5 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <LockOutlinedIcon style={{ width: '12px', height: '15px', color: '#868E96', position: 'absolute', top: 0 }} />
+                </Box>
               </Box>
             )}
           </>
@@ -422,23 +426,44 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
 
   return (
     <Box maxWidth={'1070px'}>
-      {dataInfo && (
-        <Box paddingY={7.5} textAlign="center">
-          <Typography component={'div'} color="gray.90" variant="heading0">
-            {dataInfo.chartPredictSettingNm}
-          </Typography>
-          <Typography component={'div'} color="#495057" variant="subtext0">
-            Updated {formatDataInfoDate}
-          </Typography>
-        </Box>
-      )}
+      <Box paddingY={7.5} textAlign="center">
+        {dataInfoIsLoading ? (
+          <MIBaseSkeleton.Table width={'100%'} height={'85px'} sx={{ alignSelf: 'center' }} />
+        ) : (
+          <>
+            <Typography component={'div'} color="gray.90" variant="heading0">
+              {dataInfo?.chartPredictSettingNm}
+            </Typography>
+            <Typography component={'div'} color="#495057" variant="subtext0">
+              Updated {formatDataInfoDate}
+            </Typography>
+          </>
+        )}
+      </Box>
 
       <Box>
-        <MonthSelector selected={monthSelect} onSelect={setMonthSelect} months={monthsData ?? []} />
+        {chartDatesIsLoading ? (
+          <SkeletonWrapper.Row gap={'8px'} sx={{ justifyContent: 'flex-start' }}>
+            <MIBaseSkeleton.InputField width={'158px'} height={'38px'} />
+            <MIBaseSkeleton.InputField width={'97px'} height={'38px'} />
+            <MIBaseSkeleton.InputField width={'96px'} height={'38px'} />
+            <MIBaseSkeleton.InputField width={'95px'} height={'38px'} />
+            <MIBaseSkeleton.InputField width={'98px'} height={'38px'} />
+            <MIBaseSkeleton.InputField width={'98px'} height={'38px'} />
+            <MIBaseSkeleton.InputField width={'95px'} height={'38px'} />
+            <MIBaseSkeleton.InputField width={'97px'} height={'38px'} />
+            <MIBaseSkeleton.InputField width={'98px'} height={'38px'} />
+          </SkeletonWrapper.Row>
+        ) : (
+          <MonthSelector selected={monthSelect} onSelect={setMonthSelect} months={monthsData ?? []} />
+        )}
+
         <MISummaryDownloadReport companyNo={companyNo} monthSelect={monthSelect} />
 
         {/* CompanyChartRenderer에 props로 받은 companyNo 전달 */}
-        {chartData && (
+        {chartDataIsLoading || !chartData ? (
+          <MIBaseSkeleton.BaseElement2 width={'100%'} height={'656px'} sx={{ mb: '24px' }} />
+        ) : (
           <CompanyChartRenderer
             data={chartData}
             companyNo={companyNo}
@@ -469,7 +494,10 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
               <MIButton startIcon={<DataTrendChartDownloadIcon />} onClick={downloadDataTable} contentType={'icon'} type="outlined" />
             </Box>
           </Box>
-          {chartData && (
+
+          {chartDataIsLoading || !chartData ? (
+            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'236px'} />
+          ) : (
             <MITableUser
               tableProps={{
                 noRowMessage: '등록된 내용이 없습니다.',

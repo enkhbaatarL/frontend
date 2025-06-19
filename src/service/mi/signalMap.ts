@@ -33,7 +33,7 @@ const signalMapService = {
   /**
    * 시그널맵 회사 필터를 조회합니다.
    * @param companyNo - {companyNo: 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호}
-   */ async getCompanyFilters(companyNo: number): Promise<ICommonResponse<string[]>> {
+   */ async getCompanyFilters(companyNo: number): Promise<ICommonResponse<IAdvancedFilterItem[]>> {
     const response = await api.get(`/mi/signal-map/companies/${companyNo}/filters`)
 
     return response.data
@@ -41,8 +41,9 @@ const signalMapService = {
   /**
    * 시그널맵 데이터를 조회합니다.
    * @param companyNo - {companyNo: 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호}
+   * @param params
    */
-  async getSignalMapData(companyNo: number, params: Partial<{ period?: string; filter?: string }>): Promise<ICommonResponse<MapRootData>> {
+  async getSignalMapData(companyNo: number, params: Partial<{ period: string; filter?: string }>): Promise<ICommonResponse<MapRootData>> {
     const response = await api.get(`/mi/signal-map/companies/${companyNo}`, {
       params,
     })

@@ -71,13 +71,15 @@ const InsightsPage = () => {
     queryFn: async () => await insightsService.getFocusedList(customerCompanyNo),
     refetchOnWindowFocus: false,
     gcTime: 0,
+    enabled: !!customerCompanyNo,
   })
   // 필터
   const { data: filterList, isLoading: filterIsLoading } = useQuery({
-    queryKey: ['getAdvancedFilterData'],
-    queryFn: async () => await insightsService.getAdvancedFilterData(),
+    queryKey: ['getAdvancedFilterData', customerCompanyNo],
+    queryFn: async () => await insightsService.getAdvancedFilterData(customerCompanyNo),
     refetchOnWindowFocus: false,
     gcTime: 0,
+    enabled: !!customerCompanyNo,
   })
 
   const {

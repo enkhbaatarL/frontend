@@ -20,11 +20,13 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
   const [shouldShowButton, setShouldShowButton] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ['dashboardSummary', monthSelect],
     queryFn: () => dashboardDataService.getDashboardSummary(companyNo ?? 0, monthSelect.split('-').join('')),
     enabled: !!companyNo && !!monthSelect,
   })
+
+  const shouldShowLoading = !companyNo || !monthSelect || isLoading || isFetching
 
   const renderSummaryContent = () => {
     if (!data?.summaries || data.summaries.length === 0) {
@@ -41,7 +43,7 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
   }
 
   useEffect(() => {
-    if (contentRef.current && data?.summaries && !isLoading) {
+    if (contentRef.current && data?.summaries && !shouldShowLoading) {
       const element = contentRef.current
 
       // 임시로 line-clamp 제거하여 전체 높이 측정
@@ -70,7 +72,7 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
       // 전체 높이가 4줄 높이보다 크면 버튼 표시
       setShouldShowButton(fullHeight > clampedHeight)
     }
-  }, [data?.summaries])
+  }, [data?.summaries, shouldShowLoading])
 
   const handleDownload = async () => {
     try {
@@ -84,7 +86,7 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
   }
 
   return (
-    <MISkeleton variant={'dashboardSummary'} loading={isLoading}>
+    <MISkeleton variant={'dashboardSummary'} loading={shouldShowLoading}>
       <Box borderRadius={'4px'} border={'1px solid #E5EDFA'} bgcolor={'#F6F9FD'} padding={5} mt={10} mb={6}>
         <Box display={'flex'} mb={5} alignItems={'center'} justifyContent={'space-between'}>
           <Typography component={'div'} variant={'textAI'}>

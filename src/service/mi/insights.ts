@@ -51,8 +51,8 @@ const insightsService = {
   /**
    * Insights 검색에서 사용할 고급필터 데이타를 조회합니다.
    */
-  async getAdvancedFilterData(): Promise<ICommonResponse<IAdvancedFilter>> {
-    const response: AxiosResponse<ICommonResponse<IAdvancedFilter>> = await api.get('/mi/insights/advanced-filter')
+  async getAdvancedFilterData(companyNo: number): Promise<ICommonResponse<IAdvancedFilter>> {
+    const response: AxiosResponse<ICommonResponse<IAdvancedFilter>> = await api.get(`/mi/insights/companies/${companyNo}/advanced-filter`)
 
     return response.data
   },

@@ -66,7 +66,7 @@ const SignalMapPage = () => {
   const { data: companyOptions = [], isLoading: companyOptionsIsLoading } = useQuery({
     queryKey: ['getCompanyFilters'],
     queryFn: async () => await signalMapService.getCompanyFilters(customerCompanyNo),
-    select: (res) => res.data.map((options) => ({ label: options, value: options })),
+    select: (res) => res.data.map((m) => ({ label: m.codeNm, value: m.codeId })),
   })
 
   const { data: signalData, isLoading: signalDataIsLoading } = useQuery({

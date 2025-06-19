@@ -1,8 +1,5 @@
 import { Typography, Switch, Box, styled, SwitchProps } from '@mui/material'
 
-// import { MIAgentToggleSettingItem } from './MIAgentInputBoxDropdown'
-// import theme from '@/theming'
-
 // Custom styled switch to match the design
 const CustomSwitch = styled((props: SwitchProps) => <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />)(
   ({ theme }) => ({
@@ -60,17 +57,18 @@ export interface MIAgentToggleSettingOption {
   checked: boolean
   disabled?: boolean
 }
+
 export interface MIAgentToggleSettingProps {
   items: MIAgentToggleSettingOption[]
-  selectedItem: MIAgentToggleSettingOption
-  onChangeSelectedItem: (item: MIAgentToggleSettingOption) => void
-}
-export interface MIAgentToggleSettingItemProps {
-  item: MIAgentToggleSettingOption
   onChangeSelectedItem: (item: MIAgentToggleSettingOption) => void
 }
 
-const MIAgentToggleSettingItem = ({ item, onChangeSelectedItem }: MIAgentToggleSettingItemProps) => (
+export interface MIAgentToggleSettingItemProps {
+  item: MIAgentToggleSettingOption
+  onToggleItem: (item: MIAgentToggleSettingOption) => void
+}
+
+const MIAgentToggleSettingItem = ({ item, onToggleItem }: MIAgentToggleSettingItemProps) => (
   <Box
     sx={{
       display: 'flex',
@@ -111,7 +109,7 @@ const MIAgentToggleSettingItem = ({ item, onChangeSelectedItem }: MIAgentToggleS
       disabled={item.disabled}
       onChange={() => {
         if (!item.disabled) {
-          onChangeSelectedItem?.(item)
+          onToggleItem(item)
         }
       }}
     />
@@ -127,7 +125,7 @@ const MIAgentToggleSetting = ({ items, onChangeSelectedItem }: MIAgentToggleSett
   >
     {items?.map((item, index) => (
       <Box
-        key={index}
+        key={item.id}
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -139,7 +137,7 @@ const MIAgentToggleSetting = ({ items, onChangeSelectedItem }: MIAgentToggleSett
             ...item,
             disabled: item.disabled ?? false,
           }}
-          onChangeSelectedItem={onChangeSelectedItem}
+          onToggleItem={onChangeSelectedItem}
         />
         {index < items.length - 1 && (
           <Box sx={{ width: '100%', height: '0.5px', backgroundColor: 'contentBorder.Normal', marginY: '8px' }} />

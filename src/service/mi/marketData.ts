@@ -104,8 +104,10 @@ const marketDataService = {
   /**
    * 최근 조회한 데이터 목록을 조회합니다.
    */
-  async getRecentViewed(): Promise<IRecentViewedItem[]> {
-    const response: AxiosResponse<ICommonResponse<IRecentViewedItem[]>> = await api.get('mi/market-data/recent-viewed')
+  async getRecentViewed(customerCompanyNo: number): Promise<IRecentViewedItem[]> {
+    const response: AxiosResponse<ICommonResponse<IRecentViewedItem[]>> = await api.get(
+      `mi/market-data/companies/${customerCompanyNo}/recent-viewed`,
+    )
 
     return response.data.data
   },
