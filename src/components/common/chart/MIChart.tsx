@@ -403,6 +403,38 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       }))
     }, [comparisonCharts, hideComparisonChartIndexList, timestampToIndex])
 
+    const volumeDatasets = useMemo(
+      () =>
+        volumeDataSeries
+          ? [
+            {
+              label: volumeDataSeries.label,
+              data: volumeDataSeries.values.map((value, index) => {
+                const timestamp = dayjs(mainChart?.timestamps[index]).valueOf()
+                return {
+                  x: timestampToIndex.get(timestamp) ?? index,
+                  y: value ?? null,
+                }
+              }),
+              type: 'line',
+              borderWidth: 0,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.1,
+              spanGaps: true,
+              yAxisID: 'y',
+              hidden: true,
+              metadata: {
+                hasDivider: true,
+                chipColor: '#2E3F5E',
+                toFixed: 0,
+              },
+            },
+          ]
+          : [],
+      [mainChart?.timestamps, timestampToIndex, volumeDataSeries],
+    )
+
     const comparisonChartUnits = useMemo(
       () => comparisonCharts.map((chart) => chart.unitCd).filter((unit): unit is string => unit !== undefined),
       [comparisonCharts],
@@ -534,6 +566,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       if (indicatorDatasets.BB) datasets.push(...indicatorDatasets.BB)
       if (indicatorDatasets.MA) datasets.push(...indicatorDatasets.MA)
       if (comparisonDatasets.length) datasets.push(...comparisonDatasets)
+      if (volumeDatasets) datasets.push(...volumeDatasets)
 
       return datasets as ChartDatasetType[]
     }, [comparisonDatasets, indicatorDatasets.BB, indicatorDatasets.MA, mainDatasets])

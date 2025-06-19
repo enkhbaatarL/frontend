@@ -13,6 +13,7 @@ interface TooltipContent {
   color?: string
   date: string
   hasDivider?: boolean
+  toFixed?: number
 }
 
 interface MICrosshairLineProps {
@@ -113,6 +114,7 @@ const MICrosshairLine = forwardRef<MICrosshairLineHandle, MICrosshairLineProps>(
 
           if (value !== undefined) {
             const yAxisId = (mainDataset as { yAxisID: string }).yAxisID ?? 'y'
+            const toFixed = (mainDataset as { metadata?: { toFixed?: number } }).metadata?.toFixed
 
             const valueBox = document.createElement('div')
             valueBox.style.position = 'absolute'
@@ -124,7 +126,7 @@ const MICrosshairLine = forwardRef<MICrosshairLineHandle, MICrosshairLineProps>(
             valueBox.style.fontWeight = '500'
             valueBox.style.fontFamily = 'Pretendard'
             valueBox.style.whiteSpace = 'nowrap'
-            valueBox.textContent = formatValue(value)
+            valueBox.textContent = formatValue(value, '', 'en-US', toFixed)
             valueBox.dataset.yAxisId = yAxisId
             mainIndicatorContainer.appendChild(valueBox)
 
@@ -262,6 +264,7 @@ const MICrosshairLine = forwardRef<MICrosshairLineHandle, MICrosshairLineProps>(
           value,
           date: formattedDate,
           hasDivider: (dataset as { metadata?: { hasDivider?: boolean } }).metadata?.hasDivider,
+          toFixed: (dataset as { metadata?: { toFixed?: number } }).metadata?.toFixed,
         }
       })
 

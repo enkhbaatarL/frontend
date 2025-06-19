@@ -1,18 +1,19 @@
 /**
- * Formats a number as a value with currency symbol, thousands separators, and 2 decimal places
+ * Formats a number as a value with currency symbol, thousands separators, and specified decimal places
  * @param {number} amount - The value amount to format
  * @param {string} [currencySymbol='$'] - Currency symbol to prepend (default: $)
  * @param {string} [locale='en-US'] - The locale to use for number formatting
+ * @param {number} [toFixed=2] - Number of decimal places (default: 2)
  * @returns {string} The formatted value string
  */
-export const formatValue = (amount: number, currencySymbol = '', locale = 'en-US') => {
-  // Round to 2 decimal places (standard for currency)
-  const roundedAmount = Math.round(amount * 100) / 100
+export const formatValue = (amount: number, currencySymbol = '', locale = 'en-US', toFixed = 2) => {
+  // Round to specified decimal places
+  const roundedAmount = Math.round(amount * Math.pow(10, toFixed)) / Math.pow(10, toFixed)
 
-  // Format the number according to locale with 2 decimal places
+  // Format the number according to locale with specified decimal places
   const formattedNumber = roundedAmount.toLocaleString(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: toFixed,
+    maximumFractionDigits: toFixed,
   })
 
   // Return with currency symbol

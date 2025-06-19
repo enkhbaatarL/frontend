@@ -3,8 +3,8 @@ import { Fragment, ReactNode, forwardRef } from 'react'
 
 import { formatValue } from '@/utils/number'
 
-const ChartToolTipItem = (props: { label: ReactNode; value?: number; color: string }) => {
-  const { label, value, color } = props
+const ChartToolTipItem = (props: { label: ReactNode; value?: number; color: string; toFixed?: number }) => {
+  const { label, value, color, toFixed } = props
 
   return (
     <Box sx={{ minWidth: '152px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px' }}>
@@ -12,7 +12,7 @@ const ChartToolTipItem = (props: { label: ReactNode; value?: number; color: stri
         {label}
       </Typography>
       <Typography variant="chartToolTipNumber" color={value === undefined ? undefined : color}>
-        {value === undefined ? '-' : formatValue(value)}
+        {value === undefined ? '-' : formatValue(value, '', 'en-US', toFixed)}
       </Typography>
     </Box>
   )
@@ -22,13 +22,13 @@ interface MIChartTooltipProps {
   visible?: boolean
   top?: number
   left?: number
-  content: Record<string, { label?: string; value?: number; color?: string; date: string; hasDivider?: boolean }>
+  content: Record<string, { label?: string; value?: number; color?: string; date: string; hasDivider?: boolean; toFixed?: number }>
 }
 
 const MIChartTooltip = forwardRef<HTMLDivElement, Readonly<MIChartTooltipProps>>(({ visible, top, left, content }, ref) => {
   if (!visible) return null
 
-  const items: Array<{ label?: string; value?: number; color?: string; date: string; hasDivider?: boolean }> = []
+  const items: Array<{ label?: string; value?: number; color?: string; date: string; hasDivider?: boolean; toFixed?: number }> = []
 
   Object.entries(content).forEach(([, value]) => {
     items.push(value)
@@ -60,7 +60,7 @@ const MIChartTooltip = forwardRef<HTMLDivElement, Readonly<MIChartTooltipProps>>
       {items.map((item, idx) => (
         <Fragment key={idx}>
           {item.hasDivider && <Divider sx={{ my: '8px', borderColor: '#DEE2E6' }} />}
-          <ChartToolTipItem label={item.label as string} value={item.value} color={item.color as string} />
+          <ChartToolTipItem label={item.label as string} value={item.value} color={item.color as string} toFixed={item.toFixed} />
         </Fragment>
       ))}
     </Box>
