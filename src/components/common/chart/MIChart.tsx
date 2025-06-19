@@ -111,6 +111,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     const mainChartRef = useRef<ChartJS | null>(null)
     const volumeChartRef = useRef<ChartJS | null>(null)
     const crosshairRef = useRef<MICrosshairLineHandle | null>(null)
+    const tooltipRef = useRef<HTMLDivElement | null>(null)
 
     const [tooltip, setTooltip] = useState({ visible: false, top: 0, left: 0, content: {} })
 
@@ -442,10 +443,54 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           return
         }
 
+        const canvasRect = crosshairRef.current?.getCanvasRect()
+        if (!canvasRect) {
+          setTooltip({
+            visible: true,
+            top: chartTooltip.y + 10,
+            left: chartTooltip.x + 12,
+            content: chartTooltip.content,
+          })
+          return
+        }
+
+        const tooltipElement = tooltipRef.current
+        let tooltipWidth = 0
+        let tooltipHeight = 0
+
+        if (tooltipElement) {
+          const rect = tooltipElement.getBoundingClientRect()
+          tooltipWidth = rect.width
+          tooltipHeight = rect.height
+        }
+
+        let targetX = chartTooltip.x + 12
+        let targetY = chartTooltip.y + 10
+
+        const wouldExceedRight = targetX + tooltipWidth > canvasRect.right
+        if (wouldExceedRight) {
+          targetX = chartTooltip.x - tooltipWidth - 12
+        }
+
+        const margin = 28
+
+        if (targetY + tooltipHeight > canvasRect.bottom - margin) {
+          const overflow = targetY + tooltipHeight - (canvasRect.bottom - margin)
+          targetY = Math.max(canvasRect.top + margin, targetY - overflow)
+        }
+
+        if (targetY < canvasRect.top + margin) {
+          const underflow = canvasRect.top + margin - targetY
+          targetY = Math.min(canvasRect.bottom - tooltipHeight - margin, targetY + underflow)
+        }
+
+        const finalX = Math.max(canvasRect.left, Math.min(canvasRect.right - tooltipWidth, targetX))
+        const finalY = Math.max(canvasRect.top + margin, Math.min(canvasRect.bottom - tooltipHeight - margin, targetY))
+
         setTooltip({
           visible: true,
-          top: chartTooltip.y - 4,
-          left: chartTooltip.x + 6,
+          top: finalY,
+          left: finalX,
           content: chartTooltip.content,
         })
       },
@@ -831,7 +876,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           volumeChartRef={hasVolume ? volumeChartRef : undefined}
           onTooltipChange={externalTooltipHandler}
         />
-        <MIChartTooltip {...tooltip} />
+        <MIChartTooltip ref={tooltipRef} {...tooltip} />
       </Box>
     )
   },

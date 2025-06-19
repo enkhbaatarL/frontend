@@ -1,5 +1,5 @@
 import { Box, Divider, Typography } from '@mui/material'
-import { Fragment, ReactNode } from 'react'
+import { Fragment, ReactNode, forwardRef } from 'react'
 
 import { formatValue } from '@/utils/number'
 
@@ -18,17 +18,14 @@ const ChartToolTipItem = (props: { label: ReactNode; value?: number; color: stri
   )
 }
 
-const MIChartTooltip = ({
-  visible,
-  top,
-  left,
-  content,
-}: Readonly<{
+interface MIChartTooltipProps {
   visible?: boolean
   top?: number
   left?: number
   content: Record<string, { label?: string; value?: number; color?: string; date: string; hasDivider?: boolean }>
-}>) => {
+}
+
+const MIChartTooltip = forwardRef<HTMLDivElement, Readonly<MIChartTooltipProps>>(({ visible, top, left, content }, ref) => {
   if (!visible) return null
 
   const items: Array<{ label?: string; value?: number; color?: string; date: string; hasDivider?: boolean }> = []
@@ -41,6 +38,7 @@ const MIChartTooltip = ({
 
   return (
     <Box
+      ref={ref}
       sx={{
         position: 'absolute',
         top,
@@ -67,6 +65,8 @@ const MIChartTooltip = ({
       ))}
     </Box>
   )
-}
+})
+
+MIChartTooltip.displayName = 'MIChartTooltip'
 
 export default MIChartTooltip
