@@ -35,6 +35,7 @@ export interface IInsightsInfo {
   goodsDataNo: number
   goodsDataNm: string
   goodsDataExpn: string
+  goodsDataSummaryCntt: string
   modifyDt: string
   goodsDataCategory: string
 }

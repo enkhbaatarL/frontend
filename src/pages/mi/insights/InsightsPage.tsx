@@ -167,7 +167,7 @@ const InsightsPage = () => {
         date: item.modifyDt,
         source: item.providerNm,
         typeId: String(item.goodsDataNo),
-        subtitle: item.goodsDataExpn,
+        subtitle: item.goodsDataSummaryCntt,
         goodsNo: item.goodsNo,
         goodsDataNo: item.goodsDataNo,
       }))
