@@ -1,7 +1,7 @@
 import { Button, ButtonProps, SxProps, Theme } from '@mui/material'
 import { useMemo } from 'react'
 
-type AdminButtonSize = 'h42' | 'h34' | 'h32' | 'h28'
+type AdminButtonSize = 'h42' | 'h34' | 'h32' | 'h28' | 'h39'
 interface AdminButton extends Omit<ButtonProps, 'size'> {
   size?: AdminButtonSize
 }
@@ -26,6 +26,13 @@ const getSizeStyle = (size: AdminButtonSize) => {
       padding: '7px 16px',
       fontSize: '14px',
       height: '34px',
+    }
+
+  if (size === 'h39')
+    return {
+      padding: '10px 16px',
+      fontSize: '16px',
+      height: '39px',
     }
 
   if (size === 'h42')

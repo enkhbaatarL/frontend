@@ -17,6 +17,7 @@ export interface IUserDetail {
   isIndividualInfoAgreement: boolean
   companyNm: string
   companyNo: number
+  userAccessPageType: string
 }
 
 export interface IAccessCompanyInfo {
