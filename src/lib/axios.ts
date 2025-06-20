@@ -138,9 +138,6 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
       case 'AUTH-008':
         navigateFn('/error/ip-verification', { state: { code, status }, replace: true })
         break
-      case 'RSC-001':
-        navigateFn('/error/access-denied', { state: { code, status }, replace: true })
-        break
       default:
         errorHandlerOptions?.showSnackbar?.(`Error: ${statusText}`, { variant: 'error' })
         console.error(error)
