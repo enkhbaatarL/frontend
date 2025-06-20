@@ -153,6 +153,7 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
                       goodsDataSourceNo={selectedContent.goodsDataSourceNo}
                       predictDate={monthSelect.split('-').join('')}
                       date={dayjs(selectedContent.date).format('YYYYMM')}
+                      categorySelect={categorySelect}
                     />
                   </Box>
                 </>

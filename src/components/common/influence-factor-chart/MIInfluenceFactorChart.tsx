@@ -42,6 +42,7 @@ interface MIInfluenceFactorChartProps {
   goodsDataSourceNo: number | undefined
   predictDate: string
   date: string
+  categorySelect: string
 }
 
 const createDummyData = (seed: string) =>
@@ -203,7 +204,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
       predictDate: props.predictDate,
       date: props.date,
       mnemonicCd: factor.mnemonicCd,
-      explanatoryLevelNm: factor.explanatoryLevelDetailNm,
+      explanatoryLevelNm: props.categorySelect,
       predictionInputMnemonicCd: factor.predictionInputMnemonicCd,
       marketIndexAnalysisTargetCd: factor.marketIndexAnalysisTargetCd,
     }
