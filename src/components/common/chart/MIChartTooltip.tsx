@@ -45,7 +45,7 @@ const MIChartTooltip = forwardRef<HTMLDivElement, Readonly<MIChartTooltipProps>>
         left,
         pointerEvents: 'none',
         padding: '14px',
-        zIndex: 1000,
+        zIndex: 30,
         borderRadius: '4px',
         border: '1px solid #DEE2E6',
         backgroundColor: '#ffffff',

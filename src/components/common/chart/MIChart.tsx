@@ -853,6 +853,9 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             }
           }
         }}
+        onMouseLeave={() => {
+          crosshairRef.current?.handleMouseOut()
+        }}
       >
         <Box
           sx={{
