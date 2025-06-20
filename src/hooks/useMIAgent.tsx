@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 
 import { useScroll } from '@/contexts/ScrollContext'
-import agentService, { IChatQnaRes, IChatRoomRes } from '@/service/mi/agent'
+import agentService, { ChatRoomStatus, IChatQnaRes, IChatRoomRes } from '@/service/mi/agent'
 import { IPaginationResponse } from '@/types/api'
 import delay from '@/utils/delay'
 
@@ -94,6 +94,21 @@ const useMIAgent = () => {
     ])
   }, [])
 
+  const getErrorConversation = (originalQuestion: string): IConversation => ({
+    qnaNo: null,
+    question: originalQuestion,
+    answer: null,
+    isRecommended: null,
+    isNotRecommended: null,
+    statusCd: ChatRoomStatus.FAIL,
+    statusNm: '실패',
+    feedbackCd: null,
+    feedbackNm: null,
+    feedbackComment: null,
+    auditInfo: null,
+    isNew: true,
+  })
+
   const inquire = useCallback(
     async (message: string, shouldWebSearch: boolean = false) => {
       try {
@@ -119,6 +134,13 @@ const useMIAgent = () => {
         replaceConversations(newChat)
       } catch (error) {
         console.error('Error in inquire:', error)
+        // 에러 발생 시 상태 초기화
+        setState('complete')
+        await delay(1000)
+        setState('default')
+
+        // 에러 메시지를 답변으로 설정
+        replaceConversations(getErrorConversation(message))
       }
     },
     [replaceConversations, scrollToBottom, selectedChatRoom.id, selectedChatRoom.isNew, refetchChatRooms],
