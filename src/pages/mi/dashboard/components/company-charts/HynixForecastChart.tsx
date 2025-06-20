@@ -655,7 +655,7 @@ const HynixForecastChart = ({ selectedContent, onSelectedContent, data, userRole
       .filter(Boolean)
 
     setForecastDatasets([...actualDatasets, ...forecastDatasets, ...datasets] as ForecastDataset[])
-    setLastUpdated(formatDate(data.dashboardMetadata.lastUpdateDt))
+    setLastUpdated(data.dashboardMetadata?.lastUpdateDt ? formatDate(data.dashboardMetadata.lastUpdateDt) : 'MMMM D, YYYY')
     setTopLabel(`${data.dashboardMetadata.currency}/${data.dashboardMetadata.currentUnitCd}`)
   }, [data, colorMap, formatDate])
 

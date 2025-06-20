@@ -31,6 +31,16 @@ const authService = {
 
     return response.data.data
   },
+
+  async getAdminAccessCheck(token: string): Promise<string> {
+    const response: AxiosResponse<ICommonResponse<string>> = await api.get('common/admin-access-check', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    return response.data.data
+  },
 }
 
 export default authService

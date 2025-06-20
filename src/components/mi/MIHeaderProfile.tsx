@@ -6,10 +6,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIProfile from '@/components/common/profile/MIProfile'
+import authService from '@/service/common/auth.ts'
 import useAuthStore from '@/store/useAuthStore'
 
 const MIHeaderProfile = () => {
-  const { user } = useAuthStore()
+  const { user, token } = useAuthStore()
   const navigate = useNavigate()
 
   const [anchorElUser, setAnchorElUser] = useState(false)
@@ -98,8 +99,11 @@ const MIHeaderProfile = () => {
               team={user?.departmentNm ?? ''}
               role={user?.isOtherServiceAccessPossible ? user?.userRoleCd : undefined}
               buttonLabel={user?.isOtherServiceAccessPossible ? '어드민 페이지' : undefined}
-              onButtonClick={() => {
-                navigate('/admin')
+              onButtonClick={async () => {
+                if (token) {
+                  await authService.getAdminAccessCheck(token)
+                  navigate('/admin')
+                }
               }}
             />
           </Box>

@@ -672,7 +672,7 @@ const SiltronForecastChart = ({ selectedContent, onSelectedContent, data, userRo
     })
 
     setForecastDatasets(allDatasets)
-    setLastUpdated(formatDate(data.dashboardMetadata.lastUpdateDt))
+    setLastUpdated(data.dashboardMetadata?.lastUpdateDt ? formatDate(data.dashboardMetadata.lastUpdateDt) : 'MMMM D, YYYY')
   }, [data, formatDate])
 
   const dates = useMemo(() => {

@@ -37,6 +37,9 @@ const LoginPage = () => {
       if (userDetail) {
         setUser(userDetail)
         setToken(token)
+        if (userDetail.userRoleCd !== 'USER') {
+          await authService.getAdminAccessCheck(token)
+        }
       }
     },
     [setUser, setToken],
