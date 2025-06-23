@@ -283,23 +283,27 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
               },
             }}
           >
-            <FileDownloadOutlinedIcon
-              fontSize={'small'}
-              style={{
-                verticalAlign: 'sub',
-                marginRight: '8px',
-              }}
-            />
-            <Typography
-              sx={{
-                fontWeight: '600 !important',
-                cursor: param.row.baselinePrice === '-' ? 'not-allowed' : 'pointer !important',
-              }}
-              variant={'tableHeaderSemibold'}
-              color={param.row.baselinePrice === '-' ? 'contentText.Disabled' : 'gray.70'}
-            >
-              Download
-            </Typography>
+            {param.row.baselinePrice !== '-' && (
+              <>
+                <FileDownloadOutlinedIcon
+                  fontSize={'small'}
+                  style={{
+                    verticalAlign: 'sub',
+                    marginRight: '8px',
+                  }}
+                />
+                <Typography
+                  sx={{
+                    fontWeight: '600 !important',
+                    cursor: 'pointer !important',
+                  }}
+                  variant={'tableHeaderSemibold'}
+                  color={'gray.70'}
+                >
+                  Download
+                </Typography>
+              </>
+            )}
           </Box>
         </MITableCell>
       ),
