@@ -46,7 +46,9 @@ export const downloadChart = async ({ filename = 'chart.png', target, remove = [
 
       if (clonedCanvasContext) {
         clonedCanvasContext.scale(scale, scale)
-        clonedCanvasContext.drawImage(originalCanvas, 0, 0)
+        if (originalCanvas.width > 0 && originalCanvas.height > 0) {
+          clonedCanvasContext.drawImage(originalCanvas, 0, 0)
+        }
       }
 
       const clonedCanvasElement = clonedElement.querySelector('canvas')
@@ -114,7 +116,9 @@ export const downloadChart = async ({ filename = 'chart.png', target, remove = [
     })
 
     if (ctx) {
-      ctx.drawImage(finalTempCanvas, padding, padding)
+      if (finalTempCanvas && finalTempCanvas.width > 0 && finalTempCanvas.height > 0) {
+        ctx.drawImage(finalTempCanvas, padding, padding)
+      }
     }
 
     const link = document.createElement('a')

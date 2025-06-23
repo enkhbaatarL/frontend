@@ -35,7 +35,7 @@ const verticalLinePlugin: verticalLinePlugin = {
           x: event.clientX - rect.left,
           y: event.clientY - rect.top,
         }
-      } catch (err) {
+      } catch {
         plugin.mousePosition = null
         plugin.tooltipContent = []
       }
@@ -84,7 +84,10 @@ const verticalLinePlugin: verticalLinePlugin = {
       ctx.save()
 
       if (hoverImages['marker']) {
-        ctx.drawImage(hoverImages['marker'], x - 6, topY - 13, 13, 8)
+        const markerImage = hoverImages['marker']
+        if (markerImage && markerImage.complete && markerImage.naturalWidth > 0) {
+          ctx.drawImage(markerImage, x - 6, topY - 13, 13, 8)
+        }
       }
 
       ctx.beginPath()
@@ -117,7 +120,9 @@ const verticalLinePlugin: verticalLinePlugin = {
           // Use the cached image for this color
           const img = hoverImages['value']
 
-          ctx.drawImage(img, xPos, yPos, size, size)
+          if (img && img.complete && img.naturalWidth > 0) {
+            ctx.drawImage(img, xPos, yPos, size, size)
+          }
         }
       }
 
