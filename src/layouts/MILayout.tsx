@@ -110,7 +110,7 @@ const MILayout = () => {
   useEffect(() => {
     const fetchNotice = async () => {
       try {
-        const notice = await boardService.getNoticePopup()
+        const notice = await boardService.getNoticePopup(accessCompanyInfo?.customerCompanyNo)
 
         if (!notice?.bulletinNo) return
 
