@@ -56,6 +56,7 @@ const SignalMapPage = () => {
   const [companyFilter, setCompanyFilter] = useState<string>('')
   const [isRenderingComplete, setIsRenderingComplete] = useState(false)
   const [hasInitialData, setHasInitialData] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const { data: periodOptions = [], isLoading: periodOptionsIsLoading } = useQuery({
     queryKey: ['getPeriodsFilters'],
@@ -69,10 +70,11 @@ const SignalMapPage = () => {
     select: (res) => res.data.map((m) => ({ label: m.codeNm, value: m.codeId })),
   })
 
+  // 메인 데이터 쿼리 - 초기화가 완료된 후에만 실행
   const { data: signalData, isLoading: signalDataIsLoading } = useQuery({
     queryKey: ['getSignalMapData', period, companyFilter],
     queryFn: async () => await signalMapService.getSignalMapData(customerCompanyNo, { period, filter: companyFilter }),
-    enabled: !!period,
+    enabled: isInitialized && (!!period || !!companyFilter),
     select: (res) => res.data,
   })
 
@@ -87,12 +89,12 @@ const SignalMapPage = () => {
   }, [signalData?.updatedDt])
 
   useEffect(() => {
-    setPeriod(periodOptions?.[0]?.value ?? '')
-  }, [periodOptions])
-
-  useEffect(() => {
-    setCompanyFilter(companyOptions?.[0]?.value ?? '')
-  }, [companyOptions])
+    if (periodOptions.length > 0 && companyOptions.length > 0 && !isInitialized) {
+      setPeriod(periodOptions[0]?.value ?? '')
+      setCompanyFilter(companyOptions[0]?.value ?? '')
+      setIsInitialized(true)
+    }
+  }, [periodOptions, companyOptions, isInitialized])
 
   useEffect(() => {
     setIsRenderingComplete(false)
@@ -192,11 +194,11 @@ const SignalMapPage = () => {
                   <Box mb={5}>
                     <SectionHeader title={root.categoryName} itemCount={root.items.length} boldTitle />
                   </Box>
-                  {subItems.map((subCatogory, cateIdx) => (
+                  {subItems.map((subCategory, cateIdx) => (
                     <Box mb={6} key={cateIdx}>
-                      <SectionHeader title={subCatogory.categoryName} itemCount={subCatogory.items.length} />
+                      <SectionHeader title={subCategory.categoryName} itemCount={subCategory.items.length} />
                       <Box height="460px" marginTop="6px">
-                        <MISignalMap mapData={subCatogory.items} useAnimation />
+                        <MISignalMap mapData={subCategory.items} useAnimation />
                       </Box>
                     </Box>
                   ))}
