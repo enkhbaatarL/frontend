@@ -698,7 +698,7 @@ const SiltronForecastChart = ({ selectedContent, onSelectedContent, data, userRo
       months={dates}
       lastUpdated={lastUpdated}
       height={530}
-      topLabel={'Unit: Millions Units'}
+      topLabel={data.dashboardMetadata.tableHeader ? `Unit: ${data.dashboardMetadata.tableHeader}` : ''}
       goodsDataSourceNoList={data.dashboardDataSources.map(({ goodsDataSourceNo, dashboardLineName }) => ({
         goodsDataSourceNm: dashboardLineName,
         goodsDataSourceNo,

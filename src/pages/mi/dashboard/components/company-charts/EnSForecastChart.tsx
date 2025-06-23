@@ -548,7 +548,6 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd
     },
   ])
   const [lastUpdated, setLastUpdated] = useState<string>('')
-  const [topLabel, setTopLabel] = useState<string>('')
   const colorMap = ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485']
 
   const formatDate = (date: string) => {
@@ -628,7 +627,6 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd
 
     setForecastDatasets([...actualDatasets, ...forecastDatasets, ...datasets] as ForecastDataset[])
     setLastUpdated(data.dashboardMetadata?.lastUpdateDt ? formatDate(data.dashboardMetadata.lastUpdateDt) : 'MMMM D, YYYY')
-    setTopLabel(`${data.dashboardMetadata.currency}/${data.dashboardMetadata.currentUnitCd}`)
   }, [data])
 
   const dates = useMemo(() => {
@@ -651,7 +649,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd
       months={dates}
       lastUpdated={lastUpdated}
       height={530}
-      topLabel={`Unit: ${topLabel}`}
+      topLabel={data.dashboardMetadata.tableHeader ? `Unit: ${data.dashboardMetadata.tableHeader}` : ''}
       data={data}
       goodsDataSourceNoList={data.dashboardDataSources.map(({ goodsDataSourceNo, dashboardLineName }) => ({
         goodsDataSourceNm: dashboardLineName,

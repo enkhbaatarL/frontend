@@ -573,7 +573,6 @@ const HynixForecastChart = ({ selectedContent, onSelectedContent, data, userRole
     },
   ])
   const [lastUpdated, setLastUpdated] = useState<string>('')
-  const [topLabel, setTopLabel] = useState<string>('')
 
   // 색상 배열을 메모이제이션
   const colorMap = useMemo(() => ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485'], [])
@@ -657,7 +656,6 @@ const HynixForecastChart = ({ selectedContent, onSelectedContent, data, userRole
 
     setForecastDatasets([...actualDatasets, ...forecastDatasets, ...datasets] as ForecastDataset[])
     setLastUpdated(data.dashboardMetadata?.lastUpdateDt ? formatDate(data.dashboardMetadata.lastUpdateDt) : 'MMMM D, YYYY')
-    setTopLabel(`${data.dashboardMetadata.currency}/${data.dashboardMetadata.currentUnitCd}`)
   }, [data, colorMap, formatDate])
 
   const dates = useMemo(() => {
@@ -682,7 +680,7 @@ const HynixForecastChart = ({ selectedContent, onSelectedContent, data, userRole
       months={dates}
       lastUpdated={lastUpdated}
       height={530}
-      topLabel={`Unit: ${topLabel}`}
+      topLabel={data.dashboardMetadata.tableHeader ? `Unit: ${data.dashboardMetadata.tableHeader}` : ''}
       goodsDataSourceNoList={data.dashboardDataSources.map(({ goodsDataSourceNo, dashboardLineName }) => ({
         goodsDataSourceNm: dashboardLineName,
         goodsDataSourceNo,

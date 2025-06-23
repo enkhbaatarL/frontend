@@ -123,6 +123,7 @@ interface IDashboardChartMetadata {
   currentUnitCd: string
   baseDate: string
   dataTableType: string
+  tableHeader: string
 }
 interface IChartLineRawData {
   resultDate: string
