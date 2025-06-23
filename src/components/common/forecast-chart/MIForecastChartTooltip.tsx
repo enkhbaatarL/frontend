@@ -107,6 +107,7 @@ const MIForecastChartTooltip = ({
   return (
     <Box
       ref={tooltipContainerRef}
+      className="mi-forecast-chart-tooltip"
       sx={{
         position: 'absolute',
         top: position.top,

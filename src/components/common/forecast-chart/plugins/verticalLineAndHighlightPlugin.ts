@@ -35,6 +35,37 @@ export interface PointerMoveEventContext {
   } | null
 }
 
+const adjustTooltipPosition = (tooltipX: number, tooltipY: number, chart: Chart) => {
+  const chartArea = chart.chartArea
+
+  const tooltipElement = document.querySelector('.mi-forecast-chart-tooltip') as HTMLElement
+  let tooltipWidth = 300
+  let tooltipHeight = 120
+
+  if (tooltipElement) {
+    const rect = tooltipElement.getBoundingClientRect()
+    tooltipWidth = rect.width
+    tooltipHeight = rect.height
+  }
+
+  let adjustedX = tooltipX
+  let adjustedY = tooltipY
+
+  if (tooltipX + tooltipWidth + 20 > chartArea.right) {
+    adjustedX = tooltipX - tooltipWidth - 40
+  } else if (tooltipX < chartArea.left) {
+    adjustedX = chartArea.left + 10
+  }
+
+  if (tooltipY + tooltipHeight > chartArea.bottom) {
+    adjustedY = tooltipY - tooltipHeight
+  } else if (tooltipY < chartArea.top) {
+    adjustedY = chartArea.top + 10
+  }
+
+  return { x: adjustedX, y: adjustedY }
+}
+
 // Class-based plugin implementation for isolated instances
 class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin {
   id = 'verticalLineAndHighlight'
@@ -267,23 +298,27 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
           const currentIndex = activePoint.index
           const months = chart.data.labels || []
 
+          const clickTooltipContent = [
+            {
+              label: chart.data.datasets[this.selectedPoint.datasetIndex].label,
+              value: chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
+              category: DATA_CATEGORIES.FORECAST,
+              color: chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
+              goodsDataSourceNo: (chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
+            },
+          ]
+
+          const adjustedPosition = adjustTooltipPosition(x, y, chart)
+
           options.onPointerMove?.({
             plugin: this,
             chart,
             tooltip: {
-              x,
-              y,
+              x: adjustedPosition.x,
+              y: adjustedPosition.y,
               label: formatDate(months[currentIndex], 'MMMM YYYY'),
               viewDetail: true,
-              content: [
-                {
-                  label: chart.data.datasets[this.selectedPoint.datasetIndex].label,
-                  value: chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
-                  category: DATA_CATEGORIES.FORECAST,
-                  color: chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
-                  goodsDataSourceNo: (chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
-                },
-              ],
+              content: clickTooltipContent,
             },
           })
         }
@@ -655,12 +690,14 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
             label = formatDate(months[currentIndex], 'MMMM YYYY')
           }
 
+          const adjustedPosition = adjustTooltipPosition(this.mousePosition.x, this.mousePosition.y, chart)
+
           options.onPointerMove?.({
             plugin: this,
             chart,
             tooltip: {
-              x: this.mousePosition.x,
-              y: this.mousePosition.y,
+              x: adjustedPosition.x,
+              y: adjustedPosition.y,
               label,
               viewDetail: false,
               content: this.tooltipContent,
