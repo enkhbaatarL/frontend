@@ -42,16 +42,14 @@ const DataItem = ({ data, index, onClick }: { data: ProcessedMarketDataItem; ind
   const color = isPositive ? '#3C8A36' : direction === 'down' ? '#A9141A' : 'gray.60'
 
   return (
-    <Box paddingY={3} borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'} position="relative">
-      <Typography
-        onClick={isPermitted ? onClick : undefined}
-        fontWeight={600}
-        color="gray.70"
-        component="div"
-        mb="2px"
-        variant="fileName"
-        sx={{ WebkitLineClamp: 1, cursor: isPermitted ? 'pointer' : 'auto' }}
-      >
+    <Box
+      paddingY={3}
+      borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'}
+      position="relative"
+      onClick={isPermitted ? onClick : undefined}
+      sx={{ cursor: isPermitted ? 'pointer' : 'auto' }}
+    >
+      <Typography fontWeight={600} color="gray.70" component="div" mb="2px" variant="fileName" sx={{ WebkitLineClamp: 1 }}>
         {goodsDataSourceNm}
       </Typography>
       <Box sx={{ position: 'relative' }}>
