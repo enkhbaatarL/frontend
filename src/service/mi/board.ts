@@ -53,6 +53,7 @@ export interface INoticeInfo {
   status: string
   target: string
   isRead: boolean
+  createDt?: string
   auditInfo: IAuditInfo
 }
 

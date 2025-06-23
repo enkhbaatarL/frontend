@@ -2,6 +2,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { Badge, Box, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -228,6 +229,13 @@ const MIHeaderNotice = () => {
   const { user, accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
+  const { data: filterOptions } = useQuery({
+    queryKey: ['getNoticeFilter'],
+    queryFn: async () => await boardService.getNoticeFilter(),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
   // 읽지 않은 알림이나 공지사항이 있는지 확인
   const hasUnreadItems = useMemo(() => {
     const hasUnreadNotices = notices.some((notice) => !notice.isRead)
@@ -366,8 +374,11 @@ const MIHeaderNotice = () => {
                   key={notice.bulletinNo}
                   trend={'down'} // 미사용
                   title={notice.bulletinTitleName}
-                  subtitle={notice.bulletinCategorySeparateCode}
-                  date={dayjs(notice.auditInfo?.createDt).format('YYYY-MM-DD')}
+                  subtitle={
+                    filterOptions?.category.find((item) => item.key === notice.bulletinCategorySeparateCode)?.value ??
+                    notice.bulletinCategorySeparateCode
+                  }
+                  date={dayjs(notice.createDt).format('YYYY-MM-DD')}
                   isRead={notice.isRead}
                   onClick={handleNoticeClick}
                 />
