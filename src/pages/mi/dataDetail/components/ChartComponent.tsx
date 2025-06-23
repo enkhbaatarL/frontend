@@ -403,6 +403,11 @@ const ChartComponent = ({
               onChange={(_) => {
                 setUseSaveLastSetting((prev) => !prev)
               }}
+              sx={{
+                '& .MuiSwitch-switchBase:not(.Mui-checked) + .MuiSwitch-track': {
+                  backgroundColor: 'gray.50',
+                },
+              }}
             />
             <Typography variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
               Save last setting
