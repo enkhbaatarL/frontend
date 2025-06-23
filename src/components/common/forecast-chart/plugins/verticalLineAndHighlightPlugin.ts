@@ -523,7 +523,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                     }, {})
 
                     // Sort datasets by their base name
-                    const sortedBaseNames = Object.keys(groupedDatasets).sort()
+                    const sortedBaseNames = Object.keys(groupedDatasets).sort((a, b) => a.localeCompare(b))
 
                     // Create ordered tooltip content
                     this.tooltipContent = []
