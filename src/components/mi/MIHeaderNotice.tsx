@@ -107,19 +107,19 @@ const AlertItem = ({ id, trend, title, subtitle, date, isRead, onClick }: Notice
         </Typography>
       }
       secondary={
-        <Typography variant="body2R14" color={isRead ? 'gray.60' : 'gray.70'} component="div">
-          <Typography variant="chip1" marginRight={1.5} color={isRead ? 'gray.60' : 'gray.70'} component="span">
-            {trend === 'up' ? '상승' : '하락'}
+        <Box display={'flex'} justifyContent={'space-between'} alignItems={'flex-end'}>
+          <Typography variant="body2R14" color={isRead ? 'gray.60' : 'gray.70'} component="div">
+            <Typography variant="chip1" marginRight={1.5} color={isRead ? 'gray.60' : 'gray.70'} component="span">
+              {trend === 'up' ? '상승' : '하락'}
+            </Typography>
+            {subtitle}
           </Typography>
-          {subtitle}
-        </Typography>
+          <Typography variant="body3R12" color="gray.60">
+            {date}
+          </Typography>
+        </Box>
       }
     />
-    <Box sx={{ minHeight: '43px' }}>
-      <Typography variant="body3R12" color="gray.60">
-        {date}
-      </Typography>
-    </Box>
   </ListItem>
 )
 
@@ -205,16 +205,16 @@ const NoticeItem = ({ id, title, subtitle, date, isRead, onClick }: NoticeItemPr
         </Typography>
       }
       secondary={
-        <Typography variant="body2R14" color={isRead ? 'gray.60' : 'gray.70'} component="div">
-          {subtitle}
-        </Typography>
+        <Box display={'flex'} justifyContent={'space-between'} alignItems={'flex-end'}>
+          <Typography variant="body2R14" color={isRead ? 'gray.60' : 'gray.70'} component="div">
+            {subtitle}
+          </Typography>
+          <Typography variant="body3R12" color="gray.60">
+            {date}
+          </Typography>
+        </Box>
       }
     />
-    <Box sx={{ minHeight: '43px' }}>
-      <Typography variant="body3R12" color="gray.60">
-        {date}
-      </Typography>
-    </Box>
   </ListItem>
 )
 
