@@ -33,26 +33,30 @@ export const downloadChart = async ({ filename = 'chart.png', target, remove = [
       elements.forEach((element) => element.remove())
     })
 
-    const originalCanvas = targetElement.querySelector('canvas')
-    if (originalCanvas) {
-      const clonedCanvas = originalCanvas.cloneNode(true) as HTMLCanvasElement
-      const clonedCanvasContext = clonedCanvas.getContext('2d')
+    const originalCanvases = targetElement.querySelectorAll('canvas')
+    if (originalCanvases.length > 0) {
+      originalCanvases.forEach((originalCanvas, index) => {
+        const clonedCanvas = originalCanvas.cloneNode(true) as HTMLCanvasElement
+        const clonedCanvasContext = clonedCanvas.getContext('2d')
 
-      const scale = 4
-      clonedCanvas.width = originalCanvas.width * scale
-      clonedCanvas.height = originalCanvas.height * scale
-      clonedCanvas.style.width = originalCanvas.style.width
-      clonedCanvas.style.height = originalCanvas.style.height
+        const scale = 4
+        clonedCanvas.width = originalCanvas.width * scale
+        clonedCanvas.height = originalCanvas.height * scale
+        clonedCanvas.style.width = originalCanvas.style.width
+        clonedCanvas.style.height = originalCanvas.style.height
 
-      if (clonedCanvasContext) {
-        clonedCanvasContext.scale(scale, scale)
-        clonedCanvasContext.drawImage(originalCanvas, 0, 0)
-      }
+        if (clonedCanvasContext) {
+          clonedCanvasContext.scale(scale, scale)
+          if (originalCanvas.width > 0 && originalCanvas.height > 0) {
+            clonedCanvasContext.drawImage(originalCanvas, 0, 0)
+          }
+        }
 
-      const clonedCanvasElement = clonedElement.querySelector('canvas')
-      if (clonedCanvasElement) {
-        clonedCanvasElement.parentNode?.replaceChild(clonedCanvas, clonedCanvasElement)
-      }
+        const clonedCanvasElements = clonedElement.querySelectorAll('canvas')
+        if (clonedCanvasElements[index]) {
+          clonedCanvasElements[index].parentNode?.replaceChild(clonedCanvas, clonedCanvasElements[index])
+        }
+      })
     }
 
     const canvas = await html2canvas(clonedElement, {
@@ -114,7 +118,9 @@ export const downloadChart = async ({ filename = 'chart.png', target, remove = [
     })
 
     if (ctx) {
-      ctx.drawImage(finalTempCanvas, padding, padding)
+      if (finalTempCanvas && finalTempCanvas.width > 0 && finalTempCanvas.height > 0) {
+        ctx.drawImage(finalTempCanvas, padding, padding)
+      }
     }
 
     const link = document.createElement('a')

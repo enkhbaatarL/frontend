@@ -9,7 +9,6 @@ interface DocumentItemProps {
   goodsDataNm: string
   modifyDt: string
   providerNm: string
-  id: number
   index: number
   onClick: () => void
 }
@@ -25,15 +24,8 @@ interface LatestInsightsData {
 }
 
 const DataItem = ({ goodsDataNm, modifyDt, providerNm, index, onClick }: DocumentItemProps) => (
-  <Box paddingY={3} borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'}>
-    <Typography
-      onClick={onClick}
-      fontWeight={600}
-      color="gray.70"
-      component="div"
-      sx={{ WebkitLineClamp: 1, cursor: 'pointer' }}
-      variant="fileName"
-    >
+  <Box paddingY={3} borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'} onClick={onClick} sx={{ cursor: 'pointer' }}>
+    <Typography fontWeight={600} color="gray.70" component="div" sx={{ WebkitLineClamp: 1 }} variant="fileName">
       {goodsDataNm}
     </Typography>
     <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
@@ -65,7 +57,6 @@ const LatestData = ({ dataList }: { dataList: LatestInsightsData[] }) => {
           <DataItem
             key={item.goodsDataNo}
             index={index}
-            id={item.goodsDataNo}
             goodsDataNm={item.goodsDataNm}
             modifyDt={item.modifyDt}
             providerNm={item.providerNm}

@@ -339,7 +339,9 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
       ctx.save()
 
       if (this.markerImage) {
-        ctx.drawImage(this.markerImage, x - 6, topY - 13, 13, 8)
+        if (this.markerImage.complete && this.markerImage.naturalWidth > 0) {
+          ctx.drawImage(this.markerImage, x - 6, topY - 13, 13, 8)
+        }
       }
 
       ctx.beginPath()
@@ -366,13 +368,15 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
       ctx.restore()
 
       if (activeImage) {
-        ctx.drawImage(
-          activeImage,
-          this.selectedPoint.element.x - HOVER_INDICATOR.SIZE / 2,
-          this.selectedPoint.element.y - HOVER_INDICATOR.SIZE / 2,
-          HOVER_INDICATOR.SIZE,
-          HOVER_INDICATOR.SIZE,
-        )
+        if (activeImage.complete && activeImage.naturalWidth > 0) {
+          ctx.drawImage(
+            activeImage,
+            this.selectedPoint.element.x - HOVER_INDICATOR.SIZE / 2,
+            this.selectedPoint.element.y - HOVER_INDICATOR.SIZE / 2,
+            HOVER_INDICATOR.SIZE,
+            HOVER_INDICATOR.SIZE,
+          )
+        }
       }
     }
 
@@ -519,7 +523,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                     }, {})
 
                     // Sort datasets by their base name
-                    const sortedBaseNames = Object.keys(groupedDatasets).sort()
+                    const sortedBaseNames = Object.keys(groupedDatasets).sort((a, b) => a.localeCompare(b))
 
                     // Create ordered tooltip content
                     this.tooltipContent = []
@@ -570,11 +574,17 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                   }
 
                   if (this.interactionState === PointInteractionState.CLICKED && mouseIsNear) {
-                    ctx.drawImage(hoverImages[`${dataset.label} Active`], xPos, yPos, size, size)
+                    const activeImage = hoverImages[`${dataset.label} Active`]
+                    if (activeImage && activeImage.complete && activeImage.naturalWidth > 0) {
+                      ctx.drawImage(activeImage, xPos, yPos, size, size)
+                    }
                   } else if (this.interactionState === PointInteractionState.HOVER_NEAR && mouseIsNear) {
                     // Draw a subtle highlight circle around the point
-                    ctx.drawImage(hoverImages[`${dataset.label} Hover`], xPos, yPos, size, size)
-                  } else {
+                    const hoverImage = hoverImages[`${dataset.label} Hover`]
+                    if (hoverImage && hoverImage.complete && hoverImage.naturalWidth > 0) {
+                      ctx.drawImage(hoverImage, xPos, yPos, size, size)
+                    }
+                  } else if (img.complete && img.naturalWidth > 0) {
                     ctx.drawImage(img, xPos, yPos, size, size)
                   }
                 }
@@ -623,11 +633,17 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
               const img = hoverImages[`${dataset.label}`]
 
               if (this.interactionState === PointInteractionState.CLICKED) {
-                ctx.drawImage(hoverImages[`${dataset.label} Active`], xPos, yPos, size, size)
+                const activeImage = hoverImages[`${dataset.label} Active`]
+                if (activeImage && activeImage.complete && activeImage.naturalWidth > 0) {
+                  ctx.drawImage(activeImage, xPos, yPos, size, size)
+                }
               } else if (this.interactionState === PointInteractionState.HOVER_NEAR) {
                 // Draw a subtle highlight circle around the point
-                ctx.drawImage(hoverImages[`${dataset.label} Hover`], xPos, yPos, size, size)
-              } else {
+                const hoverImage = hoverImages[`${dataset.label} Hover`]
+                if (hoverImage && hoverImage.complete && hoverImage.naturalWidth > 0) {
+                  ctx.drawImage(hoverImage, xPos, yPos, size, size)
+                }
+              } else if (img && img.complete && img.naturalWidth > 0) {
                 ctx.drawImage(img, xPos, yPos, size, size)
               }
             }

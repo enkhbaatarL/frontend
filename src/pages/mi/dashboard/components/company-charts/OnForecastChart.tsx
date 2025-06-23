@@ -209,21 +209,22 @@ const ForecastChart = (props: ForecastChartProps) => {
     [selectedContent],
   )
 
-  const handleRefresh = useCallback((resetChart?: boolean) => {
-    if (resetChart) {
-      setDatasets((prevDatasets) => {
-        const newDatasets = [...prevDatasets]
+  const handleRefresh = useCallback(
+    (resetChart?: boolean) => {
+      if (resetChart) {
+        const newDatasets = [...datasets]
         newDatasets.forEach((dataset) => {
           if (dataset.hidden) {
             dataset.hidden = false
           }
         })
-        return newDatasets
-      })
-    }
-    setTooltip((prev) => ({ ...prev, visible: false }))
-    verticalLineAndHighlightPlugin.reset()
-  }, [])
+        setDatasets(newDatasets)
+      }
+      tooltip.onClose?.()
+      verticalLineAndHighlightPlugin.reset()
+    },
+    [datasets, tooltip],
+  )
 
   const handleDownload = useCallback(
     debounce(async () => {
@@ -317,7 +318,7 @@ const ForecastChart = (props: ForecastChartProps) => {
     if (!selectedContent) {
       handleRefresh()
     }
-  }, [selectedContent, handleRefresh])
+  }, [selectedContent])
 
   return (
     <Box ref={captureRef} width={'100%'} maxWidth={'100%'} sx={{ boxSizing: 'border-box' }}>

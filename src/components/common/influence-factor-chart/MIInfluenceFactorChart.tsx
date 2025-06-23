@@ -401,7 +401,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
             </Box>
             <Box>
               <Typography variant="body2R14" color="gray.70">
-                {factorSummary}
+                {!factorSummary ? '-' : factorSummary}
               </Typography>
             </Box>
           </Box>
