@@ -35,7 +35,7 @@ const DataDetailPage = () => {
   const { state } = useLocation()
   const [goodsDataSourceNo, setGoodsDataSourceNo] = useState<number>()
 
-  const [startDate, setStartDate] = useState<string>(dayjs().subtract(1, 'month').format('YYYYMMDD'))
+  const [startDate, setStartDate] = useState<string>(dayjs().subtract(1, 'year').format('YYYYMMDD'))
   const [endDate, setEndDate] = useState<string>(dayjs().format('YYYYMMDD'))
 
   const [rawSize, setRawSize] = useState<number>(10)
