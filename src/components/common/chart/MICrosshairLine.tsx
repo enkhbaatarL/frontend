@@ -146,11 +146,39 @@ const MICrosshairLine = forwardRef<MICrosshairLineHandle, MICrosshairLineProps>(
     [volumeChartRef],
   )
 
+  const handleMouseOut = useCallback(() => {
+    const canvas = canvasRef.current
+    if (canvas) {
+      const ctx = canvas.getContext('2d')
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
+
+    const chart = chartRef.current
+    const mainIndicatorContainer = chart?.canvas?.parentElement?.querySelector('#main-indicator-container')
+    if (mainIndicatorContainer) {
+      mainIndicatorContainer.innerHTML = ''
+    }
+
+    setMousePosition(null)
+    if (volumeChartRef?.current) {
+      volumeChartRef.current.update('none')
+    }
+
+    onTooltipChange({ tooltip: null })
+  }, [chartRef, onTooltipChange, volumeChartRef])
+
   const updateCrosshairPosition = useCallback(
     (mouseX: number, mouseY: number, xScaleIndex: number) => {
       const chart = chartRef.current
       const canvas = canvasRef.current
       if (!chart || !canvas) return
+
+      const formattedDate = getFormattedDateFromChart(chart, xScaleIndex)
+
+      if (formattedDate === '1970-01-01') {
+        handleMouseOut()
+        return
+      }
 
       let finalMousePosition: { x: number; y: number }
 
@@ -246,7 +274,6 @@ const MICrosshairLine = forwardRef<MICrosshairLineHandle, MICrosshairLineProps>(
       updateValueAndDateIndicators(chart, xScaleIndex, finalMousePosition)
 
       const tooltipContent: Record<string, TooltipContent> = {}
-      const formattedDate = getFormattedDateFromChart(chart, xScaleIndex)
 
       chart.data.datasets.forEach((dataset, index) => {
         const point = dataset.data.find((p) => typeof p === 'object' && p !== null && 'x' in p && p.x === xScaleIndex) as
@@ -287,7 +314,7 @@ const MICrosshairLine = forwardRef<MICrosshairLineHandle, MICrosshairLineProps>(
         y: mouseY,
       })
     },
-    [chartRef, volumeChartRef, isModifierKeyPressed, onTooltipChange],
+    [chartRef, volumeChartRef, isModifierKeyPressed, onTooltipChange, handleMouseOut],
   )
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
@@ -301,27 +328,6 @@ const MICrosshairLine = forwardRef<MICrosshairLineHandle, MICrosshairLineProps>(
       setIsModifierKeyPressed(false)
     }
   }, [])
-
-  const handleMouseOut = useCallback(() => {
-    const canvas = canvasRef.current
-    if (canvas) {
-      const ctx = canvas.getContext('2d')
-      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
-    }
-
-    const chart = chartRef.current
-    const mainIndicatorContainer = chart?.canvas?.parentElement?.querySelector('#main-indicator-container')
-    if (mainIndicatorContainer) {
-      mainIndicatorContainer.innerHTML = ''
-    }
-
-    setMousePosition(null)
-    if (volumeChartRef?.current) {
-      volumeChartRef.current.update('none')
-    }
-
-    onTooltipChange({ tooltip: null })
-  }, [chartRef, onTooltipChange, volumeChartRef])
 
   useEffect(() => {
     if (lastMousePosition && chartRef.current) {
