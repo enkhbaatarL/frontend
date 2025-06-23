@@ -135,8 +135,10 @@ const boardService = {
   /**
    * 공지사항 팝업을 조회합니다.
    */
-  async getNoticePopup(): Promise<INoticePopupInfo> {
-    const response: AxiosResponse<ICommonResponse<INoticePopupInfo>> = await api.get('mi/bulletinboard/notices/popup')
+  async getNoticePopup(customerCompanyNo?: number | null): Promise<INoticePopupInfo> {
+    const response: AxiosResponse<ICommonResponse<INoticePopupInfo>> = await api.get('mi/bulletinboard/notices/popup', {
+      params: { customerCompanyNo },
+    })
 
     return response.data.data
   },

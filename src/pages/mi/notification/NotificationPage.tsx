@@ -70,7 +70,7 @@ const NotificationPage = () => {
             tableProps={{
               loading: isLoading,
               noRowMessage: '설정된 알람이 없습니다.',
-              rowId: 'goodsDataNo',
+              rowId: 'goodsDataSourceNo',
               rows: data?.detail,
               onRowClick: ({ row }) => {
                 navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`, { state: { goodsDataSrcNo: row.goodsDataSourceNo } })

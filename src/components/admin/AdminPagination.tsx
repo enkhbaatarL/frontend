@@ -24,7 +24,7 @@ const AdminPagination = ({ page = 1, count = 0, onPageChange, disabled = false }
       <IconButton
         size="small"
         onClick={() => onPageChange?.(Math.min(currentGroupStart - 5, count))}
-        disabled={disabled || page <= 1}
+        disabled={disabled || page <= 5}
         sx={{ margin: '0 4px' }}
       >
         <NavigateBeforeIcon fontSize="small" />
@@ -51,7 +51,7 @@ const AdminPagination = ({ page = 1, count = 0, onPageChange, disabled = false }
       <IconButton
         size="small"
         onClick={() => onPageChange?.(Math.min(currentGroupEnd + 1, count))}
-        disabled={disabled || page >= count}
+        disabled={disabled || currentGroupEnd >= count}
         sx={{ margin: '0 4px', borderRadius: '4px' }}
       >
         <NavigateNextIcon fontSize="small" />
