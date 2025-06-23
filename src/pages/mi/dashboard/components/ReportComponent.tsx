@@ -33,11 +33,11 @@ interface ReportComponentProps {
   companyNo?: number
 }
 
-const formatErrorRateValue = (value: number) => {
+/*const formatErrorRateValue = (value: number) => {
   if (value > 0) return { color: '#498B47', displayValue: `+${value.toFixed(2)}` }
   if (value < 0) return { color: '#CC4D50', displayValue: `${value.toFixed(2)}` }
   return { color: '#212529', displayValue: value }
-}
+}*/
 
 const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   const [monthSelect, setMonthSelect] = useState('')
@@ -135,10 +135,10 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         align: 'center',
         renderCell: ({ row }) => {
           const value = row[chart.resultDate]
-          if (row.permission && row.id === 'ERROR_RATE') {
+          /*          if (row.permission && row.id === 'ERROR_RATE') {
             const { color, displayValue } = formatErrorRateValue(value)
             return <MITableCell value={displayValue} typography={{ color }} />
-          }
+          }*/
           if (row.permission) {
             return <MITableCell value={value} />
           }
@@ -341,7 +341,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             ...actualRowData,
           })
 
-          const correspondingForecast = chartData.charts.find(
+          /*          const correspondingForecast = chartData.charts.find(
             (forecastChart) =>
               forecastChart.chartLineDescription === chart.chartLineDescription && forecastChart.forecastChartLines.dataType === 'FORECAST',
           )
@@ -377,7 +377,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
               permission: chart.actualChartLines.isPermitted && correspondingForecast.forecastChartLines.isPermitted,
               ...errorRowData,
             })
-          }
+          }*/
         }
 
         return rows
