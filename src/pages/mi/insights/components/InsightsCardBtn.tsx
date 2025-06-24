@@ -14,6 +14,7 @@ import rsrchBgImg from '@/assets/research-presentation-bg.png'
 import edBgImg from '@/assets/the-edge-bg.png'
 import MIBage from '@/components/common/bage/MIBage'
 import MILine from '@/components/common/divider/MILine'
+import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 
 export type ReportType =
   | 'A_INSIGHT'
@@ -33,6 +34,7 @@ export interface Report {
   source: string
   typeId: string
   goodsNo?: number
+  viewable: boolean
 }
 interface InsightsCardBtnProps {
   report: Report
@@ -42,6 +44,8 @@ interface InsightsCardBtnProps {
 const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
   const [isHover, setIsHover] = useState(false)
   const navigate = useNavigate()
+
+  const isPermitted = useMemo(() => report.viewable, [report.viewable])
 
   const backgroundImageUrl = useMemo(() => {
     if (!isHover) {
@@ -113,17 +117,20 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
     <Box
       sx={{
         position: 'relative',
-        cursor: 'pointer',
+        cursor: isPermitted ? 'pointer' : 'default',
         transition: 'all 0.3s ease-in-out',
         transform: isHover ? 'scale3d(0.994, 0.994, 0.994)' : 'scale3d(1, 1, 1)',
         backgroundColor: 'transparent',
         boxShadow: isHover ? 'none' : '0px 5px 15px rgba(0, 0, 0, 0.1)',
         borderRadius: 1,
         overflow: 'hidden',
+        userSelect: 'none',
       }}
-      onMouseOver={() => setIsHover(true)}
+      onMouseOver={() => isPermitted && setIsHover(true)}
       onMouseOut={() => setIsHover(false)}
       onClick={() => {
+        if (!isPermitted) return
+
         navigate(`/mi/data-detail/${report.goodsNo}/${report.typeId}`)
       }}
     >
@@ -180,12 +187,24 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
             color: 'white',
             mt: 4.5,
             mb: 'auto',
+            filter: !isPermitted ? 'blur(8px)' : 'none',
           }}
           component="h4"
           variant="titleCardInsight"
         >
-          {report.title}
+          {isPermitted ? report.title : 'Don\'t have permission to view'}
         </Typography>
+        {!isPermitted && (
+          <Box
+            display={'flex'}
+            alignItems={'center'}
+            justifyContent={'center'}
+            position={'absolute'}
+            sx={{ inset: '0px -6px', color: '#E9ECEF' }}
+          >
+            <LockOutlinedIcon width={28} height={28} />
+          </Box>
+        )}
         <Grid
           container
           alignItems="center"

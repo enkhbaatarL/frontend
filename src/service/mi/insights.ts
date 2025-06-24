@@ -11,6 +11,7 @@ export interface IFocusedInfo {
   goodsNo: number
   goodsDataNm: string
   goodsNm: string
+  viewable: boolean
 }
 export interface IAdvancedFilterItem {
   codeNm: string

@@ -128,6 +128,7 @@ const InsightsPage = () => {
         source: item.providerNm,
         typeId: String(item.goodsDataNo),
         goodsNo: item.goodsNo,
+        viewable: item.viewable,
       })),
     [focusedList],
   )
@@ -273,14 +274,14 @@ const InsightsPage = () => {
                 minWidth={160}
                 fullWidth
                 options={sortOptions}
-                value={filter.sort || 'NEWEST'}
+                value={filter.sort ?? 'NEWEST'}
                 onChange={(e) => updateFilterWithSearch('sort', String(e.target.value ?? 'NEWEST'))}
               />
               <MISelect
                 minWidth={160}
                 fullWidth
                 options={periodOptions}
-                value={filter.period || 'ALL_DATES'}
+                value={filter.period ?? 'ALL_DATES'}
                 onChange={(e) => updateFilterWithSearch('period', String(e.target.value ?? 'ALL_DATES'))}
               />
             </Grid>
