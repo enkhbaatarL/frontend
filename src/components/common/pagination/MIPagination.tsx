@@ -33,7 +33,7 @@ const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, di
     const totalElements = data?.totalElements ?? 0
     const start = (page - 1) * pageSize + 1
     const end = Math.min(page * pageSize, totalElements)
-    return `${start}-${end} of ${totalElements.toLocaleString()}`
+    return `${start.toLocaleString()}-${end.toLocaleString()} of ${totalElements.toLocaleString()}`
   }, [data?.totalElements, page, size])
 
   // 네비게이션 버튼 활성화 조건
