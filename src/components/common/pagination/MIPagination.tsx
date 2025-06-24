@@ -33,8 +33,26 @@ const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, di
     const totalElements = data?.totalElements ?? 0
     const start = (page - 1) * pageSize + 1
     const end = Math.min(page * pageSize, totalElements)
-    return `${start}-${end} of ${totalElements.toLocaleString()}`
+    return `${start.toLocaleString()}-${end.toLocaleString()} of ${totalElements.toLocaleString()}`
   }, [data?.totalElements, page, size])
+
+  // 네비게이션 버튼 활성화 조건
+  const canGoToFirst = page > 1 && currentGroupStart > 1
+  const canGoToPrevGroup = currentGroupStart > 1
+  const canGoToNextGroup = currentGroupEnd < count && count > groupSize
+  const canGoToLast = page < count && currentGroupEnd < count
+
+  // 네비게이션 핸들러
+  const goToFirstPage = () => onPageChange?.(1)
+  const goToPrevGroup = () => {
+    const prevGroupEnd = currentGroupStart - 1
+    onPageChange?.(prevGroupEnd) // 이전 그룹의 마지막 페이지로 이동
+  }
+  const goToNextGroup = () => {
+    const nextGroupStart = currentGroupEnd + 1
+    onPageChange?.(Math.min(nextGroupStart, count)) // 다음 그룹의 첫 페이지로 이동
+  }
+  const goToLastPage = () => onPageChange?.(count)
 
   return data ? (
     <Box display="flex" alignItems="center" justifyContent="space-between" pt="20px" pb="10px">
@@ -43,22 +61,29 @@ const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, di
       </Typography>
       {pageNumbers.length !== 0 ? (
         <Box display="flex" alignItems="center" sx={{ justifyContent: 'center' }}>
+          {/* 첫 번째 페이지 */}
           <IconButton
             size="small"
-            onClick={() => onPageChange?.(1)}
-            disabled={disabled || page <= 1}
+            onClick={goToFirstPage}
+            disabled={disabled || !canGoToFirst}
             sx={{ margin: '0 4px', '&:hover': { color: 'primary.main', backgroundColor: 'transparent' } }}
+            title="첫 번째 페이지"
           >
             <KeyboardDoubleArrowLeftIcon fontSize="small" />
           </IconButton>
+
+          {/* 이전 그룹 */}
           <IconButton
             size="small"
-            onClick={() => onPageChange?.(Math.min(currentGroupStart - 5, count))}
-            disabled={disabled || page <= 5}
+            onClick={goToPrevGroup}
+            disabled={disabled || !canGoToPrevGroup}
             sx={{ margin: '0 4px', '&:hover': { color: 'primary.main', backgroundColor: 'transparent' } }}
+            title="이전 그룹"
           >
             <NavigateBeforeIcon fontSize="small" />
           </IconButton>
+
+          {/* 페이지 번호들 */}
           {pageNumbers.map((i) => (
             <PaginationItem
               key={i}
@@ -70,7 +95,6 @@ const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, di
                 fontSize: 14,
                 fontWeight: 600,
                 color: 'primary.main',
-                width: 26,
                 height: 26,
                 minWidth: 26,
                 margin: '0 4px',
@@ -78,19 +102,25 @@ const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, di
               }}
             />
           ))}
+
+          {/* 다음 그룹 */}
           <IconButton
             size="small"
-            onClick={() => onPageChange?.(Math.min(currentGroupEnd + 1, count))}
-            disabled={disabled || currentGroupEnd >= count}
+            onClick={goToNextGroup}
+            disabled={disabled || !canGoToNextGroup}
             sx={{ margin: '0 4px', '&:hover': { color: 'primary.main', backgroundColor: 'transparent' } }}
+            title="다음 그룹"
           >
             <NavigateNextIcon fontSize="small" />
           </IconButton>
+
+          {/* 마지막 페이지 */}
           <IconButton
             size="small"
-            onClick={() => onPageChange?.(count)}
-            disabled={disabled || currentGroupEnd === page}
+            onClick={goToLastPage}
+            disabled={disabled || !canGoToLast}
             sx={{ margin: '0 4px', '&:hover': { color: 'primary.main', backgroundColor: 'transparent' } }}
+            title="마지막 페이지"
           >
             <KeyboardDoubleArrowRightIcon fontSize="small" />
           </IconButton>

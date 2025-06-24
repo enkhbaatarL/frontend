@@ -28,51 +28,65 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
 
   const shouldShowLoading = !companyNo || !monthSelect || isLoading || isFetching
 
-  const renderSummaryContent = () => {
-    if (!data?.summaries || data.summaries.length === 0) {
-      return ''
+  // 간단한 연산이므로 useMemo 불필요
+  const summaryContent =
+    !data?.summaries || data.summaries.length === 0
+      ? ''
+      : data.summaries
+        .map((summary: IDashboardSummary, index: number) => {
+          const content =
+              index !== 0 ? `${summary.explanatoryTitleContent}\n${summary.explanatorySummaryContent}` : summary.explanatorySummaryContent
+          return content
+        })
+        .join('\n\n')
+
+  // 첫 번째 summary의 title content (이것도 useMemo 불필요)
+  const firstSummaryTitle = data?.summaries?.[0]?.explanatoryTitleContent || ''
+
+  // useEffect에서 summaryContent를 의존성에 추가
+  useEffect(() => {
+    if (!contentRef.current || !summaryContent || shouldShowLoading) {
+      return undefined
     }
 
-    return data.summaries.map((summary: IDashboardSummary, index: number) => (
-      <Typography key={index} variant="subtext5" color="#242424" component="div">
-        {index !== 0 && summary.explanatoryTitleContent}
-        {index !== 0 && <br />}
-        {summary.explanatorySummaryContent}
-      </Typography>
-    ))
-  }
+    const element = contentRef.current
 
-  useEffect(() => {
-    if (contentRef.current && data?.summaries && !shouldShowLoading) {
-      const element = contentRef.current
+    // 올바른 overflow 감지 방법 (항상 4줄 제한 상태에서 측정)
+    const checkOverflow = () => {
+      // 현재 상태 저장
+      const currentWebkitLineClamp = element.style.webkitLineClamp
+      const currentDisplay = element.style.display
+      const currentWebkitBoxOrient = element.style.webkitBoxOrient
 
-      // 임시로 line-clamp 제거하여 전체 높이 측정
-      const originalWebkitLineClamp = element.style.webkitLineClamp
-      const originalDisplay = element.style.display
-      const originalWebkitBoxOrient = element.style.webkitBoxOrient
-
-      element.style.webkitLineClamp = 'unset'
-      element.style.display = 'block'
-      element.style.webkitBoxOrient = 'unset'
-
-      const fullHeight = element.scrollHeight
-
-      // 다시 4줄로 제한하여 높이 측정
+      // 강제로 4줄 제한 상태로 설정
       element.style.webkitLineClamp = '4'
       element.style.display = '-webkit-box'
       element.style.webkitBoxOrient = 'vertical'
 
-      const clampedHeight = element.scrollHeight
+      const clientHeight = element.clientHeight
+      const scrollHeight = element.scrollHeight
 
-      // 원래 스타일로 복원
-      element.style.webkitLineClamp = originalWebkitLineClamp
-      element.style.display = originalDisplay
-      element.style.webkitBoxOrient = originalWebkitBoxOrient
+      // 원래 상태로 복원
+      element.style.webkitLineClamp = currentWebkitLineClamp
+      element.style.display = currentDisplay
+      element.style.webkitBoxOrient = currentWebkitBoxOrient
 
-      // 전체 높이가 4줄 높이보다 크면 버튼 표시
-      setShouldShowButton(fullHeight > clampedHeight)
+      // scrollHeight가 clientHeight보다 크면 내용이 잘린 것
+      setShouldShowButton(scrollHeight > clientHeight)
     }
-  }, [data?.summaries, shouldShowLoading])
+
+    // 약간의 지연을 주어 DOM이 완전히 렌더링된 후 측정
+    const timeoutId = setTimeout(checkOverflow, 50)
+
+    // ResizeObserver로 크기 변화 감지
+    const resizeObserver = new ResizeObserver(checkOverflow)
+    resizeObserver.observe(element)
+
+    return () => {
+      clearTimeout(timeoutId)
+      resizeObserver.disconnect()
+    }
+  }, [summaryContent, shouldShowLoading]) // showMore는 의존성에서 제외
 
   const handleDownload = async () => {
     try {
@@ -105,24 +119,29 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
           </MIButton>
         </Box>
 
-        {data?.summaries && data.summaries.length > 0 && (
+        {firstSummaryTitle && (
           <Typography mb={1.5} variant={'subtext5'} fontWeight={600} color={'gray.90'} component={'div'}>
-            {data.summaries[0].explanatoryTitleContent}
+            {firstSummaryTitle}
           </Typography>
         )}
 
-        <Box
+        <Typography
           ref={contentRef}
+          variant={'subtext5'}
           mb={shouldShowButton ? 5 : 0}
           sx={{
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: showMore ? 'unset' : '4',
             WebkitBoxOrient: 'vertical',
+            whiteSpace: 'pre-line', // 줄바꿈 처리
+            lineHeight: 1.5, // 명시적으로 line-height 설정
           }}
+          color={'#242424'}
+          component={'div'}
         >
-          {renderSummaryContent()}
-        </Box>
+          {summaryContent}
+        </Typography>
 
         {shouldShowButton && <MIButtonViewMore onClick={() => setShowMore(!showMore)} state={showMore ? 'less' : 'more'} />}
       </Box>
