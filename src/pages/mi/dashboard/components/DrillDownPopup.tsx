@@ -91,7 +91,7 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
             </Box>
             <Box>
               <Typography variant="messageText1" color="#212529" sx={{ marginRight: '2px' }}>
-                {selectedContent?.value}
+                {selectedContent?.value.toLocaleString()}
               </Typography>
               <Typography variant="body2SB14" color="#212529">
                 USD/bb

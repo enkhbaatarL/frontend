@@ -42,6 +42,37 @@ const initialTooltip: MIForecastChartTooltipProps = {
   onClose: () => {},
 }
 
+const adjustTooltipPosition = (tooltipX: number, tooltipY: number, chart: ChartJS) => {
+  const chartArea = chart.chartArea
+
+  const tooltipElement = document.querySelector('.mi-forecast-chart-tooltip') as HTMLElement
+  let tooltipWidth = 300
+  let tooltipHeight = 120
+
+  if (tooltipElement) {
+    const rect = tooltipElement.getBoundingClientRect()
+    tooltipWidth = rect.width
+    tooltipHeight = rect.height
+  }
+
+  let adjustedX = tooltipX
+  let adjustedY = tooltipY
+
+  if (tooltipX + tooltipWidth + 20 > chartArea.right) {
+    adjustedX = tooltipX - tooltipWidth - 40
+  } else if (tooltipX < chartArea.left) {
+    adjustedX = chartArea.left + 10
+  }
+
+  if (tooltipY + tooltipHeight > chartArea.bottom) {
+    adjustedY = tooltipY - tooltipHeight
+  } else if (tooltipY < chartArea.top) {
+    adjustedY = chartArea.top + 10
+  }
+
+  return { x: adjustedX, y: adjustedY }
+}
+
 const MIDrillDownChart = (props: MIDrillDownChartProps) => {
   const { height, months, datasets, topLabel, bottomLabel } = props
   const chartRef = useRef<ChartJS | null>(null)
@@ -86,13 +117,15 @@ const MIDrillDownChart = (props: MIDrillDownChartProps) => {
           const originalValue = datasets[datasetIndex]?.data[originalIndex]
           const originalLabel = months[originalIndex]
 
+          const adjustedPosition = adjustTooltipPosition(x + 20 + 20, y, chart)
+
           setTooltip({
             minWidth: 293,
             visible: true,
             viewDetail: false,
             isSimple: true,
-            top: y,
-            left: x + 20 + 20,
+            top: adjustedPosition.y,
+            left: adjustedPosition.x,
             label: formatDate(originalLabel ?? chartLabel, 'MMMM YYYY'),
             content: [
               {

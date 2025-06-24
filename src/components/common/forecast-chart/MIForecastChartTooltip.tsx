@@ -27,7 +27,16 @@ const ChartToolTipItem = (props: { label: string; value: number; category: strin
 
   return (
     <Box sx={{ minWidth: `${minWidth}px`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Typography component={'div'} variant="body2M14" color="gray.70" px="4px" py="5px" display={'flex'} alignItems={'center'}>
+      <Typography
+        component={'div'}
+        variant="body2M14"
+        color="gray.70"
+        px="4px"
+        py="5px"
+        display={'flex'}
+        alignItems={'center'}
+        sx={{ whiteSpace: 'nowrap' }}
+      >
         <Box mr="6px" color={color ?? 'inherit'} display={'flex'} alignItems={'center'}>
           {icon}
         </Box>
@@ -35,12 +44,12 @@ const ChartToolTipItem = (props: { label: string; value: number; category: strin
         {label}
       </Typography>
       {category === DATA_CATEGORIES.FORECAST_ERROR ? (
-        <Typography variant="body2M14" color={value > 0 ? '#3C8A36' : '#A9141A'}>
+        <Typography variant="body2M14" color={value > 0 ? '#3C8A36' : '#A9141A'} sx={{ whiteSpace: 'nowrap' }}>
           {value > 0 ? '+' : ''}
           {formatValue(value)}
         </Typography>
       ) : (
-        <Typography variant="body2M14" color="gray.70">
+        <Typography variant="body2M14" color="gray.70" sx={{ whiteSpace: 'nowrap' }}>
           {formatValue(value)}
         </Typography>
       )}
