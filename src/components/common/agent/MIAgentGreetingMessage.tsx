@@ -46,13 +46,11 @@ const MIAgentGreetingMessage = ({ handleSendMessage }: Props) => {
   return (
     <Box width={'100%'} display={'flex'} justifyContent={'center'} alignItems={'center'} flexDirection={'column'} marginY={'24px'}>
       <Typography color="gray.90" variant="messageText1" marginBottom={'4px'}>
-        {t('오늘의 시장 인사이트, Mari에게 물어보세요.')}
+        {t('시장의 핵심 흐름을 한눈에, Mari에서 찾아보세요.')}
       </Typography>
-      {((majorQuestions ?? []).length !== 0 || isLoading) && (
-        <Typography color="gray.90" variant="messageText2" marginBottom={'20px'}>
-          {t('오늘의 상황을 반영한 추천 질문입니다')}
-        </Typography>
-      )}
+      <Typography color="gray.90" variant="messageText2" marginBottom={'20px'}>
+        {t('복잡한 시장 정보, 구조화된 인사이트로 정리합니다')}
+      </Typography>
       {isLoading ? (
         <Box display={'flex'} justifyContent={'center'} alignItems={'center'} height={'116px'}>
           <MIAgentSpinner />

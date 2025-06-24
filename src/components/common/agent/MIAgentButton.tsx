@@ -12,7 +12,8 @@ const GradientBox = styled(Box)(() => ({
   background: '#1D1F20',
   position: 'relative',
   borderRadius: '200px',
-  width: '140px',
+  minWidth: '140px',
+  width: 'auto',
   height: '56px',
   color: 'white',
   boxShadow: '2px 4px 40px 0px #276ACF4D, 0 0 0 1px rgba(0, 0, 0, 0.1)',
@@ -232,7 +233,7 @@ const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
           sx={{
             opacity: showChatWindow ? 0 : 1,
             visibility: showChatWindow ? 'hidden' : 'visible',
-            width: !showChatWindow ? '140px' : '0px',
+            width: !showChatWindow ? 'auto' : '0px',
             height: '0px',
             borderRadius: '12px',
             position: 'relative',
@@ -244,7 +245,8 @@ const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
               sx={{
                 position: 'relative',
                 overflow: 'hidden',
-                width: '140px',
+                minWidth: '140px',
+                width: 'auto',
                 height: '56px',
                 borderRadius: '200px',
                 color: '#fff',
@@ -253,6 +255,7 @@ const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
                 fontStyle: 'normal',
                 fontWeight: '700',
                 lineHeight: '1.4',
+                padding: '0 16px',
                 transition: 'all 0.2s cubic-bezier(0, 0.55, 0.45, 1)',
                 '&:hover': {
                   background: 'linear-gradient(100.9deg, #5A7DC9 15.49%, #25276C 101.21%)',
@@ -262,7 +265,7 @@ const MIAgentButton: FC<MIAgentButtonProps> = ({ top = 126, right }) => {
               onClick={() => setShowChatWindow(true)}
               ref={buttonRef}
             >
-              <GradientText>Ask Mari</GradientText>
+              <GradientText>Find Mari</GradientText>
             </Button>
           </GradientBox>
         </Box>

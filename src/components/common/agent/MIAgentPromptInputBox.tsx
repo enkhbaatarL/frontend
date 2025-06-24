@@ -29,7 +29,7 @@ interface Props {
 
 const MIAgentPromptInputBox = ({
   onSendMessage,
-  placeholder = '무엇이 궁금하세요?',
+  placeholder = '무엇을 찾으시나요?',
   isGenerating,
   selectModeOption,
   onSelectModeOptionChange,
