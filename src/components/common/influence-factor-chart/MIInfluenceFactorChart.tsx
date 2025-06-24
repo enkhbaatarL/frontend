@@ -207,6 +207,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
       explanatoryLevelNm: props.categorySelect,
       predictionInputMnemonicCd: factor.predictionInputMnemonicCd,
       marketIndexAnalysisTargetCd: factor.marketIndexAnalysisTargetCd,
+      predictionInputMnemonicDetailCd: factor.predictionInputMnemonicDetailCd,
     }
 
     try {

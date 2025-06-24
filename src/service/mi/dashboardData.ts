@@ -213,6 +213,7 @@ export interface IDashboardFactorGraphRequest {
   explanatoryLevelNm: string
   predictionInputMnemonicCd: string
   marketIndexAnalysisTargetCd: string
+  predictionInputMnemonicDetailCd: string
 }
 export interface IDashboardFactorGraphResponse {
   summary: string
