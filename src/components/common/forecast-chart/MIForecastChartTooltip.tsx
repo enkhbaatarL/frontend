@@ -122,6 +122,8 @@ const MIForecastChartTooltip = ({
         boxShadow: '0px 1px 8px 0px rgba(0, 0, 0, 0.10);',
         willChange: 'background-color, border-color',
         transition: 'background-color 0.4s ease-in-out, border-color 0.4s ease-in-out',
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden',
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '4px', ml: '4px', height: '32px' }}>

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Chart, { ActiveElement, ChartType, InteractionItem, Plugin } from 'chart.js/auto'
+import { debounce, DebouncedFunc } from 'lodash-es'
 
 import { DATA_CATEGORIES, HOVER_INDICATOR, LINE_STYLES } from '@/components/common/forecast-chart/constants'
 import { createMakerSVG } from '@/components/common/forecast-chart/utils/loadImage'
@@ -19,6 +20,8 @@ interface IVerticalLineAndHighlightPlugin extends Plugin<ChartType> {
   tooltipContent: { label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
   interactionState: PointInteractionState
   clearSelectedPoint: () => void
+  updateTooltipPosition: (viewDetail: boolean) => void
+  destroy: () => void
   _options: any
   _chart: Chart | null
 }
@@ -76,6 +79,8 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
   _options: any = {}
   _chart: Chart | null = null
   private readonly markerImage: HTMLImageElement
+  private resizeObserver: ResizeObserver | null = null
+  private debouncedRecalculateTooltipPosition: DebouncedFunc<() => void> | null = null
 
   constructor() {
     this.markerImage = new Image()
@@ -139,6 +144,23 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
     const plugin = this
 
     if (!plugin) return
+
+    if (typeof ResizeObserver !== 'undefined') {
+      this.debouncedRecalculateTooltipPosition = debounce(() => {
+        this.recalculateTooltipPosition()
+      }, 50)
+
+      this.resizeObserver = new ResizeObserver(() => {
+        this.debouncedRecalculateTooltipPosition?.()
+      })
+
+      const chartContainer = chart.canvas.parentElement
+      if (chartContainer) {
+        this.resizeObserver.observe(chartContainer)
+      }
+
+      window.addEventListener('resize', this.handleWindowResize)
+    }
 
     chart.canvas.addEventListener('mousemove', (event: MouseEvent) => {
       try {
@@ -308,7 +330,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
             },
           ]
 
-          const adjustedPosition = adjustTooltipPosition(x, y, chart)
+          const adjustedPosition = adjustTooltipPosition(forecastPoint.element.x, forecastPoint.element.y, chart)
 
           options.onPointerMove?.({
             plugin: this,
@@ -430,6 +452,37 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
         if (!point.y) return false
 
         return Math.abs(point.x - this.mousePosition.x) < 10 && Math.abs(point.y - this.mousePosition.y) < 10
+      }
+
+      // 선택된 포인트가 있을 때는 선택된 포인트를 기준으로 툴팁 표시
+      if (this.selectedPoint) {
+        const months = chart.data.labels || []
+        const selectedIndex = this.selectedPoint.index
+
+        const clickTooltipContent = [
+          {
+            label: chart.data.datasets[this.selectedPoint.datasetIndex].label,
+            value: chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
+            category: DATA_CATEGORIES.FORECAST,
+            color: chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
+            goodsDataSourceNo: (chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
+          },
+        ]
+
+        const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, chart)
+
+        options.onPointerMove?.({
+          plugin: this,
+          chart,
+          tooltip: {
+            x: adjustedPosition.x,
+            y: adjustedPosition.y,
+            label: formatDate(months[selectedIndex], 'MMMM YYYY'),
+            viewDetail: true,
+            content: clickTooltipContent,
+          },
+        })
+        return
       }
 
       if (this.mousePosition && !this.selectedPoint) {
@@ -712,6 +765,137 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
         }
       }
     }
+  }
+
+  private recalculateTooltipPosition() {
+    if (!this._chart) return
+
+    const chartArea = this._chart.chartArea
+    const tooltipElement = document.querySelector('.mi-forecast-chart-tooltip') as HTMLElement
+
+    if (!tooltipElement) return
+
+    const rect = tooltipElement.getBoundingClientRect()
+    const tooltipWidth = rect.width
+    const tooltipHeight = rect.height
+
+    if (this.selectedPoint) {
+      const months = this._chart.data.labels || []
+      const currentIndex = this.selectedPoint.index
+
+      const clickTooltipContent = [
+        {
+          label: this._chart.data.datasets[this.selectedPoint.datasetIndex].label,
+          value: this._chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
+          category: DATA_CATEGORIES.FORECAST,
+          color: this._chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
+          goodsDataSourceNo: (this._chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
+        },
+      ]
+
+      let adjustedX = this.selectedPoint.element.x
+      let adjustedY = this.selectedPoint.element.y
+
+      // 차트 영역을 벗어나지 않도록 위치 조정
+      if (adjustedX + tooltipWidth + 20 > chartArea.right) {
+        adjustedX = adjustedX - tooltipWidth - 40
+      } else if (adjustedX < chartArea.left) {
+        adjustedX = chartArea.left + 10
+      }
+
+      if (adjustedY + tooltipHeight > chartArea.bottom) {
+        adjustedY = adjustedY - tooltipHeight
+      } else if (adjustedY < chartArea.top) {
+        adjustedY = chartArea.top + 10
+      }
+
+      this._options.onPointerMove?.({
+        plugin: this,
+        chart: this._chart,
+        tooltip: {
+          x: adjustedX,
+          y: adjustedY,
+          label: formatDate(months[currentIndex], 'MMMM YYYY'),
+          viewDetail: true,
+          content: clickTooltipContent,
+        },
+      })
+    }
+  }
+
+  public updateTooltipPosition(viewDetail: boolean) {
+    if (!this._chart) return
+
+    if (this.selectedPoint) {
+      const months = this._chart.data.labels || []
+      const currentIndex = this.selectedPoint.index
+
+      const clickTooltipContent = [
+        {
+          label: this._chart.data.datasets[this.selectedPoint.datasetIndex].label,
+          value: this._chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
+          category: DATA_CATEGORIES.FORECAST,
+          color: this._chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
+          goodsDataSourceNo: (this._chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
+        },
+      ]
+
+      const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, this._chart)
+
+      this._options.onPointerMove?.({
+        plugin: this,
+        chart: this._chart,
+        tooltip: {
+          x: adjustedPosition.x,
+          y: adjustedPosition.y,
+          label: formatDate(months[currentIndex], 'MMMM YYYY'),
+          viewDetail,
+          content: clickTooltipContent,
+        },
+      })
+    } else if (this.mousePosition && this.tooltipContent.length > 0) {
+      const activePoint = (this._chart.tooltip as any)?._active?.[0]
+      if (activePoint) {
+        const months = this._chart.data.labels || []
+        const currentIndex = activePoint.index
+        let label = ''
+        if (months[currentIndex]) {
+          label = formatDate(months[currentIndex], 'MMMM YYYY')
+        }
+
+        const adjustedPosition = adjustTooltipPosition(this.mousePosition.x, this.mousePosition.y, this._chart)
+
+        this._options.onPointerMove?.({
+          plugin: this,
+          chart: this._chart,
+          tooltip: {
+            x: adjustedPosition.x,
+            y: adjustedPosition.y,
+            label,
+            viewDetail,
+            content: this.tooltipContent,
+          },
+        })
+      }
+    }
+  }
+
+  public destroy() {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect()
+      this.resizeObserver = null
+    }
+
+    if (this.debouncedRecalculateTooltipPosition) {
+      this.debouncedRecalculateTooltipPosition.cancel()
+      this.debouncedRecalculateTooltipPosition = null
+    }
+
+    window.removeEventListener('resize', this.handleWindowResize)
+  }
+
+  private readonly handleWindowResize = () => {
+    this.debouncedRecalculateTooltipPosition?.()
   }
 }
 
