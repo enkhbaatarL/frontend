@@ -32,16 +32,14 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
   const summaryContent =
     !data?.summaries || data.summaries.length === 0
       ? ''
-      : data.summaries
-        .map((summary: IDashboardSummary, index: number) => {
-          const content =
-              index !== 0 ? `${summary.explanatoryTitleContent}\n${summary.explanatorySummaryContent}` : summary.explanatorySummaryContent
-          return content
-        })
-        .join('\n\n')
-
-  // 첫 번째 summary의 title content (이것도 useMemo 불필요)
-  const firstSummaryTitle = data?.summaries?.[0]?.explanatoryTitleContent || ''
+      : data.summaries.map((summary: IDashboardSummary, index: number) => (
+        <Box key={index} mt={index !== 0 ? '20px' : 0}>
+          <Typography mb={1.5} variant={'subtext5'} fontWeight={600} color={'gray.90'} component={'div'}>
+            {summary.explanatoryTitleContent}
+          </Typography>
+          {summary.explanatorySummaryContent}
+        </Box>
+      ))
 
   // useEffect에서 summaryContent를 의존성에 추가
   useEffect(() => {
@@ -118,12 +116,6 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
             Download Full Report
           </MIButton>
         </Box>
-
-        {firstSummaryTitle && (
-          <Typography mb={1.5} variant={'subtext5'} fontWeight={600} color={'gray.90'} component={'div'}>
-            {firstSummaryTitle}
-          </Typography>
-        )}
 
         <Typography
           ref={contentRef}
