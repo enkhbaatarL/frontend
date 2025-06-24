@@ -271,7 +271,9 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           }
         })
 
-      const getErrorObject = () => {
+      return [...forecastRows, ...actualRows, ...futureRows]
+
+      /*      const getErrorObject = () => {
         if (!forecastRows.length || !actualRows.length) return []
         const isYYYYMMFormat = /^\d{4}-(0[1-9]|1[0-2])$/
         return [
@@ -299,7 +301,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
       }
 
       const errorObject = getErrorObject()
-      return [...forecastRows, ...actualRows, ...futureRows, ...errorObject]
+      return [...forecastRows, ...actualRows, ...futureRows, ...errorObject]*/
     } else {
       const allRows = chartData.charts.flatMap((chart) => {
         const rows = []
