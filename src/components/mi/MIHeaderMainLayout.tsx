@@ -71,9 +71,16 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
   )
 
   useEffect(() => {
-    if (!selectedCompany && companyList.length > 0) {
-      const defaultCompany = companyList.find((company) => company.value === (accessCompanyInfo?.customerCompanyNo ?? user?.companyNo))
-      setSelectedCompany(defaultCompany ?? companyList[0])
+    if (!selectedCompany) {
+      if (user?.userRoleCd === UserRole.USER) {
+        setSelectedCompany({
+          label: accessCompanyInfo?.customerCompanyNm ?? user?.companyNm ?? '',
+          value: accessCompanyInfo?.customerCompanyNo ?? user?.companyNo ?? 0,
+        })
+      } else if (companyList.length > 0) {
+        const defaultCompany = companyList.find((company) => company.value === (accessCompanyInfo?.customerCompanyNo ?? user?.companyNo))
+        setSelectedCompany(defaultCompany ?? companyList[0])
+      }
     }
   }, [companyList, selectedCompany, accessCompanyInfo, user])
 
