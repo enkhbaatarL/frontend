@@ -296,7 +296,10 @@ const DataDetailPage = () => {
                         data: rawGoodsData as unknown as IPaginationResponse<ITableRow>,
                         size: rawSize,
                         onPageChange: (page) => setRawPage(page),
-                        onSizeChange: (size) => setRawSize(size),
+                        onSizeChange: (size) => {
+                          setRawSize(size)
+                          setRawPage(1)
+                        },
                       }}
                     />
                   </Box>
