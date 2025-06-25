@@ -50,10 +50,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
   const location = useLocation()
   const { user, accessCompanyInfo, setAccessCompanyInfo } = useAuthStore()
 
-  const [selectedCompany, setSelectedCompany] = useState({
-    label: accessCompanyInfo?.customerCompanyNm ?? user?.companyNm ?? '',
-    value: accessCompanyInfo?.customerCompanyNo ?? user?.companyNo ?? 0,
-  })
+  const [selectedCompany, setSelectedCompany] = useState<{ label: string; value: number } | null>(null)
   const [isOpenCompany, setIsOpenCompany] = useState(false)
 
   const { data: allCompanies } = useQuery({
@@ -72,6 +69,13 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
       })) ?? [],
     [allCompanies],
   )
+
+  useEffect(() => {
+    if (!selectedCompany && companyList.length > 0) {
+      const defaultCompany = companyList.find((company) => company.value === (accessCompanyInfo?.customerCompanyNo ?? user?.companyNo))
+      setSelectedCompany(defaultCompany ?? companyList[0])
+    }
+  }, [companyList, selectedCompany, accessCompanyInfo, user])
 
   useEffect(() => {
     if (selectedCompany) {
@@ -96,9 +100,9 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
         >
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography mr={1} variant="body3SB12" color="gray.70">
-              {selectedCompany.label}
+              {selectedCompany?.label}
             </Typography>
-            {companyList.length > 0 && (
+            {companyList.length > 0 && selectedCompany && (
               <MIMenuSelector
                 sx={{ marginTop: '8px' }}
                 minWidthMenu="160px"
