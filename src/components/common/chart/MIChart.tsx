@@ -241,6 +241,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             fill: false,
             tension: 0.1,
             spanGaps: true,
+            hidden: index !== 0,
             yAxisID: 'y',
             metadata: {
               isMain: true,
