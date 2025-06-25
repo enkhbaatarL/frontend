@@ -39,6 +39,7 @@ export interface IInsightsInfo {
   goodsDataSummaryCntt: string
   modifyDt: string
   goodsDataCategory: string
+  isViewable: boolean
 }
 const insightsService = {
   /**

@@ -30,6 +30,7 @@ export interface Report {
   subtitle?: string
   goodsNo?: number
   goodsDataNo?: number
+  isViewable: boolean
 }
 
 const skeletonFields = [
@@ -171,6 +172,7 @@ const InsightsPage = () => {
         subtitle: item.goodsDataSummaryCntt,
         goodsNo: item.goodsNo,
         goodsDataNo: item.goodsDataNo,
+        isViewable: item.isViewable,
       }))
     }
     return []

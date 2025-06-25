@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 import MIBage, { MIChipColor } from '@/components/common/bage/MIBage'
 import MILine from '@/components/common/divider/MILine'
+import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { Report } from '@/pages/mi/insights/InsightsPage'
 import theme from '@/theming'
 
@@ -11,8 +12,19 @@ interface InsightsDocumentItemProps {
   report: Report
 }
 
+const getRandomString = (length: number) => {
+  const characters = 'abcdefghijklmnopqrstuvwxyz        '
+  let result = ''
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length))
+  }
+  return result
+}
+
 const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
   const navigate = useNavigate()
+
+  const isPermitted = useMemo(() => report.isViewable, [report.isViewable])
 
   const formatDate = useMemo(() => {
     const date = new Date(report.date.replace(' ', 'T'))
@@ -52,20 +64,27 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
       padding={2.5}
       gap={2.5}
       onClick={() => {
+        if (!isPermitted) return
+
         navigate(`/mi/data-detail/${report.goodsNo}/${report.goodsDataNo}`)
       }}
       sx={{
-        cursor: 'pointer',
+        cursor: isPermitted ? 'pointer' : 'default',
         transition: '0.3s',
         '&:hover': {
-          backgroundColor: theme.palette.gray[5],
+          backgroundColor: isPermitted ? theme.palette.gray[5] : 'transparent',
         },
       }}
     >
       <Box display={'flex'} alignItems={'center'} gap={1}>
         {report.types?.map((type) => <MIBage key={type} size={'h20'} color={type as MIChipColor} label={convertToType(type)} />)}
       </Box>
-      <Box>
+      <Box
+        sx={{
+          position: 'relative',
+          width: '100%',
+        }}
+      >
         <Typography
           color="gray.90"
           fontSize={20}
@@ -77,9 +96,10 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
             display: '-webkit-box',
             WebkitLineClamp: 1,
             WebkitBoxOrient: 'vertical',
+            filter: !isPermitted ? 'blur(6px)' : 'none',
           }}
         >
-          {report.title}
+          {isPermitted ? report.title : getRandomString(120)}
         </Typography>
         <Typography
           color="gray.60"
@@ -91,10 +111,22 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
             display: '-webkit-box',
             WebkitLineClamp: 1,
             WebkitBoxOrient: 'vertical',
+            filter: !isPermitted ? 'blur(6px)' : 'none',
           }}
         >
-          {report.subtitle}
+          {isPermitted ? report.subtitle : getRandomString(120)}
         </Typography>
+        {!isPermitted && (
+          <Box
+            display={'flex'}
+            alignItems={'center'}
+            justifyContent={'center'}
+            position={'absolute'}
+            sx={{ inset: '-8px -12px', backgroundColor: 'rgba(255, 255, 255, 0.6)', color: '#868E96' }}
+          >
+            <LockOutlinedIcon width={24} height={24} />
+          </Box>
+        )}
       </Box>
       <Grid container alignItems="center">
         <Typography color={'#354564'} variant={'body4'}>
