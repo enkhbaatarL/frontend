@@ -218,7 +218,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
       }
 
       if (response.graphMetadata) {
-        setFactorUnit(`Unit: ${response.graphMetadata.currency}/${response.graphMetadata.currentUnitCd}`)
+        setFactorUnit(response.graphMetadata.tableHeader ? `Unit: ${response.graphMetadata.tableHeader}` : '')
       }
 
       if (response.datasource) {

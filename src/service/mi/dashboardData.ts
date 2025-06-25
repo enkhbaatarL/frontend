@@ -192,6 +192,7 @@ export interface IDashboardFactorsResponse {
 export interface IGraphMetaData {
   currency: string
   currentUnitCd: string
+  tableHeader: string
 }
 export interface IRawData {
   resultDate: string
