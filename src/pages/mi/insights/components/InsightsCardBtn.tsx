@@ -188,6 +188,7 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
             mt: 4.5,
             mb: 'auto',
             filter: !isPermitted ? 'blur(8px)' : 'none',
+            overflowWrap: 'anywhere',
           }}
           component="h4"
           variant="titleCardInsight"
