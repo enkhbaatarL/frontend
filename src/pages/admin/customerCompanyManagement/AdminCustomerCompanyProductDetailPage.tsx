@@ -87,7 +87,6 @@ const AdminCustomerCompanyProductDetailPage = () => {
 
   const { companyNo, providerNo, goodsNo } = useParams()
   const { state } = useLocation()
-  // const { companyNm } = state as { companyNm: string }
   const [companyNm, setCompanyNm] = useState<string>('')
 
   const { data: goodsDetailData, isLoading: goodsDetailDataIsLoading } = useQuery({
@@ -114,11 +113,12 @@ const AdminCustomerCompanyProductDetailPage = () => {
     updatePage,
     data: userPermissions,
     isLoading: userPermissionsLoading,
+    refetch: userPermissionsRefetch,
   } = useSearchFilter<IPaginationRequest, IUserPaginationResponse<IUserPermissionInfo>>(
     (params) => companiesService.getUserPermissions(Number(companyNo), Number(providerNo), Number(goodsNo), params),
     {
       page: 1,
-      size: 20,
+      size: 9999,
     },
   )
 
@@ -259,7 +259,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
       setIsDetailPermissionSetting(false)
       await queryClient.invalidateQueries({ queryKey: ['goodsDetail', companyNo, providerNo, goodsNo] })
       await queryClient.invalidateQueries({ queryKey: ['goodsDetailLatest', companyNo, providerNo, goodsNo] })
-      await queryClient.invalidateQueries({ queryKey: ['userPermissions', companyNo, providerNo, goodsNo] })
+      await userPermissionsRefetch()
       setIndividualPermissions([])
       setCompanyPermission({
         isViewable: goodsDetailData?.companySetting ? goodsDetailData.companySetting.isViewable : false,
@@ -333,10 +333,10 @@ const AdminCustomerCompanyProductDetailPage = () => {
       const initialCheckList = userPermissions.detail.reduce(
         (acc, user) => {
           acc[user.userNo] = {
-            isViewable: false,
-            isDownloadable: false,
-            usageBeginDate: dayjs().format('YYYYMMDD'),
-            usageEndDate: dayjs().add(10, 'year').endOf('year').format('YYYYMMDD'),
+            isViewable: user.isViewable,
+            isDownloadable: user.isDownloadable,
+            usageBeginDate: user.usageBeginDate,
+            usageEndDate: user.usageEndDate,
           }
           return acc
         },
@@ -723,9 +723,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
                   <Typography variant="subtitle2" color="gray.60">
                     {t('조회')}
                   </Typography>
-                  <Typography variant="chip1">
-                    {isDetailPermissionSetting ? calculateViewableCount : userPermissions?.extension?.numberOfViewable}
-                  </Typography>
+                  <Typography variant="chip1">{calculateViewableCount}</Typography>
                 </Box>
                 <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
                 <Box display={'flex'} alignItems={'center'} columnGap={'4px'}>
@@ -733,9 +731,7 @@ const AdminCustomerCompanyProductDetailPage = () => {
                   <Typography variant="subtitle2" color="gray.60">
                     {t('다운로드')}
                   </Typography>
-                  <Typography variant="chip1">
-                    {isDetailPermissionSetting ? calculateDownloadableCount : userPermissions?.extension?.numberOfDownloadable}
-                  </Typography>
+                  <Typography variant="chip1">{calculateDownloadableCount}</Typography>
                 </Box>
                 <Box width={'1px'} height={'14px'} bgcolor={'gray.30'} mx="8px" />
               </>
