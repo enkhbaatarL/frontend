@@ -307,6 +307,13 @@ const MIHeaderNotice = () => {
     handleCloseNoticeMenu()
   }
 
+  const handleNotificationReadInquiry = async (emailSendSn: number) => {
+    const response = await notificationService.getNotificationInquiry(emailSendSn)
+    navigate(`/mi/data-detail/${response.goodsNo}/${response.goodsDataNo}`, {
+      state: { goodsDataSrcNo: response.goodsDataSourceNo },
+    })
+  }
+
   const tabsData = [
     {
       label: 'Recent Alerts',
@@ -326,10 +333,10 @@ const MIHeaderNotice = () => {
                   key={alert.emailSendSn}
                   trend={['INCRATE', 'UPPER'].includes(alert.notificationCriticalValueSeparateCd) ? 'up' : 'down'}
                   title={alert.goodsDataSourceNm}
-                  subtitle={alert.criticalValueSettingVol.toString().concat(alert.criticalValueSettingUnitNm)}
+                  subtitle={alert.criticalValueSettingVol.toString().concat(alert.criticalValueSettingUnitNm || '')}
                   date={dayjs(alert.emailSendDtm).format('YYYY-MM-DD')}
                   isRead={alert.isEmailInquiry}
-                  onClick={(id) => console.log(id)}
+                  onClick={() => handleNotificationReadInquiry(alert.emailSendSn)}
                 />
               ))
             ) : (

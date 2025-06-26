@@ -49,6 +49,8 @@ export interface INotificationHistory {
   criticalValueSettingUnitNm: string
   goodsDataSourceNm: string
   goodsDataSourceNo: number
+  goodsDataNo: number
+  goodsNo: number
 }
 
 export interface INotificationSetting {
@@ -166,6 +168,17 @@ const notificationService = {
    */
   async getNotificationSetting(): Promise<INotificationSetting> {
     const response: AxiosResponse<ICommonResponse<INotificationSetting>> = await api.get('mi/notification-management/notification-setting')
+
+    return response.data.data
+  },
+  /**
+   * 알림 내역 읽음 처리를 합니다.
+   * @param emailSendSn
+   */
+  async getNotificationInquiry(emailSendSn: number): Promise<INotificationHistory> {
+    const response: AxiosResponse<ICommonResponse<INotificationHistory>> = await api.get(
+      `mi/notification-management/notifications/${emailSendSn}/inquiry`,
+    )
 
     return response.data.data
   },
