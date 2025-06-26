@@ -54,6 +54,15 @@ const CallbackProcessingPage = () => {
 
   useEffect(() => {
     if (user?.userRoleCd) {
+      // 로컬스토리지에서 저장된 리다이렉트 경로 확인
+      const redirectPath = localStorage.getItem('redirectAfterLogin')
+
+      if (redirectPath) {
+        localStorage.removeItem('redirectAfterLogin')
+        navigate(redirectPath, { replace: true })
+        return
+      }
+
       switch (user?.userRoleCd) {
         case UserRole.ADMIN:
           navigate('/admin')

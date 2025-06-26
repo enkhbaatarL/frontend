@@ -27,6 +27,12 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }, [navigate])
 
   if (!user) {
+    // data-detail 접근 확인 (메일 접근)
+    const dataDetailPattern = /^\/mi\/data-detail\/\d+\/\d+$/
+    if (dataDetailPattern.test(location.pathname)) {
+      localStorage.setItem('redirectAfterLogin', location.pathname)
+    }
+
     return <Navigate to="/" state={{ from: location }} replace />
   }
 

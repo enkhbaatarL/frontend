@@ -4,7 +4,7 @@ import LockComponent from '@/pages/error/components/LockComponent'
 
 const ErrorIpVerificationPage = () => (
   <LockComponent
-    title="SK MI Platform"
+    title="AI Market Insights"
     message={
       <>
         <div>{t('허용된 IP가 아닙니다.')}</div>

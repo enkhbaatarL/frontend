@@ -9,7 +9,7 @@ const UnifiedAuthenticationErrorPage = () => (
     <Grid container direction="column" alignItems="center" spacing={0}>
       <ErrorIcon />
       <Typography variant="heading1" color="gray.90">
-        {t('SK MI Platform')}
+        {t('AI Market Insights')}
       </Typography>
     </Grid>
     <Grid>
