@@ -75,8 +75,18 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
         const noZeroOrLeadingZero = (v: string) => {
           const trimmed = v.trim()
 
+          if (trimmed === '-') return '음수는 입력할 수 없습니다.'
+
+          // 0 입력 방지
           if (trimmed === '0') return '0은 입력할 수 없습니다.'
+
+          // 앞자리 0 방지 (예: 01, 02, 003 등)
           if (/^0[0-9]/.test(trimmed)) return '0은 입력할 수 없습니다.'
+
+          // 음수 방지
+          if (trimmed.startsWith('-') || Number(trimmed) < 0) {
+            return '음수는 입력할 수 없습니다.'
+          }
 
           return undefined
         }
@@ -312,6 +322,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
                   type="button"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value as string)}
+                  useAllOption={false}
                   options={[
                     { label: '상승', value: 'rise' },
                     { label: '하락', value: 'fall' },
