@@ -311,6 +311,7 @@ const MIHeaderNotice = () => {
     const response = await notificationService.getNotificationInquiry(emailSendSn)
     navigate(`/mi/data-detail/${response.goodsNo}/${response.goodsDataNo}`, {
       state: { goodsDataSrcNo: response.goodsDataSourceNo },
+      replace: true,
     })
   }
 
