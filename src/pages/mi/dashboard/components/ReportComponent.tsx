@@ -119,11 +119,13 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     if (!chartData) return []
 
     const isForecastSingleLayer = chartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
+    const currency = chartData.dashboardMetadata.currency || ''
+    const currentUnitCd = chartData.dashboardMetadata.currentUnitCd || ''
 
     if (isForecastSingleLayer) {
       const currencyColumn: GridColDef = {
         field: chartData.dashboardMetadata.currency,
-        headerName: `${chartData.dashboardMetadata.currency}/${chartData.dashboardMetadata.currentUnitCd}`,
+        headerName: `${currency}/${currentUnitCd}`,
         flex: 1.5,
         align: 'center',
       }

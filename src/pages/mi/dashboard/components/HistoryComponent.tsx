@@ -284,7 +284,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
               },
             }}
           >
-            {param.row.baselinePrice !== '-' && (
+            {param.row.baselinePrice !== '-' && metaData?.data.isDownloadable && (
               <>
                 <FileDownloadOutlinedIcon
                   fontSize={'small'}
