@@ -114,21 +114,23 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       const isIncrease = ['INCRATE', 'UPPER'].includes(item.notificationCriticalValueSeparateCd)
 
       let description = ''
+      const unitText = item.criticalValueSettingUnitNm?.trim() || ''
+
       switch (item.notificationCriticalValueSeparateCd) {
         case 'UPPER':
-          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 이상으로 상승`
+          description = `{${item.goodsDataSourceNm}}이 {${item.criticalValueSettingVol}${unitText}} 이상으로 상승`
           break
         case 'LOWER':
-          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 이하로 하락`
+          description = `{${item.goodsDataSourceNm}}이 {${item.criticalValueSettingVol}${unitText}} 이하로 하락`
           break
         case 'INCRATE':
-          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 상승률 초과`
+          description = `{${item.goodsDataSourceNm}}이 {${item.criticalValueSettingVol}${unitText}} 상승률 초과`
           break
         case 'DECRATE':
-          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 하락률 초과`
+          description = `{${item.goodsDataSourceNm}}이 {${item.criticalValueSettingVol}${unitText}} 하락률 초과`
           break
         default:
-          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm})`
+          description = `{${item.goodsDataSourceNm}}이 {${item.criticalValueSettingVol}${unitText}}`
       }
 
       return {
