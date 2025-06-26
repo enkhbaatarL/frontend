@@ -462,7 +462,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
           <Box sx={{ position: 'absolute', right: 0, top: 14, zIndex: 1 }}>
             <Stack direction="row" alignItems="center">
               <Switch size={'small'} checked={alarmStatus} onChange={(e) => handleChangeStatus(e.target.checked)} />
-              <Typography width={'54px'} variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
+              <Typography width={'54px'} variant="body2M14" color={'gray.70'} whiteSpace={'nowrap'} onClick={(e) => e.stopPropagation()}>
                 {alarmStatus ? '알람 ON' : '알람 OFF'}
               </Typography>
             </Stack>
