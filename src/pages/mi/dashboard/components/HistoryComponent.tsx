@@ -5,7 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useState, useEffect, useMemo } from 'react'
 
-import DownloadIcon from '@/components/common/icons/DownloadIcon'
+import MIButton from '@/components/common/button/MIButton.tsx'
+import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon.tsx'
 import DownIcon from '@/components/common/icons/table/DownIcon'
 import UpIcon from '@/components/common/icons/table/UpIcon'
 import MISelect from '@/components/common/select/MISelect'
@@ -388,27 +389,29 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
             </Typography>
           )}
 
-          <Box
+          <MIButton
+            startIcon={<ChartDownloadIcon />}
             onClick={handleDownload}
-            sx={{
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              color: 'contentIcon.Enabled',
-              border: '1px solid',
-              borderColor: 'gray.8',
-              borderRadius: '4px',
-              '&:hover': {
-                color: 'contentIcon.Hover',
-                cursor: 'pointer',
-                backgroundColor: 'contentBG.Hover',
+            contentType={'icon'}
+            type={'outlined'}
+            disabled={!metaData?.data?.isDownloadable}
+            toolTipProps={{
+              placement: 'top',
+              slotProps: {
+                popper: {
+                  modifiers: [
+                    {
+                      name: 'offset',
+                      options: {
+                        offset: [0, -10],
+                      },
+                    },
+                  ],
+                },
               },
             }}
-          >
-            <DownloadIcon />
-          </Box>
+            toolTip={<Typography variant="subtext2">다운로드</Typography>}
+          />
         </Box>
       </Box>
 

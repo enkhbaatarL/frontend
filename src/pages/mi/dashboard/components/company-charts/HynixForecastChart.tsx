@@ -390,7 +390,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                 onClick={handleDownload}
                 contentType={'icon'}
                 type={'outlined'}
-                disabled={selectedContent !== null}
+                disabled={!props.data?.isFileDownload || selectedContent !== null}
                 toolTipProps={{
                   placement: 'top',
                   slotProps: {

@@ -68,6 +68,7 @@ export interface DashboardChartInfo {
     goodsDataSourceNo: number
     dashboardLineName: string
   }[]
+  isFileDownload: boolean
 }
 
 export interface SettingDetail {
@@ -87,6 +88,7 @@ export interface HistoryMetaData {
   predictPeriodUnitSeparateCd: string
   currency: string
   unit: string
+  isDownloadable: boolean
   targets: HistoryMetaDataTarget[]
 }
 export interface DashboardBasicInfo {
@@ -149,6 +151,7 @@ export interface IDashboardChartData {
     goodsDataSourceNo: number
     dashboardLineName: string
   }[]
+  isFileDownload: boolean
 }
 export interface IDashboardFactorCategoryRequest {
   predictDate: string
