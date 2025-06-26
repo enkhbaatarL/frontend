@@ -171,6 +171,7 @@ export interface ICategoryList {
 }
 export interface IDashboardFactorsRequest {
   predictDate: string
+  date: string
   goodsDataSourceNo: number
   explanatoryLevelNm: string
 }

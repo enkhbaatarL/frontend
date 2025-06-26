@@ -49,6 +49,7 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
     queryFn: () =>
       dashboardDataService.getDashboardFactors(companyNo ?? 0, {
         predictDate: monthSelect.split('-').join(''),
+        date: dayjs(selectedContent.date).format('YYYYMM'),
         goodsDataSourceNo: selectedContent.goodsDataSourceNo ?? 0,
         explanatoryLevelNm: categorySelect,
       }),
