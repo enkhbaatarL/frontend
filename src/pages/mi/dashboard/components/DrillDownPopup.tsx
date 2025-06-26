@@ -39,6 +39,7 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
       dashboardDataService.getDashboardFactorCategory(companyNo ?? 0, {
         predictDate: monthSelect.split('-').join(''),
         goodsDataSourceNo: selectedContent.goodsDataSourceNo ?? 0,
+        date: dayjs(selectedContent.date).format('YYYYMM'),
       }),
     enabled: !!companyNo && !!monthSelect && !!selectedContent.goodsDataSourceNo,
   })

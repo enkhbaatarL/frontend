@@ -156,6 +156,7 @@ export interface IDashboardChartData {
 export interface IDashboardFactorCategoryRequest {
   predictDate: string
   goodsDataSourceNo: number
+  date: string
 }
 export interface IDashboardSummary {
   explanatoryTitleContent: string
