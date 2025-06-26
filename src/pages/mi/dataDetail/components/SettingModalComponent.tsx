@@ -1,6 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined'
-import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { Box, Grid2 as Grid, Stack, Switch, Typography } from '@mui/material'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
@@ -51,6 +51,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
   const [transactions, setTransactions] = useState<TransactionItem[]>([])
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false)
   const [hideFooter, setHideFooter] = useState(false)
+  const [alarmStatus, setAlarmStatus] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { showSnackbar } = useSnackbar()
   const [selectGoodsDataSourceNo, setGoodsDataSourceNo] = useState(() =>
@@ -234,6 +235,15 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       showSnackbar('알림 등록 중 오류가 발생했습니다.', { variant: 'error' })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleChangeStatus = (value: boolean) => {
+    setAlarmStatus(value)
+    if (!value) {
+      // setTransactions([])
+    } else {
+      // setTransactions(dataAlarm)
     }
   }
 
@@ -429,7 +439,25 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
         },
       ]}
     >
-      <MITabs onChange={(value) => setHideFooter(!!value)} arrayItem={visibleTabs} />
+      <Box sx={{ position: 'relative' }}>
+        <Box sx={{ position: 'absolute', right: 0, top: 14, zIndex: 1 }}>
+          <Stack direction="row" alignItems="center">
+            <Switch
+              size={'small'}
+              checked={alarmStatus}
+              onChange={(e) => handleChangeStatus(e.target.checked)}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                handleChangeStatus(!alarmStatus)
+              }}
+            />
+            <Typography width={'54px'} variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
+              {alarmStatus ? '알람 ON' : '알람 OFF'}
+            </Typography>
+          </Stack>
+        </Box>
+        <MITabs onChange={(value) => setHideFooter(!!value)} arrayItem={visibleTabs} />
+      </Box>
     </MIConfirm>
   )
 }
