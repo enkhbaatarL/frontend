@@ -51,6 +51,10 @@ export interface INotificationHistory {
   goodsDataSourceNo: number
 }
 
+export interface INotificationSetting {
+  isUserNotificationSetting: boolean
+}
+
 const notificationService = {
   /**
    * 정형 데이터 알림 설정 리스트를 조회합니다.
@@ -143,6 +147,25 @@ const notificationService = {
         params,
       },
     )
+
+    return response.data.data
+  },
+  /**
+   * 전체 알림 설정을 변경합니다.
+   * @param isUserNotificationSetting
+   */
+  async updateNotificationSetting(isUserNotificationSetting: boolean): Promise<ICommonResponse<null>> {
+    const response: AxiosResponse<ICommonResponse<null>> = await api.patch('mi/notification-management/notification-setting', {
+      isUserNotificationSetting,
+    })
+    return response.data
+  },
+
+  /**
+   * 전체 알림 설정을 조회합니다.
+   */
+  async getNotificationSetting(): Promise<INotificationSetting> {
+    const response: AxiosResponse<ICommonResponse<INotificationSetting>> = await api.get('mi/notification-management/notification-setting')
 
     return response.data.data
   },

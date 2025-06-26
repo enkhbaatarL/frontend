@@ -1,6 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined'
-import { Box, Grid2 as Grid, Stack, Switch, Typography } from '@mui/material'
+import { Box, CircularProgress, Grid2 as Grid, Stack, Switch, Typography } from '@mui/material'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
@@ -54,12 +54,13 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
   const [alarmStatus, setAlarmStatus] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { showSnackbar } = useSnackbar()
-  const [selectGoodsDataSourceNo, setGoodsDataSourceNo] = useState(() =>
+  const [selectGoodsDataSourceNo, setSelectGoodsDataSourceNo] = useState(() =>
     goodsDataSourceNoList?.length === 1 ? goodsDataSourceNoList[0].goodsDataSourceNo : 0,
   )
   const [notificationType, setNotificationType] = useState(() =>
     goodsDataSourceNoList?.length === 1 ? goodsDataSourceNoList[0].type : 'ACTUAL',
   )
+  const [disabledSwitch, setDisabledSwitch] = useState(false)
 
   const form = useForm({
     defaultValues: {
@@ -92,7 +93,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
 
   useEffect(() => {
     if (goodsDataSourceNoList?.length === 1 && selectGoodsDataSourceNo !== goodsDataSourceNoList[0].goodsDataSourceNo) {
-      setGoodsDataSourceNo(goodsDataSourceNoList[0].goodsDataSourceNo)
+      setSelectGoodsDataSourceNo(goodsDataSourceNoList[0].goodsDataSourceNo)
       setNotificationType(goodsDataSourceNoList[0].type)
     }
   }, [goodsDataSourceNoList, selectGoodsDataSourceNo])
@@ -173,6 +174,9 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
         const transformedData = transformNotificationData(response.detail)
         setTransactions(transformedData)
       }
+
+      const notificationSettingResponse = await notificationService.getNotificationSetting()
+      setAlarmStatus(notificationSettingResponse?.isUserNotificationSetting)
     } catch (error) {
       console.error('알림 설정 목록 조회 오류:', error)
       showSnackbar('알림 설정 목록을 불러오는데 실패했습니다.', { variant: 'error' })
@@ -238,12 +242,15 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
     }
   }
 
-  const handleChangeStatus = (value: boolean) => {
-    setAlarmStatus(value)
-    if (!value) {
-      // setTransactions([])
-    } else {
-      // setTransactions(dataAlarm)
+  const handleChangeStatus = async (value: boolean) => {
+    if (disabledSwitch) return
+
+    setDisabledSwitch(true)
+    try {
+      await notificationService.updateNotificationSetting(!alarmStatus)
+      setAlarmStatus(value)
+    } finally {
+      setDisabledSwitch(false)
     }
   }
 
@@ -273,7 +280,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
                       const selectedNo = Number(e.target.value)
                       const selectedItem = goodsDataSourceNoList.find((item) => item.goodsDataSourceNo === selectedNo)
 
-                      setGoodsDataSourceNo(selectedNo)
+                      setSelectGoodsDataSourceNo(selectedNo)
                       if (selectedItem) {
                         setNotificationType(selectedItem.type)
                       }
@@ -350,13 +357,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       ),
       content: (
         <>
-          {isLoadingTransactions ? (
-            <Box display={'flex'} alignItems={'center'} justifyContent={'center'} height={460}>
-              <Typography variant="body3SB12" color="gray.60">
-                로딩 중...
-              </Typography>
-            </Box>
-          ) : transactions && transactions.length === 0 ? (
+          {transactions && transactions.length === 0 ? (
             <Box
               display={'flex'}
               borderBottom={'1px solid'}
@@ -427,7 +428,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       title="알람"
       width={500}
       handleClose={onClose}
-      hideFooter={hideFooter}
+      hideFooter={hideFooter || isLoadingTransactions}
       actions={[
         { label: '취소', variant: 'outlined', color: 'gray', onClick: handleClose },
         {
@@ -439,25 +440,23 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
         },
       ]}
     >
-      <Box sx={{ position: 'relative' }}>
-        <Box sx={{ position: 'absolute', right: 0, top: 14, zIndex: 1 }}>
-          <Stack direction="row" alignItems="center">
-            <Switch
-              size={'small'}
-              checked={alarmStatus}
-              onChange={(e) => handleChangeStatus(e.target.checked)}
-              onContextMenu={(e) => {
-                e.preventDefault()
-                handleChangeStatus(!alarmStatus)
-              }}
-            />
-            <Typography width={'54px'} variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
-              {alarmStatus ? '알람 ON' : '알람 OFF'}
-            </Typography>
-          </Stack>
+      {isLoadingTransactions ? (
+        <Box display={'flex'} alignItems={'center'} justifyContent={'center'} height={320}>
+          <CircularProgress size={24} />
         </Box>
-        <MITabs onChange={(value) => setHideFooter(!!value)} arrayItem={visibleTabs} />
-      </Box>
+      ) : (
+        <Box sx={{ position: 'relative' }}>
+          <Box sx={{ position: 'absolute', right: 0, top: 14, zIndex: 1 }}>
+            <Stack direction="row" alignItems="center">
+              <Switch size={'small'} checked={alarmStatus} onChange={(e) => handleChangeStatus(e.target.checked)} />
+              <Typography width={'54px'} variant="body2M14" color={'gray.70'} onClick={(e) => e.stopPropagation()}>
+                {alarmStatus ? '알람 ON' : '알람 OFF'}
+              </Typography>
+            </Stack>
+          </Box>
+          <MITabs onChange={(value) => setHideFooter(!!value)} arrayItem={visibleTabs} />
+        </Box>
+      )}
     </MIConfirm>
   )
 }
