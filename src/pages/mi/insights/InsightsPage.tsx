@@ -93,12 +93,14 @@ const InsightsPage = () => {
     updateSize,
     isLoading: insightsIsLoading,
   } = useSearchFilter<IInsightsRequest, IPaginationResponse<IInsightsInfo>>(
-    (params) => insightsService.getInsightsData(customerCompanyNo, params),
+    (params, signal) => insightsService.getInsightsData(customerCompanyNo, params, signal),
     {
       keyword: '',
       sort: 'NEWEST',
       period: 'ALL_DATES',
-      filters: '',
+      docFilters: '',
+      provFilters: '',
+      langFilters: '',
     },
     {
       page: 1,
@@ -106,6 +108,7 @@ const InsightsPage = () => {
     },
     {
       initialFetch: true,
+      useAbortController: true,
     },
   )
 
@@ -178,11 +181,17 @@ const InsightsPage = () => {
     return []
   }, [convertToTypes, insightsData])
 
-  const handleFilterChange = (value: string) => {
-    const currentFilters = (filter?.filters ?? '').split(',').filter(Boolean)
-    const updatedFilters = currentFilters.includes(value) ? currentFilters.filter((v) => v !== value) : [...currentFilters, value]
+  const handleFilterChange = (value: string, filterType: 'docFilters' | 'provFilters' | 'langFilters') => {
+    const currentFilters = (filter?.[filterType] ?? '').split(',').filter(Boolean)
+    const updatedFilters = currentFilters.includes(value) ? currentFilters.filter((v: string) => v !== value) : [...currentFilters, value]
 
-    updateFilterWithSearch('filters', updatedFilters.join(','))
+    updateFilterWithSearch(filterType, updatedFilters.join(','))
+  }
+
+  const getFilterType = (sectionTitle: string): 'docFilters' | 'provFilters' | 'langFilters' => {
+    if (sectionTitle === 'Document Types') return 'docFilters'
+    if (sectionTitle === 'Providers') return 'provFilters'
+    return 'langFilters'
   }
 
   const isActuallyLoading = useMemo(
@@ -191,12 +200,12 @@ const InsightsPage = () => {
   )
 
   useEffect(() => {
-    const shouldMarkAsInitialized = filterList?.data && (!filter.filters || (filter.sort && filter.period))
+    const shouldMarkAsInitialized = filterList?.data && (!filter.docFilters || (filter.sort && filter.period))
     if (shouldMarkAsInitialized) {
       setHasInitialData(true)
       setIsInitialLoading(false)
     }
-  }, [filterList, filter.filters, filter.sort, filter.period])
+  }, [filterList, filter.docFilters, filter.sort, filter.period])
 
   useEffect(() => {
     if (insightsData?.detail?.length) setHasInitialData(true)
@@ -323,7 +332,8 @@ const InsightsPage = () => {
           >
             <Grid container border={'1px solid'} borderColor={'gray.30'} borderRadius={1} gap={6} padding={6} flexShrink={0}>
               {filters?.map((section) => {
-                const checkedValues = (filter?.filters ?? '').split(',')
+                const filterType = getFilterType(section.title)
+                const checkedValues = (filter?.[filterType] ?? '').split(',')
                 return (
                   <Box key={section.title}>
                     <Typography mb={3.5} color="gray.90" component="h2" variant="titleBox">
@@ -342,7 +352,7 @@ const InsightsPage = () => {
                             <AdminCheckbox
                               checked={checkedValues.includes(option.value)}
                               value={option.value}
-                              onChange={(e) => handleFilterChange(e.target.value)}
+                              onChange={(e) => handleFilterChange(e.target.value, filterType)}
                             />
                           }
                           label={option.label}

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { isEqual, omit } from 'lodash-es'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import useBlocker from './useBlocker'
@@ -24,15 +24,21 @@ const diffCheck = <T>(a: T, b: T) =>
     removeEmptyValues(omit(b as DiffCheckObject<T>, ['page', 'size'])),
   )
 
-const defaultOptions = { initialFetch: true }
+const defaultOptions = { initialFetch: true, useAbortController: false }
+
+interface SearchFilterOptions {
+  initialFetch?: boolean
+  useAbortController?: boolean
+}
 
 const useSearchFilter = <Req, Res>(
-  fetchFn: (params: Partial<Req> & PageFilter) => Promise<Res>,
+  fetchFn: (params: Partial<Req> & PageFilter, signal?: AbortSignal) => Promise<Res>,
   initialFilter: Partial<Req> = {},
   initialPagination = { page: 1, size: 20 },
-  options = defaultOptions,
+  options: SearchFilterOptions = defaultOptions,
 ) => {
   const queryClient = useQueryClient()
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const { state } = useLocation()
   const navigate = useNavigate()
@@ -91,10 +97,27 @@ const useSearchFilter = <Req, Res>(
     setFetchParams(removeObjectEmptyValues(filter))
   }, [filter])
 
+  // 기존 요청 abort
+  const fetchWithAbort = useCallback(
+    async (params: Partial<Req> & PageFilter) => {
+      if (options.useAbortController) {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort()
+        }
+
+        abortControllerRef.current = new AbortController()
+        return await fetchFn(params, abortControllerRef.current.signal)
+      } else {
+        return await fetchFn(params)
+      }
+    },
+    [fetchFn, options.useAbortController],
+  )
+
   const { data, refetch, isLoading } = useQuery({
     queryKey: [fetchKey, JSON.stringify(fetchParams), pagination.page, pagination.size],
     queryFn: () =>
-      fetchFn({
+      fetchWithAbort({
         ...(fetchParams as Partial<Req>),
         ...(pagination as Partial<PageFilter>),
       }),
@@ -124,12 +147,16 @@ const useSearchFilter = <Req, Res>(
 
   useEffect(
     () => () => {
+      if (options.useAbortController && abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
       queryClient.removeQueries({
         predicate: (query) => query.queryKey[0] === fetchKey,
       })
     },
-    [queryClient, fetchKey],
+    [queryClient, fetchKey, options.useAbortController],
   )
+
   return {
     filter,
     pagination,
