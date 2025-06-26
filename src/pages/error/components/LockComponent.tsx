@@ -14,7 +14,7 @@ type LockComponentProps = {
 }
 
 const LockComponent = ({
-  title = 'SK MI Platform',
+  title = 'AI Market Insights',
   message = (
     <>
       <div>{t('접근 권한이 없습니다')}</div>

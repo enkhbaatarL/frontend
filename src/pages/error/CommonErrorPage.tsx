@@ -31,7 +31,7 @@ const getErrorInfo = (state: { status?: number; code?: string }, pathname: strin
   const statusCode = state?.status ?? fallbackStatus
   const message = codeMapper(statusCode, state?.code ?? paramsCode)
   // 많아지면 분리 필요
-  const additionalVar = paramsCode === 'AUTH-001' ? { hiddenButton: true, icon: 'lock', title: 'SK MI Platform' } : {}
+  const additionalVar = paramsCode === 'AUTH-001' ? { hiddenButton: true, icon: 'lock', title: 'AI Market Insights' } : {}
   return { statusCode, message, ...additionalVar }
 }
 

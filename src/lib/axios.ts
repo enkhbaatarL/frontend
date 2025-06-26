@@ -116,13 +116,12 @@ const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> 
 const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
   const status = error.response?.status
   const code = error.response?.data?.code
-  const statusText = error.response?.statusText || t('알 수 없는 오류')
+  const statusText = error.response?.statusText ?? t('알 수 없는 오류')
 
   if (status && status >= 400) {
     switch (code) {
-      // ==========TODO
       case 'AUTH-001': // 인증 필요
-        navigateFn('/error', { state: { code, status, hiddenButton: true, icon: 'lock', title: 'SK MI Platform' }, replace: true })
+        navigateFn('/error', { state: { code, status, hiddenButton: true, icon: 'lock', title: 'AI Market Insights' }, replace: true })
         break
       // case 'AUTH-002': // 잘못된 자격증명
       // case 'AUTH-006': // 계정 잠김  계정이 잠겼습니다. 관리자에게 문의하세요.
