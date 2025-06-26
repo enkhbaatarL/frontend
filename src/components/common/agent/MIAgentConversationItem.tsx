@@ -17,6 +17,12 @@ const getErrorMessage = (statusCd: string): string[] => {
       return [t('금지된 단어가 포함되어 있어 답변을 생성할 수 없습니다.')]
     case ChatRoomErrorStatus.FAIL_EXCEED_LENGTH:
       return [t('질문 길이가 제한을 초과했습니다.')]
+    case ChatRoomErrorStatus.FAIL_EXCEED_TOKEN:
+      return [t('사용 가능한 크레딧이 모두 소진되었습니다.'), t('자세한 사항은 관리자에게 문의해 주세요.')]
+    case ChatRoomErrorStatus.FAIL_TIMED_OUT:
+      return [t('요청 시간이 초과되었습니다. 다시 시도해 주세요.')]
+    case ChatRoomErrorStatus.FAIL_AGENT_COMMUNICATION:
+      return [t('지금은 서버 연결이 원활하지 않습니다.'), t('잠시 후 다시 시도해 주세요.')]
     default:
       return [t('알 수 없는 오류가 발생했습니다.')]
   }
