@@ -69,6 +69,7 @@ const insightsService = {
       `/mi/insights/companies/${companyNo}/insights-data`,
       {
         params,
+        timeout: 120_000,
       },
     )
 

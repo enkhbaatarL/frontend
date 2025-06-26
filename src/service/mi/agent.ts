@@ -151,7 +151,7 @@ const agentService = {
         question,
         shouldWebSearch,
       },
-      { timeout: 180000 },
+      { timeout: 180_000 },
     )
 
     return response.data.data
