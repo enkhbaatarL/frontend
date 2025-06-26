@@ -415,6 +415,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
   }
 
   const shouldUseRowSpanning = useMemo(() => chartData?.dashboardMetadata.dataTableType !== 'FORECAST_SINGLE_LAYER', [chartData])
+  const canFileDownload = useMemo(() => chartData?.isFileDownload, [chartData])
 
   useEffect(() => {
     if (monthSelect === '') {
@@ -493,7 +494,13 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
               Data Table
             </Typography>
             <Box>
-              <MIButton startIcon={<DataTrendChartDownloadIcon />} onClick={downloadDataTable} contentType={'icon'} type="outlined" />
+              <MIButton
+                startIcon={<DataTrendChartDownloadIcon />}
+                onClick={downloadDataTable}
+                contentType={'icon'}
+                type="outlined"
+                disabled={!canFileDownload}
+              />
             </Box>
           </Box>
 

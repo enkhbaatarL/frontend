@@ -274,6 +274,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
         yoyChangeRate: 0,
         momChangeRate: 0,
         wowChangeRate: 0,
+        recentChangeRate: 0,
       },
     }
     : data
@@ -381,7 +382,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
             <Box mr={6}>
               <Typography sx={{ fontWeight: 600 }} fontSize={28} color="#14181F" mb={2.5} component="div" variant="heading1">
                 {metaData.lastValue}
-                {getChangeRateLabel(metaData.wowChangeRate)}
+                {getChangeRateLabel(metaData.recentChangeRate)}
               </Typography>
             </Box>
             <Box height={53} px={'10px'}>

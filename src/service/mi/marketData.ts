@@ -33,6 +33,7 @@ export interface IMarketMetaData {
   yoyChangeRate: number
   momChangeRate: number
   wowChangeRate: number
+  recentChangeRate: number
 }
 
 export interface IMarketData {

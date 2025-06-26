@@ -75,8 +75,18 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
         const noZeroOrLeadingZero = (v: string) => {
           const trimmed = v.trim()
 
+          if (trimmed === '-') return '음수는 입력할 수 없습니다.'
+
+          // 0 입력 방지
           if (trimmed === '0') return '0은 입력할 수 없습니다.'
+
+          // 앞자리 0 방지 (예: 01, 02, 003 등)
           if (/^0[0-9]/.test(trimmed)) return '0은 입력할 수 없습니다.'
+
+          // 음수 방지
+          if (trimmed.startsWith('-') || Number(trimmed) < 0) {
+            return '음수는 입력할 수 없습니다.'
+          }
 
           return undefined
         }
@@ -104,21 +114,23 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
       const isIncrease = ['INCRATE', 'UPPER'].includes(item.notificationCriticalValueSeparateCd)
 
       let description = ''
+      const unitText = item.criticalValueSettingUnitNm?.trim() || ''
+
       switch (item.notificationCriticalValueSeparateCd) {
         case 'UPPER':
-          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 이상으로 상승`
+          description = `{${item.goodsDataSourceNm}}이 {${item.criticalValueSettingVol}${unitText}} 이상으로 상승`
           break
         case 'LOWER':
-          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 이하로 하락`
+          description = `{${item.goodsDataSourceNm}}이 {${item.criticalValueSettingVol}${unitText}} 이하로 하락`
           break
         case 'INCRATE':
-          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 상승률 초과`
+          description = `{${item.goodsDataSourceNm}}이 {${item.criticalValueSettingVol}${unitText}} 상승률 초과`
           break
         case 'DECRATE':
-          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm}) 하락률 초과`
+          description = `{${item.goodsDataSourceNm}}이 {${item.criticalValueSettingVol}${unitText}} 하락률 초과`
           break
         default:
-          description = `(${item.goodsDataSourceNm})이 (${item.criticalValueSettingVol}${item.criticalValueSettingUnitNm})`
+          description = `{${item.goodsDataSourceNm}}이 {${item.criticalValueSettingVol}${unitText}}`
       }
 
       return {
@@ -312,6 +324,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
                   type="button"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value as string)}
+                  useAllOption={false}
                   options={[
                     { label: '상승', value: 'rise' },
                     { label: '하락', value: 'fall' },
