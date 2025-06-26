@@ -37,7 +37,7 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
           <Typography mb={1.5} variant={'subtext5'} fontWeight={600} color={'gray.90'} component={'div'}>
             {summary.explanatoryTitleContent}
           </Typography>
-          {summary.explanatorySummaryContent}
+          {(summary.explanatorySummaryContent ?? '').replace('\\n', '\n')}
         </Box>
       ))
 
