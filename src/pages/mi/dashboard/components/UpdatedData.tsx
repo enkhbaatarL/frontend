@@ -85,7 +85,7 @@ const DataItem = ({ data, index, onClick }: { data: ProcessedMarketDataItem; ind
             position={'absolute'}
             sx={{ inset: '0px -6px', backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#868E96' }}
           >
-            <LockOutlinedIcon width={22} height={22} />
+            <LockOutlinedIcon width={20} height={20} />
           </Box>
         )}
       </Box>

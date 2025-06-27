@@ -7,18 +7,10 @@ import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { Report } from '@/pages/mi/insights/InsightsPage'
 import theme from '@/theming'
+import { getRandomString } from '@/utils/string'
 
 interface InsightsDocumentItemProps {
   report: Report
-}
-
-const getRandomString = (length: number) => {
-  const characters = 'abcdefghijklmnopqrstuvwxyz        '
-  let result = ''
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length))
-  }
-  return result
 }
 
 const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
