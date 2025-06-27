@@ -108,17 +108,17 @@ const AlertItem = ({ id, trend, title, subtitle, date, isRead, onClick }: Notice
         </Typography>
       }
       secondary={
-        <Box display={'flex'} justifyContent={'space-between'} alignItems={'flex-end'}>
-          <Typography variant="body2R14" color={isRead ? 'gray.60' : 'gray.70'} component="div">
+        <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <Typography variant="body2R14" color={isRead ? 'gray.60' : 'gray.70'} component="span">
             <Typography variant="chip1" marginRight={1.5} color={isRead ? 'gray.60' : 'gray.70'} component="span">
               {trend === 'up' ? '상승' : '하락'}
             </Typography>
             {subtitle}
           </Typography>
-          <Typography variant="body3R12" color="gray.60">
+          <Typography variant="body3R12" color="gray.60" component="span">
             {date}
           </Typography>
-        </Box>
+        </span>
       }
     />
   </ListItem>
@@ -206,14 +206,14 @@ const NoticeItem = ({ id, title, subtitle, date, isRead, onClick }: NoticeItemPr
         </Typography>
       }
       secondary={
-        <Box display={'flex'} justifyContent={'space-between'} alignItems={'flex-end'}>
-          <Typography variant="body2R14" color={isRead ? 'gray.60' : 'gray.70'} component="div">
+        <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <Typography variant="body2R14" color={isRead ? 'gray.60' : 'gray.70'} component="span">
             {subtitle}
           </Typography>
-          <Typography variant="body3R12" color="gray.60">
+          <Typography variant="body3R12" color="gray.60" component="span">
             {date}
           </Typography>
-        </Box>
+        </span>
       }
     />
   </ListItem>
