@@ -160,15 +160,14 @@ const MILayout = () => {
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
 
-    return `${defaultPadding + (showDailyChart || marketDataIsLoading ? 76 : 0)}px`
-  }, [showDailyChart, isScrolled, marketDataIsLoading])
+    return `${defaultPadding}px`
+  }, [isScrolled])
 
   const mariAgentTopPosition = useMemo(() => {
     const scrolledGap = isScrolled ? -headerTopHeight : 0
-    const dailyChartGap = showDailyChart || marketDataIsLoading ? 76 : 0
 
-    return 126 + scrolledGap + dailyChartGap
-  }, [showDailyChart, isScrolled, marketDataIsLoading])
+    return 117 + scrolledGap
+  }, [isScrolled])
 
   return (
     <MIProvider>
@@ -194,9 +193,6 @@ const MILayout = () => {
           {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
             <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />
-            <MISkeleton variant={'dailyChart'} loading={marketDataIsLoading}>
-              {showDailyChart && <DailyChart data={marketDataList} />}
-            </MISkeleton>
           </div>
           <Box
             sx={{
@@ -206,6 +202,9 @@ const MILayout = () => {
               transition: 'padding 0.15s linear',
             }}
           >
+            <MISkeleton variant={'dailyChart'} loading={marketDataIsLoading}>
+              {showDailyChart && <DailyChart data={marketDataList} />}
+            </MISkeleton>
             <Outlet key={outletKey} />
           </Box>
           <MIFooter />
