@@ -4,7 +4,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { Badge, Box, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
@@ -257,6 +257,22 @@ const MIHeaderNotice = () => {
 
   const anchorEl = useRef<HTMLElement>(null)
 
+  const fetchAlerts = useCallback(async () => {
+    if (user?.userRoleCd === UserRole.USER) {
+      try {
+        setAlertsIsLoading(true)
+        const response = await notificationService.getNotificationHistory({ page: 1, size: 10 })
+        if (response.detail) {
+          setAlerts(response.detail)
+        }
+      } catch (error) {
+        console.error('Failed to fetch notification history:', error)
+      } finally {
+        setAlertsIsLoading(false)
+      }
+    }
+  }, [user?.userRoleCd])
+
   useEffect(() => {
     const fetchNotices = async () => {
       if (customerCompanyNo) {
@@ -278,22 +294,6 @@ const MIHeaderNotice = () => {
   }, [customerCompanyNo])
 
   useEffect(() => {
-    const fetchAlerts = async () => {
-      if (user?.userRoleCd === UserRole.USER) {
-        try {
-          setAlertsIsLoading(true)
-          const response = await notificationService.getNotificationHistory({ page: 1, size: 10 })
-          if (response.detail) {
-            setAlerts(response.detail)
-          }
-        } catch (error) {
-          console.error('Failed to fetch notification history:', error)
-        } finally {
-          setAlertsIsLoading(false)
-        }
-      }
-    }
-
     fetchAlerts()
   }, [user?.userRoleCd])
 
@@ -313,6 +313,7 @@ const MIHeaderNotice = () => {
       state: { goodsDataSrcNo: response.goodsDataSourceNo },
       replace: true,
     })
+    await fetchAlerts()
   }
 
   const tabsData = [
