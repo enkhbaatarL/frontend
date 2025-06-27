@@ -367,6 +367,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
                 MIAgent.setSelectedChatRoomId(null, true)
                 setInitialHistoryLoading(false)
               }}
+              isGenerating={isGenerating}
             />
           </Box>
           {/* Response area */}

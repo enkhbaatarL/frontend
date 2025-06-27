@@ -12,9 +12,10 @@ export interface MIAgentHeaderBoxProps {
   newChat: () => void
   onExpand?: () => void
   onClose?: () => void
+  isGenerating: boolean
 }
 
-const MIAgentHeaderBox = ({ minimized = true, newChat, onExpand = () => {}, onClose = () => {} }: MIAgentHeaderBoxProps) => {
+const MIAgentHeaderBox = ({ minimized = true, newChat, isGenerating, onExpand = () => {}, onClose = () => {} }: MIAgentHeaderBoxProps) => {
   const [closeTooltipOpen, setCloseTooltipOpen] = useState(false)
   const [expandTooltipOpen, setExpandTooltipOpen] = useState(false)
 
@@ -44,7 +45,7 @@ const MIAgentHeaderBox = ({ minimized = true, newChat, onExpand = () => {}, onCl
       <Tooltip title={'New Chat'} placement="right-start" disableInteractive>
         <Box
           sx={{
-            cursor: 'pointer',
+            cursor: isGenerating ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s cubic-bezier(0, 0.55, 0.45, 1)',
             '&:hover': {
               transform: 'scale(1.04)',
@@ -53,7 +54,10 @@ const MIAgentHeaderBox = ({ minimized = true, newChat, onExpand = () => {}, onCl
               transform: 'scale(1.01)',
             },
           }}
-          onClick={newChat}
+          onClick={() => {
+            if (isGenerating) return
+            newChat()
+          }}
         >
           <img width={32} height={32} src={mariIcon} alt="Mari Icon" style={{ marginLeft: '16px' }} />
         </Box>
