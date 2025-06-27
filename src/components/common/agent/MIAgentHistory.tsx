@@ -154,12 +154,12 @@ const MiAgentHistory = ({
             Powered by
           </Typography>
           <Typography variant="caption" fontWeight="bold" sx={{ ml: 0.5 }}>
-            A.I
+            A.X
           </Typography>
         </Box>
       ) : (
         <Typography variant="caption" fontWeight="bold" sx={{ textAlign: 'center', marginBottom: '12px', width: '100%' }}>
-          A.I
+          A.X
         </Typography>
       )}
     </Box>
