@@ -32,6 +32,7 @@ export interface DisplayDataInfo {
 }
 
 interface MIChartProps {
+  currency?: string
   unitCd?: string
   mainChart?: ChartData
   indicators?: Indicator[]
@@ -96,6 +97,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     {
       height,
       chartRange,
+      currency,
       unitCd,
       mainChart,
       chartType = MIChartType.LINE,
@@ -633,7 +635,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             ...generateYAxis({
               isMain: true,
               position: 'left',
-              unit: unitCd?.split('#').at(-1) ?? unitCd ?? '',
+              unit: [currency ? `${currency}` : '', unitCd?.split('#').at(-1) ?? unitCd ?? ''].filter(Boolean).join('/'),
               borderColor: '#DEE2E6',
             }),
             min: isEmptyChart ? 0 : undefined,
@@ -730,7 +732,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             ...generateYAxis({
               isMain: true,
               position: 'left',
-              unit: unitCd?.split('#').at(-1) ?? unitCd ?? '',
+              unit: [currency ? `${currency}` : '', unitCd?.split('#').at(-1) ?? unitCd ?? ''].filter(Boolean).join('/'),
               borderColor: '#DEE2E6',
               scaleTop: 0.24,
               scaleBottom: 0,

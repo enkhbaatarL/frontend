@@ -500,6 +500,7 @@ const ChartComponent = ({
                 height={'100%'}
                 chartType={chartType}
                 chartRange={searchFilter.range}
+                currency={chartMetaData?.currency}
                 unitCd={searchFilter.unitCd}
                 mainChart={chartData?.mainChart}
                 indicators={chartData?.indicators}
