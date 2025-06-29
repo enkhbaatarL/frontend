@@ -556,6 +556,12 @@ const ChartComponent = ({
           open={isOpenSetting}
           onClose={() => setIsOpenSetting(false)}
           goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo, type: 'ACTUAL' }]}
+          currentUnit={[
+            chartMetaData?.currency ? `${chartMetaData?.currency}` : '',
+            chartMetaData?.currentUnitCd?.split('#').at(-1) ?? chartMetaData?.currentUnitCd ?? '',
+          ]
+            .filter(Boolean)
+            .join('/')}
         />
       )}
     </>

@@ -386,6 +386,7 @@ const MIDrillDownChart = (props: MIDrillDownChartProps) => {
         open={isOpenSetting}
         onClose={() => setIsOpenSetting(false)}
         goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo: 1, type: 'ACTUAL' }]}
+        currentUnit={topLabel}
       />
     </Box>
   )

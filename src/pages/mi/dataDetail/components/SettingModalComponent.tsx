@@ -25,6 +25,7 @@ interface SettingModalProps {
   onRegister?: () => void
   isNotification?: boolean
   goodsDataSourceNoList: { goodsDataSourceNm: string; goodsDataSourceNo: number; type: string }[]
+  currentUnit?: string
 }
 
 interface TransactionItem {
@@ -47,7 +48,14 @@ interface NotificationSettingItem {
   notificationCriticalValueSeparateCd: string
 }
 
-const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotification = false, onRegister, goodsDataSourceNoList }) => {
+const SettingModalComponent: FC<SettingModalProps> = ({
+  open,
+  onClose,
+  isNotification = false,
+  onRegister,
+  goodsDataSourceNoList,
+  currentUnit,
+}) => {
   const [transactions, setTransactions] = useState<TransactionItem[]>([])
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false)
   const [hideFooter, setHideFooter] = useState(false)
@@ -347,7 +355,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({ open, onClose, isNotific
                       error={field.state.value !== '' && field.state.meta.errors.length !== 0}
                       errorMessage={field.state.meta.errors[0] as string}
                       value={field.state.value}
-                      appendContent={standardField.state.value === 'threshold' ? '{기본단위}' : '%'}
+                      appendContent={standardField.state.value === 'threshold' ? currentUnit : '%'}
                       size="h36"
                       onChange={(e) => {
                         field.handleChange(e.target.value)
