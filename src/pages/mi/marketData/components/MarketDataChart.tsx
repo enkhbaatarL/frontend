@@ -1,8 +1,8 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { Box, Grid2 as Grid, Typography, Tooltip } from '@mui/material'
 import { Chart, Tick } from 'chart.js'
 import dayjs from 'dayjs'
-import { FC, memo, useCallback, useEffect, useRef } from 'react'
+import { FC, memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIChip from '@/components/common/chip/MIChip'
@@ -234,6 +234,15 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
 
 const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locked }) => {
   const navigate = useNavigate()
+  const textRef = useRef<HTMLSpanElement>(null)
+  const [isTextOverflow, setIsTextOverflow] = useState(false)
+
+  useEffect(() => {
+    if (textRef.current) {
+      const element = textRef.current
+      setIsTextOverflow(element.scrollWidth > element.clientWidth)
+    }
+  }, [data?.marketMetaData?.goodsDataNm])
 
   if (!data?.marketMetaData) {
     return null
@@ -323,7 +332,13 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
           },
         }}
       >
-        <span>{metaData.goodsDataNm}</span>
+        {isTextOverflow ? (
+          <Tooltip title={metaData.goodsDataNm} placement="top" followCursor>
+            <span ref={textRef}>{metaData.goodsDataNm}</span>
+          </Tooltip>
+        ) : (
+          <span ref={textRef}>{metaData.goodsDataNm}</span>
+        )}
         <ChevronRightIcon sx={{ color: 'gray.60', minWidth: '24px', ml: 1 }} />
       </Typography>
       <Typography component={size === 'large' ? 'span' : 'div'} mr={5} color="gray.60" variant="body2M14">
