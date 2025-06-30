@@ -298,7 +298,12 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
             backgroundColor: '#F8F9FA',
           },
       }}
-      onClick={() => !locked && navigate(`/mi/data-detail/${data?.marketMetaData?.goodsNo}/${data?.marketMetaData?.goodsDataNo}`)}
+      onClick={() =>
+        !locked &&
+        navigate(`/mi/data-detail/${data?.marketMetaData?.goodsNo}/${data?.marketMetaData?.goodsDataNo}`, {
+          state: { goodsDataSrcNo: data?.marketMetaData?.goodsDataSourceNo },
+        })
+      }
     >
       <Typography
         color="gray.90"
