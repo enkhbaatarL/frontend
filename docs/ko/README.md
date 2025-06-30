@@ -11,6 +11,7 @@
 ```sh
 git clone https://github.com/sk-mi-platform/frontend.git
 cd mi-platform-frontend
+npm install
 
 # 개발 브랜치 사용
 git checkout dev
@@ -21,8 +22,8 @@ git checkout dev-style
 # 로컬 실행
 npm run dev
 # 또는
-# 모의 API 서버와 함께 로컬 실행
-npm run mock
+# VDI에서 개발 API 서버로 연결 및 실행
+npm run dev-vdi
 ```
 
 ## 🛠️ IDE 정보
@@ -41,6 +42,7 @@ IDE에 ESLint를 설정해야 합니다. 자세한 지침은 [IDE_SETTING.md](..
 - **Node 22.14**: 최신 LTS 버전
 - **React 19**: 최신 버전
 - **TypeScript**: 타입 검사
+- **Vite 6.2**: 빌드 도구 및 개발 서버
 - **MUI 6.4**: UI 프레임워크
 - **Zustand / React Query**: 상태 관리
 - **Axios**: API 요청
@@ -49,11 +51,117 @@ IDE에 ESLint를 설정해야 합니다. 자세한 지침은 [IDE_SETTING.md](..
 - **ESLint & Prettier**: 코드 스타일
 - **Husky & lint-staged**: Git Hooks
 
+> ⚠️ 다국어 지원은 일부 `t('string')` 형식으로 코드 작성 되어 있으나, 현재 바이패스로 출력하고 있습니다. 
+> (차후 맵핑이 필요합니다)
+
+## 🛣️ 라우팅 구조
+
+애플리케이션은 React Router v7을 사용하여 계층적 라우팅 구조를 가집니다:
+
+### 메인 라우트
+- `/` - 로그인 페이지
+- `/callback` - OAuth 콜백 처리
+- `/saml2/authenticate` - SAML 인증 콜백
+- `/pdf-viewer/:fileId` - PDF 뷰어
+- `/healthcheck` - 헬스 체크 엔드포인트
+
+### MI 플랫폼 (`/mi`)
+- `/mi` - 회사별 홈페이지로 리다이렉트
+- `/mi/dashboard` - 메인 대시보드
+- `/mi/signal-map` - 시그널 맵 시각화
+- `/mi/market-data` - 시장 데이터 분석
+- `/mi/insights` - 시장 인사이트
+- `/mi/data-detail/:goodsNo/:goodsDataNo` - 상세 데이터 보기
+- `/mi/notices` - 공지사항
+  - `/mi/notices/:noticeNo` - 공지사항 상세
+- `/mi/help-center` - 도움말 센터 (FAQ)
+- `/mi/privacy-policy` - 개인정보처리방침
+- `/mi/notifications` - 사용자 알림
+
+### 관리자 (`/admin`)
+- `/admin` - 고객사 관리로 리다이렉트
+- `/admin/customer-company` - 고객사 관리
+  - `/admin/customer-company/companies` - 고객사 목록
+  - `/admin/customer-company/owner-companies` - 관리사 목록
+- `/admin/member-mgmt` - 사용자 관리
+  - `/admin/member-mgmt/users` - 서비스 회원
+  - `/admin/member-mgmt/managers` - 어드민 관리자
+- `/admin/data-providers` - 데이터 프로바이더 관리
+  - `/admin/data-providers/providers` - 프로바이더 목록
+- `/admin/notification` - 알람 관리
+  - `/admin/notification/list` - 알람 발송 목록
+- `/admin/boards` - 게시판 관리
+  - `/admin/boards/notice` - 공지사항 관리
+  - `/admin/boards/faq` - FAQ 관리
+- `/admin/system` - 시스템 관리
+  - `/admin/system/api` - API 관리
+
+### 오류 (`/error`)
+- `/error/404` - 페이지를 찾을 수 없음
+- `/error/auth` - 인증 오류
+- `/error/unknown` - 알 수 없는 오류
+- `/error/access-denied` - 접근 거부
+- `/error/ip-verification` - IP 인증 오류
+- `/error/session-expired` - 세션 만료
+
 ## 📝 코드 스타일 가이드
 
 - ESLint 및 Prettier 설정 포함
 - `lint-staged` 및 `husky`를 사용하여 Git Hooks 적용
 - 커밋 메시지에 `Conventional Commits` 규칙을 따름
+- 스타일 코드는 module.scss 파일에 작성
+
+**예시)**
+
+DividerScroll.module.scss
+
+```scss
+.dividerScroll {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  flex-grow: 1;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 12px 40px;
+  border-top: none;
+  border-bottom: none;
+
+  &.noPadding {
+    padding: 0;
+  }
+
+  &.showTopBorder {
+    border-top: 1px solid #dde1eb;
+  }
+
+  &.showBottomBorder {
+    border-bottom: 1px solid #dde1eb;
+  }
+}
+```
+
+DividerScroll.tsx
+
+```typescript jsx
+...
+import style from './DividerScroll.module.scss'
+...
+    <div
+      ref={containerRef}
+      className={clsx(
+        style.dividerScroll,
+        !padding && style.noPadding,
+        showTopBorder && style.showTopBorder,
+        showBottomBorder && style.showBottomBorder,
+        className,
+      )}
+      {...DividerScrollProps}
+    >
+      <div ref={contentRef}>{children}</div>
+    </div>
+...
+```
 
 ## 📌 커밋 메시지 규칙
 
@@ -77,41 +185,99 @@ IDE에 ESLint를 설정해야 합니다. 자세한 지침은 [IDE_SETTING.md](..
 > fix: 로그인 시 잘못된 비밀번호 입력 시 오류 수정  
 > chore: eslint 설정 업데이트
 
-## 🐳 Docker 빌드 (임시)
+## 🐳 Docker 빌드
 
 ```bash
 docker build -t mi-platform-frontend .
 
 # 로컬 실행
-docker run -p 8080:80 my-react-app
+docker run -p 8080:80 mi-platform-frontend
 ```
+자세한 배포는 AMDP 파이프라인 참고
 
 ## 📂 프로젝트 구조
 
 ```
 📦 project-root/
 ┣ 📂 public/
+┃ ┗ 📂 locales/          # i18n 번역 파일
 ┣ 📂 src/
-┃ ┣ 📂 adapter/        # 어댑터 관련 파일
-┃ ┣ 📂 assets/         # 정적 파일 (이미지, 아이콘 등)
-┃ ┣ 📂 components/     # 재사용 가능한 컴포넌트
-┃ ┃ ┣ 📂 admin/        # 관리자 관련 컴포넌트
-┃ ┃ ┣ 📂 common/       # 공통 컴포넌트
-┃ ┃ ┗ 📂 user/         # 사용자 관련 컴포넌트
-┃ ┣ 📂 constants/      # 상수 값
-┃ ┣ 📂 contexts/       # Context API 관련 파일
-┃ ┣ 📂 hooks/          # 커스텀 훅
-┃ ┣ 📂 layouts/        # 레이아웃 컴포넌트
-┃ ┣ 📂 lib/            # 라이브러리 파일
-┃ ┣ 📂 pages/          # 주요 페이지
-┃ ┃ ┣ 📂 admin/        # 관리자 페이지
-┃ ┃ ┣ 📂 error/        # 오류 페이지
-┃ ┃ ┗ 📂 user/         # 사용자 페이지
-┃ ┣ 📂 providers/      # 컨텍스트 제공자
-┃ ┣ 📂 routes/         # 라우트 정의
-┃ ┣ 📂 styles/         # 스타일 파일
-┃ ┣ 📂 types/          # 타입 정의
-┃ ┣ 📂 utils/          # 유틸리티 함수
-┣ 📂 mock/             # 모의 API 관련 파일
-┣ 📂 .husky/           # Git Hook 설정
+┃ ┣ 📂 assets/           # 정적 파일 (이미지, 아이콘, 폰트 등)
+┃ ┣ 📂 components/       # 재사용 가능한 컴포넌트
+┃ ┃ ┣ 📂 admin/          # 관리자 관련 컴포넌트
+┃ ┃ ┣ 📂 common/         # 공통 컴포넌트 (차트, 버튼, 입력 등)
+┃ ┃ ┗ 📂 mi/             # MI 플랫폼 전용 컴포넌트
+┃ ┣ 📂 constants/        # 상수 값
+┃ ┣ 📂 contexts/         # Context API 관련 파일
+┃ ┣ 📂 hooks/            # 커스텀 훅
+┃ ┣ 📂 layouts/          # 레이아웃 컴포넌트
+┃ ┣ 📂 lib/              # 라이브러리 파일 (axios, i18n, 차트 어댑터)
+┃ ┣ 📂 pages/            # 주요 페이지
+┃ ┃ ┣ 📂 admin/          # 관리자 페이지
+┃ ┃ ┣ 📂 common/         # 공통 페이지 (로그인, 콜백 등)
+┃ ┃ ┣ 📂 error/          # 오류 페이지
+┃ ┃ ┗ 📂 mi/             # MI 플랫폼 페이지 (대시보드, 인사이트 등)
+┃ ┣ 📂 providers/        # 컨텍스트 제공자
+┃ ┣ 📂 routes/           # 라우트 정의
+┃ ┣ 📂 service/          # API 서비스 파일
+┃ ┣ 📂 store/            # 상태 관리 (Zustand 스토어)
+┃ ┣ 📂 styles/           # 전역 스타일 파일
+┃ ┣ 📂 theming/          # 테마 설정
+┃ ┣ 📂 types/            # 타입 정의
+┃ ┣ 📂 utils/            # 유틸리티 함수
+┃ ┣ 📂 App.tsx           # 메인 App 컴포넌트
+┃ ┗ 📂 main.tsx          # 애플리케이션 진입점
+┣ 📂 docs/               # 문서
+┣ 📂 .husky/             # Git Hook 설정
+┣ 📂 eslint.config.js    # ESLint 설정
+┣ 📂 vite.config.ts      # Vite 설정
+┗ 📂 package.json        # 의존성 및 스크립트
 ```
+
+## 🔧 사용 가능한 스크립트
+
+- `npm run dev` - 개발 서버 시작
+- `npm run dev-vdi` - VDI 모드로 개발 서버 시작
+- `npm run build` - 빌드
+- `npm run lint` - ESLint 실행
+- `npm run preview` - 빌드 미리보기
+
+## 💡 개발용 Mock 설정 (필요 시 참고사항)
+`d08f60c0) refactor: mock 및 미사용 파일 제거` 내용을 참고하여 기존에 사용하던 mcok 관련 파일을 복구합니다.
+
+```
+📦 project-root/
+┣ 📂 mock/
+┃ ┣ 📂 swagger/  
+┃ ┃ ┣ swagger-ui.css
+┃ ┃ ┗ swagger-ui-bundle.js
+┃ ┣ index.html
+┃ ┗ mock-api.json
+┣ .env.mock
+┗ package.json
+```
+
+
+mock-api.json 파일을 BE 스웨거에서 다운받아서 파일 교체 후 prettier를 적용합니다.
+
+```bash
+prettier -w ./mock/mock-api.json
+```
+
+이후 파일 내용을 다음으로 치환합니다.
+1. `"*/*"` -> `"application/json"`
+2. `8080` -> `4010`
+
+이후 시큐리티 관련 부분을 제거해줍니다.
+
+```bash
+# 종속성 설치
+npm i
+
+# Mock(+Dev) 서버 실행
+npm run mock
+```
+
+### Mock 스웨거
+http://localhost:9000/
+
