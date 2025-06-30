@@ -148,7 +148,7 @@ docker run -p 8080:80 my-react-app
 ┃ ┣ 📂 components/     # Reusable components
 ┃ ┃ ┣ 📂 admin/        # Admin related components
 ┃ ┃ ┣ 📂 common/       # Common components
-┃ ┃ ┗ 📂 user/         # User related components
+┃ ┃ ┗ 📂 mi/           # MI related components
 ┃ ┣ 📂 constants/      # Constant values
 ┃ ┣ 📂 contexts/       # Context API related files
 ┃ ┣ 📂 hooks/          # Custom hooks
@@ -156,10 +156,12 @@ docker run -p 8080:80 my-react-app
 ┃ ┣ 📂 lib/            # Library files
 ┃ ┣ 📂 pages/          # Main pages
 ┃ ┃ ┣ 📂 admin/        # Admin pages
+┃ ┃ ┣ 📂 common/       # common pages
 ┃ ┃ ┣ 📂 error/        # Error pages
-┃ ┃ ┗ 📂 user/         # User pages
+┃ ┃ ┗ 📂 mi/           # MI pages
 ┃ ┣ 📂 providers/      # Providers for context
 ┃ ┣ 📂 routes/         # Route definitions
+┃ ┣ 📂 service/        # Service files
 ┃ ┣ 📂 styles/         # Style files
 ┃ ┣ 📂 types/          # Type definitions
 ┃ ┣ 📂 utils/          # Utility functions
