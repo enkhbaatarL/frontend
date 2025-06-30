@@ -568,7 +568,12 @@ const ForecastChart = (props: ForecastChartProps) => {
         <MIForecastChartTooltip {...tooltip} />
       </Box>
       {isMIAgent && <MIForecastLegend showActual={false} datasets={datasets} onToggleDataset={handleToggleDataset} />}
-      <SettingModalComponent open={isOpenSetting} onClose={() => setIsOpenSetting(false)} goodsDataSourceNoList={goodsDataSourceNoList} />
+      <SettingModalComponent
+        open={isOpenSetting}
+        onClose={() => setIsOpenSetting(false)}
+        goodsDataSourceNoList={goodsDataSourceNoList}
+        currentUnit={topLabel?.replace('Unit: ', '')}
+      />
     </Box>
   )
 }

@@ -578,6 +578,11 @@ const AdminCustomerCompanyProductDetailPage = () => {
             value={permission}
             onChange={(e) => {
               setPermission(e.target.value)
+              if (e.target.value === 'INDIVIDUAL') {
+                setIndividualPermissions(userPermissions?.detail ?? [])
+              } else {
+                setIndividualPermissions([])
+              }
             }}
           >
             <FormControlLabel disabled={!isDetailPermissionSetting} value="INDIVIDUAL" control={<Radio />} label="개별 권한" />

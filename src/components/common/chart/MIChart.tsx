@@ -32,6 +32,7 @@ export interface DisplayDataInfo {
 }
 
 interface MIChartProps {
+  currency?: string
   unitCd?: string
   mainChart?: ChartData
   indicators?: Indicator[]
@@ -96,6 +97,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     {
       height,
       chartRange,
+      currency,
       unitCd,
       mainChart,
       chartType = MIChartType.LINE,
@@ -176,14 +178,14 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           return [
             {
               label: mainChart?.goodsDataSourceName ?? '',
-              data:
-                mainDataSeries?.values?.map((value, index) => {
-                  const timestamp = dayjs(mainChart?.timestamps[index]).valueOf()
-                  return {
-                    x: timestampToIndex.get(timestamp) ?? index,
-                    y: value ?? null,
-                  }
-                }) ?? sortedTimestamps.map((_, index) => ({ x: index, y: null })),
+              data: sortedTimestamps.map((timestamp) => {
+                const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+                const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+                return {
+                  x: timestampToIndex.get(timestamp) ?? 0,
+                  y: index !== undefined && index !== -1 ? (mainDataSeries?.values[index] ?? null) : null,
+                }
+              }),
               type: 'line',
               borderColor: '#2F62A3',
               borderWidth: 3,
@@ -200,16 +202,14 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             // NOTE: ref, volume 데이터는 표시하지 않음 - hidden: true 지정 (y축 범위 문제)
             ...refDataSeries.map((series) => ({
               label: series.label,
-              data:
-                series.values.length === 0
-                  ? sortedTimestamps.map((_, index) => ({ x: index, y: null }))
-                  : series.values.map((value, index) => {
-                    const timestamp = dayjs(mainChart?.timestamps[index]).valueOf()
-                    return {
-                      x: timestampToIndex.get(timestamp) ?? index,
-                      y: value ?? null,
-                    }
-                  }),
+              data: sortedTimestamps.map((timestamp) => {
+                const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+                const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+                return {
+                  x: timestampToIndex.get(timestamp) ?? 0,
+                  y: index !== undefined && index !== -1 ? (series.values[index] ?? null) : null,
+                }
+              }),
               type: 'line',
               borderWidth: 0,
               pointRadius: 0,
@@ -227,25 +227,28 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         }
 
         if (mainChart?.chartType === MIChartType.CANDLE) {
-          return [closeDataSeries, openDataSeries, highDataSeries, lowDataSeries].map((series, index) => ({
+          return [closeDataSeries, openDataSeries, highDataSeries, lowDataSeries].map((series, seriesIndex) => ({
             label: `${mainChart?.goodsDataSourceName} (${series?.seriesId})`,
-            data:
-              series?.values.map((value, index) => ({
-                x: index,
-                y: value ?? null,
-              })) ?? sortedTimestamps.map((_, index) => ({ x: index, y: null })),
+            data: sortedTimestamps.map((timestamp) => {
+              const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+              const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+              return {
+                x: timestampToIndex.get(timestamp) ?? 0,
+                y: index !== undefined && index !== -1 ? (series?.values[index] ?? null) : null,
+              }
+            }),
             type: 'line',
-            borderColor: ['#40597A', '#7A8790', '#9DAFB9', '#B1BEC6'][index], // 가시성 문제로 #C7CED4 -> #B1BEC6 적용
+            borderColor: ['#40597A', '#7A8790', '#9DAFB9', '#B1BEC6'][seriesIndex], // 가시성 문제로 #C7CED4 -> #B1BEC6 적용
             borderWidth: series?.seriesId === 'close' ? 3 : 0,
             pointRadius: 0,
             fill: false,
             tension: 0.1,
             spanGaps: true,
-            hidden: index !== 0,
+            hidden: seriesIndex !== 0,
             yAxisID: 'y',
             metadata: {
               isMain: true,
-              chipColor: ['#40597A', '#7A8790', '#9DAFB9', '#B1BEC6'][index],
+              chipColor: ['#40597A', '#7A8790', '#9DAFB9', '#B1BEC6'][seriesIndex],
             },
           }))
         }
@@ -255,21 +258,17 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         return [
           {
             label: mainChart?.goodsDataSourceName ?? '',
-            data:
-              closeDataSeries?.values.map((value, index) => ({
-                x: index,
-                c: value ?? null,
-                o: openDataSeries?.values[index] ?? value ?? null,
-                h: highDataSeries?.values[index] ?? value ?? null,
-                l: lowDataSeries?.values[index] ?? value ?? null,
-              })) ??
-              sortedTimestamps.map((_, index) => ({
-                x: index,
-                c: null,
-                o: null,
-                h: null,
-                l: null,
-              })),
+            data: sortedTimestamps.map((timestamp) => {
+              const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+              const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+              return {
+                x: timestampToIndex.get(timestamp) ?? 0,
+                c: index !== undefined && index !== -1 ? (closeDataSeries?.values[index] ?? null) : null,
+                o: index !== undefined && index !== -1 ? (openDataSeries?.values[index] ?? null) : null,
+                h: index !== undefined && index !== -1 ? (highDataSeries?.values[index] ?? null) : null,
+                l: index !== undefined && index !== -1 ? (lowDataSeries?.values[index] ?? null) : null,
+              }
+            }),
             type: 'candlestick',
             colors: {
               up: '#498B47',
@@ -322,10 +321,14 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           ma?.series
             ?.map((series) => ({
               label: maLabels[series.seriesId],
-              data: series.values.map((value, index) => ({
-                x: index,
-                y: value ?? null,
-              })),
+              data: sortedTimestamps.map((timestamp) => {
+                const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+                const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+                return {
+                  x: timestampToIndex.get(timestamp) ?? 0,
+                  y: index !== undefined && index !== -1 ? (series.values[index] ?? null) : null,
+                }
+              }),
               type: 'line',
               borderColor: displayDataInfo.MA[maLabels[series.seriesId]] ? maColors[series.seriesId] : 'transparent',
               borderWidth: 1,
@@ -349,10 +352,14 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           bb?.series
             ?.map((series) => ({
               label: bbLabels[series.seriesId],
-              data: series.values.map((value, index) => ({
-                x: index,
-                y: value ?? null,
-              })),
+              data: sortedTimestamps.map((timestamp) => {
+                const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+                const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+                return {
+                  x: timestampToIndex.get(timestamp) ?? 0,
+                  y: index !== undefined && index !== -1 ? (series.values[index] ?? null) : null,
+                }
+              }),
               type: 'line',
               borderColor: displayDataInfo.BB ? bbColors[series.seriesId] : 'transparent',
               borderWidth: 1,
@@ -371,18 +378,19 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               return order[a.label] - order[b.label]
             }) ?? [],
       }
-    }, [indicators, displayDataInfo.BB, displayDataInfo.MA])
+    }, [indicators, displayDataInfo.BB, displayDataInfo.MA, mainChart?.timestamps, sortedTimestamps, timestampToIndex])
 
     const comparisonDatasets = useMemo(() => {
       const colors = ['#26757B', '#EFA460', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434']
 
       return comparisonCharts.map((chart, index) => ({
         label: chart.goodsDataSourceName,
-        data: chart.series[0].values.map((value, idx) => {
-          const timestamp = dayjs(chart.timestamps[idx]).valueOf()
+        data: sortedTimestamps.map((timestamp) => {
+          const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+          const chartIndex = chart.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
           return {
-            x: timestampToIndex.get(timestamp) ?? idx,
-            y: value ?? null,
+            x: timestampToIndex.get(timestamp) ?? 0,
+            y: chartIndex !== undefined && chartIndex !== -1 ? (chart.series[0].values[chartIndex] ?? null) : null,
           }
         }),
         type: 'line',
@@ -403,7 +411,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           goodsDataSourceName: chart.goodsDataSourceName,
         },
       }))
-    }, [comparisonCharts, hideComparisonChartIndexList, timestampToIndex])
+    }, [comparisonCharts, hideComparisonChartIndexList, timestampToIndex, sortedTimestamps])
 
     const volumeDatasets = useMemo(
       () =>
@@ -411,11 +419,12 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           ? [
             {
               label: volumeDataSeries.label,
-              data: volumeDataSeries.values.map((value, index) => {
-                const timestamp = dayjs(mainChart?.timestamps[index]).valueOf()
+              data: sortedTimestamps.map((timestamp) => {
+                const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+                const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
                 return {
-                  x: timestampToIndex.get(timestamp) ?? index,
-                  y: value ?? null,
+                  x: timestampToIndex.get(timestamp) ?? 0,
+                  y: index !== undefined && index !== -1 ? (volumeDataSeries.values[index] ?? null) : null,
                 }
               }),
               type: 'line',
@@ -434,7 +443,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             },
           ]
           : [],
-      [mainChart?.timestamps, timestampToIndex, volumeDataSeries],
+      [mainChart?.timestamps, timestampToIndex, volumeDataSeries, sortedTimestamps],
     )
 
     const comparisonChartUnits = useMemo(
@@ -633,7 +642,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             ...generateYAxis({
               isMain: true,
               position: 'left',
-              unit: unitCd?.split('#').at(-1) ?? unitCd ?? '',
+              unit: [currency ? `${currency}` : '', unitCd?.split('#').at(-1) ?? unitCd ?? ''].filter(Boolean).join('/'),
               borderColor: '#DEE2E6',
             }),
             min: isEmptyChart ? 0 : undefined,
@@ -706,18 +715,30 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       return [
         {
           label: volumeDataSeries.label,
-          data: volumeDataSeries.values.map((value, index) => ({
-            x: index,
-            y: value ?? null,
-          })),
+          data: sortedTimestamps.map((timestamp) => {
+            const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+            const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+            const value = index !== undefined && index !== -1 ? (volumeDataSeries.values[index] ?? null) : null
+
+            return {
+              x: timestampToIndex.get(timestamp) ?? 0,
+              y: value,
+            }
+          }),
           type: 'bar',
-          backgroundColor: volumeDataSeries.values.map((value, index) =>
-            index > 0 && value < volumeDataSeries.values[index - 1] ? 'rgba(169, 20, 26, 0.5)' : 'rgba(60, 138, 54, 0.5)',
-          ),
+          backgroundColor: sortedTimestamps.map((timestamp) => {
+            const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+            const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+            const value = index !== undefined && index !== -1 ? (volumeDataSeries.values[index] ?? null) : null
+            const prevValue = index !== undefined && index !== -1 && index > 0 ? (volumeDataSeries.values[index - 1] ?? null) : null
+
+            if (value === null || prevValue === null) return 'rgba(60, 138, 54, 0.5)'
+            return value < prevValue ? 'rgba(169, 20, 26, 0.5)' : 'rgba(60, 138, 54, 0.5)'
+          }),
           yAxisID: 'y',
         },
       ] as ChartDatasetType[]
-    }, [volumeDataSeries])
+    }, [volumeDataSeries, mainChart?.timestamps, sortedTimestamps, timestampToIndex])
 
     const hasVolume = useMemo(() => (volumeDataSeries?.values.length ?? 0) > 0, [volumeDataSeries?.values.length])
 
@@ -730,7 +751,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             ...generateYAxis({
               isMain: true,
               position: 'left',
-              unit: unitCd?.split('#').at(-1) ?? unitCd ?? '',
+              unit: [currency ? `${currency}` : '', unitCd?.split('#').at(-1) ?? unitCd ?? ''].filter(Boolean).join('/'),
               borderColor: '#DEE2E6',
               scaleTop: 0.24,
               scaleBottom: 0,

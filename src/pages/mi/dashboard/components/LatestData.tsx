@@ -97,6 +97,7 @@ const LatestData = ({ dataList }: { dataList: LatestInsightsData[] }) => {
             modifyDt={item.modifyDt}
             providerNm={item.providerNm}
             onClick={() => onClickRow(item)}
+            isViewable={item.isViewable}
           />
         ))}
       </Box>

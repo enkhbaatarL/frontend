@@ -500,6 +500,7 @@ const ChartComponent = ({
                 height={'100%'}
                 chartType={chartType}
                 chartRange={searchFilter.range}
+                currency={chartMetaData?.currency}
                 unitCd={searchFilter.unitCd}
                 mainChart={chartData?.mainChart}
                 indicators={chartData?.indicators}
@@ -555,6 +556,12 @@ const ChartComponent = ({
           open={isOpenSetting}
           onClose={() => setIsOpenSetting(false)}
           goodsDataSourceNoList={[{ goodsDataSourceNm: '', goodsDataSourceNo, type: 'ACTUAL' }]}
+          currentUnit={[
+            chartMetaData?.currency ? `${chartMetaData?.currency}` : '',
+            chartMetaData?.currentUnitCd?.split('#').at(-1) ?? chartMetaData?.currentUnitCd ?? '',
+          ]
+            .filter(Boolean)
+            .join('/')}
         />
       )}
     </>
