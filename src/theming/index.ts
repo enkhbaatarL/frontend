@@ -660,7 +660,7 @@ const theme = createTheme({
       lineHeight: '1.2',
     },
     messageText2: {
-      fontSize: '12px',
+      fontSize: '13px',
       fontStyle: 'normal',
       fontWeight: 400,
       lineHeight: '1.6',

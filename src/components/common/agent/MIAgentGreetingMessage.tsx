@@ -54,10 +54,16 @@ const MIAgentGreetingMessage = ({ handleSendMessage }: Props) => {
   return (
     <Box width={'100%'} display={'flex'} justifyContent={'center'} alignItems={'center'} flexDirection={'column'} marginY={'24px'}>
       <Typography color="gray.90" variant="messageText1" marginBottom={'4px'}>
-        {t('시장의 핵심 흐름을 한눈에, Mari에서 찾아보세요.')}
+        {t('신뢰도 높은 데이터로 시장의 흐름을 정확하게 읽을 수 있습니다')}
+      </Typography>
+      <Typography color="gray.90" variant="messageText2" marginBottom={'1px'}>
+        {t('LSEG에서 수집된 글로벌 데이터를 기반으로')}
+      </Typography>
+      <Typography color="gray.90" variant="messageText2" marginBottom={'1px'}>
+        {t('가격 수준, 추세 변화, 이상 여부 등 단일 지표에 대한 핵심 정보를 확인하고')}
       </Typography>
       <Typography color="gray.90" variant="messageText2" marginBottom={'20px'}>
-        {t('복잡한 시장 정보, 구조화된 인사이트로 정리합니다')}
+        {t('해당 지표와 관련된 시황 흐름을 간결하게 파악할 수 있습니다.')}
       </Typography>
       {isLoading ? (
         <Box display={'flex'} justifyContent={'center'} alignItems={'center'} height={'116px'}>
