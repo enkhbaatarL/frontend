@@ -43,14 +43,6 @@ const MIAgentGreetingMessage = ({ handleSendMessage }: Props) => {
     gcTime: 1000 * 60 * 5,
   })
 
-  /*
-    [2025-07-07 kmjung] 변경 내역
-    - before: ?.slice(0, 3)
-    - after: ?.slice(0, questionLimit)
-  */
-
-  const questionLimit = majorQuestions && majorQuestions.length >= 5 ? 5 : 3
-
   return (
     <Box width={'100%'} display={'flex'} justifyContent={'center'} alignItems={'center'} flexDirection={'column'} marginY={'24px'}>
       <Typography color="gray.90" variant="messageText1" marginBottom={'4px'}>
@@ -71,7 +63,7 @@ const MIAgentGreetingMessage = ({ handleSendMessage }: Props) => {
         </Box>
       ) : (
         majorQuestions
-          ?.slice(0, questionLimit)
+          ?.slice(0, 3)
           .map(({ majorQuestionNo, majorQuestion }) => (
             <BtnMessage key={majorQuestionNo} text={majorQuestion} onSendMessage={handleSendMessage} />
           ))
