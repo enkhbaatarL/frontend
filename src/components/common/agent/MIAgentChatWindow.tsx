@@ -290,17 +290,22 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     }
   }, [MIAgent.conversations, MIAgent.history, hasConversations, initialHistoryLoading, scrollRef, scrollToBottom])
 
+  /*
+    [2025-07-07 kmjung] 변경 내역
+    - before: minWidth: '640px', minHeight: '544px'
+    - after:  minWidth: '840px', minHeight: '694px'
+  */
   return (
     <Box>
       <Box
         sx={{
           display: 'flex',
-          width: windowExpend ? '1380px' : '640px',
-          height: windowExpend || hasConversations ? `calc(100vh - ${top + 96}px)` : '544px',
+          width: windowExpend ? '1380px' : '840px',
+          height: windowExpend || hasConversations ? `calc(100vh - ${top + 96}px)` : '694px',
           transition: 'width 0.4s cubic-bezier(0.33, 1, 0.68, 1), height 0.54s cubic-bezier(0.33, 1, 0.68, 1)',
-          minWidth: '640px',
+          minWidth: '840px',
           maxWidth: `calc(100vw - ${62}px)`,
-          minHeight: '544px',
+          minHeight: '694px',
           maxHeight: '2048px',
           position: 'relative',
           borderRadius: '12px',
