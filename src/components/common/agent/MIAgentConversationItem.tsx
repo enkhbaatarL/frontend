@@ -51,6 +51,15 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
   const { showSnackbar } = useSnackbar()
   const [clipboardContents, setClipboardContents] = useState<{ plain: string; html?: string }>({ plain: '' })
 
+  const bundles = conversation.answer?.bundles || []
+  const [isDone, setIsDone] = useState(false)
+
+  useEffect(() => {
+    const done = bundles.length == 0 || (typeof conversation?.event === 'string' && conversation?.event ==='complete')
+    setIsDone(done)
+  }, [bundles, conversation])
+  const [currentIdx, setCurrentIdx] = useState(0)
+
   const handleFeedback = useCallback(
     async (qnaNo: number, isRecommended: boolean, feedbackCd?: FeedbackCd, feedbackComment?: string) => {
       if (!chatRoom?.chatRoomId) return
@@ -72,6 +81,22 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
     }
   }, [conversation.statusCd, conversation.isNew, animationComplete, onAnimationComplete, showSnackbar])
 
+
+  useEffect(() => {
+    if (!bundles.length) return
+    if (isDone) {
+      onAnimationComplete()
+      return
+    }
+    if (currentIdx < bundles.length -1) {
+      const timeout = setTimeout(() => {
+        setCurrentIdx((prev) => prev+1) 
+
+      },400)
+      return () => clearTimeout(timeout)
+    }
+  }, [bundles.length , currentIdx])
+
   return (
     <Box display={'flex'} flexDirection={'column'} gap={'12px'} px={'12px'} id={`message-${conversation.qnaNo}`}>
       <MIAgentMessagePrompt content={conversation.question} />
@@ -79,6 +104,7 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
         <>
           <MIAgentAnswer
             isNewChat={conversation.isNew}
+            eventType={conversation.event ?? undefined}
             bundles={conversation.answer?.bundles}
             chatRoomTitle={chatRoom?.title}
             onAnimationComplete={onAnimationComplete}

@@ -8,6 +8,7 @@ ChartJS.register(TreemapController, TreemapElement)
 
 interface Props {
   mapData: {
+    categoryName?: string
     instrumentNm: string
     correlationCalculationVal: number
   }[]
@@ -16,6 +17,7 @@ interface Props {
 }
 
 interface TreemapData {
+  category?: string
   sector: string
   value: number
   change: number
@@ -91,9 +93,17 @@ Tooltip.positioners.myCustomPositioner = function (_elements: ActiveElement[], e
 const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }: Props) => {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
-  const chartInstanceRef = useRef<{ destroy:() => void }>(null)
+  const chartInstanceRef = useRef<{ destroy: () => void }>(null)
 
-  const data = useMemo(() => mapData.map((m) => ({ sector: m.instrumentNm, change: m.correlationCalculationVal })), [mapData])
+  const data = useMemo(
+    () =>
+      mapData.map((m) => ({
+        category: m.categoryName,
+        sector: m.instrumentNm,
+        change: m.correlationCalculationVal,
+      })),
+    [mapData],
+  )
 
   const formatChange = (change: number | undefined) => (typeof change === 'number' ? `${change.toFixed(2)}%` : 'N/A')
 
@@ -240,12 +250,20 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
             titleColor: '#333',
             titleFont: {
               size: 14,
-              weight: 'normal',
+              weight: '600',
+              lineHeight: 1,
             },
             bodyColor: '#333',
             bodyFont: {
+              size: 14,
+              weight: '500',
+              lineHeight: 1,
+            },
+            footerColor: '#333',
+            footerFont: {
               size: 24,
-              weight: 'normal',
+              weight: '600',
+              lineHeight: 1.5,
             },
             padding: 16,
             displayColors: false,
@@ -256,11 +274,16 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
             yAlign: 'bottom',
             callbacks: {
               title: (context: TreemapScriptableContext[]) => {
-                const { sector } = (context[0].raw as unknown as TreemapRawData)._data.children[0]
-                return sector
+                const { category } = (context[0].raw as unknown as TreemapRawData)._data.children[0]
+
+                return category ? category : ''
               },
               label: (context: TreemapScriptableContext) => {
-                const { change } = (context.raw as unknown as TreemapRawData)._data.children[0]
+                const { sector } = (context.raw as unknown as TreemapRawData)._data.children[0]
+                return sector
+              },
+              footer: (context: TreemapScriptableContext[]) => {
+                const { change } = (context[0].raw as unknown as TreemapRawData)._data.children[0]
                 return change.toFixed(2).replace('-', '- ')
               },
             },

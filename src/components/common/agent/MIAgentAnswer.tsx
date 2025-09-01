@@ -21,6 +21,7 @@ import { IChatQnaAnswerBundle } from '@/service/mi/agent'
 interface Props {
   isNewChat?: boolean
   bundles?: IChatQnaAnswerBundle[]
+  eventType?: string
   chatRoomTitle?: string
   onAnimationComplete?: () => void
   onCreateCopyableContent?: (contents: { plain: string; html?: string }) => void
@@ -70,7 +71,7 @@ const markdownToHtml = async (markdown: string): Promise<string> => {
   return result.toString()
 }
 
-const MIAgentAnswer = ({ bundles, chatRoomTitle, onAnimationComplete, isNewChat, onCreateCopyableContent }: Props) => {
+const MIAgentAnswer = ({ bundles, chatRoomTitle, eventType, onAnimationComplete, isNewChat, onCreateCopyableContent }: Props) => {
   const { typedText, startTyping } = useTypingEffect(4, 60)
   const [animationStateList, setAnimationStateList] = useState<AnimationState[]>(
     isNewChat ? ['idle'] : [...(bundles ?? []).map(() => 'complete' as AnimationState)],
@@ -78,7 +79,7 @@ const MIAgentAnswer = ({ bundles, chatRoomTitle, onAnimationComplete, isNewChat,
   const [chartImageUrls, setChartImageUrls] = useState<string[]>([])
 
   const answerRef = useRef<HTMLDivElement>(null)
-  const { scrollToBottom } = useScroll()
+  const { scrollToBottom , scrollToNewMessage} = useScroll()
 
   useEffect(() => {
     animationStateList.forEach((state, index) => {
@@ -87,6 +88,7 @@ const MIAgentAnswer = ({ bundles, chatRoomTitle, onAnimationComplete, isNewChat,
       if (!content) return
 
       if (state === 'idle') {
+        scrollToBottom()
         setAnimationStateList(updateAnimationState(index, 'typing'))
         startTyping(content).then(() => {
           setTimeout(() => setAnimationStateList(updateAnimationState(index, 'graph')), 100)
@@ -98,12 +100,16 @@ const MIAgentAnswer = ({ bundles, chatRoomTitle, onAnimationComplete, isNewChat,
       }
 
       if (state === 'link') {
-        setTimeout(() => setAnimationStateList(updateAnimationState(index, 'complete', 'idle')), 300)
+        if (eventType === 'complete') {
+          setAnimationStateList(updateAnimationState(index, 'typing'))
+          startTyping(content).then(() => {
+            setTimeout(() => setAnimationStateList(updateAnimationState(index, 'complete', 'idle')), 300)
+          })
+        }
       }
     })
 
-    scrollToBottom()
-  }, [animationStateList])
+  }, [animationStateList, bundles])
 
   useEffect(() => {
     if (animationStateList.length > (bundles?.length ?? 0)) {
@@ -149,7 +155,7 @@ const MIAgentAnswer = ({ bundles, chatRoomTitle, onAnimationComplete, isNewChat,
   useEffect(() => {
     // 타이핑 중에는 스크롤 하단 유지
     if (typedText) {
-      scrollToBottom()
+      scrollToNewMessage()
     }
   }, [typedText])
 

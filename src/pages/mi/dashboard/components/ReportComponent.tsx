@@ -17,6 +17,7 @@ import MonthSelector from '@/pages/mi/dashboard/components/MonthSelector'
 import dashboardDataService from '@/service/mi/dashboardData'
 import useAuthStore from '@/store/useAuthStore'
 import { downloadFile } from '@/utils/file'
+import dayjs from 'dayjs'
 
 export type MonthItem = {
   label: string
@@ -94,10 +95,11 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         }
 
         const year = dateObj.getFullYear()
-        const month = dateObj.toLocaleString('en-US', { month: 'short' })
+        // const month = dateObj.toLocaleString('en-US', { month: 'short' })
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0')
 
         return {
-          label: `${month} ${year}`,
+          label: ` ${year}-${month}`,
           value: date,
         }
       }),
@@ -440,7 +442,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
               {dataInfo?.chartPredictSettingNm}
             </Typography>
             <Typography component={'div'} color="#495057" variant="subtext0">
-              Updated {formatDataInfoDate}
+              Updated {dayjs(formatDataInfoDate).format('YYYY-MM-DD')}
             </Typography>
           </>
         )}

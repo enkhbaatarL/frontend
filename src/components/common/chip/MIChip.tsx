@@ -1,7 +1,7 @@
 import { Chip, ChipProps, SxProps, Theme, Typography, TypographyProps } from '@mui/material'
 import { useCallback, useMemo } from 'react'
 
-type MIChipSize = 'h20' | 'h24'
+type MIChipSize = 'h20' | 'h22' | 'h24'
 type MIChipColor =
   | 'blue'
   | 'purple'
@@ -34,10 +34,16 @@ export default function MIChip(props: Readonly<MIChipProps>) {
         height: '20px',
       }
 
-    if (size === 'h24')
+    if (size === 'h22')
       return {
         padding: '4px 8px',
         height: '22px',
+      }
+
+    if (size === 'h24')
+      return {
+        padding: '4px 8px',
+        height: '24px',
       }
 
     return {}
@@ -53,10 +59,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#1C7ED61A',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#1C7ED61A',
+                },
+              }),
         }
       if (color === 'purple')
         return {
@@ -66,10 +72,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#F3EFF9',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#F3EFF9',
+                },
+              }),
         }
       if (color === 'orange')
         return {
@@ -79,10 +85,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#F261001A',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#F261001A',
+                },
+              }),
         }
       if (color === 'green')
         return {
@@ -92,10 +98,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#2A8D3E1A',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#2A8D3E1A',
+                },
+              }),
         }
       if (color === 'green-climb')
         return {
@@ -111,10 +117,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#F03E3E1A',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#F03E3E1A',
+                },
+              }),
         }
       if (color === 'red-decline')
         return {
@@ -124,10 +130,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#CC4D501A',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#CC4D501A',
+                },
+              }),
         }
       if (color === 'pink')
         return {
@@ -137,10 +143,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#D6336C1A',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#D6336C1A',
+                },
+              }),
         }
       if (color === 'gray')
         return {
@@ -150,10 +156,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#E9ECEF',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#E9ECEF',
+                },
+              }),
         }
       if (color === 'white')
         return {
@@ -163,10 +169,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#FFFFFF',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#FFFFFF',
+                },
+              }),
         }
       if (color === 'gray-border')
         return {
@@ -176,10 +182,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#FFFFFF',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#FFFFFF',
+                },
+              }),
         }
       if (color === 'primary')
         return {
@@ -189,10 +195,10 @@ export default function MIChip(props: Readonly<MIChipProps>) {
           ...(disableHover
             ? {}
             : {
-              '&:hover': {
-                backgroundColor: '#FFFFFF',
-              },
-            }),
+                '&:hover': {
+                  backgroundColor: '#FFFFFF',
+                },
+              }),
         }
       return {}
     },

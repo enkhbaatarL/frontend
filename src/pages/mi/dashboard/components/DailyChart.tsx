@@ -83,7 +83,7 @@ const DailyChart = ({ data = [] }: Props) => {
             lastValue: isPermitted ? summary.lastValue : 0.0,
             change: isPermitted ? summary.change : 0.0,
             changePercent: isPermitted ? summary.changePercent : 0.0,
-            lastUpdateDt: isPermitted ? dayjs(summary.lastUpdateDt).format('MMMM D, YYYY') : 'MMMM D, YYYY',
+            lastUpdateDt: isPermitted ? dayjs(summary.lastUpdateDt).format('YYYY-MM-DD') : 'YYYY-MM-DD',
             unit: isPermitted ? summary.unit : 'N/A',
             currency: isPermitted ? summary.currency : 'N/A',
           }

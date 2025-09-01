@@ -17,7 +17,7 @@ export enum PointInteractionState {
 interface IVerticalLineAndHighlightPlugin extends Plugin<ChartType> {
   mousePosition: { x: number; y: number } | null
   selectedPoint: InteractionItem | null
-  tooltipContent: { label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
+  tooltipContent: {index?: number, label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
   interactionState: PointInteractionState
   clearSelectedPoint: () => void
   updateTooltipPosition: (viewDetail: boolean) => void
@@ -34,7 +34,7 @@ export interface PointerMoveEventContext {
     y: number
     viewDetail?: boolean
     label: string
-    content: { label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
+    content: { index?: number, label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
   } | null
 }
 
@@ -74,7 +74,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
   id = 'verticalLineAndHighlight'
   mousePosition: { x: number; y: number } | null = null
   selectedPoint: InteractionItem | null = null
-  tooltipContent: { label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[] = []
+  tooltipContent: { index?: number, label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[] = []
   interactionState: PointInteractionState = PointInteractionState.NONE
   _options: any = {}
   _chart: Chart | null = null
@@ -322,6 +322,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
           const clickTooltipContent = [
             {
+              index: this.selectedPoint.datasetIndex,
               label: chart.data.datasets[this.selectedPoint.datasetIndex].label,
               value: chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
               category: DATA_CATEGORIES.FORECAST,
@@ -461,6 +462,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
         const clickTooltipContent = [
           {
+            index: this.selectedPoint.datasetIndex,
             label: chart.data.datasets[this.selectedPoint.datasetIndex].label,
             value: chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
             category: DATA_CATEGORIES.FORECAST,
@@ -634,6 +636,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                       const forecastDataset = groupedDatasets[baseName][0]
                       if (forecastDataset) {
                         this.tooltipContent.push({
+                          index: currentIndex,
                           label: forecastDataset.label,
                           value: forecastDataset.data[currentIndex] as number,
                           category: DATA_CATEGORIES.FORECAST,
@@ -785,6 +788,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
       const clickTooltipContent = [
         {
+          index: this.selectedPoint.datasetIndex,
           label: this._chart.data.datasets[this.selectedPoint.datasetIndex].label,
           value: this._chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
           category: DATA_CATEGORIES.FORECAST,

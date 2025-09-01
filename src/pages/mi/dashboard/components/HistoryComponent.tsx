@@ -119,14 +119,32 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
     }
   }
 
-  // 리포트 다운로드
+  // // 리포트 다운로드
+  // const handleDownload2 = async (date: string) => {
+  //   try {
+  //     const response = await dashboardDataService.getDashboardSummaryFileDownload(companyNo, selectedFulfillDate, date)
+
+  //     // 파일 다운로드 처리
+  //     const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedFulfillDate}.zip`
+  //     downloadFile(response.data, fileName)
+  //   } catch (error) {
+  //     console.error('Download failed:', error)
+  //   }
+  // }
+
   const handleDownload2 = async (date: string) => {
     try {
       const response = await dashboardDataService.getDashboardSummaryFileDownload(companyNo, selectedFulfillDate, date)
 
-      // 파일 다운로드 처리
-      const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedFulfillDate}.zip`
-      downloadFile(response.data, fileName)
+      const cd = response.headers?.['content-disposition'] ?? ''
+
+      if (cd.includes('.zip')) {
+        const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedFulfillDate}.zip`
+        downloadFile(response.data, fileName)
+      } else {
+        const fileName = cd.split("''").pop().trim()
+        downloadFile(response.data, fileName)
+      }
     } catch (error) {
       console.error('Download failed:', error)
     }
@@ -218,10 +236,10 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
             ...(!param.row.isCounterpartMaximum && !param.row.isCounterpartMinimum
               ? {}
               : {
-                '.MuiTypography-root.MuiTypography-tableBody2': {
-                  fontWeight: 600,
-                },
-              }),
+                  '.MuiTypography-root.MuiTypography-tableBody2': {
+                    fontWeight: 600,
+                  },
+                }),
           }}
         >
           <Box
@@ -320,7 +338,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
           {basicInfo?.chartPredictSettingNm}
         </Typography>
         <Typography component={'div'} color="#495057" variant="subtext0">
-          Updated {dayjs(basicInfo?.lastUpdateDt).format('MMMM D, YYYY')}
+          Updated {dayjs(basicInfo?.lastUpdateDt).format('YYYY-MM-DD')}
         </Typography>
       </Box>
 

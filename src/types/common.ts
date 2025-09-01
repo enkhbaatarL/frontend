@@ -24,4 +24,4 @@ export interface IFilterItem {
   value: string
 }
 
-export type MiPagesType = 'dashboard' | 'insights' | 'market-data' | 'signal-map'
+export type MiPagesType = 'main' | 'dashboard' | 'insights' | 'market-data' | 'signal-map' | 'custom' | 'news' | 'letter'

@@ -39,6 +39,7 @@ export interface ChartMetadata {
   initialChartType: ChartType
   changeableUnitCd: string[]
   latestDate: string
+  isYAxisSeparated: boolean
 }
 
 export interface ChartSeries {

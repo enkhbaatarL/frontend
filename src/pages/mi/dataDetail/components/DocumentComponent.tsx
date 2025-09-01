@@ -72,11 +72,17 @@ const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable
 const DocumentComponent = ({ data }: DocumentComponentProps) => {
   const [fileData, setFileData] = useState<IFileDownloadRequest[]>([])
 
-  // 파일 다운로드 (여러개)
+  // 파일 다운로드 (여러개) , 파일이 1개일때는 압축없이 일반파일 다운로드되게 함
   const handleDownloadFiles = async () => {
     try {
-      const response = await fileService.downloadFiles('file', fileData)
-      downloadFile(response, 'file.zip')
+      if (fileData.length === 1) {
+        const file = fileData[0]
+        const fileBlob = await fileService.downloadFile(file)
+        downloadFile(fileBlob, file.fileNm)
+      } else {
+        const response = await fileService.downloadFiles('file', fileData)
+        downloadFile(response, 'file.zip')
+      }
     } catch (error) {
       console.error(error)
     }

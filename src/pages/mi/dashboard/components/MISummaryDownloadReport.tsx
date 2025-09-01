@@ -33,13 +33,13 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
     !data?.summaries || data.summaries.length === 0
       ? ''
       : data.summaries.map((summary: IDashboardSummary, index: number) => (
-        <Box key={index} mt={index !== 0 ? '20px' : 0}>
-          <Typography mb={1.5} variant={'subtext5'} fontWeight={600} color={'gray.90'} component={'div'}>
-            {summary.explanatoryTitleContent}
-          </Typography>
-          {(summary.explanatorySummaryContent ?? '').replace(/\\n/g, '\n')}
-        </Box>
-      ))
+          <Box key={index} mt={index !== 0 ? '20px' : 0}>
+            <Typography mb={1.5} variant={'subtext5'} fontWeight={600} color={'gray.90'} component={'div'}>
+              {summary.explanatoryTitleContent}
+            </Typography>
+            {(summary.explanatorySummaryContent ?? '').replace(/\\n/g, '\n')}
+          </Box>
+        ))
 
   // useEffect에서 summaryContent를 의존성에 추가
   useEffect(() => {
@@ -90,8 +90,15 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
     try {
       const response = await dashboardDataService.getDashboardSummaryFileDownload(companyNo ?? 0, monthSelect.split('-').join(''))
 
-      const fileName = `Report_${monthSelect.split('-').join('')}.zip`
-      downloadFile(response.data, fileName)
+      const cd = response.headers?.['content-disposition'] ?? ''
+
+      if (cd.includes('.zip')) {
+        const fileName = `Report_${monthSelect.split('-').join('')}.zip`
+        downloadFile(response.data, fileName)
+      } else {
+        const fileName = cd.split("''").pop().trim()
+        downloadFile(response.data, fileName)
+      }
     } catch (error) {
       console.error('Download failed:', error)
     }

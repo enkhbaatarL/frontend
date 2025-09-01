@@ -126,7 +126,7 @@ const MIDrillDownChart = (props: MIDrillDownChartProps) => {
             isSimple: true,
             top: adjustedPosition.y,
             left: adjustedPosition.x,
-            label: formatDate(originalLabel ?? chartLabel, 'MMMM YYYY'),
+            label: formatDate(originalLabel ?? chartLabel, 'YYYY-MM'),
             content: [
               {
                 label: dataset?.label ?? '',

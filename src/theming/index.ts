@@ -136,6 +136,7 @@ declare module '@mui/material/styles' {
     chartToolTipTitle: CSSProperties
     chartToolTipNumber: CSSProperties
     titlePage: CSSProperties
+    titleSubPage: CSSProperties
     bage1: CSSProperties
     bage2: CSSProperties
     titleCardInsight: CSSProperties
@@ -201,6 +202,7 @@ declare module '@mui/material/styles' {
     chartToolTipTitle?: CSSProperties
     chartToolTipNumber?: CSSProperties
     titlePage: CSSProperties
+    titleSubPage: CSSProperties
     bage1: CSSProperties
     bage2: CSSProperties
     titleCardInsight: CSSProperties
@@ -269,6 +271,7 @@ declare module '@mui/material/Typography' {
     chartToolTipTitle: true
     chartToolTipNumber: true
     titlePage: true
+    titleSubPage: true
     bage1: true
     bage2: true
     titleCardInsight: true
@@ -671,7 +674,7 @@ const theme = createTheme({
       fontWeight: 900,
       lineHeight: '1.4',
       letterSpacing: '0.15px',
-      fontFeatureSettings: '\'liga\' off, \'clig\' off',
+      fontFeatureSettings: "'liga' off, 'clig' off",
     },
     helperText: {
       fontSize: '12px',
@@ -728,6 +731,12 @@ const theme = createTheme({
       fontStyle: 'normal',
       fontWeight: 600,
       lineHeight: '1.4',
+    },
+    titleSubPage: {
+      fontSize: '36px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1',
     },
     bage1: {
       fontSize: '12px',

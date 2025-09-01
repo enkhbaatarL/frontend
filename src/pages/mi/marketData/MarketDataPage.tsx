@@ -118,7 +118,6 @@ const MarketDataPage = () => {
   return (
     <MISkeleton variant={'marketData'} loading={isActuallyLoading}>
       <Box
-        paddingY={14}
         sx={{
           background: `url(${psImg}) right / 33% no-repeat, url(${bgmImg}) lightgray 50% 82%/ cover no-repeat`,
           zIndex: 0,
@@ -136,25 +135,25 @@ const MarketDataPage = () => {
             boxShadow: '0px 20px 20px 0px rgba(0, 0, 0, 0.25) inset',
           }}
         ></Box>
-        <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
+        <Box boxSizing={'border-box'} paddingX={7.5} paddingY={10.5} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
           <Typography color="white" component="h1" fontSize={40} variant="body1M16">
-            Market Data
+            Market Metrics
           </Typography>
-          <Typography color="#DCDCDC" fontSize={20} lineHeight={1.6} variant="subtext1">
+          {/* <Typography color="#DCDCDC" fontSize={20} lineHeight={1.6} variant="subtext1">
             Elevate your market understanding with comprehensive data
-          </Typography>
+          </Typography> */}
         </Box>
       </Box>
       <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'} py={12.5} px={7.5}>
         <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
-          Data Dashboard
+          Focused
         </Typography>
         <Grid mb={17.5} container spacing={5}>
           <Grid width={'100%'} container direction={'row'} gap={'16px'}>
             {normalizedChartData?.map((chartData, index) => (
-              // 2개: 큰 차트, 8개: 작은 차트
-              <Grid key={`market-data-chart-${index}`} size={index <= 1 ? 6 : 3} sx={{ width: index <= 1 ? '682px' : '333px' }}>
-                <MarketDataChart data={chartData} size={index <= 1 ? 'large' : 'small'} locked={!chartData.isPermitted} />
+              // 2개: 큰 차트, 8개: 작은 차트 -> 같은사이즈 9개차트로 변경
+              <Grid key={`market-data-chart-${index}`} size={3} sx={{ width: '449px' }}>
+                <MarketDataChart data={chartData} size={'large'} locked={!chartData.isPermitted} />
               </Grid>
             ))}
             {normalizedChartData?.length === 0 && (

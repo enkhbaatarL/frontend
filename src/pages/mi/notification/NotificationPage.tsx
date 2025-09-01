@@ -102,7 +102,7 @@ const NotificationPage = () => {
                   renderCell: (params) => (
                     <MIChip
                       label={params.value}
-                      size="h24"
+                      size="h22"
                       color="blue"
                       onClick={(e) => {
                         e.stopPropagation()

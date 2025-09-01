@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
+import { withCustomBaseUrl } from '@/store/useAuthStore'
 
 export interface IRawDataPoint {
   date: string
@@ -14,6 +15,11 @@ export interface IMainGraph {
 
 export interface ICompareGraph {
   rawData: IRawDataPoint[]
+}
+
+export interface IchangeRate {
+  label: string
+  value: number
 }
 
 export interface IMarketMetaData {
@@ -33,7 +39,8 @@ export interface IMarketMetaData {
   yoyChangeRate: number
   momChangeRate: number
   wowChangeRate: number
-  recentChangeRate: number
+  dodChangeRate: number
+  changeRates: IchangeRate[]
 }
 
 export interface IMarketData {
@@ -80,10 +87,15 @@ const marketDataService = {
     if (!customerCompanyNo) throw new Error('customerCompanyNo is required')
 
     const response: AxiosResponse<ICommonResponse<IMarketData[]>> = await api.get(
-      `mi/market-data/companies/${customerCompanyNo}/market-datas`,
+      withCustomBaseUrl(`/mi/market-data/companies/${customerCompanyNo}/market-datas`),
     )
 
-    return response.data.data
+    //임시 - 마켓데이터 대시보드 big2 , small8 -> 같은사이즈 9개로 변경되어 임시로 출력 데이터 1개 제거
+    // return response.data.data
+
+    const list = Array.isArray(response.data.data) ? response.data.data : []
+
+    return list.slice(0, -1)
   },
 
   /**
@@ -93,7 +105,7 @@ const marketDataService = {
    */
   async getDataCatalog(customerCompanyNo: number, params: Partial<IDataCatalogRequest>): Promise<IPaginationResponse<IDataCatalogItem>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IDataCatalogItem>>> = await api.get(
-      `mi/market-data/companies/${customerCompanyNo}/data-catalog`,
+      withCustomBaseUrl(`/mi/market-data/companies/${customerCompanyNo}/data-catalog`),
       {
         params,
       },

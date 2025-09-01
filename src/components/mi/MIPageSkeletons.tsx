@@ -260,20 +260,19 @@ export const MIPageSkeletons = {
         <MIBaseSkeleton.BaseElement width={'294px'} height={'50px'} />
         <Box width={'1380px'} height={'916px'} gap={'20px'} paddingBottom={'17px'}>
           <SkeletonWrapper.Row gap={'16px'} sx={{ paddingBottom: '16px' }}>
-            <MIBaseSkeleton.Card width={'682px'} height={'446px'} />
-            <MIBaseSkeleton.Card width={'682px'} height={'446px'} />
+            <MIBaseSkeleton.Card width={'449px'} height={'331px'} />
+            <MIBaseSkeleton.Card width={'449px'} height={'331px'} />
+            <MIBaseSkeleton.Card width={'449px'} height={'331px'} />
           </SkeletonWrapper.Row>
           <SkeletonWrapper.Row gap={'16px'} sx={{ paddingBottom: '16px' }}>
-            <MIBaseSkeleton.Card width={'333px'} height={'215px'} />
-            <MIBaseSkeleton.Card width={'333px'} height={'215px'} />
-            <MIBaseSkeleton.Card width={'333px'} height={'215px'} />
-            <MIBaseSkeleton.Card width={'333px'} height={'215px'} />
+            <MIBaseSkeleton.Card width={'449px'} height={'331px'} />
+            <MIBaseSkeleton.Card width={'449px'} height={'331px'} />
+            <MIBaseSkeleton.Card width={'449px'} height={'331px'} />
           </SkeletonWrapper.Row>
-          <SkeletonWrapper.Row gap={'16px'}>
-            <MIBaseSkeleton.Card width={'333px'} height={'215px'} />
-            <MIBaseSkeleton.Card width={'333px'} height={'215px'} />
-            <MIBaseSkeleton.Card width={'333px'} height={'215px'} />
-            <MIBaseSkeleton.Card width={'333px'} height={'215px'} />
+          <SkeletonWrapper.Row gap={'16px'} sx={{ paddingBottom: '16px' }}>
+            <MIBaseSkeleton.Card width={'449px'} height={'331px'} />
+            <MIBaseSkeleton.Card width={'449px'} height={'331px'} />
+            <MIBaseSkeleton.Card width={'449px'} height={'331px'} />
           </SkeletonWrapper.Row>
         </Box>
         <MIBaseSkeleton.BaseElement width={'294px'} height={'50px'} />

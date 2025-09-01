@@ -136,7 +136,7 @@ export default function MIRigCountChart(props: MIRigCountChartProps) {
                     },
                     color: theme.palette.gray[60],
                   },
-                  afterTickToLabelConversion (axis: any) {
+                  afterTickToLabelConversion(axis: any) {
                     // Remove the first tick label
                     if (axis.ticks.length > 0) {
                       axis.ticks.forEach((item: { label: string }) => {

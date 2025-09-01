@@ -1,7 +1,7 @@
 import { Chip, ChipProps, SxProps, Theme, Typography, TypographyProps } from '@mui/material'
 import { useMemo } from 'react'
 
-type MIChipSize = 'h20' | 'h24'
+type MIChipSize = 'h20' | 'h22' | 'h24'
 export type MIChipColor =
   | 'A_INSIGHT'
   | 'A_CMMDT_MRKT_RPT'
@@ -19,13 +19,18 @@ export interface MIChipProps extends Omit<ChipProps, 'size' | 'color'> {
 }
 
 export default function MIBage(props: Readonly<MIChipProps>) {
-  const { size = 'h24', color = 'A_INSIGHT', label, sx, ...originStyle } = props
+  const { size = 'h22', color = 'A_INSIGHT', label, sx, ...originStyle } = props
 
   const getSizeStyle = (size: MIChipSize) => {
     if (size === 'h20')
       return {
         padding: '4px 6px',
         lineHeight: '1',
+      }
+
+    if (size === 'h22')
+      return {
+        padding: '2px 6px',
       }
 
     if (size === 'h24')

@@ -1,11 +1,11 @@
-import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { Box, Grid2 as Grid } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useEffect } from 'react'
 
 import ReportComponent from './components/ReportComponent'
 import UpdatedData from './components/UpdatedData'
 
-import psImg from '@/assets/productsymbol.png'
+// import psImg from '@/assets/productsymbol.png'
 import MITabs from '@/components/common/tabs/MITabs'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useMarketData } from '@/contexts/MarketDataContext'
@@ -77,7 +77,7 @@ const MIDashboardPage = () => {
   return (
     <MISkeleton variant={'dashboard'} loading={basicInfoIsLoading}>
       <Box bgcolor={'#F2F5F7'} position={'relative'}>
-        <Box
+        {/* <Box
           paddingX={7.5}
           paddingTop={6.25}
           paddingBottom={7.5}
@@ -106,7 +106,7 @@ const MIDashboardPage = () => {
               Gain even more insights with AI-driven intelligence for better decisions.
             </Typography>
           </Box>
-        </Box>
+        </Box> */}
         <Box maxWidth={'1380px'} margin={'auto'} paddingTop={'30px'}>
           <Grid
             sx={{

@@ -255,7 +255,17 @@ const AdminDataRegiUploadComponent = ({
                         <AdminUpload
                           disabled={!structuredComponentType}
                           onUploadAction={(file) => onUploadAction(file, 'structured')}
-                          acceptedTypes={['text/csv']}
+                          acceptedTypes={[
+                            'text/csv',
+                            '.csv',
+                            'application/csv',
+                            'application/vnd.ms-excel',
+                            'application/octet-stream',
+                            '.tsv',
+                            '.xls',
+                            '.xlsx',
+                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                          ]}
                           maxSize={300}
                         />
                       </Grid>

@@ -18,7 +18,14 @@ export const useCompanyCondition = () => {
   const { data: deniedDashboardPage } = useQuery({
     queryKey: ['getDashboardAccess', comNo],
     queryFn: async () => await dashboardDataService.getDashboardDataExists(comNo!),
-    select: (res) => (res === true ? [] : extractPages),
+    select: (res): MiPagesType[] => {
+      const baseDenied: MiPagesType[] = res === true ? [] : [...(extractPages ?? [])]
+      const isSKE = comNo === 2020
+
+      return isSKE
+        ? baseDenied
+        : [...baseDenied, 'main' as MiPagesType, 'custom' as MiPagesType, 'news' as MiPagesType, 'letter' as MiPagesType]
+    },
     enabled: !!comNo,
     refetchOnWindowFocus: false,
   })
@@ -33,6 +40,10 @@ export const useCompanyCondition = () => {
    */
   const miHome = () => {
     if (!extractPage) return undefined
+    // SKE 의 경우 로그인 후 첫페이지를 신규대시보드로 지정함
+    if (comNo === 2020) {
+      return 'main'
+    }
     return miPages.find((page) => !extractPage.includes(page))
   }
 

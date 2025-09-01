@@ -74,7 +74,7 @@ const AdminAccessControlForm = ({
           {isViewMode ? (
             <MIChip
               color={userRoleCd === UserRole.ADMIN ? 'blue' : 'orange'}
-              size="h24"
+              size="h22"
               label={userRoleCd === UserRole.ADMIN ? t('Admin') : t('운영자')}
             />
           ) : (
@@ -110,7 +110,7 @@ const AdminAccessControlForm = ({
             {isViewMode ? (
               <MIChip
                 color={isOtherServiceAccessPossible ? 'blue' : 'gray'}
-                size="h24"
+                size="h22"
                 label={isOtherServiceAccessPossible ? t('허용') : t('비허용')}
               />
             ) : (

@@ -10,6 +10,7 @@ const codeMapper = (status: number, code?: string): string => {
   if (code) {
     const map: Record<string, string> = {
       'AUTH-001': '접근 권한이 없습니다. \n관리자에게 시스템 사용자 등록을 요청해 주세요',
+      'AUTH-003': '토큰이 만료되어 갱신을 진행합니다.',
       'SYS-999': '문제가 발생했습니다.\n나중에 다시 시도하시거나 이전 페이지로 돌아가세요.',
       'AUTH-004': '제공된 토큰이 유효하지 않거나 형식이 잘못되었습니다.',
       'AUTH-005': '이 작업을 수행할 권한이 없습니다.',
@@ -31,7 +32,12 @@ const getErrorInfo = (state: { status?: number; code?: string }, pathname: strin
   const statusCode = state?.status ?? fallbackStatus
   const message = codeMapper(statusCode, state?.code ?? paramsCode)
   // 많아지면 분리 필요
-  const additionalVar = paramsCode === 'AUTH-001' ? { hiddenButton: true, icon: 'lock', title: 'AI Market Insights' } : {}
+  // const additionalVar = paramsCode === 'AUTH-001' ? { hiddenButton: true, icon: 'lock', title: 'AI Market Insights' } : {}
+  const additionalMap: Record<string, any> = {
+    'AUTH-001': { hiddenButton: true, icon: 'lock', title: 'AI Market Insights' },
+    'AUTH-003': { hiddenButton: true, icon: 'lock', title: 'AI Market Insights' },
+  }
+  const additionalVar = additionalMap[paramsCode!] ?? {}
   return { statusCode, message, ...additionalVar }
 }
 

@@ -8,6 +8,7 @@ export interface MapCategory {
   items: {
     categoryName: string
     items: {
+      categoryName: string
       instrumentNm: string
       correlationCalculationVal: number
     }[]
@@ -18,6 +19,7 @@ export interface MapRootData {
   title: string
   updatedDt: string
   list: MapCategory[]
+  topImpactVariables: MapCategory[]
 }
 
 const signalMapService = {

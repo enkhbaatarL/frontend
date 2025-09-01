@@ -31,7 +31,7 @@ const MIProfile = ({ name, role, email, company, team, buttonLabel, onButtonClic
             variant="filled"
             label={role === UserRole.ADMIN ? 'Admin' : t('운영자')}
             color={role === UserRole.ADMIN ? 'blue' : 'orange'}
-            size="h24"
+            size="h22"
           />
         )}
       </Box>

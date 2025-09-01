@@ -24,7 +24,7 @@ export default function MIProfile({ name, role, email, company, team, buttonLabe
           <Typography marginRight="8px" color="gray.90" variant="body1B16">
             {name}
           </Typography>
-          {role && <MIChip variant="filled" label={role} color={role === 'Admin' ? 'blue' : 'orange'} size="h24" />}
+          {role && <MIChip variant="filled" label={role} color={role === 'Admin' ? 'blue' : 'orange'} size="h22" />}
         </Box>
       </Stack>
       <Stack gap={1.5}>

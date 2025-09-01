@@ -11,7 +11,7 @@ import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import theme from '@/theming'
 import { formatValue } from '@/utils/number'
 
-const ChartToolTipItem = (props: { label: string; value: number; category: string; color: string; minWidth: number }) => {
+const ChartToolTipItem = (props: { index: number, label: string; value: number; category: string; color: string; minWidth: number }) => {
   const { label, value, category, color, minWidth } = props
 
   const icon = useMemo(() => {
@@ -146,10 +146,11 @@ const MIForecastChartTooltip = ({
         )}
       </Box>
 
-      {dataContent.map((item) => (
+      {dataContent.map((item, index) => (
         <ChartToolTipItem
           minWidth={minWidth}
           key={item.label}
+          index={index}
           label={item.label ?? ''}
           value={item.value ?? 0}
           category={item.category ?? ''}
@@ -159,8 +160,9 @@ const MIForecastChartTooltip = ({
 
       {futuresContent.length > 0 && <Box sx={{ background: theme.palette.gray[30], width: '100%', height: '1px' }} my="2px" />}
 
-      {futuresContent.map((item) => (
+      {futuresContent.map((item, index) => (
         <ChartToolTipItem
+          index={index}
           key={item.label}
           label={item.label ?? ''}
           value={item.value ?? 0}

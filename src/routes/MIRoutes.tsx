@@ -3,10 +3,14 @@ import { Navigate, RouteObject } from 'react-router-dom'
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MILayout from '@/layouts/MILayout'
 import PolicyPage from '@/pages/common/PolicyPage'
+import MainDashboardPage from '@/pages/mi/mainDashboard/MainDashboardPage'
 import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
 import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
+import CustomPage from '@/pages/mi/custom/CustomPage'
+import NewsPage from '@/pages/mi/news/NewsPage'
+import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
@@ -34,6 +38,10 @@ const MIRoutes: RouteObject = {
       element: <MIMainRedirect />,
     },
     {
+      path: 'main',
+      element: <MainDashboardPage />,
+    },
+    {
       path: 'dashboard',
       element: <MIDashboardPage />,
     },
@@ -49,6 +57,18 @@ const MIRoutes: RouteObject = {
     {
       path: 'insights',
       element: <InsightsPage />,
+    },
+    {
+      path: 'custom',
+      element: <CustomPage />,
+    },
+    {
+      path: 'news',
+      element: <NewsPage />,
+    },
+    {
+      path: 'letter',
+      element: <NewsletterPage />,
     },
     {
       path: 'data-detail/:goodsNo/:goodsDataNo',

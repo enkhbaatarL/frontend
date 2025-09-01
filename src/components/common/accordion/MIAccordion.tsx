@@ -139,7 +139,7 @@ export default function MIAccordion({ isBorder, items, defaultExpandedKeys, visi
             </AccordionSummary>
             <AccordionDetails isBorder={isBorder}>
               {typeof content === 'string' ? (
-                <Typography variant="tableBody2" color="gray.90" component="div">
+                <Typography variant="tableBody2" color="gray.90" component="div" sx={{ whiteSpace: 'pre-line' }}>
                   {content}
                 </Typography>
               ) : (

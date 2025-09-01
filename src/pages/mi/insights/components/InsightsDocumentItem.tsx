@@ -42,6 +42,14 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
         return 'Company Report'
       case 'A_INFORM':
         return 'Inform'
+      case 'A_EDGE':
+        return 'The Edge'
+      case 'A_RSRCH_PRSNTTN':
+        return 'Research Presentation'
+      case 'A_CNTRY_RPT':
+        return 'Country Report'
+      case 'A_HORIZONS':
+        return 'Horizons'
       default:
         return '-'
     }

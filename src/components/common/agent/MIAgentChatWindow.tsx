@@ -98,15 +98,15 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     setSelectModeOption(newOptions)
     saveSelectModeOptionsToStorage(newOptions)
   }, [])
-
-  const isGenerating = useMemo(() => animationComplete.length > 0 && !animationComplete[animationComplete.length - 1], [animationComplete])
-
+  const isGenerating = useMemo(() => {
+    // const hasUnfinishedAnimation = animationComplete.some((done) => !done)
+    return !MIAgent.isStreamingDone //|| hasUnfinishedAnimation
+  }, [animationComplete, MIAgent.isStreamingDone])
   const handleScroll = useCallback(
     async (e: UIEvent<HTMLDivElement>) => {
       if (initialHistoryLoading || isGenerating) return
       const { scrollTop } = e.currentTarget
 
-      // 스크롤이 맨 위에 도달했을 때 이전 히스토리를 로드
       if (scrollTop === 0) {
         // 현재 보이는 첫 번째 메시지의 ID를 저장 (추가 로드 후 스크롤 위치 조정 용)
         const qnaNo = MIAgent.conversations[0]?.qnaNo
@@ -120,7 +120,20 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     },
     [initialHistoryLoading, isGenerating, MIAgent.conversations, MIAgent.history],
   )
+  useEffect(() => {
+    const allAnimationsComplete = animationComplete.length > 0 && animationComplete.every((v) => v)
+    const isActuallyComplete = MIAgent.isStreamingDone
 
+    if (allAnimationsComplete && isActuallyComplete) { 
+      MIAgent.markLastConversationAsOld()
+      requestAnimationFrame(() => setTimeout(scrollToBottom, 100))
+
+      if (isRetrying) {
+        setShouldCheckScroll(true)
+        setIsRetrying(false)
+      }
+    }
+  }, [animationComplete, MIAgent.isStreamingDone])
   // retry 완료 후 스크롤 체크
   useEffect(() => {
     if (shouldCheckScroll && !isGenerating) {
@@ -272,7 +285,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
                 resizeObserver.disconnect()
                 setInitialHistoryLoading(false)
                 requestAnimationFrame(() => {
-                  scrollToBottom()
+                  // scrollToBottom() //history click하여 로딩시 스크롤 다운되는 지점
                 })
               } else if (!MIAgent.history.isLast && !MIAgent.history.isLoading) {
                 MIAgent.history.fetchPrevHistory().then()

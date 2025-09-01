@@ -97,7 +97,9 @@ const MIConfirm = ({
 
       {children && (
         <DialogContent>
-          <DialogContentText component="div">{children}</DialogContentText>
+          <DialogContentText component="div" sx={{ whiteSpace: 'pre-line' }}>
+            {children}
+          </DialogContentText>
         </DialogContent>
       )}
       <DialogActions sx={{ paddingTop: children ? '30px' : 0, justifyContent: justifyContentAction }}>

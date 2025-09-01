@@ -10,6 +10,7 @@ import ErrorRoutes from '@/routes/ErrorRoutes'
 import { healthCheckRoutes } from '@/routes/HealthCheckRoutes'
 import MIRoutes from '@/routes/MIRoutes'
 import { ICustomRouteObject } from '@/types/common'
+import { ResetKeyProvider } from '@/contexts/ResetKeyContext'
 
 const commonRoutes: ICustomRouteObject[] = [
   {
@@ -61,5 +62,9 @@ export const AppRoutes = () => {
     basename: '/',
   })
 
-  return <RouterProvider router={element} />
+  return (
+    <ResetKeyProvider>
+      <RouterProvider router={element} />
+    </ResetKeyProvider>
+  )
 }

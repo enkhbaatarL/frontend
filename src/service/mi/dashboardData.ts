@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios.ts'
 import { ICommonResponse } from '@/types/api.ts'
+import { withCustomBaseUrl } from '@/store/useAuthStore'
 
 export interface IDashboardLastInsightsInfo {
   modifyDt: string
@@ -31,6 +32,8 @@ interface MarketMetaDataSummary {
   momChangeValue: number | null
   wowChangeRate: number | null
   wowChangeValue: number | null
+  recentChangeRate: number | null
+  recentChangeValue: number | null
   dodChangeRate: number | null
   dodChangeValue: number | null
 }
@@ -245,7 +248,7 @@ const dashboardDataService = {
    * @param companyNo - 고객사 번호
    */
   async getDashboardMarketDatas(companyNo: number): Promise<MarketDataItemInfo[]> {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/market-datas`)
+    const response = await api.get(withCustomBaseUrl(`/mi/dashboard/companies/${companyNo}/market-datas`))
     return response.data.data
   },
   /**
@@ -261,7 +264,7 @@ const dashboardDataService = {
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    */
   async getDashboardChartDates(companyNo: number): Promise<IDashboardChartDates> {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart-dates`)
+    const response = await api.get(withCustomBaseUrl(`/mi/dashboard/companies/${companyNo}/chart-dates`))
     return response.data.data
   },
   /**
@@ -270,7 +273,7 @@ const dashboardDataService = {
    * @param date - 조회할 년월
    */
   async getDashboardChartData(companyNo: number, date: string): Promise<IDashboardChartData> {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart`, { params: { date } })
+    const response = await api.get(withCustomBaseUrl(`/mi/dashboard/companies/${companyNo}/chart`), { params: { date } })
     return response.data.data
   },
 
@@ -280,7 +283,7 @@ const dashboardDataService = {
    * @param date - 조회할 년월
    */
   async getDashboardChart(companyNo: number, date: string): Promise<DashboardChartInfo> {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/chart`, {
+    const response = await api.get(withCustomBaseUrl(`/mi/dashboard/companies/${companyNo}/chart`), {
       params: { date },
     })
     return response.data.data
@@ -290,7 +293,9 @@ const dashboardDataService = {
    * @param companyNo - 고객사 번호
    */
   async getDashboardBasicInfo(companyNo: number): Promise<DashboardBasicInfo> {
-    const response: AxiosResponse<ICommonResponse<DashboardBasicInfo>> = await api.get(`mi/dashboard/companies/${companyNo}/info`)
+    const response: AxiosResponse<ICommonResponse<DashboardBasicInfo>> = await api.get(
+      withCustomBaseUrl(`/mi/dashboard/companies/${companyNo}/info`),
+    )
     return response.data.data
   },
   /**
@@ -308,7 +313,7 @@ const dashboardDataService = {
    */
   async getDashboardHistoryDetail(settingDetailNo: number, params: IDashboardHistoryDetailRequest): Promise<IDashboardHistoryDetail[]> {
     const response: AxiosResponse<ICommonResponse<IDashboardHistoryDetail[]>> = await api.get(
-      `mi/dashboard/histories/setting-details/${settingDetailNo}`,
+      withCustomBaseUrl(`/mi/dashboard/histories/setting-details/${settingDetailNo}`),
       { params },
     )
 
@@ -320,7 +325,10 @@ const dashboardDataService = {
    * @param params - { fulfillDate: 예측수행일자 }
    */
   async getDashboardHistoryDetailDownload(settingDetailNo: number, params: IDashboardHistoryDetailRequest) {
-    return await api.get(`mi/dashboard/histories/setting-details/${settingDetailNo}/download`, { params, responseType: 'blob' })
+    return await api.get(withCustomBaseUrl(`/mi/dashboard/histories/setting-details/${settingDetailNo}/download`), {
+      params,
+      responseType: 'blob',
+    })
   },
   /**
    * 대시보드 차트 데이터를 다운로드합니다.
@@ -328,7 +336,7 @@ const dashboardDataService = {
    * @param date - 조회할 년월
    */
   async getDashboardChartDataDownload(companyNo: number, date: string) {
-    return await api.get(`mi/dashboard/companies/${companyNo}/chart/file-download`, {
+    return await api.get(withCustomBaseUrl(`/mi/dashboard/companies/${companyNo}/chart/file-download`), {
       params: { date },
       responseType: 'blob',
     })
@@ -387,7 +395,7 @@ const dashboardDataService = {
    */
   async getDashboardFactorGraph(companyNo: number, params: IDashboardFactorGraphRequest) {
     const response: AxiosResponse<ICommonResponse<IDashboardFactorGraphResponse>> = await api.get(
-      `mi/dashboard/companies/${companyNo}/chart/factor/graph`,
+      withCustomBaseUrl(`/mi/dashboard/companies/${companyNo}/chart/factor/graph`),
       { params },
     )
     return response.data.data

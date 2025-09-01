@@ -4,6 +4,7 @@ import api from '@/lib/axios'
 import { IAuditInfo } from '@/service/admin/members'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 import { ChartInterval, ChartMetadata, ChartRange, DataDetailChart, MinInterval } from '@/types/dataDetailChart'
+import { withCustomBaseUrl } from '@/store/useAuthStore'
 
 export interface ICategoryDataInfo {
   categoryHighCd: string
@@ -60,6 +61,7 @@ export interface IProductDataStructuredChartPersonalizationRequest {
   chartConditionCd: string
   chartConditionVal: string
 }
+
 /**
  * 상품 데이터를 조회합니다.
  * isViewable: 상품에 대한 보기 권한 여부를 의미합니다.
@@ -133,7 +135,7 @@ const dataDetailService = {
     params: IProductDataStructuredChartRequest,
   ): Promise<DataDetailChart> {
     const response: AxiosResponse<ICommonResponse<DataDetailChart>> = await api.get(
-      `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/chart`,
+      withCustomBaseUrl(`/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/chart`),
       { params },
     )
 
@@ -155,7 +157,7 @@ const dataDetailService = {
     params: IProductDataStructuredRequest,
   ): Promise<IPaginationResponse<IProductDataStructuredRawData>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IProductDataStructuredRawData>>> = await api.get(
-      `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/raw-data`,
+      withCustomBaseUrl(`/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/raw-data`),
       { params },
     )
 
@@ -177,7 +179,9 @@ const dataDetailService = {
     params: IProductDataStructuredRawDataDownloadRequest,
   ) {
     return await api.get(
-      `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/raw-data/download`,
+      withCustomBaseUrl(
+        `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}/goods-data-sources/${goodsDataSourceNo}/raw-data/download`,
+      ),
       { params, responseType: 'blob' },
     )
   },

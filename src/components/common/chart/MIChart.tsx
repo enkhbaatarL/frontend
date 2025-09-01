@@ -35,6 +35,7 @@ interface MIChartProps {
   currency?: string
   unitCd?: string
   mainChart?: ChartData
+  isYAxisSeparated?: boolean
   indicators?: Indicator[]
   comparisonCharts?: ChartData[]
   displayDataInfo: DisplayDataInfo
@@ -100,6 +101,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       currency,
       unitCd,
       mainChart,
+      isYAxisSeparated,
       chartType = MIChartType.LINE,
       indicators = [],
       comparisonCharts = [],
@@ -400,7 +402,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         fill: false,
         tension: 0.1,
         spanGaps: true,
-        yAxisID: `sub-${chart.unitCd?.split('#').at(-1) ?? ''}`,
+        yAxisID: isYAxisSeparated ? `sub-${chart.unitCd?.split('#').at(-1) ?? ''}` : 'y',
         metadata: {
           chipColor: colors[index % colors.length],
           hasDivider: index === 0,
@@ -417,31 +419,31 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       () =>
         volumeDataSeries
           ? [
-            {
-              label: volumeDataSeries.label,
-              data: sortedTimestamps.map((timestamp) => {
-                const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
-                const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
-                return {
-                  x: timestampToIndex.get(timestamp) ?? 0,
-                  y: index !== undefined && index !== -1 ? (volumeDataSeries.values[index] ?? null) : null,
-                }
-              }),
-              type: 'line',
-              borderWidth: 0,
-              pointRadius: 0,
-              fill: false,
-              tension: 0.1,
-              spanGaps: true,
-              yAxisID: 'y',
-              hidden: true,
-              metadata: {
-                hasDivider: true,
-                chipColor: '#2E3F5E',
-                toFixed: 0,
+              {
+                label: volumeDataSeries.label,
+                data: sortedTimestamps.map((timestamp) => {
+                  const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+                  const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+                  return {
+                    x: timestampToIndex.get(timestamp) ?? 0,
+                    y: index !== undefined && index !== -1 ? (volumeDataSeries.values[index] ?? null) : null,
+                  }
+                }),
+                type: 'line',
+                borderWidth: 0,
+                pointRadius: 0,
+                fill: false,
+                tension: 0.1,
+                spanGaps: true,
+                yAxisID: 'y',
+                hidden: true,
+                metadata: {
+                  hasDivider: true,
+                  chipColor: '#2E3F5E',
+                  toFixed: 0,
+                },
               },
-            },
-          ]
+            ]
           : [],
       [mainChart?.timestamps, timestampToIndex, volumeDataSeries, sortedTimestamps],
     )
@@ -669,7 +671,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               }
             },
           },
-          ...subYAxes,
+          ...(isYAxisSeparated ? subYAxes : {}),
         },
         plugins: {
           tooltip: {
@@ -780,18 +782,20 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               },
             },
           },
-          ...Object.fromEntries(
-            Object.entries(subYAxes).map(([key, value]) => [
-              key,
-              {
-                ...value,
-                ticks: {
-                  ...value.ticks,
-                  display: false,
-                },
-              },
-            ]),
-          ),
+          ...(isYAxisSeparated
+            ? Object.fromEntries(
+                Object.entries(subYAxes).map(([key, value]) => [
+                  key,
+                  {
+                    ...value,
+                    ticks: {
+                      ...value.ticks,
+                      display: false,
+                    },
+                  },
+                ]),
+              )
+            : {}),
         },
         plugins: {
           ...chartOptions.plugins,

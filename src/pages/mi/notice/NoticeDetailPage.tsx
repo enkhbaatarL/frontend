@@ -36,7 +36,7 @@ export default function NoticesDetailPage() {
         <Box paddingY={7.5}>
           {data?.fileUrl && <img style={{ display: 'block' }} width="100%" src={data.fileUrl} alt="" />}
           <Grid direction="column" mb={5} paddingY={7.5} gap={4} container borderBottom="1px solid #D9D9D9">
-            <Typography variant="body1R16" component="div" color="gray.90">
+            <Typography variant="body1R16" component="div" color="gray.90" sx={{ whiteSpace: 'pre-line' }}>
               {data?.bulletinCntt}
             </Typography>
           </Grid>

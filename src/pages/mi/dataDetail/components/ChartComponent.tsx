@@ -88,43 +88,43 @@ const ChartComponent = ({
     () => [
       ...(displayDataInfo.BB
         ? [
-          {
-            chartConditionCd: 'INDICATOR',
-            chartConditionVal: 'BB',
-          },
-        ]
+            {
+              chartConditionCd: 'INDICATOR',
+              chartConditionVal: 'BB',
+            },
+          ]
         : []),
       ...(displayDataInfo.MA.MA5
         ? [
-          {
-            chartConditionCd: 'INDICATOR',
-            chartConditionVal: 'MA_5',
-          },
-        ]
+            {
+              chartConditionCd: 'INDICATOR',
+              chartConditionVal: 'MA_5',
+            },
+          ]
         : []),
       ...(displayDataInfo.MA.MA20
         ? [
-          {
-            chartConditionCd: 'INDICATOR',
-            chartConditionVal: 'MA_20',
-          },
-        ]
+            {
+              chartConditionCd: 'INDICATOR',
+              chartConditionVal: 'MA_20',
+            },
+          ]
         : []),
       ...(displayDataInfo.MA.MA60
         ? [
-          {
-            chartConditionCd: 'INDICATOR',
-            chartConditionVal: 'MA_60',
-          },
-        ]
+            {
+              chartConditionCd: 'INDICATOR',
+              chartConditionVal: 'MA_60',
+            },
+          ]
         : []),
       ...(displayDataInfo.MA.MA120
         ? [
-          {
-            chartConditionCd: 'INDICATOR',
-            chartConditionVal: 'MA_120',
-          },
-        ]
+            {
+              chartConditionCd: 'INDICATOR',
+              chartConditionVal: 'MA_120',
+            },
+          ]
         : []),
     ],
     [displayDataInfo],
@@ -198,9 +198,9 @@ const ChartComponent = ({
         ?.map((chart, index) =>
           !hideComparisonChartIndexList.includes(index)
             ? {
-              chartConditionCd: 'COMP_DATA_SOURCE',
-              chartConditionVal: String(chart.goodsDataSourceNo),
-            }
+                chartConditionCd: 'COMP_DATA_SOURCE',
+                chartConditionVal: String(chart.goodsDataSourceNo),
+              }
             : null,
         )
         .filter((item): item is IProductDataStructuredChartPersonalizationRequest => item !== null) ?? [],
@@ -501,6 +501,7 @@ const ChartComponent = ({
                 chartType={chartType}
                 chartRange={searchFilter.range}
                 currency={chartMetaData?.currency}
+                isYAxisSeparated={chartData?.metadata?.isYAxisSeparated}
                 unitCd={searchFilter.unitCd}
                 mainChart={chartData?.mainChart}
                 indicators={chartData?.indicators}

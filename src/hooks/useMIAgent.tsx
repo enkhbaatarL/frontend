@@ -11,6 +11,7 @@ export type MIAgentState = 'default' | 'generating' | 'complete'
 
 export interface IConversation extends IChatQnaRes {
   isNew?: boolean
+  event?: null
 }
 
 export interface IChatRoom extends IChatRoomRes {
@@ -108,38 +109,116 @@ const useMIAgent = () => {
     auditInfo: null,
     isNew: true,
   })
+  const [isStreamingDone, setIsStreamingDone] = useState(true)
 
+  // const inquireBackup = useCallback(
+  //   async (message: string, shouldWebSearch: boolean = false) => {
+  //     try {
+  //       setConversations((prev) => [...prev, getTempConversation(message)])
+  //       setState('generating')
+  //       requestAnimationFrame(() => {
+  //         setTimeout(() => {
+  //           scrollToBottom()
+  //         }, 200)
+  //       })
+  //       const newChatRoomId = selectedChatRoom.id ?? uuid()
+  //       const newChat = await agentService.sendQna(newChatRoomId, message, shouldWebSearch)
+  //       if (selectedChatRoom.isNew) {
+  //         refetchChatRooms()
+  //         setSelectedChatRoom((prev) => ({
+  //           ...prev,
+  //           id: newChatRoomId,
+  //         }))
+  //       }
+  //       setState('complete')
+  //       await delay(1000)
+  //       setState('default')
+  //       replaceConversations(newChat)
+  //     } catch (error) {
+  //       console.error('Error in inquire:', error)
+  //       // 에러 발생 시 상태 초기화
+  //       setState('complete')
+  //       await delay(1000)
+  //       setState('default')
+
+  //       // 에러 메시지를 답변으로 설정
+  //       replaceConversations(getErrorConversation(message))
+  //     }
+  //   },
+  //   [replaceConversations, scrollToBottom, selectedChatRoom.id, selectedChatRoom.isNew, refetchChatRooms],
+  // )
   const inquire = useCallback(
     async (message: string, shouldWebSearch: boolean = false) => {
       try {
+        setIsStreamingDone(false)
         setConversations((prev) => [...prev, getTempConversation(message)])
         setState('generating')
+
         requestAnimationFrame(() => {
           setTimeout(() => {
             scrollToBottom()
           }, 200)
         })
+
         const newChatRoomId = selectedChatRoom.id ?? uuid()
-        const newChat = await agentService.sendQna(newChatRoomId, message, shouldWebSearch)
-        if (selectedChatRoom.isNew) {
-          refetchChatRooms()
-          setSelectedChatRoom((prev) => ({
-            ...prev,
-            id: newChatRoomId,
-          }))
-        }
-        setState('complete')
-        await delay(1000)
-        setState('default')
-        replaceConversations(newChat)
+        await agentService.sendQnaStreamMock(
+          newChatRoomId,
+          message,
+          shouldWebSearch,
+          (chunk: any) => {
+            setTimeout(() => {
+              replaceConversations({
+                qnaNo: chunk.data.qnaNo,
+                question: message,
+                isNew: true,
+                event: chunk.event,
+                answer: {
+                  bundles: [chunk.data.answer.bundles[0]],
+                },
+                isRecommended: null,
+                isNotRecommended: null,
+                statusCd: null,
+                statusNm: null,
+                feedbackCd: null,
+                feedbackNm: null,
+                feedbackComment: null,
+                auditInfo: null
+              })
+
+              setTimeout(() => {
+                scrollToBottom()
+              }, 100)
+            }, 400)
+          },
+          () => {
+            setState('complete')
+            setTimeout(() => setIsStreamingDone(true), 100)
+            setTimeout(() => setState('default'), 1000)
+
+            if (selectedChatRoom.isNew) {
+              refetchChatRooms()
+              setSelectedChatRoom((prev) => ({
+                ...prev,
+                id: newChatRoomId,
+              }))
+            }
+
+          },
+          (err) => {
+            console.error('스트리밍 에러:', err)
+            setIsStreamingDone(true)
+            setState('complete')
+            setTimeout(() => setState('default'), 1000)
+            replaceConversations(getErrorConversation(message))
+          },
+        )
+        
+        // replaceConversations(newChat);
       } catch (error) {
         console.error('Error in inquire:', error)
-        // 에러 발생 시 상태 초기화
+        setIsStreamingDone(true)
         setState('complete')
-        await delay(1000)
-        setState('default')
-
-        // 에러 메시지를 답변으로 설정
+        setTimeout(() => setState('default'), 1000)
         replaceConversations(getErrorConversation(message))
       }
     },
@@ -224,6 +303,7 @@ const useMIAgent = () => {
   return {
     state,
     inquire,
+    isStreamingDone,
     retry,
     chatRoom: {
       list: chatRoomList,

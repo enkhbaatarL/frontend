@@ -1,16 +1,20 @@
 import Axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { t } from 'i18next'
 import { NavigateFunction } from 'react-router-dom'
+import { QueryClient } from '@tanstack/react-query'
 
 import { ISnackbarOptions } from '@/hooks/useSnackbar'
 import useAuthStore from '@/store/useAuthStore'
 import useDialog from '@/store/useDialog'
+import { triggerLayoutReset } from '@/utils/resetLayout'
 export interface HttpResponse<T> {
   status: number
   code: string
   message?: string
   data?: T
 }
+
+export const queryClient = new QueryClient()
 
 export interface ErrorHandlerOptions {
   showSnackbar: (message: string, options?: ISnackbarOptions) => void
@@ -60,9 +64,12 @@ let requestQueue: (() => void)[] = []
 /** 토큰만료 재발급 process */
 const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> => {
   const { token: savedToken } = useAuthStore.getState()
-  const processQueue = () => {
-    requestQueue.forEach((callback) => callback())
-    requestQueue = []
+  const processQueue = (): Promise<void> => {
+    return new Promise((resolve) => {
+      requestQueue.forEach((callback) => callback())
+      requestQueue = []
+      resolve()
+    })
   }
   const errorNavigate = () => {
     requestQueue = []
@@ -102,7 +109,10 @@ const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> 
     const data = await response.json()
     const newToken = data?.data?.accessToken
     useAuthStore.setState({ token: newToken })
-    processQueue()
+    await processQueue()
+    setTimeout(() => {
+      triggerLayoutReset()
+    }, 200)
   } catch {
     errorNavigate()
   } finally {
@@ -147,7 +157,7 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
 }
 
 api.interceptors.response.use(
-  (res: AxiosResponse) => res,
+  async (res: AxiosResponse) => res,
   (error: AxiosError<HttpResponse<unknown>>) => errorHandler(error),
 )
 

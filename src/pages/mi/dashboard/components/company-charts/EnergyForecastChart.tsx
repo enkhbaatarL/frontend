@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { Chart as ChartJS, ChartDataset } from 'chart.js'
 import dayjs from 'dayjs'
-import { debounce } from 'lodash-es'
+import { debounce, isEqual } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Chart } from 'react-chartjs-2'
 
@@ -103,6 +103,9 @@ const ForecastChart = (props: ForecastChartProps) => {
   const [tooltip, setTooltip] = useState<MIForecastChartTooltipProps>(initialTooltip)
   const [isOpenSetting, setIsOpenSetting] = useState(false)
 
+  const rawForecastDatasetRef = useRef<ForecastDataset | null>(null)
+  const prevTooltipRef = useRef<any | null>(null)
+
   useEffect(() => {
     if (selectedContent === null) {
       verticalLineAndHighlightPlugin.reset()
@@ -119,6 +122,15 @@ const ForecastChart = (props: ForecastChartProps) => {
         return
       }
 
+      const filteredTooltipContent = chartTooltip.content.filter((item: any) => {
+        if (item.category === 'forecast') {
+          const value = rawForecastDatasetRef.current?.data?.[item.index - 1]
+          return value !== null && value !== undefined
+        } else {
+          return true
+        }
+      })
+
       if (chartTooltip.viewDetail) {
         props.onSelectedContent({
           label: chartTooltip.content[0].label ?? '',
@@ -128,19 +140,22 @@ const ForecastChart = (props: ForecastChartProps) => {
         })
       }
 
-      setTooltip({
-        minWidth: 293,
-        visible: true,
-        viewDetail: chartTooltip.viewDetail,
-        top: chartTooltip.y,
-        left: chartTooltip.x + 20 + 20,
-        label: chartTooltip.label,
-        content: chartTooltip.content,
-        onClose: () => {
-          plugin.clearSelectedPoint()
-          props.onSelectedContent(null)
-        },
-      })
+      if (!isEqual(prevTooltipRef.current, filteredTooltipContent) || filteredTooltipContent.length === 1) {
+        prevTooltipRef.current = filteredTooltipContent
+        setTooltip({
+          minWidth: 293,
+          visible: true,
+          viewDetail: chartTooltip.viewDetail,
+          top: chartTooltip.y,
+          left: chartTooltip.x + 20 + 20,
+          label: chartTooltip.label,
+          content: filteredTooltipContent, //chartTooltip.content,
+          onClose: () => {
+            plugin.clearSelectedPoint()
+            props.onSelectedContent(null)
+          },
+        })
+      }
     },
     [props],
   )
@@ -239,6 +254,7 @@ const ForecastChart = (props: ForecastChartProps) => {
         }
 
         if (type === 'forecast') {
+          rawForecastDatasetRef.current = dataset
           dataset.data.forEach((_, index) => {
             if (index <= 1) return
             const actualDataset = datasets.find((d) => d.label === dataset.label)
@@ -248,14 +264,14 @@ const ForecastChart = (props: ForecastChartProps) => {
               data:
                 dataset.data.length > 0
                   ? [
-                    null,
-                    ...dataset.data.map((subValue, subIndex) => {
-                      if (index - 1 === subIndex) return actualDataset?.data[index] ?? null
-                      if (index === subIndex) return subValue
-                      return null
-                    }),
-                    null,
-                  ]
+                      null,
+                      ...dataset.data.map((subValue, subIndex) => {
+                        if (index - 1 === subIndex) return actualDataset?.data[index] ?? null
+                        if (index === subIndex) return subValue
+                        return null
+                      }),
+                      null,
+                    ]
                   : [],
               borderColor: dataset.color,
               backgroundColor: dataset.color,

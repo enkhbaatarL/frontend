@@ -71,15 +71,16 @@ const MIAgentConversation = ({ conversations, chatRoom, onRetry, animationComple
         }}
       >
         {conversations.map((conversation, index) => (
-          <MIAgentConversationItem
-            key={conversation.qnaNo}
-            conversation={conversation}
-            chatRoom={chatRoom}
-            onRetry={onRetry}
-            animationComplete={animationComplete[index]}
-            onAnimationComplete={() => onAnimationComplete(index)}
-            isLastChat={index === conversations.length - 1}
-          />
+            <MIAgentConversationItem
+              key={`${conversation.qnaNo}-${index}`}
+
+              conversation={conversation}
+              chatRoom={chatRoom}
+              onRetry={onRetry}
+              animationComplete={animationComplete[index]}
+              onAnimationComplete={() => onAnimationComplete(index)}
+              isLastChat={index === conversations.length - 1}
+            />
         ))}
       </Box>
     </Box>

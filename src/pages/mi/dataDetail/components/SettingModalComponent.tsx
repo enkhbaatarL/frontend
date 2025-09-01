@@ -373,7 +373,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({
       label: (
         <Grid gap={2} container alignItems={'center'}>
           내가 설정한 알람
-          <MIChip sx={{ border: 0 }} label={transactions.length} color={'gray'} size={'h24'} fontType="chipM" />
+          <MIChip sx={{ border: 0 }} label={transactions.length} color={'gray'} size={'h22'} fontType="chipM" />
         </Grid>
       ),
       content: (

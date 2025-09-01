@@ -1,6 +1,6 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, Tooltip } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import dayjs from 'dayjs'
+// import dayjs from 'dayjs'
 import chunk from 'lodash-es/chunk'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 
@@ -12,6 +12,7 @@ import { MIBaseSkeleton, SkeletonWrapper } from '@/components/mi/MIBaseSkeleton.
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import signalMapService, { MapCategory } from '@/service/mi/signalMap'
 import useAuthStore from '@/store/useAuthStore'
+import InfoIcon from '@/components/common/icons/table/InfoIconMedium'
 
 interface SectionHeaderProps {
   title: string
@@ -75,18 +76,40 @@ const SignalMapPage = () => {
     queryKey: ['getSignalMapData', period, companyFilter],
     queryFn: async () => await signalMapService.getSignalMapData(customerCompanyNo, { period, filter: companyFilter }),
     enabled: isInitialized && (!!period || !!companyFilter),
-    select: (res) => res.data,
+    select: (res) => {
+      const topImpactVariables = normalizeTopImpact(res.data)
+      const newRes = {
+        ...res.data,
+        topImpactVariables,
+      }
+      return newRes
+    },
   })
+
+  const normalizeTopImpact = (signalData: any) => {
+    if (!signalData?.topImpactVariables) return null
+    return [
+      {
+        categoryName: 'Top Impact Variables',
+        items: [
+          {
+            categoryName: 'All Sectors',
+            items: signalData?.topImpactVariables,
+          },
+        ],
+      },
+    ]
+  }
 
   const getSortedList = (list?: MapCategory[]) => {
     if (!list) return []
     return list.sort((a, b) => a.categoryName.localeCompare(b.categoryName))
   }
 
-  const formattedDate = useMemo(() => {
-    if (!signalData?.updatedDt) return ''
-    return `Updated ${dayjs(signalData?.updatedDt).format('MMMM D, YYYY')}`
-  }, [signalData?.updatedDt])
+  // const formattedDate = useMemo(() => {
+  //   if (!signalData?.updatedDt) return ''
+  //   return `Updated ${dayjs(signalData?.updatedDt).format('MMMM D, YYYY')}`
+  // }, [signalData?.updatedDt])
 
   useEffect(() => {
     if (periodOptions.length > 0 && companyOptions.length > 0 && !isInitialized) {
@@ -137,7 +160,14 @@ const SignalMapPage = () => {
           </Typography>
           <br />
           <Typography color="#495057" variant="subtext0">
-            {formattedDate}
+            Visual Correlation of Market Signals by Sector
+            <Tooltip
+              title="Mapped signals are grouped by sector and macroeconimic factor. Hovering reveals related signals and recent trend data."
+              arrow
+            >
+              <InfoIcon style={{ display: 'inline-block', transform: 'translateX(2px) translateY(3px)' }} />
+            </Tooltip>
+            {/* {formattedDate} */}
           </Typography>
         </Box>
       )}
@@ -161,6 +191,7 @@ const SignalMapPage = () => {
               sizeSelect="h40"
               width={160}
               useAllOption
+              type={'button'}
               onChange={(e) => setPeriod(e.target.value as string)}
               options={periodOptions}
             />
@@ -170,6 +201,7 @@ const SignalMapPage = () => {
                 sizeSelect="h40"
                 width={180}
                 useAllOption
+                type={'button'}
                 onChange={(e) => setCompanyFilter(e.target.value as string)}
                 options={companyOptions}
               />
@@ -177,6 +209,36 @@ const SignalMapPage = () => {
           </Box>
           <MIColorRange />
         </Box>
+        {chunk(signalData?.topImpactVariables, 2).map((row, rowIdx) => (
+          <Box
+            key={rowIdx}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '1fr',
+              gap: '24px',
+              mb: 5,
+            }}
+          >
+            {row.map((root, colIdx) => {
+              const subItems = root?.items.sort((a, b) => a.categoryName.localeCompare(b.categoryName))
+              return (
+                <Box key={colIdx}>
+                  <Box mb={5}>
+                    <SectionHeader title={root.categoryName} itemCount={root.items.length} boldTitle />
+                  </Box>
+                  {subItems.map((subCategory, cateIdx) => (
+                    <Box mb={6} key={cateIdx}>
+                      <SectionHeader title={subCategory.categoryName} itemCount={subCategory.items.length} />
+                      <Box height="460px" marginTop="6px">
+                        <MISignalMap mapData={subCategory.items} useAnimation />
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              )
+            })}
+          </Box>
+        ))}
         {chunk(getSortedList(signalData?.list), 2).map((row, rowIdx) => (
           <Box
             key={rowIdx}

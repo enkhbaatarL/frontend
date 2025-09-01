@@ -6,7 +6,6 @@ import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 
-import bshImg from '@/assets/bgsubheader.png'
 import MIButton from '@/components/common/button/MIButton'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import MILine from '@/components/common/divider/MILine'
@@ -35,10 +34,10 @@ const DataDetailPage = () => {
   const { state } = useLocation()
   const [goodsDataSourceNo, setGoodsDataSourceNo] = useState<number>()
 
-  const [startDate, setStartDate] = useState<string>(dayjs().subtract(1, 'year').format('YYYYMMDD'))
+  const [startDate, setStartDate] = useState<string>(dayjs().subtract(6, 'month').format('YYYYMMDD'))
   const [endDate, setEndDate] = useState<string>(dayjs().format('YYYYMMDD'))
 
-  const [rawSize, setRawSize] = useState<number>(10)
+  const [rawSize, setRawSize] = useState<number>(50)
   const [rawPage, setRawPage] = useState<number>(1)
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -231,23 +230,29 @@ const DataDetailPage = () => {
   return (
     <MISkeleton variant={'dataDetail'} loading={isActuallyLoading}>
       {productData && (
-        <Box paddingY={21} sx={{ background: ` url(${bshImg}) lightgray 50% / cover no-repeat` }}>
+        <Box paddingTop={'56px'} paddingBottom={'30px'}>
           <Box paddingX={7.5} boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
-            <Typography color="white" component="h1" lineHeight={1.2} mb={7.5} mt={1} variant="titleSubheader">
+            {!hasStructuredDataList && (
+              <Typography color="contentText.Normal" variant="subtext1">
+                Market Reports
+              </Typography>
+            )}
+            <Typography paddingY={6.5} color="contentText.Black" component="h1" lineHeight={1.2} variant="titleSubPage">
               {productData.goodsDataNm}
             </Typography>
             <Grid container alignItems="center">
-              <Typography color="white" variant="subtext1">
+              <Typography color="contentText.Subtext" variant="subtext1">
                 {formatDate}
               </Typography>
               <MILine length={14} margin="0 14px" direction="vertical" backgroundColor="gray.50" />
-              <Typography color="white" variant="subtext1">
+              <Typography color="contentText.Subtext" variant="subtext1">
                 {productData.providerNm}
               </Typography>
             </Grid>
           </Box>
         </Box>
       )}
+      <Box boxSizing={'border-box'} minWidth={'1380px'} width={'1380px'} borderTop="1px solid" borderColor="gray.30" margin={'auto'}></Box>
       <Box boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'} paddingTop={10} paddingX={7.5}>
         <Grid
           sx={{

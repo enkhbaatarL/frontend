@@ -16,6 +16,7 @@ export interface IFocusedInfo {
 export interface IAdvancedFilterItem {
   codeNm: string
   codeId: string
+  codeExpn: string
 }
 export interface IAdvancedFilter {
   documentTypes: IAdvancedFilterItem[]

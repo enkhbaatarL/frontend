@@ -41,7 +41,11 @@ const getCookie = (name: string): string | null => {
 
 const mainPages: Page[] = [
   {
-    label: 'MI Dashboard',
+    label: 'Dashboard',
+    url: 'main',
+  },
+  {
+    label: 'AI Forecast Model',
     url: 'dashboard',
   },
   {
@@ -49,12 +53,24 @@ const mainPages: Page[] = [
     url: 'signal-map',
   },
   {
-    label: 'Market Data',
+    label: 'Metrics',
     url: 'market-data',
   },
   {
-    label: 'Insights',
+    label: 'Reports',
     url: 'insights',
+  },
+  {
+    label: 'Qualitative Analysis',
+    url: 'custom',
+  },
+  {
+    label: 'News',
+    url: 'news',
+  },
+  {
+    label: 'Newsletter',
+    url: 'letter',
   },
 ]
 
@@ -149,13 +165,14 @@ const MILayout = () => {
   const handleClose = () => setShowNoticePopup(false)
 
   const showDailyChart = useMemo(
-    () => location.pathname === '/mi/dashboard' && marketDataList.length > 0,
+    () => (location.pathname === '/mi/main' || location.pathname === '/mi/dashboard') && marketDataList.length > 0,
     [location.pathname, marketDataList],
   )
 
   // MEMO: 상반기 개발(~ 25.06.30) 기준
   // -> 개인정보 처리방침 제외
-  const showMiAgent = !['/mi/privacy-policy'].includes(location.pathname)
+  // -> 고객사 custom iframe page 제외
+  const showMiAgent = !['/mi/privacy-policy', '/mi/custom'].includes(location.pathname)
 
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
@@ -185,7 +202,7 @@ const MILayout = () => {
             background: showDailyChart ? '#F2F5F7' : undefined,
             display: 'flex',
             flexDirection: 'column',
-            minHeight: location.pathname === '/mi/dashboard' ? '100vh' : preRenderMinHeight,
+            minHeight: location.pathname === '/mi/main' || location.pathname === '/mi/dashboard' ? '100vh' : preRenderMinHeight,
             minWidth: '1440px',
             boxSizing: 'border-box',
           }}
@@ -245,10 +262,15 @@ const MILayout = () => {
   )
 }
 
-const MILayoutWithProvider = () => (
-  <MarketDataProvider>
-    <MILayout />
-  </MarketDataProvider>
-)
+import { useResetKeyContext } from '@/contexts/ResetKeyContext'
+
+const MILayoutWithProvider = () => {
+  const { resetKey } = useResetKeyContext()
+  return (
+    <MarketDataProvider>
+      <MILayout key={resetKey} />
+    </MarketDataProvider>
+  )
+}
 
 export default MILayoutWithProvider

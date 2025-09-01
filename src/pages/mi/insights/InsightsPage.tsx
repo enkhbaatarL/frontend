@@ -1,4 +1,4 @@
-import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography } from '@mui/material'
+import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography, Tooltip } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -18,6 +18,7 @@ import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
 import insightsService, { IAdvancedFilter, IAdvancedFilterItem, IInsightsInfo, IInsightsRequest } from '@/service/mi/insights'
 import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
+import InfoIcon from '@/components/common/icons/table/InfoIconMedium'
 
 export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT'
 export interface Report {
@@ -138,13 +139,14 @@ const InsightsPage = () => {
   )
   const convertToFilters = (filterInfo: IAdvancedFilter) => {
     const buildOptions = (arr: IAdvancedFilterItem[] = []) =>
-      arr.map(({ codeNm, codeId }) => ({
+      arr.map(({ codeNm, codeId, codeExpn }) => ({
         label: codeNm,
         value: codeId,
+        codeExpn: codeExpn,
       }))
 
     const sections = [
-      { title: 'Document Types', items: filterInfo.documentTypes },
+      // { title: 'Document Types', items: filterInfo.documentTypes },
       { title: 'Providers', items: filterInfo.providers },
       { title: 'Languages', items: filterInfo.languages },
     ]
@@ -198,6 +200,14 @@ const InsightsPage = () => {
     () => isInitialLoading || focusedIsLoading || filterIsLoading || (insightsIsLoading && !hasInitialData),
     [isInitialLoading, focusedIsLoading, filterIsLoading, insightsIsLoading, hasInitialData],
   )
+  useEffect(() => {
+    if (filterList?.data?.providers?.length && !(filter?.provFilters && filter?.provFilters.length > 0)) {
+      const providerIds = filterList.data.providers.map((p) => p.codeId)
+      const defaultProvider = providerIds.includes('A_WOODMAC') ? 'A_WOODMAC' : null
+
+      if (defaultProvider) updateFilterWithSearch('provFilters', defaultProvider)
+    }
+  }, [filterList])
 
   useEffect(() => {
     const shouldMarkAsInitialized = filterList?.data && (!filter.docFilters || (filter.sort && filter.period))
@@ -214,7 +224,6 @@ const InsightsPage = () => {
   return (
     <MISkeleton variant={'insights'} loading={isActuallyLoading}>
       <Box
-        paddingY={14}
         sx={{
           background: `url(${psImg}) right / 33% no-repeat, url(${shiImg}) lightgray 50% / cover no-repeat`,
           zIndex: 0,
@@ -232,13 +241,13 @@ const InsightsPage = () => {
             boxShadow: '0px 20px 20px 0px rgba(0, 0, 0, 0.25) inset',
           }}
         ></Box>
-        <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
+        <Box boxSizing={'border-box'} paddingX={7.5} paddingY={10.5} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
           <Typography color="white" component="h1" fontSize={40} variant="body1M16">
-            Insights
+            Market Reports
           </Typography>
-          <Typography color="#DCDCDC" fontSize={20} lineHeight={1.6} variant="subtext1">
+          {/* <Typography color="#DCDCDC" fontSize={20} lineHeight={1.6} variant="subtext1">
             Stay informed, stay ahead
-          </Typography>
+          </Typography> */}
         </Box>
       </Box>
       <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'} py={12.5} px={7.5}>
@@ -340,7 +349,7 @@ const InsightsPage = () => {
                       {section.title}
                     </Typography>
                     <FormGroup>
-                      {section.options.map((option: { label: string; value: string }) => (
+                      {section.options.map((option: { label: string; value: string; codeExpn: string }) => (
                         <FormControlLabel
                           key={option.value}
                           sx={{
@@ -355,7 +364,20 @@ const InsightsPage = () => {
                               onChange={(e) => handleFilterChange(e.target.value, filterType)}
                             />
                           }
-                          label={option.label}
+                          label={
+                            option.label ? (
+                              <Box display="flex" alignItems="center" gap={0.5}>
+                                {option.label}
+                                {section.title.toLowerCase().includes('document') && option.codeExpn && (
+                                  <Tooltip title={option.codeExpn} arrow>
+                                    <InfoIcon />
+                                  </Tooltip>
+                                )}
+                              </Box>
+                            ) : (
+                              option.label
+                            )
+                          }
                         />
                       ))}
                     </FormGroup>

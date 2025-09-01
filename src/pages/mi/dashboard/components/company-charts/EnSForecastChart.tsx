@@ -309,7 +309,7 @@ const ForecastChart = (props: ForecastChartProps) => {
           <Box>
             {lastUpdated && (
               <Typography variant="body3M12" color="gray.60">
-                Last Updated : {lastUpdated}
+                Last Updated : {lastUpdated ? dayjs(lastUpdated).format('YYYY-MM-DD') : 'YYYY-MM-DD'}
               </Typography>
             )}
           </Box>

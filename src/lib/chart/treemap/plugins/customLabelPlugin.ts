@@ -1,121 +1,214 @@
 import { Chart as ChartJS, ChartDataset } from 'chart.js'
-
+interface TreemapChild {
+  sector: string
+  level: number
+  change: number
+  category?: string
+  instrument?: string
+}
 interface TreemapDataItem {
   _data: {
-    children: {
-      sector: string
-      level: number
-      change: number
-    }[]
+    children: TreemapChild[]
   }
+}
+
+const ELLIPSIS = '…'
+const FONT_FAMILY = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial'
+
+function drawOneLineEllipsis(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  font: string,
+  fillStyle: string,
+) {
+  if (!text) return
+  ctx.font = font
+  ctx.fillStyle = fillStyle
+
+  const fullWidth = ctx.measureText(text).width
+  if (fullWidth <= maxWidth) {
+    ctx.fillText(text, x, y)
+    return
+  }
+
+  if (ctx.measureText(ELLIPSIS).width > maxWidth) return
+
+  let t = text
+  while (t.length && ctx.measureText(t + ELLIPSIS).width > maxWidth) {
+    t = t.slice(0, -1)
+  }
+  if (t.length) ctx.fillText(t + ELLIPSIS, x, y)
+}
+
+function drawMultiLineWithEllipsis(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  maxLines: number,
+  font: string,
+  lineHeightPx: number,
+  fillStyle: string,
+): number {
+  if (!text || maxLines <= 0) return 0
+  ctx.font = font
+  ctx.fillStyle = fillStyle
+
+  const words: string[] = []
+  text.split(/\s+/).forEach((w) => {
+    if (!w) return
+    if (ctx.measureText(w).width <= maxWidth) {
+      words.push(w)
+    } else {
+      let chunk = ''
+      for (const ch of w) {
+        const test = chunk + ch
+        if (ctx.measureText(test).width > maxWidth) {
+          if (chunk) words.push(chunk)
+          chunk = ch
+        } else {
+          chunk = test
+        }
+      }
+      if (chunk) words.push(chunk)
+    }
+  })
+
+  const lines: string[] = []
+  let line = ''
+  for (let i = 0; i < words.length; i++) {
+    const test = (line ? line + ' ' : '') + words[i]
+    if (ctx.measureText(test).width > maxWidth) {
+      if (line) {
+        lines.push(line)
+        line = words[i]
+      } else {
+        lines.push(words[i])
+        line = ''
+      }
+    } else {
+      line = test
+    }
+  }
+  if (line) lines.push(line)
+
+  const clipped = lines.slice(0, maxLines)
+  if (clipped.length < lines.length) {
+    let last = clipped[clipped.length - 1]
+    while (last && ctx.measureText(last + ELLIPSIS).width > maxWidth) {
+      last = last.slice(0, -1)
+    }
+    clipped[clipped.length - 1] = last ? last + ELLIPSIS : ELLIPSIS
+  }
+
+  clipped.forEach((ln, idx) => ctx.fillText(ln, x, y + idx * lineHeightPx))
+  return clipped.length
 }
 
 const customLabelPlugin = {
   id: 'customLabelPlugin',
-  // beforeTooltipDraw 대신 afterDatasetsDraw 사용 (항상 라벨이 표시되도록)
   afterDatasetsDraw: (chart: ChartJS) => {
     const ctx = chart.ctx
     const dataset = chart.data.datasets[0] as ChartDataset<'treemap', TreemapDataItem[]>
-
     if (!dataset?.data) return
 
-    dataset.data.forEach((item: TreemapDataItem, i: number) => {
-      const rect = chart.getDatasetMeta(0).data[i]
+    const meta = chart.getDatasetMeta(0)
 
+    dataset.data.forEach((item: TreemapDataItem, i: number) => {
+      const rect = meta.data[i] as unknown as { x: number; y: number; width: number; height: number } | undefined
       if (!rect) return
 
-      const data = item._data.children[0]
-      if (!data?.sector) return
+      const raw = item?._data?.children?.[0] as TreemapChild | undefined
+      if (!raw) return
 
-      const { x, y, width: w, height: h } = rect as unknown as { x: number; y: number; width: number; height: number }
+      const category = (raw.category ?? '').trim()
+      const instrument = (raw.instrument ?? raw.sector ?? '').trim()
+      const changeText = (typeof raw.change === 'number' ? raw.change : 0).toFixed(2).replace('-', '- ')
 
-      // 레벨에 따른 폰트 크기 결정 (사각형 크기와 무관하게)
-      const level = data.level || 1
+      const { x, y, width: w, height: h } = rect
+      if (w <= 0 || h <= 0) return
 
-      // 레벨에 따라 폰트 크기 직접 결정 (사각형 크기에 비례하지 않음)
-      const baseTitleSize = 10
-      const baseChangeSize = 14
+      const level = raw.level ?? 1
+      const isSmallBox = w < 64 || h < 48
+      const padX = isSmallBox ? 6 : 14
+      const padY = isSmallBox ? 6 : 12
+      const usableW = Math.max(4, w - padX * 2)
+      const usableH = Math.max(4, h - padY * 2)
+      const MIN_FONT = 14
 
-      // 레벨별 고정 폰트 크기 설정
-      const titleFontSize = baseTitleSize + (level - 1) * 0.3
-      const changeFontSize = baseChangeSize + (level - 1) * 0.4
+      const catSize = Math.max(MIN_FONT, Math.round(10 + (level - 1) * 0.4))
+      const instSize = Math.max(MIN_FONT, Math.round(10 + (level - 1) * 0.4))
+      const valSize = Math.round(16 + (level - 1) * 0.4)
+      const catFont = `600 ${catSize}px ${FONT_FAMILY}`
+      const instFont = `500 ${instSize}px ${FONT_FAMILY}`
+      const valFont = `600 ${valSize}px ${FONT_FAMILY}`
+      const catLH = Math.round(catSize * 1.35)
+      const instLH = Math.round(instSize * 1.35)
+      const valLH = Math.round(valSize * 1.2)
 
-      const paddingX = 18
-      const paddingY = 18
+      const titleColor = 'rgba(255,255,255,0.95)'
+      const valueColor = 'rgba(255,255,255,1)'
+      const gapTitle = 2
+      const gapToValue = 6
 
       ctx.save()
-
-      // 텍스트가 영역을 벗어나지 않도록 일립시스 처리하는 함수
-      const drawTextWithEllipsis = (
-        text: string,
-        xPos: number,
-        yPos: number,
-        maxWidth: number,
-        fontSize: number,
-        isBold: boolean = false,
-      ) => {
-        const fontWeight = isBold ? 'bold' : 'normal'
-        ctx.font = `${fontWeight} ${fontSize}px Arial`
-
-        const textWidth = ctx.measureText(text).width
-
-        const textHeight = fontSize * 1.2
-
-        // 사각형 높이보다 텍스트 높이가 크면 표시하지 않음
-        if (textHeight > h - paddingY * 2) {
-          return null
-        }
-
-        // 텍스트가 영역 내에 들어가는 경우
-        if (textWidth <= maxWidth - paddingX * 2) {
-          ctx.fillText(text, xPos, yPos)
-          return text
-        }
-
-        let ellipsisText = text
-        const ellipsis = '...'
-        const ellipsisWidth = ctx.measureText(ellipsis).width
-
-        // ...만 표시하는 경우
-        if (ellipsisWidth + 10 > maxWidth - paddingX * 2) {
-          return null
-        }
-
-        // 텍스트가 maxWidth에 맞도록 자르기
-        while (ctx.measureText(ellipsisText + ellipsis).width > maxWidth - paddingX * 2 && ellipsisText.length > 0) {
-          ellipsisText = ellipsisText.substring(0, ellipsisText.length - 1)
-        }
-
-        // 텍스트를 모두 자르고도 공간이 부족한 경우
-        if (ellipsisText.length === 0) {
-          return null
-        }
-
-        ctx.fillText(ellipsisText + ellipsis, xPos, yPos)
-
-        return ellipsisText + ellipsis
-      }
-
-      // 섹터명 (상단)
-      ctx.fillStyle = 'white'
-      ctx.textAlign = 'left'
+      ctx.textAlign = 'start'
       ctx.textBaseline = 'top'
-      const sectorText = drawTextWithEllipsis(data.sector, x + paddingX, y + paddingY, w, titleFontSize, false)
 
-      if (sectorText === null) {
+      if (isSmallBox) {
+        ctx.font = valFont
+        ctx.fillStyle = valueColor
+        const tw = ctx.measureText(changeText).width
+        if (tw <= usableW && valLH <= usableH) {
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(changeText, x + w / 2, y + h / 2 - 1)
+        }
+        ctx.restore()
         return
       }
 
-      // 변화율 (하단)
-      ctx.fillStyle = 'rgba(255,255,255,0.9)'
-      drawTextWithEllipsis(
-        data.change.toFixed(2).replace('-', '- '),
-        x + paddingX,
-        y + paddingY + titleFontSize + 8,
-        w,
-        changeFontSize,
-        true,
-      )
+      const reservedForValue = gapToValue + valLH
+      let remainForTitle = usableH - reservedForValue
+      if (remainForTitle <= 0) {
+        ctx.font = valFont
+        ctx.fillStyle = valueColor
+        ctx.fillText(changeText, x + padX, y + padY)
+        ctx.restore()
+        return
+      }
+
+      let curY = y + padY
+      if (category) {
+        if (remainForTitle >= catLH) {
+          drawOneLineEllipsis(ctx, category, x + padX, curY, usableW, catFont, titleColor)
+          curY += catLH + gapTitle
+          remainForTitle -= catLH + gapTitle
+        } else {
+          ctx.font = valFont
+          ctx.fillStyle = valueColor
+          ctx.fillText(changeText, x + padX, y + padY)
+          ctx.restore()
+          return
+        }
+      }
+
+      const maxInstLines = Math.floor(remainForTitle / instLH)
+      let usedInstLines = 0
+      if (maxInstLines >= 1) {
+        usedInstLines = drawMultiLineWithEllipsis(ctx, instrument, x + padX, curY, usableW, maxInstLines, instFont, instLH, titleColor)
+        curY += usedInstLines * instLH
+        remainForTitle -= usedInstLines * instLH
+      }
+
+      ctx.font = valFont
+      ctx.fillStyle = valueColor
+      const valueY = Math.min(curY + gapToValue, y + h - padY - valLH)
+      ctx.fillText(changeText, x + padX, valueY)
 
       ctx.restore()
     })
