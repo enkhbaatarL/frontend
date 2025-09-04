@@ -10,6 +10,7 @@ import useAuthStore from '@/store/useAuthStore'
 const CallbackProcessingPage = () => {
   const [searchParams] = useSearchParams()
   const sessionId = searchParams.get('sessionId')
+  const isExternalLogin = searchParams.get('isExternalLogin') === 'true'
   const { user, setUser, setToken } = useAuthStore()
 
   const navigate = useNavigate()
@@ -35,8 +36,10 @@ const CallbackProcessingPage = () => {
       return
     }
 
+    const targetUrl = `/api/v1/${isExternalLogin ? 'external' : 'saml2'}/callback`
+
     axios
-      .get('/api/v1/saml2/callback', {
+      .get(targetUrl, {
         params: { sessionId },
         withCredentials: true,
       })

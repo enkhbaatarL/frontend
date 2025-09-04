@@ -2,20 +2,25 @@ import { omit } from 'lodash-es'
 import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
 
 import ProtectedRoute from '@/components/common/ProtectedRoute'
+import { ResetKeyProvider } from '@/contexts/ResetKeyContext'
 import CallbackProcessingPage from '@/pages/common/CallbackProcessingPage'
 import LoginPage from '@/pages/common/LoginPage'
 import PdfViewerPage from '@/pages/common/PdfViewerPage'
+import ExternalLoginPage from '@/pages/mi/externalLogin/externalLoginPage'
 import AdminRoutes from '@/routes/AdminRoutes'
 import ErrorRoutes from '@/routes/ErrorRoutes'
 import { healthCheckRoutes } from '@/routes/HealthCheckRoutes'
 import MIRoutes from '@/routes/MIRoutes'
 import { ICustomRouteObject } from '@/types/common'
-import { ResetKeyProvider } from '@/contexts/ResetKeyContext'
 
 const commonRoutes: ICustomRouteObject[] = [
   {
     path: '/',
     element: <LoginPage />,
+  },
+  {
+    path: 'login',
+    element: <ExternalLoginPage />,
   },
   {
     ...AdminRoutes,

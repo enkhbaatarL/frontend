@@ -41,6 +41,11 @@ const authService = {
 
     return response.data.data
   },
+
+  async postExternalLogin(body: { loginId: string; password: string }): Promise<{ sessionId: string }> {
+    const response = await api.post('/external/login', body)
+    return response.data.data
+  },
 }
 
 export default authService

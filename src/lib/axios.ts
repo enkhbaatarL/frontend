@@ -1,7 +1,7 @@
+import { QueryClient } from '@tanstack/react-query'
 import Axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { t } from 'i18next'
 import { NavigateFunction } from 'react-router-dom'
-import { QueryClient } from '@tanstack/react-query'
 
 import { ISnackbarOptions } from '@/hooks/useSnackbar'
 import useAuthStore from '@/store/useAuthStore'
@@ -64,13 +64,12 @@ let requestQueue: (() => void)[] = []
 /** 토큰만료 재발급 process */
 const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> => {
   const { token: savedToken } = useAuthStore.getState()
-  const processQueue = (): Promise<void> => {
-    return new Promise((resolve) => {
+  const processQueue = (): Promise<void> =>
+    new Promise((resolve) => {
       requestQueue.forEach((callback) => callback())
       requestQueue = []
       resolve()
     })
-  }
   const errorNavigate = () => {
     requestQueue = []
     const { onShow } = useDialog.getState()

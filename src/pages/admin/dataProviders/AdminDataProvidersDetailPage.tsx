@@ -375,7 +375,7 @@ export default function AdminDataProvidersDetailPage() {
                   readOnly
                   placeholder="입력하세요"
                   fullWidth
-                  maxLength={6}
+                  maxLength={20}
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   error={field.state.meta.errors.some((msg) => typeof msg === 'string')}

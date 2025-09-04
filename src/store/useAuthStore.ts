@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+
 import { UserRole } from '@/service/admin/members'
 
 let __currentBaseUrl: string | null = null
@@ -20,6 +21,7 @@ export interface IUserDetail {
   companyNo: number
   userAccessPageType: string
   companyMipUrl?: string
+  isExternalLogin?: boolean
 }
 
 export interface IAccessCompanyInfo {
@@ -55,7 +57,7 @@ const useAuthStore = create<AuthState>()(
           let nextBase = s.customBaseUrl
           const companyNo = s.accessCompanyInfo?.customerCompanyNo ?? user?.companyNo
           if (user?.companyMipUrl && companyNo) {
-            nextBase = user.companyMipUrl + '/api/v1'
+            nextBase = `${user.companyMipUrl}/api/v1`
             sessionStorage.setItem(`customBaseUrl_${companyNo}`, nextBase)
           }
           __currentBaseUrl = nextBase
@@ -67,7 +69,7 @@ const useAuthStore = create<AuthState>()(
           let nextBase = s.customBaseUrl
           const companyNo = accessCompanyInfo?.customerCompanyNo ?? s.user?.companyNo
           if (s.user?.companyMipUrl && companyNo) {
-            nextBase = s.user.companyMipUrl + '/api/v1'
+            nextBase = `${s.user.companyMipUrl}/api/v1`
             sessionStorage.setItem(`customBaseUrl_${companyNo}`, nextBase)
           }
           __currentBaseUrl = nextBase

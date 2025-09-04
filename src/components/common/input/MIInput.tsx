@@ -1,7 +1,9 @@
-import { Box, InputAdornment, TextField, TextFieldProps, Tooltip, Typography } from '@mui/material'
+import { Box, InputAdornment, TextField, TextFieldProps, Tooltip, Typography, IconButton } from '@mui/material'
 import { t } from 'i18next'
 import { ChangeEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import VisibilityIcon from '@/components/common/icons/VisibilityIcon'
+import VisibilityOffIcon from '@/components/common/icons/VisibilityOffIcon'
 import MIInputClearIcon from '@/components/common/input/MIInputClearIcon'
 import MIInputErrorIcon from '@/components/common/input/MIInputErrorIcon'
 import useCheckFocus from '@/hooks/useCheckFocus'
@@ -24,6 +26,7 @@ export interface MIInputProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   onClear?: () => void
   appendContent?: string
   onFocusInput?: () => void
+  showPasswordToggle?: boolean
 }
 
 const MIInput = ({
@@ -45,15 +48,18 @@ const MIInput = ({
   width,
   onClear,
   onFocusInput,
+  showPasswordToggle = false,
+  type,
   ...props
 }: MIInputProps) => {
-  const [innerValue, setInnerValue] = useState<string>(String(value) || '')
+  const [innerValue, setInnerValue] = useState<string>(value && typeof value === 'string' ? value : '')
+  const [showPassword, setShowPassword] = useState<boolean>(false)
   const { ref: containerRef, isFocus } = useCheckFocus()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (maxLength && typeof value === 'string' && value.length >= maxLength) return
-    setInnerValue(value ? String(value) : '')
+    setInnerValue(value && typeof value === 'string' ? value : '')
   }, [maxLength, value])
 
   const handleInput = useCallback(
@@ -86,6 +92,10 @@ const MIInput = ({
       onFocusInput()
     }
   }, [onFocusInput])
+
+  const handleTogglePassword = useCallback(() => {
+    setShowPassword((prev) => !prev)
+  }, [])
 
   const styleBaseSize = useMemo(() => {
     switch (size) {
@@ -152,7 +162,7 @@ const MIInput = ({
     }
 
     defaultProps.endAdornment = (
-      <InputAdornment position="end" sx={{ cursor: 'pointer' }}>
+      <InputAdornment position="end" sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginRight: '0' }}>
         {isFocus && !readOnly && innerValue && !props.error && !props.multiline && (
           <MIInputClearIcon
             width={size === 'h46' ? 20 : 16}
@@ -170,6 +180,22 @@ const MIInput = ({
               }
             }}
           />
+        )}
+        {showPasswordToggle && type === 'password' && innerValue && (
+          <IconButton
+            onClick={handleTogglePassword}
+            edge="end"
+            sx={{
+              padding: '4px',
+              borderRadius: '4px',
+              marginRight: '0',
+              '&:hover': {
+                backgroundColor: theme.palette.content.backgroundHover,
+              },
+            }}
+          >
+            {showPassword ? <VisibilityIcon width={16} height={13} /> : <VisibilityOffIcon width={16} height={13} />}
+          </IconButton>
         )}
         {props.error && variant === 'inTable' && (
           <Tooltip disableHoverListener={!errorMessage} title={errorMessage}>
@@ -193,7 +219,22 @@ const MIInput = ({
     }
 
     return defaultProps
-  }, [readOnly, isFocus, innerValue, props, size, variant, errorMessage, endIcon, startIcon, maxLength, onClear])
+  }, [
+    readOnly,
+    isFocus,
+    innerValue,
+    props,
+    size,
+    variant,
+    errorMessage,
+    endIcon,
+    startIcon,
+    maxLength,
+    onClear,
+    showPasswordToggle,
+    showPassword,
+    handleTogglePassword,
+  ])
 
   return (
     <Box
@@ -218,6 +259,12 @@ const MIInput = ({
           onFocus={handleFocus}
           minRows={4.3}
           maxRows={11.8}
+          type={(() => {
+            if (showPasswordToggle && type === 'password') {
+              return showPassword ? 'text' : 'password'
+            }
+            return type
+          })()}
           slotProps={{
             input: inputProps,
           }}
@@ -235,6 +282,9 @@ const MIInput = ({
               },
               '.MuiInputAdornment-root': {
                 marginRight: 0,
+                '&.MuiInputAdornment-positionEnd': {
+                  marginRight: 0,
+                },
               },
               '& .end-icon-wrapper': {
                 borderRadius: '4px',

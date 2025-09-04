@@ -48,7 +48,7 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
   const { isProd } = useEnvironment()
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, accessCompanyInfo, setAccessCompanyInfo } = useAuthStore()
+  const { user, accessCompanyInfo, setAccessCompanyInfo, clearAuth } = useAuthStore()
 
   const [selectedCompany, setSelectedCompany] = useState<{ label: string; value: number } | null>(null)
   const [isOpenCompany, setIsOpenCompany] = useState(false)
@@ -166,6 +166,21 @@ const MIHeaderMainLayout = ({ pages, onMoveTab }: MIHeaderMainLayoutProps) => {
                 {board.label}
               </Link>
             ))}
+            {user?.isExternalLogin && (
+              <Link
+                href=""
+                onClick={(e) => {
+                  e.preventDefault()
+                  clearAuth()
+                }}
+                color="gray.70"
+                padding="4px 12px"
+                underline="hover"
+                variant="subtext"
+              >
+                Sign Out
+              </Link>
+            )}
           </Grid>
         </Grid>
       </Grid>

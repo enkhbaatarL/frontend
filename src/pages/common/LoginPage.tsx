@@ -1,5 +1,5 @@
 import { Divider } from '@mui/material'
-import { useCallback, useEffect, useState } from 'react'
+import { ChangeEvent, useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
@@ -30,6 +30,10 @@ const LoginPage = () => {
     window.location.href = '/api/v1/saml2/login/user'
   }
 
+  const externalAccessLogin = () => {
+    navigate('/login')
+  }
+
   const setUserInfo = useCallback(
     async (token: string) => {
       const userDetail = await authService.getUserDetail(token)
@@ -45,7 +49,7 @@ const LoginPage = () => {
     [setUser, setToken],
   )
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value
     setPassword(inputValue)
 
@@ -60,6 +64,7 @@ const LoginPage = () => {
   }, [])
 
   if (isProd) {
+    // TODO: external login 케이스의 경우 externalAccessLogin() 실행 필요
     ssoLogin()
     return null
   }
@@ -138,6 +143,9 @@ const LoginPage = () => {
           <Divider sx={{ width: '100%' }} />
           <MIButton onClick={ssoLogin} width="120px">
             SSO 로그인
+          </MIButton>
+          <MIButton onClick={externalAccessLogin} width="120px">
+            ID / PW 로그인
           </MIButton>
         </Flex>
       ) : (
