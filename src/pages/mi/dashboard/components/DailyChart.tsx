@@ -1,10 +1,9 @@
-import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { useMemo } from 'react'
 import Marquee from 'react-fast-marquee'
 import { useNavigate } from 'react-router-dom'
 
-import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { MarketDataItemInfo } from '@/service/mi/dashboardData'
 
@@ -30,12 +29,130 @@ const getMinimumAvailableChange = ({ lastValue, dodChangeValue, wowChangeValue, 
   }
   const { unit, change } = changeEntry
   const changePercent = lastValue !== 0 ? +((change / (lastValue - change)) * 100).toFixed(2) : 0
-  const direction = change > 0 ? 'up' : change < 0 ? 'down' : 'flat'
+  let direction: string
+  if (change > 0) {
+    direction = 'up'
+  } else if (change < 0) {
+    direction = 'down'
+  } else {
+    direction = 'flat'
+  }
   return { unit, change, changePercent, direction }
 }
 
 interface Props {
   data?: MarketDataItemInfo[]
+}
+
+const getChangeColor = (direction: string): string => {
+  if (direction === 'up') {
+    return '#498B47'
+  } else if (direction === 'down') {
+    return '#CC4D50'
+  }
+  return '#495057'
+}
+
+interface DisplayData {
+  goodsDataSourceNm: string
+  lastValue: number
+  change: number
+  changePercent: number
+  lastUpdateDt: string
+  unit: string
+  currency: string
+}
+
+const MarketItemContent = ({
+  displayData,
+  isPositive,
+  color,
+  isPermitted,
+}: {
+  displayData: DisplayData
+  isPositive: boolean
+  color: string
+  isPermitted: boolean
+}) => (
+  <Box display={'flex'} alignItems={'center'} gap={'6px'}>
+    <Typography
+      fontWeight={600}
+      color="#495057"
+      component="div"
+      fontSize={'14px'}
+      lineHeight={1}
+      sx={{
+        WebkitLineClamp: 1,
+        maxWidth: '100px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+      variant="fileName"
+    >
+      {displayData.goodsDataSourceNm}
+    </Typography>
+    <Box display={'flex'} alignItems={'center'} gap={'4px'}>
+      <Typography lineHeight={1.4} color="#495057" variant="body2" fontWeight={600} fontSize={'14px'}>
+        {displayData.lastValue.toLocaleString()}
+      </Typography>
+      <Typography lineHeight={1.4} color={!isPermitted ? '#495057' : color} variant="body2" fontWeight={600} fontSize={'14px'}>
+        {`${isPositive ? '+' : ''}${displayData.changePercent}%`}
+      </Typography>
+    </Box>
+  </Box>
+)
+
+const MarketItem = ({ item, onClickItem }: { item: ProcessedMarketDataItem; onClickItem: (item: ProcessedMarketDataItem) => void }) => {
+  const summary = item.marketMetaDataSummary
+  const isPositive = summary.direction === 'up'
+  const color = getChangeColor(summary.direction)
+  const isPermitted = item.isPermitted
+
+  const displayData = {
+    goodsDataSourceNm: summary.goodsDataSourceNm,
+    lastValue: isPermitted ? summary.lastValue : 0.0,
+    change: isPermitted ? summary.change : 0.0,
+    changePercent: isPermitted ? summary.changePercent : 0.0,
+    lastUpdateDt: isPermitted ? dayjs(summary.lastUpdateDt).format('YYYY-MM-DD') : 'YYYY-MM-DD',
+    unit: isPermitted ? summary.unit : 'N/A',
+    currency: isPermitted ? summary.currency : 'N/A',
+  }
+
+  return (
+    <Box
+      flexShrink={0}
+      bgcolor={'#fff'}
+      mx={'20px'}
+      p={'4px'}
+      onClick={isPermitted ? () => onClickItem(item) : undefined}
+      sx={{
+        cursor: isPermitted ? 'pointer' : 'auto',
+        userSelect: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        height: '28px',
+      }}
+    >
+      <Box sx={{ position: 'relative' }}>
+        <Box sx={{ filter: !isPermitted ? 'blur(3px)' : 'none' }}>
+          <MarketItemContent displayData={displayData} isPositive={isPositive} color={color} isPermitted={isPermitted} />
+        </Box>
+        {!isPermitted && (
+          <Box
+            display={'flex'}
+            alignItems={'center'}
+            justifyContent={'center'}
+            position={'absolute'}
+            sx={{ inset: '-4px -8px', backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#868E96' }}
+          >
+            <LockOutlinedIcon width={24} height={24} />
+          </Box>
+        )}
+      </Box>
+    </Box>
+  )
 }
 
 const DailyChart = ({ data = [] }: Props) => {
@@ -68,90 +185,17 @@ const DailyChart = ({ data = [] }: Props) => {
         overflowX: 'hidden',
         bgcolor: '#fff',
         borderBottom: '1px solid #DEE2E6',
-        height: '76px',
+        height: '40px',
       }}
     >
-      <Marquee pauseOnHover={true} gradient={false} speed={20} style={{ height: '76px', backgroundColor: '#fff' }} autoFill>
-        {mappedList.map((item, idx) => {
-          const summary = item.marketMetaDataSummary
-          const isPositive = summary.direction === 'up'
-          const color = isPositive ? '#3C8A36' : summary.direction === 'down' ? '#A9141A' : 'gray.60'
-          const isPermitted = item.isPermitted
-
-          const displayData = {
-            goodsDataSourceNm: summary.goodsDataSourceNm,
-            lastValue: isPermitted ? summary.lastValue : 0.0,
-            change: isPermitted ? summary.change : 0.0,
-            changePercent: isPermitted ? summary.changePercent : 0.0,
-            lastUpdateDt: isPermitted ? dayjs(summary.lastUpdateDt).format('YYYY-MM-DD') : 'YYYY-MM-DD',
-            unit: isPermitted ? summary.unit : 'N/A',
-            currency: isPermitted ? summary.currency : 'N/A',
-          }
-
-          return (
-            <Box
-              key={idx}
-              flexShrink={0}
-              bgcolor={'#fff'}
-              mx={'35px'}
-              p={3}
-              onClick={isPermitted ? () => onClickItem(item) : undefined}
-              sx={{
-                cursor: isPermitted ? 'pointer' : 'auto',
-                userSelect: 'none',
-              }}
-            >
-              <Typography
-                fontWeight={600}
-                color="gray.70"
-                component="div"
-                fontSize={'14px'}
-                lineHeight={1}
-                mb={1}
-                sx={{ WebkitLineClamp: 1 }}
-                variant="fileName"
-              >
-                {displayData.goodsDataSourceNm}
-              </Typography>
-              <Box sx={{ position: 'relative' }}>
-                <Box sx={{ filter: !isPermitted ? 'blur(3px)' : 'none' }}>
-                  <Grid mb={1} container wrap="nowrap" alignItems="center" gap={'4px'}>
-                    <Typography lineHeight={1.4} color="gray.90" variant="body2">
-                      {displayData.lastValue}
-                    </Typography>
-                    <Typography lineHeight={1.4} color={!isPermitted ? 'gray.90' : color} variant="body2">
-                      {`${isPositive ? '+' : ''}${displayData.change} (${isPositive ? '+' : ''}${displayData.changePercent}%)`}
-                    </Typography>
-                  </Grid>
-                  <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
-                    <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
-                      {displayData.lastUpdateDt}
-                    </Typography>
-                    <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
-                    <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
-                      {displayData.unit}
-                    </Typography>
-                    <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
-                    <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
-                      {displayData.currency}
-                    </Typography>
-                  </Grid>
-                </Box>
-                {!isPermitted && (
-                  <Box
-                    display={'flex'}
-                    alignItems={'center'}
-                    justifyContent={'center'}
-                    position={'absolute'}
-                    sx={{ inset: '-4px -8px', backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#868E96' }}
-                  >
-                    <LockOutlinedIcon width={24} height={24} />
-                  </Box>
-                )}
-              </Box>
-            </Box>
-          )
-        })}
+      <Marquee pauseOnHover={true} gradient={false} speed={20} style={{ height: '40px', backgroundColor: '#fff' }} autoFill>
+        {mappedList.map((item) => (
+          <MarketItem
+            key={`${item.marketMetaDataSummary.goodsDataSourceNo}-${item.marketMetaDataSummary.goodsNo}`}
+            item={item}
+            onClickItem={onClickItem}
+          />
+        ))}
       </Marquee>
     </Box>
   )
