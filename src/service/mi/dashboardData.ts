@@ -1,8 +1,8 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios.ts'
-import { ICommonResponse } from '@/types/api.ts'
 import { withCustomBaseUrl } from '@/store/useAuthStore'
+import { ICommonResponse } from '@/types/api.ts'
 
 export interface IDashboardLastInsightsInfo {
   modifyDt: string

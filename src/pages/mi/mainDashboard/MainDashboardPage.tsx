@@ -2,9 +2,10 @@ import { Box } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useEffect } from 'react'
 
+import MIDateDisplay from '@/components/common/date/MIDateDisplay'
+import AIMarketSummary from '@/components/mi/AIMarketSummary'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useMarketData } from '@/contexts/MarketDataContext'
-import imgPath from '@/assets/imsi/Dashboard_1440.png'
 import dashboardDataService from '@/service/mi/dashboardData'
 import useAuthStore from '@/store/useAuthStore'
 
@@ -43,9 +44,18 @@ const MainDashboardPage = () => {
 
   return (
     <MISkeleton variant={'dashboard'}>
-      <Box bgcolor={'#F2F5F7'} position={'relative'}>
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <img src={imgPath} style={{ display: 'block' }} />
+      <Box bgcolor={'#F2F5F7'} position={'relative'} py={6}>
+        <Box
+          display={'flex'}
+          flexDirection={'column'}
+          position={'relative'}
+          maxWidth={'1380px'}
+          width={'100%'}
+          margin={'auto'}
+          gap={'10px'}
+        >
+          <MIDateDisplay />
+          <AIMarketSummary />
         </Box>
       </Box>
     </MISkeleton>
