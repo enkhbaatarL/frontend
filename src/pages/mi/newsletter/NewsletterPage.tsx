@@ -4,7 +4,7 @@ import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useEffect } from 'react'
 import imgPath from '@/assets/imsi/Newsletter_1440.png'
 
-const NewsPage = () => {
+const NewsLettersPage = () => {
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -29,4 +29,4 @@ const NewsPage = () => {
   )
 }
 
-export default NewsPage
+export default NewsLettersPage

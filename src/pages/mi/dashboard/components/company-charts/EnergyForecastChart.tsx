@@ -257,7 +257,7 @@ const ForecastChart = (props: ForecastChartProps) => {
           rawForecastDatasetRef.current = dataset
           dataset.data.forEach((_, index) => {
             if (index <= 1) return
-            const actualDataset = datasets.find((d) => d.label === dataset.label)
+            // const actualDataset = datasets.find((d) => d.label === dataset.label)
 
             datasets.push({
               label: `${dataset.label} Forecast`,
@@ -266,7 +266,10 @@ const ForecastChart = (props: ForecastChartProps) => {
                   ? [
                       null,
                       ...dataset.data.map((subValue, subIndex) => {
-                        if (index - 1 === subIndex) return actualDataset?.data[index] ?? null
+                        /*
+                        에너지 차트 예측데이터 포인트 클릭은 되나 점선이 안보이는 상태로 대기 (버그픽스중)
+                        */
+                        // if (index - 1 === subIndex) return actualDataset?.data[index] ?? null
                         if (index === subIndex) return subValue
                         return null
                       }),

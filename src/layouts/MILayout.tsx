@@ -16,6 +16,7 @@ import { MarketDataProvider } from '@/providers/MarketDataProvider'
 import MIProvider from '@/providers/MIProvider'
 import boardService, { INoticeDetailInfo, INoticePopupInfo } from '@/service/mi/board'
 import useAuthStore from '@/store/useAuthStore'
+import { MiPagesType } from '@/types/common'
 
 // 쿠키 설정 함수
 const setCookie = (name: string, value: string, expiryDays: number) => {
@@ -39,39 +40,33 @@ const getCookie = (name: string): string | null => {
   return null
 }
 
-const mainPages: Page[] = [
+const mainMenu: Page[] = [
   {
     label: 'Dashboard',
-    url: 'main',
-  },
-  {
-    label: 'AI Forecast Model',
     url: 'dashboard',
   },
   {
-    label: 'Signal Map',
-    url: 'signal-map',
+    label: 'AI Forecast',
+    url: 'forecast',
   },
   {
-    label: 'Metrics',
-    url: 'market-data',
+    label: 'Market Data',
+    url: 'market',
   },
-  {
-    label: 'Reports',
-    url: 'insights',
-  },
-  {
-    label: 'Qualitative Analysis',
-    url: 'custom',
-  },
-  {
-    label: 'News',
-    url: 'news',
-  },
-  {
-    label: 'Newsletter',
-    url: 'letter',
-  },
+]
+
+const activeMenu: MiPagesType[] = [
+  'dashboard',
+  'forecast',
+  'market',
+  'newsletters',
+  'economic-event',
+  'signal-map',
+  'market-data',
+  'insights',
+  'news-list',
+  'parallel-coordinates',
+  'custom',
 ]
 
 const headerTopHeight = 36
@@ -85,7 +80,7 @@ const MILayout = () => {
   const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
   const location = useLocation()
   const { saveScroll, currentScroll, preRenderMinHeight } = useScrollRestoration({
-    urls: mainPages.map((m) => m.url),
+    urls: mainMenu.map((m) => m.url),
     ref: scrollRef,
   })
   const [isScrolled, setIsScrolled] = useState(currentScroll !== 0)
@@ -97,9 +92,9 @@ const MILayout = () => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
 
-  const fixedMainPages = useMemo(() => {
+  const getActiveMenu = useMemo(() => {
     if (!extractPage) return []
-    return mainPages.filter(({ url }) => !extractPage.includes(url))
+    return activeMenu.filter((item) => !extractPage.includes(item))
   }, [extractPage])
 
   useEffect(() => setIsScrolled(currentScroll > 0), [currentScroll])
@@ -209,7 +204,7 @@ const MILayout = () => {
         >
           {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
-            <MIHeaderMainLayout pages={fixedMainPages} onMoveTab={(callback) => saveScroll(callback)} />
+            <MIHeaderMainLayout pages={mainMenu} activeMenu={getActiveMenu} onMoveTab={(callback) => saveScroll(callback)} />
           </div>
           <Box
             sx={{

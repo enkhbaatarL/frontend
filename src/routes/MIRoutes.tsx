@@ -11,6 +11,8 @@ import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import CustomPage from '@/pages/mi/custom/CustomPage'
 import NewsPage from '@/pages/mi/news/NewsPage'
 import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
+import EconomicEventPage from '@/pages/mi/economicEvent/EconomicEventPage'
+import ParallelCoordinatesPage from '@/pages/mi/parallelCoordinates/ParallelCoordinatesPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
@@ -38,11 +40,19 @@ const MIRoutes: RouteObject = {
       element: <MIMainRedirect />,
     },
     {
-      path: 'main',
+      path: 'dashboard',
       element: <MainDashboardPage />,
     },
     {
-      path: 'dashboard',
+      path: 'newsletters',
+      element: <NewsletterPage />,
+    },
+    {
+      path: 'economic-event',
+      element: <EconomicEventPage />,
+    },
+    {
+      path: 'forecast',
       element: <MIDashboardPage />,
     },
     {
@@ -53,7 +63,6 @@ const MIRoutes: RouteObject = {
       path: 'market-data',
       element: <MarketDataPage />,
     },
-
     {
       path: 'insights',
       element: <InsightsPage />,
@@ -63,12 +72,12 @@ const MIRoutes: RouteObject = {
       element: <CustomPage />,
     },
     {
-      path: 'news',
+      path: 'news-list',
       element: <NewsPage />,
     },
     {
-      path: 'letter',
-      element: <NewsletterPage />,
+      path: 'parallel-coordinates',
+      element: <ParallelCoordinatesPage />,
     },
     {
       path: 'data-detail/:goodsNo/:goodsDataNo',
