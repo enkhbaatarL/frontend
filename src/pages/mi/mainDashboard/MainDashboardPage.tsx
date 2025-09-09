@@ -6,6 +6,7 @@ import MIDateDisplay from '@/components/common/date/MIDateDisplay'
 import AIMarketSensor from '@/components/mi/dashboard/AIMarketSensor'
 import AIMarketSensorPersonalized from '@/components/mi/dashboard/AIMarketSensorPersonalized'
 import AIMarketSummary from '@/components/mi/dashboard/AIMarketSummary'
+import Category from '@/components/mi/dashboard/Category'
 import EventCalendar from '@/components/mi/dashboard/EventCalendar'
 import NewsFeed from '@/components/mi/dashboard/NewsFeed'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
@@ -61,7 +62,10 @@ const MainDashboardPage = () => {
           margin={'auto'}
           gap={'10px'}
         >
-          <MIDateDisplay />
+          <Box display={'flex'} justifyContent={'space-between'}>
+            <MIDateDisplay />
+            <Category onCategoryChange={() => {}} />
+          </Box>
           <AIMarketSummary />
           <Box py={'14px'} display={'flex'} justifyContent={'center'}>
             <Box sx={{ display: 'flex', gap: '24px', maxWidth: '1380px' }}>

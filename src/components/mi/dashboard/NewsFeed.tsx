@@ -9,14 +9,9 @@ import { isEmpty } from 'lodash-es'
 import { useState } from 'react'
 
 import DashboardCardHeader from './DashboardCardHeader'
-import NewsFeedCategory from './NewsFeedCategory'
 import Summarizing from './Summarizing'
 
 import newsFeedIcon from '@/assets/dashboard/news-feed.svg'
-import batteryImg from '@/assets/dashboard/newsFeed/battery.png'
-import crudeOilImg from '@/assets/dashboard/newsFeed/crude-oil.png'
-import dramImg from '@/assets/dashboard/newsFeed/dram.png'
-import naturalGasImg from '@/assets/dashboard/newsFeed/natural-gas.png'
 import MIButton from '@/components/common/button/MIButton'
 import MISelect from '@/components/common/select/MISelect'
 
@@ -111,45 +106,6 @@ const ProviderChip = ({ provider }: { provider: string }) => (
     </Typography>
   </Box>
 )
-
-const newsFeedCategory = [
-  {
-    label: 'Crude Oil',
-    image: crudeOilImg,
-  },
-  {
-    label: 'Natural Gas',
-    image: naturalGasImg,
-  },
-  {
-    label: 'DRAM',
-    image: dramImg,
-  },
-  {
-    label: 'Battery',
-    image: batteryImg,
-  },
-]
-
-const CategoryTabs = () => {
-  const [selectedCategoryIdx, setSelectedCategoryIdx] = useState(0)
-
-  return (
-    <Box padding="18px 24px">
-      <Stack direction="row" gap={'20px'}>
-        {newsFeedCategory.map((category, idx) => (
-          <NewsFeedCategory
-            key={category.label}
-            label={category.label}
-            image={category.image}
-            selected={selectedCategoryIdx === idx}
-            onClick={() => setSelectedCategoryIdx(idx)}
-          />
-        ))}
-      </Stack>
-    </Box>
-  )
-}
 
 const NewsItem = ({ item }: { item: NewsItem }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -292,7 +248,7 @@ const sortOptions = [
 ]
 
 const FilterSection = ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
-  <Box padding="14px 24px">
+  <Box padding="18px 24px 14px">
     <MISelect
       value={value}
       onChange={(e) => onChange(e.target.value as string)}
@@ -453,7 +409,6 @@ const NewsFeed = ({ items = [] }: NewsFeedProps) => {
         }
         padding="17px 15px"
       />
-      <CategoryTabs />
       <FilterSection value={sortValue} onChange={setSortValue} />
 
       <Box px="24px">
