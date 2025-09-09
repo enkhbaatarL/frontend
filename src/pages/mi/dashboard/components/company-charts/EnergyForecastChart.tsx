@@ -104,7 +104,7 @@ const ForecastChart = (props: ForecastChartProps) => {
   const [isOpenSetting, setIsOpenSetting] = useState(false)
 
   const rawForecastDatasetRef = useRef<ForecastDataset | null>(null)
-  const prevTooltipRef = useRef<any | null>(null)
+  const prevTooltipRef = useRef<unknown | null>(null)
 
   useEffect(() => {
     if (selectedContent === null) {
@@ -122,9 +122,9 @@ const ForecastChart = (props: ForecastChartProps) => {
         return
       }
 
-      const filteredTooltipContent = chartTooltip.content.filter((item: any) => {
+      const filteredTooltipContent = chartTooltip.content.filter((item) => {
         if (item.category === 'forecast') {
-          const value = rawForecastDatasetRef.current?.data?.[item.index - 1]
+          const value = rawForecastDatasetRef.current?.data?.[(item.index ?? 0) - 1]
           return value !== null && value !== undefined
         } else {
           return true
@@ -257,21 +257,24 @@ const ForecastChart = (props: ForecastChartProps) => {
           rawForecastDatasetRef.current = dataset
           dataset.data.forEach((_, index) => {
             if (index <= 1) return
-            const actualDataset = datasets.find((d) => d.label === dataset.label)
+            // const actualDataset = datasets.find((d) => d.label === dataset.label)
 
             datasets.push({
               label: `${dataset.label} Forecast`,
               data:
                 dataset.data.length > 0
                   ? [
-                      null,
-                      ...dataset.data.map((subValue, subIndex) => {
-                        if (index - 1 === subIndex) return actualDataset?.data[index] ?? null
-                        if (index === subIndex) return subValue
-                        return null
-                      }),
-                      null,
-                    ]
+                    null,
+                    ...dataset.data.map((subValue, subIndex) => {
+                      /*
+                        에너지 차트 예측데이터 포인트 클릭은 되나 점선이 안보이는 상태로 대기 (버그픽스중)
+                        */
+                      // if (index - 1 === subIndex) return actualDataset?.data[index] ?? null
+                      if (index === subIndex) return subValue
+                      return null
+                    }),
+                    null,
+                  ]
                   : [],
               borderColor: dataset.color,
               backgroundColor: dataset.color,

@@ -1,10 +1,10 @@
 import { Box } from '@mui/material'
-
-import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useEffect } from 'react'
-import imgPath from '@/assets/imsi/Newsletter_1440.png'
 
-const NewsPage = () => {
+import imgPath from '@/assets/imsi/Newsletter_1440.png'
+import MISkeleton from '@/components/mi/MISkeleton.tsx'
+
+const NewsLettersPage = () => {
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -23,10 +23,10 @@ const NewsPage = () => {
           justifyContent: 'center',
         }}
       >
-        <img src={imgPath} />
+        <img src={imgPath} alt={''} />
       </Box>
     </MISkeleton>
   )
 }
 
-export default NewsPage
+export default NewsLettersPage

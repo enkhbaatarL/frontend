@@ -3,18 +3,20 @@ import { Navigate, RouteObject } from 'react-router-dom'
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MILayout from '@/layouts/MILayout'
 import PolicyPage from '@/pages/common/PolicyPage'
-import MainDashboardPage from '@/pages/mi/mainDashboard/MainDashboardPage'
+import CustomPage from '@/pages/mi/custom/CustomPage'
 import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
 import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
+import EconomicEventPage from '@/pages/mi/economicEvent/EconomicEventPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
-import CustomPage from '@/pages/mi/custom/CustomPage'
+import MainDashboardPage from '@/pages/mi/mainDashboard/MainDashboardPage'
+import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
 import NewsPage from '@/pages/mi/news/NewsPage'
 import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
-import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
 import NotificationPage from '@/pages/mi/notification/NotificationPage'
+import ParallelCoordinatesPage from '@/pages/mi/parallelCoordinates/ParallelCoordinatesPage'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import MIProvider from '@/providers/MIProvider'
 
@@ -38,11 +40,19 @@ const MIRoutes: RouteObject = {
       element: <MIMainRedirect />,
     },
     {
-      path: 'main',
+      path: 'dashboard',
       element: <MainDashboardPage />,
     },
     {
-      path: 'dashboard',
+      path: 'newsletters',
+      element: <NewsletterPage />,
+    },
+    {
+      path: 'economic-event',
+      element: <EconomicEventPage />,
+    },
+    {
+      path: 'forecast',
       element: <MIDashboardPage />,
     },
     {
@@ -53,7 +63,6 @@ const MIRoutes: RouteObject = {
       path: 'market-data',
       element: <MarketDataPage />,
     },
-
     {
       path: 'insights',
       element: <InsightsPage />,
@@ -63,12 +72,12 @@ const MIRoutes: RouteObject = {
       element: <CustomPage />,
     },
     {
-      path: 'news',
+      path: 'news-list',
       element: <NewsPage />,
     },
     {
-      path: 'letter',
-      element: <NewsletterPage />,
+      path: 'parallel-coordinates',
+      element: <ParallelCoordinatesPage />,
     },
     {
       path: 'data-detail/:goodsNo/:goodsDataNo',
