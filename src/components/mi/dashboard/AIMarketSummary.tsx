@@ -1,10 +1,10 @@
 import { Box, Card, Divider, Stack, Typography } from '@mui/material'
 
-import DashboardCardHeader from './AIMarketSummary/DashboardCardHeader'
-import KeyEconomicIndicators from './AIMarketSummary/KeyEconomicIndicators'
-import KeyMetrics from './AIMarketSummary/KeyMetrics'
-import MarketRecap from './AIMarketSummary/MarketRecap'
-import StrategyCheckpoints from './AIMarketSummary/StrategyCheckpoints'
+import DashboardCardHeader from './DashboardCardHeader'
+import KeyEconomicIndicators from './KeyEconomicIndicators'
+import KeyMetrics from './KeyMetrics'
+import MarketRecap from './MarketRecap'
+import StrategyCheckpoints from './StrategyCheckpoints'
 
 import aiSummaryIcon from '@/assets/dashboard/ai-summary.svg'
 import { MarketItem } from '@/service/mi/mainDashboard'

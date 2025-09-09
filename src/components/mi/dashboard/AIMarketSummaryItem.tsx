@@ -21,12 +21,7 @@ const AIMarketSummaryItem = ({ item }: AIMarketSummaryItemProps) => (
       <Typography variant="body1" color="gray.90" sx={{ fontWeight: 600 }}>
         {item.title}
       </Typography>
-      <SourceDropdownChip
-        sources={item.sources}
-        onSourceSelected={(source) => {
-          console.log(source)
-        }}
-      />
+      <SourceDropdownChip sources={item.sources} onSourceSelected={(_source) => {}} />
     </Stack>
     <Box pl="42px">
       {item.summary.map((content, index) => (

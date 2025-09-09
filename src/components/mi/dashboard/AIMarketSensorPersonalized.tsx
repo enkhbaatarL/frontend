@@ -8,7 +8,7 @@ import SensorItem, { SensorItemData } from './SensorItem'
 
 import aiMarketSensorIcon from '@/assets/dashboard/ai-market-sensor.svg'
 import MIButton from '@/components/common/button/MIButton'
-import CategoryChip from '@/components/common/chip/CategoryChip'
+import CategoryChip from '@/components/mi/dashboard/CategoryChip'
 interface CategoryChipData {
   id: string
   name: string
