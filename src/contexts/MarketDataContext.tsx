@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 
-import { MarketDataItemInfo } from '@/service/mi/dashboardData'
+import { MarketDataItemInfo } from '@/service/mi/forecast'
 
 interface MarketDataContextType {
   marketDataList: MarketDataItemInfo[]

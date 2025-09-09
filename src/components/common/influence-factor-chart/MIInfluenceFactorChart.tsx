@@ -8,8 +8,8 @@ import { generateChartMonths } from '../forecast-chart/mockBrentForecastData'
 import CloseIcon from '../icons/CloseIcon'
 
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
-import MIDrillDownChart from '@/pages/mi/dashboard/components/MIDrillDownChart'
-import dashboardDataService, { IFactor, IDashboardFactorGraphRequest } from '@/service/mi/dashboardData.ts'
+import MIDrillDownChart from '@/pages/mi/forecast/components/MIDrillDownChart'
+import forecastDataService, { IFactor, IForecastFactorGraphRequest } from '@/service/mi/forecast.ts'
 
 const CheveronRightIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -199,7 +199,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
   const [isPermitted, setIsPermitted] = useState(true)
 
   const fetchFactorGraphData = async (factor: IFactor) => {
-    const requestParams: IDashboardFactorGraphRequest = {
+    const requestParams: IForecastFactorGraphRequest = {
       goodsDataSourceNo: props.goodsDataSourceNo ?? 0,
       predictDate: props.predictDate,
       date: props.date,
@@ -211,7 +211,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
     }
 
     try {
-      const response = await dashboardDataService.getDashboardFactorGraph(props.companyNo ?? 0, requestParams)
+      const response = await forecastDataService.getForecastFactorGraph(props.companyNo ?? 0, requestParams)
 
       if (response.summary) {
         setFactorSummary(response.summary)

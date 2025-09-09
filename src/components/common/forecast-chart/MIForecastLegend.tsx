@@ -7,7 +7,7 @@ import ActualLegendIcon from './icons/ActualLegendIcon'
 import ForecastLegendIcon from './icons/ForecastLegendIcon'
 import LockOutlinedIcon from '../icons/LockOutlinedIcon'
 
-import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
+import { SelectedReportChartContent } from '@/pages/mi/forecast/components/ReportComponent'
 import theme from '@/theming'
 
 interface MIForecastLegendProps {

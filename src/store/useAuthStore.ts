@@ -113,5 +113,5 @@ export default useAuthStore
 
 export const withCustomBaseUrl = (path: string) => {
   if (!__currentBaseUrl) throw new Error('Custom base url not set.')
-  return __currentBaseUrl + path
+  return __currentBaseUrl + (path.startsWith('/') ? path : `/${path}`)
 }

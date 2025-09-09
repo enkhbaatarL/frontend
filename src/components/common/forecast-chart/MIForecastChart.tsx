@@ -30,8 +30,8 @@ import loadImages, {
 } from './utils/loadImage'
 
 import useSnackbar from '@/hooks/useSnackbar'
-import { SelectedReportChartContent } from '@/pages/mi/dashboard/components/ReportComponent'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
+import { SelectedReportChartContent } from '@/pages/mi/forecast/components/ReportComponent'
 import theme from '@/theming'
 import { convertToRgbaWithOpacity } from '@/utils/color'
 

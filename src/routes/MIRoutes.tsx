@@ -4,12 +4,12 @@ import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MILayout from '@/layouts/MILayout'
 import PolicyPage from '@/pages/common/PolicyPage'
 import CustomPage from '@/pages/mi/custom/CustomPage'
-import MIDashboardPage from '@/pages/mi/dashboard/MIDashboardPage'
+import DashboardPage from '@/pages/mi/dashboard/DashboardPage'
 import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
 import EconomicEventPage from '@/pages/mi/economicEvent/EconomicEventPage'
+import ForecastPage from '@/pages/mi/forecast/ForecastPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
-import MainDashboardPage from '@/pages/mi/mainDashboard/MainDashboardPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
 import NewsPage from '@/pages/mi/news/NewsPage'
 import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
@@ -41,7 +41,7 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'dashboard',
-      element: <MainDashboardPage />,
+      element: <DashboardPage />,
     },
     {
       path: 'newsletters',
@@ -53,7 +53,7 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'forecast',
-      element: <MIDashboardPage />,
+      element: <ForecastPage />,
     },
     {
       path: 'signal-map',

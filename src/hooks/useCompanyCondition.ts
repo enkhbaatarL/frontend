@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
 import { miPages } from '@/lib/constants'
-import dashboardDataService from '@/service/mi/dashboardData'
+import forecastDataService from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
 import { MiPagesType } from '@/types/common'
 
@@ -17,7 +17,7 @@ export const useCompanyCondition = () => {
   )
   const { data: deniedDashboardPage } = useQuery({
     queryKey: ['getDashboardAccess', comNo],
-    queryFn: async () => await dashboardDataService.getDashboardDataExists(comNo!),
+    queryFn: async () => await forecastDataService.getForecastDataExists(comNo!),
     select: (res): MiPagesType[] => {
       const baseDenied: MiPagesType[] = res === true ? [] : [...(extractPages ?? [])]
       const isSKE = comNo === 2020

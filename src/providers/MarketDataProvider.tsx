@@ -1,7 +1,7 @@
 import { ReactNode, useState, useMemo } from 'react'
 
 import { MarketDataContext } from '@/contexts/MarketDataContext'
-import { MarketDataItemInfo } from '@/service/mi/dashboardData'
+import { MarketDataItemInfo } from '@/service/mi/forecast'
 
 interface MarketDataProviderProps {
   children: ReactNode
