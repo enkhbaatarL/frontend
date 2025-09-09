@@ -114,7 +114,7 @@ const KeyEconomicIndicators = ({ indicators = [], summary = [] }: KeyEconomicInd
       sx={{
         border: '1px solid #DEE2E6',
         borderRadius: '4px',
-        padding: '12px',
+        padding: '12px 10px',
       }}
     >
       <SectionHeader
@@ -149,27 +149,26 @@ const KeyEconomicIndicators = ({ indicators = [], summary = [] }: KeyEconomicInd
       </Stack>
 
       <Box padding="12px 0">
-        <Typography variant="body2" color="gray.70" sx={{ lineHeight: 1.4 }}>
-          {displaySummary.map((content, index) => (
-            <Typography
-              key={`content-${index}`}
-              variant="body2"
-              color="gray.70"
-              sx={{
-                lineHeight: 1.4,
-                paddingLeft: '21px',
-                textIndent: '-16px',
-                '&::before': {
-                  content: '"•"',
-                  marginRight: '8px',
-                  color: 'gray.70',
-                },
-              }}
-            >
-              {content}
-            </Typography>
-          ))}
-        </Typography>
+        {displaySummary.map((content, index) => (
+          <Typography
+            key={`content-${index}`}
+            variant="body2"
+            color="gray.70"
+            sx={{
+              lineHeight: 1.4,
+              paddingLeft: '21px',
+              textIndent: '-16px',
+              '&::before': {
+                content: '"•"',
+                marginRight: '8px',
+                color: 'gray.70',
+              },
+              marginBottom: '1px',
+            }}
+          >
+            {content}
+          </Typography>
+        ))}
       </Box>
     </Card>
   )

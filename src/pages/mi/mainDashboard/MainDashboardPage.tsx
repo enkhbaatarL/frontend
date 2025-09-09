@@ -4,6 +4,10 @@ import { useMemo, useEffect } from 'react'
 
 import MIDateDisplay from '@/components/common/date/MIDateDisplay'
 import AIMarketSummary from '@/components/mi/AIMarketSummary'
+import AIMarketSensor from '@/components/mi/AIMarketSummary/AIMarketSensor'
+import AIMarketSensorPersonalized from '@/components/mi/AIMarketSummary/AIMarketSensorPersonalized'
+import EventCalendar from '@/components/mi/AIMarketSummary/EventCalendar'
+import NewsFeed from '@/components/mi/AIMarketSummary/NewsFeed'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useMarketData } from '@/contexts/MarketDataContext'
 import dashboardDataService from '@/service/mi/dashboardData'
@@ -20,7 +24,10 @@ const MainDashboardPage = () => {
     isLoading: marketDataListIsLoading,
   } = useQuery({
     queryKey: ['getDashboardMarKetDatas', companyNo],
-    queryFn: async () => await dashboardDataService.getDashboardMarketDatas(companyNo!),
+    queryFn: async () => {
+      if (companyNo === -1) throw new Error('Invalid company number')
+      return await dashboardDataService.getDashboardMarketDatas(companyNo)
+    },
     enabled: !!companyNo && companyNo !== -1,
     refetchOnWindowFocus: false,
     gcTime: 0,
@@ -56,6 +63,18 @@ const MainDashboardPage = () => {
         >
           <MIDateDisplay />
           <AIMarketSummary />
+          <Box py={'14px'} display={'flex'} justifyContent={'center'}>
+            <Box sx={{ display: 'flex', gap: '24px', maxWidth: '1380px' }}>
+              <Box sx={{ width: '800px' }}>
+                <NewsFeed />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '556px' }}>
+                <AIMarketSensor />
+                <AIMarketSensorPersonalized />
+                <EventCalendar />
+              </Box>
+            </Box>
+          </Box>
         </Box>
       </Box>
     </MISkeleton>

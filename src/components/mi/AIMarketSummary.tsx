@@ -1,11 +1,12 @@
 import { Box, Card, Divider, Stack, Typography } from '@mui/material'
 
+import DashboardCardHeader from './AIMarketSummary/DashboardCardHeader'
 import KeyEconomicIndicators from './AIMarketSummary/KeyEconomicIndicators'
 import KeyMetrics from './AIMarketSummary/KeyMetrics'
 import MarketRecap from './AIMarketSummary/MarketRecap'
 import StrategyCheckpoints from './AIMarketSummary/StrategyCheckpoints'
 
-import GeneratingIcon from '@/components/common/icons/agent/GeneratingIcon'
+import aiSummaryIcon from '@/assets/dashboard/ai-summary.svg'
 import { MarketItem } from '@/service/mi/mainDashboard'
 
 // MARKET RECAP 샘플 데이터
@@ -108,39 +109,32 @@ const AIMarketSummary = ({ lastUpdated = 'Aug 19 09:00 - Aug 20 09:00' }: AIMark
       padding: 0,
     }}
   >
-    <Box height={'60px'}>
-      <Box p={'15px'} sx={{ borderBottom: '1px solid #DEE2E6' }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Stack direction="row" alignItems="center" gap={'6px'}>
-            <GeneratingIcon width={27} height={27} style={{ marginBottom: '-6px' }} />
-            <Typography color="gray.90" sx={{ fontWeight: 700, fontSize: 20 }}>
-              AI Market Summary
-            </Typography>
-          </Stack>
-          <Stack direction="row" alignItems="center" gap={'9px'} px={'10px'}>
-            <Stack direction="row" alignItems="center" gap={'4px'}>
-              <Box
-                sx={{
-                  width: 9,
-                  height: 9,
-                  borderRadius: '50%',
-                  backgroundColor: '#ADB5BD',
-                }}
-              />
-              <Typography variant="body3" color="gray.70" sx={{ fontSize: 12 }}>
-                최근 24시간
-              </Typography>
-            </Stack>
-            <Divider orientation="vertical" flexItem />
+    <DashboardCardHeader
+      icon={aiSummaryIcon}
+      title="AI Market Summary"
+      updatedTime={
+        <Stack direction="row" alignItems="center" gap={'9px'} px={'10px'}>
+          <Stack direction="row" alignItems="center" gap={'4px'}>
+            <Box
+              sx={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                backgroundColor: '#ADB5BD',
+              }}
+            />
             <Typography variant="body3" color="gray.70" sx={{ fontSize: 12 }}>
-              {lastUpdated}
+              최근 24시간
             </Typography>
           </Stack>
+          <Divider orientation="vertical" flexItem />
+          <Typography variant="body3" color="gray.70" sx={{ fontSize: 12 }}>
+            {lastUpdated}
+          </Typography>
         </Stack>
-      </Box>
-    </Box>
-
-    <Box py={'28px'} px={'24px'} sx={{ display: 'flex', gap: '24px' }}>
+      }
+    />
+    <Box padding={'28px 24px 22px'} sx={{ display: 'flex', gap: '24px' }}>
       <Box display={'flex'} flexDirection={'column'} gap={'22px'} flex={1} width={708}>
         <MarketRecap items={marketRecapSampleItems} />
         <StrategyCheckpoints items={strategyCheckpointsSampleItems} />

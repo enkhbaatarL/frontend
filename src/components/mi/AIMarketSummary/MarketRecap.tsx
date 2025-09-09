@@ -38,7 +38,6 @@ const MarketRecap = ({ items = [] }: MarketRecapProps) => (
     />
     <Stack gap={'18px'}>
       {items.map((item: IAIMarketSummaryItem) => {
-        console.log(item.impact)
         item.iconSrc = getIconSrc(item.impact as IconType)
 
         return <AIMarketSummaryItem key={item.id} item={item} />

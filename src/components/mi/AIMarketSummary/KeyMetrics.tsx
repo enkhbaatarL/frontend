@@ -25,7 +25,7 @@ const MetricItem = ({ item }: { item: MetricItem }) => (
     display="flex"
     alignItems="center"
     padding="2px 4px"
-    gap={'3px'}
+    gap={'4px'}
     height={26}
     sx={{
       boxShadow: '0 0.5px 0 0 #DEE2E6',
@@ -181,7 +181,7 @@ const KeyMetrics = ({ metrics = [] }: KeyMetricsProps) => {
       sx={{
         border: '1px solid #DEE2E6',
         borderRadius: '4px',
-        padding: '12px',
+        padding: '10px',
       }}
     >
       <SectionHeader
@@ -189,7 +189,7 @@ const KeyMetrics = ({ metrics = [] }: KeyMetricsProps) => {
         tooltipTitle="시장에서 가장 중요하게 모니터링되는 가격 및 공급 지표를 제공합니다. 실시간 변동을 통해 시장의 단기 흐름과 가격 방향성을 파악할 수 있습니다."
         marginBottom={'8px'}
       />
-      <Stack gap={0}>
+      <Stack gap={0} mb="2px">
         {displayMetrics.map((item) => (
           <MetricItem key={item.id} item={item} />
         ))}
