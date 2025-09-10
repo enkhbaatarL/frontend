@@ -5,7 +5,7 @@ import CloseChatIcon from '../icons/agent/CloseChatIcon'
 import CollapseIcon from '../icons/agent/CollapseIcon'
 import ExpandIcon from '../icons/agent/ExpandIcon'
 
-import mariIcon from '@/assets/mariicon.svg'
+import mariSymbol from '@/assets/mari-symbol-animated.svg'
 
 export interface MIAgentHeaderBoxProps {
   minimized?: boolean
@@ -59,7 +59,7 @@ const MIAgentHeaderBox = ({ minimized = true, newChat, isGenerating, onExpand = 
             newChat()
           }}
         >
-          <img width={32} height={32} src={mariIcon} alt="Mari Icon" style={{ marginLeft: '16px' }} />
+          <img width={32} height={32} src={mariSymbol} alt="Mari Icon" style={{ marginLeft: '16px' }} />
         </Box>
       </Tooltip>
 

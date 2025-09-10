@@ -94,7 +94,7 @@ const MarketItemContent = ({
     </Typography>
     <Box display={'flex'} alignItems={'center'} gap={'4px'}>
       <Typography lineHeight={1.4} color="#495057" variant="body2" fontWeight={600} fontSize={'14px'}>
-        {displayData.lastValue.toLocaleString()}
+        {displayData.lastValue?.toLocaleString() ?? '0'}
       </Typography>
       <Typography lineHeight={1.4} color={!isPermitted ? '#495057' : color} variant="body2" fontWeight={600} fontSize={'14px'}>
         {`${isPositive ? '+' : ''}${displayData.changePercent}%`}
@@ -111,7 +111,7 @@ const MarketItem = ({ item, onClickItem }: { item: ProcessedMarketDataItem; onCl
 
   const displayData = {
     goodsDataSourceNm: summary.goodsDataSourceNm,
-    lastValue: isPermitted ? summary.lastValue : 0.0,
+    lastValue: isPermitted ? (summary.lastValue ?? 0.0) : 0.0,
     change: isPermitted ? summary.change : 0.0,
     changePercent: isPermitted ? summary.changePercent : 0.0,
     lastUpdateDt: isPermitted ? dayjs(summary.lastUpdateDt).format('YYYY-MM-DD') : 'YYYY-MM-DD',

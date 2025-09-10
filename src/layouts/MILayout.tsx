@@ -186,6 +186,7 @@ const MILayout = () => {
     <MIProvider>
       <ScrollWrapper
         ref={scrollRef}
+        id="main-scroll-wrapper"
         styScroll={{
           zIndex: 1200,
           right: 0,

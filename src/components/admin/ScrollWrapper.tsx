@@ -1,9 +1,12 @@
 import { Box, SxProps, Theme } from '@mui/material'
-import { useRef, useEffect, useState, useCallback, ReactNode, CSSProperties, MouseEvent, forwardRef } from 'react'
+import { useRef, useEffect, useState, useCallback, ReactNode, CSSProperties, MouseEvent, forwardRef, useMemo } from 'react'
+
+import { useScrollThumbRegistry } from '@/hooks/useScrollThumbRegistry'
 
 interface ScrollWrapperProps {
   children: ReactNode
   className?: string
+  id?: string
   offsetTop?: number
   maxHeight?: number | string
   scrollToBottomTrigger?: number | string | boolean
@@ -13,15 +16,26 @@ interface ScrollWrapperProps {
 }
 
 const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
-  ({ children, className, offsetTop = 0, maxHeight = 268, scrollToBottomTrigger, scrollToBottomOffset, sx, styScroll }, ref) => {
+  ({ children, className, id, offsetTop = 0, maxHeight = 268, scrollToBottomTrigger, scrollToBottomOffset, sx, styScroll }, ref) => {
+    const scrollWrapperId = useMemo(() => id ?? `scroll-wrapper-${Math.random().toString(36).substring(2, 11)}`, [id])
+
     const containerRef = useRef<HTMLDivElement>(null)
-    const thumbRef = useRef<HTMLDivElement>(null)
     const childrenRef = useRef<HTMLDivElement>(null)
+
+    const { thumbRef, registerThumb, unregisterThumb } = useScrollThumbRegistry()
     const [thumbHeight, setThumbHeight] = useState(0)
     const [isScrollable, setIsScrollable] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
     const [startY, setStartY] = useState(0)
     const [startScrollTop, setStartScrollTop] = useState(0)
+
+    useEffect(() => {
+      registerThumb(scrollWrapperId)
+
+      return () => {
+        unregisterThumb(scrollWrapperId)
+      }
+    }, [scrollWrapperId, registerThumb, unregisterThumb])
 
     const syncThumb = useCallback(() => {
       const container = containerRef.current
@@ -51,7 +65,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       if (thumb) {
         thumb.style.top = `${(scrollTop / scrollHeight) * clientHeight + offsetTop}px`
       }
-    }, [offsetTop])
+    }, [offsetTop, thumbRef])
 
     // Handle mouse down on the thumb
     const handleMouseDown = useCallback((e: MouseEvent<HTMLDivElement>) => {
@@ -116,9 +130,9 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
     // Set up scroll event listeners
     useEffect(() => {
       const container = containerRef.current
-      const children = childrenRef.current
+      const childrenElement = childrenRef.current
 
-      if (!container || !children) return () => {}
+      if (!container || !childrenElement) return () => {}
 
       syncThumb()
 
@@ -130,7 +144,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
         syncThumb()
       })
 
-      resizeObserver.observe(children)
+      resizeObserver.observe(childrenElement)
 
       return () => {
         container.removeEventListener('scroll', syncThumb)
@@ -182,6 +196,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
           <Box
             ref={thumbRef}
             onMouseDown={handleMouseDown}
+            data-scroll-id={scrollWrapperId}
             sx={{
               position: 'absolute',
               top: `${offsetTop}px`,
@@ -201,6 +216,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                 backgroundColor: '#ADB5BD',
               },
             }}
+            className="scroll-wrapper-thumb"
           ></Box>
         )}
         {/* Add track area for mouse scrolling */}
