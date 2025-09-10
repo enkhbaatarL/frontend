@@ -12,6 +12,7 @@ const SessionExpiredPage = () => {
       title={t('세션이 만료되었습니다.')}
       width={350}
       handleClose={() => setShowPopup(true)}
+      disableClose={true}
       actions={[
         {
           label: 'Login',

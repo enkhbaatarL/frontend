@@ -16,6 +16,7 @@ const GlobalDialog = () => {
       actions={dialog.actions}
       hideFooter={dialog.hideFooter}
       zIndex={dialog.zIndex}
+      disableClose={dialog.disableClose}
       handleClose={onHide}
     >
       {dialog.children}

@@ -76,6 +76,7 @@ const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> 
     const handleDelete = () => {
       onShow({
         title: t('세션이 만료되었습니다.'),
+        disableClose: true,
         actions: [
           {
             label: 'Login',

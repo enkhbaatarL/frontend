@@ -11,6 +11,7 @@ interface DialogContentState {
   actions?: ActionButton[]
   hideFooter?: boolean
   zIndex?: number
+  disableClose?: boolean
 }
 interface DialogState {
   visible: boolean
