@@ -243,11 +243,15 @@ const MISelect = ({
       },
       ...(type === 'button'
         ? {
+          '& .MuiInputBase-root:has(input[readonly])': {
+            cursor: 'pointer',
+          },
           '& .MuiInputBase-input[readonly]': {
             borderColor: 'inherit',
             backgroundColor: 'inherit',
             userSelect: 'none',
             cursor: 'pointer',
+            pointerEvents: 'none',
           },
         }
         : {}),
