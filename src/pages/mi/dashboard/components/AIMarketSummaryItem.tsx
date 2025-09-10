@@ -13,7 +13,7 @@ interface AIMarketSummaryItemProps {
 }
 
 const AIMarketSummaryItem = ({ item }: AIMarketSummaryItemProps) => (
-  <Box borderBottom="0.5px solid #DEE2E6" height={'80px'}>
+  <Box borderBottom="0.5px solid #DEE2E6" minHeight={'80px'}>
     <Stack direction="row" alignItems="center" gap={'8px'} marginBottom={'6px'}>
       <Box width={26} height={26} display="flex" alignItems="center" justifyContent="center">
         <img src={item.iconSrc} alt="impact" width={26} height={26} />
@@ -23,7 +23,7 @@ const AIMarketSummaryItem = ({ item }: AIMarketSummaryItemProps) => (
       </Typography>
       <SourceDropdownChip sources={item.sources} onSourceSelected={(_source) => {}} />
     </Stack>
-    <Box pl="42px">
+    <Box pl="42px" pb="8px">
       {item.summary.map((content, index) => (
         <Typography
           key={`${item.id}-content-${index}`}

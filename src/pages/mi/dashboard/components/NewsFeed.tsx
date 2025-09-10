@@ -120,6 +120,8 @@ const NewsItem = ({ item }: { item: NewsItem }) => {
         item.content =
           '미·중 관세 휴전 90일 연장에 일본·호주 증시 사상 최고치, 아시아 증시 전반 상승.\n미·중 관세 휴전 90일 연장 발표에 아시아 주식 전반 상승, 투자 심리 개선됨\n일본 닛케이 지수는 공휴일 이후 기술주 강세를 통해 사상 최고치 경신됨\n호주 ASX 지수는 RBA의 기준금리 3.60% 인하 소식에 신규 최고치 도달함\n중국 CSI 300은 보합세, 홍콩 항셍지수는 소폭 하락함\n관세 휴전은 시장에 안도감을 주어, 이후 발표될 미국 CPI, RBA 금리 결정, 트럼프-푸틴 정상회담에 관심이 집중됨'
       }, 1000)
+    } else {
+      setIsOpen(!isOpen)
     }
   }
 
@@ -133,7 +135,7 @@ const NewsItem = ({ item }: { item: NewsItem }) => {
       borderRadius="8px"
       marginBottom="10px"
       sx={{
-        cursor: isEmpty(item.content) && !isLoading ? 'pointer' : 'default',
+        cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
           backgroundColor: '#F4F6FF',
@@ -173,7 +175,7 @@ const NewsItem = ({ item }: { item: NewsItem }) => {
         }}
       >
         <Box>
-          {isLoading && isEmpty(item.content) ? (
+          {isLoading ? (
             <Box>
               <Summarizing />
             </Box>

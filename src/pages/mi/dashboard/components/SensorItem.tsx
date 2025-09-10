@@ -86,6 +86,8 @@ const SensorItem = ({ item, onSourceSelected, onContentLoad }: SensorItemProps) 
           'S&P, 관세 수익 반영해 미국 AA+ 신용 등급 유지\n\n관세 수익이 미국의 신용 등급에 긍정적 영향을 미침\nS&P가 미국의 AA+ 등급을 유지하기로 결정\n관세 정책이 경제에 미치는 영향에 대한 긍정적 평가\n향후 관세 정책의 지속 가능성에 대한 관심 증가'
         onContentLoad?.(item, content)
       }, 1000)
+    } else {
+      setIsOpen(!isOpen)
     }
   }
 
@@ -95,7 +97,7 @@ const SensorItem = ({ item, onSourceSelected, onContentLoad }: SensorItemProps) 
       flexDirection="column"
       padding="4px"
       sx={{
-        cursor: isEmpty(item.content) && !isLoading ? 'pointer' : 'default',
+        cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
           backgroundColor: '#F4F6FF',
@@ -150,7 +152,7 @@ const SensorItem = ({ item, onSourceSelected, onContentLoad }: SensorItemProps) 
             }}
           >
             <Box>
-              {isLoading && isEmpty(item.content) ? (
+              {isLoading ? (
                 <Box pr="24px">
                   <Summarizing />
                 </Box>

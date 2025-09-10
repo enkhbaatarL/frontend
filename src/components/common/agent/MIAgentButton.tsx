@@ -209,6 +209,9 @@ const NewAgentButton: FC<NewAgentButtonProps> = ({ top = 126, right }) => {
               style={{
                 filter: showMariText ? 'drop-shadow(0px 0px 2.4px rgba(54, 79, 199, 0.7))' : 'none',
                 transition: 'filter 0.2s cubic-bezier(0, 0.55, 0.45, 1)',
+                WebkitFilter: showMariText ? 'drop-shadow(0px 0px 2.4px rgba(54, 79, 199, 0.7))' : 'none',
+                WebkitTransition: 'filter 0.2s ease-out',
+                willChange: 'filter',
               }}
             >
               <img width={48} height={48} src={mariSymbol} alt="Mari" />
