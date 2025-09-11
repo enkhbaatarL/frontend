@@ -35,6 +35,7 @@ type MISelectProps = {
   options?: readonly OptionType[]
   useAllOption?: boolean
   showClearIcon?: boolean
+  darkPlaceholder?: boolean
 }
 
 const CustomArrowIcon = ({
@@ -144,6 +145,7 @@ const MISelect = ({
   useAllOption = true,
   width,
   type = 'input',
+  darkPlaceholder = false,
 }: MISelectProps) => {
   const finalPlaceholder = placeholder ?? t('선택하세요')
 
@@ -231,6 +233,11 @@ const MISelect = ({
         '&:focus': {
           outline: `1px solid ${theme.palette.content['borderActivePrimary']}`,
         },
+        '&::placeholder': {
+          color: darkPlaceholder && !isFocused ? `${theme.palette.content['textBlack']} !important` : theme.palette.gray[50],
+          opacity: '1',
+          transition: 'color 0.2s ease',
+        },
         ...(sizeSelect === 'h26' && { borderRadius: '4px' }),
       },
       '.MuiTouchRipple-root': {
@@ -257,7 +264,7 @@ const MISelect = ({
         : {}),
       ...sx,
     }),
-    [minWidth, sizeSelect, shouldShowClearButton, showValue, type, sx],
+    [minWidth, sizeSelect, shouldShowClearButton, showValue, type, sx, darkPlaceholder, isFocused],
   )
 
   const getSelectedOption = (
@@ -311,7 +318,7 @@ const MISelect = ({
             onChange({ target: { value: values } })
           } else {
             const option = newValue as OptionType | null
-            if (option && option.disabled) return
+            if (option?.disabled) return
 
             const value = option?.value ?? ''
 

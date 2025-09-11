@@ -10,6 +10,7 @@ import AIMarketSensorPersonalized from '@/pages/mi/dashboard/components/AIMarket
 import AIMarketSummary from '@/pages/mi/dashboard/components/AIMarketSummary'
 import Category from '@/pages/mi/dashboard/components/Category'
 import EventCalendar from '@/pages/mi/dashboard/components/EventCalendar'
+import IndustryWatch from '@/pages/mi/dashboard/components/IndustryWatch'
 import NewsFeed from '@/pages/mi/dashboard/components/NewsFeed'
 import forecastDataService from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
@@ -73,6 +74,7 @@ const DashboardPage = () => {
                 <NewsFeed />
               </Box>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '556px' }}>
+                <IndustryWatch />
                 <AIMarketSensor />
                 <AIMarketSensorPersonalized />
                 <EventCalendar />

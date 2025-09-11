@@ -19,7 +19,7 @@ const NewAgentButton: FC<NewAgentButtonProps> = ({ top = 126, right }) => {
   const [isClosing, setIsClosing] = useState(false)
   const [offsetLeft, setOffsetLeft] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
-  const [scrollThumbTop, setScrollThumbTop] = useState<string>('')
+  const [scrollThumbTop, setScrollThumbTop] = useState<string>('0px')
 
   const buttonRef = useRef<HTMLButtonElement>(null)
   const ref = useRef<HTMLButtonElement>(null)

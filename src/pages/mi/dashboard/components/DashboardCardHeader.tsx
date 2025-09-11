@@ -4,7 +4,7 @@ import { ReactNode } from 'react'
 interface DashboardCardHeaderProps {
   icon: string
   title: ReactNode
-  updatedTime: ReactNode
+  updatedTime?: ReactNode
   padding?: string
 }
 
