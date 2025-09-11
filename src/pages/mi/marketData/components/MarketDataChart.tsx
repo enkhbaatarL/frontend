@@ -430,6 +430,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
   const displayData = locked
     ? {
         mainChart: {
+          specificIndicatorName: 'CURRENT',
           rawData: dummyChartData.mainChart.map((value, index) => ({
             date: String(index),
             value,
@@ -437,6 +438,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
         },
         compareCharts: [
           {
+            specificIndicatorName: 'PAST_5Y_AVG',
             rawData: dummyChartData.compareCharts.map((value, index) => ({
               date: String(index),
               value,

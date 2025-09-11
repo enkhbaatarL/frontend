@@ -11,12 +11,6 @@ interface RawPoint {
   value: number
 }
 
-interface CompareSeries {
-  specificIndicatorName: string // 'fiveYears' | 'bollingerMax' | 'bollingerMid' | 'bollingerMin'
-  rawData: RawPoint[]
-  label?: string
-}
-
 interface MarketDataCustomChartProps {
   data?: IMarketData
   locked?: boolean
@@ -68,11 +62,12 @@ const defaultDummyPayload: IMarketData = {
   ],
   isPermitted: false,
   mainChart: {
+    specificIndicatorName: 'CURRENT',
     rawData: makeSeriesPoints(dates, 230, 12),
   },
 }
 
-const colorForKey = (key: string) => {
+const colorForKey = (key: string | null) => {
   if (key === 'main') return '#40597A'
   if (key === 'PAST_5Y_AVG') return '#7A8790'
   if (key === 'PAST_5Y_MAX' || key === 'PAST_5Y_MIN') {
@@ -81,12 +76,17 @@ const colorForKey = (key: string) => {
   return '#6B7280'
 }
 
-const dashForKey = (key: string): number[] | undefined => {
+const dashForKey = (key: string | null): number[] | undefined => {
   if (key === 'PAST_5Y_AVG') return [4, 2]
   return undefined
 }
 
-const labelForKey = (series: CompareSeries, fallback: string) => series.label ?? fallback
+const labelForKey = (key?: string | null, fallback?: string) => {
+  if (key === 'PAST_5Y_AVG') return fallback ?? '5Yr Avg'
+  if (key === 'PAST_5Y_MAX') return fallback ?? 'Bollinger Upper'
+  if (key === 'PAST_5Y_MIN') return fallback ?? 'Bollinger Lower'
+  return fallback ?? key ?? ''
+}
 
 const buildChartData = (data: IMarketData) => {
   const rawData = data.mainChart?.rawData ?? []
@@ -112,7 +112,7 @@ const buildChartData = (data: IMarketData) => {
 
   const compareCharts: ICompareGraph[] = data.compareCharts ?? []
   const sortedCompare: ICompareGraph[] = compareCharts.slice().sort((a, b) => {
-    const order = (k: string): number => {
+    const order = (k: string | null): number => {
       switch (k) {
         case 'PAST_5Y_MIN':
           return 0
@@ -135,14 +135,14 @@ const buildChartData = (data: IMarketData) => {
 
     const ds = {
       label: labelForKey(
-        series,
+        series.specificIndicatorName,
         series.specificIndicatorName === 'PAST_5Y_AVG'
           ? compareChartLabel
           : series.specificIndicatorName === 'PAST_5Y_MAX'
             ? 'Bollinger Upper'
             : series.specificIndicatorName === 'PAST_5Y_MIN'
               ? 'Bollinger Lower'
-              : series.specificIndicatorName,
+              : (series.specificIndicatorName ?? ''),
       ),
       data: mapPoints(series.rawData),
       borderColor: colorForKey(series.specificIndicatorName),

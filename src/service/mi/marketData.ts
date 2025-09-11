@@ -9,11 +9,12 @@ export interface IRawDataPoint {
 }
 
 export interface IMainGraph {
+  specificIndicatorName: string | null
   rawData: IRawDataPoint[]
 }
 
 export interface ICompareGraph {
-  specificIndicatorName: string
+  specificIndicatorName: string | null
   rawData: IRawDataPoint[]
 }
 export interface IchangeRate {
