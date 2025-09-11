@@ -234,7 +234,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
               if (!elem) return
 
               const pos = typeof elem.tooltipPosition === 'function' ? elem.tooltipPosition() : { x: elem?.x, y: elem?.y }
-              let x = pos?.x,
+              const x = pos?.x,
                 y = pos?.y
               if (!Number.isFinite(x) || !Number.isFinite(y)) return
 

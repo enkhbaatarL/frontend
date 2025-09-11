@@ -45,6 +45,7 @@ export interface ChartMetadata {
 export interface ChartSeries {
   seriesId: string
   label: string
+  isLineChartDashStyle?: boolean
   renderAs: 'MAIN' | 'COMPARISON'
   values: number[]
   isVisible: boolean
