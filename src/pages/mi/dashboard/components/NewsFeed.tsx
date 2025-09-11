@@ -45,6 +45,7 @@ const OutlookChip = ({ type, value }: { type: OutlookType; value: number }) => {
   const getTextColor = () => {
     if (type === 'positive') return '#498B47'
     if (type === 'negative') return '#CC4D50'
+    if (type === 'neutral') return '#495057'
     return '#868E96'
   }
 
@@ -74,7 +75,7 @@ const OutlookChip = ({ type, value }: { type: OutlookType; value: number }) => {
       </Box>
       <Typography
         variant="body2"
-        mr="4px"
+        mx="2px"
         sx={{
           fontWeight: 500,
           fontSize: 14,
@@ -308,7 +309,7 @@ const NewsFeed = ({ items = [] }: NewsFeedProps) => {
       provider: 'Financial Times',
       date: '2025-08-21 07:30',
       impactScore: 8.2,
-      outlook: 'negative',
+      outlook: 'neutral',
       title: 'War or peace? For oil markets, the Ukraine outcome is insignificant',
       content: '',
     },
