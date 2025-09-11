@@ -1,10 +1,12 @@
 import SearchIcon from '@mui/icons-material/Search'
-import { Box, MenuItem, Typography } from '@mui/material'
+import { Box, MenuItem, Typography, InputAdornment, TextField } from '@mui/material'
 import { disassembleToGroups } from 'es-hangul'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { t } from 'i18next'
+import { useCallback, useEffect, useMemo, useRef, useState, ChangeEvent } from 'react'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import MIInput from '@/components/common/input/MIInput'
+import MIInputClearIcon from '@/components/common/input/MIInputClearIcon'
+import useCheckFocus from '@/hooks/useCheckFocus'
 import theme from '@/theming'
 
 interface Props {
@@ -20,6 +22,7 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
   const [history, setHistory] = useState<string[]>(JSON.parse(localStorage.getItem(`${storageKey}-search-history`) ?? '[]'))
   const [isFocused, setIsFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { ref: containerRef, isFocus } = useCheckFocus()
 
   const inputBlur = useCallback(() => {
     setTimeout(() => {
@@ -37,13 +40,49 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
   }, [])
 
   const filteredHistories = useMemo(() => {
-    const result = history.filter((item) => disassembleToGroups(item).flat().join().startsWith(disassembleToGroups(value).flat().join())) // 초중성 분리하여 검색
-    return result.sort((a, b) => a.length - b.length).slice(0, 10)
+    const result = history.filter((item: string) =>
+      disassembleToGroups(item).flat().join().startsWith(disassembleToGroups(value).flat().join()),
+    ) // 초중성 분리하여 검색
+    const sortedResult = [...result]
+    sortedResult.sort((a: string, b: string) => a.length - b.length)
+    return sortedResult.slice(0, 10)
   }, [history, value])
 
   const openHistoryList = useMemo(
     () => history.length > 0 && isFocused && filteredHistories.length > 0,
     [history.length, isFocused, filteredHistories],
+  )
+
+  const handleInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      onChange(e.target.value)
+    },
+    [onChange],
+  )
+
+  const handleClear = useCallback(() => {
+    onChange('')
+    onClear()
+  }, [onChange, onClear])
+
+  const handleSearchClick = useCallback(() => {
+    if (value.trim()) {
+      addHistory(value)
+      onSearch(value)
+      inputBlur()
+    }
+  }, [value, addHistory, onSearch, inputBlur])
+
+  const inputProps = useMemo(
+    () => ({
+      endAdornment: (
+        <InputAdornment position="end" sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginRight: '0' }}>
+          {isFocus && value && <MIInputClearIcon width={20} height={20} onClick={handleClear} />}
+          <SearchIcon style={{ color: theme.palette.content['iconEnabled'], cursor: 'pointer' }} onClick={handleSearchClick} />
+        </InputAdornment>
+      ),
+    }),
+    [isFocus, value, handleClear, handleSearchClick],
   )
 
   useEffect(() => {
@@ -63,32 +102,96 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
   }, [storageKey])
 
   return (
-    <Box position={'relative'}>
-      <MIInput
+    <Box
+      position={'relative'}
+      ref={containerRef}
+      sx={{
+        maxWidth: '100%',
+        width: 458,
+        svg: {
+          display: 'block',
+        },
+      }}
+    >
+      <TextField
         inputRef={inputRef}
-        width={458}
-        maxWidth={'100%'}
-        placeholder={placeholder}
-        size="h46"
+        fullWidth
+        variant="outlined"
+        hiddenLabel
+        placeholder={placeholder ?? t('입력하세요.')}
         value={value}
-        onChange={(e) => {
-          onChange(e.target.value)
-        }}
+        onChange={handleInputChange}
         onKeyDown={({ key, target }) => {
           if (key === 'Enter') {
-            const value = (target as HTMLInputElement).value
+            const inputValue = (target as HTMLInputElement).value
             inputBlur()
 
             setTimeout(() => {
-              addHistory(value)
-              onSearch(value)
+              addHistory(inputValue)
+              onSearch(inputValue)
             }, 100)
           }
         }}
-        onClear={onClear}
-        startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        slotProps={{
+          input: inputProps,
+        }}
+        autoComplete="off"
+        sx={{
+          '& .MuiInputBase-root': {
+            alignItems: 'center',
+            borderRadius: '4px',
+            height: '46px',
+            padding: '10px 12px',
+            ...theme.typography.body2R14,
+            '& input': {
+              height: '25px',
+              fontSize: '18px',
+              fontWeight: 500,
+              padding: '0 6px',
+              width: '100%',
+              borderRadius: '0',
+              '&::placeholder': {
+                fontWeight: 400,
+                color: `${theme.palette.gray['40']} !important`,
+              },
+            },
+            '.MuiSvgIcon-root': {
+              marginRight: '4px !important',
+            },
+            '.MuiInputAdornment-root': {
+              marginRight: 0,
+              '&.MuiInputAdornment-positionEnd': {
+                marginRight: 0,
+              },
+            },
+          },
+          '& .MuiInputBase-root .MuiSvgIcon-root': {
+            marginRight: 2,
+            color: '#868E96',
+          },
+          '& .MuiInputBase-root.Mui-focused': {
+            '.MuiInputAdornment-root': {
+              marginRight: 0,
+              'svg:last-child': {
+                color: theme.palette.content['iconActive'],
+                path: {
+                  fill: theme.palette.content['iconActive'],
+                },
+              },
+              'svg.iconClear': {
+                color: theme.palette.content['iconEnabled'],
+                path: {
+                  fill: theme.palette.content['iconEnabled'],
+                },
+              },
+            },
+          },
+          '& .MuiInputAdornment-root': {
+            margin: 0,
+          },
+        }}
       />
       {openHistoryList && (
         <Box
@@ -107,7 +210,7 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
           }}
         >
           <ScrollWrapper maxHeight={'215px'}>
-            {filteredHistories.map((item) => (
+            {filteredHistories.map((item: string) => (
               <MenuItem
                 key={item}
                 onMouseDown={(e) => {
