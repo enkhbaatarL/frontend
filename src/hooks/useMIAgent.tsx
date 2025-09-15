@@ -161,7 +161,7 @@ const useMIAgent = () => {
         })
 
         const newChatRoomId = selectedChatRoom.id ?? uuid()
-        await agentService.sendQnaStreamMock(
+        await agentService.sendQnaStream(
           newChatRoomId,
           message,
           shouldWebSearch,
@@ -182,7 +182,7 @@ const useMIAgent = () => {
                 feedbackCd: null,
                 feedbackNm: null,
                 feedbackComment: null,
-                auditInfo: null
+                auditInfo: null,
               })
 
               setTimeout(() => {
@@ -202,7 +202,6 @@ const useMIAgent = () => {
                 id: newChatRoomId,
               }))
             }
-
           },
           (err) => {
             console.error('스트리밍 에러:', err)
@@ -212,7 +211,7 @@ const useMIAgent = () => {
             replaceConversations(getErrorConversation(message))
           },
         )
-        
+
         // replaceConversations(newChat);
       } catch (error) {
         console.error('Error in inquire:', error)
