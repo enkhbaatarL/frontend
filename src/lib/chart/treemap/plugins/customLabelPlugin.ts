@@ -81,7 +81,7 @@ function drawMultiLineWithEllipsis(
   const lines: string[] = []
   let line = ''
   for (let i = 0; i < words.length; i++) {
-    const test = (line ? line + ' ' : '') + words[i]
+    const test = (line ? `${line} ` : '') + words[i]
     if (ctx.measureText(test).width > maxWidth) {
       if (line) {
         lines.push(line)

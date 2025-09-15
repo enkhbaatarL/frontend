@@ -98,10 +98,12 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     setSelectModeOption(newOptions)
     saveSelectModeOptionsToStorage(newOptions)
   }, [])
-  const isGenerating = useMemo(() => {
-    // const hasUnfinishedAnimation = animationComplete.some((done) => !done)
-    return !MIAgent.isStreamingDone //|| hasUnfinishedAnimation
-  }, [animationComplete, MIAgent.isStreamingDone])
+  const isGenerating = useMemo(
+    () =>
+      // const hasUnfinishedAnimation = animationComplete.some((done) => !done)
+      !MIAgent.isStreamingDone, //|| hasUnfinishedAnimation
+    [animationComplete, MIAgent.isStreamingDone],
+  )
   const handleScroll = useCallback(
     async (e: UIEvent<HTMLDivElement>) => {
       if (initialHistoryLoading || isGenerating) return
@@ -124,7 +126,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     const allAnimationsComplete = animationComplete.length > 0 && animationComplete.every((v) => v)
     const isActuallyComplete = MIAgent.isStreamingDone
 
-    if (allAnimationsComplete && isActuallyComplete) { 
+    if (allAnimationsComplete && isActuallyComplete) {
       MIAgent.markLastConversationAsOld()
       requestAnimationFrame(() => setTimeout(scrollToBottom, 100))
 

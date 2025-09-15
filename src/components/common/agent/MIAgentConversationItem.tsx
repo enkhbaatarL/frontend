@@ -55,7 +55,7 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
   const [isDone, setIsDone] = useState(false)
 
   useEffect(() => {
-    const done = bundles.length == 0 || (typeof conversation?.event === 'string' && conversation?.event ==='complete')
+    const done = bundles.length === 0 || (typeof conversation?.event === 'string' && conversation?.event === 'complete')
     setIsDone(done)
   }, [bundles, conversation])
   const [currentIdx, setCurrentIdx] = useState(0)
@@ -81,21 +81,21 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
     }
   }, [conversation.statusCd, conversation.isNew, animationComplete, onAnimationComplete, showSnackbar])
 
-
   useEffect(() => {
-    if (!bundles.length) return
+    if (!bundles.length) return () => {}
     if (isDone) {
       onAnimationComplete()
-      return
+      return () => {}
     }
-    if (currentIdx < bundles.length -1) {
+    if (currentIdx < bundles.length - 1) {
       const timeout = setTimeout(() => {
-        setCurrentIdx((prev) => prev+1) 
-
-      },400)
+        setCurrentIdx((prev) => prev + 1)
+      }, 400)
       return () => clearTimeout(timeout)
     }
-  }, [bundles.length , currentIdx])
+
+    return () => {}
+  }, [bundles.length, currentIdx])
 
   return (
     <Box display={'flex'} flexDirection={'column'} gap={'12px'} px={'12px'} id={`message-${conversation.qnaNo}`}>

@@ -79,7 +79,7 @@ const MIAgentAnswer = ({ bundles, chatRoomTitle, eventType, onAnimationComplete,
   const [chartImageUrls, setChartImageUrls] = useState<string[]>([])
 
   const answerRef = useRef<HTMLDivElement>(null)
-  const { scrollToBottom , scrollToNewMessage} = useScroll()
+  const { scrollToBottom, scrollToNewMessage } = useScroll()
 
   useEffect(() => {
     animationStateList.forEach((state, index) => {
@@ -108,7 +108,6 @@ const MIAgentAnswer = ({ bundles, chatRoomTitle, eventType, onAnimationComplete,
         }
       }
     })
-
   }, [animationStateList, bundles])
 
   useEffect(() => {

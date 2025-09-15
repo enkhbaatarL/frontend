@@ -6,13 +6,13 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 
 import smImg from '@/assets/product_symbol_hover.png'
 import MIColorRange from '@/components/common/colorrange/MIColorRange'
+import InfoIcon from '@/components/common/icons/table/InfoIconMedium'
 import MISelect from '@/components/common/select/MISelect'
 import MISignalMap from '@/components/common/signal-map/MISignalMap'
 import { MIBaseSkeleton, SkeletonWrapper } from '@/components/mi/MIBaseSkeleton.tsx'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import signalMapService, { MapCategory } from '@/service/mi/signalMap'
 import useAuthStore from '@/store/useAuthStore'
-import InfoIcon from '@/components/common/icons/table/InfoIconMedium'
 
 interface SectionHeaderProps {
   title: string
@@ -71,21 +71,6 @@ const SignalMapPage = () => {
     select: (res) => res.data.map((m) => ({ label: m.codeNm, value: m.codeId })),
   })
 
-  // 메인 데이터 쿼리 - 초기화가 완료된 후에만 실행
-  const { data: signalData, isLoading: signalDataIsLoading } = useQuery({
-    queryKey: ['getSignalMapData', period, companyFilter],
-    queryFn: async () => await signalMapService.getSignalMapData(customerCompanyNo, { period, filter: companyFilter }),
-    enabled: isInitialized && (!!period || !!companyFilter),
-    select: (res) => {
-      const topImpactVariables = normalizeTopImpact(res.data)
-      const newRes = {
-        ...res.data,
-        topImpactVariables,
-      }
-      return newRes
-    },
-  })
-
   const normalizeTopImpact = (signalData: any) => {
     if (!signalData?.topImpactVariables) return null
     return [
@@ -100,6 +85,21 @@ const SignalMapPage = () => {
       },
     ]
   }
+
+  // 메인 데이터 쿼리 - 초기화가 완료된 후에만 실행
+  const { data: signalData, isLoading: signalDataIsLoading } = useQuery({
+    queryKey: ['getSignalMapData', period, companyFilter],
+    queryFn: async () => await signalMapService.getSignalMapData(customerCompanyNo, { period, filter: companyFilter }),
+    enabled: isInitialized && (!!period || !!companyFilter),
+    select: (res) => {
+      const topImpactVariables = normalizeTopImpact(res.data)
+      const newRes = {
+        ...res.data,
+        topImpactVariables,
+      }
+      return newRes
+    },
+  })
 
   const getSortedList = (list?: MapCategory[]) => {
     if (!list) return []

@@ -674,7 +674,7 @@ const theme = createTheme({
       fontWeight: 900,
       lineHeight: '1.4',
       letterSpacing: '0.15px',
-      fontFeatureSettings: "'liga' off, 'clig' off",
+      fontFeatureSettings: '\'liga\' off, \'clig\' off',
     },
     helperText: {
       fontSize: '12px',

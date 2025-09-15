@@ -1,5 +1,7 @@
 import { Box, Typography, Tooltip } from '@mui/material'
+
 import MIColorBox from './MIColorBox'
+
 import { formatNumberToDecimal } from '@/utils/number'
 
 export interface MIColorRangeProps {
@@ -7,12 +9,12 @@ export interface MIColorRangeProps {
 }
 
 const getTooltipLabel = (value: number) => {
-  if (value == -1.0) return 'Strong Negative'
-  if (value == -0.7) return 'Moderate Negative'
-  if (value == -0.3) return 'Weak Negative'
-  if (value == 0) return 'Weak Positive'
-  if (value == 0.3) return 'Moderate Positive'
-  if (value == 0.7) return 'Strong Positive'
+  if (value === -1.0) return 'Strong Negative'
+  if (value === -0.7) return 'Moderate Negative'
+  if (value === -0.3) return 'Weak Negative'
+  if (value === 0) return 'Weak Positive'
+  if (value === 0.3) return 'Moderate Positive'
+  if (value === 0.7) return 'Strong Positive'
   return 'Strong Positive'
 }
 

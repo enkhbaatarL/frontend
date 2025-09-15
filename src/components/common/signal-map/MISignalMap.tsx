@@ -93,7 +93,7 @@ Tooltip.positioners.myCustomPositioner = function (_elements: ActiveElement[], e
 const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }: Props) => {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
-  const chartInstanceRef = useRef<{ destroy: () => void }>(null)
+  const chartInstanceRef = useRef<{ destroy:() => void }>(null)
 
   const data = useMemo(
     () =>

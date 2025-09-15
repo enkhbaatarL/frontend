@@ -2,9 +2,9 @@ import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
 import { IAuditInfo } from '@/service/admin/members'
+import { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 import { ChartInterval, ChartMetadata, ChartRange, DataDetailChart, MinInterval } from '@/types/dataDetailChart'
-import { withCustomBaseUrl } from '@/store/useAuthStore'
 
 export interface ICategoryDataInfo {
   categoryHighCd: string

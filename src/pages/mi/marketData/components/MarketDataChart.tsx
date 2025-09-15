@@ -429,47 +429,47 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
   const metaData = locked ? { ...data.marketMetaData, ...dummyMetaData } : data.marketMetaData
   const displayData = locked
     ? {
-        mainChart: {
-          specificIndicatorName: 'CURRENT',
-          rawData: dummyChartData.mainChart.map((value, index) => ({
+      mainChart: {
+        specificIndicatorName: 'CURRENT',
+        rawData: dummyChartData.mainChart.map((value, index) => ({
+          date: String(index),
+          value,
+        })),
+      },
+      compareCharts: [
+        {
+          specificIndicatorName: 'PAST_5Y_AVG',
+          rawData: dummyChartData.compareCharts.map((value, index) => ({
             date: String(index),
             value,
           })),
         },
-        compareCharts: [
-          {
-            specificIndicatorName: 'PAST_5Y_AVG',
-            rawData: dummyChartData.compareCharts.map((value, index) => ({
-              date: String(index),
-              value,
-            })),
-          },
+      ],
+      isPermitted: false,
+      marketMetaData: {
+        chartMarkRank: 0,
+        goodsNo: 0,
+        goodsDataNo: 0,
+        goodsDataSourceNo: 0,
+        goodsDataNm: '',
+        goodsDataSourceNm: '',
+        currency: '',
+        currentUnitCd: '',
+        visibleChartType: '',
+        interval: '',
+        lastUpdateDt: '',
+        indexStartDt: '',
+        lastValue: 0,
+        yoyChangeRate: 0,
+        momChangeRate: 0,
+        wowChangeRate: 0,
+        dodChangeRate: 0,
+        changeRates: [
+          { label: 'DoD', value: 0 },
+          { label: 'WoW', value: 0 },
         ],
-        isPermitted: false,
-        marketMetaData: {
-          chartMarkRank: 0,
-          goodsNo: 0,
-          goodsDataNo: 0,
-          goodsDataSourceNo: 0,
-          goodsDataNm: '',
-          goodsDataSourceNm: '',
-          currency: '',
-          currentUnitCd: '',
-          visibleChartType: '',
-          interval: '',
-          lastUpdateDt: '',
-          indexStartDt: '',
-          lastValue: 0,
-          yoyChangeRate: 0,
-          momChangeRate: 0,
-          wowChangeRate: 0,
-          dodChangeRate: 0,
-          changeRates: [
-            { label: 'DoD', value: 0 },
-            { label: 'WoW', value: 0 },
-          ],
-        },
-      }
+      },
+    }
     : data
 
   return (
@@ -487,9 +487,9 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
         '&:hover': locked
           ? undefined
           : {
-              borderColor: '#2E3F5E',
-              backgroundColor: '#F8F9FA',
-            },
+            borderColor: '#2E3F5E',
+            backgroundColor: '#F8F9FA',
+          },
       }}
       onClick={() =>
         !locked &&
@@ -539,7 +539,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
                 {metaData.lastValue}
               </Typography>
 
-              {metaData.changeRates.length == 2 && (
+              {metaData.changeRates.length === 2 && (
                 <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto' }} gap={1.25}>
                   <Typography color="gray.70" component="div" variant="body1M16">
                     {metaData.changeRates[0].label}
@@ -553,7 +553,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
                 </Box>
               )}
 
-              {metaData.changeRates.length == 0 && (
+              {metaData.changeRates.length === 0 && (
                 <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto' }} gap={1.25}>
                   <Typography color="gray.70" component="div" variant="body1M16">
                     DoD

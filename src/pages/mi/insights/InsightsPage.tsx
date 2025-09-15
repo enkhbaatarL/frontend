@@ -8,6 +8,7 @@ import psImg from '@/assets/productsymbol.png'
 import shiImg from '@/assets/subheaderinsight.jpg'
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
+import InfoIcon from '@/components/common/icons/table/InfoIconMedium'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
@@ -18,7 +19,6 @@ import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
 import insightsService, { IAdvancedFilter, IAdvancedFilterItem, IInsightsInfo, IInsightsRequest } from '@/service/mi/insights'
 import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
-import InfoIcon from '@/components/common/icons/table/InfoIconMedium'
 
 export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT'
 export interface Report {
@@ -142,7 +142,7 @@ const InsightsPage = () => {
       arr.map(({ codeNm, codeId, codeExpn }) => ({
         label: codeNm,
         value: codeId,
-        codeExpn: codeExpn,
+        codeExpn,
       }))
 
     const sections = [

@@ -1,10 +1,10 @@
 import { Box, Typography } from '@mui/material'
-
-import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useEffect } from 'react'
+
 import imgPath from '@/assets/imsi/Market News_weekly_1440 1.png'
-import psImg from '@/assets/productsymbol.png'
 import bgmImg from '@/assets/imsi/subheader black.jpg'
+import psImg from '@/assets/productsymbol.png'
+import MISkeleton from '@/components/mi/MISkeleton.tsx'
 
 const NewsPage = () => {
   useEffect(() => {

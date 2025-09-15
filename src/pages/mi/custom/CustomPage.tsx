@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
+import { useEffect } from 'react'
 
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
-import { useEffect } from 'react'
 
 const CustomPage = () => {
   useEffect(() => {
@@ -25,7 +25,7 @@ const CustomPage = () => {
         }}
       >
         <iframe
-          src={'https://' + window.location.hostname + '/ske/?embed=true'}
+          src={`https://${window.location.hostname}/ske/?embed=true`}
           title="Embedded"
           style={{ width: '100%', height: '100%', border: 0 }}
           allowFullScreen

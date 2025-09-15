@@ -66,6 +66,7 @@ export default tseslint.config(
       '@stylistic/js/jsx-quotes': ['error', 'prefer-double'],
 
       // Warn rules
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
         // 사용하지 않는 변수 경고
         'warn',

@@ -23,7 +23,6 @@ import AdminDataProviderRegistrationPage from '@/pages/admin/dataProviders/Admin
 import AdminDataProvidersDetailPage from '@/pages/admin/dataProviders/AdminDataProvidersDetailPage'
 import AdminDataProvidersListPage from '@/pages/admin/dataProviders/AdminDataProvidersListPage'
 import AdminDataRegistration from '@/pages/admin/dataProviders/AdminDataRegistration'
-import AdminTokenManagementPage from '@/pages/admin/tokens/AdminTokenManagementPage'
 import AdminMemberManagementManagersRegistrationPage from '@/pages/admin/memberManagement/AdminMemberManagementManagerRegistrationPage'
 import AdminMemberManagementManagersPage from '@/pages/admin/memberManagement/AdminMemberManagementManagersPage'
 import AdminMemberManagementMangerDetailPage from '@/pages/admin/memberManagement/AdminMemberManagementMangerDetailPage'
@@ -32,6 +31,7 @@ import AdminMemberManagementUserRegistrationPage from '@/pages/admin/memberManag
 import AdminMemberManagementUsersPage from '@/pages/admin/memberManagement/AdminMemberManagementUsersPage'
 import AdminNotificationListPage from '@/pages/admin/notification/AdminNotificationListPage'
 import AdminApiPage from '@/pages/admin/system/AdminApiPage'
+import AdminTokenManagementPage from '@/pages/admin/tokens/AdminTokenManagementPage'
 import AdminProvider from '@/providers/AdminProvider'
 import { ICustomRouteObject } from '@/types/common'
 
