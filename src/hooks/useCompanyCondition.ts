@@ -22,7 +22,17 @@ export const useCompanyCondition = () => {
       const baseDenied: MiPagesType[] = res === true ? [] : [...(extractPages ?? [])]
       const isSKE = comNo === 2020
 
-      return isSKE ? baseDenied : [...baseDenied, 'custom' as MiPagesType]
+      return isSKE
+        ? baseDenied
+        : [
+            ...baseDenied,
+            'dashboard' as MiPagesType,
+            'custom' as MiPagesType,
+            'news-list' as MiPagesType,
+            'newsletters' as MiPagesType,
+            'economic-event' as MiPagesType,
+            'parallel-coordinates' as MiPagesType,
+          ]
     },
     enabled: !!comNo,
     refetchOnWindowFocus: false,

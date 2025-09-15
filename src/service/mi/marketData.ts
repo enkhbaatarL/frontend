@@ -1,22 +1,22 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
-import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 import { withCustomBaseUrl } from '@/store/useAuthStore'
-
+import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 export interface IRawDataPoint {
   date: string
   value: number
 }
 
 export interface IMainGraph {
+  specificIndicatorName: string | null
   rawData: IRawDataPoint[]
 }
 
 export interface ICompareGraph {
+  specificIndicatorName: string | null
   rawData: IRawDataPoint[]
 }
-
 export interface IchangeRate {
   label: string
   value: number
@@ -46,6 +46,7 @@ export interface IMarketMetaData {
 export interface IMarketData {
   mainChart?: IMainGraph
   isPermitted: boolean
+  isCustomChart?: boolean
   marketMetaData?: IMarketMetaData
   compareCharts?: ICompareGraph[]
 }
@@ -90,12 +91,22 @@ const marketDataService = {
       withCustomBaseUrl(`/mi/market-data/companies/${customerCompanyNo}/market-datas`),
     )
 
-    //임시 - 마켓데이터 대시보드 big2 , small8 -> 같은사이즈 9개로 변경되어 임시로 출력 데이터 1개 제거
-    // return response.data.data
+    return response.data.data
+  },
 
-    const list = Array.isArray(response.data.data) ? response.data.data : []
+  /**
+   * 커스텀 요건 : 마켓 데이터를 조회합니다. (메인 데이터셋 , 비교데이터셋, 볼린저밴드 등 포함)
+   * 예시) SK E&S 고객사의 GIE EU 데이터 : /mi/market-data/companies/2013/custom/gie-eu
+   * @param customerCompanyNo - 고객사 번호
+   */
+  async getMarketDataCustom(customerCompanyNo?: number, customId?: string): Promise<IMarketData> {
+    if (!customerCompanyNo) throw new Error('customerCompanyNo is required')
 
-    return list.slice(0, -1)
+    const response: AxiosResponse<ICommonResponse<IMarketData>> = await api.get(
+      withCustomBaseUrl(`/mi/market-data/companies/${customerCompanyNo}/custom/${customId}`),
+    )
+
+    return response.data.data
   },
 
   /**

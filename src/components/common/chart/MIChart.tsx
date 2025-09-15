@@ -82,16 +82,22 @@ const bbColors: {
   bb_middle: '#4263EB',
   bb_lower: '#37B24D',
 }
-
-const bbLabels: {
-  [key: string]: string
-} = {
-  bb_upper: 'Upper BB',
-  bb_middle: 'Middle BB',
-  bb_lower: 'Lower BB',
+type DatasetMeta = {
+  isMain?: boolean
+  chipColor?: string
+  hasDivider?: boolean
+  goodsNo?: number
+  goodsDataNo?: number
+  goodsDataName?: string
+  goodsDataSourceNo?: number
+  goodsDataSourceName?: string
+  isDashed?: boolean
+  toFixed?: number
 }
 
-type ChartDatasetType = ChartDataset<'line' | 'candlestick' | 'bar', (Point | FinancialDataPoint)[]>
+type ChartDatasetType = ChartDataset<'line' | 'candlestick' | 'bar', (Point | FinancialDataPoint)[]> & {
+  metadata?: DatasetMeta
+}
 
 const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
   (
@@ -306,7 +312,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       mainDataSeries?.values,
       sortedTimestamps,
       refDataSeries,
-      volumeDataSeries,
+      // volumeDataSeries,
       timestampToIndex,
       closeDataSeries,
       openDataSeries,
@@ -353,7 +359,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
         BB:
           bb?.series
             ?.map((series) => ({
-              label: bbLabels[series.seriesId],
+              label: series.label,
               data: sortedTimestamps.map((timestamp) => {
                 const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
                 const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
@@ -372,48 +378,68 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               metadata: {
                 isMain: true,
                 chipColor: bbColors[series.seriesId],
-                hasDivider: bbLabels[series.seriesId] === 'Upper BB',
+                hasDivider: series.seriesId === 'bb_upper',
               },
             }))
             .sort((a, b) => {
-              const order: Record<string, number> = { 'Upper BB': 0, 'Middle BB': 1, 'Lower BB': 2 }
-              return order[a.label] - order[b.label]
+              // const order: Record<string, number> = { bb_upper: 0, bb_middle: 1, bb_lower: 2 }
+              // return order[a.label] - order[b.label]
+              const getPriority = (label: string) => {
+                if (label.toLocaleLowerCase().includes('upper')) return 0
+                if (label.toLocaleLowerCase().includes('middle')) return 1
+                if (label.toLocaleLowerCase().includes('lower')) return 2
+                return 999
+              }
+
+              return getPriority(a.label) - getPriority(b.label)
             }) ?? [],
       }
     }, [indicators, displayDataInfo.BB, displayDataInfo.MA, mainChart?.timestamps, sortedTimestamps, timestampToIndex])
+    const bbFillBetweenLabels = useMemo(() => {
+      const upper = indicatorDatasets.BB?.find((d) => d.label?.toLowerCase().includes('upper'))?.label
+      const lower = indicatorDatasets.BB?.find((d) => d.label?.toLowerCase().includes('lower'))?.label
 
-    const comparisonDatasets = useMemo(() => {
+      return upper && lower ? [upper, lower] : []
+    }, [indicatorDatasets.BB])
+
+    const comparisonDatasets = useMemo<ChartDatasetType[]>(() => {
       const colors = ['#26757B', '#EFA460', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434']
 
-      return comparisonCharts.map((chart, index) => ({
-        label: chart.goodsDataSourceName,
-        data: sortedTimestamps.map((timestamp) => {
-          const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
-          const chartIndex = chart.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
-          return {
-            x: timestampToIndex.get(timestamp) ?? 0,
-            y: chartIndex !== undefined && chartIndex !== -1 ? (chart.series[0].values[chartIndex] ?? null) : null,
-          }
-        }),
-        type: 'line',
-        pointRadius: 0,
-        borderColor: hideComparisonChartIndexList.includes(index) ? 'transparent' : colors[index % colors.length],
-        borderWidth: 3,
-        fill: false,
-        tension: 0.1,
-        spanGaps: true,
-        yAxisID: isYAxisSeparated ? `sub-${chart.unitCd?.split('#').at(-1) ?? ''}` : 'y',
-        metadata: {
-          chipColor: colors[index % colors.length],
-          hasDivider: index === 0,
-          goodsNo: chart.goodsNo,
-          goodsDataNo: chart.goodsDataNo,
-          goodsDataName: chart.goodsDataName,
-          goodsDataSourceNo: chart.goodsDataSourceNo,
-          goodsDataSourceName: chart.goodsDataSourceName,
-        },
-      }))
-    }, [comparisonCharts, hideComparisonChartIndexList, timestampToIndex, sortedTimestamps])
+      return comparisonCharts.map((chart, index) => {
+        const dashed = (chart as ChartData) && chart.series?.[0]?.isLineChartDashStyle ? true : false
+
+        return {
+          label: chart.goodsDataSourceName,
+          data: sortedTimestamps.map((timestamp) => {
+            const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+            const chartIndex = chart.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+            return {
+              x: timestampToIndex.get(timestamp) ?? 0,
+              y: chartIndex !== undefined && chartIndex !== -1 ? (chart.series[0].values[chartIndex] ?? null) : null,
+            }
+          }),
+          type: 'line',
+          pointRadius: 0,
+          borderColor: hideComparisonChartIndexList.includes(index) ? 'transparent' : colors[index % colors.length],
+          borderWidth: 3,
+          ...(dashed ? { borderDash: [6, 3] as number[], borderDashOffset: 0 } : {}),
+          fill: false,
+          tension: 0.1,
+          spanGaps: true,
+          yAxisID: isYAxisSeparated ? `sub-${chart.unitCd?.split('#').pop() ?? ''}` : 'y',
+          metadata: {
+            chipColor: colors[index % colors.length],
+            hasDivider: index === 0,
+            goodsNo: chart.goodsNo,
+            goodsDataNo: chart.goodsDataNo,
+            goodsDataName: chart.goodsDataName,
+            goodsDataSourceNo: chart.goodsDataSourceNo,
+            goodsDataSourceName: chart.goodsDataSourceName,
+            isDashed: dashed,
+          },
+        } as ChartDatasetType
+      })
+    }, [comparisonCharts, hideComparisonChartIndexList, timestampToIndex, sortedTimestamps, isYAxisSeparated])
 
     const volumeDatasets = useMemo(
       () =>
@@ -582,7 +608,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       if (volumeDatasets) datasets.push(...volumeDatasets)
 
       return datasets as ChartDatasetType[]
-    }, [comparisonDatasets, indicatorDatasets.BB, indicatorDatasets.MA, mainDatasets])
+    }, [comparisonDatasets, indicatorDatasets.BB, indicatorDatasets.MA, mainDatasets, volumeDatasets])
 
     const chartOptions = useMemo(
       () => ({
@@ -681,7 +707,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             yIDs: ['y', ...Object.keys(subYAxes)],
           },
           fillBetween: {
-            labels: ['Upper BB', 'Lower BB'],
+            // labels: ['Upper BB', 'Lower BB'],
+            labels: bbFillBetweenLabels,
             fillColor: 'rgba(206, 212, 218, 0.12)',
           },
           legend: {
@@ -708,7 +735,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           },
         },
       }),
-      [chartRange, isEmptyChart, sortedTimestamps, subYAxes, unitCd, syncChartScales],
+      [chartRange, isEmptyChart, sortedTimestamps, subYAxes, unitCd, syncChartScales, bbFillBetweenLabels, currency, isYAxisSeparated],
     )
 
     const volumeDataset = useMemo(() => {
@@ -801,7 +828,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           ...chartOptions.plugins,
         },
       }),
-      [chartOptions, subYAxes, unitCd, volumeDataSeries?.values],
+      [chartOptions, subYAxes, unitCd, volumeDataSeries?.values, currency, isYAxisSeparated],
     )
 
     useEffect(() => {
@@ -818,6 +845,10 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       }
     }, [syncChartScales])
 
+    const legendColors: string[] = useMemo(
+      () => comparisonDatasets.map((d) => d.metadata?.chipColor ?? 'transparent'),
+      [comparisonDatasets],
+    )
     return (
       <Box
         height={height}
@@ -899,7 +930,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               goodsDataSourceNo: data.metadata?.goodsDataSourceNo ?? 0,
               goodsDataSourceName: data.metadata?.goodsDataSourceName ?? '',
             }))}
-            colors={comparisonDatasets.map((data) => data.metadata?.chipColor)}
+            colors={legendColors}
             hideComparisonChartIndexList={hideComparisonChartIndexList}
             onChange={setHideComparisonChartIndexList}
             setIsMouseHoverLegend={setIsMouseHoverLegend}

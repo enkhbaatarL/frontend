@@ -20,6 +20,7 @@ interface MIChartControllerProps {
   chartIntervalOptions: { label: string; value: string }[]
   searchFilter: IProductDataStructuredChartRequest
   setSearchFilter: Dispatch<SetStateAction<IProductDataStructuredChartRequest>>
+  bbRenderLabel?: string
   displayDataInfo?: DisplayDataInfo
   onDisplayDataInfoChange?: (value: { label: string; isShow: boolean }) => void
 }
@@ -34,6 +35,7 @@ export default function MIChartController({
   chartIntervalOptions,
   searchFilter,
   setSearchFilter,
+  bbRenderLabel,
   displayDataInfo,
   onDisplayDataInfoChange,
 }: Readonly<MIChartControllerProps>) {
@@ -76,7 +78,7 @@ export default function MIChartController({
         />
         <Box display={'flex'} gap={'6px'}>
           <MIChartViewToggle
-            label="BB"
+            label={bbRenderLabel ?? 'BB'}
             isShow={displayDataInfo?.BB ?? false}
             onChange={(value) => {
               onDisplayDataInfoChange?.(value)

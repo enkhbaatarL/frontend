@@ -330,6 +330,11 @@ const ChartComponent = ({
     }
   }, [])
 
+  const bbRenderLabel = useMemo(
+    () => chartData?.indicators?.find((ind) => ind.indicatorType === 'BOLLINGER_BANDS')?.series?.[0]?.renderAs ?? '',
+    [chartData?.indicators],
+  )
+
   return (
     <>
       <Box borderRadius={1} maxWidth={'100%'} border={'1px solid'} borderColor={'gray.30'} sx={{ position: 'relative' }}>
@@ -440,6 +445,7 @@ const ChartComponent = ({
             searchFilter={searchFilter}
             setSearchFilter={setSearchFilter}
             unitList={chartMetaData?.changeableUnitCd ?? []}
+            bbRenderLabel={bbRenderLabel}
             displayDataInfo={displayDataInfo}
             onDisplayDataInfoChange={({ label, isShow }) => {
               if (label === 'BB') {

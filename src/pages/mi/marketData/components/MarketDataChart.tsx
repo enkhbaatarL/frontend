@@ -234,7 +234,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
               if (!elem) return
 
               const pos = typeof elem.tooltipPosition === 'function' ? elem.tooltipPosition() : { x: elem?.x, y: elem?.y }
-              let x = pos?.x,
+              const x = pos?.x,
                 y = pos?.y
               if (!Number.isFinite(x) || !Number.isFinite(y)) return
 
@@ -430,6 +430,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
   const displayData = locked
     ? {
         mainChart: {
+          specificIndicatorName: 'CURRENT',
           rawData: dummyChartData.mainChart.map((value, index) => ({
             date: String(index),
             value,
@@ -437,6 +438,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
         },
         compareCharts: [
           {
+            specificIndicatorName: 'PAST_5Y_AVG',
             rawData: dummyChartData.compareCharts.map((value, index) => ({
               date: String(index),
               value,

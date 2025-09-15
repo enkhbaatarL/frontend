@@ -4,6 +4,8 @@ import dayjs from 'dayjs'
 import { useEffect, useMemo, useRef, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import MarketDataCustomChart from './components/MarketDataCustomChart'
+
 import bgmImg from '@/assets/bgmarket.jpg'
 import psImg from '@/assets/productsymbol.png'
 import MILine from '@/components/common/divider/MILine'
@@ -38,6 +40,20 @@ const MarketDataPage = () => {
     enabled: !!customerCompanyNo,
   })
 
+  // SK E&S custom card
+  const isEnsCompany = accessCompanyInfo?.customerCompanyNo === 2013 && !!customerCompanyNo
+
+  const { data: customChartInfo, isLoading: customChartInfoIsLoading } = useQuery<IMarketData | undefined>({
+    queryKey: ['customChartInfo', customerCompanyNo, isEnsCompany],
+    queryFn: async () => {
+      if (!isEnsCompany) return undefined
+      return marketDataService.getMarketDataCustom(customerCompanyNo!, 'gie-eu')
+    },
+    enabled: isEnsCompany,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
   // Data Catalog
   const { data, filter, updateFilter, updateFilterWithSearch, pagination, updatePage, updateSize, isLoading } = useSearchFilter<
     IDataCatalogRequest,
@@ -64,7 +80,29 @@ const MarketDataPage = () => {
     enabled: !!customerCompanyNo,
   })
 
-  const normalizedChartData = useMemo(() => dashboardList?.slice(0, 10), [dashboardList])
+  /*
+  market data dasshboard의 노출 차트는 최대 9개로 제한하며 custom card 사용시 해당 데이터를 목록에 추가
+  */
+  const normalizedChartData = useMemo(
+    () => (dashboardList && dashboardList.length >= 9 ? dashboardList.slice(0, 9) : dashboardList),
+    [dashboardList],
+  )
+  const insertedChartData = useMemo(() => {
+    if (!normalizedChartData) return []
+
+    if (isEnsCompany && accessCompanyInfo?.customerCompanyNo) {
+      const targetIndex = customChartInfo?.marketMetaData?.chartMarkRank ?? 0
+      const arr = [...normalizedChartData]
+
+      arr.splice(targetIndex, 0, {
+        ...arr[targetIndex],
+        isCustomChart: true,
+      })
+      return arr.length >= 9 ? arr.slice(0, 9) : arr
+    }
+
+    return normalizedChartData
+  }, [normalizedChartData, isEnsCompany, accessCompanyInfo, customChartInfo])
 
   const handleSearchChange = useCallback(
     (value: string) => {
@@ -111,8 +149,8 @@ const MarketDataPage = () => {
   }, [data])
 
   const isActuallyLoading = useMemo(
-    () => isInitialLoading || dashboardListIsLoading || recentViewedIsLoading || (isLoading && !hasInitialData),
-    [isInitialLoading, dashboardListIsLoading, recentViewedIsLoading, hasInitialData, isLoading],
+    () => isInitialLoading || dashboardListIsLoading || customChartInfoIsLoading || recentViewedIsLoading || (isLoading && !hasInitialData),
+    [isInitialLoading, dashboardListIsLoading, customChartInfoIsLoading, recentViewedIsLoading, hasInitialData, isLoading],
   )
 
   return (
@@ -150,10 +188,13 @@ const MarketDataPage = () => {
         </Typography>
         <Grid mb={17.5} container spacing={5}>
           <Grid width={'100%'} container direction={'row'} gap={'16px'}>
-            {normalizedChartData?.map((chartData, index) => (
-              // 2개: 큰 차트, 8개: 작은 차트 -> 같은사이즈 9개차트로 변경
+            {insertedChartData?.map((chartData, index) => (
               <Grid key={`market-data-chart-${index}`} size={3} sx={{ width: '449px' }}>
-                <MarketDataChart data={chartData} size={'large'} locked={!chartData.isPermitted} />
+                {chartData.isCustomChart ? (
+                  <MarketDataCustomChart data={customChartInfo} locked={!chartData.isPermitted} />
+                ) : (
+                  <MarketDataChart data={chartData} size="large" locked={!chartData.isPermitted} />
+                )}
               </Grid>
             ))}
             {normalizedChartData?.length === 0 && (
