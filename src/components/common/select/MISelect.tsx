@@ -208,7 +208,7 @@ const MISelect = ({
 
       '.MuiOutlinedInput-root': {
         '.MuiAutocomplete-clearIndicator': {
-          display: sizeSelect === 'h26' ? 'none' : 'flex !important',
+          display: type === 'button' || sizeSelect === 'h26' ? 'none !important' : 'flex !important',
           visibility: shouldShowClearButton ? 'visible' : 'hidden',
           cursor: 'pointer',
           '& svg': {
@@ -234,7 +234,7 @@ const MISelect = ({
           outline: `1px solid ${theme.palette.content['borderActivePrimary']}`,
         },
         '&::placeholder': {
-          color: darkPlaceholder && !isFocused ? `${theme.palette.content['textBlack']} !important` : theme.palette.gray[50],
+          color: darkPlaceholder && !isFocused && !disabled ? `${theme.palette.content['textBlack']} !important` : theme.palette.gray[50],
           opacity: '1',
           transition: 'color 0.2s ease',
         },
@@ -257,8 +257,17 @@ const MISelect = ({
             borderColor: 'inherit',
             backgroundColor: 'inherit',
             userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none',
             cursor: 'pointer',
             pointerEvents: 'none',
+            '&::selection': {
+              backgroundColor: 'transparent',
+            },
+            '&::-moz-selection': {
+              backgroundColor: 'transparent',
+            },
           },
         }
         : {}),
@@ -277,7 +286,7 @@ const MISelect = ({
 
       return options.filter((opt) => value.includes(opt.value)) as OptionType[]
     } else {
-      if (useAllOption && !isFocused && value === '') return { label: t('전체'), value: '' } as OptionType
+      if (useAllOption && !isFocused && !darkPlaceholder && value === '') return { label: t('전체'), value: '' } as OptionType
       if (value === undefined) return null
 
       return (options.find((opt) => opt.value === (typeof opt.value === 'number' ? Number(value) : value)) as OptionType) ?? null
