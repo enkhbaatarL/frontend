@@ -1,4 +1,4 @@
-import { Box, Grid2 as Grid, Card, CardMedia } from '@mui/material'
+import { Box, Card, CardMedia } from '@mui/material'
 import Marquee from 'react-fast-marquee'
 
 import { MIBaseSkeleton, SkeletonWrapper } from './MIBaseSkeleton.tsx'
@@ -738,5 +738,135 @@ export const MIPageSkeletons = {
         </Box>
       </Marquee>
     </Box>
+  ),
+
+  // Newsletter 페이지 패턴
+  Newsletter: () => (
+    <Box>
+      <MIBaseSkeleton.BaseElement width={'100%'} height={'140px'} />
+
+      <Box boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'} py={5} px={7.5}>
+        {/* Featured Section */}
+        <MIBaseSkeleton.BaseElement2 width={'200px'} height={'32px'} sx={{ mb: 3 }} />
+        <SkeletonWrapper.Grid columns={6} gap={3} sx={{ mb: 38 }}>
+          {Array.from({ length: 6 }, (_, i) => (
+            <MIPageSkeletons.NewsletterCardSkeleton key={i} />
+          ))}
+        </SkeletonWrapper.Grid>
+
+        <SkeletonWrapper.Row gap={'30px'}>
+          <Box width={'1064px'} height={'1498px'}>
+            <Box
+              display={'flex'}
+              flexDirection={'row'}
+              justifyContent={'space-between'}
+              pb={6}
+              mb={9}
+              borderBottom={'1px solid'}
+              borderColor={'gray.30'}
+            >
+              <MIBaseSkeleton.InputField width={'360px'} height={'40px'} />
+              <MIBaseSkeleton.InputField width={'160px'} height={'40px'} />
+            </Box>
+            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'806px'} sx={{ marginBottom: '38px' }} />
+            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'346px'} sx={{ marginBottom: '38px' }} />
+            <Box borderBottom={'1px solid #DEE2E6'} width={'100%'} height={'0px'} marginBottom={'38px'}></Box>
+            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'52px'} sx={{ marginBottom: '38px' }} />
+            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'142px'} />
+          </Box>
+          <Box alignSelf={'flex-start'}>
+            <Box pb={'12px'}>
+              <MIBaseSkeleton.BaseElement2 width={'146px'} height={'30px'} />
+            </Box>
+            <Box pt={'12px'} pb={'12px'}>
+              <MIBaseSkeleton.BaseElement2 width={'262px'} height={'24px'} />
+              <MIBaseSkeleton.BaseElement2 width={'238px'} height={'24px'} sx={{ marginTop: '4px' }} />
+              <MIBaseSkeleton.BaseElement2 width={'203px'} height={'24px'} sx={{ marginTop: '4px' }} />
+            </Box>
+            <Box pt={'12px'} pb={'12px'}>
+              <MIBaseSkeleton.BaseElement2 width={'262px'} height={'24px'} />
+              <MIBaseSkeleton.BaseElement2 width={'238px'} height={'24px'} sx={{ marginTop: '4px' }} />
+              <MIBaseSkeleton.BaseElement2 width={'203px'} height={'24px'} sx={{ marginTop: '4px' }} />
+            </Box>
+          </Box>
+        </SkeletonWrapper.Row>
+      </Box>
+    </Box>
+  ),
+
+  NewsletterCardSkeleton: () => (
+    <Card
+      elevation={0}
+      sx={{
+        minHeight: '316px',
+        height: '100%',
+        border: '1px solid',
+        borderColor: '#DEE2E6',
+        borderRadius: '8px',
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        alignItems: 'flex-end',
+        backgroundColor: '#FFFFFF',
+        boxSizing: 'border-box',
+      }}
+    >
+      <CardMedia
+        component="div"
+        sx={{
+          height: 100,
+          width: '100%',
+          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '8px',
+          alignSelf: 'stretch',
+          overflow: 'hidden',
+          color: 'gray.60',
+          fontSize: '14px',
+          fontWeight: 500,
+        }}
+      />
+
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '5px',
+          alignSelf: 'stretch',
+          flex: 1,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px',
+            alignSelf: 'stretch',
+          }}
+        >
+          <MIBaseSkeleton.BaseElement2 width="60px" height="17px" />
+          <MIBaseSkeleton.BaseElement2 width="100%" height="28px" />
+        </Box>
+
+        <MIBaseSkeleton.BaseElement2 width="100%" height="20px" />
+        <MIBaseSkeleton.BaseElement2 width="100%" height="20px" />
+      </Box>
+
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          alignSelf: 'stretch',
+          gap: '12px',
+        }}
+      >
+        <MIBaseSkeleton.Button width={100} height={28} />
+      </Box>
+    </Card>
   ),
 }

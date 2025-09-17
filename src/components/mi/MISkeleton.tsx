@@ -19,6 +19,7 @@ interface Props {
     | 'form'
     | 'dailyChart'
     | 'dashboardSummary'
+    | 'newsletter'
   itemCount?: number
   rows?: number
   columns?: number
@@ -59,6 +60,8 @@ const MISkeleton = ({ loading, children, variant = 'dashboard', rows, columns, f
       return <MIPageSkeletons.DailyChart />
     case 'dashboardSummary':
       return <MIBaseSkeleton.BaseElement2 width={'1028px'} height={'275px'} sx={{ mt: '40px', mb: '24px' }} />
+    case 'newsletter':
+      return <MIPageSkeletons.Newsletter />
     default:
       return <MIPageSkeletons.Dashboard />
   }

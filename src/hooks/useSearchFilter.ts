@@ -31,6 +31,11 @@ interface SearchFilterOptions {
   useAbortController?: boolean
 }
 
+interface OptimisticUpdateOptions<T> {
+  optimisticData: T
+  rollbackOnError?: boolean
+}
+
 const useSearchFilter = <Req, Res>(
   fetchFn: (params: Partial<Req> & PageFilter, signal?: AbortSignal) => Promise<Res>,
   initialFilter: Partial<Req> = {},
@@ -46,6 +51,8 @@ const useSearchFilter = <Req, Res>(
   const [pagination, setPagination] = useState((state?.pagination as PageFilter) ?? initialPagination)
   const [fetchParams, setFetchParams] = useState<Partial<Req> | null>(null)
   const [isPureState, setIsPureState] = useState(true)
+  const [optimisticData, setOptimisticData] = useState<Res | null>(null)
+  const [isOptimisticUpdate, setIsOptimisticUpdate] = useState(false)
 
   const isInitialState = useMemo(() => diffCheck(filter, initialFilter), [filter, initialFilter])
   const isSearchedState = useMemo(() => {
@@ -97,6 +104,56 @@ const useSearchFilter = <Req, Res>(
     setFetchParams(removeObjectEmptyValues(filter))
   }, [filter])
 
+  const optimisticUpdate = useCallback(
+    async (
+      updateFn: (params: Partial<Req> & PageFilter, signal?: AbortSignal) => Promise<Res | null>,
+      updateOptions: OptimisticUpdateOptions<Res>,
+    ) => {
+      const rollbackOptimisticUpdate = () => {
+        setOptimisticData(null)
+        setIsOptimisticUpdate(false)
+      }
+
+      const currentParams = {
+        ...(fetchParams as Partial<Req>),
+        ...(pagination as Partial<PageFilter>),
+      }
+
+      // 낙관적 업데이트 시작
+      setIsOptimisticUpdate(true)
+      setOptimisticData(updateOptions.optimisticData)
+
+      try {
+        // 업데이트 요청 실행
+        const result = await updateFn(currentParams, abortControllerRef.current?.signal)
+
+        // 반환값이 null이면 현재 상태 유지 (서버 통신 없이 화면만 갱신)
+        if (result === null) {
+          // 낙관적 데이터를 그대로 유지하고 쿼리 캐시는 업데이트하지 않음
+          return result
+        }
+
+        setOptimisticData(null)
+        setIsOptimisticUpdate(false)
+
+        queryClient.setQueryData([fetchKey, JSON.stringify(fetchParams), pagination.page, pagination.size], result)
+
+        return result
+      } catch (error) {
+        if (updateOptions.rollbackOnError !== false) {
+          rollbackOptimisticUpdate()
+        }
+        throw error
+      }
+    },
+    [fetchParams, pagination, fetchKey, queryClient],
+  )
+
+  const rollbackOptimisticUpdate = useCallback(() => {
+    setOptimisticData(null)
+    setIsOptimisticUpdate(false)
+  }, [])
+
   // 기존 요청 abort
   const fetchWithAbort = useCallback(
     async (params: Partial<Req> & PageFilter) => {
@@ -125,6 +182,9 @@ const useSearchFilter = <Req, Res>(
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
+
+  // 낙관적 업데이트 데이터가 있으면 우선 반환, 없으면 실제 데이터 반환
+  const displayData = optimisticData ?? data
 
   const runInitialize = useCallback((initialVal: Partial<Req>) => {
     setFilter(initialVal)
@@ -163,8 +223,9 @@ const useSearchFilter = <Req, Res>(
     isInitialState,
     isSearchedState,
     isLoading,
-    data,
+    data: displayData,
     isPureState,
+    isOptimisticUpdate,
     updateFilter,
     updateFilterWithSearch,
     updateMultiFilter,
@@ -173,6 +234,8 @@ const useSearchFilter = <Req, Res>(
     resetFilter,
     search,
     refetch,
+    optimisticUpdate,
+    rollbackOptimisticUpdate,
   }
 }
 

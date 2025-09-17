@@ -12,6 +12,7 @@ import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
 import NewsPage from '@/pages/mi/news/NewsPage'
+import NewsletterDetailPage from '@/pages/mi/newsletter/NewsletterDetailPage'
 import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
@@ -45,7 +46,16 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'newsletters',
-      element: <NewsletterPage />,
+      children: [
+        {
+          index: true,
+          element: <NewsletterPage />,
+        },
+        {
+          path: ':newsletterId/:issueNo',
+          element: <NewsletterDetailPage />,
+        },
+      ],
     },
     {
       path: 'economic-event',

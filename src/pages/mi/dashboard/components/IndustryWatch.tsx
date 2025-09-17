@@ -1,6 +1,6 @@
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import { Box, Card, Stack, Typography, Table, TableBody, TableCell, TableHead, TableRow, Tooltip } from '@mui/material'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 
 import DashboardCardHeader from './DashboardCardHeader'
 
@@ -161,7 +161,7 @@ const IndustryWatch = ({ data = [] }: IndustryWatchProps) => {
     >
       <DashboardCardHeader icon={tableIcon} title="Industry Watch" padding="17px 15px" />
 
-      <Box padding="18px 12px 6px">
+      <Box padding="18px 12px 6px" mb="10px">
         <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2}>
           <MISelect
             value={tempSelectedValue ?? ''}
@@ -294,9 +294,8 @@ const IndustryWatch = ({ data = [] }: IndustryWatchProps) => {
           </TableHead>
           <TableBody>
             {displayData.map((company) => (
-              <>
+              <Fragment key={company.id}>
                 <TableRow
-                  key={`${company.id}-revenue`}
                   onMouseEnter={() => handleMouseEnter(company.id)}
                   onMouseLeave={handleMouseLeave}
                   sx={{
@@ -414,7 +413,7 @@ const IndustryWatch = ({ data = [] }: IndustryWatchProps) => {
                     {company.q2_2025.operatingIncome}
                   </TableCell>
                 </TableRow>
-              </>
+              </Fragment>
             ))}
           </TableBody>
         </Table>

@@ -19,6 +19,10 @@ export interface MITableProps<T extends GridRowModel> extends DataGridProps {
   unstable_rowSpanning?: boolean
 }
 
+interface DisableableRow extends GridRowModel {
+  disabled?: boolean
+}
+
 const createNoRowsOverlay = (message?: string) => {
   const Component = () => (
     <Box display={'flex'} alignItems={'center'} justifyContent={'center'} bgcolor={'gray.5'} textAlign={'center'} height={'100%'}>
@@ -38,7 +42,7 @@ export default function MITable<T extends GridRowModel>(props: Readonly<MITableP
   const ROW_HEIGHT = 40
   const HEADER_HEIGHT = 36
 
-  const { columns, rows, noRowMessage, rowId, loading, disableHover = false, ...dataGridProps } = props
+  const { columns, rows, noRowMessage, rowId, loading, disableHover = false, onRowClick, ...dataGridProps } = props
 
   const memoizedColumns = useMemo(
     () =>
@@ -55,6 +59,19 @@ export default function MITable<T extends GridRowModel>(props: Readonly<MITableP
   )
 
   const noRowsOverlay = useMemo(() => createNoRowsOverlay(noRowMessage), [noRowMessage])
+
+  const getRowClassName = (params: { row: T }) => ((params.row as DisableableRow).disabled ? 'disabled-row' : '')
+
+  const handleRowClick = (params: { row: T }, event?: React.MouseEvent, details?: unknown) => {
+    if ((params.row as DisableableRow).disabled) {
+      return
+    }
+    onRowClick?.(
+      params as Parameters<NonNullable<typeof onRowClick>>[0],
+      event as Parameters<NonNullable<typeof onRowClick>>[1],
+      details as Parameters<NonNullable<typeof onRowClick>>[2],
+    )
+  }
 
   return (
     <DataGrid
@@ -74,6 +91,8 @@ export default function MITable<T extends GridRowModel>(props: Readonly<MITableP
       rowHeight={ROW_HEIGHT}
       columnHeaderHeight={HEADER_HEIGHT}
       className="MITable"
+      getRowClassName={getRowClassName}
+      onRowClick={handleRowClick}
       sx={{
         '--DataGrid-overlayHeight': '387px',
         '--DataGrid-containerBackground': theme.palette.gray[5],
@@ -149,6 +168,21 @@ export default function MITable<T extends GridRowModel>(props: Readonly<MITableP
           padding: '0',
           alignItems: 'center',
           display: 'flex',
+        },
+        // disabled row 스타일
+        '& .disabled-row': {
+          color: '#6C757D !important',
+          cursor: 'default !important',
+          '& *': {
+            color: '#6C757D !important',
+            cursor: 'default !important',
+          },
+          '&:hover': {
+            backgroundColor: `${theme.palette.gray[5]} !important`,
+            '& *': {
+              fontWeight: 'normal !important',
+            },
+          },
         },
       }}
       disableColumnMenu

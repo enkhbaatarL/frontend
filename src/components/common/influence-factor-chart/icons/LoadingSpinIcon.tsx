@@ -4,9 +4,10 @@ interface LoadingSpinnerProps {
   size?: number
   color?: string
   speed?: number
+  stop?: boolean
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 42, color = 'rgba(0, 0, 0, 0.2)', speed = 1 }) => {
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 42, color = 'rgba(0, 0, 0, 0.2)', speed = 1, stop = false }) => {
   // Calculate viewBox based on original dimensions
   const viewBox = '0 0 42 42'
 
@@ -44,7 +45,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 42, color = 'rgb
           <path
             d="M21 0C26.5695 0 31.911 2.21249 35.8492 6.15076C39.7875 10.089 42 15.4305 42 21H36C36 19.0302 35.612 17.0796 34.8582 15.2597C34.1044 13.4399 32.9995 11.7863 31.6066 10.3934C30.2137 9.00052 28.5601 7.89563 26.7403 7.14181C24.9204 6.38799 22.9698 6 21 6V0Z"
             fill={color}
-            style={spinnerStyle}
+            style={stop ? { animation: 'none' } : spinnerStyle}
           />
         </g>
         <defs>

@@ -16,9 +16,10 @@ interface Props {
   placeholder?: string
   onSearch: (value: string) => void
   onClear: () => void
+  width?: number
 }
 
-const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onClear }: Props) => {
+const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onClear, width }: Props) => {
   const [history, setHistory] = useState<string[]>(JSON.parse(localStorage.getItem(`${storageKey}-search-history`) ?? '[]'))
   const [isFocused, setIsFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -107,7 +108,7 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
       ref={containerRef}
       sx={{
         maxWidth: '100%',
-        width: 458,
+        width: width ?? 458,
         svg: {
           display: 'block',
         },
@@ -200,7 +201,7 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
             position: 'absolute',
             top: '52px',
             left: '0px',
-            width: '458px',
+            width: width ? `${width}px` : '458px',
             zIndex: 10,
             border: '1px solid #DEE2E6',
             boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.1)',

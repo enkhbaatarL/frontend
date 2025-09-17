@@ -55,7 +55,7 @@ const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, di
   const goToLastPage = () => onPageChange?.(count)
 
   return data ? (
-    <Box display="flex" alignItems="center" justifyContent="space-between" pt="20px" pb="10px">
+    <Box display="flex" alignItems="center" justifyContent="space-between" pt="20px">
       <Typography variant="body3" color="gray.60">
         {paginationRange}
       </Typography>
