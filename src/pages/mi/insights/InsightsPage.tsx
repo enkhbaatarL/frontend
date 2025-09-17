@@ -4,8 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import InsightsDocumentItem from './components/InsightsDocumentItem'
 
-import psImg from '@/assets/productsymbol.png'
-import shiImg from '@/assets/subheaderinsight.jpg'
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import InfoIcon from '@/components/common/icons/table/InfoIconMedium'
@@ -13,6 +11,7 @@ import MISearchInput from '@/components/common/input/MISearchInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
+import MIPageHeadline from '@/components/mi/MIPageHeadline'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import InsightsCardBtn from '@/pages/mi/insights/components/InsightsCardBtn'
@@ -223,33 +222,8 @@ const InsightsPage = () => {
 
   return (
     <MISkeleton variant={'insights'} loading={isActuallyLoading}>
-      <Box
-        sx={{
-          background: `url(${psImg}) right / 33% no-repeat, url(${shiImg}) lightgray 50% / cover no-repeat`,
-          zIndex: 0,
-          position: 'relative',
-        }}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: -1,
-            boxShadow: '0px 20px 20px 0px rgba(0, 0, 0, 0.25) inset',
-          }}
-        ></Box>
-        <Box boxSizing={'border-box'} paddingX={7.5} paddingY={10.5} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
-          <Typography color="white" component="h1" fontSize={40} variant="body1M16">
-            Market Reports
-          </Typography>
-          {/* <Typography color="#DCDCDC" fontSize={20} lineHeight={1.6} variant="subtext1">
-            Stay informed, stay ahead
-          </Typography> */}
-        </Box>
-      </Box>
+      <MIPageHeadline title="Market Reports" gradientStart="#14416D" gradientEnd="#165586" />
+
       <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'} py={12.5} px={7.5}>
         <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
           Focused

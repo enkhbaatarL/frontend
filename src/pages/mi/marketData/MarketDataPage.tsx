@@ -6,13 +6,12 @@ import { useNavigate } from 'react-router-dom'
 
 import MarketDataCustomChart from './components/MarketDataCustomChart'
 
-import bgmImg from '@/assets/bgmarket.jpg'
-import psImg from '@/assets/productsymbol.png'
 import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
+import MIPageHeadline from '@/components/mi/MIPageHeadline'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
@@ -155,33 +154,8 @@ const MarketDataPage = () => {
 
   return (
     <MISkeleton variant={'marketData'} loading={isActuallyLoading}>
-      <Box
-        sx={{
-          background: `url(${psImg}) right / 33% no-repeat, url(${bgmImg}) lightgray 50% 82%/ cover no-repeat`,
-          zIndex: 0,
-          position: 'relative',
-        }}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: -1,
-            boxShadow: '0px 20px 20px 0px rgba(0, 0, 0, 0.25) inset',
-          }}
-        ></Box>
-        <Box boxSizing={'border-box'} paddingX={7.5} paddingY={10.5} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
-          <Typography color="white" component="h1" fontSize={40} variant="body1M16">
-            Market Metrics
-          </Typography>
-          {/* <Typography color="#DCDCDC" fontSize={20} lineHeight={1.6} variant="subtext1">
-            Elevate your market understanding with comprehensive data
-          </Typography> */}
-        </Box>
-      </Box>
+      <MIPageHeadline title="Market Metrics" gradientStart="#021728" gradientEnd="#135F7A" />
+
       <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'} py={12.5} px={7.5}>
         <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
           Focused

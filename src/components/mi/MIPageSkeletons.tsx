@@ -1,4 +1,4 @@
-import { Box } from '@mui/material'
+import { Box, Grid2 as Grid, Card, CardMedia } from '@mui/material'
 import Marquee from 'react-fast-marquee'
 
 import { MIBaseSkeleton, SkeletonWrapper } from './MIBaseSkeleton.tsx'
@@ -246,7 +246,7 @@ export const MIPageSkeletons = {
   // Market Data 패턴
   MarketData: () => (
     <Box>
-      <MIBaseSkeleton.BaseElement width={'100%'} height={'216px'} />
+      <MIBaseSkeleton.BaseElement width={'100%'} height={'140px'} />
       <Box
         minWidth={'1380px'}
         width={'1380px'}
@@ -329,7 +329,7 @@ export const MIPageSkeletons = {
   // Insights 패턴
   Insights: () => (
     <Box>
-      <MIBaseSkeleton.BaseElement width={'100%'} height={'216px'} />
+      <MIBaseSkeleton.BaseElement width={'100%'} height={'140px'} />
       <Box
         minWidth={'1380px'}
         width={'1380px'}
@@ -666,8 +666,8 @@ export const MIPageSkeletons = {
       {Array.from({ length: rows }, (_, rowIndex) => (
         <Box key={rowIndex} border="1px solid #E9ECEF" borderTop="none" p={2} sx={{ '&:last-child': { borderRadius: '0 0 8px 8px' } }}>
           <SkeletonWrapper.Row gap={2}>
-            {Array.from({ length: columns }, (_, colIndex) => (
-              <MIBaseSkeleton.TextLine key={colIndex} width={`${100 / columns}%`} height={14} />
+            {Array.from({ length: columns }, (__, colIdx) => (
+              <MIBaseSkeleton.TextLine key={colIdx} width={`${100 / columns}%`} height={14} />
             ))}
           </SkeletonWrapper.Row>
         </Box>
