@@ -448,7 +448,7 @@ const ChartComponent = ({
             bbRenderLabel={bbRenderLabel}
             displayDataInfo={displayDataInfo}
             onDisplayDataInfoChange={({ label, isShow }) => {
-              if (label === 'BB') {
+              if (label === bbRenderLabel) {
                 setDisplayDataInfo((prev) => ({
                   ...prev,
                   BB: isShow,

@@ -369,6 +369,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
                 }
               }),
               type: 'line',
+              borderDash: series.seriesId === 'bb_middle' ? ([6, 3] as number[]) : {},
+              borderDashOffset: 0,
               borderColor: displayDataInfo.BB ? bbColors[series.seriesId] : 'transparent',
               borderWidth: 1,
               pointRadius: 0,
@@ -379,15 +381,17 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
                 isMain: true,
                 chipColor: bbColors[series.seriesId],
                 hasDivider: series.seriesId === 'bb_upper',
+                isDashed: series.seriesId === 'bb_middle',
               },
             }))
             .sort((a, b) => {
               // const order: Record<string, number> = { bb_upper: 0, bb_middle: 1, bb_lower: 2 }
               // return order[a.label] - order[b.label]
               const getPriority = (label: string) => {
-                if (label.toLocaleLowerCase().includes('upper')) return 0
-                if (label.toLocaleLowerCase().includes('middle')) return 1
-                if (label.toLocaleLowerCase().includes('lower')) return 2
+                const l = label.toLocaleLowerCase()
+                if (l.includes('upper') || l.includes('max')) return 0
+                if (l.includes('middle') || label.includes('avg')) return 1
+                if (l.includes('lower') || label.includes('min')) return 2
                 return 999
               }
 
@@ -396,8 +400,12 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       }
     }, [indicators, displayDataInfo.BB, displayDataInfo.MA, mainChart?.timestamps, sortedTimestamps, timestampToIndex])
     const bbFillBetweenLabels = useMemo(() => {
-      const upper = indicatorDatasets.BB?.find((d) => d.label?.toLowerCase().includes('upper'))?.label
-      const lower = indicatorDatasets.BB?.find((d) => d.label?.toLowerCase().includes('lower'))?.label
+      const upper = indicatorDatasets.BB?.find(
+        (d) => d.label?.toLowerCase().includes('upper') || d.label?.toLowerCase().includes('max'),
+      )?.label
+      const lower = indicatorDatasets.BB?.find(
+        (d) => d.label?.toLowerCase().includes('lower') || d.label?.toLowerCase().includes('min'),
+      )?.label
 
       return upper && lower ? [upper, lower] : []
     }, [indicatorDatasets.BB])
@@ -406,8 +414,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
       const colors = ['#26757B', '#EFA460', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434']
 
       return comparisonCharts.map((chart, index) => {
-        const dashed = (chart as ChartData) && chart.series?.[0]?.isLineChartDashStyle ? true : false
-
         return {
           label: chart.goodsDataSourceName,
           data: sortedTimestamps.map((timestamp) => {
@@ -422,7 +428,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           pointRadius: 0,
           borderColor: hideComparisonChartIndexList.includes(index) ? 'transparent' : colors[index % colors.length],
           borderWidth: 3,
-          ...(dashed ? { borderDash: [6, 3] as number[], borderDashOffset: 0 } : {}),
           fill: false,
           tension: 0.1,
           spanGaps: true,
@@ -435,7 +440,6 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
             goodsDataName: chart.goodsDataName,
             goodsDataSourceNo: chart.goodsDataSourceNo,
             goodsDataSourceName: chart.goodsDataSourceName,
-            isDashed: dashed,
           },
         } as ChartDatasetType
       })
