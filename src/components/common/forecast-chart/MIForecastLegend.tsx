@@ -23,6 +23,10 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
     const right: Array<ChartDataset & { category: string; hidden?: boolean; permission?: boolean; yAxisID: string; index: number }> = []
 
     datasets.forEach((dataset, index) => {
+      if (dataset.category === 'forecast-line') {
+        return
+      }
+
       if (dataset.yAxisID === 'y') {
         left.push({
           index,
