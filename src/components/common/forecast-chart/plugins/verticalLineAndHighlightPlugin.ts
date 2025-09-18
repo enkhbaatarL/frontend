@@ -17,7 +17,7 @@ export enum PointInteractionState {
 interface IVerticalLineAndHighlightPlugin extends Plugin<ChartType> {
   mousePosition: { x: number; y: number } | null
   selectedPoint: InteractionItem | null
-  tooltipContent: {index?: number, label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
+  tooltipContent: { index?: number; label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
   interactionState: PointInteractionState
   clearSelectedPoint: () => void
   updateTooltipPosition: (viewDetail: boolean) => void
@@ -34,7 +34,7 @@ export interface PointerMoveEventContext {
     y: number
     viewDetail?: boolean
     label: string
-    content: { index?: number, label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
+    content: { index?: number; label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[]
   } | null
 }
 
@@ -74,7 +74,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
   id = 'verticalLineAndHighlight'
   mousePosition: { x: number; y: number } | null = null
   selectedPoint: InteractionItem | null = null
-  tooltipContent: { index?: number, label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[] = []
+  tooltipContent: { index?: number; label?: string; value?: number; category?: string; color?: string; goodsDataSourceNo?: number }[] = []
   interactionState: PointInteractionState = PointInteractionState.NONE
   _options: any = {}
   _chart: Chart | null = null
@@ -227,7 +227,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
         }
 
         // Trigger chart update to redraw with new state
-        chart.update()
+        // Chart will redraw automatically
       } catch (error) {
         console.error('Error in mousemove event:', error)
         plugin.mousePosition = null
@@ -258,7 +258,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
         })
 
         // Trigger chart update to redraw with new state
-        chart.update()
+        // Chart will redraw automatically
       } catch (error) {
         console.error('Error in mouseout event:', error)
         // Reset cursor on error
@@ -283,7 +283,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
         // 이미 선택된 포인트가 있고 차트 영역을 클릭했다면 초기화
         if (this.selectedPoint && isClickInChartArea) {
           this.reset()
-          chart.update()
+          // Chart will redraw automatically
           return
         }
 
@@ -317,21 +317,104 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
           if (!activePoint) return
 
-          const currentIndex = activePoint.index
+          // 클릭된 포인트의 실제 데이터 인덱스 찾기
+          const clickedDataset = chart.data.datasets[this.selectedPoint.datasetIndex]
+          const clickedData = clickedDataset.data
+          let realIndex = -1
+
+          // 실제 값이 있는 인덱스 찾기
+          for (let i = 0; i < clickedData.length; i++) {
+            if (clickedData[i] !== null && clickedData[i] !== undefined) {
+              realIndex = i - 1 // null padding 때문에 -1
+              break
+            }
+          }
+
           const months = chart.data.labels || []
+          const currentIndex = Math.max(0, Math.min(realIndex, months.length - 1)) // 범위 체크
 
-          const clickTooltipContent = [
-            {
+          // 클릭된 월의 모든 데이터를 툴팁에 포함
+          const clickTooltipContent: any[] = []
+
+          // 실제 데이터는 클릭 툴팁에서 제외 (Forecast 값만 표시)
+          // chart.data.datasets.forEach((dataset: any, datasetIndex: number) => {
+          //   if (dataset.category === DATA_CATEGORIES.ACTUAL && !dataset.hidden && dataset.data[this.selectedPoint.index] !== null) {
+          //     clickTooltipContent.push({
+          //       label: dataset.label,
+          //       value: dataset.data[this.selectedPoint.index] as number,
+          //       category: DATA_CATEGORIES.ACTUAL,
+          //       color: dataset.borderColor as string,
+          //     })
+          //   }
+          // })
+
+          // 클릭된 Forecast 데이터 추가
+          const clickedForecastDataset = chart.data.datasets[this.selectedPoint.datasetIndex]
+          const clickedValue = clickedForecastDataset.data[this.selectedPoint.index] as number
+
+          if (clickedValue !== null && clickedValue !== undefined) {
+            clickTooltipContent.push({
               index: this.selectedPoint.datasetIndex,
-              label: chart.data.datasets[this.selectedPoint.datasetIndex].label,
-              value: chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
+              label: clickedForecastDataset.label,
+              value: clickedValue,
               category: DATA_CATEGORIES.FORECAST,
-              color: chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
-              goodsDataSourceNo: (chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
-            },
-          ]
+              color:
+                (clickedForecastDataset as any).pointBackgroundColor ||
+                clickedForecastDataset.borderColor ||
+                clickedForecastDataset.backgroundColor,
+              goodsDataSourceNo: (clickedForecastDataset as any).metadata?.goodsDataSourceNo,
+            })
+          }
 
-          const adjustedPosition = adjustTooltipPosition(forecastPoint.element.x, forecastPoint.element.y, chart)
+          // 다른 Forecast 데이터들도 추가 (중복 방지)
+          if (this.selectedPoint) {
+            const addedLabels = new Set([clickedForecastDataset.label]) // 이미 추가된 레이블 추적
+
+            chart.data.datasets.forEach((dataset: any) => {
+              if (
+                dataset.category === DATA_CATEGORIES.FORECAST &&
+                dataset.data &&
+                this.selectedPoint &&
+                dataset.data[this.selectedPoint.index] !== null &&
+                !dataset.hidden &&
+                !addedLabels.has(dataset.label) // 중복 방지
+              ) {
+                clickTooltipContent.push({
+                  label: dataset.label,
+                  value: this.selectedPoint ? (dataset.data[this.selectedPoint.index] as number) : 0,
+                  category: DATA_CATEGORIES.FORECAST,
+                  color: dataset.backgroundColor as string,
+                  goodsDataSourceNo: dataset.metadata?.goodsDataSourceNo,
+                })
+                addedLabels.add(dataset.label)
+              }
+            })
+          }
+
+          // Future 데이터들도 추가
+          if (this.selectedPoint) {
+            chart.data.datasets.forEach((dataset: any) => {
+              if (
+                dataset.category === DATA_CATEGORIES.FUTURE &&
+                !dataset.hidden &&
+                dataset.data &&
+                this.selectedPoint &&
+                this.selectedPoint &&
+                dataset.data &&
+                dataset.data[this.selectedPoint.index] !== null
+              ) {
+                clickTooltipContent.push({
+                  label: dataset.label,
+                  value: this.selectedPoint ? (dataset.data[this.selectedPoint.index] as number) : 0,
+                  category: DATA_CATEGORIES.FUTURE,
+                  color: dataset.borderColor as string,
+                })
+              }
+            })
+          }
+
+          // 실제 차트 위치에서 툴팁 위치 계산 (클릭된 포인트의 element 위치 사용)
+          const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, chart)
 
           options.onPointerMove?.({
             plugin: this,
@@ -458,18 +541,56 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
       // 선택된 포인트가 있을 때는 선택된 포인트를 기준으로 툴팁 표시
       if (this.selectedPoint) {
         const months = chart.data.labels || []
-        const selectedIndex = this.selectedPoint.index
 
-        const clickTooltipContent = [
-          {
+        // 클릭된 포인트의 실제 데이터 인덱스 찾기
+        const clickedDataset = chart.data.datasets[this.selectedPoint.datasetIndex]
+        const clickedData = clickedDataset.data
+        let realIndex = -1
+
+        // 실제 값이 있는 인덱스 찾기
+        for (let i = 0; i < clickedData.length; i++) {
+          if (clickedData[i] !== null && clickedData[i] !== undefined) {
+            realIndex = i - 1 // null padding 때문에 -1
+            break
+          }
+        }
+
+        const selectedIndex = Math.max(0, realIndex)
+
+        // 클릭된 월의 Forecast 데이터만 툴팁에 포함 (중복 방지)
+        const clickTooltipContent: any[] = []
+        const addedLabels = new Set<string>() // 중복 방지용
+
+        // 실제 데이터는 클릭 툴팁에서 제외 (Forecast 값만 표시)
+        // chart.data.datasets.forEach((dataset: any, datasetIndex: number) => {
+        //   if (dataset.category === DATA_CATEGORIES.ACTUAL && !dataset.hidden && dataset.data[this.selectedPoint.index] !== null) {
+        //     clickTooltipContent.push({
+        //       label: dataset.label,
+        //       value: dataset.data[this.selectedPoint.index] as number,
+        //       category: DATA_CATEGORIES.ACTUAL,
+        //       color: dataset.borderColor as string,
+        //     })
+        //   }
+        // })
+
+        // 클릭된 Forecast 데이터 추가
+        const selectedForecastDataset = chart.data.datasets[this.selectedPoint.datasetIndex]
+        const selectedValue = selectedForecastDataset.data[this.selectedPoint.index] as number
+
+        if (selectedValue !== null && selectedValue !== undefined) {
+          clickTooltipContent.push({
             index: this.selectedPoint.datasetIndex,
-            label: chart.data.datasets[this.selectedPoint.datasetIndex].label,
-            value: chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
+            label: selectedForecastDataset.label,
+            value: selectedValue,
             category: DATA_CATEGORIES.FORECAST,
-            color: chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
-            goodsDataSourceNo: (chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
-          },
-        ]
+            color:
+              (selectedForecastDataset as any).pointBackgroundColor ||
+              selectedForecastDataset.borderColor ||
+              selectedForecastDataset.backgroundColor,
+            goodsDataSourceNo: (selectedForecastDataset as any).metadata?.goodsDataSourceNo,
+          })
+          addedLabels.add(selectedForecastDataset.label)
+        }
 
         const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, chart)
 
@@ -640,7 +761,8 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                           label: forecastDataset.label,
                           value: forecastDataset.data[currentIndex] as number,
                           category: DATA_CATEGORIES.FORECAST,
-                          color: forecastDataset.borderColor as string,
+                          color:
+                            (forecastDataset as any).pointBackgroundColor || forecastDataset.backgroundColor || forecastDataset.borderColor,
                           goodsDataSourceNo: forecastDataset.metadata?.goodsDataSourceNo,
                         })
                       }
@@ -784,18 +906,46 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
     if (this.selectedPoint) {
       const months = this._chart.data.labels || []
-      const currentIndex = this.selectedPoint.index
 
-      const clickTooltipContent = [
-        {
-          index: this.selectedPoint.datasetIndex,
-          label: this._chart.data.datasets[this.selectedPoint.datasetIndex].label,
-          value: this._chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
-          category: DATA_CATEGORIES.FORECAST,
-          color: this._chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
-          goodsDataSourceNo: (this._chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
-        },
-      ]
+      const clickedDataset = this._chart.data.datasets[this.selectedPoint.datasetIndex]
+      const clickedData = clickedDataset.data
+      let realIndex = -1
+
+      for (let i = 0; i < clickedData.length; i++) {
+        if (clickedData[i] !== null && clickedData[i] !== undefined) {
+          realIndex = i - 1
+          break
+        }
+      }
+
+      const currentIndex = Math.max(0, Math.min(realIndex, months.length - 1))
+
+      const clickTooltipContent: any[] = []
+
+      this._chart.data.datasets.forEach((dataset: any) => {
+        if (
+          this.selectedPoint &&
+          dataset.category === DATA_CATEGORIES.ACTUAL &&
+          !dataset.hidden &&
+          dataset.data[this.selectedPoint.index] !== null
+        ) {
+          clickTooltipContent.push({
+            label: dataset.label,
+            value: dataset.data[this.selectedPoint.index] as number,
+            category: DATA_CATEGORIES.ACTUAL,
+            color: dataset.borderColor as string,
+          })
+        }
+      })
+
+      clickTooltipContent.push({
+        index: this.selectedPoint.datasetIndex,
+        label: this._chart.data.datasets[this.selectedPoint.datasetIndex].label,
+        value: this._chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
+        category: DATA_CATEGORIES.FORECAST,
+        color: this._chart.data.datasets[this.selectedPoint.datasetIndex].backgroundColor as string,
+        goodsDataSourceNo: (this._chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
+      })
 
       let adjustedX = this.selectedPoint.element.x
       let adjustedY = this.selectedPoint.element.y
@@ -832,17 +982,41 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
     if (this.selectedPoint) {
       const months = this._chart.data.labels || []
-      const currentIndex = this.selectedPoint.index
 
-      const clickTooltipContent = [
-        {
-          label: this._chart.data.datasets[this.selectedPoint.datasetIndex].label,
-          value: this._chart.data.datasets[this.selectedPoint.datasetIndex].data[this.selectedPoint.index] as number,
+      const clickedDataset = this._chart.data.datasets[this.selectedPoint.datasetIndex]
+      const clickedData = clickedDataset.data
+      let realIndex = -1
+
+      for (let i = 0; i < clickedData.length; i++) {
+        if (clickedData[i] !== null && clickedData[i] !== undefined) {
+          realIndex = i - 1
+          break
+        }
+      }
+
+      const currentIndex = Math.max(0, Math.min(realIndex, months.length - 1))
+
+      const clickTooltipContent: any[] = []
+      const addedLabels = new Set<string>() // 중복 방지용
+
+      // 실제 데이터는 클릭 툴팁에서 제외 (Forecast만 표시)
+
+      const targetForecastDataset = this._chart.data.datasets[this.selectedPoint.datasetIndex]
+      const targetValue = targetForecastDataset.data[this.selectedPoint.index] as number
+
+      if (targetValue !== null && targetValue !== undefined) {
+        clickTooltipContent.push({
+          label: targetForecastDataset.label,
+          value: targetValue,
           category: DATA_CATEGORIES.FORECAST,
-          color: this._chart.data.datasets[this.selectedPoint.datasetIndex].borderColor as string,
-          goodsDataSourceNo: (this._chart.data.datasets[this.selectedPoint.datasetIndex] as any).metadata?.goodsDataSourceNo,
-        },
-      ]
+          color:
+            (targetForecastDataset as any).pointBackgroundColor ||
+            targetForecastDataset.borderColor ||
+            targetForecastDataset.backgroundColor,
+          goodsDataSourceNo: (targetForecastDataset as any).metadata?.goodsDataSourceNo,
+        })
+        addedLabels.add(targetForecastDataset.label)
+      }
 
       const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, this._chart)
 

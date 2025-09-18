@@ -1,7 +1,8 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Typography } from '@mui/material'
 import { Chart, LegendItem } from 'chart.js'
-import { FC, useEffect, useRef } from 'react'
+import { FC, useEffect, useRef, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { ICompareGraph, IMarketData } from '@/service/mi/marketData'
@@ -29,9 +30,8 @@ const LockedOverlay = () => (
     <LockOutlinedIcon />
   </Box>
 )
-const title = 'Custom chart area[change]'
-const mainChartLabel = 'Current Year [change]'
-const compareChartLabel = '5Yr Avg [change]'
+const mainChartLabel = 'Current'
+const compareChartLabel = '5Yr Avg'
 
 // ─────────────────────────────────────────────────────────────
 // 더미 데이터 유틸
@@ -48,15 +48,15 @@ const dates = makeMonthlyDates(2025)
 const defaultDummyPayload: IMarketData = {
   compareCharts: [
     {
-      specificIndicatorName: 'fiveYears',
+      specificIndicatorName: '5Yr Avg',
       rawData: makeSeriesPoints(dates, 200, 10),
     },
     {
-      specificIndicatorName: 'bollingerDown',
+      specificIndicatorName: 'PAST_5Y_MIN',
       rawData: makeSeriesPoints(dates, 215, 6),
     },
     {
-      specificIndicatorName: 'bollingerUpper',
+      specificIndicatorName: 'PAST_5Y_MAX',
       rawData: makeSeriesPoints(dates, 245, 6),
     },
   ],
@@ -160,9 +160,16 @@ const buildChartData = (data: IMarketData) => {
   return { labels, datasets: [baseDataset, ...compareDatasets] }
 }
 
-const MarketDataCustomChart: FC<MarketDataCustomChartProps> = ({ data, locked = false, onClick }) => {
+const MarketDataCustomChart: FC<MarketDataCustomChartProps> = ({ data, locked = false }) => {
+  const navigate = useNavigate()
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart<'line'> | null>(null)
+
+  const title: string = useMemo(() => {
+    const base = data ?? defaultDummyPayload
+    const ep: IMarketData = locked ? { ...base, isPermitted: false } : base
+    return ep.marketMetaData?.goodsDataNm ?? 'SK E&S custom chart'
+  }, [data, locked])
 
   useEffect(() => {
     if (chartInstance.current) {
@@ -253,9 +260,12 @@ const MarketDataCustomChart: FC<MarketDataCustomChartProps> = ({ data, locked = 
               backgroundColor: 'background.default',
             },
       }}
-      onClick={() => {
-        if (!locked && onClick) onClick()
-      }}
+      onClick={() =>
+        !locked &&
+        navigate(`/mi/data-detail/${data?.marketMetaData?.goodsNo}/${data?.marketMetaData?.goodsDataNo}`, {
+          state: { goodsDataSrcNo: data?.marketMetaData?.goodsDataSourceNo },
+        })
+      }
     >
       <Typography
         color="gray.90"

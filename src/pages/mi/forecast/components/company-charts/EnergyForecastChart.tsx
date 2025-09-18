@@ -124,20 +124,24 @@ const ForecastChart = (props: ForecastChartProps) => {
 
       const filteredTooltipContent = chartTooltip.content.filter((item) => {
         if (item.category === 'forecast') {
-          const value = rawForecastDatasetRef.current?.data?.[(item.index ?? 0) - 1]
-          return value !== null && value !== undefined
+          return item.value !== null && item.value !== undefined
         } else {
           return true
         }
       })
 
       if (chartTooltip.viewDetail) {
-        props.onSelectedContent({
-          label: chartTooltip.content[0].label ?? '',
-          date: chartTooltip.label,
-          value: Number((chartTooltip.content[0].value ?? 0).toFixed(2)),
-          goodsDataSourceNo: chartTooltip.content[0].goodsDataSourceNo,
-        })
+        const forecastContent = chartTooltip.content.find((item) => item.category === 'forecast') || chartTooltip.content[0]
+
+        if (forecastContent) {
+          const safeValue = Number(forecastContent.value ?? 0)
+          props.onSelectedContent({
+            label: forecastContent.label ?? '',
+            date: chartTooltip.label ?? '',
+            value: Number(safeValue.toFixed(2)),
+            goodsDataSourceNo: forecastContent.goodsDataSourceNo ?? 0,
+          })
+        }
       }
 
       if (!isEqual(prevTooltipRef.current, filteredTooltipContent) || filteredTooltipContent.length === 1) {
@@ -255,36 +259,53 @@ const ForecastChart = (props: ForecastChartProps) => {
 
         if (type === 'forecast') {
           rawForecastDatasetRef.current = dataset
+
+          datasets.push({
+            label: `${dataset.label} Forecast Line`,
+            data: dataset.data.length > 0 ? [null, ...dataset.data, null] : [],
+            borderColor: dataset.color,
+            backgroundColor: 'transparent',
+            pointStyle: 'circle',
+            pointBackgroundColor: 'transparent',
+            pointBorderColor: 'transparent',
+            borderDash: [5, 5],
+            tension: 0,
+            borderWidth: 1.5,
+            showLine: true,
+            hidden: false,
+            category: 'forecast-line',
+            pointRadius: 0,
+            yAxisID: dataset.yAxisID ?? 'y',
+            spanGaps: false,
+            metadata: dataset.metadata,
+            permission: false,
+          })
+
           dataset.data.forEach((_, index) => {
             if (index <= 1) return
-            // const actualDataset = datasets.find((d) => d.label === dataset.label)
 
             datasets.push({
               label: `${dataset.label} Forecast`,
               data:
                 dataset.data.length > 0
                   ? [
-                    null,
-                    ...dataset.data.map((subValue, subIndex) => {
-                      /*
-                        에너지 차트 예측데이터 포인트 클릭은 되나 점선이 안보이는 상태로 대기 (버그픽스중)
-                        */
-                      // if (index - 1 === subIndex) return actualDataset?.data[index] ?? null
-                      if (index === subIndex) return subValue
-                      return null
-                    }),
-                    null,
-                  ]
+                      null,
+                      ...dataset.data.map((subValue, subIndex) => {
+                        if (index === subIndex) return subValue
+                        return null
+                      }),
+                      null,
+                    ]
                   : [],
-              borderColor: dataset.color,
+              borderColor: 'transparent',
               backgroundColor: dataset.color,
               pointStyle: dataset.hidePoint ? 'circle' : 'rectRot',
               pointBackgroundColor: dataset.color,
               pointBorderColor: dataset.color,
               borderDash: [5, 5],
               tension: 0,
-              borderWidth: 1.5,
-              showLine: true,
+              borderWidth: 0,
+              showLine: false,
               hidden: false,
               category: 'forecast',
               pointRadius: dataset.hidePoint ? 0 : 3,
