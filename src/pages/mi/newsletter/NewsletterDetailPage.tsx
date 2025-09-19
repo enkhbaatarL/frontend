@@ -1,9 +1,12 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import { Box, Button, Menu, MenuItem, ListItemText } from '@mui/material'
+import { Box } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
+import timezone from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
 import html2canvas from 'html2canvas'
-import { useRef, useState, useCallback, useEffect, useLayoutEffect, MouseEvent } from 'react'
+import { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { InflectionPointChartRef } from './components/chart/InflectionPointChart'
@@ -15,16 +18,29 @@ import Summarized from './components/emailTemplate/Summarized'
 import Title from './components/emailTemplate/Title'
 
 import MIButton from '@/components/common/button/MIButton'
-// import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
+import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
 import AddIcon from '@/components/common/icons/AddIcon'
 import CheckIcon from '@/components/common/icons/agent/CheckIcon'
-// import EditIcon from '@/components/common/icons/agent/EditIcon'
+import EditIcon from '@/components/common/icons/agent/EditIcon'
 import LoadingSpinner from '@/components/common/influence-factor-chart/icons/LoadingSpinIcon'
 import MISelect from '@/components/common/select/MISelect'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
 import newsletterService, { INewsletterIssueDetail, IRelatedNewsEventItem, NewsletterDetailPageMode } from '@/service/mi/newsletter'
 import useDialog from '@/store/useDialog'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+const createTimestampInNY = (date: string, time: string): number => {
+  try {
+    // 날짜와 시간을 합쳐서 뉴욕 시간대로 파싱
+    return dayjs.tz(`${date} ${time}`, 'YYYY-MM-DD HH:mm', 'America/New_York').valueOf()
+  } catch (error) {
+    console.error('Invalid date/time format:', error)
+    return dayjs().tz('America/New_York').valueOf()
+  }
+}
 
 const processNewsletterData = (data: INewsletterIssueDetail | null | undefined) => {
   if (!data) return data
@@ -38,6 +54,7 @@ const processNewsletterData = (data: INewsletterIssueDetail | null | undefined) 
         newsEventItems: data.issueDetail.relatedNews.newsEventItems.map((item) => ({
           ...item,
           content: item.content.map((content) => (content.startsWith('-') ? content : `- ${content}`)),
+          trend: item.showInChart === false ? ('' as const) : item.trend,
         })),
       },
     },
@@ -45,13 +62,7 @@ const processNewsletterData = (data: INewsletterIssueDetail | null | undefined) 
 }
 
 const sortNewsByDateTime = (newsItems: IRelatedNewsEventItem[]): IRelatedNewsEventItem[] =>
-  [...newsItems].sort((a, b) => {
-    const dateTimeA = new Date(`${a.createdDate}T${a.createTime}`)
-    const dateTimeB = new Date(`${b.createdDate}T${b.createTime}`)
-
-    // 오래된 순서부터 정렬 (오름차순)
-    return dateTimeA.getTime() - dateTimeB.getTime()
-  })
+  [...newsItems].sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0))
 
 const NewsletterDetailPage = () => {
   const navigate = useNavigate()
@@ -62,15 +73,15 @@ const NewsletterDetailPage = () => {
   const chartRef = useRef<InflectionPointChartRef>(null)
 
   const [loadingNewsletterIds, setLoadingNewsletterIds] = useState<Set<string>>(new Set())
-  const [downloadMenuAnchor, setDownloadMenuAnchor] = useState<null | HTMLElement>(null)
   const [mode, setMode] = useState<NewsletterDetailPageMode>(NewsletterDetailPageMode.VIEW)
   const [newsletterIssueDetail, setNewsletterIssueDetail] = useState<INewsletterIssueDetail | undefined | null>(undefined)
-  const [editingNews, setEditingNews] = useState<Record<string, Record<string, string>>>({})
+  const [editingNews, setEditingNews] = useState<Record<string, Record<string, string | boolean>>>({})
   const [tempNewsItems, setTempNewsItems] = useState<IRelatedNewsEventItem[]>([])
   const [savedScrollPosition, setSavedScrollPosition] = useState<number | null>(null)
   const [sortKey, setSortKey] = useState(0)
 
   const [isSummarizedPublished, setIsSummarizedPublished] = useState(true)
+  const [unPublishedNewsIds, setUnPublishedNewsIds] = useState<string[]>([])
 
   const { newsletterId, issueNo } = useParams()
 
@@ -151,7 +162,7 @@ const NewsletterDetailPage = () => {
     [newsletterIssueDetail, optimisticUpdateDetail, showSnackbar],
   )
 
-  const handleNewsUpdate = useCallback((newsId: string, field: string, value: string) => {
+  const handleNewsUpdate = useCallback((newsId: string, field: string, value: string | boolean) => {
     setEditingNews((prev) => ({
       ...prev,
       [newsId]: {
@@ -171,7 +182,7 @@ const NewsletterDetailPage = () => {
       createdDate: '',
       createTime: '',
       source: '',
-      showInChart: true,
+      showInChart: false,
     }
 
     // 임시 저장소에만 추가
@@ -219,93 +230,107 @@ const NewsletterDetailPage = () => {
     }
   }, [tempNewsItems.length, showDialog, hideDialog])
 
-  const handleApplyNews = useCallback(() => {
-    if (!newsletterIssueDetail) return
+  const handleApplyNews = useCallback(
+    (latestUnPublishedNewsIds?: string[]) => {
+      if (!newsletterIssueDetail) return
 
-    // 현재 스크롤 위치 저장
-    const currentScrollTop = window.scrollY || document.documentElement.scrollTop
-    setSavedScrollPosition(currentScrollTop)
+      // 현재 스크롤 위치 저장
+      const currentScrollTop = window.scrollY || document.documentElement.scrollTop
+      setSavedScrollPosition(currentScrollTop)
 
-    // 필수 조건 검증 함수
-    const validateRequiredFields = (item: IRelatedNewsEventItem) => {
-      const time = editingNews[item.newsId]?.createTime ?? item.createTime
-      const date = editingNews[item.newsId]?.createdDate ?? item.createdDate
-      const title = editingNews[item.newsId]?.title ?? item.title
-      const content = editingNews[item.newsId]?.content ?? item.content.join('\n')
+      // 필수 조건 검증 함수
+      const validateRequiredFields = (item: IRelatedNewsEventItem) => {
+        const time = String(editingNews[item.newsId]?.createTime ?? item.createTime)
+        const date = String(editingNews[item.newsId]?.createdDate ?? item.createdDate)
+        const title = String(editingNews[item.newsId]?.title ?? item.title)
+        const content = String(editingNews[item.newsId]?.content ?? item.content.join('\n'))
 
-      return time.trim() !== '' && date.trim() !== '' && title.trim() !== '' && content.trim() !== ''
-    }
-
-    // 모든 항목(기존 + 신규)의 필수 조건 검증
-    const allItems = [...(newsletterIssueDetail.issueDetail.relatedNews.newsEventItems || []), ...tempNewsItems]
-    const allItemsValid = allItems.every(validateRequiredFields)
-
-    if (!allItemsValid) {
-      showSnackbar('모든 필수 항목을 입력해주세요', { variant: 'error' })
-      return
-    }
-
-    // 기존 뉴스 항목들의 수정사항을 적용하고, 새로 추가한 항목들도 함께 반영
-    setNewsletterIssueDetail((prev) => {
-      if (!prev) return prev
-
-      // 기존 뉴스 항목들에 수정사항 적용
-      const updatedExistingNews = prev.issueDetail.relatedNews.newsEventItems.map((item) => {
-        const edits = editingNews[item.newsId]
-        if (!edits) return item
-
-        return {
-          ...item,
-          createTime: edits.createTime ?? item.createTime,
-          createdDate: edits.createdDate ?? item.createdDate,
-          title: edits.title ?? item.title,
-          content: edits.content ? edits.content.split('\n') : item.content,
-        }
-      })
-
-      // 새로 추가한 항목들에 수정사항 적용
-      const updatedTempNews = tempNewsItems.map((item) => {
-        const edits = editingNews[item.newsId]
-        if (!edits) return item
-
-        return {
-          ...item,
-          createTime: edits.createTime ?? item.createTime,
-          createdDate: edits.createdDate ?? item.createdDate,
-          title: edits.title ?? item.title,
-          content: edits.content ? edits.content.split('\n') : item.content,
-        }
-      })
-
-      // 기존 뉴스와 새로 추가한 뉴스를 합치고 일자+시간 순으로 정렬
-      const allNewsItems = [...updatedExistingNews, ...updatedTempNews]
-      const sortedNewsItems = sortNewsByDateTime(allNewsItems)
-
-      return {
-        ...prev,
-        issueDetail: {
-          ...prev.issueDetail,
-          relatedNews: {
-            ...prev.issueDetail.relatedNews,
-            newsEventItems: sortedNewsItems,
-          },
-        },
+        return time.trim() !== '' && date.trim() !== '' && title.trim() !== '' && content.trim() !== ''
       }
-    })
 
-    // 임시 저장소 초기화
-    setTempNewsItems([])
-    setEditingNews({})
+      // 모든 항목(기존 + 신규)의 필수 조건 검증
+      const allItems = [...(newsletterIssueDetail.issueDetail.relatedNews.newsEventItems || []), ...tempNewsItems]
+      const allItemsValid = allItems.every(validateRequiredFields)
 
-    // 정렬 키 업데이트하여 DOM 요소 강제 재생성
-    setSortKey((prev) => prev + 1)
+      if (!allItemsValid) {
+        showSnackbar('모든 필수 항목을 입력해주세요', { variant: 'error' })
+        return
+      }
 
-    showSnackbar('뉴스 항목이 성공적으로 적용되었습니다', { variant: 'success' })
-  }, [newsletterIssueDetail, tempNewsItems, editingNews, showSnackbar])
+      const currentUnPublishedNewsIds = latestUnPublishedNewsIds ?? unPublishedNewsIds
+
+      const updateNewsItem = (item: IRelatedNewsEventItem): IRelatedNewsEventItem => {
+        const edits = editingNews[item.newsId]
+        const isUnPublished = currentUnPublishedNewsIds.includes(item.newsId)
+
+        let showInChartValue
+        let validTrend
+
+        if (isUnPublished) {
+          showInChartValue = false
+          validTrend = ''
+        } else {
+          validTrend = edits?.trend ?? item.trend ?? ''
+          showInChartValue = validTrend !== ''
+        }
+
+        const createTime = String(edits?.createTime ?? item.createTime)
+        const createdDate = String(edits?.createdDate ?? item.createdDate)
+
+        const timestamp = createTimestampInNY(createdDate, createTime)
+
+        return {
+          ...item,
+          createTime,
+          createdDate,
+          title: String(edits?.title ?? item.title),
+          content: typeof edits?.content === 'string' ? edits?.content.split('\n') : item.content,
+          trend: validTrend as 'UP' | 'DOWN' | 'NONE' | '',
+          showInChart: showInChartValue,
+          timestamp,
+        }
+      }
+
+      setNewsletterIssueDetail((prev) => {
+        if (!prev) return prev
+
+        // 기존 뉴스 항목들에 수정사항 적용
+        const updatedExistingNews = prev.issueDetail.relatedNews.newsEventItems.map(updateNewsItem)
+
+        // 새로 추가한 항목들에 수정사항 적용
+        const updatedTempNews = tempNewsItems.map(updateNewsItem)
+
+        // 기존 뉴스와 새로 추가한 뉴스를 합치고 일자+시간 순으로 정렬
+        const allNewsItems = [...updatedExistingNews, ...updatedTempNews]
+        const sortedNewsItems = sortNewsByDateTime(allNewsItems)
+
+        return {
+          ...prev,
+          issueDetail: {
+            ...prev.issueDetail,
+            relatedNews: {
+              ...prev.issueDetail.relatedNews,
+              newsEventItems: sortedNewsItems,
+            },
+          },
+        }
+      })
+
+      setTempNewsItems([])
+      setEditingNews({})
+
+      // 정렬 키 업데이트하여 DOM 요소 강제 재생성
+      setSortKey((prev) => prev + 1)
+
+      showSnackbar('뉴스 항목이 성공적으로 적용되었습니다', { variant: 'success' })
+    },
+    [newsletterIssueDetail, tempNewsItems, editingNews, showSnackbar, unPublishedNewsIds],
+  )
 
   const initializeNewsletterIssueDetail = useCallback(() => {
     setNewsletterIssueDetail(processNewsletterData(newsletterIssueDetailData))
     setIsSummarizedPublished(true)
+    setUnPublishedNewsIds([])
   }, [newsletterIssueDetailData])
 
   // 스크롤 위치 복원
@@ -327,7 +352,6 @@ const NewsletterDetailPage = () => {
     }
   }, [newsletterIssueDetail, savedScrollPosition])
 
-  /// TODO: 차트 이미지화
   const createEmailContentHTML = async (): Promise<string> => {
     const originalMode = mode
     setMode(NewsletterDetailPageMode.CAPTURE)
@@ -336,8 +360,9 @@ const NewsletterDetailPage = () => {
       setTimeout(resolve, 0)
     })
 
-    const html = emailContentRef.current?.outerHTML ?? ''
+    const html = (emailContentRef.current?.outerHTML ?? '').replaceAll(/<canvas[^>]*>.*?<\/canvas>/gis, '')
     setMode(originalMode)
+
     return html
   }
 
@@ -363,13 +388,19 @@ Content-Transfer-Encoding: 7bit
     a.download = 'newsletter.eml'
     a.click()
     URL.revokeObjectURL(url)
-    setDownloadMenuAnchor(null)
   }
 
   const handleDownloadPNG = async () => {
     if (!emailContentRef.current) return
 
     try {
+      const originalMode = mode
+      setMode(NewsletterDetailPageMode.CAPTURE)
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
+
       const canvas = await html2canvas(emailContentRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
@@ -378,50 +409,21 @@ Content-Transfer-Encoding: 7bit
       })
 
       const link = document.createElement('a')
-      link.download = 'newsletter.png'
+      link.download = `Issue ${issueNo?.padStart(3, '0')} (${newsletterIssueDetail?.issueDetail.date})`
       link.href = canvas.toDataURL('image/png')
       link.click()
+
+      setMode(originalMode)
     } catch (error) {
       console.error('PNG 다운로드 실패:', error)
       showSnackbar('PNG 다운로드 중 오류가 발생했습니다', { variant: 'error' })
-    } finally {
-      setDownloadMenuAnchor(null)
     }
   }
 
-  const handleDownloadMenuOpen = (event: MouseEvent<HTMLElement>) => {
-    setDownloadMenuAnchor(event.currentTarget)
-  }
-
-  const handleDownloadMenuClose = () => {
-    setDownloadMenuAnchor(null)
-  }
-
   const handleBackToView = () => {
-    showDialog({
-      title: '편집 모드 종료',
-      children: '편집 중인 데이터가 사라집니다.\n정말로 편집 모드를 종료하시겠습니까?',
-      width: 400,
-      actions: [
-        {
-          label: '취소',
-          variant: 'outlined',
-          color: 'gray',
-          onClick: hideDialog,
-        },
-        {
-          label: '종료',
-          variant: 'filled',
-          color: 'primary',
-          onClick: () => {
-            chartRef.current?.resetBoxPositions()
-            setMode(NewsletterDetailPageMode.VIEW)
-            initializeNewsletterIssueDetail()
-            hideDialog()
-          },
-        },
-      ],
-    })
+    chartRef.current?.resetBoxPositions()
+    setMode(NewsletterDetailPageMode.VIEW)
+    initializeNewsletterIssueDetail()
   }
 
   useEffect(() => {
@@ -430,43 +432,6 @@ Content-Transfer-Encoding: 7bit
 
   return (
     <Box>
-      <Box display="none">
-        <Button
-          onClick={async () => {
-            const emailContentHTML = await createEmailContentHTML()
-            await navigator.clipboard.writeText(emailContentHTML)
-          }}
-        >
-          내용 복사
-        </Button>
-        <Button
-          onClick={async () => {
-            const emailContentHTML = await createEmailContentHTML()
-            const emailContent = createEMLContent(emailContentHTML)
-            const blob = new Blob([emailContent], { type: 'message/rfc822' })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = 'newsletter.eml'
-            a.click()
-          }}
-        >
-          .eml 파일 다운로드
-        </Button>
-        <Button
-          onClick={async () => {
-            const emailContentHTML = await createEmailContentHTML()
-            const uriScheme =
-              'ms-outlook://emails/new' +
-              '?to=jh.park@twolinecloud.com' +
-              '&subject=Email%20Test' +
-              `&body=${encodeURIComponent(emailContentHTML)}`
-            window.open(uriScheme, '_blank')
-          }}
-        >
-          아웃룩 열기
-        </Button>
-      </Box>
       <Box display="flex" justifyContent="space-between" py="12px" width="800px" margin="38px auto 20px auto">
         {mode === NewsletterDetailPageMode.VIEW && (
           <MISelect
@@ -530,7 +495,7 @@ Content-Transfer-Encoding: 7bit
                 >
                   {newsletterIssueDetail?.subscribed ? 'Subscribed' : 'Subscribe'}
                 </MIButton>
-                {/* <MIButton
+                <MIButton
                   type="outlined"
                   color="gray"
                   contentType="text"
@@ -538,52 +503,16 @@ Content-Transfer-Encoding: 7bit
                   onClick={() => setMode(NewsletterDetailPageMode.EDIT)}
                 >
                   Edit
-                </MIButton> */}
+                </MIButton>
               </>
             )}
             {mode === NewsletterDetailPageMode.EDIT && (
-              <MIButton type="filled" color="primary" contentType="text" startIcon={<OpenInNewIcon />} onClick={handleDownloadMenuOpen}>
+              <MIButton type="filled" color="primary" contentType="text" startIcon={<OpenInNewIcon />} onClick={handleDownloadEML}>
                 Send to Mail Apps
               </MIButton>
             )}
-            {/* <MIButton
-              type="outlined"
-              color="gray"
-              contentType="icon"
-              startIcon={<ChartDownloadIcon />}
-              onClick={handleDownloadMenuOpen}
-            /> */}
+            <MIButton type="outlined" color="gray" contentType="icon" startIcon={<ChartDownloadIcon />} onClick={handleDownloadPNG} />
           </Box>
-          <Menu
-            anchorEl={downloadMenuAnchor}
-            open={Boolean(downloadMenuAnchor)}
-            onClose={handleDownloadMenuClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            slotProps={{
-              paper: {
-                sx: {
-                  minWidth: 150,
-                  mt: 1,
-                  boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
-                  borderRadius: '8px',
-                },
-              },
-            }}
-          >
-            <MenuItem onClick={handleDownloadEML} sx={{ justifyContent: 'center' }}>
-              <ListItemText sx={{ textAlign: 'left' }}>EML 파일</ListItemText>
-            </MenuItem>
-            <MenuItem onClick={handleDownloadPNG} sx={{ justifyContent: 'center' }}>
-              <ListItemText sx={{ textAlign: 'left' }}>PNG 이미지</ListItemText>
-            </MenuItem>
-          </Menu>
         </Box>
       </Box>
 
@@ -621,6 +550,7 @@ Content-Transfer-Encoding: 7bit
           <tr>
             <td>
               <Chart
+                key={`chart-${sortKey}`}
                 chartRef={chartRef}
                 title={newsletterIssueDetail?.issueDetail.newsFlowChart.title ?? ''}
                 basis={newsletterIssueDetail?.issueDetail.newsFlowChart.aggregationTime ?? ''}
@@ -643,6 +573,8 @@ Content-Transfer-Encoding: 7bit
                 onResetNews={handleResetNews}
                 onApplyNews={handleApplyNews}
                 editingNews={editingNews}
+                unPublishedNewsIds={unPublishedNewsIds}
+                onUnPublishedNewsIdsChange={setUnPublishedNewsIds}
               />
             </td>
           </tr>

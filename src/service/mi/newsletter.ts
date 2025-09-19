@@ -81,7 +81,7 @@ export interface IRelatedNewsEventItem {
   createTime: string
   source: string
   showInChart: boolean
-  trend?: 'UP' | 'DOWN' | 'NONE'
+  trend?: 'UP' | 'DOWN' | 'NONE' | ''
 }
 
 export interface IReferenceDataItem {

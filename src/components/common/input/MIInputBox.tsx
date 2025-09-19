@@ -51,7 +51,7 @@ const MIInputBox = ({
         gap: '4px',
         width,
         padding: readOnly ? '4px' : '12px',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: disabled ? '#F1F3F5' : '#FFFFFF',
         border: shouldShowError ? '1px solid #F03E3E' : '1px solid #DEE2E6',
         borderRadius: '8px',
         opacity: disabled ? 0.6 : 1,

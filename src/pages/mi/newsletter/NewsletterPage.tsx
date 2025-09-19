@@ -334,6 +334,7 @@ const NewsLettersPage = () => {
                   noRowMessage: 'No results found',
                   columns,
                   rowId: 'newsletterId',
+                  getRowId: (row) => `${row.newsletterId}-${row.issueNo}`,
                   rows: newsletterList?.detail.map((item) => ({
                     ...item,
                     disabled: item.status !== NewsletterStatus.PUBLISHED,

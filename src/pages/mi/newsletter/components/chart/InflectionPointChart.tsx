@@ -1,9 +1,9 @@
 import { Box } from '@mui/material'
 import { Chart as ChartJS } from 'chart.js'
 import { CandlestickController, CandlestickElement, OhlcController, OhlcElement } from 'chartjs-chart-financial'
-// import html2canvas from 'html2canvas'
-import { ChartJSOrUndefined } from 'node_modules/react-chartjs-2/dist/types'
-import { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
+import html2canvas from 'html2canvas'
+import { debounce } from 'lodash-es'
+import { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react'
 import { Chart } from 'react-chartjs-2'
 
 import '@/lib/chart/adapterDayjs'
@@ -27,12 +27,15 @@ export interface InflectionPointChartRef {
 
 ChartJS.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement)
 
+type ChartJSOrUndefined = ChartJS | undefined
+
 const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chartData, relatedNews, mode }, ref) => {
   const mainChartRef = useRef<ChartJSOrUndefined | null>(null)
   const volumeChartRef = useRef<ChartJSOrUndefined | null>(null)
   const [chartType, setChartType] = useState<ChartType>(ChartType.LINE)
   const [forceUpdate, setForceUpdate] = useState(0)
   const [boxPositions, setBoxPositions] = useState<Record<number, { x: number; y: number }>>({})
+  const [base64ChartImage, setBase64ChartImage] = useState<string>('')
   const chartContainerRef = useRef<HTMLDivElement>(null)
 
   const handleRedrawChart = useCallback(() => {
@@ -387,18 +390,42 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
 
   const hasVolume = useMemo(() => volumeSeries?.isVisible && (volumeSeries.values?.length ?? 0) > 0, [volumeSeries])
 
-  // const base64ChartImage = useMemo(async () => {
-  //   if (!chartContainerRef.current) return undefined
-  //
-  //   const canvas = await html2canvas(chartContainerRef.current, {
-  //     backgroundColor: '#ffffff',
-  //     scale: 2,
-  //     useCORS: true,
-  //     allowTaint: true,
-  //   })
-  //
-  //   return canvas.toDataURL('image/png')
-  // }, [chartContainerRef])
+  const debouncedGenerateChartImage = useMemo(
+    () =>
+      debounce(async () => {
+        if (chartContainerRef.current) {
+          try {
+            // 차트가 완전히 렌더링될 때까지 잠시 대기
+            await new Promise((resolve) => setTimeout(resolve, 200))
+
+            const canvas = await html2canvas(chartContainerRef.current, {
+              backgroundColor: '#ffffff',
+              scale: 1,
+              useCORS: true,
+              allowTaint: true,
+              logging: true,
+            })
+
+            const dataURL = canvas.toDataURL('image/png')
+            setBase64ChartImage(dataURL)
+          } catch (error) {
+            console.error('Error generating chart image:', error)
+          }
+        }
+      }, 500),
+    [],
+  )
+
+  useEffect(() => {
+    debouncedGenerateChartImage()
+  }, [chartData, relatedNews, chartType, forceUpdate, boxPositions, debouncedGenerateChartImage])
+
+  useEffect(
+    () => () => {
+      debouncedGenerateChartImage.cancel()
+    },
+    [debouncedGenerateChartImage],
+  )
 
   const hasVisibleData =
     (chartType === ChartType.CANDLE ? closeDataSeries && openDataSeries && highDataSeries && lowDataSeries : closeDataSeries) || hasVolume
@@ -425,35 +452,35 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
 
   return (
     <>
-      {/* {mode === NewsletterDetailPageMode.CAPTURE && (
-        <img src={base64ChartImage} alt="chart" />
-      )} */}
+      {mode === NewsletterDetailPageMode.CAPTURE && <img src={base64ChartImage} alt="chart" width="776px" />}
       <>
-        <Box display="flex" justifyContent="flex-end" px="30px" pb="12px" gap="8px">
-          {mode === NewsletterDetailPageMode.EDIT && (
-            <MIButton type={'outlined'} color={'gray'} contentType={'icon'} startIcon={<RefreshIcon />} onClick={resetBoxPositions} />
-          )}
-          <MIButton
-            type={mode === NewsletterDetailPageMode.VIEW ? 'ghost' : 'outlined'}
-            color={'gray'}
-            valueSelect={selectedChart}
-            startIcon={selectedChart.icon}
-            contentType={'select'}
-            onChange={({ value }) => {
-              setChartType(value as ChartType)
-            }}
-            options={chartTypeOptions}
-            minWidth="84px"
-          />
-        </Box>
-
+        {mode !== NewsletterDetailPageMode.CAPTURE && (
+          <Box display="flex" justifyContent="flex-end" px="30px" pb="12px" gap="8px">
+            {mode === NewsletterDetailPageMode.EDIT && (
+              <MIButton type={'outlined'} color={'gray'} contentType={'icon'} startIcon={<RefreshIcon />} onClick={resetBoxPositions} />
+            )}
+            <MIButton
+              type={mode === NewsletterDetailPageMode.VIEW ? 'ghost' : 'outlined'}
+              color={'gray'}
+              valueSelect={selectedChart}
+              startIcon={selectedChart.icon}
+              contentType={'select'}
+              onChange={({ value }) => {
+                setChartType(value as ChartType)
+              }}
+              options={chartTypeOptions}
+              minWidth="84px"
+            />
+          </Box>
+        )}
         <Box
           ref={chartContainerRef}
-          position={mode === NewsletterDetailPageMode.CAPTURE ? 'fixed' : 'relative'}
-          top={mode === NewsletterDetailPageMode.CAPTURE ? '-99990px' : undefined}
-          left={mode === NewsletterDetailPageMode.CAPTURE ? '-99990px' : undefined}
+          position="relative"
           width="776px"
           boxSizing="border-box"
+          sx={{
+            display: mode === NewsletterDetailPageMode.CAPTURE ? 'none' : 'block',
+          }}
         >
           <Box height="352px" sx={{ position: 'relative' }}>
             <Chart

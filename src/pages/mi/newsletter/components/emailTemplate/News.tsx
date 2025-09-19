@@ -1,9 +1,11 @@
 import AddIcon from '@mui/icons-material/Add'
 import { Box, Typography } from '@mui/material'
+import { useState, useEffect } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIInputBox from '@/components/common/input/MIInputBox'
 import { timeFormat, dateFormat, titleLength, contentLength } from '@/components/common/input/validators'
+import EditPanal from '@/pages/mi/newsletter/components/EditPanal'
 import { IRelatedNewsEventItem, NewsletterDetailPageMode } from '@/service/mi/newsletter'
 
 interface Props {
@@ -11,11 +13,13 @@ interface Props {
   relatedNews?: IRelatedNewsEventItem[]
   tempNewsItems?: IRelatedNewsEventItem[]
   mode: NewsletterDetailPageMode
-  onNewsUpdate?: (newsId: string, field: string, value: string) => void
+  onNewsUpdate?: (newsId: string, field: string, value: string | boolean) => void
   onAddNews?: () => void
   onResetNews?: () => void
-  onApplyNews?: () => void
-  editingNews?: Record<string, Record<string, string>>
+  onApplyNews?: (unPublishedNewsIds?: string[]) => void
+  editingNews?: Record<string, Record<string, string | boolean>>
+  unPublishedNewsIds?: string[]
+  onUnPublishedNewsIdsChange?: (unPublishedNewsIds: string[]) => void
 }
 
 const Chart = ({
@@ -28,26 +32,29 @@ const Chart = ({
   onResetNews,
   onApplyNews,
   editingNews = {},
+  unPublishedNewsIds = [],
+  onUnPublishedNewsIdsChange,
 }: Props) => {
-  const handleFieldChange = (newsId: string, field: string, value: string) => {
+  const [localUnPublishedNewsIds, setLocalUnPublishedNewsIds] = useState<string[]>(unPublishedNewsIds)
+
+  useEffect(() => {
+    setLocalUnPublishedNewsIds(unPublishedNewsIds)
+  }, [unPublishedNewsIds])
+
+  const handleFieldChange = (newsId: string, field: string, value: string | boolean) => {
     onNewsUpdate?.(newsId, field, value)
   }
 
-  const getFieldValue = (newsId: string, field: string, defaultValue: string) => editingNews[newsId]?.[field] ?? defaultValue
+  const getFieldValue = (newsId: string, field: string, defaultValue: string) => String(editingNews[newsId]?.[field] ?? defaultValue)
 
-  const maxTempNewsItems = 2 ///
+  const maxTempNewsItems = 10 ///
   const canAddNewItem = tempNewsItems.length < maxTempNewsItems
 
-  // const existingNewsCount = relatedNews?.length ?? 0
-  // const totalMaxItems = existingNewsCount + maxTempNewsItems
-  // const currentTotalItems = existingNewsCount + tempNewsItems.length
-  // const canAddNewItem = currentTotalItems < totalMaxItems
-
   const validateRequiredFields = (item: IRelatedNewsEventItem) => {
-    const time = getFieldValue(item.newsId, 'createTime', item.createTime)
-    const date = getFieldValue(item.newsId, 'createdDate', item.createdDate)
-    const title = getFieldValue(item.newsId, 'title', item.title)
-    const content = getFieldValue(item.newsId, 'content', item.content.join('\n'))
+    const time = String(getFieldValue(item.newsId, 'createTime', item.createTime))
+    const date = String(getFieldValue(item.newsId, 'createdDate', item.createdDate))
+    const title = String(getFieldValue(item.newsId, 'title', item.title))
+    const content = String(getFieldValue(item.newsId, 'content', item.content.join('\n')))
 
     const hasRequiredValues = time.trim() !== '' && date.trim() !== '' && title.trim() !== '' && content.trim() !== ''
 
@@ -201,7 +208,40 @@ const Chart = ({
             </tr>
             {[...(relatedNews || []), ...tempNewsItems].map((item, index) => (
               <tr key={`${item.newsId}-${item.createdDate}-${item.createTime}-${index}`}>
-                <td colSpan={2} style={{ padding: '20px 0', width: '100%' }}>
+                <td colSpan={2} style={{ padding: '20px 0', width: '100%', position: 'relative' }}>
+                  <Box position="absolute" top="22px" right="-220px">
+                    <EditPanal
+                      isPublished={!localUnPublishedNewsIds.includes(item.newsId)}
+                      onPublishedChange={() => {
+                        const isCurrentlyUnpublished = localUnPublishedNewsIds.includes(item.newsId)
+                        const newUnPublishedIds = isCurrentlyUnpublished
+                          ? localUnPublishedNewsIds.filter((id) => id !== item.newsId)
+                          : [...localUnPublishedNewsIds, item.newsId]
+                        setLocalUnPublishedNewsIds(newUnPublishedIds)
+
+                        if (!isCurrentlyUnpublished) {
+                          // 미게시: 변곡점 제거(변곡점 미등록, showInChart false)
+                          handleFieldChange(item.newsId, 'trend', '')
+                          handleFieldChange(item.newsId, 'showInChart', false)
+                        } else {
+                          // 게시: 변곡점 상태에 따라 showInChart 설정
+                          const editedTrend = editingNews[item.newsId]?.['trend']
+                          const originalTrend = item.trend ?? ''
+                          const effectiveTrend = editedTrend !== undefined ? String(editedTrend) : originalTrend
+
+                          handleFieldChange(item.newsId, 'showInChart', effectiveTrend !== '')
+                        }
+                      }}
+                      useInflectionPointSelect
+                      inflectionPoint={getFieldValue(item.newsId, 'trend', item.trend ?? '')}
+                      onInflectionPointChange={(inflectionPoint) => {
+                        handleFieldChange(item.newsId, 'trend', inflectionPoint)
+                        if (!localUnPublishedNewsIds.includes(item.newsId)) {
+                          handleFieldChange(item.newsId, 'showInChart', inflectionPoint !== '')
+                        }
+                      }}
+                    />
+                  </Box>
                   <Box
                     sx={{
                       width: '776px',
@@ -220,6 +260,7 @@ const Chart = ({
                         error={!isFieldValid(item, 'createTime')}
                         helperText={getFieldError(item, 'createTime')}
                         offInitialError={isNewItem(item)}
+                        disabled={localUnPublishedNewsIds.includes(item.newsId)}
                       />
                       <MIInputBox
                         label="일자"
@@ -230,6 +271,7 @@ const Chart = ({
                         error={!isFieldValid(item, 'createdDate')}
                         helperText={getFieldError(item, 'createdDate')}
                         offInitialError={isNewItem(item)}
+                        disabled={localUnPublishedNewsIds.includes(item.newsId)}
                       />
                       <Box p="4px">
                         <Typography variant="body2" color="content.textNormal">
@@ -247,6 +289,7 @@ const Chart = ({
                         error={!isFieldValid(item, 'title')}
                         helperText={getFieldError(item, 'title')}
                         offInitialError={isNewItem(item)}
+                        disabled={localUnPublishedNewsIds.includes(item.newsId)}
                       />
                       <MIInputBox
                         label="내용"
@@ -259,6 +302,7 @@ const Chart = ({
                         error={!isFieldValid(item, 'content')}
                         helperText={getFieldError(item, 'content')}
                         offInitialError={isNewItem(item)}
+                        disabled={localUnPublishedNewsIds.includes(item.newsId)}
                       />
                     </Box>
                   </Box>
@@ -277,11 +321,30 @@ const Chart = ({
             <tr>
               <td colSpan={2} style={{ padding: '36px 0 12px 0', width: '100%', borderTop: '1px solid #DEE2E6' }}>
                 <Box display="flex" justifyContent="flex-end" gap="12px">
-                  <MIButton type="outlined" size="h32" color="gray" width="76px" onClick={onResetNews}>
+                  <MIButton
+                    type="outlined"
+                    size="h32"
+                    color="gray"
+                    width="76px"
+                    onClick={() => {
+                      setLocalUnPublishedNewsIds(unPublishedNewsIds)
+                      onResetNews?.()
+                    }}
+                  >
                     Reset
                   </MIButton>
 
-                  <MIButton type="filled" size="h32" color="primary" width="76px" disabled={!allItemsValid} onClick={onApplyNews}>
+                  <MIButton
+                    type="filled"
+                    size="h32"
+                    color="primary"
+                    width="76px"
+                    disabled={!allItemsValid}
+                    onClick={() => {
+                      onUnPublishedNewsIdsChange?.(localUnPublishedNewsIds)
+                      onApplyNews?.(localUnPublishedNewsIds)
+                    }}
+                  >
                     Apply
                   </MIButton>
                 </Box>
@@ -289,11 +352,18 @@ const Chart = ({
             </tr>
           </>
         )}
-        {mode === NewsletterDetailPageMode.VIEW && (
+        {(mode === NewsletterDetailPageMode.VIEW || mode === NewsletterDetailPageMode.CAPTURE) && (
           <tr>
             <td colSpan={2} style={{ padding: '24px 0', width: '100%' }}>
               {[...(relatedNews || []), ...tempNewsItems].map((item) => (
-                <table key={item.newsId} width="100%" style={{ borderBottom: '1px solid #DEE2E6' }}>
+                <table
+                  key={item.newsId}
+                  width="100%"
+                  style={{
+                    borderBottom: '1px solid #DEE2E6',
+                    display: mode === NewsletterDetailPageMode.CAPTURE && localUnPublishedNewsIds.includes(item.newsId) ? 'none' : 'block',
+                  }}
+                >
                   <thead>
                     <tr>
                       <th></th>

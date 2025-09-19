@@ -589,7 +589,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
               selectedForecastDataset.backgroundColor,
             goodsDataSourceNo: (selectedForecastDataset as any).metadata?.goodsDataSourceNo,
           })
-          addedLabels.add(selectedForecastDataset.label)
+          addedLabels.add(selectedForecastDataset.label ?? '')
         }
 
         const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, chart)
@@ -1015,7 +1015,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
             targetForecastDataset.backgroundColor,
           goodsDataSourceNo: (targetForecastDataset as any).metadata?.goodsDataSourceNo,
         })
-        addedLabels.add(targetForecastDataset.label)
+        addedLabels.add(targetForecastDataset.label ?? '')
       }
 
       const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, this._chart)

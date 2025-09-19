@@ -95,99 +95,115 @@ const NewsletterCard = ({ featuredNewsletterItem, onSubscribe, onClick, disabled
         padding: '20px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
         alignItems: 'flex-end',
+        justifyContent: 'space-between',
         backgroundColor: '#FFFFFF',
         boxSizing: 'border-box',
+        gap: '12px',
       }}
     >
-      <CardMedia
-        component="div"
-        sx={{
-          height: 100,
-          width: '100%',
-          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'gray.60',
-          fontSize: '14px',
-          fontWeight: 500,
-          borderRadius: '8px',
-          alignSelf: 'stretch',
-          overflow: 'hidden',
-        }}
-      >
-        {imageLoadError ? (
-          <Box
-            component="img"
-            src={defaultImage}
-            alt={featuredNewsletterItem.name}
-            sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          <Box
-            component="img"
-            src={featuredNewsletterItem.imageBase64}
-            alt={featuredNewsletterItem.name}
-            sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={() => setImageLoadError(true)}
-          />
-        )}
-      </CardMedia>
-
       <Box
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '5px',
-          alignSelf: 'stretch',
-          flex: 1,
+          userSelect: 'none',
+          cursor: 'pointer',
+          gap: '12px',
+        }}
+        onClick={() => {
+          onClick(featuredNewsletterItem.newsletterId, featuredNewsletterItem.issueNo)
         }}
       >
+        <CardMedia
+          component="div"
+          sx={{
+            height: 100,
+            width: '100%',
+            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'gray.60',
+            fontSize: '14px',
+            fontWeight: 500,
+            borderRadius: '8px',
+            alignSelf: 'stretch',
+            overflow: 'hidden',
+          }}
+        >
+          {imageLoadError ? (
+            <Box
+              component="img"
+              src={defaultImage}
+              alt={featuredNewsletterItem.name}
+              draggable={false}
+              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <Box
+              component="img"
+              src={featuredNewsletterItem.imageBase64}
+              alt={featuredNewsletterItem.name}
+              draggable={false}
+              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={() => setImageLoadError(true)}
+            />
+          )}
+        </CardMedia>
+
         <Box
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '1px',
+            gap: '5px',
             alignSelf: 'stretch',
+            flex: 1,
           }}
         >
-          <Typography
+          <Box
             sx={{
-              fontWeight: 400,
-              fontSize: '12px',
-              lineHeight: 1.4,
-              color: '#868E96',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1px',
               alignSelf: 'stretch',
             }}
           >
-            {featuredNewsletterItem.frequency}
-          </Typography>
+            <Typography
+              sx={{
+                fontWeight: 400,
+                fontSize: '12px',
+                lineHeight: 1.4,
+                color: '#868E96',
+                alignSelf: 'stretch',
+              }}
+            >
+              {featuredNewsletterItem.frequency}
+            </Typography>
+            <Typography
+              sx={{
+                fontWeight: 600,
+                fontSize: '20px',
+                lineHeight: 1.4,
+                color: disabled ? '#ADB5BD' : '#212529',
+                alignSelf: 'stretch',
+              }}
+            >
+              {featuredNewsletterItem.name}
+            </Typography>
+          </Box>
+
           <Typography
             sx={{
-              fontWeight: 600,
-              fontSize: '20px',
+              fontWeight: 500,
+              fontSize: '14px',
               lineHeight: 1.4,
               color: disabled ? '#ADB5BD' : '#212529',
               alignSelf: 'stretch',
             }}
           >
-            {featuredNewsletterItem.name}
+            {featuredNewsletterItem.description}
           </Typography>
         </Box>
-
-        <Typography
-          sx={{
-            fontWeight: 500,
-            fontSize: '14px',
-            lineHeight: 1.4,
-            color: disabled ? '#ADB5BD' : '#212529',
-            alignSelf: 'stretch',
-          }}
-        >
-          {featuredNewsletterItem.description}
-        </Typography>
       </Box>
 
       <Box

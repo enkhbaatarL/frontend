@@ -1,5 +1,5 @@
 import { Box, FormControlLabel, Switch, Typography } from '@mui/material'
-import { ChangeEvent, useState } from 'react'
+import { ChangeEvent, useState, useEffect } from 'react'
 
 import MISelect from '@/components/common/select/MISelect'
 
@@ -13,17 +13,27 @@ export interface EditPannalProps {
 
 const EditPannal = ({
   isPublished = false,
-  inflectionPoint = '미등록',
   onPublishedChange,
   useInflectionPointSelect = false,
+  inflectionPoint = '',
   onInflectionPointChange,
 }: EditPannalProps) => {
   const [published, setPublished] = useState(isPublished)
   const [selectedInflectionPoint, setSelectedInflectionPoint] = useState(inflectionPoint)
 
+  useEffect(() => {
+    setPublished(isPublished)
+  }, [isPublished])
+
+  useEffect(() => {
+    setSelectedInflectionPoint(inflectionPoint)
+  }, [inflectionPoint])
+
   const inflectionPointOptions = [
-    { label: '미등록', value: '미등록' },
-    { label: '등록', value: '등록' },
+    { label: '미등록', value: '' },
+    { label: '상승', value: 'UP' },
+    { label: '중립', value: 'NONE' },
+    { label: '하락', value: 'DOWN' },
   ]
 
   const handlePublishedChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -98,16 +108,17 @@ const EditPannal = ({
             변곡점
           </Typography>
           <MISelect
+            type="button"
             value={selectedInflectionPoint}
             onChange={handleInflectionPointChange}
             options={inflectionPointOptions}
             width={93}
             sizeSelect="h34"
             placeholder="미등록"
+            darkPlaceholder
             sx={{
               '& .MuiOutlinedInput-root': {
                 height: '34px',
-                padding: '0 6px 0 12px',
                 '& fieldset': {
                   borderColor: '#DEE2E6',
                   borderRadius: '4px',
@@ -123,9 +134,10 @@ const EditPannal = ({
                 padding: '6px 0',
                 fontSize: '14px',
                 fontWeight: 600,
-                color: '#495057',
+                color: published ? '#495057' : '#ADB5BD',
               },
             }}
+            disabled={!published}
           />
         </Box>
       )}

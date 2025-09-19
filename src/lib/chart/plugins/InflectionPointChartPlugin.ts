@@ -1,7 +1,12 @@
 import { Plugin, Chart as ChartJS } from 'chart.js'
 import dayjs from 'dayjs'
+import timezone from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
 
 import { IRelatedNewsEventItem } from '@/service/mi/newsletter'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 interface InflectionPointPluginOptions {
   timestamps?: number[]
@@ -16,16 +21,56 @@ interface InflectionPointPluginOptions {
   onInitialPositionsSet?: (positions: Record<number, { x: number; y: number }>) => void
 }
 
-// 원의 반지름
-const CIRCLE_RADIUS = 12
+interface BoxInfo {
+  x: number
+  y: number
+  width: number
+  height: number
+  isAbove: boolean
+  xPosition: number
+  yPosition: number
+  titleArea: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+}
 
-// 드래그 상태 관리
+interface DrawInfoBoxParams {
+  ctx: CanvasRenderingContext2D
+  xPosition: number
+  yPosition: number
+  title: string
+  score?: number
+  isAbove?: boolean
+  timestamp?: number
+  existingBoxes?: BoxInfo[]
+  chartArea?: { left: number; right: number; top: number; bottom: number }
+  customPosition?: { x: number; y: number }
+  enableCollisionDetection?: boolean
+}
+
 interface DragState {
   isDragging: boolean
   draggedBoxTimestamp: number | null
   dragOffset: { x: number; y: number }
   initialPosition: { x: number; y: number }
 }
+
+interface DrawConnectionLineParams {
+  ctx: CanvasRenderingContext2D
+  markerX: number
+  markerY: number
+  boxX: number
+  boxY: number
+  boxWidth: number
+  boxHeight: number
+  isAbove: boolean
+}
+
+// 원의 반지름
+const CIRCLE_RADIUS = 12
 
 // 차트별 드래그 상태 저장
 const dragStateMap = new Map<string, DragState>()
@@ -216,7 +261,7 @@ const drawXAxisLabels = (
   // 모든 틱 라벨 그리기
   for (let i = 0; i < timestamps.length; i += tickStep) {
     const timestamp = timestamps[i]
-    const label = dayjs(timestamp).format('HH:mm')
+    const label = dayjs(timestamp).tz('America/New_York').format('HH:mm')
 
     // x 위치 계산
     const xPosition = xScale.getPixelForValue(i)
@@ -231,7 +276,7 @@ const drawXAxisLabels = (
   if (timestamps.length > 1 && (timestamps.length - 1) % tickStep !== 0) {
     const lastIndex = timestamps.length - 1
     const lastTimestamp = timestamps[lastIndex]
-    const lastLabel = dayjs(lastTimestamp).format('HH:mm')
+    const lastLabel = dayjs(lastTimestamp).tz('America/New_York').format('HH:mm')
     const lastXPosition = xScale.getPixelForValue(lastIndex)
 
     if (lastXPosition >= chartArea.left && lastXPosition <= chartArea.right) {
@@ -279,38 +324,8 @@ const drawMarker = (ctx: CanvasRenderingContext2D, xPosition: number, yPosition:
   ctx.stroke()
 }
 
-interface BoxInfo {
-  x: number
-  y: number
-  width: number
-  height: number
-  isAbove: boolean
-  xPosition: number
-  yPosition: number
-  titleArea: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
-}
-
-interface DrawInfoBoxParams {
-  ctx: CanvasRenderingContext2D
-  xPosition: number
-  yPosition: number
-  title: string
-  score?: number
-  isAbove?: boolean
-  timestamp?: number
-  existingBoxes?: BoxInfo[]
-  chartArea?: { left: number; right: number; top: number; bottom: number }
-  customPosition?: { x: number; y: number }
-  enableCollisionDetection?: boolean
-}
-
 const calculateBoxDimensions = (ctx: CanvasRenderingContext2D, title: string, score?: number, timestamp?: number) => {
-  const time = timestamp ? dayjs(timestamp).format('HH:mm') : dayjs().format('HH:mm')
+  const time = timestamp ? dayjs(timestamp).tz('America/New_York').format('HH:mm') : dayjs().tz('America/New_York').format('HH:mm')
   const padding = 8
   const lineHeight = 16
 
@@ -405,17 +420,6 @@ const adjustBoxPosition = (
 
   // 충돌 해결이 불가능한 경우 원본 위치 반환
   return originalBox
-}
-
-interface DrawConnectionLineParams {
-  ctx: CanvasRenderingContext2D
-  markerX: number
-  markerY: number
-  boxX: number
-  boxY: number
-  boxWidth: number
-  boxHeight: number
-  isAbove: boolean
 }
 
 const drawConnectionLine = (params: DrawConnectionLineParams) => {
@@ -677,7 +681,7 @@ const drawNewsMarkers = (
   })
 
   // 그 다음 정보 박스들을 그리기 (충돌 방지 적용)
-  // x축 위치 순서로 정렬하여 교대 배치 적용 (0: 아래, 1: 위, 2: 아래, ...)
+  // x축 위치 순서로 정렬하여 교대 배치 적용 (0: 위, 1: 아래, 2: 위, ...)
   const sortedNews = visibleNews
     .map((news) => {
       if (!news.timestamp) return null
@@ -724,8 +728,8 @@ const drawNewsMarkers = (
     // 차트 영역 내부에 있는지 확인
     if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
       if (news.title) {
-        // 인덱스에 따라 교대로 위/아래 배치 (홀수 인덱스: 위, 짝수 인덱스: 아래)
-        const isAbove = index % 2 === 1
+        // 인덱스에 따라 교대로 위/아래 배치 (짝수 인덱스: 위, 홀수 인덱스: 아래)
+        const isAbove = index % 2 === 0
         const customPosition = news.timestamp ? boxPositions?.[news.timestamp] : undefined
 
         // 초기 위치가 있으면 사용, 없으면 충돌 검사로 계산
