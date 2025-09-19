@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom'
 
 import MariBadge from '@/components/common/bage/MariBadge'
 import MIButtonArrow from '@/components/common/button/MIButtonArrow'
-import CheckIcon from '@/components/common/icons/agent/CheckIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MISelect from '@/components/common/select/MISelect'
 import MITableCell from '@/components/common/table/MITableCell'
@@ -82,28 +81,6 @@ const NewsLettersPage = () => {
     [isInitialLoading, newsletterListIsLoading, hasInitialData],
   )
 
-  const renderPublishStatus = (status: NewsletterStatus) => {
-    if (status === NewsletterStatus.CHECK) {
-      return (
-        <Box
-          sx={{
-            width: 14,
-            height: 14,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <CheckIcon fill="black" />
-        </Box>
-      )
-    }
-    if (status === NewsletterStatus.PUBLISHING) {
-      return <Typography variant="body2">발행 중</Typography>
-    }
-    return null
-  }
-
   const columns: GridColDef[] = [
     {
       field: 'date',
@@ -140,18 +117,6 @@ const NewsLettersPage = () => {
       flex: 2.5,
       minWidth: 400,
       align: 'left',
-    },
-    {
-      field: 'status',
-      headerName: 'Publish',
-      flex: 0.6,
-      minWidth: 80,
-      align: 'center',
-      renderCell: ({ row }) => (
-        <Box display="flex" justifyContent="center" alignItems="center">
-          {renderPublishStatus(row.status)}
-        </Box>
-      ),
     },
   ]
 
@@ -194,9 +159,9 @@ const NewsLettersPage = () => {
       try {
         await optimisticUpdateFeatured(
           async () => {
-            await new Promise((resolve) => setTimeout(resolve, 1000)) // 구독/해제 API 호출
+            await newsletterService.updateNewsletterSubscribed(newsletterId, newSubscribedState)
 
-            return null // refetch 없이 화면만 갱신
+            return null
           },
           {
             optimisticData: {
@@ -371,7 +336,7 @@ const NewsLettersPage = () => {
                   rowId: 'newsletterId',
                   rows: newsletterList?.detail.map((item) => ({
                     ...item,
-                    disabled: item.status !== NewsletterStatus.CHECK,
+                    disabled: item.status !== NewsletterStatus.PUBLISHED,
                   })),
                   onRowClick: ({ row }) => {
                     handleNewsletterClick(row.newsletterId, row.issueNo)

@@ -769,10 +769,6 @@ export const MIPageSkeletons = {
               <MIBaseSkeleton.InputField width={'160px'} height={'40px'} />
             </Box>
             <MIBaseSkeleton.BaseElement2 width={'100%'} height={'806px'} sx={{ marginBottom: '38px' }} />
-            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'346px'} sx={{ marginBottom: '38px' }} />
-            <Box borderBottom={'1px solid #DEE2E6'} width={'100%'} height={'0px'} marginBottom={'38px'}></Box>
-            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'52px'} sx={{ marginBottom: '38px' }} />
-            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'142px'} />
           </Box>
           <Box alignSelf={'flex-start'}>
             <Box pb={'12px'}>

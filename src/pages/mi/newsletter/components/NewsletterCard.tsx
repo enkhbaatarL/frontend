@@ -2,6 +2,7 @@ import { Add as AddIcon } from '@mui/icons-material'
 import { Box, Typography, Card, CardMedia, Button, Tooltip } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
+import defaultImage from '@/assets/newsletter/default-image.png'
 import CheckIcon from '@/components/common/icons/agent/CheckIcon'
 import LoadingSpinner from '@/components/common/influence-factor-chart/icons/LoadingSpinIcon'
 import { IFeaturedNewsletterItem } from '@/service/mi/newsletter'
@@ -118,13 +119,16 @@ const NewsletterCard = ({ featuredNewsletterItem, onSubscribe, onClick, disabled
         }}
       >
         {imageLoadError ? (
-          <Box padding="12px" textAlign="center">
-            {featuredNewsletterItem.name}
-          </Box>
+          <Box
+            component="img"
+            src={defaultImage}
+            alt={featuredNewsletterItem.name}
+            sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         ) : (
           <Box
             component="img"
-            src={featuredNewsletterItem.image}
+            src={featuredNewsletterItem.imageBase64}
             alt={featuredNewsletterItem.name}
             sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={() => setImageLoadError(true)}

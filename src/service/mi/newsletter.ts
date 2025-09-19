@@ -3,9 +3,14 @@ import { AxiosResponse } from 'axios'
 import api from '@/lib/axios'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 
+export enum NewsletterDetailPageMode {
+  VIEW = 'view',
+  EDIT = 'edit',
+  CAPTURE = 'capture',
+}
+
 export enum NewsletterStatus {
-  PUBLISHING = 'PUBLISHING',
-  CHECK = 'CHECK',
+  PUBLISHED = 'PUBLISHED',
   BLANK = 'BLANK',
 }
 
@@ -35,23 +40,85 @@ export interface IFeaturedNewsletterItem {
   description: string
   subscribed: boolean
   issueNo: string
-  image: string
+  imageBase64: string
   enabled: boolean
+}
+
+export interface INewsletterIssue {
+  date: string
+  no: string
+}
+
+export interface INewsletterIssueResponse {
+  newsletterId: string
+  issuedList: INewsletterIssue[]
+}
+
+export interface ISeriesData {
+  seriesId: string
+  label: string
+  renderAs: string
+  values: number[]
+  isVisible: boolean
+  isLineChartDashStyle: string | null
+}
+
+export interface INewsFlowChartData {
+  title: string
+  aggregationTime: string
+  chartData: {
+    timestamps: string[]
+    series: ISeriesData[]
+  }
+}
+
+export interface IRelatedNewsEventItem {
+  newsId: string
+  title: string
+  content: string[]
+  timestamp?: number
+  createdDate: string
+  createTime: string
+  source: string
+  showInChart: boolean
+  trend?: 'UP' | 'DOWN' | 'NONE'
+}
+
+export interface IReferenceDataItem {
+  title: string
+  description: string
+  type: 'CHART' | 'TABLE' | 'TEXT'
+  tableData: {
+    tableId: string
+    headers: {
+      field: string
+      name: string
+    }[]
+    rows: {
+      cells: string[]
+    }[]
+  }
 }
 
 export interface INewsletterIssueDetail {
   newsletterId: string
-  frequency: string
+  frequency: NewsletterFrequency
   name: string
   description: string
   subscribed: boolean
-  issueNo: string
-  image: string
+  imageBase64: string
   enabled: boolean
-  issuedList: {
+  issueDetail: {
+    title: string
     date: string
-    no: string
-  }[]
+    summary: string
+    newsFlowChart: INewsFlowChartData
+    relatedNews: {
+      aggregationTime: string
+      newsEventItems: IRelatedNewsEventItem[]
+    }
+    references: IReferenceDataItem[]
+  }
 }
 
 /**
@@ -86,6 +153,16 @@ const newsletterService = {
   },
 
   /**
+   * 특정 뉴스레터의 발행 리스트를 조회합니다.
+   * @param {string} newsletterId - 뉴스레터 ID
+   * @returns {Promise<{ date: string; no: string }[]>} 발행 리스트
+   */
+  async getNewsletterIssues(newsletterId: string): Promise<INewsletterIssueResponse> {
+    const response: AxiosResponse<ICommonResponse<INewsletterIssueResponse>> = await api.get(`/mi/newsletter/${newsletterId}/issues`)
+    return response.data.data
+  },
+
+  /**
    * 특정 뉴스레터의 특정 발행호 상세 정보를 조회합니다.
    * @param {string} newsletterId - 뉴스레터 ID
    * @param {string} issueNo - 발행호 번호
@@ -95,6 +172,16 @@ const newsletterService = {
     const response: AxiosResponse<ICommonResponse<INewsletterIssueDetail>> = await api.get(`mi/newsletter/${newsletterId}/${issueNo}`)
 
     return response.data.data
+  },
+
+  /**
+   * [임시] 뉴스레터 구독 상태를 변경합니다.
+   * @param {string} _newsletterId - 뉴스레터 ID
+   * @param {boolean} subscribed - 구독 상태
+   */
+  async updateNewsletterSubscribed(_newsletterId: string, subscribed: boolean): Promise<boolean> {
+    await new Promise((resolve) => setTimeout(resolve, 1000)) /// TODO: 실제 API
+    return subscribed
   },
 }
 

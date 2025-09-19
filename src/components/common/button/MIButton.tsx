@@ -102,10 +102,10 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
     }[size]
 
     const padding = {
-      h28: contentType === 'icon' ? '3px' : '3px 11px',
-      h32: contentType === 'icon' ? '5px' : contentType === 'link' ? '4px' : '5px 13px',
-      h34: contentType === 'icon' ? '6px' : contentType === 'select' ? '7px 8px' : '6px 15px',
-      h42: contentType === 'icon' ? '9px' : '9px 15px',
+      h28: contentType === 'icon' ? '3px' : startIcon ? '3px 11px 3px 8px' : '3px 11px',
+      h32: contentType === 'icon' ? '5px' : contentType === 'link' ? '4px' : startIcon ? '5px 13px 5px 8px' : '5px 13px',
+      h34: contentType === 'icon' ? '6px' : contentType === 'select' ? '7px 8px' : startIcon ? '6px 15px 6px 8px' : '6px 15px',
+      h42: contentType === 'icon' ? '9px' : startIcon ? '9px 15px 9px 8px' : '9px 15px',
     }[size]
 
     const height = {
@@ -128,7 +128,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
       width,
       ...typography,
     }
-  }, [size, contentType])
+  }, [size, contentType, startIcon])
 
   const [isOpenMenu, setIsOpenMenu] = useState(false)
   const styleBaseType = useMemo((): Record<MIButtonType, SxProps> => {
