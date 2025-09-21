@@ -104,6 +104,8 @@ const ForecastChart = (props: ForecastChartProps) => {
   const [isOpenSetting, setIsOpenSetting] = useState(false)
 
   const lastSelectedContentRef = useRef<SelectedReportChartContent | null>(null)
+  // 호버 시 정상 날짜를 저장해두기 위한 ref
+  const lastHoverDateRef = useRef<string>('')
 
   useEffect(() => {
     lastSelectedContentRef.current = selectedContent
@@ -124,10 +126,15 @@ const ForecastChart = (props: ForecastChartProps) => {
         return
       }
 
+      // 호버 시에는 정상 날짜를 저장
+      if (!chartTooltip.viewDetail) {
+        lastHoverDateRef.current = chartTooltip.label
+      }
+
       if (chartTooltip.viewDetail) {
         const newContent = {
           label: chartTooltip.content[0].label ?? '',
-          date: chartTooltip.label,
+          date: lastHoverDateRef.current, // 호버 시 저장된 정상 날짜 사용
           value: Number((chartTooltip.content[0].value ?? 0).toFixed(2)),
           goodsDataSourceNo: chartTooltip.content[0].goodsDataSourceNo,
         }
@@ -152,7 +159,7 @@ const ForecastChart = (props: ForecastChartProps) => {
         viewDetail: chartTooltip.viewDetail,
         top: chartTooltip.y,
         left: chartTooltip.x + 20 + 20,
-        label: chartTooltip.label,
+        label: chartTooltip.viewDetail ? lastHoverDateRef.current : chartTooltip.label, // 클릭 시 저장된 날짜, 호버 시 현재 날짜
         content: chartTooltip.content,
         onClose: () => {
           plugin.clearSelectedPoint()

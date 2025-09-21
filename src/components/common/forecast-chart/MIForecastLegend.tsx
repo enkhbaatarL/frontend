@@ -8,6 +8,7 @@ import ForecastLegendIcon from './icons/ForecastLegendIcon'
 import LockOutlinedIcon from '../icons/LockOutlinedIcon'
 
 import { SelectedReportChartContent } from '@/pages/mi/forecast/components/ReportComponent'
+import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
 
 interface MIForecastLegendProps {
@@ -18,6 +19,10 @@ interface MIForecastLegendProps {
 }
 
 const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, selectedContent }: Readonly<MIForecastLegendProps>) => {
+  const { accessCompanyInfo } = useAuthStore()
+
+  const comNo = useMemo(() => accessCompanyInfo?.customerCompanyNo, [accessCompanyInfo?.customerCompanyNo])
+
   const legends = useMemo(() => {
     const left: Array<ChartDataset & { category: string; hidden?: boolean; permission?: boolean; yAxisID: string; index: number }> = []
     const right: Array<ChartDataset & { category: string; hidden?: boolean; permission?: boolean; yAxisID: string; index: number }> = []
@@ -44,7 +49,7 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
       left,
       right,
     }
-  }, [datasets])
+  }, [datasets, comNo])
 
   const isMultipleAxes = !!legends.left.length && !!legends.right.length
 
@@ -58,8 +63,8 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
         )}
 
         {legends.left.map((dataset) => {
-          // Skip forecast datasets
-          if (dataset.category === DATA_CATEGORIES.FORECAST) return null
+          // Skip forecast datasets except for companyNo 2013
+          if (dataset.category === DATA_CATEGORIES.FORECAST && comNo !== 2013) return null
 
           let opacity = dataset.hidden ? 0.3 : 1
 
@@ -115,7 +120,12 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
                 },
               }}
             >
-              <Box
+              {dataset.category === DATA_CATEGORIES.FORECAST ? (
+                <ForecastLegendIcon color={dataset.borderColor as string} />
+              ) : (
+                <ActualLegendIcon color={dataset.borderColor as string} />
+              )}
+              {/* <Box
                 sx={{
                   width: '12px',
                   height: '12px',
@@ -125,7 +135,7 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
                   borderColor: dataset.borderColor as string,
                   borderWidth: 1,
                 }}
-              />
+              /> */}
               <Typography variant="body2SB14" color="gray.70">
                 {dataset.label}
               </Typography>
@@ -145,7 +155,8 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
         )}
 
         {legends.right.map((dataset) => {
-          if (dataset.category === DATA_CATEGORIES.FORECAST) return null
+          // Skip forecast datasets except for companyNo 2013
+          if (dataset.category === DATA_CATEGORIES.FORECAST && comNo !== 2013) return null
 
           let opacity = dataset.hidden ? 0.3 : 1
 
