@@ -204,7 +204,6 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
           imagesInfo[`${label}`] = createHoverDiamonSVG(color)
           imagesInfo[`${label} Active`] = createActiveDiamonSVG(color)
           imagesInfo[`${label} Hover`] = createHoverPointDiamonSVG(color)
-          console.log(imagesInfo)
         }
 
         if (type === 'ACTUAL') {

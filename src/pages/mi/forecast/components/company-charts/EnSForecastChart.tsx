@@ -605,13 +605,10 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd
     const forecastDatasets = data.charts
       .map((chart, index) => {
         if (chart.forecastChartLines.dataType === 'FORECAST') {
-          // const value = (chart.forecastChartLines.rawData ?? []).map((item) => item.value)
+          const value = (chart.forecastChartLines.rawData ?? []).map((item) => item.value)
 
           return {
-            // data: value,
-            data: chart.forecastChartLines.dataExplanation.includes('1')
-              ? [2, 3, 1, 3.59, 1, 4, null, null, null, 3.55, 2.45, 1]
-              : [1.11, 3, 1, 1, 1.9, 5, 3, null, null, 1.55, 2.43, 2],
+            data: value,
             label: chart.forecastChartLines.dataExplanation,
             color: colorMap[index + 2],
             hidePoint: true,

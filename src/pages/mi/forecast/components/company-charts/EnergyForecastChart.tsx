@@ -160,8 +160,6 @@ const ForecastChart = (props: ForecastChartProps) => {
       if (!isEqual(prevTooltipRef.current, filteredTooltipContent) || filteredTooltipContent.length === 1) {
         prevTooltipRef.current = filteredTooltipContent
 
-        console.log('Setting tooltip with date:', correctDate)
-
         setTooltip({
           minWidth: 293,
           visible: true,
