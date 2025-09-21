@@ -73,10 +73,6 @@ const Chart = ({
       value = value.join('\n')
     }
 
-    if (typeof value !== 'string') {
-      value = String(value || '')
-    }
-
     if (value.trim() === '') return false
 
     switch (field) {
@@ -98,10 +94,6 @@ const Chart = ({
 
     if (field === 'content' && Array.isArray(value)) {
       value = value.join('\n')
-    }
-
-    if (typeof value !== 'string') {
-      value = String(value || '')
     }
 
     if (value.trim() === '') {
@@ -137,9 +129,12 @@ const Chart = ({
 
   const allItemsValid = [...(relatedNews || []), ...tempNewsItems].every(validateRequiredFields)
 
+  if (mode !== NewsletterDetailPageMode.EDIT && relatedNews?.length === unPublishedNewsIds.length) {
+    return null
+  }
+
   return (
     <table
-      data-news-section
       style={{
         width: '776px',
         margin: '30px auto 20px auto',

@@ -1,9 +1,7 @@
 import { Box } from '@mui/material'
 import { Chart as ChartJS } from 'chart.js'
 import { CandlestickController, CandlestickElement, OhlcController, OhlcElement } from 'chartjs-chart-financial'
-import html2canvas from 'html2canvas'
-import { debounce } from 'lodash-es'
-import { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react'
+import { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { Chart } from 'react-chartjs-2'
 
 import '@/lib/chart/adapterDayjs'
@@ -35,7 +33,8 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
   const [chartType, setChartType] = useState<ChartType>(ChartType.LINE)
   const [forceUpdate, setForceUpdate] = useState(0)
   const [boxPositions, setBoxPositions] = useState<Record<number, { x: number; y: number }>>({})
-  const [base64ChartImage, setBase64ChartImage] = useState<string>('')
+  const [base64MainChartImage, setBase64MainChartImage] = useState<string>('')
+  const [base64VolumeChartImage, setBase64VolumeChartImage] = useState<string>('')
   const chartContainerRef = useRef<HTMLDivElement>(null)
 
   const handleRedrawChart = useCallback(() => {
@@ -92,7 +91,16 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
     () => ({
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 0 },
+      animation: {
+        duration: 0,
+        onComplete: () => {
+          const canvas = mainChartRef.current?.canvas
+          if (canvas) {
+            const dataURL = canvas.toDataURL('image/png')
+            setBase64MainChartImage(dataURL)
+          }
+        },
+      },
       events: ['mousedown', 'mousemove', 'mouseup', 'click', 'mouseover', 'mouseout'] as (
         | 'mousedown'
         | 'mousemove'
@@ -332,6 +340,16 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
   const volumeChartOptions = useMemo(
     () => ({
       ...chartOptions,
+      animation: {
+        duration: 0,
+        onComplete: () => {
+          const canvas = volumeChartRef.current?.canvas
+          if (canvas) {
+            const dataURL = canvas.toDataURL('image/png')
+            setBase64VolumeChartImage(dataURL)
+          }
+        },
+      },
       layout: {
         padding: {
           right: 30,
@@ -390,43 +408,6 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
 
   const hasVolume = useMemo(() => volumeSeries?.isVisible && (volumeSeries.values?.length ?? 0) > 0, [volumeSeries])
 
-  const debouncedGenerateChartImage = useMemo(
-    () =>
-      debounce(async () => {
-        if (chartContainerRef.current) {
-          try {
-            // 차트가 완전히 렌더링될 때까지 잠시 대기
-            await new Promise((resolve) => setTimeout(resolve, 200))
-
-            const canvas = await html2canvas(chartContainerRef.current, {
-              backgroundColor: '#ffffff',
-              scale: 1,
-              useCORS: true,
-              allowTaint: true,
-              logging: true,
-            })
-
-            const dataURL = canvas.toDataURL('image/png')
-            setBase64ChartImage(dataURL)
-          } catch (error) {
-            console.error('Error generating chart image:', error)
-          }
-        }
-      }, 500),
-    [],
-  )
-
-  useEffect(() => {
-    debouncedGenerateChartImage()
-  }, [chartData, relatedNews, chartType, forceUpdate, boxPositions, debouncedGenerateChartImage])
-
-  useEffect(
-    () => () => {
-      debouncedGenerateChartImage.cancel()
-    },
-    [debouncedGenerateChartImage],
-  )
-
   const hasVisibleData =
     (chartType === ChartType.CANDLE ? closeDataSeries && openDataSeries && highDataSeries && lowDataSeries : closeDataSeries) || hasVolume
   if (!chartData?.chartData?.series?.length || !hasVisibleData) {
@@ -452,7 +433,12 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
 
   return (
     <>
-      {mode === NewsletterDetailPageMode.CAPTURE && <img src={base64ChartImage} alt="chart" width="776px" />}
+      {mode === NewsletterDetailPageMode.CAPTURE && (
+        <>
+          {base64MainChartImage && <img src={base64MainChartImage} alt="chart" width="776px" />}
+          {base64VolumeChartImage && <img src={base64VolumeChartImage} alt="chart" width="776px" />}
+        </>
+      )}
       <>
         {mode !== NewsletterDetailPageMode.CAPTURE && (
           <Box display="flex" justifyContent="flex-end" px="30px" pb="12px" gap="8px">

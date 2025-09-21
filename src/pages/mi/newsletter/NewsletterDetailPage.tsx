@@ -54,7 +54,7 @@ const processNewsletterData = (data: INewsletterIssueDetail | null | undefined) 
         newsEventItems: data.issueDetail.relatedNews.newsEventItems.map((item) => ({
           ...item,
           content: item.content.map((content) => (content.startsWith('-') ? content : `- ${content}`)),
-          trend: item.showInChart === false ? ('' as const) : item.trend,
+          trend: !item.showInChart ? ('' as const) : item.trend,
         })),
       },
     },
@@ -79,6 +79,7 @@ const NewsletterDetailPage = () => {
   const [tempNewsItems, setTempNewsItems] = useState<IRelatedNewsEventItem[]>([])
   const [savedScrollPosition, setSavedScrollPosition] = useState<number | null>(null)
   const [sortKey, setSortKey] = useState(0)
+  const [isCapturing, setIsCapturing] = useState(false)
 
   const [isSummarizedPublished, setIsSummarizedPublished] = useState(true)
   const [unPublishedNewsIds, setUnPublishedNewsIds] = useState<string[]>([])
@@ -89,7 +90,7 @@ const NewsletterDetailPage = () => {
     Record<string, never>,
     INewsletterIssueDetail | null
   >(
-    (_params) => {
+    () => {
       if (!newsletterId || !issueNo) {
         return Promise.resolve(null)
       }
@@ -202,7 +203,7 @@ const NewsletterDetailPage = () => {
   const handleResetNews = useCallback(() => {
     if (tempNewsItems.length > 0) {
       showDialog({
-        title: 'Reset',
+        title: '뉴스 초기화',
         children: '추가한 모든 뉴스가 삭제됩니다.\n정말로 초기화하시겠습니까?',
         width: 400,
         actions: [
@@ -352,7 +353,8 @@ const NewsletterDetailPage = () => {
     }
   }, [newsletterIssueDetail, savedScrollPosition])
 
-  const createEmailContentHTML = async (): Promise<string> => {
+  const createEmailContentHTML = useCallback(async (): Promise<string> => {
+    setIsCapturing(true)
     const originalMode = mode
     setMode(NewsletterDetailPageMode.CAPTURE)
 
@@ -362,9 +364,10 @@ const NewsletterDetailPage = () => {
 
     const html = (emailContentRef.current?.outerHTML ?? '').replaceAll(/<canvas[^>]*>.*?<\/canvas>/gis, '')
     setMode(originalMode)
+    setIsCapturing(false)
 
     return html
-  }
+  }, [mode, setMode])
 
   const createEMLContent = (htmlContent: string) => `From: sender@example.com
 To: recipient@example.com
@@ -395,6 +398,8 @@ Content-Transfer-Encoding: 7bit
 
     try {
       const originalMode = mode
+
+      setIsCapturing(true)
       setMode(NewsletterDetailPageMode.CAPTURE)
 
       await new Promise((resolve) => {
@@ -414,9 +419,11 @@ Content-Transfer-Encoding: 7bit
       link.click()
 
       setMode(originalMode)
+      setIsCapturing(false)
     } catch (error) {
       console.error('PNG 다운로드 실패:', error)
       showSnackbar('PNG 다운로드 중 오류가 발생했습니다', { variant: 'error' })
+      setIsCapturing(false)
     }
   }
 
@@ -426,12 +433,70 @@ Content-Transfer-Encoding: 7bit
     initializeNewsletterIssueDetail()
   }
 
+  const openPreviewWindow = useCallback(async () => {
+    try {
+      const previewHtml = await createEmailContentHTML()
+
+      const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Newsletter Preview</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  ${previewHtml}
+</body>
+</html>`
+
+      const blob = new Blob([html], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+
+      window.open(url, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes')
+
+      // 메모리 정리
+      setTimeout(() => {
+        URL.revokeObjectURL(url)
+      }, 5000)
+    } catch (error) {
+      console.error('Preview 생성 중 오류:', error)
+      showSnackbar('Preview 생성 중 오류가 발생했습니다', { variant: 'error' })
+    }
+  }, [createEmailContentHTML, showSnackbar])
+
   useEffect(() => {
     initializeNewsletterIssueDetail()
   }, [newsletterIssueDetailData, initializeNewsletterIssueDetail])
 
   return (
-    <Box>
+    <Box position="relative">
+      {(mode === NewsletterDetailPageMode.CAPTURE || isCapturing) && (
+        <Box
+          position="fixed"
+          top="0"
+          left="0"
+          width="100vw"
+          height="100vh"
+          zIndex={300}
+          sx={{
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 2,
+            backdropFilter: 'blur(2px)',
+          }}
+        >
+          <LoadingSpinner speed={2} />
+        </Box>
+      )}
       <Box display="flex" justifyContent="space-between" py="12px" width="800px" margin="38px auto 20px auto">
         {mode === NewsletterDetailPageMode.VIEW && (
           <MISelect
@@ -458,28 +523,28 @@ Content-Transfer-Encoding: 7bit
             onClick={handleBackToView}
           />
         )}
-        <Box display="flex">
-          <Box display={loadingNewsletterIds.has(newsletterId ?? '') ? 'flex' : 'none'}>
-            <MIButton width={130} type="outlined" color="gray" contentType="text" disabled>
-              <Box width={'100%'} height={'100%'} overflow="hidden">
-                <Box
-                  display={'flex'}
-                  alignItems={'center'}
-                  justifyContent={'center'}
-                  width={'20px'}
-                  height={'20px'}
-                  sx={{
-                    backgroundColor: 'linear-gradient(107deg, #C2C2C2 8.8%, #FFF 54.4%, #FFF 67.11%, #C4C4C4 100%)',
-                  }}
-                >
-                  <LoadingSpinner speed={2} />
-                </Box>
+        <Box display="flex" gap="12px">
+          {mode === NewsletterDetailPageMode.VIEW && (
+            <>
+              <Box display={loadingNewsletterIds.has(newsletterId ?? '') ? 'flex' : 'none'}>
+                <MIButton width={130} type="outlined" color="gray" contentType="text" disabled>
+                  <Box width={'100%'} height={'100%'} overflow="hidden">
+                    <Box
+                      display={'flex'}
+                      alignItems={'center'}
+                      justifyContent={'center'}
+                      width={'20px'}
+                      height={'20px'}
+                      sx={{
+                        backgroundColor: 'linear-gradient(107deg, #C2C2C2 8.8%, #FFF 54.4%, #FFF 67.11%, #C4C4C4 100%)',
+                      }}
+                    >
+                      <LoadingSpinner speed={2} />
+                    </Box>
+                  </Box>
+                </MIButton>
               </Box>
-            </MIButton>
-          </Box>
-          <Box display={loadingNewsletterIds.has(newsletterId ?? '') ? 'none' : 'flex'} gap="12px">
-            {mode === NewsletterDetailPageMode.VIEW && (
-              <>
+              <Box display={loadingNewsletterIds.has(newsletterId ?? '') ? 'none' : 'flex'}>
                 <MIButton
                   width={130}
                   type={newsletterIssueDetail?.subscribed ? 'ghost' : 'outlined'}
@@ -495,24 +560,29 @@ Content-Transfer-Encoding: 7bit
                 >
                   {newsletterIssueDetail?.subscribed ? 'Subscribed' : 'Subscribe'}
                 </MIButton>
-                <MIButton
-                  type="outlined"
-                  color="gray"
-                  contentType="text"
-                  startIcon={<EditIcon />}
-                  onClick={() => setMode(NewsletterDetailPageMode.EDIT)}
-                >
-                  Edit
-                </MIButton>
-              </>
-            )}
-            {mode === NewsletterDetailPageMode.EDIT && (
+              </Box>
+              <MIButton
+                type="outlined"
+                color="gray"
+                contentType="text"
+                startIcon={<EditIcon />}
+                onClick={() => setMode(NewsletterDetailPageMode.EDIT)}
+              >
+                Edit
+              </MIButton>
+            </>
+          )}
+          {mode === NewsletterDetailPageMode.EDIT && (
+            <>
+              <MIButton type="outlined" color="gray" contentType="text" onClick={openPreviewWindow}>
+                Preview
+              </MIButton>
               <MIButton type="filled" color="primary" contentType="text" startIcon={<OpenInNewIcon />} onClick={handleDownloadEML}>
                 Send to Mail Apps
               </MIButton>
-            )}
-            <MIButton type="outlined" color="gray" contentType="icon" startIcon={<ChartDownloadIcon />} onClick={handleDownloadPNG} />
-          </Box>
+            </>
+          )}
+          <MIButton type="outlined" color="gray" contentType="icon" startIcon={<ChartDownloadIcon />} onClick={handleDownloadPNG} />
         </Box>
       </Box>
 

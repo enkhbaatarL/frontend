@@ -29,6 +29,7 @@ interface BoxInfo {
   isAbove: boolean
   xPosition: number
   yPosition: number
+  timestamp?: number
   titleArea: {
     x: number
     y: number
@@ -115,37 +116,30 @@ const drawXAxisGrid = (
   const totalTicks = Math.min(timestamps.length, maxTicksLimit)
   const tickStep = Math.max(1, Math.floor(timestamps.length / totalTicks))
 
-  // 처음 선과 마지막 선을 black 실선으로 그리기
+  // 차트의 왼쪽과 오른쪽 끝에 검은선 그리기
   ctx.strokeStyle = '#000000'
   ctx.lineWidth = 1
   ctx.setLineDash([])
 
-  // 첫 번째 선 (인덱스 0)
-  const firstXPosition = xScale.getPixelForValue(0)
-  if (firstXPosition >= chartArea.left && firstXPosition <= chartArea.right) {
-    ctx.beginPath()
-    ctx.moveTo(firstXPosition, chartArea.top)
-    ctx.lineTo(firstXPosition, chartArea.bottom)
-    ctx.stroke()
-  }
+  // 왼쪽 끝 선
+  ctx.beginPath()
+  ctx.moveTo(chartArea.left, chartArea.top)
+  ctx.lineTo(chartArea.left, chartArea.bottom)
+  ctx.stroke()
 
-  // 마지막 선 (인덱스 timestamps.length - 1)
-  const lastIndex = timestamps.length - 1
-  const lastXPosition = xScale.getPixelForValue(lastIndex)
-  if (lastXPosition >= chartArea.left && lastXPosition <= chartArea.right) {
-    ctx.beginPath()
-    ctx.moveTo(lastXPosition, chartArea.top)
-    ctx.lineTo(lastXPosition, chartArea.bottom)
-    ctx.stroke()
-  }
+  // 오른쪽 끝 선
+  ctx.beginPath()
+  ctx.moveTo(chartArea.right, chartArea.top)
+  ctx.lineTo(chartArea.right, chartArea.bottom)
+  ctx.stroke()
 
-  // 나머지 보조선들을 점선으로 그리기
+  // 보조선을 점선으로 그리기
   ctx.strokeStyle = '#ADB5BD'
   ctx.lineWidth = 1
   ctx.setLineDash([2, 2])
 
-  // 보조선 그리기 (첫 번째와 마지막 제외)
-  for (let i = tickStep; i < timestamps.length - 1; i += tickStep) {
+  // 보조선 그리기
+  for (let i = 0; i < timestamps.length; i += tickStep) {
     const xPosition = xScale.getPixelForValue(i)
 
     // 차트 영역 내부에 있는지 확인
@@ -434,7 +428,7 @@ const drawConnectionLine = (params: DrawConnectionLineParams) => {
 
   // 마커와 박스의 상대적 위치에 따라 연결선 시작점 결정
   const markerStartX = markerX
-  let markerStartY = markerY
+  let markerStartY
 
   // 박스가 마커보다 위에 있는지 아래에 있는지 확인
   const boxIsAboveMarker = boxCenterY < markerY
@@ -532,6 +526,7 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
     isAbove,
     xPosition,
     yPosition,
+    timestamp,
     titleArea: {
       x: titleAreaX,
       y: titleAreaY,
@@ -545,13 +540,6 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   if (enableCollisionDetection && chartArea && existingBoxes.length > 0) {
     finalBox = adjustBoxPosition(boxInfo, existingBoxes, chartArea)
   }
-
-  // 박스 그리기 (현재는 텍스트만 표시, 배경 박스는 비활성화)
-  // ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-  // ctx.strokeStyle = '#DEE2E6'
-  // ctx.lineWidth = 1
-  // ctx.fillRect(finalBox.x - 2, finalBox.y, finalBox.width + 6, finalBox.height)
-  // ctx.strokeRect(finalBox.x - 2, finalBox.y, finalBox.width + 6, finalBox.height)
 
   // 시간
   ctx.fillStyle = '#868E96'
@@ -830,21 +818,28 @@ const InflectionPointChartPlugin: Plugin = {
       const clickedBox = findTopBoxAtPoint(x, y, boxes)
 
       if (clickedBox && pluginOptions.relatedNews && pluginOptions.timestamps) {
-        // 박스에서 타임스탬프 찾기
-        const timestamp = pluginOptions.relatedNews.find((news) => {
-          if (!news.showInChart || !pluginOptions.timestamps || !news.timestamp) return false
+        // 클릭된 박스에 타임스탬프가 있으면 직접 사용
+        let timestamp = clickedBox.timestamp
 
-          let timestampIndex = pluginOptions.timestamps.findIndex((ts) => ts === news.timestamp)
+        // 박스에 타임스탬프가 없으면 기존 로직으로 찾기
+        if (!timestamp) {
+          timestamp = pluginOptions.relatedNews.find((news) => {
+            if (!news.showInChart || !pluginOptions.timestamps || !news.timestamp) return false
 
-          // 정확한 매치가 없으면 가장 가까운 값 찾기
-          if (timestampIndex === -1) {
-            timestampIndex = findNearestTimestampIndex(news.timestamp, pluginOptions.timestamps)
-          }
+            let timestampIndex = pluginOptions.timestamps.findIndex((ts) => ts === news.timestamp)
 
-          if (timestampIndex === -1) return false
+            // 정확한 매치가 없으면 가장 가까운 값 찾기
+            if (timestampIndex === -1) {
+              timestampIndex = findNearestTimestampIndex(news.timestamp, pluginOptions.timestamps)
+            }
 
-          return Math.abs(clickedBox.xPosition - chart.scales.x.getPixelForValue(timestampIndex)) < 1
-        })?.timestamp
+            if (timestampIndex === -1) return false
+
+            // 더 넓은 범위에서 매칭 (5px 허용 오차)
+            const expectedXPosition = chart.scales.x.getPixelForValue(timestampIndex)
+            return Math.abs(clickedBox.xPosition - expectedXPosition) < 5
+          })?.timestamp
+        }
 
         if (timestamp) {
           dragState.isDragging = true
