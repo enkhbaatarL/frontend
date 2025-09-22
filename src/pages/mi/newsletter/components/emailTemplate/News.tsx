@@ -371,7 +371,7 @@ const Chart = ({
                         <p style={{ padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>{item.createdDate}</p>
                         <p style={{ padding: 4, fontWeight: 400, fontSize: '14px', color: '#868E96' }}>{item.source}</p>
                       </td>
-                      <td width="auto" style={{ padding: '20px 6px 36px 6px', verticalAlign: 'top' }}>
+                      <td width="626px" style={{ padding: '20px 6px 36px 6px', verticalAlign: 'top' }}>
                         <p style={{ padding: '4px 0 10px 0', fontWeight: 600, fontSize: '18px', color: '#495057' }}>{item.title}</p>
                         {item.content.map((content) => (
                           <p

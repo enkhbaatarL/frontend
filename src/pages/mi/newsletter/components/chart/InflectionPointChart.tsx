@@ -37,6 +37,23 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
   const [base64VolumeChartImage, setBase64VolumeChartImage] = useState<string>('')
   const chartContainerRef = useRef<HTMLDivElement>(null)
 
+  const convertChartToImage = useCallback((canvas: HTMLCanvasElement, setImageState: (image: string) => void) => {
+    const tempCanvas = document.createElement('canvas')
+    const tempCtx = tempCanvas.getContext('2d')
+    if (tempCtx) {
+      tempCanvas.width = canvas.width
+      tempCanvas.height = canvas.height
+
+      tempCtx.fillStyle = '#FFFFFF'
+      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
+
+      tempCtx.drawImage(canvas, 0, 0)
+
+      const dataURL = tempCanvas.toDataURL('image/png')
+      setImageState(dataURL)
+    }
+  }, [])
+
   const handleRedrawChart = useCallback(() => {
     if (mainChartRef.current) {
       mainChartRef.current.destroy()
@@ -96,8 +113,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
         onComplete: () => {
           const canvas = mainChartRef.current?.canvas
           if (canvas) {
-            const dataURL = canvas.toDataURL('image/png')
-            setBase64MainChartImage(dataURL)
+            convertChartToImage(canvas, setBase64MainChartImage)
           }
         },
       },
@@ -117,7 +133,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
       layout: {
         padding: {
           right: 30,
-          top: 0,
+          top: 10,
           left: 60,
           bottom: 30,
         },
@@ -204,7 +220,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
         },
       },
     }),
-    [timestamps, relatedNews, boxPositions, handleBoxPositionChange, chartData?.chartData?.series, mode],
+    [timestamps, relatedNews, boxPositions, handleBoxPositionChange, chartData?.chartData?.series, mode, convertChartToImage],
   )
 
   const { volumeSeries, closeDataSeries, openDataSeries, highDataSeries, lowDataSeries } = useMemo(() => {
@@ -345,8 +361,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
         onComplete: () => {
           const canvas = volumeChartRef.current?.canvas
           if (canvas) {
-            const dataURL = canvas.toDataURL('image/png')
-            setBase64VolumeChartImage(dataURL)
+            convertChartToImage(canvas, setBase64VolumeChartImage)
           }
         },
       },
@@ -403,7 +418,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
         },
       },
     }),
-    [chartOptions, volumeSeries?.values, timestamps],
+    [chartOptions, volumeSeries?.values, timestamps, convertChartToImage],
   )
 
   const hasVolume = useMemo(() => volumeSeries?.isVisible && (volumeSeries.values?.length ?? 0) > 0, [volumeSeries])
