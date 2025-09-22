@@ -362,7 +362,7 @@ const NewsletterDetailPage = () => {
       setTimeout(resolve, 0)
     })
 
-    const html = (emailContentRef.current?.outerHTML ?? '').replaceAll(/<canvas[^>]*>.*?<\/canvas>/gis, '')
+    const html = (emailContentRef.current?.outerHTML ?? '').replace(/<canvas[^>]*>.*?<\/canvas>/gis, '')
     setMode(originalMode)
     setIsCapturing(false)
 

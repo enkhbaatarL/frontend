@@ -266,7 +266,7 @@ const drawXAxisLabels = (
     }
   }
 
-  // 마지막 틱이 포함되지 않은 경우 마지막 틱도 그리기
+  // 마지막 틱 그리기
   if (timestamps.length > 1 && (timestamps.length - 1) % tickStep !== 0) {
     const lastIndex = timestamps.length - 1
     const lastTimestamp = timestamps[lastIndex]
@@ -274,8 +274,31 @@ const drawXAxisLabels = (
     const lastXPosition = xScale.getPixelForValue(lastIndex)
 
     if (lastXPosition >= chartArea.left && lastXPosition <= chartArea.right) {
-      ctx.textAlign = 'right'
-      ctx.fillText(lastLabel, lastXPosition + 16, yPosition)
+      // 이미 그려진 라벨들과 충돌하는지 확인
+      const labelWidth = ctx.measureText(lastLabel).width
+      const lastLabelRight = lastXPosition + 16 + labelWidth
+
+      // 충돌 검사를 위해 현재까지 그려진 라벨들의 위치를 확인
+      let hasCollision = false
+      for (let i = 0; i < timestamps.length; i += tickStep) {
+        const currentLabel = dayjs(timestamps[i]).tz('America/New_York').format('HH:mm')
+        const currentXPosition = xScale.getPixelForValue(i)
+        const currentLabelWidth = ctx.measureText(currentLabel).width
+        const currentLabelLeft = currentXPosition - currentLabelWidth / 2
+        const currentLabelRight = currentXPosition + currentLabelWidth / 2
+
+        // 마지막 라벨과 기존 라벨이 겹치는지 확인 (5px 여유)
+        if (lastXPosition + 16 < currentLabelRight + 5 && lastLabelRight > currentLabelLeft - 5) {
+          hasCollision = true
+          break
+        }
+      }
+
+      // 충돌이 없을 때만 마지막 틱 그리기
+      if (!hasCollision) {
+        ctx.textAlign = 'right'
+        ctx.fillText(lastLabel, lastXPosition + 16, yPosition)
+      }
     }
   }
 }
