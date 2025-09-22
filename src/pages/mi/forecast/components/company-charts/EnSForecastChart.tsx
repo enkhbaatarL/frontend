@@ -128,10 +128,12 @@ const ForecastChart = (props: ForecastChartProps) => {
       }
 
       if (chartTooltip.viewDetail) {
+        const safeValue = Number(chartTooltip.content[0].value ?? 0)
+
         props.onSelectedContent({
           label: chartTooltip.content[0].label ?? '',
           date: lastHoverDateRef.current, // 호버 시 저장된 정상 날짜 사용
-          value: Number((chartTooltip.content[0].value ?? 0).toFixed(2)),
+          value: Number(safeValue.toFixed(2)),
           goodsDataSourceNo: chartTooltip.content[0].goodsDataSourceNo,
         })
       }

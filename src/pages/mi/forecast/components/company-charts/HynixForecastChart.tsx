@@ -125,10 +125,11 @@ const ForecastChart = (props: ForecastChartProps) => {
       }
 
       if (chartTooltip.viewDetail) {
+        const safeValue = Number(chartTooltip.content[0].value ?? 0)
         const newContent = {
           label: chartTooltip.content[0].label ?? '',
           date: chartTooltip.label,
-          value: Number((chartTooltip.content[0].value ?? 0).toFixed(2)),
+          value: Number(safeValue.toFixed(2)),
           goodsDataSourceNo: chartTooltip.content[0].goodsDataSourceNo,
         }
 
