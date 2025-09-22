@@ -30,7 +30,7 @@ type ChartJSOrUndefined = ChartJS | undefined
 const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chartData, relatedNews, mode }, ref) => {
   const mainChartRef = useRef<ChartJSOrUndefined | null>(null)
   const volumeChartRef = useRef<ChartJSOrUndefined | null>(null)
-  const [chartType, setChartType] = useState<ChartType>(ChartType.LINE)
+  const [chartType, setChartType] = useState<ChartType>(ChartType.CANDLE)
   const [forceUpdate, setForceUpdate] = useState(0)
   const [boxPositions, setBoxPositions] = useState<Record<number, { x: number; y: number }>>({})
   const [base64MainChartImage, setBase64MainChartImage] = useState<string>('')
@@ -247,14 +247,14 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(({ chart
   const chartTypeOptions = useMemo(
     () => [
       {
-        value: ChartType.LINE,
-        label: 'Line',
-        icon: <ShowChartIcon />,
-      },
-      {
         value: ChartType.CANDLE,
         label: 'Candles',
         icon: <CandlestickChartOutlineIcon />,
+      },
+      {
+        value: ChartType.LINE,
+        label: 'Line',
+        icon: <ShowChartIcon />,
       },
     ],
     [],
