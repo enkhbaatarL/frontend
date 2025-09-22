@@ -103,6 +103,9 @@ const ForecastChart = (props: ForecastChartProps) => {
   const [tooltip, setTooltip] = useState<MIForecastChartTooltipProps>(initialTooltip)
   const [isOpenSetting, setIsOpenSetting] = useState(false)
 
+  // 호버 시 정상 날짜를 저장해두기 위한 ref
+  const lastHoverDateRef = useRef<string>('')
+
   useEffect(() => {
     if (selectedContent === null) {
       verticalLineAndHighlightPlugin.reset()
@@ -119,10 +122,15 @@ const ForecastChart = (props: ForecastChartProps) => {
         return
       }
 
+      // 호버 시에는 정상 날짜를 저장
+      if (!chartTooltip.viewDetail) {
+        lastHoverDateRef.current = chartTooltip.label
+      }
+
       if (chartTooltip.viewDetail) {
         props.onSelectedContent({
           label: chartTooltip.content[0].label ?? '',
-          date: chartTooltip.label,
+          date: lastHoverDateRef.current, // 호버 시 저장된 정상 날짜 사용
           value: Number((chartTooltip.content[0].value ?? 0).toFixed(2)),
           goodsDataSourceNo: chartTooltip.content[0].goodsDataSourceNo,
         })
@@ -134,7 +142,7 @@ const ForecastChart = (props: ForecastChartProps) => {
         viewDetail: chartTooltip.viewDetail,
         top: chartTooltip.y,
         left: chartTooltip.x + 20 + 20,
-        label: chartTooltip.label,
+        label: chartTooltip.viewDetail ? lastHoverDateRef.current : chartTooltip.label, // 클릭 시 저장된 날짜, 호버 시 현재 날짜
         content: chartTooltip.content,
         onClose: () => {
           plugin.clearSelectedPoint()
@@ -177,8 +185,9 @@ const ForecastChart = (props: ForecastChartProps) => {
     dataset.hidden = !dataset.hidden
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
-    const forecast = newDatasets.filter((item: any) => item.label === `${dataset.label} Forecast`)
-
+    // forecast 데이터셋 찾기 - 현재 라벨 패턴에 맞춰 수정
+    // const forecast = newDatasets.filter((item: any) => item.label === `${dataset.label} Forecast`)
+    const forecast = newDatasets.filter((item: any) => item.category === 'forecast' && item.label?.startsWith(dataset.label?.trim() ?? ''))
     forecast.forEach((d) => {
       d.hidden = dataset.hidden
     })
@@ -233,14 +242,17 @@ const ForecastChart = (props: ForecastChartProps) => {
 
         if (color) {
           imagesInfo[label] = createHoverDotSVG(color)
-          imagesInfo[`${label} Forecast`] = createHoverDiamonSVG(color)
-          imagesInfo[`${label} Forecast Active`] = createActiveDiamonSVG(color)
-          imagesInfo[`${label} Forecast Hover`] = createHoverPointDiamonSVG(color)
+          // forecast 타입인 경우 동일한 키로 다이아몬드 이미지 덮어쓰기
+          if (type === 'forecast') {
+            imagesInfo[label] = createHoverDiamonSVG(color)
+          }
+          imagesInfo[`${label} Active`] = createActiveDiamonSVG(color)
+          imagesInfo[`${label} Hover`] = createHoverPointDiamonSVG(color)
         }
 
         if (type === 'forecast') {
           datasets.push({
-            label: `${dataset.label} Forecast`,
+            label: `${dataset.label}`, // Forecast 접미사 제거
             data: dataset.data.length > 0 ? [null, ...dataset.data, null] : [],
             borderColor: dataset.color,
             backgroundColor: dataset.color,
@@ -255,7 +267,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             category: 'forecast',
             pointRadius: dataset.hidePoint ? 0 : 3,
             yAxisID: dataset.yAxisID ?? 'y',
-            spanGaps: true,
+            spanGaps: false, // null 값일 때 선이 연결되지 않도록 변경
             metadata: dataset.metadata,
             permission,
           })
@@ -553,6 +565,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd
     },
   ])
   const [lastUpdated, setLastUpdated] = useState<string>('')
+  // const colorMap = ['#40597A', '#2F62A3', '#5191F5', '#0CA678', '#FF973C', '#EFD485']
   const colorMap = ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485']
 
   const formatDate = (date: string) => {
@@ -593,10 +606,11 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd
       .map((chart, index) => {
         if (chart.forecastChartLines.dataType === 'FORECAST') {
           const value = (chart.forecastChartLines.rawData ?? []).map((item) => item.value)
+
           return {
             data: value,
-            label: label[index],
-            color: colorMap[index],
+            label: chart.forecastChartLines.dataExplanation,
+            color: colorMap[index + 2],
             hidePoint: true,
             type: 'forecast',
             borderDash: [5, 5],

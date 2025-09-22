@@ -130,14 +130,27 @@ const ForecastChart = (props: ForecastChartProps) => {
         }
       })
 
+      // 클릭 시 올바른 날짜 먼저 계산
+      let correctDate = chartTooltip.label
+      if (chartTooltip.viewDetail && chartTooltip.content.length > 0) {
+        const forecastContent = chartTooltip.content.find((item) => item.category === 'forecast')
+        if (forecastContent && forecastContent.index !== undefined) {
+          const monthIndex = Math.max(0, forecastContent.index) // 패딩 고려
+          if (months[monthIndex]) {
+            correctDate = dayjs(months[monthIndex], 'YYYY-MM').format('MMMM YYYY')
+          }
+        }
+      }
+
       if (chartTooltip.viewDetail) {
         const forecastContent = chartTooltip.content.find((item) => item.category === 'forecast') || chartTooltip.content[0]
-
+        console.log(forecastContent.index)
+        console.log(correctDate)
         if (forecastContent) {
           const safeValue = Number(forecastContent.value ?? 0)
           props.onSelectedContent({
             label: forecastContent.label ?? '',
-            date: chartTooltip.label ?? '',
+            date: correctDate, // 수정된 날짜 사용
             value: Number(safeValue.toFixed(2)),
             goodsDataSourceNo: forecastContent.goodsDataSourceNo ?? 0,
           })
@@ -146,13 +159,14 @@ const ForecastChart = (props: ForecastChartProps) => {
 
       if (!isEqual(prevTooltipRef.current, filteredTooltipContent) || filteredTooltipContent.length === 1) {
         prevTooltipRef.current = filteredTooltipContent
+
         setTooltip({
           minWidth: 293,
           visible: true,
           viewDetail: chartTooltip.viewDetail,
           top: chartTooltip.y,
           left: chartTooltip.x + 20 + 20,
-          label: chartTooltip.label,
+          label: correctDate, // 수정된 날짜 사용
           content: filteredTooltipContent, //chartTooltip.content,
           onClose: () => {
             plugin.clearSelectedPoint()

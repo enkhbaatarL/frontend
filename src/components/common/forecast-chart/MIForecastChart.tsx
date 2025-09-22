@@ -114,6 +114,8 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
       // props.onViewDetail?.(chartTooltip.content[0], chartTooltip.label)
       // TODO: onSelectedContent로 대체 필요
     }
+    console.log(chartTooltip)
+    console.log(chartTooltip.viewDetail)
 
     setTooltip({
       minWidth: 293,
@@ -161,7 +163,7 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
 
     dataset.hidden = !dataset.hidden
 
-    const forecast = newDatasets.filter((item: any) => item.label === `${dataset.label} Forecast`)
+    const forecast = newDatasets.filter((item: any) => item.label === `${dataset.label}`)
 
     forecast.forEach((d) => {
       d.hidden = dataset.hidden
@@ -199,15 +201,15 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
 
         if (color) {
           imagesInfo[label] = createHoverDotSVG(color)
-          imagesInfo[`${label} Forecast`] = createHoverDiamonSVG(color)
-          imagesInfo[`${label} Forecast Active`] = createActiveDiamonSVG(color)
-          imagesInfo[`${label} Forecast Hover`] = createHoverPointDiamonSVG(color)
+          imagesInfo[`${label}`] = createHoverDiamonSVG(color)
+          imagesInfo[`${label} Active`] = createActiveDiamonSVG(color)
+          imagesInfo[`${label} Hover`] = createHoverPointDiamonSVG(color)
         }
 
         if (type === 'ACTUAL') {
           forecastData.forEach((data) => {
             datasets.push({
-              label: `${label} Forecast`,
+              label: `${label}`,
               data,
               borderColor: color,
               backgroundColor: color,

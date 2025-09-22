@@ -124,7 +124,49 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     const currency = chartData.dashboardMetadata.currency || ''
     const currentUnitCd = chartData.dashboardMetadata.currentUnitCd || ''
 
-    if (isForecastSingleLayer) {
+    if (companyNo === 2013) {
+      const currencyColumn: GridColDef = {
+        field: 'label',
+        headerName: chartData.dashboardMetadata.tableHeader,
+        flex: 1.5,
+        align: 'center',
+      }
+
+      const dataColumns: GridColDef[] = (chartData.charts[0].forecastChartLines.rawData ?? []).map((chart) => ({
+        field: chart.resultDate,
+        headerName: formatDate(chart.resultDate),
+        flex: 1,
+        align: 'center',
+        renderCell: ({ row }) => {
+          const value = row[chart.resultDate]
+          /*          if (row.permission && row.id === 'ERROR_RATE') {
+            const { color, displayValue } = formatErrorRateValue(value)
+            return <MITableCell value={displayValue} typography={{ color }} />
+          }*/
+          if (row.permission) {
+            return <MITableCell value={value} />
+          }
+          return (
+            <Box position="relative" sx={{ userSelect: 'none' }}>
+              <Box sx={{ filter: 'blur(3px)' }}>{value}</Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <LockOutlinedIcon
+                  style={{
+                    width: '12px',
+                    height: '15px',
+                    color: '#868E96',
+                    position: 'absolute',
+                    top: 0,
+                  }}
+                />
+              </Box>
+            </Box>
+          )
+        },
+      }))
+
+      return [currencyColumn, ...dataColumns]
+    } else if (isForecastSingleLayer) {
       const currencyColumn: GridColDef = {
         field: chartData.dashboardMetadata.currency,
         headerName: `${currency}/${currentUnitCd}`,
@@ -209,14 +251,71 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     }
 
     return []
-  }, [chartData])
+  }, [chartData, companyNo])
 
   const tableRows = useMemo(() => {
     if (!chartData) return []
 
     const isForecastSingleLayer = chartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
 
-    if (isForecastSingleLayer) {
+    if (companyNo === 2013) {
+      const forecastRows = chartData.charts
+        .filter((chart) => chart.forecastChartLines.dataType === 'FORECAST')
+        .map((chart) => {
+          const rowData = (chart.forecastChartLines.rawData ?? []).reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value ?? '-',
+            }),
+            {},
+          )
+
+          return {
+            id: chart.forecastChartLines.dataExplanation,
+            label: chart.forecastChartLines.dataExplanation,
+            permission: chart.forecastChartLines.isPermitted,
+            ...rowData,
+          }
+        })
+
+      const actualRows = chartData.charts
+        .filter((chart) => chart.actualChartLines.dataType === 'ACTUAL')
+        .map((chart) => {
+          const rowData = (chart.actualChartLines.rawData ?? []).reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value ?? '-',
+            }),
+            {},
+          )
+
+          return {
+            id: chart.actualChartLines.dataType,
+            label: chart.actualChartLines.dataType[0] + chart.actualChartLines.dataType.slice(1).toLowerCase(),
+            permission: chart.actualChartLines.isPermitted,
+            ...rowData,
+          }
+        })
+      const futureRows = chartData.charts
+        .filter((chart) => chart.actualChartLines.dataType === 'FUTURE')
+        .map((chart) => {
+          const rowData = (chart.actualChartLines.rawData ?? []).reduce(
+            (acc, data) => ({
+              ...acc,
+              [data.resultDate]: data.value ?? '-',
+            }),
+            {},
+          )
+
+          return {
+            id: chart.chartLineDescription,
+            label: chart.chartLineDescription,
+            permission: chart.actualChartLines.isPermitted,
+            ...rowData,
+          }
+        })
+      return [...forecastRows, ...actualRows, ...futureRows]
+    } else if (isForecastSingleLayer) {
       const forecastRows = chartData.charts
         .filter((chart) => chart.forecastChartLines.dataType === 'FORECAST')
         .map((chart) => {
@@ -393,7 +492,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     }
 
     return []
-  }, [chartData])
+  }, [chartData, companyNo])
 
   const formatDataInfoDate = useMemo(() => {
     const date = new Date(dataInfo?.lastUpdateDt ?? '')

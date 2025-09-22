@@ -11,7 +11,7 @@ import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import theme from '@/theming'
 import { formatValue } from '@/utils/number'
 
-const ChartToolTipItem = (props: { index: number, label: string; value: number; category: string; color: string; minWidth: number }) => {
+const ChartToolTipItem = (props: { index: number; label: string; value: number; category: string; color: string; minWidth: number }) => {
   const { label, value, category, color, minWidth } = props
 
   const icon = useMemo(() => {

@@ -594,6 +594,13 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
         const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, chart)
 
+        // console.log('Click tooltip date calculation:', {
+        //   selectedIndex,
+        //   monthsLength: months.length,
+        //   selectedMonth: months[selectedIndex],
+        //   formattedDate: formatDate(months[selectedIndex], 'MMMM YYYY'),
+        // })
+
         options.onPointerMove?.({
           plugin: this,
           chart,
@@ -739,21 +746,22 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                     // Create ordered tooltip content
                     this.tooltipContent = []
 
-                    sortedBaseNames.forEach((baseName) => {
-                      // Add actual data first - hidden 상태 체크 추가
-                      const actualDataset = chart.data.datasets.find(
-                        (ds: any) => ds.permission && ds.category === DATA_CATEGORIES.ACTUAL && ds.label === baseName && !ds.hidden,
-                      )
-                      if (actualDataset && actualDataset.data[currentIndex] !== null) {
-                        this.tooltipContent.push({
-                          label: options.showActualTag ? `${actualDataset.label} Actual` : actualDataset.label,
-                          value: actualDataset.data[currentIndex] as number,
-                          category: DATA_CATEGORIES.ACTUAL,
-                          color: actualDataset.borderColor as string,
-                        })
-                      }
+                    // Add actual data first (only once) - hidden 상태 체크 추가
+                    const actualDataset = chart.data.datasets.find(
+                      (ds: any) => ds.permission && ds.category === DATA_CATEGORIES.ACTUAL && !ds.hidden,
+                    )
 
-                      // Then add forecast data
+                    if (actualDataset && actualDataset.data[currentIndex] !== null) {
+                      this.tooltipContent.push({
+                        label: options.showActualTag ? `${actualDataset.label} Actual` : actualDataset.label,
+                        value: actualDataset.data[currentIndex] as number,
+                        category: DATA_CATEGORIES.ACTUAL,
+                        color: actualDataset.borderColor as string,
+                      })
+                    }
+
+                    // Then add forecast data for each baseName
+                    sortedBaseNames.forEach((baseName) => {
                       const forecastDataset = groupedDatasets[baseName][0]
                       if (forecastDataset) {
                         this.tooltipContent.push({
@@ -802,13 +810,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                   }
                 }
 
-                if (
-                  dataset.category === DATA_CATEGORIES.ACTUAL &&
-                  !dataset.hidden &&
-                  img &&
-                  !this.selectedPoint &&
-                  !nearestPointIsForecast
-                ) {
+                if (dataset.category === DATA_CATEGORIES.ACTUAL && !dataset.hidden && img && !this.selectedPoint) {
                   // ctx.drawImage(img, xPos, yPos, size, size)
                   this.tooltipContent.push({
                     label: dataset?.label,
@@ -818,13 +820,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                   })
                 }
 
-                if (
-                  dataset.category === DATA_CATEGORIES.FUTURE &&
-                  !dataset.hidden &&
-                  img &&
-                  !this.selectedPoint &&
-                  !nearestPointIsForecast
-                ) {
+                if (dataset.category === DATA_CATEGORIES.FUTURE && !dataset.hidden && img && !this.selectedPoint) {
                   // ctx.drawImage(img, xPos, yPos, size, size)
                   this.tooltipContent.push({
                     label: dataset?.label,

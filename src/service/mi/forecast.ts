@@ -138,6 +138,7 @@ interface IChartLineRawData {
   value: number
 }
 interface IChartLine {
+  dataExplanation: string
   isPermitted: boolean
   dataType: string
   goodsDataSourceNo: number
