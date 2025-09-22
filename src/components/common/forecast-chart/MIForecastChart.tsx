@@ -114,8 +114,6 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
       // props.onViewDetail?.(chartTooltip.content[0], chartTooltip.label)
       // TODO: onSelectedContent로 대체 필요
     }
-    console.log(chartTooltip)
-    console.log(chartTooltip.viewDetail)
 
     setTooltip({
       minWidth: 293,
