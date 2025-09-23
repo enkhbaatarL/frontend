@@ -154,8 +154,8 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
             })
 
             // Compare 차트의 최고값/최저값 포인트 (realValue 사용)
-            const realMin = compareChart.rawData[minIdx]?.realValue ?? min
-            const realMax = compareChart.rawData[maxIdx]?.realValue ?? max
+            const realMin = compareChart.rawData[minIdx]?.real ?? min
+            const realMax = compareChart.rawData[maxIdx]?.real ?? max
 
             datasets.push({
               type: 'line' as const,
