@@ -139,15 +139,35 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
         data.compareCharts.forEach((compareChart, index) => {
           if (compareChart.rawData) {
             const compareData = compareChart.rawData.map((point) => point.value)
+            const { min, max, minIdx, maxIdx } = getMinMax(compareData)
+
+            // Compare 차트 라인
             datasets.push({
               type: 'line' as const,
-              label: `Compare ${index + 1}`,
+              label: compareChart.specificIndicatorName || `Compare ${index + 1}`,
               data: compareData,
-              borderColor: '#7A8790',
+              borderColor: '#ef6b35ff',
               backgroundColor: () => 'transparent',
               tension: 0,
               fill: false,
               borderWidth: 1,
+            })
+
+            // Compare 차트의 최고값/최저값 포인트
+            datasets.push({
+              type: 'line' as const,
+              label: `Compare ${index + 1} MinMaxMarkers`,
+              data: compareData.map((v, i) => (i === minIdx || i === maxIdx ? v : Number.NaN)),
+              borderColor: 'transparent',
+              backgroundColor: '#EF6B35',
+              pointRadius: (ctx: any) => {
+                const i = ctx.dataIndex
+                return i === minIdx || i === maxIdx ? 3 : 0
+              },
+              pointHoverRadius: 4.5,
+              pointBackgroundColor: '#ef6b35ff', // 더 진한 주황색
+              showLine: false,
+              _minMaxInfo: { min, max, minIdx, maxIdx },
             })
           }
         })
@@ -221,14 +241,33 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
         const minMaxLabelPlugin = {
           id: 'minMaxLabel',
           afterDatasetsDraw(chart: any) {
-            const dsIndex = chart.data.datasets.findIndex((d: any) => d.label === 'MinMaxMarkers')
-            if (dsIndex < 0) return
-            const ds: any = chart.data.datasets[dsIndex]
-            const info = ds._minMaxInfo
-            if (!info) return
+            // Main 차트의 MinMaxMarkers 찾기
+            const mainDsIndex = chart.data.datasets.findIndex((d: any) => d.label === 'MinMaxMarkers')
+            if (mainDsIndex >= 0) {
+              const ds: any = chart.data.datasets[mainDsIndex]
+              const info = ds._minMaxInfo
+              if (info) {
+                const meta = chart.getDatasetMeta(mainDsIndex)
+                this.drawMinMaxLabels(chart, meta, info)
+              }
+            }
 
-            const meta = chart.getDatasetMeta(dsIndex)
+            // Compare 차트들의 MinMaxMarkers 찾기
+            const compareDsIndices = chart.data.datasets
+              .map((d: any, index: number) => (d.label?.includes('MinMaxMarkers') && d.label !== 'MinMaxMarkers' ? index : -1))
+              .filter((index: number) => index >= 0)
 
+            compareDsIndices.forEach((dsIndex: number) => {
+              const ds: any = chart.data.datasets[dsIndex]
+              const info = ds._minMaxInfo
+              if (info) {
+                const meta = chart.getDatasetMeta(dsIndex)
+                this.drawMinMaxLabels(chart, meta, info)
+              }
+            })
+          },
+
+          drawMinMaxLabels(chart: any, meta: any, info: any) {
             const drawOne = (idx: number, text: string) => {
               const elem = meta.data[idx]
               if (!elem) return
@@ -342,7 +381,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
             },
             scales: {
               y: {
-                grace: '5%',
+                grace: '10%',
                 display: false,
                 title: {
                   display: false,
@@ -567,9 +606,45 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
                 </Box>
               )}
             </Box>
-            <Box pt={6} height={158} sx={{ overflow: 'visible', filter: locked ? 'blur(6px)' : 'none' }}>
+            <Box pt={6} height={180} sx={{ overflow: 'visible', filter: locked ? 'blur(6px)' : 'none' }}>
               <SimpleLineChart data={displayData} hasTicks />
             </Box>
+            {/* Legend - compare 차트가 있을 때만 표시 */}
+            {displayData.compareCharts && displayData.compareCharts.length > 0 && (
+              <Box mt={-4} display="flex" justifyContent="center" flexWrap="wrap" gap={2} sx={{ filter: locked ? 'blur(6px)' : 'none' }}>
+                {displayData.mainChart && (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box
+                      width={12}
+                      height={2}
+                      sx={{
+                        backgroundColor: '#40597A',
+                        borderRadius: '1px',
+                      }}
+                    />
+                    <Typography variant="body3R12" color="gray.70">
+                      {displayData.mainChart.specificIndicatorName || 'Main'}
+                    </Typography>
+                  </Box>
+                )}
+                {displayData.compareCharts?.map((chart, index) => (
+                  <Box key={index} display="flex" alignItems="center" gap={1}>
+                    <Box
+                      width={12}
+                      height={2}
+                      sx={{
+                        backgroundColor: '#EF6B35', // 주황색으로 변경
+                        borderRadius: '1px',
+                        backgroundImage: 'repeating-linear-gradient(90deg, #EF6B35, #EF6B35 5px, transparent 5px, transparent 10px)', // 점선 효과
+                      }}
+                    />
+                    <Typography variant="body3R12" color="gray.70">
+                      {chart.specificIndicatorName || `Compare ${index + 1}`}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
           </Box>
           {locked && <LockedOverlay />}
         </Box>

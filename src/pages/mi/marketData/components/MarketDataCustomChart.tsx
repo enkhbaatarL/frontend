@@ -294,7 +294,7 @@ const MarketDataCustomChart: FC<MarketDataCustomChartProps> = ({ data, locked = 
         <Box
           sx={{
             width: 467,
-            height: 215,
+            height: 238,
             overflow: 'visible',
             filter: locked ? 'blur(6px)' : 'none',
           }}
