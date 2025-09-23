@@ -143,7 +143,7 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
           '& .MuiInputBase-root': {
             alignItems: 'center',
             borderRadius: '4px',
-            height: '46px',
+            height: '40px',
             padding: '10px 12px',
             ...theme.typography.body2R14,
             '& input': {

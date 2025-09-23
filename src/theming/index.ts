@@ -674,6 +674,7 @@ const theme = createTheme({
       fontWeight: 900,
       lineHeight: '1.4',
       letterSpacing: '0.15px',
+      // prettier-ignore
       fontFeatureSettings: '\'liga\' off, \'clig\' off',
     },
     helperText: {
@@ -727,7 +728,7 @@ const theme = createTheme({
       fontWeight: 300,
     },
     titlePage: {
-      fontSize: '36px',
+      fontSize: '28px',
       fontStyle: 'normal',
       fontWeight: 600,
       lineHeight: '1.4',

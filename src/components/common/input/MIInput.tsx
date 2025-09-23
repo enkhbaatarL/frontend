@@ -128,7 +128,7 @@ const MIInput = ({
         }
       case 'h46':
         return {
-          height: props.multiline ? 'auto' : '46px',
+          height: props.multiline ? 'auto' : '40px',
           padding: '10px 12px',
           ...theme.typography.body2R14,
           '& input': {
