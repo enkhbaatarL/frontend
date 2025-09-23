@@ -1,6 +1,7 @@
-import { Box, FormControlLabel, Switch, Typography } from '@mui/material'
+import { Box, Button, FormControlLabel, Switch, Typography } from '@mui/material'
 import { ChangeEvent, useState, useEffect } from 'react'
 
+import TrashIcon from '@/components/common/icons/TrashIcon'
 import MISelect from '@/components/common/select/MISelect'
 
 export interface EditPannalProps {
@@ -9,6 +10,7 @@ export interface EditPannalProps {
   onPublishedChange?: (isPublished: boolean) => void
   useInflectionPointSelect?: boolean
   onInflectionPointChange?: (inflectionPoint: string) => void
+  onDeleteNews?: () => void
 }
 
 const EditPannal = ({
@@ -17,6 +19,7 @@ const EditPannal = ({
   useInflectionPointSelect = false,
   inflectionPoint = '',
   onInflectionPointChange,
+  onDeleteNews,
 }: EditPannalProps) => {
   const [published, setPublished] = useState(isPublished)
   const [selectedInflectionPoint, setSelectedInflectionPoint] = useState(inflectionPoint)
@@ -87,59 +90,72 @@ const EditPannal = ({
       </Box>
 
       {useInflectionPointSelect && (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <Typography
+        <>
+          <Box
             sx={{
-              fontFamily: 'Pretendard',
-              fontWeight: 600,
-              fontSize: '14px',
-              lineHeight: '1.4',
-              color: '#868E96',
-              width: '50px',
-              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
             }}
           >
-            변곡점
-          </Typography>
-          <MISelect
-            type="button"
-            value={selectedInflectionPoint}
-            onChange={handleInflectionPointChange}
-            options={inflectionPointOptions}
-            width={93}
-            sizeSelect="h34"
-            placeholder="미등록"
-            darkPlaceholder
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                height: '34px',
-                '& fieldset': {
-                  borderColor: '#DEE2E6',
-                  borderRadius: '4px',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#DEE2E6',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#DEE2E6',
-                },
-              },
-              '& .MuiInputBase-input': {
-                padding: '6px 0',
-                fontSize: '14px',
+            <Typography
+              sx={{
+                fontFamily: 'Pretendard',
                 fontWeight: 600,
-                color: published ? '#495057' : '#ADB5BD',
-              },
+                fontSize: '14px',
+                lineHeight: '1.4',
+                color: '#868E96',
+                width: '50px',
+                textAlign: 'left',
+              }}
+            >
+              변곡점
+            </Typography>
+            <MISelect
+              type="button"
+              value={selectedInflectionPoint}
+              onChange={handleInflectionPointChange}
+              options={inflectionPointOptions}
+              width={93}
+              sizeSelect="h34"
+              placeholder="미등록"
+              darkPlaceholder
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  height: '34px',
+                  '& fieldset': {
+                    borderColor: '#DEE2E6',
+                    borderRadius: '4px',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#DEE2E6',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#DEE2E6',
+                  },
+                },
+                '& .MuiInputBase-input': {
+                  padding: '6px 0',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#495057',
+                },
+              }}
+            />
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
             }}
-            disabled={!published}
-          />
-        </Box>
+          >
+            <Button variant="text" onClick={onDeleteNews} sx={{ color: 'red', svg: { color: 'red !important' }, marginLeft: '-12px' }}>
+              <TrashIcon />
+              삭제
+            </Button>
+          </Box>
+        </>
       )}
     </Box>
   )

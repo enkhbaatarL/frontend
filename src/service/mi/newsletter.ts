@@ -61,15 +61,18 @@ export interface ISeriesData {
   values: number[]
   isVisible: boolean
   isLineChartDashStyle: string | null
+  color?: string
+}
+
+export interface IChartData {
+  timestamps: number[]
+  series: ISeriesData[]
 }
 
 export interface INewsFlowChartData {
   title: string
   aggregationTime: string
-  chartData: {
-    timestamps: string[]
-    series: ISeriesData[]
-  }
+  chartData: IChartData
 }
 
 export interface IRelatedNewsEventItem {
@@ -88,6 +91,7 @@ export interface IReferenceDataItem {
   title: string
   description: string
   type: 'CHART' | 'TABLE' | 'TEXT'
+  chartData: IChartData
   tableData: {
     tableId: string
     headers: {
@@ -111,6 +115,8 @@ export interface INewsletterIssueDetail {
   issueDetail: {
     title: string
     date: string
+    marketOpenTime: number
+    marketCloseTime: number
     summary: string
     newsFlowChart: INewsFlowChartData
     relatedNews: {

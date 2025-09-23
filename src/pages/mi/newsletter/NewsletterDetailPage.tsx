@@ -83,6 +83,7 @@ const NewsletterDetailPage = () => {
 
   const [isSummarizedPublished, setIsSummarizedPublished] = useState(true)
   const [unPublishedNewsIds, setUnPublishedNewsIds] = useState<string[]>([])
+  const [deletedNewsIds, setDeletedNewsIds] = useState<string[]>([])
 
   const { newsletterId, issueNo } = useParams()
 
@@ -201,10 +202,54 @@ const NewsletterDetailPage = () => {
   }, [])
 
   const handleResetNews = useCallback(() => {
-    if (tempNewsItems.length > 0) {
+    showDialog({
+      title: '관련 뉴스 항목을 초기화 합니다',
+      width: 400,
+      actions: [
+        {
+          label: '취소',
+          variant: 'outlined',
+          color: 'gray',
+          onClick: hideDialog,
+        },
+        {
+          label: '초기화',
+          variant: 'filled',
+          color: 'primary',
+          onClick: () => {
+            setEditingNews({})
+            setTempNewsItems([])
+            setDeletedNewsIds([])
+            hideDialog()
+          },
+        },
+      ],
+    })
+  }, [showDialog, hideDialog])
+
+  const handleDeleteNewsConfirm = useCallback(
+    (newsId: string) => {
+      if (newsId.startsWith('temp_')) {
+        setTempNewsItems((prev) => prev.filter((item) => item.newsId !== newsId))
+      } else {
+        setDeletedNewsIds((prev) => [...prev, newsId])
+      }
+
+      setEditingNews((prev) => {
+        const updated = { ...prev }
+        delete updated[newsId]
+        return updated
+      })
+
+      hideDialog()
+    },
+    [hideDialog],
+  )
+
+  const handleDeleteNews = useCallback(
+    (newsId: string) => {
       showDialog({
-        title: '뉴스 초기화',
-        children: '추가한 모든 뉴스가 삭제됩니다.\n정말로 초기화하시겠습니까?',
+        title: '선택한 뉴스 항목을 삭제합니다',
         width: 400,
         actions: [
           {
@@ -214,22 +259,16 @@ const NewsletterDetailPage = () => {
             onClick: hideDialog,
           },
           {
-            label: '초기화',
+            label: '삭제',
             variant: 'filled',
-            color: 'primary',
-            onClick: () => {
-              setEditingNews({})
-              setTempNewsItems([])
-              hideDialog()
-            },
+            color: 'red',
+            onClick: () => handleDeleteNewsConfirm(newsId),
           },
         ],
       })
-    } else {
-      setEditingNews({})
-      setTempNewsItems([])
-    }
-  }, [tempNewsItems.length, showDialog, hideDialog])
+    },
+    [showDialog, hideDialog, handleDeleteNewsConfirm],
+  )
 
   const handleApplyNews = useCallback(
     (latestUnPublishedNewsIds?: string[]) => {
@@ -238,6 +277,8 @@ const NewsletterDetailPage = () => {
       // 현재 스크롤 위치 저장
       const currentScrollTop = window.scrollY || document.documentElement.scrollTop
       setSavedScrollPosition(currentScrollTop)
+
+      const currentUnPublishedNewsIds = latestUnPublishedNewsIds ?? unPublishedNewsIds
 
       // 필수 조건 검증 함수
       const validateRequiredFields = (item: IRelatedNewsEventItem) => {
@@ -249,31 +290,22 @@ const NewsletterDetailPage = () => {
         return time.trim() !== '' && date.trim() !== '' && title.trim() !== '' && content.trim() !== ''
       }
 
-      // 모든 항목(기존 + 신규)의 필수 조건 검증
+      // 모든 항목(기존 + 신규)의 필수 조건 검증 (비활성화된 뉴스는 제외)
       const allItems = [...(newsletterIssueDetail.issueDetail.relatedNews.newsEventItems || []), ...tempNewsItems]
-      const allItemsValid = allItems.every(validateRequiredFields)
+      const activeItems = allItems.filter((item) => !currentUnPublishedNewsIds.includes(item.newsId))
+      const allItemsValid = activeItems.every(validateRequiredFields)
 
       if (!allItemsValid) {
         showSnackbar('모든 필수 항목을 입력해주세요', { variant: 'error' })
         return
       }
 
-      const currentUnPublishedNewsIds = latestUnPublishedNewsIds ?? unPublishedNewsIds
-
       const updateNewsItem = (item: IRelatedNewsEventItem): IRelatedNewsEventItem => {
         const edits = editingNews[item.newsId]
         const isUnPublished = currentUnPublishedNewsIds.includes(item.newsId)
 
-        let showInChartValue
-        let validTrend
-
-        if (isUnPublished) {
-          showInChartValue = false
-          validTrend = ''
-        } else {
-          validTrend = edits?.trend ?? item.trend ?? ''
-          showInChartValue = validTrend !== ''
-        }
+        const validTrend = edits?.trend ?? item.trend ?? ''
+        const showInChartValue = isUnPublished ? false : validTrend !== ''
 
         const createTime = String(edits?.createTime ?? item.createTime)
         const createdDate = String(edits?.createdDate ?? item.createdDate)
@@ -295,8 +327,10 @@ const NewsletterDetailPage = () => {
       setNewsletterIssueDetail((prev) => {
         if (!prev) return prev
 
-        // 기존 뉴스 항목들에 수정사항 적용
-        const updatedExistingNews = prev.issueDetail.relatedNews.newsEventItems.map(updateNewsItem)
+        // 기존 뉴스 항목들에 수정사항 적용하고 삭제된 뉴스는 제외
+        const updatedExistingNews = prev.issueDetail.relatedNews.newsEventItems
+          .filter((item) => !deletedNewsIds.includes(item.newsId))
+          .map(updateNewsItem)
 
         // 새로 추가한 항목들에 수정사항 적용
         const updatedTempNews = tempNewsItems.map(updateNewsItem)
@@ -319,19 +353,21 @@ const NewsletterDetailPage = () => {
 
       setTempNewsItems([])
       setEditingNews({})
+      setDeletedNewsIds([])
 
       // 정렬 키 업데이트하여 DOM 요소 강제 재생성
       setSortKey((prev) => prev + 1)
 
       showSnackbar('뉴스 항목이 성공적으로 적용되었습니다', { variant: 'success' })
     },
-    [newsletterIssueDetail, tempNewsItems, editingNews, showSnackbar, unPublishedNewsIds],
+    [newsletterIssueDetail, tempNewsItems, editingNews, showSnackbar, unPublishedNewsIds, deletedNewsIds],
   )
 
   const initializeNewsletterIssueDetail = useCallback(() => {
     setNewsletterIssueDetail(processNewsletterData(newsletterIssueDetailData))
     setIsSummarizedPublished(true)
     setUnPublishedNewsIds([])
+    setDeletedNewsIds([])
   }, [newsletterIssueDetailData])
 
   // 스크롤 위치 복원
@@ -627,6 +663,8 @@ Content-Transfer-Encoding: 7bit
                 chartData={newsletterIssueDetail?.issueDetail.newsFlowChart}
                 relatedNews={newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems}
                 mode={mode}
+                marketOpenTime={newsletterIssueDetail?.issueDetail.marketOpenTime}
+                marketCloseTime={newsletterIssueDetail?.issueDetail.marketCloseTime}
               />
             </td>
           </tr>
@@ -645,6 +683,8 @@ Content-Transfer-Encoding: 7bit
                 editingNews={editingNews}
                 unPublishedNewsIds={unPublishedNewsIds}
                 onUnPublishedNewsIdsChange={setUnPublishedNewsIds}
+                onDeleteNews={handleDeleteNews}
+                deletedNewsIds={deletedNewsIds}
               />
             </td>
           </tr>

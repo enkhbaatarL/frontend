@@ -11,9 +11,11 @@ interface Props {
   relatedNews?: IRelatedNewsEventItem[]
   mode: NewsletterDetailPageMode
   chartRef?: RefObject<InflectionPointChartRef | null>
+  marketOpenTime?: number
+  marketCloseTime?: number
 }
 
-const Chart = ({ title, basis, chartData, relatedNews, mode, chartRef }: Props) => (
+const Chart = ({ title, basis, chartData, relatedNews, mode, chartRef, marketOpenTime, marketCloseTime }: Props) => (
   <table
     style={{
       width: '776px',
@@ -52,7 +54,16 @@ const Chart = ({ title, basis, chartData, relatedNews, mode, chartRef }: Props) 
     <tbody>
       <tr>
         <td colSpan={2} style={{ padding: '24px 0', width: '100%' }}>
-          {chartData && <InflectionPointChart ref={chartRef} chartData={chartData} relatedNews={relatedNews} mode={mode} />}
+          {chartData && (
+            <InflectionPointChart
+              ref={chartRef}
+              chartData={chartData}
+              relatedNews={relatedNews}
+              mode={mode}
+              marketOpenTime={marketOpenTime}
+              marketCloseTime={marketCloseTime}
+            />
+          )}
         </td>
       </tr>
     </tbody>
