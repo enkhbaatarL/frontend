@@ -1,6 +1,6 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import { Box } from '@mui/material'
+import { Box, Typography, Collapse, Fade } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -414,7 +414,7 @@ Content-Type: text/html; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 
 <body>
-  ${htmlContent}
+  ${htmlContent.replace(/Pretendard/g, '\'Malgun Gothic\', \'맑은 고딕\'')}
 </body>`
 
   const handleDownloadEML = async () => {
@@ -533,6 +533,36 @@ Content-Transfer-Encoding: 7bit
           <LoadingSpinner speed={2} />
         </Box>
       )}
+      <Collapse in={mode === NewsletterDetailPageMode.EDIT} timeout={300} easing="ease-in-out">
+        <Fade in={mode === NewsletterDetailPageMode.EDIT} timeout={400} easing="ease-in-out">
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            alignSelf="stretch"
+            gap="10px"
+            padding="12px 0px"
+            width="100%"
+            sx={{
+              backgroundColor: '#212529',
+              opacity: 0.9,
+            }}
+          >
+            <Typography
+              sx={{
+                fontFamily: 'Pretendard',
+                fontWeight: 500,
+                fontSize: '14px',
+                lineHeight: 1.4,
+                textAlign: 'left',
+                color: '#FFFFFF',
+              }}
+            >
+              Newsletter Edit Mode - 뉴스 항목을 수정하고 아웃룩 등 메일 서비스로 보내 발송할 수 있습니다
+            </Typography>
+          </Box>
+        </Fade>
+      </Collapse>
       <Box display="flex" justifyContent="space-between" py="12px" width="800px" margin="38px auto 20px auto">
         {mode === NewsletterDetailPageMode.VIEW && (
           <MISelect
@@ -622,7 +652,21 @@ Content-Transfer-Encoding: 7bit
         </Box>
       </Box>
 
-      <table ref={emailContentRef} style={{ width: '800px', margin: '0 auto', padding: '0', fontFamily: 'Pretendard, sans-serif' }}>
+      <table
+        ref={emailContentRef}
+        style={
+          {
+            width: '800px',
+            margin: '0 auto',
+            padding: '0',
+            fontFamily: 'Pretendard, sans-serif',
+            backgroundColor: '#ffffff',
+            msoLineHeightRule: 'exactly',
+            msoAsciiFontFamily: 'Malgun Gothic',
+            msoHansiFontFamily: 'Malgun Gothic',
+          } as React.CSSProperties
+        }
+      >
         <thead>
           <tr>
             <th></th>

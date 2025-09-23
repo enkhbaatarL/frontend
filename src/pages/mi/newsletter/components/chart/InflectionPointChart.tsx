@@ -4,7 +4,7 @@ import { CandlestickController, CandlestickElement, OhlcController, OhlcElement 
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
-import { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react'
 import { Chart } from 'react-chartjs-2'
 
 import '@/lib/chart/adapterDayjs'
@@ -42,11 +42,12 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
     const [chartType, setChartType] = useState<ChartType>(ChartType.CANDLE)
     const [forceUpdate, setForceUpdate] = useState(0)
     const [boxPositions, setBoxPositions] = useState<Record<number, { x: number; y: number }>>({})
-    const [base64MainChartImage, setBase64MainChartImage] = useState<string>('')
-    const [base64VolumeChartImage, setBase64VolumeChartImage] = useState<string>('')
+    const [mainChartImage, setMainChartImage] = useState<HTMLCanvasElement | null>(null)
+    const [volumeChartImage, setVolumeChartImage] = useState<HTMLCanvasElement | null>(null)
+    const [base64ChartImage, setBase64ChartImage] = useState<string>('')
     const chartContainerRef = useRef<HTMLDivElement>(null)
 
-    const convertChartToImage = useCallback((canvas: HTMLCanvasElement, setImageState: (image: string) => void) => {
+    const saveChartCanvas = useCallback((canvas: HTMLCanvasElement, setCanvasState: (canvas: HTMLCanvasElement) => void) => {
       const tempCanvas = document.createElement('canvas')
       const tempCtx = tempCanvas.getContext('2d')
       if (tempCtx) {
@@ -57,9 +58,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
 
         tempCtx.drawImage(canvas, 0, 0)
-
-        const dataURL = tempCanvas.toDataURL('image/png')
-        setImageState(dataURL)
+        setCanvasState(tempCanvas)
       }
     }, [])
 
@@ -190,6 +189,34 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
       }
     }, [chartData?.chartData?.series])
 
+    const hasVolume = useMemo(() => volumeSeries?.isVisible && (volumeSeries.values?.length ?? 0) > 0, [volumeSeries])
+
+    useEffect(() => {
+      if (mainChartImage && volumeChartImage) {
+        // 메인 차트와 볼륨 차트를 합쳐서 하나의 이미지로 생성
+        const combinedCanvas = document.createElement('canvas')
+        const combinedCtx = combinedCanvas.getContext('2d')
+
+        if (combinedCtx) {
+          combinedCanvas.width = mainChartImage.width
+          combinedCanvas.height = mainChartImage.height + volumeChartImage.height
+
+          combinedCtx.fillStyle = '#FFFFFF'
+          combinedCtx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height)
+
+          combinedCtx.drawImage(mainChartImage, 0, 0)
+
+          combinedCtx.drawImage(volumeChartImage, 0, mainChartImage.height)
+
+          const dataURL = combinedCanvas.toDataURL('image/png')
+          setBase64ChartImage(dataURL)
+        }
+      } else if (mainChartImage && !hasVolume) {
+        const dataURL = mainChartImage.toDataURL('image/png')
+        setBase64ChartImage(dataURL)
+      }
+    }, [mainChartImage, volumeChartImage, hasVolume])
+
     // 최고점 데이터 계산
     const highPointData = useMemo(() => {
       if (!highDataSeries?.values || !timestamps.length) return null
@@ -239,7 +266,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
           onComplete: () => {
             const canvas = mainChartRef.current?.canvas
             if (canvas) {
-              convertChartToImage(canvas, setBase64MainChartImage)
+              saveChartCanvas(canvas, setMainChartImage)
             }
           },
         },
@@ -259,7 +286,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
         layout: {
           padding: {
             right: 30,
-            top: 14,
+            top: 20,
             left: 60,
             bottom: 6,
           },
@@ -351,7 +378,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
         handleBoxPositionChange,
         chartData?.chartData?.series,
         mode,
-        convertChartToImage,
+        saveChartCanvas,
         calculateYAxisRange,
         highPointData,
         lowPointData,
@@ -470,14 +497,14 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
           onComplete: () => {
             const canvas = volumeChartRef.current?.canvas
             if (canvas) {
-              convertChartToImage(canvas, setBase64VolumeChartImage)
+              saveChartCanvas(canvas, setVolumeChartImage)
             }
           },
         },
         layout: {
           padding: {
             right: 30,
-            top: 20,
+            top: 16,
             left: 60,
             bottom: 30,
           },
@@ -535,10 +562,8 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
           },
         },
       }),
-      [chartOptions, volumeSeries?.values, timestamps, convertChartToImage, calculateYAxisRange, marketOpenTime, marketCloseTime],
+      [chartOptions, volumeSeries?.values, timestamps, saveChartCanvas, calculateYAxisRange, marketOpenTime, marketCloseTime],
     )
-
-    const hasVolume = useMemo(() => volumeSeries?.isVisible && (volumeSeries.values?.length ?? 0) > 0, [volumeSeries])
 
     const hasVisibleData =
       (chartType === ChartType.CANDLE ? closeDataSeries && openDataSeries && highDataSeries && lowDataSeries : closeDataSeries) || hasVolume
@@ -565,12 +590,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
 
     return (
       <>
-        {mode === NewsletterDetailPageMode.CAPTURE && (
-          <>
-            {base64MainChartImage && <img src={base64MainChartImage} alt="chart" width="776px" />}
-            {base64VolumeChartImage && <img src={base64VolumeChartImage} alt="chart" width="776px" />}
-          </>
-        )}
+        {mode === NewsletterDetailPageMode.CAPTURE && <>{base64ChartImage && <img src={base64ChartImage} alt="chart" width="100%" />}</>}
         <>
           {mode !== NewsletterDetailPageMode.CAPTURE && (
             <Box display="flex" justifyContent="flex-end" px="30px" pb="12px" gap="8px">

@@ -324,7 +324,7 @@ const Chart = ({
                 <Box display="flex" justifyContent="flex-end" gap="12px">
                   <MIButton
                     type="outlined"
-                    size="h32"
+                    size="h34"
                     color="gray"
                     width="76px"
                     onClick={() => {
@@ -337,7 +337,7 @@ const Chart = ({
 
                   <MIButton
                     type="filled"
-                    size="h32"
+                    size="h34"
                     color="primary"
                     width="76px"
                     disabled={!allItemsValid}

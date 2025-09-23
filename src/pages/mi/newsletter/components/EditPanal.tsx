@@ -150,7 +150,11 @@ const EditPannal = ({
               gap: '8px',
             }}
           >
-            <Button variant="text" onClick={onDeleteNews} sx={{ color: 'red', svg: { color: 'red !important' }, marginLeft: '-12px' }}>
+            <Button
+              variant="text"
+              onClick={onDeleteNews}
+              sx={{ color: '#CC4D50', svg: { color: '#CC4D50 !important' }, marginLeft: '-12px' }}
+            >
               <TrashIcon />
               삭제
             </Button>

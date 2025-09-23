@@ -365,7 +365,7 @@ const drawHighPoint = (
   ctx.font = '700 12px Pretendard, sans-serif'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.strokeStyle = '#ffffff'
+  ctx.strokeStyle = '#FFFFFF'
   ctx.lineWidth = 4
 
   // 전체 텍스트 길이 계산
@@ -442,7 +442,7 @@ const drawLowPoint = (
   ctx.font = '700 12px Pretendard, sans-serif'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.strokeStyle = '#ffffff'
+  ctx.strokeStyle = '#FFFFFF'
   ctx.lineWidth = 4
 
   // 전체 텍스트 길이 계산
@@ -833,7 +833,7 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   const timeY = finalBox.y + padding + lineHeight / 2
 
   // 흰색 외곽선 추가 (그래프랑 겹쳐도 잘 보이도록)
-  ctx.strokeStyle = '#ffffff'
+  ctx.strokeStyle = '#FFFFFF'
   ctx.lineWidth = 2
   ctx.strokeText(time, timeX, timeY)
   ctx.fillText(time, timeX, timeY)
@@ -851,8 +851,8 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   const titleX = finalBox.x + padding
 
   // 흰색 외곽선 추가 (그래프랑 겹쳐도 잘 보이도록)
-  ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 4
+  ctx.strokeStyle = '#FFFFFF'
+  ctx.lineWidth = 2
 
   // 타이틀을 여러 줄로 렌더링
   titleLines.forEach((line, index) => {
