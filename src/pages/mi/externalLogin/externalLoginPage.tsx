@@ -122,7 +122,7 @@ const ExternalLoginPage = () => {
           <Box width="52px" height="52px" display="flex" alignItems="center" justifyContent="center">
             <img src={logoImg} alt="AI Market Insights" height="52" />
           </Box>
-          <Typography
+          {/* <Typography
             fontFamily="'Source Serif Pro', serif"
             fontSize="22px"
             lineHeight="1em"
@@ -135,7 +135,7 @@ const ExternalLoginPage = () => {
             }}
           >
             Accelerate Market Intelligence with SK AI
-          </Typography>
+          </Typography> */}
         </Box>
         <Box width="100%" display="flex" flexDirection="column" gap="31px">
           <form onSubmit={handleSubmit}>
@@ -214,7 +214,7 @@ const ExternalLoginPage = () => {
                   Sign in
                 </MIButton>
               </Box>
-              <Typography
+              {/* <Typography
                 fontFamily="Pretendard"
                 fontWeight={400}
                 fontSize="13px"
@@ -225,7 +225,7 @@ const ExternalLoginPage = () => {
                 margin={0}
               >
                 서비스 이용 문의: mi@sk.com
-              </Typography>
+              </Typography> */}
             </Box>
           </form>
         </Box>
