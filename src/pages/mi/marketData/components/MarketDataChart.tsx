@@ -153,7 +153,10 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
               borderWidth: 1,
             })
 
-            // Compare 차트의 최고값/최저값 포인트
+            // Compare 차트의 최고값/최저값 포인트 (realValue 사용)
+            const realMin = compareChart.rawData[minIdx]?.realValue ?? min
+            const realMax = compareChart.rawData[maxIdx]?.realValue ?? max
+
             datasets.push({
               type: 'line' as const,
               label: `Compare ${index + 1} MinMaxMarkers`,
@@ -167,7 +170,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
               pointHoverRadius: 4.5,
               pointBackgroundColor: '#ef6b35ff', // 더 진한 주황색
               showLine: false,
-              _minMaxInfo: { min, max, minIdx, maxIdx },
+              _minMaxInfo: { min: realMin, max: realMax, minIdx, maxIdx },
             })
           }
         })
@@ -466,6 +469,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
   }
 
   const metaData = locked ? { ...data.marketMetaData, ...dummyMetaData } : data.marketMetaData
+
   const displayData = locked
     ? {
         mainChart: {
