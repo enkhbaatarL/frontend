@@ -135,23 +135,23 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
         },
       ]
 
-      // dashboard에서 비교차트 사용안함
-      // if (data.compareCharts && data.compareCharts.length > 0) {
-      //   data.compareCharts.forEach((compareChart, index) => {
-      //     if (compareChart.rawData) {
-      //       const compareData = compareChart.rawData.map((point) => point.value)
-      //       datasets.push({
-      //         label: `Compare ${index + 1}`,
-      //         data: compareData,
-      //         borderColor: '#7A8790',
-      //         backgroundColor: '#7A8790',
-      //         tension: 0,
-      //         fill: false,
-      //         borderWidth: 1,
-      //       })
-      //     }
-      //   })
-      // }
+      if (data.compareCharts && data.compareCharts.length > 0) {
+        data.compareCharts.forEach((compareChart, index) => {
+          if (compareChart.rawData) {
+            const compareData = compareChart.rawData.map((point) => point.value)
+            datasets.push({
+              type: 'line' as const,
+              label: `Compare ${index + 1}`,
+              data: compareData,
+              borderColor: '#7A8790',
+              backgroundColor: () => 'transparent',
+              tension: 0,
+              fill: false,
+              borderWidth: 1,
+            })
+          }
+        })
+      }
 
       return {
         labels,
@@ -429,47 +429,47 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
   const metaData = locked ? { ...data.marketMetaData, ...dummyMetaData } : data.marketMetaData
   const displayData = locked
     ? {
-      mainChart: {
-        specificIndicatorName: 'CURRENT',
-        rawData: dummyChartData.mainChart.map((value, index) => ({
-          date: String(index),
-          value,
-        })),
-      },
-      compareCharts: [
-        {
-          specificIndicatorName: 'PAST_5Y_AVG',
-          rawData: dummyChartData.compareCharts.map((value, index) => ({
+        mainChart: {
+          specificIndicatorName: 'CURRENT',
+          rawData: dummyChartData.mainChart.map((value, index) => ({
             date: String(index),
             value,
           })),
         },
-      ],
-      isPermitted: false,
-      marketMetaData: {
-        chartMarkRank: 0,
-        goodsNo: 0,
-        goodsDataNo: 0,
-        goodsDataSourceNo: 0,
-        goodsDataNm: '',
-        goodsDataSourceNm: '',
-        currency: '',
-        currentUnitCd: '',
-        visibleChartType: '',
-        interval: '',
-        lastUpdateDt: '',
-        indexStartDt: '',
-        lastValue: 0,
-        yoyChangeRate: 0,
-        momChangeRate: 0,
-        wowChangeRate: 0,
-        dodChangeRate: 0,
-        changeRates: [
-          { label: 'DoD', value: 0 },
-          { label: 'WoW', value: 0 },
+        compareCharts: [
+          {
+            specificIndicatorName: 'PAST_5Y_AVG',
+            rawData: dummyChartData.compareCharts.map((value, index) => ({
+              date: String(index),
+              value,
+            })),
+          },
         ],
-      },
-    }
+        isPermitted: false,
+        marketMetaData: {
+          chartMarkRank: 0,
+          goodsNo: 0,
+          goodsDataNo: 0,
+          goodsDataSourceNo: 0,
+          goodsDataNm: '',
+          goodsDataSourceNm: '',
+          currency: '',
+          currentUnitCd: '',
+          visibleChartType: '',
+          interval: '',
+          lastUpdateDt: '',
+          indexStartDt: '',
+          lastValue: 0,
+          yoyChangeRate: 0,
+          momChangeRate: 0,
+          wowChangeRate: 0,
+          dodChangeRate: 0,
+          changeRates: [
+            { label: 'DoD', value: 0 },
+            { label: 'WoW', value: 0 },
+          ],
+        },
+      }
     : data
 
   return (
@@ -487,9 +487,9 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
         '&:hover': locked
           ? undefined
           : {
-            borderColor: '#2E3F5E',
-            backgroundColor: '#F8F9FA',
-          },
+              borderColor: '#2E3F5E',
+              backgroundColor: '#F8F9FA',
+            },
       }}
       onClick={() =>
         !locked &&

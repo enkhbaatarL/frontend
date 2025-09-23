@@ -116,6 +116,7 @@ export interface IForecastHistoryDetailBaseline {
 }
 export interface IForecastHistoryDetail {
   date: string
+  download: boolean
   baseline: IForecastHistoryDetailBaseline
   counterpart?: IForecastHistoryDetailBaseline
 }
