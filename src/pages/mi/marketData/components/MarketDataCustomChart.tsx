@@ -108,6 +108,7 @@ const buildChartData = (data: IMarketData) => {
     tension: 0.3,
     fill: false as const,
     pointRadius: 0,
+    spanGaps: false,
   }
 
   const compareCharts: ICompareGraph[] = data.compareCharts ?? []
@@ -152,6 +153,7 @@ const buildChartData = (data: IMarketData) => {
       fill: isBollingerUpper ? { target: '-1' } : false,
       backgroundColor: isBollingerUpper ? 'rgba(53, 136, 200,0.1)' : undefined,
       pointRadius: 0,
+      spanGaps: false,
     }
 
     return ds
