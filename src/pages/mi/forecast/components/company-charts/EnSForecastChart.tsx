@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { Chart as ChartJS, ChartDataset } from 'chart.js'
 import dayjs from 'dayjs'
-import { debounce } from 'lodash-es'
+import { debounce, isEqual } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Chart } from 'react-chartjs-2'
 
@@ -105,6 +105,7 @@ const ForecastChart = (props: ForecastChartProps) => {
 
   // 호버 시 정상 날짜를 저장해두기 위한 ref
   const lastHoverDateRef = useRef<string>('')
+  const prevTooltipRef = useRef<unknown | null>(null)
 
   useEffect(() => {
     if (selectedContent === null) {
@@ -122,6 +123,14 @@ const ForecastChart = (props: ForecastChartProps) => {
         return
       }
 
+      const filteredTooltipContent = chartTooltip.content.filter((item) => {
+        if (item.category === 'forecast') {
+          return item.value !== null && item.value !== undefined
+        } else {
+          return true
+        }
+      })
+
       // 호버 시에는 정상 날짜를 저장
       if (!chartTooltip.viewDetail) {
         lastHoverDateRef.current = chartTooltip.label
@@ -137,20 +146,23 @@ const ForecastChart = (props: ForecastChartProps) => {
           goodsDataSourceNo: chartTooltip.content[0].goodsDataSourceNo,
         })
       }
+      if (!isEqual(prevTooltipRef.current, filteredTooltipContent)) {
+        prevTooltipRef.current = filteredTooltipContent
 
-      setTooltip({
-        minWidth: 293,
-        visible: true,
-        viewDetail: chartTooltip.viewDetail,
-        top: chartTooltip.y,
-        left: chartTooltip.x + 20 + 20,
-        label: chartTooltip.viewDetail ? lastHoverDateRef.current : chartTooltip.label, // 클릭 시 저장된 날짜, 호버 시 현재 날짜
-        content: chartTooltip.content,
-        onClose: () => {
-          plugin.clearSelectedPoint()
-          props.onSelectedContent(null)
-        },
-      })
+        setTooltip({
+          minWidth: 293,
+          visible: true,
+          viewDetail: chartTooltip.viewDetail,
+          top: chartTooltip.y,
+          left: chartTooltip.x + 20 + 20,
+          label: chartTooltip.viewDetail ? lastHoverDateRef.current : chartTooltip.label, // 클릭 시 저장된 날짜, 호버 시 현재 날짜
+          content: chartTooltip.content,
+          onClose: () => {
+            plugin.clearSelectedPoint()
+            props.onSelectedContent(null)
+          },
+        })
+      }
     },
     [props],
   )

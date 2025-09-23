@@ -155,7 +155,7 @@ const ForecastChart = (props: ForecastChartProps) => {
         }
       }
 
-      if (!isEqual(prevTooltipRef.current, filteredTooltipContent) || filteredTooltipContent.length === 1) {
+      if (!isEqual(prevTooltipRef.current, filteredTooltipContent)) {
         prevTooltipRef.current = filteredTooltipContent
 
         setTooltip({
@@ -301,13 +301,13 @@ const ForecastChart = (props: ForecastChartProps) => {
               data:
                 dataset.data.length > 0
                   ? [
-                    null,
-                    ...dataset.data.map((subValue, subIndex) => {
-                      if (index === subIndex) return subValue
-                      return null
-                    }),
-                    null,
-                  ]
+                      null,
+                      ...dataset.data.map((subValue, subIndex) => {
+                        if (index === subIndex) return subValue
+                        return null
+                      }),
+                      null,
+                    ]
                   : [],
               borderColor: 'transparent',
               backgroundColor: dataset.color,
