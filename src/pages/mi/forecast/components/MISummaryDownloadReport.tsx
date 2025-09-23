@@ -33,13 +33,13 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
     !data?.summaries || data.summaries.length === 0
       ? ''
       : data.summaries.map((summary: IForecastSummary, index: number) => (
-        <Box key={index} mt={index !== 0 ? '20px' : 0}>
-          <Typography mb={1.5} variant={'subtext5'} fontWeight={600} color={'gray.90'} component={'div'}>
-            {summary.explanatoryTitleContent}
-          </Typography>
-          {(summary.explanatorySummaryContent ?? '').replace(/\\n/g, '\n')}
-        </Box>
-      ))
+          <Box key={index} mt={index !== 0 ? '20px' : 0}>
+            <Typography mb={1.5} variant={'subtext5'} fontWeight={600} color={'gray.90'} component={'div'}>
+              {summary.explanatoryTitleContent}
+            </Typography>
+            {(summary.explanatorySummaryContent ?? '').replace(/\\n/g, '\n')}
+          </Box>
+        ))
 
   // useEffect에서 summaryContent를 의존성에 추가
   useEffect(() => {
@@ -57,7 +57,7 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
       const currentWebkitBoxOrient = element.style.webkitBoxOrient
 
       // 강제로 4줄 제한 상태로 설정
-      element.style.webkitLineClamp = '4'
+      element.style.webkitLineClamp = '8'
       element.style.display = '-webkit-box'
       element.style.webkitBoxOrient = 'vertical'
 
@@ -96,6 +96,7 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
         const fileName = `Report_${monthSelect.split('-').join('')}.zip`
         downloadFile(response.data, fileName)
       } else {
+        // prettier-ignore
         const fileName = cd.split('\'\'').pop().trim()
         downloadFile(response.data, fileName)
       }
@@ -131,7 +132,7 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
           sx={{
             overflow: 'hidden',
             display: '-webkit-box',
-            WebkitLineClamp: showMore ? 'unset' : '4',
+            WebkitLineClamp: showMore ? 'unset' : '8',
             WebkitBoxOrient: 'vertical',
             whiteSpace: 'pre-line', // 줄바꿈 처리
             lineHeight: 1.5, // 명시적으로 line-height 설정

@@ -144,8 +144,6 @@ const ForecastChart = (props: ForecastChartProps) => {
 
       if (chartTooltip.viewDetail) {
         const forecastContent = chartTooltip.content.find((item) => item.category === 'forecast') || chartTooltip.content[0]
-        console.log(forecastContent.index)
-        console.log(correctDate)
         if (forecastContent) {
           const safeValue = Number(forecastContent.value ?? 0)
           props.onSelectedContent({
@@ -303,13 +301,13 @@ const ForecastChart = (props: ForecastChartProps) => {
               data:
                 dataset.data.length > 0
                   ? [
-                      null,
-                      ...dataset.data.map((subValue, subIndex) => {
-                        if (index === subIndex) return subValue
-                        return null
-                      }),
-                      null,
-                    ]
+                    null,
+                    ...dataset.data.map((subValue, subIndex) => {
+                      if (index === subIndex) return subValue
+                      return null
+                    }),
+                    null,
+                  ]
                   : [],
               borderColor: 'transparent',
               backgroundColor: dataset.color,

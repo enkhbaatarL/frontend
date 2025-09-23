@@ -120,12 +120,7 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
                 },
               }}
             >
-              {dataset.category === DATA_CATEGORIES.FORECAST ? (
-                <ForecastLegendIcon color={dataset.borderColor as string} />
-              ) : (
-                <ActualLegendIcon color={dataset.borderColor as string} />
-              )}
-              {/* <Box
+              <Box
                 sx={{
                   width: '12px',
                   height: '12px',
@@ -135,7 +130,7 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
                   borderColor: dataset.borderColor as string,
                   borderWidth: 1,
                 }}
-              /> */}
+              />
               <Typography variant="body2SB14" color="gray.70">
                 {dataset.label}
               </Typography>
@@ -206,6 +201,10 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
               sx={{
                 opacity,
                 cursor: selectedContent || !dataset.permission ? 'default' : 'pointer',
+                borderRadius: '4px',
+                '&:hover': {
+                  backgroundColor: 'contentBG.PrimaryFade',
+                },
               }}
             >
               <Box

@@ -591,7 +591,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd
           return {
             data: values,
             label: label[index],
-            color: colorMap[index],
+            color: colorMap[index + 1],
             hidePoint: true,
             type: 'future',
             metadata: {
@@ -612,7 +612,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd
           return {
             data: value,
             label: chart.forecastChartLines.dataExplanation,
-            color: colorMap[index + 2],
+            color: colorMap[index + 1],
             hidePoint: true,
             type: 'forecast',
             borderDash: [5, 5],
@@ -633,7 +633,7 @@ const EnSForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd
           return {
             data: value,
             label: label[index],
-            color: colorMap[index],
+            color: colorMap[0],
             hidePoint: true,
             type: 'actualData',
             metadata: {
