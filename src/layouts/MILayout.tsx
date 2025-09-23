@@ -196,7 +196,13 @@ const MILayout = () => {
       >
         <div
           style={{
-            background: showDailyChart ? '#F2F5F7' : undefined,
+            background:
+              location.pathname === '/mi/dashboard'
+                ? 'linear-gradient(300deg, #D5D6D8 0%, #FCFCFC 30%, #E6E6E7 60%, #FAFAFA 100%)'
+                : showDailyChart
+                  ? '#F2F5F7'
+                  : undefined,
+
             display: 'flex',
             flexDirection: 'column',
             minHeight: location.pathname === '/mi/main' || location.pathname === '/mi/dashboard' ? '100vh' : preRenderMinHeight,

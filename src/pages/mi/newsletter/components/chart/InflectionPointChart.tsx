@@ -142,7 +142,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
         } else if (normalizedRange <= 5) {
           step = 0.5 * magnitude
         } else {
-          step = 1 * magnitude
+          step = magnitude
         }
 
         // min과 max를 스텝에 맞게 조정
