@@ -417,3 +417,29 @@ input::placeholder, textarea::placeholder {
 .notistack-SnackbarContainer.mi-snackbar {
   z-index: 10000;
 }
+
+/* MUI 컴포넌트에 Pretendard 폰트 강제 적용 */
+.MuiTypography-root,
+.MuiButton-root,
+.MuiTextField-root,
+.MuiInputBase-root,
+.MuiFormControl-root,
+.MuiFormLabel-root,
+.MuiSelect-root,
+.MuiMenuItem-root,
+.MuiDialog-root,
+.MuiDialogTitle-root,
+.MuiDialogContent-root,
+.MuiDialogActions-root,
+.MuiAlert-root,
+.MuiAlertTitle-root,
+.MuiBreadcrumbs-root,
+.MuiTooltip-root,
+.MuiIconButton-root,
+.MuiPagination-root,
+.MuiSwitch-root,
+.MuiCheckbox-root,
+.MuiLinearProgress-root,
+.MuiSkeleton-root {
+  font-family: Pretendard, sans-serif !important;
+}
