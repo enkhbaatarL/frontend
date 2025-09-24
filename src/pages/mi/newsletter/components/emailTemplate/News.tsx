@@ -186,12 +186,12 @@ const Chart = ({
                     {basis}
                   </td>
                 </tr>
+                <tr>
+                  <th colSpan={2} style={{ width: '100%', height: '12px', borderBottom: '1px solid #868E96' }}></th>
+                </tr>
               </tbody>
             </table>
           </th>
-        </tr>
-        <tr>
-          <th colSpan={2} style={{ width: '100%', height: '12px', borderBottom: '1px solid #868E96' }}></th>
         </tr>
       </thead>
       <tbody>
@@ -374,13 +374,13 @@ const Chart = ({
         )}
         {(mode === NewsletterDetailPageMode.VIEW || mode === NewsletterDetailPageMode.CAPTURE) && (
           <tr>
-            <td colSpan={2} style={{ padding: '24px 0', width: '100%' }}>
+            <td colSpan={2} style={{ padding: '24px 12px', width: '100%' }}>
               {[...(relatedNews || []), ...tempNewsItems]
                 .filter((item) => !deletedNewsIds.includes(item.newsId))
                 .map((item) => (
                   <table
                     key={item.newsId}
-                    width="100%"
+                    width="776px"
                     style={{
                       borderBottom: '1px solid #DEE2E6',
                       display:
@@ -394,7 +394,7 @@ const Chart = ({
                     </thead>
                     <tbody>
                       <tr>
-                        <td>
+                        <td style={{ verticalAlign: 'top' }}>
                           <table style={{ width: '150px' }}>
                             <thead>
                               <tr>
@@ -412,7 +412,7 @@ const Chart = ({
                             </tbody>
                           </table>
                         </td>
-                        <td>
+                        <td style={{ verticalAlign: 'top' }}>
                           <table style={{ width: '626px' }}>
                             <thead>
                               <tr>

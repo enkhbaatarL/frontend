@@ -62,12 +62,12 @@ const Chart = ({ title, basis, chartData, relatedNews, mode, chartRef, marketOpe
                   {basis}
                 </td>
               </tr>
+              <tr>
+                <th colSpan={2} style={{ width: '100%', height: '12px', borderBottom: '1px solid #868E96' }}></th>
+              </tr>
             </tbody>
           </table>
         </th>
-      </tr>
-      <tr>
-        <th style={{ width: '100%', height: '12px', borderBottom: '1px solid #868E96' }}></th>
       </tr>
     </thead>
     <tbody>
