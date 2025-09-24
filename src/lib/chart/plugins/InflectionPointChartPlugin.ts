@@ -843,7 +843,7 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   if (params.trend === 'DOWN') {
     titleColor = '#2F62A3'
   } else if (params.trend === 'UP') {
-    titleColor = '#AB3B39'
+    titleColor = '#DF4B4A'
   }
 
   ctx.fillStyle = titleColor

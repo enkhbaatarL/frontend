@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import html2canvas from 'html2canvas'
-import { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, useLayoutEffect, CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { InflectionPointChartRef } from './components/chart/InflectionPointChart'
@@ -414,7 +414,7 @@ Content-Type: text/html; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 
 <body>
-  ${htmlContent.replace(/Pretendard/g, '\'Malgun Gothic\', \'맑은 고딕\'')}
+  ${htmlContent.replace(/Pretendard/g, '\'Malgun Gothic\', \'맑은 고딕\'').replace(/\n/g, '<br>')}
 </body>`
 
   const handleDownloadEML = async () => {
@@ -661,10 +661,7 @@ Content-Transfer-Encoding: 7bit
             padding: '0',
             fontFamily: 'Pretendard, sans-serif',
             backgroundColor: '#ffffff',
-            msoLineHeightRule: 'exactly',
-            msoAsciiFontFamily: 'Malgun Gothic',
-            msoHansiFontFamily: 'Malgun Gothic',
-          } as React.CSSProperties
+          } as CSSProperties
         }
       >
         <thead>
@@ -734,7 +731,12 @@ Content-Transfer-Encoding: 7bit
           </tr>
           <tr>
             <td>
-              <Reference referenceData={newsletterIssueDetail?.issueDetail.references ?? []} />
+              <Reference
+                referenceData={newsletterIssueDetail?.issueDetail.references ?? []}
+                mode={mode}
+                marketOpenTime={newsletterIssueDetail?.issueDetail.marketOpenTime}
+                marketCloseTime={newsletterIssueDetail?.issueDetail.marketCloseTime}
+              />
             </td>
           </tr>
         </tbody>

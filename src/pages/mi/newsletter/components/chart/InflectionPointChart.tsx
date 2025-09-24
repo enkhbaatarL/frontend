@@ -460,7 +460,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
           })),
           type: 'line' as const,
           borderColor: '#2F62A3',
-          borderWidth: 3,
+          borderWidth: 1,
           pointRadius: 0,
           fill: false,
           tension: 0.1,
@@ -567,7 +567,8 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
 
     const hasVisibleData =
       (chartType === ChartType.CANDLE ? closeDataSeries && openDataSeries && highDataSeries && lowDataSeries : closeDataSeries) || hasVolume
-    if (!chartData?.chartData?.series?.length || !hasVisibleData) {
+
+    if (!chartData?.chartData?.series?.length || !hasVisibleData || timestamps.length === 0) {
       return (
         <Box
           height="352px"
@@ -583,7 +584,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
             color: '#6C757D',
           }}
         >
-          차트 데이터가 없습니다
+          현재 데이터를 불러올 수 없습니다.
         </Box>
       )
     }

@@ -34,6 +34,7 @@ export const generateYAxis = (params: {
   scaleTop?: number
   scaleBottom?: number
   isVirtual?: boolean
+  axisWidth?: number
 }) => ({
   unit: params.unit,
   display: !params.isVirtual,
@@ -42,7 +43,7 @@ export const generateYAxis = (params: {
     text: params.label ?? '',
   },
   afterFit(axis: { width: number }) {
-    axis.width = params.isVirtual ? 2 : 67
+    axis.width = params.isVirtual ? 2 : (params.axisWidth ?? 67)
   },
   position: params.position ?? 'right',
   grid: {
@@ -82,6 +83,8 @@ export const generateYAxis = (params: {
     scale.max = scale.max + range * topPadding
   },
   isVirtual: params.isVirtual,
+  borderColor: params.borderColor,
+  color: params.color,
 })
 
 export const getWeekOfMonth = (date: dayjs.Dayjs) => {

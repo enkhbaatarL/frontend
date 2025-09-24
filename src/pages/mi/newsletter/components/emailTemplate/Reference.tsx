@@ -1,11 +1,19 @@
-import { IReferenceDataItem } from '@/service/mi/newsletter'
+import { useRef } from 'react'
+
+import ReferenceChart, { ReferenceChartRef } from '@/pages/mi/newsletter/components/chart/ReferenceChart'
+import { IReferenceDataItem, NewsletterDetailPageMode } from '@/service/mi/newsletter'
 
 interface Props {
   referenceData: IReferenceDataItem[]
+  mode: NewsletterDetailPageMode
+  marketOpenTime?: number
+  marketCloseTime?: number
 }
 
-const Reference = ({ referenceData }: Props) =>
-  referenceData.map((item) => (
+const Reference = ({ referenceData, mode, marketOpenTime, marketCloseTime }: Props) => {
+  const chartRef = useRef<ReferenceChartRef | null>(null)
+
+  return referenceData.map((item) => (
     <table
       style={{
         width: '776px',
@@ -46,7 +54,15 @@ const Reference = ({ referenceData }: Props) =>
                 </tr>
                 <tr>
                   <td width="100%" style={{ paddingTop: '24px' }}>
-                    {/* 데이터 구현부 */}
+                    {item.chartData && (
+                      <ReferenceChart
+                        ref={chartRef}
+                        chartData={item.chartData}
+                        mode={mode}
+                        marketOpenTime={marketOpenTime}
+                        marketCloseTime={marketCloseTime}
+                      />
+                    )}
                     {item.tableData && (
                       <table width="100%" style={{ borderCollapse: 'collapse' }}>
                         <thead>
@@ -104,5 +120,6 @@ const Reference = ({ referenceData }: Props) =>
       </tbody>
     </table>
   ))
+}
 
 export default Reference
