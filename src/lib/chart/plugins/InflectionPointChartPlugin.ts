@@ -324,8 +324,6 @@ const drawMarketHoursBackground = (
   const closeTimestamp = Number(marketCloseTime)
 
   if (closeTimestamp < openTimestamp) {
-    // 양쪽 범위
-
     const firstTimestamp = timestamps[0]
     const baseDate = dayjs(firstTimestamp).tz('America/New_York').format('YYYY-MM-DD')
 
@@ -336,7 +334,6 @@ const drawMarketHoursBackground = (
     drawMarketHoursBackgroundSegment(ctx, chartArea, xScale, timestamps, openTimestamp, firstCloseTimestamp)
     drawMarketHoursBackgroundSegment(ctx, chartArea, xScale, timestamps, secondOpenTimestamp, closeTimestamp)
   } else {
-    // 단일 범위
     drawMarketHoursBackgroundSegment(ctx, chartArea, xScale, timestamps, openTimestamp, closeTimestamp)
   }
 }

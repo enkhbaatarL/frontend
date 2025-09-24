@@ -1,6 +1,6 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import { Box, Typography, Collapse, Fade } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -24,6 +24,7 @@ import CheckIcon from '@/components/common/icons/agent/CheckIcon'
 import EditIcon from '@/components/common/icons/agent/EditIcon'
 import LoadingSpinner from '@/components/common/influence-factor-chart/icons/LoadingSpinIcon'
 import MISelect from '@/components/common/select/MISelect'
+import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
 import newsletterService, { INewsletterIssueDetail, IRelatedNewsEventItem, NewsletterDetailPageMode } from '@/service/mi/newsletter'
@@ -68,6 +69,7 @@ const NewsletterDetailPage = () => {
   const navigate = useNavigate()
   const { showSnackbar } = useSnackbar()
   const { onShow: showDialog, onHide: hideDialog } = useDialog()
+  const { setStickyHeader } = useStickyHeader()
 
   const emailContentRef = useRef<HTMLTableElement>(null)
   const chartRef = useRef<InflectionPointChartRef>(null)
@@ -87,10 +89,11 @@ const NewsletterDetailPage = () => {
 
   const { newsletterId, issueNo } = useParams()
 
-  const { data: newsletterIssueDetailData, optimisticUpdate: optimisticUpdateDetail } = useSearchFilter<
-    Record<string, never>,
-    INewsletterIssueDetail | null
-  >(
+  const {
+    data: newsletterIssueDetailData,
+    optimisticUpdate: optimisticUpdateDetail,
+    isLoading: isNewsletterIssueDetailLoading,
+  } = useSearchFilter<Record<string, never>, INewsletterIssueDetail | null>(
     () => {
       if (!newsletterId || !issueNo) {
         return Promise.resolve(null)
@@ -107,7 +110,7 @@ const NewsletterDetailPage = () => {
     },
   )
 
-  const { data: newsletterIssues } = useQuery({
+  const { data: newsletterIssues, isLoading: isNewsletterIssuesLoading } = useQuery({
     queryKey: ['newsletterIssues', newsletterId],
     queryFn: () => {
       if (!newsletterId) {
@@ -394,8 +397,37 @@ const NewsletterDetailPage = () => {
     const originalMode = mode
     setMode(NewsletterDetailPageMode.CAPTURE)
 
+    // 차트가 완전히 렌더링될 때까지 충분히 대기
     await new Promise((resolve) => {
-      setTimeout(resolve, 0)
+      const waitForChartRendering = () => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              // ReferenceChart의 이미지 변환 완료 확인
+              const checkChartImages = () => {
+                const chartImages = emailContentRef.current?.querySelectorAll('img[alt="chart"]')
+                if (chartImages && chartImages.length > 0) {
+                  const allImagesLoaded = Array.from(chartImages).every((img) => {
+                    const htmlImg = img as HTMLImageElement
+                    return htmlImg.complete && htmlImg.naturalWidth > 0
+                  })
+
+                  if (allImagesLoaded) {
+                    resolve(undefined)
+                  } else {
+                    setTimeout(checkChartImages, 100)
+                  }
+                } else {
+                  setTimeout(checkChartImages, 200)
+                }
+              }
+
+              checkChartImages()
+            }, 1000)
+          })
+        })
+      }
+      waitForChartRendering()
     })
 
     const html = (emailContentRef.current?.outerHTML ?? '').replace(/<canvas[^>]*>.*?<\/canvas>/gis, '')
@@ -405,26 +437,29 @@ const NewsletterDetailPage = () => {
     return html
   }, [mode, setMode])
 
-  const createEMLContent = (htmlContent: string) => `From: sender@example.com
-To: recipient@example.com
-Subject: HTML Content Test
+  const createEMLContent = (subject: string, htmlContent: string) => `From:
+To:
+Subject: ${subject}
 MIME-Version: 1.0
 X-Unsent: 1
 Content-Type: text/html; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 
 <body>
+  <!--[if mso]><style type="text/css">body, table, td {font-family: 'Malgun Gothic', '맑은 고딕', sans-serif !important;}</style><![endif]-->
   ${htmlContent.replace(/Pretendard/g, '\'Malgun Gothic\', \'맑은 고딕\'').replace(/\n/g, '<br>')}
 </body>`
 
   const handleDownloadEML = async () => {
+    const emailSubject =
+      newsletterIssueDetail?.issueDetail.emailSubject ?? `Issue ${issueNo?.padStart(3, '0')} (${newsletterIssueDetail?.issueDetail.date})`
     const emailContentHTML = await createEmailContentHTML()
-    const emailContent = createEMLContent(emailContentHTML)
+    const emailContent = createEMLContent(emailSubject, emailContentHTML)
     const blob = new Blob([emailContent], { type: 'message/rfc822' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'newsletter.eml'
+    a.download = `${emailSubject}.eml`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -507,12 +542,52 @@ Content-Transfer-Encoding: 7bit
   }, [createEmailContentHTML, showSnackbar])
 
   useEffect(() => {
+    if (mode === NewsletterDetailPageMode.EDIT) {
+      const editModeHeader = (
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          alignSelf="stretch"
+          gap="10px"
+          padding="12px 0px"
+          width="100%"
+          sx={{
+            backgroundColor: '#212529',
+            opacity: 0.9,
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: 'Pretendard',
+              fontWeight: 500,
+              fontSize: '14px',
+              lineHeight: 1.4,
+              textAlign: 'left',
+              color: '#FFFFFF',
+            }}
+          >
+            Newsletter Edit Mode - 뉴스 항목을 수정하고 아웃룩 등 메일 서비스로 보내 발송할 수 있습니다
+          </Typography>
+        </Box>
+      )
+      setStickyHeader(editModeHeader)
+    } else {
+      setStickyHeader(null)
+    }
+
+    return () => {
+      setStickyHeader(null)
+    }
+  }, [mode, setStickyHeader])
+
+  useEffect(() => {
     initializeNewsletterIssueDetail()
   }, [newsletterIssueDetailData, initializeNewsletterIssueDetail])
 
   return (
     <Box position="relative">
-      {(mode === NewsletterDetailPageMode.CAPTURE || isCapturing) && (
+      {(mode === NewsletterDetailPageMode.CAPTURE || isCapturing || isNewsletterIssueDetailLoading || isNewsletterIssuesLoading) && (
         <Box
           position="fixed"
           top="0"
@@ -533,36 +608,6 @@ Content-Transfer-Encoding: 7bit
           <LoadingSpinner speed={2} />
         </Box>
       )}
-      <Collapse in={mode === NewsletterDetailPageMode.EDIT} timeout={300} easing="ease-in-out">
-        <Fade in={mode === NewsletterDetailPageMode.EDIT} timeout={400} easing="ease-in-out">
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            alignSelf="stretch"
-            gap="10px"
-            padding="12px 0px"
-            width="100%"
-            sx={{
-              backgroundColor: '#212529',
-              opacity: 0.9,
-            }}
-          >
-            <Typography
-              sx={{
-                fontFamily: 'Pretendard',
-                fontWeight: 500,
-                fontSize: '14px',
-                lineHeight: 1.4,
-                textAlign: 'left',
-                color: '#FFFFFF',
-              }}
-            >
-              Newsletter Edit Mode - 뉴스 항목을 수정하고 아웃룩 등 메일 서비스로 보내 발송할 수 있습니다
-            </Typography>
-          </Box>
-        </Fade>
-      </Collapse>
       <Box display="flex" justifyContent="space-between" py="12px" width="800px" margin="38px auto 20px auto">
         {mode === NewsletterDetailPageMode.VIEW && (
           <MISelect
@@ -733,7 +778,6 @@ Content-Transfer-Encoding: 7bit
             <td>
               <Reference
                 referenceData={newsletterIssueDetail?.issueDetail.references ?? []}
-                mode={mode}
                 marketOpenTime={newsletterIssueDetail?.issueDetail.marketOpenTime}
                 marketCloseTime={newsletterIssueDetail?.issueDetail.marketCloseTime}
               />

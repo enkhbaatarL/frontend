@@ -270,14 +270,6 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
             }
           },
         },
-        events: ['mousedown', 'mousemove', 'mouseup', 'click', 'mouseover', 'mouseout'] as (
-          | 'mousedown'
-          | 'mousemove'
-          | 'mouseup'
-          | 'click'
-          | 'mouseover'
-          | 'mouseout'
-        )[],
         interaction: {
           intersect: false,
           mode: 'index' as const,

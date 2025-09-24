@@ -142,33 +142,52 @@ const Chart = ({
   return (
     <table
       style={{
-        width: '776px',
+        width: '800px',
         margin: '30px auto 20px auto',
+        padding: '0 12px',
       }}
     >
       <thead>
         <tr>
-          <th
-            style={{
-              width: '100%',
-              textAlign: 'left',
-              fontWeight: 600,
-              fontSize: '18px',
-              color: '#212529',
-            }}
-          >
-            관련 뉴스
-          </th>
-          <th
-            style={{
-              whiteSpace: 'nowrap',
-              textAlign: 'right',
-              fontWeight: 400,
-              fontSize: '12px',
-              color: '#868E96',
-            }}
-          >
-            {basis}
+          <th>
+            <table
+              style={{
+                width: '776px',
+                margin: '0 auto',
+              }}
+            >
+              <thead>
+                <tr>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      fontWeight: 600,
+                      fontSize: '18px',
+                      color: '#212529',
+                    }}
+                  >
+                    관련 뉴스
+                  </td>
+                  <td
+                    style={{
+                      whiteSpace: 'nowrap',
+                      textAlign: 'right',
+                      fontWeight: 400,
+                      fontSize: '12px',
+                      color: '#868E96',
+                    }}
+                  >
+                    {basis}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </th>
         </tr>
         <tr>
@@ -179,7 +198,7 @@ const Chart = ({
         {mode === NewsletterDetailPageMode.EDIT && (
           <>
             <tr>
-              <td colSpan={2} style={{ padding: '24px 0 12px 0', width: '100%' }}>
+              <td style={{ padding: '24px 0 12px 0', width: '100%' }}>
                 <Box
                   sx={{
                     width: '776px',
@@ -375,21 +394,49 @@ const Chart = ({
                     </thead>
                     <tbody>
                       <tr>
-                        <td width="150px" style={{ padding: '20px 0 36px 0', verticalAlign: 'top' }}>
-                          <p style={{ padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>{item.createTime}</p>
-                          <p style={{ padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>{item.createdDate}</p>
-                          <p style={{ padding: 4, fontWeight: 400, fontSize: '14px', color: '#868E96' }}>{item.source}</p>
+                        <td>
+                          <table style={{ width: '150px' }}>
+                            <thead>
+                              <tr>
+                                <th></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td style={{ padding: '20px 0 36px 0', verticalAlign: 'top' }}>
+                                  <p style={{ padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>{item.createTime}</p>
+                                  <p style={{ padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>{item.createdDate}</p>
+                                  <p style={{ padding: 4, fontWeight: 400, fontSize: '14px', color: '#868E96' }}>{item.source}</p>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
                         </td>
-                        <td width="626px" style={{ padding: '20px 6px 36px 6px', verticalAlign: 'top' }}>
-                          <p style={{ padding: '4px 0 10px 0', fontWeight: 600, fontSize: '18px', color: '#495057' }}>{item.title}</p>
-                          {item.content.map((content) => (
-                            <p
-                              key={content}
-                              style={{ padding: 0, fontWeight: 400, fontSize: '16px', color: '#495057', whiteSpace: 'pre-line' }}
-                            >
-                              {content}
-                            </p>
-                          ))}
+                        <td>
+                          <table style={{ width: '626px' }}>
+                            <thead>
+                              <tr>
+                                <th></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td style={{ padding: '20px 6px 36px 6px', verticalAlign: 'top' }}>
+                                  <p style={{ padding: '4px 0 10px 0', fontWeight: 600, fontSize: '18px', color: '#495057' }}>
+                                    {item.title}
+                                  </p>
+                                  {item.content.map((content) => (
+                                    <p
+                                      key={content}
+                                      style={{ padding: 0, fontWeight: 400, fontSize: '16px', color: '#495057', whiteSpace: 'pre-line' }}
+                                    >
+                                      {content}
+                                    </p>
+                                  ))}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
                         </td>
                       </tr>
                     </tbody>

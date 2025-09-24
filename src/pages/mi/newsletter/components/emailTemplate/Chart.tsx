@@ -18,14 +18,20 @@ interface Props {
 const Chart = ({ title, basis, chartData, relatedNews, mode, chartRef, marketOpenTime, marketCloseTime }: Props) => (
   <table
     style={{
-      width: '776px',
+      width: '800px',
       margin: '30px auto 20px auto',
+      padding: '0 12px',
     }}
   >
     <thead>
       <tr>
         <th>
-          <table>
+          <table
+            style={{
+              width: '776px',
+              margin: '0 auto',
+            }}
+          >
             <thead>
               <tr>
                 <th></th>

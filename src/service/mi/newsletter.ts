@@ -113,6 +113,7 @@ export interface INewsletterIssueDetail {
   imageBase64: string
   enabled: boolean
   issueDetail: {
+    emailSubject: string
     title: string
     date: string
     marketOpenTime: number

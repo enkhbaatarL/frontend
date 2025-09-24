@@ -66,7 +66,6 @@ const Summarized = ({ content, mode, isPublished, onPublishedChange }: Props) =>
                 <tbody>
                   <tr>
                     <td
-                      colSpan={2}
                       style={{
                         textAlign: 'left',
                         margin: '0 auto',
@@ -89,14 +88,23 @@ const Summarized = ({ content, mode, isPublished, onPublishedChange }: Props) =>
                   </tr>
                   {base64MariBadgeImg && (
                     <tr>
-                      <td width="auto"></td>
-                      <td width="177px" height="46px" style={{ paddingTop: '20px' }}>
-                        <img src={base64MariBadgeImg} alt="Mari Badge" style={{ width: '100%', height: '100%' }} draggable={false} />
+                      <td style={{ textAlign: 'right', paddingTop: '20px' }}>
+                        <img
+                          src={base64MariBadgeImg}
+                          alt="Mari Badge"
+                          style={{
+                            width: '177px',
+                            height: '46px',
+                            display: 'block',
+                            marginLeft: 'auto',
+                          }}
+                          draggable={false}
+                        />
                       </td>
                     </tr>
                   )}
                   <tr>
-                    <td colSpan={2} style={{ height: '24px', borderBottom: '1px solid #DEE2E6' }}></td>
+                    <td style={{ height: '24px', borderBottom: '1px solid #DEE2E6' }}></td>
                   </tr>
                 </tbody>
               </table>

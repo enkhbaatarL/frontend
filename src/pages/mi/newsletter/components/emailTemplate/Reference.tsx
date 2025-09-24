@@ -1,23 +1,23 @@
 import { useRef } from 'react'
 
 import ReferenceChart, { ReferenceChartRef } from '@/pages/mi/newsletter/components/chart/ReferenceChart'
-import { IReferenceDataItem, NewsletterDetailPageMode } from '@/service/mi/newsletter'
+import { IReferenceDataItem } from '@/service/mi/newsletter'
 
 interface Props {
   referenceData: IReferenceDataItem[]
-  mode: NewsletterDetailPageMode
   marketOpenTime?: number
   marketCloseTime?: number
 }
 
-const Reference = ({ referenceData, mode, marketOpenTime, marketCloseTime }: Props) => {
+const Reference = ({ referenceData, marketOpenTime, marketCloseTime }: Props) => {
   const chartRef = useRef<ReferenceChartRef | null>(null)
 
   return referenceData.map((item) => (
     <table
       style={{
-        width: '776px',
+        width: '800px',
         margin: '30px auto 20px auto',
+        padding: '0 12px',
       }}
       key={item.title}
     >
@@ -55,13 +55,25 @@ const Reference = ({ referenceData, mode, marketOpenTime, marketCloseTime }: Pro
                 <tr>
                   <td width="100%" style={{ paddingTop: '24px' }}>
                     {item.chartData && (
-                      <ReferenceChart
-                        ref={chartRef}
-                        chartData={item.chartData}
-                        mode={mode}
-                        marketOpenTime={marketOpenTime}
-                        marketCloseTime={marketCloseTime}
-                      />
+                      <table width="100%" style={{ borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>
+                              <ReferenceChart
+                                ref={chartRef}
+                                chartData={item.chartData}
+                                marketOpenTime={marketOpenTime}
+                                marketCloseTime={marketCloseTime}
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     )}
                     {item.tableData && (
                       <table width="100%" style={{ borderCollapse: 'collapse' }}>

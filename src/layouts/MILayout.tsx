@@ -10,11 +10,13 @@ import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useMarketData } from '@/contexts/MarketDataContext'
 import { useResetKeyContext } from '@/contexts/ResetKeyContext'
+import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import { useScrollRestoration } from '@/hooks/useScrollRestoration'
 import DailyChart from '@/pages/mi/forecast/components/DailyChart'
 import { MarketDataProvider } from '@/providers/MarketDataProvider'
 import MIProvider from '@/providers/MIProvider'
+import { StickyHeaderProvider } from '@/providers/StickyHeaderProvider'
 import boardService, { INoticeDetailInfo, INoticePopupInfo } from '@/service/mi/board'
 import useAuthStore from '@/store/useAuthStore'
 import { MiPagesType } from '@/types/common'
@@ -86,6 +88,8 @@ const MILayout = () => {
   })
   const [isScrolled, setIsScrolled] = useState(currentScroll !== 0)
   const { marketDataList, marketDataIsLoading } = useMarketData()
+  const { stickyHeader } = useStickyHeader()
+  const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0)
 
   const { extractPage } = useCompanyCondition()
 
@@ -118,6 +122,72 @@ const MILayout = () => {
 
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    if (stickyHeader) {
+      const observer = new MutationObserver(() => {
+        const stickyElement = document.querySelector('[data-sticky-header]')
+        if (stickyElement) {
+          const height = stickyElement.getBoundingClientRect().height
+          if (height > 0 && height !== stickyHeaderHeight) {
+            setStickyHeaderHeight(height)
+          }
+        }
+      })
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+      })
+
+      return () => observer.disconnect()
+    }
+    return undefined
+  }, [stickyHeader, stickyHeaderHeight])
+
+  useEffect(() => {
+    if (stickyHeader) {
+      let resizeObserver: ResizeObserver | null = null
+
+      const measureHeight = () => {
+        const stickyElement = document.querySelector('[data-sticky-header]')
+        if (stickyElement) {
+          const height = stickyElement.getBoundingClientRect().height
+          if (height > 0) {
+            setStickyHeaderHeight(height)
+          }
+        }
+      }
+
+      // DOM이 완전히 렌더링될 때까지 대기
+      const timeoutId = setTimeout(() => {
+        measureHeight()
+
+        const stickyElement = document.querySelector('[data-sticky-header]')
+        if (stickyElement) {
+          resizeObserver = new ResizeObserver(() => {
+            const height = stickyElement.getBoundingClientRect().height
+            if (height > 0) {
+              setStickyHeaderHeight(height)
+            }
+          })
+          resizeObserver.observe(stickyElement)
+        }
+      }, 100)
+
+      return () => {
+        clearTimeout(timeoutId)
+        if (resizeObserver) {
+          resizeObserver.disconnect()
+        }
+      }
+    } else {
+      setStickyHeaderHeight(0)
+      return undefined
+    }
+  }, [stickyHeader])
 
   useEffect(() => {
     const fetchNotice = async () => {
@@ -172,15 +242,18 @@ const MILayout = () => {
 
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
+    const totalPadding = defaultPadding + stickyHeaderHeight
 
-    return `${defaultPadding}px`
-  }, [isScrolled])
+    return `${totalPadding}px`
+  }, [isScrolled, stickyHeaderHeight])
 
   const mariAgentTopPosition = useMemo(() => {
     const scrolledGap = isScrolled ? -headerTopHeight : 0
+    const basePosition = 117 + scrolledGap
+    const totalPosition = basePosition + stickyHeaderHeight
 
-    return 117 + scrolledGap
-  }, [isScrolled])
+    return totalPosition
+  }, [isScrolled, stickyHeaderHeight])
 
   return (
     <MIProvider>
@@ -213,6 +286,18 @@ const MILayout = () => {
           {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
             <MIHeaderMainLayout pages={mainMenu} activeMenu={getActiveMenu} onMoveTab={(callback) => saveScroll(callback)} />
+            {stickyHeader && (
+              <Box
+                data-sticky-header
+                sx={{
+                  position: 'sticky',
+                  top: isScrolled ? '70px' : '106px',
+                  zIndex: 1000,
+                }}
+              >
+                {stickyHeader}
+              </Box>
+            )}
           </div>
           <Box
             sx={{
@@ -269,7 +354,9 @@ const MILayoutWithProvider = () => {
   const { resetKey } = useResetKeyContext()
   return (
     <MarketDataProvider>
-      <MILayout key={resetKey} />
+      <StickyHeaderProvider>
+        <MILayout key={resetKey} />
+      </StickyHeaderProvider>
     </MarketDataProvider>
   )
 }

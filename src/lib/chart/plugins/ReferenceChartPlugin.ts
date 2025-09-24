@@ -289,25 +289,17 @@ const drawMarketHoursBackground = (
   const openTimestamp = Number(marketOpenTime)
   const closeTimestamp = Number(marketCloseTime)
 
-  // 타임스탬프가 하루를 넘어가는 경우 (예: 23:00 - 06:00) /// 수정 필요
   if (closeTimestamp < openTimestamp) {
-    // 첫 번째 타임스탬프의 날짜를 기준으로 계산
     const firstTimestamp = timestamps[0]
     const baseDate = dayjs(firstTimestamp).tz('America/New_York').format('YYYY-MM-DD')
 
-    // 첫 번째 구간: marketOpenTime부터 자정까지
     const firstCloseTimestamp = dayjs.tz(`${baseDate} 23:59:59`, 'America/New_York').valueOf()
 
-    // 두 번째 구간: 자정부터 marketCloseTime까지
     const secondOpenTimestamp = dayjs.tz(`${baseDate} 00:00:00`, 'America/New_York').add(1, 'day').valueOf()
 
-    // 첫 번째 구간 그리기
     drawMarketHoursBackgroundSegment(ctx, chartArea, xScale, timestamps, openTimestamp, firstCloseTimestamp)
-
-    // 두 번째 구간 그리기
     drawMarketHoursBackgroundSegment(ctx, chartArea, xScale, timestamps, secondOpenTimestamp, closeTimestamp)
   } else {
-    // 일반적인 경우: 같은 날 내에서 marketOpenTime부터 marketCloseTime까지
     drawMarketHoursBackgroundSegment(ctx, chartArea, xScale, timestamps, openTimestamp, closeTimestamp)
   }
 }
