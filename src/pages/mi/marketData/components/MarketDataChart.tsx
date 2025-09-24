@@ -2,7 +2,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Typography, Tooltip } from '@mui/material'
 import { Chart } from 'chart.js'
 import dayjs from 'dayjs'
-import { FC, memo, useCallback, useEffect, useRef, useState } from 'react'
+import { FC, Fragment, memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIChip from '@/components/common/chip/MIChip'
@@ -472,47 +472,47 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
 
   const displayData = locked
     ? {
-        mainChart: {
-          specificIndicatorName: 'CURRENT',
-          rawData: dummyChartData.mainChart.map((value, index) => ({
+      mainChart: {
+        specificIndicatorName: 'CURRENT',
+        rawData: dummyChartData.mainChart.map((value, index) => ({
+          date: String(index),
+          value,
+        })),
+      },
+      compareCharts: [
+        {
+          specificIndicatorName: 'PAST_5Y_AVG',
+          rawData: dummyChartData.compareCharts.map((value, index) => ({
             date: String(index),
             value,
           })),
         },
-        compareCharts: [
-          {
-            specificIndicatorName: 'PAST_5Y_AVG',
-            rawData: dummyChartData.compareCharts.map((value, index) => ({
-              date: String(index),
-              value,
-            })),
-          },
+      ],
+      isPermitted: false,
+      marketMetaData: {
+        chartMarkRank: 0,
+        goodsNo: 0,
+        goodsDataNo: 0,
+        goodsDataSourceNo: 0,
+        goodsDataNm: '',
+        goodsDataSourceNm: '',
+        currency: '',
+        currentUnitCd: '',
+        visibleChartType: '',
+        interval: '',
+        lastUpdateDt: '',
+        indexStartDt: '',
+        lastValue: 0,
+        yoyChangeRate: 0,
+        momChangeRate: 0,
+        wowChangeRate: 0,
+        dodChangeRate: 0,
+        changeRates: [
+          { label: 'DoD', value: 0 },
+          { label: 'WoW', value: 0 },
         ],
-        isPermitted: false,
-        marketMetaData: {
-          chartMarkRank: 0,
-          goodsNo: 0,
-          goodsDataNo: 0,
-          goodsDataSourceNo: 0,
-          goodsDataNm: '',
-          goodsDataSourceNm: '',
-          currency: '',
-          currentUnitCd: '',
-          visibleChartType: '',
-          interval: '',
-          lastUpdateDt: '',
-          indexStartDt: '',
-          lastValue: 0,
-          yoyChangeRate: 0,
-          momChangeRate: 0,
-          wowChangeRate: 0,
-          dodChangeRate: 0,
-          changeRates: [
-            { label: 'DoD', value: 0 },
-            { label: 'WoW', value: 0 },
-          ],
-        },
-      }
+      },
+    }
     : data
 
   return (
@@ -530,9 +530,9 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
         '&:hover': locked
           ? undefined
           : {
-              borderColor: '#2E3F5E',
-              backgroundColor: '#F8F9FA',
-            },
+            borderColor: '#2E3F5E',
+            backgroundColor: '#F8F9FA',
+          },
       }}
       onClick={() =>
         !locked &&
@@ -582,33 +582,17 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
                 {metaData.lastValue}
               </Typography>
 
-              {metaData.changeRates.length === 2 && (
-                <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto' }} gap={1.25}>
-                  <Typography color="gray.70" component="div" variant="body1M16">
-                    {metaData.changeRates[0].label}
-                  </Typography>
-                  {getChangeRateChip(metaData.changeRates[0].value)}
-                  <MILine thickness={'1px'} direction={'vertical'} length={18} />
-                  <Typography color="gray.70" component="div" variant="body1M16">
-                    {metaData.changeRates[1].label}
-                  </Typography>
-                  {getChangeRateChip(metaData.changeRates[1].value)}
-                </Box>
-              )}
-
-              {metaData.changeRates.length === 0 && (
-                <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto' }} gap={1.25}>
-                  <Typography color="gray.70" component="div" variant="body1M16">
-                    DoD
-                  </Typography>
-                  <MIChip size={'h24'} color={'gray'} label={'-'} />
-                  <MILine thickness={'1px'} direction={'vertical'} length={18} />
-                  <Typography color="gray.70" component="div" variant="body1M16">
-                    WoW
-                  </Typography>
-                  <MIChip size={'h24'} color={'gray'} label={'-'} />
-                </Box>
-              )}
+              <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto' }} gap={1.25}>
+                {(metaData.changeRates ?? []).map(({ label, value }, index) => (
+                  <Fragment key={index}>
+                    {index !== 0 && <MILine thickness={'1px'} direction={'vertical'} length={18} />}
+                    <Typography color="gray.70" component="div" variant="body1M16">
+                      {label}
+                    </Typography>
+                    {getChangeRateChip(value)}
+                  </Fragment>
+                ))}
+              </Box>
             </Box>
             <Box pt={6} height={180} sx={{ overflow: 'visible', filter: locked ? 'blur(6px)' : 'none' }}>
               <SimpleLineChart data={displayData} hasTicks />
