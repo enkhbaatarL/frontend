@@ -163,7 +163,7 @@ const MarketDataPage = () => {
         <Grid mb={17.5} container spacing={5}>
           <Grid width={'100%'} container direction={'row'} gap={'16px'}>
             {insertedChartData?.map((chartData, index) => (
-              <Grid key={`market-data-chart-${index}`} size={3} sx={{ width: '449px' }}>
+              <Grid key={`market-data-chart-${index}`} size={3} sx={{ width: '449px', minHeight: '324px' }}>
                 {chartData.isCustomChart ? (
                   <MarketDataCustomChart data={customChartInfo} locked={!chartData.isPermitted} />
                 ) : (

@@ -74,6 +74,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
 
     return historyDetailList.map((item: IForecastHistoryDetail) => ({
       date: item.date,
+      download: item.download ?? false,
       baselinePrice: item.baseline?.stat?.price ?? '-',
       baselineChangeRate: item.baseline?.stat?.changeRate ?? '-',
       counterpartPrice: item.counterpart?.stat?.price ?? '-',
@@ -142,6 +143,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
         const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedFulfillDate}.zip`
         downloadFile(response.data, fileName)
       } else {
+        // prettier-ignore
         const fileName = cd.split('\'\'').pop().trim()
         downloadFile(response.data, fileName)
       }
@@ -236,10 +238,10 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
             ...(!param.row.isCounterpartMaximum && !param.row.isCounterpartMinimum
               ? {}
               : {
-                '.MuiTypography-root.MuiTypography-tableBody2': {
-                  fontWeight: 600,
-                },
-              }),
+                  '.MuiTypography-root.MuiTypography-tableBody2': {
+                    fontWeight: 600,
+                  },
+                }),
           }}
         >
           <Box
@@ -283,26 +285,27 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
         <MITableCell>
           <Box
             onClick={() => {
-              if (param.row.baselinePrice !== '-') {
+              if (param.row.baselinePrice !== '-' && param.row.download) {
                 handleDownload2(param.row.date)
               }
             }}
             sx={{
               padding: '4px 12px',
-              color: param.row.baselinePrice === '-' ? 'content.iconDisabled' : 'content.iconEnabled',
+              color: param.row.baselinePrice === '-' || !param.row.download ? 'content.iconDisabled' : 'content.iconEnabled',
               width: 'fit-content',
               float: 'right',
               borderRadius: '4px',
               marginRight: '-12px',
               display: 'flex',
               alignItems: 'center',
+              cursor: param.row.baselinePrice !== '-' && param.row.download ? 'pointer' : 'not-allowed',
               '&:hover': {
-                color: param.row.baselinePrice === '-' ? 'content.iconDisabled' : 'content.iconHover',
-                backgroundColor: param.row.baselinePrice === '-' ? 'unset' : 'contentBG.Hover',
+                color: param.row.baselinePrice === '-' || !param.row.download ? 'content.iconDisabled' : 'content.iconHover',
+                backgroundColor: param.row.baselinePrice === '-' || !param.row.download ? 'unset' : 'contentBG.Hover',
               },
             }}
           >
-            {param.row.baselinePrice !== '-' && metaData?.data.isDownloadable && (
+            {param.row.baselinePrice !== '-' && metaData?.data.isDownloadable && param.row.download && (
               <>
                 <FileDownloadOutlinedIcon
                   fontSize={'small'}
@@ -375,7 +378,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
                 })) ?? []
               }
             />
-            <MISelect
+            {/* <MISelect
               width={220}
               type="button"
               value={selectedSettingDetailNo?.toString() || ''}
@@ -390,7 +393,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
                   )
                   .filter((option, index, self) => index === self.findIndex((item) => item.value === option.value)) ?? []
               }
-            />
+            /> */}
           </Box>
         </Box>
 

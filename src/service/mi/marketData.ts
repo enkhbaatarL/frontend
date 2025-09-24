@@ -6,6 +6,7 @@ import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/type
 export interface IRawDataPoint {
   date: string
   value: number
+  real?: number
 }
 
 export interface IMainGraph {

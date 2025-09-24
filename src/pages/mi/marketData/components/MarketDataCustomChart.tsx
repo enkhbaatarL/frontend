@@ -108,6 +108,7 @@ const buildChartData = (data: IMarketData) => {
     tension: 0.3,
     fill: false as const,
     pointRadius: 0,
+    spanGaps: false,
   }
 
   const compareCharts: ICompareGraph[] = data.compareCharts ?? []
@@ -152,6 +153,7 @@ const buildChartData = (data: IMarketData) => {
       fill: isBollingerUpper ? { target: '-1' } : false,
       backgroundColor: isBollingerUpper ? 'rgba(53, 136, 200,0.1)' : undefined,
       pointRadius: 0,
+      spanGaps: false,
     }
 
     return ds
@@ -294,7 +296,7 @@ const MarketDataCustomChart: FC<MarketDataCustomChartProps> = ({ data, locked = 
         <Box
           sx={{
             width: 467,
-            height: 215,
+            height: 238,
             overflow: 'visible',
             filter: locked ? 'blur(6px)' : 'none',
           }}

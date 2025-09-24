@@ -20,19 +20,25 @@ export const useCompanyCondition = () => {
     queryFn: async () => await forecastDataService.getForecastDataExists(comNo!),
     select: (res): MiPagesType[] => {
       const baseDenied: MiPagesType[] = res === true ? [] : [...(extractPages ?? [])]
-      const isSKE = comNo === 2020
 
-      return isSKE
+      const allowedCompanies = [
+        2020, // 에너지
+        // 2013, // E&S
+      ]
+
+      const isAllowed = allowedCompanies.includes(comNo ?? 0)
+
+      return isAllowed
         ? baseDenied
         : [
-            ...baseDenied,
+          ...baseDenied,
             'dashboard' as MiPagesType,
             'custom' as MiPagesType,
             'news-list' as MiPagesType,
             'newsletters' as MiPagesType,
             'economic-event' as MiPagesType,
             'parallel-coordinates' as MiPagesType,
-          ]
+        ]
     },
     enabled: !!comNo,
     refetchOnWindowFocus: false,
