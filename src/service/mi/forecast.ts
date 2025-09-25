@@ -111,6 +111,7 @@ export interface IForecastHistoryDetailStat {
 }
 export interface IForecastHistoryDetailBaseline {
   type: string
+  suffix?: string
   stat: IForecastHistoryDetailStat
   isPermitted: boolean
 }
@@ -118,6 +119,7 @@ export interface IForecastHistoryDetail {
   date: string
   download: boolean
   baseline: IForecastHistoryDetailBaseline
+  baseline2?: IForecastHistoryDetailBaseline
   counterpart?: IForecastHistoryDetailBaseline
 }
 
@@ -320,7 +322,6 @@ const forecastDataService = {
       withCustomBaseUrl(`mi/dashboard/histories/setting-details/${settingDetailNo}`),
       { params },
     )
-
     return response.data.data
   },
   /**

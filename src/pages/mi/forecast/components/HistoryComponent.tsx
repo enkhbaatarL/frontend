@@ -26,8 +26,15 @@ interface ProcessedHistoryData {
   date: string
   baselinePrice: string | number
   baselineChangeRate: string | number | null
+  baselineSuffix: string
   isBaselineMaximum: boolean
   isBaselineMinimum: boolean
+  baseline2Price: string | number
+  baseline2ChangeRate: string | number | null
+  baseline2Suffix: string
+  isBaseline2Maximum: boolean
+  isBaseline2Minimum: boolean
+  isBaseline2Permitted: boolean
   counterpartPrice: string | number
   counterpartChangeRate: string | number | null
   isBaselinePermitted: boolean
@@ -77,12 +84,19 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
       download: item.download ?? false,
       baselinePrice: item.baseline?.stat?.price ?? '-',
       baselineChangeRate: item.baseline?.stat?.changeRate ?? '-',
+      baselineSuffix: item.baseline?.suffix ?? '',
+      baseline2Price: item.baseline2?.stat?.price ?? '-',
+      baseline2ChangeRate: item.baseline2?.stat?.changeRate ?? '-',
+      baseline2Suffix: item.baseline2?.suffix ?? '',
       counterpartPrice: item.counterpart?.stat?.price ?? '-',
       counterpartChangeRate: item.counterpart?.stat?.changeRate ?? '-',
       isBaselinePermitted: item.baseline?.isPermitted ?? false,
+      isBaseline2Permitted: item.baseline2?.isPermitted ?? false,
       isCounterpartPermitted: item.counterpart?.isPermitted ?? false,
       isBaselineMaximum: item.baseline?.stat?.isMaximum ?? false,
       isBaselineMinimum: item.baseline?.stat?.isMinimum ?? false,
+      isBaseline2Maximum: item.baseline2?.stat?.isMaximum ?? false,
+      isBaseline2Minimum: item.baseline2?.stat?.isMinimum ?? false,
       isCounterpartMaximum: item.counterpart?.stat?.isMaximum ?? false,
       isCounterpartMinimum: item.counterpart?.stat?.isMinimum ?? false,
     }))
@@ -152,6 +166,39 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
     }
   }
 
+  // baseline2 데이터가 있는지 확인
+  const hasBaseline2Data = processedTableData.some((row) => row.baseline2Price !== '-')
+
+  const getColumnHeaders = () => {
+    const firstRow = processedTableData[0]
+    if (!firstRow) {
+      return {
+        baselineHeader: 'Forecast',
+        baselineChangeRateHeader: 'Forecast 오차율',
+        baseline2Header: 'Forecast',
+        baseline2ChangeRateHeader: 'Forecast오차율',
+      }
+    }
+
+    if (hasBaseline2Data && firstRow) {
+      return {
+        baselineHeader: 'Forecast M+1',
+        baselineChangeRateHeader: 'Forecast M+1 오차율',
+        baseline2Header: 'Forecast M+2',
+        baseline2ChangeRateHeader: 'Forecast  M+2 오차율 ',
+      }
+    } else {
+      return {
+        baselineHeader: 'Forecast',
+        baselineChangeRateHeader: 'Forecast 오차율',
+        baseline2Header: 'Forecast',
+        baseline2ChangeRateHeader: 'Forecast오차율',
+      }
+    }
+  }
+
+  const columnHeaders = getColumnHeaders()
+
   const columns: GridColDef[] = [
     {
       field: 'date',
@@ -160,7 +207,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
     },
     {
       field: 'baselinePrice',
-      headerName: 'Forecast',
+      headerName: columnHeaders.baselineHeader,
       align: 'right',
       flex: 1,
       renderCell: (param) => (
@@ -194,23 +241,85 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
     },
     {
       field: 'baselineChangeRate',
-      headerName: '예측 변화율',
+      headerName: columnHeaders.baselineChangeRateHeader,
       align: 'right',
       flex: 1,
       renderCell: (param) => (
         <MITableCell>
           <Box sx={{ filter: !param.row.isBaselinePermitted ? 'blur(3px)' : 'none' }}>
-            <Typography
-              variant={'tableBody2'}
-              fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
-              color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
-            >
-              {param.value > 0 ? '+'.concat(param.value) : param.value}
-            </Typography>
+            {param.value !== '-' && (
+              <Typography
+                variant={'tableBody2'}
+                fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
+                color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
+              >
+                {param.value > 0 ? '+'.concat(param.value) : param.value}%
+              </Typography>
+            )}
           </Box>
         </MITableCell>
       ),
     },
+    // baseline2 데이터가 있을 때만 컬럼 추가
+    ...(hasBaseline2Data
+      ? [
+          {
+            field: 'baseline2Price',
+            headerName: columnHeaders.baseline2Header,
+            align: 'right' as const,
+            flex: 1,
+            renderCell: (param: any) => (
+              <MITableCell
+                sx={{
+                  width: '100%',
+                  cursor: 'pointer',
+                  color: 'gray.70',
+                  display: 'flex',
+                  justifyContent: 'end',
+                  alignItems: 'center',
+                  backgroundColor: !param.row.isBaseline2Maximum && !param.row.isBaseline2Minimum ? 'unset' : '#F9F8F6',
+                  filter: !param.row.isBaseline2Permitted ? 'blur(3px)' : 'none',
+                  '.MuiSvgIcon-root': {
+                    verticalAlign: 'text-top',
+                    marginRight: '4px',
+                  },
+                  '.MuiChip-label': {
+                    '.MuiTypography-root': {
+                      fontWeight: 600,
+                    },
+                  },
+                }}
+              >
+                {param.row.isBaseline2Maximum ? <UpIcon /> : param.row.isBaseline2Minimum ? <DownIcon /> : ''}
+                <Typography variant={'tableBody2'} color={'gray.90'}>
+                  {param.value}
+                </Typography>
+              </MITableCell>
+            ),
+          },
+          {
+            field: 'baseline2ChangeRate',
+            headerName: columnHeaders.baseline2ChangeRateHeader,
+            align: 'right' as const,
+            flex: 1,
+            renderCell: (param: any) => (
+              <MITableCell>
+                <Box sx={{ filter: !param.row.isBaseline2Permitted ? 'blur(3px)' : 'none' }}>
+                  {param.value !== '-' && (
+                    <Typography
+                      variant={'tableBody2'}
+                      fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
+                      color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
+                    >
+                      {param.value > 0 ? '+'.concat(param.value) : param.value}%
+                    </Typography>
+                  )}
+                </Box>
+              </MITableCell>
+            ),
+          },
+        ]
+      : []),
     {
       field: 'counterpartPrice',
       headerName: 'Actual',
@@ -257,25 +366,25 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
         </MITableCell>
       ),
     },
-    {
-      field: 'counterpartChangeRate',
-      headerName: '실가 변화율',
-      align: 'right',
-      flex: 1,
-      renderCell: (param) => (
-        <MITableCell>
-          <Box sx={{ filter: !param.row.isCounterpartPermitted ? 'blur(3px)' : 'none' }}>
-            <Typography
-              variant={'tableBody2'}
-              fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
-              color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
-            >
-              {param.value > 0 ? '+'.concat(param.value) : param.value}
-            </Typography>
-          </Box>
-        </MITableCell>
-      ),
-    },
+    // {
+    //   field: 'counterpartChangeRate',
+    //   headerName: '실가 변화율',
+    //   align: 'right',
+    //   flex: 1,
+    //   renderCell: (param) => (
+    //     <MITableCell>
+    //       <Box sx={{ filter: !param.row.isCounterpartPermitted ? 'blur(3px)' : 'none' }}>
+    //         <Typography
+    //           variant={'tableBody2'}
+    //           fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
+    //           color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
+    //         >
+    //           {param.value > 0 ? '+'.concat(param.value) : param.value}
+    //         </Typography>
+    //       </Box>
+    //     </MITableCell>
+    //   ),
+    // },
     {
       field: 'action',
       headerName: '리포트',
