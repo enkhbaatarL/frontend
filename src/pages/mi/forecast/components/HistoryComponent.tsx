@@ -151,16 +151,30 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
     try {
       const response = await forecastDataService.getForecastSummaryFileDownload(companyNo, selectedFulfillDate, date)
 
-      const cd = response.headers?.['content-disposition'] ?? ''
+      const contentDisposition = response.headers?.['content-disposition'] ?? ''
+      let fileName = ''
 
-      if (cd.includes('.zip')) {
-        const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedFulfillDate}.zip`
-        downloadFile(response.data, fileName)
-      } else {
-        // prettier-ignore
-        const fileName = cd.split('\'\'').pop().trim()
-        downloadFile(response.data, fileName)
+      // Content-Disposition 헤더에서 파일명 추출
+      if (contentDisposition.includes("filename*=UTF-8''")) {
+        // UTF-8 인코딩된 파일명 처리
+        const match = contentDisposition.match(/filename\*=UTF-8''([^;\n]*)/)
+        if (match) {
+          fileName = decodeURIComponent(match[1])
+        }
+      } else if (contentDisposition.includes('filename=')) {
+        // 일반 파일명 처리
+        const match = contentDisposition.match(/filename=([^;\n]*)/)
+        if (match) {
+          fileName = match[1].replace(/['"]/g, '')
+        }
       }
+
+      // 파일명을 추출할 수 없는 경우 기본 파일명 사용
+      if (!fileName) {
+        fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedFulfillDate}.zip`
+      }
+
+      downloadFile(response.data, fileName)
     } catch (error) {
       console.error('Download failed:', error)
     }

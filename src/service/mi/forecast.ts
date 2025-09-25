@@ -330,10 +330,30 @@ const forecastDataService = {
    * @param params - { fulfillDate: 예측수행일자 }
    */
   async getForecastHistoryDetailDownload(settingDetailNo: number, params: IForecastHistoryDetailRequest) {
-    return await api.get(withCustomBaseUrl(`mi/dashboard/histories/setting-details/${settingDetailNo}/download`), {
+    const response = await api.get(withCustomBaseUrl(`mi/dashboard/histories/setting-details/${settingDetailNo}/download`), {
       params,
       responseType: 'blob',
     })
+
+    // 한글 파일명 처리를 위한 Content-Disposition 헤더 수정
+    if (response.headers?.['content-disposition']) {
+      const contentDisposition = response.headers['content-disposition']
+      // filename*=UTF-8'' 형태로 인코딩된 파일명이 있는지 확인
+      if (contentDisposition.includes('filename*=')) {
+        // 이미 올바르게 인코딩되어 있으면 그대로 사용
+        return response
+      } else if (contentDisposition.includes('filename=')) {
+        // filename= 형태인 경우 UTF-8로 인코딩
+        const filenameMatch = contentDisposition.match(/filename=([^;\n]*)/)
+        if (filenameMatch) {
+          const originalFilename = filenameMatch[1].replace(/['"]/g, '')
+          const encodedFilename = encodeURIComponent(originalFilename)
+          response.headers['content-disposition'] = contentDisposition.replace(/filename=[^;\n]*/, `filename*=UTF-8''${encodedFilename}`)
+        }
+      }
+    }
+
+    return response
   },
   /**
    * Forecast 차트 데이터를 다운로드합니다.
@@ -353,10 +373,30 @@ const forecastDataService = {
    * @param predictDate - YYYYMM
    */
   async getForecastSummaryFileDownload(companyNo: number, date: string, predictDate?: string) {
-    return await api.get(`mi/dashboard/companies/${companyNo}/summary/file-download`, {
+    const response = await api.get(`mi/dashboard/companies/${companyNo}/summary/file-download`, {
       params: { date, predictDate },
       responseType: 'blob',
     })
+
+    // 한글 파일명 처리를 위한 Content-Disposition 헤더 수정
+    if (response.headers?.['content-disposition']) {
+      const contentDisposition = response.headers['content-disposition']
+      // filename*=UTF-8'' 형태로 인코딩된 파일명이 있는지 확인
+      if (contentDisposition.includes('filename*=')) {
+        // 이미 올바르게 인코딩되어 있으면 그대로 사용
+        return response
+      } else if (contentDisposition.includes('filename=')) {
+        // filename= 형태인 경우 UTF-8로 인코딩
+        const filenameMatch = contentDisposition.match(/filename=([^;\n]*)/)
+        if (filenameMatch) {
+          const originalFilename = filenameMatch[1].replace(/['"]/g, '')
+          const encodedFilename = encodeURIComponent(originalFilename)
+          response.headers['content-disposition'] = contentDisposition.replace(/filename=[^;\n]*/, `filename*=UTF-8''${encodedFilename}`)
+        }
+      }
+    }
+
+    return response
   },
   /**
    * Forecast Summary 데이터를 조회합니다.
