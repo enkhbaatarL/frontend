@@ -166,7 +166,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
     }
   }
 
-  // baseline2 데이터가 있는지 확인
+  // baseline2 데이터 유무에 따라 컬럼명 변경
   const hasBaseline2Data = processedTableData.some((row) => row.baseline2Price !== '-')
 
   const getColumnHeaders = () => {
@@ -394,27 +394,27 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
         <MITableCell>
           <Box
             onClick={() => {
-              if (param.row.baselinePrice !== '-' && param.row.download) {
+              if (param.row.download) {
                 handleDownload2(param.row.date)
               }
             }}
             sx={{
               padding: '4px 12px',
-              color: param.row.baselinePrice === '-' || !param.row.download ? 'content.iconDisabled' : 'content.iconEnabled',
+              color: !param.row.download ? 'content.iconDisabled' : 'content.iconEnabled',
               width: 'fit-content',
               float: 'right',
               borderRadius: '4px',
               marginRight: '-12px',
               display: 'flex',
               alignItems: 'center',
-              cursor: param.row.baselinePrice !== '-' && param.row.download ? 'pointer' : 'not-allowed',
+              cursor: param.row.download ? 'pointer' : 'not-allowed',
               '&:hover': {
-                color: param.row.baselinePrice === '-' || !param.row.download ? 'content.iconDisabled' : 'content.iconHover',
-                backgroundColor: param.row.baselinePrice === '-' || !param.row.download ? 'unset' : 'contentBG.Hover',
+                color: !param.row.download ? 'content.iconDisabled' : 'content.iconHover',
+                backgroundColor: !param.row.download ? 'unset' : 'contentBG.Hover',
               },
             }}
           >
-            {param.row.baselinePrice !== '-' && metaData?.data.isDownloadable && param.row.download && (
+            {metaData?.data.isDownloadable && param.row.download && (
               <>
                 <FileDownloadOutlinedIcon
                   fontSize={'small'}
