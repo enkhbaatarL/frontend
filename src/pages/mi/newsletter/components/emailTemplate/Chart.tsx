@@ -19,8 +19,7 @@ const Chart = ({ title, basis, chartData, relatedNews, mode, chartRef, marketOpe
   <table
     style={{
       width: '800px',
-      margin: '30px auto 20px auto',
-      padding: '0 12px',
+      padding: '10px 12px 0px 12px',
     }}
   >
     <thead>
@@ -29,7 +28,6 @@ const Chart = ({ title, basis, chartData, relatedNews, mode, chartRef, marketOpe
           <table
             style={{
               width: '776px',
-              margin: '0 auto',
             }}
           >
             <thead>

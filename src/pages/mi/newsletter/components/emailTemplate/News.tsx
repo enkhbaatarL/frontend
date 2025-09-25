@@ -146,8 +146,7 @@ const Chart = ({
     <table
       style={{
         width: '800px',
-        margin: '30px auto 20px auto',
-        padding: '0 12px',
+        padding: '30px 12px 20px 12px',
       }}
     >
       <thead>
@@ -211,7 +210,6 @@ const Chart = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    margin: '0 auto',
                   }}
                 >
                   <Box
@@ -270,7 +268,6 @@ const Chart = ({
                         width: '776px',
                         display: 'flex',
                         gap: '6px',
-                        margin: '0 auto',
                       }}
                     >
                       <Box width="150px" display="flex" flexDirection="column" gap="4px">
@@ -298,7 +295,7 @@ const Chart = ({
                         />
                         <MIInputBox
                           label="출처"
-                          value={getFieldValue(item.newsId, 'source', item.source)}
+                          value={getFieldValue(item.newsId, 'source', item.source ?? '')}
                           onChange={(value) => handleFieldChange(item.newsId, 'source', value)}
                           placeholder="출처를 입력해 주세요"
                           disabled={localUnPublishedNewsIds.includes(item.newsId)}
@@ -379,7 +376,7 @@ const Chart = ({
         )}
         {(mode === NewsletterDetailPageMode.VIEW || mode === NewsletterDetailPageMode.CAPTURE) && (
           <tr>
-            <td colSpan={2} style={{ padding: '0 12px', width: '100%' }}>
+            <td colSpan={2} style={{ width: '100%', padding: '0 12px 30px 12px' }}>
               {[...(relatedNews || []), ...tempNewsItems]
                 .filter((item) => !deletedNewsIds.includes(item.newsId))
                 .map((item, index, array) => {
@@ -390,7 +387,6 @@ const Chart = ({
                   return (
                     <table
                       key={item.newsId}
-                      width="776px"
                       style={{
                         borderBottom: '1px solid #DEE2E6',
                         display:
@@ -413,18 +409,16 @@ const Chart = ({
                               </thead>
                               <tbody>
                                 <tr>
-                                  <td style={{ padding: '0 0 14px 0', verticalAlign: 'top' }}>
+                                  <td style={{ padding: '6px 0 14px 0', verticalAlign: 'top' }}>
                                     {/* 이전 아이템과 동일 날자면 날자는 생략 */}
                                     {shouldShowDate && (
-                                      <div style={{ margin: '0', padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>
+                                      <div style={{ padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>
                                         {item.createdDate}
                                       </div>
                                     )}
-                                    <div style={{ margin: '0', padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>
-                                      {item.createTime}
-                                    </div>
-                                    <div style={{ margin: '0', padding: 4, fontWeight: 400, fontSize: '14px', color: '#868E96' }}>
-                                      {item.source}
+                                    <div style={{ padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>{item.createTime}</div>
+                                    <div style={{ padding: 4, fontWeight: 400, fontSize: '14px', color: '#868E96' }}>
+                                      {item.source ?? ''}
                                     </div>
                                   </td>
                                 </tr>
@@ -432,7 +426,7 @@ const Chart = ({
                             </table>
                           </td>
                           <td style={{ verticalAlign: 'top' }}>
-                            <table style={{ width: '626px' }}>
+                            <table style={{ width: '620px' }}>
                               <thead>
                                 <tr>
                                   <th></th>
@@ -440,13 +434,11 @@ const Chart = ({
                               </thead>
                               <tbody>
                                 <tr>
-                                  <td style={{ padding: '0 6px 14px 6px', verticalAlign: 'top' }}>
+                                  <td style={{ padding: '6px 6px 14px 6px', verticalAlign: 'top' }}>
                                     <div style={{ padding: '4px 0 10px 0', fontWeight: 600, fontSize: '18px', color: '#495057' }}>
                                       {item.title}
                                     </div>
-                                    <div
-                                      style={{ padding: 0, fontWeight: 400, fontSize: '16px', color: '#495057', whiteSpace: 'pre-line' }}
-                                    >
+                                    <div style={{ fontWeight: 400, fontSize: '16px', color: '#495057', whiteSpace: 'pre-line' }}>
                                       {item.content.map((content, index) => (
                                         <Fragment key={index}>
                                           {index > 0 && <br />}

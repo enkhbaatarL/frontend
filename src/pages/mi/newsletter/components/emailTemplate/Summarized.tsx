@@ -40,8 +40,7 @@ const Summarized = ({ content, mode, isPublished, onPublishedChange }: Props) =>
       <table
         style={{
           width: '800px',
-          margin: '20px auto 20px auto',
-          padding: '0 12px',
+          padding: '0px 12px 20px 12px',
         }}
       >
         <thead>
@@ -55,7 +54,6 @@ const Summarized = ({ content, mode, isPublished, onPublishedChange }: Props) =>
               <table
                 style={{
                   width: '776px',
-                  margin: '0 auto',
                 }}
               >
                 <thead>
@@ -69,7 +67,6 @@ const Summarized = ({ content, mode, isPublished, onPublishedChange }: Props) =>
                       style={{
                         textAlign: 'left',
                         margin: '0 auto',
-                        // borderBottom: '1px solid #2E3F5E',
                       }}
                     >
                       <p

@@ -16,7 +16,7 @@ const Reference = ({ referenceData, marketOpenTime, marketCloseTime }: Props) =>
     <table
       style={{
         width: '800px',
-        margin: '30px auto 20px auto',
+        margin: '0 auto 20px auto',
         padding: '0 12px',
       }}
       key={item.title}
@@ -89,7 +89,7 @@ const Reference = ({ referenceData, marketOpenTime, marketCloseTime }: Props) =>
                           </td>
                         </tr>
                         <tr>
-                          <td width="100%" style={{ paddingTop: '24px' }}>
+                          <td width="100%" style={{ padding: '24px 0' }}>
                             {item.chartData && (
                               <table width="100%" style={{ borderCollapse: 'collapse' }}>
                                 <thead>

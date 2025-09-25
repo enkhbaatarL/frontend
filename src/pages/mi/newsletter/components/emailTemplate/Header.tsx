@@ -13,7 +13,7 @@ const Header = ({ headerImg, title, subtitle }: Props) => {
     <table
       style={{
         width: '800px',
-        margin: '0 auto 20px auto',
+        padding: '0 0 20px 0',
         backgroundColor: '#F1F3F5',
       }}
     >
@@ -26,7 +26,7 @@ const Header = ({ headerImg, title, subtitle }: Props) => {
                 alt="cover"
                 width={280}
                 height={188}
-                style={{ marginBottom: '8px' }}
+                style={{ paddingBottom: '8px' }}
                 draggable={false}
                 onError={() => setImageError(true)}
               />
@@ -37,41 +37,38 @@ const Header = ({ headerImg, title, subtitle }: Props) => {
       <tbody>
         <tr>
           <td style={{ textAlign: 'center' }}>
-            <p
+            <div
               style={{
                 fontFamily: 'Source Serif Pro, serif',
                 fontWeight: 600,
                 fontSize: '12px',
                 color: '#212529',
-                padding: '0',
-                margin: '0 0 6px 0',
+                padding: '0 0 6px 0',
               }}
             >
               <u>AI Market Insights</u>
-            </p>
-            <p
+            </div>
+            <div
               style={{
                 fontFamily: 'Source Serif Pro, serif',
                 fontWeight: 600,
                 fontSize: '26px',
                 color: '#212529',
-                padding: '0',
-                margin: '0 0 6px 0',
+                padding: '0 0 6px 0',
               }}
             >
               {title}
-            </p>
-            <p
+            </div>
+            <div
               style={{
                 fontWeight: 600,
                 fontSize: '14px',
                 color: '#495057',
-                padding: '0',
-                margin: '0 0 14px 0',
+                padding: '0 0 6px 0',
               }}
             >
               {subtitle}
-            </p>
+            </div>
           </td>
         </tr>
       </tbody>

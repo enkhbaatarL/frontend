@@ -322,7 +322,7 @@ const NewsletterDetailPage = () => {
           createdDate,
           title: String(edits?.title ?? item.title),
           content: typeof edits?.content === 'string' ? edits?.content.split('\n') : item.content,
-          source: String(edits?.source ?? item.source),
+          source: String(edits?.source ?? item.source ?? ''),
           trend: validTrend as 'UP' | 'DOWN' | 'NONE' | '',
           showInChart: showInChartValue,
           timestamp,

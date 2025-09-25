@@ -30,29 +30,16 @@ const Disclaimer = ({ mode }: Props) => {
     <table
       style={{
         width: '800px',
-        height: '115px',
-        margin: '20px auto',
-        padding: '12px 20px',
         backgroundColor: '#F1F3F5',
       }}
     >
-      <thead>
-        <tr>
-          <th></th>
-        </tr>
-      </thead>
       <tbody>
         <tr>
           <td style={{ verticalAlign: 'top' }}>
-            <table style={{ width: '150px' }}>
-              <thead>
-                <tr>
-                  <th></th>
-                </tr>
-              </thead>
+            <table>
               <tbody>
                 <tr>
-                  <td style={{ padding: '18px 0', verticalAlign: 'top' }}>
+                  <td style={{ padding: '16px 12px 16px 20px', verticalAlign: 'top' }}>
                     {base64LogImg && <img src={base64LogImg} alt="AI Market Insights" />}
                   </td>
                 </tr>
@@ -60,15 +47,10 @@ const Disclaimer = ({ mode }: Props) => {
             </table>
           </td>
           <td style={{ verticalAlign: 'top' }}>
-            <table style={{ width: '626px' }}>
-              <thead>
-                <tr>
-                  <th></th>
-                </tr>
-              </thead>
+            <table>
               <tbody>
                 <tr>
-                  <td style={{ padding: '18px 6px', verticalAlign: 'top', color: '#495057', fontWeight: 400, fontSize: '12px' }}>
+                  <td style={{ padding: '16px 24px 16px 12px', verticalAlign: 'top', color: '#495057', fontWeight: 400, fontSize: '12px' }}>
                     {mode === NewsletterDetailPageMode.VIEW
                       ? disclaimerText[NewsletterDetailPageMode.VIEW]
                       : disclaimerText[NewsletterDetailPageMode.EDIT]}

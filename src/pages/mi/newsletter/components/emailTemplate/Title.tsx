@@ -7,13 +7,12 @@ const Title = ({ title, date }: Props) => (
   <table
     style={{
       width: '800px',
-      margin: '20px auto 20px auto',
-      padding: '0 12px',
+      padding: '20px 12px 20px 12px',
     }}
   >
     <thead>
       <tr>
-        <th></th>
+        <th colSpan={2} style={{ display: 'none' }}></th>
       </tr>
     </thead>
     <tbody>
@@ -26,20 +25,14 @@ const Title = ({ title, date }: Props) => (
                   style={{
                     width: '776px',
                     textAlign: 'center',
-                    margin: '0 auto',
+                    fontWeight: 700,
+                    fontSize: '24px',
+                    color: '#212529',
+                    padding: '32px 0 3px 0',
                     borderTop: '1px solid #2E3F5E',
                   }}
                 >
-                  <p
-                    style={{
-                      fontWeight: 700,
-                      fontSize: '24px',
-                      color: '#212529',
-                      margin: '32px auto 3px auto',
-                    }}
-                  >
-                    {title}
-                  </p>
+                  {title}
                 </th>
               </tr>
             </thead>
@@ -49,19 +42,14 @@ const Title = ({ title, date }: Props) => (
                   style={{
                     textAlign: 'center',
                     margin: '0 auto',
+                    fontWeight: '500',
+                    fontSize: '16px',
+                    color: '#495057',
+                    padding: '3px 0 32px 0',
                     borderBottom: '1px solid #2E3F5E',
                   }}
                 >
-                  <p
-                    style={{
-                      fontWeight: '500',
-                      fontSize: '16px',
-                      color: '#495057',
-                      margin: '3px auto 32px auto',
-                    }}
-                  >
-                    {date}
-                  </p>
+                  {date}
                 </td>
               </tr>
             </tbody>
