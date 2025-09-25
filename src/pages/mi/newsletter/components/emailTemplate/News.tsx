@@ -51,7 +51,7 @@ const Chart = ({
     onNewsUpdate?.(newsId, field, value)
   }
 
-  const getFieldValue = (newsId: string, field: string, defaultValue: string) => String(editingNews[newsId]?.[field] ?? defaultValue)
+  const getFieldValue = (newsId: string, field: string, defaultValue: string) => String(editingNews[newsId]?.[field] ?? defaultValue ?? '')
 
   const currentNewsCount = (relatedNews?.length ?? 0) + tempNewsItems.length
   const maxAllowedNewsCount = baseNewsCount + 10
