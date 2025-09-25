@@ -62,6 +62,8 @@ export interface ISeriesData {
   isVisible: boolean
   isLineChartDashStyle: string | null
   color?: string
+  dtick?: number
+  range?: number[]
 }
 
 export interface IChartData {

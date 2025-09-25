@@ -6,11 +6,12 @@ import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import html2canvas from 'html2canvas'
-import { useRef, useState, useCallback, useEffect, useLayoutEffect, CSSProperties } from 'react'
+import { useRef, useState, useCallback, useEffect, useLayoutEffect, CSSProperties, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { InflectionPointChartRef } from './components/chart/InflectionPointChart'
 import Chart from './components/emailTemplate/Chart'
+import Disclaimer from './components/emailTemplate/Disclaimer'
 import Header from './components/emailTemplate/Header'
 import News from './components/emailTemplate/News'
 import Reference from './components/emailTemplate/Reference'
@@ -321,6 +322,7 @@ const NewsletterDetailPage = () => {
           createdDate,
           title: String(edits?.title ?? item.title),
           content: typeof edits?.content === 'string' ? edits?.content.split('\n') : item.content,
+          source: String(edits?.source ?? item.source),
           trend: validTrend as 'UP' | 'DOWN' | 'NONE' | '',
           showInChart: showInChartValue,
           timestamp,
@@ -335,8 +337,8 @@ const NewsletterDetailPage = () => {
           .filter((item) => !deletedNewsIds.includes(item.newsId))
           .map(updateNewsItem)
 
-        // 새로 추가한 항목들에 수정사항 적용
-        const updatedTempNews = tempNewsItems.map(updateNewsItem)
+        // 새로 추가한 항목들에 수정사항 적용 (미게시 뉴스는 제외)
+        const updatedTempNews = tempNewsItems.filter((item) => !currentUnPublishedNewsIds.includes(item.newsId)).map(updateNewsItem)
 
         // 기존 뉴스와 새로 추가한 뉴스를 합치고 일자+시간 순으로 정렬
         const allNewsItems = [...updatedExistingNews, ...updatedTempNews]
@@ -354,7 +356,8 @@ const NewsletterDetailPage = () => {
         }
       })
 
-      setTempNewsItems([])
+      // 미게시 뉴스는 tempList로 유지
+      setTempNewsItems((prev) => prev.filter((item) => currentUnPublishedNewsIds.includes(item.newsId)))
       setEditingNews({})
       setDeletedNewsIds([])
 
@@ -540,6 +543,11 @@ Content-Transfer-Encoding: 7bit
       showSnackbar('Preview 생성 중 오류가 발생했습니다', { variant: 'error' })
     }
   }, [createEmailContentHTML, showSnackbar])
+
+  const baseNewsCount = useMemo(
+    () => (newsletterIssueDetailData?.issueDetail.relatedNews.newsEventItems?.length ?? 0) - deletedNewsIds.length,
+    [newsletterIssueDetailData, deletedNewsIds],
+  )
 
   useEffect(() => {
     if (mode === NewsletterDetailPageMode.EDIT) {
@@ -771,6 +779,7 @@ Content-Transfer-Encoding: 7bit
                 onUnPublishedNewsIdsChange={setUnPublishedNewsIds}
                 onDeleteNews={handleDeleteNews}
                 deletedNewsIds={deletedNewsIds}
+                baseNewsCount={baseNewsCount}
               />
             </td>
           </tr>
@@ -781,6 +790,11 @@ Content-Transfer-Encoding: 7bit
                 marketOpenTime={newsletterIssueDetail?.issueDetail.marketOpenTime}
                 marketCloseTime={newsletterIssueDetail?.issueDetail.marketCloseTime}
               />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <Disclaimer mode={mode} />
             </td>
           </tr>
         </tbody>

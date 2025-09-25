@@ -1,6 +1,6 @@
 import AddIcon from '@mui/icons-material/Add'
-import { Box, Typography } from '@mui/material'
-import { useState, useEffect } from 'react'
+import { Box } from '@mui/material'
+import { useState, useEffect, Fragment } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIInputBox from '@/components/common/input/MIInputBox'
@@ -22,6 +22,7 @@ interface Props {
   onUnPublishedNewsIdsChange?: (unPublishedNewsIds: string[]) => void
   onDeleteNews?: (newsId: string) => void
   deletedNewsIds?: string[]
+  baseNewsCount?: number
 }
 
 const Chart = ({
@@ -38,6 +39,7 @@ const Chart = ({
   onUnPublishedNewsIdsChange,
   onDeleteNews,
   deletedNewsIds = [],
+  baseNewsCount = 0,
 }: Props) => {
   const [localUnPublishedNewsIds, setLocalUnPublishedNewsIds] = useState<string[]>(unPublishedNewsIds)
 
@@ -51,8 +53,9 @@ const Chart = ({
 
   const getFieldValue = (newsId: string, field: string, defaultValue: string) => String(editingNews[newsId]?.[field] ?? defaultValue)
 
-  const maxTempNewsItems = 10
-  const canAddNewItem = tempNewsItems.length < maxTempNewsItems
+  const currentNewsCount = (relatedNews?.length ?? 0) + tempNewsItems.length
+  const maxAllowedNewsCount = baseNewsCount + 10
+  const canAddNewItem = currentNewsCount < maxAllowedNewsCount
 
   const validateRequiredFields = (item: IRelatedNewsEventItem) => {
     const time = String(getFieldValue(item.newsId, 'createTime', item.createTime))
@@ -272,6 +275,17 @@ const Chart = ({
                     >
                       <Box width="150px" display="flex" flexDirection="column" gap="4px">
                         <MIInputBox
+                          label="일자"
+                          required
+                          value={getFieldValue(item.newsId, 'createdDate', item.createdDate)}
+                          onChange={(value) => handleFieldChange(item.newsId, 'createdDate', value)}
+                          placeholder="YYYY-MM-DD"
+                          error={localUnPublishedNewsIds.includes(item.newsId) ? false : !isFieldValid(item, 'createdDate')}
+                          helperText={localUnPublishedNewsIds.includes(item.newsId) ? '' : getFieldError(item, 'createdDate')}
+                          offInitialError={isNewItem(item)}
+                          disabled={localUnPublishedNewsIds.includes(item.newsId)}
+                        />
+                        <MIInputBox
                           label="시간"
                           required
                           value={getFieldValue(item.newsId, 'createTime', item.createTime)}
@@ -283,21 +297,12 @@ const Chart = ({
                           disabled={localUnPublishedNewsIds.includes(item.newsId)}
                         />
                         <MIInputBox
-                          label="일자"
-                          required
-                          value={getFieldValue(item.newsId, 'createdDate', item.createdDate)}
-                          onChange={(value) => handleFieldChange(item.newsId, 'createdDate', value)}
-                          placeholder="YYYY-MM-DD"
-                          error={localUnPublishedNewsIds.includes(item.newsId) ? false : !isFieldValid(item, 'createdDate')}
-                          helperText={localUnPublishedNewsIds.includes(item.newsId) ? '' : getFieldError(item, 'createdDate')}
-                          offInitialError={isNewItem(item)}
+                          label="출처"
+                          value={getFieldValue(item.newsId, 'source', item.source)}
+                          onChange={(value) => handleFieldChange(item.newsId, 'source', value)}
+                          placeholder="출처를 입력해 주세요"
                           disabled={localUnPublishedNewsIds.includes(item.newsId)}
                         />
-                        <Box p="4px">
-                          <Typography variant="body2" color="content.textNormal">
-                            {item.source}
-                          </Typography>
-                        </Box>
                       </Box>
                       <Box flex={1} display="flex" flexDirection="column" gap="4px">
                         <MIInputBox
@@ -374,74 +379,91 @@ const Chart = ({
         )}
         {(mode === NewsletterDetailPageMode.VIEW || mode === NewsletterDetailPageMode.CAPTURE) && (
           <tr>
-            <td colSpan={2} style={{ padding: '24px 12px', width: '100%' }}>
+            <td colSpan={2} style={{ padding: '0 12px', width: '100%' }}>
               {[...(relatedNews || []), ...tempNewsItems]
                 .filter((item) => !deletedNewsIds.includes(item.newsId))
-                .map((item) => (
-                  <table
-                    key={item.newsId}
-                    width="776px"
-                    style={{
-                      borderBottom: '1px solid #DEE2E6',
-                      display:
-                        mode === NewsletterDetailPageMode.CAPTURE && localUnPublishedNewsIds.includes(item.newsId) ? 'none' : 'block',
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td style={{ verticalAlign: 'top' }}>
-                          <table style={{ width: '150px' }}>
-                            <thead>
-                              <tr>
-                                <th></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td style={{ padding: '20px 0 36px 0', verticalAlign: 'top' }}>
-                                  <p style={{ padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>{item.createTime}</p>
-                                  <p style={{ padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>{item.createdDate}</p>
-                                  <p style={{ padding: 4, fontWeight: 400, fontSize: '14px', color: '#868E96' }}>{item.source}</p>
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </td>
-                        <td style={{ verticalAlign: 'top' }}>
-                          <table style={{ width: '626px' }}>
-                            <thead>
-                              <tr>
-                                <th></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td style={{ padding: '20px 6px 36px 6px', verticalAlign: 'top' }}>
-                                  <p style={{ padding: '4px 0 10px 0', fontWeight: 600, fontSize: '18px', color: '#495057' }}>
-                                    {item.title}
-                                  </p>
-                                  {item.content.map((content) => (
-                                    <p
-                                      key={content}
+                .map((item, index, array) => {
+                  // 이전 아이템과 동일한 날짜인지 확인
+                  const previousItem = index > 0 ? array[index - 1] : null
+                  const shouldShowDate = !previousItem || previousItem.createdDate !== item.createdDate
+
+                  return (
+                    <table
+                      key={item.newsId}
+                      width="776px"
+                      style={{
+                        borderBottom: '1px solid #DEE2E6',
+                        display:
+                          mode === NewsletterDetailPageMode.CAPTURE && localUnPublishedNewsIds.includes(item.newsId) ? 'none' : 'block',
+                      }}
+                    >
+                      <thead>
+                        <tr>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td style={{ verticalAlign: 'top' }}>
+                            <table style={{ width: '150px' }}>
+                              <thead>
+                                <tr>
+                                  <th></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td style={{ padding: '0 0 14px 0', verticalAlign: 'top' }}>
+                                    {/* 이전 아이템과 동일 날자면 날자는 생략 */}
+                                    {shouldShowDate && (
+                                      <div style={{ margin: '0', padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>
+                                        {item.createdDate}
+                                      </div>
+                                    )}
+                                    <div style={{ margin: '0', padding: 4, fontWeight: 600, fontSize: '16px', color: '#495057' }}>
+                                      {item.createTime}
+                                    </div>
+                                    <div style={{ margin: '0', padding: 4, fontWeight: 400, fontSize: '14px', color: '#868E96' }}>
+                                      {item.source}
+                                    </div>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                          <td style={{ verticalAlign: 'top' }}>
+                            <table style={{ width: '626px' }}>
+                              <thead>
+                                <tr>
+                                  <th></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td style={{ padding: '0 6px 14px 6px', verticalAlign: 'top' }}>
+                                    <div style={{ padding: '4px 0 10px 0', fontWeight: 600, fontSize: '18px', color: '#495057' }}>
+                                      {item.title}
+                                    </div>
+                                    <div
                                       style={{ padding: 0, fontWeight: 400, fontSize: '16px', color: '#495057', whiteSpace: 'pre-line' }}
                                     >
-                                      {content}
-                                    </p>
-                                  ))}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                ))}
+                                      {item.content.map((content, index) => (
+                                        <Fragment key={index}>
+                                          {index > 0 && <br />}
+                                          {content}
+                                        </Fragment>
+                                      ))}
+                                    </div>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  )
+                })}
             </td>
           </tr>
         )}

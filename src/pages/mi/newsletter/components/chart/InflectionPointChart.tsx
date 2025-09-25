@@ -583,7 +583,9 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
 
     return (
       <>
-        {mode === NewsletterDetailPageMode.CAPTURE && <>{base64ChartImage && <img src={base64ChartImage} alt="chart" width="100%" />}</>}
+        {mode === NewsletterDetailPageMode.CAPTURE && (
+          <>{base64ChartImage && <img src={base64ChartImage} alt="chart" width="100%" draggable={false} />}</>
+        )}
         <>
           {mode !== NewsletterDetailPageMode.CAPTURE && (
             <Box display="flex" justifyContent="flex-end" px="30px" pb="12px" gap="8px">

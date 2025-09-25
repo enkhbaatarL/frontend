@@ -4,7 +4,8 @@ import { CandlestickController, CandlestickElement, OhlcController, OhlcElement 
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
-import { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { isEmpty } from 'lodash-es'
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { Chart } from 'react-chartjs-2'
 
 import '@/lib/chart/adapterDayjs'
@@ -204,9 +205,9 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
       onHover: () => {},
       layout: {
         padding: {
-          right: 6,
+          right: 16,
           top: 14,
-          left: 28,
+          left: 38,
           bottom: 30,
         },
       },
@@ -251,9 +252,22 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
             display: false,
           },
           ...(() => {
+            const range = chartData?.series?.[0]?.range
             const values = chartData?.series?.[0]?.values ?? [0]
-            return calculateYAxisRange(values, 30, 30, true) // 상하 10% 패딩
+            return !isEmpty(range) ? { min: range?.[0], max: range?.[1] } : calculateYAxisRange(values, 30, 30, true)
           })(),
+          afterDataLimits(scale: { min: number; max: number }) {
+            const range = chartData?.series?.[0]?.range
+            if (!isEmpty(range)) {
+              scale.min = range?.[0] ?? 0
+              scale.max = range?.[1] ?? 0
+            } else {
+              const values = chartData?.series?.[0]?.values ?? [0]
+              const { min, max } = calculateYAxisRange(values, 30, 30, true)
+              scale.min = min
+              scale.max = max
+            }
+          },
         },
         ...Object.keys(subYAxes).reduce(
           (acc, key) => {
@@ -262,7 +276,8 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
 
             if (seriesIndex >= 1 && chartData?.series?.[seriesIndex]) {
               const values = chartData.series[seriesIndex].values ?? []
-              const yAxisRange = calculateYAxisRange(values, 30, 30, true)
+              const range = chartData?.series?.[seriesIndex]?.range
+              const yAxisRange = !isEmpty(range) ? { min: range?.[0], max: range?.[1] } : calculateYAxisRange(values, 30, 30, true)
 
               acc[key] = {
                 ...axis,
@@ -282,6 +297,12 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
                 },
                 min: yAxisRange.min,
                 max: yAxisRange.max,
+                afterDataLimits(scale: { min: number; max: number }) {
+                  if (!isEmpty(range)) {
+                    scale.min = range?.[0] ?? 0
+                    scale.max = range?.[1] ?? 0
+                  }
+                },
               }
             } else {
               acc[key] = axis
@@ -319,6 +340,7 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
             },
             {} as Record<string, { unit: string; borderColor?: string; color?: string; isVirtual?: boolean }>,
           ),
+          seriesTicks: chartData?.series?.map((series) => series.dtick) || [],
           boldLine: 'vertical',
         },
         legend: {

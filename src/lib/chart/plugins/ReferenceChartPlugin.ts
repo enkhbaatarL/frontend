@@ -18,6 +18,7 @@ interface ReferencePluginOptions {
   marketCloseTime?: number
   yIDs?: string[]
   subYAxes?: Record<string, { unit: string; borderColor?: string; color?: string; isVirtual?: boolean }>
+  seriesTicks?: (number | undefined)[]
 }
 
 const findNearestTimestampIndex = (targetTimestamp: number, timestamps: number[]): number => {
@@ -184,27 +185,51 @@ const drawYAxisGrid = (
   yScale: { getPixelForValue: (value: number) => number; min: number; max: number },
   yAxisStep: number = 1,
   _isRightAxis: boolean = false,
+  seriesTicks?: (number | undefined)[],
+  seriesIndex?: number,
 ) => {
   ctx.strokeStyle = '#DEE2E6'
   ctx.lineWidth = 1
   ctx.setLineDash([2, 2])
 
-  // y축 범위 계산 - 지정된 단위로 증가
-  const min = Math.floor(yScale.min / yAxisStep) * yAxisStep
-  const max = Math.ceil(yScale.max / yAxisStep) * yAxisStep
+  // seriesTicks가 있고 해당 시리즈에 tick 값이 있는 경우 우선 사용
+  if (seriesTicks && seriesIndex !== undefined && seriesTicks[seriesIndex] !== undefined) {
+    const tickValue = seriesTicks[seriesIndex]
 
-  // 지정된 단위 간격으로 모든 값에 대해 그리기
-  for (let value = min; value <= max; value += yAxisStep) {
-    if (value === min) continue
+    const min = Math.floor(yScale.min / tickValue) * tickValue
+    const max = Math.ceil(yScale.max / tickValue) * tickValue
 
-    const yPosition = yScale.getPixelForValue(value)
+    // 지정된 tick 간격 사용
+    for (let value = min; value <= max; value += tickValue) {
+      if (value === min) continue
 
-    // 차트 영역 내부에 있는지 확인
-    if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
-      ctx.beginPath()
-      ctx.moveTo(chartArea.left, yPosition)
-      ctx.lineTo(chartArea.right, yPosition)
-      ctx.stroke()
+      const yPosition = yScale.getPixelForValue(value)
+
+      // 차트 영역 내부에 있는지 확인
+      if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
+        ctx.beginPath()
+        ctx.moveTo(chartArea.left, yPosition)
+        ctx.lineTo(chartArea.right, yPosition)
+        ctx.stroke()
+      }
+    }
+  } else {
+    const min = Math.floor(yScale.min / yAxisStep) * yAxisStep
+    const max = Math.ceil(yScale.max / yAxisStep) * yAxisStep
+
+    // 지정된 단위 간격으로 모든 값에 대해 그리기
+    for (let value = min; value <= max; value += yAxisStep) {
+      if (value === min) continue
+
+      const yPosition = yScale.getPixelForValue(value)
+
+      // 차트 영역 내부에 있는지 확인
+      if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
+        ctx.beginPath()
+        ctx.moveTo(chartArea.left, yPosition)
+        ctx.lineTo(chartArea.right, yPosition)
+        ctx.stroke()
+      }
     }
   }
 }
@@ -215,6 +240,8 @@ const drawYAxisLabels = (
   yScale: { getPixelForValue: (value: number) => number; min: number; max: number },
   yAxisStep: number = 1,
   isRightAxis: boolean = false,
+  seriesTicks?: (number | undefined)[],
+  seriesIndex?: number,
 ) => {
   // 텍스트 스타일 설정
   ctx.fillStyle = '#2E3F5E'
@@ -222,23 +249,43 @@ const drawYAxisLabels = (
   ctx.textAlign = isRightAxis ? 'left' : 'right'
   ctx.textBaseline = 'middle'
 
-  // y축 범위 계산 - 지정된 단위로 증가
-  const min = Math.floor(yScale.min / yAxisStep) * yAxisStep
-  const max = Math.ceil(yScale.max / yAxisStep) * yAxisStep
+  const xPosition = isRightAxis ? chartArea.right + 10 : chartArea.left - 10
 
-  // 라벨 위치 (y축 왼쪽/오른쪽 12px 패딩)
-  const xPosition = isRightAxis ? chartArea.right + 12 : chartArea.left - 12
+  // seriesTicks가 있고 해당 시리즈에 tick 값이 있는 경우 우선 사용
+  if (seriesTicks && seriesIndex !== undefined && seriesTicks[seriesIndex] !== undefined) {
+    const tickValue = seriesTicks[seriesIndex]
 
-  // 지정된 단위 간격으로 모든 값에 대해 라벨 그리기
-  for (let value = min; value <= max; value += yAxisStep) {
-    const yPosition = yScale.getPixelForValue(value)
+    const min = Math.floor(yScale.min / tickValue) * tickValue
+    const max = Math.ceil(yScale.max / tickValue) * tickValue
 
-    // 차트 영역 내부에 있는지 확인
-    if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
-      const label = Number(value.toFixed(0)).toLocaleString()
+    // 지정된 tick 간격 사용
+    for (let value = min; value <= max; value += tickValue) {
+      const yPosition = yScale.getPixelForValue(value)
 
-      if (label) {
-        ctx.fillText(label, xPosition, yPosition)
+      // 차트 영역 내부에 있는지 확인
+      if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
+        const label = value.toLocaleString()
+
+        if (label) {
+          ctx.fillText(label, xPosition, yPosition)
+        }
+      }
+    }
+  } else {
+    const min = Math.floor(yScale.min / yAxisStep) * yAxisStep
+    const max = Math.ceil(yScale.max / yAxisStep) * yAxisStep
+
+    // 지정된 단위 간격으로 모든 값에 대해 라벨 그리기
+    for (let value = min; value <= max; value += yAxisStep) {
+      const yPosition = yScale.getPixelForValue(value)
+
+      // 차트 영역 내부에 있는지 확인
+      if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
+        const label = Number(value.toFixed(0)).toLocaleString()
+
+        if (label) {
+          ctx.fillText(label, xPosition, yPosition)
+        }
       }
     }
   }
@@ -438,19 +485,8 @@ const ReferenceChartPlugin: Plugin = {
     const yScale = chart.scales.y
     if (yScale) {
       const yAxisStep = pluginOptions.yAxisStep ?? 1
-      drawYAxisGrid(ctx, chartArea, yScale, yAxisStep, false)
+      drawYAxisGrid(ctx, chartArea, yScale, yAxisStep, false, pluginOptions.seriesTicks, 0)
     }
-
-    // 서브 y축 그리드 그리기
-    // if (pluginOptions.subYAxes) {
-    //   Object.keys(pluginOptions.subYAxes).forEach(axisId => {
-    //     const subYScale = chart.scales[axisId]
-    //     if (subYScale && !pluginOptions.subYAxes?.[axisId]?.isVirtual) {
-    //       const yAxisStep = pluginOptions.yAxisStep ?? 1
-    //       drawYAxisGrid(ctx, chartArea, subYScale, yAxisStep, true)
-    //     }
-    //   })
-    // }
 
     ctx.restore()
   },
@@ -484,7 +520,7 @@ const ReferenceChartPlugin: Plugin = {
     const yScale = chart.scales.y
     if (yScale) {
       const yAxisStep = pluginOptions.yAxisStep ?? 1
-      drawYAxisLabels(ctx, chartArea, yScale, yAxisStep, false)
+      drawYAxisLabels(ctx, chartArea, yScale, yAxisStep, false, pluginOptions.seriesTicks, 0)
     }
 
     // 서브 y축들 라벨 그리기
@@ -493,7 +529,9 @@ const ReferenceChartPlugin: Plugin = {
         const subYScale = chart.scales[axisId]
         if (subYScale && !pluginOptions.subYAxes?.[axisId]?.isVirtual) {
           const yAxisStep = pluginOptions.yAxisStep ?? 1
-          drawYAxisLabels(ctx, chartArea, subYScale, yAxisStep, true)
+          // axisId에서 시리즈 인덱스 추출 (sub-1 -> 1)
+          const seriesIndex = axisId.startsWith('sub-') ? parseInt(axisId.replace('sub-', '')) : undefined
+          drawYAxisLabels(ctx, chartArea, subYScale, yAxisStep, true, pluginOptions.seriesTicks, seriesIndex)
         }
       })
     }
