@@ -8,12 +8,12 @@ import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
+import Ticker from '@/components/mi/Ticker'
 import { useMarketData } from '@/contexts/MarketDataContext'
 import { useResetKeyContext } from '@/contexts/ResetKeyContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import { useScrollRestoration } from '@/hooks/useScrollRestoration'
-import DailyChart from '@/pages/mi/forecast/components/DailyChart'
 import { MarketDataProvider } from '@/providers/MarketDataProvider'
 import MIProvider from '@/providers/MIProvider'
 import { StickyHeaderProvider } from '@/providers/StickyHeaderProvider'
@@ -230,7 +230,7 @@ const MILayout = () => {
 
   const handleClose = () => setShowNoticePopup(false)
 
-  const showDailyChart = useMemo(
+  const showTicker = useMemo(
     () => (location.pathname === '/mi/main' || location.pathname === '/mi/dashboard') && marketDataList.length > 0,
     [location.pathname, marketDataList],
   )
@@ -272,7 +272,7 @@ const MILayout = () => {
             background:
               location.pathname === '/mi/dashboard'
                 ? 'linear-gradient(300deg, #D5D6D8 0%, #FCFCFC 30%, #E6E6E7 60%, #FAFAFA 100%)'
-                : showDailyChart
+                : showTicker
                   ? '#F2F5F7'
                   : undefined,
 
@@ -308,7 +308,7 @@ const MILayout = () => {
             }}
           >
             <MISkeleton variant={'dailyChart'} loading={marketDataIsLoading}>
-              {showDailyChart && <DailyChart data={marketDataList} />}
+              {showTicker && <Ticker data={marketDataList} />}
             </MISkeleton>
             <Outlet key={outletKey} />
           </Box>

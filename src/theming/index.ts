@@ -19,6 +19,7 @@ declare module '@mui/material/styles' {
     chartMulti: Record<string, string>
     point: Record<string, string>
     chart: Record<string, string>
+    decrease: Record<string, string>
     content: Record<string, string>
   }
 
@@ -37,6 +38,7 @@ declare module '@mui/material/styles' {
     chartMulti?: Record<string, string>
     point?: Record<string, string>
     chart?: Record<string, string>
+    decrease?: Record<string, string>
     content: Record<string, string>
   }
 }
@@ -57,6 +59,7 @@ declare module '@mui/material/Button' {
     chartMulti: true
     point: true
     chart: true
+    decrease: true
   }
 }
 
@@ -77,6 +80,7 @@ declare module '@mui/material/IconButton' {
     chartMonochrome7: true
     chartMulti: true
     'point.red1': true
+    decrease: true
     // Add any other custom colors you need
   }
 }
@@ -318,6 +322,9 @@ const theme = createTheme({
       blue2: '#5191F5',
       green6: '#498B47',
       red4: '#CC4D50',
+    },
+    decrease: {
+      main: '#CC4D50',
     },
     content: {
       backgroundHover: '#F0F3F6',

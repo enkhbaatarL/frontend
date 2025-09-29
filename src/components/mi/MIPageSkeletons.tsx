@@ -716,25 +716,29 @@ export const MIPageSkeletons = {
         overflowX: 'hidden',
         bgcolor: '#fff',
         borderBottom: '1px solid #DEE2E6',
+        height: '40px',
       }}
     >
-      <Marquee pauseOnHover={true} gradient={false} speed={20} style={{ height: '76px', backgroundColor: '#fff' }} autoFill>
+      <Marquee pauseOnHover={true} gradient={false} speed={20} style={{ height: '40px', backgroundColor: '#fff' }} autoFill>
         <Box
           flexShrink={0}
           bgcolor={'#fff'}
-          mx={'35px'}
-          p={3}
+          mx={'20px'}
+          p={'4px'}
           sx={{
             cursor: 'auto',
             userSelect: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            height: '28px',
           }}
-          gap={'4px'}
-          display={'flex'}
-          flexDirection={'column'}
         >
-          <MIBaseSkeleton.InputField width={'98px'} height={'14px'} />
-          <MIBaseSkeleton.BaseElement2 width={'189px'} height={'20px'} />
-          <MIBaseSkeleton.BaseElement2 width={'136px'} height={'10px'} />
+          <MIBaseSkeleton.TextLine width={'100px'} height={'14px'} />
+          <Box display={'flex'} alignItems={'center'} gap={'4px'}>
+            <MIBaseSkeleton.TextLine width={'80px'} height={'14px'} />
+            <MIBaseSkeleton.TextLine width={'60px'} height={'14px'} />
+          </Box>
         </Box>
       </Marquee>
     </Box>
