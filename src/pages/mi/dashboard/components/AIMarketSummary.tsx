@@ -1,10 +1,9 @@
-import { Box, Card, Chip, Stack } from '@mui/material'
+import { Card, Chip, Stack } from '@mui/material'
 import { useMemo } from 'react'
 
 import aiSummaryIcon from '@/assets/dashboard/ai-summary.svg'
 import DashboardCardHeader from '@/pages/mi/dashboard/components/DashboardCardHeader'
 import KeyEconomicIndicators from '@/pages/mi/dashboard/components/KeyEconomicIndicators'
-import KeyMetrics from '@/pages/mi/dashboard/components/KeyMetrics'
 import MarketRecap from '@/pages/mi/dashboard/components/MarketRecap'
 import Watchlist from '@/pages/mi/dashboard/components/Watchlist'
 
@@ -49,16 +48,15 @@ const AIMarketSummary = ({ lastUpdated = 'Sep 14 07:00 - Sep 15 07:00' }: AIMark
         </Stack>
       }
     />
-    <Box px="24px" sx={{ display: 'flex', gap: '24px' }}>
-      <Box display={'flex'} flexDirection={'column'} gap={'22px'} flex={1} width={708}>
+    <Stack px="24px" direction="row" gap="24px">
+      <Stack gap="22px" flex={1} width={708}>
         <MarketRecap />
-      </Box>
-      <Box display={'flex'} flexDirection={'column'} gap={'11px'} width={600}>
+      </Stack>
+      <Stack gap="12px" width={600}>
         <Watchlist />
-        <KeyMetrics />
         <KeyEconomicIndicators />
-      </Box>
-    </Box>
+      </Stack>
+    </Stack>
   </Card>
 )
 

@@ -143,9 +143,16 @@ const HighlightsItem = ({
                 variant="subtext5"
                 color="gray.70"
                 fontWeight={500}
-                sx={{ textIndent: '-12px' }}
+                sx={{
+                  textIndent: '-14px',
+                  '&::before': {
+                    content: '"•"',
+                    marginRight: '6px',
+                    color: 'gray.70',
+                  },
+                }}
               >
-                • {content}
+                {content}
               </Typography>
             ))}
           </Stack>

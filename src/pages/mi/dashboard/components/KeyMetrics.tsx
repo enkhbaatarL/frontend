@@ -187,7 +187,7 @@ const KeyMetrics = ({ metrics = [] }: KeyMetricsProps) => {
       <SectionHeader
         title="KEY METRICS"
         tooltipTitle="시장에서 가장 중요하게 모니터링되는 가격 및 공급 지표를 제공합니다. 실시간 변동을 통해 시장의 단기 흐름과 가격 방향성을 파악할 수 있습니다."
-        marginBottom={'8px'}
+        marginBottom="8px"
       />
       <Stack gap={0} mb="2px">
         {displayMetrics.map((item) => (

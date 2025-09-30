@@ -19,12 +19,13 @@ const shimmer = keyframes`
 const createBarExpandKeyframes = (minValue: number, maxValue: number, currentValue: number) => {
   const minWidth = `${(minValue / (minValue + maxValue)) * 100}%`
   const currentWidth = `${(currentValue / (minValue + maxValue)) * 100}%`
+  const middleFrame = `${(minValue / currentValue) * 100}%`
 
   return keyframes`
     0% {
-      width: 0%;
+      width: 0;
     }
-    ${(minValue / currentValue) * 100}% {
+    ${middleFrame} {
       width: ${minWidth};
     }
     100% {
