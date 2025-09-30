@@ -292,7 +292,7 @@ const MILayout = () => {
                 sx={{
                   position: 'sticky',
                   top: isScrolled ? '70px' : '106px',
-                  zIndex: 1000,
+                  zIndex: 8,
                 }}
               >
                 {stickyHeader}
