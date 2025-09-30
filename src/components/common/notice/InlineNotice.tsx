@@ -11,15 +11,15 @@ interface InlineNoticeProps {
 }
 
 const InlineNotice = ({ noticeKey, children, showCloseButton = true }: InlineNoticeProps) => {
-  const [disabled, setDisabled] = useState(JSON.parse(localStorage.getItem('disabledInlineNotice') ?? '{}')?.[noticeKey])
+  const [disabled, setDisabled] = useState(JSON.parse(localStorage.getItem('disabled-inline-notice') ?? '{}')?.[noticeKey])
   const [isClosing, setIsClosing] = useState(false)
 
   const handleClose = () => {
     setIsClosing(true)
     setTimeout(() => {
       localStorage.setItem(
-        'disabledInlineNotice',
-        JSON.stringify({ ...JSON.parse(localStorage.getItem('disabledInlineNotice') ?? '{}'), [noticeKey]: true }),
+        'disabled-inline-notice',
+        JSON.stringify({ ...JSON.parse(localStorage.getItem('disabled-inline-notice') ?? '{}'), [noticeKey]: true }),
       )
       setDisabled(true)
     }, 300)
