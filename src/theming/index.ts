@@ -477,8 +477,8 @@ const theme = createTheme({
     subtext5: {
       fontSize: '16px',
       fontStyle: 'normal',
-      fontWeight: 400,
-      lineHeight: '1.6',
+      fontWeight: 500,
+      lineHeight: '1.4',
     },
     body1: {
       fontSize: '16px',
@@ -784,11 +784,8 @@ const theme = createTheme({
       lineHeight: '1.4',
     },
     textAI: {
-      background: 'linear-gradient(272deg, #29487B -41.16%, #4B84E1 109.67%)',
-      backgroundClip: 'text',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      fontSize: '20px',
+      color: '#364FC7',
+      fontSize: '16px',
       fontStyle: 'normal',
       fontWeight: 600,
       letterSpacing: '-0.4px',
