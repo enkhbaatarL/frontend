@@ -7,7 +7,7 @@ export interface SourceOption {
 
 export interface MarketItem {
   id: string
-  type: MarketItemType
+  type?: MarketItemType
   title: string
   summary: string[]
   sources: SourceOption[]

@@ -12,7 +12,7 @@ const MarketRecap = () => {
 
   return (
     <Box padding="12px">
-      <SectionHeader title="MARKET RECAP" mb="18px">
+      <SectionHeader title="Market Recap" mb="10px" bold>
         <MIButton
           size="h32"
           color="gray"
@@ -24,7 +24,7 @@ const MarketRecap = () => {
           Market Recap
         </MIButton>
       </SectionHeader>
-      <Stack gap="24px">
+      <Stack py="12px" gap="24px">
         <Sentiment />
         <Highlights />
         <Checkpoints />

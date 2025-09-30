@@ -13,7 +13,7 @@ const options = [
   { label: 'Narrative', value: 'narrative' },
 ]
 
-const sampleData: { detailed: MarketItem[]; narrative: Omit<MarketItem, 'type'> } = {
+const sampleData: { detailed: MarketItem[]; narrative: MarketItem } = {
   detailed: [
     {
       id: 's1',
@@ -131,7 +131,7 @@ const HighlightsItem = ({
   <Box px="6px">
     <Stack py="12px" gap="6px" borderBottom={borderBottom ? '1px solid #DEE2E6' : 'none'}>
       <Stack direction="row" gap="8px">
-        <Icon type={item.type} />
+        <Icon type={item.type ?? 'neutral'} />
         <Typography variant="infoDocument">{item.title}</Typography>
       </Stack>
       <Collapse in={selectedOption === 'detailed'} timeout={300}>
