@@ -1,5 +1,5 @@
 import { omit } from 'lodash-es'
-import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, Navigate, RouteObject, RouterProvider, useLocation } from 'react-router-dom'
 
 import ProtectedRoute from '@/components/common/ProtectedRoute'
 import { ResetKeyProvider } from '@/contexts/ResetKeyContext'
@@ -12,6 +12,12 @@ import ErrorRoutes from '@/routes/ErrorRoutes'
 import { healthCheckRoutes } from '@/routes/HealthCheckRoutes'
 import MIRoutes from '@/routes/MIRoutes'
 import { ICustomRouteObject } from '@/types/common'
+
+const NotFoundRedirect = () => {
+  const location = useLocation()
+  console.info('404 Not Found: ', location.pathname)
+  return <Navigate to="/error/404" replace={true} />
+}
 
 const commonRoutes: ICustomRouteObject[] = [
   {
@@ -46,7 +52,7 @@ const commonRoutes: ICustomRouteObject[] = [
   ...healthCheckRoutes,
   {
     path: '/*',
-    element: <Navigate to="/error/404" replace={true} />,
+    element: <NotFoundRedirect />,
   },
 ]
 
