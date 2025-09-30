@@ -12,12 +12,21 @@ export interface DashboardSelectItem {
 
 interface Props {
   type?: DashboardMultipleSelectType
+  multiple?: boolean
   selectedItems: string[]
   setSelectedItems: Dispatch<SetStateAction<string[]>>
   items: DashboardSelectItem[]
+  placeholder?: string
 }
 
-const DashboardSelect = ({ selectedItems, setSelectedItems, items, type = 'default' }: Props) => {
+const DashboardSelect = ({
+  selectedItems,
+  setSelectedItems,
+  items,
+  type = 'default',
+  multiple = false,
+  placeholder = '선택하세요',
+}: Props) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
@@ -26,15 +35,23 @@ const DashboardSelect = ({ selectedItems, setSelectedItems, items, type = 'defau
   const handleClick = () => setAnchorEl(menuAnchorRef.current)
   const handleClose = () => setAnchorEl(null)
 
-  const handleToggle = (value: string) => {
+  const handleMultipleToggle = (value: string) => {
     setSelectedItems((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]))
   }
 
+  const handleSingleSelect = (value: string) => {
+    setSelectedItems([value])
+    handleClose()
+  }
+
+  const handleToggle = multiple ? handleMultipleToggle : handleSingleSelect
+
   const selectedItemsLabel = useMemo(() => {
     const selectedLabels = items.filter((item) => selectedItems.includes(item.value)).map(({ label }) => label)
+    if (selectedLabels.length === 0) return placeholder
     if (selectedLabels.length > 2) return `${selectedLabels.slice(0, 2).join(', ')} and more`
     return selectedLabels.join(', ')
-  }, [selectedItems, items])
+  }, [selectedItems, items, placeholder])
 
   return (
     <Box>
@@ -63,7 +80,7 @@ const DashboardSelect = ({ selectedItems, setSelectedItems, items, type = 'defau
             style: {
               minWidth: 150,
               marginTop: '20px',
-              marginLeft: '-100px',
+              marginLeft: '-110px',
             },
           },
           list: {
@@ -73,29 +90,35 @@ const DashboardSelect = ({ selectedItems, setSelectedItems, items, type = 'defau
           },
         }}
       >
-        {items.map(({ label, value, disabled }) => (
-          <MenuItem
-            key={value}
-            onClick={() => (disabled ? null : handleToggle(value))}
-            sx={{
-              padding: '8px 12px',
-            }}
-          >
-            <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" gap="12px" component="div">
-              <Typography variant="body2M14">{label}</Typography>
-              {type === 'switch' && (
-                <Switch
-                  checked={selectedItems.includes(value)}
-                  size="small"
-                  disabled={disabled}
-                  sx={{
-                    margin: 0,
-                  }}
-                />
-              )}
-            </Stack>
-          </MenuItem>
-        ))}
+        {items.map(({ label, value, disabled }) => {
+          const isSelected = selectedItems.includes(value)
+
+          return (
+            <MenuItem
+              key={value}
+              onClick={() => (disabled ? null : handleToggle(value))}
+              sx={{
+                padding: '8px 12px',
+              }}
+            >
+              <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" gap="12px" component="div">
+                <Typography variant="body2M14" color={isSelected ? 'gray.70' : 'gray.60'}>
+                  {label}
+                </Typography>
+                {type === 'switch' && (
+                  <Switch
+                    checked={isSelected}
+                    size="small"
+                    disabled={disabled}
+                    sx={{
+                      margin: 0,
+                    }}
+                  />
+                )}
+              </Stack>
+            </MenuItem>
+          )
+        })}
       </Menu>
     </Box>
   )

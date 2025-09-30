@@ -41,7 +41,7 @@ const SourceDropdownChip: FC<SourceDropdownChipProps> = ({ sources, onSourceSele
           padding="2px 6px"
           borderRadius="100px"
           sx={{
-            backgroundColor: '#F1F3F5',
+            backgroundColor: '#E9ECEF',
             border: isOpen ? '0.5px solid #495057' : '0.5px solid transparent',
             cursor: disabled ? 'default' : 'pointer',
             ...(!disabled && {
@@ -60,7 +60,7 @@ const SourceDropdownChip: FC<SourceDropdownChipProps> = ({ sources, onSourceSele
               fontSize: 10,
             }}
           >
-            {sources[0]?.name || ''}
+            {sources.length === 1 ? sources[0]?.name : 'More'}
           </Typography>
           {hasMultiple && (
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -91,9 +91,9 @@ const SourceDropdownChip: FC<SourceDropdownChipProps> = ({ sources, onSourceSele
             flexDirection="column"
             gap="4px"
           >
-            {sources.map((source) => (
+            {sources.map((source, index) => (
               <Box
-                key={source.link}
+                key={`${source.link}-${index}`}
                 display="flex"
                 alignItems="center"
                 px="10px"

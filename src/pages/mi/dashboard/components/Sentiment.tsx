@@ -236,10 +236,10 @@ const Sentiment = () => {
     <Stack padding="6px 12px 14px" borderRadius="10px" sx={{ backgroundColor: '#F8F9FA' }}>
       <SectionHeader
         title="Sentiment"
-        tooltipTitle="최근 24시간의 뉴스와 데이터를 분석해, 시장에 영향을 준 핵심 사건들을 간략히 정리합니다."
+        tooltipTitle="최근 24시간 뉴스를 바탕으로 시장 가격 상승에 대한 긍정·중립·부정 반응의 비중을 나타냅니다."
         padding="7.5px 0 7.5px 6px"
       >
-        <DashboardSelect type="switch" items={options} selectedItems={selectedOptions} setSelectedItems={setSelectedOptions} />
+        <DashboardSelect type="switch" multiple items={options} selectedItems={selectedOptions} setSelectedItems={setSelectedOptions} />
       </SectionHeader>
       {sampleItems.map((item, index) => {
         const isVisible = selectedOptions.includes(item.key)

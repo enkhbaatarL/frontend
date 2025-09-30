@@ -1,7 +1,9 @@
-import { Box } from '@mui/material'
+import { Box, Stack } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
+import Checkpoints from '@/pages/mi/dashboard/components/Checkpoints'
+import Highlights from '@/pages/mi/dashboard/components/Highlights'
 import SectionHeader from '@/pages/mi/dashboard/components/SectionHeader'
 import Sentiment from '@/pages/mi/dashboard/components/Sentiment'
 
@@ -22,7 +24,11 @@ const MarketRecap = () => {
           Market Recap
         </MIButton>
       </SectionHeader>
-      <Sentiment />
+      <Stack gap="24px">
+        <Sentiment />
+        <Highlights />
+        <Checkpoints />
+      </Stack>
     </Box>
   )
 }
