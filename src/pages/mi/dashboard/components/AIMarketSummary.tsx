@@ -1,12 +1,12 @@
 import { Box, Card, Chip, Stack } from '@mui/material'
 import { useMemo } from 'react'
 
-import DashboardCardHeader from './DashboardCardHeader'
-import KeyEconomicIndicators from './KeyEconomicIndicators'
-import KeyMetrics from './KeyMetrics'
-import MarketRecap from './MarketRecap'
-
 import aiSummaryIcon from '@/assets/dashboard/ai-summary.svg'
+import DashboardCardHeader from '@/pages/mi/dashboard/components/DashboardCardHeader'
+import KeyEconomicIndicators from '@/pages/mi/dashboard/components/KeyEconomicIndicators'
+import KeyMetrics from '@/pages/mi/dashboard/components/KeyMetrics'
+import MarketRecap from '@/pages/mi/dashboard/components/MarketRecap'
+import Watchlist from '@/pages/mi/dashboard/components/Watchlist'
 
 // 메인 AI Market Summary 컴포넌트
 interface AIMarketSummaryProps {
@@ -54,6 +54,7 @@ const AIMarketSummary = ({ lastUpdated = 'Sep 14 07:00 - Sep 15 07:00' }: AIMark
         <MarketRecap />
       </Box>
       <Box display={'flex'} flexDirection={'column'} gap={'11px'} width={600}>
+        <Watchlist />
         <KeyMetrics />
         <KeyEconomicIndicators />
       </Box>
