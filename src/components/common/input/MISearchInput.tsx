@@ -108,7 +108,7 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
       ref={containerRef}
       sx={{
         maxWidth: '100%',
-        width: width ?? 458,
+        width: width ?? 360,
         svg: {
           display: 'block',
         },
@@ -148,7 +148,7 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
             ...theme.typography.body2R14,
             '& input': {
               height: '25px',
-              fontSize: '18px',
+              fontSize: '14px',
               fontWeight: 500,
               padding: '0 6px',
               width: '100%',

@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useRef, useEffect } from 'react'
 
-import aiIcon from '@/assets/ai.svg'
+import aiStarIcon from '@/assets/ai.svg'
 import MIButton from '@/components/common/button/MIButton.tsx'
 import MIButtonViewMore from '@/components/common/button/MIButtonViewMore.tsx'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon.tsx'
@@ -34,10 +34,12 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
       ? ''
       : data.summaries.map((summary: IForecastSummary, index: number) => (
           <Box key={index} mt={index !== 0 ? '20px' : 0}>
-            <Typography mb={1.5} variant={'subtext5'} fontWeight={600} color={'gray.90'} component={'div'}>
+            <Typography mb={1.5} variant={'subtext5'} color={'content.textNormal'} component={'div'}>
               {summary.explanatoryTitleContent}
             </Typography>
-            {(summary.explanatorySummaryContent ?? '').replace(/\\n/g, '\n')}
+            <Typography variant={'body2R14'} color={'content.textNormal'} component={'div'}>
+              {(summary.explanatorySummaryContent ?? '').replace(/\\n/g, '\n')}
+            </Typography>
           </Box>
         ))
 
@@ -107,43 +109,67 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
 
   return (
     <MISkeleton variant={'dashboardSummary'} loading={shouldShowLoading}>
-      <Box borderRadius={'4px'} border={'1px solid #E5EDFA'} bgcolor={'#F6F9FD'} padding={5} mt={10} mb={6}>
-        <Box display={'flex'} mb={5} alignItems={'center'} justifyContent={'space-between'}>
-          <Typography component={'div'} variant={'textAI'}>
-            <img style={{ verticalAlign: 'sub', marginRight: '4px' }} src={aiIcon} alt="" />
-            Summary
-          </Typography>
-          <MIButton
-            size={'h34'}
-            type={'outlined'}
-            color={'gray'}
-            startIcon={<FileDownloadIcon />}
-            disabled={!data?.isFileDownload}
-            onClick={handleDownload}
-          >
-            Download Full Report
-          </MIButton>
-        </Box>
-
-        <Typography
-          ref={contentRef}
-          variant={'subtext5'}
-          mb={shouldShowButton ? 5 : 0}
+      <Box
+        borderRadius={'6px'}
+        sx={{
+          background: `
+            linear-gradient(135deg, #364FC7 0%, #2F80ED 25%, #364FC7 75%, #29487B 100%),
+            linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 30%, #FCFEFF 70%, #E9F6FC 100%)
+          `,
+          backgroundClip: 'padding-box, content-box',
+          backgroundOrigin: 'border-box, content-box',
+          padding: '1px',
+        }}
+        mt={10}
+        mb={6}
+      >
+        <Box
+          borderRadius={'6px'}
           sx={{
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: showMore ? 'unset' : '8',
-            WebkitBoxOrient: 'vertical',
-            whiteSpace: 'pre-line', // 줄바꿈 처리
-            lineHeight: 1.5, // 명시적으로 line-height 설정
+            background: 'linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 30%, #FCFEFF 70%, #E9F6FC 100%)',
+            padding: 5,
           }}
-          color={'#242424'}
-          component={'div'}
         >
-          {summaryContent}
-        </Typography>
+          <Box display={'flex'} mb={5} alignItems={'center'} justifyContent={'space-between'}>
+            <Typography component={'div'} variant={'textAI'}>
+              <img style={{ verticalAlign: 'sub', marginRight: '4px' }} src={aiStarIcon} alt="" />
+              AI Summary
+            </Typography>
+            <MIButton
+              size={'h34'}
+              type={'outlined'}
+              color={'gray'}
+              startIcon={<FileDownloadIcon />}
+              disabled={!data?.isFileDownload}
+              onClick={handleDownload}
+              width={'192px'}
+            >
+              Download All Report
+            </MIButton>
+          </Box>
 
-        {shouldShowButton && <MIButtonViewMore onClick={() => setShowMore(!showMore)} state={showMore ? 'less' : 'more'} />}
+          <Box width="990px" height="1px" bgcolor="#1967D22E" mb={5} />
+
+          <Typography
+            ref={contentRef}
+            variant={'subtext5'}
+            mb={shouldShowButton ? 5 : 0}
+            sx={{
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: showMore ? 'unset' : '8',
+              WebkitBoxOrient: 'vertical',
+              whiteSpace: 'pre-line', // 줄바꿈 처리
+              lineHeight: 1.5, // 명시적으로 line-height 설정
+            }}
+            color={'#242424'}
+            component={'div'}
+          >
+            {summaryContent}
+          </Typography>
+
+          {shouldShowButton && <MIButtonViewMore onClick={() => setShowMore(!showMore)} state={showMore ? 'less' : 'more'} />}
+        </Box>
       </Box>
     </MISkeleton>
   )

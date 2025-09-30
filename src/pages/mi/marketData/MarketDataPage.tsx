@@ -157,7 +157,7 @@ const MarketDataPage = () => {
       <MIPageHeadline title="Market Metrics" gradientStart="#021728" gradientEnd="#135F7A" />
 
       <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'} py={12.5} px={7.5}>
-        <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
+        <Typography mb={6} color="gray.90" component="h2" variant="titlePage">
           Focused
         </Typography>
         <Grid mb={17.5} container spacing={5}>
