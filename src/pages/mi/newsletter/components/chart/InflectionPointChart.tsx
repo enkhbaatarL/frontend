@@ -15,6 +15,7 @@ import ShowChartIcon from '@/components/common/icons/ShowChartIcon'
 import InflectionPointChartPlugin from '@/lib/chart/plugins/InflectionPointChartPlugin'
 import { INewsFlowChartData, IRelatedNewsEventItem, NewsletterDetailPageMode } from '@/service/mi/newsletter'
 import { ChartType } from '@/types/dataDetailChart'
+import { filterValidChartValues } from '@/utils/dataUtil'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -117,8 +118,13 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
       (values: number[], paddingTop: number = 0, paddingBottom: number = 0, showNearAxis: boolean = false) => {
         if (!values.length) return { min: 0, max: 0 }
 
-        const minValue = Math.min(...values)
-        const maxValue = Math.max(...values)
+        // 빈 값(null, undefined, NaN) 필터링
+        const validValues = filterValidChartValues(values)
+
+        if (!validValues.length) return { min: 0, max: 0 }
+
+        const minValue = Math.min(...validValues)
+        const maxValue = Math.max(...validValues)
         const range = maxValue - minValue
 
         if (range === 0) {
@@ -222,7 +228,12 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
       if (!highDataSeries?.values || !timestamps.length) return null
 
       const values = highDataSeries.values
-      const maxValue = Math.max(...values)
+      // 빈 값(null, undefined, NaN) 필터링
+      const validValues = filterValidChartValues(values)
+
+      if (!validValues.length) return null
+
+      const maxValue = Math.max(...validValues)
       const maxIndex = values.findIndex((value) => value === maxValue)
 
       if (maxIndex === -1) return null
@@ -242,7 +253,12 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
       if (!lowDataSeries?.values || !timestamps.length) return null
 
       const values = lowDataSeries.values
-      const minValue = Math.min(...values)
+      // 빈 값(null, undefined, NaN) 필터링
+      const validValues = filterValidChartValues(values)
+
+      if (!validValues.length) return null
+
+      const minValue = Math.min(...validValues)
       const minIndex = values.findIndex((value) => value === minValue)
 
       if (minIndex === -1) return null
@@ -270,6 +286,14 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
             }
           },
         },
+        events: ['mousedown', 'mousemove', 'mouseup', 'click', 'mouseover', 'mouseout'] as (
+          | 'mousedown'
+          | 'mousemove'
+          | 'mouseup'
+          | 'click'
+          | 'mouseover'
+          | 'mouseout'
+        )[],
         interaction: {
           intersect: false,
           mode: 'index' as const,

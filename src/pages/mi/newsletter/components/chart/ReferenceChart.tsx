@@ -12,6 +12,7 @@ import '@/lib/chart/adapterDayjs'
 import ReferenceChartPlugin from '@/lib/chart/plugins/ReferenceChartPlugin'
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
 import { IChartData } from '@/service/mi/newsletter'
+import { filterValidChartValues } from '@/utils/dataUtil'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -87,8 +88,13 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
     (values: number[], paddingTop: number = 0, paddingBottom: number = 0, showNearAxis: boolean = false) => {
       if (!values.length) return { min: 0, max: 0 }
 
-      const minValue = Math.min(...values)
-      const maxValue = Math.max(...values)
+      // 빈 값(null, undefined, NaN) 필터링
+      const validValues = filterValidChartValues(values)
+
+      if (!validValues.length) return { min: 0, max: 0 }
+
+      const minValue = Math.min(...validValues)
+      const maxValue = Math.max(...validValues)
       const range = maxValue - minValue
 
       if (range === 0) {

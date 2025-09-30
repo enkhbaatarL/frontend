@@ -32,3 +32,11 @@ export const removeObjectEmptyValues = <T extends object>(obj: T): Partial<T> =>
       return true
     }),
   ) as Partial<T>
+
+/**
+ * 차트 데이터에서 유효한 숫자 값들만 필터링
+ * @param values 숫자 배열 (null, undefined, NaN 포함 가능)
+ * @returns 유효한 숫자 값들만 포함된 배열
+ */
+export const filterValidChartValues = (values: (number | null | undefined)[]): number[] =>
+  values.filter((value) => value !== null && value !== undefined && !isNaN(value)) as number[]
