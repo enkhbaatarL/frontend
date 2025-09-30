@@ -8,7 +8,6 @@ import { useMarketData } from '@/contexts/MarketDataContext'
 import AIMarketSensor from '@/pages/mi/dashboard/components/AIMarketSensor'
 import AIMarketSensorPersonalized from '@/pages/mi/dashboard/components/AIMarketSensorPersonalized'
 import AIMarketSummary from '@/pages/mi/dashboard/components/AIMarketSummary'
-import Category from '@/pages/mi/dashboard/components/Category'
 import EventCalendar from '@/pages/mi/dashboard/components/EventCalendar'
 import IndustryWatch from '@/pages/mi/dashboard/components/IndustryWatch'
 import NewsFeed from '@/pages/mi/dashboard/components/NewsFeed'
@@ -61,11 +60,10 @@ const DashboardPage = () => {
           maxWidth={'1380px'}
           width={'100%'}
           margin={'auto'}
-          gap={'10px'}
+          gap={'24px'}
         >
           <Box display={'flex'} justifyContent={'space-between'}>
             <MIDateDisplay />
-            <Category onCategoryChange={() => {}} />
           </Box>
           <AIMarketSummary />
           <Box py={'14px'} display={'flex'} justifyContent={'center'}>

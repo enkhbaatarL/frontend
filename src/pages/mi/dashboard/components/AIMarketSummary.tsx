@@ -1,4 +1,5 @@
-import { Box, Card, Divider, Stack, Typography } from '@mui/material'
+import { Box, Card, Chip, Stack } from '@mui/material'
+import { useMemo } from 'react'
 
 import DashboardCardHeader from './DashboardCardHeader'
 import KeyEconomicIndicators from './KeyEconomicIndicators'
@@ -8,59 +9,6 @@ import StrategyCheckpoints from './StrategyCheckpoints'
 
 import aiSummaryIcon from '@/assets/dashboard/ai-summary.svg'
 import { MarketItem } from '@/service/mi/dashboard'
-
-// MARKET RECAP 샘플 데이터
-const marketRecapSampleItems: MarketItem[] = [
-  {
-    id: '1',
-    title: '미·러·우 평화협상 기대감 재부상으로 전일 유가 하락, 금일 반등',
-    summary: [
-      '9일 아시아장·글로벌장에서는 우크라이나 전쟁 종식 관련 외교 모멘텀 기대감으로 유가가 소폭 하락(Brent 약 $66.53).',
-      '20일 들어 협상 불확실성과 재고 감소 소식이 겹치며 반등. 영향도: Neutral → 단기 변동성 확대.',
-    ],
-    sources: [
-      { name: 'Reuters', link: 'https://reuters.com' },
-      { name: 'Investing.com', link: 'https://investing.com' },
-      { name: 'Bloomberg', link: 'https://bloomberg.com' },
-    ],
-    impact: 'neutral',
-  },
-  {
-    id: '2',
-    title: 'API: 미 원유 재고 \'주간 240만 배럴 감소\'(8/15 주)',
-    summary: [
-      '컨센서스(약 120만 배럴 감소) 대비 큰 폭의 감소로 단기 가격 지지 요인.',
-      '다만 휘발유·중간유 재고는 증가해 수요 신호는 엇갈림.',
-    ],
-    sources: [
-      { name: 'Argaam', link: 'https://argaam.com' },
-      { name: 'Reuters', link: 'https://reuters.com' },
-      { name: 'Bloomberg', link: 'https://bloomberg.com' },
-    ],
-    impact: 'positive',
-  },
-  {
-    id: '3',
-    title: '유가 곡선 \'스마일\'(근월·장기>중월) 구조 지속',
-    summary: ['EA/EIA의 중기 공급과잉 전망(\'25~\'26년)과 현물 타이트함이 공존.', '중월 구간 프리미엄 축소는 중기 하방 리스크를 시사.'],
-    sources: [{ name: 'Reuters', link: 'https://reuters.com' }],
-    impact: 'negative',
-  },
-  {
-    id: '4',
-    title: '가스 가격: TTF 소폭 상승, JKM 보합권',
-    summary: [
-      'TTF(ICE Endex Oct\'25)가 약 €31.645/MWh(+0.352), JKM(플랫츠 선물) $10.915/MMBtu로 비교적 안정.',
-      '정제 마진·연료 대체 수요에 미치는 영향은 제한적.',
-    ],
-    sources: [
-      { name: 'Investing.com', link: 'https://investing.com' },
-      { name: 'Reuters', link: 'https://reuters.com' },
-      { name: 'Bloomberg', link: 'https://bloomberg.com' },
-    ],
-    impact: 'no-clear',
-  },
-]
 
 // STRATEGY CHECKPOINTS 샘플 데이터
 const strategyCheckpointsSampleItems: MarketItem[] = [
@@ -99,7 +47,23 @@ interface AIMarketSummaryProps {
   lastUpdated?: string
 }
 
-const AIMarketSummary = ({ lastUpdated = 'Aug 19 09:00 - Aug 20 09:00' }: AIMarketSummaryProps) => (
+const UpdatedInfoChip = ({ label, color }: { label: string; color: { backgroundColor: string; color: string } }) => {
+  const chipStyle = useMemo(
+    () => ({
+      backgroundColor: color.backgroundColor,
+      color: color.color,
+      height: '36px',
+      borderRadius: '10px',
+      fontSize: 14,
+      fontWeight: 500,
+    }),
+    [color],
+  )
+
+  return <Chip label={label} sx={chipStyle} />
+}
+
+const AIMarketSummary = ({ lastUpdated = 'Sep 14 07:00 - Sep 15 07:00' }: AIMarketSummaryProps) => (
   <Card
     elevation={0}
     sx={{
@@ -113,30 +77,15 @@ const AIMarketSummary = ({ lastUpdated = 'Aug 19 09:00 - Aug 20 09:00' }: AIMark
       icon={aiSummaryIcon}
       title="AI Market Summary"
       updatedTime={
-        <Stack direction="row" alignItems="center" gap={'9px'} px={'10px'}>
-          <Stack direction="row" alignItems="center" gap={'4px'}>
-            <Box
-              sx={{
-                width: 9,
-                height: 9,
-                borderRadius: '50%',
-                backgroundColor: '#ADB5BD',
-              }}
-            />
-            <Typography variant="body3" color="gray.70" sx={{ fontSize: 12 }}>
-              최근 24시간
-            </Typography>
-          </Stack>
-          <Divider orientation="vertical" flexItem />
-          <Typography variant="body3" color="gray.70" sx={{ fontSize: 12 }}>
-            {lastUpdated}
-          </Typography>
+        <Stack direction="row" alignItems="center" gap={'8px'}>
+          <UpdatedInfoChip label="24H" color={{ backgroundColor: '#FAEBE3', color: '#B74306' }} />
+          <UpdatedInfoChip label={lastUpdated} color={{ backgroundColor: '#F1F3F5', color: '#495057' }} />
         </Stack>
       }
     />
-    <Box padding={'28px 24px 22px'} sx={{ display: 'flex', gap: '24px' }}>
+    <Box px="24px" sx={{ display: 'flex', gap: '24px' }}>
       <Box display={'flex'} flexDirection={'column'} gap={'22px'} flex={1} width={708}>
-        <MarketRecap items={marketRecapSampleItems} />
+        <MarketRecap />
         <StrategyCheckpoints items={strategyCheckpointsSampleItems} />
       </Box>
       <Box display={'flex'} flexDirection={'column'} gap={'11px'} width={600}>

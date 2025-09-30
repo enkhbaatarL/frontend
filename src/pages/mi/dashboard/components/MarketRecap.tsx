@@ -1,49 +1,30 @@
-import { Box, Stack } from '@mui/material'
+import { Box } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
 
-import AIMarketSummaryItem, { IAIMarketSummaryItem } from './AIMarketSummaryItem'
-import SectionHeader from './SectionHeader'
+import MIButton from '@/components/common/button/MIButton'
+import SectionHeader from '@/pages/mi/dashboard/components/SectionHeader'
+import Sentiment from '@/pages/mi/dashboard/components/Sentiment'
 
-import negativeIcon from '@/assets/dashboard/negative.svg'
-import neutralIcon from '@/assets/dashboard/neutral.svg'
-import noClearIcon from '@/assets/dashboard/no-clear.svg'
-import positiveIcon from '@/assets/dashboard/positive.svg'
-import { MarketItem } from '@/service/mi/dashboard'
+const MarketRecap = () => {
+  const navigate = useNavigate()
 
-type IconType = 'positive' | 'negative' | 'neutral' | 'no-clear'
-
-const getIconSrc = (type: IconType) => {
-  switch (type) {
-    case 'positive':
-      return positiveIcon
-    case 'negative':
-      return negativeIcon
-    case 'neutral':
-      return neutralIcon
-    case 'no-clear':
-      return noClearIcon
-    default:
-      return noClearIcon
-  }
+  return (
+    <Box padding="12px">
+      <SectionHeader title="MARKET RECAP" mb="18px">
+        <MIButton
+          size="h32"
+          color="gray"
+          type="outlined"
+          onClick={() => {
+            navigate('/mi/dashboard/market-recap')
+          }}
+        >
+          Market Recap
+        </MIButton>
+      </SectionHeader>
+      <Sentiment />
+    </Box>
+  )
 }
-
-interface MarketRecapProps {
-  items?: MarketItem[]
-}
-
-const MarketRecap = ({ items = [] }: MarketRecapProps) => (
-  <Box>
-    <SectionHeader
-      title="MARKET RECAP"
-      tooltipTitle="최근 24시간의 뉴스와 데이터를 분석해, 시장에 영향을 준 핵심 사건들을 간략히 정리합니다."
-    />
-    <Stack gap={'18px'}>
-      {items.map((item: IAIMarketSummaryItem) => {
-        item.iconSrc = getIconSrc(item.impact as IconType)
-
-        return <AIMarketSummaryItem key={item.id} item={item} />
-      })}
-    </Stack>
-  </Box>
-)
 
 export default MarketRecap

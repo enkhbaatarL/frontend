@@ -11,7 +11,7 @@ const InfoTooltip = ({
   title,
   placement = 'top-start',
   offset = [-22, -8],
-  iconSize = 18,
+  iconSize = 20,
   iconColor = '#868E96',
   ...props
 }: InfoTooltipProps) => (
