@@ -2,6 +2,7 @@ import { Box, Stack, Typography, Collapse, Fade } from '@mui/material'
 import { isEmpty } from 'lodash-es'
 import { useState } from 'react'
 
+import InlineNotice from '@/components/common/notice/InlineNotice'
 import DashboardSelect from '@/pages/mi/dashboard/components/DashboardSelect'
 import SectionHeader from '@/pages/mi/dashboard/components/SectionHeader'
 import SourceDropdownChip from '@/pages/mi/dashboard/components/SourceDropdownChip'
@@ -181,6 +182,9 @@ const Highlights = () => {
           }}
         />
       </SectionHeader>
+      <InlineNotice noticeKey="dashboard-highlights">
+        지난 24시간 동안 발생한 핵심 시장 동인을 MARI AI Agent가 분석·정리해 제공합니다.
+      </InlineNotice>
       <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500}>
         <Box>
           {(selectedOption === 'detailed' || selectedOption === 'focused') &&
