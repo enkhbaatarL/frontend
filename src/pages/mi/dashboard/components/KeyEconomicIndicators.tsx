@@ -142,6 +142,12 @@ const KeyEconomicIndicators = () => {
               height="38px"
               gap="4px"
               borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+              sx={{
+                '&:hover': {
+                  backgroundColor: '#F8F9FA',
+                },
+                cursor: 'pointer',
+              }}
             >
               <BodyCell width="50px" textAlign="center">
                 {data.country}

@@ -1,15 +1,16 @@
-import { Card, Chip, Stack } from '@mui/material'
+import { Box, Chip, Stack } from '@mui/material'
 import { useMemo } from 'react'
 
-import aiSummaryIcon from '@/assets/dashboard/ai-summary.svg'
-import DashboardCardHeader from '@/pages/mi/dashboard/components/DashboardCardHeader'
+import AiSummaryIcon from '@/assets/dashboard/ai-summary.svg'
+import ContentReader from '@/pages/mi/dashboard/components/ContentReader'
+import DashboardCard from '@/pages/mi/dashboard/components/DashboardCard'
 import KeyEconomicIndicators from '@/pages/mi/dashboard/components/KeyEconomicIndicators'
 import MarketRecap from '@/pages/mi/dashboard/components/MarketRecap'
 import Watchlist from '@/pages/mi/dashboard/components/Watchlist'
 
-// 메인 AI Market Summary 컴포넌트
-interface AIMarketSummaryProps {
-  lastUpdated?: string
+interface Props {
+  period?: string
+  dateRange?: string
 }
 
 const UpdatedInfoChip = ({ label, color }: { label: string; color: { backgroundColor: string; color: string } }) => {
@@ -28,36 +29,32 @@ const UpdatedInfoChip = ({ label, color }: { label: string; color: { backgroundC
   return <Chip label={label} sx={chipStyle} />
 }
 
-const AIMarketSummary = ({ lastUpdated = 'Sep 14 07:00 - Sep 15 07:00' }: AIMarketSummaryProps) => (
-  <Card
-    elevation={0}
-    sx={{
-      width: 1380,
-      border: '1px solid #DEE2E6',
-      borderRadius: '4px',
-      padding: 0,
-    }}
+const AIMarketSummary = ({ period = '24H', dateRange = 'Sep 14 07:00 - Sep 15 07:00' }: Props) => (
+  <DashboardCard
+    icon={AiSummaryIcon}
+    title={
+      <Stack direction="row" alignItems="center" gap={'6px'}>
+        AI Market Summary
+        <Box ml="6px">
+          <ContentReader />
+        </Box>
+      </Stack>
+    }
+    headerContent={
+      <Stack direction="row" alignItems="center" gap={'8px'}>
+        <UpdatedInfoChip label={period} color={{ backgroundColor: '#FAEBE3', color: '#B74306' }} />
+        <UpdatedInfoChip label={dateRange} color={{ backgroundColor: '#F1F3F5', color: '#495057' }} />
+      </Stack>
+    }
   >
-    <DashboardCardHeader
-      icon={aiSummaryIcon}
-      title="AI Market Summary"
-      updatedTime={
-        <Stack direction="row" alignItems="center" gap={'8px'}>
-          <UpdatedInfoChip label="24H" color={{ backgroundColor: '#FAEBE3', color: '#B74306' }} />
-          <UpdatedInfoChip label={lastUpdated} color={{ backgroundColor: '#F1F3F5', color: '#495057' }} />
-        </Stack>
-      }
-    />
-    <Stack px="24px" direction="row" gap="24px">
-      <Stack gap="22px" flex={1} width={708}>
-        <MarketRecap />
-      </Stack>
-      <Stack gap="12px" width={600}>
-        <Watchlist />
-        <KeyEconomicIndicators />
-      </Stack>
+    <Stack gap="22px" flex={1} width={708}>
+      <MarketRecap />
     </Stack>
-  </Card>
+    <Stack gap="12px" width={600}>
+      <Watchlist />
+      <KeyEconomicIndicators />
+    </Stack>
+  </DashboardCard>
 )
 
 export default AIMarketSummary

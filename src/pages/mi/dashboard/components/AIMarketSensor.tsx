@@ -6,6 +6,7 @@ import SensorItem, { SensorItemData } from './SensorItem'
 
 import aiMarketSensorIcon from '@/assets/dashboard/ai-market-sensor.svg'
 import MIButton from '@/components/common/button/MIButton'
+
 interface AIMarketSensorProps {
   items?: SensorItemData[]
 }
@@ -76,28 +77,23 @@ const AIMarketSensor = ({ items = [] }: AIMarketSensorProps) => {
         backgroundColor: '#FFFFFF',
       }}
     >
-      <DashboardCardHeader
-        icon={aiMarketSensorIcon}
-        title="AI Market Sensor"
-        updatedTime={
-          <Stack direction="row" alignItems="center" gap={'9px'} px={'10px'}>
-            <Stack direction="row" alignItems="center" gap={'4px'}>
-              <Box
-                sx={{
-                  width: 9,
-                  height: 9,
-                  borderRadius: '50%',
-                  backgroundColor: '#364FC7',
-                }}
-              />
-              <Typography variant="body3" color="gray.70" fontSize={12}>
-                최근 24시간
-              </Typography>
-            </Stack>
+      <DashboardCardHeader icon={aiMarketSensorIcon} title="AI Market Sensor" padding="17px 15px">
+        <Stack direction="row" alignItems="center" gap={'9px'} px={'10px'}>
+          <Stack direction="row" alignItems="center" gap={'4px'}>
+            <Box
+              sx={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                backgroundColor: '#364FC7',
+              }}
+            />
+            <Typography variant="body3" color="gray.70" fontSize={12}>
+              최근 24시간
+            </Typography>
           </Stack>
-        }
-        padding="17px 15px"
-      />
+        </Stack>
+      </DashboardCardHeader>
 
       <Box padding="14px 14px 10px">
         <Stack gap={0}>

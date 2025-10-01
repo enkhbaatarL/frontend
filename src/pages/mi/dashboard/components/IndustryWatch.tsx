@@ -153,7 +153,6 @@ const IndustryWatch = ({ data = [] }: IndustryWatchProps) => {
     <Card
       elevation={0}
       sx={{
-        width: 556,
         border: '1px solid #DEE2E6',
         borderRadius: '4px',
         backgroundColor: '#FFFFFF',

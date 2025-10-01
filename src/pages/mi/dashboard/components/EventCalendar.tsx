@@ -276,28 +276,23 @@ const EventCalendar = ({ items = [] }: EventCalendarProps) => {
         backgroundColor: '#FFFFFF',
       }}
     >
-      <DashboardCardHeader
-        icon={eventCalendarIcon}
-        title="Event Calendar"
-        updatedTime={
-          <Stack direction="row" alignItems="center" gap={'9px'} px={'10px'}>
-            <Stack direction="row" alignItems="center" gap={'4px'}>
-              <Box
-                sx={{
-                  width: 9,
-                  height: 9,
-                  borderRadius: '50%',
-                  backgroundColor: '#364FC7',
-                }}
-              />
-              <Typography variant="body3" color="gray.70" fontSize={12}>
-                5분 전 업데이트
-              </Typography>
-            </Stack>
+      <DashboardCardHeader icon={eventCalendarIcon} title="Event Calendar" padding="17px 15px">
+        <Stack direction="row" alignItems="center" gap={'9px'} px={'10px'}>
+          <Stack direction="row" alignItems="center" gap={'4px'}>
+            <Box
+              sx={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                backgroundColor: '#364FC7',
+              }}
+            />
+            <Typography variant="body3" color="gray.70" fontSize={12}>
+              5분 전 업데이트
+            </Typography>
           </Stack>
-        }
-        padding="17px 15px"
-      />
+        </Stack>
+      </DashboardCardHeader>
 
       <Box padding="14px 7px">
         <TableHeader />

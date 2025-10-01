@@ -157,25 +157,24 @@ const AIMarketSensorPersonalized = ({ items = [] }: AIMarketSensorPersonalizedPr
             />
           </Box>
         }
-        updatedTime={
-          <Stack direction="row" alignItems="center" gap={'9px'} px={'10px'}>
-            <Stack direction="row" alignItems="center" gap={'4px'}>
-              <Box
-                sx={{
-                  width: 9,
-                  height: 9,
-                  borderRadius: '50%',
-                  backgroundColor: '#364FC7',
-                }}
-              />
-              <Typography variant="body3" color="gray.70" fontSize={12}>
-                최근 24시간
-              </Typography>
-            </Stack>
-          </Stack>
-        }
         padding="17px 15px"
-      />
+      >
+        <Stack direction="row" alignItems="center" gap={'9px'} px={'10px'}>
+          <Stack direction="row" alignItems="center" gap={'4px'}>
+            <Box
+              sx={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                backgroundColor: '#364FC7',
+              }}
+            />
+            <Typography variant="body3" color="gray.70" fontSize={12}>
+              최근 24시간
+            </Typography>
+          </Stack>
+        </Stack>
+      </DashboardCardHeader>
       <Box padding="28px 34px 0">
         <CategorySection />
       </Box>
