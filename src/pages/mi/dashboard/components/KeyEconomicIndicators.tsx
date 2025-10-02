@@ -2,14 +2,19 @@ import { Box, Stack, Typography, TypographyProps, Tooltip } from '@mui/material'
 import { ReactNode, useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import levelHighIcon from '@/assets/level-high.svg'
+import levelLowIcon from '@/assets/level-low.svg'
+import levelMediumIcon from '@/assets/level-medium.svg'
+import levelNotRatedIcon from '@/assets/level-not-rated.svg'
 import MIButton from '@/components/common/button/MIButton'
 import SectionHeader from '@/pages/mi/dashboard/components/SectionHeader'
 
 const sampleData = [
   {
     id: 'e1',
-    country: 'KR',
-    name: 'KOSPI (Final, Aug)',
+    time: '10:00',
+    imp: 'High',
+    event: 'KOSPI (Final, Aug)',
     for: 'Aug',
     actual: '3.8%',
     forecast: '3.7%',
@@ -17,21 +22,33 @@ const sampleData = [
   },
   {
     id: 'e2',
-    country: 'JP',
-    name: 'Japan Trade Balance (Jul) Japan Trade Balance (Jul)',
-    for: 'Jul',
+    time: '15:00',
+    imp: 'Medium',
+    event: 'Japan Trade Balance (Jul) Japan Trade Balance (Jul)',
+    for: 'Aug',
     actual: '-4.1%',
     forecast: '-',
     previous: '-4.1%',
   },
   {
     id: 'e3',
-    country: 'EU',
-    name: 'Eurozone CPI (Final, Aug)',
-    for: 'Aug',
+    time: '16:30',
+    imp: 'Low',
+    event: 'Eurozone CPI (Final, Aug)',
+    for: 'Jul',
     actual: '2.0%',
     forecast: '2.0%',
     previous: '2.0%',
+  },
+  {
+    id: 'e4',
+    time: '20:00',
+    imp: 'Medium',
+    event: 'China CPI (Aug)',
+    for: 'Aug',
+    actual: '3.5%',
+    forecast: '3.4%',
+    previous: '3.3%',
   },
 ]
 
@@ -90,6 +107,32 @@ const BodyCell = ({ children, width, textAlign }: { children: ReactNode; width: 
   )
 }
 
+type ImportanceLevel = 'High' | 'Medium' | 'Low'
+
+const ImportanceIcon = ({ level }: { level: ImportanceLevel }) => {
+  let icon = levelNotRatedIcon
+  let alt = 'level-not-rated'
+
+  switch (level) {
+    case 'High':
+      icon = levelHighIcon
+      alt = 'level-high'
+      break
+    case 'Medium':
+      icon = levelMediumIcon
+      alt = 'level-medium'
+      break
+    case 'Low':
+      icon = levelLowIcon
+      alt = 'level-low'
+      break
+    default:
+      break
+  }
+
+  return <img src={icon} width={16} height={16} alt={alt} />
+}
+
 const KeyEconomicIndicators = () => {
   const navigate = useNavigate()
 
@@ -115,10 +158,13 @@ const KeyEconomicIndicators = () => {
       <Stack gap="10px">
         <Stack>
           <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
-            <HeaderCell width="50px" textAlign="center">
-              Ctry.
+            <HeaderCell width="60px" textAlign="center">
+              Time
             </HeaderCell>
-            <HeaderCell width="192px" textAlign="left">
+            <HeaderCell width="44px" textAlign="center">
+              Imp.
+            </HeaderCell>
+            <HeaderCell width="150px" textAlign="left">
               Event
             </HeaderCell>
             <HeaderCell width="50px" textAlign="center">
@@ -136,7 +182,7 @@ const KeyEconomicIndicators = () => {
           </Stack>
           {sampleData.map((data, index) => (
             <Stack
-              key={`${data.name}-${index}`}
+              key={data.id}
               direction="row"
               alignItems="center"
               height="38px"
@@ -149,11 +195,14 @@ const KeyEconomicIndicators = () => {
                 cursor: 'pointer',
               }}
             >
-              <BodyCell width="50px" textAlign="center">
-                {data.country}
+              <BodyCell width="60px" textAlign="center">
+                {data.time}
               </BodyCell>
-              <BodyCell width="192px" textAlign="left">
-                {data.name}
+              <Stack width="44px" justifyContent="center" alignItems="center">
+                <ImportanceIcon level={data.imp as ImportanceLevel} />
+              </Stack>
+              <BodyCell width="150px" textAlign="left">
+                {data.event}
               </BodyCell>
               <BodyCell width="50px" textAlign="center">
                 {data.for}
