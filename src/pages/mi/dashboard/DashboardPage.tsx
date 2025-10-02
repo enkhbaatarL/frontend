@@ -1,15 +1,12 @@
-import { Box } from '@mui/material'
+import { Stack } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useEffect } from 'react'
 
 import MIDateDisplay from '@/components/common/date/MIDateDisplay'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useMarketData } from '@/contexts/MarketDataContext'
-import AIMarketSensor from '@/pages/mi/dashboard/components/AIMarketSensor'
-import AIMarketSensorPersonalized from '@/pages/mi/dashboard/components/AIMarketSensorPersonalized'
 import AIMarketSummary from '@/pages/mi/dashboard/components/AIMarketSummary'
-import EventCalendar from '@/pages/mi/dashboard/components/EventCalendar'
-import IndustryWatch from '@/pages/mi/dashboard/components/IndustryWatch'
+import MIGuide from '@/pages/mi/dashboard/components/MIGuide'
 import NewsFeed from '@/pages/mi/dashboard/components/NewsFeed'
 import forecastDataService from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
@@ -52,35 +49,18 @@ const DashboardPage = () => {
 
   return (
     <MISkeleton variant={'dashboard'}>
-      <Box bgcolor={'#F2F5F7'} position={'relative'} py={6}>
-        <Box
-          display={'flex'}
-          flexDirection={'column'}
-          position={'relative'}
-          maxWidth={'1380px'}
-          width={'100%'}
-          margin={'auto'}
-          gap={'24px'}
-        >
-          <Box display={'flex'} justifyContent={'space-between'}>
-            <MIDateDisplay />
-          </Box>
-          <AIMarketSummary />
-          <Box py={'14px'} display={'flex'} justifyContent={'center'}>
-            <Box sx={{ display: 'flex', gap: '24px', maxWidth: '1380px' }}>
-              <Box sx={{ width: '800px' }}>
-                <NewsFeed />
-              </Box>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '556px' }}>
-                <IndustryWatch />
-                <AIMarketSensor />
-                <AIMarketSensorPersonalized />
-                <EventCalendar />
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+      <Stack py="24px" maxWidth="1380px" margin="auto" gap="24px">
+        <MIDateDisplay />
+        <AIMarketSummary />
+        <Stack direction="row" gap="24px">
+          <Stack width="740px" gap="24px">
+            <NewsFeed />
+          </Stack>
+          <Stack width="616px" gap="24px">
+            <MIGuide />
+          </Stack>
+        </Stack>
+      </Stack>
     </MISkeleton>
   )
 }

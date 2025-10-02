@@ -24,8 +24,11 @@ const NewsFeed = () => {
           Market News
         </MIButton>
       }
+      sx={{
+        overflow: 'visible',
+      }}
     >
-      <Timeline />
+      <Timeline my="12px" />
     </DashboardCard>
   )
 }
