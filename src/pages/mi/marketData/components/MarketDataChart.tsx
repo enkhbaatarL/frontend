@@ -117,6 +117,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
           tension: 0,
           fill: true,
           borderWidth: 1,
+          spanGaps: true,
         },
         {
           type: 'line' as const,
@@ -151,6 +152,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
               tension: 0,
               fill: false,
               borderWidth: 1,
+              spanGaps: true,
             })
 
             // Compare 차트의 최고값/최저값 포인트 (realValue 사용)
@@ -193,6 +195,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
           tension: 0,
           fill: false,
           borderWidth: 1,
+          spanGaps: true,
         },
         {
           label: 'Compare',
@@ -202,6 +205,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
           tension: 0,
           fill: false,
           borderWidth: 1,
+          spanGaps: true,
         },
       ],
     }

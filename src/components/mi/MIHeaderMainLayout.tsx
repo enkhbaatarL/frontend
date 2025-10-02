@@ -143,7 +143,7 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
   const location = useLocation()
   const { user, accessCompanyInfo, setAccessCompanyInfo, clearAuth } = useAuthStore()
 
-  const [selectedCompany, setSelectedCompany] = useState<{ label: string; value: number } | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState<{ label: string; value: number; customerCompanyMipUrl: string } | null>(null)
   const [isOpenCompany, setIsOpenCompany] = useState(false)
 
   const { data: allCompanies } = useQuery({
@@ -156,9 +156,10 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
 
   const companyList = useMemo(
     () =>
-      allCompanies?.map(({ customerCompanyNo, customerCompanyNm }) => ({
+      allCompanies?.map(({ customerCompanyNo, customerCompanyNm, customerCompanyMipUrl }) => ({
         label: customerCompanyNm,
         value: customerCompanyNo,
+        customerCompanyMipUrl,
       })) ?? [],
     [allCompanies],
   )
@@ -191,6 +192,7 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
         setSelectedCompany({
           label: accessCompanyInfo?.customerCompanyNm ?? user?.companyNm ?? '',
           value: accessCompanyInfo?.customerCompanyNo ?? user?.companyNo ?? 0,
+          customerCompanyMipUrl: accessCompanyInfo?.customerCompanyMipUrl ?? '',
         })
       } else if (companyList.length > 0) {
         const def = companyList.find((c) => c.value === (accessCompanyInfo?.customerCompanyNo ?? user?.companyNo))
@@ -201,7 +203,11 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
 
   useEffect(() => {
     if (selectedCompany) {
-      setAccessCompanyInfo({ customerCompanyNo: selectedCompany.value, customerCompanyNm: selectedCompany.label })
+      setAccessCompanyInfo({
+        customerCompanyNo: selectedCompany.value,
+        customerCompanyNm: selectedCompany.label,
+        customerCompanyMipUrl: selectedCompany.customerCompanyMipUrl,
+      })
     }
   }, [selectedCompany, setAccessCompanyInfo])
 
@@ -286,7 +292,11 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
                 options={companyList}
                 onOpen={setIsOpenCompany}
                 onChange={({ value, label }) => {
-                  setSelectedCompany({ value: value as number, label })
+                  setSelectedCompany({
+                    value: value as number,
+                    label,
+                    customerCompanyMipUrl: companyList.find((c) => c.value === value)?.customerCompanyMipUrl ?? '',
+                  })
                   navigate('/mi')
                 }}
                 disablePortal

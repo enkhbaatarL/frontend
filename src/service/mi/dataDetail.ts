@@ -73,7 +73,7 @@ export interface IProductDataStructuredChartPersonalizationRequest {
 const dataDetailService = {
   async getProductData(goodsNo: number, goodsDataNo: number): Promise<IProductDataInfo> {
     const response: AxiosResponse<ICommonResponse<IProductDataInfo>> = await api.get(
-      `/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}`,
+      withCustomBaseUrl(`/mi/data-detail/goods/${goodsNo}/goods-data/${goodsDataNo}`),
     )
 
     return response.data.data

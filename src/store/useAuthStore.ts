@@ -27,6 +27,7 @@ export interface IUserDetail {
 export interface IAccessCompanyInfo {
   customerCompanyNo: number
   customerCompanyNm: string
+  customerCompanyMipUrl: string
 }
 
 interface AuthState {
@@ -68,20 +69,17 @@ const useAuthStore = create<AuthState>()(
         set((s) => {
           let nextBase = s.customBaseUrl
           const companyNo = accessCompanyInfo?.customerCompanyNo ?? s.user?.companyNo
-          if (s.user?.companyMipUrl && companyNo) {
-            nextBase = `${s.user.companyMipUrl}/api/v1`
+          if (accessCompanyInfo?.customerCompanyMipUrl && companyNo) {
+            nextBase = `${accessCompanyInfo.customerCompanyMipUrl}/api/v1`
             sessionStorage.setItem(`customBaseUrl_${companyNo}`, nextBase)
+            __currentBaseUrl = nextBase
           }
-          __currentBaseUrl = nextBase
           return { accessCompanyInfo, customBaseUrl: nextBase }
         }),
 
       clearAuth: () =>
-        set((s) => {
-          const companyNo = s.accessCompanyInfo?.customerCompanyNo ?? s.user?.companyNo
-          if (companyNo) {
-            sessionStorage.removeItem(`customBaseUrl_${companyNo}`)
-          }
+        set(() => {
+          sessionStorage.clear()
           __currentBaseUrl = null
           return { token: null, user: null, accessCompanyInfo: null, customBaseUrl: null }
         }),
