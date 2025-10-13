@@ -10,8 +10,9 @@ import verticalLinePlugin, { PointerMoveEventContext } from './plugins/verticalL
 import loadImages, { createHoverDotSVG } from './utils/loadImage'
 
 import theme from '@/theming'
+import { getCurrentFontFamily } from '@/utils/font'
 
-Chart.defaults.font.family = 'Pretendard'
+Chart.defaults.font.family = getCurrentFontFamily()
 
 interface MIRigCountChartProps {
   height: number
@@ -130,7 +131,7 @@ export default function MIRigCountChart(props: MIRigCountChartProps) {
                 x: {
                   ticks: {
                     font: {
-                      family: 'Pretendard',
+                      family: getCurrentFontFamily(),
                       size: 12,
                       weight: 400,
                     },
@@ -154,7 +155,7 @@ export default function MIRigCountChart(props: MIRigCountChartProps) {
                 y: {
                   ticks: {
                     font: {
-                      family: 'Pretendard',
+                      family: getCurrentFontFamily(),
                       size: 12,
                       weight: 400,
                     },

@@ -1,0 +1,34 @@
+{
+  "submenu": {
+    "dashboard": {
+      "desc": "AI市場インサイトブリーフィング"
+    },
+    "forecast": {
+      "desc": "AI予測シミュレーション"
+    },
+    "signalMap": {
+      "desc": "主要要因相関関係分析"
+    },
+    "marketMetrics": {
+      "desc": "市場数値指標及び価格データ"
+    },
+    "marketReports": {
+      "desc": "分析レポート及びインサイト"
+    },
+    "marketNews": {
+      "desc": "市場動向及び主要イシュー"
+    },
+    "parallelCoordinates": {
+      "desc": "主要要因因果関係分析"
+    }
+  },
+  "dataDetail": {
+    "excelDownload": "エクセルダウンロード",
+    "noResultsFound": "No results found",
+    "noContentMessage": "このコンテンツは本文を提供しません。",
+    "disclaimer": {
+      "en": "This document is the property of the respective data provider. Please refrain from reproducing or distributing it without prior approval. If you wish to use this content, please contact the appropriate administrator in advance. The information contained herein is provided for reference purposes only, and users are encouraged to exercise their own judgment and responsibility when utilizing it.",
+      "others": "本書類は、該当データ提供者の資産であり、事前の承認なしに複製や配布を控えていただきますようお願いいたします。ご利用を希望される場合は、関連担当者まで事前にご連絡ください。本書類は参考用の情報を提供するものですので、内容の正確性や利用結果についてはご自身の判断と責任でご対応ください。"
+    }
+  }
+}

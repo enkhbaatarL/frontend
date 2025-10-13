@@ -225,7 +225,7 @@ const InsightsPage = () => {
       <MIPageHeadline title="Market Reports" gradientStart="#14416D" gradientEnd="#165586" />
 
       <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'} py={12.5} px={7.5}>
-        <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
+        <Typography mb={6} color="gray.90" component="h2" variant="titlePage">
           Focused
         </Typography>
         <Grid mb={17.5} container spacing={'16px'}>
@@ -242,7 +242,7 @@ const InsightsPage = () => {
         </Grid>
 
         <Box pb={6} mb={9} borderBottom={'1px solid'} borderColor={'gray.30'}>
-          <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
+          <Typography mb={6} color="gray.90" component="h2" variant="titlePage">
             Insights
           </Typography>
           <MISearchInput
@@ -310,7 +310,7 @@ const InsightsPage = () => {
           <Box
             flexShrink={0}
             sx={{
-              width: 346,
+              width: 286,
             }}
           >
             <Grid container border={'1px solid'} borderColor={'gray.30'} borderRadius={1} gap={6} padding={6} flexShrink={0}>
@@ -319,17 +319,17 @@ const InsightsPage = () => {
                 const checkedValues = (filter?.[filterType] ?? '').split(',')
                 return (
                   <Box key={section.title}>
-                    <Typography mb={3.5} color="gray.90" component="h2" variant="titleBox">
+                    <Typography mb={2.5} color="gray.70" component="h2" variant="sidePanelTitle">
                       {section.title}
                     </Typography>
-                    <FormGroup>
+                    <FormGroup sx={{ gap: 1 }}>
                       {section.options.map((option: { label: string; value: string; codeExpn: string }) => (
                         <FormControlLabel
                           key={option.value}
                           sx={{
-                            p: '6.82px 8px',
+                            p: '6px 10px 8px 0px',
                             mr: 0,
-                            '.MuiTypography-root': { fontSize: '16px', lineHeight: 1.4 },
+                            '.MuiTypography-root': { fontSize: '14px', lineHeight: 1.4 },
                           }}
                           control={
                             <AdminCheckbox

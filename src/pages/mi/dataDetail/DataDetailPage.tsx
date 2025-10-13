@@ -2,8 +2,8 @@ import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
-import { t } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLocation, useParams } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
@@ -30,6 +30,7 @@ interface ITableRow {
 }
 
 const DataDetailPage = () => {
+  const { t } = useTranslation()
   const pathParams = useParams()
   const { state } = useLocation()
   const [goodsDataSourceNo, setGoodsDataSourceNo] = useState<number>()
@@ -196,9 +197,9 @@ const DataDetailPage = () => {
     ],
   )
 
-  const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
-    setStartDate(startDate?.format('YYYYMMDD') ?? '')
-    setEndDate(endDate?.format('YYYYMMDD') ?? '')
+  const handleDateChange = ({ startDate: newStartDate, endDate: newEndDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
+    setStartDate(newStartDate?.format('YYYYMMDD') ?? '')
+    setEndDate(newEndDate?.format('YYYYMMDD') ?? '')
   }
 
   useEffect(() => {
@@ -278,7 +279,7 @@ const DataDetailPage = () => {
                     <MIDateRangePicker onChange={handleDateChange} startDate={startDate} endDate={endDate} />
                   </Box>
                   <MIButton
-                    toolTip={'엑셀 다운로드'}
+                    toolTip={t('dataDetail.excelDownload')}
                     type="outlined"
                     color="gray"
                     contentType="icon"
@@ -292,7 +293,7 @@ const DataDetailPage = () => {
                     <MITableUser<ITableRow>
                       tableProps={{
                         disableHover: true,
-                        noRowMessage: 'No results found',
+                        noRowMessage: t('dataDetail.noResultsFound'),
                         columns: columns as GridColDef[],
                         rowId: 'id',
                         rows,
@@ -335,7 +336,7 @@ const DataDetailPage = () => {
                 <Box display="flex" flexDirection="column" rowGap="10px" alignItems="center">
                   <ErrorOutlineIcon />
                   <Typography variant="body3SB12" color="gray.60">
-                    {t('이 콘텐츠는 본문을 제공하지 않습니다.')}
+                    {t('dataDetail.noContentMessage')}
                   </Typography>
                 </Box>
               </Box>
@@ -344,11 +345,13 @@ const DataDetailPage = () => {
           <Grid
             sx={{
               width: '286px',
+              maxWidth: '286px',
+              minWidth: '286px',
+              flexShrink: 0,
             }}
             container
             gap={6}
             direction="column"
-            flexShrink={0}
           >
             {hasUnstructuredData && (
               <DocumentComponent
@@ -356,7 +359,7 @@ const DataDetailPage = () => {
                   unstructuredDataList?.map(({ fileNo, fileName, auditInfo, extension, isPdfViewable, fileSize }) => ({
                     fileNo,
                     fileName,
-                    date: dayjs(auditInfo.modifyDt).format('YYYY-MM-DD'),
+                    date: dayjs(auditInfo.modifyDt).format('YYYY-MM-DD HH:mm'),
                     extension,
                     isPdfViewable,
                     isDownloadable: productData?.isDownloadable,
@@ -366,16 +369,11 @@ const DataDetailPage = () => {
               />
             )}
             {productData && <DocumentInfoComponent data={productData} />}
-            <Typography color="gray.60" component="div" variant="body3R12">
-              This document is the property of the respective data provider. Please refrain from reproducing or distributing it without
-              prior approval. If you wish to use this content, please contact the appropriate administrator in advance. The information
-              contained herein is provided for reference purposes only, and users are encouraged to exercise their own judgment and
-              responsibility when utilizing it.
+            <Typography paddingX={3} color="gray.60" component="div" variant="body3R12">
+              {t('dataDetail.disclaimer.en')}
             </Typography>
-            <Typography color="gray.60" component="div" variant="body3R12">
-              본 문서는 해당 데이터 제공업체의 자산으로, 사전 승인 없이 복제하거나 배포하는 것은 삼가 주시기 바랍니다. 활용을 원하실 경우,
-              관련 관리자에게 사전 문의해 주시기 바랍니다. 본 문서는 참고용 정보를 제공하기 위한 것으로, 내용의 정확성이나 활용 결과에
-              대해서는 사용자의 판단과 책임이 요구됩니다.
+            <Typography paddingX={3} color="gray.60" component="div" variant="body3R12">
+              {t('dataDetail.disclaimer.others')}
             </Typography>
           </Grid>
         </Grid>

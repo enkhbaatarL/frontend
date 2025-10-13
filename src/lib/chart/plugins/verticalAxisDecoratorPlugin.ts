@@ -1,5 +1,7 @@
 import { Plugin, Scale } from 'chart.js'
 
+import { getCurrentFontFamily } from '@/utils/font'
+
 interface YAxisOptions {
   position?: 'left' | 'right'
   unit?: string
@@ -62,12 +64,12 @@ const verticalAxisDecoratorPlugin: Plugin = {
 
       const availableWidth = width - UNIT_PADDING_RIGHT
       let fontSize = DEFAULT_FONT_SIZE
-      ctx.font = `600 ${fontSize}px Pretendard`
+      ctx.font = `600 ${fontSize}px ${getCurrentFontFamily()}`
       let textMetrics = ctx.measureText(unit)
 
       while (textMetrics.width > availableWidth - SIZE_TOLERANCE && fontSize > MIN_FONT_SIZE) {
         fontSize -= 1
-        ctx.font = `600 ${fontSize}px Pretendard`
+        ctx.font = `600 ${fontSize}px ${getCurrentFontFamily()}`
         textMetrics = ctx.measureText(unit)
       }
 

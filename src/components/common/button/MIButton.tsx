@@ -163,7 +163,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
       },
       outlined: {
         color: colors[color],
-        border: color === 'gray2' ? `1px solid ${theme.palette.gray[60]}` : `1px solid ${theme.palette.gray[30]}`,
+        border: color === 'gray2' ? `1px solid ${theme.palette.gray[30]}` : `1px solid ${theme.palette.gray[30]}`,
         background: isActive || active ? theme.palette.gray[5] : theme.palette.common.white,
         svg: {
           color: theme.palette.content['iconEnabled'],

@@ -129,6 +129,7 @@ declare module '@mui/material/styles' {
     subtitle: CSSProperties
     subtext: CSSProperties
     contentTitle: CSSProperties
+    sidePanelTitle: CSSProperties
     asterisk: CSSProperties
     helperText: CSSProperties
     labelText: CSSProperties
@@ -195,6 +196,7 @@ declare module '@mui/material/styles' {
     subtitle?: CSSProperties
     subtext?: CSSProperties
     contentTitle?: CSSProperties
+    sidePanelTitle?: CSSProperties
     asterisk?: CSSProperties
     helperText?: CSSProperties
     labelText?: CSSProperties
@@ -264,6 +266,7 @@ declare module '@mui/material/Typography' {
     subtitle: true
     subtext: true
     contentTitle: true
+    sidePanelTitle: true
     asterisk: true
     helperText: true
     labelText: true
@@ -661,6 +664,12 @@ const theme = createTheme({
       fontWeight: 700,
       lineHeight: '1.4',
     },
+    sidePanelTitle: {
+      fontSize: '16px',
+      fontStyle: 'normal',
+      fontWeight: 700,
+      lineHeight: '1.2',
+    },
     mariButton: {
       fontSize: '18px',
       fontStyle: 'normal',
@@ -719,7 +728,7 @@ const theme = createTheme({
       lineHeight: '1.2',
     },
     fileName: {
-      fontSize: '16px',
+      fontSize: '14px',
       fontStyle: 'normal',
       fontWeight: 500,
       overflow: 'hidden',
@@ -773,7 +782,7 @@ const theme = createTheme({
     },
 
     h1: undefined,
-    fontFamily: ['Pretendard', 'sans-serif'].join(','),
+    fontFamily: 'var(--font-family-primary)',
     chartToolTipTitle: {
       fontSize: '16px',
       fontStyle: 'normal',

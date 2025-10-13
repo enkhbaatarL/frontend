@@ -17,7 +17,6 @@ import useSearchFilter from '@/hooks/useSearchFilter'
 import MarketDataChart from '@/pages/mi/marketData/components/MarketDataChart'
 import marketDataService, { IDataCatalogItem, IDataCatalogRequest, IMarketData } from '@/service/mi/marketData'
 import useAuthStore from '@/store/useAuthStore'
-import theme from '@/theming'
 import { IPaginationResponse } from '@/types/api'
 
 const MarketDataPage = () => {
@@ -299,48 +298,55 @@ const MarketDataPage = () => {
           <Box
             boxSizing={'border-box'}
             sx={{
-              width: 346,
+              width: 286,
             }}
           >
-            <Box border={'1px solid'} borderColor={'gray.30'} borderRadius={1} gap={6} padding={6} flexShrink={0}>
-              <Typography mb={2.5} color="gray.90" component="h2" variant="titleBox">
+            <Box border={'1px solid'} borderColor={'gray.30'} borderRadius={1} padding={3} flexShrink={0}>
+              <Typography color="gray.70" component="h2" variant="sidePanelTitle" padding={2}>
                 Recent Viewed
               </Typography>
               {recentViewedList?.length ? (
                 recentViewedList.map((item, index) => (
-                  <Box
-                    p={3}
-                    key={index}
-                    onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
-                    sx={{
-                      cursor: 'pointer',
-                      '&:hover': {
-                        backgroundColor: theme.palette.gray[5],
-                      },
-                    }}
-                  >
-                    <Typography color="gray.70" component="div" variant="body1">
-                      {item.goodsDataNm}
-                    </Typography>
-                    <Typography
-                      sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                      color="gray.70"
-                      lineHeight={1.6}
-                      component="div"
-                      variant="body2"
+                  <>
+                    <Box
+                      paddingY={2}
+                      key={index}
+                      onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
+                      sx={{
+                        width: '90%',
+                        padding: '12px',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          backgroundColor: 'contentBG.Hover',
+                        },
+                      }}
                     >
-                      {item.goodsDataExpn}
-                    </Typography>
-                    <Grid direction={'row'} container alignItems={'center'}>
-                      <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
-                        {item.providerNm}
+                      <Typography paddingTop={1.5} color="gray.70" component="div" lineHeight={1.4} variant="body4">
+                        {item.goodsDataNm}
                       </Typography>
-                      <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
-                      <Typography color="gray.60" lineHeight={1.6} component="div" variant="body2">
-                        {dayjs(item.recentViewedDt).format('MMM DD-YY')}
+                      <Typography
+                        sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                        color="gray.60"
+                        lineHeight={1.4}
+                        component="div"
+                        variant="body3R12"
+                      >
+                        {item.goodsDataExpn}
                       </Typography>
-                    </Grid>
-                  </Box>
+                      <Grid direction={'row'} container alignItems={'center'} gap={1}>
+                        <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
+                          {item.providerNm}
+                        </Typography>
+                        <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
+                        <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
+                          {/* {dayjs(item.recentViewedDt).format('MMM DD-YY')} */}
+                          {dayjs(item.recentViewedDt).format('YY-MM-DD HH:mm')}
+                        </Typography>
+                      </Grid>
+                    </Box>
+                    {index !== recentViewedList.length - 1 && <MILine thickness={1.01} direction="horizontal" backgroundColor="gray.30" />}
+                  </>
                 ))
               ) : (
                 <Typography color="gray.60" textAlign="center" py={4} component="div" variant="body2">

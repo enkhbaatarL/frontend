@@ -1,4 +1,34 @@
 {
-  "ko": "korean",
-  "en": "english"
+  "submenu": {
+    "dashboard": {
+      "desc": "AI Market Insights Briefing"
+    },
+    "forecast": {
+      "desc": "AI Prediction Simulation"
+    },
+    "signalMap": {
+      "desc": "Key Factor Correlation Analysis"
+    },
+    "marketMetrics": {
+      "desc": "Market Metrics and Price Data"
+    },
+    "marketReports": {
+      "desc": "Analysis Reports and Insights"
+    },
+    "marketNews": {
+      "desc": "Market Trends and Key Issues"
+    },
+    "parallelCoordinates": {
+      "desc": "Key Factor Causality Analysis"
+    }
+  },
+  "dataDetail": {
+    "excelDownload": "Excel Download",
+    "noResultsFound": "No results found",
+    "noContentMessage": "This content does not provide body text.",
+    "disclaimer": {
+      "en": "This document is the property of the respective data provider. Please refrain from reproducing or distributing it without prior approval. If you wish to use this content, please contact the appropriate administrator in advance. The information contained herein is provided for reference purposes only, and users are encouraged to exercise their own judgment and responsibility when utilizing it.",
+      "others": ""
+    }
+  }
 }

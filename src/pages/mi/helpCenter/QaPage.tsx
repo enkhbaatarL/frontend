@@ -139,11 +139,11 @@ const QaPage = () => {
             Help Center
           </Typography>
           <MIInput
-            width={458}
+            width={360}
             maxWidth="100%"
             placeholder="Search for help center"
             size="h46"
-            startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
+            endIcon={<SearchIcon style={{ color: '#CED4DA' }} sx={{ fontSize: 20 }} />}
             value={filter?.keyword ?? ''}
             onChange={(e) => updateFilter('keyword', e.target.value)}
             onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('keyword', (target as HTMLInputElement).value)}

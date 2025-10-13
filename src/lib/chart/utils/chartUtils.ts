@@ -2,6 +2,7 @@ import { Chart, ChartTypeRegistry } from 'chart.js'
 import dayjs from 'dayjs'
 
 import { ChartRange } from '@/types/dataDetailChart'
+import { getCurrentFontFamily } from '@/utils/font'
 
 export const getFormattedDateFromChart = (chart: Chart, index: number, format?: string): string => {
   const dateLabel = chart.scales.x.getLabelForValue(index)
@@ -63,7 +64,7 @@ export const generateYAxis = (params: {
     color: params.isMain ? '#2E3F5E' : params.color,
     font: {
       size: 14,
-      family: 'Pretendard,sans-serif',
+      family: getCurrentFontFamily(),
       weight: 'normal' as const,
     },
     beginAtZero: true,

@@ -1,6 +1,8 @@
 import { Box, TextField, Typography } from '@mui/material'
 import { useState, useEffect } from 'react'
 
+import { getCurrentFontFamily } from '@/utils/font'
+
 interface MIInputBoxProps {
   label: string
   required?: boolean
@@ -62,7 +64,7 @@ const MIInputBox = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <Typography
             sx={{
-              fontFamily: 'Pretendard',
+              fontFamily: getCurrentFontFamily(),
               fontWeight: 600,
               fontSize: '12px',
               lineHeight: '1.4',
@@ -74,7 +76,7 @@ const MIInputBox = ({
           {required && (
             <Typography
               sx={{
-                fontFamily: 'Pretendard',
+                fontFamily: getCurrentFontFamily(),
                 fontWeight: 400,
                 fontSize: '12px',
                 lineHeight: '1.4',
@@ -121,7 +123,7 @@ const MIInputBox = ({
             input: {
               disableUnderline: true,
               sx: {
-                fontFamily: 'Pretendard',
+                fontFamily: getCurrentFontFamily(),
                 fontWeight: 400,
                 fontSize: '14px',
                 lineHeight: '1.4',

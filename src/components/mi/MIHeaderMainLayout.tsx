@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography'
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 import style from './MIHeaderMainLayout.module.scss'
@@ -22,6 +23,7 @@ import ParallelIcon from '@/components/common/icons/gnb/ParallelIcon'
 import ReportIcon from '@/components/common/icons/gnb/ReportIcon'
 import SignalIcon from '@/components/common/icons/gnb/SignalIcon'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
+import MISelect from '@/components/common/select/MISelect'
 import MIHeaderNotice from '@/components/mi/MIHeaderNotice'
 import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
 import useEnvironment from '@/hooks/useEnvironment.ts'
@@ -29,6 +31,7 @@ import { UserRole } from '@/service/admin/members'
 import companiesService from '@/service/mi/companies'
 import useAuthStore from '@/store/useAuthStore'
 import { MiPagesType } from '@/types/common'
+import { languageList } from '@/utils/font'
 
 export interface Page {
   label: string
@@ -46,12 +49,13 @@ type SubItem = {
   children?: SubItem[]
   section?: 'SERVICES' | 'DEFAULT'
 }
+
 const SUBMENUS: Record<string, SubItem[]> = {
   dashboard: [
     {
       label: 'Dashboard',
       to: '/mi/dashboard',
-      desc: 'AI 시장 인사이트 브리핑',
+      desc: 'submenu.dashboard.desc',
       disable: false,
       show: false,
       iconSlot: <DashboardIcon />,
@@ -74,14 +78,14 @@ const SUBMENUS: Record<string, SubItem[]> = {
     {
       label: 'AI Forecast Model',
       to: '/mi/forecast',
-      desc: 'AI 예측 시뮬레이션',
+      desc: 'submenu.forecast.desc',
       iconSlot: <ForecastIcon />,
       show: false,
     },
     {
       label: 'Signal Map',
       to: '/mi/signal-map',
-      desc: '주요 요인 상관관계 분석',
+      desc: 'submenu.signalMap.desc',
       iconSlot: <SignalIcon />,
       show: false,
     },
@@ -90,21 +94,21 @@ const SUBMENUS: Record<string, SubItem[]> = {
     {
       label: 'Market Metrics',
       to: '/mi/market-data',
-      desc: '시장 수치 지표 및 가격 데이터',
+      desc: 'submenu.marketMetrics.desc',
       iconSlot: <MetricsIcon />,
       show: false,
     },
     {
       label: 'Market Reports',
       to: '/mi/insights',
-      desc: '분석 리포트 및 인사이트',
+      desc: 'submenu.marketReports.desc',
       iconSlot: <ReportIcon />,
       show: false,
     },
     {
       label: 'Market News',
       to: '/mi/news-list',
-      desc: '시장 동향 및 주요 이슈',
+      desc: 'submenu.marketNews.desc',
       disable: false,
       show: false,
       iconSlot: <NewsIcon />,
@@ -112,7 +116,7 @@ const SUBMENUS: Record<string, SubItem[]> = {
     {
       label: 'Parallel Coordinates',
       to: '/mi/parallel-coordinates',
-      desc: '주요 요인 인과관계 분석',
+      desc: 'submenu.parallelCoordinates.desc',
       disable: false,
       show: false,
       iconSlot: <ParallelIcon />,
@@ -142,9 +146,27 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
   const navigate = useNavigate()
   const location = useLocation()
   const { user, accessCompanyInfo, setAccessCompanyInfo, clearAuth } = useAuthStore()
+  const { i18n, t } = useTranslation()
 
   const [selectedCompany, setSelectedCompany] = useState<{ label: string; value: number; customerCompanyMipUrl: string } | null>(null)
   const [isOpenCompany, setIsOpenCompany] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState<{ label: string; value: string }>({ label: '한국어', value: 'ko' })
+
+  const handleLanguageChange = (e: { target: { value: string | number | boolean | (string | number | boolean)[] } }) => {
+    const selectedValue = e.target.value as string
+    const selectedLanguageOption = languageList.find((option) => option.value === selectedValue)
+    if (selectedLanguageOption) {
+      setSelectedLanguage(selectedLanguageOption)
+      i18n.changeLanguage(selectedLanguageOption.value)
+    }
+  }
+
+  // 현재 언어에 따라 선택된 언어 상태 초기화
+  useEffect(() => {
+    const currentLang = i18n.language ?? 'ko'
+    const currentLanguageOption = languageList.find((option) => option.value === currentLang) ?? languageList[0]
+    setSelectedLanguage(currentLanguageOption)
+  }, [i18n.language])
 
   const { data: allCompanies } = useQuery({
     queryKey: ['getAllCompanies'],
@@ -178,12 +200,16 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
         Object.entries(SUBMENUS).map(([main, items]) => [
           main,
           items.map((item) => {
-            const url = item.to.split('/mi/').pop() || ''
-            return { ...item, show: activeMenu.includes(url as MiPagesType) }
+            const url = item.to.split('/mi/').pop() ?? ''
+            return {
+              ...item,
+              show: activeMenu.includes(url as MiPagesType),
+              desc: item.desc ? t(item.desc) : item.desc,
+            }
           }),
         ]),
       ),
-    [activeMenu],
+    [activeMenu, t],
   )
 
   useEffect(() => {
@@ -490,7 +516,11 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
                                           gap: 1.25,
                                           height: item.desc ? '58px' : '38px',
                                           transition: 'background-color .15s',
-                                          color: item.disable ? 'gray.60' : active ? 'mari.Primary' : '#495057',
+                                          color: (() => {
+                                            if (item.disable) return 'gray.60'
+                                            if (active) return 'mari.Primary'
+                                            return '#495057'
+                                          })(),
                                           cursor: item.disable ? 'default' : 'pointer',
                                           backgroundColor: active ? '#ffffff' : 'transparent',
                                           '&:hover': {
@@ -540,6 +570,9 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
             </Box>
 
             <Grid container alignItems="center" wrap="nowrap" direction="row" spacing={4} sx={{ flexGrow: 0 }}>
+              {/* TODO: 테스트 후 제거 필요 */}
+              <MISelect type={'button'} value={selectedLanguage.value} options={languageList} onChange={handleLanguageChange} />
+              <Divider orientation="vertical" variant="middle" component="div" sx={{ width: '1px', height: 20 }} />
               <MIHeaderNotice />
               <Divider orientation="vertical" variant="middle" component="div" sx={{ width: '1px', height: 20 }} />
               <MIHeaderProfile />
