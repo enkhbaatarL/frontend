@@ -2,6 +2,7 @@ import i18n from 'i18next'
 import Backend from 'i18next-http-backend'
 import { initReactI18next } from 'react-i18next'
 
+import queryClient from '@/lib/queryClient'
 import { getCurrentFontFamily } from '@/utils/font'
 
 /**
@@ -40,6 +41,9 @@ i18n
 
     i18n.on('languageChanged', (lng) => {
       updateFontFamily(lng)
+
+      // 언어 변경 시 API 재요청
+      queryClient.invalidateQueries().then()
     })
   })
 
