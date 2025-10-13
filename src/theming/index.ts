@@ -782,7 +782,7 @@ const theme = createTheme({
     },
 
     h1: undefined,
-    fontFamily: ['Pretendard', 'sans-serif'].join(','),
+    fontFamily: 'var(--font-family-primary)',
     chartToolTipTitle: {
       fontSize: '16px',
       fontStyle: 'normal',

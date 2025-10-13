@@ -1,5 +1,7 @@
 import { Chart, ChartType, Plugin } from 'chart.js'
 
+import { getCurrentFontFamily } from '@/utils/font'
+
 interface VolumeTextPlugin extends Plugin<ChartType> {
   id: string
   afterDraw(chart: Chart<ChartType>, args: unknown, options: unknown): void
@@ -10,7 +12,7 @@ interface DataPoint {
   y: number
 }
 
-const FONT = '500 14px Pretendard'
+const getFont = () => `500 14px ${getCurrentFontFamily()}`
 
 let currentMouseX: number | null = null
 
@@ -70,7 +72,7 @@ const volumeTextPlugin: VolumeTextPlugin = {
     }
 
     // Set font and style
-    ctx.font = FONT
+    ctx.font = getFont()
     ctx.fillStyle = '#2E3F5E'
 
     // Position text in top left corner with some padding
