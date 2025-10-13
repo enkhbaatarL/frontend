@@ -29,10 +29,15 @@ interface LatestInsightsData {
 
 const DataItem = ({ goodsDataNm, modifyDt, providerNm, index, onClick, isViewable }: DocumentItemProps) => (
   <Box
-    paddingY={3}
+    p={3}
     borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'}
     onClick={onClick}
-    sx={{ cursor: isViewable ? 'pointer' : 'default' }}
+    sx={{
+      cursor: isViewable ? 'pointer' : 'default',
+      '&:hover': {
+        backgroundColor: 'contentBG.Hover',
+      },
+    }}
   >
     <Box
       sx={{
@@ -41,13 +46,13 @@ const DataItem = ({ goodsDataNm, modifyDt, providerNm, index, onClick, isViewabl
       }}
     >
       <Typography
-        fontWeight={600}
+        fontWeight={500}
         color="gray.70"
         component="div"
         sx={{ WebkitLineClamp: 1, filter: !isViewable ? 'blur(5px)' : 'none' }}
         variant="fileName"
       >
-        {isViewable ? goodsDataNm : getRandomString(40)}
+        {isViewable ? goodsDataNm : getRandomString(35)}
       </Typography>
       {!isViewable && (
         <Box
@@ -63,11 +68,11 @@ const DataItem = ({ goodsDataNm, modifyDt, providerNm, index, onClick, isViewabl
       )}
     </Box>
     <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
-      <Typography lineHeight={1.6} color="gray.60" variant="body2">
+      <Typography lineHeight={1.4} color="gray.60" variant="subtext2">
         {providerNm}
       </Typography>
       <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
-      <Typography whiteSpace="nowrap" lineHeight={1.6} color="gray.60" variant="body2">
+      <Typography whiteSpace="nowrap" lineHeight={1.4} color="gray.60" variant="subtext2">
         {dayjs(modifyDt).format('YYYY-MM-DD ')}
       </Typography>
     </Grid>
@@ -84,8 +89,8 @@ const LatestData = ({ dataList }: { dataList: LatestInsightsData[] }) => {
   }
 
   return (
-    <Grid gap={2.5} bgcolor={'#fff'} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
-      <Typography component="div" color="gray.90" variant="titleBox">
+    <Grid gap={1} bgcolor={'#fff'} container direction="column" p={3} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
+      <Typography padding={2} component="div" color="gray.70" variant="sidePanelTitle">
         Latest Insights
       </Typography>
       <Box>
@@ -101,7 +106,7 @@ const LatestData = ({ dataList }: { dataList: LatestInsightsData[] }) => {
           />
         ))}
       </Box>
-      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h42'} onClick={() => navigate('/mi/insights')}>
+      <MIButton width={'100%'} contentType={'text'} color={'gray2'} type={'outlined'} size={'h34'} onClick={() => navigate('/mi/insights')}>
         View all
         <KeyboardArrowRightIcon
           sx={{

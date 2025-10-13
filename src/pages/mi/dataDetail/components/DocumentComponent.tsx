@@ -19,7 +19,16 @@ interface DocumentComponentProps {
   data: DocumentItemProps[]
 }
 
-const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable, fileNo, fileSize }: DocumentItemProps) => {
+const DocumentItem = ({
+  fileName,
+  date,
+  extension,
+  isPdfViewable,
+  isDownloadable,
+  fileNo,
+  fileSize,
+  isLast,
+}: DocumentItemProps & { isLast?: boolean }) => {
   const handleViewPdf = () => {
     window.open(
       `/pdf-viewer/${fileNo}`,
@@ -44,28 +53,50 @@ const DocumentItem = ({ fileName, date, extension, isPdfViewable, isDownloadable
   }
 
   return (
-    <Box paddingY={3}>
-      <Typography mb={1} color="gray.70" component="div" variant="fileName">
-        {fileName}
-      </Typography>
-      <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
-        <Typography whiteSpace="nowrap" lineHeight={1.6} color="gray.60" variant="body2">
-          {date}
+    <>
+      <Box gap={3} sx={{ width: '90%', padding: '12px 12px 0px 12px', overflow: 'hidden' }}>
+        <Typography
+          mt={0.5}
+          color="gray.70"
+          component="div"
+          variant="fileName"
+          sx={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            lineHeight: 1.4,
+            width: '100%',
+            wordBreak: 'break-word',
+            maxHeight: '2.8em', // 2줄 높이 제한 (lineHeight 1.4 * 2)
+          }}
+        >
+          {fileName}
         </Typography>
-        <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
-        <Typography lineHeight={1.6} color="gray.60" variant="body2">
-          {extension}
-        </Typography>
-        {isPdfViewable && (
-          <MIButton contentType={'link'} color={'gray'} type={'ghost'} size={'h32'} onClick={handleViewPdf}>
-            View
+        <Grid container wrap="nowrap" alignItems="center" gap={'4px'}>
+          <Typography whiteSpace="nowrap" lineHeight={1.4} color="gray.60" variant="body3R12">
+            {date}
+          </Typography>
+          <MILine length={7} borderRadius={1} thickness={1.1} direction="vertical" backgroundColor="gray.30" />
+          <Typography lineHeight={1.4} color="gray.60" variant="body3R12">
+            {extension}
+          </Typography>
+        </Grid>
+
+        <Grid container wrap="nowrap" mt={1} mb={3.5} alignItems="center" gap={'6px'} justifyContent="flex-end">
+          {isPdfViewable && (
+            <MIButton color={'gray'} type={'outlined'} size={'h28'} onClick={handleViewPdf}>
+              View
+            </MIButton>
+          )}
+          <MIButton color={'gray'} type={'outlined'} size={'h28'} disabled={!isDownloadable} onClick={handleDownloadFile}>
+            Download
           </MIButton>
-        )}
-        <MIButton contentType={'link'} color={'gray'} type={'ghost'} size={'h32'} disabled={!isDownloadable} onClick={handleDownloadFile}>
-          Download
-        </MIButton>
-      </Grid>
-    </Box>
+        </Grid>
+      </Box>
+      {!isLast && <MILine thickness={1.01} direction="horizontal" backgroundColor="gray.30" />}
+    </>
   )
 }
 
@@ -95,11 +126,21 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => {
   }, [data])
 
   return (
-    <Grid gap={2.5} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
-      <Typography component="div" color="gray.90" variant="titleBox">
-        Document
+    <Grid
+      gap={2.5}
+      container
+      direction="column"
+      paddingX={3}
+      paddingY={6}
+      borderRadius={1}
+      border={'1px solid'}
+      borderColor={'gray.30'}
+      sx={{ width: '100%', maxWidth: '286px' }}
+    >
+      <Typography paddingX={3} component="div" color="gray.70" variant="sidePanelTitle">
+        Downloads
       </Typography>
-      <Box>
+      <Box sx={{ width: '100%', overflow: 'hidden', marginBottom: '4px' }}>
         {data?.map((item, index) => (
           <DocumentItem
             key={index}
@@ -110,6 +151,7 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => {
             isDownloadable={item.isDownloadable}
             fileNo={item.fileNo}
             fileSize={item.fileSize}
+            isLast={index === data.length - 1}
           />
         ))}
       </Box>
@@ -118,11 +160,11 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => {
         contentType={'text'}
         color={'gray2'}
         type={'outlined'}
-        size={'h42'}
+        size={'h34'}
         onClick={handleDownloadFiles}
         disabled={!data.some((item) => item.isDownloadable)}
       >
-        Download All
+        Download all
       </MIButton>
     </Grid>
   )

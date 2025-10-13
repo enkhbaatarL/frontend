@@ -344,11 +344,13 @@ const DataDetailPage = () => {
           <Grid
             sx={{
               width: '286px',
+              maxWidth: '286px',
+              minWidth: '286px',
+              flexShrink: 0,
             }}
             container
             gap={6}
             direction="column"
-            flexShrink={0}
           >
             {hasUnstructuredData && (
               <DocumentComponent
@@ -356,7 +358,7 @@ const DataDetailPage = () => {
                   unstructuredDataList?.map(({ fileNo, fileName, auditInfo, extension, isPdfViewable, fileSize }) => ({
                     fileNo,
                     fileName,
-                    date: dayjs(auditInfo.modifyDt).format('YYYY-MM-DD'),
+                    date: dayjs(auditInfo.modifyDt).format('YYYY-MM-DD HH:mm'),
                     extension,
                     isPdfViewable,
                     isDownloadable: productData?.isDownloadable,
@@ -366,13 +368,13 @@ const DataDetailPage = () => {
               />
             )}
             {productData && <DocumentInfoComponent data={productData} />}
-            <Typography color="gray.60" component="div" variant="body3R12">
+            <Typography paddingX={3} color="gray.60" component="div" variant="body3R12">
               This document is the property of the respective data provider. Please refrain from reproducing or distributing it without
               prior approval. If you wish to use this content, please contact the appropriate administrator in advance. The information
               contained herein is provided for reference purposes only, and users are encouraged to exercise their own judgment and
               responsibility when utilizing it.
             </Typography>
-            <Typography color="gray.60" component="div" variant="body3R12">
+            <Typography paddingX={3} color="gray.60" component="div" variant="body3R12">
               본 문서는 해당 데이터 제공업체의 자산으로, 사전 승인 없이 복제하거나 배포하는 것은 삼가 주시기 바랍니다. 활용을 원하실 경우,
               관련 관리자에게 사전 문의해 주시기 바랍니다. 본 문서는 참고용 정보를 제공하기 위한 것으로, 내용의 정확성이나 활용 결과에
               대해서는 사용자의 판단과 책임이 요구됩니다.

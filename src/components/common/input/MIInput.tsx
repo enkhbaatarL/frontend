@@ -133,15 +133,16 @@ const MIInput = ({
           ...theme.typography.body2R14,
           '& input': {
             height: '25px',
-            fontSize: '18px',
-            fontWeight: 500,
+            fontSize: '14px',
+            marginLeft: '1px',
+            fontWeight: 400,
             '&::placeholder': {
-              color: `${theme.palette.gray['60']} !important`, // Only apply for input H46
+              color: `${theme.palette.gray['40']} !important`, // Only apply for input H46
             },
           },
-          '.MuiSvgIcon-root': {
-            marginRight: '10px !important',
-          },
+          // '.MuiSvgIcon-root': {
+          //   marginRight: '10px !important',
+          // },
         }
       // Default size is h34
       default:
@@ -202,11 +203,7 @@ const MIInput = ({
             <MIInputErrorIcon width={16} height={16} />
           </Tooltip>
         )}
-        {endIcon && (
-          <Box className="end-icon-wrapper" p={'4px'}>
-            {endIcon}
-          </Box>
-        )}
+        {endIcon && <Box className="end-icon-wrapper">{endIcon}</Box>}{' '}
       </InputAdornment>
     )
 
@@ -288,20 +285,20 @@ const MIInput = ({
               },
               '& .end-icon-wrapper': {
                 borderRadius: '4px',
-                marginLeft: '8px',
+                // marginLeft: '8px',
               },
               '& .end-icon-wrapper svg path': {
                 fill: '#868E96',
               },
-              '&:hover .end-icon-wrapper': {
-                backgroundColor: theme.palette.content.backgroundHover,
-              },
+              // '&:hover .end-icon-wrapper': {
+              //   backgroundColor: theme.palette.content.backgroundHover,
+              // },
               '&:hover .end-icon-wrapper svg path': {
                 fill: theme.palette.gray[80],
               },
             },
             '& .MuiInputBase-root .MuiSvgIcon-root': {
-              marginRight: 2,
+              // marginRight: 2,
               color: '#868E96',
             },
 
@@ -309,9 +306,9 @@ const MIInput = ({
               //borderColor: theme.palette.content['borderActivePrimary'],
               '.MuiInputAdornment-root': {
                 marginRight: 0,
-                '.end-icon-wrapper': {
-                  backgroundColor: theme.palette.content.backgroundHover,
-                },
+                // '.end-icon-wrapper': {
+                //   backgroundColor: theme.palette.content.backgroundHover,
+                // },
                 'svg:last-child': {
                   color: theme.palette.content['iconActive'],
                   path: {

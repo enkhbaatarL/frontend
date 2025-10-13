@@ -43,36 +43,41 @@ const DataItem = ({ data, index, onClick }: { data: ProcessedMarketDataItem; ind
 
   return (
     <Box
-      paddingY={3}
+      padding={3}
       borderTop={index > 0 ? '1px solid #DEE2E6' : 'none'}
       position="relative"
       onClick={isPermitted ? onClick : undefined}
-      sx={{ cursor: isPermitted ? 'pointer' : 'auto' }}
+      sx={{
+        cursor: isPermitted ? 'pointer' : 'auto',
+        '&:hover': {
+          backgroundColor: 'contentBG.Hover',
+        },
+      }}
     >
-      <Typography fontWeight={600} color="gray.70" component="div" mb="2px" variant="fileName" sx={{ WebkitLineClamp: 1 }}>
+      <Typography fontWeight={500} color="gray.70" component="div" mb="4px" variant="fileName" sx={{ WebkitLineClamp: 1 }}>
         {goodsDataSourceNm}
       </Typography>
       <Box sx={{ position: 'relative' }}>
         <Box sx={{ filter: !isPermitted ? 'blur(5px)' : 'none' }}>
           <Grid mb={1} container wrap="nowrap" alignItems="center" gap="5px">
-            <Typography lineHeight={1.6} color="gray.90" variant="body2">
+            <Typography lineHeight={1.4} color="gray.90" variant="body2">
               {isPermitted ? lastValue : 0.0}
             </Typography>
             <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
-            <Typography lineHeight={1.6} color={isPermitted ? color : 'gray.60'} variant="body2">
+            <Typography lineHeight={1.4} color={isPermitted ? color : 'gray.60'} variant="body2">
               {isPermitted ? `${isPositive ? '+' : ''}${change} (${isPositive ? '+' : ''}${changePercent}%)` : '+0.00 (+0.00%)'}
             </Typography>
           </Grid>
           <Grid container wrap="nowrap" alignItems="center" gap={'5px'}>
-            <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
+            <Typography lineHeight={1} color="gray.60" variant="subtext2">
               {isPermitted ? dayjs(lastUpdateDt).format('YYYY-MM-DD') : 'YYYY-MM-DD'}
             </Typography>
             <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
-            <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
+            <Typography lineHeight={1} color="gray.60" variant="subtext2">
               {isPermitted ? unit : 'N/A'}
             </Typography>
             <MILine length={6} borderRadius={2.5} thickness={2} direction="vertical" backgroundColor="gray.30" />
-            <Typography lineHeight={1} fontSize={10} fontWeight={400} color="gray.60" variant="body2">
+            <Typography lineHeight={1} color="gray.60" variant="subtext2">
               {isPermitted ? currency : 'N/A'}
             </Typography>
           </Grid>
@@ -119,8 +124,8 @@ const UpdatedData = ({ dataList }: { dataList: MarketDataItemInfo[] }) => {
   }
 
   return (
-    <Grid gap={2.5} bgcolor="#fff" container direction="column" p={6} borderRadius={1} border="1px solid" borderColor="gray.30">
-      <Typography component="div" color="gray.90" variant="titleBox">
+    <Grid gap={1} bgcolor="#fff" container direction="column" p={3} borderRadius={1} border="1px solid" borderColor="gray.30">
+      <Typography p={3} component="div" color="gray.70" variant="sidePanelTitle">
         Updated Data
       </Typography>
       <Box>
@@ -128,7 +133,7 @@ const UpdatedData = ({ dataList }: { dataList: MarketDataItemInfo[] }) => {
           <DataItem key={index} data={item} index={index} onClick={() => onClickRow(item)} />
         ))}
       </Box>
-      <MIButton width="100%" contentType="text" color="gray2" type="outlined" size="h42" onClick={() => navigate('/mi/market-data')}>
+      <MIButton width="100%" contentType="text" color="gray2" type="outlined" size="h34" onClick={() => navigate('/mi/market-data')}>
         View all
         <KeyboardArrowRightIcon sx={{ verticalAlign: 'sub', color: '#868E96', ml: '8px' }} fontSize="small" />
       </MIButton>

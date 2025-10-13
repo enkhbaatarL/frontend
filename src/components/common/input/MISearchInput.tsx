@@ -79,7 +79,11 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
       endAdornment: (
         <InputAdornment position="end" sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginRight: '0' }}>
           {isFocus && value && <MIInputClearIcon width={20} height={20} onClick={handleClear} />}
-          <SearchIcon style={{ color: theme.palette.content['iconEnabled'], cursor: 'pointer' }} onClick={handleSearchClick} />
+          <SearchIcon
+            sx={{ fontSize: 20 }}
+            style={{ color: theme.palette.content['iconEnabled'], cursor: 'pointer' }}
+            onClick={handleSearchClick}
+          />
         </InputAdornment>
       ),
     }),
@@ -144,12 +148,12 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
             alignItems: 'center',
             borderRadius: '4px',
             height: '40px',
-            padding: '10px 12px',
+            padding: '10px 6px',
             ...theme.typography.body2R14,
             '& input': {
               height: '25px',
               fontSize: '14px',
-              fontWeight: 500,
+              fontWeight: 400,
               padding: '0 6px',
               width: '100%',
               borderRadius: '0',
@@ -159,7 +163,7 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
               },
             },
             '.MuiSvgIcon-root': {
-              marginRight: '4px !important',
+              marginRight: '8px !important',
             },
             '.MuiInputAdornment-root': {
               marginRight: 0,

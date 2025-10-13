@@ -13,10 +13,10 @@ interface DocumentInfoComponentProps {
 
 const DocumentInfoItem = ({ label, value }: DocumentInfoItemProps) => (
   <Box>
-    <Typography color="gray.70" component="div" variant="infoDocument">
+    <Typography color="gray.70" component="div" variant="body2SB14">
       {label}
     </Typography>
-    <Typography lineHeight={1.6} color="gray.70" component="div" variant="body1R16">
+    <Typography lineHeight={1.6} color="gray.70" component="div" variant="body2">
       {value}
     </Typography>
   </Box>
@@ -35,7 +35,7 @@ const DocumentInfoComponent = ({ data }: DocumentInfoComponentProps) => {
 
   return (
     <Grid gap={3.5} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
-      <Typography component="div" color="gray.90" variant="titleBox">
+      <Typography component="div" color="gray.70" variant="sidePanelTitle" mb={1}>
         Data Info
       </Typography>
       <Grid container direction="column" gap={3}>
