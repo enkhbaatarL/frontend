@@ -4,6 +4,7 @@ import { t } from 'i18next'
 import { NavigateFunction } from 'react-router-dom'
 
 import { ISnackbarOptions } from '@/hooks/useSnackbar'
+import i18n from '@/lib/i18n'
 import useAuthStore from '@/store/useAuthStore'
 import useDialog from '@/store/useDialog'
 import { triggerLayoutReset } from '@/utils/resetLayout'
@@ -53,6 +54,8 @@ api.interceptors.request.use((req) => {
     if (user?.isOtherServiceAccessPossible && accessCompanyInfo?.customerCompanyNo) {
       req.headers['X-Company-No'] = accessCompanyInfo.customerCompanyNo.toString()
     }
+    const currentLanguage = i18n.language || 'ko'
+    req.headers['Accept-Language'] = currentLanguage
   }
 
   return req
