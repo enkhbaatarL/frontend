@@ -325,7 +325,7 @@ const MarketDataPage = () => {
                       <Typography paddingTop={1.5} color="gray.70" component="div" lineHeight={1.4} variant="body4">
                         {item.goodsDataNm}
                       </Typography>
-                      <Typography
+                      {/* <Typography
                         sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                         color="gray.60"
                         lineHeight={1.4}
@@ -333,7 +333,7 @@ const MarketDataPage = () => {
                         variant="body3R12"
                       >
                         {item.goodsDataExpn}
-                      </Typography>
+                      </Typography> */}
                       <Grid direction={'row'} container alignItems={'center'} gap={1}>
                         <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
                           {item.providerNm}
