@@ -27,6 +27,7 @@ const NewsFeed = () => {
       sx={{
         overflow: 'visible',
       }}
+      direction="column"
     >
       <Timeline my="12px" />
     </DashboardCard>

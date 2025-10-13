@@ -6,6 +6,7 @@ import MIDateDisplay from '@/components/common/date/MIDateDisplay'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useMarketData } from '@/contexts/MarketDataContext'
 import AIMarketSummary from '@/pages/mi/dashboard/components/AIMarketSummary'
+import FactorMap from '@/pages/mi/dashboard/components/FactorMap'
 import MIGuide from '@/pages/mi/dashboard/components/MIGuide'
 import NewsFeed from '@/pages/mi/dashboard/components/NewsFeed'
 import forecastDataService from '@/service/mi/forecast'
@@ -57,6 +58,7 @@ const DashboardPage = () => {
             <NewsFeed />
           </Stack>
           <Stack width="616px" gap="24px">
+            <FactorMap />
             <MIGuide />
           </Stack>
         </Stack>

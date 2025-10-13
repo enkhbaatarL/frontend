@@ -7,9 +7,11 @@ interface Props extends Omit<CardProps, 'title'> {
   icon?: string
   title: ReactNode
   headerContent?: ReactNode
+  direction?: 'row' | 'column'
+  gap?: number | string
 }
 
-const DashboardCard = ({ icon, title, headerContent, children, ...props }: Props) => (
+const DashboardCard = ({ icon, title, headerContent, children, direction = 'row', gap = '24px', ...props }: Props) => (
   <Card
     elevation={0}
     {...props}
@@ -23,7 +25,7 @@ const DashboardCard = ({ icon, title, headerContent, children, ...props }: Props
     <DashboardCardHeader icon={icon} title={title}>
       {headerContent}
     </DashboardCardHeader>
-    <Stack px="24px" direction="row" gap="24px">
+    <Stack px="24px" direction={direction} gap={gap}>
       {children}
     </Stack>
   </Card>

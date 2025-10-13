@@ -1,32 +1,16 @@
-import { Box, Chip, Stack } from '@mui/material'
-import { useMemo } from 'react'
+import { Box, Stack } from '@mui/material'
 
 import AiSummaryIcon from '@/assets/dashboard/ai-summary.svg'
 import ContentReader from '@/pages/mi/dashboard/components/ContentReader'
 import DashboardCard from '@/pages/mi/dashboard/components/DashboardCard'
 import KeyEconomicIndicators from '@/pages/mi/dashboard/components/KeyEconomicIndicators'
 import MarketRecap from '@/pages/mi/dashboard/components/MarketRecap'
+import UpdatedInfoChip from '@/pages/mi/dashboard/components/UpdatedInfoChip'
 import Watchlist from '@/pages/mi/dashboard/components/Watchlist'
 
 interface Props {
   period?: string
   dateRange?: string
-}
-
-const UpdatedInfoChip = ({ label, color }: { label: string; color: { backgroundColor: string; color: string } }) => {
-  const chipStyle = useMemo(
-    () => ({
-      backgroundColor: color.backgroundColor,
-      color: color.color,
-      height: '36px',
-      borderRadius: '10px',
-      fontSize: 14,
-      fontWeight: 500,
-    }),
-    [color],
-  )
-
-  return <Chip label={label} sx={chipStyle} />
 }
 
 const AIMarketSummary = ({ period = '24H', dateRange = 'Sep 14 07:00 - Sep 15 07:00' }: Props) => (
