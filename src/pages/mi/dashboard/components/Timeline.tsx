@@ -381,7 +381,7 @@ const Timeline = ({ ...props }: BoxProps) => (
     {...props}
   >
     <Box padding="12px 6px 0">
-      <SectionHeader title="Timeline" tooltipTitle="-" />
+      <SectionHeader title="Timeline" tooltipTitle="" />
     </Box>
     <Stack alignContent="center" justifyContent="center" height="280px">
       <TimelineBar data={sampleData} />
