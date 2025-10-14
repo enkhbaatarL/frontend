@@ -1,8 +1,9 @@
 import { Box, Stack, Typography, keyframes, Collapse, Tooltip } from '@mui/material'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
-import DashboardSelect from './DashboardSelect'
-import SectionHeader from './SectionHeader'
+import DashboardSelect from '@/pages/mi/dashboard/components/DashboardSelect'
+import SectionHeader from '@/pages/mi/dashboard/components/SectionHeader'
 
 const shimmer = keyframes`
   0% {
@@ -81,6 +82,8 @@ interface SentimentBarProps {
 }
 
 const SentimentBar = ({ value, valueIndex, item, shimmerAnimation, isFirstItem, isVisible }: SentimentBarProps) => {
+  const { t } = useTranslation()
+
   const total = item.value.reduce((acc: number, curr: number) => acc + curr, 0)
   const maxIndex = item.value.indexOf(Math.max(...item.value))
   const sentimentType = getSentimentType(valueIndex, item.value.length)
@@ -92,18 +95,19 @@ const SentimentBar = ({ value, valueIndex, item, shimmerAnimation, isFirstItem, 
 
   const dynamicKeyframes = createBarExpandKeyframes(minValue, maxValue, value)
 
+  const getTooltipTitle = () => {
+    if (sentimentType === 'positive') return t('dashboard.sentiments.barTooltip.positive')
+    if (sentimentType === 'negative') return t('dashboard.sentiments.barTooltip.negative')
+    return t('dashboard.sentiments.barTooltip.neutral')
+  }
+
   return (
-    <Tooltip
-      title={`${sentimentType.charAt(0).toUpperCase() + sentimentType.slice(1)} - ${percentage} (${value})`}
-      placement="top"
-      disableInteractive
-      followCursor
-    >
+    <Tooltip title={`${getTooltipTitle()} - ${percentage} (${value})`} placement="top" disableInteractive followCursor>
       <Box
         key={`${item.key}-${valueIndex}-${value}`}
-        height={24}
+        height={18}
         borderRadius="100px"
-        padding="2px 10px"
+        padding="2px 8px"
         boxSizing="border-box"
         display="flex"
         alignItems="center"
@@ -172,74 +176,83 @@ interface SentimentItemProps {
   shimmerAnimation: string
 }
 
-const SentimentItem = ({ item, index, isVisible, showLabels, shimmerAnimation }: SentimentItemProps) => (
-  <Box
-    sx={{
-      opacity: isVisible ? 1 : 0,
-      transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
-      maxHeight: isVisible ? '200px' : '0px',
-      overflow: 'hidden',
-      transition: isVisible ? 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      transitionDelay: isVisible ? `${index * 50}ms` : '0ms',
-      pointerEvents: isVisible ? 'auto' : 'none',
-      marginBottom: isVisible ? '6px' : '0px',
-    }}
-  >
-    <Stack>
-      <Collapse
-        in={showLabels && isVisible}
-        timeout={showLabels && isVisible ? 400 : 200}
-        sx={{
-          transition: showLabels && isVisible ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)',
-        }}
-      >
-        <Stack padding="4px 8px" direction="row" alignItems="center" justifyContent="space-between" gap="8px">
-          <Typography variant="body1" color="gray.70">
-            {item.label}
-          </Typography>
-          <Typography variant="body3" color="gray.70">
-            {item.date}
-          </Typography>
-        </Stack>
-      </Collapse>
-      <Box
-        sx={{
-          opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.98)',
-          transition: isVisible ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)',
-          transitionDelay: isVisible ? `${index * 50 + 150}ms` : '0ms',
-        }}
-      >
-        <Stack padding="8px" direction="row" alignItems="center" gap="3px" borderRadius="100px" sx={{ backgroundColor: '#E9ECEF' }}>
-          {item.value.map((value, valueIndex) => (
-            <SentimentBar
-              key={`${item.key}-${valueIndex}-${value}`}
-              value={value}
-              valueIndex={valueIndex}
-              item={item}
-              shimmerAnimation={shimmerAnimation}
-              isFirstItem={index === 0}
-              isVisible={isVisible}
-            />
-          ))}
-        </Stack>
-      </Box>
-    </Stack>
-  </Box>
-)
+const SentimentItem = ({ item, index, isVisible, showLabels, shimmerAnimation }: SentimentItemProps) => {
+  const { t } = useTranslation()
+
+  return (
+    <Box
+      sx={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+        maxHeight: isVisible ? '200px' : '0px',
+        overflow: 'hidden',
+        transition: isVisible ? 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transitionDelay: isVisible ? `${index * 50}ms` : '0ms',
+        pointerEvents: isVisible ? 'auto' : 'none',
+        marginBottom: isVisible ? '6px' : '0px',
+      }}
+    >
+      <Stack>
+        <Collapse
+          in={showLabels && isVisible}
+          timeout={showLabels && isVisible ? 400 : 200}
+          sx={{
+            transition: showLabels && isVisible ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
+          <Stack padding="4px 8px" direction="row" alignItems="center" justifyContent="space-between" gap="8px">
+            <Typography variant="body1" color="gray.70">
+              {t(`dashboard.sentiments.options.${item.key}Label`)}
+            </Typography>
+            <Typography variant="body3" color="gray.70">
+              {item.date}
+            </Typography>
+          </Stack>
+        </Collapse>
+        <Box
+          sx={{
+            opacity: isVisible ? 1 : 0,
+            transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.98)',
+            transition: isVisible ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)',
+            transitionDelay: isVisible ? `${index * 50 + 150}ms` : '0ms',
+          }}
+        >
+          <Stack padding="8px" direction="row" alignItems="center" gap="3px" borderRadius="100px" sx={{ backgroundColor: '#E9ECEF' }}>
+            {item.value.map((value, valueIndex) => (
+              <SentimentBar
+                key={`${item.key}-${valueIndex}-${value}`}
+                value={value}
+                valueIndex={valueIndex}
+                item={item}
+                shimmerAnimation={shimmerAnimation}
+                isFirstItem={index === 0}
+                isVisible={isVisible}
+              />
+            ))}
+          </Stack>
+        </Box>
+      </Stack>
+    </Box>
+  )
+}
 
 const Sentiment = () => {
+  const { t } = useTranslation()
   const [selectedOptions, setSelectedOptions] = useState<string[]>(['current'])
 
-  const options = useMemo(() => sampleItems.map((item) => ({ label: item.label, value: item.key, disabled: item.disabled })), [])
+  const options = useMemo(
+    () =>
+      sampleItems.map((item) => ({
+        label: t(`dashboard.sentiments.options.${item.key}Label`),
+        value: item.key,
+        disabled: item.disabled,
+      })),
+    [t],
+  )
 
   return (
     <Stack padding="6px 12px 14px" borderRadius="10px" sx={{ backgroundColor: '#F8F9FA' }}>
-      <SectionHeader
-        title="Sentiment"
-        tooltipTitle="최근 24시간 뉴스를 바탕으로 시장 가격 상승에 대한 긍정·중립·부정 반응의 비중을 나타냅니다."
-        padding="7.5px 0 7.5px 6px"
-      >
+      <SectionHeader title="Sentiment" tooltipTitle={t('dashboard.sentiments.titleTooltip')} padding="7.5px 0 7.5px 6px">
         <DashboardSelect type="switch" multiple items={options} selectedItems={selectedOptions} setSelectedItems={setSelectedOptions} />
       </SectionHeader>
       {sampleItems.map((item, index) => {

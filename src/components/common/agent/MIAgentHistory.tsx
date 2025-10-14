@@ -1,5 +1,6 @@
 import { Box, Typography, List, ListItem, Tooltip } from '@mui/material'
 import { useState, useMemo, memo } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import HistoryIcon from '../icons/agent/HistoryIcon'
 
@@ -43,6 +44,7 @@ const MiAgentHistory = ({
   disabled,
 }: MiAgentHistoryProps) => {
   const [isExpanded, setIsExpanded] = useState(true)
+  const { t } = useTranslation()
 
   const containerStyles = useMemo(
     () => ({
@@ -93,7 +95,7 @@ const MiAgentHistory = ({
                 }}
                 color="gray.60"
               >
-                최근
+                {t('common.recent')}
               </Typography>
             </Box>
             {loading ? (

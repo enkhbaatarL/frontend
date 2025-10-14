@@ -1,5 +1,6 @@
 import { Box, TextareaAutosize } from '@mui/material'
 import { ChangeEvent, useRef, useState, KeyboardEvent, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import MIAgentInputBoxDropdown from '@/components/common/agent/MIAgentInputBoxDropdown'
 import MIAgentPromptButton from '@/components/common/agent/MIAgentPromptButton'
@@ -27,18 +28,13 @@ interface Props {
   ) => void
 }
 
-const MIAgentPromptInputBox = ({
-  onSendMessage,
-  placeholder = '무엇을 찾으시나요?',
-  isGenerating,
-  selectModeOption,
-  onSelectModeOptionChange,
-}: Props) => {
+const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selectModeOption, onSelectModeOptionChange }: Props) => {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [isComposing, setIsComposing] = useState(false)
   const [isInputFocused, setIsInputFocused] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [promptText, setPromptText] = useState('')
+  const { t } = useTranslation()
 
   const handleToggleOption = (toggledItem: { id: string }) => {
     const newOptions = selectModeOption.map((item) => (item.id === toggledItem.id ? { ...item, checked: !item.checked } : item))
@@ -109,7 +105,7 @@ const MIAgentPromptInputBox = ({
         >
           <TextareaAutosize
             ref={inputRef}
-            placeholder={isGenerating ? '답변을 생성중입니다' : placeholder}
+            placeholder={isGenerating ? t('mari.promptMessage.generating') : (placeholder ?? t('mari.promptMessage.placeholder'))}
             value={promptText}
             maxLength={2000}
             className={'MIScrollbar'}

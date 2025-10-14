@@ -2,8 +2,8 @@ import InsertChartRoundedIcon from '@mui/icons-material/InsertChartRounded'
 import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded'
 import { Box, Button, Typography, CircularProgress } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
-import { t } from 'i18next'
 import { useMemo, useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
@@ -107,6 +107,7 @@ const RelatedDataBtn = ({ goodsNo, goodsDataNo, displayNm }: RelatedDataBtnProps
 const MAX_RELATED_DATA_COUNT = 3
 
 const MIAgentRelatedData = ({ relatedData }: Props) => {
+  const { t } = useTranslation()
   const [isShowMore, setIsShowMore] = useState<boolean>((relatedData?.length ?? 0) <= MAX_RELATED_DATA_COUNT)
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -126,11 +127,11 @@ const MIAgentRelatedData = ({ relatedData }: Props) => {
   return (
     <Box display="flex" alignItems="start" flexDirection="column" gap={1.5} mt={'12px'}>
       <Typography py={1} component="div" variant="mariParagraph" color="gray.90">
-        {t('해당 정보는 다음의 데이터를 참고하였습니다.')}
+        {t('mari.answer.relatedData.disclaimer')}
       </Typography>
 
       <Typography pt={2} component="div" variant="mariDescription" color="gray.70">
-        {t('응답과 연관있는 데이터')}
+        {t('mari.answer.relatedData.explanation')}
       </Typography>
 
       {relatedDataList?.map((item, index) => (

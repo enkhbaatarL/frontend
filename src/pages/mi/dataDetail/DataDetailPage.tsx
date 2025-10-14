@@ -370,10 +370,13 @@ const DataDetailPage = () => {
             )}
             {productData && <DocumentInfoComponent data={productData} />}
             <Typography paddingX={3} color="gray.60" component="div" variant="body3R12">
-              {t('dataDetail.disclaimer.en')}
+              This document is the property of the respective data provider. Please refrain from reproducing or distributing it without
+              prior approval. If you wish to use this content, please contact the appropriate administrator in advance. The information
+              contained herein is provided for reference purposes only, and users are encouraged to exercise their own judgment and
+              responsibility when utilizing it.
             </Typography>
             <Typography paddingX={3} color="gray.60" component="div" variant="body3R12">
-              {t('dataDetail.disclaimer.others')}
+              {t('dataDetail.disclaimer')}
             </Typography>
           </Grid>
         </Grid>

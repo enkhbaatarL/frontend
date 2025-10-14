@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import clsx from 'clsx'
-import { t } from 'i18next'
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import MIAgentAnswer from '@/components/common/agent/MIAgentAnswer'
 import style from '@/components/common/agent/MIAgentAnswer.module.scss'
@@ -11,20 +11,20 @@ import { IChatRoom, IConversation } from '@/hooks/useMIAgent'
 import useSnackbar from '@/hooks/useSnackbar'
 import agentService, { ChatRoomErrorStatus, FeedbackCd } from '@/service/mi/agent'
 
-const getErrorMessage = (statusCd: string): string[] => {
+const getErrorMessage = (statusCd: string, t: (key: string) => string): string[] => {
   switch (statusCd) {
     case ChatRoomErrorStatus.FAIL_FORBIDDEN_WORDS:
-      return [t('금지된 단어가 포함되어 있어 답변을 생성할 수 없습니다.')]
+      return [t('mari.error.forbiddenWords')]
     case ChatRoomErrorStatus.FAIL_EXCEED_LENGTH:
-      return [t('질문 길이가 제한을 초과했습니다.')]
+      return [t('mari.error.exceedLength')]
     case ChatRoomErrorStatus.FAIL_EXCEED_TOKEN:
-      return [t('사용 가능한 크레딧이 모두 소진되었습니다.'), t('자세한 사항은 관리자에게 문의해 주세요.')]
+      return [t('mari.error.exceedToken'), t('mari.error.exceedTokenDetail')]
     case ChatRoomErrorStatus.FAIL_TIMED_OUT:
-      return [t('요청 시간이 초과되었습니다. 다시 시도해 주세요.')]
+      return [t('mari.error.timedOut')]
     case ChatRoomErrorStatus.FAIL_AGENT_COMMUNICATION:
-      return [t('지금은 서버 연결이 원활하지 않습니다.'), t('잠시 후 다시 시도해 주세요.')]
+      return [t('mari.error.agentCommunication'), t('mari.error.pleaseTryAgain')]
     default:
-      return [t('알 수 없는 오류가 발생했습니다.')]
+      return [t('mari.error.unknownError')]
   }
 }
 
@@ -49,6 +49,7 @@ const ErrorMessage = ({ messages }: { messages: string[] }) => (
 
 const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationComplete, onAnimationComplete, isLastChat }: Props) => {
   const { showSnackbar } = useSnackbar()
+  const { t } = useTranslation()
   const [clipboardContents, setClipboardContents] = useState<{ plain: string; html?: string }>({ plain: '' })
 
   const bundles = conversation.answer?.bundles || []
@@ -74,7 +75,7 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
       onAnimationComplete()
 
       if (conversation.statusCd === ChatRoomErrorStatus.FAIL_FORBIDDEN_WORDS) {
-        showSnackbar('입력하신 내용에 서비스 이용 제한 단어가 포함되어 있습니다.', {
+        showSnackbar(t('mari.snackbar.forbiddenWords'), {
           variant: 'error',
         })
       }
@@ -131,10 +132,10 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
       )}
       {conversation.statusCd?.startsWith('FAIL') && (
         <>
-          <ErrorMessage messages={getErrorMessage(conversation.statusCd)} />
+          <ErrorMessage messages={getErrorMessage(conversation.statusCd, t)} />
           <MIAgentAnswerFooter
             copyableContent={{
-              plain: getErrorMessage(conversation.statusCd).join('\n'),
+              plain: getErrorMessage(conversation.statusCd, t).join('\n'),
             }}
             onFeedback={async (isRecommended, feedbackCd, feedbackComment) => {
               if (conversation.qnaNo === null) return

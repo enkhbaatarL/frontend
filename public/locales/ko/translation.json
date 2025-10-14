@@ -1,4 +1,23 @@
 {
+  "common": {
+    "comma": ", ",
+    "andMore": "and more",
+    "detailed": "Detailed",
+    "focused": "Focused",
+    "narrative": "Narrative",
+    "copy": "복사",
+    "copySuccess": "복사되었습니다.",
+    "copyToClipboard": "클립보드에 복사되었습니다.",
+    "copyFail": "복사에 실패했습니다.",
+    "cancel": "취소",
+    "confirm": "확인",
+    "recent": "최근",
+    "edit": "수정",
+    "delete": "삭제",
+    "source": "출처",
+    "complete": "완료",
+    "defaultPlaceholder": "입력하세요"
+  },
   "submenu": {
     "dashboard": {
       "desc": "AI 시장 인사이트 브리핑"
@@ -22,13 +41,196 @@
       "desc": "주요 요인 인과관계 분석"
     }
   },
+  "dashboard": {
+    "sentiments": {
+      "titleTooltip": "최근 24시간 뉴스를 바탕으로 시장 가격 상승에 대한 긍정·중립·부정 반응의 비중을 나타냅니다.",
+      "barTooltip": {
+        "positive": "Upward",
+        "neutral": "Neutral",
+        "negative": "Downward"
+      },
+      "options": {
+        "currentLabel": "Current",
+        "previousLabel": "Previous",
+        "last7daysLabel": "Last 7 Days",
+        "last30daysLabel": "Last 30 Days"
+      }
+    },
+    "highlights": {
+      "tooltipTitle": "최근 24시간의 뉴스와 데이터를 분석해, 시장에 영향을 준 핵심 사건들을 간략히 정리합니다.",
+      "inlineNotice": "지난 24시간 동안 발생한 핵심 시장 동인을 MARI AI Agent가 분석·정리해 제공합니다."
+    },
+    "checkpoints": {
+      "tooltipTitle": "시장 데이터와 뉴스 흐름을 종합해, 단기 대응과 리스크 관리를 위해 확인해야 할 전략 체크리스트를 제공합니다.",
+      "inlineNotice": "시장 분석 결과를 토대로 주요 리스크와 기회를 반영한 대응 전략을 제시합니다."
+    },
+    "keyEconomicIndicators": {
+      "tooltipTitle": "최근 24시간 내 발표된 주요 경제지표를 집계해 시장에 미치는 영향을 해석합니다. 거시 변수와 시장 간의 연계성을 파악하는 데 활용됩니다."
+    },
+    "factorMap": {
+      "information": "Factor Map은 AI가 분석한 시장 요인의 성격을 위치로, 관련성을 거리로, 영향도를 크기로, 가격 방향성을 색상으로 변환하여 표현합니다. 이를 통해 복잡한 시장 동향을 한눈에 입체적으로 분석할 수 있습니다."
+    },
+    "sampleData": {
+      "highlights": {
+        "detailed": {
+          "0": {
+            "title": "우크라이나의 드론 공격으로 러시아 원유 수출 차질 우려",
+            "summary": [
+              "우크라이나 드론 공격으로 러시아 프리모르스크 항구와 키리시 정유시설 등 주요 인프라 타격, 우크라이나 드론 공격으로 러시아 프리모르스크 항구와 키리시 정유시설 등 주요 인프라 타격",
+              "러시아 원유 및 연료 수출 차질 가능성 확대",
+              "단기적으로 글로벌 원유 공급 긴축 압력으로 작용할 전망"
+            ]
+          },
+          "1": {
+            "title": "IEA, 원유 공급 과잉 전망 상향",
+            "summary": [
+              "IEA, 2025년 하루 270만 배럴, 2026년 210만 배럴 공급 증가 전망",
+              "OPEC+와 비-OPEC 생산 확대 반영",
+              "수요 성장률을 상회하는 공급 증가 → 글로벌 재고 과잉 가능성 확대"
+            ]
+          },
+          "2": {
+            "title": "사우디, 아시아향 10월 원유 가격 인하",
+            "summary": [
+              "사우디 아람코, Arab Light 등 주요 등급 판매 가격 인하 발표",
+              "아시아 시장 수요 둔화 우려 반영",
+              "아시아 정제사 및 트레이더들에 원유 수급 부담 요인 확대"
+            ]
+          }
+        },
+        "narrative": {
+          "title": "불안은 오늘 키우고, 공급은 내일 넘치며, 가격은 리야드가 흔든다",
+          "summary": [
+            "우크라이나 드론 공격으로 러시아 주요 원유 수출항과 정유시설이 피해를 입으면서, 단기적으로 공급 차질 우려가 확대되고 있습니다. 프리모르스크 항구와 키리시 정유시설이 직접적인 타격을 입은 것으로 알려지며, 러시아의 원유 및 정제 제품 수출에 불확실성이 커지고 있습니다. 단기적으로는 글로벌 원유 시장이 가격 상승 압력을 받을 가능성이 높지만, 서방 제재 환경과 대체 공급원 활용 가능성을 고려할 때 장기적 충격은 제한적일 수 있다는 시각도 존재합니다. 다만 지정학적 리스크가 누적되는 상황에서 단기적 변동성 확대는 불가피해 보입니다.",
+            "한편 국제에너지기구(IEA)는 최근 보고서를 통해 원유 시장의 공급 과잉 가능성을 재차 강조했습니다. IEA는 2025년 하루 270만 배럴, 2026년 210만 배럴의 공급 증가를 전망하고 있으며, 이는 OPEC+와 비OPEC 국가들의 증산을 모두 반영한 수치입니다. 특히 미국과 브라질 등 비OPEC 산유국의 공급 확대가 두드러질 것으로 보입니다. 문제는 글로벌 수요 증가세가 예상보다 둔화될 경우 재고가 빠르게 누적될 수 있는 점이며, 이는 2026년 이후 수급 균형에 구조적 부담을 줄 수 있습니다.",
+            "사우디아라비아는 최근 아시아향 10월 선적분 원유 판매 가격을 인하하기로 결정했습니다. 이는 아시아 지역 정제마진 약세와 수요 둔화 우려를 반영한 조치로, 정제사들의 조달 부담을 줄이고 자국 원유의 시장 점유율을 유지하려는 전략으로 해석됩니다. 그러나 가격 인하가 러시아발 단기 공급 차질에서 비롯된 긴축 요인을 완전히 상쇄하기는 어렵습니다. 따라서 시장은 단기적으로는 지정학적 리스크에 따른 불안 요인, 중기적으로는 공급 과잉 전망이라는 상반된 시그널이 교차하는 복합적 국면에 놓여 있다고 평가할 수 있습니다."
+          ]
+        }
+      },
+      "checkpoints": {
+        "detailed": {
+          "0": {
+            "title": "단기 충격 방어: 헤지와 재고 운용",
+            "summary": [
+              "공급 차질 리스크에 대비해 선물·옵션을 활용한 단기 헤지 강화",
+              "정제재고를 최적화하고 조기 비축을 통해 공급 안정성 확보"
+            ]
+          },
+          "1": {
+            "title": "중장기 원가 경쟁력 확보: 비용 구조 재편",
+            "summary": [
+              "공급 과잉에 따른 가격 압박을 고려해 원가 절감과 효율화 추진",
+              "고정비 중심 구조를 변동비 중심으로 전환해 수익성 방어"
+            ]
+          },
+          "2": {
+            "title": "시장 축소 대응: 수출 다변화와 제품 고도화",
+            "summary": ["아시아 수요 둔화를 반영해 유럽·남미 등 신규 시장 개척", "석유화학·디젤 등 고부가 제품 비중을 확대해 리스크 분산"]
+          }
+        },
+        "narrative": {
+          "title": "불안은 오늘 키우고, 공급은 내일 넘치며, 가격은 리야드가 흔든다",
+          "summary": [
+            "우크라이나 드론 공격으로 러시아 주요 원유 수출항과 정유시설이 피해를 입으면서, 단기적으로 공급 차질 우려가 확대되고 있습니다. 프리모르스크 항구와 키리시 정유시설이 직접적인 타격을 입은 것으로 알려지며, 러시아의 원유 및 정제 제품 수출에 불확실성이 커지고 있습니다. 단기적으로는 글로벌 원유 시장이 가격 상승 압력을 받을 가능성이 높지만, 서방 제재 환경과 대체 공급원 활용 가능성을 고려할 때 장기적 충격은 제한적일 수 있다는 시각도 존재합니다. 다만 지정학적 리스크가 누적되는 상황에서 단기적 변동성 확대는 불가피해 보입니다.",
+            "한편 국제에너지기구(IEA)는 최근 보고서를 통해 원유 시장의 공급 과잉 가능성을 재차 강조했습니다. IEA는 2025년 하루 270만 배럴, 2026년 210만 배럴의 공급 증가를 전망하고 있으며, 이는 OPEC+와 비OPEC 국가들의 증산을 모두 반영한 수치입니다. 특히 미국과 브라질 등 비OPEC 산유국의 공급 확대가 두드러질 것으로 보입니다. 문제는 글로벌 수요 증가세가 예상보다 둔화될 경우 재고가 빠르게 누적될 수 있다는 점이며, 이는 2026년 이후 수급 균형에 구조적 부담을 줄 수 있습니다.",
+            "사우디아라비아는 최근 아시아향 10월 선적분 원유 판매 가격을 인하하기로 결정했습니다. 이는 아시아 지역 정제마진 약세와 수요 둔화 우려를 반영한 조치로, 정제사들의 조달 부담을 줄이고 자국 원유의 시장 점유율을 유지하려는 전략으로 해석됩니다. 그러나 가격 인하가 러시아발 단기 공급 차질에서 비롯된 긴축 요인을 완전히 상쇄하기는 어렵습니다. 따라서 시장은 단기적으로는 지정학적 리스크에 따른 불안 요인, 중기적으로는 공급 과잉 전망이라는 상반된 시그널이 교차하는 복합적 국면에 놓여 있다고 평가할 수 있습니다."
+          ]
+        }
+      },
+      "keyEconomicIndicators": {
+        "sampleSummary": {
+          "0": "가격 모멘텀: API의 예상초과 재고 감소로 단기 상방이나, 중월 커브 약세·공급증가 시그널로 중기 하방 리스크가 더 두드러짐.",
+          "1": "거시 변수: 英 물가 서프라이즈 → 파운드 강세/달러 약세 가능성은 달러표시 유가에 우호하나, 유럽 물가 안정은 수요 측면에서 중립적.",
+          "2": "수요/무역: 일본의 7월 무역적자는 아시아 지역 수요 온도 하락 신호—특히 자동차·자본재 흐름 둔화 시 제품 수요/정제 마진에 부담"
+        }
+      }
+    }
+  },
+  "newsletter": {
+    "disclaimer": "본 뉴스레터는 시장 뉴스 데이터 제공업체의 기사를 AI를 통해 종합적으로 분석·재가공하여 생성된 것입니다. 시장 뉴스 데이터를 종합적으로 분석하여 주요 이벤트와 시장 영향도를 평가하고, 뉴스의 흐름을 일목요연하게 정리함으로써 신속한 시장 이해를 돕는 것을 취지로 합니다. 본 뉴스레터는 참고용 정보를 제공하기 위한 것으로, 내용의 정확성이나 활용 결과에 대해서는 사용자의 판단과 책임이 요구됩니다."
+  },
+  "aiForecast": {
+    "forecastChart": {
+      "tooltip": "예측 데이터 포인트 클릭 시 상세 정보 조회"
+    }
+  },
+  "signalMap": {
+    "title": "Visual Correlation of Market Signals by Sector",
+    "tooltipTitle": "Mapped signals are grouped by sector and macroeconimic factor. Hovering reveals related signals and recent trend data."
+  },
   "dataDetail": {
     "excelDownload": "엑셀 다운로드",
     "noResultsFound": "No results found",
     "noContentMessage": "이 콘텐츠는 본문을 제공하지 않습니다.",
-    "disclaimer": {
-      "en": "This document is the property of the respective data provider. Please refrain from reproducing or distributing it without prior approval. If you wish to use this content, please contact the appropriate administrator in advance. The information contained herein is provided for reference purposes only, and users are encouraged to exercise their own judgment and responsibility when utilizing it.",
-      "others": "본 문서는 해당 데이터 제공업체의 자산으로, 사전 승인 없이 복제하거나 배포하는 것은 삼가 주시기 바랍니다. 활용을 원하실 경우, 관련 관리자에게 사전 문의해 주시기 바랍니다. 본 문서는 참고용 정보를 제공하기 위한 것으로, 내용의 정확성이나 활용 결과에 대해서는 사용자의 판단과 책임이 요구됩니다."
+    "disclaimer": "본 문서는 해당 데이터 제공업체의 자산으로, 사전 승인 없이 복제하거나 배포하는 것은 삼가 주시기 바랍니다. 활용을 원하실 경우, 관련 관리자에게 사전 문의해 주시기 바랍니다. 본 문서는 참고용 정보를 제공하기 위한 것으로, 내용의 정확성이나 활용 결과에 대해서는 사용자의 판단과 책임이 요구됩니다."
+  },
+  "footer": {
+    "copyrightMessage": "SK구성원을 위한 시스템으로서 인가된 분만 사용할 수 있습니다. 불법으로 사용시에는 법적 제재를 받을 수 있습니다.",
+    "privacyPolicy": "개인정보처리방침"
+  },
+  "mari": {
+    "greetingMessage": {
+      "title": "신뢰도 높은 데이터로 시장의 흐름을 정확하게 읽을 수 있습니다",
+      "description": "LSEG에서 수집된 글로벌 데이터를 기반으로",
+      "description2": "가격 수준, 추세 변화, 이상 여부 등 단일 지표에 대한 핵심 정보를 확인하고",
+      "description3": "해당 지표와 관련된 시황 흐름을 간결하게 파악할 수 있습니다."
+    },
+    "promptMessage": {
+      "placeholder": "무엇을 찾으시나요?",
+      "generating": "답변을 생성중입니다"
+    },
+    "answer": {
+      "generating": "답변 생성 중",
+      "relatedData": {
+        "disclaimer": "해당 정보는 다음의 데이터를 참고하였습니다.",
+        "explanation": "응답과 연관있는 데이터"
+      },
+      "feedback": {
+        "like": "응답이 마음에 들어요",
+        "dislike": "응답이 마음에 들지 않아요",
+        "retry": "다시 답변",
+        "submitSuccess": "피드백이 제출되었습니다.",
+        "detail": {
+          "bugIssue": "버그문제",
+          "noPossibleResponse": "가능한 응답이 없음",
+          "notFollowRequest": "요청에 제대로 따르지 않음",
+          "inaccurateInformation": "정보가 정확하지 않음",
+          "incompleteResponse": "응답이 완전하지 않음",
+          "other": "기타",
+          "reason": "어떤 점이 불만족스러우셨나요? 알려주시면 개선하겠습니다.",
+          "placeholder": "불만족 사유 입력"
+        }
+      },
+      "disclaimer": "AI 응답은 검토 후 활용하시기 바랍니다"
+    },
+    "source": {
+      "miDatasetSubtitle": "메타모델 및 구독데이터 검색",
+      "webSearchSubtitle": "실시간 웹 검색"
+    },
+    "error": {
+      "forbiddenWords": "금지된 단어가 포함되어 있어 답변을 생성할 수 없습니다.",
+      "exceedLength": "질문 길이가 제한을 초과했습니다.",
+      "exceedToken": "사용 가능한 크레딧이 모두 소진되었습니다.",
+      "exceedTokenDetail": "자세한 사항은 관리자에게 문의해 주세요.",
+      "timedOut": "요청 시간이 초과되었습니다. 다시 시도해 주세요.",
+      "agentCommunication": "지금은 서버 연결이 원활하지 않습니다.",
+      "pleaseTryAgain": "잠시 후 다시 시도해 주세요.",
+      "unknownError": "알 수 없는 오류가 발생했습니다."
+    },
+    "snackbar": {
+      "updateChatRoomName": "채팅방 이름 변경에 실패했습니다.",
+      "deleteChatRoomSuccess": "삭제되었습니다.",
+      "deleteChatRoomFail": "채팅방 삭제에 실패했습니다.",
+      "forbiddenWords": "입력하신 내용에 서비스 이용 제한 단어가 포함되어 있습니다."
+    },
+    "confirm": {
+      "deleteChatRoom": "채팅을 삭제하시겠습니까?",
+      "deleteChatRoomContent": "삭제된 내용은 되돌릴 수 없습니다."
+    }
+  },
+  "temp": {
+    "ticker": {
+      "description": "뉴욕상품거래소(NYMEX) 전자거래 시장에서 거래되는 WTI 기준 경질유(Light Sweet Crude Oil)의 선물 가격을 1개월물 기준으로 연속적으로 구성한 월물 시계열 지표"
     }
   }
 }

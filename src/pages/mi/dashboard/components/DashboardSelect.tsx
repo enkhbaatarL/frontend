@@ -1,6 +1,9 @@
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
 import { MenuItem, Button, Menu, Box, Typography, Stack, Switch } from '@mui/material'
 import { Dispatch, SetStateAction, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+
+import CheckIcon from '@/components/common/icons/agent/CheckIcon'
 
 export type DashboardMultipleSelectType = 'default' | 'switch'
 
@@ -27,6 +30,7 @@ const DashboardSelect = ({
   multiple = false,
   placeholder = '선택하세요',
 }: Props) => {
+  const { t } = useTranslation()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
@@ -49,9 +53,9 @@ const DashboardSelect = ({
   const selectedItemsLabel = useMemo(() => {
     const selectedLabels = items.filter((item) => selectedItems.includes(item.value)).map(({ label }) => label)
     if (selectedLabels.length === 0) return placeholder
-    if (selectedLabels.length > 2) return `${selectedLabels.slice(0, 2).join(', ')} and more`
-    return selectedLabels.join(', ')
-  }, [selectedItems, items, placeholder])
+    if (selectedLabels.length > 2) return `${selectedLabels.slice(0, 2).join(t('common.comma'))} ${t('common.andMore')}`
+    return selectedLabels.join(t('common.comma'))
+  }, [selectedItems, items, placeholder, t])
 
   return (
     <Box>
@@ -115,6 +119,7 @@ const DashboardSelect = ({
                     }}
                   />
                 )}
+                {type !== 'switch' && !multiple && isSelected && <CheckIcon style={{ color: 'gray.70' }} />}
               </Stack>
             </MenuItem>
           )

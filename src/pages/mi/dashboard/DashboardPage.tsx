@@ -2,6 +2,9 @@ import { Stack } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useEffect } from 'react'
 
+import tempEconomicCalenderImg from '@/assets/dashboard/temp/economic-calendar.png'
+import tempPeerComparisonImg from '@/assets/dashboard/temp/peer-comparison.png'
+import tempTopicTrackerImg from '@/assets/dashboard/temp/topic-tracker.png'
 import MIDateDisplay from '@/components/common/date/MIDateDisplay'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useMarketData } from '@/contexts/MarketDataContext'
@@ -59,6 +62,9 @@ const DashboardPage = () => {
           </Stack>
           <Stack width="616px" gap="24px">
             <FactorMap />
+            <img src={tempPeerComparisonImg} width={616} alt="peer-comparison" draggable={false} />
+            <img src={tempTopicTrackerImg} width={616} alt="topic-tracker" draggable={false} />
+            <img src={tempEconomicCalenderImg} width={616} alt="economic-calender" draggable={false} />
             <MIGuide />
           </Stack>
         </Stack>

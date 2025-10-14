@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
-import { t } from 'i18next'
 import { useState, useMemo, useCallback, useLayoutEffect, useEffect, UIEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import MIAgentConversation from '@/components/common/agent/MIAgentConversation'
 import MIAgentGreetingMessage from '@/components/common/agent/MIAgentGreetingMessage'
@@ -41,14 +41,14 @@ const DEFAULT_SELECT_MODE_OPTIONS: SelectModeOption[] = [
   {
     id: '1',
     title: 'MI Dataset',
-    subtitle: '메타모델 및 구독데이터 검색',
+    subtitle: 'mari.source.miDatasetSubtitle',
     checked: false,
     disabled: true,
   },
   {
     id: '2',
     title: 'Web Search',
-    subtitle: '실시간 웹 검색',
+    subtitle: 'mari.source.webSearchSubtitle',
     checked: true,
     disabled: false,
   },
@@ -82,7 +82,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
   const { scrollRef, scrollToBottom } = useScroll()
   const MIAgent = useMIAgent()
   const { showSnackbar } = useSnackbar()
-
+  const { t } = useTranslation()
   const [initialHistoryLoading, setInitialHistoryLoading] = useState(false)
   const [scrollToAnchor, setScrollToAnchor] = useState<ScrollToAnchor>({
     id: null,
@@ -92,12 +92,25 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
   const [shouldCheckScroll, setShouldCheckScroll] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
 
-  const [selectModeOption, setSelectModeOption] = useState<SelectModeOption[]>(() => loadSelectModeOptionsFromStorage())
+  const [selectModeOption, setSelectModeOption] = useState<SelectModeOption[]>(() => {
+    const options = loadSelectModeOptionsFromStorage()
+    return options.map((option) => ({
+      ...option,
+      subtitle: t(option.subtitle),
+    }))
+  })
 
-  const updateSelectModeOption = useCallback((newOptions: SelectModeOption[]) => {
-    setSelectModeOption(newOptions)
-    saveSelectModeOptionsToStorage(newOptions)
-  }, [])
+  const updateSelectModeOption = useCallback(
+    (newOptions: SelectModeOption[]) => {
+      const translatedOptions = newOptions.map((option) => ({
+        ...option,
+        subtitle: t(option.subtitle),
+      }))
+      setSelectModeOption(translatedOptions)
+      saveSelectModeOptionsToStorage(newOptions)
+    },
+    [t],
+  )
   const isGenerating = useMemo(
     () =>
       // const hasUnfinishedAnimation = animationComplete.some((done) => !done)
@@ -339,20 +352,20 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
               await agentService.updateChatRoom(chatId, newTitle)
               await MIAgent.chatRoom.refetch()
             } catch {
-              showSnackbar(t('채팅방 이름 변경에 실패했습니다.'), { variant: 'error' })
+              showSnackbar(t('mari.snackbar.updateChatRoomName'), { variant: 'error' })
             }
           }}
           onDelete={async (chatId: string) => {
             try {
               await agentService.deleteChatRoom(chatId)
               await MIAgent.chatRoom.refetch()
-              showSnackbar(t('삭제되었습니다.'), { variant: 'success' })
+              showSnackbar(t('mari.snackbar.deleteChatRoomSuccess'), { variant: 'success' })
               if (MIAgent.selectedChatRoom?.chatRoomId === chatId) {
                 MIAgent.setSelectedChatRoomId(null, true)
                 setInitialHistoryLoading(false)
               }
             } catch {
-              showSnackbar(t('채팅방 삭제에 실패했습니다.'), { variant: 'error' })
+              showSnackbar(t('mari.snackbar.deleteChatRoomFail'), { variant: 'error' })
             }
           }}
           disabled={isGenerating}

@@ -1,5 +1,6 @@
 import { Box, Stack, Typography, TypographyProps, Tooltip } from '@mui/material'
-import { ReactNode, useRef, useState, useEffect } from 'react'
+import { ReactNode, useRef, useState, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import levelHighIcon from '@/assets/level-high.svg'
@@ -50,12 +51,6 @@ const sampleData = [
     forecast: '3.4%',
     previous: '3.3%',
   },
-]
-
-const sampleSummary = [
-  '가격 모멘텀: API의 예상초과 재고 감소로 단기 상방이나, 중월 커브 약세·공급증가 시그널로 중기 하방 리스크가 더 두드러짐.',
-  '거시 변수: 英 물가 서프라이즈 → 파운드 강세/달러 약세 가능성은 달러표시 유가에 우호하나, 유럽 물가 안정은 수요 측면에서 중립적.',
-  '수요/무역: 일본의 7월 무역적자는 아시아 지역 수요 온도 하락 신호—특히 자동차·자본재 흐름 둔화 시 제품 수요/정제 마진에 부담',
 ]
 
 const HeaderCell = ({ children, width, textAlign }: { children: ReactNode; width: string; textAlign: TypographyProps['textAlign'] }) => (
@@ -135,15 +130,21 @@ const ImportanceIcon = ({ level }: { level: ImportanceLevel }) => {
 
 const KeyEconomicIndicators = () => {
   const navigate = useNavigate()
+  const { t } = useTranslation()
+
+  const sampleSummary = useMemo(
+    () =>
+      [
+        t('dashboard.sampleData.keyEconomicIndicators.sampleSummary.0'),
+        t('dashboard.sampleData.keyEconomicIndicators.sampleSummary.1'),
+        t('dashboard.sampleData.keyEconomicIndicators.sampleSummary.2'),
+      ].filter(Boolean),
+    [t],
+  )
 
   return (
     <Box padding="12px">
-      <SectionHeader
-        title="Key Economic Indicators"
-        tooltipTitle="최근 24시간 내 발표된 주요 경제지표를 집계해 시장에 미치는 영향을 해석합니다. 거시 변수와 시장 간의 연계성을 파악하는 데 활용됩니다."
-        mb="10px"
-        bold
-      >
+      <SectionHeader title="Key Economic Indicators" tooltipTitle={t('dashboard.keyEconomicIndicators.tooltipTitle')} mb="10px" bold>
         <MIButton
           size="h32"
           color="gray"

@@ -141,7 +141,7 @@ const TimelineItem = ({ item, isHovered = false, hoverColor = '#F0F8FF', ...prop
       </Stack>
       <Typography
         variant="body4"
-        width={waitDelay ? '206px' : 'auto'}
+        width={waitDelay ? '208px' : 'auto'}
         color={isHovered ? 'white' : 'gray.70'}
         overflow="hidden"
         sx={{
@@ -221,7 +221,7 @@ const TimelineBar = ({ data }: TimelineBarProps) => {
       if (index === 1) return 62
 
       const minHeight = 30
-      const maxHeight = 110
+      const maxHeight = 96
       const minDifference = 50
 
       let newHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight
@@ -308,17 +308,8 @@ const TimelineBar = ({ data }: TimelineBarProps) => {
                     box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)
                   `,
                   backgroundColor: isHovered ? getColor(item.trend) : 'white',
-                  // cursor: 'pointer',
                   zIndex: isHovered ? 5 : 1,
                 }}
-                // onMouseEnter={(e) => {
-                //   e.stopPropagation()
-                //   handleMouseEnter(index)
-                // }}
-                // onMouseLeave={(e) => {
-                //   e.stopPropagation()
-                //   handleMouseLeave()
-                // }}
               />
               <Stack
                 position="absolute"
@@ -382,7 +373,6 @@ const TimelineBar = ({ data }: TimelineBarProps) => {
 
 const Timeline = ({ ...props }: BoxProps) => (
   <Box
-    width="100%"
     borderRadius="10px"
     padding="6px 12px"
     sx={{

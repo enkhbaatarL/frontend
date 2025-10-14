@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material'
-import { t } from 'i18next'
+import { useTranslation } from 'react-i18next'
 
 import CheckIcon from '@/components/common/icons/agent/CheckIcon'
 import GeneratingIcon from '@/components/common/icons/agent/GeneratingIcon'
@@ -10,6 +10,8 @@ export interface MIAgentStatusProps {
 }
 
 const MIAgentStatus = ({ status }: MIAgentStatusProps) => {
+  const { t } = useTranslation()
+
   if (status === null) return null
 
   return (
@@ -45,7 +47,7 @@ const MIAgentStatus = ({ status }: MIAgentStatusProps) => {
         {status === 'generating' ? <GeneratingIcon /> : <CheckIcon />}
       </Box>
       <Typography variant="body2" fontWeight="medium">
-        {status === 'generating' ? t('답변 생성 중') : status === 'complete' ? t('완료') : null}
+        {status === 'generating' ? t('mari.answer.generating') : status === 'complete' ? t('common.complete') : null}
       </Typography>
     </Box>
   )

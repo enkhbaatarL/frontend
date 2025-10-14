@@ -1,9 +1,10 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { Box, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import FactorMapIcon from '@/assets/dashboard/factor-map.svg'
-import tempFactorMapImg from '@/assets/dashboard/temp-factor-map.svg'
+import tempFactorMapImg from '@/assets/dashboard/temp/temp-factor-map.svg'
 import MITopic from '@/components/common/topic/MITopic'
 import DashboardCard from '@/pages/mi/dashboard/components/DashboardCard'
 import UpdatedInfoChip from '@/pages/mi/dashboard/components/UpdatedInfoChip'
@@ -24,6 +25,8 @@ const topics = [
 ]
 
 const FactorMap = () => {
+  const { t } = useTranslation()
+
   const [selectedTopic, setSelectedTopic] = useState(topics[0].value)
 
   return (
@@ -55,8 +58,7 @@ const FactorMap = () => {
         >
           <InfoOutlinedIcon sx={{ fontSize: 16, color: '#868E96', paddingTop: '1px' }} />
           <Typography variant="subtext2" color="#868E96" flexGrow={1}>
-            Factor Map은 AI가 분석한 시장 요인의 성격을 위치로, 관련성을 거리로, 영향도를 크기로, 가격 방향성을 색상으로 변환하여
-            표현합니다. 이를 통해 복잡한 시장 동향을 한눈에 입체적으로 분석할 수 있습니다.
+            {t('dashboard.factorMap.information')}
           </Typography>
         </Stack>
       </Box>

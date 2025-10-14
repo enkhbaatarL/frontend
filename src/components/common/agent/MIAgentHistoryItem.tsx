@@ -1,7 +1,7 @@
 import ErrorIcon from '@mui/icons-material/Error'
 import { ListItemButton, Typography, styled, TooltipProps, Tooltip, tooltipClasses, Box, Input, InputAdornment } from '@mui/material'
-import { t } from 'i18next'
 import { useMemo, useState, useRef, useEffect, useCallback, KeyboardEvent, ChangeEvent, MouseEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -129,6 +129,7 @@ const editingInputStyles = {
 }
 
 const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete, disabled }: Props) => {
+  const { t } = useTranslation()
   const tooltipRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLDivElement>(null)
 
@@ -197,7 +198,7 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
   const tooltipActions = useMemo(
     () => [
       {
-        name: '수정',
+        name: t('common.edit'),
         icon: EditIcon,
         action: () => {
           setIsEditing(true)
@@ -206,7 +207,7 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
         },
       },
       {
-        name: '삭제',
+        name: t('common.delete'),
         icon: DeleteIcon,
         action: (e: MouseEvent<HTMLDivElement>) => {
           e.stopPropagation()
@@ -216,7 +217,7 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
         },
       },
     ],
-    [],
+    [t],
   )
 
   return (
@@ -229,7 +230,7 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
           }}
         >
           <Input
-            placeholder={'입력하세요'}
+            placeholder={t('common.defaultPlaceholder')}
             sx={editingInputStyles}
             disableUnderline
             value={title}
@@ -365,7 +366,7 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
         title={
           <>
             <ErrorIcon color="error" fontSize="small" sx={{ marginRight: '12px', verticalAlign: 'sub' }} />
-            {t('채팅을 삭제하시겠습니까?')}
+            {t('mari.confirm.deleteChatRoom')}
           </>
         }
         width={450}
@@ -375,7 +376,7 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
         }}
         actions={[
           {
-            label: t('취소'),
+            label: t('common.cancel'),
             variant: 'outlined',
             color: 'gray',
             onClick: () => {
@@ -384,7 +385,7 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
             disabled: isUpdating,
           },
           {
-            label: t('삭제'),
+            label: t('common.delete'),
             variant: 'filled',
             color: '#F03E3E',
             hoverBgColor: '#BD3D37',
@@ -394,7 +395,7 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
         ]}
         disableClose={isUpdating}
       >
-        {t('삭제된 내용은 되돌릴 수 없습니다.')}
+        {t('mari.confirm.deleteChatRoomContent')}
       </MIConfirm>
     </>
   )

@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import { useMemo, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import MIButton from '@/components/common/button/MIButton'
 import { DATA_CATEGORIES } from '@/components/common/forecast-chart/constants'
@@ -85,6 +86,7 @@ const MIForecastChartTooltip = ({
   onClose,
 }: Readonly<MIForecastChartTooltipProps>) => {
   const tooltipContainerRef = useRef<HTMLElement>(null)
+  const { t } = useTranslation()
 
   const position = useMemo(() => {
     let newTop: number = top
@@ -176,7 +178,7 @@ const MIForecastChartTooltip = ({
         <Box display={'flex'} alignItems={'center'} padding={'6px 4px'} gap={'4px'} mt={'8px'}>
           <InfoOutlineIcon width="18" height="18" color="#868E96" display={'block'} />
           <Typography variant="subtext2" color="gray.70">
-            예측 데이터 포인트 클릭 시 상세 정보 조회
+            {t('aiForecast.forecastChart.tooltip')}
           </Typography>
         </Box>
       )}

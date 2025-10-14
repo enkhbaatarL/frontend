@@ -1,5 +1,6 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import Link from '@mui/material/Link'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import logowImg from '@/assets/logow.svg'
@@ -8,6 +9,7 @@ import useEnvironment from '@/hooks/useEnvironment.ts'
 const MIFooter = () => {
   const navigate = useNavigate()
   const { isProd } = useEnvironment()
+  const { t } = useTranslation()
 
   return (
     <footer>
@@ -38,7 +40,7 @@ const MIFooter = () => {
             </Link>
             <Typography color="gray.40" component="div" variant="body3R12">
               COPYRIGHT©2025 ALL RIGHTS RESERVED. <br />
-              SK구성원을 위한 시스템으로서 인가된 분만 사용할 수 있습니다. 불법으로 사용시에는 법적 제재를 받을 수 있습니다.
+              {t('footer.copyrightMessage')}
             </Typography>
           </Grid>
           <Typography color="gray.40" variant="body2">
@@ -60,7 +62,7 @@ const MIFooter = () => {
                 },
               }}
             >
-              개인정보처리방침
+              {t('footer.privacyPolicy')}
             </Link>
           </Typography>
         </Grid>

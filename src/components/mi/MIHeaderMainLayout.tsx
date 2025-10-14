@@ -185,7 +185,7 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
       })) ?? [],
     [allCompanies],
   )
-  const updatedMainmenus = useMemo(() => {
+  const updatedMainMenus = useMemo(() => {
     const activeSet = new Set(activeMenu.map((m) => String(m)))
     return pages.map((item) => {
       const url = String(item.url)
@@ -400,7 +400,7 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
             </Box>
 
             <Box sx={{ flexGrow: 1, display: 'flex' }}>
-              {updatedMainmenus
+              {updatedMainMenus
                 .filter((page) => page.show)
                 .map((page) => {
                   const pageKey = String(page.url)

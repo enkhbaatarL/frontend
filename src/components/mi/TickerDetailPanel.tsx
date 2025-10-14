@@ -1,5 +1,7 @@
 import { Box, Typography } from '@mui/material'
+import cloneDeep from 'lodash-es/cloneDeep'
 import { MouseEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import MIButton from '@/components/common/button/MIButton'
 import MILine from '@/components/common/divider/MILine'
@@ -11,8 +13,11 @@ interface TickerDetailPanelProps {
   onViewDetails?: (event: MouseEvent<HTMLButtonElement>) => void
 }
 
-const TickerDetailPanel = ({ item, onClose, onViewDetails }: TickerDetailPanelProps) => {
+const TickerDetailPanel = ({ item: originalItem, onClose, onViewDetails }: TickerDetailPanelProps) => {
+  const { t } = useTranslation()
+
   // TODO: 퍼블리싱을 위한 임시 값 제거
+  const item = cloneDeep(originalItem)
   item.marketMetaDataSummary.change = -1.51
   item.marketMetaDataSummary.changePercent = -2.379
   item.marketMetaDataSummary.unit = 'USD/bbl'
@@ -20,8 +25,7 @@ const TickerDetailPanel = ({ item, onClose, onViewDetails }: TickerDetailPanelPr
   item.marketMetaDataSummary.previousClose = 63.48
   item.marketMetaDataSummary.dayRange = '61.4500 - 63.4900'
   item.marketMetaDataSummary.source = 'LSEG'
-  item.marketMetaDataSummary.description =
-    '뉴욕상품거래소(NYMEX) 전자거래 시장에서 거래되는 WTI 기준 경질유(Light Sweet Crude Oil)의 선물 가격을 1개월물 기준으로 연속적으로 구성한 월물 시계열 지표'
+  item.marketMetaDataSummary.description = t('temp.ticker.description')
 
   return (
     <Box

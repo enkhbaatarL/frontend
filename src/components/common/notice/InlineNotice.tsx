@@ -33,9 +33,9 @@ const InlineNotice = ({ noticeKey, children, showCloseButton = true }: InlineNot
         <Box padding="6px 12px" boxSizing="border-box" sx={{ userSelect: 'none' }}>
           <Stack
             direction="row"
-            alignItems="center"
+            alignItems="start"
             borderRadius="10px"
-            height="38px"
+            minHeight="38px"
             padding="8px 12px"
             boxSizing="border-box"
             bgcolor="#E8F4FF"

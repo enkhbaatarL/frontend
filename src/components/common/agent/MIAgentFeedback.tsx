@@ -1,6 +1,6 @@
 import { Box, Typography, Radio, RadioGroup, FormControlLabel, FormControl, Stack, TextField } from '@mui/material'
-import { t } from 'i18next'
 import { useEffect, useMemo, useState, useRef, ChangeEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import MIButton from '@/components/common/button/MIButton'
 import { useScroll } from '@/contexts/ScrollContext'
@@ -17,35 +17,36 @@ const MIAgentFeedbackBak = ({ onSubmit, onCancel }: MIAgentFeedbackProps) => {
   const [buttonDisabled, setButtonDisabled] = useState(false)
   const { scrollRef } = useScroll()
   const boxRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation()
 
   const FeedbackOptions = useMemo(
     () => [
       {
         id: FeedbackCd.BUG_ISSUE,
-        label: t('버그문제'),
+        label: t('mari.answer.feedback.detail.bugIssue'),
       },
       {
         id: FeedbackCd.NO_POSSIBLE_RESPONSE,
-        label: t('가능한 응답이 없음'),
+        label: t('mari.answer.feedback.detail.noPossibleResponse'),
       },
       {
         id: FeedbackCd.NOT_FOLLOW_REQUEST,
-        label: t('요청에 제대로 따르지 않음'),
+        label: t('mari.answer.feedback.detail.notFollowRequest'),
       },
       {
         id: FeedbackCd.INACCURATE_INFORMATION,
-        label: t('정보가 정확하지 않음'),
+        label: t('mari.answer.feedback.detail.inaccurateInformation'),
       },
       {
         id: FeedbackCd.INCOMPLETE_RESPONSE,
-        label: t('응답이 완전하지 않음'),
+        label: t('mari.answer.feedback.detail.incompleteResponse'),
       },
       {
         id: FeedbackCd.OTHER,
-        label: t('기타'),
+        label: t('mari.answer.feedback.detail.other'),
       },
     ],
-    [],
+    [t],
   )
 
   useEffect(() => {
@@ -121,7 +122,7 @@ const MIAgentFeedbackBak = ({ onSubmit, onCancel }: MIAgentFeedbackProps) => {
           Feedback
         </Typography>
         <Typography variant="body2R14" color="gray.60">
-          {t('어떤 점이 불만족스러우셨나요? 알려주시면 개선하겠습니다.')}
+          {t('mari.answer.feedback.detail.reason')}
         </Typography>
       </Box>
 
@@ -146,7 +147,7 @@ const MIAgentFeedbackBak = ({ onSubmit, onCancel }: MIAgentFeedbackProps) => {
       {feedbackCd === FeedbackCd.OTHER && (
         <TextField
           fullWidth={true}
-          placeholder={t('불만족 사유 입력')}
+          placeholder={t('mari.answer.feedback.detail.placeholder')}
           rows={4}
           multiline
           sx={{ mb: 2 }}
@@ -156,10 +157,10 @@ const MIAgentFeedbackBak = ({ onSubmit, onCancel }: MIAgentFeedbackProps) => {
 
       <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 3, width: '100%' }}>
         <MIButton type={'outlined'} color={'gray'} size="h34" onClick={onCancel} disabled={buttonDisabled}>
-          {t('취소')}
+          {t('common.cancel')}
         </MIButton>
         <MIButton type={'filled'} color={'primary'} size="h34" onClick={handleSubMIt} disabled={disabledSubmit || buttonDisabled}>
-          {t('확인')}
+          {t('common.confirm')}
         </MIButton>
       </Stack>
     </Box>

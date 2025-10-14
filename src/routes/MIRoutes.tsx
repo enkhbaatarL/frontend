@@ -4,8 +4,8 @@ import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MILayout from '@/layouts/MILayout'
 import PolicyPage from '@/pages/common/PolicyPage'
 import CustomPage from '@/pages/mi/custom/CustomPage'
-// import DashboardPage from '@/pages/mi/dashboard/DashboardPage'
-import PreviewDashboardPage from '@/pages/mi/dashboard/PreviewDashboardPage'
+import DashboardPage from '@/pages/mi/dashboard/DashboardPage'
+// import PreviewDashboardPage from '@/pages/mi/dashboard/PreviewDashboardPage'
 import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
 import EconomicEventPage from '@/pages/mi/economicEvent/EconomicEventPage'
 import ForecastPage from '@/pages/mi/forecast/ForecastPage'
@@ -43,8 +43,8 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'dashboard',
-      element: <PreviewDashboardPage />,
-      // element: <DashboardPage />,
+      // element: <PreviewDashboardPage />,
+      element: <DashboardPage />,
     },
     {
       path: 'newsletters',

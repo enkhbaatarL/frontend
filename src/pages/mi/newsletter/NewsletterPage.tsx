@@ -2,6 +2,7 @@ import { Box, Typography, Grid2 as Grid } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import MariBadge from '@/components/common/bage/MariBadge'
@@ -26,7 +27,7 @@ import { IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 const NewsLettersPage = () => {
   const navigate = useNavigate()
-
+  const { t } = useTranslation()
   const { showSnackbar } = useSnackbar()
 
   const [loadingNewsletterIds, setLoadingNewsletterIds] = useState<Set<string>>(new Set())
@@ -375,10 +376,7 @@ const NewsLettersPage = () => {
                 exercise their own judgment and responsibility when utilizing it.
               </Typography>
               <Typography color="gray.60" component="div" variant="body3R12">
-                본 뉴스레터는 시장 뉴스 데이터 제공업체의 기사를 AI를 통해 종합적으로 분석·재가공하여 생성된 것입니다. 시장 뉴스 데이터를
-                종합적으로 분석하여 주요 이벤트와 시장 영향도를 평가하고, 뉴스의 흐름을 일목요연하게 정리함으로써 신속한 시장 이해를 돕는
-                것을 취지로 합니다. 본 뉴스레터는 참고용 정보를 제공하기 위한 것으로, 내용의 정확성이나 활용 결과에 대해서는 사용자의 판단과
-                책임이 요구됩니다.
+                {t('newsletter.disclaimer')}
               </Typography>
             </Grid>
           </Box>

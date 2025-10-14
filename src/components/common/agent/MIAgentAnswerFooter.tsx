@@ -6,8 +6,8 @@ import ThumbDownAltOutlinedIcon from '@mui/icons-material/ThumbDownAltOutlined'
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt'
 import ThumbUpAltOutlinedIcon from '@mui/icons-material/ThumbUpAltOutlined'
 import { CircularProgress, Grid2 as Grid, Typography } from '@mui/material'
-import { t } from 'i18next'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import MIAgentFeedback from '@/components/common/agent/MIAgentFeedback'
 import MIButtonMari from '@/components/common/button/MIButtonMari'
@@ -31,6 +31,7 @@ const MIAgentAnswerFooter = ({ copyableContent, onFeedback, onRetry, initialFeed
   const [isSubmit, setIsSubmit] = useState<boolean>(initialFeedback === 'dislike')
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [submitMessage, setSubmitMessage] = useState<ReactNode>('')
+  const { t } = useTranslation()
 
   const { showSnackbar } = useSnackbar()
 
@@ -46,7 +47,7 @@ const MIAgentAnswerFooter = ({ copyableContent, onFeedback, onRetry, initialFeed
     if (isSubmit && initialFeedback !== 'dislike') {
       setSubmitMessage(<CircularProgress size={12} style={{ marginLeft: '4px' }} />)
       setTimeout(() => {
-        setSubmitMessage(t('피드백이 제출되었습니다.'))
+        setSubmitMessage(t('mari.answer.feedback.submitSuccess'))
       }, 1000)
     }
   }, [isSubmit, initialFeedback])
@@ -57,16 +58,16 @@ const MIAgentAnswerFooter = ({ copyableContent, onFeedback, onRetry, initialFeed
         <Grid container px={1} gap={3}>
           <MIButtonMari
             icon={getIcon()}
-            tooltip={copied ? t('복사됨') : t('복사')}
+            tooltip={copied ? t('common.copySuccess') : t('common.copy')}
             onClick={async () => {
               if (copyableContent) {
                 setIsLoading(true)
                 try {
                   await multiContentsToClipboard(copyableContent.plain, copyableContent.html)
-                  showSnackbar(t('클립보드에 복사되었습니다.'))
+                  showSnackbar(t('common.copyToClipboard'))
                   setCopied(true)
                 } catch (error) {
-                  showSnackbar(t('복사에 실패했습니다.'), { variant: 'error' })
+                  showSnackbar(t('common.copyFail'), { variant: 'error' })
                   console.error('Failed to copy content:', error)
                 } finally {
                   setIsLoading(false)
@@ -79,7 +80,7 @@ const MIAgentAnswerFooter = ({ copyableContent, onFeedback, onRetry, initialFeed
           />
           <MIButtonMari
             icon={liked ? <ThumbUpAltIcon fontSize="small" /> : <ThumbUpAltOutlinedIcon fontSize="small" />}
-            tooltip={t('응답이 마음에 들어요')}
+            tooltip={t('mari.answer.feedback.like')}
             onClick={async () => {
               if (disabled) return
 
@@ -93,7 +94,7 @@ const MIAgentAnswerFooter = ({ copyableContent, onFeedback, onRetry, initialFeed
           />
           <MIButtonMari
             icon={dislike ? <ThumbDownAltIcon fontSize="small" /> : <ThumbDownAltOutlinedIcon fontSize="small" />}
-            tooltip={t('응답이 마음에 들지 않아요')}
+            tooltip={t('mari.answer.feedback.dislike')}
             onClick={async () => {
               if (disabled) return
               setDislike(true)
@@ -105,13 +106,13 @@ const MIAgentAnswerFooter = ({ copyableContent, onFeedback, onRetry, initialFeed
           />
           <MIButtonMari
             icon={<RefreshRoundedIcon fontSize="small" />}
-            tooltip={t('다시 답변')}
+            tooltip={t('mari.answer.feedback.retry')}
             onClick={onRetry}
             disabled={disabled || !onRetry || !isLastChat} // MEMO: retry 조건에 따라 마지막 채팅일 경우에만 임시 활성화
           />
         </Grid>
         <Typography color={'gray.70'} variant={'mariDescription'}>
-          {t('AI 응답은 검토 후 활용하시기 바랍니다')}
+          {t('mari.answer.disclaimer')}
         </Typography>
       </Grid>
       {dislike && !isSubmit && (

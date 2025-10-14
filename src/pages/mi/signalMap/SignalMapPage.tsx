@@ -1,8 +1,8 @@
 import { Box, Typography, Tooltip } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-// import dayjs from 'dayjs'
 import chunk from 'lodash-es/chunk'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import smImg from '@/assets/product_symbol_hover.png'
 import MIColorRange from '@/components/common/colorrange/MIColorRange'
@@ -51,6 +51,7 @@ const SectionHeader = ({ title, itemCount, subCategories, boldTitle = false }: S
 
 const SignalMapPage = () => {
   const { accessCompanyInfo } = useAuthStore()
+  const { i18n, t } = useTranslation()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
   const [period, setPeriod] = useState<string>('')
@@ -58,15 +59,16 @@ const SignalMapPage = () => {
   const [isRenderingComplete, setIsRenderingComplete] = useState(false)
   const [hasInitialData, setHasInitialData] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language)
 
   const { data: periodOptions = [], isLoading: periodOptionsIsLoading } = useQuery({
-    queryKey: ['getPeriodsFilters'],
+    queryKey: ['getPeriodsFilters', i18n.language],
     queryFn: async () => await signalMapService.getPeriodsFilters(customerCompanyNo),
     select: (res) => res.data.map((m) => ({ label: m.codeNm, value: m.codeId })),
   })
 
   const { data: companyOptions = [], isLoading: companyOptionsIsLoading } = useQuery({
-    queryKey: ['getCompanyFilters'],
+    queryKey: ['getCompanyFilters', i18n.language],
     queryFn: async () => await signalMapService.getCompanyFilters(customerCompanyNo),
     select: (res) => res.data.map((m) => ({ label: m.codeNm, value: m.codeId })),
   })
@@ -88,7 +90,7 @@ const SignalMapPage = () => {
 
   // 메인 데이터 쿼리 - 초기화가 완료된 후에만 실행
   const { data: signalData, isLoading: signalDataIsLoading } = useQuery({
-    queryKey: ['getSignalMapData', period, companyFilter],
+    queryKey: ['getSignalMapData', period, companyFilter, i18n.language],
     queryFn: async () => await signalMapService.getSignalMapData(customerCompanyNo, { period, filter: companyFilter }),
     enabled: isInitialized && (!!period || !!companyFilter),
     select: (res) => {
@@ -106,10 +108,17 @@ const SignalMapPage = () => {
     return list.sort((a, b) => a.categoryName.localeCompare(b.categoryName))
   }
 
-  // const formattedDate = useMemo(() => {
-  //   if (!signalData?.updatedDt) return ''
-  //   return `Updated ${dayjs(signalData?.updatedDt).format('MMMM D, YYYY')}`
-  // }, [signalData?.updatedDt])
+  useEffect(() => {
+    // 언어 변경 시 상태 초기화
+    if (i18n.language !== currentLanguage) {
+      setPeriod('')
+      setCompanyFilter('')
+      setIsRenderingComplete(false)
+      setHasInitialData(false)
+      setIsInitialized(false)
+      setCurrentLanguage(i18n.language)
+    }
+  }, [i18n.language, currentLanguage])
 
   useEffect(() => {
     if (periodOptions.length > 0 && companyOptions.length > 0 && !isInitialized) {
@@ -160,14 +169,10 @@ const SignalMapPage = () => {
           </Typography>
           <br />
           <Typography color="#495057" variant="subtext0">
-            Visual Correlation of Market Signals by Sector
-            <Tooltip
-              title="Mapped signals are grouped by sector and macroeconimic factor. Hovering reveals related signals and recent trend data."
-              arrow
-            >
+            {t('signalMap.title')}
+            <Tooltip title={t('signalMap.tooltipTitle')} arrow>
               <InfoIcon style={{ display: 'inline-block', transform: 'translateX(2px) translateY(3px)' }} />
             </Tooltip>
-            {/* {formattedDate} */}
           </Typography>
         </Box>
       )}
@@ -189,7 +194,7 @@ const SignalMapPage = () => {
             <MISelect
               value={period}
               sizeSelect="h40"
-              width={160}
+              minWidth={160}
               useAllOption
               type={'button'}
               onChange={(e) => setPeriod(e.target.value as string)}
