@@ -1,7 +1,7 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useRef, useCallback, useState } from 'react'
+import { useEffect, useMemo, useRef, useCallback, useState, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MarketDataCustomChart from './components/MarketDataCustomChart'
@@ -307,10 +307,9 @@ const MarketDataPage = () => {
               </Typography>
               {recentViewedList?.length ? (
                 recentViewedList.map((item, index) => (
-                  <>
+                  <Fragment key={`recent-viewed-${index}`}>
                     <Box
                       paddingY={2}
-                      key={index}
                       onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
                       sx={{
                         width: '90%',
@@ -325,7 +324,7 @@ const MarketDataPage = () => {
                       <Typography paddingTop={1.5} color="gray.70" component="div" lineHeight={1.4} variant="body4">
                         {item.goodsDataNm}
                       </Typography>
-                      <Typography
+                      {/* <Typography
                         sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                         color="gray.60"
                         lineHeight={1.4}
@@ -333,7 +332,7 @@ const MarketDataPage = () => {
                         variant="body3R12"
                       >
                         {item.goodsDataExpn}
-                      </Typography>
+                      </Typography> */}
                       <Grid direction={'row'} container alignItems={'center'} gap={1}>
                         <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
                           {item.providerNm}
@@ -346,7 +345,7 @@ const MarketDataPage = () => {
                       </Grid>
                     </Box>
                     {index !== recentViewedList.length - 1 && <MILine thickness={1.01} direction="horizontal" backgroundColor="gray.30" />}
-                  </>
+                  </Fragment>
                 ))
               ) : (
                 <Typography color="gray.60" textAlign="center" py={4} component="div" variant="body2">

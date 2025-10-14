@@ -107,10 +107,12 @@ const NewsletterCard = ({ featuredNewsletterItem, onSubscribe, onClick, disabled
           display: 'flex',
           flexDirection: 'column',
           userSelect: 'none',
-          cursor: 'pointer',
+          cursor: disabled ? 'default' : 'pointer',
           gap: '12px',
         }}
         onClick={() => {
+          if (disabled) return
+
           onClick(featuredNewsletterItem.newsletterId, featuredNewsletterItem.issueNo)
         }}
       >

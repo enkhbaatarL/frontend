@@ -110,6 +110,17 @@ const useAuthStore = create<AuthState>()(
 export default useAuthStore
 
 export const withCustomBaseUrl = (path: string) => {
-  if (!__currentBaseUrl) throw new Error('Custom base url not set.')
+  if (!__currentBaseUrl) {
+    const { getUrl } = useAuthStore.getState()
+    const url = getUrl()
+
+    if (url) {
+      __currentBaseUrl = url
+    } else {
+      console.error('Custom base url not set.')
+      throw new Error('Custom base url not set.')
+    }
+  }
+
   return __currentBaseUrl + (path.startsWith('/') ? path : `/${path}`)
 }
