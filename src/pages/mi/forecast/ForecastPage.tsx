@@ -150,7 +150,7 @@ const ForecastPage = () => {
             </Grid>
           </Grid>
         </Box>
-        <Box sx={{ position: 'absolute', top: '100%', left: 0, right: 0, height: '100px', backgroundColor: '#F2F5F7' }}></Box>
+        <Box sx={{ position: 'absolute', top: '100%', left: 0, right: 0, height: '136px', backgroundColor: '#F2F5F7' }}></Box>
       </Box>
     </MISkeleton>
   )
