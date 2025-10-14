@@ -19,7 +19,7 @@ import DashboardIcon from '@/components/common/icons/gnb/DashboardIcon'
 import ForecastIcon from '@/components/common/icons/gnb/ForecastIcon'
 import MetricsIcon from '@/components/common/icons/gnb/MetricsIcon'
 import NewsIcon from '@/components/common/icons/gnb/NewsIcon'
-import ParallelIcon from '@/components/common/icons/gnb/ParallelIcon'
+// import ParallelIcon from '@/components/common/icons/gnb/ParallelIcon'
 import ReportIcon from '@/components/common/icons/gnb/ReportIcon'
 import SignalIcon from '@/components/common/icons/gnb/SignalIcon'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
@@ -66,12 +66,12 @@ const SUBMENUS: Record<string, SubItem[]> = {
       show: false,
       section: 'SERVICES',
     },
-    {
-      label: 'Economic Event Calendar',
-      to: '/mi/economic-event',
-      disable: false,
-      show: false,
-    },
+    // {
+    //   label: 'Economic Event Calendar',
+    //   to: '/mi/economic-event',
+    //   disable: false,
+    //   show: false,
+    // },
   ],
   forecast: [
     {
@@ -112,14 +112,14 @@ const SUBMENUS: Record<string, SubItem[]> = {
       show: false,
       iconSlot: <NewsIcon />,
     },
-    {
-      label: 'Parallel Coordinates',
-      to: '/mi/parallel-coordinates',
-      desc: 'submenu.parallelCoordinates.desc',
-      disable: false,
-      show: false,
-      iconSlot: <ParallelIcon />,
-    },
+    // {
+    //   label: 'Parallel Coordinates',
+    //   to: '/mi/parallel-coordinates',
+    //   desc: 'submenu.parallelCoordinates.desc',
+    //   disable: false,
+    //   show: false,
+    //   iconSlot: <ParallelIcon />,
+    // },
     {
       label: 'Qualitative Analysis',
       to: '/mi/custom',
@@ -413,7 +413,7 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
                     <Typography
                       variant="subtext"
                       color="gray.70"
-                      width="35px"
+                      width="38px"
                       height="18px"
                       display="flex"
                       alignItems="center"
