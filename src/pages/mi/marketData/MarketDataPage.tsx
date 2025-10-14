@@ -177,19 +177,9 @@ const MarketDataPage = () => {
             )}
           </Grid>
         </Grid>
-        <Box pb={6} mb={9} borderBottom={'1px solid'} borderColor={'gray.30'}>
-          <Typography mb={9} color="gray.90" component="h2" variant="titlePage">
-            Data Catalog
-          </Typography>
-          <MISearchInput
-            storageKey={'market-data'}
-            value={filter?.keyword ?? ''}
-            onChange={handleSearchChange}
-            placeholder={'Search for Data'}
-            onSearch={handleSearch}
-            onClear={handleSearchClear}
-          />
-        </Box>
+        <Typography mb={6} color="gray.90" component="h2" variant="titlePage">
+          All Market Metrics
+        </Typography>
         <Grid
           container
           sx={{
@@ -201,9 +191,18 @@ const MarketDataPage = () => {
           <Box
             boxSizing={'border-box'}
             sx={{
-              width: 'calc(100% - 370px)',
+              width: 'calc(100% - 280px)',
             }}
           >
+            <MISearchInput
+              storageKey={'market-data'}
+              value={filter?.keyword ?? ''}
+              onChange={handleSearchChange}
+              placeholder={'Search for Data'}
+              onSearch={handleSearch}
+              onClear={handleSearchClear}
+            />
+            <Box mb={6} mt={6} borderBottom={'1px solid'} borderColor={'gray.30'} />
             <Box boxSizing={'border-box'} width={'100%'}>
               <MITableUser
                 hidePagination={data?.totalElements === 0 || !data?.totalElements}

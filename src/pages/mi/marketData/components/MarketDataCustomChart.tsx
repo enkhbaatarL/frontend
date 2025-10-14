@@ -198,6 +198,27 @@ const MarketDataCustomChart: FC<MarketDataCustomChartProps> = ({ data, locked = 
                 position: 'top',
                 labels: {
                   filter: (legendItem: LegendItem) => !legendItem.text.includes('Bollinger'),
+                  usePointStyle: true,
+                  pointStyle: 'line',
+                  boxWidth: 120,
+                  boxHeight: 12,
+                  generateLabels: (chart: Chart) => {
+                    const original = Chart.defaults.plugins.legend.labels.generateLabels
+                    const labels = original.call(this, chart)
+
+                    return labels.map((label: LegendItem, index: number) => {
+                      const dataset = chart.data.datasets[index] as any
+                      if (dataset && dataset.borderDash) {
+                        return {
+                          ...label,
+                          lineDash: dataset.borderDash,
+                          strokeStyle: dataset.borderColor,
+                          lineWidth: dataset.borderWidth || 2,
+                        }
+                      }
+                      return label
+                    })
+                  },
                 },
               },
               tooltip: { enabled: !locked },
