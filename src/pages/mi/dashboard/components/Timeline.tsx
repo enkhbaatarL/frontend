@@ -183,6 +183,7 @@ const TimelineItem = ({ item, isHovered = false, hoverColor = '#F0F8FF', ...prop
 
 const TimelineBar = ({ data }: TimelineBarProps) => {
   const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null)
+  const [containerWidth, setContainerWidth] = useState<number>(0)
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const timelineItemRefsContainer = useRef<HTMLElement>(null)
 
@@ -240,6 +241,29 @@ const TimelineBar = ({ data }: TimelineBarProps) => {
     return items.map((_, index) => getRandomHeight(index))
   }, [items])
 
+  const timelineItems = useMemo(() => {
+    if (!containerWidth) return []
+
+    return items.map((item, index) => {
+      const evenNumber = index % 2 === 0
+      const itemLineHeight = itemHeights[index]
+      const timeRatio = dayjs(item.time).diff(barStartTime, 'ms') / (barEndTime - barStartTime)
+      const leftPosition = containerWidth * timeRatio - 9
+      const left = `${Math.floor(leftPosition)}px`
+      const isRightSide = leftPosition > containerWidth * 0.7
+
+      return {
+        item,
+        index,
+        evenNumber,
+        itemLineHeight,
+        leftPosition,
+        left,
+        isRightSide,
+      }
+    })
+  }, [items, containerWidth, barStartTime, barEndTime, itemHeights])
+
   const getColor = (trend: string) => {
     if (trend === 'upward') return '#3386C2'
     if (trend === 'downward') return '#A02A74'
@@ -259,27 +283,43 @@ const TimelineBar = ({ data }: TimelineBarProps) => {
     }, 100)
   }
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const updateContainerWidth = () => {
+      if (timelineItemRefsContainer.current) {
+        const width = timelineItemRefsContainer.current.clientWidth
+        setContainerWidth(width)
+      }
+    }
+
+    updateContainerWidth()
+
+    window.addEventListener('resize', updateContainerWidth)
+
+    const timeoutId = setTimeout(updateContainerWidth, 100)
+
+    return () => {
+      window.removeEventListener('resize', updateContainerWidth)
+      clearTimeout(timeoutId)
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current)
       }
-    },
-    [],
-  )
+    }
+  }, [])
+
+  useEffect(() => {
+    if (timelineItemRefsContainer.current && !containerWidth) {
+      const width = timelineItemRefsContainer.current.clientWidth
+      if (width > 0) {
+        setContainerWidth(width)
+      }
+    }
+  }, [containerWidth])
 
   return (
     <Stack gap="10px" px="10px">
       <Box ref={timelineItemRefsContainer} position="relative">
         <Box height="6px" borderRadius="100px" sx={{ backgroundColor: '#DEE2E6' }} />
-        {items.map((item, index) => {
-          const evenNumber = index % 2 === 0
-          const itemLineHeight = itemHeights[index]
-          const containerWidth = timelineItemRefsContainer.current?.clientWidth ?? 0
-          const timeRatio = dayjs(item.time).diff(barStartTime, 'ms') / (barEndTime - barStartTime)
-          const leftPosition = containerWidth * timeRatio - 9
-          const left = `${Math.floor(leftPosition)}px`
-          const isRightSide = leftPosition > 556
+        {timelineItems.map(({ item, index, evenNumber, itemLineHeight, left, isRightSide }) => {
           const isHovered = hoveredItemIndex === index
 
           return (
