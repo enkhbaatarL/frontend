@@ -387,7 +387,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
                 padding: '8px 12px',
                 minWidth: '79px',
                 width: '79px',
-                maxWidth: '79px',
+                // maxWidth: '79px',
                 height: '61px',
                 letterSpacing: '-0.4px',
                 borderRadius: '4px',

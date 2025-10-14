@@ -249,6 +249,18 @@
     "privacyPolicy": "プライバシーポリシー"
   },
   "mari": {
+    "streamMessage": {  
+      "general_request": "一般的な質問の回答を探しています。",
+      "single_metric": "単一指標の分析のためにデータを検索しています。",
+      "timeseries_trend": "時系列トレンドを分析するためにデータを検索しています。",
+      "item_comparison": "データを比較分析するために情報を検索しています。",
+      "similarity_pattern": "類似パターンを分析するためにデータを検索しています。",
+      "market_impact": "産業への影響を分析するためにデータを検索しています。",
+      "event_impact": "イベントの影響を分析するためにデータを検索しています。",
+      "execute": "検索された情報を基に回答を生成しています。",
+      "plan": "質問への回答を見つけるためにデータを検索しています。",
+      "query_rewriter": "質問内容を解析しています。"
+    },
     "greetingMessage": {
       "title": "信頼性の高いデータで、\n市場の動きを正確に読み取ることができます。",
       "description": "LSEGで収集されたグローバルデータを基に",

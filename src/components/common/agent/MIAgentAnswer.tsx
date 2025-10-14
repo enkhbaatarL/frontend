@@ -1,6 +1,7 @@
 import { Box, Divider } from '@mui/material'
 import clsx from 'clsx'
 import { ButtonHTMLAttributes, useEffect, useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import rehypeStringify from 'rehype-stringify'
@@ -48,8 +49,18 @@ const downloadButtonTemplate = (tableId: string) => `
 
 export const tableIdRegex = /<!-- tableId:{([^}]+)} -->/g
 
-// 테이블 ID 주석을 찾아서 다운로드 버튼으로 치환
-const getContent = (content: string) => content.replace(tableIdRegex, (_, tableId) => downloadButtonTemplate(tableId))
+const streamMessageKeyList = [
+  'general_request',
+  'single_metric',
+  'timeseries_trend',
+  'item_comparison',
+  'similarity_pattern',
+  'market_impact',
+  'event_impact',
+  'execute',
+  'plan',
+  'query_rewriter',
+]
 
 const createMarkdownComponents = (bundle: IChatQnaAnswerBundle, chatRoomTitle?: string) => ({
   button: (props: ButtonProps) => <MIAgentTableDownloadButton bundle={bundle} chatRoomTitle={chatRoomTitle} {...props} />,
@@ -73,6 +84,8 @@ const markdownToHtml = async (markdown: string): Promise<string> => {
 
 const MIAgentAnswer = ({ bundles, chatRoomTitle, eventType, onAnimationComplete, isNewChat, onCreateCopyableContent }: Props) => {
   const { typedText, startTyping } = useTypingEffect(4, 60)
+  const { t } = useTranslation()
+
   const [animationStateList, setAnimationStateList] = useState<AnimationState[]>(
     isNewChat ? ['idle'] : [...(bundles ?? []).map(() => 'complete' as AnimationState)],
   )
@@ -80,6 +93,16 @@ const MIAgentAnswer = ({ bundles, chatRoomTitle, eventType, onAnimationComplete,
 
   const answerRef = useRef<HTMLDivElement>(null)
   const { scrollToBottom, scrollToNewMessage } = useScroll()
+
+  const getContent = (content: string) => {
+    // 상태(key)인 경우 i18n 처리
+    if (streamMessageKeyList.includes(content)) {
+      return t(content)
+    }
+
+    // 본문일 경우 테이블 ID 주석을 찾아서 다운로드 버튼으로 치환
+    return content.replace(tableIdRegex, (_, tableId) => downloadButtonTemplate(tableId))
+  }
 
   useEffect(() => {
     animationStateList.forEach((state, index) => {

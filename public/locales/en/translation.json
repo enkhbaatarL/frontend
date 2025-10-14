@@ -246,6 +246,18 @@
     "privacyPolicy": "개인정보처리방침"
   },
   "mari": {
+    "streamMessage": {
+      "general_request": "일반 질의의 답을 찾고 있습니다.",
+      "single_metric": "단일 지표 분석을 위해 데이터를 찾고 있습니다.",
+      "timeseries_trend": "시계열 추세를 분석하기 위해 데이터를 찾고 있습니다.",
+      "item_comparison": "데이터를 비교 분석하기 위해 정보를 검색하고 있습니다.",
+      "similarity_pattern": "유사 패턴을 분석하기 위해 데이터를 찾고 있습니다.",
+      "market_impact": "산업 영향을 분석하기 위해 데이터를 찾고 있습니다.",
+      "event_impact": "이벤트의 영향을 분석하기 위해 데이터를 찾고 있습니다.",
+      "execute": "검색된 정보를 바탕으로 답변을 생성하고 있습니다.",
+      "plan": "질의의 답을 찾기 위해 데이터를 찾고 있습니다.",
+      "query_rewriter": "질의를 해석하고 있습니다."
+    },
     "greetingMessage": {
       "title": "신뢰도 높은 데이터로 시장의 흐름을 정확하게 읽을 수 있습니다",
       "description": "LSEG에서 수집된 글로벌 데이터를 기반으로",
