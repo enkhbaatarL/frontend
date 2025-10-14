@@ -4,6 +4,7 @@ import { CandlestickController, CandlestickElement, OhlcController, OhlcElement 
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
+import { isEmpty } from 'lodash-es'
 import { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react'
 import { Chart } from 'react-chartjs-2'
 
@@ -348,9 +349,24 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
               display: false,
             },
             ...(() => {
-              const values = chartData?.chartData?.series?.find((s) => s.seriesId?.toLowerCase() === 'close')?.values ?? [0]
-              return calculateYAxisRange(values, 30, 30, true)
+              const closeSeries = chartData?.chartData?.series?.find((s) => s.seriesId?.toLowerCase() === 'close')
+              const range = closeSeries?.range
+              const values = closeSeries?.values ?? [0]
+              return !isEmpty(range) ? { min: range?.[0], max: range?.[1] } : calculateYAxisRange(values, 30, 30, true)
             })(),
+            afterDataLimits(scale: { min: number; max: number }) {
+              const closeSeries = chartData?.chartData?.series?.find((s) => s.seriesId?.toLowerCase() === 'close')
+              const range = closeSeries?.range
+              if (!isEmpty(range)) {
+                scale.min = range?.[0] ?? 0
+                scale.max = range?.[1] ?? 0
+              } else {
+                const values = closeSeries?.values ?? [0]
+                const { min, max } = calculateYAxisRange(values, 30, 30, true)
+                scale.min = min
+                scale.max = max
+              }
+            },
           },
         },
         plugins: {
@@ -384,6 +400,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
             hideXAxisLabel: true,
             marketOpenTime,
             marketCloseTime,
+            seriesTicks: chartData?.chartData?.series?.map((series) => series.dtick) || [],
           },
         },
       }),
@@ -575,10 +592,20 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
             useUnitDisplay: true,
             marketOpenTime,
             marketCloseTime,
+            seriesTicks: chartData?.chartData?.series?.map((series) => series.dtick) || [],
           },
         },
       }),
-      [chartOptions, volumeSeries?.values, timestamps, saveChartCanvas, calculateYAxisRange, marketOpenTime, marketCloseTime],
+      [
+        chartOptions,
+        volumeSeries?.values,
+        timestamps,
+        saveChartCanvas,
+        calculateYAxisRange,
+        marketOpenTime,
+        marketCloseTime,
+        chartData?.chartData?.series,
+      ],
     )
 
     const hasVisibleData =
