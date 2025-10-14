@@ -53,11 +53,11 @@ const NotificationPage = () => {
             My Notifications
           </Typography>
           <MIInput
-            width={458}
+            width={360}
             maxWidth={'100%'}
             placeholder="Search for Notifications"
             size="h46"
-            startIcon={<SearchIcon style={{ color: '#CED4DA' }} />}
+            endIcon={<SearchIcon style={{ color: '#CED4DA' }} sx={{ fontSize: 20 }} />}
             value={filter?.search ?? ''}
             onChange={(e) => updateFilter('search', e.target.value)}
             onKeyDown={({ key, target }) => key === 'Enter' && updateFilterWithSearch('search', (target as HTMLInputElement).value)}
