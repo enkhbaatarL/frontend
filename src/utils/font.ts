@@ -2,7 +2,7 @@ export type SupportedLanguage = 'ko' | 'en' | 'ja'
 
 export const languageList: { label: string; value: SupportedLanguage }[] = [
   { label: '한국어', value: 'ko' },
-  { label: 'English', value: 'en' },
+  // { label: 'English', value: 'en' },
   { label: '日本語', value: 'ja' },
 ]
 

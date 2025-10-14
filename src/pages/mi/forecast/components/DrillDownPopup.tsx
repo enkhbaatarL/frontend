@@ -2,6 +2,7 @@ import { Box, CircularProgress, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import MIButton from '@/components/common/button/MIButton'
 import CloseIcon from '@/components/common/icons/CloseIcon'
@@ -32,6 +33,7 @@ const PopupIndicatorIcon = () => (
 
 const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: DrillDownPopupProps) => {
   const [categorySelect, setCategorySelect] = useState('')
+  const { t } = useTranslation()
 
   const { data: categoryList, isLoading: isLoadingCategoryList } = useQuery({
     queryKey: ['dashboardFactorCategory', monthSelect, selectedContent.goodsDataSourceNo],
@@ -110,7 +112,7 @@ const DrillDownPopup = ({ monthSelect, selectedContent, onClose, companyNo }: Dr
             <Box display={'flex'} gap="6px" mb={'12px'}>
               <HorizontalChartIcon />
               <Typography component={'div'} variant="infoDocument" color="gray.90">
-                주요 요인 분석
+                {t('aiForecast.drillDown.title')}
               </Typography>
             </Box>
             <Box

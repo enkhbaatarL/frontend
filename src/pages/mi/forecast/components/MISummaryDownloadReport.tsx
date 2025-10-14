@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import aiStarIcon from '@/assets/ai.svg'
 import MIButton from '@/components/common/button/MIButton.tsx'
@@ -19,6 +20,7 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
   const [showMore, setShowMore] = useState(false)
   const [shouldShowButton, setShouldShowButton] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
+  const { i18n } = useTranslation()
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['dashboardSummary', monthSelect],
@@ -33,15 +35,15 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
     !data?.summaries || data.summaries.length === 0
       ? ''
       : data.summaries.map((summary: IForecastSummary, index: number) => (
-          <Box key={index} mt={index !== 0 ? '20px' : 0}>
-            <Typography mb={1.5} variant={'subtext5'} color={'content.textNormal'} component={'div'}>
-              {summary.explanatoryTitleContent}
-            </Typography>
-            <Typography variant={'body2R14'} color={'content.textNormal'} component={'div'}>
-              {(summary.explanatorySummaryContent ?? '').replace(/\\n/g, '\n')}
-            </Typography>
-          </Box>
-        ))
+        <Box key={index} mt={index !== 0 ? '20px' : 0}>
+          <Typography mb={1.5} variant={'subtext5'} color={'content.textNormal'} component={'div'}>
+            {summary.explanatoryTitleContent}
+          </Typography>
+          <Typography variant={'body2R14'} color={'content.textNormal'} component={'div'}>
+            {(summary.explanatorySummaryContent ?? '').replace(/\\n/g, '\n')}
+          </Typography>
+        </Box>
+      ))
 
   // useEffect에서 summaryContent를 의존성에 추가
   useEffect(() => {
@@ -90,6 +92,19 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
 
   const handleDownload = async () => {
     try {
+      // TODO: 시연 후 제거 필요
+      // 일본어일 때 특정 PDF 파일 다운로드
+      if (i18n.language === 'ja') {
+        const response = await fetch('/temp/Dubai Crude Outlook (2025.08.22).pdf')
+        if (response.ok) {
+          const blob = await response.blob()
+          downloadFile(blob, 'Dubai Crude Outlook (2025.08.22).pdf')
+        } else {
+          console.error('PDF file not found')
+        }
+        return
+      }
+
       const response = await forecastDataService.getForecastSummaryFileDownload(companyNo ?? 0, monthSelect.split('-').join(''))
 
       const cd = response.headers?.['content-disposition'] ?? ''

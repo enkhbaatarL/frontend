@@ -149,6 +149,18 @@
   "newsletter": {
     "disclaimer": "본 뉴스레터는 시장 뉴스 데이터 제공업체의 기사를 AI를 통해 종합적으로 분석·재가공하여 생성된 것입니다. 시장 뉴스 데이터를 종합적으로 분석하여 주요 이벤트와 시장 영향도를 평가하고, 뉴스의 흐름을 일목요연하게 정리함으로써 신속한 시장 이해를 돕는 것을 취지로 합니다. 본 뉴스레터는 참고용 정보를 제공하기 위한 것으로, 내용의 정확성이나 활용 결과에 대해서는 사용자의 판단과 책임이 요구됩니다."
   },
+  "aiForecast": {
+    "forecastChart": {
+      "tooltip": "예측 데이터 포인트 클릭 시 상세 정보 조회"
+    },
+    "drillDown": {
+      "title": "주요 요인 분석"
+    },
+    "influenceFactorChart": {
+      "increasingFactors": "상승요인",
+      "decreasingFactors": "하락요인"
+    }
+  },
   "signalMap": {
     "title": "Visual Correlation of Market Signals by Sector",
     "tooltipTitle": "Mapped signals are grouped by sector and macroeconimic factor. Hovering reveals related signals and recent trend data."
@@ -221,6 +233,11 @@
     "confirm": {
       "deleteChatRoom": "채팅을 삭제하시겠습니까?",
       "deleteChatRoomContent": "삭제된 내용은 되돌릴 수 없습니다."
+    }
+  },
+  "temp": {
+    "ticker": {
+      "description": "뉴욕상품거래소(NYMEX) 전자거래 시장에서 거래되는 WTI 기준 경질유(Light Sweet Crude Oil)의 선물 가격을 1개월물 기준으로 연속적으로 구성한 월물 시계열 지표"
     }
   }
 }

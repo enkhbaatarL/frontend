@@ -152,6 +152,13 @@
   "aiForecast": {
     "forecastChart": {
       "tooltip": "예측 데이터 포인트 클릭 시 상세 정보 조회"
+    },
+    "drillDown": {
+      "title": "주요 요인 분석"
+    },
+    "influenceFactorChart": {
+      "increasingFactors": "상승요인",
+      "decreasingFactors": "하락요인"
     }
   },
   "signalMap": {

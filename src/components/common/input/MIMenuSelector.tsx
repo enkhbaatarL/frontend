@@ -71,15 +71,15 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
           open={open}
           onClose={handleOverlayClose}
           keepMounted
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          anchorOrigin={menuProps?.anchorOrigin ?? { vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={menuProps?.transformOrigin ?? { vertical: 'top', horizontal: 'left' }}
           disablePortal={disablePortal}
           sx={{
             ...(disablePortal && {
               position: 'absolute',
               top: '100%',
-              left: 0,
-              right: 'auto',
+              left: menuProps?.anchorOrigin?.horizontal === 'right' ? 'auto' : 0,
+              right: menuProps?.anchorOrigin?.horizontal === 'right' ? 0 : 'auto',
               zIndex: 1200,
               '& .MuiPaper-root': {
                 borderRadius: '4px',
@@ -97,7 +97,7 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
             }),
             ...sx,
           }}
-          {...menuProps}
+          {...(menuProps && { ...menuProps, anchorOrigin: undefined, transformOrigin: undefined })}
         >
           {options.map((item, index) => (
             <MenuItem

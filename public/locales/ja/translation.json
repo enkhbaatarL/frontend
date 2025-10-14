@@ -155,6 +155,13 @@
   "aiForecast": {
     "forecastChart": {
       "tooltip": "予測データポイントクリック時の詳細情報表示"
+    },
+    "drillDown": {
+      "title": "カテゴリ別要因分析"
+    },
+    "influenceFactorChart": {
+      "increasingFactors": "上昇要因",
+      "decreasingFactors": "下落要因"
     }
   },
   "signalMap": {

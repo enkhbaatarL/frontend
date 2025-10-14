@@ -1,5 +1,5 @@
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import { Divider, Grid2 as Grid, Popper, Paper, ClickAwayListener } from '@mui/material'
+import { Divider, Grid2 as Grid, Popper, Paper, ClickAwayListener, Stack, MenuProps } from '@mui/material'
 import AppBar from '@mui/material/AppBar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -23,7 +23,6 @@ import ParallelIcon from '@/components/common/icons/gnb/ParallelIcon'
 import ReportIcon from '@/components/common/icons/gnb/ReportIcon'
 import SignalIcon from '@/components/common/icons/gnb/SignalIcon'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
-import MISelect from '@/components/common/select/MISelect'
 import MIHeaderNotice from '@/components/mi/MIHeaderNotice'
 import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
 import useEnvironment from '@/hooks/useEnvironment.ts'
@@ -151,15 +150,7 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
   const [selectedCompany, setSelectedCompany] = useState<{ label: string; value: number; customerCompanyMipUrl: string } | null>(null)
   const [isOpenCompany, setIsOpenCompany] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState<{ label: string; value: string }>({ label: '한국어', value: 'ko' })
-
-  const handleLanguageChange = (e: { target: { value: string | number | boolean | (string | number | boolean)[] } }) => {
-    const selectedValue = e.target.value as string
-    const selectedLanguageOption = languageList.find((option) => option.value === selectedValue)
-    if (selectedLanguageOption) {
-      setSelectedLanguage(selectedLanguageOption)
-      i18n.changeLanguage(selectedLanguageOption.value)
-    }
-  }
+  const [isOpenLanguageSelect, setIsOpenLanguageSelect] = useState(false)
 
   // 현재 언어에 따라 선택된 언어 상태 초기화
   useEffect(() => {
@@ -307,9 +298,11 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
           justifyContent="space-between"
         >
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography mr={1} variant="body3SB12" color="gray.70">
-              {selectedCompany?.label}
-            </Typography>
+            {companyList.length === 0 && (
+              <Typography ml={1} variant="body3SB12" color="gray.70">
+                {selectedCompany?.label}
+              </Typography>
+            )}
             {companyList.length > 0 && selectedCompany && (
               <MIMenuSelector
                 sx={{ marginTop: '8px' }}
@@ -327,27 +320,34 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
                 }}
                 disablePortal
               >
-                <Box
-                  width={'24px'}
-                  height={'24px'}
-                  display={'flex'}
-                  alignItems={'center'}
-                  justifyContent={'center'}
-                  borderRadius={'4px'}
+                <Stack
+                  direction="row"
+                  alignItems="center"
                   sx={{
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    backgroundColor: isOpenCompany ? 'rgba(46, 63, 94, 0.15)' : 'transparent',
-                    '&:hover': { backgroundColor: 'rgba(34, 103, 230, 0.15)' },
-                    '& svg': { transform: isOpenCompany ? 'rotate(180deg)' : 'rotate(0deg)' },
                   }}
                 >
-                  <KeyboardArrowDownIcon sx={{ color: '#495057' }} fontSize="small" />
-                </Box>
+                  <Typography ml={1} variant="body3SB12" color="gray.70">
+                    {selectedCompany?.label}
+                  </Typography>
+                  <Box
+                    width={'24px'}
+                    height={'24px'}
+                    display={'flex'}
+                    alignItems={'center'}
+                    justifyContent={'center'}
+                    borderRadius={'4px'}
+                    sx={{
+                      '& svg': { transform: isOpenCompany ? 'rotate(180deg)' : 'rotate(0deg)' },
+                    }}
+                  >
+                    <KeyboardArrowDownIcon sx={{ color: '#495057' }} fontSize="small" />
+                  </Box>
+                </Stack>
               </MIMenuSelector>
             )}
           </Box>
-          <Grid container gap={1}>
+          <Grid container gap={1} alignItems="center">
             {boards.map((board) => (
               <Link
                 key={board.label}
@@ -378,6 +378,65 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
               >
                 Sign Out
               </Link>
+            )}
+            {user?.userRoleCd === UserRole.ADMIN && (
+              <>
+                <Divider orientation="vertical" variant="middle" component="div" color="gray.70" sx={{ width: '1px', height: 16 }} />
+                <MIMenuSelector
+                  sx={{ marginTop: '6px' }}
+                  minWidthMenu="120px"
+                  value={selectedLanguage}
+                  options={languageList}
+                  onOpen={setIsOpenLanguageSelect}
+                  onChange={({ value, label }) => {
+                    setSelectedLanguage({ value: value as string, label })
+                    i18n.changeLanguage(value as string)
+                  }}
+                  disablePortal
+                  menuProps={
+                    {
+                      anchorOrigin: { vertical: 'bottom', horizontal: 'right' },
+                      transformOrigin: { vertical: 'top', horizontal: 'right' },
+                    } as MenuProps
+                  }
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    sx={{
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    <Typography
+                      variant="subtext"
+                      color="gray.70"
+                      width="35px"
+                      height="18px"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      {selectedLanguage?.label}
+                    </Typography>
+                    <Box
+                      width={'20px'}
+                      height={'20px'}
+                      display={'flex'}
+                      alignItems={'center'}
+                      justifyContent={'center'}
+                      borderRadius={'4px'}
+                      sx={{
+                        '& svg': { transform: isOpenLanguageSelect ? 'rotate(180deg)' : 'rotate(0deg)' },
+                      }}
+                    >
+                      <KeyboardArrowDownIcon sx={{ color: '#495057' }} fontSize="small" />
+                    </Box>
+                  </Stack>
+                </MIMenuSelector>
+              </>
             )}
           </Grid>
         </Grid>
@@ -570,9 +629,6 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
             </Box>
 
             <Grid container alignItems="center" wrap="nowrap" direction="row" spacing={4} sx={{ flexGrow: 0 }}>
-              {/* TODO: 테스트 후 제거 필요 */}
-              <MISelect type={'button'} value={selectedLanguage.value} options={languageList} onChange={handleLanguageChange} />
-              <Divider orientation="vertical" variant="middle" component="div" sx={{ width: '1px', height: 20 }} />
               <MIHeaderNotice />
               <Divider orientation="vertical" variant="middle" component="div" sx={{ width: '1px', height: 20 }} />
               <MIHeaderProfile />

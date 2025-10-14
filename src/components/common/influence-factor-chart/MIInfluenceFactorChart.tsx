@@ -1,5 +1,6 @@
 import { Box, Tooltip, Typography } from '@mui/material'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import LoadingBox from './LoadingBox'
@@ -197,6 +198,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
   const [goodsDataSourceNo, setGoodsDataSourceNo] = useState(0)
   const [goodsDataSourceNm, setGoodsDataSourceNm] = useState('')
   const [isPermitted, setIsPermitted] = useState(true)
+  const { t } = useTranslation()
 
   const fetchFactorGraphData = async (factor: IFactor) => {
     const requestParams: IForecastFactorGraphRequest = {
@@ -287,8 +289,8 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
     <Box>
       <Box display={'flex'} flexDirection={'column'} gap="12px" mb="12px" px="12px" py="24px">
         <Box display={'flex'} justifyContent={'space-between'}>
-          <Typography variant="body2SB14">하락요인</Typography>
-          <Typography variant="body2SB14">상승요인</Typography>
+          <Typography variant="body2SB14">{t('aiForecast.influenceFactorChart.decreasingFactors')}</Typography>
+          <Typography variant="body2SB14">{t('aiForecast.influenceFactorChart.increasingFactors')}</Typography>
         </Box>
         <Box display={'flex'} width={'100%'} sx={{ overflow: 'hidden' }}>
           <Box display={'flex'} flexDirection={'column'} alignItems={'flex-end'} gap={'10px'} flex={1} width={'100%'}>

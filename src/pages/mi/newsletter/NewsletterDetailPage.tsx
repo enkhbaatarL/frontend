@@ -616,7 +616,14 @@ Content-Transfer-Encoding: 7bit
           <LoadingSpinner speed={2} />
         </Box>
       )}
-      <Box display="flex" justifyContent="space-between" py="12px" width="800px" margin="38px auto 20px auto">
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        py="12px"
+        pr={mode === NewsletterDetailPageMode.VIEW ? '26px' : '0'}
+        width="800px"
+        margin="38px auto 20px auto"
+      >
         {mode === NewsletterDetailPageMode.VIEW && (
           <MISelect
             type="button"
