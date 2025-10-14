@@ -97,7 +97,7 @@ const MIAgentAnswer = ({ bundles, chatRoomTitle, eventType, onAnimationComplete,
   const getContent = (content: string) => {
     // 상태(key)인 경우 i18n 처리
     if (streamMessageKeyList.includes(content)) {
-      return t(content)
+      return t(`mari.streamMessage.${content}`)
     }
 
     // 본문일 경우 테이블 ID 주석을 찾아서 다운로드 버튼으로 치환
