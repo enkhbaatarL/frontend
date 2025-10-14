@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import ReferenceChart, { ReferenceChartRef } from '@/pages/mi/newsletter/components/chart/ReferenceChart'
 import { IReferenceDataItem } from '@/service/mi/newsletter'
@@ -10,6 +11,7 @@ interface Props {
 }
 
 const Reference = ({ referenceData, marketOpenTime, marketCloseTime }: Props) => {
+  const { t } = useTranslation()
   const chartRef = useRef<ReferenceChartRef | null>(null)
 
   return referenceData.map((item) => (
@@ -46,7 +48,7 @@ const Reference = ({ referenceData, marketOpenTime, marketCloseTime }: Props) =>
                       color: '#212529',
                     }}
                   >
-                    참고
+                    {t('newsletter.detail.reference')}
                   </td>
                 </tr>
                 <tr>

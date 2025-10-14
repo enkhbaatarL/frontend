@@ -7,6 +7,7 @@ import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import html2canvas from 'html2canvas'
 import { useRef, useState, useCallback, useEffect, useLayoutEffect, CSSProperties, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { InflectionPointChartRef } from './components/chart/InflectionPointChart'
@@ -71,6 +72,7 @@ const NewsletterDetailPage = () => {
   const { showSnackbar } = useSnackbar()
   const { onShow: showDialog, onHide: hideDialog } = useDialog()
   const { setStickyHeader } = useStickyHeader()
+  const { t } = useTranslation()
 
   const emailContentRef = useRef<HTMLTableElement>(null)
   const chartRef = useRef<InflectionPointChartRef>(null)
@@ -207,17 +209,17 @@ const NewsletterDetailPage = () => {
 
   const handleResetNews = useCallback(() => {
     showDialog({
-      title: '관련 뉴스 항목을 초기화 합니다',
+      title: t('newsletter.editMode.resetDialog.title'),
       width: 400,
       actions: [
         {
-          label: '취소',
+          label: t('common.cancel'),
           variant: 'outlined',
           color: 'gray',
           onClick: hideDialog,
         },
         {
-          label: '초기화',
+          label: t('common.reset'),
           variant: 'filled',
           color: 'primary',
           onClick: () => {
@@ -229,7 +231,7 @@ const NewsletterDetailPage = () => {
         },
       ],
     })
-  }, [showDialog, hideDialog])
+  }, [showDialog, hideDialog, t])
 
   const handleDeleteNewsConfirm = useCallback(
     (newsId: string) => {
@@ -253,17 +255,17 @@ const NewsletterDetailPage = () => {
   const handleDeleteNews = useCallback(
     (newsId: string) => {
       showDialog({
-        title: '선택한 뉴스 항목을 삭제합니다',
+        title: t('newsletter.editMode.deleteDialog.title'),
         width: 400,
         actions: [
           {
-            label: '취소',
+            label: t('common.cancel'),
             variant: 'outlined',
             color: 'gray',
             onClick: hideDialog,
           },
           {
-            label: '삭제',
+            label: t('common.delete'),
             variant: 'filled',
             color: 'red',
             onClick: () => handleDeleteNewsConfirm(newsId),
@@ -271,7 +273,7 @@ const NewsletterDetailPage = () => {
         ],
       })
     },
-    [showDialog, hideDialog, handleDeleteNewsConfirm],
+    [showDialog, hideDialog, handleDeleteNewsConfirm, t],
   )
 
   const handleApplyNews = useCallback(
@@ -300,7 +302,7 @@ const NewsletterDetailPage = () => {
       const allItemsValid = activeItems.every(validateRequiredFields)
 
       if (!allItemsValid) {
-        showSnackbar('모든 필수 항목을 입력해주세요', { variant: 'error' })
+        showSnackbar(t('newsletter.editMode.error.requiredFields'), { variant: 'error' })
         return
       }
 
@@ -364,9 +366,9 @@ const NewsletterDetailPage = () => {
       // 정렬 키 업데이트하여 DOM 요소 강제 재생성
       setSortKey((prev) => prev + 1)
 
-      showSnackbar('뉴스 항목이 성공적으로 적용되었습니다', { variant: 'success' })
+      showSnackbar(t('newsletter.editMode.snackbar.newsUpdated'), { variant: 'success' })
     },
-    [newsletterIssueDetail, tempNewsItems, editingNews, showSnackbar, unPublishedNewsIds, deletedNewsIds],
+    [newsletterIssueDetail, tempNewsItems, editingNews, showSnackbar, unPublishedNewsIds, deletedNewsIds, t],
   )
 
   const initializeNewsletterIssueDetail = useCallback(() => {
@@ -496,7 +498,7 @@ Content-Transfer-Encoding: 7bit
       setIsCapturing(false)
     } catch (error) {
       console.error('PNG 다운로드 실패:', error)
-      showSnackbar('PNG 다운로드 중 오류가 발생했습니다', { variant: 'error' })
+      showSnackbar(t('newsletter.editMode.error.pngDownloadError'), { variant: 'error' })
       setIsCapturing(false)
     }
   }
@@ -540,7 +542,7 @@ Content-Transfer-Encoding: 7bit
       }, 5000)
     } catch (error) {
       console.error('Preview 생성 중 오류:', error)
-      showSnackbar('Preview 생성 중 오류가 발생했습니다', { variant: 'error' })
+      showSnackbar(t('newsletter.editMode.error.previewError'), { variant: 'error' })
     }
   }, [createEmailContentHTML, showSnackbar])
 
@@ -575,7 +577,7 @@ Content-Transfer-Encoding: 7bit
               color: '#FFFFFF',
             }}
           >
-            Newsletter Edit Mode - 뉴스 항목을 수정하고 아웃룩 등 메일 서비스로 보내 발송할 수 있습니다
+            Newsletter Edit Mode - {t('newsletter.editMode.stickyHeader')}
           </Typography>
         </Box>
       )
@@ -587,7 +589,7 @@ Content-Transfer-Encoding: 7bit
     return () => {
       setStickyHeader(null)
     }
-  }, [mode, setStickyHeader])
+  }, [mode, setStickyHeader, t])
 
   useEffect(() => {
     initializeNewsletterIssueDetail()

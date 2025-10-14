@@ -1,5 +1,6 @@
 import { Box, Button, FormControlLabel, Switch, Typography } from '@mui/material'
 import { ChangeEvent, useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import TrashIcon from '@/components/common/icons/TrashIcon'
 import MISelect from '@/components/common/select/MISelect'
@@ -23,6 +24,7 @@ const EditPannal = ({
 }: EditPannalProps) => {
   const [published, setPublished] = useState(isPublished)
   const [selectedInflectionPoint, setSelectedInflectionPoint] = useState(inflectionPoint)
+  const { t } = useTranslation()
 
   useEffect(() => {
     setPublished(isPublished)
@@ -33,10 +35,10 @@ const EditPannal = ({
   }, [inflectionPoint])
 
   const inflectionPointOptions = [
-    { label: '미등록', value: '' },
-    { label: '상승', value: 'UP' },
-    { label: '중립', value: 'NONE' },
-    { label: '하락', value: 'DOWN' },
+    { label: t('newsletter.editMode.unregistered'), value: '' },
+    { label: t('newsletter.editMode.up'), value: 'UP' },
+    { label: t('newsletter.editMode.none'), value: 'NONE' },
+    { label: t('newsletter.editMode.down'), value: 'DOWN' },
   ]
 
   const handlePublishedChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -84,7 +86,7 @@ const EditPannal = ({
             textAlign: 'left',
           }}
         >
-          게시
+          {t('newsletter.editMode.publish')}
         </Typography>
         <FormControlLabel control={<Switch checked={published} onChange={handlePublishedChange} />} label="" />
       </Box>
@@ -109,7 +111,7 @@ const EditPannal = ({
                 textAlign: 'left',
               }}
             >
-              변곡점
+              {t('newsletter.editMode.inflectionPoint')}
             </Typography>
             <MISelect
               type="button"
@@ -118,7 +120,7 @@ const EditPannal = ({
               options={inflectionPointOptions}
               width={93}
               sizeSelect="h34"
-              placeholder="미등록"
+              placeholder={t('newsletter.editMode.unregistered')}
               darkPlaceholder
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -156,7 +158,7 @@ const EditPannal = ({
               sx={{ color: '#CC4D50', svg: { color: '#CC4D50 !important' }, marginLeft: '-12px' }}
             >
               <TrashIcon />
-              삭제
+              {t('common.delete')}
             </Button>
           </Box>
         </>

@@ -1,6 +1,7 @@
 import AddIcon from '@mui/icons-material/Add'
 import { Box } from '@mui/material'
 import { useState, useEffect, Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIInputBox from '@/components/common/input/MIInputBox'
@@ -42,6 +43,7 @@ const Chart = ({
   baseNewsCount = 0,
 }: Props) => {
   const [localUnPublishedNewsIds, setLocalUnPublishedNewsIds] = useState<string[]>(unPublishedNewsIds)
+  const { t } = useTranslation()
 
   useEffect(() => {
     setLocalUnPublishedNewsIds(unPublishedNewsIds)
@@ -65,10 +67,10 @@ const Chart = ({
 
     const hasRequiredValues = time.trim() !== '' && date.trim() !== '' && title.trim() !== '' && content.trim() !== ''
 
-    const timeValid = !timeFormat(time)
-    const dateValid = !dateFormat(date)
-    const titleValid = !titleLength(title)
-    const contentValid = !contentLength(content)
+    const timeValid = !timeFormat(time, undefined, t)
+    const dateValid = !dateFormat(date, undefined, t)
+    const titleValid = !titleLength(title, undefined, undefined, t)
+    const contentValid = !contentLength(content, undefined, undefined, t)
 
     return hasRequiredValues && timeValid && dateValid && titleValid && contentValid
   }
@@ -84,13 +86,13 @@ const Chart = ({
 
     switch (field) {
       case 'createTime':
-        return !timeFormat(value)
+        return !timeFormat(value, undefined, t)
       case 'createdDate':
-        return !dateFormat(value)
+        return !dateFormat(value, undefined, t)
       case 'title':
-        return !titleLength(value)
+        return !titleLength(value, undefined, undefined, t)
       case 'content':
-        return !contentLength(value)
+        return !contentLength(value, undefined, undefined, t)
       default:
         return true
     }
@@ -106,13 +108,13 @@ const Chart = ({
     if (value.trim() === '') {
       switch (field) {
         case 'createTime':
-          return '시간을 입력해주세요'
+          return t('newsletter.editMode.error.time')
         case 'createdDate':
-          return '일자를 입력해주세요'
+          return t('newsletter.editMode.error.createdDate')
         case 'title':
-          return '제목을 입력해주세요'
+          return t('newsletter.editMode.error.title')
         case 'content':
-          return '내용을 입력해주세요'
+          return t('newsletter.editMode.error.content')
         default:
           return ''
       }
@@ -120,13 +122,13 @@ const Chart = ({
 
     switch (field) {
       case 'createTime':
-        return timeFormat(value) ?? ''
+        return timeFormat(value, undefined, t) ?? ''
       case 'createdDate':
-        return dateFormat(value) ?? ''
+        return dateFormat(value, undefined, t) ?? ''
       case 'title':
-        return titleLength(value) ?? ''
+        return titleLength(value, undefined, undefined, t) ?? ''
       case 'content':
-        return contentLength(value) ?? ''
+        return contentLength(value, undefined, undefined, t) ?? ''
       default:
         return ''
     }
@@ -174,7 +176,7 @@ const Chart = ({
                       color: '#212529',
                     }}
                   >
-                    관련 뉴스
+                    {t('newsletter.detail.relatedNews')}
                   </td>
                   <td
                     style={{
@@ -222,7 +224,7 @@ const Chart = ({
                       textAlign: 'center',
                     }}
                   >
-                    뉴스 항목 편집 후 저장 시 변경된 내용이 뉴스 목록 및 그래프에 적용됩니다
+                    {t('newsletter.editMode.relatedNewsMessage')}
                   </Box>
                 </Box>
               </td>
@@ -272,7 +274,7 @@ const Chart = ({
                     >
                       <Box width="150px" display="flex" flexDirection="column" gap="4px">
                         <MIInputBox
-                          label="일자"
+                          label={t('newsletter.editMode.createdDate')}
                           required
                           value={getFieldValue(item.newsId, 'createdDate', item.createdDate)}
                           onChange={(value) => handleFieldChange(item.newsId, 'createdDate', value)}
@@ -283,7 +285,7 @@ const Chart = ({
                           disabled={localUnPublishedNewsIds.includes(item.newsId)}
                         />
                         <MIInputBox
-                          label="시간"
+                          label={t('newsletter.editMode.time')}
                           required
                           value={getFieldValue(item.newsId, 'createTime', item.createTime)}
                           onChange={(value) => handleFieldChange(item.newsId, 'createTime', value)}
@@ -294,31 +296,31 @@ const Chart = ({
                           disabled={localUnPublishedNewsIds.includes(item.newsId)}
                         />
                         <MIInputBox
-                          label="출처"
+                          label={t('newsletter.editMode.source')}
                           value={getFieldValue(item.newsId, 'source', item.source ?? '')}
                           onChange={(value) => handleFieldChange(item.newsId, 'source', value)}
-                          placeholder="출처를 입력해 주세요"
+                          placeholder={t('newsletter.editMode.sourcePlaceholder')}
                           disabled={localUnPublishedNewsIds.includes(item.newsId)}
                         />
                       </Box>
                       <Box flex={1} display="flex" flexDirection="column" gap="4px">
                         <MIInputBox
-                          label="제목"
+                          label={t('newsletter.editMode.title')}
                           required
                           value={getFieldValue(item.newsId, 'title', item.title)}
                           onChange={(value) => handleFieldChange(item.newsId, 'title', value)}
-                          placeholder="제목을 입력해 주세요"
+                          placeholder={t('newsletter.editMode.titlePlaceholder')}
                           error={localUnPublishedNewsIds.includes(item.newsId) ? false : !isFieldValid(item, 'title')}
                           helperText={localUnPublishedNewsIds.includes(item.newsId) ? '' : getFieldError(item, 'title')}
                           offInitialError={isNewItem(item)}
                           disabled={localUnPublishedNewsIds.includes(item.newsId)}
                         />
                         <MIInputBox
-                          label="내용"
+                          label={t('newsletter.editMode.content')}
                           required
                           value={getFieldValue(item.newsId, 'content', item.content.join('\n'))}
                           onChange={(value) => handleFieldChange(item.newsId, 'content', value)}
-                          placeholder="내용을 입력해 주세요"
+                          placeholder={t('newsletter.editMode.contentPlaceholder')}
                           multiline
                           rows={5}
                           error={localUnPublishedNewsIds.includes(item.newsId) ? false : !isFieldValid(item, 'content')}
@@ -335,7 +337,7 @@ const Chart = ({
               <tr>
                 <td colSpan={2} style={{ padding: '12px 0 24px 0', width: '100%' }}>
                   <MIButton type="outlined" size="h42" color="gray" width="100%" startIcon={<AddIcon />} onClick={onAddNews}>
-                    Add a New Item
+                    {t('newsletter.editMode.addNewItem')}
                   </MIButton>
                 </td>
               </tr>
@@ -353,7 +355,7 @@ const Chart = ({
                       onResetNews?.()
                     }}
                   >
-                    Reset
+                    {t('newsletter.editMode.buttonLabel.reset')}
                   </MIButton>
 
                   <MIButton
@@ -367,7 +369,7 @@ const Chart = ({
                       onApplyNews?.(localUnPublishedNewsIds)
                     }}
                   >
-                    Apply
+                    {t('newsletter.editMode.buttonLabel.apply')}
                   </MIButton>
                 </Box>
               </td>

@@ -396,7 +396,7 @@ export default function MIInfluenceFactorChart(props: Readonly<MIInfluenceFactor
               }}
             >
               <Typography variant="subtext3" color="gray.70" whiteSpace={'nowrap'}>
-                영향력 점수
+                {t('aiForecast.influenceFactorChart.influenceScore')}
               </Typography>
               <Typography variant="sectionTitleTXL" color="gray.70">
                 {influenceScore}

@@ -16,7 +16,8 @@
     "delete": "削除",
     "source": "出典",
     "complete": "完了",
-    "defaultPlaceholder": "入力してください"
+    "defaultPlaceholder": "入力してください",
+    "reset": "リセット"
   },
   "submenu": {
     "dashboard": {
@@ -150,7 +151,75 @@
     }
   },
   "newsletter": {
-    "disclaimer": "本ニュースレターは、市場ニュースデータ提供会社から配信された記事をもとに、AIによる分析と再処理を経て生成されたものです。市場ニュースデータを総合的に分析し、主要なイベントを抽出するとともに、市場への影響度を評価し、ニュースの流れを分かりやすく整理することで、迅速な市場理解を支援することを目的としています。なお、本ニュースレターの内容は参考情報の提供を目的としたものであり、その正確性および利用結果については、利用者ご自身の判断と責任においてご活用ください。"
+    "disclaimer": "本ニュースレターは、市場ニュースデータ提供会社から配信された記事をもとに、AIによる分析と再処理を経て生成されたものです。市場ニュースデータを総合的に分析し、主要なイベントを抽出するとともに、市場への影響度を評価し、ニュースの流れを分かりやすく整理することで、迅速な市場理解を支援することを目的としています。なお、本ニュースレターの内容は参考情報の提供を目的としたものであり、その正確性および利用結果については、利用者ご自身の判断と責任においてご活用ください。",
+    "detail": {
+      "relatedNews": "関連ニュース",
+      "reference": "参考"
+    },
+    "editMode": {
+      "stickyHeader": "ニュース項目を編集し、Outlookなどのメールサービスで送信・配信することができます。",
+      "publish": "公開",
+      "inflectionPoint": "転換点",
+      "relatedNewsMessage": "ニュース項目を編集して保存すると、変更内容がニュースリストおよびグラフに反映されます。",
+      "unregistered": "削除",
+      "up": "上昇",
+      "none": "中立",
+      "down": "下落",
+      "addNewItem": "新しい項目を追加",
+      "time": "時間",
+      "createdDate": "日付",
+      "source": "出典",
+      "sourcePlaceholder": "出典を入力してください",
+      "title": "タイトル",
+      "titlePlaceholder": "タイトルを入力してください",
+      "content": "内容",
+      "contentPlaceholder": "内容を入力してください",
+      "error": {
+        "pngDownloadError": "PNG ダウンロード中にエラーが発生しました",
+        "previewError": "Preview 生成中にエラーが発生しました",
+        "requiredFields": "すべての必須項目を入力してください",
+        "time": "時間を入力してください",
+        "createdDate": "日付を入力してください",
+        "title": "タイトルを入力してください",
+        "content": "内容を入力してください",
+        "timeFormat": {
+          "invalidCharacters": "数字とコロン(:)のみ入力可能です。",
+          "invalidFormat": "正しい時間形式ではありません。"
+        },
+        "dateFormat": {
+          "invalidCharacters": "数字とハイフン(-)のみ入力可能です。",
+          "invalidFormat": "正しい日付形式ではありません。",
+          "invalidMonth": "月は01-12の間の値である必要があります。",
+          "invalidDay": "日は01-31の間の値である必要があります。",
+          "invalidDate": "有効ではない日付です。"
+        },
+        "uppercase": "英字大文字のみ入力可能です。",
+        "uppercaseWithLength": {
+          "invalidCharacters": "英字大文字のみ入力可能です。",
+          "exceedLength": "最大{maxLength}文字まで入力可能です。"
+        },
+        "titleLength": "タイトルは{maxLength}文字以下で入力してください。",
+        "contentLength": "内容は{maxLength}文字以下で入力してください。",
+        "required": "必須入力項目です。"
+      },
+      "buttonLabel": {
+        "reset": "リセット",
+        "apply": "適用"
+      },
+      "deleteDialog": {
+        "title": "選択したニュース項目を削除します"
+      },
+      "resetDialog": {
+        "title": "関連ニュース項目をリセットします"
+      },
+      "snackbar": {
+        "newsUpdated": "ニュース項目が正常に適用されました"
+      }
+    },
+    "footer": {
+      "disclaimerViewText": "このメールは、お客様が AI Market Insights プラットフォームの購読・通知ページ、またはワンクリック登録リンクを通じてお申し込みいただいたために配信されています。本メールは SKテレコム株式会社 より送信されています。本ニュースレターは、AI Market Insights のAIエージェント MARI によって構成され、信頼性の高い複数の情報ソースを基に再構成されています。AIが生成したコンテンツには、一部に誤情報や不完全な内容が含まれる場合がありますので、重要な事項については必ず原文をご確認ください。",
+      "disclaimerEditText": "本ニュースレターは、AI Market Insights のAIエージェント MARI が、信頼性の高い複数の情報ソースを基に生成したコンテンツを、ユーザー自身が編集・補足した上で最終配信したものです。そのため、原文と一部内容が異なる場合があります。重要な事項については、必ず原文をご確認ください。"
+    }
   },
   "aiForecast": {
     "forecastChart": {
@@ -161,7 +230,8 @@
     },
     "influenceFactorChart": {
       "increasingFactors": "上昇要因",
-      "decreasingFactors": "下落要因"
+      "decreasingFactors": "下落要因",
+      "influenceScore": "影響力スコア"
     }
   },
   "signalMap": {
