@@ -177,9 +177,14 @@ const Highlights = () => {
       <SectionHeader title="Highlights" tooltipTitle={t('dashboard.highlights.tooltipTitle')} padding="7.5px 0 7.5px 6px">
         <DashboardSelect
           items={options.map((option) => ({ ...option, label: t(`common.${option.value}`) }))}
-          selectedItems={[selectedOption]}
-          setSelectedItems={(items) => {
-            setSelectedOption(Array.isArray(items) ? items[0] : 'detailed')
+          selected={selectedOption}
+          onSelected={setSelectedOption}
+          menuPositionOffset={-32}
+          fitMenuWidth={false}
+          paperProps={{
+            sx: {
+              width: '150px',
+            },
           }}
         />
       </SectionHeader>

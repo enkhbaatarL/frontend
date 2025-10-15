@@ -253,7 +253,15 @@ const Sentiment = () => {
   return (
     <Stack padding="6px 12px 14px" borderRadius="10px" sx={{ backgroundColor: '#F8F9FA' }}>
       <SectionHeader title="Sentiment" tooltipTitle={t('dashboard.sentiments.titleTooltip')} padding="7.5px 0 7.5px 6px">
-        <DashboardSelect type="switch" multiple items={options} selectedItems={selectedOptions} setSelectedItems={setSelectedOptions} />
+        <DashboardSelect
+          selectType="switch"
+          multiple
+          items={options}
+          selected={selectedOptions}
+          onSelected={setSelectedOptions}
+          menuPositionOffset={-32}
+          fitMenuWidth={false}
+        />
       </SectionHeader>
       {sampleItems.map((item, index) => {
         const isVisible = selectedOptions.includes(item.key)

@@ -14,7 +14,7 @@ const MariBadge = ({ text = 'Curated' }: MariBadgeProps) => (
       alignItems: 'center',
       backgroundColor: '#F0F4FF',
       borderRadius: '6px',
-      padding: '2px 8px 2px 4px',
+      padding: '2px 8px',
       boxShadow: '0px 0px 10px 0px rgba(54, 79, 199, 0.35)',
       width: 'fit-content',
       height: 'fit-content',
@@ -25,9 +25,10 @@ const MariBadge = ({ text = 'Curated' }: MariBadgeProps) => (
       src={ai}
       alt="AI"
       sx={{
-        width: '22px',
-        height: '22px',
-        marginRight: '4px',
+        width: '18px',
+        height: '18px',
+        marginLeft: '2px',
+        marginBottom: '2px',
       }}
     />
     <Box
@@ -59,6 +60,7 @@ const MariBadge = ({ text = 'Curated' }: MariBadgeProps) => (
         sx={{
           width: '29px',
           height: '9px',
+          marginLeft: '1px',
         }}
       />
     </Box>
