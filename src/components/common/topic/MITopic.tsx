@@ -1,6 +1,8 @@
 import { Box, Stack, Typography, type StackProps } from '@mui/material'
 import { ReactNode } from 'react'
 
+import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
+
 export interface Topic {
   image?: string
   label: ReactNode
@@ -43,7 +45,7 @@ const MITopic = ({ topics, selectedTopic, onClick, ...props }: Props) => {
   }
 
   return (
-    <Stack direction="row" py="12px" gap="10px" {...props}>
+    <HorizontalScrollContainer py="12px" gap="10px" scrollAmount={0.6} {...props}>
       {topics.map((topic, index) => (
         <Stack
           key={topic.value ?? `topic-${index}`}
@@ -64,6 +66,7 @@ const MITopic = ({ topics, selectedTopic, onClick, ...props }: Props) => {
             userSelect: 'none',
             cursor: topic.disabled || topic.isPending ? 'default' : 'pointer',
             transition: 'all 0.2s ease-in-out, border-color 0.3s ease-in-out',
+            flexShrink: 0,
             '&:hover': {
               backgroundColor: getHoverBackgroundColor(topic),
               border: `1px solid ${getHoverBorderColor(topic)}`,
@@ -91,12 +94,12 @@ const MITopic = ({ topics, selectedTopic, onClick, ...props }: Props) => {
               <img src={topic.image} width={26} height={26} alt={topic.value} draggable={false} />
             </Stack>
           )}
-          <Typography variant="body1SB16" color={getTextColor(topic)}>
+          <Typography variant="body1SB16" color={getTextColor(topic)} noWrap>
             {topic.label}
           </Typography>
         </Stack>
       ))}
-    </Stack>
+    </HorizontalScrollContainer>
   )
 }
 

@@ -343,89 +343,87 @@ const EconomicCalendar = () => {
       direction="column"
       collapsedHeight={660}
     >
-      <Stack gap="24px">
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <DashboardSelect
-            variant="outlined"
-            selectType="none"
-            selected={filter}
-            onSelected={setFilter}
-            items={filterOptions}
-            sx={{ minWidth: 40 }}
-            menuPosition="left"
-          />
-          <UpdatedInfoChip label="Sep 15 09:45" color={{ backgroundColor: '#F1F3F5', color: '#495057' }} />
-        </Stack>
-        <Stack gap="10px">
-          <Stack>
-            <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
-              <HeaderCell width="60px" textAlign="center">
-                Time
-              </HeaderCell>
-              <HeaderCell width="44px" textAlign="center">
-                Imp.
-              </HeaderCell>
-              <HeaderCell width="146px" textAlign="left">
-                Event
-              </HeaderCell>
-              <HeaderCell width="46px" textAlign="center">
-                For
-              </HeaderCell>
-              <HeaderCell width="80px" textAlign="right">
-                Actual
-              </HeaderCell>
-              <HeaderCell width="80px" textAlign="right">
-                Forecast
-              </HeaderCell>
-              <HeaderCell width="80px" textAlign="right">
-                Prior
-              </HeaderCell>
-            </Stack>
-            {sampleData.map((data, index) => (
-              <Stack
-                key={data.id}
-                direction="row"
-                alignItems="center"
-                height="38px"
-                gap="4px"
-                borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
-                sx={{
-                  '&:hover': {
-                    backgroundColor: '#F8F9FA',
-                  },
-                  cursor: 'pointer',
-                }}
-              >
-                <BodyCell width="60px" textAlign="center">
-                  {data.time}
-                </BodyCell>
-                <Stack width="44px" justifyContent="center" alignItems="center">
-                  <ImportanceIcon level={data.imp as ImportanceLevel} />
-                </Stack>
-                <BodyCell width="146px" textAlign="left">
-                  {data.event}
-                </BodyCell>
-                <BodyCell width="46px" textAlign="center">
-                  {data.for}
-                </BodyCell>
-                <Stack width="80px" justifyContent="center" alignItems="flex-end" pr="8px">
-                  {data.isTBA ? (
-                    <TBABadge />
-                  ) : (
-                    <BodyCell width="80px" textAlign="right">
-                      {data.actual}
-                    </BodyCell>
-                  )}
-                </Stack>
-                <BodyCell width="80px" textAlign="right">
-                  {data.forecast}
-                </BodyCell>
-                <BodyCell width="80px" textAlign="right">
-                  {data.previous}
-                </BodyCell>
-              </Stack>
-            ))}
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <DashboardSelect
+          variant="outlined"
+          selectType="none"
+          selected={filter}
+          onSelected={setFilter}
+          items={filterOptions}
+          sx={{ minWidth: 40 }}
+          menuPosition="left"
+        />
+        <UpdatedInfoChip label="Sep 15 09:45" color={{ backgroundColor: '#F1F3F5', color: '#495057' }} />
+      </Stack>
+      <Stack gap="10px">
+        <Stack>
+          <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
+            <HeaderCell width="60px" textAlign="center">
+              Time
+            </HeaderCell>
+            <HeaderCell width="44px" textAlign="center">
+              Imp.
+            </HeaderCell>
+            <HeaderCell width="146px" textAlign="left">
+              Event
+            </HeaderCell>
+            <HeaderCell width="46px" textAlign="center">
+              For
+            </HeaderCell>
+            <HeaderCell width="80px" textAlign="right">
+              Actual
+            </HeaderCell>
+            <HeaderCell width="80px" textAlign="right">
+              Forecast
+            </HeaderCell>
+            <HeaderCell width="80px" textAlign="right">
+              Prior
+            </HeaderCell>
           </Stack>
+          {sampleData.map((data, index) => (
+            <Stack
+              key={data.id}
+              direction="row"
+              alignItems="center"
+              height="38px"
+              gap="4px"
+              borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+              sx={{
+                '&:hover': {
+                  backgroundColor: '#F8F9FA',
+                },
+                cursor: 'pointer',
+              }}
+            >
+              <BodyCell width="60px" textAlign="center">
+                {data.time}
+              </BodyCell>
+              <Stack width="44px" justifyContent="center" alignItems="center">
+                <ImportanceIcon level={data.imp as ImportanceLevel} />
+              </Stack>
+              <BodyCell width="146px" textAlign="left">
+                {data.event}
+              </BodyCell>
+              <BodyCell width="46px" textAlign="center">
+                {data.for}
+              </BodyCell>
+              <Stack width="80px" justifyContent="center" alignItems="flex-end" pr="8px">
+                {data.isTBA ? (
+                  <TBABadge />
+                ) : (
+                  <BodyCell width="80px" textAlign="right">
+                    {data.actual}
+                  </BodyCell>
+                )}
+              </Stack>
+              <BodyCell width="80px" textAlign="right">
+                {data.forecast}
+              </BodyCell>
+              <BodyCell width="80px" textAlign="right">
+                {data.previous}
+              </BodyCell>
+            </Stack>
+          ))}
         </Stack>
       </Stack>
     </DashboardCard>

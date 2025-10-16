@@ -148,6 +148,7 @@ const DashboardCard = forwardRef<DashboardCardRef, Props>(
               sx={{
                 position: 'relative',
                 zIndex: 2,
+                userSelect: 'none',
               }}
             >
               <MIButton width="100%" color="gray" type="outlined" contentType="text" size="h42" onClick={handleToggleCollapse}>
