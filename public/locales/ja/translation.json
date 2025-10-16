@@ -17,7 +17,9 @@
     "source": "出典",
     "complete": "完了",
     "defaultPlaceholder": "入力してください",
-    "reset": "リセット"
+    "reset": "リセット",
+    "showMore": "もっと見る",
+    "showLess": "閉じる"
   },
   "submenu": {
     "dashboard": {
@@ -43,6 +45,11 @@
     }
   },
   "dashboard": {
+    "toolbar": {
+      "description": "さまざまなウィジェットを自由に配置・構成できます。",
+      "switchLabel": "すべて表示",
+      "selectWidgetPlaceholder": "ウィジェットを選択"
+    },
     "sentiments": {
       "titleTooltip": "直近24時間のニュースを基に、市場価格に対する上昇・中立・下落の反応割合を示しています。",
       "barTooltip": {
@@ -75,6 +82,9 @@
       "summary": {
         "aiDescription": "AIによる要約結果は必ずしも正確とは限りません。重要な内容については再度ご確認ください。"
       }
+    },
+    "guide": {
+      "title": "AIマーケットインテリジェンスガイド"
     },
     "sampleData": {
       "highlights": {

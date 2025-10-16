@@ -29,6 +29,7 @@ const NewsFeed = () => {
         overflow: 'visible',
       }}
       direction="column"
+      collapsedHeight={1300}
     >
       <Timeline my="12px" />
       <Feed />

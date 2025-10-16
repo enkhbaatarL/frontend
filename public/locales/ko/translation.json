@@ -17,7 +17,9 @@
     "source": "출처",
     "complete": "완료",
     "defaultPlaceholder": "입력하세요",
-    "reset": "초기화"
+    "reset": "초기화",
+    "showMore": "Show more",
+    "showLess": "Show less"
   },
   "submenu": {
     "dashboard": {
@@ -43,6 +45,11 @@
     }
   },
   "dashboard": {
+    "toolbar": {
+      "description": "다양한 위젯을 자유롭게 배치하고 구성할 수 있습니다.",
+      "switchLabel": "전체 보기",
+      "selectWidgetPlaceholder": "위젯 선택"
+    },
     "sentiments": {
       "titleTooltip": "최근 24시간 뉴스를 바탕으로 시장 가격 상승에 대한 긍정·중립·부정 반응의 비중을 나타냅니다.",
       "barTooltip": {
@@ -75,6 +82,9 @@
       "summary": {
         "aiDescription": "AI 요약 결과는 정확하지 않을 수 있으니 중요한 사항은 한 번 더 검토해 주세요."
       }
+    },
+    "guide": {
+      "title": "A Guide to AI Market Intelligence"
     },
     "sampleData": {
       "highlights": {

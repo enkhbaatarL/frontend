@@ -110,6 +110,9 @@ const DashboardSelect = ({
             height: '40px',
             justifyContent: 'space-between',
             textTransform: 'none',
+            '&:disabled': {
+              backgroundColor: props.disabled && variant === 'text' ? 'transparent' : undefined,
+            },
             border: variant === 'outlined' ? '1px solid #DEE2E6' : 'none',
             '&:hover': {
               backgroundColor: variant === 'outlined' ? 'transparent' : undefined,

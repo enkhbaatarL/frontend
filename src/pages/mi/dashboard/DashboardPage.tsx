@@ -1,17 +1,18 @@
-import { Stack } from '@mui/material'
+import { Box, Stack } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useEffect } from 'react'
 
-import tempEconomicCalenderImg from '@/assets/dashboard/temp/economic-calendar.png'
-import tempPeerComparisonImg from '@/assets/dashboard/temp/peer-comparison.png'
-import tempTopicTrackerImg from '@/assets/dashboard/temp/topic-tracker.png'
 import MIDateDisplay from '@/components/common/date/MIDateDisplay'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useMarketData } from '@/contexts/MarketDataContext'
 import AIMarketSummary from '@/pages/mi/dashboard/components/AIMarketSummary'
+import EconomicCalendar from '@/pages/mi/dashboard/components/EconomicCalendar'
 import FactorMap from '@/pages/mi/dashboard/components/FactorMap'
 import MIGuide from '@/pages/mi/dashboard/components/MIGuide'
 import NewsFeed from '@/pages/mi/dashboard/components/NewsFeed'
+import Newsletters from '@/pages/mi/dashboard/components/Newsletters'
+import Toolbar from '@/pages/mi/dashboard/components/Toolbar'
+import TopicTracker from '@/pages/mi/dashboard/components/TopicTracker'
 import forecastDataService from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
 
@@ -56,16 +57,19 @@ const DashboardPage = () => {
       <Stack py="24px" maxWidth="1380px" margin="auto" gap="24px">
         <MIDateDisplay />
         <AIMarketSummary />
+        <Box mb="-12px">
+          <Toolbar />
+        </Box>
         <Stack direction="row" gap="24px">
           <Stack width="740px" gap="24px">
             <NewsFeed />
+            <MIGuide />
+            <Newsletters />
           </Stack>
           <Stack width="616px" gap="24px">
+            <TopicTracker />
+            <EconomicCalendar />
             <FactorMap />
-            <img src={tempPeerComparisonImg} width={616} alt="peer-comparison" draggable={false} />
-            <img src={tempTopicTrackerImg} width={616} alt="topic-tracker" draggable={false} />
-            <img src={tempEconomicCalenderImg} width={616} alt="economic-calender" draggable={false} />
-            <MIGuide />
           </Stack>
         </Stack>
       </Stack>

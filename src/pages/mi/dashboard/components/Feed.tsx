@@ -492,7 +492,7 @@ const Feed = () => {
           />
         </Stack>
       </Stack>
-      <Stack py="12px">
+      <Stack mt="12px">
         {sampleItems.map((item, index) => (
           <Fragment key={item.id}>
             {index !== 0 && <Divider color="#DEE2E6" sx={{ my: '10px' }} />}
@@ -500,15 +500,6 @@ const Feed = () => {
           </Fragment>
         ))}
       </Stack>
-      <Box padding="6px 0 18px">
-        <MIButton width="100%" color="gray" type="outlined" contentType="text" size="h42" onClick={() => {}}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography variant="body1" color="gray.90" fontWeight={600}>
-              Load more
-            </Typography>
-          </Box>
-        </MIButton>
-      </Box>
     </Stack>
   )
 }
