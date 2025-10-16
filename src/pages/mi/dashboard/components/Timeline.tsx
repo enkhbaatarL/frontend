@@ -6,6 +6,7 @@ import SectionHeader from '@/pages/mi/dashboard/components/SectionHeader'
 
 interface TimelineBarProps {
   data: { id: string; time: string; title: string; trend: string; score: number }[]
+  onItemClick?: (id: string) => void
 }
 
 const sampleData: TimelineBarProps['data'] = [
@@ -181,7 +182,7 @@ const TimelineItem = ({ item, isHovered = false, hoverColor = '#F0F8FF', ...prop
   )
 }
 
-const TimelineBar = ({ data }: TimelineBarProps) => {
+const TimelineBar = ({ data, onItemClick }: TimelineBarProps) => {
   const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null)
   const [containerWidth, setContainerWidth] = useState<number>(0)
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -372,6 +373,10 @@ const TimelineBar = ({ data }: TimelineBarProps) => {
                     e.stopPropagation()
                     handleMouseLeave()
                   }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onItemClick?.(item.id)
+                  }}
                 />
                 <Stack
                   direction="row"
@@ -411,7 +416,11 @@ const TimelineBar = ({ data }: TimelineBarProps) => {
   )
 }
 
-const Timeline = ({ ...props }: BoxProps) => (
+interface TimelineProps extends BoxProps {
+  onItemClick?: (id: string) => void
+}
+
+const Timeline = ({ onItemClick, ...props }: TimelineProps) => (
   <Box
     borderRadius="10px"
     padding="6px 12px"
@@ -424,7 +433,7 @@ const Timeline = ({ ...props }: BoxProps) => (
       <SectionHeader title="Timeline" tooltipTitle="" />
     </Box>
     <Stack alignContent="center" justifyContent="center" height="280px">
-      <TimelineBar data={sampleData} />
+      <TimelineBar data={sampleData} onItemClick={onItemClick} />
     </Stack>
   </Box>
 )

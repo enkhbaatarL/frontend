@@ -1,7 +1,7 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import SouthAmericaIcon from '@mui/icons-material/SouthAmerica'
 import { Box, Divider, Stack, Typography, Collapse, Fade } from '@mui/material'
-import { Fragment, ReactNode, useMemo, useState, useEffect } from 'react'
+import { Fragment, ReactNode, useMemo, useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import crudeOilIcon from '@/assets/icons/crude-oil.png'
@@ -54,7 +54,7 @@ const filter3Options = [{ label: 'Highest', value: 'highest' }]
 
 const sampleItems = [
   {
-    id: '1',
+    id: 'a1B',
     type: 'crudeOil',
     isGlobal: true,
     sentiment: 'positive',
@@ -66,7 +66,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '2',
+    id: 'c2D',
     type: 'crudeOil',
     isGlobal: true,
     sentiment: 'negative',
@@ -78,7 +78,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '3',
+    id: 'e3F',
     type: 'crudeOil',
     isGlobal: true,
     sentiment: 'positive',
@@ -90,7 +90,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '4',
+    id: 'g4H',
     type: 'crudeOil',
     isGlobal: true,
     sentiment: 'positive',
@@ -102,7 +102,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '5',
+    id: 'i5J',
     type: 'other',
     isGlobal: true,
     sentiment: 'neutral',
@@ -114,7 +114,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '6',
+    id: 'k6L',
     type: 'crudeOil',
     isGlobal: true,
     sentiment: 'negative',
@@ -126,7 +126,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 08:35 AM',
   },
   {
-    id: '7',
+    id: 'm7N',
     type: 'dram',
     isGlobal: true,
     sentiment: 'positive',
@@ -138,7 +138,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '8',
+    id: 'o8P',
     type: 'lng',
     isGlobal: true,
     sentiment: 'negative',
@@ -150,7 +150,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '9',
+    id: 'q9R',
     type: 'lng',
     isGlobal: true,
     sentiment: 'negative',
@@ -162,7 +162,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '10',
+    id: 's0T',
     type: 'lng',
     isGlobal: true,
     sentiment: 'negative',
@@ -174,7 +174,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '11',
+    id: 'u1V',
     type: 'lng',
     isGlobal: true,
     sentiment: 'negative',
@@ -186,7 +186,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '12',
+    id: 'w2X',
     type: 'lng',
     isGlobal: true,
     sentiment: 'negative',
@@ -198,7 +198,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '13',
+    id: 'y3Z',
     type: 'lng',
     isGlobal: true,
     sentiment: 'negative',
@@ -210,7 +210,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '14',
+    id: 'b4C',
     type: 'lng',
     isGlobal: true,
     sentiment: 'negative',
@@ -222,7 +222,7 @@ const sampleItems = [
     date: 'September 17, 2025 at 10:04 AM',
   },
   {
-    id: '15',
+    id: 'd5E',
     type: 'battery',
     isGlobal: true,
     sentiment: 'neutral',
@@ -267,11 +267,33 @@ const FeedIconWrapper = ({ children, padding = '0' }: { children: ReactNode; pad
   </Stack>
 )
 
-const FeedItem = ({ item }: { item: (typeof sampleItems)[0] }) => {
+const getSentimentColor = (sentiment: string) => {
+  switch (sentiment) {
+    case 'positive':
+      return '#3386C2'
+    case 'negative':
+      return '#A02A74'
+    default:
+      return '#A8A8A8' // neutral
+  }
+}
+
+const FeedItem = ({
+  item,
+  isHighlighted,
+  onRefSet,
+}: {
+  item: (typeof sampleItems)[0]
+  isHighlighted?: boolean
+  onRefSet?: (ref: HTMLDivElement | null) => void
+}) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [aiSummary, setAiSummary] = useState<{ title: string; summary: string[] } | null>(null)
+  const [shouldFlash, setShouldFlash] = useState(false)
   const { t, i18n } = useTranslation()
+
+  const sentimentColor = getSentimentColor(item.sentiment)
 
   const summary = useMemo(
     () => ({
@@ -293,6 +315,20 @@ const FeedItem = ({ item }: { item: (typeof sampleItems)[0] }) => {
     setIsExpanded(false)
   }, [i18n.language])
 
+  useEffect(() => {
+    if (isHighlighted) {
+      setShouldFlash(true)
+      const timer = setTimeout(() => {
+        setShouldFlash(false)
+      }, 1300)
+      return () => clearTimeout(timer)
+    } else {
+      // 하이라이트가 해제되면 즉시 애니메이션 중지
+      setShouldFlash(false)
+      return () => {}
+    }
+  }, [isHighlighted])
+
   const handleClick = () => {
     if (!aiSummary) {
       setIsExpanded(true)
@@ -308,12 +344,32 @@ const FeedItem = ({ item }: { item: (typeof sampleItems)[0] }) => {
 
   return (
     <Stack
+      ref={onRefSet}
       padding="12px 18px"
       borderRadius="10px"
       sx={{
         cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
         backgroundColor: isExpanded ? '#F0F3F6' : 'transparent',
+        border: '1px solid transparent',
+        boxSizing: 'border-box',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          right: '0',
+          bottom: '0',
+          border: `2px solid ${sentimentColor}`,
+          borderRadius: '10px',
+          boxShadow: `0 0 0 1px ${sentimentColor}40, 0 2px 8px ${sentimentColor}30`,
+          pointerEvents: 'none',
+          zIndex: 1,
+          opacity: shouldFlash ? 1 : 0,
+          transform: shouldFlash ? 'scale(1.01)' : 'scale(1)',
+          transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        },
         '&:hover': {
           backgroundColor: '#F0F3F6',
         },
@@ -446,10 +502,30 @@ const FeedItem = ({ item }: { item: (typeof sampleItems)[0] }) => {
   )
 }
 
-const Feed = () => {
+const Feed = ({ selectedItemId, onItemHighlighted }: { selectedItemId?: string | null; onItemHighlighted?: () => void }) => {
   const [filter1, setFilter1] = useState(filter1Options[0].value)
   const [filter2, setFilter2] = useState(filter2Options[0].value)
   const [filter3, setFilter3] = useState(filter3Options[0].value)
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  // 선택된 아이템으로 스크롤
+  useEffect(() => {
+    if (selectedItemId && itemRefs.current[selectedItemId]) {
+      const element = itemRefs.current[selectedItemId]
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+      // 하이라이트가 끝난 후 상태 초기화
+      const timer = setTimeout(() => {
+        onItemHighlighted?.()
+      }, 1500)
+
+      return () => clearTimeout(timer)
+    } else {
+      // selectedItemId가 null이면 즉시 상태 초기화
+      onItemHighlighted?.()
+      return () => {}
+    }
+  }, [selectedItemId, onItemHighlighted])
 
   return (
     <Stack px="12px">
@@ -496,7 +572,13 @@ const Feed = () => {
         {sampleItems.map((item, index) => (
           <Fragment key={item.id}>
             {index !== 0 && <Divider color="#DEE2E6" sx={{ my: '10px' }} />}
-            <FeedItem item={item} />
+            <FeedItem
+              item={item}
+              isHighlighted={selectedItemId === item.id}
+              onRefSet={(ref) => {
+                itemRefs.current[item.id] = ref
+              }}
+            />
           </Fragment>
         ))}
       </Stack>
