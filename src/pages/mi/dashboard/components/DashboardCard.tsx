@@ -59,12 +59,11 @@ const DashboardCard = forwardRef<DashboardCardRef, Props>(
         pixelHeight = match ? parseInt(match[1]) - 90 - 60 : 200
       }
 
-      const calculatedTimeout = Math.max(600, pixelHeight * 0.7)
-      return calculatedTimeout
+      return Math.max(600, pixelHeight * 0.7)
     }, [collapsedHeight])
 
     // 앵커 기능을 위한 fastExpand 애니메이션 시간 지정
-    const currentTimeout = fastExpand ? 0 : animationTimeout
+    const currentTimeout = fastExpand ? 100 : animationTimeout
 
     useImperativeHandle(
       ref,
@@ -80,7 +79,7 @@ const DashboardCard = forwardRef<DashboardCardRef, Props>(
             setTimeout(() => {
               setFastExpand(false)
               resolve()
-            }, 0)
+            }, 100)
           }),
         isCollapsed: () => isCollapsed,
       }),
@@ -134,7 +133,7 @@ const DashboardCard = forwardRef<DashboardCardRef, Props>(
                   zIndex: 10,
                   cursor: 'default',
                   opacity: isCollapsed ? 1 : 0,
-                  transition: `opacity ${isCollapsed ? '0ms' : `${currentTimeout}ms`} ease-in-out`,
+                  transition: `opacity ${isCollapsed ? 0 : currentTimeout}ms ease-in-out`,
                   pointerEvents: isCollapsed ? 'auto' : 'none',
                 }}
                 onClick={eventBlocker}
