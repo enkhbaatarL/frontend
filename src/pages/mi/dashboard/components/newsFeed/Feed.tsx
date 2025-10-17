@@ -10,7 +10,7 @@ import semiconductorIcon from '@/assets/icons/semiconductor.png'
 import ButtonSelect from '@/components/common/select/ButtonSelect'
 import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
 import CategoryChip from '@/pages/mi/dashboard/components/common/CategoryChip'
-import SentimentIcon from '@/pages/mi/dashboard/components/common/SentimentIcon'
+import TrendIcon from '@/pages/mi/dashboard/components/newsFeed/TrendIcon'
 
 const filter1Options = [
   {
@@ -56,7 +56,7 @@ const sampleItems = [
     id: 'a1B',
     type: 'crudeOil',
     isGlobal: true,
-    sentiment: 'positive',
+    trend: 'upward',
     impact: 'high',
     impactScore: 9.8,
     title: 'How Russia\'s Sanctions Evasion Could Create Lasting Costs',
@@ -68,10 +68,10 @@ const sampleItems = [
     id: 'c2D',
     type: 'crudeOil',
     isGlobal: true,
-    sentiment: 'negative',
+    trend: 'upward',
     impact: 'high',
-    impactScore: 9.7,
-    title: 'Oil Gains Amid Prospects of More Sanctions Against Russia',
+    impactScore: 9.5,
+    title: 'Oil Prices Surge Amid Supply Concerns',
     description: 'Crude Oil',
     sources: 'Reuters',
     date: 'September 17, 2025 at 10:04 AM',
@@ -80,10 +80,10 @@ const sampleItems = [
     id: 'e3F',
     type: 'crudeOil',
     isGlobal: true,
-    sentiment: 'positive',
+    trend: 'downward',
     impact: 'high',
-    impactScore: 9.5,
-    title: 'Ukraine hits one of Russia\'s largest oil refining complexes with explosive drone attack',
+    impactScore: 9.3,
+    title: 'Oil Markets Weigh Russia\'s Oil-For-Food Trade Plan',
     description: 'Crude Oil',
     sources: 'Reuters',
     date: 'September 17, 2025 at 10:04 AM',
@@ -92,10 +92,10 @@ const sampleItems = [
     id: 'g4H',
     type: 'crudeOil',
     isGlobal: true,
-    sentiment: 'positive',
+    trend: 'neutral',
     impact: 'high',
-    impactScore: 9.5,
-    title: 'Ukraine hits one of Russia\'s largest oil refining complexes with explosive drone attack',
+    impactScore: 9.1,
+    title: 'US Shale Production Update',
     description: 'Crude Oil',
     sources: 'Reuters',
     date: 'September 17, 2025 at 10:04 AM',
@@ -104,10 +104,10 @@ const sampleItems = [
     id: 'i5J',
     type: 'other',
     isGlobal: true,
-    sentiment: 'neutral',
-    impact: 'medium',
-    impactScore: 5.2,
-    title: 'China - High-Tenacity Filament Yarn Of Aramids - Market Analysis, Forecast, Size, Trends And Insights Please mention',
+    trend: 'neutral',
+    impact: 'high',
+    impactScore: 8.9,
+    title: 'US Production and Consumption Trends',
     description: 'Other',
     sources: 'Reuters',
     date: 'September 17, 2025 at 10:04 AM',
@@ -116,10 +116,10 @@ const sampleItems = [
     id: 'k6L',
     type: 'crudeOil',
     isGlobal: true,
-    sentiment: 'negative',
-    impact: 'medium',
-    impactScore: 7.2,
-    title: 'Oil Holds Three-Day Gain With Focus on Russian Supply Risks',
+    trend: 'upward',
+    impact: 'high',
+    impactScore: 8.7,
+    title: 'OPEC+ Meeting Results and Market Impact',
     description: 'Crude Oil',
     sources: 'Reuters',
     date: 'September 17, 2025 at 08:35 AM',
@@ -128,10 +128,10 @@ const sampleItems = [
     id: 'm7N',
     type: 'dram',
     isGlobal: true,
-    sentiment: 'positive',
-    impact: 'medium',
-    impactScore: 6.8,
-    title: 'SK Hynix deploys High NA EUV to lead DRAM market',
+    trend: 'upward',
+    impact: 'high',
+    impactScore: 8.5,
+    title: 'China\'s Oil Demand Recovery',
     description: 'DRAM',
     sources: 'The Chosunilbo',
     date: 'September 17, 2025 at 10:04 AM',
@@ -140,10 +140,10 @@ const sampleItems = [
     id: 'o8P',
     type: 'lng',
     isGlobal: true,
-    sentiment: 'negative',
+    trend: 'downward',
     impact: 'high',
-    impactScore: 6.7,
-    title: 'Market Focus: Geopolitics, price volatility shape the path of LNG',
+    impactScore: 8.3,
+    title: 'Middle East Geopolitical Tensions',
     description: 'LNG',
     sources: 'Oil & Gas Journal',
     date: 'September 17, 2025 at 10:04 AM',
@@ -152,10 +152,10 @@ const sampleItems = [
     id: 'q9R',
     type: 'lng',
     isGlobal: true,
-    sentiment: 'negative',
+    trend: 'upward',
     impact: 'high',
-    impactScore: 6.7,
-    title: 'Market Focus: Geopolitics, price volatility shape the path of LNG',
+    impactScore: 8.1,
+    title: 'European Gas Storage Status',
     description: 'LNG',
     sources: 'Oil & Gas Journal',
     date: 'September 17, 2025 at 10:04 AM',
@@ -164,10 +164,10 @@ const sampleItems = [
     id: 's0T',
     type: 'lng',
     isGlobal: true,
-    sentiment: 'negative',
+    trend: 'downward',
     impact: 'high',
-    impactScore: 6.7,
-    title: 'Market Focus: Geopolitics, price volatility shape the path of LNG',
+    impactScore: 8.9,
+    title: 'Global Oil Price Fluctuations',
     description: 'LNG',
     sources: 'Oil & Gas Journal',
     date: 'September 17, 2025 at 10:04 AM',
@@ -176,10 +176,10 @@ const sampleItems = [
     id: 'u1V',
     type: 'lng',
     isGlobal: true,
-    sentiment: 'negative',
+    trend: 'neutral',
     impact: 'high',
-    impactScore: 6.7,
-    title: 'Market Focus: Geopolitics, price volatility shape the path of LNG',
+    impactScore: 8.7,
+    title: 'IEA Monthly Oil Report Highlights',
     description: 'LNG',
     sources: 'Oil & Gas Journal',
     date: 'September 17, 2025 at 10:04 AM',
@@ -188,10 +188,10 @@ const sampleItems = [
     id: 'w2X',
     type: 'lng',
     isGlobal: true,
-    sentiment: 'negative',
+    trend: 'upward',
     impact: 'high',
-    impactScore: 6.7,
-    title: 'Market Focus: Geopolitics, price volatility shape the path of LNG',
+    impactScore: 8.5,
+    title: 'Emerging Market Energy Demand',
     description: 'LNG',
     sources: 'Oil & Gas Journal',
     date: 'September 17, 2025 at 10:04 AM',
@@ -200,10 +200,10 @@ const sampleItems = [
     id: 'y3Z',
     type: 'lng',
     isGlobal: true,
-    sentiment: 'negative',
+    trend: 'downward',
     impact: 'high',
-    impactScore: 6.7,
-    title: 'Market Focus: Geopolitics, price volatility shape the path of LNG',
+    impactScore: 8.3,
+    title: 'US Dollar Strength and Oil Prices',
     description: 'LNG',
     sources: 'Oil & Gas Journal',
     date: 'September 17, 2025 at 10:04 AM',
@@ -212,10 +212,10 @@ const sampleItems = [
     id: 'b4C',
     type: 'lng',
     isGlobal: true,
-    sentiment: 'negative',
+    trend: 'neutral',
     impact: 'high',
-    impactScore: 6.7,
-    title: 'Market Focus: Geopolitics, price volatility shape the path of LNG',
+    impactScore: 8.1,
+    title: 'Refinery Maintenance Schedules',
     description: 'LNG',
     sources: 'Oil & Gas Journal',
     date: 'September 17, 2025 at 10:04 AM',
@@ -224,10 +224,10 @@ const sampleItems = [
     id: 'd5E',
     type: 'battery',
     isGlobal: true,
-    sentiment: 'neutral',
+    trend: 'upward',
     impact: 'high',
-    impactScore: 5.6,
-    title: 'EV battery giant CATL\'s earnings outlook brightens as it extends market share',
+    impactScore: 7.9,
+    title: 'Renewable Energy Integration',
     description: 'Battery',
     sources: 'South China Morning Post',
     date: 'September 17, 2025 at 10:04 AM',
@@ -249,11 +249,11 @@ const getFeedIcon = (type: string): string | undefined => {
   }
 }
 
-const getSentimentColor = (sentiment: string) => {
-  switch (sentiment) {
-    case 'positive':
+const getTrendColor = (trend: string) => {
+  switch (trend) {
+    case 'upward':
       return '#3386C2'
-    case 'negative':
+    case 'downward':
       return '#A02A74'
     default:
       return '#A8A8A8' // neutral
@@ -274,7 +274,7 @@ const FeedItem = ({
   const aiSummaryRef = useRef<AiSummaryHandle>(null)
   const { t } = useTranslation()
 
-  const sentimentColor = getSentimentColor(item.sentiment)
+  const trendColor = getTrendColor(item.trend)
 
   useEffect(() => {
     if (isHighlighted) {
@@ -334,9 +334,9 @@ const FeedItem = ({
           left: '0',
           right: '0',
           bottom: '0',
-          border: `2px solid ${sentimentColor}`,
+          border: `2px solid ${trendColor}`,
           borderRadius: '10px',
-          boxShadow: `0 0 0 1px ${sentimentColor}40, 0 2px 8px ${sentimentColor}30`,
+          boxShadow: `0 0 0 1px ${trendColor}40, 0 2px 8px ${trendColor}30`,
           pointerEvents: 'none',
           zIndex: 1,
           opacity: shouldFlash ? 1 : 0,
@@ -366,9 +366,9 @@ const FeedItem = ({
             </Stack>
           </CategoryChip>
         )}
-        {item.sentiment && (
+        {item.trend && (
           <CategoryChip>
-            <SentimentIcon sentiment={item.sentiment} impact={item.impact} />
+            <TrendIcon sentiment={item.trend} impact={item.impact} />
           </CategoryChip>
         )}
         {!!item.impactScore && (
