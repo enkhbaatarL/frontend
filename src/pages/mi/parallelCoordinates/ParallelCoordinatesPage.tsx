@@ -1,7 +1,6 @@
 import { Box } from '@mui/material'
 import { useEffect } from 'react'
 
-import imgPath from '@/assets/imsi/Newsletter_1440.png'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 
 const ParallelCoordinatesPage = () => {
@@ -24,7 +23,7 @@ const ParallelCoordinatesPage = () => {
           justifyContent: 'center',
         }}
       >
-        <img src={imgPath} alt={''} />
+        {/*<img src={imgPath} alt={''} />*/}
       </Box>
     </MISkeleton>
   )

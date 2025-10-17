@@ -3,7 +3,7 @@ import { Typography, Stack, Switch } from '@mui/material'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import DashboardSelect from '@/pages/mi/dashboard/components/DashboardSelect'
+import ButtonSelect from '@/components/common/select/ButtonSelect'
 
 const Toolbar = () => {
   const [selected, setSelected] = useState('')
@@ -24,7 +24,7 @@ const Toolbar = () => {
           </Typography>
           <Switch checked={false} size="small" disabled />
         </Stack>
-        <DashboardSelect
+        <ButtonSelect
           placeholder={t('dashboard.toolbar.selectWidgetPlaceholder')}
           selected={selected}
           onSelected={setSelected}
