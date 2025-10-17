@@ -1,17 +1,16 @@
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import SouthAmericaIcon from '@mui/icons-material/SouthAmerica'
-import { Box, Divider, Stack, Typography, Collapse, Fade } from '@mui/material'
-import { Fragment, ReactNode, useMemo, useState, useEffect, useRef } from 'react'
+import { Box, Divider, Stack, Typography } from '@mui/material'
+import { Fragment, useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import crudeOilIcon from '@/assets/icons/crude-oil.png'
 import evBatteryIcon from '@/assets/icons/ev-battery.png'
 import lngIcon from '@/assets/icons/lng.png'
 import semiconductorIcon from '@/assets/icons/semiconductor.png'
-import MIButton from '@/components/common/button/MIButton'
+import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/AiSummary'
+import CategoryChip from '@/pages/mi/dashboard/components/CategoryChip'
 import DashboardSelect from '@/pages/mi/dashboard/components/DashboardSelect'
 import SentimentIcon from '@/pages/mi/dashboard/components/SentimentIcon'
-import Summarizing from '@/pages/mi/dashboard/components/Summarizing'
 
 const filter1Options = [
   {
@@ -250,23 +249,6 @@ const getFeedIcon = (type: string): string | undefined => {
   }
 }
 
-const FeedIconWrapper = ({ children, padding = '0' }: { children: ReactNode; padding?: string }) => (
-  <Stack
-    alignItems="center"
-    justifyContent="center"
-    borderRadius="4px"
-    bgcolor="white"
-    border="1px solid"
-    borderColor="content.borderEnabled"
-    height={26}
-    minWidth={26}
-    boxSizing="border-box"
-    padding={padding}
-  >
-    {children}
-  </Stack>
-)
-
 const getSentimentColor = (sentiment: string) => {
   switch (sentiment) {
     case 'positive':
@@ -287,33 +269,12 @@ const FeedItem = ({
   isHighlighted?: boolean
   onRefSet?: (ref: HTMLDivElement | null) => void
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [aiSummary, setAiSummary] = useState<{ title: string; summary: string[] } | null>(null)
   const [shouldFlash, setShouldFlash] = useState(false)
-  const { t, i18n } = useTranslation()
+  const [isExpanded, setIsExpanded] = useState(false)
+  const aiSummaryRef = useRef<AiSummaryHandle>(null)
+  const { t } = useTranslation()
 
   const sentimentColor = getSentimentColor(item.sentiment)
-
-  const summary = useMemo(
-    () => ({
-      title: t('dashboard.sampleData.feed.summary.title'),
-      summary: [
-        t('dashboard.sampleData.feed.summary.summary.0'),
-        t('dashboard.sampleData.feed.summary.summary.1'),
-        t('dashboard.sampleData.feed.summary.summary.2'),
-        t('dashboard.sampleData.feed.summary.summary.3'),
-        t('dashboard.sampleData.feed.summary.summary.4'),
-      ].filter(Boolean),
-    }),
-    [t, i18n.language],
-  )
-
-  // 언어 변경 시 summary 초기화 (일본어 데모 대응 임시 코드)
-  useEffect(() => {
-    setAiSummary(null)
-    setIsExpanded(false)
-  }, [i18n.language])
 
   useEffect(() => {
     if (isHighlighted) {
@@ -330,16 +291,28 @@ const FeedItem = ({
   }, [isHighlighted])
 
   const handleClick = () => {
-    if (!aiSummary) {
-      setIsExpanded(true)
-      setIsLoading(true)
-      setTimeout(() => {
-        setIsLoading(false)
-        setAiSummary(summary)
-      }, 1000)
-    } else {
-      setIsExpanded(!isExpanded)
+    setIsExpanded((prev) => !prev)
+    aiSummaryRef.current?.toggle()
+  }
+
+  // 임시 AI 요약 조회 함수
+  const fetchFeedSummary = async (): Promise<AiSummaryData> => {
+    const summaryData: AiSummaryData = {
+      title: t('dashboard.sampleData.feed.summary.title'),
+      summary: [
+        t('dashboard.sampleData.feed.summary.summary.0'),
+        t('dashboard.sampleData.feed.summary.summary.1'),
+        t('dashboard.sampleData.feed.summary.summary.2'),
+        t('dashboard.sampleData.feed.summary.summary.3'),
+        t('dashboard.sampleData.feed.summary.summary.4'),
+      ].filter(Boolean),
     }
+
+    return new Promise<AiSummaryData>((resolve) => {
+      setTimeout(() => {
+        resolve(summaryData)
+      }, 1000)
+    })
   }
 
   return (
@@ -379,31 +352,31 @@ const FeedItem = ({
     >
       <Stack direction="row" gap="8px">
         {getFeedIcon(item.type) && (
-          <FeedIconWrapper>
+          <CategoryChip>
             <Box component="img" width={22} height={22} src={getFeedIcon(item.type)} alt={item.type} />
-          </FeedIconWrapper>
+          </CategoryChip>
         )}
         {item.isGlobal && (
-          <FeedIconWrapper padding="6px 8px 6px 6px">
+          <CategoryChip padding="6px 8px 6px 6px">
             <Stack direction="row" alignItems="center" gap="4px">
               <SouthAmericaIcon sx={{ fontSize: 16, color: 'content.iconEnabled' }} />
               <Typography variant="labelText" color="content.textNormal">
                 Global
               </Typography>
             </Stack>
-          </FeedIconWrapper>
+          </CategoryChip>
         )}
         {item.sentiment && (
-          <FeedIconWrapper>
+          <CategoryChip>
             <SentimentIcon sentiment={item.sentiment} impact={item.impact} />
-          </FeedIconWrapper>
+          </CategoryChip>
         )}
         {!!item.impactScore && (
-          <FeedIconWrapper padding="6px 8px">
+          <CategoryChip padding="6px 8px">
             <Typography variant="body2SB14" color="content.textNormal">
               {item.impactScore}
             </Typography>
-          </FeedIconWrapper>
+          </CategoryChip>
         )}
       </Stack>
       <Stack py="8px">
@@ -426,78 +399,7 @@ const FeedItem = ({
           </Typography>
         </Stack>
       </Stack>
-
-      <Collapse
-        in={isExpanded}
-        timeout={300}
-        sx={{
-          '& .MuiCollapse-wrapper': {
-            transition: 'height 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms',
-          },
-        }}
-      >
-        <Box>
-          {isLoading ? (
-            <Box pr="24px">
-              <Summarizing />
-            </Box>
-          ) : (
-            <Box>
-              <Fade in={!!aiSummary} timeout={800}>
-                <Stack pt="10px" gap="6px">
-                  <Typography variant="body1B16" color="content.textNormal">
-                    {aiSummary?.title}
-                  </Typography>
-                  <Stack pl="22px">
-                    {aiSummary?.summary.map((summary, index) => (
-                      <Typography
-                        key={index}
-                        variant="body1M16"
-                        color="content.textNormal"
-                        lineHeight={1.4}
-                        sx={{
-                          textIndent: '-14px',
-                          '&::before': {
-                            content: '"•"',
-                            marginRight: '6px',
-                            color: 'gray.70',
-                          },
-                        }}
-                      >
-                        {summary}
-                      </Typography>
-                    ))}
-                  </Stack>
-                  <Stack direction="row" justifyContent="space-between" mt="14px">
-                    <Stack direction="row" alignItems="center" boxSizing="border-box" gap="4px">
-                      <InfoOutlinedIcon sx={{ fontSize: 16, color: 'contentText.Subtext' }} />
-                      <Typography variant="subtext2" color="contentText.Subtext">
-                        {t('dashboard.feed.summary.aiDescription')}
-                      </Typography>
-                    </Stack>
-                    <MIButton
-                      width="100%"
-                      color="gray"
-                      type="outlined"
-                      contentType="text"
-                      size="h28"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                      }}
-                    >
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="subtext3" color="content.textNormal">
-                          View Original
-                        </Typography>
-                      </Box>
-                    </MIButton>
-                  </Stack>
-                </Stack>
-              </Fade>
-            </Box>
-          )}
-        </Box>
-      </Collapse>
+      <AiSummary ref={aiSummaryRef} fetchSummary={fetchFeedSummary} />
     </Stack>
   )
 }

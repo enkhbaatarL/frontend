@@ -1,6 +1,7 @@
 import SouthAmericaIcon from '@mui/icons-material/SouthAmerica'
 import { Box, Divider, Stack, Typography } from '@mui/material'
-import { ReactNode, useState } from 'react'
+import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import topicSampleImg1 from '@/assets/dashboard/temp/topic-sample1.png'
@@ -10,6 +11,8 @@ import topicSampleImg4 from '@/assets/dashboard/temp/topic-sample4.png'
 import topicTrackerIcon from '@/assets/dashboard/topic-tracker.svg'
 import MIButton from '@/components/common/button/MIButton'
 import MITopic from '@/components/common/topic/MITopic'
+import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/AiSummary'
+import CategoryChip from '@/pages/mi/dashboard/components/CategoryChip'
 import DashboardCard from '@/pages/mi/dashboard/components/DashboardCard'
 
 const topics = [
@@ -112,33 +115,42 @@ const sampleData = [
   },
 ]
 
-const IconWrapper = ({ children, padding = '0' }: { children: ReactNode; padding?: string }) => (
-  <Stack
-    alignItems="center"
-    justifyContent="center"
-    borderRadius="4px"
-    bgcolor="white"
-    border="1px solid"
-    borderColor="content.borderEnabled"
-    height={26}
-    minWidth={26}
-    boxSizing="border-box"
-    padding={padding}
-    overflow="hidden"
-  >
-    {children}
-  </Stack>
-)
-
 const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
+  const aiSummaryRef = useRef<AiSummaryHandle>(null)
+  const { t } = useTranslation()
+
   const getIcon = (topicValue: string) => {
     const topic = topics.find(({ value }) => value === topicValue)
     return topic?.image
   }
 
+  const handleClick = () => {
+    aiSummaryRef.current?.toggle()
+  }
+
+  // 임시 AI 요약 조회 함수
+  const fetchTopicSummary = async (): Promise<AiSummaryData> => {
+    const summaryData: AiSummaryData = {
+      title: t('dashboard.sampleData.feed.summary.title'),
+      summary: [
+        t('dashboard.sampleData.feed.summary.summary.0'),
+        // t('dashboard.sampleData.feed.summary.summary.1'),
+        t('dashboard.sampleData.feed.summary.summary.2'),
+        // t('dashboard.sampleData.feed.summary.summary.3'),
+        // t('dashboard.sampleData.feed.summary.summary.4'),
+      ].filter(Boolean),
+    }
+
+    return new Promise<AiSummaryData>((resolve) => {
+      setTimeout(() => {
+        resolve(summaryData)
+      }, 1000)
+    })
+  }
+
   return (
-    <Stack py="12px">
-      <Stack direction="row">
+    <Stack py="12px" sx={{ cursor: 'pointer', userSelect: 'none' }}>
+      <Stack direction="row" onClick={handleClick}>
         <Stack width="60px" alignItems="center" gap="8px" flexShrink={0}>
           <Stack>
             <Typography variant="body1M16" color="contentText.Normal">
@@ -152,17 +164,17 @@ const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
         </Stack>
         <Stack px="8px" flex={1} overflow="hidden">
           <Stack direction="row" gap="8px">
-            <IconWrapper>
+            <CategoryChip>
               <Box component="img" src={getIcon(item.topic) ?? ''} />
-            </IconWrapper>
-            <IconWrapper padding="6px 8px 6px 6px">
+            </CategoryChip>
+            <CategoryChip padding="6px 8px 6px 6px">
               <Stack direction="row" alignItems="center" gap="4px">
                 <SouthAmericaIcon sx={{ fontSize: 16, color: 'content.iconEnabled' }} />
                 <Typography variant="labelText" color="content.textNormal">
                   {item.region}
                 </Typography>
               </Stack>
-            </IconWrapper>
+            </CategoryChip>
           </Stack>
           <Stack py="12px" gap="4px">
             <Typography
@@ -188,6 +200,7 @@ const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
               </Typography>
             </Stack>
           </Stack>
+          <AiSummary ref={aiSummaryRef} fetchSummary={fetchTopicSummary} />
         </Stack>
       </Stack>
     </Stack>

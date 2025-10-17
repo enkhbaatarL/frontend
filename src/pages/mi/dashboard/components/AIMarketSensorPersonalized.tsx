@@ -8,7 +8,7 @@ import SensorItem, { SensorItemData } from './SensorItem'
 
 import aiMarketSensorIcon from '@/assets/dashboard/ai-market-sensor.svg'
 import MIButton from '@/components/common/button/MIButton'
-import CategoryChip from '@/pages/mi/dashboard/components/CategoryChip'
+import CategoryChipOld from '@/pages/mi/dashboard/components/CategoryChipOld'
 interface CategoryChipData {
   id: string
   name: string
@@ -42,7 +42,7 @@ const CategorySection = () => {
       }}
     >
       {categories.map((category) => (
-        <CategoryChip
+        <CategoryChipOld
           key={category.id}
           name={category.name}
           isActive={category.isActive}
