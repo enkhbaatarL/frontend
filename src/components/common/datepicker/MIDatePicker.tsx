@@ -80,8 +80,9 @@ const MIInputAdornment = (props: InputAdornmentProps) => {
   )
 }
 
-export default function MIDatePicker(props: DatePickerProps<Dayjs> & { size?: 'h26' | 'h34' | 'h36' }) {
+export default function MIDatePicker(props: DatePickerProps<Dayjs> & { size?: 'h26' | 'h28' | 'h34' | 'h36' }) {
   const today = dayjs()
+  const { value, ...restProps } = props
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -117,10 +118,11 @@ export default function MIDatePicker(props: DatePickerProps<Dayjs> & { size?: 'h
             sx: { ...datePickerTextStyleSx(props.size) },
           },
         }}
-        defaultValue={today}
+        value={value}
+        defaultValue={value === undefined ? today : undefined}
         format="YYYY-MM-DD"
         views={['year', 'month', 'day']}
-        {...props}
+        {...restProps}
       />
     </LocalizationProvider>
   )

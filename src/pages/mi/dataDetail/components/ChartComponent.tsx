@@ -10,6 +10,7 @@ import MIButton from '@/components/common/button/MIButton'
 import MIChart, { DisplayDataInfo } from '@/components/common/chart/MIChart'
 import MIChartController from '@/components/common/chart/MIChartController'
 import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
+import useSnackbar from '@/hooks/useSnackbar'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import { UserRole } from '@/service/admin/members'
 import dataDetailService, {
@@ -88,43 +89,43 @@ const ChartComponent = ({
     () => [
       ...(displayDataInfo.BB
         ? [
-            {
-              chartConditionCd: 'INDICATOR',
-              chartConditionVal: 'BB',
-            },
-          ]
+          {
+            chartConditionCd: 'INDICATOR',
+            chartConditionVal: 'BB',
+          },
+        ]
         : []),
       ...(displayDataInfo.MA.MA5
         ? [
-            {
-              chartConditionCd: 'INDICATOR',
-              chartConditionVal: 'MA_5',
-            },
-          ]
+          {
+            chartConditionCd: 'INDICATOR',
+            chartConditionVal: 'MA_5',
+          },
+        ]
         : []),
       ...(displayDataInfo.MA.MA20
         ? [
-            {
-              chartConditionCd: 'INDICATOR',
-              chartConditionVal: 'MA_20',
-            },
-          ]
+          {
+            chartConditionCd: 'INDICATOR',
+            chartConditionVal: 'MA_20',
+          },
+        ]
         : []),
       ...(displayDataInfo.MA.MA60
         ? [
-            {
-              chartConditionCd: 'INDICATOR',
-              chartConditionVal: 'MA_60',
-            },
-          ]
+          {
+            chartConditionCd: 'INDICATOR',
+            chartConditionVal: 'MA_60',
+          },
+        ]
         : []),
       ...(displayDataInfo.MA.MA120
         ? [
-            {
-              chartConditionCd: 'INDICATOR',
-              chartConditionVal: 'MA_120',
-            },
-          ]
+          {
+            chartConditionCd: 'INDICATOR',
+            chartConditionVal: 'MA_120',
+          },
+        ]
         : []),
     ],
     [displayDataInfo],
@@ -140,6 +141,7 @@ const ChartComponent = ({
   )
 
   const { user } = useAuthStore()
+  const { showSnackbar } = useSnackbar()
 
   const selectedDataSourceOption = useMemo(
     () => ({
@@ -198,9 +200,9 @@ const ChartComponent = ({
         ?.map((chart, index) =>
           !hideComparisonChartIndexList.includes(index)
             ? {
-                chartConditionCd: 'COMP_DATA_SOURCE',
-                chartConditionVal: String(chart.goodsDataSourceNo),
-              }
+              chartConditionCd: 'COMP_DATA_SOURCE',
+              chartConditionVal: String(chart.goodsDataSourceNo),
+            }
             : null,
         )
         .filter((item): item is IProductDataStructuredChartPersonalizationRequest => item !== null) ?? [],
@@ -258,9 +260,37 @@ const ChartComponent = ({
     }
   }, [indicatorLastSetting, comparisonLastSettings, useSaveLastSetting])
 
-  const handleDateChange = ({ startDate, endDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
-    setStartDate(startDate?.format('YYYYMMDD') ?? '')
-    setEndDate(endDate?.format('YYYYMMDD') ?? '')
+  const handleDateChange = ({ startDate: newStartDate, endDate: newEndDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
+    if (!newStartDate) {
+      showSnackbar('시작일을 선택해주세요.', {
+        variant: 'error',
+      })
+      return
+    }
+
+    if (!newEndDate) {
+      showSnackbar('종료일을 선택해주세요.', {
+        variant: 'error',
+      })
+      return
+    }
+
+    if (newStartDate.isAfter(newEndDate)) {
+      showSnackbar('시작일은 종료일보다 이전이어야 합니다.', {
+        variant: 'error',
+      })
+      return
+    }
+
+    if (newStartDate.isBefore(dayjs().subtract(3, 'year'))) {
+      showSnackbar('조회 가능한 최대 기간은 3년입니다.', {
+        variant: 'error',
+      })
+      return
+    }
+
+    setStartDate(newStartDate?.format('YYYYMMDD') ?? '')
+    setEndDate(newEndDate?.format('YYYYMMDD') ?? '')
   }
 
   const handleRangeChange = (range: ChartRange) => {
@@ -548,8 +578,14 @@ const ChartComponent = ({
             </MIButton>
           ))}
           {searchFilter.range === ChartRange.CUSTOM && (
-            <Grid container maxWidth={357} wrap={'nowrap'} alignItems={'center'} direction={'row'} ml={2.5}>
-              <MIDateRangePicker sizeInput={'h26'} onChange={handleDateChange} startDate={startDate} endDate={endDate} />
+            <Grid container maxWidth={364} wrap={'nowrap'} alignItems={'center'} direction={'row'} ml={2.5}>
+              <MIDateRangePicker
+                sizeInput={'h28'}
+                onChange={handleDateChange}
+                startDate={startDate ? dayjs(startDate) : undefined}
+                endDate={endDate ? dayjs(endDate) : undefined}
+                useApplyButton
+              />
             </Grid>
           )}
           <Typography ml={'auto'} variant={'body3M12'} color={'gray.60'}>
