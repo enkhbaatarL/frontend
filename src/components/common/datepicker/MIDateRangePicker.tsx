@@ -71,6 +71,9 @@ export default function MIDateRangePicker({
   const handleApply = () => {
     onChange?.({ startDate: internalStartDate, endDate: internalEndDate })
   }
+
+  const isApplyEnabled = useApplyButton && internalStartDate && internalEndDate
+
   return (
     <Flex direction="row" align="center" gap={8}>
       <MIDatePicker
@@ -92,7 +95,7 @@ export default function MIDateRangePicker({
         minDate={useApplyButton ? internalStartDate : dateValues.startDate}
       />
       {useApplyButton && (
-        <MIButton type="filled" size="h28" onClick={handleApply}>
+        <MIButton type="filled" size="h28" onClick={handleApply} disabled={!isApplyEnabled}>
           Apply
         </MIButton>
       )}
