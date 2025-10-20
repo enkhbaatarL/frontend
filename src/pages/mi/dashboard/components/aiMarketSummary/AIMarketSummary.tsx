@@ -1,6 +1,7 @@
 import { Box, Stack } from '@mui/material'
 
 import AiSummaryIcon from '@/assets/dashboard/ai-summary.svg'
+import audioFile from '@/assets/dashboard/temp/empty_audio.wav'
 import ContentReader from '@/pages/mi/dashboard/components/aiMarketSummary/ContentReader'
 import KeyEconomicIndicators from '@/pages/mi/dashboard/components/aiMarketSummary/KeyEconomicIndicators'
 import MarketRecap from '@/pages/mi/dashboard/components/aiMarketSummary/MarketRecap'
@@ -20,7 +21,7 @@ const AIMarketSummary = ({ period = '24H', dateRange = 'Sep 14 07:00 - Sep 15 07
       <Stack direction="row" alignItems="center" gap={'6px'}>
         AI Market Summary
         <Box ml="6px">
-          <ContentReader />
+          <ContentReader audioUrl={audioFile} />
         </Box>
       </Stack>
     }
