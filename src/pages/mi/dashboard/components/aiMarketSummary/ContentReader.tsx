@@ -104,7 +104,7 @@ const ContentReader = ({ audioUrl }: ContentReaderProps) => {
   const getWidth = () => {
     if (isPlaying || isPaused) return '210px' // 재생바
     if (isShowListen) return '92px' // Listen 표시
-    return '36px'
+    return '38px'
   }
 
   return (
@@ -230,7 +230,7 @@ const ContentReader = ({ audioUrl }: ContentReaderProps) => {
                 },
                 '& .MuiSlider-track': {
                   backgroundColor: '#364FC7',
-                  height: 4,
+                  height: 2,
                   borderRadius: 2,
                 },
                 '& .MuiSlider-rail': {
