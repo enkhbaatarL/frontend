@@ -12,9 +12,9 @@ const getTooltipLabel = (value: number) => {
   if (value === -1.0) return 'Strong Negative'
   if (value === -0.7) return 'Moderate Negative'
   if (value === -0.3) return 'Weak Negative'
-  if (value === 0) return 'Weak Positive'
-  if (value === 0.3) return 'Moderate Positive'
-  if (value === 0.7) return 'Strong Positive'
+  if (value === 0) return 'Neutral'
+  if (value === 0.3) return 'Weak Positive'
+  if (value === 0.7) return 'Moderate Positive'
   return 'Strong Positive'
 }
 
@@ -29,18 +29,19 @@ export default function MIColorRange(props: Readonly<MIColorRangeProps>) {
           <Box
             key={`label-${index}`}
             sx={{
-              width: '48px',
+              width: '47px',
               textAlign: 'center',
               height: '20px',
+              marginLeft: '-5px' 
             }}
           >
             {index === 1 && (
-              <Typography variant="body3" color="#868E96" sx={{ marginLeft: '-16px' }}>
+              <Typography variant="body3" color="#868E96" sx={{ marginLeft: '-70px' }}>
                 Negative
               </Typography>
             )}
             {index === data.length - 1 && (
-              <Typography variant="body3" color="#868E96">
+              <Typography variant="body3" color="#868E96" sx={{ marginLeft: '24px' }}>
                 Positive
               </Typography>
             )}
@@ -48,10 +49,10 @@ export default function MIColorRange(props: Readonly<MIColorRangeProps>) {
         ))}
       </Box>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '1px', marginLeft: '50px' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
         {data.map((value, index) => (
-          <Box key={index} sx={{ textAlign: 'center' }}>
-            {index < data.length - 1 ? (
+          <Box key={index} sx={{ textAlign: 'center' }} >
+            {index < data.length  ? (
               <Tooltip title={getTooltipLabel(value)} arrow>
                 <Box>
                   <MIColorBox value={value} />
@@ -65,7 +66,16 @@ export default function MIColorRange(props: Readonly<MIColorRangeProps>) {
               color="#868E96"
               sx={{
                 marginTop: '6px',
-                marginLeft: index < data.length - 1 ? '-44.83px' : '-15px',
+                // marginLeft: index < data.length - 1 ? '-48px'  : '30px',
+                marginLeft: {
+                  0: '-24px',
+                  1: '-15px',
+                  2: '-5px',
+                  3: '0px',
+                  4: '5px',
+                  5: '15px',
+                  6: '21px'
+                }[index],
               }}
             >
               {formatNumberToDecimal(value)}
@@ -76,3 +86,4 @@ export default function MIColorRange(props: Readonly<MIColorRangeProps>) {
     </Box>
   )
 }
+

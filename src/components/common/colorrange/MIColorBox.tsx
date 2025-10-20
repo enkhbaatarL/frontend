@@ -8,13 +8,14 @@ export interface MIChipProps {
 const MIColorBox = (props: MIChipProps) => {
   const { value } = props
   const color = useMemo(() => {
-    if (value < -0.7) return '#B52837'
-    if (value < -0.3) return '#C7515E'
-    if (value < 0) return '#CB989E'
-    if (value < 0.3) return '#99B5AE'
-    if (value < 0.7) return '#3F9E80'
+    if (value < -0.7) return '#6B2935'
+    if (value < -0.3) return '#983846'
+    if (value < 0) return '#C74659'
+    if (value === 0) return '#5D636A'
+    if (value < 0.4 ) return '#459578' 
+    if (value < 0.8) return '#397964'
 
-    return '#006F4E'
+    return '#29584A'
   }, [value])
 
   return (
@@ -28,29 +29,11 @@ const MIColorBox = (props: MIChipProps) => {
         justifyContent: 'center',
         flexDirection: 'column',
         position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          right: '-1px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: '1px',
-          height: '16px',
-          backgroundColor: '#CED4DA',
-        },
-        '&:first-of-type::after': {
-          content: '""',
-          position: 'absolute',
-          left: '-1px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: '1px',
-          height: '16px',
-          backgroundColor: '#CED4DA',
-        },
+        
       }}
     ></Box>
   )
 }
 
 export default MIColorBox
+
