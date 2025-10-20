@@ -282,7 +282,7 @@ const ChartComponent = ({
       return
     }
 
-    if (newStartDate.isBefore(dayjs().subtract(3, 'year'))) {
+    if (newStartDate.isBefore(newEndDate.subtract(3, 'year'))) {
       showSnackbar('조회 가능한 최대 기간은 3년입니다.', {
         variant: 'error',
       })
