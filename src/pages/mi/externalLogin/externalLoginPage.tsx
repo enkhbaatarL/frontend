@@ -116,11 +116,18 @@ const ExternalLoginPage = () => {
   }, [])
 
   return (
-    <Box width="100vw" height="100vh" display="flex" alignItems="center" justifyContent="center" sx={{ backgroundColor: '#FFFFFF' }}>
+    <Box
+      width="100vw"
+      height="100vh"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      sx={{ backgroundColor: '#FFFFFF', userSelect: 'none' }}
+    >
       <Box width="452px" display="flex" flexDirection="column" alignItems="center" gap="45px">
         <Box display="flex" flexDirection="column" alignItems="center" gap="24px">
           <Box width="52px" height="52px" display="flex" alignItems="center" justifyContent="center">
-            <img src={logoImg} alt="AI Market Insights" height="52" />
+            <img src={logoImg} alt="AI Market Insights" height="52" draggable={false} />
           </Box>
           {/* <Typography
             fontFamily="'Source Serif Pro', serif"

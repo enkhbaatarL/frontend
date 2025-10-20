@@ -11,7 +11,7 @@ import authService from '@/service/common/auth'
 import useAuthStore from '@/store/useAuthStore'
 
 const LoginPage = () => {
-  const { isProd, isLocal } = useEnvironment()
+  const { isProd, isLocal, isExternal } = useEnvironment()
 
   const navigate = useNavigate()
   const { setUser, setToken, clearAuth } = useAuthStore()
@@ -26,13 +26,13 @@ const LoginPage = () => {
     return isLocal || isDevAuthenticated
   })
 
-  const ssoLogin = () => {
-    window.location.href = '/api/v1/saml2/login/user'
-  }
+  const ssoLogin = useCallback(() => {
+    globalThis.location.href = '/api/v1/saml2/login/user'
+  }, [])
 
-  const externalAccessLogin = () => {
+  const externalAccessLogin = useCallback(() => {
     navigate('/login')
-  }
+  }, [navigate])
 
   const setUserInfo = useCallback(
     async (token: string) => {
@@ -63,9 +63,19 @@ const LoginPage = () => {
     clearAuth()
   }, [])
 
-  if (isProd) {
-    // TODO: external login 케이스의 경우 externalAccessLogin() 실행 필요
-    ssoLogin()
+  useEffect(() => {
+    if (isExternal) {
+      externalAccessLogin()
+    }
+  }, [isExternal, externalAccessLogin])
+
+  useEffect(() => {
+    if (isProd) {
+      ssoLogin()
+    }
+  }, [isProd, ssoLogin])
+
+  if (isExternal || isProd) {
     return null
   }
 
