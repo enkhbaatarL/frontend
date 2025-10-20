@@ -120,30 +120,32 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
 
     const gradient = ctxRef.current.createLinearGradient(x, y, x + width, y + height)
 
+    
+
     if (change === 0) {
-      gradient.addColorStop(0, '#DEDEDE')
-      gradient.addColorStop(1, '#DEDEDE')
+      gradient.addColorStop(0, '#5D636A')
+      gradient.addColorStop(1, '#5D636A')
     } else if (change < 0) {
-      if (change > -0.4) {
-        gradient.addColorStop(0, '#C2AAAD')
-        gradient.addColorStop(1, '#AD8389')
+      if (change > -0.3) {
+        gradient.addColorStop(0, '#C74659')
+        gradient.addColorStop(1, '#C74659')
       } else if (change > -0.7) {
-        gradient.addColorStop(0, '#C7515E')
-        gradient.addColorStop(1, '#99323D')
+        gradient.addColorStop(0, '#983846')
+        gradient.addColorStop(1, '#983846')
       } else {
-        gradient.addColorStop(0, '#B32332')
-        gradient.addColorStop(1, '#77131E')
+        gradient.addColorStop(0, '#6B2935')
+        gradient.addColorStop(1, '#6B2935')
       }
     } else if (change > 0) {
-      if (change < 0.4) {
-        gradient.addColorStop(0, '#99B5AE')
-        gradient.addColorStop(1, '#6A867F')
+      if (change < 0.3) {
+        gradient.addColorStop(0, '#459578')
+        gradient.addColorStop(1, '#459578')
       } else if (change < 0.7) {
-        gradient.addColorStop(0, '#3F9E80')
-        gradient.addColorStop(1, '#277F64')
+        gradient.addColorStop(0, '#397964')
+        gradient.addColorStop(1, '#397964')
       } else {
-        gradient.addColorStop(0, '#006F4E')
-        gradient.addColorStop(1, '#09543C')
+        gradient.addColorStop(0, '#29584A')
+        gradient.addColorStop(1, '#29584A')
       }
     }
 
@@ -313,3 +315,5 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
 }
 
 export default MISignalMap
+
+
