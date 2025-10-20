@@ -49,7 +49,12 @@ const filter1Options = [
 
 const filter2Options = [{ label: 'Filters', value: 'filters' }]
 
-const filter3Options = [{ label: 'Highest', value: 'highest' }]
+const filter3Options = [
+  { label: 'Highest', value: 'highest' },
+  { label: 'Lowest', value: 'lowest' },
+  { label: 'Newest', value: 'newest' },
+  { label: 'Oldest', value: 'oldest' },
+]
 
 const sampleItems = [
   {
@@ -445,7 +450,6 @@ const Feed = ({ selectedItemId, onItemHighlighted }: { selectedItemId?: string |
         <Stack direction="row" gap="8px">
           <ButtonSelect
             variant="outlined"
-            selectType="none"
             selected={filter1}
             onSelected={setFilter1}
             items={filter1Options}
@@ -459,14 +463,15 @@ const Feed = ({ selectedItemId, onItemHighlighted }: { selectedItemId?: string |
             onSelected={setFilter2}
             items={filter2Options}
             sx={{ minWidth: 100 }}
+            menuPosition="left"
           />
           <ButtonSelect
             variant="outlined"
-            selectType="none"
             selected={filter3}
             onSelected={setFilter3}
             items={filter3Options}
             sx={{ minWidth: 110 }}
+            menuPosition="left"
           />
         </Stack>
       </Stack>

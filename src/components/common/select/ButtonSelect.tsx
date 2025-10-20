@@ -1,6 +1,6 @@
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
 import { Button, Box, Typography, Stack, Switch, ButtonProps, Paper, ClickAwayListener, PaperProps } from '@mui/material'
-import { ReactNode, useMemo, useRef, useState } from 'react'
+import { ReactNode, useMemo, useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import CheckIcon from '@/components/common/icons/agent/CheckIcon'
@@ -43,11 +43,76 @@ const ButtonSelect = ({
 }: Props) => {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const [isPositioned, setIsPositioned] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
+  const [menuStyles, setMenuStyles] = useState<{ top: number; left?: number; right?: number; width?: number }>({
+    top: 0,
+  })
 
-  const menuAnchorRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
-  const handleClick = () => setOpen(!open)
-  const handleClose = () => setOpen(false)
+  const handleClose = () => {
+    setIsClosing(true)
+    setTimeout(() => {
+      setOpen(false)
+      setIsPositioned(false)
+      setIsClosing(false)
+    }, 150)
+  }
+
+  const handleClick = () => {
+    if (open) {
+      handleClose()
+    } else {
+      setOpen(true)
+      setIsClosing(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!open || !buttonRef.current) {
+      return undefined
+    }
+
+    const updatePosition = () => {
+      const rect = buttonRef.current?.getBoundingClientRect()
+      if (rect) {
+        const styles: { top: number; left?: number; right?: number; width?: number } = {
+          top: rect.bottom,
+        }
+
+        if (menuPosition === 'left') {
+          styles.left = rect.left + menuPositionOffset
+        } else {
+          styles.right = window.innerWidth - rect.right + menuPositionOffset
+        }
+
+        if (fitMenuWidth) {
+          styles.width = rect.width - 2
+        }
+
+        setMenuStyles(styles)
+        setIsPositioned(true)
+      }
+    }
+
+    updatePosition()
+
+    const handelScrollClose = () => {
+      updatePosition()
+      if (open && !isClosing) {
+        handleClose()
+      }
+    }
+
+    window.addEventListener('scroll', handelScrollClose, true)
+    window.addEventListener('resize', handelScrollClose)
+
+    return () => {
+      window.removeEventListener('scroll', handelScrollClose, true)
+      window.removeEventListener('resize', handelScrollClose)
+    }
+  }, [open, menuPosition, menuPositionOffset, fitMenuWidth, isClosing])
 
   const handleMultipleToggle = (value: string) => {
     const currentArray = Array.isArray(selected) ? selected : [selected]
@@ -96,10 +161,26 @@ const ButtonSelect = ({
     ))
   }, [selected, items, placeholder, t, multiple])
 
+  const getMenuOpacity = () => {
+    if (isClosing) return 0
+    if (isPositioned) return 1
+    return 0
+  }
+
+  const getMenuTransition = () => {
+    if (isClosing) return 'opacity 0.15s ease-out'
+    if (isPositioned) return 'opacity 0.1s ease-in'
+    return 'none'
+  }
+
+  const menuOpacity = getMenuOpacity()
+  const menuTransition = getMenuTransition()
+
   return (
     <Box sx={{ position: 'relative' }}>
       <Stack direction="row" alignItems="center">
         <Button
+          ref={buttonRef}
           onClick={handleClick}
           endIcon={open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
           variant={variant}
@@ -136,28 +217,30 @@ const ButtonSelect = ({
             {selectedItemsLabel}
           </Typography>
         </Button>
-        <Box ref={menuAnchorRef} />
       </Stack>
       {open && (
         <ClickAwayListener onClickAway={handleClose}>
           <Paper
             {...paperProps}
             sx={{
-              position: 'absolute',
-              top: '100%',
-              left: menuPosition === 'left' ? 0 + menuPositionOffset : 'auto',
-              right: menuPosition === 'right' ? 0 + menuPositionOffset : 'auto',
+              position: 'fixed',
+              top: `${menuStyles.top}px`,
+              left: menuStyles.left !== undefined ? `${menuStyles.left}px` : 'auto',
+              right: menuStyles.right !== undefined ? `${menuStyles.right}px` : 'auto',
+              minWidth: menuStyles.width !== undefined ? `${menuStyles.width}px` : 'auto',
               zIndex: 900,
-              minWidth: fitMenuWidth ? 'calc(100% - 2px)' : 'auto',
               boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
               borderRadius: '4px',
               overflow: 'hidden',
               border: '1px solid',
               borderColor: 'gray.20',
+              opacity: menuOpacity,
+              transition: menuTransition,
+              userSelect: 'none',
               ...paperProps?.sx,
             }}
           >
-            <Box sx={{ padding: '8px 0' }}>
+            <Stack gap="8px" sx={{ padding: '12px' }}>
               {items.map(({ label, value, disabled }) => {
                 const isSelected = selected.includes(value)
 
@@ -165,8 +248,9 @@ const ButtonSelect = ({
                   <Box
                     key={value}
                     onClick={() => (disabled ? null : handleToggle(value))}
+                    borderRadius="10px"
                     sx={{
-                      padding: '8px 12px',
+                      padding: '6px 12px',
                       cursor: disabled ? 'not-allowed' : 'pointer',
                       '&:hover': {
                         backgroundColor: disabled ? 'transparent' : 'gray.10',
@@ -174,7 +258,15 @@ const ButtonSelect = ({
                       textWrap: 'nowrap',
                     }}
                   >
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" gap="12px" component="div">
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      width="100%"
+                      minWidth={(props.sx as Record<string, unknown>)?.minWidth as string | number}
+                      gap="12px"
+                      component="div"
+                    >
                       <Typography
                         variant="body2M14"
                         color={isSelected ? 'gray.70' : 'gray.60'}
@@ -187,7 +279,11 @@ const ButtonSelect = ({
                       >
                         {label}
                       </Typography>
-                      {selectType === 'default' && !multiple && isSelected && <CheckIcon style={{ color: 'gray.70' }} />}
+                      {selectType === 'default' && !multiple && (
+                        <Box width="20px" height="20px">
+                          {isSelected && <CheckIcon fill="gray.70" />}
+                        </Box>
+                      )}
                       {selectType === 'switch' && (
                         <Switch
                           checked={isSelected}
@@ -202,7 +298,7 @@ const ButtonSelect = ({
                   </Box>
                 )
               })}
-            </Box>
+            </Stack>
           </Paper>
         </ClickAwayListener>
       )}
