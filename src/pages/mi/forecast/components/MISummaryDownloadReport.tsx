@@ -95,10 +95,10 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
       // TODO: 시연 후 제거 필요
       // 일본어일 때 특정 PDF 파일 다운로드
       if (i18n.language === 'ja') {
-        const response = await fetch('/temp/Dubai Crude Outlook (2025.08.22).pdf')
+        const response = await fetch('/temp/DubaiCrudeReport.pdf')
         if (response.ok) {
           const blob = await response.blob()
-          downloadFile(blob, 'Dubai Crude Outlook (2025.08.22).pdf')
+          downloadFile(blob, 'DubaiCrudeReport.pdf')
         } else {
           console.error('PDF file not found')
         }
