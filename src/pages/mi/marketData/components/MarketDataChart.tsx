@@ -338,7 +338,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
             chart: any,
             allLabels: Array<{ x: number; y: number; text: string; color: string; isMain: boolean; isMin: boolean }>,
           ) {
-            const { ctx, chartArea } = chart
+              const { ctx, chartArea } = chart
 
             const groupedLabels = new Map<
               number,
@@ -356,8 +356,8 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
             groupedLabels.forEach((labels) => {
               if (labels.length === 1) {
                 const label = labels[0]
-                ctx.save()
-                ctx.font = '600 14px Pretendard, sans-serif'
+              ctx.save()
+              ctx.font = '600 14px Pretendard, sans-serif'
                 ctx.fillStyle = label.color
                 ctx.textAlign = 'center'
                 ctx.textBaseline = 'bottom'
@@ -580,47 +580,47 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
 
   const displayData = locked
     ? {
-        mainChart: {
-          specificIndicatorName: 'CURRENT',
-          rawData: dummyChartData.mainChart.map((value, index) => ({
+      mainChart: {
+        specificIndicatorName: 'CURRENT',
+        rawData: dummyChartData.mainChart.map((value, index) => ({
+          date: String(index),
+          value,
+        })),
+      },
+      compareCharts: [
+        {
+          specificIndicatorName: 'PAST_5Y_AVG',
+          rawData: dummyChartData.compareCharts.map((value, index) => ({
             date: String(index),
             value,
           })),
         },
-        compareCharts: [
-          {
-            specificIndicatorName: 'PAST_5Y_AVG',
-            rawData: dummyChartData.compareCharts.map((value, index) => ({
-              date: String(index),
-              value,
-            })),
-          },
+      ],
+      isPermitted: false,
+      marketMetaData: {
+        chartMarkRank: 0,
+        goodsNo: 0,
+        goodsDataNo: 0,
+        goodsDataSourceNo: 0,
+        goodsDataNm: '',
+        goodsDataSourceNm: '',
+        currency: '',
+        currentUnitCd: '',
+        visibleChartType: '',
+        interval: '',
+        lastUpdateDt: '',
+        indexStartDt: '',
+        lastValue: 0,
+        yoyChangeRate: 0,
+        momChangeRate: 0,
+        wowChangeRate: 0,
+        dodChangeRate: 0,
+        changeRates: [
+          { label: 'DoD', value: 0 },
+          { label: 'WoW', value: 0 },
         ],
-        isPermitted: false,
-        marketMetaData: {
-          chartMarkRank: 0,
-          goodsNo: 0,
-          goodsDataNo: 0,
-          goodsDataSourceNo: 0,
-          goodsDataNm: '',
-          goodsDataSourceNm: '',
-          currency: '',
-          currentUnitCd: '',
-          visibleChartType: '',
-          interval: '',
-          lastUpdateDt: '',
-          indexStartDt: '',
-          lastValue: 0,
-          yoyChangeRate: 0,
-          momChangeRate: 0,
-          wowChangeRate: 0,
-          dodChangeRate: 0,
-          changeRates: [
-            { label: 'DoD', value: 0 },
-            { label: 'WoW', value: 0 },
-          ],
-        },
-      }
+      },
+    }
     : data
 
   return (
@@ -628,7 +628,6 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
       borderRadius={1}
       sx={{
         padding: '25px',
-        paddingBottom: (metaData.changeRates ?? []).length === 0 ? '28.5px' : '25px',
         borderRadius: '4px',
         border: '1px solid',
         borderColor: '#E9ECEF',
@@ -639,9 +638,9 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
         '&:hover': locked
           ? undefined
           : {
-              borderColor: '#2E3F5E',
-              backgroundColor: '#F8F9FA',
-            },
+            borderColor: '#2E3F5E',
+            backgroundColor: '#F8F9FA',
+          },
       }}
       onClick={() =>
         !locked &&
@@ -667,9 +666,9 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
             variant="infoDocument"
             color="gray.90"
             sx={{
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
               minWidth: 0,
               flexShrink: 1,
               marginRight: '4px',
@@ -696,77 +695,76 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
               alignItems={'center'}
               sx={{
                 filter: locked ? 'blur(6px)' : 'none',
-                minHeight: '15px',
+                minHeight: '33.6px',
               }}
             >
               <Typography sx={{ fontWeight: 600 }} color="gray.90" component="div" variant="heading2">
                 {metaData.lastValue || ''}
               </Typography>
-
+              
               <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto', mt: '3px' }} gap={3}>
                 {(metaData.changeRates ?? []).length > 0 ? (
                   (metaData.changeRates ?? []).map(({ label, value }, index) => (
-                    <Fragment key={index}>
+                  <Fragment key={index}>
                       {index !== 0 && (
                         <Box sx={{ mt: '3px' }}>
                           <MILine thickness={'1px'} direction={'vertical'} length={18} />
                         </Box>
                       )}
-                      <Typography color="gray.70" component="div" variant="body1M16">
-                        {label}
-                      </Typography>
-                      {getChangeRateChip(value)}
-                    </Fragment>
+                    <Typography color="gray.70" component="div" variant="body1M16">
+                      {label}
+                    </Typography>
+                    {getChangeRateChip(value)}
+                  </Fragment>
                   ))
                 ) : (
                   <Box sx={{ width: '120px', height: '10px' }} />
                 )}
               </Box>
             </Box>
-            <Box mt={3} height={188} sx={{ overflow: 'visible', filter: locked ? 'blur(6px)' : 'none' }}>
+            <Box mt={3} height={188} sx={{ overflow: 'visible', filter: locked ? 'blur(6px)' : 'none', position: 'relative' }}>
               {/* Legend - compare 차트가 있을 때만 표시 */}
-              {displayData.compareCharts && displayData.compareCharts.length > 0 && (
-                <Box display="flex" justifyContent="center" flexWrap="wrap" gap={2} sx={{ filter: locked ? 'blur(6px)' : 'none' }}>
-                  {displayData.mainChart && (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Box
-                        width={12}
-                        height={2}
-                        sx={{
-                          backgroundColor: '#40597A',
-                          borderRadius: '1px',
-                        }}
-                      />
-                      <Typography variant="body3R12" color="gray.70">
-                        {displayData.mainChart.specificIndicatorName || 'Main'}
-                      </Typography>
-                    </Box>
-                  )}
+            {displayData.compareCharts && displayData.compareCharts.length > 0 && (
+                <Box display="flex" justifyContent="center" flexWrap="wrap" gap={2} sx={{ filter: locked ? 'blur(6px)' : 'none', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, pointerEvents: 'none' }}>
+                {displayData.mainChart && (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box
+                      width={12}
+                      height={2}
+                      sx={{
+                        backgroundColor: '#40597A',
+                        borderRadius: '1px',
+                      }}
+                    />
+                    <Typography variant="body3R12" color="gray.70">
+                      {displayData.mainChart.specificIndicatorName || 'Main'}
+                    </Typography>
+                  </Box>
+                )}
                   {displayData.compareCharts?.map((chart, index) => {
                     const compareColors = ['#EF6B35', '#9B59B6', '#3498DB', '#1ABC9C', '#F39C12', '#E74C3C', '#2ECC71', '#F1C40F']
                     const color = compareColors[index % compareColors.length]
                     return (
-                      <Box key={index} display="flex" alignItems="center" gap={1}>
-                        <Box
-                          width={12}
-                          height={2}
-                          sx={{
+                  <Box key={index} display="flex" alignItems="center" gap={1}>
+                    <Box
+                      width={12}
+                      height={2}
+                      sx={{
                             backgroundColor: color,
-                            borderRadius: '1px',
+                        borderRadius: '1px',
                             backgroundImage: `repeating-linear-gradient(90deg, ${color}, ${color} 5px, transparent 5px, transparent 10px)`, // 점선 효과
-                          }}
-                        />
-                        <Typography variant="body3R12" color="gray.70">
-                          {chart.specificIndicatorName || `Compare ${index + 1}`}
-                        </Typography>
-                      </Box>
+                      }}
+                    />
+                    <Typography variant="body3R12" color="gray.70">
+                      {chart.specificIndicatorName || `Compare ${index + 1}`}
+                    </Typography>
+                  </Box>
                     )
                   })}
-                </Box>
-              )}
-              <SimpleLineChart data={displayData} hasTicks />
+              </Box>
+            )}
+            <SimpleLineChart data={displayData} hasTicks />
             </Box>
-            {(metaData.changeRates ?? []).length === 0 && <Box sx={{ height: '15px' }} />}
           </Box>
           {locked && <LockedOverlay />}
         </Box>
