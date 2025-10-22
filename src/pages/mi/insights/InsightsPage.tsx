@@ -407,7 +407,7 @@ const InsightsPage = () => {
                 )
               })}
             </Box>
-            <Box border={'1px solid'} borderColor={'gray.30'} borderRadius={1} padding={3} flexShrink={0}>
+            <Box border={'1px solid'} borderColor={'gray.30'} borderRadius={1} padding={3} flexShrink={0} width={286} boxSizing={'border-box'}>
               <Box display="flex" justifyContent="space-between" alignItems="center" padding="12px 12px 5px 12px">
                 <Typography color="gray.70" component="h2" variant="sidePanelTitle">
                   Recently Viewed
