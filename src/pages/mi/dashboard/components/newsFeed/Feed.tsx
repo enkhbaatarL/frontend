@@ -448,14 +448,7 @@ const Feed = ({ selectedItemId, onItemHighlighted }: { selectedItemId?: string |
           </Box>
         </Stack>
         <Stack direction="row" gap="8px">
-          <ButtonSelect
-            variant="outlined"
-            selected={filter1}
-            onSelected={setFilter1}
-            items={filter1Options}
-            sx={{ minWidth: 140 }}
-            menuPosition="left"
-          />
+          <ButtonSelect variant="outlined" selected={filter1} onSelected={setFilter1} items={filter1Options} sx={{ minWidth: 140 }} />
           <ButtonSelect
             variant="outlined"
             selectType="none"
@@ -463,16 +456,8 @@ const Feed = ({ selectedItemId, onItemHighlighted }: { selectedItemId?: string |
             onSelected={setFilter2}
             items={filter2Options}
             sx={{ minWidth: 100 }}
-            menuPosition="left"
           />
-          <ButtonSelect
-            variant="outlined"
-            selected={filter3}
-            onSelected={setFilter3}
-            items={filter3Options}
-            sx={{ minWidth: 110 }}
-            menuPosition="left"
-          />
+          <ButtonSelect variant="outlined" selected={filter3} onSelected={setFilter3} items={filter3Options} sx={{ minWidth: 110 }} />
         </Stack>
       </Stack>
       <Stack mt="12px">

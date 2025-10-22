@@ -106,8 +106,9 @@ const Checkpoints = () => {
           items={options.map((option) => ({ ...option, label: t(`common.${option.value}`) }))}
           selected={selectedOption}
           onSelected={setSelectedOption}
-          menuPositionOffset={-32}
+          menuPositionOffset={{ top: 0, right: -32 }}
           fitMenuWidth={false}
+          menuPosition="right"
           paperProps={{
             sx: {
               width: '150px',

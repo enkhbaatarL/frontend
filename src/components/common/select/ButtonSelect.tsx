@@ -1,16 +1,38 @@
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
-import { Button, Box, Typography, Stack, Switch, ButtonProps, Paper, ClickAwayListener, PaperProps } from '@mui/material'
-import { ReactNode, useMemo, useRef, useState, useEffect } from 'react'
+import {
+  Button,
+  Box,
+  Typography,
+  Stack,
+  Switch,
+  ButtonProps,
+  Paper,
+  ClickAwayListener,
+  PaperProps,
+  ListSubheader,
+  Divider,
+} from '@mui/material'
+import { ReactNode, useMemo, useRef, useState, useEffect, useCallback, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import CheckIcon from '@/components/common/icons/agent/CheckIcon'
 
 export type DashboardMultipleSelectType = 'default' | 'switch' | 'none'
 
-export interface DashboardSelectItem {
+export interface ButtonSelectItem {
   label: ReactNode
   value: string
   disabled?: boolean
+  group?: string
+}
+
+export type GroupDisplayType = 'label' | 'divider' | 'none'
+
+export interface MenuPositionOffset {
+  top?: number
+  left?: number
+  right?: number
+  bottom?: number
 }
 
 interface Props extends ButtonProps {
@@ -19,12 +41,14 @@ interface Props extends ButtonProps {
   multiple?: boolean
   selected: string | string[]
   onSelected: ((selected: string) => void) | ((selected: string[]) => void)
-  items: DashboardSelectItem[]
+  items: ButtonSelectItem[]
   placeholder?: string
   menuPosition?: 'left' | 'right'
-  menuPositionOffset?: number
+  menuPositionOffset?: MenuPositionOffset
   fitMenuWidth?: boolean
   paperProps?: PaperProps
+  groupDisplayType?: GroupDisplayType
+  groupLabels?: { [groupKey: string]: ReactNode }
 }
 
 const ButtonSelect = ({
@@ -35,10 +59,12 @@ const ButtonSelect = ({
   selectType = 'default',
   multiple = false,
   placeholder = '선택하세요',
-  menuPosition = 'right',
-  menuPositionOffset = 0,
+  menuPosition = 'left',
+  menuPositionOffset = {},
   fitMenuWidth = true,
   paperProps,
+  groupDisplayType = 'label',
+  groupLabels = {},
   ...props
 }: Props) => {
   const { t } = useTranslation()
@@ -51,14 +77,14 @@ const ButtonSelect = ({
 
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsClosing(true)
     setTimeout(() => {
       setOpen(false)
       setIsPositioned(false)
       setIsClosing(false)
     }, 150)
-  }
+  }, [])
 
   const handleClick = () => {
     if (open) {
@@ -70,49 +96,65 @@ const ButtonSelect = ({
   }
 
   useEffect(() => {
-    if (!open || !buttonRef.current) {
-      return undefined
+    if (!open || !buttonRef.current) return
+
+    const rect = buttonRef.current.getBoundingClientRect()
+    const styles: { top: number; left?: number; right?: number; width?: number } = {
+      top: rect.bottom + (menuPositionOffset.top ?? 8),
     }
 
-    const updatePosition = () => {
-      const rect = buttonRef.current?.getBoundingClientRect()
-      if (rect) {
-        const styles: { top: number; left?: number; right?: number; width?: number } = {
-          top: rect.bottom,
-        }
-
-        if (menuPosition === 'left') {
-          styles.left = rect.left + menuPositionOffset
-        } else {
-          styles.right = window.innerWidth - rect.right + menuPositionOffset
-        }
-
-        if (fitMenuWidth) {
-          styles.width = rect.width - 2
-        }
-
-        setMenuStyles(styles)
-        setIsPositioned(true)
-      }
+    if (menuPosition === 'left') {
+      styles.left = rect.left + (menuPositionOffset.left ?? 0)
+    } else {
+      styles.right = window.innerWidth - rect.right + (menuPositionOffset.right ?? 0)
     }
 
-    updatePosition()
+    if (fitMenuWidth) {
+      styles.width = rect.width - 2
+    }
 
-    const handelScrollClose = () => {
-      updatePosition()
+    setMenuStyles(styles)
+    setIsPositioned(true)
+  }, [open, menuPosition, fitMenuWidth, menuPositionOffset.top, menuPositionOffset.left, menuPositionOffset.right])
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    const handleScrollClose = () => {
       if (open && !isClosing) {
         handleClose()
       }
     }
 
-    window.addEventListener('scroll', handelScrollClose, true)
-    window.addEventListener('resize', handelScrollClose)
+    const handleResize = () => {
+      if (!buttonRef.current) return
+
+      const rect = buttonRef.current.getBoundingClientRect()
+      const styles: { top: number; left?: number; right?: number; width?: number } = {
+        top: rect.bottom + (menuPositionOffset.top ?? 8),
+      }
+
+      if (menuPosition === 'left') {
+        styles.left = rect.left + (menuPositionOffset.left ?? 0)
+      } else {
+        styles.right = window.innerWidth - rect.right + (menuPositionOffset.right ?? 0)
+      }
+
+      if (fitMenuWidth) {
+        styles.width = rect.width - 2
+      }
+
+      setMenuStyles(styles)
+    }
+
+    window.addEventListener('scroll', handleScrollClose, true)
+    window.addEventListener('resize', handleResize)
 
     return () => {
-      window.removeEventListener('scroll', handelScrollClose, true)
-      window.removeEventListener('resize', handelScrollClose)
+      window.removeEventListener('scroll', handleScrollClose, true)
+      window.removeEventListener('resize', handleResize)
     }
-  }, [open, menuPosition, menuPositionOffset, fitMenuWidth, isClosing])
+  }, [open, isClosing, handleClose, menuPosition, fitMenuWidth, menuPositionOffset.top, menuPositionOffset.left, menuPositionOffset.right])
 
   const handleMultipleToggle = (value: string) => {
     const currentArray = Array.isArray(selected) ? selected : [selected]
@@ -126,6 +168,29 @@ const ButtonSelect = ({
   }
 
   const handleToggle = multiple ? handleMultipleToggle : handleSingleSelect
+
+  const groupedItems = useMemo(() => {
+    if (groupDisplayType === 'none') {
+      return { groups: {}, ungroupedItems: items }
+    }
+
+    const groups: { [key: string]: ButtonSelectItem[] } = {}
+    const ungroupedItems: ButtonSelectItem[] = []
+
+    for (const item of items) {
+      const groupKey = item.group
+      if (groupKey) {
+        if (!groups[groupKey]) {
+          groups[groupKey] = []
+        }
+        groups[groupKey].push(item)
+      } else {
+        ungroupedItems.push(item)
+      }
+    }
+
+    return { groups, ungroupedItems }
+  }, [items, groupDisplayType])
 
   const selectedItemsLabel = useMemo(() => {
     if (!multiple) {
@@ -176,6 +241,19 @@ const ButtonSelect = ({
   const menuOpacity = getMenuOpacity()
   const menuTransition = getMenuTransition()
 
+  const getBorderColor = () => {
+    if (variant !== 'outlined') return undefined
+    return open ? 'contentBorder.Active' : 'contentBorder.Normal'
+  }
+
+  const getHoverBackgroundColor = () => {
+    if (variant !== 'outlined') return undefined
+    return open ? 'contentBG.Active' : 'transparent'
+  }
+
+  const borderColor = getBorderColor()
+  const hoverBackgroundColor = getHoverBackgroundColor()
+
   return (
     <Box sx={{ position: 'relative' }}>
       <Stack direction="row" alignItems="center">
@@ -191,13 +269,17 @@ const ButtonSelect = ({
             height: '40px',
             justifyContent: 'space-between',
             textTransform: 'none',
+            backgroundColor: open ? 'contentBG.Active' : undefined,
             '&:disabled': {
               backgroundColor: props.disabled && variant === 'text' ? 'transparent' : undefined,
             },
-            border: variant === 'outlined' ? '1px solid #DEE2E6' : 'none',
+            borderColor,
+            borderWidth: '1px',
+            borderRadius: '10px',
             '&:hover': {
-              backgroundColor: variant === 'outlined' ? 'transparent' : undefined,
-              border: variant === 'outlined' ? '1px solid #DEE2E6' : 'none',
+              backgroundColor: hoverBackgroundColor,
+              borderColor,
+              borderWidth: '1px',
             },
             '& .MuiButton-endIcon': {
               marginRight: '2px',
@@ -225,15 +307,15 @@ const ButtonSelect = ({
             sx={{
               position: 'fixed',
               top: `${menuStyles.top}px`,
-              left: menuStyles.left !== undefined ? `${menuStyles.left}px` : 'auto',
-              right: menuStyles.right !== undefined ? `${menuStyles.right}px` : 'auto',
-              minWidth: menuStyles.width !== undefined ? `${menuStyles.width}px` : 'auto',
+              left: menuStyles.left === undefined ? 'auto' : `${menuStyles.left}px`,
+              right: menuStyles.right === undefined ? 'auto' : `${menuStyles.right}px`,
+              minWidth: menuStyles.width === undefined ? 'auto' : `${menuStyles.width}px`,
               zIndex: 900,
-              boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
-              borderRadius: '4px',
+              boxShadow: '0px 0px 4px 0px rgba(0, 0, 0, 0.1)',
+              borderRadius: '10px',
               overflow: 'hidden',
               border: '1px solid',
-              borderColor: 'gray.20',
+              borderColor: variant === 'outlined' ? 'contentBorder.Normal' : 'gray.20',
               opacity: menuOpacity,
               transition: menuTransition,
               userSelect: 'none',
@@ -241,63 +323,270 @@ const ButtonSelect = ({
             }}
           >
             <Stack gap="8px" sx={{ padding: '12px' }}>
-              {items.map(({ label, value, disabled }) => {
-                const isSelected = selected.includes(value)
+              {groupDisplayType === 'divider' ? (
+                <>
+                  {groupedItems.ungroupedItems.map(({ label, value, disabled }) => {
+                    const isSelected = selected.includes(value)
 
-                return (
-                  <Box
-                    key={value}
-                    onClick={() => (disabled ? null : handleToggle(value))}
-                    borderRadius="10px"
-                    sx={{
-                      padding: '6px 12px',
-                      cursor: disabled ? 'not-allowed' : 'pointer',
-                      '&:hover': {
-                        backgroundColor: disabled ? 'transparent' : 'gray.10',
-                      },
-                      textWrap: 'nowrap',
-                    }}
-                  >
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      justifyContent="space-between"
-                      width="100%"
-                      minWidth={(props.sx as Record<string, unknown>)?.minWidth as string | number}
-                      gap="12px"
-                      component="div"
-                    >
-                      <Typography
-                        variant="body2M14"
-                        color={isSelected ? 'gray.70' : 'gray.60'}
+                    return (
+                      <Box
+                        key={value}
+                        onClick={() => (disabled ? null : handleToggle(value))}
+                        borderRadius="10px"
                         sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '100%',
+                          padding: '6px 12px',
+                          cursor: disabled ? 'not-allowed' : 'pointer',
+                          '&:hover': {
+                            backgroundColor: disabled ? 'transparent' : 'gray.10',
+                          },
+                          textWrap: 'nowrap',
                         }}
                       >
-                        {label}
-                      </Typography>
-                      {selectType === 'default' && !multiple && (
-                        <Box width="20px" height="20px">
-                          {isSelected && <CheckIcon fill="gray.70" />}
-                        </Box>
-                      )}
-                      {selectType === 'switch' && (
-                        <Switch
-                          checked={isSelected}
-                          size="small"
-                          disabled={disabled}
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          width="100%"
+                          minWidth={(props.sx as Record<string, unknown>)?.minWidth as string | number}
+                          gap="12px"
+                          component="div"
+                        >
+                          <Typography
+                            variant="body2M14"
+                            color={isSelected ? 'gray.70' : 'gray.60'}
+                            sx={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              maxWidth: '100%',
+                            }}
+                          >
+                            {label}
+                          </Typography>
+                          {selectType === 'default' && !multiple && (
+                            <Box width="20px" height="20px">
+                              {isSelected && <CheckIcon fill="gray.70" />}
+                            </Box>
+                          )}
+                          {selectType === 'switch' && (
+                            <Switch
+                              checked={isSelected}
+                              size="small"
+                              disabled={disabled}
+                              sx={{
+                                margin: 0,
+                              }}
+                            />
+                          )}
+                        </Stack>
+                      </Box>
+                    )
+                  })}
+
+                  {Object.entries(groupedItems.groups).map(([groupKey, groupItems], groupIndex) => (
+                    <Fragment key={groupKey}>
+                      {groupIndex > 0 && <Divider />}
+
+                      {groupItems.map(({ label, value, disabled }) => {
+                        const isSelected = selected.includes(value)
+
+                        return (
+                          <Box
+                            key={value}
+                            onClick={() => (disabled ? null : handleToggle(value))}
+                            borderRadius="10px"
+                            sx={{
+                              padding: '6px 12px',
+                              cursor: disabled ? 'not-allowed' : 'pointer',
+                              '&:hover': {
+                                backgroundColor: disabled ? 'transparent' : 'gray.10',
+                              },
+                              textWrap: 'nowrap',
+                            }}
+                          >
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              justifyContent="space-between"
+                              width="100%"
+                              minWidth={(props.sx as Record<string, unknown>)?.minWidth as string | number}
+                              gap="12px"
+                              component="div"
+                            >
+                              <Typography
+                                variant="body2M14"
+                                color={isSelected ? 'gray.70' : 'gray.60'}
+                                sx={{
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  maxWidth: '100%',
+                                }}
+                              >
+                                {label}
+                              </Typography>
+                              {selectType === 'default' && !multiple && (
+                                <Box width="20px" height="20px">
+                                  {isSelected && <CheckIcon fill="gray.70" />}
+                                </Box>
+                              )}
+                              {selectType === 'switch' && (
+                                <Switch
+                                  checked={isSelected}
+                                  size="small"
+                                  disabled={disabled}
+                                  sx={{
+                                    margin: 0,
+                                  }}
+                                />
+                              )}
+                            </Stack>
+                          </Box>
+                        )
+                      })}
+                    </Fragment>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {groupedItems.ungroupedItems.map(({ label, value, disabled }) => {
+                    const isSelected = selected.includes(value)
+
+                    return (
+                      <Box
+                        key={value}
+                        onClick={() => (disabled ? null : handleToggle(value))}
+                        borderRadius="10px"
+                        sx={{
+                          padding: '6px 12px',
+                          cursor: disabled ? 'not-allowed' : 'pointer',
+                          '&:hover': {
+                            backgroundColor: disabled ? 'transparent' : 'gray.10',
+                          },
+                          textWrap: 'nowrap',
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          width="100%"
+                          minWidth={(props.sx as Record<string, unknown>)?.minWidth as string | number}
+                          gap="12px"
+                          component="div"
+                        >
+                          <Typography
+                            variant="body2M14"
+                            color={isSelected ? 'gray.70' : 'gray.60'}
+                            sx={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              maxWidth: '100%',
+                            }}
+                          >
+                            {label}
+                          </Typography>
+                          {selectType === 'default' && !multiple && (
+                            <Box width="20px" height="20px">
+                              {isSelected && <CheckIcon fill="gray.70" />}
+                            </Box>
+                          )}
+                          {selectType === 'switch' && (
+                            <Switch
+                              checked={isSelected}
+                              size="small"
+                              disabled={disabled}
+                              sx={{
+                                margin: 0,
+                              }}
+                            />
+                          )}
+                        </Stack>
+                      </Box>
+                    )
+                  })}
+
+                  {Object.entries(groupedItems.groups).map(([groupKey, groupItems]) => (
+                    <Box key={groupKey}>
+                      {groupDisplayType === 'label' && (
+                        <ListSubheader
                           sx={{
-                            margin: 0,
+                            padding: '8px 12px',
+                            backgroundColor: 'transparent',
+                            color: 'gray.50',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            lineHeight: 1.2,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
                           }}
-                        />
+                        >
+                          {groupLabels[groupKey] || groupKey}
+                        </ListSubheader>
                       )}
-                    </Stack>
-                  </Box>
-                )
-              })}
+
+                      {groupItems.map(({ label, value, disabled }) => {
+                        const isSelected = selected.includes(value)
+
+                        return (
+                          <Box
+                            key={value}
+                            onClick={() => (disabled ? null : handleToggle(value))}
+                            borderRadius="10px"
+                            sx={{
+                              padding: '6px 12px',
+                              cursor: disabled ? 'not-allowed' : 'pointer',
+                              '&:hover': {
+                                backgroundColor: disabled ? 'transparent' : 'gray.10',
+                              },
+                              textWrap: 'nowrap',
+                            }}
+                          >
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              justifyContent="space-between"
+                              width="100%"
+                              minWidth={(props.sx as Record<string, unknown>)?.minWidth as string | number}
+                              gap="12px"
+                              component="div"
+                            >
+                              <Typography
+                                variant="body2M14"
+                                color={isSelected ? 'gray.70' : 'gray.60'}
+                                sx={{
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  maxWidth: '100%',
+                                }}
+                              >
+                                {label}
+                              </Typography>
+                              {selectType === 'default' && !multiple && (
+                                <Box width="20px" height="20px">
+                                  {isSelected && <CheckIcon fill="gray.70" />}
+                                </Box>
+                              )}
+                              {selectType === 'switch' && (
+                                <Switch
+                                  checked={isSelected}
+                                  size="small"
+                                  disabled={disabled}
+                                  sx={{
+                                    margin: 0,
+                                  }}
+                                />
+                              )}
+                            </Stack>
+                          </Box>
+                        )
+                      })}
+                    </Box>
+                  ))}
+                </>
+              )}
             </Stack>
           </Paper>
         </ClickAwayListener>

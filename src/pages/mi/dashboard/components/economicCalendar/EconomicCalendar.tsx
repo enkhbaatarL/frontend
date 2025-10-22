@@ -351,7 +351,6 @@ const EconomicCalendar = () => {
           onSelected={setFilter}
           items={filterOptions}
           sx={{ minWidth: 40 }}
-          menuPosition="left"
         />
         <UpdatedInfoChip label="Sep 15 09:45" color={{ backgroundColor: '#F1F3F5', color: '#495057' }} />
       </Stack>
