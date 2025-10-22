@@ -1,8 +1,6 @@
 import { Box, Stack, Typography, TypographyProps, Tooltip } from '@mui/material'
 import { ReactNode, useRef, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 
-import MIButton from '@/components/common/button/MIButton'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 
 const sampleData = [
@@ -169,91 +167,77 @@ const BodyCell = ({ children, width, textAlign, color, ...props }: BodyCellProps
   )
 }
 
-const Watchlist = () => {
-  const navigate = useNavigate()
-
-  return (
-    <Box padding="12px">
-      <SectionHeader
-        title="Watchlist"
-        tooltipTitle="시장에서 가장 중요하게 모니터링되는 가격 및 공급 지표를 제공합니다. 실시간 변동을 통해 시장의 단기 흐름과 가격 방향성을 파악할 수 있습니다."
-        mb="10px"
-        bold
-      >
-        <MIButton
-          size="h32"
-          color="gray"
-          type="outlined"
-          onClick={() => {
-            navigate('/mi/market-data')
+const Watchlist = () => (
+  <Box padding="12px">
+    <SectionHeader
+      title="Watchlist"
+      link="/mi/market-data"
+      tooltipTitle="시장에서 가장 중요하게 모니터링되는 가격 및 공급 지표를 제공합니다. 실시간 변동을 통해 시장의 단기 흐름과 가격 방향성을 파악할 수 있습니다."
+      mb="10px"
+      bold
+    />
+    <Stack>
+      <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
+        <HeaderCell width="276px" textAlign="left">
+          Name
+        </HeaderCell>
+        <HeaderCell width="100px" textAlign="right">
+          Price
+        </HeaderCell>
+        <HeaderCell width="90px" textAlign="right">
+          Change
+        </HeaderCell>
+        <HeaderCell width="90px" textAlign="right">
+          Change %
+        </HeaderCell>
+      </Stack>
+      {sampleData.map((data, index) => (
+        <Stack
+          key={`${data.name}-${index}`}
+          direction="row"
+          alignItems="center"
+          height="38px"
+          gap="4px"
+          borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+          sx={{
+            '&:hover': {
+              backgroundColor: '#F8F9FA',
+            },
+            cursor: 'pointer',
           }}
         >
-          Market Metrics
-        </MIButton>
-      </SectionHeader>
-      <Stack>
-        <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
-          <HeaderCell width="276px" textAlign="left">
-            Name
-          </HeaderCell>
-          <HeaderCell width="100px" textAlign="right">
-            Price
-          </HeaderCell>
-          <HeaderCell width="90px" textAlign="right">
-            Change
-          </HeaderCell>
-          <HeaderCell width="90px" textAlign="right">
-            Change %
-          </HeaderCell>
+          <BodyCell width="34px" textAlign="left" color="gray.70" pr="3px">
+            <Stack
+              width="20px"
+              height="20px"
+              color="#FFFFFF"
+              borderRadius="50%"
+              alignItems="center"
+              justifyContent="center"
+              fontSize={12}
+              sx={{
+                backgroundColor: 'gray.50',
+              }}
+            >
+              {data.period}
+            </Stack>
+          </BodyCell>
+          <BodyCell width="242px" textAlign="left" color="gray.70" pl="3px">
+            {data.name}
+          </BodyCell>
+          <BodyCell width="100px" textAlign="right" color="gray.70">
+            {data.value}
+          </BodyCell>
+          <BodyCell width="90px" textAlign="right" color={data.change.startsWith('-') ? 'decrease' : 'increase'}>
+            {data.change}
+          </BodyCell>
+          <BodyCell width="90px" textAlign="right" color={data.changePercent.startsWith('-') ? 'decrease' : 'increase'}>
+            {data.changePercent}
+          </BodyCell>
         </Stack>
-        {sampleData.map((data, index) => (
-          <Stack
-            key={`${data.name}-${index}`}
-            direction="row"
-            alignItems="center"
-            height="38px"
-            gap="4px"
-            borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
-            sx={{
-              '&:hover': {
-                backgroundColor: '#F8F9FA',
-              },
-              cursor: 'pointer',
-            }}
-          >
-            <BodyCell width="34px" textAlign="left" color="gray.70" pr="3px">
-              <Stack
-                width="20px"
-                height="20px"
-                color="#FFFFFF"
-                borderRadius="50%"
-                alignItems="center"
-                justifyContent="center"
-                fontSize={12}
-                sx={{
-                  backgroundColor: 'gray.50',
-                }}
-              >
-                {data.period}
-              </Stack>
-            </BodyCell>
-            <BodyCell width="242px" textAlign="left" color="gray.70" pl="3px">
-              {data.name}
-            </BodyCell>
-            <BodyCell width="100px" textAlign="right" color="gray.70">
-              {data.value}
-            </BodyCell>
-            <BodyCell width="90px" textAlign="right" color={data.change.startsWith('-') ? 'decrease' : 'increase'}>
-              {data.change}
-            </BodyCell>
-            <BodyCell width="90px" textAlign="right" color={data.changePercent.startsWith('-') ? 'decrease' : 'increase'}>
-              {data.changePercent}
-            </BodyCell>
-          </Stack>
-        ))}
-      </Stack>
-    </Box>
-  )
-}
+      ))}
+    </Stack>
+  </Box>
+)
 
 export default Watchlist

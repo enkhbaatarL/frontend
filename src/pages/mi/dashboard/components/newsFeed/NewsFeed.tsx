@@ -86,6 +86,7 @@ const NewsFeed = () => {
       ref={dashboardCardRef}
       icon={newsFeedIcon}
       title="News Feed"
+      link="/mi/news-list"
       headerContent={
         <ButtonSelect
           variant="outlined"

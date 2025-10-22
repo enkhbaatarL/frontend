@@ -1,13 +1,11 @@
 import { Stack, Typography, TypographyProps, Tooltip, Chip } from '@mui/material'
 import { ReactNode, useRef, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import economicCalendarIcon from '@/assets/dashboard/economic-calendar.svg'
 import levelHighIcon from '@/assets/level-high.svg'
 import levelLowIcon from '@/assets/level-low.svg'
 import levelMediumIcon from '@/assets/level-medium.svg'
 import levelNotRatedIcon from '@/assets/level-not-rated.svg'
-import MIButton from '@/components/common/button/MIButton'
 import ButtonSelect from '@/components/common/select/ButtonSelect'
 import DashboardCard from '@/pages/mi/dashboard/components/common/DashboardCard'
 import UpdatedInfoChip from '@/pages/mi/dashboard/components/common/UpdatedInfoChip'
@@ -317,26 +315,13 @@ const TBABadge = () => (
 )
 
 const EconomicCalendar = () => {
-  const navigate = useNavigate()
-
   const [filter, setFilter] = useState(filterOptions[0].value)
 
   return (
     <DashboardCard
       icon={economicCalendarIcon}
       title="Economic Calendar"
-      headerContent={
-        <MIButton
-          size="h32"
-          color="gray"
-          type="outlined"
-          onClick={() => {
-            navigate('/mi/economic-event')
-          }}
-        >
-          Economic Calendar
-        </MIButton>
-      }
+      link="/mi/economic-event"
       sx={{
         overflow: 'visible',
       }}

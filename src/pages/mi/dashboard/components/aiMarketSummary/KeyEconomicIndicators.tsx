@@ -1,13 +1,11 @@
 import { Box, Stack, Typography, TypographyProps, Tooltip } from '@mui/material'
 import { ReactNode, useRef, useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 
 import levelHighIcon from '@/assets/level-high.svg'
 import levelLowIcon from '@/assets/level-low.svg'
 import levelMediumIcon from '@/assets/level-medium.svg'
 import levelNotRatedIcon from '@/assets/level-not-rated.svg'
-import MIButton from '@/components/common/button/MIButton'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 
 const sampleData = [
@@ -129,7 +127,6 @@ const ImportanceIcon = ({ level }: { level: ImportanceLevel }) => {
 }
 
 const KeyEconomicIndicators = () => {
-  const navigate = useNavigate()
   const { t } = useTranslation()
 
   const sampleSummary = useMemo(
@@ -144,18 +141,13 @@ const KeyEconomicIndicators = () => {
 
   return (
     <Box padding="12px">
-      <SectionHeader title="Key Economic Indicators" tooltipTitle={t('dashboard.keyEconomicIndicators.tooltipTitle')} mb="10px" bold>
-        <MIButton
-          size="h32"
-          color="gray"
-          type="outlined"
-          onClick={() => {
-            navigate('/mi/economic-event')
-          }}
-        >
-          Economic Calendar
-        </MIButton>
-      </SectionHeader>
+      <SectionHeader
+        title="Key Economic Indicators"
+        link="/mi/economic-event"
+        tooltipTitle={t('dashboard.keyEconomicIndicators.tooltipTitle')}
+        mb="10px"
+        bold
+      />
       <Stack gap="10px">
         <Stack>
           <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">

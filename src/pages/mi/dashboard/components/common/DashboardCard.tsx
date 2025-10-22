@@ -8,6 +8,7 @@ import DashboardCardHeader from '@/pages/mi/dashboard/components/common/Dashboar
 interface Props extends Omit<CardProps, 'title'> {
   icon?: string
   title: ReactNode
+  link?: string
   headerContent?: ReactNode
   direction?: 'row' | 'column'
   gap?: number | string
@@ -20,7 +21,7 @@ export interface DashboardCardRef {
 }
 
 const DashboardCard = forwardRef<DashboardCardRef, Props>(
-  ({ icon, title, headerContent, children, direction = 'row', gap = '24px', collapsedHeight, ...props }, ref) => {
+  ({ icon, title, link, headerContent, children, direction = 'row', gap = '24px', collapsedHeight, ...props }, ref) => {
     const [isCollapsed, setIsCollapsed] = useState(!!collapsedHeight)
     const [fastExpand, setFastExpand] = useState(false)
     const { t } = useTranslation()
@@ -100,7 +101,7 @@ const DashboardCard = forwardRef<DashboardCardRef, Props>(
         }}
       >
         <Stack>
-          <DashboardCardHeader icon={icon} title={title}>
+          <DashboardCardHeader icon={icon} title={title} link={link}>
             {headerContent}
           </DashboardCardHeader>
           <Box position="relative">

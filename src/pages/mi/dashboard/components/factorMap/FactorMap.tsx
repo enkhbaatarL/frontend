@@ -33,6 +33,7 @@ const FactorMap = () => {
     <DashboardCard
       icon={FactorMapIcon}
       title="Factor Map"
+      link="/mi/factor-map"
       headerContent={
         <Stack direction="row" alignItems="center" gap={'8px'}>
           <UpdatedInfoChip label={'Last Week'} color={{ backgroundColor: '#FAEBE3', color: '#B74306' }} />

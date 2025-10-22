@@ -2,14 +2,12 @@ import SouthAmericaIcon from '@mui/icons-material/SouthAmerica'
 import { Box, Divider, Stack, Typography } from '@mui/material'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 
 import topicSampleImg1 from '@/assets/dashboard/temp/topic-sample1.png'
 import topicSampleImg2 from '@/assets/dashboard/temp/topic-sample2.png'
 // import topicSampleImg3 from '@/assets/dashboard/temp/topic-sample3.png'
 import topicSampleImg4 from '@/assets/dashboard/temp/topic-sample4.png'
 import topicTrackerIcon from '@/assets/dashboard/topic-tracker.svg'
-import MIButton from '@/components/common/button/MIButton'
 import MITopic from '@/components/common/topic/MITopic'
 import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
 import CategoryChip from '@/pages/mi/dashboard/components/common/CategoryChip'
@@ -208,25 +206,13 @@ const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
 }
 
 const TopicTracker = () => {
-  const navigate = useNavigate()
   const [selectedTopic, setSelectedTopic] = useState(topics[0].value)
 
   return (
     <DashboardCard
       icon={topicTrackerIcon}
       title="Topic Tracker"
-      headerContent={
-        <MIButton
-          size="h32"
-          color="gray"
-          type="outlined"
-          onClick={() => {
-            navigate('/mi/topic-tracker')
-          }}
-        >
-          Topic Tracker
-        </MIButton>
-      }
+      link="/mi/topic-tracker"
       sx={{
         overflow: 'visible',
       }}
