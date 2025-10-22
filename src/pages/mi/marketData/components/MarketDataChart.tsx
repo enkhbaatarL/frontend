@@ -10,6 +10,32 @@ import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { IMarketData } from '@/service/mi/marketData'
 
+const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & any) => {
+  const textRef = useRef<HTMLDivElement>(null)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+
+  useEffect(() => {
+    const element = textRef.current
+    if (element) {
+      setIsOverflowing(element.scrollWidth > element.clientWidth)
+    }
+  }, [text])
+
+  const typography = (
+    <Typography ref={textRef} {...typographyProps}>
+      {text}
+    </Typography>
+  )
+
+  return isOverflowing ? (
+    <Tooltip title={text} arrow>
+      {typography}
+    </Tooltip>
+  ) : (
+    typography
+  )
+}
+
 interface MarketDataChartProps {
   data?: IMarketData
   size?: 'large' | 'small'
@@ -80,6 +106,8 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
   let cachedGradient: CanvasGradient | null = null
   let gW = 0,
     gH = 0
+
+  const compareColors = ['#EF6B35', '#9B59B6', '#3498DB', '#1ABC9C', '#F39C12', '#E74C3C', '#2ECC71', '#F1C40F']
   const generateChartGradient = (ctx: CanvasRenderingContext2D, area: any) => {
     const w = area.right - area.left
     const h = area.bottom - area.top
@@ -132,7 +160,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
           pointHoverRadius: 4.5,
           pointBackgroundColor: '#2E3F5E',
           showLine: false,
-          _minMaxInfo: { min, max, minIdx, maxIdx },
+          _minMaxInfo: { min, max, minIdx, maxIdx, color: '#2E3F5E' },
         },
       ]
 
@@ -141,13 +169,14 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
           if (compareChart.rawData) {
             const compareData = compareChart.rawData.map((point) => point.value)
             const { min, max, minIdx, maxIdx } = getMinMax(compareData)
+            const color = compareColors[index % compareColors.length]
 
             // Compare 차트 라인
             datasets.push({
               type: 'line' as const,
               label: compareChart.specificIndicatorName || `Compare ${index + 1}`,
               data: compareData,
-              borderColor: '#ef6b35ff',
+              borderColor: color,
               backgroundColor: () => 'transparent',
               tension: 0,
               fill: false,
@@ -164,15 +193,15 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
               label: `Compare ${index + 1} MinMaxMarkers`,
               data: compareData.map((v, i) => (i === minIdx || i === maxIdx ? v : Number.NaN)),
               borderColor: 'transparent',
-              backgroundColor: '#EF6B35',
+              backgroundColor: color,
               pointRadius: (ctx: any) => {
                 const i = ctx.dataIndex
                 return i === minIdx || i === maxIdx ? 3 : 0
               },
               pointHoverRadius: 4.5,
-              pointBackgroundColor: '#ef6b35ff', // 더 진한 주황색
+              pointBackgroundColor: color,
               showLine: false,
-              _minMaxInfo: { min: realMin, max: realMax, minIdx, maxIdx },
+              _minMaxInfo: { min: realMin, max: realMax, minIdx, maxIdx, color },
             })
           }
         })
@@ -237,10 +266,10 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
             ctx.textBaseline = 'top'
 
             ctx.textAlign = 'right'
-            ctx.fillText(leftText, left + 67, bottom + 7)
+            ctx.fillText(leftText, left + 67, bottom + 3)
 
             ctx.textAlign = 'left'
-            ctx.fillText(rightText, right - 67, bottom + 7)
+            ctx.fillText(rightText, right - 67, bottom + 3)
 
             ctx.restore()
           },
@@ -248,18 +277,18 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
         const minMaxLabelPlugin = {
           id: 'minMaxLabel',
           afterDatasetsDraw(chart: any) {
-            // Main 차트의 MinMaxMarkers 찾기
+            const allLabels: Array<{ x: number; y: number; text: string; color: string; isMain: boolean; isMin: boolean }> = []
+
             const mainDsIndex = chart.data.datasets.findIndex((d: any) => d.label === 'MinMaxMarkers')
             if (mainDsIndex >= 0) {
               const ds: any = chart.data.datasets[mainDsIndex]
               const info = ds._minMaxInfo
               if (info) {
                 const meta = chart.getDatasetMeta(mainDsIndex)
-                this.drawMinMaxLabels(chart, meta, info)
+                this.collectLabels(meta, info, info.color || '#2E3F5E', true, allLabels)
               }
             }
 
-            // Compare 차트들의 MinMaxMarkers 찾기
             const compareDsIndices = chart.data.datasets
               .map((d: any, index: number) => (d.label?.includes('MinMaxMarkers') && d.label !== 'MinMaxMarkers' ? index : -1))
               .filter((index: number) => index >= 0)
@@ -269,96 +298,170 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
               const info = ds._minMaxInfo
               if (info) {
                 const meta = chart.getDatasetMeta(dsIndex)
-                this.drawMinMaxLabels(chart, meta, info)
+                const color = info.color || '#EF6B35'
+                this.collectLabels(meta, info, color, false, allLabels)
               }
             })
+
+            this.drawAllLabels(chart, allLabels)
           },
 
-          drawMinMaxLabels(chart: any, meta: any, info: any) {
-            const drawOne = (idx: number, text: string) => {
+          collectLabels(
+            meta: any,
+            info: any,
+            color: string,
+            isMain: boolean,
+            allLabels: Array<{ x: number; y: number; text: string; color: string; isMain: boolean; isMin: boolean }>,
+          ) {
+            const collectOne = (idx: number, text: string, isMin: boolean) => {
               const elem = meta.data[idx]
               if (!elem) return
+              if (text == null || text === undefined || text === '') return
 
               const pos = typeof elem.tooltipPosition === 'function' ? elem.tooltipPosition() : { x: elem?.x, y: elem?.y }
               const x = pos?.x,
                 y = pos?.y
               if (!Number.isFinite(x) || !Number.isFinite(y)) return
 
-              const { ctx, chartArea } = chart
-              ctx.save()
-
-              ctx.font = '600 14px Pretendard, sans-serif'
-              ctx.fillStyle = '#2E3F5E'
-
-              const s = String(text)
-              const m = ctx.measureText(s)
-              const w = m.width
-              const h = (m.actualBoundingBoxAscent ?? 11) + (m.actualBoundingBoxDescent ?? 3)
-
-              const pad = 6
-              const margin = 2
-
-              const fits = (tx: number, ty: number, align: CanvasTextAlign, base: CanvasTextBaseline) => {
-                let left = tx,
-                  right = tx,
-                  top = ty,
-                  bottom = ty
-                if (align === 'center') {
-                  left = tx - w / 2
-                  right = tx + w / 2
-                } else if (align === 'left') {
-                  left = tx
-                  right = tx + w
-                } else if (align === 'right') {
-                  left = tx - w
-                  right = tx
-                }
-
-                if (base === 'top') {
-                  top = ty
-                  bottom = ty + h
-                } else if (base === 'middle') {
-                  top = ty - h / 2
-                  bottom = ty + h / 2
-                } else if (base === 'bottom') {
-                  top = ty - h
-                  bottom = ty
-                }
-
-                return (
-                  left >= chartArea.left + margin &&
-                  right <= chartArea.right - margin &&
-                  top >= chartArea.top + margin &&
-                  bottom <= chartArea.bottom - margin
-                )
-              }
-
-              const candidates: Array<{ tx: number; ty: number; align: CanvasTextAlign; base: CanvasTextBaseline }> = [
-                { tx: x, ty: y - pad, align: 'center', base: 'bottom' },
-                { tx: x + pad, ty: y, align: 'left', base: 'middle' },
-                { tx: x - pad, ty: y, align: 'right', base: 'middle' },
-                { tx: x, ty: y + pad, align: 'center', base: 'top' },
-              ]
-
-              let chosen = candidates.find((c) => fits(c.tx, c.ty, c.align, c.base))
-
-              if (!chosen) {
-                let tx = x,
-                  ty = y - pad
-                tx = Math.min(Math.max(tx, chartArea.left + margin + w / 2), chartArea.right - margin - w / 2)
-                ty = Math.min(Math.max(ty, chartArea.top + margin + h), chartArea.bottom - margin)
-                chosen = { tx, ty, align: 'center', base: 'bottom' }
-              }
-
-              ctx.textAlign = chosen.align
-              ctx.textBaseline = chosen.base
-              ctx.fillText(s, chosen.tx, chosen.ty)
-
-              ctx.restore()
+              allLabels.push({ x, y, text: String(text), color, isMain, isMin })
             }
 
-            drawOne(info.minIdx, info.min)
-            drawOne(info.maxIdx, info.max)
+            if (info.min === info.max && info.minIdx === info.maxIdx) {
+              collectOne(info.minIdx, info.min, true)
+            } else {
+              collectOne(info.minIdx, info.min, true)
+              collectOne(info.maxIdx, info.max, false)
+            }
+          },
+
+          drawAllLabels(
+            chart: any,
+            allLabels: Array<{ x: number; y: number; text: string; color: string; isMain: boolean; isMin: boolean }>,
+          ) {
+            const { ctx, chartArea } = chart
+
+            const groupedLabels = new Map<
+              number,
+              Array<{ x: number; y: number; text: string; color: string; isMain: boolean; isMin: boolean }>
+            >()
+
+            allLabels.forEach((label) => {
+              const yKey = Math.round(label.y / 10) * 10
+              if (!groupedLabels.has(yKey)) {
+                groupedLabels.set(yKey, [])
+              }
+              groupedLabels.get(yKey)!.push(label)
+            })
+
+            groupedLabels.forEach((labels) => {
+              if (labels.length === 1) {
+                const label = labels[0]
+                ctx.save()
+                ctx.font = '600 14px Pretendard, sans-serif'
+                ctx.fillStyle = label.color
+                ctx.textAlign = 'center'
+                ctx.textBaseline = 'bottom'
+
+                const textWidth = ctx.measureText(label.text).width
+                const textHeight = 14
+                const margin = 10
+
+                const finalX = label.x
+                let finalY = label.y
+
+                if (label.isMain) {
+                  finalY = label.y - 2
+                } else {
+                  finalY = label.y + 20
+                }
+
+                const adjustedX = Math.max(
+                  chartArea.left + margin + textWidth / 2,
+                  Math.min(chartArea.right - margin - textWidth / 2, finalX),
+                )
+                const adjustedY = Math.max(chartArea.top + margin + textHeight, Math.min(chartArea.bottom - margin, finalY))
+
+                ctx.fillText(label.text, adjustedX, adjustedY)
+                ctx.restore()
+                return
+              }
+
+              const mainLabels = labels.filter((label) => label.isMain)
+              const compareLabels = labels.filter((label) => !label.isMain)
+
+              mainLabels.sort((a, b) => parseFloat(b.text) - parseFloat(a.text))
+              compareLabels.sort((a, b) => parseFloat(b.text) - parseFloat(a.text))
+
+              const sortedLabels = [...mainLabels, ...compareLabels]
+              const margin = 10
+
+              const canSpreadHorizontally = (labels: any[]) => {
+                const minX = Math.min(...labels.map((l) => l.x))
+                const maxX = Math.max(...labels.map((l) => l.x))
+                const requiredWidth = (labels.length - 1) * 50 + 50
+                const availableWidth = chartArea.right - chartArea.left - margin * 2
+                return requiredWidth <= availableWidth && minX - margin >= chartArea.left && maxX + margin <= chartArea.right
+              }
+
+              const canSpread = canSpreadHorizontally(sortedLabels)
+
+              sortedLabels.forEach((label, index) => {
+                ctx.save()
+                ctx.font = '600 14px Pretendard, sans-serif'
+                ctx.fillStyle = label.color
+                ctx.textAlign = 'center'
+                ctx.textBaseline = 'bottom'
+
+                const textWidth = ctx.measureText(label.text).width
+                const textHeight = 14
+
+                let finalX = label.x
+                let finalY = label.y
+
+                if (label.isMain) {
+                  finalY = label.y - 2
+                } else {
+                  if (labels.length > 1) {
+                    if (canSpread) {
+                      if (index === 1) {
+                        finalX = label.x - 30
+                        finalY = label.isMin ? label.y - 15 : label.y + 20
+                      } else if (index === 2) {
+                        finalX = label.x + 30
+                        finalY = label.isMin ? label.y - 15 : label.y + 20
+                      } else {
+                        const offset = 25 + (index - 3) * 20
+                        if (index % 2 === 0) {
+                          finalX = label.x + offset
+                        } else {
+                          finalX = label.x - offset
+                        }
+                        finalY = label.isMin ? label.y - 15 : label.y + 20
+                      }
+                    } else {
+                      const compareIndex = sortedLabels.filter((l) => !l.isMain).indexOf(label)
+                      if (label.isMin) {
+                        finalY = label.y - 15 - compareIndex * 20
+                      } else {
+                        finalY = label.y + 20 + compareIndex * 20
+                      }
+                    }
+                  } else {
+                    finalX = label.x
+                    finalY = label.isMin ? label.y - 15 : label.y + 20
+                  }
+                }
+
+                const adjustedX = Math.max(
+                  chartArea.left + margin + textWidth / 2,
+                  Math.min(chartArea.right - margin - textWidth / 2, finalX),
+                )
+                const adjustedY = Math.max(chartArea.top + margin + textHeight, Math.min(chartArea.bottom - margin, finalY))
+
+                ctx.fillText(label.text, adjustedX, adjustedY)
+                ctx.restore()
+              })
+            })
           },
         }
 
@@ -370,6 +473,7 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
             maintainAspectRatio: false,
             layout: {
               padding: {
+                top: 30,
                 bottom: 9,
               },
             },
@@ -458,15 +562,6 @@ const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data,
 
 const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locked }) => {
   const navigate = useNavigate()
-  const textRef = useRef<HTMLSpanElement>(null)
-  const [isTextOverflow, setIsTextOverflow] = useState(false)
-
-  useEffect(() => {
-    if (textRef.current) {
-      const element = textRef.current
-      setIsTextOverflow(element.scrollWidth > element.clientWidth)
-    }
-  }, [data?.marketMetaData?.goodsDataNm])
 
   if (!data?.marketMetaData) {
     return null
@@ -474,56 +569,66 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
 
   const metaData = locked ? { ...data.marketMetaData, ...dummyMetaData } : data.marketMetaData
 
+  // 타이틀에서 단위 추출 (괄호 안의 내용)
+  const extractUnitFromTitle = (title: string) => {
+    const match = title.match(/\(([^)]+)\)$/)
+    return match ? match[1] : null
+  }
+
+  const titleWithoutUnit = metaData.goodsDataNm?.replace(/\s*\([^)]+\)$/, '') || ''
+  const extractedUnit = extractUnitFromTitle(metaData.goodsDataNm || '')
+
   const displayData = locked
     ? {
-      mainChart: {
-        specificIndicatorName: 'CURRENT',
-        rawData: dummyChartData.mainChart.map((value, index) => ({
-          date: String(index),
-          value,
-        })),
-      },
-      compareCharts: [
-        {
-          specificIndicatorName: 'PAST_5Y_AVG',
-          rawData: dummyChartData.compareCharts.map((value, index) => ({
+        mainChart: {
+          specificIndicatorName: 'CURRENT',
+          rawData: dummyChartData.mainChart.map((value, index) => ({
             date: String(index),
             value,
           })),
         },
-      ],
-      isPermitted: false,
-      marketMetaData: {
-        chartMarkRank: 0,
-        goodsNo: 0,
-        goodsDataNo: 0,
-        goodsDataSourceNo: 0,
-        goodsDataNm: '',
-        goodsDataSourceNm: '',
-        currency: '',
-        currentUnitCd: '',
-        visibleChartType: '',
-        interval: '',
-        lastUpdateDt: '',
-        indexStartDt: '',
-        lastValue: 0,
-        yoyChangeRate: 0,
-        momChangeRate: 0,
-        wowChangeRate: 0,
-        dodChangeRate: 0,
-        changeRates: [
-          { label: 'DoD', value: 0 },
-          { label: 'WoW', value: 0 },
+        compareCharts: [
+          {
+            specificIndicatorName: 'PAST_5Y_AVG',
+            rawData: dummyChartData.compareCharts.map((value, index) => ({
+              date: String(index),
+              value,
+            })),
+          },
         ],
-      },
-    }
+        isPermitted: false,
+        marketMetaData: {
+          chartMarkRank: 0,
+          goodsNo: 0,
+          goodsDataNo: 0,
+          goodsDataSourceNo: 0,
+          goodsDataNm: '',
+          goodsDataSourceNm: '',
+          currency: '',
+          currentUnitCd: '',
+          visibleChartType: '',
+          interval: '',
+          lastUpdateDt: '',
+          indexStartDt: '',
+          lastValue: 0,
+          yoyChangeRate: 0,
+          momChangeRate: 0,
+          wowChangeRate: 0,
+          dodChangeRate: 0,
+          changeRates: [
+            { label: 'DoD', value: 0 },
+            { label: 'WoW', value: 0 },
+          ],
+        },
+      }
     : data
 
   return (
     <Box
       borderRadius={1}
       sx={{
-        padding: '20px',
+        padding: '25px',
+        paddingBottom: (metaData.changeRates ?? []).length === 0 ? '28.5px' : '25px',
         borderRadius: '4px',
         border: '1px solid',
         borderColor: '#E9ECEF',
@@ -534,9 +639,9 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
         '&:hover': locked
           ? undefined
           : {
-            borderColor: '#2E3F5E',
-            backgroundColor: '#F8F9FA',
-          },
+              borderColor: '#2E3F5E',
+              backgroundColor: '#F8F9FA',
+            },
       }}
       onClick={() =>
         !locked &&
@@ -545,33 +650,44 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
         })
       }
     >
-      <Typography
+      <Box
         color="gray.90"
         mb={size === 'large' ? 5 : 2.5}
         component="h4"
-        variant="infoDocument"
         sx={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
           width: '100%',
-          '& > span': {
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxWidth: 'calc(100% - 32px)',
-          },
         }}
       >
-        {isTextOverflow ? (
-          <Tooltip title={metaData.goodsDataNm} placement="top" followCursor>
-            <span ref={textRef}>{metaData.goodsDataNm}</span>
-          </Tooltip>
-        ) : (
-          <span ref={textRef}>{metaData.goodsDataNm}</span>
-        )}
-        <ChevronRightIcon sx={{ color: 'gray.60', minWidth: '24px', ml: 1 }} />
-      </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1, overflow: 'hidden' }}>
+          <TruncatedTextWithTooltip
+            text={titleWithoutUnit}
+            component="span"
+            variant="infoDocument"
+            color="gray.90"
+            sx={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              minWidth: 0,
+              flexShrink: 1,
+              marginRight: '4px',
+            }}
+          />
+          {extractedUnit && (
+            <Typography
+              component="span"
+              variant="infoDocument"
+              color="gray.90"
+              sx={{ whiteSpace: 'nowrap', flexShrink: 0, marginRight: '4px' }}
+            >
+              ({extractedUnit})
+            </Typography>
+          )}
+        </Box>
+        <ChevronRightIcon sx={{ color: 'gray.60', minWidth: '24px', ml: '8px' }} />
+      </Box>
       {size === 'large' && (
         <Box position={'relative'}>
           <Box display={'flex'} flexDirection={'column'}>
@@ -580,63 +696,77 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
               alignItems={'center'}
               sx={{
                 filter: locked ? 'blur(6px)' : 'none',
+                minHeight: '15px',
               }}
             >
               <Typography sx={{ fontWeight: 600 }} color="gray.90" component="div" variant="heading2">
-                {metaData.lastValue}
+                {metaData.lastValue || ''}
               </Typography>
 
-              <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto' }} gap={1.25}>
-                {(metaData.changeRates ?? []).map(({ label, value }, index) => (
-                  <Fragment key={index}>
-                    {index !== 0 && <MILine thickness={'1px'} direction={'vertical'} length={18} />}
-                    <Typography color="gray.70" component="div" variant="body1M16">
-                      {label}
-                    </Typography>
-                    {getChangeRateChip(value)}
-                  </Fragment>
-                ))}
+              <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto', mt: '3px' }} gap={3}>
+                {(metaData.changeRates ?? []).length > 0 ? (
+                  (metaData.changeRates ?? []).map(({ label, value }, index) => (
+                    <Fragment key={index}>
+                      {index !== 0 && (
+                        <Box sx={{ mt: '3px' }}>
+                          <MILine thickness={'1px'} direction={'vertical'} length={18} />
+                        </Box>
+                      )}
+                      <Typography color="gray.70" component="div" variant="body1M16">
+                        {label}
+                      </Typography>
+                      {getChangeRateChip(value)}
+                    </Fragment>
+                  ))
+                ) : (
+                  <Box sx={{ width: '120px', height: '10px' }} />
+                )}
               </Box>
             </Box>
-            <Box pt={6} height={180} sx={{ overflow: 'visible', filter: locked ? 'blur(6px)' : 'none' }}>
+            <Box mt={3} height={188} sx={{ overflow: 'visible', filter: locked ? 'blur(6px)' : 'none' }}>
+              {/* Legend - compare 차트가 있을 때만 표시 */}
+              {displayData.compareCharts && displayData.compareCharts.length > 0 && (
+                <Box display="flex" justifyContent="center" flexWrap="wrap" gap={2} sx={{ filter: locked ? 'blur(6px)' : 'none' }}>
+                  {displayData.mainChart && (
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Box
+                        width={12}
+                        height={2}
+                        sx={{
+                          backgroundColor: '#40597A',
+                          borderRadius: '1px',
+                        }}
+                      />
+                      <Typography variant="body3R12" color="gray.70">
+                        {displayData.mainChart.specificIndicatorName || 'Main'}
+                      </Typography>
+                    </Box>
+                  )}
+                  {displayData.compareCharts?.map((chart, index) => {
+                    const compareColors = ['#EF6B35', '#9B59B6', '#3498DB', '#1ABC9C', '#F39C12', '#E74C3C', '#2ECC71', '#F1C40F']
+                    const color = compareColors[index % compareColors.length]
+                    return (
+                      <Box key={index} display="flex" alignItems="center" gap={1}>
+                        <Box
+                          width={12}
+                          height={2}
+                          sx={{
+                            backgroundColor: color,
+                            borderRadius: '1px',
+                            backgroundImage: `repeating-linear-gradient(90deg, ${color}, ${color} 5px, transparent 5px, transparent 10px)`, // 점선 효과
+                          }}
+                        />
+                        <Typography variant="body3R12" color="gray.70">
+                          {chart.specificIndicatorName || `Compare ${index + 1}`}
+                        </Typography>
+                      </Box>
+                    )
+                  })}
+                </Box>
+              )}
               <SimpleLineChart data={displayData} hasTicks />
             </Box>
-            {/* Legend - compare 차트가 있을 때만 표시 */}
-            {displayData.compareCharts && displayData.compareCharts.length > 0 && (
-              <Box mt={-4} display="flex" justifyContent="center" flexWrap="wrap" gap={2} sx={{ filter: locked ? 'blur(6px)' : 'none' }}>
-                {displayData.mainChart && (
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Box
-                      width={12}
-                      height={2}
-                      sx={{
-                        backgroundColor: '#40597A',
-                        borderRadius: '1px',
-                      }}
-                    />
-                    <Typography variant="body3R12" color="gray.70">
-                      {displayData.mainChart.specificIndicatorName || 'Main'}
-                    </Typography>
-                  </Box>
-                )}
-                {displayData.compareCharts?.map((chart, index) => (
-                  <Box key={index} display="flex" alignItems="center" gap={1}>
-                    <Box
-                      width={12}
-                      height={2}
-                      sx={{
-                        backgroundColor: '#EF6B35', // 주황색으로 변경
-                        borderRadius: '1px',
-                        backgroundImage: 'repeating-linear-gradient(90deg, #EF6B35, #EF6B35 5px, transparent 5px, transparent 10px)', // 점선 효과
-                      }}
-                    />
-                    <Typography variant="body3R12" color="gray.70">
-                      {chart.specificIndicatorName || `Compare ${index + 1}`}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            )}
+            {(metaData.changeRates ?? []).length === 0 && <Box sx={{ height: '15px' }} />}
           </Box>
           {locked && <LockedOverlay />}
         </Box>

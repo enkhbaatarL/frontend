@@ -1,5 +1,5 @@
-import { Box, Grid2 as Grid, Typography } from '@mui/material'
-import { useQuery } from '@tanstack/react-query'
+import { Box, Grid2 as Grid, Typography, Tooltip } from '@mui/material'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useRef, useCallback, useState, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -19,9 +19,36 @@ import marketDataService, { IDataCatalogItem, IDataCatalogRequest, IMarketData }
 import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
 
+const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & any) => {
+  const textRef = useRef<HTMLDivElement>(null)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+
+  useEffect(() => {
+    const element = textRef.current
+    if (element) {
+      setIsOverflowing(element.scrollWidth > element.clientWidth)
+    }
+  }, [text])
+
+  const typography = (
+    <Typography ref={textRef} {...typographyProps}>
+      {text}
+    </Typography>
+  )
+
+  return isOverflowing ? (
+    <Tooltip title={text} arrow>
+      {typography}
+    </Tooltip>
+  ) : (
+    typography
+  )
+}
+
 const MarketDataPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
@@ -76,6 +103,14 @@ const MarketDataPage = () => {
     refetchOnWindowFocus: false,
     gcTime: 0,
     enabled: !!customerCompanyNo,
+  })
+
+  // Clear Recent Viewed
+  const clearRecentViewedMutation = useMutation({
+    mutationFn: async () => await marketDataService.clearRecentViewed(customerCompanyNo),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recentViewed', customerCompanyNo] })
+    },
   })
 
   /*
@@ -301,56 +336,78 @@ const MarketDataPage = () => {
             }}
           >
             <Box border={'1px solid'} borderColor={'gray.30'} borderRadius={1} padding={3} flexShrink={0}>
-              <Typography color="gray.70" component="h2" variant="sidePanelTitle" padding={2}>
-                Recent Viewed
-              </Typography>
-              {recentViewedList?.length ? (
-                recentViewedList.map((item, index) => (
-                  <Fragment key={`recent-viewed-${index}`}>
-                    <Box
-                      paddingY={2}
-                      onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
-                      sx={{
-                        width: '90%',
-                        padding: '12px',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          backgroundColor: 'contentBG.Hover',
-                        },
-                      }}
-                    >
-                      <Typography paddingTop={1.5} color="gray.70" component="div" lineHeight={1.4} variant="body4">
-                        {item.goodsDataNm}
-                      </Typography>
-                      {/* <Typography
-                        sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                        color="gray.60"
-                        lineHeight={1.4}
-                        component="div"
-                        variant="body3R12"
-                      >
-                        {item.goodsDataExpn}
-                      </Typography> */}
-                      <Grid direction={'row'} container alignItems={'center'} gap={1}>
-                        <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
-                          {item.providerNm}
-                        </Typography>
-                        <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
-                        <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
-                          {/* {dayjs(item.recentViewedDt).format('MMM DD-YY')} */}
-                          {dayjs(item.recentViewedDt).format('YY-MM-DD HH:mm')}
-                        </Typography>
-                      </Grid>
-                    </Box>
-                    {index !== recentViewedList.length - 1 && <MILine thickness={1.01} direction="horizontal" backgroundColor="gray.30" />}
-                  </Fragment>
-                ))
-              ) : (
-                <Typography color="gray.60" textAlign="center" py={4} component="div" variant="body2">
-                  No results found
+              <Box display="flex" justifyContent="space-between" alignItems="center" padding="12px 12px 5px 12px">
+                <Typography color="gray.70" component="h2" variant="sidePanelTitle">
+                  Recently Viewed
                 </Typography>
-              )}
+                <Typography
+                  variant="body3R12"
+                  sx={{
+                    color: 'gray.70',
+                    lineHeight: 1.2,
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    '&:hover': {
+                      color: 'gray.70',
+                    },
+                  }}
+                  onClick={() => clearRecentViewedMutation.mutate()}
+                >
+                  Clear
+                </Typography>
+              </Box>
+              <Box paddingBottom="12px">
+                {recentViewedList?.length ? (
+                  recentViewedList.map((item, index) => (
+                    <Fragment key={`recent-viewed-${index}`}>
+                      <Box
+                        paddingY={2}
+                        onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
+                        sx={{
+                          width: '90%',
+                          padding: '12px',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: 'contentBG.Hover',
+                          },
+                        }}
+                      >
+                        <TruncatedTextWithTooltip
+                          text={item.goodsDataNm}
+                          paddingTop={1.5}
+                          color="gray.70"
+                          component="div"
+                          lineHeight={1.4}
+                          variant="body4"
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        />
+                        <Grid direction={'row'} container alignItems={'center'} gap={1}>
+                          <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
+                            {item.providerNm}
+                          </Typography>
+                          <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
+                          <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
+                            {/* {dayjs(item.recentViewedDt).format('MMM DD-YY')} */}
+                            {dayjs(item.recentViewedDt).format('YY-MM-DD HH:mm')}
+                          </Typography>
+                        </Grid>
+                      </Box>
+                      {index !== recentViewedList.length - 1 && (
+                        <MILine thickness={1.01} direction="horizontal" backgroundColor="gray.30" />
+                      )}
+                    </Fragment>
+                  ))
+                ) : (
+                  <Typography color="gray.50" textAlign="center" pt={6.5} pb={5} component="div" variant="body3R12">
+                    No History
+                  </Typography>
+                )}
+              </Box>
             </Box>
           </Box>
         </Grid>

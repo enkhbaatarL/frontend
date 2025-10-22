@@ -17,12 +17,11 @@ export interface ProcessedMarketDataItem extends MarketDataItemInfo {
     changePercent: number
     direction: string
     unit: string
-    // TODO: 퍼블리싱을 위한 임시 값 제거
-    description?: string
+    goodsDataSourceExpn?: string
     period?: string
-    previousClose?: number
+    previousValue?: string
     dayRange?: string
-    source?: string
+    providerName?: string
   }
 }
 
@@ -229,7 +228,17 @@ const Ticker = ({ data = [] }: Props) => {
       } else {
         setSelectedItemIndex(index)
         const rect = event.currentTarget.getBoundingClientRect()
-        setSelectedItemLeft(Math.max(rect.left, 8))
+        const popoverWidth = 400
+        const windowWidth = window.innerWidth
+        const padding = 8
+
+        let left = Math.max(rect.left, padding)
+
+        if (left + popoverWidth > windowWidth - padding) {
+          left = windowWidth - popoverWidth - padding
+        }
+
+        setSelectedItemLeft(left)
       }
     },
     [selectedItemIndex],
@@ -258,12 +267,32 @@ const Ticker = ({ data = [] }: Props) => {
       }
     }
 
+    const preventScroll = (e: Event) => {
+      e.preventDefault()
+    }
+
     if (selectedItemIndex !== null) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
       document.addEventListener('click', handleClickOutside)
+      document.addEventListener('wheel', preventScroll, { passive: false })
+      document.addEventListener('touchmove', preventScroll, { passive: false })
+    } else {
+      document.body.style.overflow = 'unset'
+      document.body.style.position = 'unset'
+      document.body.style.width = 'unset'
+      document.removeEventListener('wheel', preventScroll)
+      document.removeEventListener('touchmove', preventScroll)
     }
 
     return () => {
       document.removeEventListener('click', handleClickOutside)
+      document.removeEventListener('wheel', preventScroll)
+      document.removeEventListener('touchmove', preventScroll)
+      document.body.style.overflow = 'unset'
+      document.body.style.position = 'unset'
+      document.body.style.width = 'unset'
     }
   }, [selectedItemIndex])
 
