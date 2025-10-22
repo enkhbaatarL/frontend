@@ -3,8 +3,8 @@ import { Box, Stack, Typography, Collapse, Fade } from '@mui/material'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import InlineNotice from '@/components/common/notice/InlineNotice'
-import ButtonSelect from '@/components/common/select/ButtonSelect'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 import { MarketItem } from '@/service/mi/dashboard'
 
@@ -102,11 +102,11 @@ const Checkpoints = () => {
   return (
     <Stack padding="6px 12px" borderRadius="10px" gap="6px" sx={{ backgroundColor: '#F8F9FA' }}>
       <SectionHeader title="Checkpoints" tooltipTitle={t('dashboard.checkpoints.tooltipTitle')} padding="7.5px 0 7.5px 6px">
-        <ButtonSelect
+        <MISelectMenu
           items={options.map((option) => ({ ...option, label: t(`common.${option.value}`) }))}
           selected={selectedOption}
           onSelected={setSelectedOption}
-          menuPositionOffset={{ top: 0, right: -32 }}
+          menuPositionOffset={{ top: 4, right: -32 }}
           fitMenuWidth={false}
           menuPosition="right"
           paperProps={{

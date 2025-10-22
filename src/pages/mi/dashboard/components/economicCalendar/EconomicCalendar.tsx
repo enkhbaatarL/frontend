@@ -6,7 +6,7 @@ import levelHighIcon from '@/assets/level-high.svg'
 import levelLowIcon from '@/assets/level-low.svg'
 import levelMediumIcon from '@/assets/level-medium.svg'
 import levelNotRatedIcon from '@/assets/level-not-rated.svg'
-import ButtonSelect from '@/components/common/select/ButtonSelect'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import DashboardCard from '@/pages/mi/dashboard/components/common/DashboardCard'
 import UpdatedInfoChip from '@/pages/mi/dashboard/components/common/UpdatedInfoChip'
 
@@ -329,7 +329,7 @@ const EconomicCalendar = () => {
       collapsedHeight={660}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <ButtonSelect
+        <MISelectMenu
           variant="outlined"
           selectType="none"
           selected={filter}

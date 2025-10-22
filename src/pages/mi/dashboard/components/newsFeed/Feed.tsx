@@ -7,45 +7,10 @@ import crudeOilIcon from '@/assets/icons/crude-oil.png'
 import evBatteryIcon from '@/assets/icons/ev-battery.png'
 import lngIcon from '@/assets/icons/lng.png'
 import semiconductorIcon from '@/assets/icons/semiconductor.png'
-import ButtonSelect from '@/components/common/select/ButtonSelect'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
 import CategoryChip from '@/pages/mi/dashboard/components/common/CategoryChip'
 import TrendIcon from '@/pages/mi/dashboard/components/newsFeed/TrendIcon'
-
-const filter1Options = [
-  {
-    label: (
-      <Stack direction="row" alignItems="center" gap="6px">
-        <Box component="img" width={22} height={22} src={crudeOilIcon} alt="crude oil" /> Crude Oil
-      </Stack>
-    ),
-    value: '1',
-  },
-  {
-    label: (
-      <Stack direction="row" alignItems="center" gap="6px">
-        <Box component="img" width={22} height={22} src={evBatteryIcon} alt="ev battery" /> EV Battery
-      </Stack>
-    ),
-    value: '2',
-  },
-  {
-    label: (
-      <Stack direction="row" alignItems="center" gap="6px">
-        <Box component="img" width={22} height={22} src={lngIcon} alt="lng" /> LNG
-      </Stack>
-    ),
-    value: '3',
-  },
-  {
-    label: (
-      <Stack direction="row" alignItems="center" gap="6px">
-        <Box component="img" width={22} height={22} src={semiconductorIcon} alt="semiconductor" /> Semiconductor
-      </Stack>
-    ),
-    value: '4',
-  },
-]
 
 const filter2Options = [{ label: 'Filters', value: 'filters' }]
 
@@ -410,7 +375,6 @@ const FeedItem = ({
 }
 
 const Feed = ({ selectedItemId, onItemHighlighted }: { selectedItemId?: string | null; onItemHighlighted?: () => void }) => {
-  const [filter1, setFilter1] = useState(filter1Options[0].value)
   const [filter2, setFilter2] = useState(filter2Options[0].value)
   const [filter3, setFilter3] = useState(filter3Options[0].value)
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({})
@@ -448,8 +412,7 @@ const Feed = ({ selectedItemId, onItemHighlighted }: { selectedItemId?: string |
           </Box>
         </Stack>
         <Stack direction="row" gap="8px">
-          <ButtonSelect variant="outlined" selected={filter1} onSelected={setFilter1} items={filter1Options} sx={{ minWidth: 140 }} />
-          <ButtonSelect
+          <MISelectMenu
             variant="outlined"
             selectType="none"
             selected={filter2}
@@ -457,7 +420,7 @@ const Feed = ({ selectedItemId, onItemHighlighted }: { selectedItemId?: string |
             items={filter2Options}
             sx={{ minWidth: 100 }}
           />
-          <ButtonSelect variant="outlined" selected={filter3} onSelected={setFilter3} items={filter3Options} sx={{ minWidth: 110 }} />
+          <MISelectMenu variant="outlined" selected={filter3} onSelected={setFilter3} items={filter3Options} sx={{ minWidth: 110 }} />
         </Stack>
       </Stack>
       <Stack mt="12px">

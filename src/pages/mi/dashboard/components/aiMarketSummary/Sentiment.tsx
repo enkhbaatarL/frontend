@@ -2,7 +2,7 @@ import { Box, Stack, Typography, keyframes, Collapse, Tooltip } from '@mui/mater
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import ButtonSelect from '@/components/common/select/ButtonSelect'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 
 const shimmer = keyframes`
@@ -253,13 +253,13 @@ const Sentiment = () => {
   return (
     <Stack padding="6px 12px 14px" borderRadius="10px" sx={{ backgroundColor: '#F8F9FA' }}>
       <SectionHeader title="Sentiment" tooltipTitle={t('dashboard.sentiments.titleTooltip')} padding="7.5px 0 7.5px 6px">
-        <ButtonSelect
+        <MISelectMenu
           selectType="switch"
           multiple
           items={options}
           selected={selectedOptions}
           onSelected={setSelectedOptions}
-          menuPositionOffset={{ top: 0, right: -32 }}
+          menuPositionOffset={{ top: 4, right: -32 }}
           fitMenuWidth={false}
           menuPosition="right"
         />
