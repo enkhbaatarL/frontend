@@ -1,56 +1,30 @@
 import SettingsIcon from '@mui/icons-material/Settings'
 import { Box, Stack, Typography, Switch, Collapse, Fade } from '@mui/material'
-import { useState, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useState, useMemo, useEffect } from 'react'
 
 import newsFeedIcon from '@/assets/dashboard/news-feed.svg'
-import crudeOilIcon from '@/assets/icons/crude-oil.png'
 import defaultIcon from '@/assets/icons/default.png'
-import evBatteryIcon from '@/assets/icons/ev-battery.png'
-import lngIcon from '@/assets/icons/lng.png'
-import semiconductorIcon from '@/assets/icons/semiconductor.png'
 import MIMenu from '@/components/common/menu/MIMenu'
 import MISelectMenu, { SelectMenuItem } from '@/components/common/menu/MISelectMenu'
-import DashboardCard, { DashboardCardRef } from '@/pages/mi/dashboard/components/common/DashboardCard'
+import DashboardCard from '@/pages/mi/dashboard/components/common/DashboardCard'
 import Feed from '@/pages/mi/dashboard/components/newsFeed/Feed'
 import Timeline from '@/pages/mi/dashboard/components/newsFeed/Timeline'
+import codeService from '@/service/common/code'
+import dashboardService from '@/service/mi/dashboard'
+import { getMarketIconInfo } from '@/utils/marketIcons'
 
-const marketsOptions: SelectMenuItem[] = [
-  {
-    group: 'market',
-    label: (
-      <Stack direction="row" alignItems="center" gap="6px">
-        <Box component="img" width={22} height={22} src={crudeOilIcon} alt="crude oil" /> Crude Oil
-      </Stack>
-    ),
-    value: 'crude-oil',
-  },
-  {
-    group: 'market',
-    label: (
-      <Stack direction="row" alignItems="center" gap="6px">
-        <Box component="img" width={22} height={22} src={lngIcon} alt="lng" /> Natural Gas
-      </Stack>
-    ),
-    value: 'natural-gas',
-  },
-  {
-    group: 'market',
-    label: (
-      <Stack direction="row" alignItems="center" gap="6px">
-        <Box component="img" width={22} height={22} src={semiconductorIcon} alt="semiconductor" /> Semiconductor
-      </Stack>
-    ),
-    value: 'semiconductor',
-  },
-  {
-    group: 'market',
-    label: (
-      <Stack direction="row" alignItems="center" gap="6px">
-        <Box component="img" width={22} height={22} src={evBatteryIcon} alt="ev battery" /> EV Battery
-      </Stack>
-    ),
-    value: 'ev-battery',
-  },
+const getMarketCategoryLabel = (codeId: string) => {
+  const { icon, label } = getMarketIconInfo(codeId)
+
+  return label === 'Unknown' ? null : (
+    <Stack direction="row" alignItems="center" gap="6px">
+      <Box component="img" width={22} height={22} src={icon} alt={codeId} /> {label}
+    </Stack>
+  )
+}
+
+const dummyCompaniesOptions: SelectMenuItem[] = [
   {
     group: 'company',
     label: (
@@ -123,18 +97,45 @@ const SettingsMenuItem = ({
 
 const NewsFeed = () => {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
-  const dashboardCardRef = useRef<DashboardCardRef>(null)
-  const [selectedMarket, setSelectedMarket] = useState<string>(marketsOptions[0].value)
+  const [categoryCode, setCategoryCode] = useState<string>('')
 
   const [displayStates, setDisplayStates] = useState<{ [key: string]: boolean }>({
     timeline: true,
     feed: true,
   })
 
+  const { data: marketCategoryCode } = useQuery({
+    queryKey: ['marketCategoryCode'],
+    queryFn: async () => await codeService.getMarketCategoryCode(),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  const { data: newsFeed } = useQuery({
+    queryKey: ['newsFeed', categoryCode],
+    queryFn: async () => await dashboardService.getNewsFeed(categoryCode),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+    enabled: !!categoryCode,
+  })
+
+  const marketCategoryCodeOptions = useMemo(
+    (): SelectMenuItem[] => [
+      ...(marketCategoryCode
+        ?.map((code) => ({
+          group: 'marketCategory',
+          label: getMarketCategoryLabel(code.codeId),
+          value: code.codeId,
+        }))
+        .filter(({ label }) => label !== null) ?? []),
+      ...dummyCompaniesOptions,
+    ],
+    [marketCategoryCode],
+  )
+
   const handleItemClick = async (id: string) => {
     setSelectedItemId(null)
     // DashboardCard가 펼쳐질 때까지 기다린 후 스크롤 시작
-    await dashboardCardRef.current?.expand()
     setSelectedItemId(id)
   }
 
@@ -145,9 +146,14 @@ const NewsFeed = () => {
     }))
   }
 
+  useEffect(() => {
+    if (marketCategoryCodeOptions.length > 0) {
+      setCategoryCode(marketCategoryCodeOptions[0].value)
+    }
+  }, [marketCategoryCodeOptions])
+
   return (
     <DashboardCard
-      ref={dashboardCardRef}
       icon={newsFeedIcon}
       title="News Feed"
       link="/mi/news-list"
@@ -155,9 +161,9 @@ const NewsFeed = () => {
         <Stack direction="row" gap="8px">
           <MISelectMenu
             variant="outlined"
-            selected={selectedMarket}
-            onSelected={setSelectedMarket}
-            items={marketsOptions}
+            selected={categoryCode}
+            onSelected={setCategoryCode}
+            items={marketCategoryCodeOptions}
             sx={{ minWidth: 148 }}
             groupDisplayType="divider"
           />
@@ -202,7 +208,7 @@ const NewsFeed = () => {
           </Box>
         </Fade>
       </Collapse>
-      <Feed selectedItemId={selectedItemId} onItemHighlighted={() => setSelectedItemId(null)} />
+      <Feed newsFeedList={newsFeed?.detail} selectedItemId={selectedItemId} onItemHighlighted={() => setSelectedItemId(null)} />
     </DashboardCard>
   )
 }
