@@ -35,6 +35,15 @@ export interface INewsFeedItem {
 }
 
 const dashboardService = {
+  async getTimeline(categoryCode: string): Promise<INewsFeedItem[]> {
+    const response: AxiosResponse<ICommonResponse<INewsFeedItem[]>> = await api.get('mi/market-news/timeline', {
+      params: {
+        category: categoryCode,
+      },
+    })
+
+    return response.data.data
+  },
   async getNewsFeed(categoryCode: string): Promise<INewsFeedItem[]> {
     const response: AxiosResponse<ICommonResponse<INewsFeedItem[]>> = await api.get('mi/market-news/feed', {
       params: {

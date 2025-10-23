@@ -15,10 +15,10 @@ const orderOptions = [
 ]
 
 interface FeedProps {
-  newsFeedList?: INewsFeedItem[]
+  newsFeedItems?: INewsFeedItem[]
 }
 
-const Feed = ({ newsFeedList }: FeedProps) => {
+const Feed = ({ newsFeedItems }: FeedProps) => {
   const [filter, setFilter] = useState(filterOptions[0].value)
   const [order, setOrder] = useState(orderOptions[0].value)
 
@@ -31,7 +31,7 @@ const Feed = ({ newsFeedList }: FeedProps) => {
           </Typography>
           <Box padding="6px 8px" borderRadius="100px" boxSizing="border-box" sx={{ backgroundColor: 'gray.30', userSelect: 'none' }}>
             <Typography component="div" variant="body2SB14" color="content.textBlack" textAlign="center">
-              {newsFeedList?.length ?? 0}
+              {newsFeedItems?.length ?? 0}
             </Typography>
           </Box>
         </Stack>
@@ -48,14 +48,14 @@ const Feed = ({ newsFeedList }: FeedProps) => {
         </Stack>
       </Stack>
       <Stack mt="12px">
-        {newsFeedList?.map((item, index) => (
+        {newsFeedItems?.map((item, index) => (
           <Fragment key={item.nwsSigId}>
             {index !== 0 && <Divider color="#DEE2E6" sx={{ my: '10px' }} />}
             <FeedItem item={item} />
           </Fragment>
         ))}
-        {!newsFeedList || newsFeedList.length === 0 ? (
-          <Stack height={452} justifyContent="center" alignItems="center">
+        {!newsFeedItems || newsFeedItems.length === 0 ? (
+          <Stack height={452} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
             <Typography variant="body2SB14" color="content.textNormal">
               No data available to display.
             </Typography>

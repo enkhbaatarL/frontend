@@ -385,10 +385,10 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
 
 interface TimelineProps extends BoxProps {
   onItemClick?: (id: string) => void
-  timeLineData?: INewsFeedItem[]
+  timeLineItems?: INewsFeedItem[]
 }
 
-const Timeline = ({ onItemClick, timeLineData, ...props }: TimelineProps) => {
+const Timeline = ({ onItemClick, timeLineItems, ...props }: TimelineProps) => {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [isHighlighted, setIsHighlighted] = useState(false)
 
@@ -413,8 +413,8 @@ const Timeline = ({ onItemClick, timeLineData, ...props }: TimelineProps) => {
   }
 
   const selectedItem = useMemo(
-    () => timeLineData?.find((item) => item.nwsSigId.toString() === selectedItemId),
-    [timeLineData, selectedItemId],
+    () => timeLineItems?.find((item) => item.nwsSigId.toString() === selectedItemId),
+    [timeLineItems, selectedItemId],
   )
 
   const handleItemClose = () => {
@@ -449,14 +449,14 @@ const Timeline = ({ onItemClick, timeLineData, ...props }: TimelineProps) => {
         <SectionHeader title="Timeline" tooltipTitle="" />
       </Box>
       <Stack alignContent="center" justifyContent="center" height="280px">
-        {!timeLineData || timeLineData.length === 0 ? (
-          <Stack height={280} justifyContent="center" alignItems="center">
+        {!timeLineItems || timeLineItems?.length === 0 ? (
+          <Stack height={280} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
             <Typography variant="body2SB14" color="content.textNormal" mt="-24px">
               No data available to display.
             </Typography>
           </Stack>
         ) : (
-          <TimelineBar data={timeLineData} onItemClick={handleItemClick} selectedItemId={selectedItemId} />
+          <TimelineBar data={timeLineItems} onItemClick={handleItemClick} selectedItemId={selectedItemId} />
         )}
       </Stack>
       {selectedItem && (

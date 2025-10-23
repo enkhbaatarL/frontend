@@ -110,7 +110,15 @@ const NewsFeed = () => {
     gcTime: 0,
   })
 
-  const { data: newsFeed } = useQuery({
+  const { data: timelineItems } = useQuery({
+    queryKey: ['timeline', categoryCode],
+    queryFn: async () => await dashboardService.getTimeline(categoryCode),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+    enabled: !!categoryCode,
+  })
+
+  const { data: newsFeedItems } = useQuery({
     queryKey: ['newsFeed', categoryCode],
     queryFn: async () => await dashboardService.getNewsFeed(categoryCode),
     refetchOnWindowFocus: false,
@@ -197,11 +205,11 @@ const NewsFeed = () => {
           }}
         >
           <Box mb="24px">
-            <Timeline my="12px" timeLineData={newsFeed} />
+            <Timeline my="12px" timeLineItems={timelineItems} />
           </Box>
         </Fade>
       </Collapse>
-      <Feed newsFeedList={newsFeed} />
+      <Feed newsFeedItems={newsFeedItems} />
     </DashboardCard>
   )
 }
