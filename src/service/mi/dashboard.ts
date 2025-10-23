@@ -32,7 +32,7 @@ export interface INewsFeedItem {
   nwsMrktCtgrCd: string
   newsSummaryId: number
   briefSummary: string
-  summary: string
+  summary: string[]
   title: string
   provider: string
   impctScre: number

@@ -96,7 +96,6 @@ const SettingsMenuItem = ({
 )
 
 const NewsFeed = () => {
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [categoryCode, setCategoryCode] = useState<string>('')
 
   const [displayStates, setDisplayStates] = useState<{ [key: string]: boolean }>({
@@ -132,12 +131,6 @@ const NewsFeed = () => {
     ],
     [marketCategoryCode],
   )
-
-  const handleItemClick = async (id: string) => {
-    setSelectedItemId(null)
-    // DashboardCard가 펼쳐질 때까지 기다린 후 스크롤 시작
-    setSelectedItemId(id)
-  }
 
   const handleSwitchToggle = (value: string) => {
     setDisplayStates((prev) => ({
@@ -204,11 +197,11 @@ const NewsFeed = () => {
           }}
         >
           <Box mb="24px">
-            <Timeline my="12px" onItemClick={handleItemClick} />
+            <Timeline my="12px" timeLineData={newsFeed?.detail} />
           </Box>
         </Fade>
       </Collapse>
-      <Feed newsFeedList={newsFeed?.detail} selectedItemId={selectedItemId} onItemHighlighted={() => setSelectedItemId(null)} />
+      <Feed newsFeedList={newsFeed?.detail} />
     </DashboardCard>
   )
 }

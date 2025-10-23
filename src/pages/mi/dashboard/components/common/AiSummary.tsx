@@ -17,6 +17,8 @@ interface Props {
 
 export interface AiSummaryHandle {
   toggle: () => void
+  open: () => void
+  close: () => void
   reset: () => void
 }
 
@@ -26,7 +28,6 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary }, ref) => 
   const [isLoading, setIsLoading] = useState(false)
   const [aiSummary, setAiSummary] = useState<AiSummaryData | null>(null)
 
-  // 언어 변경 시 summary 초기화 (임시)
   useEffect(() => {
     setAiSummary(null)
     setIsExpanded(false)
@@ -47,6 +48,27 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary }, ref) => 
     }
   }
 
+  const openSummary = async () => {
+    setIsExpanded(true)
+
+    if (aiSummary) {
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const data = await fetchSummary()
+      setAiSummary(data)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const closeSummary = () => {
+    setIsExpanded(false)
+    setIsLoading(false)
+  }
+
   const reset = () => {
     setIsExpanded(false)
     setIsLoading(false)
@@ -55,6 +77,8 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary }, ref) => 
 
   useImperativeHandle(ref, () => ({
     toggle: toggleSummary,
+    open: openSummary,
+    close: closeSummary,
     reset,
   }))
 

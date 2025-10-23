@@ -1,9 +1,9 @@
 import SouthAmericaIcon from '@mui/icons-material/SouthAmerica'
-import { Box, Divider, Stack, Typography } from '@mui/material'
+import { Box, Divider, Stack, StackProps, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import { useState, useEffect, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useState, useEffect, useRef, useMemo } from 'react'
 
+import CloseIcon from '@/components/common/icons/CloseIcon'
 import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
 import CategoryChip from '@/pages/mi/dashboard/components/common/CategoryChip'
 import TrendIcon from '@/pages/mi/dashboard/components/newsFeed/TrendIcon'
@@ -40,17 +40,17 @@ const getImpactLevel = (score: number): string => {
   return 'low'
 }
 
-interface FeedItemProps {
+interface FeedItemProps extends StackProps {
   item: INewsFeedItem
+  onClose?: () => void
   isHighlighted?: boolean
-  onRefSet?: (ref: HTMLDivElement | null) => void
+  focusMode?: boolean
 }
 
-const FeedItem = ({ item, isHighlighted, onRefSet }: FeedItemProps) => {
+const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedItemProps) => {
   const [shouldFlash, setShouldFlash] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const aiSummaryRef = useRef<AiSummaryHandle>(null)
-  const { t } = useTranslation()
 
   const trendColor = getTrendColor(item.drctnlt)
   const trendString = getTrendString(item.drctnlt)
@@ -70,22 +70,35 @@ const FeedItem = ({ item, isHighlighted, onRefSet }: FeedItemProps) => {
     }
   }, [isHighlighted])
 
+  // focuseMode일 때는 항상 확장된 상태로 설정하고 AI 요약 자동 열기
+  useEffect(() => {
+    if (focusMode) {
+      setIsExpanded(true)
+      setTimeout(() => aiSummaryRef.current?.open(), 100)
+    }
+  }, [focusMode, item.nwsSigId])
+
   const handleClick = () => {
-    setIsExpanded((prev) => !prev)
-    aiSummaryRef.current?.toggle()
+    if (focusMode) return
+
+    const newExpandedState = !isExpanded
+    setIsExpanded(newExpandedState)
+
+    if (newExpandedState) {
+      aiSummaryRef.current?.open()
+    } else {
+      aiSummaryRef.current?.close()
+    }
   }
 
-  // 임시 AI 요약 조회 함수
+  const handleClose = () => {
+    onClose?.()
+  }
+
   const fetchFeedSummary = async (): Promise<AiSummaryData> => {
     const summaryData: AiSummaryData = {
-      title: t('dashboard.sampleData.feed.summary.title'),
-      summary: [
-        t('dashboard.sampleData.feed.summary.summary.0'),
-        t('dashboard.sampleData.feed.summary.summary.1'),
-        t('dashboard.sampleData.feed.summary.summary.2'),
-        t('dashboard.sampleData.feed.summary.summary.3'),
-        t('dashboard.sampleData.feed.summary.summary.4'),
-      ].filter(Boolean),
+      title: item.briefSummary,
+      summary: item.summary,
     }
 
     return new Promise<AiSummaryData>((resolve) => {
@@ -95,15 +108,23 @@ const FeedItem = ({ item, isHighlighted, onRefSet }: FeedItemProps) => {
     })
   }
 
+  const backgroundColor = useMemo(() => {
+    if (focusMode) {
+      return 'commonColor.White'
+    }
+    return isExpanded ? 'contentBG.Hover' : 'transparent'
+  }, [focusMode, isExpanded])
+
   return (
     <Stack
-      ref={onRefSet}
       padding="12px 18px"
       borderRadius="10px"
+      {...props}
       sx={{
-        cursor: 'pointer',
+        cursor: focusMode ? 'default' : 'pointer',
         transition: 'all 0.2s ease-in-out',
-        backgroundColor: isExpanded ? '#F0F3F6' : 'transparent',
+        backgroundColor,
+        boxShadow: focusMode ? '0px 0px 20px 0px rgba(0, 0, 0, 0.15)' : undefined,
         border: '1px solid transparent',
         boxSizing: 'border-box',
         position: 'relative',
@@ -124,34 +145,42 @@ const FeedItem = ({ item, isHighlighted, onRefSet }: FeedItemProps) => {
           transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
         },
         '&:hover': {
-          backgroundColor: '#F0F3F6',
+          backgroundColor: focusMode ? undefined : 'contentBG.Hover',
         },
         userSelect: 'none',
+        ...props.sx,
       }}
       onClick={handleClick}
     >
-      <Stack direction="row" gap="8px">
-        {getFeedIcon(item.nwsMrktCtgrCd) && (
-          <CategoryChip>
-            <Box component="img" width={22} height={22} src={getFeedIcon(item.nwsMrktCtgrCd)} alt={item.nwsMrktCtgrCd} />
+      <Stack direction="row" justifyContent="space-between">
+        <Stack direction="row" gap="8px">
+          {getFeedIcon(item.nwsMrktCtgrCd) && (
+            <CategoryChip>
+              <Box component="img" width={22} height={22} src={getFeedIcon(item.nwsMrktCtgrCd)} alt={item.nwsMrktCtgrCd} />
+            </CategoryChip>
+          )}
+          <CategoryChip padding="6px 8px 6px 6px">
+            <Stack direction="row" alignItems="center" gap="4px">
+              <SouthAmericaIcon sx={{ fontSize: 16, color: 'content.iconEnabled' }} />
+              <Typography variant="labelText" color="content.textNormal">
+                Global
+              </Typography>
+            </Stack>
           </CategoryChip>
-        )}
-        <CategoryChip padding="6px 8px 6px 6px">
-          <Stack direction="row" alignItems="center" gap="4px">
-            <SouthAmericaIcon sx={{ fontSize: 16, color: 'content.iconEnabled' }} />
-            <Typography variant="labelText" color="content.textNormal">
-              Global
+          <CategoryChip>
+            <TrendIcon sentiment={trendString} impact={impactLevel} />
+          </CategoryChip>
+          <CategoryChip padding="6px 8px">
+            <Typography variant="body2SB14" color="content.textNormal">
+              {item.impctScre}
             </Typography>
+          </CategoryChip>
+        </Stack>
+        {focusMode && (
+          <Stack width={28} height={28} alignItems="center" justifyContent="center">
+            <CloseIcon style={{ color: 'contentIcon.Enabled', cursor: 'pointer' }} onClick={handleClose} />
           </Stack>
-        </CategoryChip>
-        <CategoryChip>
-          <TrendIcon sentiment={trendString} impact={impactLevel} />
-        </CategoryChip>
-        <CategoryChip padding="6px 8px">
-          <Typography variant="body2SB14" color="content.textNormal">
-            {item.impctScre}
-          </Typography>
-        </CategoryChip>
+        )}
       </Stack>
       <Stack py="8px">
         <Typography

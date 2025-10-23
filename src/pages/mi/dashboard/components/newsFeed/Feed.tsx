@@ -1,13 +1,13 @@
 import { Box, Divider, Stack, Typography } from '@mui/material'
-import { Fragment, useState, useEffect, useRef } from 'react'
+import { Fragment, useState } from 'react'
 
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import FeedItem from '@/pages/mi/dashboard/components/newsFeed/FeedItem'
 import { INewsFeedItem } from '@/service/mi/dashboard'
 
-const filter2Options = [{ label: 'Filters', value: 'filters' }]
+const filterOptions = [{ label: 'Filters', value: 'filters' }]
 
-const filter3Options = [
+const orderOptions = [
   { label: 'Highest', value: 'highest' },
   { label: 'Lowest', value: 'lowest' },
   { label: 'Newest', value: 'newest' },
@@ -16,33 +16,11 @@ const filter3Options = [
 
 interface FeedProps {
   newsFeedList?: INewsFeedItem[]
-  selectedItemId?: string | null
-  onItemHighlighted?: () => void
 }
 
-const Feed = ({ newsFeedList, selectedItemId, onItemHighlighted }: FeedProps) => {
-  const [filter2, setFilter2] = useState(filter2Options[0].value)
-  const [filter3, setFilter3] = useState(filter3Options[0].value)
-  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({})
-
-  // 선택된 아이템으로 스크롤
-  useEffect(() => {
-    if (selectedItemId && itemRefs.current[selectedItemId]) {
-      const element = itemRefs.current[selectedItemId]
-      element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-
-      // 하이라이트가 끝난 후 상태 초기화
-      const timer = setTimeout(() => {
-        onItemHighlighted?.()
-      }, 1500)
-
-      return () => clearTimeout(timer)
-    } else {
-      // selectedItemId가 null이면 즉시 상태 초기화
-      onItemHighlighted?.()
-      return () => {}
-    }
-  }, [selectedItemId, onItemHighlighted])
+const Feed = ({ newsFeedList }: FeedProps) => {
+  const [filter, setFilter] = useState(filterOptions[0].value)
+  const [order, setOrder] = useState(orderOptions[0].value)
 
   return (
     <Stack px="12px">
@@ -61,25 +39,19 @@ const Feed = ({ newsFeedList, selectedItemId, onItemHighlighted }: FeedProps) =>
           <MISelectMenu
             variant="outlined"
             selectType="none"
-            selected={filter2}
-            onSelected={setFilter2}
-            items={filter2Options}
+            selected={filter}
+            onSelected={setFilter}
+            items={filterOptions}
             sx={{ minWidth: 100 }}
           />
-          <MISelectMenu variant="outlined" selected={filter3} onSelected={setFilter3} items={filter3Options} sx={{ minWidth: 110 }} />
+          <MISelectMenu variant="outlined" selected={order} onSelected={setOrder} items={orderOptions} sx={{ minWidth: 110 }} />
         </Stack>
       </Stack>
       <Stack mt="12px">
         {newsFeedList?.map((item, index) => (
           <Fragment key={item.nwsSigId}>
             {index !== 0 && <Divider color="#DEE2E6" sx={{ my: '10px' }} />}
-            <FeedItem
-              item={item}
-              isHighlighted={selectedItemId === item.nwsSigId.toString()}
-              onRefSet={(ref) => {
-                itemRefs.current[item.nwsSigId.toString()] = ref
-              }}
-            />
+            <FeedItem item={item} />
           </Fragment>
         ))}
         {!newsFeedList || newsFeedList.length === 0 ? (
