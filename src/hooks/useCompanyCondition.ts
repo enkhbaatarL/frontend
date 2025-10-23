@@ -34,7 +34,7 @@ export const useCompanyCondition = () => {
           ...baseDenied,
             'dashboard' as MiPagesType,
             'custom' as MiPagesType,
-            'news-list' as MiPagesType,
+            'market-news' as MiPagesType,
             'newsletters' as MiPagesType,
             'economic-event' as MiPagesType,
             'parallel-coordinates' as MiPagesType,

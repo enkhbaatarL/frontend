@@ -149,7 +149,7 @@ const NewsFeed = () => {
     <DashboardCard
       icon={newsFeedIcon}
       title="News Feed"
-      link="/mi/news-list"
+      link="/mi/market-news"
       headerContent={
         <Stack direction="row" gap="8px">
           <MISelectMenu
@@ -197,11 +197,11 @@ const NewsFeed = () => {
           }}
         >
           <Box mb="24px">
-            <Timeline my="12px" timeLineData={newsFeed?.detail} />
+            <Timeline my="12px" timeLineData={newsFeed} />
           </Box>
         </Fade>
       </Collapse>
-      <Feed newsFeedList={newsFeed?.detail} />
+      <Feed newsFeedList={newsFeed} />
     </DashboardCard>
   )
 }

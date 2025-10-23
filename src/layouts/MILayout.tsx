@@ -67,7 +67,7 @@ const activeMenu: MiPagesType[] = [
   'signal-map',
   'market-data',
   'insights',
-  'news-list',
+  'market-news',
   'parallel-coordinates',
   'custom',
 ]

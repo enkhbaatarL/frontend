@@ -1,13 +1,12 @@
 import { Box, Stack, Typography, Collapse, Fade } from '@mui/material'
-import { isEmpty } from 'lodash-es'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import TagChip from '@/components/common/chip/TagChip'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import InlineNotice from '@/components/common/notice/InlineNotice'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
-import SourceDropdownChip from '@/pages/mi/dashboard/components/common/SourceDropdownChip'
-import { MarketItem, MarketItemType, SourceOption } from '@/service/mi/dashboard'
+import { MarketItem, MarketItemType } from '@/service/mi/dashboard'
 
 const options = [
   { label: 'Detailed', value: 'detailed' },
@@ -35,26 +34,6 @@ const Icon = ({ type }: { type: MarketItemType }) => {
     >
       <Box borderRadius="4px" width={16} height={16} display="flex" sx={{ background: getColor() }} />
     </Box>
-  )
-}
-
-const convertSources = (sources: SourceOption[]): SourceOption[][] => {
-  const [source1, source2, ...rest] = sources
-
-  return [source1 ? [source1] : [], source2 ? [source2] : [], rest.filter((source) => !isEmpty(source))].filter(
-    (sourceGroup) => sourceGroup.length > 0,
-  )
-}
-
-const SourceItems = ({ sources, padding = '6px 20px' }: { sources: SourceOption[]; padding?: string }) => {
-  const convertedSources = convertSources(sources)
-
-  return (
-    <Stack direction="row" padding={padding} gap="8px">
-      {convertedSources.map((item, index) => (
-        <SourceDropdownChip key={index} sources={item} onSourceSelected={(_source) => {}} />
-      ))}
-    </Stack>
   )
 }
 
@@ -95,7 +74,7 @@ const HighlightsItem = ({
               </Typography>
             ))}
           </Stack>
-          <SourceItems sources={item.sources} />
+          <TagChip items={item.sources} ellipsisRange={2} padding="6px 20px" />
         </Stack>
       </Collapse>
     </Stack>
@@ -215,7 +194,7 @@ const Highlights = () => {
                   </Typography>
                 ))}
               </Stack>
-              <SourceItems sources={sampleData.narrative.sources} padding="6px 0 12px" />
+              <TagChip items={sampleData.narrative.sources} ellipsisRange={2} padding="6px 0 12px" />
             </Stack>
           )}
         </Box>

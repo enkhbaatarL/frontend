@@ -13,6 +13,7 @@ export interface AiSummaryData {
 
 interface Props {
   fetchSummary: () => Promise<AiSummaryData>
+  viewOriginal?: () => void
 }
 
 export interface AiSummaryHandle {
@@ -22,7 +23,7 @@ export interface AiSummaryHandle {
   reset: () => void
 }
 
-const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary }, ref) => {
+const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOriginal }, ref) => {
   const { t, i18n } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -141,6 +142,7 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary }, ref) => 
                     size="h28"
                     onClick={(e) => {
                       e.stopPropagation()
+                      viewOriginal?.()
                     }}
                   >
                     <Box display="flex" alignItems="center" gap={1}>

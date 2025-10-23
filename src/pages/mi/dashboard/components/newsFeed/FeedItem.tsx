@@ -2,6 +2,7 @@ import SouthAmericaIcon from '@mui/icons-material/SouthAmerica'
 import { Box, Divider, Stack, StackProps, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import CloseIcon from '@/components/common/icons/CloseIcon'
 import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
@@ -56,6 +57,8 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
   const trendString = getTrendString(item.drctnlt)
   const impactLevel = getImpactLevel(item.impctScre)
 
+  const navigate = useNavigate()
+
   useEffect(() => {
     if (isHighlighted) {
       setShouldFlash(true)
@@ -93,6 +96,10 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
 
   const handleClose = () => {
     onClose?.()
+  }
+
+  const handleViewOriginal = () => {
+    navigate(`/mi/market-news/${item.newsSummaryId}`)
   }
 
   const fetchFeedSummary = async (): Promise<AiSummaryData> => {
@@ -207,7 +214,7 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
           </Typography>
         </Stack>
       </Stack>
-      <AiSummary ref={aiSummaryRef} fetchSummary={fetchFeedSummary} />
+      <AiSummary ref={aiSummaryRef} fetchSummary={fetchFeedSummary} viewOriginal={handleViewOriginal} />
     </Stack>
   )
 }

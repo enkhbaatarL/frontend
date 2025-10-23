@@ -1,21 +1,16 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios.ts'
-import { ICommonResponse, IPaginationResponse } from '@/types/api'
+import { ICommonResponse } from '@/types/api'
 
 export type MarketItemType = 'positive' | 'neutral' | 'negative'
-
-export interface SourceOption {
-  name: string
-  link: string
-}
 
 export interface MarketItem {
   id: string
   type?: MarketItemType
   title: string
   summary: string[]
-  sources: SourceOption[]
+  sources: { name: string; link: string }[]
   impact?: string
 }
 
@@ -40,9 +35,8 @@ export interface INewsFeedItem {
 }
 
 const dashboardService = {
-  async getNewsFeed(categoryCode: string): Promise<IPaginationResponse<INewsFeedItem>> {
-    // TODO: API 변경시 IPaginationResponse 제거 필요
-    const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsFeedItem>>> = await api.get('mi/market-news/feed', {
+  async getNewsFeed(categoryCode: string): Promise<INewsFeedItem[]> {
+    const response: AxiosResponse<ICommonResponse<INewsFeedItem[]>> = await api.get('mi/market-news/feed', {
       params: {
         category: categoryCode,
       },

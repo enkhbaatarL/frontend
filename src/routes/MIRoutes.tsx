@@ -11,6 +11,7 @@ import ForecastPage from '@/pages/mi/forecast/ForecastPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
+import NewsDetailPage from '@/pages/mi/news/NewsDetailPage'
 import NewsPage from '@/pages/mi/news/NewsPage'
 import NewsletterDetailPage from '@/pages/mi/newsletter/NewsletterDetailPage'
 import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
@@ -82,8 +83,17 @@ const MIRoutes: RouteObject = {
       element: <CustomPage />,
     },
     {
-      path: 'news-list',
-      element: <NewsPage />,
+      path: 'market-news',
+      children: [
+        {
+          index: true,
+          element: <NewsPage />,
+        },
+        {
+          path: ':newsSummaryId',
+          element: <NewsDetailPage />,
+        },
+      ],
     },
     {
       path: 'parallel-coordinates',

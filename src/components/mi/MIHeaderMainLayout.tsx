@@ -106,7 +106,7 @@ const SUBMENUS: Record<string, SubItem[]> = {
     },
     {
       label: 'Market News',
-      to: '/mi/news-list',
+      to: '/mi/market-news',
       desc: 'submenu.marketNews.desc',
       disable: false,
       show: false,

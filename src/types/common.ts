@@ -31,7 +31,7 @@ export type MiPagesType =
   | 'signal-map'
   | 'newsletters'
   | 'economic-event'
-  | 'news-list'
+  | 'market-news'
   | 'parallel-coordinates'
   | 'custom'
   | 'market-data'
