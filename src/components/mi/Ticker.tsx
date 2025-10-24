@@ -109,11 +109,11 @@ const MarketItemContent = ({
         fontSize={'14px'}
         lineHeight={1}
         sx={{
-          WebkitLineClamp: 1,
           maxWidth: '100px',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
+          display: 'block',
         }}
         variant="fileName"
       >
