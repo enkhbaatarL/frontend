@@ -208,6 +208,7 @@ const MISelect = ({
       },
 
       '.MuiOutlinedInput-root': {
+        height: '40px !important',
         '.MuiAutocomplete-clearIndicator': {
           display: type === 'button' || sizeSelect === 'h26' ? 'none !important' : 'flex !important',
           visibility: shouldShowClearButton ? 'visible' : 'hidden',
