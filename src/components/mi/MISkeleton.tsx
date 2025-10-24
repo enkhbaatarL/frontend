@@ -12,6 +12,7 @@ interface Props {
     | 'insights'
     | 'signalMap'
     | 'dataDetail'
+    | 'newsDetail'
     | 'boardPage'
     | 'boardDetail'
     | 'helpCenter'
@@ -48,6 +49,8 @@ const MISkeleton = ({ loading, children, variant = 'dashboard', rows, columns, f
       return <MIPageSkeletons.SignalMap />
     case 'dataDetail':
       return <MIPageSkeletons.DataDetail />
+    case 'newsDetail':
+      return <MIPageSkeletons.NewsDetail />
     case 'boardPage':
       return <MIPageSkeletons.BoardPageSkeleton />
     case 'boardDetail':

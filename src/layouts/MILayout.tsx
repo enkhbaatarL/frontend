@@ -250,9 +250,8 @@ const MILayout = () => {
   const mariAgentTopPosition = useMemo(() => {
     const scrolledGap = isScrolled ? -headerTopHeight : 0
     const basePosition = 117 + scrolledGap
-    const totalPosition = basePosition + stickyHeaderHeight
 
-    return totalPosition
+    return basePosition + stickyHeaderHeight
   }, [isScrolled, stickyHeaderHeight])
 
   return (

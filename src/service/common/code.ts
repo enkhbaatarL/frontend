@@ -9,7 +9,7 @@ interface ICode {
 const apiUrl = 'common/codes'
 
 const codeService = {
-  async getMarketCategoryCode(): Promise<ICode[]> {
+  async getNewsMarketCategoryCode(): Promise<ICode[]> {
     const response = await api.get(`${apiUrl}/nws_mrkt_ctgr_cd`)
     return response.data.data
   },

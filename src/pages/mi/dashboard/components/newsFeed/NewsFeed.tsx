@@ -105,7 +105,7 @@ const NewsFeed = () => {
 
   const { data: marketCategoryCode } = useQuery({
     queryKey: ['marketCategoryCode'],
-    queryFn: async () => await codeService.getMarketCategoryCode(),
+    queryFn: async () => await codeService.getNewsMarketCategoryCode(),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })

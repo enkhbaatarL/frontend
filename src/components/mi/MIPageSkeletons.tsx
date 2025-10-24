@@ -563,6 +563,40 @@ export const MIPageSkeletons = {
     </Box>
   ),
 
+  // News Detail 상세 페이지 패턴
+  NewsDetail: () => (
+    <Box>
+      <MIBaseSkeleton.BaseElement width={'100%'} height={'298px'} />
+      <Box
+        minWidth={'1380px'}
+        width={'1380px'}
+        margin={'auto'}
+        display={'flex'}
+        flexDirection={'column'}
+        height={'1498px'}
+        marginTop={'40px'}
+      >
+        <SkeletonWrapper.Row gap={'24px'}>
+          <Box width={'1070px'} height={'1498px'}>
+            <MIBaseSkeleton.BaseElement2 width={'100%'} height={'806px'} sx={{ marginBottom: '38px' }} />
+          </Box>
+          <Box alignSelf={'flex-start'}>
+            <Box pt={'12px'} pb={'12px'}>
+              <MIBaseSkeleton.BaseElement2 width={'286px'} height={'24px'} />
+              <MIBaseSkeleton.BaseElement2 width={'238px'} height={'24px'} sx={{ marginTop: '4px' }} />
+              <MIBaseSkeleton.BaseElement2 width={'203px'} height={'24px'} sx={{ marginTop: '4px' }} />
+            </Box>
+            <Box pt={'12px'} pb={'12px'}>
+              <MIBaseSkeleton.BaseElement2 width={'286px'} height={'24px'} />
+              <MIBaseSkeleton.BaseElement2 width={'238px'} height={'24px'} sx={{ marginTop: '4px' }} />
+              <MIBaseSkeleton.BaseElement2 width={'203px'} height={'24px'} sx={{ marginTop: '4px' }} />
+            </Box>
+          </Box>
+        </SkeletonWrapper.Row>
+      </Box>
+    </Box>
+  ),
+
   // 게시판 스켈레톤
   BoardPageSkeleton: () => (
     <Box maxWidth={'1380px'} margin={'auto'} paddingX={7.5}>

@@ -1,7 +1,7 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import TagChip from '@/components/common/chip/TagChip'
 import MILine from '@/components/common/divider/MILine'
@@ -12,6 +12,8 @@ const NewsDetailPage = () => {
   const pathParams = useParams()
   const newsSummaryId = pathParams.newsSummaryId
 
+  const navigate = useNavigate()
+
   const { data: newsSummaryData, isLoading: newsSummaryDataIsLoading } = useQuery({
     queryKey: ['newsSummaryData', newsSummaryId],
     queryFn: () => marketNewsService.getNewsSummaryData(newsSummaryId!),
@@ -21,10 +23,10 @@ const NewsDetailPage = () => {
   })
 
   return (
-    <MISkeleton variant={'dataDetail'} loading={newsSummaryDataIsLoading}>
+    <MISkeleton variant={'newsDetail'} loading={newsSummaryDataIsLoading}>
       <Box paddingTop={'56px'} paddingBottom={'30px'}>
         <Box paddingX={7.5} boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
-          <Typography color="contentText.Normal" variant="subtext1">
+          <Typography color="contentText.Normal" variant="subtext1" sx={{ cursor: 'pointer' }} onClick={() => navigate('/mi/market-news')}>
             Market News
           </Typography>
           <Typography paddingY={6.5} color="contentText.Black" component="h1" lineHeight={1.2} variant="titleSubPage">
