@@ -194,8 +194,8 @@ const SignalMapPage = () => {
             <MISelect
               value={period}
               sizeSelect="h40"
-              minWidth={160}
               useAllOption
+              width={160}
               type={'button'}
               onChange={(e) => setPeriod(e.target.value as string)}
               options={periodOptions}
@@ -204,7 +204,7 @@ const SignalMapPage = () => {
               <MISelect
                 value={companyFilter}
                 sizeSelect="h40"
-                width={180}
+                width={160}
                 useAllOption
                 type={'button'}
                 onChange={(e) => setCompanyFilter(e.target.value as string)}

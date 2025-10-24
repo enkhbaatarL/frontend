@@ -1,6 +1,6 @@
 import { Box, Typography, Tooltip } from '@mui/material'
 import cloneDeep from 'lodash-es/cloneDeep'
-import { MouseEvent, useRef, useEffect, useState } from 'react'
+import { MouseEvent, useRef, useState, useEffect } from 'react'
 // import { useTranslation } from 'react-i18next'
 
 import MIButton from '@/components/common/button/MIButton'
@@ -13,10 +13,33 @@ interface TickerDetailPanelProps {
   onViewDetails?: (event: MouseEvent<HTMLButtonElement>) => void
 }
 
-const TickerDetailPanel = ({ item: originalItem, onClose, onViewDetails }: TickerDetailPanelProps) => {
-  const titleRef = useRef<HTMLSpanElement>(null)
-  const [isTitleOverflow, setIsTitleOverflow] = useState(false)
+const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & any) => {
+  const textRef = useRef<HTMLDivElement>(null)
+  const [isOverflowing, setIsOverflowing] = useState(false)
 
+  useEffect(() => {
+    const element = textRef.current
+    if (element) {
+      setIsOverflowing(element.scrollWidth > element.clientWidth)
+    }
+  }, [text])
+
+  const typography = (
+    <Typography ref={textRef} {...typographyProps}>
+      {text}
+    </Typography>
+  )
+
+  return isOverflowing ? (
+    <Tooltip title={text} arrow>
+      {typography}
+    </Tooltip>
+  ) : (
+    typography
+  )
+}
+
+const TickerDetailPanel = ({ item: originalItem, onClose, onViewDetails }: TickerDetailPanelProps) => {
   const item = cloneDeep(originalItem)
 
   const getChangeData = () => {
@@ -44,7 +67,7 @@ const TickerDetailPanel = ({ item: originalItem, onClose, onViewDetails }: Ticke
   item.marketMetaDataSummary.period = changeData.period ? changeData.period : '-'
   item.marketMetaDataSummary.previousValue = item.marketMetaDataSummary.previousValue || '-'
   item.marketMetaDataSummary.providerName = item.marketMetaDataSummary.providerName || '-'
-  item.marketMetaDataSummary.goodsDataSourceExpn = item.marketMetaDataSummary.goodsDataSourceExpn ||  undefined
+  item.marketMetaDataSummary.goodsDataSourceExpn = item.marketMetaDataSummary.goodsDataSourceExpn || undefined
 
   // change 값에 따른 색상 결정
   const getChangeColor = (value: number) => {
@@ -54,12 +77,6 @@ const TickerDetailPanel = ({ item: originalItem, onClose, onViewDetails }: Ticke
   }
 
   const titleText = item.marketMetaDataSummary.goodsDataSourceNm
-
-  useEffect(() => {
-    if (titleRef.current) {
-      setIsTitleOverflow(titleRef.current.scrollWidth > titleRef.current.clientWidth)
-    }
-  }, [titleText])
 
   return (
     <Box
@@ -89,39 +106,18 @@ const TickerDetailPanel = ({ item: originalItem, onClose, onViewDetails }: Ticke
           gap: '8px',
         }}
       >
-        {isTitleOverflow ? (
-          <Tooltip title={titleText} arrow>
-            <Typography
-              ref={titleRef}
-              variant="contentTitle"
-              color="gray.70"
-              sx={{
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                minWidth: 0,
-                flex: 1,
-              }}
-            >
-              {titleText}
-            </Typography>
-          </Tooltip>
-        ) : (
-          <Typography
-            ref={titleRef}
-            variant="contentTitle"
-            color="gray.70"
-            sx={{
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              minWidth: 0,
-              flex: 1,
-            }}
-          >
-            {titleText}
-          </Typography>
-        )}
+        <TruncatedTextWithTooltip
+          text={titleText}
+          variant="contentTitle"
+          color="gray.70"
+          sx={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            minWidth: 0,
+            flex: 1,
+          }}
+        />
       </Box>
 
       <Box sx={{ mt: '-1px' }}>
@@ -130,7 +126,7 @@ const TickerDetailPanel = ({ item: originalItem, onClose, onViewDetails }: Ticke
 
       <Box py="12px" display="flex" gap="8px">
         <Box flex={1} display="flex" flexDirection="column" gap="2px">
-          <Typography variant="body3" color="gray.60" >
+          <Typography variant="body3" color="gray.60">
             Last
           </Typography>
           <Typography variant="infoDocument" color="gray.70" sx={{ mt: '-3px' }}>
@@ -146,7 +142,7 @@ const TickerDetailPanel = ({ item: originalItem, onClose, onViewDetails }: Ticke
         <Box flex={1} display="flex" flexDirection="column" gap="16px">
           <Box display="flex">
             <Box flex={1} display="flex" flexDirection="column" gap="2px">
-              <Typography variant="body3" color="gray.60" >
+              <Typography variant="body3" color="gray.60">
                 Unit
               </Typography>
               <Typography variant="body2SB14" color="gray.70" sx={{ mt: '-2px' }}>
@@ -187,7 +183,7 @@ const TickerDetailPanel = ({ item: originalItem, onClose, onViewDetails }: Ticke
             <MILine />
           </Box>
           <Box sx={{ mt: '3px', mb: '8px' }}>
-            <Typography variant="body3M12" color="gray.60" style={{  lineHeight: '1.4', display: 'inline-block' }}>
+            <Typography variant="body3M12" color="gray.60" style={{ lineHeight: '1.4', display: 'inline-block' }}>
               {item.marketMetaDataSummary.goodsDataSourceExpn}
             </Typography>
           </Box>

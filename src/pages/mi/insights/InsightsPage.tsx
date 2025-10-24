@@ -314,12 +314,16 @@ const InsightsPage = () => {
               <Grid container direction={'row'} wrap={'nowrap'} gap={3.5}>
                 <MISelect
                   sx={{ width: 160 }}
+                  sizeSelect="h40"
+                  type={'button'}
                   options={sortOptions}
                   value={filter.sort ?? 'NEWEST'}
                   onChange={(e) => updateFilterWithSearch('sort', String(e.target.value ?? 'NEWEST'))}
                 />
                 <MISelect
                   sx={{ width: 160 }}
+                  sizeSelect="h40"
+                  type={'button'}
                   options={periodOptions}
                   value={filter.period ?? 'ALL_DATES'}
                   onChange={(e) => updateFilterWithSearch('period', String(e.target.value ?? 'ALL_DATES'))}

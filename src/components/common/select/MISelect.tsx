@@ -180,6 +180,7 @@ const MISelect = ({
       return {
         padding: '7px 12px',
         fontSize: '14px',
+        height: '40px'
       }
     }
 
