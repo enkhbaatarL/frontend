@@ -1,4 +1,4 @@
-import { Box, FormControlLabel, FormGroup, Grid2 as Grid, Typography, Tooltip } from '@mui/material'
+import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 // import dayjs from 'dayjs'
 // import { useNavigate } from 'react-router-dom'
@@ -8,9 +8,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import InsightsDocumentItem from './components/InsightsDocumentItem'
 
-import AdminCheckbox from '@/components/admin/AdminCheckbox'
+import MIFilterGroup from '@/components/common/filter/MIFilterGroup'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
-import InfoIcon from '@/components/common/icons/table/InfoIconMedium'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISelect from '@/components/common/select/MISelect'
@@ -196,11 +195,8 @@ const InsightsPage = () => {
     return []
   }, [convertToTypes, insightsData])
 
-  const handleFilterChange = (value: string, filterType: 'docFilters' | 'provFilters' | 'langFilters') => {
-    const currentFilters = (filter?.[filterType] ?? '').split(',').filter(Boolean)
-    const updatedFilters = currentFilters.includes(value) ? currentFilters.filter((v: string) => v !== value) : [...currentFilters, value]
-
-    updateFilterWithSearch(filterType, updatedFilters.join(','))
+  const handleFilterChange = (filterType: 'docFilters' | 'provFilters' | 'langFilters', selectedFilters: string[]) => {
+    updateFilterWithSearch(filterType, selectedFilters.join(','))
   }
 
   const getFilterType = (sectionTitle: string): 'docFilters' | 'provFilters' | 'langFilters' => {
@@ -328,54 +324,26 @@ const InsightsPage = () => {
               width: 286,
             }}
           >
-            <Grid container direction={'column'} gap={6}>
-              <Grid container border={'1px solid'} borderColor={'gray.30'} borderRadius={1} gap={6} padding={6} flexShrink={0}>
-                {filters?.map((section) => {
-                  const filterType = getFilterType(section.title)
-                  const checkedValues = (filter?.[filterType] ?? '').split(',')
-                  return (
-                    <Box key={section.title}>
-                      <Typography mb={2.5} color="gray.70" component="h2" variant="sidePanelTitle">
-                        {section.title}
-                      </Typography>
-                      <FormGroup sx={{ gap: 1 }}>
-                        {section.options.map((option: { label: string; value: string; codeExpn: string }) => (
-                          <FormControlLabel
-                            key={option.value}
-                            sx={{
-                              p: '6px 10px 8px 0px',
-                              mr: 0,
-                              '.MuiTypography-root': { fontSize: '14px', lineHeight: 1.4 },
-                            }}
-                            control={
-                              <AdminCheckbox
-                                checked={checkedValues.includes(option.value)}
-                                value={option.value}
-                                onChange={(e) => handleFilterChange(e.target.value, filterType)}
-                              />
-                            }
-                            label={
-                              option.label ? (
-                                <Box display="flex" alignItems="center" gap={0.5}>
-                                  {option.label}
-                                  {section.title.toLowerCase().includes('document') && option.codeExpn && (
-                                    <Tooltip title={option.codeExpn} arrow>
-                                      <InfoIcon />
-                                    </Tooltip>
-                                  )}
-                                </Box>
-                              ) : (
-                                option.label
-                              )
-                            }
-                          />
-                        ))}
-                      </FormGroup>
-                    </Box>
-                  )
-                })}
-              </Grid>
-              {/* <Box border={'1px solid'} borderColor={'gray.30'} borderRadius={1} padding={3} flexShrink={0}>
+            <Box
+              display={'flex'}
+              flexDirection={'column'}
+              border={'1px solid'}
+              borderColor={'gray.30'}
+              borderRadius={1}
+              padding={'24px 12px'}
+              boxSizing={'border-box'}
+              gap={6}
+            >
+              {filters?.map((section) => (
+                <MIFilterGroup
+                  key={section.title}
+                  title={section.title}
+                  filters={section.options}
+                  onFilterChange={(selectedFilters) => handleFilterChange(getFilterType(section.title), selectedFilters)}
+                />
+              ))}
+            </Box>
+            {/* <Box border={'1px solid'} borderColor={'gray.30'} borderRadius={1} padding={3} flexShrink={0}>
                 <Typography color="gray.70" component="h2" variant="sidePanelTitle" padding={2}>
                   Recent Viewed
                 </Typography>
@@ -419,7 +387,6 @@ const InsightsPage = () => {
                   </Typography>
                 )}
               </Box> */}
-            </Grid>
           </Box>
         </Grid>
       </Box>

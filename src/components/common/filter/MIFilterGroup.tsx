@@ -5,11 +5,12 @@ import AdminCheckbox from '@/components/admin/AdminCheckbox'
 
 interface Props extends Omit<StackProps, 'title'> {
   title?: ReactNode
-  filters: { label: string; value: string }[]
+  type?: 'panel' | 'menu'
+  filters: { label: string; badge?: string; value: string }[]
   onFilterChange?: (selectedFilters: string[]) => void
 }
 
-const MIFilterGroup = ({ title, filters, onFilterChange, ...props }: Props) => {
+const MIFilterGroup = ({ title, type = 'panel', filters, onFilterChange, ...props }: Props) => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
   const [isEllipsis, setIsEllipsis] = useState<{ [key: string]: boolean }>({})
 
@@ -66,12 +67,16 @@ const MIFilterGroup = ({ title, filters, onFilterChange, ...props }: Props) => {
   }, [filters, checkEllipsis])
 
   return (
-    <Stack px="6px" boxSizing="border-box" gap="12px" {...props}>
-      <Typography variant="sidePanelTitle" color="contentText.Normal" px="6px">
+    <Stack px="6px" boxSizing="border-box" gap={type === 'panel' ? '12px' : '8px'} {...props}>
+      <Typography
+        variant={type === 'panel' ? 'sidePanelTitle' : 'body3M12'}
+        color={`contentText.${type === 'panel' ? 'Normal' : 'Subtext'}`}
+        px="6px"
+      >
         {title}
       </Typography>
       <FormGroup sx={{ gap: '2px' }}>
-        {filters.map(({ label, value }) => (
+        {filters.map(({ label, badge, value }) => (
           <Tooltip
             key={value}
             title={isEllipsis[value] ? label : ''}
@@ -86,13 +91,17 @@ const MIFilterGroup = ({ title, filters, onFilterChange, ...props }: Props) => {
                 width: '100%',
                 height: '34px',
                 padding: '6px 10px',
-                borderRadius: '10px',
+                borderRadius: '4px',
                 margin: 0,
                 display: 'flex',
                 alignItems: 'center',
                 cursor: 'pointer',
                 '&:hover': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  backgroundColor: 'contentBG.Hover',
+                  '& .MuiCheckbox-root.MuiButtonBase-root > span:first-of-type': {
+                    backgroundColor: selectedFilters.includes(value) ? '#2E3F5E' : '#ebf1f5',
+                    borderColor: '#2E3F5E',
+                  },
                 },
               }}
               onClick={() => handleFilterChange(value, !selectedFilters.includes(value))}
@@ -104,6 +113,11 @@ const MIFilterGroup = ({ title, filters, onFilterChange, ...props }: Props) => {
                   onChange={(e) => handleFilterChange(value, e.target.checked)}
                 />
               </Box>
+              {badge && (
+                <Typography variant="body3M12" color="contentText.Subtext" padding="2px 6px" borderRadius="4px" bgcolor="gray.20">
+                  {badge}
+                </Typography>
+              )}
               <span
                 ref={(el) => {
                   textRefs.current[value] = el
