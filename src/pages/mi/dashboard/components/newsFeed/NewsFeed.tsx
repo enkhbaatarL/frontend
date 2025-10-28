@@ -106,23 +106,17 @@ const NewsFeed = () => {
   const { data: marketCategoryCode } = useQuery({
     queryKey: ['marketCategoryCode'],
     queryFn: async () => await codeService.getNewsMarketCategoryCode(),
-    refetchOnWindowFocus: false,
-    gcTime: 0,
   })
 
   const { data: timelineItems } = useQuery({
     queryKey: ['timeline', categoryCode],
     queryFn: async () => await dashboardService.getTimeline(categoryCode),
-    refetchOnWindowFocus: false,
-    gcTime: 0,
     enabled: !!categoryCode,
   })
 
   const { data: newsFeedItems } = useQuery({
     queryKey: ['newsFeed', categoryCode],
     queryFn: async () => await dashboardService.getNewsFeed(categoryCode),
-    refetchOnWindowFocus: false,
-    gcTime: 0,
     enabled: !!categoryCode,
   })
 

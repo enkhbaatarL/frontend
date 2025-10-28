@@ -174,8 +174,8 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
           },
         },
         '&:hover': {
-          background: theme.palette.content['backgroundHover'],
-          borderColor: color === 'gray2' ? theme.palette.gray[70] : theme.palette.content['borderHover'],
+          background: theme.palette.gray[20],
+          borderColor: color === 'gray2' ? theme.palette.gray[70] : theme.palette.gray[30],
           svg: {
             color: theme.palette.content['iconHover'],
             path: {

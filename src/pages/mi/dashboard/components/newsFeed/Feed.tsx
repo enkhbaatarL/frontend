@@ -8,10 +8,10 @@ import { INewsFeedItem } from '@/service/mi/dashboard'
 const filterOptions = [{ label: 'Filters', value: 'filters' }]
 
 const orderOptions = [
-  { label: 'Highest', value: 'highest' },
-  { label: 'Lowest', value: 'lowest' },
-  { label: 'Newest', value: 'newest' },
-  { label: 'Oldest', value: 'oldest' },
+  { label: 'Highest', value: 'HIGHEST' },
+  { label: 'Lowest', value: 'LOWEST' },
+  { label: 'Newest', value: 'NEWEST' },
+  { label: 'Oldest', value: 'OLDEST' },
 ]
 
 interface FeedProps {
@@ -23,8 +23,8 @@ const Feed = ({ newsFeedItems }: FeedProps) => {
   const [order, setOrder] = useState(orderOptions[0].value)
 
   return (
-    <Stack px="12px">
-      <Stack direction="row" padding="6px" justifyContent="space-between" alignItems="center">
+    <Stack>
+      <Stack direction="row" pl="6px" justifyContent="space-between" alignItems="center">
         <Stack direction="row" gap="8px" height="32px" alignItems="center">
           <Typography variant="sectionTitleTXL" color="black" height="32px">
             Feed

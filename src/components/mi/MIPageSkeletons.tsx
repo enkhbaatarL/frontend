@@ -563,10 +563,113 @@ export const MIPageSkeletons = {
     </Box>
   ),
 
-  // News Detail 상세 페이지 패턴
-  NewsDetail: () => (
+  // News 페이지 패턴
+  MarketNews: () => (
     <Box>
-      <MIBaseSkeleton.BaseElement width={'100%'} height={'298px'} />
+      <MIBaseSkeleton.BaseElement width={'100%'} height={'140px'} />
+      <Box
+        minWidth={'1440px'}
+        width={'1440px'}
+        margin={'auto'}
+        display={'flex'}
+        flexDirection={'column'}
+        padding={'50px 30px'}
+        gap={'24px'}
+        boxSizing={'border-box'}
+      >
+        <MIBaseSkeleton.BaseElement width={'200px'} height={'46px'} />
+        <SkeletonWrapper.Row gap={'24px'} sx={{ alignItems: 'flex-start' }}>
+          <Box flexGrow={1}>
+            <SkeletonWrapper.Row gap={'14px'} sx={{ pb: '20px', justifyContent: 'space-between', borderBottom: '1px solid #DEE2E6' }}>
+              <MIBaseSkeleton.InputField width={'400px'} height={'40px'} />
+              <SkeletonWrapper.Row gap={'12px'}>
+                <MIBaseSkeleton.BaseElement2 width={'160px'} height={'40px'} />
+                <MIBaseSkeleton.BaseElement2 width={'380px'} height={'40px'} />
+              </SkeletonWrapper.Row>
+            </SkeletonWrapper.Row>
+            <Box gap={'6px'}>
+              {Array.from({ length: 10 }, (_, i) => (
+                <Box key={i}>
+                  <Box padding={'12px 18px'} gap={'6px'}>
+                    <MIBaseSkeleton.InputField width={'100%'} height={'24px'} sx={{ marginBottom: '6px' }} />
+                    <MIBaseSkeleton.InputField width={'280px'} height={'20px'} sx={{ marginBottom: '6px' }} />
+                  </Box>
+                  {i < 9 && <Box borderBottom={'1px solid #DEE2E6'} />}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+          <Box border="1px solid #DEE2E6" width={'298px'} height={'680px'} borderRadius={'4px'} pt={'24px'} pl={'24px'}>
+            <Box width={'298px'} marginBottom={'24px'}>
+              <MIBaseSkeleton.InputField width={'218px'} height={'24px'} sx={{ marginBottom: '14px' }} />
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+            </Box>
+            <Box width={'298px'} marginBottom={'24px'}>
+              <MIBaseSkeleton.InputField width={'218px'} height={'24px'} sx={{ marginBottom: '14px' }} />
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+            </Box>
+            <Box width={'298px'} marginBottom={'24px'}>
+              <MIBaseSkeleton.InputField width={'218px'} height={'24px'} sx={{ marginBottom: '14px' }} />
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+            </Box>
+            <Box width={'298px'} marginBottom={'24px'}>
+              <MIBaseSkeleton.InputField width={'218px'} height={'24px'} sx={{ marginBottom: '14px' }} />
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+              <SkeletonWrapper.Row gap={'8px'} sx={{ padding: '10px 0 10px 12px' }}>
+                <MIBaseSkeleton.Checkbox width={'10px'} height={'10px'} />
+                <MIBaseSkeleton.InputField width={'130px'} height={'16px'} />
+              </SkeletonWrapper.Row>
+            </Box>
+          </Box>
+        </SkeletonWrapper.Row>
+      </Box>
+    </Box>
+  ),
+
+  // Market News Detail 상세 페이지 패턴
+  MarketNewsDetail: () => (
+    <Box>
+      <MIBaseSkeleton.BaseElement width={'100%'} height={'226px'} />
       <Box
         minWidth={'1380px'}
         width={'1380px'}

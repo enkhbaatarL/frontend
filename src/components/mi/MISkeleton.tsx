@@ -12,7 +12,6 @@ interface Props {
     | 'insights'
     | 'signalMap'
     | 'dataDetail'
-    | 'newsDetail'
     | 'boardPage'
     | 'boardDetail'
     | 'helpCenter'
@@ -21,6 +20,8 @@ interface Props {
     | 'dailyChart'
     | 'dashboardSummary'
     | 'newsletter'
+    | 'marketNews'
+    | 'marketNewsDetail'
   itemCount?: number
   rows?: number
   columns?: number
@@ -49,8 +50,10 @@ const MISkeleton = ({ loading, children, variant = 'dashboard', rows, columns, f
       return <MIPageSkeletons.SignalMap />
     case 'dataDetail':
       return <MIPageSkeletons.DataDetail />
-    case 'newsDetail':
-      return <MIPageSkeletons.NewsDetail />
+    case 'marketNews':
+      return <MIPageSkeletons.MarketNews />
+    case 'marketNewsDetail':
+      return <MIPageSkeletons.MarketNewsDetail />
     case 'boardPage':
       return <MIPageSkeletons.BoardPageSkeleton />
     case 'boardDetail':

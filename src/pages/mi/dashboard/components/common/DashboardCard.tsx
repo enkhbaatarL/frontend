@@ -1,4 +1,4 @@
-import { Box, Card, CardProps, Stack, Typography } from '@mui/material'
+import { Box, Card, CardProps, Stack, StackProps, Typography } from '@mui/material'
 import { ReactNode, useState, MouseEvent, useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -13,6 +13,7 @@ interface Props extends Omit<CardProps, 'title'> {
   direction?: 'row' | 'column'
   gap?: number | string
   collapsedHeight?: number | string
+  childrenProps?: StackProps
 }
 
 const DashboardCard = ({
@@ -21,6 +22,7 @@ const DashboardCard = ({
   link,
   headerContent,
   children,
+  childrenProps,
   direction = 'row',
   gap = '24px',
   collapsedHeight,
@@ -160,7 +162,7 @@ const DashboardCard = ({
               transition: `max-height ${currentTimeout}ms cubic-bezier(0.4, 0, 0.2, 1)`,
             }}
           >
-            <Stack ref={innerRef} px="24px" direction={direction} gap={gap}>
+            <Stack ref={innerRef} px="24px" direction={direction} gap={gap} {...childrenProps}>
               {children}
             </Stack>
           </Box>

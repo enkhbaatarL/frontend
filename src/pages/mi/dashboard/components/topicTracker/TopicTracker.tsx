@@ -114,6 +114,7 @@ const sampleData = [
 ]
 
 const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
   const aiSummaryRef = useRef<AiSummaryHandle>(null)
   const { t } = useTranslation()
 
@@ -123,7 +124,14 @@ const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
   }
 
   const handleClick = () => {
-    aiSummaryRef.current?.toggle()
+    const newExpandedState = !isExpanded
+    setIsExpanded(newExpandedState)
+
+    if (newExpandedState) {
+      aiSummaryRef.current?.open()
+    } else {
+      aiSummaryRef.current?.close()
+    }
   }
 
   // 임시 AI 요약 조회 함수
@@ -147,7 +155,18 @@ const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
   }
 
   return (
-    <Stack py="12px" sx={{ cursor: 'pointer', userSelect: 'none' }}>
+    <Stack
+      padding="12px 10px"
+      sx={{
+        cursor: 'pointer',
+        borderRadius: '10px',
+        '&:hover': {
+          backgroundColor: 'contentBG.Hover',
+        },
+        transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        userSelect: 'none',
+      }}
+    >
       <Stack direction="row" onClick={handleClick}>
         <Stack width="60px" alignItems="center" gap="8px" flexShrink={0}>
           <Stack>
@@ -180,9 +199,9 @@ const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
               variant="heading4"
               fontWeight={500}
               sx={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                overflow: isExpanded ? 'visible' : 'hidden',
+                textOverflow: isExpanded ? 'unset' : 'ellipsis',
+                whiteSpace: isExpanded ? 'normal' : 'nowrap',
                 width: '100%',
               }}
             >

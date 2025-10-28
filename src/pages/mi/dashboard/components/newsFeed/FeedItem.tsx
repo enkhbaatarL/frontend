@@ -1,7 +1,7 @@
 import SouthAmericaIcon from '@mui/icons-material/SouthAmerica'
 import { Box, Divider, Stack, StackProps, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import CloseIcon from '@/components/common/icons/CloseIcon'
@@ -115,13 +115,6 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
     })
   }
 
-  const backgroundColor = useMemo(() => {
-    if (focusMode) {
-      return 'commonColor.White'
-    }
-    return isExpanded ? 'contentBG.Hover' : 'transparent'
-  }, [focusMode, isExpanded])
-
   return (
     <Stack
       padding="12px 18px"
@@ -130,7 +123,7 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
       sx={{
         cursor: focusMode ? 'default' : 'pointer',
         transition: 'all 0.2s ease-in-out',
-        backgroundColor,
+        backgroundColor: 'commonColor.White',
         boxShadow: focusMode ? '0px 0px 20px 0px rgba(0, 0, 0, 0.15)' : undefined,
         border: '1px solid transparent',
         boxSizing: 'border-box',
@@ -210,7 +203,7 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
           </Typography>
           <Divider orientation="vertical" flexItem sx={{ height: '12px', borderColor: 'contentBorder.Normal' }} />
           <Typography variant="body2SB14" color="content.textNormal">
-            {dayjs(item.firstCreated).format('MMMM D, YYYY, hh:mm A')}
+            {dayjs(item.firstCreated).format('MMMM D, YYYY [at] h:mm A')}
           </Typography>
         </Stack>
       </Stack>

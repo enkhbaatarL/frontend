@@ -23,7 +23,7 @@ const NewsDetailPage = () => {
   })
 
   return (
-    <MISkeleton variant={'newsDetail'} loading={newsSummaryDataIsLoading}>
+    <MISkeleton variant={'marketNewsDetail'} loading={newsSummaryDataIsLoading}>
       <Box paddingTop={'56px'} paddingBottom={'30px'}>
         <Box paddingX={7.5} boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
           <Typography color="contentText.Normal" variant="subtext1" sx={{ cursor: 'pointer' }} onClick={() => navigate('/mi/market-news')}>

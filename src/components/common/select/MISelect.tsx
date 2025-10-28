@@ -178,7 +178,7 @@ const MISelect = ({
     }
     if (sizeSelect === 'h40') {
       return {
-        padding: '7px 12px',
+        padding: '7.5px 12px',
         fontSize: '14px',
       }
     }

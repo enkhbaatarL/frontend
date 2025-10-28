@@ -80,7 +80,7 @@ const MIInputAdornment = (props: InputAdornmentProps) => {
   )
 }
 
-export default function MIDatePicker(props: DatePickerProps<Dayjs> & { size?: 'h26' | 'h28' | 'h34' | 'h36' }) {
+export default function MIDatePicker(props: DatePickerProps<Dayjs> & { size?: 'h26' | 'h28' | 'h34' | 'h36' | 'h40' }) {
   const today = dayjs()
   const { value, ...restProps } = props
 

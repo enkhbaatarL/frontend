@@ -1,8 +1,8 @@
 import theme from '@/theming'
 
-type Size = 'h26' | 'h28' | 'h34' | 'h36'
+type Size = 'h26' | 'h28' | 'h34' | 'h36' | 'h40'
 
-const getTextFieldSize = (size?: 'h26' | 'h28' | 'h34' | 'h36') => {
+const getTextFieldSize = (size?: 'h26' | 'h28' | 'h34' | 'h36' | 'h40') => {
   switch (size) {
     case 'h26':
       return {
@@ -30,6 +30,12 @@ const getTextFieldSize = (size?: 'h26' | 'h28' | 'h34' | 'h36') => {
         height: '34px',
         padding: '8px 12px !important',
       }
+    case 'h40':
+      return {
+        boxSizing: 'border-box',
+        height: '38px',
+        padding: '10px 12px !important',
+      }
     default:
       return {
         boxSizing: 'border-box',
@@ -39,7 +45,7 @@ const getTextFieldSize = (size?: 'h26' | 'h28' | 'h34' | 'h36') => {
   }
 }
 
-const getSvgStyle = (size?: 'h26' | 'h28' | 'h34' | 'h36') => {
+const getSvgStyle = (size?: 'h26' | 'h28' | 'h34' | 'h36' | 'h40') => {
   switch (size) {
     case 'h26':
     case 'h28':

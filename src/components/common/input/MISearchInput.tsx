@@ -205,7 +205,7 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
             position: 'absolute',
             top: '52px',
             left: '0px',
-            width: width ? `${width}px` : '458px',
+            width: width ?? 360,
             zIndex: 10,
             border: '1px solid #DEE2E6',
             boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.1)',

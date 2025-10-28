@@ -8,12 +8,13 @@ import Flex from '@/components/common/display/Flex'
 
 interface MIDateRangePickerProps {
   onChange?: (dates: { startDate?: Dayjs; endDate?: Dayjs }) => void
-  sizeInput?: 'h26' | 'h28' | 'h34' | 'h36'
+  sizeInput?: 'h26' | 'h28' | 'h34' | 'h36' | 'h40'
   disabled?: boolean
   readOnly?: boolean
   startDate?: Dayjs | string
   endDate?: Dayjs | string
   useApplyButton?: boolean
+  width?: string | number
 }
 
 export default function MIDateRangePicker({
@@ -24,6 +25,7 @@ export default function MIDateRangePicker({
   startDate,
   endDate,
   useApplyButton = false,
+  width,
 }: Readonly<MIDateRangePickerProps>) {
   const dateValues = useMemo(() => {
     const convertToDayjs = (date: Dayjs | string | undefined) => {
@@ -75,7 +77,7 @@ export default function MIDateRangePicker({
   const isApplyEnabled = useApplyButton && internalStartDate && internalEndDate
 
   return (
-    <Flex direction="row" align="center" gap={8}>
+    <Flex direction="row" align="center" gap={8} style={{ width }}>
       <MIDatePicker
         readOnly={readOnly}
         disabled={disabled}

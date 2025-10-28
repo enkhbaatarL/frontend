@@ -125,11 +125,11 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOrigin
                     </Typography>
                   ))}
                 </Stack>
-                <Stack direction="row" justifyContent="space-between" mt="14px" gap="18px">
+                <Stack direction="row" justifyContent="space-between" mt="14px" gap="12px">
                   <Stack justifyContent="center">
                     <Stack direction="row" alignItems="start" boxSizing="border-box" gap="4px">
                       <InfoOutlinedIcon sx={{ fontSize: 16, color: 'contentText.Subtext' }} />
-                      <Typography variant="subtext2" color="contentText.Subtext">
+                      <Typography variant="subtext2" color="contentText.Subtext" letterSpacing={-0.1}>
                         {t('dashboard.feed.summary.aiDescription')}
                       </Typography>
                     </Stack>
@@ -140,13 +140,14 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOrigin
                     type="outlined"
                     contentType="text"
                     size="h28"
+                    padding="5px 12px"
                     onClick={(e) => {
                       e.stopPropagation()
                       viewOriginal?.()
                     }}
                   >
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Typography variant="subtext3" color="content.textNormal">
+                    <Box display="flex" alignItems="center">
+                      <Typography variant="subtext3" color="content.textNormal" letterSpacing={-0.1}>
                         View Original
                       </Typography>
                     </Box>

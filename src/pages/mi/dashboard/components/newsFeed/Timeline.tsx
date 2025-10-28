@@ -437,39 +437,46 @@ const Timeline = ({ onItemClick, timeLineItems, ...props }: TimelineProps) => {
   )
 
   return (
-    <Box
-      borderRadius="10px"
-      padding="6px 12px"
-      sx={{
-        backgroundColor: '#F8F9FA',
-      }}
-      {...props}
-    >
-      <Box padding="12px 6px 0">
-        <SectionHeader title="Timeline" tooltipTitle="" />
+    <Stack px="6px">
+      <SectionHeader title="Timeline" tooltipTitle="" />
+      <Box
+        borderRadius="10px"
+        padding="6px 12px"
+        sx={{
+          backgroundColor: '#F8F9FA',
+        }}
+        {...props}
+      >
+        <Stack alignContent="center" justifyContent="center" height="280px">
+          {!timeLineItems || timeLineItems?.length === 0 ? (
+            <Stack height={280} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+              <Typography variant="body2SB14" color="content.textNormal" mt="-24px">
+                No data available to display.
+              </Typography>
+            </Stack>
+          ) : (
+            <TimelineBar data={timeLineItems} onItemClick={handleItemClick} selectedItemId={selectedItemId} />
+          )}
+        </Stack>
+        <Box
+          sx={{
+            opacity: selectedItem ? 1 : 0,
+            transition: 'opacity 1.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+          }}
+        >
+          {selectedItem && (
+            <FeedItem
+              key={selectedItem.nwsSigId}
+              item={selectedItem}
+              onClose={handleItemClose}
+              isHighlighted={isHighlighted}
+              mb="6px"
+              focusMode
+            />
+          )}
+        </Box>
       </Box>
-      <Stack alignContent="center" justifyContent="center" height="280px">
-        {!timeLineItems || timeLineItems?.length === 0 ? (
-          <Stack height={280} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-            <Typography variant="body2SB14" color="content.textNormal" mt="-24px">
-              No data available to display.
-            </Typography>
-          </Stack>
-        ) : (
-          <TimelineBar data={timeLineItems} onItemClick={handleItemClick} selectedItemId={selectedItemId} />
-        )}
-      </Stack>
-      {selectedItem && (
-        <FeedItem
-          key={selectedItem.nwsSigId}
-          item={selectedItem}
-          onClose={handleItemClose}
-          isHighlighted={isHighlighted}
-          mb="6px"
-          focusMode
-        />
-      )}
-    </Box>
+    </Stack>
   )
 }
 
