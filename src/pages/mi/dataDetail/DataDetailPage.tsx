@@ -233,12 +233,17 @@ const DataDetailPage = () => {
       {productData && (
         <Box paddingTop={'56px'} paddingBottom={'30px'}>
           <Box paddingX={7.5} boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
-            {!hasStructuredDataList && (
-              <Typography color="contentText.Normal" variant="subtext1">
-                Market Reports
-              </Typography>
-            )}
-            <Typography paddingY={6.5} color="contentText.Black" component="h1" lineHeight={1.2} variant="titleSubPage">
+            <Typography color="contentText.Normal" variant="subtext1">
+              {hasStructuredDataList ? 'Market Metrics' : 'Market Reports'}
+            </Typography>
+            <Typography
+              paddingTop={3.5}
+              paddingBottom={6.5}
+              color="contentText.Black"
+              component="h1"
+              lineHeight={1.2}
+              variant="titleSubPage"
+            >
               {productData.goodsDataNm}
             </Typography>
             <Grid container alignItems="center">

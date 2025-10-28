@@ -44,6 +44,16 @@ export interface IInsightsInfo {
   goodsDataCategory: string
   isViewable: boolean
 }
+
+export interface IRecentViewedItem {
+  providerNo: number
+  providerNm: string
+  goodsNo: number
+  goodsDataNo: number
+  goodsDataNm: string
+  goodsDataExpn: string
+  recentViewedDt: string
+}
 const insightsService = {
   /**
    * Focused 목록을 조회합니다.
@@ -83,6 +93,22 @@ const insightsService = {
     )
 
     return response.data.data
+  },
+
+  /**
+   * 최근 조회한 Insights 목록을 조회합니다.
+   */
+  async getRecentViewed(companyNo: number): Promise<IRecentViewedItem[]> {
+    const response: AxiosResponse<ICommonResponse<IRecentViewedItem[]>> = await api.get(`/mi/insights/companies/${companyNo}/recent-viewed`)
+
+    return response.data.data
+  },
+
+  /**
+   * 최근 조회한 Insights 목록을 삭제합니다.
+   */
+  async clearRecentViewed(companyNo: number): Promise<void> {
+    await api.delete(`/mi/insights/companies/${companyNo}/recent-viewed`)
   },
 }
 

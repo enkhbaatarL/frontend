@@ -136,6 +136,13 @@ const marketDataService = {
 
     return response.data.data
   },
+
+  /**
+   * 최근 조회한 데이터 목록을 삭제합니다.
+   */
+  async clearRecentViewed(customerCompanyNo: number): Promise<void> {
+    await api.delete(withCustomBaseUrl(`/mi/market-data/companies/${customerCompanyNo}/recent-viewed`))
+  },
 }
 
 export default marketDataService

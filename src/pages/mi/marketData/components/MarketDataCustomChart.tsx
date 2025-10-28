@@ -268,7 +268,7 @@ const MarketDataCustomChart: FC<MarketDataCustomChartProps> = ({ data, locked = 
     <Box
       borderRadius={1}
       sx={{
-        padding: '20px',
+        padding: '25px 25px 20.5px 25px',
         borderRadius: '4px',
         border: '1px solid',
         borderColor: '#E9ECEF',
@@ -279,9 +279,9 @@ const MarketDataCustomChart: FC<MarketDataCustomChartProps> = ({ data, locked = 
         '&:hover': locked
           ? undefined
           : {
-              borderColor: 'contentBorder.Primaryactive',
-              backgroundColor: 'background.default',
-            },
+            borderColor: 'contentBorder.Primaryactive',
+            backgroundColor: 'background.default',
+          },
       }}
       onClick={() =>
         !locked &&
@@ -325,7 +325,7 @@ const MarketDataCustomChart: FC<MarketDataCustomChartProps> = ({ data, locked = 
           <canvas
             ref={chartRef}
             style={{
-              transform: 'translate(-20px, 7px)',
+              transform: 'translate(-25px, -5px)',
               pointerEvents: locked ? 'none' : 'auto',
             }}
           />

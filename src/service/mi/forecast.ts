@@ -34,8 +34,6 @@ interface MarketMetaDataSummary {
   momChangeValue: number | null
   wowChangeRate: number | null
   wowChangeValue: number | null
-  recentChangeRate: number | null
-  recentChangeValue: number | null
   dodChangeRate: number | null
   dodChangeValue: number | null
 }

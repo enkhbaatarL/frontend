@@ -36,7 +36,7 @@ const DocumentInfoComponent = ({ data }: DocumentInfoComponentProps) => {
   return (
     <Grid gap={3.5} container direction="column" p={6} borderRadius={1} border={'1px solid'} borderColor={'gray.30'}>
       <Typography component="div" color="gray.70" variant="sidePanelTitle" mb={1}>
-        Data Info
+        Info
       </Typography>
       <Grid container direction="column" gap={3}>
         {dataInfo.map((item, index) => (

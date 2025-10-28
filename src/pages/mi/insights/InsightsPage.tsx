@@ -1,13 +1,12 @@
-import { Box, Grid2 as Grid, Typography } from '@mui/material'
-import { useQuery } from '@tanstack/react-query'
-// import dayjs from 'dayjs'
-// import { useNavigate } from 'react-router-dom'
-// import MILine from '@/components/common/divider/MILine'
-// import marketDataService from '@/service/mi/marketData'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Box, Grid2 as Grid, Typography, Tooltip } from '@mui/material'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import dayjs from 'dayjs'
+import { useCallback, useEffect, useMemo, useState, Fragment, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import InsightsDocumentItem from './components/InsightsDocumentItem'
 
+import MILine from '@/components/common/divider/MILine'
 import MIFilterGroup from '@/components/common/filter/MIFilterGroup'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
@@ -62,9 +61,37 @@ const renderSkeletonGroup = (key: number, removeMarginBottom = false) => (
   </Box>
 )
 
+// 말줄임이 적용된 경우에만 툴팁을 표시하는 컴포넌트
+const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & any) => {
+  const textRef = useRef<HTMLDivElement>(null)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+
+  useEffect(() => {
+    const element = textRef.current
+    if (element) {
+      setIsOverflowing(element.scrollWidth > element.clientWidth)
+    }
+  }, [text])
+
+  const typography = (
+    <Typography ref={textRef} {...typographyProps}>
+      {text}
+    </Typography>
+  )
+
+  return isOverflowing ? (
+    <Tooltip title={text} arrow>
+      {typography}
+    </Tooltip>
+  ) : (
+    typography
+  )
+}
+
 const InsightsPage = () => {
   const { accessCompanyInfo } = useAuthStore()
-  // const navigate = useNavigate()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -87,14 +114,20 @@ const InsightsPage = () => {
     enabled: !!customerCompanyNo,
   })
 
-  // // Recent Viewed marketDataService쪽 api 임시 사용 -> insight recent viewed 목록으로 추후 변경 필요
-  // const { data: recentViewedList, isLoading: recentViewedIsLoading } = useQuery({
-  //   queryKey: ['recentViewed', customerCompanyNo],
-  //   queryFn: async () => await marketDataService.getRecentViewed(customerCompanyNo),
-  //   refetchOnWindowFocus: false,
-  //   gcTime: 0,
-  //   enabled: !!customerCompanyNo,
-  // })
+  const { data: recentViewedList, isLoading: recentViewedIsLoading } = useQuery({
+    queryKey: ['recentViewed', customerCompanyNo],
+    queryFn: async () => await insightsService.getRecentViewed(customerCompanyNo),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+    enabled: !!customerCompanyNo,
+  })
+
+  const clearRecentViewedMutation = useMutation({
+    mutationFn: async () => await insightsService.clearRecentViewed(customerCompanyNo),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recentViewed', customerCompanyNo] })
+    },
+  })
 
   const {
     filter,
@@ -214,8 +247,8 @@ const InsightsPage = () => {
   }
 
   const isActuallyLoading = useMemo(
-    () => isInitialLoading || focusedIsLoading || filterIsLoading || (insightsIsLoading && !hasInitialData), //|| recentViewedIsLoading
-    [isInitialLoading, focusedIsLoading, filterIsLoading, insightsIsLoading, hasInitialData], //recentViewedIsLoading,
+    () => isInitialLoading || focusedIsLoading || filterIsLoading || recentViewedIsLoading || (insightsIsLoading && !hasInitialData),
+    [isInitialLoading, focusedIsLoading, filterIsLoading, recentViewedIsLoading, insightsIsLoading, hasInitialData],
   )
   useEffect(() => {
     if (filterList?.data?.providers?.length && !(filter?.provFilters && filter?.provFilters.length > 0)) {
@@ -285,12 +318,16 @@ const InsightsPage = () => {
               <Grid container direction={'row'} wrap={'nowrap'} gap={3.5}>
                 <MISelect
                   sx={{ width: 160 }}
+                  sizeSelect="h40"
+                  type={'button'}
                   options={sortOptions}
                   value={filter.sort ?? 'NEWEST'}
                   onChange={(e) => updateFilterWithSearch('sort', String(e.target.value ?? 'NEWEST'))}
                 />
                 <MISelect
                   sx={{ width: 160 }}
+                  sizeSelect="h40"
+                  type={'button'}
                   options={periodOptions}
                   value={filter.period ?? 'ALL_DATES'}
                   onChange={(e) => updateFilterWithSearch('period', String(e.target.value ?? 'ALL_DATES'))}
@@ -327,7 +364,7 @@ const InsightsPage = () => {
             )}
           </Box>
           <Box
-            flexShrink={0}
+            boxSizing={'border-box'}
             sx={{
               width: 286,
             }}
@@ -352,10 +389,36 @@ const InsightsPage = () => {
                 />
               ))}
             </Box>
-            {/* <Box border={'1px solid'} borderColor={'gray.30'} borderRadius={1} padding={3} flexShrink={0}>
-                <Typography color="gray.70" component="h2" variant="sidePanelTitle" padding={2}>
-                  Recent Viewed
+            <Box
+              border={'1px solid'}
+              borderColor={'gray.30'}
+              borderRadius={1}
+              padding={3}
+              flexShrink={0}
+              width={286}
+              boxSizing={'border-box'}
+            >
+              <Box display="flex" justifyContent="space-between" alignItems="center" padding="12px 12px 5px 12px">
+                <Typography color="gray.70" component="h2" variant="sidePanelTitle">
+                  Recently Viewed
                 </Typography>
+                <Typography
+                  variant="body3R12"
+                  sx={{
+                    color: 'gray.70',
+                    lineHeight: 1.2,
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    '&:hover': {
+                      color: 'gray.70',
+                    },
+                  }}
+                  onClick={() => clearRecentViewedMutation.mutate()}
+                >
+                  Clear
+                </Typography>
+              </Box>
+              <Box paddingBottom="12px">
                 {recentViewedList?.length ? (
                   recentViewedList.map((item, index) => (
                     <Fragment key={`recent-viewed-${index}`}>
@@ -372,14 +435,24 @@ const InsightsPage = () => {
                           },
                         }}
                       >
-                        <Typography paddingTop={1.5} color="gray.70" component="div" lineHeight={1.4} variant="body4">
-                          {item.goodsDataNm}
-                        </Typography>
+                        <TruncatedTextWithTooltip
+                          text={item.goodsDataNm}
+                          paddingTop={1.5}
+                          color="gray.70"
+                          component="div"
+                          lineHeight={1.4}
+                          variant="body4"
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        />
                         <Grid direction={'row'} container alignItems={'center'} gap={1}>
                           <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
                             {item.providerNm}
                           </Typography>
-                          <MILine thickness={2} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
+                          <MILine thickness={1.1} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
                           <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
                             {dayjs(item.recentViewedDt).format('YY-MM-DD HH:mm')}
                           </Typography>
@@ -391,11 +464,12 @@ const InsightsPage = () => {
                     </Fragment>
                   ))
                 ) : (
-                  <Typography color="gray.60" textAlign="center" py={4} component="div" variant="body2">
-                    No results found
+                  <Typography color="gray.50" textAlign="center" pt={6.5} pb={5} component="div" variant="body3R12">
+                    No History
                   </Typography>
                 )}
-              </Box> */}
+              </Box>
+            </Box>
           </Box>
         </Grid>
       </Box>

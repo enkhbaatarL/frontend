@@ -500,7 +500,11 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
                       >
                         <Typography
                           variant="body1M16"
-                          sx={{ textAlign: 'center', color: isActiveTop ? 'mari.Primary' : 'contentText.normal' }}
+                          sx={{
+                            textAlign: 'center',
+                            color: isActiveTop ? 'mari.Primary' : 'contentText.normal',
+                            fontWeight: isActiveTop ? 600 : 'normal',
+                          }}
                         >
                           {page.label}
                         </Typography>
