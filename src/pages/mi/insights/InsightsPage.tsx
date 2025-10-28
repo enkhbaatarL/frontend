@@ -1,7 +1,7 @@
 import { Box, Grid2 as Grid, Typography, Tooltip } from '@mui/material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useState, Fragment, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import InsightsDocumentItem from './components/InsightsDocumentItem'
@@ -364,7 +364,10 @@ const InsightsPage = () => {
             )}
           </Box>
           <Box
+            display={'flex'}
+            flexDirection={'column'}
             boxSizing={'border-box'}
+            gap={6}
             sx={{
               width: 286,
             }}
@@ -390,15 +393,19 @@ const InsightsPage = () => {
               ))}
             </Box>
             <Box
+              display={'flex'}
+              flexDirection={'column'}
               border={'1px solid'}
               borderColor={'gray.30'}
               borderRadius={1}
-              padding={3}
+              py={6}
+              px={3}
               flexShrink={0}
               width={286}
               boxSizing={'border-box'}
+              gap={2}
             >
-              <Box display="flex" justifyContent="space-between" alignItems="center" padding="12px 12px 5px 12px">
+              <Box display="flex" justifyContent="space-between" alignItems="center" px={3}>
                 <Typography color="gray.70" component="h2" variant="sidePanelTitle">
                   Recently Viewed
                 </Typography>
@@ -418,10 +425,10 @@ const InsightsPage = () => {
                   Clear
                 </Typography>
               </Box>
-              <Box paddingBottom="12px">
+              <Box display={'flex'} flexDirection={'column'} gap={'4px'}>
                 {recentViewedList?.length ? (
                   recentViewedList.map((item, index) => (
-                    <Fragment key={`recent-viewed-${index}`}>
+                    <Fragment key={`recent-viewed-${item.goodsNo}-${item.goodsDataNo}-${index}`}>
                       <Box
                         paddingY={2}
                         onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
@@ -430,6 +437,7 @@ const InsightsPage = () => {
                           padding: '12px',
                           overflow: 'hidden',
                           cursor: 'pointer',
+                          borderRadius: '4px',
                           '&:hover': {
                             backgroundColor: 'contentBG.Hover',
                           },
@@ -437,7 +445,6 @@ const InsightsPage = () => {
                       >
                         <TruncatedTextWithTooltip
                           text={item.goodsDataNm}
-                          paddingTop={1.5}
                           color="gray.70"
                           component="div"
                           lineHeight={1.4}
@@ -464,7 +471,7 @@ const InsightsPage = () => {
                     </Fragment>
                   ))
                 ) : (
-                  <Typography color="gray.50" textAlign="center" pt={6.5} pb={5} component="div" variant="body3R12">
+                  <Typography color="gray.50" textAlign="center" py={5.5} component="div" variant="body3R12">
                     No History
                   </Typography>
                 )}
