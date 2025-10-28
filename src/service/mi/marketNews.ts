@@ -17,6 +17,9 @@ export interface INewsListRequest extends IPaginationRequest {
   keyword?: string
   startDate?: string
   endDate?: string
+  category?: string[]
+  region?: string[]
+  industry?: string[]
 }
 
 export interface INewsListItem {
@@ -30,7 +33,12 @@ export interface INewsListItem {
 const marketNewsService = {
   async getNewsList(params: Partial<INewsListRequest>, signal?: AbortSignal): Promise<IPaginationResponse<INewsListItem>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsListItem>>> = await api.get('mi/market-news', {
-      params,
+      params: {
+        ...params,
+        category: params.category?.join(','),
+        region: params.region?.join(','),
+        industry: params.industry?.join(','),
+      },
       timeout: 120_000,
       signal,
     })

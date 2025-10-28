@@ -7,11 +7,12 @@ interface Props extends Omit<StackProps, 'title'> {
   title?: ReactNode
   type?: 'panel' | 'menu'
   filters: { label: string; badge?: string; value: string }[]
+  selectedFilters?: string[]
   onFilterChange?: (selectedFilters: string[]) => void
 }
 
-const MIFilterGroup = ({ title, type = 'panel', filters, onFilterChange, ...props }: Props) => {
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([])
+const MIFilterGroup = ({ title, type = 'panel', filters, selectedFilters: externalSelectedFilters, onFilterChange, ...props }: Props) => {
+  const [selectedFilters, setSelectedFilters] = useState<string[]>(externalSelectedFilters ?? [])
   const [isEllipsis, setIsEllipsis] = useState<{ [key: string]: boolean }>({})
 
   const textRefs = useRef<{ [key: string]: HTMLSpanElement | null }>({})
@@ -65,6 +66,12 @@ const MIFilterGroup = ({ title, type = 'panel', filters, onFilterChange, ...prop
       window.removeEventListener('resize', handleResize)
     }
   }, [filters, checkEllipsis])
+
+  useEffect(() => {
+    if (externalSelectedFilters !== undefined) {
+      setSelectedFilters(externalSelectedFilters)
+    }
+  }, [externalSelectedFilters])
 
   return (
     <Stack px="6px" boxSizing="border-box" gap={type === 'panel' ? '12px' : '8px'} {...props}>

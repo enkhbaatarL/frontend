@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState, useMemo, useEffect } from 'react'
 
 import newsFeedIcon from '@/assets/dashboard/news-feed.svg'
-import defaultIcon from '@/assets/icons/default.png'
+// import defaultIcon from '@/assets/icons/default.png'
 import MIMenu from '@/components/common/menu/MIMenu'
 import MISelectMenu, { SelectMenuItem } from '@/components/common/menu/MISelectMenu'
 import DashboardCard from '@/pages/mi/dashboard/components/common/DashboardCard'
@@ -24,26 +24,26 @@ const getMarketCategoryLabel = (codeId: string) => {
   )
 }
 
-const dummyCompaniesOptions: SelectMenuItem[] = [
-  {
-    group: 'company',
-    label: (
-      <Stack direction="row" alignItems="center" gap="6px">
-        <Box component="img" width={22} height={22} src={defaultIcon} alt="all markets" /> Company 1
-      </Stack>
-    ),
-    value: 'company-1',
-  },
-  {
-    group: 'company',
-    label: (
-      <Stack direction="row" alignItems="center" gap="6px">
-        <Box component="img" width={22} height={22} src={defaultIcon} alt="all markets" /> Company 2
-      </Stack>
-    ),
-    value: 'company-2',
-  },
-]
+// const dummyCompaniesOptions: SelectMenuItem[] = [
+//   {
+//     group: 'company',
+//     label: (
+//       <Stack direction="row" alignItems="center" gap="6px">
+//         <Box component="img" width={22} height={22} src={defaultIcon} alt="all markets" /> Company 1
+//       </Stack>
+//     ),
+//     value: 'company-1',
+//   },
+//   {
+//     group: 'company',
+//     label: (
+//       <Stack direction="row" alignItems="center" gap="6px">
+//         <Box component="img" width={22} height={22} src={defaultIcon} alt="all markets" /> Company 2
+//       </Stack>
+//     ),
+//     value: 'company-2',
+//   },
+// ]
 
 const switchOptions: SelectMenuItem[] = [
   { label: 'Timeline', value: 'timeline' },
@@ -129,7 +129,7 @@ const NewsFeed = () => {
           value: code.codeId,
         }))
         .filter(({ label }) => label !== null) ?? []),
-      ...dummyCompaniesOptions,
+      // ...dummyCompaniesOptions,
     ],
     [marketCategoryCode],
   )

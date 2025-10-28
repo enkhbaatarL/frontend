@@ -171,6 +171,14 @@ const InsightsPage = () => {
 
   const filters = useMemo(() => (filterList ? convertToFilters(filterList.data) : []), [filterList])
 
+  const getSelectedFilters = useCallback(
+    (filterType: 'docFilters' | 'provFilters' | 'langFilters'): string[] => {
+      const filterValue = filter[filterType]
+      return filterValue ? filterValue.split(',').filter(Boolean) : []
+    },
+    [filter],
+  )
+
   const convertToTypes = useCallback(
     (category: string) =>
       filterList?.data?.documentTypes?.filter((type) => category.split(',').includes(type.codeId)).map((type) => type.codeId),
@@ -339,6 +347,7 @@ const InsightsPage = () => {
                   key={section.title}
                   title={section.title}
                   filters={section.options}
+                  selectedFilters={getSelectedFilters(getFilterType(section.title))}
                   onFilterChange={(selectedFilters) => handleFilterChange(getFilterType(section.title), selectedFilters)}
                 />
               ))}

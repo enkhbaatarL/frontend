@@ -1,4 +1,5 @@
 import { AxiosResponse } from 'axios'
+import dayjs from 'dayjs'
 
 import api from '@/lib/axios.ts'
 import { ICommonResponse } from '@/types/api'
@@ -38,6 +39,7 @@ const dashboardService = {
   async getTimeline(categoryCode: string): Promise<INewsFeedItem[]> {
     const response: AxiosResponse<ICommonResponse<INewsFeedItem[]>> = await api.get('mi/market-news/timeline', {
       params: {
+        crtrDt: dayjs().format('YYYYMMDD'),
         category: categoryCode,
       },
     })
@@ -47,6 +49,7 @@ const dashboardService = {
   async getNewsFeed(categoryCode: string): Promise<INewsFeedItem[]> {
     const response: AxiosResponse<ICommonResponse<INewsFeedItem[]>> = await api.get('mi/market-news/feed', {
       params: {
+        crtrDt: dayjs().format('YYYYMMDD'),
         category: categoryCode,
       },
     })
