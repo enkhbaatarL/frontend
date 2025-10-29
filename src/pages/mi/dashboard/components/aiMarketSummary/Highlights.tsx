@@ -159,8 +159,7 @@ const Highlights = () => {
           selected={selectedOption}
           onSelected={setSelectedOption}
           menuPositionOffset={{ top: 4, right: -32 }}
-          fitMenuWidth={false}
-          menuPosition="right"
+          placement="bottom-end"
           paperProps={{
             sx: {
               width: '150px',

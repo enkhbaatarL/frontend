@@ -1,5 +1,4 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { Fragment, useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -14,8 +13,8 @@ import MISelect from '@/components/common/select/MISelect'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import MIPageHeadline from '@/components/mi/MIPageHeadline'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
+import useCodeData from '@/hooks/useCodeData'
 import useSearchFilter from '@/hooks/useSearchFilter'
-import codeService from '@/service/common/code'
 import marketNewsService, { INewsListItem, INewsListRequest } from '@/service/mi/marketNews'
 import { IPaginationResponse } from '@/types/api'
 
@@ -79,23 +78,9 @@ const NewsPage = () => {
     },
   )
 
-  const { data: marketCategoryCodeList } = useQuery({
-    queryKey: ['marketCategoryCode'],
-    queryFn: async () => await codeService.getNewsMarketCategoryCode(),
-  })
+  const { marketCategoryCodeList, industrySectorCodeList, regionCategoryCodeList, isLoading: codeDataLoading } = useCodeData()
 
-  const { data: industrySectorCodeList } = useQuery({
-    queryKey: ['industrySectorCode'],
-    queryFn: async () => await codeService.getNewsIndustrySectorCode(),
-  })
-
-  const { data: regionCategoryCodeList } = useQuery({
-    queryKey: ['sentimentCode'],
-    queryFn: async () => await codeService.getNewsRegionCategoryCode(),
-  })
-
-  const isPageLoading = useMemo(() => isInitialLoading, [isInitialLoading])
-
+  const isPageLoading = useMemo(() => isInitialLoading || codeDataLoading, [isInitialLoading, codeDataLoading])
   const isListLoading = useMemo(() => newsListIsLoading && hasInitialData, [newsListIsLoading, hasInitialData])
 
   useEffect(() => {

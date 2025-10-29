@@ -260,8 +260,7 @@ const Sentiment = () => {
           selected={selectedOptions}
           onSelected={setSelectedOptions}
           menuPositionOffset={{ top: 4, right: -32 }}
-          fitMenuWidth={false}
-          menuPosition="right"
+          placement="bottom-end"
         />
       </SectionHeader>
       {sampleItems.map((item, index) => {

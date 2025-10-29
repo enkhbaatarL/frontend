@@ -24,12 +24,12 @@ interface Props extends ButtonProps {
   onSelected: ((selected: string) => void) | ((selected: string[]) => void)
   items: SelectMenuItem[]
   placeholder?: string
-  menuPosition?: 'left' | 'right'
+  placement?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
   menuPositionOffset?: MenuPositionOffset
-  fitMenuWidth?: boolean
   paperProps?: PaperProps
   groupDisplayType?: GroupDisplayType
   groupLabels?: { [groupKey: string]: ReactNode }
+  disablePortal?: boolean
 }
 
 const MISelectMenu = ({
@@ -40,12 +40,12 @@ const MISelectMenu = ({
   selectType = 'default',
   multiple = false,
   placeholder = '선택하세요',
-  menuPosition = 'left',
+  placement = 'bottom-start',
   menuPositionOffset = {},
-  fitMenuWidth = true,
   paperProps,
   groupDisplayType = 'label',
   groupLabels = {},
+  disablePortal = false,
   ...props
 }: Props) => {
   const { t } = useTranslation()
@@ -397,12 +397,12 @@ const MISelectMenu = ({
       label={selectedItemsLabel}
       displayType="select"
       variant={variant}
-      menuPosition={menuPosition}
+      placement={placement}
       menuPositionOffset={menuPositionOffset}
-      fitMenuWidth={fitMenuWidth}
       paperProps={paperProps}
       open={open}
       onOpenChange={setOpen}
+      disablePortal={disablePortal}
       {...props}
     >
       <Stack gap="8px" sx={{ padding: '12px' }}>

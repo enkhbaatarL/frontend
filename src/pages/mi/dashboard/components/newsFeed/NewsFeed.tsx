@@ -4,13 +4,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useState, useMemo, useEffect } from 'react'
 
 import newsFeedIcon from '@/assets/dashboard/news-feed.svg'
-// import defaultIcon from '@/assets/icons/default.png'
 import MIMenu from '@/components/common/menu/MIMenu'
 import MISelectMenu, { SelectMenuItem } from '@/components/common/menu/MISelectMenu'
+import useCodeData from '@/hooks/useCodeData'
 import DashboardCard from '@/pages/mi/dashboard/components/common/DashboardCard'
 import Feed from '@/pages/mi/dashboard/components/newsFeed/Feed'
 import Timeline from '@/pages/mi/dashboard/components/newsFeed/Timeline'
-import codeService from '@/service/common/code'
 import dashboardService from '@/service/mi/dashboard'
 import { getMarketIconInfo } from '@/utils/marketIcons'
 
@@ -24,30 +23,16 @@ const getMarketCategoryLabel = (codeId: string) => {
   )
 }
 
-// const dummyCompaniesOptions: SelectMenuItem[] = [
-//   {
-//     group: 'company',
-//     label: (
-//       <Stack direction="row" alignItems="center" gap="6px">
-//         <Box component="img" width={22} height={22} src={defaultIcon} alt="all markets" /> Company 1
-//       </Stack>
-//     ),
-//     value: 'company-1',
-//   },
-//   {
-//     group: 'company',
-//     label: (
-//       <Stack direction="row" alignItems="center" gap="6px">
-//         <Box component="img" width={22} height={22} src={defaultIcon} alt="all markets" /> Company 2
-//       </Stack>
-//     ),
-//     value: 'company-2',
-//   },
-// ]
-
 const switchOptions: SelectMenuItem[] = [
   { label: 'Timeline', value: 'timeline' },
   { label: 'Feed', value: 'feed', disabled: true },
+]
+
+const feedOrderOptions: SelectMenuItem[] = [
+  { label: 'Highest', value: 'HIGHEST' },
+  { label: 'Lowest', value: 'LOWEST' },
+  { label: 'Newest', value: 'NEWEST' },
+  { label: 'Oldest', value: 'OLDEST' },
 ]
 
 const SettingsMenuItem = ({
@@ -97,16 +82,19 @@ const SettingsMenuItem = ({
 
 const NewsFeed = () => {
   const [categoryCode, setCategoryCode] = useState<string>('')
+  const [sentiments, setSentiments] = useState<string[]>([])
+  const [impactScores, setImpactScores] = useState<string[]>([])
+  const [regions, setRegions] = useState<string[]>([])
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [sort, setSort] = useState<string>(feedOrderOptions[0].value)
 
   const [displayStates, setDisplayStates] = useState<{ [key: string]: boolean }>({
     timeline: true,
     feed: true,
   })
 
-  const { data: marketCategoryCode } = useQuery({
-    queryKey: ['marketCategoryCode'],
-    queryFn: async () => await codeService.getNewsMarketCategoryCode(),
-  })
+  const { marketCategoryCodeList } = useCodeData()
 
   const { data: timelineItems } = useQuery({
     queryKey: ['timeline', categoryCode],
@@ -115,23 +103,28 @@ const NewsFeed = () => {
   })
 
   const { data: newsFeedItems } = useQuery({
-    queryKey: ['newsFeed', categoryCode],
-    queryFn: async () => await dashboardService.getNewsFeed(categoryCode),
+    queryKey: ['newsFeed', categoryCode, sort, sentiments.join(','), impactScores.join(','), regions.join(',')],
+    queryFn: async () =>
+      await dashboardService.getNewsFeed(categoryCode, {
+        sort,
+        sentiments,
+        impactScores,
+        regions,
+      }),
     enabled: !!categoryCode,
   })
 
   const marketCategoryCodeOptions = useMemo(
     (): SelectMenuItem[] => [
-      ...(marketCategoryCode
+      ...(marketCategoryCodeList
         ?.map((code) => ({
           group: 'marketCategory',
           label: getMarketCategoryLabel(code.codeId),
           value: code.codeId,
         }))
         .filter(({ label }) => label !== null) ?? []),
-      // ...dummyCompaniesOptions,
     ],
-    [marketCategoryCode],
+    [marketCategoryCodeList],
   )
 
   const handleSwitchToggle = (value: string) => {
@@ -141,11 +134,38 @@ const NewsFeed = () => {
     }))
   }
 
-  useEffect(() => {
-    if (marketCategoryCodeOptions.length > 0) {
-      setCategoryCode(marketCategoryCodeOptions[0].value)
+  const handleApplyFilters = (newSentiments: string[], newImpactScores: string[], newRegions: string[], save?: boolean) => {
+    setSentiments(newSentiments)
+    setImpactScores(newImpactScores)
+    setRegions(newRegions)
+
+    if (save) {
+      localStorage.setItem(
+        'newsFeedFilters',
+        JSON.stringify({ sentiments: newSentiments, impactScores: newImpactScores, regions: newRegions }),
+      )
+    } else {
+      localStorage.removeItem('newsFeedFilters')
     }
-  }, [marketCategoryCodeOptions])
+  }
+
+  useEffect(() => {
+    if (marketCategoryCodeOptions.length > 0 && !isInitialized) {
+      setCategoryCode(marketCategoryCodeOptions[0].value)
+
+      const savedFilters = localStorage.getItem('newsFeedFilters')
+
+      if (savedFilters) {
+        const { sentiments: savedSentiments, impactScores: savedImpactScores, regions: savedRegions } = JSON.parse(savedFilters)
+
+        setSentiments(savedSentiments)
+        setImpactScores(savedImpactScores)
+        setRegions(savedRegions)
+      }
+
+      setIsInitialized(true)
+    }
+  }, [marketCategoryCodeOptions, isInitialized])
 
   return (
     <DashboardCard
@@ -163,11 +183,13 @@ const NewsFeed = () => {
             groupDisplayType="divider"
           />
           <MIMenu
+            open={isSettingsMenuOpen}
             label={<SettingsIcon sx={{ width: 20, height: 20, color: 'gray.70' }} />}
             displayType="button"
             variant="outlined"
-            menuPosition="right"
+            placement="bottom-end"
             menuPositionOffset={{ right: -10 }}
+            onOpenChange={setIsSettingsMenuOpen}
           >
             <Stack padding="12px" gap="12px" minWidth={154} boxSizing="border-box">
               {switchOptions.map((item) => (
@@ -203,7 +225,15 @@ const NewsFeed = () => {
           </Box>
         </Fade>
       </Collapse>
-      <Feed newsFeedItems={newsFeedItems} />
+      <Feed
+        newsFeedItems={newsFeedItems}
+        onApplyFilters={handleApplyFilters}
+        appliedFiltersCount={[...sentiments, ...impactScores, ...regions].length}
+        initialFilters={{ sentiments, impactScores, regions }}
+        order={sort}
+        orderOptions={feedOrderOptions}
+        onOrderChange={setSort}
+      />
     </DashboardCard>
   )
 }

@@ -33,24 +33,36 @@ export interface INewsFeedItem {
   provider: string
   impctScre: number
   drctnlt: DirectionType
+  region: string[]
+}
+
+export interface INewsFeedFilter {
+  sort: string
+  sentiments: string[]
+  impactScores: string[]
+  regions: string[]
 }
 
 const dashboardService = {
   async getTimeline(categoryCode: string): Promise<INewsFeedItem[]> {
     const response: AxiosResponse<ICommonResponse<INewsFeedItem[]>> = await api.get('mi/market-news/timeline', {
       params: {
-        crtrDt: dayjs().format('YYYYMMDD'),
+        criteriaDate: dayjs().format('YYYYMMDD'),
         category: categoryCode,
       },
     })
 
     return response.data.data
   },
-  async getNewsFeed(categoryCode: string): Promise<INewsFeedItem[]> {
+  async getNewsFeed(categoryCode: string, filters: INewsFeedFilter): Promise<INewsFeedItem[]> {
     const response: AxiosResponse<ICommonResponse<INewsFeedItem[]>> = await api.get('mi/market-news/feed', {
       params: {
-        crtrDt: dayjs().format('YYYYMMDD'),
+        criteriaDate: dayjs().format('YYYYMMDD'),
         category: categoryCode,
+        sort: filters.sort,
+        sentiments: filters.sentiments.join(','),
+        impactScores: filters.impactScores.join(','),
+        regions: filters.regions.join(','),
       },
     })
 

@@ -1,6 +1,6 @@
 import api from '@/lib/axios.ts'
 
-interface ICode {
+export interface ICode {
   codeId: string
   codeNm: string
   codeExpn: string

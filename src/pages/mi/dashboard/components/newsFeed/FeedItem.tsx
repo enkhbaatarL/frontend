@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import CloseIcon from '@/components/common/icons/CloseIcon'
+import useCodeData from '@/hooks/useCodeData'
 import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
 import CategoryChip from '@/pages/mi/dashboard/components/common/CategoryChip'
 import TrendIcon from '@/pages/mi/dashboard/components/newsFeed/TrendIcon'
@@ -58,6 +59,8 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
   const impactLevel = getImpactLevel(item.impctScre)
 
   const navigate = useNavigate()
+
+  const { regionCategoryCodeList } = useCodeData()
 
   useEffect(() => {
     if (isHighlighted) {
@@ -159,14 +162,16 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
               <Box component="img" width={22} height={22} src={getFeedIcon(item.nwsMrktCtgrCd)} alt={item.nwsMrktCtgrCd} />
             </CategoryChip>
           )}
-          <CategoryChip padding="6px 8px 6px 6px">
-            <Stack direction="row" alignItems="center" gap="4px">
-              <SouthAmericaIcon sx={{ fontSize: 16, color: 'content.iconEnabled' }} />
-              <Typography variant="labelText" color="content.textNormal">
-                Global
-              </Typography>
-            </Stack>
-          </CategoryChip>
+          {item.region.map((region) => (
+            <CategoryChip key={region} padding="6px 8px 6px 6px">
+              <Stack direction="row" alignItems="center" gap="4px">
+                <SouthAmericaIcon sx={{ fontSize: 16, color: 'content.iconEnabled' }} />
+                <Typography variant="labelText" color="content.textNormal">
+                  {regionCategoryCodeList?.find((code) => code.codeId === region)?.codeNm}
+                </Typography>
+              </Stack>
+            </CategoryChip>
+          ))}
           <CategoryChip>
             <TrendIcon sentiment={trendString} impact={impactLevel} />
           </CategoryChip>

@@ -78,11 +78,11 @@ const MIFilterGroup = ({ title, type = 'panel', filters, selectedFilters: extern
       <Typography
         variant={type === 'panel' ? 'sidePanelTitle' : 'body3M12'}
         color={`contentText.${type === 'panel' ? 'Normal' : 'Subtext'}`}
-        px="6px"
+        px={type === 'panel' ? '4px' : '2px'}
       >
         {title}
       </Typography>
-      <FormGroup sx={{ gap: '2px' }}>
+      <FormGroup sx={{ gap: '12px' }}>
         {filters.map(({ label, badge, value }) => (
           <Tooltip
             key={value}
@@ -96,8 +96,8 @@ const MIFilterGroup = ({ title, type = 'panel', filters, selectedFilters: extern
                 boxSizing: 'border-box',
                 userSelect: 'none',
                 width: '100%',
-                height: '34px',
-                padding: '6px 10px',
+                height: type === 'panel' ? '34px' : '24px',
+                padding: type === 'panel' ? '6px 10px' : '4px',
                 borderRadius: '4px',
                 margin: 0,
                 display: 'flex',
@@ -121,30 +121,37 @@ const MIFilterGroup = ({ title, type = 'panel', filters, selectedFilters: extern
                 />
               </Box>
               {badge && (
-                <Typography variant="body3M12" color="contentText.Subtext" padding="2px 6px" borderRadius="4px" bgcolor="gray.20">
+                <Typography
+                  variant="body3M12"
+                  color="contentText.Subtext"
+                  padding="2px 6px"
+                  borderRadius="4px"
+                  bgcolor="gray.20"
+                  ml="-2px"
+                  mr="4px"
+                >
                   {badge}
                 </Typography>
               )}
-              <span
+              <Typography
                 ref={(el) => {
                   textRefs.current[value] = el
                   if (el) {
                     requestAnimationFrame(() => checkEllipsis(value))
                   }
                 }}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  marginLeft: '4px',
-                  flex: 1,
-                  minWidth: 0,
-                }}
+                variant="body2M14"
+                color="contentText.Normal"
+                display="block"
+                width="100%"
+                overflow="hidden"
+                textOverflow="ellipsis"
+                whiteSpace="nowrap"
+                flex={1}
+                minWidth={0}
               >
                 {label}
-              </span>
+              </Typography>
             </Box>
           </Tooltip>
         ))}
