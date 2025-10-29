@@ -96,13 +96,13 @@ const NewsFeed = () => {
 
   const { marketCategoryCodeList } = useCodeData()
 
-  const { data: timelineItems } = useQuery({
+  const { data: timelineItems, isLoading: isTimelineLoading } = useQuery({
     queryKey: ['timeline', categoryCode],
     queryFn: async () => await dashboardService.getTimeline(categoryCode),
     enabled: !!categoryCode,
   })
 
-  const { data: newsFeedItems } = useQuery({
+  const { data: newsFeedItems, isLoading: isNewsFeedLoading } = useQuery({
     queryKey: ['newsFeed', categoryCode, sort, sentiments.join(','), impactScores.join(','), regions.join(',')],
     queryFn: async () =>
       await dashboardService.getNewsFeed(categoryCode, {
@@ -221,7 +221,7 @@ const NewsFeed = () => {
           }}
         >
           <Box mb="24px">
-            <Timeline my="12px" timeLineItems={timelineItems} />
+            <Timeline my="12px" timeLineItems={timelineItems} loading={isTimelineLoading} />
           </Box>
         </Fade>
       </Collapse>
@@ -233,6 +233,7 @@ const NewsFeed = () => {
         order={sort}
         orderOptions={feedOrderOptions}
         onOrderChange={setSort}
+        isLoading={isNewsFeedLoading}
       />
     </DashboardCard>
   )

@@ -62,16 +62,7 @@ const NewsDetailPage = () => {
             >
               {newsSummaryData?.story}
             </Typography>
-            <TagChip
-              items={[
-                { name: 'Sample Tag 1' },
-                { name: 'Sample Tag 2' },
-                { name: 'Sample Tag 3' },
-                { name: 'Sample Tag 4' },
-                { name: 'Sample Tag 5' },
-              ]}
-              disabled
-            />
+            <TagChip items={newsSummaryData?.tagList?.map((value) => ({ name: value })) ?? []} disabled />
           </Grid>
           <Grid
             sx={{

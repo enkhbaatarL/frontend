@@ -10,6 +10,7 @@ export interface INewsSummaryData {
   title: string
   story: string
   provider: string
+  tagList: string[]
 }
 
 export interface INewsListRequest extends IPaginationRequest {
@@ -17,9 +18,9 @@ export interface INewsListRequest extends IPaginationRequest {
   keyword?: string
   startDate?: string
   endDate?: string
-  category?: string[]
-  region?: string[]
-  industry?: string[]
+  categories?: string[]
+  regions?: string[]
+  industries?: string[]
 }
 
 export interface INewsListItem {
@@ -35,9 +36,9 @@ const marketNewsService = {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsListItem>>> = await api.get('mi/market-news', {
       params: {
         ...params,
-        category: params.category?.join(','),
-        region: params.region?.join(','),
-        industry: params.industry?.join(','),
+        categories: params.categories?.join(','),
+        regions: params.regions?.join(','),
+        industries: params.industries?.join(','),
       },
       timeout: 120_000,
       signal,

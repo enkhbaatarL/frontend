@@ -64,9 +64,9 @@ const NewsPage = () => {
       sort: 'NEWEST',
       startDate: today.subtract(1, 'year').format('YYYYMMDD'),
       endDate: today.format('YYYYMMDD'),
-      category: [],
-      region: [],
-      industry: [],
+      categories: [],
+      regions: [],
+      industries: [],
     },
     {
       page: 1,
@@ -231,8 +231,8 @@ const NewsPage = () => {
                     </Stack>
                   }
                   filters={marketCategoryCodeList?.map((code) => ({ label: code.codeNm, value: code.codeId })) ?? []}
-                  selectedFilters={filter.category}
-                  onFilterChange={(selectedFilters) => updateFilterWithSearch('category', selectedFilters)}
+                  selectedFilters={filter.categories}
+                  onFilterChange={(selectedFilters) => updateFilterWithSearch('categories', selectedFilters)}
                   padding="16px"
                   bgcolor="contentBG.Primaryactive"
                   border="1px solid"
@@ -242,14 +242,14 @@ const NewsPage = () => {
                 <MIFilterGroup
                   title="Industries"
                   filters={industrySectorCodeList?.map((code) => ({ label: code.codeNm, value: code.codeId })) ?? []}
-                  selectedFilters={filter.industry}
-                  onFilterChange={(selectedFilters) => updateFilterWithSearch('industry', selectedFilters)}
+                  selectedFilters={filter.industries}
+                  onFilterChange={(selectedFilters) => updateFilterWithSearch('industries', selectedFilters)}
                 />
                 <MIFilterGroup
                   title="Regions"
                   filters={regionCategoryCodeList?.map((code) => ({ label: code.codeNm, value: code.codeId })) ?? []}
-                  selectedFilters={filter.region}
-                  onFilterChange={(selectedFilters) => updateFilterWithSearch('region', selectedFilters)}
+                  selectedFilters={filter.regions}
+                  onFilterChange={(selectedFilters) => updateFilterWithSearch('regions', selectedFilters)}
                 />
               </Stack>
             </Stack>

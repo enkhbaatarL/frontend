@@ -2,6 +2,7 @@ import { Box, BoxProps, Stack, StackProps, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { useRef, useMemo, useState, useEffect } from 'react'
 
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 import FeedItem from '@/pages/mi/dashboard/components/newsFeed/FeedItem'
 import { INewsFeedItem, DirectionType } from '@/service/mi/dashboard'
@@ -386,13 +387,16 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
 interface TimelineProps extends BoxProps {
   onItemClick?: (id: string) => void
   timeLineItems?: INewsFeedItem[]
+  loading?: boolean
 }
 
-const Timeline = ({ onItemClick, timeLineItems, ...props }: TimelineProps) => {
+const Timeline = ({ onItemClick, timeLineItems, loading = false, ...props }: TimelineProps) => {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [isHighlighted, setIsHighlighted] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
 
   const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const startAnimation = () => {
     if (animationTimeoutRef.current) {
@@ -418,7 +422,12 @@ const Timeline = ({ onItemClick, timeLineItems, ...props }: TimelineProps) => {
   )
 
   const handleItemClose = () => {
-    setSelectedItemId(null)
+    setIsClosing(true)
+
+    closeTimeoutRef.current = setTimeout(() => {
+      setSelectedItemId(null)
+      setIsClosing(false)
+    }, 250)
   }
 
   useEffect(() => {
@@ -431,6 +440,9 @@ const Timeline = ({ onItemClick, timeLineItems, ...props }: TimelineProps) => {
     () => () => {
       if (animationTimeoutRef.current) {
         clearTimeout(animationTimeoutRef.current)
+      }
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
       }
     },
     [],
@@ -447,21 +459,49 @@ const Timeline = ({ onItemClick, timeLineItems, ...props }: TimelineProps) => {
         }}
         {...props}
       >
-        <Stack alignContent="center" justifyContent="center" height="280px">
-          {!timeLineItems || timeLineItems?.length === 0 ? (
-            <Stack height={280} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-              <Typography variant="body2SB14" color="content.textNormal" mt="-24px">
-                No data available to display.
-              </Typography>
+        {loading ? (
+          <Stack alignContent="center" justifyContent="center" height="280px">
+            <Stack gap="10px" px="10px">
+              <Box position="relative">
+                <Box height="6px" borderRadius="100px" sx={{ backgroundColor: '#DEE2E6' }} />
+              </Box>
+              <Stack direction="row" justifyContent="space-between">
+                <MIBaseSkeleton.TextLine width="80px" height="16px" sx={{ borderRadius: '4px' }} />
+                <MIBaseSkeleton.TextLine width="80px" height="16px" sx={{ borderRadius: '4px' }} />
+              </Stack>
             </Stack>
-          ) : (
-            <TimelineBar data={timeLineItems} onItemClick={handleItemClick} selectedItemId={selectedItemId} />
-          )}
-        </Stack>
+          </Stack>
+        ) : (
+          <Stack alignContent="center" justifyContent="center" height="280px">
+            {!timeLineItems || timeLineItems?.length === 0 ? (
+              <Stack height={280} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+                <Typography variant="body2SB14" color="content.textNormal" mt="-24px">
+                  No data available to display.
+                </Typography>
+              </Stack>
+            ) : (
+              <TimelineBar data={timeLineItems} onItemClick={handleItemClick} selectedItemId={selectedItemId} />
+            )}
+          </Stack>
+        )}
         <Box
           sx={{
-            opacity: selectedItem ? 1 : 0,
-            transition: 'opacity 1.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            opacity: selectedItem && !isClosing ? 1 : 0,
+            transform: selectedItem && !isClosing ? 'translateY(0)' : 'translateY(-8px)',
+            maxHeight: selectedItem && !isClosing ? '1000px' : '0px',
+            transition: `
+              opacity 0.25s ease-in-out,
+              transform 0.25s ease-in-out,
+              max-height 0.55s ease-in-out,
+              margin-top 0.5s ease-in-out,
+              padding-top 0.5s ease-in-out,
+              padding-bottom 0.5s ease-in-out
+            `,
+            pointerEvents: selectedItem && !isClosing ? 'auto' : 'none',
+            overflow: 'visible',
+            marginTop: selectedItem && !isClosing ? '6px' : '0px',
+            paddingTop: selectedItem && !isClosing ? '6px' : '0px',
+            paddingBottom: selectedItem && !isClosing ? '6px' : '0px',
           }}
         >
           {selectedItem && (

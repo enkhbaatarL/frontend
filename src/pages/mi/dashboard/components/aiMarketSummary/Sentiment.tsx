@@ -259,8 +259,10 @@ const Sentiment = () => {
           items={options}
           selected={selectedOptions}
           onSelected={setSelectedOptions}
-          menuPositionOffset={{ top: 4, right: -32 }}
+          menuPositionOffset={{ right: -78 }}
           placement="bottom-end"
+          fadeIn="left"
+          closeOnScroll
         />
       </SectionHeader>
       {sampleItems.map((item, index) => {

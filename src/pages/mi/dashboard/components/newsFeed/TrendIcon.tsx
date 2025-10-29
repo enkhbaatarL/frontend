@@ -9,26 +9,27 @@ import neutralMediumIcon from '@/assets/icons/sentiment-neutral-medium.svg'
 import positiveHighIcon from '@/assets/icons/sentiment-positive-high.svg'
 import positiveLowIcon from '@/assets/icons/sentiment-positive-low.svg'
 import positiveMediumIcon from '@/assets/icons/sentiment-positive-medium.svg'
+import { DirectionType } from '@/service/mi/dashboard'
 
 interface Props {
-  sentiment: string //'upward' | 'downward' | 'neutral'
-  impact: string //'high' | 'medium' | 'low'
+  sentiment: DirectionType
+  impact: string // 'HIGH' | 'MEDIUM' | 'LOW'
 }
 
 const getTrendIconSrc = (trend: string, impact: string) => {
-  if (trend === 'upward') {
-    if (impact === 'high') return positiveHighIcon
-    if (impact === 'medium') return positiveMediumIcon
+  if (trend === DirectionType.Upward) {
+    if (impact === 'HIGH') return positiveHighIcon
+    if (impact === 'MEDIUM') return positiveMediumIcon
     return positiveLowIcon
   }
-  if (trend === 'downward') {
-    if (impact === 'high') return negativeHighIcon
-    if (impact === 'medium') return negativeMediumIcon
+  if (trend === DirectionType.Downward) {
+    if (impact === 'HIGH') return negativeHighIcon
+    if (impact === 'MEDIUM') return negativeMediumIcon
     return negativeLowIcon
   }
-  if (trend === 'neutral') {
-    if (impact === 'high') return neutralHighIcon
-    if (impact === 'medium') return neutralMediumIcon
+  if (trend === DirectionType.Neutral) {
+    if (impact === 'HIGH') return neutralHighIcon
+    if (impact === 'MEDIUM') return neutralMediumIcon
     return neutralLowIcon
   }
 

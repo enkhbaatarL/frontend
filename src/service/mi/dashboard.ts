@@ -33,7 +33,7 @@ export interface INewsFeedItem {
   provider: string
   impctScre: number
   drctnlt: DirectionType
-  region: string[]
+  regions: string[]
 }
 
 export interface INewsFeedFilter {

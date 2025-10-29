@@ -15,6 +15,7 @@ interface Props extends ButtonProps {
   variant?: 'text' | 'outlined' | 'contained'
   placement?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
   menuPositionOffset?: MenuPositionOffset
+  fadeIn?: 'left' | 'right' | 'center'
   paperProps?: PaperProps
   children?: ReactNode
   onClose?: () => void
@@ -30,6 +31,7 @@ const MIMenu = ({
   variant = 'text',
   placement = 'bottom-start',
   menuPositionOffset = {},
+  fadeIn,
   paperProps,
   children,
   onClose,
@@ -108,16 +110,31 @@ const MIMenu = ({
   }
 
   const getTransformOrigin = (popperPlacement: string) => {
-    if (popperPlacement === 'bottom-start') return 'left top'
-    if (popperPlacement === 'bottom-end') return 'right top'
-    if (popperPlacement === 'top-start') return 'left bottom'
-    return 'right bottom'
+    const isTop = popperPlacement.startsWith('top')
+
+    let horizontalOrigin = 'center'
+    let verticalOrigin
+
+    if (fadeIn) {
+      if (fadeIn === 'left') horizontalOrigin = 'left'
+      else if (fadeIn === 'right') horizontalOrigin = 'right'
+      if (isTop) verticalOrigin = 'bottom'
+      else verticalOrigin = 'top'
+    } else {
+      if (popperPlacement.includes('start')) horizontalOrigin = 'left'
+      else if (popperPlacement.includes('end')) horizontalOrigin = 'right'
+
+      if (isTop) verticalOrigin = 'bottom'
+      else verticalOrigin = 'top'
+    }
+
+    return `${horizontalOrigin} ${verticalOrigin}`
   }
 
   const popperModifiers = useMemo(() => {
     const modifiers: Array<Record<string, unknown>> = []
 
-    const { top = 6, left = 0, right = 0, bottom = 6 } = menuPositionOffset
+    const { top = variant === 'outlined' ? 6 : 2, left = 0, right = 0, bottom = variant === 'outlined' ? 6 : 2 } = menuPositionOffset
 
     let skidding = 0
     let distance = 0
@@ -138,7 +155,7 @@ const MIMenu = ({
     })
 
     return modifiers
-  }, [menuPositionOffset, placement])
+  }, [menuPositionOffset, placement, variant])
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -158,7 +175,7 @@ const MIMenu = ({
             height: '40px',
             justifyContent: 'space-between',
             textTransform: 'none',
-            backgroundColor: open ? 'contentBG.Active' : undefined,
+            backgroundColor: variant === 'outlined' && open ? 'contentBG.Active' : undefined,
             transition: 'background-color 0.2s ease-in-out, border-color 0.2s ease-in-out',
             '&:disabled': {
               backgroundColor: props.disabled && variant === 'text' ? 'transparent' : undefined,

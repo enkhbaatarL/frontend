@@ -1,10 +1,12 @@
 import { Box, Divider, FormControlLabel, Stack, Switch, Typography } from '@mui/material'
+import { isEqual } from 'lodash-es'
 import { Fragment, useEffect, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIFilterGroup from '@/components/common/filter/MIFilterGroup'
 import MIMenu from '@/components/common/menu/MIMenu'
 import MISelectMenu, { SelectMenuItem } from '@/components/common/menu/MISelectMenu'
+import MISkeleton from '@/components/mi/MISkeleton'
 import useCodeData from '@/hooks/useCodeData'
 import FeedItem from '@/pages/mi/dashboard/components/newsFeed/FeedItem'
 import { DirectionType, INewsFeedItem } from '@/service/mi/dashboard'
@@ -33,9 +35,19 @@ interface FeedProps {
   order: string
   orderOptions: SelectMenuItem[]
   onOrderChange: (order: string) => void
+  isLoading?: boolean
 }
 
-const Feed = ({ newsFeedItems, onApplyFilters, appliedFiltersCount, initialFilters, order, orderOptions, onOrderChange }: FeedProps) => {
+const Feed = ({
+  newsFeedItems,
+  onApplyFilters,
+  appliedFiltersCount,
+  initialFilters,
+  order,
+  orderOptions,
+  onOrderChange,
+  isLoading,
+}: FeedProps) => {
   const [sentiments, setSentiments] = useState<string[]>(initialFilters?.sentiments ?? [])
   const [impactScores, setImpactScores] = useState<string[]>(initialFilters?.impactScores ?? [])
   const [regions, setRegions] = useState<string[]>(initialFilters?.regions ?? [])
@@ -44,6 +56,9 @@ const Feed = ({ newsFeedItems, onApplyFilters, appliedFiltersCount, initialFilte
   const [save, setSave] = useState(false)
 
   const { regionCategoryCodeList } = useCodeData()
+
+  const [hasChanges, setHasChanges] = useState(false)
+  const [previousItemsLength, setPreviousItemsLength] = useState(4)
 
   useEffect(() => {
     if (
@@ -56,6 +71,33 @@ const Feed = ({ newsFeedItems, onApplyFilters, appliedFiltersCount, initialFilte
       setSave(true)
     }
   }, [initialFilters])
+
+  useEffect(() => {
+    const initialSentiments = initialFilters?.sentiments ?? []
+    const initialImpactScores = initialFilters?.impactScores ?? []
+    const initialRegions = initialFilters?.regions ?? []
+
+    const sentimentsChanged = !isEqual(
+      sentiments.slice().sort((a, b) => a.localeCompare(b)),
+      initialSentiments.slice().sort((a, b) => a.localeCompare(b)),
+    )
+    const impactScoresChanged = !isEqual(
+      impactScores.slice().sort((a, b) => a.localeCompare(b)),
+      initialImpactScores.slice().sort((a, b) => a.localeCompare(b)),
+    )
+    const regionsChanged = !isEqual(
+      regions.slice().sort((a, b) => a.localeCompare(b)),
+      initialRegions.slice().sort((a, b) => a.localeCompare(b)),
+    )
+
+    setHasChanges(sentimentsChanged || impactScoresChanged || regionsChanged)
+  }, [sentiments, impactScores, regions, initialFilters])
+
+  useEffect(() => {
+    if (newsFeedItems && newsFeedItems.length > 0) {
+      setPreviousItemsLength(newsFeedItems.length)
+    }
+  }, [newsFeedItems])
 
   return (
     <Stack>
@@ -164,6 +206,7 @@ const Feed = ({ newsFeedItems, onApplyFilters, appliedFiltersCount, initialFilte
                   <MIButton
                     type="outlined"
                     size="h28"
+                    disabled={[...sentiments, ...impactScores, ...regions].length === 0}
                     onClick={() => {
                       setSentiments([])
                       setImpactScores([])
@@ -175,6 +218,7 @@ const Feed = ({ newsFeedItems, onApplyFilters, appliedFiltersCount, initialFilte
                   <MIButton
                     type="filled"
                     size="h28"
+                    disabled={!hasChanges}
                     onClick={() => {
                       onApplyFilters(sentiments, impactScores, regions, save)
                       setIsMenuOpen(false)
@@ -190,19 +234,63 @@ const Feed = ({ newsFeedItems, onApplyFilters, appliedFiltersCount, initialFilte
         </Stack>
       </Stack>
       <Stack mt="12px">
-        {newsFeedItems?.map((item, index) => (
-          <Fragment key={item.nwsSigId}>
-            {index !== 0 && <Divider color="#DEE2E6" sx={{ my: '10px' }} />}
-            <FeedItem item={item} />
-          </Fragment>
-        ))}
-        {!newsFeedItems || newsFeedItems.length === 0 ? (
-          <Stack height={452} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-            <Typography variant="body2SB14" color="content.textNormal">
-              No data available to display.
-            </Typography>
+        {isLoading ? (
+          <Stack gap="10px">
+            {Array.from({ length: previousItemsLength }, (_, index) => {
+              const uniqueId = `skeleton-${Date.now()}-${index}`
+
+              return (
+                <Fragment key={uniqueId}>
+                  {index !== 0 && <Divider color="#DEE2E6" />}
+                  <MISkeleton
+                    loading={true}
+                    custom={
+                      <Stack
+                        padding="12px 18px"
+                        borderRadius="10px"
+                        gap="8px"
+                        sx={{
+                          backgroundColor: 'commonColor.White',
+                          border: '1px solid transparent',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        <Stack direction="row" justifyContent="space-between">
+                          <Box width="300px" height="26px" borderRadius="4px" sx={{ backgroundColor: 'gray.20' }} />
+                        </Stack>
+
+                        <Stack py="8px">
+                          <Box width="90%" height="22px" borderRadius="4px" sx={{ backgroundColor: 'gray.20' }} mb="8px" />
+                          <Stack direction="row" gap="8px" alignItems="center">
+                            <Box width="50px" height="14px" borderRadius="4px" sx={{ backgroundColor: 'gray.20' }} />
+                            <Box width="1px" height="12px" sx={{ backgroundColor: 'gray.20' }} />
+                            <Box width="140px" height="14px" borderRadius="4px" sx={{ backgroundColor: 'gray.20' }} />
+                          </Stack>
+                        </Stack>
+                      </Stack>
+                    }
+                  />
+                </Fragment>
+              )
+            })}
           </Stack>
-        ) : null}
+        ) : (
+          <>
+            {newsFeedItems?.map((item, index) => (
+              <Fragment key={item.nwsSigId}>
+                {index !== 0 && <Divider color="#DEE2E6" sx={{ my: '10px' }} />}
+                <FeedItem item={item} />
+              </Fragment>
+            ))}
+            {!newsFeedItems || newsFeedItems.length === 0 ? (
+              <Stack height={452} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+                <Typography variant="body2SB14" color="content.textNormal">
+                  No data available to display.
+                </Typography>
+              </Stack>
+            ) : null}
+          </>
+        )}
       </Stack>
     </Stack>
   )

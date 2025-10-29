@@ -18,26 +18,30 @@ const defaultOptions = {
   enabled: false,
 }
 
+const marketCategoryKey = 'nws_mrkt_ctgr_cd'
+const regionCategoryKey = 'nws_rgn_spt_cd'
+const industrySectorKey = 'nws_ind_sctr_cd'
+
 /**
  * 코드 데이터를 지연 로딩으로 불러오는 훅
  * 실제로 사용되는 코드만 필요할 때 로드하고 캐싱 처리
  */
 const useCodeData = (): UseCodeDataReturn => {
   const marketQuery = useQuery({
-    queryKey: ['codeData', 'marketCategory'],
-    queryFn: async () => await codeService.getNewsMarketCategoryCode(),
+    queryKey: ['codeData', marketCategoryKey],
+    queryFn: async () => await codeService.getCodeFromKey(marketCategoryKey),
     ...defaultOptions,
   })
 
   const regionQuery = useQuery({
-    queryKey: ['codeData', 'regionCategory'],
-    queryFn: async () => await codeService.getNewsRegionCategoryCode(),
+    queryKey: ['codeData', regionCategoryKey],
+    queryFn: async () => await codeService.getCodeFromKey(regionCategoryKey),
     ...defaultOptions,
   })
 
   const industryQuery = useQuery({
-    queryKey: ['codeData', 'industrySector'],
-    queryFn: async () => await codeService.getNewsIndustrySectorCode(),
+    queryKey: ['codeData', industrySectorKey],
+    queryFn: async () => await codeService.getCodeFromKey(industrySectorKey),
     ...defaultOptions,
   })
 

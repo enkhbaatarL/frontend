@@ -25,21 +25,10 @@ const getTrendColor = (drctnlt: DirectionType) => {
   }
 }
 
-const getTrendString = (drctnlt: DirectionType): string => {
-  switch (drctnlt) {
-    case DirectionType.Upward:
-      return 'upward'
-    case DirectionType.Downward:
-      return 'downward'
-    default:
-      return 'neutral'
-  }
-}
-
 const getImpactLevel = (score: number): string => {
-  if (score >= 9) return 'high'
-  if (score >= 7) return 'medium'
-  return 'low'
+  if (score >= 9) return 'HIGH'
+  if (score >= 7) return 'MEDIUM'
+  return 'LOW'
 }
 
 interface FeedItemProps extends StackProps {
@@ -55,12 +44,11 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
   const aiSummaryRef = useRef<AiSummaryHandle>(null)
 
   const trendColor = getTrendColor(item.drctnlt)
-  const trendString = getTrendString(item.drctnlt)
   const impactLevel = getImpactLevel(item.impctScre)
 
   const navigate = useNavigate()
 
-  const { regionCategoryCodeList } = useCodeData()
+  const { regionCategoryCodeList, marketCategoryCodeList } = useCodeData()
 
   useEffect(() => {
     if (isHighlighted) {
@@ -72,7 +60,7 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
     } else {
       // 하이라이트가 해제되면 즉시 애니메이션 중지
       setShouldFlash(false)
-      return () => {}
+      return undefined
     }
   }, [isHighlighted])
 
@@ -158,11 +146,11 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
       <Stack direction="row" justifyContent="space-between">
         <Stack direction="row" gap="8px">
           {getFeedIcon(item.nwsMrktCtgrCd) && (
-            <CategoryChip>
+            <CategoryChip tooltipTitle={marketCategoryCodeList?.find((code) => code.codeId === item.nwsMrktCtgrCd)?.codeNm}>
               <Box component="img" width={22} height={22} src={getFeedIcon(item.nwsMrktCtgrCd)} alt={item.nwsMrktCtgrCd} />
             </CategoryChip>
           )}
-          {item.region.map((region) => (
+          {item.regions.map((region) => (
             <CategoryChip key={region} padding="6px 8px 6px 6px">
               <Stack direction="row" alignItems="center" gap="4px">
                 <SouthAmericaIcon sx={{ fontSize: 16, color: 'content.iconEnabled' }} />
@@ -172,10 +160,10 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
               </Stack>
             </CategoryChip>
           ))}
-          <CategoryChip>
-            <TrendIcon sentiment={trendString} impact={impactLevel} />
+          <CategoryChip tooltipTitle={item.drctnlt}>
+            <TrendIcon sentiment={item.drctnlt} impact={impactLevel} />
           </CategoryChip>
-          <CategoryChip padding="6px 8px">
+          <CategoryChip padding="6px 8px" tooltipTitle={`Impact Score: ${item.impctScre}`}>
             <Typography variant="body2SB14" color="content.textNormal">
               {item.impctScre}
             </Typography>

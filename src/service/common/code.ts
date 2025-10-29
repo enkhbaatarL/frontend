@@ -6,19 +6,9 @@ export interface ICode {
   codeExpn: string
 }
 
-const apiUrl = 'common/codes'
-
 const codeService = {
-  async getNewsMarketCategoryCode(): Promise<ICode[]> {
-    const response = await api.get(`${apiUrl}/nws_mrkt_ctgr_cd`)
-    return response.data.data
-  },
-  async getNewsRegionCategoryCode(): Promise<ICode[]> {
-    const response = await api.get(`${apiUrl}/nws_rgn_spt_cd`)
-    return response.data.data
-  },
-  async getNewsIndustrySectorCode(): Promise<ICode[]> {
-    const response = await api.get(`${apiUrl}/nws_ind_sctr_cd`)
+  async getCodeFromKey(key: string): Promise<ICode[]> {
+    const response = await api.get(`common/codes/${key}`)
     return response.data.data
   },
 }

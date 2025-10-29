@@ -158,13 +158,12 @@ const Highlights = () => {
           items={options.map((option) => ({ ...option, label: t(`common.${option.value}`) }))}
           selected={selectedOption}
           onSelected={setSelectedOption}
-          menuPositionOffset={{ top: 4, right: -32 }}
-          placement="bottom-end"
           paperProps={{
             sx: {
               width: '150px',
             },
           }}
+          closeOnScroll
         />
       </SectionHeader>
       <InlineNotice noticeKey="dashboard-highlights">{t('dashboard.highlights.inlineNotice')}</InlineNotice>
