@@ -5,6 +5,11 @@ RUN npm install typescript -g
 
 WORKDIR /app
 
+ARG VITE_PROFILE=dev
+ARG VITE_USE_EXTERNAL_LOGIN=false
+ENV VITE_PROFILE=${VITE_PROFILE}
+ENV VITE_USE_EXTERNAL_LOGIN=${VITE_USE_EXTERNAL_LOGIN}
+
 COPY . .
 
 RUN npm install && npm run build
@@ -26,5 +31,5 @@ COPY ./nginx.conf /etc/nginx/nginx.conf
 RUN mkdir /logs && chmod 777 /logs
 
 COPY --from=build-stage /app/dist /usr/share/nginx/html
-EXPOSE 80
+EXPOSE 8070
 CMD ["nginx", "-g", "daemon off;"]
