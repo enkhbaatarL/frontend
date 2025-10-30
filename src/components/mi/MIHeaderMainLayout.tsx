@@ -6,9 +6,8 @@ import Button from '@mui/material/Button'
 import Link from '@mui/material/Link'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
-import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -25,9 +24,9 @@ import SignalIcon from '@/components/common/icons/gnb/SignalIcon'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
 import MIHeaderNotice from '@/components/mi/MIHeaderNotice'
 import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
+import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import useEnvironment from '@/hooks/useEnvironment.ts'
 import { UserRole } from '@/service/admin/members'
-import companiesService from '@/service/mi/companies'
 import useAuthStore from '@/store/useAuthStore'
 import { MiPagesType } from '@/types/common'
 import { languageList } from '@/utils/font'
@@ -44,7 +43,7 @@ type SubItem = {
   desc?: string
   disable?: boolean
   show?: boolean
-  iconSlot?: React.ReactNode
+  iconSlot?: ReactNode
   children?: SubItem[]
   section?: 'SERVICES' | 'DEFAULT'
 }
@@ -144,13 +143,20 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
   const { isProd } = useEnvironment()
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, accessCompanyInfo, setAccessCompanyInfo, clearAuth } = useAuthStore()
+  const { user, accessCompanyInfo, loadAccessCompanyInfo, clearAuth } = useAuthStore()
   const { i18n, t } = useTranslation()
 
-  const [selectedCompany, setSelectedCompany] = useState<{ label: string; value: number; customerCompanyMipUrl: string } | null>(null)
   const [isOpenCompany, setIsOpenCompany] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState<{ label: string; value: string }>({ label: '한국어', value: 'ko' })
   const [isOpenLanguageSelect, setIsOpenLanguageSelect] = useState(false)
+
+  const selectedCompany = useMemo(() => {
+    const label = accessCompanyInfo?.customerCompanyNm ?? user?.companyNm ?? ''
+    const value = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo ?? 0
+    const customerCompanyMipUrl = accessCompanyInfo?.customerCompanyMipUrl ?? user?.companyMipUrl ?? ''
+    if (!label) return null
+    return { label, value, customerCompanyMipUrl }
+  }, [accessCompanyInfo, user])
 
   // 현재 언어에 따라 선택된 언어 상태 초기화
   useEffect(() => {
@@ -159,23 +165,15 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
     setSelectedLanguage(currentLanguageOption)
   }, [i18n.language])
 
-  const { data: allCompanies } = useQuery({
-    queryKey: ['getAllCompanies'],
-    queryFn: async () => await companiesService.getAllCompanies(),
-    refetchOnWindowFocus: false,
-    gcTime: 0,
-    enabled: user?.userRoleCd === UserRole.ADMIN && user?.isOtherServiceAccessPossible,
-  })
+  const { companyList } = useCompanyCondition()
 
-  const companyList = useMemo(
-    () =>
-      allCompanies?.map(({ customerCompanyNo, customerCompanyNm, customerCompanyMipUrl }) => ({
-        label: customerCompanyNm,
-        value: customerCompanyNo,
-        customerCompanyMipUrl,
-      })) ?? [],
-    [allCompanies],
-  )
+  // 비관리자(USER) 로그인 시, 사용자 프로필 기반 설정
+  useEffect(() => {
+    if (user?.userRoleCd === UserRole.USER && !accessCompanyInfo && user?.companyNo && user?.companyNm) {
+      loadAccessCompanyInfo(user.companyNo)
+    }
+  }, [user, accessCompanyInfo, loadAccessCompanyInfo])
+
   const updatedMainMenus = useMemo(() => {
     const activeSet = new Set(activeMenu.map((m) => String(m)))
     return pages.map((item) => {
@@ -202,31 +200,6 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
       ),
     [activeMenu, t],
   )
-
-  useEffect(() => {
-    if (!selectedCompany) {
-      if (user?.userRoleCd === UserRole.USER) {
-        setSelectedCompany({
-          label: accessCompanyInfo?.customerCompanyNm ?? user?.companyNm ?? '',
-          value: accessCompanyInfo?.customerCompanyNo ?? user?.companyNo ?? 0,
-          customerCompanyMipUrl: accessCompanyInfo?.customerCompanyMipUrl ?? '',
-        })
-      } else if (companyList.length > 0) {
-        const def = companyList.find((c) => c.value === (accessCompanyInfo?.customerCompanyNo ?? user?.companyNo))
-        setSelectedCompany(def ?? companyList[0])
-      }
-    }
-  }, [companyList, selectedCompany, accessCompanyInfo, user])
-
-  useEffect(() => {
-    if (selectedCompany) {
-      setAccessCompanyInfo({
-        customerCompanyNo: selectedCompany.value,
-        customerCompanyNm: selectedCompany.label,
-        customerCompanyMipUrl: selectedCompany.customerCompanyMipUrl,
-      })
-    }
-  }, [selectedCompany, setAccessCompanyInfo])
 
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
@@ -311,12 +284,13 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
                 options={companyList}
                 onOpen={setIsOpenCompany}
                 onChange={({ value, label }) => {
-                  setSelectedCompany({
+                  const newCompany = {
                     value: value as number,
                     label,
                     customerCompanyMipUrl: companyList.find((c) => c.value === value)?.customerCompanyMipUrl ?? '',
-                  })
-                  navigate('/mi')
+                  }
+
+                  navigate('/mi', { state: { targetCompanyNo: newCompany.value } })
                 }}
                 disablePortal
               >

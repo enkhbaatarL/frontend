@@ -238,7 +238,7 @@ const MILayout = () => {
   // MEMO: 상반기 개발(~ 25.06.30) 기준
   // -> 개인정보 처리방침 제외
   // -> 고객사 custom iframe page 제외
-  const showMiAgent = !['/mi/privacy-policy', '/mi/custom'].includes(location.pathname)
+  const showMiAgent = accessCompanyInfo?.isMari && !['/mi/privacy-policy', '/mi/custom'].includes(location.pathname)
 
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
@@ -250,9 +250,8 @@ const MILayout = () => {
   const mariAgentTopPosition = useMemo(() => {
     const scrolledGap = isScrolled ? -headerTopHeight : 0
     const basePosition = 117 + scrolledGap
-    const totalPosition = basePosition + stickyHeaderHeight
 
-    return totalPosition
+    return basePosition + stickyHeaderHeight
   }, [isScrolled, stickyHeaderHeight])
 
   return (
