@@ -87,10 +87,13 @@ const valueIndicatorPlugin: ValueIndicatorPlugin = {
 
             if (!data) return null
 
+            const element = chart.getDatasetMeta(datasetIndex).data[xScaleIndex] as unknown as { x?: number; y?: number }
+            if (!element || typeof element.x !== 'number') return null
+
             return {
               label: dataset.label,
               backgroundColor: dataset.borderColor as string,
-              x: (data as Point).x,
+              x: element.x,
               y: (data as FinancialDataPoint).c || (data as Point).y,
               yAxisID: (dataset as { yAxisID: string }).yAxisID,
               interactionPoint: {

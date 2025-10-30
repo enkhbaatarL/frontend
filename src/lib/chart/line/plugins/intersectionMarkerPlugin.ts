@@ -3,6 +3,19 @@ import { Chart, Plugin, Point } from 'chart.js'
 import { getDatasetMetaData } from '@/lib/chart/utils/chartUtils'
 
 const checkIntersection = (p1: Point, p2: Point, q1: Point, q2: Point) => {
+  if (
+    p1.x === null ||
+    p1.y === null ||
+    p2.x === null ||
+    p2.y === null ||
+    q1.x === null ||
+    q1.y === null ||
+    q2.x === null ||
+    q2.y === null
+  ) {
+    return null
+  }
+
   const denom = (p2.x - p1.x) * (q2.y - q1.y) - (p2.y - p1.y) * (q2.x - q1.x)
 
   if (denom === 0) return null // 평행하면 교차 없음
@@ -42,7 +55,14 @@ const intersectionMarkerPlugin: Plugin<'line'> = {
     ctx.textBaseline = 'middle'
 
     for (let i = 0; i < metaData1.data.length - 1; i++) {
-      const intersection = checkIntersection(metaData1.data[i], metaData1.data[i + 1], metaData2.data[i], metaData2.data[i + 1])
+      const p1 = metaData1.data[i]
+      const p2 = metaData1.data[i + 1]
+      const q1 = metaData2.data[i]
+      const q2 = metaData2.data[i + 1]
+
+      if (!p1 || !p2 || !q1 || !q2) continue
+
+      const intersection = checkIntersection(p1, p2, q1, q2)
 
       if (intersection) {
         drawIntersectionMarker(ctx, intersection.x, intersection.y)

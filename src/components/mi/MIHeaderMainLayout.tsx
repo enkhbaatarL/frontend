@@ -230,7 +230,7 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
 
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
-  const hoverTimer = useRef<number | null>(null)
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const topBtnRefs = useRef<Record<string, HTMLElement | null>>({})
 
   useEffect(() => {
@@ -243,7 +243,7 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
 
   const clearHoverTimer = () => {
     if (hoverTimer.current) {
-      window.clearTimeout(hoverTimer.current)
+      clearTimeout(hoverTimer.current)
       hoverTimer.current = null
     }
   }
@@ -274,13 +274,13 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
 
   const onTopMouseEnter = (pageUrlKey: string, _currentTarget: HTMLElement) => {
     clearHoverTimer()
-    hoverTimer.current = window.setTimeout(() => {
+    hoverTimer.current = setTimeout(() => {
       setOpenKey(pageUrlKey)
     }, 1)
   }
   const onTopMouseLeave = () => {
     clearHoverTimer()
-    hoverTimer.current = window.setTimeout(() => setOpenKey(null), 1)
+    hoverTimer.current = setTimeout(() => setOpenKey(null), 1)
   }
 
   const handleClickAway = () => setOpenKey(null)

@@ -63,8 +63,8 @@ export const usePageSkeleton = <T extends SkeletonType>(
 
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false)
   const startTimeRef = useRef<number | null>(null)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const minDisplayTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const minDisplayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // useMemo로 스켈레톤 컴포넌트를 메모이제이션
   const SkeletonComponent = useMemo(() => MIPageSkeletons[skeletonType], [skeletonType])
@@ -74,7 +74,7 @@ export const usePageSkeleton = <T extends SkeletonType>(
     if (!SkeletonComponent) return null
 
     // props가 있으면 전달하고, 없으면 빈 객체 전달
-    const props = skeletonProps || {}
+    const props = skeletonProps ?? {}
     return React.createElement(SkeletonComponent as React.ComponentType<AllSkeletonProps>, props)
   }, [SkeletonComponent, skeletonProps])
 
@@ -100,7 +100,7 @@ export const usePageSkeleton = <T extends SkeletonType>(
       timeoutRef.current = setTimeout(() => {
         setShouldShowSkeleton(true)
         timeoutRef.current = null
-      }, delayThreshold)
+      }, delayThreshold) as unknown as ReturnType<typeof setTimeout>
     } else {
       // 로딩이 끝났을 때
       if (shouldShowSkeleton && startTimeRef.current) {
@@ -112,7 +112,7 @@ export const usePageSkeleton = <T extends SkeletonType>(
             setShouldShowSkeleton(false)
             startTimeRef.current = null
             minDisplayTimeoutRef.current = null
-          }, minDisplayTime - elapsedTime)
+          }, minDisplayTime - elapsedTime) as unknown as ReturnType<typeof setTimeout>
         } else {
           setShouldShowSkeleton(false)
           startTimeRef.current = null
@@ -220,7 +220,7 @@ export const createCustomSkeleton =
       // 커스텀 엘리먼트 생성
       const customElement = useMemo(() => {
         if (!skeletonComponent) return null
-        return React.createElement(skeletonComponent, props || ({} as P))
+        return React.createElement(skeletonComponent, props ?? ({} as P))
       }, [skeletonComponent, props])
 
       return {

@@ -16,20 +16,22 @@ const drawFillBetweenLines = (ctx: CanvasRenderingContext2D, metaData1: ChartMet
   ctx.fillStyle = fillColor
   ctx.beginPath()
 
-  metaData1.data.forEach((point, index) => {
-    if (index === 0) {
-      ctx.moveTo(point.x, point.y)
-    } else {
-      ctx.lineTo(point.x, point.y)
-    }
-  })
+  // 첫 번째 라인: 유효한 첫 포인트로 이동 후 이어 그리기
+  const valid1 = metaData1.data.filter((p) => p.x !== null && p.y !== null)
+  if (valid1.length === 0) {
+    ctx.restore()
+    return
+  }
+  ctx.moveTo(valid1[0].x ?? 0, valid1[0].y ?? 0)
+  for (let i = 1; i < valid1.length; i++) {
+    ctx.lineTo(valid1[i].x ?? 0, valid1[i].y ?? 0)
+  }
 
-  metaData2.data
-    .slice()
-    .reverse()
-    .forEach((point) => {
-      ctx.lineTo(point.x, point.y)
-    })
+  // 두 번째 라인: 역순으로 연결
+  const valid2 = metaData2.data.filter((p) => p.x !== null && p.y !== null)
+  for (let i = valid2.length - 1; i >= 0; i--) {
+    ctx.lineTo(valid2[i].x ?? 0, valid2[i].y ?? 0)
+  }
 
   ctx.closePath()
   ctx.fill()

@@ -151,7 +151,7 @@ const TimelineItem = ({ item, isHovered = false, hoverColor = '#F0F8FF', ...prop
 const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) => {
   const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null)
   const [containerWidth, setContainerWidth] = useState<number>(0)
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timelineItemRefsContainer = useRef<HTMLElement>(null)
 
   const items = useMemo(
@@ -247,7 +247,7 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
   const handleMouseLeave = () => {
     hoverTimeoutRef.current = setTimeout(() => {
       setHoveredItemIndex(null)
-    }, 100)
+    }, 100) as unknown as ReturnType<typeof setTimeout>
   }
 
   useEffect(() => {
