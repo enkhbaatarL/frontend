@@ -59,6 +59,10 @@ Tooltip.positioners.myCustomPositioner = function (_elements: ActiveElement[], e
 
   const { x: mouseX, y: mouseY } = eventPosition
 
+  if (mouseX === null || mouseY === null) {
+    return false
+  }
+
   // 1. 기본 툴팁 위치: 우하단
   let targetX = mouseX + 20
   let targetY = mouseY + tooltipHeight + 20
@@ -119,8 +123,6 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
     const height = Math.floor(raw.h ?? 0)
 
     const gradient = ctxRef.current.createLinearGradient(x, y, x + width, y + height)
-
-    
 
     if (change === 0) {
       gradient.addColorStop(0, '#5D636A')
@@ -315,5 +317,3 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
 }
 
 export default MISignalMap
-
-
