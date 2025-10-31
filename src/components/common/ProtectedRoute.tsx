@@ -5,6 +5,7 @@ import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import { setNavigate } from '@/lib/axios'
 import CustomErrorBoundary from '@/pages/error/CustomErrorBoundary'
 import useAuthStore from '@/store/useAuthStore'
+import useDialog from '@/store/useDialog'
 
 interface ProtectedRouteProps {
   children: ReactNode
@@ -34,6 +35,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   useEffect(() => {
     setNavigate(navigate)
   }, [navigate])
+
+  // 라우터 변경 시 다이얼로그 닫기
+  useEffect(() => {
+    const { visible, onHide } = useDialog.getState()
+    if (visible) {
+      onHide()
+    }
+  }, [location.pathname])
 
   if (!user) {
     // data-detail 접근 확인 (메일 접근)
