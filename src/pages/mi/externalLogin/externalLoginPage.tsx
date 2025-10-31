@@ -2,6 +2,7 @@ import { Box, Typography } from '@mui/material'
 import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import subtitleImg from '@/assets/Accelerate Market Intelligence with SK AI.png'
 import logoImg from '@/assets/logo.svg'
 import MIButton from '@/components/common/button/MIButton'
 import MICheckBox from '@/components/common/input/MICheckBox'
@@ -129,17 +130,9 @@ const ExternalLoginPage = () => {
           <Box width="52px" height="52px" display="flex" alignItems="center" justifyContent="center">
             <img src={logoImg} alt="AI Market Insights" height="52" draggable={false} />
           </Box>
-          <Typography
-            className="font-source-serif"
-            fontWeight={600}
-            fontSize="22px"
-            lineHeight="1em"
-            color="#495057"
-            fontStyle="italic"
-            margin={0}
-          >
-            Accelerate Market Intelligence with SK AI
-          </Typography>
+          <Box width={'390px'} height={'22px'} display="flex" alignItems="center" justifyContent="center">
+            <img src={subtitleImg} alt="Accelerate Market Intelligence with SK AI" height={'22'} draggable={false} />
+          </Box>
         </Box>
         <Box width="100%" display="flex" flexDirection="column" gap="31px">
           <form onSubmit={handleSubmit}>
@@ -197,9 +190,9 @@ const ExternalLoginPage = () => {
                   showPasswordToggle
                 />
               </MIField>
-              <Box display="flex" alignItems="center" gap="8px" width="100%" pl="4px">
+              <Box display="flex" alignItems="center" width="100%" height={'24px'} gap="2px">
                 <MICheckBox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                <Typography fontFamily="Pretendard" fontWeight={400} fontSize="13px" lineHeight="1.4em" color="#868E96" margin={0}>
+                <Typography fontFamily="Pretendard" fontWeight={500} fontSize="13px" lineHeight="1.4em" color="#868E96" margin={0}>
                   Remember me
                 </Typography>
               </Box>

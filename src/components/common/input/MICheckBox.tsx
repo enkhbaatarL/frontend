@@ -101,8 +101,8 @@ const CustomCheckbox = styled(Checkbox)(() => ({
   // Base styles
   padding: 0,
   borderRadius: 2,
-  width: 20,
-  height: 20,
+  width: 24,
+  height: 24,
   boxSizing: 'border-box',
   margin: 0,
 
