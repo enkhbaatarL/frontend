@@ -23,7 +23,19 @@ export interface ErrorHandlerOptions {
 
 let navigateFn: NavigateFunction
 
-export const setNavigate = (navFn: typeof navigateFn) => (navigateFn = navFn)
+// 페이지 이동 시 다이얼로그를 닫도록 처리
+const wrapNavigateFn = (navFn: NavigateFunction): NavigateFunction =>
+  ((to, options) => {
+    const { visible, onHide } = useDialog.getState()
+    if (visible) {
+      onHide()
+    }
+    return navFn(to, options)
+  }) as NavigateFunction
+
+export const setNavigate = (navFn: typeof navigateFn) => {
+  navigateFn = wrapNavigateFn(navFn)
+}
 
 let errorHandlerOptions: ErrorHandlerOptions | null = null
 
@@ -54,8 +66,7 @@ api.interceptors.request.use((req) => {
     if (user?.isOtherServiceAccessPossible && accessCompanyInfo?.customerCompanyNo) {
       req.headers['X-Company-No'] = accessCompanyInfo.customerCompanyNo.toString()
     }
-    const currentLanguage = i18n.language || 'ko'
-    req.headers['Accept-Language'] = currentLanguage
+    req.headers['Accept-Language'] = i18n.language || 'ko'
   }
 
   return req
@@ -75,7 +86,8 @@ const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> 
     })
   const errorNavigate = () => {
     requestQueue = []
-    const { onShow } = useDialog.getState()
+    const { onShow, onHide } = useDialog.getState()
+    onHide()
     const handleDelete = () => {
       onShow({
         title: t('세션이 만료되었습니다.'),
@@ -133,6 +145,12 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
   const statusText = error.response?.statusText ?? t('알 수 없는 오류')
 
   if (status && status >= 400) {
+    const { visible, onHide } = useDialog.getState()
+
+    if (visible) {
+      onHide()
+    }
+
     switch (code) {
       case 'AUTH-001': // 인증 필요
         navigateFn('/error', { state: { code, status, hiddenButton: true, icon: 'lock', title: 'AI Market Insights' }, replace: true })
