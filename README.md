@@ -240,6 +240,77 @@ For detailed deployment, refer to AMDP pipeline
 - `npm run lint` - Run ESLint
 - `npm run preview` - Preview build
 
+## 🔨 Build Environment Variables
+
+You can configure build options using the following environment variables during build:
+
+### VITE_PROFILE
+
+Sets the application environment profile.
+
+**Available values:**
+- `local` - Local development environment
+- `dev` - Development environment
+- `prod` - Production environment
+
+**Usage examples:**
+```bash
+# Build for local environment
+npm run build:local
+
+# Build for development environment
+npm run build:dev
+
+# Build for production environment
+npm run build:prod
+```
+
+### VITE_USE_EXTERNAL_LOGIN
+
+Sets whether to use external login system.
+
+**Available values:**
+- `true` - Use external login
+- `false` - Use internal login (default)
+
+**Usage examples:**
+```bash
+# Build for production with external login
+npm run build:prod:external
+
+# Specify environment variables directly
+cross-env VITE_PROFILE=prod VITE_USE_EXTERNAL_LOGIN=true npm run build
+```
+
+### Build Scripts
+
+The project has the following pre-defined build scripts:
+
+- `npm run build:local` - Build for local environment (`VITE_PROFILE=local`, `VITE_USE_EXTERNAL_LOGIN=false`)
+- `npm run build:dev` - Build for development environment (`VITE_PROFILE=dev`, `VITE_USE_EXTERNAL_LOGIN=false`)
+- `npm run build:prod` - Build for production environment (`VITE_PROFILE=prod`, `VITE_USE_EXTERNAL_LOGIN=false`)
+- `npm run build:prod:external` - Build for production with external login (`VITE_PROFILE=prod`, `VITE_USE_EXTERNAL_LOGIN=true`)
+
+### Docker Build Usage
+
+When building with Docker, you can pass environment variables using the `--build-arg` option:
+
+```bash
+# Build with default values (dev environment, internal login)
+docker build -t mi-platform-frontend .
+
+# Build for production environment
+docker build \
+  --build-arg VITE_PROFILE=prod \
+  -t mi-platform-frontend .
+
+# Build for production with external login
+docker build \
+  --build-arg VITE_PROFILE=prod \
+  --build-arg VITE_USE_EXTERNAL_LOGIN=true \
+  -t mi-platform-frontend .
+```
+
 ## 💡 Development Mock Setup (Reference for when needed)
 
 Refer to the content of `d08f60c0) refactor: mock 및 미사용 파일 제거` to restore mock-related files that were previously used.

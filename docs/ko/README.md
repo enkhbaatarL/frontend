@@ -242,6 +242,77 @@ docker run -p 8080:80 mi-platform-frontend
 - `npm run lint` - ESLint 실행
 - `npm run preview` - 빌드 미리보기
 
+## 🔨 빌드 환경 변수
+
+빌드 시 다음 환경 변수를 사용하여 빌드 옵션을 설정할 수 있습니다.
+
+### VITE_PROFILE
+
+애플리케이션의 환경 프로필을 설정합니다.
+
+**사용 가능한 값:**
+- `local` - 로컬 개발 환경
+- `dev` - 개발 환경
+- `prod` - 프로덕션 환경
+
+**사용 예시:**
+```bash
+# 로컬 환경으로 빌드
+npm run build:local
+
+# 개발 환경으로 빌드
+npm run build:dev
+
+# 프로덕션 환경으로 빌드
+npm run build:prod
+```
+
+### VITE_USE_EXTERNAL_LOGIN
+
+외부 로그인 시스템 사용 여부를 설정합니다.
+
+**사용 가능한 값:**
+- `true` - 외부 로그인 사용
+- `false` - 내부 로그인 사용 (기본값)
+
+**사용 예시:**
+```bash
+# 외부 로그인을 사용하는 프로덕션 빌드
+npm run build:prod:external
+
+# 직접 환경 변수 지정
+cross-env VITE_PROFILE=prod VITE_USE_EXTERNAL_LOGIN=true npm run build
+```
+
+### 빌드 스크립트
+
+프로젝트에는 다음과 같은 빌드 스크립트가 미리 정의되어 있습니다:
+
+- `npm run build:local` - 로컬 환경 빌드 (`VITE_PROFILE=local`, `VITE_USE_EXTERNAL_LOGIN=false`)
+- `npm run build:dev` - 개발 환경 빌드 (`VITE_PROFILE=dev`, `VITE_USE_EXTERNAL_LOGIN=false`)
+- `npm run build:prod` - 프로덕션 환경 빌드 (`VITE_PROFILE=prod`, `VITE_USE_EXTERNAL_LOGIN=false`)
+- `npm run build:prod:external` - 외부 로그인을 사용하는 프로덕션 빌드 (`VITE_PROFILE=prod`, `VITE_USE_EXTERNAL_LOGIN=true`)
+
+### Docker 빌드 시 사용법
+
+Docker 빌드 시 `--build-arg` 옵션을 사용하여 환경 변수를 전달할 수 있습니다:
+
+```bash
+# 기본값으로 빌드 (dev 환경, 내부 로그인)
+docker build -t mi-platform-frontend .
+
+# 프로덕션 환경으로 빌드
+docker build \
+  --build-arg VITE_PROFILE=prod \
+  -t mi-platform-frontend .
+
+# 외부 로그인을 사용하는 프로덕션 빌드
+docker build \
+  --build-arg VITE_PROFILE=prod \
+  --build-arg VITE_USE_EXTERNAL_LOGIN=true \
+  -t mi-platform-frontend .
+```
+
 ## 💡 개발용 Mock 설정 (필요 시 참고사항)
 `d08f60c0) refactor: mock 및 미사용 파일 제거` 내용을 참고하여 기존에 사용하던 mcok 관련 파일을 복구합니다.
 
