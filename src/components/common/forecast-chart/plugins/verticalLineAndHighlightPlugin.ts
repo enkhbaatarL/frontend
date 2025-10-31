@@ -130,9 +130,10 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
       onPointerMove?: (context: PointerMoveEventContext) => void
       onViewForecastPoint?: (index: number | null) => void
       hoverImages: Record<string, HTMLImageElement>
-      showForecastTrend: boolean
+      showForecastTrendBackground: boolean
       showVerticalLine?: boolean
       showActualTag?: boolean
+      showSteadinessTrend?: boolean
     },
   ) {
     this._options = options
@@ -185,8 +186,8 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
           const points = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true)
           const hoverDistance = 10 // Distance in pixels to consider "near" a point
 
-          // Find forecast points from the first dataset
-          const forecastPoint = points.find((item) => {
+          // Find forecast points and calculate their distances
+          const forecastPoints = points.filter((item) => {
             const dataset = chart.data.datasets[item.datasetIndex] as any
             const isForecastDatasets = dataset.category === DATA_CATEGORIES.FORECAST
 
@@ -202,6 +203,16 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
             return isForecastDatasets && Math.abs(item.element.x - x) < hoverDistance && Math.abs(item.element.y - y) < hoverDistance
           })
+
+          // Find the nearest forecast point by calculating Euclidean distance
+          const forecastPoint = forecastPoints.reduce((nearest: InteractionItem | null, item: InteractionItem) => {
+            if (!nearest) return item
+
+            const nearestDistance = Math.sqrt(Math.pow(nearest.element.x - x, 2) + Math.pow(nearest.element.y - y, 2))
+            const itemDistance = Math.sqrt(Math.pow(item.element.x - x, 2) + Math.pow(item.element.y - y, 2))
+
+            return itemDistance < nearestDistance ? item : nearest
+          }, null)
 
           if (forecastPoint) {
             const distance = Math.sqrt(Math.pow(forecastPoint.element.x - x, 2) + Math.pow(forecastPoint.element.y - y, 2))
@@ -290,8 +301,8 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
         const points = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true)
         const distance = 10
 
-        // Find forecast points from the first dataset
-        const forecastPoint = points.find((item) => {
+        // Find forecast points and calculate their distances
+        const forecastPoints = points.filter((item) => {
           const dataset = chart.data.datasets[item.datasetIndex] as any
           const isForecastDatasets = dataset.category === DATA_CATEGORIES.FORECAST
 
@@ -307,6 +318,16 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
           return isForecastDatasets && Math.abs(item.element.x - x) < distance && Math.abs(item.element.y - y) < distance
         })
+
+        // Find the nearest forecast point by calculating Euclidean distance
+        const forecastPoint = forecastPoints.reduce((nearest: InteractionItem | null, item: InteractionItem) => {
+          if (!nearest) return item
+
+          const nearestDistance = Math.sqrt(Math.pow(nearest.element.x - x, 2) + Math.pow(nearest.element.y - y, 2))
+          const itemDistance = Math.sqrt(Math.pow(item.element.x - x, 2) + Math.pow(item.element.y - y, 2))
+
+          return itemDistance < nearestDistance ? item : nearest
+        }, null)
 
         if (forecastPoint) {
           this.selectedPoint = forecastPoint
@@ -445,9 +466,10 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
       onPointerMove?: (context: PointerMoveEventContext) => void
       onViewForecastPoint?: (index: number | null) => void
       hoverImages: Record<string, HTMLImageElement>
-      showForecastTrend: boolean
+      showForecastTrendBackground: boolean
       showVerticalLine?: boolean
       showActualTag?: boolean
+      showSteadinessTrend?: boolean
     },
   ) {
     const enable = options?.enable ?? true
@@ -457,8 +479,9 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
     const { ctx } = chart
 
     const verticalLineIndex = options.verticalLinedIndex
-    const showForecastTrend = options.showForecastTrend
+    const showForecastTrendBackground = options.showForecastTrendBackground
     const showVerticalLine = options.showVerticalLine ?? true
+    const showSteadinessTrend = options.showSteadinessTrend ?? false
 
     const months = chart.data.labels || []
 
@@ -473,9 +496,15 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
     const topY = chart.scales.y.top
     const bottomY = chart.scales.y.bottom
 
-    // Draw fixed vertical line at the latest actual data point
+    // Get vertical line x position
+    let verticalLineX: number | null = null
     if (chart.getDatasetMeta(1).data[verticalLineIndex] && showVerticalLine) {
-      const x = chart.getDatasetMeta(1).data[verticalLineIndex].x
+      verticalLineX = chart.getDatasetMeta(1).data[verticalLineIndex].x
+    }
+
+    // Draw fixed vertical line at the latest actual data point
+    if (verticalLineX !== null && showVerticalLine) {
+      const x = verticalLineX
 
       ctx.save()
 
@@ -493,6 +522,183 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
       ctx.stroke()
 
       ctx.restore()
+    }
+
+    // Draw fixed forecast trend background (항상 표시)
+    if (showSteadinessTrend && verticalLineX !== null) {
+      // 기준선 오른쪽에 데이터가 있는 마지막 인덱스 찾기
+      // hideForecast === true 상태도 데이터 확인 (hidden 상태와 관계 X)
+      let maxDataIndex = -1
+      chart.data.datasets.forEach((dataset: any) => {
+        if (dataset.data) {
+          dataset.data.forEach((data: any, index: number) => {
+            if (data !== null && data !== undefined) {
+              maxDataIndex = Math.max(maxDataIndex, index)
+            }
+          })
+        }
+      })
+
+      // 기준선 인덱스의 예측 데이터가 있는지 확인
+      let hasForecastAtBaseline = false
+      chart.data.datasets.forEach((dataset: any) => {
+        if (
+          dataset.category === DATA_CATEGORIES.FORECAST &&
+          dataset.data[verticalLineIndex] !== null &&
+          dataset.data[verticalLineIndex] !== undefined
+        ) {
+          hasForecastAtBaseline = true
+        }
+      })
+
+      // 기준선 인덱스에 예측 데이터가 있는 경우
+      if (hasForecastAtBaseline) {
+        // 배경색은 기준선부터 기준선+1(다음 인덱스)까지 칠함
+        const nextIndex = verticalLineIndex + 1
+        let endX = verticalLineX
+
+        // 기준선 다음 인덱스의 x 위치 찾기
+        const actualDatasetIndex = chart.data.datasets.findIndex(
+          (dataset: any) => dataset.category === DATA_CATEGORIES.ACTUAL && dataset.data && dataset.data.length > 0,
+        )
+        let datasetIndexForX = actualDatasetIndex
+        if (datasetIndexForX === -1) {
+          datasetIndexForX = chart.data.datasets.findIndex((dataset: any) => dataset.data && dataset.data.length > 0)
+        }
+
+        if (datasetIndexForX !== -1 && chart.getDatasetMeta(datasetIndexForX).data[nextIndex]) {
+          endX = chart.getDatasetMeta(datasetIndexForX).data[nextIndex].x
+        } else {
+          // 다음 인덱스에 데이터가 없으면 기준선 위치를 사용 (배경색 칠지 않음)
+          endX = verticalLineX
+        }
+
+        // 데이터를 분석해서 상태 자동 계산 (동일/상승/하락 세 가지로 구분)
+        let calculatedTrend: 'NEUTRAL' | 'BULLISH' | 'BEARISH' = 'NEUTRAL'
+
+        const actualDataset = chart.data.datasets.find((dataset: any) => dataset.category === DATA_CATEGORIES.ACTUAL)
+        let baselineValue: number | null | undefined = actualDataset?.data?.[verticalLineIndex] as number | null | undefined
+
+        if (baselineValue !== null && baselineValue !== undefined && typeof baselineValue === 'string') {
+          baselineValue = Number(baselineValue)
+          if (isNaN(baselineValue)) {
+            baselineValue = undefined
+          }
+        }
+
+        if ((baselineValue === null || baselineValue === undefined) && verticalLineIndex > 0) {
+          let prevValue = actualDataset?.data?.[verticalLineIndex - 1] as number | null | undefined
+          if (prevValue !== null && prevValue !== undefined && typeof prevValue === 'string') {
+            prevValue = Number(prevValue)
+            if (isNaN(prevValue)) {
+              prevValue = undefined
+            }
+          }
+          baselineValue = prevValue
+        }
+
+        // 기준선 인덱스의 예측 데이터만 수집 (그 달의 예측 데이터)
+        const forecastDataPoints: Array<{ index: number; value: number; label?: string }> = []
+        chart.data.datasets.forEach((dataset: any) => {
+          if (dataset.category === DATA_CATEGORIES.FORECAST) {
+            // 기준선 인덱스의 예측 데이터만 확인
+            const value = dataset.data[verticalLineIndex]
+            if (value !== null && value !== undefined) {
+              const numValue = typeof value === 'number' ? value : Number(value)
+              if (!isNaN(numValue) && isFinite(numValue)) {
+                forecastDataPoints.push({ index: verticalLineIndex, value: numValue, label: dataset.label })
+              }
+            }
+          }
+        })
+
+        // 상태 계산: 기준선 인덱스의 예측 데이터를 기준선 값과 비교
+        if (baselineValue !== null && baselineValue !== undefined && forecastDataPoints.length > 0) {
+          if (forecastDataPoints.length === 1) {
+            const point = forecastDataPoints[0]
+
+            if (point.value > baselineValue) {
+              calculatedTrend = 'BULLISH'
+            } else if (point.value < baselineValue) {
+              calculatedTrend = 'BEARISH'
+            }
+          } else {
+            let upCount = 0
+            let downCount = 0
+            let neutralCount = 0
+
+            forecastDataPoints.forEach((point) => {
+              if (point.value > baselineValue) {
+                upCount++
+              } else if (point.value < baselineValue) {
+                downCount++
+              } else {
+                neutralCount++
+              }
+            })
+
+            if (upCount > downCount && upCount > neutralCount) {
+              calculatedTrend = 'BULLISH'
+            } else if (downCount > upCount && downCount > neutralCount) {
+              calculatedTrend = 'BEARISH'
+            }
+          }
+        }
+
+        let gradientColor: { start: string; end: string }
+
+        if (calculatedTrend === 'BULLISH') {
+          // 상승: 빨간색
+          gradientColor = {
+            start: 'rgba(160, 42, 116, 0)',
+            end: 'rgba(160, 42, 116, 0.15)',
+          }
+        } else if (calculatedTrend === 'BEARISH') {
+          // 하락: 파란색
+          gradientColor = {
+            start: 'rgba(51, 134, 194, 0)',
+            end: 'rgba(51, 134, 194, 0.15)',
+          }
+        } else {
+          // 동일: 회색
+          gradientColor = {
+            start: 'rgba(134, 142, 150, 0)',
+            end: 'rgba(134, 142, 150, 0.15)',
+          }
+        }
+
+        // 배경색은 다음 인덱스가 있을 때만 칠함
+        if (endX > verticalLineX && datasetIndexForX !== -1 && chart.getDatasetMeta(datasetIndexForX).data[nextIndex]) {
+          const gradient = ctx.createLinearGradient(0, topY, 0, bottomY)
+          gradient.addColorStop(0, gradientColor.start)
+          gradient.addColorStop(1, gradientColor.end)
+
+          ctx.save()
+          ctx.fillStyle = gradient
+          ctx.fillRect(verticalLineX, topY, endX - verticalLineX, bottomY - topY)
+
+          const labelText = calculatedTrend
+
+          let labelColor = '#868E96'
+
+          if (calculatedTrend === 'BULLISH') {
+            labelColor = '#A02A74'
+          } else if (calculatedTrend === 'BEARISH') {
+            labelColor = '#3386C2'
+          }
+
+          const labelX = verticalLineX + (endX - verticalLineX) / 2
+          const labelY = topY + 12
+
+          ctx.font = '12px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'top'
+          ctx.fillStyle = labelColor
+          ctx.fillText(labelText, labelX, labelY)
+
+          ctx.restore()
+        }
+      }
     }
 
     // Draw if selected point is selected from previous click
@@ -528,15 +734,6 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
       const { x } = activePoint.element
       const currentIndex = activePoint.index
-
-      const isNearestPoint = (point: { x: number; y: number }) => {
-        if (!point) return false
-        if (!this.mousePosition) return false
-        if (!point.x) return false
-        if (!point.y) return false
-
-        return Math.abs(point.x - this.mousePosition.x) < 10 && Math.abs(point.y - this.mousePosition.y) < 10
-      }
 
       // 선택된 포인트가 있을 때는 선택된 포인트를 기준으로 툴팁 표시
       if (this.selectedPoint) {
@@ -624,12 +821,17 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
           this.mousePosition.y <= chartArea.bottom
 
         if (isMouseInChart) {
-          // Find the nearest point
+          // Find the nearest point (considering both x and y coordinates)
           const nearestPoint = activePoints.reduce((prev: ActiveElement, curr: ActiveElement) => {
             if (!prev.element.x || !prev.element.y || !curr.element.x || !curr.element.y || !this.mousePosition) return prev
 
-            const prevDistance = Math.abs(prev.element.x - this.mousePosition.x)
-            const currDistance = Math.abs(curr.element.x - this.mousePosition.x)
+            // Calculate Euclidean distance (considering both x and y)
+            const prevDistance = Math.sqrt(
+              Math.pow(prev.element.x - this.mousePosition.x, 2) + Math.pow(prev.element.y - this.mousePosition.y, 2),
+            )
+            const currDistance = Math.sqrt(
+              Math.pow(curr.element.x - this.mousePosition.x, 2) + Math.pow(curr.element.y - this.mousePosition.y, 2),
+            )
 
             return currDistance < prevDistance ? curr : prev
           })
@@ -682,7 +884,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
             const prevData = (mainDataset?.data[currentIndex - 1] as number) ?? 0
             const currentData = (mainDataset?.data[currentIndex] as number) ?? 0
 
-            if (mainDataset?.data && showForecastTrend && currentIndex > 1 && prevData && currentData) {
+            if (mainDataset?.data && showForecastTrendBackground && !showSteadinessTrend && currentIndex > 1 && prevData && currentData) {
               // Determine if forecast is greater than actual
 
               const isForecastRight = (forecastValue - prevData) * (currentData - prevData) > 0
@@ -697,7 +899,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                 gradient.addColorStop(1, 'rgba(5, 91, 229, 0.15)') // More opacity at bottom
               } else {
                 // Red gradient for forecast < actual
-                gradient.addColorStop(0, 'rgba(145, 145, 145, 0.00)') // Less opacity at top
+                gradient.addColorStop(0, 'rgba(145, 145, 145, 0)') // Less opacity at top
                 gradient.addColorStop(1, 'rgba(145, 145, 145, 0.15)') // More opacity at bottom
               }
 
@@ -705,6 +907,23 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
               ctx.save()
               ctx.fillStyle = gradient
               ctx.fillRect(prevX, topY, x - prevX, bottomY - topY)
+
+              // 라벨 텍스트 추가
+              const labelText = isForecastRight ? '상승' : '하락'
+              const labelX = prevX + (x - prevX) / 2
+
+              // 라벨 위치 옵션 (테스트용)
+              // 상단: const labelY = topY + 10; ctx.textBaseline = 'top'
+              // 중앙: const labelY = topY + (bottomY - topY) / 2; ctx.textBaseline = 'middle'
+              // 하단: const labelY = bottomY - 10; ctx.textBaseline = 'bottom'
+              const labelY = bottomY - 10
+
+              ctx.font = '12px sans-serif'
+              ctx.textAlign = 'center'
+              ctx.textBaseline = 'bottom'
+              ctx.fillStyle = isForecastRight ? '#055BE5' : '#919191'
+              ctx.fillText(labelText, labelX, labelY)
+
               ctx.restore()
             }
 
@@ -720,11 +939,9 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                 const yPos = point.y - size / 2
                 const img = hoverImages[`${dataset.label}`]
 
-                const mouseIsNear = isNearestPoint(point)
-
                 // For forecast points, handle different interaction states
-                if (dataset.category === DATA_CATEGORIES.FORECAST && img && this.mousePosition) {
-                  // Add to tooltip content only for the lowest index forecast point
+                if (dataset.category === DATA_CATEGORIES.FORECAST && this.mousePosition && img) {
+                  // Add to tooltip content for forecast points
                   if (!nearestPointIsForecast || (nearestPointIsForecast && nearestPoint.datasetIndex === datasetIndex)) {
                     // Group forecast datasets by name - hidden 상태 필터링 추가
                     const forecastDatasets = chart.data.datasets.filter(
@@ -743,15 +960,21 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                     // Sort datasets by their base name
                     const sortedBaseNames = Object.keys(groupedDatasets).sort((a, b) => a.localeCompare(b))
 
-                    // Create ordered tooltip content
-                    this.tooltipContent = []
+                    // Create ordered tooltip content (중복 방지)
+                    if (this.tooltipContent.length === 0 || nearestPointIsForecast) {
+                      this.tooltipContent = []
+                    }
 
                     // Add actual data first (only once) - hidden 상태 체크 추가
                     const actualDataset = chart.data.datasets.find(
                       (ds: any) => ds.permission && ds.category === DATA_CATEGORIES.ACTUAL && !ds.hidden,
                     )
 
-                    if (actualDataset && actualDataset.data[currentIndex] !== null) {
+                    if (
+                      actualDataset &&
+                      actualDataset.data[currentIndex] !== null &&
+                      !this.tooltipContent.some((item) => item.category === DATA_CATEGORIES.ACTUAL)
+                    ) {
                       this.tooltipContent.push({
                         label: options.showActualTag ? `${actualDataset.label} Actual` : actualDataset.label,
                         value: actualDataset.data[currentIndex] as number,
@@ -763,7 +986,12 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                     // Then add forecast data for each baseName
                     sortedBaseNames.forEach((baseName) => {
                       const forecastDataset = groupedDatasets[baseName][0]
-                      if (forecastDataset) {
+                      if (
+                        forecastDataset &&
+                        !this.tooltipContent.some(
+                          (item) => item.category === DATA_CATEGORIES.FORECAST && item.label === forecastDataset.label,
+                        )
+                      ) {
                         this.tooltipContent.push({
                           index: currentIndex,
                           label: forecastDataset.label,
@@ -794,40 +1022,31 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                     return
                   }
 
-                  if (this.interactionState === PointInteractionState.CLICKED && mouseIsNear) {
-                    const activeImage = hoverImages[`${dataset.label} Active`]
-                    if (activeImage && activeImage.complete && activeImage.naturalWidth > 0) {
-                      ctx.drawImage(activeImage, xPos, yPos, size, size)
-                    }
-                  } else if (this.interactionState === PointInteractionState.HOVER_NEAR && mouseIsNear) {
-                    // Draw a subtle highlight circle around the point
-                    const hoverImage = hoverImages[`${dataset.label} Hover`]
-                    if (hoverImage && hoverImage.complete && hoverImage.naturalWidth > 0) {
-                      ctx.drawImage(hoverImage, xPos, yPos, size, size)
-                    }
-                  } else if (img.complete && img.naturalWidth > 0) {
+                  if (img.complete && img.naturalWidth > 0) {
                     ctx.drawImage(img, xPos, yPos, size, size)
                   }
                 }
 
                 if (dataset.category === DATA_CATEGORIES.ACTUAL && !dataset.hidden && img && !this.selectedPoint) {
-                  // ctx.drawImage(img, xPos, yPos, size, size)
-                  this.tooltipContent.push({
-                    label: dataset?.label,
-                    value: dataset?.data[currentIndex] as number,
-                    category: DATA_CATEGORIES.ACTUAL,
-                    color: dataset?.borderColor as string,
-                  })
+                  if (!this.tooltipContent.some((item) => item.category === DATA_CATEGORIES.ACTUAL && item.label === dataset.label)) {
+                    this.tooltipContent.push({
+                      label: dataset?.label,
+                      value: dataset?.data[currentIndex] as number,
+                      category: DATA_CATEGORIES.ACTUAL,
+                      color: dataset?.borderColor as string,
+                    })
+                  }
                 }
 
                 if (dataset.category === DATA_CATEGORIES.FUTURE && !dataset.hidden && img && !this.selectedPoint) {
-                  // ctx.drawImage(img, xPos, yPos, size, size)
-                  this.tooltipContent.push({
-                    label: dataset?.label,
-                    value: dataset?.data[currentIndex] as number,
-                    category: DATA_CATEGORIES.FUTURE,
-                    color: dataset?.borderColor as string,
-                  })
+                  if (!this.tooltipContent.some((item) => item.category === DATA_CATEGORIES.FUTURE && item.label === dataset.label)) {
+                    this.tooltipContent.push({
+                      label: dataset?.label,
+                      value: dataset?.data[currentIndex] as number,
+                      category: DATA_CATEGORIES.FUTURE,
+                      color: dataset?.borderColor as string,
+                    })
+                  }
                 }
               }
             })

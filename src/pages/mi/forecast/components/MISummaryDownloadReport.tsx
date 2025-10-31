@@ -29,6 +29,7 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
   })
 
   const shouldShowLoading = !companyNo || !monthSelect || isLoading || isFetching
+  const hasNoData = !shouldShowLoading && (!data?.summaries || data.summaries.length === 0)
 
   // 간단한 연산이므로 useMemo 불필요
   const summaryContent =
@@ -120,6 +121,10 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
     } catch (error) {
       console.error('Download failed:', error)
     }
+  }
+
+  if (hasNoData) {
+    return <Box height="24px" />
   }
 
   return (

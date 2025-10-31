@@ -25,17 +25,6 @@ const ForecastPage = () => {
     enabled: !!companyNo && companyNo !== -1,
   })
 
-  const tabsData = [
-    {
-      label: 'Report',
-      content: <ReportComponent companyNo={companyNo} />,
-    },
-    {
-      label: 'History',
-      content: <HistoryComponent companyNo={companyNo} basicInfo={basicInfo} />,
-    },
-  ]
-
   // 우측 latestInsights 리스트 조회
   const { data: latestInsightsList = [] } = useQuery({
     queryKey: ['getDashboardLatestInsights', companyNo],
@@ -57,6 +46,22 @@ const ForecastPage = () => {
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
+
+  const hideForecast = useMemo(() => companyNo === 2025, [companyNo])
+
+  const tabsData = useMemo(
+    () => [
+      {
+        label: 'Report',
+        content: <ReportComponent companyNo={companyNo} hideForecast={hideForecast} />,
+      },
+      {
+        label: 'History',
+        content: <HistoryComponent companyNo={companyNo} basicInfo={basicInfo} />,
+      },
+    ],
+    [companyNo, basicInfo, hideForecast],
+  )
 
   useEffect(() => {
     setMarketDataIsLoading(marketDataListIsLoading)
@@ -130,7 +135,7 @@ const ForecastPage = () => {
                 border={'1px solid'}
                 borderColor={'gray.30'}
               >
-                <MITabs widthTab={161} widthItem={'50%'} isNotice arrayItem={tabsData} />
+                <MITabs widthTab={161} widthItem={'50%'} isNotice arrayItem={tabsData} hideForecast={hideForecast} />
               </Box>
             </Grid>
             <Grid
@@ -150,7 +155,6 @@ const ForecastPage = () => {
             </Grid>
           </Grid>
         </Box>
-        <Box sx={{ position: 'absolute', top: '100%', left: 0, right: 0, height: '136px', backgroundColor: '#F2F5F7' }}></Box>
       </Box>
     </MISkeleton>
   )

@@ -70,6 +70,7 @@ export interface MIForecastChartTooltipProps {
   borderBottom?: number
   borderRight?: number
   onClose?: () => void
+  hideForecast?: boolean
 }
 
 const MIForecastChartTooltip = ({
@@ -84,6 +85,7 @@ const MIForecastChartTooltip = ({
   borderBottom,
   borderRight,
   onClose,
+  hideForecast = false,
 }: Readonly<MIForecastChartTooltipProps>) => {
   const tooltipContainerRef = useRef<HTMLElement>(null)
   const { t } = useTranslation()
@@ -135,6 +137,7 @@ const MIForecastChartTooltip = ({
         transition: 'background-color 0.4s ease-in-out, border-color 0.4s ease-in-out',
         transform: 'translateZ(0)',
         backfaceVisibility: 'hidden',
+        userSelect: 'none',
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '4px', ml: '4px', height: '32px' }}>
@@ -174,7 +177,7 @@ const MIForecastChartTooltip = ({
         />
       ))}
 
-      {!viewDetail && !isSimple && (
+      {!viewDetail && !isSimple && !hideForecast && (
         <Box display={'flex'} alignItems={'center'} padding={'6px 4px'} gap={'4px'} mt={'8px'}>
           <InfoOutlineIcon width="18" height="18" color="#868E96" display={'block'} />
           <Typography variant="subtext2" color="gray.70">

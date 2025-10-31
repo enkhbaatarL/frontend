@@ -32,6 +32,7 @@ export interface SelectedReportChartContent {
 }
 interface ReportComponentProps {
   companyNo?: number
+  hideForecast?: boolean
 }
 
 /*const formatErrorRateValue = (value: number) => {
@@ -40,7 +41,7 @@ interface ReportComponentProps {
   return { color: '#212529', displayValue: value }
 }*/
 
-const ReportComponent = ({ companyNo }: ReportComponentProps) => {
+const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentProps) => {
   const [monthSelect, setMonthSelect] = useState('')
   const [selectedContent, setSelectedContent] = useState<SelectedReportChartContent | null>(null)
   const { accessCompanyInfo, user } = useAuthStore()
@@ -314,7 +315,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             ...rowData,
           }
         })
-      return [...forecastRows, ...actualRows, ...futureRows]
+      return hideForecast ? [...actualRows, ...futureRows] : [...forecastRows, ...actualRows, ...futureRows]
     } else if (isForecastSingleLayer) {
       const forecastRows = chartData.charts
         .filter((chart) => chart.forecastChartLines.dataType === 'FORECAST')
@@ -374,7 +375,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
           }
         })
 
-      return [...forecastRows, ...actualRows, ...futureRows]
+      return hideForecast ? [...actualRows, ...futureRows] : [...forecastRows, ...actualRows, ...futureRows]
 
       /*      const getErrorObject = () => {
         if (!forecastRows.length || !actualRows.length) return []
@@ -410,7 +411,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
         const rows = []
 
         // 1. Forecast Row
-        if (chart.forecastChartLines.dataType === 'FORECAST') {
+        if (chart.forecastChartLines.dataType === 'FORECAST' && !hideForecast) {
           const forecastRowData = (chart.forecastChartLines.rawData ?? []).reduce(
             (acc, data) => ({
               ...acc,
@@ -492,7 +493,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
     }
 
     return []
-  }, [chartData, companyNo])
+  }, [chartData, companyNo, hideForecast])
 
   const formatDataInfoDate = useMemo(() => {
     const date = new Date(dataInfo?.lastUpdateDt ?? '')
@@ -577,6 +578,7 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             selectedContent={selectedContent}
             onSelectedContent={setSelectedContent}
             userRoleCd={user?.userRoleCd ?? ''}
+            hideForecast={hideForecast}
           />
         )}
 
@@ -596,15 +598,17 @@ const ReportComponent = ({ companyNo }: ReportComponentProps) => {
             <Typography variant="infoDocument" color="gray.90">
               Data Table
             </Typography>
-            <Box>
-              <MIButton
-                startIcon={<DataTrendChartDownloadIcon />}
-                onClick={downloadDataTable}
-                contentType={'icon'}
-                type="outlined"
-                disabled={!canFileDownload}
-              />
-            </Box>
+            {!hideForecast && (
+              <Box>
+                <MIButton
+                  startIcon={<DataTrendChartDownloadIcon />}
+                  onClick={downloadDataTable}
+                  contentType={'icon'}
+                  type="outlined"
+                  disabled={!canFileDownload}
+                />
+              </Box>
+            )}
           </Box>
 
           {chartDataIsLoading || !chartData ? (

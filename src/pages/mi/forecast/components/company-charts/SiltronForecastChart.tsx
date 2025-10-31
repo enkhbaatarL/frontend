@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { Chart as ChartJS, ChartDataset } from 'chart.js'
 import dayjs from 'dayjs'
-import { debounce } from 'lodash-es'
+import { debounce, isEqual } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Chart } from 'react-chartjs-2'
 
@@ -52,7 +52,7 @@ export interface ForecastChartProps {
   height: number | string
   months: (string | null)[]
   forecastDatasets: Array<ForecastDataset>
-  showForecastTrend?: boolean
+  showForecastTrendBackground?: boolean
   hidePoint?: boolean
   isMIAgent?: boolean
   bottomLabel?: string
@@ -85,7 +85,7 @@ const ForecastChart = (props: ForecastChartProps) => {
     height,
     forecastDatasets,
     months,
-    showForecastTrend = false,
+    showForecastTrendBackground = false,
     isMIAgent = false,
     bottomLabel = '',
     topLabel,
@@ -104,6 +104,8 @@ const ForecastChart = (props: ForecastChartProps) => {
   const [isOpenSetting, setIsOpenSetting] = useState(false)
 
   const lastSelectedContentRef = useRef<SelectedReportChartContent | null>(null)
+  const prevTooltipContentRef = useRef<unknown | null>(null)
+  const prevTooltipPositionRef = useRef<{ top: number; left: number } | null>(null)
 
   useEffect(() => {
     lastSelectedContentRef.current = selectedContent
@@ -121,6 +123,8 @@ const ForecastChart = (props: ForecastChartProps) => {
 
       if (!chartTooltip) {
         setTooltip((prev) => ({ ...prev, visible: false }))
+        prevTooltipContentRef.current = null
+        prevTooltipPositionRef.current = null
         return
       }
 
@@ -147,21 +151,40 @@ const ForecastChart = (props: ForecastChartProps) => {
         }
       }
 
-      setTooltip({
-        minWidth: 293,
-        visible: true,
-        viewDetail: chartTooltip.viewDetail,
-        top: chartTooltip.y,
-        left: chartTooltip.x + 20 + 20,
+      const tooltipContent = {
         label: chartTooltip.label,
         content: chartTooltip.content,
-        onClose: () => {
-          plugin.clearSelectedPoint()
-          props.onSelectedContent(null)
-        },
-      })
+        viewDetail: chartTooltip.viewDetail,
+      }
+
+      const newTop = chartTooltip.y
+      const newLeft = chartTooltip.x + 20 + 20
+
+      // 내용이 변경되었거나, 위치가 변경된 경우 업데이트
+      const contentChanged = !isEqual(prevTooltipContentRef.current, tooltipContent)
+      const positionChanged =
+        !prevTooltipPositionRef.current || prevTooltipPositionRef.current.top !== newTop || prevTooltipPositionRef.current.left !== newLeft
+
+      if (contentChanged || positionChanged) {
+        prevTooltipContentRef.current = tooltipContent
+        prevTooltipPositionRef.current = { top: newTop, left: newLeft }
+
+        setTooltip({
+          minWidth: 293,
+          visible: true,
+          viewDetail: chartTooltip.viewDetail,
+          top: newTop,
+          left: newLeft,
+          label: chartTooltip.label,
+          content: chartTooltip.content,
+          onClose: () => {
+            plugin.clearSelectedPoint()
+            props.onSelectedContent(null)
+          },
+        })
+      }
     },
-    [props.onSelectedContent],
+    [props],
   )
   const viewForecastPointHandler = useCallback((selectedDatasetIndex: number | null) => {
     const newDatasets = chartRef?.current?.data.datasets ?? []
@@ -223,6 +246,8 @@ const ForecastChart = (props: ForecastChartProps) => {
       }
       tooltip.onClose?.()
       verticalLineAndHighlightPlugin.reset()
+      prevTooltipContentRef.current = null
+      prevTooltipPositionRef.current = null
     },
     [datasets, tooltip],
   )
@@ -280,6 +305,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             hidden: false,
             category: 'forecast',
             pointRadius: dataset.hidePoint ? 0 : 3,
+            pointHoverRadius: dataset.hidePoint ? 0 : 3,
             yAxisID: dataset.yAxisID ?? 'y',
             spanGaps: true,
             metadata: dataset.metadata,
@@ -296,6 +322,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             tension: 0,
             category: type,
             pointRadius: dataset.hidePoint ? 0 : 3,
+            pointHoverRadius: dataset.hidePoint ? 0 : 3,
             yAxisID,
             spanGaps: true,
             metadata: dataset.metadata,
@@ -430,6 +457,10 @@ const ForecastChart = (props: ForecastChartProps) => {
             maintainAspectRatio: false,
             animation: false,
             events: ['mouseup', 'mousedown', 'mousemove', 'mouseout'],
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
             layout: {
               padding: {
                 top: 12,
@@ -548,7 +579,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                 onPointerMove: externalTooltipHandler, // 마우스 이동 시 호출
                 onViewForecastPoint: viewForecastPointHandler, // 포인트 클릭 시 호출
                 hoverImages: hoverDotImagesRef.current, // 마우스 오버 시 마커 이미지
-                showForecastTrend, // 예측 라인 표시 여부
+                showForecastTrendBackground, // 예측 부합 배경 표시 여부
               },
               legend: {
                 display: false,
