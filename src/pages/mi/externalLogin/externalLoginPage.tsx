@@ -137,10 +137,6 @@ const ExternalLoginPage = () => {
             color="#495057"
             fontStyle="italic"
             margin={0}
-            sx={{
-              letterSpacing: '-0.5px',
-              wordSpacing: '-6px',
-            }}
           >
             Accelerate Market Intelligence with SK AI
           </Typography>
