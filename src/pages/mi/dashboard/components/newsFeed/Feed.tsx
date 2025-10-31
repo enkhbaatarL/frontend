@@ -1,10 +1,7 @@
-import { Box, Divider, FormControlLabel, Stack, Switch, Typography } from '@mui/material'
-import { isEqual } from 'lodash-es'
-import { Fragment, useEffect, useState } from 'react'
+import { Box, Divider, Stack, Typography } from '@mui/material'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 
-import MIButton from '@/components/common/button/MIButton'
-import MIFilterGroup from '@/components/common/filter/MIFilterGroup'
-import MIMenu from '@/components/common/menu/MIMenu'
+import MIFilterMenu, { FilterGroupConfig } from '@/components/common/menu/MIFilterMenu'
 import MISelectMenu, { SelectMenuItem } from '@/components/common/menu/MISelectMenu'
 import MISkeleton from '@/components/mi/MISkeleton'
 import useCodeData from '@/hooks/useCodeData'
@@ -48,50 +45,49 @@ const Feed = ({
   onOrderChange,
   isLoading,
 }: FeedProps) => {
-  const [sentiments, setSentiments] = useState<string[]>(initialFilters?.sentiments ?? [])
-  const [impactScores, setImpactScores] = useState<string[]>(initialFilters?.impactScores ?? [])
-  const [regions, setRegions] = useState<string[]>(initialFilters?.regions ?? [])
-
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [save, setSave] = useState(false)
-
   const { regionCategoryCodeList } = useCodeData()
-
-  const [hasChanges, setHasChanges] = useState(false)
   const [previousItemsLength, setPreviousItemsLength] = useState(4)
 
-  useEffect(() => {
-    if (
-      initialFilters &&
-      (initialFilters.sentiments.length > 0 || initialFilters.impactScores.length > 0 || initialFilters.regions.length > 0)
-    ) {
-      setSentiments(initialFilters.sentiments)
-      setImpactScores(initialFilters.impactScores)
-      setRegions(initialFilters.regions)
-      setSave(true)
-    }
-  }, [initialFilters])
+  const filterGroups: FilterGroupConfig[][] = useMemo(
+    () => [
+      [
+        {
+          key: 'sentiments',
+          title: 'Sentiments',
+          filters: sentimentOptions,
+          width: '146px',
+        },
+        {
+          key: 'impactScores',
+          title: 'Impacts',
+          filters: impactOptions,
+          width: '146px',
+        },
+      ],
+      [
+        {
+          key: 'regions',
+          title: 'Regions',
+          filters: regionCategoryCodeList?.map((code) => ({ label: code.codeNm, value: code.codeId })) ?? [],
+          width: '186px',
+        },
+      ],
+    ],
+    [regionCategoryCodeList],
+  )
 
-  useEffect(() => {
-    const initialSentiments = initialFilters?.sentiments ?? []
-    const initialImpactScores = initialFilters?.impactScores ?? []
-    const initialRegions = initialFilters?.regions ?? []
+  const initialFilterValues = useMemo(
+    () => ({
+      sentiments: initialFilters?.sentiments ?? [],
+      impactScores: initialFilters?.impactScores ?? [],
+      regions: initialFilters?.regions ?? [],
+    }),
+    [initialFilters],
+  )
 
-    const sentimentsChanged = !isEqual(
-      sentiments.slice().sort((a, b) => a.localeCompare(b)),
-      initialSentiments.slice().sort((a, b) => a.localeCompare(b)),
-    )
-    const impactScoresChanged = !isEqual(
-      impactScores.slice().sort((a, b) => a.localeCompare(b)),
-      initialImpactScores.slice().sort((a, b) => a.localeCompare(b)),
-    )
-    const regionsChanged = !isEqual(
-      regions.slice().sort((a, b) => a.localeCompare(b)),
-      initialRegions.slice().sort((a, b) => a.localeCompare(b)),
-    )
-
-    setHasChanges(sentimentsChanged || impactScoresChanged || regionsChanged)
-  }, [sentiments, impactScores, regions, initialFilters])
+  const handleApplyFilters = (filterValues: { [key: string]: string[] }, save?: boolean) => {
+    onApplyFilters(filterValues.sentiments ?? [], filterValues.impactScores ?? [], filterValues.regions ?? [], save)
+  }
 
   useEffect(() => {
     if (newsFeedItems && newsFeedItems.length > 0) {
@@ -119,117 +115,14 @@ const Feed = ({
           </Box>
         </Stack>
         <Stack direction="row" gap="8px">
-          <MIMenu
-            open={isMenuOpen}
-            onOpenChange={setIsMenuOpen}
-            variant="outlined"
-            label={
-              <Stack direction="row" alignItems="center" gap="6px">
-                <Typography variant="body2SB14">Filters</Typography>
-                {appliedFiltersCount > 0 && (
-                  <Stack
-                    justifyContent="center"
-                    alignItems="center"
-                    minWidth="20px"
-                    height="20px"
-                    borderRadius="100px"
-                    bgcolor="commonColor.Primary"
-                  >
-                    <Typography px="5px" variant="body2SB14" color="commonColor.White" textAlign="center">
-                      {appliedFiltersCount}
-                    </Typography>
-                  </Stack>
-                )}
-              </Stack>
-            }
-            displayType="select"
-          >
-            <Stack>
-              <Stack direction="row" padding="12px" gap="12px" boxSizing="border-box">
-                <Stack gap="12px">
-                  <MIFilterGroup
-                    title="Sentiments"
-                    type="menu"
-                    filters={sentimentOptions}
-                    selectedFilters={sentiments}
-                    onFilterChange={setSentiments}
-                    padding="0"
-                    width="146px"
-                  />
-                  <Divider flexItem sx={{ borderColor: 'contentBorder.Normal' }} />
-                  <MIFilterGroup
-                    title="Impacts"
-                    type="menu"
-                    filters={impactOptions}
-                    selectedFilters={impactScores}
-                    onFilterChange={setImpactScores}
-                    padding="0"
-                    width="146px"
-                  />
-                </Stack>
-                <Divider orientation="vertical" flexItem sx={{ borderColor: 'contentBorder.Normal' }} />
-                <MIFilterGroup
-                  title="Regions"
-                  type="menu"
-                  filters={regionCategoryCodeList?.map((code) => ({ label: code.codeNm, value: code.codeId })) ?? []}
-                  selectedFilters={regions}
-                  onFilterChange={setRegions}
-                  padding="0"
-                  width="186px"
-                />
-              </Stack>
-              <Stack
-                direction="row"
-                padding="10px 12px"
-                justifyContent="space-between"
-                alignItems="center"
-                borderTop="1px solid"
-                borderColor="contentBorder.Normal"
-              >
-                <FormControlLabel
-                  label="Save"
-                  control={
-                    <Switch
-                      size="small"
-                      checked={save}
-                      onChange={() => {
-                        setSave(!save)
-                      }}
-                      sx={{
-                        mt: '1px',
-                      }}
-                    />
-                  }
-                  sx={{ marginRight: 0 }}
-                />
-                <Stack direction="row" gap="10px">
-                  <MIButton
-                    type="outlined"
-                    size="h28"
-                    disabled={[...sentiments, ...impactScores, ...regions].length === 0}
-                    onClick={() => {
-                      setSentiments([])
-                      setImpactScores([])
-                      setRegions([])
-                    }}
-                  >
-                    Clear
-                  </MIButton>
-                  <MIButton
-                    type="filled"
-                    size="h28"
-                    disabled={!hasChanges}
-                    onClick={() => {
-                      onApplyFilters(sentiments, impactScores, regions, save)
-                      setIsMenuOpen(false)
-                    }}
-                  >
-                    Apply
-                  </MIButton>
-                </Stack>
-              </Stack>
-            </Stack>
-          </MIMenu>
+          <MIFilterMenu
+            filterGroups={filterGroups}
+            initialValues={initialFilterValues}
+            appliedFiltersCount={appliedFiltersCount}
+            onApply={handleApplyFilters}
+            showSaveOption={true}
+            initialSaveOn={Boolean(localStorage.getItem('newsFeedFilters'))}
+          />
           <MISelectMenu variant="outlined" selected={order} onSelected={onOrderChange} items={orderOptions} sx={{ minWidth: 110 }} />
         </Stack>
       </Stack>

@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material'
-import dayjs from 'dayjs'
+import dayjs, { Dayjs } from 'dayjs'
 import { Fragment, useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -15,6 +15,7 @@ import MIPageHeadline from '@/components/mi/MIPageHeadline'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import useCodeData from '@/hooks/useCodeData'
 import useSearchFilter from '@/hooks/useSearchFilter'
+import useSnackbar from '@/hooks/useSnackbar'
 import marketNewsService, { INewsListItem, INewsListRequest } from '@/service/mi/marketNews'
 import { IPaginationResponse } from '@/types/api'
 
@@ -52,6 +53,8 @@ const NewsPage = () => {
     filter,
     updateFilter,
     updateFilterWithSearch,
+    updateMultiFilter,
+    updateMultiFilterWithSearch,
     data: newsList,
     pagination,
     updatePage,
@@ -79,9 +82,32 @@ const NewsPage = () => {
   )
 
   const { marketCategoryCodeList, industrySectorCodeList, regionCategoryCodeList, isLoading: codeDataLoading } = useCodeData()
+  const { showSnackbar } = useSnackbar()
 
   const isPageLoading = useMemo(() => isInitialLoading || codeDataLoading, [isInitialLoading, codeDataLoading])
   const isListLoading = useMemo(() => newsListIsLoading && hasInitialData, [newsListIsLoading, hasInitialData])
+
+  const handleDateChange = ({ startDate: newStartDate, endDate: newEndDate }: { startDate?: Dayjs; endDate?: Dayjs }) => {
+    if (!newStartDate || !newEndDate) {
+      updateMultiFilter([
+        ['startDate', newStartDate?.format('YYYYMMDD')],
+        ['endDate', newEndDate?.format('YYYYMMDD')],
+      ])
+      return
+    }
+
+    if (newStartDate.isAfter(newEndDate)) {
+      showSnackbar('시작일은 종료일보다 이전이어야 합니다.', {
+        variant: 'error',
+      })
+      return
+    }
+
+    updateMultiFilterWithSearch([
+      ['startDate', newStartDate.format('YYYYMMDD')],
+      ['endDate', newEndDate.format('YYYYMMDD')],
+    ])
+  }
 
   useEffect(() => {
     if (newsList?.detail?.length) {
@@ -130,10 +156,7 @@ const NewsPage = () => {
                     width={380}
                     startDate={filter.startDate ? dayjs(filter.startDate) : undefined}
                     endDate={filter.endDate ? dayjs(filter.endDate) : undefined}
-                    onChange={(value) => {
-                      updateFilter('startDate', value.startDate?.format('YYYYMMDD') ?? '')
-                      updateFilter('endDate', value.endDate?.format('YYYYMMDD') ?? '')
-                    }}
+                    onChange={handleDateChange}
                   />
                 </Stack>
               </Stack>

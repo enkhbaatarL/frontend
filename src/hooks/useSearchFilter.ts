@@ -98,6 +98,16 @@ const useSearchFilter = <Req, Res>(
     [fetchParams, updateFilter],
   )
 
+  const updateMultiFilterWithSearch = useCallback(
+    (entries: [string, Req[keyof Req]][]) => {
+      updateMultiFilter(entries)
+      setIsPureState(false)
+      setFetchParams({ ...(fetchParams ?? {}), ...Object.fromEntries(entries) })
+      setPagination((prev) => ({ ...prev, page: 1 }))
+    },
+    [fetchParams, updateMultiFilter],
+  )
+
   const search = useCallback(() => {
     setPagination((prev) => ({ ...prev, page: 1 }))
     setIsPureState(false)
@@ -236,6 +246,7 @@ const useSearchFilter = <Req, Res>(
     updateFilter,
     updateFilterWithSearch,
     updateMultiFilter,
+    updateMultiFilterWithSearch,
     updatePage: (page?: number) => setPagination((prev) => ({ ...prev, page: page ?? 1 })),
     updateSize: (size: number) => setPagination({ page: 1, size }),
     resetFilter,
