@@ -26,10 +26,10 @@ ENV LC_ALL=ko_KR.UTF-8
 ENV TZ=Asia/Seoul
 RUN ln -snf /usr/share/zoneinfo/"$TZ" /etc/localtime && echo "$TZ" > /etc/timezone
 
-COPY ./nginx.conf /etc/nginx/nginx.conf
+#COPY ./nginx.conf /etc/nginx/nginx.conf
 
 RUN mkdir /logs && chmod 777 /logs
 
-COPY --from=build-stage /app/dist /usr/share/nginx/html
+COPY --from=build-stage /app/dist /usr/share/nginx/html/build
 EXPOSE 8070
 CMD ["nginx", "-g", "daemon off;"]
