@@ -129,20 +129,21 @@ const ExternalLoginPage = () => {
           <Box width="52px" height="52px" display="flex" alignItems="center" justifyContent="center">
             <img src={logoImg} alt="AI Market Insights" height="52" draggable={false} />
           </Box>
-          {/* <Typography
-            fontFamily="'Source Serif Pro', serif"
+          <Typography
+            className="font-source-serif"
+            fontWeight={600}
             fontSize="22px"
             lineHeight="1em"
             color="#495057"
             fontStyle="italic"
             margin={0}
             sx={{
-              letterSpacing: '0.5px',
+              letterSpacing: '-0.5px',
               wordSpacing: '-6px',
             }}
           >
             Accelerate Market Intelligence with SK AI
-          </Typography> */}
+          </Typography>
         </Box>
         <Box width="100%" display="flex" flexDirection="column" gap="31px">
           <form onSubmit={handleSubmit}>
@@ -152,6 +153,8 @@ const ExternalLoginPage = () => {
                 sx={{
                   '&': {
                     marginBottom: '4px',
+                    paddingLeft: '4px',
+                    paddingRight: '4px',
                   },
                   '& .MuiBox-root:first-of-type': {
                     paddingBottom: '2px',
@@ -175,6 +178,10 @@ const ExternalLoginPage = () => {
               <MIField
                 label="Password"
                 sx={{
+                  '&': {
+                    paddingLeft: '4px',
+                    paddingRight: '4px',
+                  },
                   '& .MuiBox-root:first-of-type': {
                     paddingBottom: '2px',
                   },
@@ -213,7 +220,7 @@ const ExternalLoginPage = () => {
                 <MIButton
                   type="filled"
                   size="h42"
-                  color="#363434"
+                  color="#2E3F5E"
                   width="100%"
                   disabled={isLoading || !email || !password}
                   onClick={handleSubmit}
@@ -221,7 +228,7 @@ const ExternalLoginPage = () => {
                   Sign in
                 </MIButton>
               </Box>
-              {/* <Typography
+              <Typography
                 fontFamily="Pretendard"
                 fontWeight={400}
                 fontSize="13px"
@@ -232,7 +239,7 @@ const ExternalLoginPage = () => {
                 margin={0}
               >
                 서비스 이용 문의: mi@sk.com
-              </Typography> */}
+              </Typography>
             </Box>
           </form>
         </Box>
