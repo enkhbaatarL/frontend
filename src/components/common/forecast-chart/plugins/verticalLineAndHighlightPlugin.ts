@@ -908,22 +908,6 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
               ctx.fillStyle = gradient
               ctx.fillRect(prevX, topY, x - prevX, bottomY - topY)
 
-              // 라벨 텍스트 추가
-              const labelText = isForecastRight ? '상승' : '하락'
-              const labelX = prevX + (x - prevX) / 2
-
-              // 라벨 위치 옵션 (테스트용)
-              // 상단: const labelY = topY + 10; ctx.textBaseline = 'top'
-              // 중앙: const labelY = topY + (bottomY - topY) / 2; ctx.textBaseline = 'middle'
-              // 하단: const labelY = bottomY - 10; ctx.textBaseline = 'bottom'
-              const labelY = bottomY - 10
-
-              ctx.font = '12px sans-serif'
-              ctx.textAlign = 'center'
-              ctx.textBaseline = 'bottom'
-              ctx.fillStyle = isForecastRight ? '#055BE5' : '#919191'
-              ctx.fillText(labelText, labelX, labelY)
-
               ctx.restore()
             }
 
