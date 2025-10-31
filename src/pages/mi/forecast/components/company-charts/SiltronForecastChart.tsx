@@ -52,7 +52,7 @@ export interface ForecastChartProps {
   height: number | string
   months: (string | null)[]
   forecastDatasets: Array<ForecastDataset>
-  showForecastTrend?: boolean
+  showForecastTrendBackground?: boolean
   hidePoint?: boolean
   isMIAgent?: boolean
   bottomLabel?: string
@@ -85,7 +85,7 @@ const ForecastChart = (props: ForecastChartProps) => {
     height,
     forecastDatasets,
     months,
-    showForecastTrend = false,
+    showForecastTrendBackground = false,
     isMIAgent = false,
     bottomLabel = '',
     topLabel,
@@ -305,6 +305,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             hidden: false,
             category: 'forecast',
             pointRadius: dataset.hidePoint ? 0 : 3,
+            pointHoverRadius: dataset.hidePoint ? 0 : 3,
             yAxisID: dataset.yAxisID ?? 'y',
             spanGaps: true,
             metadata: dataset.metadata,
@@ -321,6 +322,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             tension: 0,
             category: type,
             pointRadius: dataset.hidePoint ? 0 : 3,
+            pointHoverRadius: dataset.hidePoint ? 0 : 3,
             yAxisID,
             spanGaps: true,
             metadata: dataset.metadata,
@@ -455,6 +457,10 @@ const ForecastChart = (props: ForecastChartProps) => {
             maintainAspectRatio: false,
             animation: false,
             events: ['mouseup', 'mousedown', 'mousemove', 'mouseout'],
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
             layout: {
               padding: {
                 top: 12,
@@ -573,7 +579,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                 onPointerMove: externalTooltipHandler, // 마우스 이동 시 호출
                 onViewForecastPoint: viewForecastPointHandler, // 포인트 클릭 시 호출
                 hoverImages: hoverDotImagesRef.current, // 마우스 오버 시 마커 이미지
-                showForecastTrend, // 예측 라인 표시 여부
+                showForecastTrendBackground, // 예측 부합 배경 표시 여부
               },
               legend: {
                 display: false,

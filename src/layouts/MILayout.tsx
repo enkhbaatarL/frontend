@@ -254,6 +254,16 @@ const MILayout = () => {
     return basePosition + stickyHeaderHeight
   }, [isScrolled, stickyHeaderHeight])
 
+  const backgroundStyle = useMemo(() => {
+    if (location.pathname === '/mi/dashboard') {
+      return 'linear-gradient(300deg, #D5D6D8 0%, #FCFCFC 30%, #E6E6E7 60%, #FAFAFA 100%)'
+    }
+    if (location.pathname.startsWith('/mi/forecast') || showTicker) {
+      return '#F2F5F7'
+    }
+    return undefined
+  }, [location.pathname, showTicker])
+
   return (
     <MIProvider>
       <ScrollWrapper
@@ -268,12 +278,7 @@ const MILayout = () => {
       >
         <div
           style={{
-            background:
-              location.pathname === '/mi/dashboard'
-                ? 'linear-gradient(300deg, #D5D6D8 0%, #FCFCFC 30%, #E6E6E7 60%, #FAFAFA 100%)'
-                : showTicker
-                  ? '#F2F5F7'
-                  : undefined,
+            background: backgroundStyle,
 
             display: 'flex',
             flexDirection: 'column',
@@ -301,7 +306,7 @@ const MILayout = () => {
           <Box
             sx={{
               paddingTop,
-              paddingBottom: isScrolled ? `${headerTopHeight}px` : 0,
+              paddingBottom: `calc(${isScrolled ? headerTopHeight : 0}px + 136px)`,
               flex: 1,
               transition: 'padding 0.15s linear',
             }}

@@ -429,7 +429,7 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
                 }
               }}
             >
-              <img src={logoImg} alt="AI Market Insights" />
+              <img src={logoImg} alt="AI Market Insights" draggable={false} />
             </Box>
 
             <Box sx={{ flexGrow: 1, display: 'flex' }}>

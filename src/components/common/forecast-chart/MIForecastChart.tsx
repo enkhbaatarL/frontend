@@ -55,7 +55,7 @@ export interface MIForecastChartProps {
   height: number | string
   months: string[] | undefined
   forecastDatasets: Array<ForecastDataset>
-  showForecastTrend?: boolean
+  showForecastTrendBackground?: boolean
   hidePoint?: boolean
   isMIAgent?: boolean
   bottomLabel?: string
@@ -73,7 +73,7 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
     height,
     forecastDatasets,
     months,
-    showForecastTrend = true,
+    showForecastTrendBackground = true,
     isMIAgent = false,
     bottomLabel = '',
     topLabel = '',
@@ -194,6 +194,7 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
           tension: 0,
           category: type,
           pointRadius: dataset.hidePoint ? 0 : 3,
+          pointHoverRadius: dataset.hidePoint ? 0 : 3,
           yAxisID,
         })
 
@@ -222,6 +223,7 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
               hidden: false,
               category: 'forecast',
               pointRadius: dataset.hidePoint ? 0 : 3,
+              pointHoverRadius: dataset.hidePoint ? 0 : 3,
               yAxisID,
             })
           })
@@ -327,6 +329,16 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
         maintainAspectRatio: false,
         animation: false,
         events: ['mouseup', 'mousedown', 'mousemove', 'mouseout'],
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        elements: {
+          point: {
+            hoverRadius: 0,
+            hitRadius: 10,
+          },
+        },
         layout: {
           padding: {
             top: 12,
@@ -375,7 +387,7 @@ export default function MIForecastChart(props: Readonly<MIForecastChartProps>) {
             onPointerMove: externalTooltipHandler,
             onViewForecastPoint: viewForecastPointHanlder,
             hoverImages: hoverDotImagesRef.current,
-            showForecastTrend,
+            showForecastTrendBackground,
           },
           legend: {
             display: false,

@@ -16,9 +16,16 @@ interface MIForecastLegendProps {
   onToggleDataset: (index: number) => void
   showActual?: boolean
   selectedContent?: SelectedReportChartContent | null
+  hideForecast?: boolean
 }
 
-const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, selectedContent }: Readonly<MIForecastLegendProps>) => {
+const MIForecastLegend = ({
+  datasets,
+  onToggleDataset,
+  showActual = true,
+  selectedContent,
+  hideForecast = false,
+}: Readonly<MIForecastLegendProps>) => {
   const { accessCompanyInfo } = useAuthStore()
 
   const comNo = useMemo(() => accessCompanyInfo?.customerCompanyNo, [accessCompanyInfo?.customerCompanyNo])
@@ -236,12 +243,14 @@ const MIForecastLegend = ({ datasets, onToggleDataset, showActual = true, select
               Actual
             </Typography>
           </Box>
-          <Box display={'flex'} alignItems={'center'} p="4px" gap="2px">
-            <ForecastLegendIcon />
-            <Typography variant="body2SB14" color="gray.70">
-              Forecast
-            </Typography>
-          </Box>
+          {!hideForecast && (
+            <Box display={'flex'} alignItems={'center'} p="4px" gap="2px">
+              <ForecastLegendIcon />
+              <Typography variant="body2SB14" color="gray.70">
+                Forecast
+              </Typography>
+            </Box>
+          )}
         </Box>
       )}
     </Box>

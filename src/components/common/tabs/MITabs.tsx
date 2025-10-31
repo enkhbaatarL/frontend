@@ -16,6 +16,7 @@ interface MITabsProps {
   onChange?: (value: number) => void
   isNotice?: boolean
   size?: 'h70' | 'h52' | 'h42' | 'h38'
+  hideForecast?: boolean
 }
 
 const CustomTabPanel = (props: Readonly<{ children?: ReactNode; value: number; index: number }>) => {
@@ -36,6 +37,7 @@ export default function MITabs({
   isNotice = false,
   onChange,
   size = 'h42',
+  hideForecast = false,
 }: Readonly<MITabsProps>) {
   const [innerTabId, setInnerTabId] = useState(value ?? 0)
 
@@ -68,64 +70,66 @@ export default function MITabs({
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box
-        sx={{
-          width: widthTab,
-          margin: 'auto',
-          marginBottom: 4,
-          borderBottom: isNotice ? 0 : 1,
-          borderColor: '#DEE2E6',
-          backgroundColor: isNotice ? '#F1F3F5' : 'transparent',
-          padding: isNotice ? 1 : 0,
-          borderRadius: isNotice ? 1 : 0,
-          '.MuiTabs-indicator': {
-            display: isNotice || arrayItem.length === 1 ? 'none' : 'block',
-          },
-        }}
-      >
-        <Tabs
+      {!hideForecast && (
+        <Box
           sx={{
-            minHeight: 'unset',
+            width: widthTab,
+            margin: 'auto',
+            marginBottom: 4,
+            borderBottom: isNotice ? 0 : 1,
+            borderColor: '#DEE2E6',
+            backgroundColor: isNotice ? '#F1F3F5' : 'transparent',
+            padding: isNotice ? 1 : 0,
+            borderRadius: isNotice ? 1 : 0,
+            '.MuiTabs-indicator': {
+              display: isNotice || arrayItem.length === 1 ? 'none' : 'block',
+            },
           }}
-          value={tabId}
-          onChange={handleChange}
         >
-          {arrayItem.map((item, idx) => (
-            <Tab
-              key={`tab-${idx}`}
-              label={item.label}
-              id={`mi-tab-tab-${idx}`}
-              aria-controls={`mi-tab-panel-${idx}`}
-              disableRipple
-              sx={{
-                ...(isNotice
-                  ? {
-                    fontSize: '16px',
+          <Tabs
+            sx={{
+              minHeight: 'unset',
+            }}
+            value={tabId}
+            onChange={handleChange}
+          >
+            {arrayItem.map((item, idx) => (
+              <Tab
+                key={`tab-${idx}`}
+                label={item.label}
+                id={`mi-tab-tab-${idx}`}
+                aria-controls={`mi-tab-panel-${idx}`}
+                disableRipple
+                sx={{
+                  ...(isNotice
+                    ? {
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      padding: '6px 12px',
+                    }
+                    : styleBaseSize),
+                  color: isNotice ? '#868E96' : '#495057',
+                  textTransform: 'none',
+                  minWidth: 'unset',
+                  minHeight: 'unset',
+                  textAlign: 'center',
+                  borderRadius: isNotice ? 1 : 0,
+                  width: widthItem,
+                  '&:hover': {
                     fontWeight: 600,
-                    padding: '6px 12px',
-                  }
-                  : styleBaseSize),
-                color: isNotice ? '#868E96' : '#495057',
-                textTransform: 'none',
-                minWidth: 'unset',
-                minHeight: 'unset',
-                textAlign: 'center',
-                borderRadius: isNotice ? 1 : 0,
-                width: widthItem,
-                '&:hover': {
-                  fontWeight: 600,
-                },
-                '&.Mui-selected': {
-                  color: isNotice || arrayItem.length === 1 ? '#212529' : '#2E3F5E',
-                  borderBottom: 0,
-                  fontWeight: arrayItem.length === 1 ? 700 : 600,
-                  backgroundColor: isNotice ? '#fff' : 'transparent',
-                },
-              }}
-            />
-          ))}
-        </Tabs>
-      </Box>
+                  },
+                  '&.Mui-selected': {
+                    color: isNotice || arrayItem.length === 1 ? '#212529' : '#2E3F5E',
+                    borderBottom: 0,
+                    fontWeight: arrayItem.length === 1 ? 700 : 600,
+                    backgroundColor: isNotice ? '#fff' : 'transparent',
+                  },
+                }}
+              />
+            ))}
+          </Tabs>
+        </Box>
+      )}
       {arrayItem.map((item, idx) => (
         <CustomTabPanel key={`tab-panel-${idx}`} value={tabId} index={idx}>
           {item.content}

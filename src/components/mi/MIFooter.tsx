@@ -13,7 +13,7 @@ const MIFooter = () => {
 
   return (
     <footer>
-      <Box mt={25} bgcolor="gray.60" paddingY={10}>
+      <Box bgcolor="gray.60" paddingTop={10} paddingBottom={10}>
         <Grid
           width={'1440px'}
           paddingX={7.5}
@@ -36,7 +36,7 @@ const MIFooter = () => {
                 }
               }}
             >
-              <img src={logowImg} alt="" />
+              <img src={logowImg} alt="" draggable={false} />
             </Link>
             <Typography color="gray.40" component="div" variant="body3R12">
               COPYRIGHT©2025 ALL RIGHTS RESERVED. <br />
