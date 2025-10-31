@@ -1,11 +1,12 @@
+import { ReactNode } from 'react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { ActionButton } from '@/components/common/confirm/MIConfirm'
 
 interface DialogContentState {
-  title: React.ReactNode
-  children?: React.ReactNode
+  title: ReactNode
+  children?: ReactNode
   width?: string | number
   justifyContentAction?: 'space-between' | 'end' | 'start' | 'center'
   actions?: ActionButton[]
@@ -32,13 +33,13 @@ const useDialog = create<DialogState>()(
       name: 'dialog-storage',
       storage: {
         getItem: (name) => {
-          const item = localStorage.getItem(name)
+          const item = sessionStorage.getItem(name)
           return item ? JSON.parse(item) : null
         },
         setItem: (name, value) => {
-          localStorage.setItem(name, JSON.stringify(value))
+          sessionStorage.setItem(name, JSON.stringify(value))
         },
-        removeItem: (name) => localStorage.removeItem(name),
+        removeItem: (name) => sessionStorage.removeItem(name),
       },
     },
   ),
