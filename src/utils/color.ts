@@ -1,4 +1,8 @@
 export const convertToRgbaWithOpacity = (color: string, opacity: number) => {
+  if (!color || typeof color !== 'string') {
+    return color || ''
+  }
+
   // If color is rgb, convert to rgba
   if (color.startsWith('rgb(') || color.startsWith('rgba')) {
     const rgbaRegex = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/i
@@ -47,6 +51,10 @@ export const convertToRgbaWithOpacity = (color: string, opacity: number) => {
  * @returns {number} Opacity value between 0-1, or 1 if opacity cannot be determined
  */
 export const getOpacityFromColor = (color: string): number => {
+  if (!color || typeof color !== 'string') {
+    return 1
+  }
+
   // Handle rgba format
   if (color.startsWith('rgba')) {
     const match = color.match(/rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\s*\)/)

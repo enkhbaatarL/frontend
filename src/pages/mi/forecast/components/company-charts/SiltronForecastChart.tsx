@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { Chart as ChartJS, ChartDataset } from 'chart.js'
 import dayjs from 'dayjs'
-import { debounce } from 'lodash-es'
+import { debounce, isEqual } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Chart } from 'react-chartjs-2'
 
@@ -104,6 +104,8 @@ const ForecastChart = (props: ForecastChartProps) => {
   const [isOpenSetting, setIsOpenSetting] = useState(false)
 
   const lastSelectedContentRef = useRef<SelectedReportChartContent | null>(null)
+  const prevTooltipContentRef = useRef<unknown | null>(null)
+  const prevTooltipPositionRef = useRef<{ top: number; left: number } | null>(null)
 
   useEffect(() => {
     lastSelectedContentRef.current = selectedContent
@@ -121,6 +123,8 @@ const ForecastChart = (props: ForecastChartProps) => {
 
       if (!chartTooltip) {
         setTooltip((prev) => ({ ...prev, visible: false }))
+        prevTooltipContentRef.current = null
+        prevTooltipPositionRef.current = null
         return
       }
 
@@ -147,21 +151,40 @@ const ForecastChart = (props: ForecastChartProps) => {
         }
       }
 
-      setTooltip({
-        minWidth: 293,
-        visible: true,
-        viewDetail: chartTooltip.viewDetail,
-        top: chartTooltip.y,
-        left: chartTooltip.x + 20 + 20,
+      const tooltipContent = {
         label: chartTooltip.label,
         content: chartTooltip.content,
-        onClose: () => {
-          plugin.clearSelectedPoint()
-          props.onSelectedContent(null)
-        },
-      })
+        viewDetail: chartTooltip.viewDetail,
+      }
+
+      const newTop = chartTooltip.y
+      const newLeft = chartTooltip.x + 20 + 20
+
+      // 내용이 변경되었거나, 위치가 변경된 경우 업데이트
+      const contentChanged = !isEqual(prevTooltipContentRef.current, tooltipContent)
+      const positionChanged =
+        !prevTooltipPositionRef.current || prevTooltipPositionRef.current.top !== newTop || prevTooltipPositionRef.current.left !== newLeft
+
+      if (contentChanged || positionChanged) {
+        prevTooltipContentRef.current = tooltipContent
+        prevTooltipPositionRef.current = { top: newTop, left: newLeft }
+
+        setTooltip({
+          minWidth: 293,
+          visible: true,
+          viewDetail: chartTooltip.viewDetail,
+          top: newTop,
+          left: newLeft,
+          label: chartTooltip.label,
+          content: chartTooltip.content,
+          onClose: () => {
+            plugin.clearSelectedPoint()
+            props.onSelectedContent(null)
+          },
+        })
+      }
     },
-    [props.onSelectedContent],
+    [props],
   )
   const viewForecastPointHandler = useCallback((selectedDatasetIndex: number | null) => {
     const newDatasets = chartRef?.current?.data.datasets ?? []
@@ -223,6 +246,8 @@ const ForecastChart = (props: ForecastChartProps) => {
       }
       tooltip.onClose?.()
       verticalLineAndHighlightPlugin.reset()
+      prevTooltipContentRef.current = null
+      prevTooltipPositionRef.current = null
     },
     [datasets, tooltip],
   )

@@ -106,6 +106,7 @@ const ForecastChart = (props: ForecastChartProps) => {
   // 호버 시 정상 날짜를 저장해두기 위한 ref
   const lastHoverDateRef = useRef<string>('')
   const prevTooltipRef = useRef<unknown | null>(null)
+  const prevTooltipPositionRef = useRef<{ top: number; left: number } | null>(null)
 
   useEffect(() => {
     if (selectedContent === null) {
@@ -119,7 +120,8 @@ const ForecastChart = (props: ForecastChartProps) => {
 
       if (!chartTooltip) {
         setTooltip((prev) => ({ ...prev, visible: false }))
-
+        prevTooltipRef.current = null
+        prevTooltipPositionRef.current = null
         return
       }
 
@@ -146,15 +148,25 @@ const ForecastChart = (props: ForecastChartProps) => {
           goodsDataSourceNo: chartTooltip.content[0].goodsDataSourceNo,
         })
       }
-      if (!isEqual(prevTooltipRef.current, filteredTooltipContent)) {
+
+      const newTop = chartTooltip.y
+      const newLeft = chartTooltip.x + 20 + 20
+
+      // 내용이 변경되었거나, 위치가 변경된 경우 업데이트
+      const contentChanged = !isEqual(prevTooltipRef.current, filteredTooltipContent)
+      const positionChanged =
+        !prevTooltipPositionRef.current || prevTooltipPositionRef.current.top !== newTop || prevTooltipPositionRef.current.left !== newLeft
+
+      if (contentChanged || positionChanged) {
         prevTooltipRef.current = filteredTooltipContent
+        prevTooltipPositionRef.current = { top: newTop, left: newLeft }
 
         setTooltip({
           minWidth: 293,
           visible: true,
           viewDetail: chartTooltip.viewDetail,
-          top: chartTooltip.y,
-          left: chartTooltip.x + 20 + 20,
+          top: newTop,
+          left: newLeft,
           label: chartTooltip.viewDetail ? lastHoverDateRef.current : chartTooltip.label, // 클릭 시 저장된 날짜, 호버 시 현재 날짜
           content: chartTooltip.content,
           onClose: () => {
@@ -180,7 +192,9 @@ const ForecastChart = (props: ForecastChartProps) => {
       })
     } else {
       newDatasets.forEach((dataset) => {
-        dataset.borderColor = convertToRgbaWithOpacity(dataset.borderColor as string, 1)
+        if (dataset.borderColor) {
+          dataset.borderColor = convertToRgbaWithOpacity(dataset.borderColor as string, 1)
+        }
       })
       props.onSelectedContent(null)
     }
@@ -222,6 +236,8 @@ const ForecastChart = (props: ForecastChartProps) => {
       }
       tooltip.onClose?.()
       verticalLineAndHighlightPlugin.reset()
+      prevTooltipRef.current = null
+      prevTooltipPositionRef.current = null
     },
     [datasets, tooltip],
   )

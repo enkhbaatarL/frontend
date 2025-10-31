@@ -105,6 +105,7 @@ const ForecastChart = (props: ForecastChartProps) => {
 
   const rawForecastDatasetRef = useRef<ForecastDataset | null>(null)
   const prevTooltipRef = useRef<unknown | null>(null)
+  const prevTooltipPositionRef = useRef<{ top: number; left: number } | null>(null)
 
   useEffect(() => {
     if (selectedContent === null) {
@@ -118,7 +119,8 @@ const ForecastChart = (props: ForecastChartProps) => {
 
       if (!chartTooltip) {
         setTooltip((prev) => ({ ...prev, visible: false }))
-
+        prevTooltipRef.current = null
+        prevTooltipPositionRef.current = null
         return
       }
 
@@ -155,15 +157,24 @@ const ForecastChart = (props: ForecastChartProps) => {
         }
       }
 
-      if (!isEqual(prevTooltipRef.current, filteredTooltipContent)) {
+      const newTop = chartTooltip.y
+      const newLeft = chartTooltip.x + 20 + 20
+
+      // 내용이 변경되었거나, 위치가 변경된 경우 업데이트
+      const contentChanged = !isEqual(prevTooltipRef.current, filteredTooltipContent)
+      const positionChanged =
+        !prevTooltipPositionRef.current || prevTooltipPositionRef.current.top !== newTop || prevTooltipPositionRef.current.left !== newLeft
+
+      if (contentChanged || positionChanged) {
         prevTooltipRef.current = filteredTooltipContent
+        prevTooltipPositionRef.current = { top: newTop, left: newLeft }
 
         setTooltip({
           minWidth: 293,
           visible: true,
           viewDetail: chartTooltip.viewDetail,
-          top: chartTooltip.y,
-          left: chartTooltip.x + 20 + 20,
+          top: newTop,
+          left: newLeft,
           label: correctDate, // 수정된 날짜 사용
           content: filteredTooltipContent, //chartTooltip.content,
           onClose: () => {
@@ -230,6 +241,8 @@ const ForecastChart = (props: ForecastChartProps) => {
       }
       tooltip.onClose?.()
       verticalLineAndHighlightPlugin.reset()
+      prevTooltipRef.current = null
+      prevTooltipPositionRef.current = null
     },
     [datasets, tooltip],
   )
@@ -301,13 +314,13 @@ const ForecastChart = (props: ForecastChartProps) => {
               data:
                 dataset.data.length > 0
                   ? [
-                      null,
-                      ...dataset.data.map((subValue, subIndex) => {
-                        if (index === subIndex) return subValue
-                        return null
-                      }),
-                      null,
-                    ]
+                    null,
+                    ...dataset.data.map((subValue, subIndex) => {
+                      if (index === subIndex) return subValue
+                      return null
+                    }),
+                    null,
+                  ]
                   : [],
               borderColor: 'transparent',
               backgroundColor: dataset.color,
