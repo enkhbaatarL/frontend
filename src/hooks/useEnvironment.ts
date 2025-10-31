@@ -4,7 +4,6 @@ interface EnvironmentInfo {
   isProd: boolean
   isDev: boolean
   isLocal: boolean
-  isExternal: boolean
   useExternalLogin: boolean
   hostname: string
   environment: 'external' | 'production' | 'development' | 'local'
@@ -27,11 +26,8 @@ const useEnvironment = (): EnvironmentInfo =>
 
     const useExternalLogin = rawUseExternalLogin === 'true'
 
-    const mapEnv = (value: string): 'external' | 'production' | 'development' | 'local' | undefined => {
+    const mapEnv = (value: string) => {
       switch (value) {
-        case 'external':
-        case 'ext':
-          return 'external'
         case 'production':
         case 'prod':
           return 'production'
@@ -52,7 +48,6 @@ const useEnvironment = (): EnvironmentInfo =>
     const isProd = environment === 'production'
     const isDev = environment === 'development'
     const isLocal = environment === 'local'
-    const isExternal = environment === 'external'
 
     let profile: 'local' | 'dev' | 'prod'
     if (isLocal) profile = 'local'
@@ -63,7 +58,6 @@ const useEnvironment = (): EnvironmentInfo =>
       isProd,
       isDev,
       isLocal,
-      isExternal,
       useExternalLogin,
       hostname,
       environment,
