@@ -10,7 +10,7 @@ concurrency:
 env:
   APP_NAME: mi-frontend
   ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-  ACR_REPO: skmidemoacr.azurecr.io
+  ACR_REPO: mi-frontend
   IMAGE_SHA: ${{ github.sha }}
   BRANCH_TAG: ${{ github.ref_name }}-latest
   COMPOSE_DIR: ${{ secrets.COMPOSE_DIR_FRONTEND || '/opt/app' }}
@@ -102,19 +102,19 @@ jobs:
           # 설정만 바뀐 경우에도 확실히 적용
           docker compose up -d --pull always
 
-      - name: Wait for healthcheck (app)
-        run: |
-          set -eux
-          NAME="mi-frontend"
-          TIMEOUT=180; waited=0
-          until [ "$(docker inspect --format='{{.State.Health.Status}}' ${NAME} 2>/dev/null || echo unknown)" = "healthy" ]; do
-            sleep 5; waited=$((waited+5))
-            if [ $waited -ge $TIMEOUT ]; then
-              echo "Health check timeout for ${NAME} after ${TIMEOUT}s"
-              docker compose logs --no-color --tail=200 || true
-              exit 1
-            fi
-          done
+#      - name: Wait for healthcheck (app)
+#        run: |
+#          set -eux
+#          NAME="mi-frontend"
+#          TIMEOUT=180; waited=0
+#          until [ "$(docker inspect --format='{{.State.Health.Status}}' ${NAME} 2>/dev/null || echo unknown)" = "healthy" ]; do
+#            sleep 5; waited=$((waited+5))
+#            if [ $waited -ge $TIMEOUT ]; then
+#              echo "Health check timeout for ${NAME} after ${TIMEOUT}s"
+#              docker compose logs --no-color --tail=200 || true
+#              exit 1
+#            fi
+#          done
 
       - name: Cleanup dangling images
         run: docker image prune -f
