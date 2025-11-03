@@ -1,8 +1,11 @@
 name: DEMO-selfhosted-build-push-deploy
 on:
-  push:
-    branches: [ "demo" ]
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'option'
+        required: true
+        default: 'demo'
 
 concurrency:
   group: selfhosted-${{ github.ref }}
