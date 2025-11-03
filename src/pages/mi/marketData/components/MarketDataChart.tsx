@@ -1,6 +1,6 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import { Box, Typography, Tooltip } from '@mui/material'
-import { Chart } from 'chart.js'
+import { Box, Typography, Tooltip, TypographyProps } from '@mui/material'
+import { Chart, ChartArea, ChartDataset, Point, ScriptableContext } from 'chart.js'
 import dayjs from 'dayjs'
 import { FC, Fragment, memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -8,9 +8,88 @@ import { useNavigate } from 'react-router-dom'
 import MIChip from '@/components/common/chip/MIChip'
 import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
-import { IMarketData } from '@/service/mi/marketData'
+import { ICompareGraph, IMarketData } from '@/service/mi/marketData'
 
-const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & any) => {
+interface MarketDataChartProps {
+  data?: IMarketData
+  size?: 'large' | 'small'
+  locked?: boolean
+}
+
+interface LabelInfo {
+  x: number
+  y: number
+  text: string
+  color: string
+  isMain: boolean
+  isMin: boolean
+}
+
+interface LabelPosition extends LabelInfo {
+  textWidth: number
+  adjustedX: number
+  adjustedY: number
+}
+
+const COMPARE_COLORS = ['#EF6B35', '#9B59B6', '#3498DB', '#1ABC9C', '#F39C12', '#E74C3C', '#2ECC71', '#F1C40F']
+const MAIN_COLOR = '#40597A'
+const MAIN_MARKER_COLOR = '#2E3F5E'
+const LABEL_FONT = '600 14px Pretendard, sans-serif'
+const LABEL_SPACING = 16
+
+let cachedLabelTextHeight: number | null = null
+
+const getLabelTextHeight = (ctx: CanvasRenderingContext2D): number => {
+  if (cachedLabelTextHeight !== null) {
+    return cachedLabelTextHeight
+  }
+
+  ctx.save()
+  ctx.font = LABEL_FONT
+  const metrics = ctx.measureText('123.45')
+
+  let height: number
+  const metricsWithExtended = metrics as TextMetrics & {
+    actualBoundingBoxAscent?: number
+    actualBoundingBoxDescent?: number
+    fontBoundingBoxAscent?: number
+    fontBoundingBoxDescent?: number
+  }
+  if (metricsWithExtended.actualBoundingBoxAscent !== undefined && metricsWithExtended.actualBoundingBoxDescent !== undefined) {
+    height = metricsWithExtended.actualBoundingBoxAscent + metricsWithExtended.actualBoundingBoxDescent
+  } else if (metricsWithExtended.fontBoundingBoxAscent !== undefined && metricsWithExtended.fontBoundingBoxDescent !== undefined) {
+    height = metricsWithExtended.fontBoundingBoxAscent + metricsWithExtended.fontBoundingBoxDescent
+  } else {
+    height = 14 * 1.2
+  }
+
+  ctx.restore()
+  cachedLabelTextHeight = height
+  return height
+}
+const DATE_FONT = '400 12px Pretendard'
+const DATE_COLOR = '#868E96'
+const DATE_BOTTOM_OFFSET = 10
+const DATE_HORIZONTAL_OFFSET = 67
+
+const DUMMY_META_DATA = {
+  lastValue: 54.32,
+  dodChangeRate: -10,
+  wowChangeRate: -12.3,
+  momChangeRate: 45.6,
+  yoyChangeRate: -78.9,
+  changeRates: [
+    { label: 'DoD', value: 0 },
+    { label: 'WoW', value: 0 },
+  ],
+}
+
+const DUMMY_CHART_DATA = {
+  mainChart: [35, 27, 43, 39, 37, 25, 31, 29, 21, 24, 35, 27],
+  compareCharts: [37, 23, 28, 20, 31, 31, 34, 30, 22, 26, 45, 48],
+}
+
+const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & TypographyProps) => {
   const textRef = useRef<HTMLDivElement>(null)
   const [isOverflowing, setIsOverflowing] = useState(false)
 
@@ -36,529 +115,678 @@ const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string }
   )
 }
 
-interface MarketDataChartProps {
-  data?: IMarketData
-  size?: 'large' | 'small'
-  locked?: boolean
-}
-
-const dummyMetaData = {
-  lastValue: 54.32,
-  dodChangeRate: -10,
-  wowChangeRate: -12.3,
-  momChangeRate: 45.6,
-  yoyChangeRate: -78.9,
-  changeRates: [
-    { label: 'DoD', value: 0 },
-    { label: 'WoW', value: 0 },
-  ],
-}
-
-const dummyChartData = {
-  mainChart: [35, 27, 43, 39, 37, 25, 31, 29, 21, 24, 35, 27],
-  compareCharts: [37, 23, 28, 20, 31, 31, 34, 30, 22, 26, 45, 48],
-}
-
 const LockedOverlay = () => (
   <Box
-    display={'flex'}
-    alignItems={'center'}
-    justifyContent={'center'}
-    position={'absolute'}
-    margin={'-3px -6px'}
-    sx={{ inset: '0px -6px', backgroundColor: 'rgba(255, 255, 255, 0.8)', color: '#868E96' }}
+    display="flex"
+    alignItems="center"
+    justifyContent="center"
+    position="absolute"
+    sx={{
+      inset: '0px -3px',
+      margin: '-3px -3px',
+      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      color: '#868E96',
+    }}
   >
     <LockOutlinedIcon />
   </Box>
 )
 
 const getChangeRateChip = (changeRate: number) => {
-  if (!changeRate) {
-    return <MIChip size={'h24'} color={'gray'} label={changeRate === 0 ? '0%' : '-'} />
+  if (changeRate === null || changeRate === undefined) {
+    return <MIChip size="h24" color="gray" label="-" />
+  }
+
+  if (changeRate === 0) {
+    return <MIChip size="h24" color="gray" label="0%" />
   }
 
   const isPositive = changeRate >= 0
+  const label = `${isPositive ? '+' : ''}${changeRate}%`
 
-  return <MIChip size={'h24'} color={isPositive ? 'green-climb' : 'red-decline'} label={`${isPositive ? '+' : ''}${changeRate}%`} />
+  return <MIChip size="h24" color={isPositive ? 'green-climb' : 'red-decline'} label={label} />
 }
 
-const getMinMax = (vals: number[]) => {
-  let min = Number.POSITIVE_INFINITY,
-    max = Number.NEGATIVE_INFINITY
-  let minIdx = -1,
-    maxIdx = -1
-  vals.forEach((v, i) => {
-    if (v < min) {
-      min = v
-      minIdx = i
+const getMinMax = (values: number[]) => {
+  let min = Number.POSITIVE_INFINITY
+  let max = Number.NEGATIVE_INFINITY
+  let minIdx = -1
+  let maxIdx = -1
+
+  values.forEach((value, index) => {
+    if (value < min) {
+      min = value
+      minIdx = index
     }
-    if (v > max) {
-      max = v
-      maxIdx = i
+    if (value > max) {
+      max = value
+      maxIdx = index
     }
   })
+
   return { min, max, minIdx, maxIdx }
 }
 
-const SimpleLineChart: FC<{ data?: IMarketData; hasTicks?: boolean }> = ({ data, hasTicks }) => {
-  const chartRef = useRef<HTMLCanvasElement>(null)
-  const chartInstance = useRef<Chart<'line', number[], string | number> | null>(null)
+const createGradientCache = () => {
   let cachedGradient: CanvasGradient | null = null
-  let gW = 0,
-    gH = 0
+  let cachedWidth = 0
+  let cachedHeight = 0
 
-  const compareColors = ['#EF6B35', '#9B59B6', '#3498DB', '#1ABC9C', '#F39C12', '#E74C3C', '#2ECC71', '#F1C40F']
-  const generateChartGradient = (ctx: CanvasRenderingContext2D, area: any) => {
-    const w = area.right - area.left
-    const h = area.bottom - area.top
-    if (!cachedGradient || gW !== w || gH !== h) {
+  return (ctx: CanvasRenderingContext2D, area: { top: number; bottom: number; left: number; right: number }) => {
+    const width = area.right - area.left
+    const height = area.bottom - area.top
+
+    if (!cachedGradient || cachedWidth !== width || cachedHeight !== height) {
       const gradient = ctx.createLinearGradient(0, area.top, 0, area.bottom)
-      gradient.addColorStop(0, 'rgba(53, 136, 200,0.1)')
-      gradient.addColorStop(0.7, 'rgba(53, 136, 200,0.05)')
+      gradient.addColorStop(0, 'rgba(53, 136, 200, 0.1)')
+      gradient.addColorStop(0.7, 'rgba(53, 136, 200, 0.05)')
       gradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
       cachedGradient = gradient
-      gW = w
-      gH = h
+      cachedWidth = width
+      cachedHeight = height
     }
+
     return cachedGradient
   }
+}
 
-  const generateChartData = useCallback(() => {
-    if (data?.mainChart?.rawData) {
-      const mainData = data.mainChart.rawData.map((point) => point.value)
-      const labels = data.mainChart.rawData.map((point) => point.date)
-      const { min, max, minIdx, maxIdx } = getMinMax(mainData)
+type LineChart = Chart<'line', number[], string | number>
 
-      const datasets = [
-        {
-          type: 'line' as const,
-          label: 'Main',
-          data: mainData,
-          borderColor: '#40597A',
-          // backgroundColor: '#40597A',
-          backgroundColor: (context: any) => {
-            const chart = context.chart
-            const { ctx, chartArea } = chart
-            if (!chartArea) return 'transparent'
-            return generateChartGradient(ctx, chartArea)
-          },
-          tension: 0,
-          fill: true,
-          borderWidth: 1,
-          spanGaps: true,
-        },
-        {
-          type: 'line' as const,
-          label: 'MinMaxMarkers',
-          data: mainData.map((v, i) => (i === minIdx || i === maxIdx ? v : Number.NaN)),
-          borderColor: 'transparent',
-          backgroundColor: '#40597A',
-          pointRadius: (ctx: any) => {
-            const i = ctx.dataIndex
-            return i === minIdx || i === maxIdx ? 3 : 0
-          },
-          pointHoverRadius: 4.5,
-          pointBackgroundColor: '#2E3F5E',
-          showLine: false,
-          _minMaxInfo: { min, max, minIdx, maxIdx, color: '#2E3F5E' },
-        },
-      ]
+const createEdgeLabelsPlugin = () => ({
+  id: 'edgeLabels',
+  afterDraw(chart: LineChart) {
+    const { ctx, scales, chartArea, height } = chart
+    const { left, right } = chartArea
+    const xScale = scales.x
 
-      if (data.compareCharts && data.compareCharts.length > 0) {
-        data.compareCharts.forEach((compareChart, index) => {
-          if (compareChart.rawData) {
-            const compareData = compareChart.rawData.map((point) => point.value)
-            const { min, max, minIdx, maxIdx } = getMinMax(compareData)
-            const color = compareColors[index % compareColors.length]
+    const leftText = dayjs(xScale.min).format('YYYY-MM-DD')
+    const rightText = dayjs(xScale.max).format('YYYY-MM-DD')
+    const dateY = height - DATE_BOTTOM_OFFSET
 
-            // Compare 차트 라인
-            datasets.push({
-              type: 'line' as const,
-              label: compareChart.specificIndicatorName || `Compare ${index + 1}`,
-              data: compareData,
-              borderColor: color,
-              backgroundColor: () => 'transparent',
-              tension: 0,
-              fill: false,
-              borderWidth: 1,
-              spanGaps: true,
-            })
+    ctx.save()
+    ctx.font = DATE_FONT
+    ctx.fillStyle = DATE_COLOR
+    ctx.textBaseline = 'top'
 
-            // Compare 차트의 최고값/최저값 포인트 (realValue 사용)
-            const realMin = compareChart.rawData[minIdx]?.real ?? min
-            const realMax = compareChart.rawData[maxIdx]?.real ?? max
+    const leftPadding = 8
+    const rightPadding = 8
 
-            datasets.push({
-              type: 'line' as const,
-              label: `Compare ${index + 1} MinMaxMarkers`,
-              data: compareData.map((v, i) => (i === minIdx || i === maxIdx ? v : Number.NaN)),
-              borderColor: 'transparent',
-              backgroundColor: color,
-              pointRadius: (ctx: any) => {
-                const i = ctx.dataIndex
-                return i === minIdx || i === maxIdx ? 3 : 0
-              },
-              pointHoverRadius: 4.5,
-              pointBackgroundColor: color,
-              showLine: false,
-              _minMaxInfo: { min: realMin, max: realMax, minIdx, maxIdx, color },
-            })
-          }
-        })
-      }
+    ctx.textAlign = 'right'
+    ctx.fillText(leftText, left + DATE_HORIZONTAL_OFFSET - 15 + leftPadding, dateY)
 
-      return {
-        labels,
-        datasets,
-      }
+    ctx.textAlign = 'left'
+    ctx.fillText(rightText, right - DATE_HORIZONTAL_OFFSET + 15 - rightPadding, dateY)
+
+    ctx.restore()
+  },
+})
+
+interface MinMaxInfo {
+  min: number
+  max: number
+  minIdx: number
+  maxIdx: number
+  color?: string
+}
+
+interface ExtendedPoint extends Point {
+  tooltipPosition?: (useFinalPosition?: boolean) => Point
+}
+
+interface ChartMetaWithPoints {
+  data: ExtendedPoint[]
+}
+
+const collectLabelsFromDataset = (meta: ChartMetaWithPoints, info: MinMaxInfo, color: string, isMain: boolean, allLabels: LabelInfo[]) => {
+  const collectOne = (index: number, value: number | string | null, isMin: boolean) => {
+    const element = meta.data[index]
+    if (!element) return
+
+    const position = typeof element.tooltipPosition === 'function' ? element.tooltipPosition() : { x: element.x, y: element.y }
+    const x = position.x ?? element.x
+    const y = position.y ?? element.y
+
+    const numValue = typeof value === 'string' ? parseFloat(value) : value
+    if (!Number.isFinite(x) || !Number.isFinite(y) || numValue === null || numValue === undefined || !Number.isFinite(numValue)) return
+
+    const formattedValue = Number.isFinite(numValue)
+      ? parseFloat(numValue.toFixed(2)).toLocaleString('ko-KR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+      : String(numValue)
+    allLabels.push({ x: x as number, y: y as number, text: formattedValue, color, isMain, isMin })
+  }
+
+  if (info.min === info.max && info.minIdx === info.maxIdx) {
+    collectOne(info.minIdx, info.min, true)
+  } else {
+    collectOne(info.minIdx, info.min, true)
+    collectOne(info.maxIdx, info.max, false)
+  }
+}
+
+interface ExtendedDataset extends ChartDataset<'line', number[]> {
+  type: 'line'
+  label: string
+  _minMaxInfo?: MinMaxInfo
+}
+
+const collectMinMaxLabels = (chart: LineChart, allLabels: LabelInfo[]) => {
+  const datasets = chart.data.datasets as ExtendedDataset[]
+  const mainDatasetIndex = datasets.findIndex((d) => d.label === 'MinMaxMarkers')
+
+  if (mainDatasetIndex >= 0) {
+    const dataset = datasets[mainDatasetIndex]
+    const info = dataset._minMaxInfo
+    if (info) {
+      const meta = chart.getDatasetMeta(mainDatasetIndex) as unknown as ChartMetaWithPoints
+      collectLabelsFromDataset(meta, info, info.color ?? MAIN_MARKER_COLOR, true, allLabels)
+    }
+  }
+
+  const compareDatasetIndices = datasets
+    .map((d, index) => (d.label?.includes('MinMaxMarkers') && d.label !== 'MinMaxMarkers' ? index : -1))
+    .filter((index) => index >= 0)
+
+  compareDatasetIndices.forEach((datasetIndex: number) => {
+    const dataset = datasets[datasetIndex]
+    const info = dataset._minMaxInfo
+    if (info) {
+      const meta = chart.getDatasetMeta(datasetIndex) as unknown as ChartMetaWithPoints
+      const color = info.color ?? COMPARE_COLORS[0]
+      collectLabelsFromDataset(meta, info, color, false, allLabels)
+    }
+  })
+}
+
+const calculateInitialPositions = (ctx: CanvasRenderingContext2D, labels: LabelInfo[], chart: LineChart): LabelPosition[] => {
+  const { chartArea, height } = chart
+  const dateTop = height - DATE_BOTTOM_OFFSET
+  const maxLabelBottom = dateTop - 5
+
+  const labelTextHeight = getLabelTextHeight(ctx)
+  const estimatedTopPadding = Math.max(30, labels.filter((l) => !l.isMin).length * LABEL_SPACING + 15)
+
+  const sortedLabels = [...labels].sort((a, b) => {
+    if (a.isMin !== b.isMin) {
+      return a.isMin ? 1 : -1
+    }
+    if (a.isMain !== b.isMain) {
+      return a.isMain ? -1 : 1
+    }
+    return 0
+  })
+
+  return sortedLabels.map((label) => {
+    const textWidth = ctx.measureText(label.text).width
+
+    const sameTypeLabels = sortedLabels.filter((l) => l.isMin === label.isMin)
+    const offsetFromGraph = sameTypeLabels.indexOf(label)
+
+    let finalY: number
+    if (label.isMin) {
+      const maxY = maxLabelBottom - labelTextHeight / 2
+      finalY = Math.min(label.y + 15 + offsetFromGraph * LABEL_SPACING, maxY)
+    } else {
+      finalY = Math.max(label.y - 15 - offsetFromGraph * LABEL_SPACING, chartArea.top - estimatedTopPadding + labelTextHeight / 2)
     }
 
     return {
-      labels: [],
-      datasets: [
-        {
-          label: 'Main',
-          data: [],
-          borderColor: '#40597A',
-          backgroundColor: '#40597A',
-          tension: 0,
-          fill: false,
-          borderWidth: 1,
-          spanGaps: true,
-        },
-        {
-          label: 'Compare',
-          data: [],
-          borderColor: '#7A8790',
-          backgroundColor: '#7A8790',
-          tension: 0,
-          fill: false,
-          borderWidth: 1,
-          spanGaps: true,
-        },
-      ],
+      ...label,
+      textWidth,
+      adjustedX: label.x,
+      adjustedY: finalY,
     }
-  }, [data])
+  })
+}
+
+const checkTextOverlap = (label1: LabelPosition, label2: LabelPosition): boolean => {
+  const padding = 5
+  const label1Left = label1.adjustedX - label1.textWidth / 2
+  const label1Right = label1.adjustedX + label1.textWidth / 2
+  const label2Left = label2.adjustedX - label2.textWidth / 2
+  const label2Right = label2.adjustedX + label2.textWidth / 2
+
+  return label1Left < label2Right + padding && label1Right + padding > label2Left
+}
+
+const groupLabelsByTextOverlap = (labels: LabelPosition[]): LabelPosition[][] => {
+  const groups: LabelPosition[][] = []
+  const processed = new Set<LabelPosition>()
+
+  labels.forEach((label) => {
+    if (processed.has(label)) return
+
+    const group: LabelPosition[] = [label]
+    processed.add(label)
+
+    let found = true
+    while (found) {
+      found = false
+      labels.forEach((otherLabel) => {
+        if (processed.has(otherLabel)) return
+
+        const overlaps = group.some((groupLabel) => checkTextOverlap(groupLabel, otherLabel))
+        if (overlaps) {
+          group.push(otherLabel)
+          processed.add(otherLabel)
+          found = true
+        }
+      })
+    }
+
+    groups.push(group)
+  })
+
+  return groups
+}
+
+const resolveLabelCollisions = (positions: LabelPosition[], chart: LineChart): LabelPosition[] => {
+  const { ctx, chartArea, height } = chart
+  const dateTop = height - DATE_BOTTOM_OFFSET
+
+  const labelTextHeight = getLabelTextHeight(ctx)
+  const maxLabelBottom = dateTop - 10
+  const estimatedTopPadding = Math.max(30, positions.filter((p) => !p.isMin).length * LABEL_SPACING + 15)
+
+  const minLabels = positions.filter((p) => p.isMin)
+  const maxLabels = positions.filter((p) => !p.isMin)
+
+  if (minLabels.length > 0) {
+    const textOverlapGroups = groupLabelsByTextOverlap(minLabels)
+
+    textOverlapGroups.forEach((group) => {
+      group.sort((a, b) => {
+        if (a.isMain !== b.isMain) {
+          return a.isMain ? -1 : 1
+        }
+        return a.y - b.y
+      })
+
+      const firstLabel = group[0]
+      const baseY: number = Math.min(firstLabel.y + 15, maxLabelBottom - labelTextHeight / 2)
+      firstLabel.adjustedY = baseY
+
+      const otherLabels = group.slice(1)
+      otherLabels.forEach((label, index) => {
+        const targetY = Math.min(baseY + (index + 1) * LABEL_SPACING, maxLabelBottom - labelTextHeight / 2)
+        label.adjustedY = targetY
+      })
+    })
+  }
+
+  if (maxLabels.length > 0) {
+    const textOverlapGroups = groupLabelsByTextOverlap(maxLabels)
+
+    textOverlapGroups.forEach((group) => {
+      group.sort((a, b) => {
+        if (a.isMain !== b.isMain) {
+          return a.isMain ? -1 : 1
+        }
+        return b.y - a.y
+      })
+
+      const firstLabel = group[0]
+      const baseY: number = Math.max(firstLabel.y - 15, chartArea.top - estimatedTopPadding + labelTextHeight / 2)
+      firstLabel.adjustedY = baseY
+
+      const otherLabels = group.slice(1)
+      otherLabels.forEach((label, index) => {
+        const targetY = Math.max(baseY - (index + 1) * LABEL_SPACING, chartArea.top - estimatedTopPadding + labelTextHeight / 2)
+        label.adjustedY = targetY
+      })
+    })
+  }
+
+  const minLabelPositions = positions.filter((p) => p.isMin)
+  if (minLabelPositions.length > 0) {
+    const bottommostLabelY = Math.max(...minLabelPositions.map((p) => p.adjustedY))
+    const labelBottomEdge = bottommostLabelY + labelTextHeight / 2
+    const safeMaxLabelBottom = dateTop - 10
+
+    if (labelBottomEdge > safeMaxLabelBottom) {
+      const adjustment = labelBottomEdge - safeMaxLabelBottom
+      minLabelPositions.forEach((label) => {
+        label.adjustedY -= adjustment
+      })
+    }
+  }
+
+  return positions
+}
+
+const drawSingleLabel = (
+  ctx: CanvasRenderingContext2D,
+  label: LabelInfo,
+  position: LabelPosition | undefined,
+  maxLabelBottom: number,
+  chartArea: ChartArea,
+  estimatedTopPadding: number,
+  labelTextHeight: number,
+) => {
+  ctx.save()
+  ctx.font = LABEL_FONT
+  ctx.fillStyle = label.color
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+
+  let x = position?.adjustedX ?? label.x
+  const textWidth = ctx.measureText(label.text).width
+  const halfWidth = textWidth / 2
+  const margin = -8
+
+  x = Math.max(chartArea.left + halfWidth + margin, Math.min(x, chartArea.right - halfWidth - margin))
+
+  const y =
+    position?.adjustedY ??
+    (label.isMin
+      ? Math.min(label.y + 10, maxLabelBottom - labelTextHeight / 2)
+      : Math.max(label.y - 10, chartArea.top - estimatedTopPadding + labelTextHeight / 2))
+
+  ctx.fillText(label.text, x, y)
+  ctx.restore()
+}
+
+const createMinMaxLabelPlugin = () => ({
+  id: 'minMaxLabel',
+  afterDatasetsDraw(chart: LineChart) {
+    const { ctx, chartArea, height } = chart
+    const allLabels: LabelInfo[] = []
+
+    collectMinMaxLabels(chart, allLabels)
+
+    if (allLabels.length === 0) return
+
+    ctx.save()
+    ctx.font = LABEL_FONT
+
+    const dateTop = height - DATE_BOTTOM_OFFSET
+    const labelTextHeight = getLabelTextHeight(ctx)
+    const maxLabelBottom = dateTop - 10
+    const estimatedTopPadding = Math.max(20, allLabels.filter((l) => !l.isMin).length * LABEL_SPACING + 10)
+
+    const labelPositions = calculateInitialPositions(ctx, allLabels, chart)
+    const resolvedPositions = resolveLabelCollisions(labelPositions, chart)
+
+    resolvedPositions.forEach((position) => {
+      drawSingleLabel(ctx, position, position, maxLabelBottom, chartArea, estimatedTopPadding, labelTextHeight)
+    })
+
+    ctx.restore()
+  },
+})
+
+const createMainDataset = (mainData: number[], getGradient: ReturnType<typeof createGradientCache>): ExtendedDataset[] => {
+  const { min, max, minIdx, maxIdx } = getMinMax(mainData)
+
+  return [
+    {
+      type: 'line' as const,
+      label: 'Main',
+      data: mainData,
+      borderColor: MAIN_COLOR,
+      backgroundColor: (context: ScriptableContext<'line'>) => {
+        const chart = context.chart as LineChart
+        const { ctx, chartArea } = chart
+        if (!chartArea) return 'transparent'
+        return getGradient(ctx, chartArea)
+      },
+      tension: 0,
+      fill: true,
+      borderWidth: 1,
+      spanGaps: true,
+    },
+    {
+      type: 'line' as const,
+      label: 'MinMaxMarkers',
+      data: mainData.map((value, index) => (index === minIdx || index === maxIdx ? value : Number.NaN)),
+      borderColor: 'transparent',
+      backgroundColor: MAIN_COLOR,
+      pointRadius: (ctx: ScriptableContext<'line'>) => {
+        const index = ctx.dataIndex
+        return index === minIdx || index === maxIdx ? 3 : 0
+      },
+      pointHoverRadius: 4.5,
+      pointBackgroundColor: MAIN_MARKER_COLOR,
+      showLine: false,
+      _minMaxInfo: { min, max, minIdx, maxIdx, color: MAIN_MARKER_COLOR },
+    },
+  ]
+}
+
+const createCompareDatasets = (compareCharts: ICompareGraph[]): ExtendedDataset[] => {
+  const datasets: ExtendedDataset[] = []
+
+  compareCharts.forEach((compareChart, index) => {
+    if (!compareChart.rawData) return
+
+    const compareData = compareChart.rawData.map((point) => point.value)
+    const { min, max, minIdx, maxIdx } = getMinMax(compareData)
+    const color = COMPARE_COLORS[index % COMPARE_COLORS.length]
+
+    datasets.push({
+      type: 'line' as const,
+      label: compareChart.specificIndicatorName || `Compare ${index + 1}`,
+      data: compareData,
+      borderColor: color,
+      backgroundColor: () => 'transparent',
+      tension: 0,
+      fill: false,
+      borderWidth: 1,
+      spanGaps: true,
+    })
+
+    const realMin: number = compareChart.rawData[minIdx]?.real ?? min
+    const realMax: number = compareChart.rawData[maxIdx]?.real ?? max
+
+    datasets.push({
+      type: 'line' as const,
+      label: `Compare ${index + 1} MinMaxMarkers`,
+      data: compareData.map((value: number, i: number) => (i === minIdx || i === maxIdx ? value : Number.NaN)),
+      borderColor: 'transparent',
+      backgroundColor: color,
+      pointRadius: (ctx: ScriptableContext<'line'>) => {
+        const i = ctx.dataIndex
+        return i === minIdx || i === maxIdx ? 3 : 0
+      },
+      pointHoverRadius: 4.5,
+      pointBackgroundColor: color,
+      showLine: false,
+      _minMaxInfo: { min: realMin, max: realMax, minIdx, maxIdx, color },
+    })
+  })
+
+  return datasets
+}
+
+const SimpleLineChart: FC<{ data?: IMarketData }> = ({ data }) => {
+  const chartRef = useRef<HTMLCanvasElement>(null)
+  const chartInstance = useRef<Chart<'line', number[], string | number> | null>(null)
+  const getGradient = createGradientCache()
+
+  const generateChartData = useCallback(() => {
+    if (!data?.mainChart?.rawData) {
+      return {
+        labels: [],
+        datasets: [
+          {
+            label: 'Main',
+            data: [],
+            borderColor: MAIN_COLOR,
+            backgroundColor: MAIN_COLOR,
+            tension: 0,
+            fill: false,
+            borderWidth: 1,
+            spanGaps: true,
+          },
+        ],
+      }
+    }
+
+    const mainData = data.mainChart.rawData.map((point) => point.value)
+    const labels = data.mainChart.rawData.map((point) => point.date)
+
+    const datasets = createMainDataset(mainData, getGradient)
+
+    if (data.compareCharts && data.compareCharts.length > 0) {
+      datasets.push(...createCompareDatasets(data.compareCharts))
+    }
+
+    return { labels, datasets }
+  }, [data, getGradient])
 
   useEffect(() => {
     if (chartInstance.current) {
       chartInstance.current.destroy()
     }
 
-    if (chartRef.current) {
-      const ctx = chartRef.current.getContext('2d')
-      const chartData = generateChartData()
+    if (!chartRef.current) return undefined
 
-      if (ctx) {
-        const edgeLabels = {
-          id: 'edgeLabels',
-          afterDraw(chart: any, _args: any, opts: any) {
-            const s = chart.scales.x
-            const { left, right, bottom } = chart.chartArea
-            const ctx = chart.ctx
+    const ctx = chartRef.current.getContext('2d')
+    if (!ctx) return undefined
 
-            const leftText = dayjs(s.min).format(opts.format ?? 'YYYY-MM-DD')
-            const rightText = dayjs(s.max).format(opts.format ?? 'YYYY-MM-DD')
+    const chartData = generateChartData()
+    const compareChartCount = data?.compareCharts?.length || 0
+    const maxLabelCount = 1 + compareChartCount
+    const minLabelCount = 1 + compareChartCount
 
-            ctx.save()
-            ctx.font = '400 12px Pretendard'
-            ctx.fillStyle = '#868E96'
-            ctx.textBaseline = 'top'
+    const needsTopPadding = maxLabelCount > 1
+    const topPadding = needsTopPadding ? Math.max(16, maxLabelCount * (LABEL_SPACING * 0.8) + 16) : LABEL_SPACING
 
-            ctx.textAlign = 'right'
-            ctx.fillText(leftText, left + 67, bottom + 3)
-
-            ctx.textAlign = 'left'
-            ctx.fillText(rightText, right - 67, bottom + 3)
-
-            ctx.restore()
-          },
-        }
-        const minMaxLabelPlugin = {
-          id: 'minMaxLabel',
-          afterDatasetsDraw(chart: any) {
-            const allLabels: Array<{ x: number; y: number; text: string; color: string; isMain: boolean; isMin: boolean }> = []
-
-            const mainDsIndex = chart.data.datasets.findIndex((d: any) => d.label === 'MinMaxMarkers')
-            if (mainDsIndex >= 0) {
-              const ds: any = chart.data.datasets[mainDsIndex]
-              const info = ds._minMaxInfo
-              if (info) {
-                const meta = chart.getDatasetMeta(mainDsIndex)
-                this.collectLabels(meta, info, info.color || '#2E3F5E', true, allLabels)
-              }
-            }
-
-            const compareDsIndices = chart.data.datasets
-              .map((d: any, index: number) => (d.label?.includes('MinMaxMarkers') && d.label !== 'MinMaxMarkers' ? index : -1))
-              .filter((index: number) => index >= 0)
-
-            compareDsIndices.forEach((dsIndex: number) => {
-              const ds: any = chart.data.datasets[dsIndex]
-              const info = ds._minMaxInfo
-              if (info) {
-                const meta = chart.getDatasetMeta(dsIndex)
-                const color = info.color || '#EF6B35'
-                this.collectLabels(meta, info, color, false, allLabels)
-              }
-            })
-
-            this.drawAllLabels(chart, allLabels)
-          },
-
-          collectLabels(
-            meta: any,
-            info: any,
-            color: string,
-            isMain: boolean,
-            allLabels: Array<{ x: number; y: number; text: string; color: string; isMain: boolean; isMin: boolean }>,
-          ) {
-            const collectOne = (idx: number, text: string, isMin: boolean) => {
-              const elem = meta.data[idx]
-              if (!elem) return
-              if (text === null || text === undefined || text === '') return
-
-              const pos = typeof elem.tooltipPosition === 'function' ? elem.tooltipPosition() : { x: elem?.x, y: elem?.y }
-              const x = pos?.x,
-                y = pos?.y
-              if (!Number.isFinite(x) || !Number.isFinite(y)) return
-
-              allLabels.push({ x, y, text: String(text), color, isMain, isMin })
-            }
-
-            if (info.min === info.max && info.minIdx === info.maxIdx) {
-              collectOne(info.minIdx, info.min, true)
-            } else {
-              collectOne(info.minIdx, info.min, true)
-              collectOne(info.maxIdx, info.max, false)
-            }
-          },
-
-          drawAllLabels(
-            chart: any,
-            allLabels: Array<{ x: number; y: number; text: string; color: string; isMain: boolean; isMin: boolean }>,
-          ) {
-            const { ctx, chartArea } = chart
-
-            const groupedLabels = new Map<
-              number,
-              Array<{ x: number; y: number; text: string; color: string; isMain: boolean; isMin: boolean }>
-            >()
-
-            allLabels.forEach((label) => {
-              const yKey = Math.round(label.y / 10) * 10
-              if (!groupedLabels.has(yKey)) {
-                groupedLabels.set(yKey, [])
-              }
-              groupedLabels.get(yKey)!.push(label)
-            })
-
-            groupedLabels.forEach((labels) => {
-              if (labels.length === 1) {
-                const label = labels[0]
-                ctx.save()
-                ctx.font = '600 14px Pretendard, sans-serif'
-                ctx.fillStyle = label.color
-                ctx.textAlign = 'center'
-                ctx.textBaseline = 'bottom'
-
-                const textWidth = ctx.measureText(label.text).width
-                const textHeight = 14
-                const margin = 10
-
-                const finalX = label.x
-                let finalY = label.y
-
-                if (label.isMain) {
-                  finalY = label.y - 2
-                } else {
-                  finalY = label.y + 20
-                }
-
-                const adjustedX = Math.max(
-                  chartArea.left + margin + textWidth / 2,
-                  Math.min(chartArea.right - margin - textWidth / 2, finalX),
-                )
-                const adjustedY = Math.max(chartArea.top + margin + textHeight, Math.min(chartArea.bottom - margin, finalY))
-
-                ctx.fillText(label.text, adjustedX, adjustedY)
-                ctx.restore()
-                return
-              }
-
-              const mainLabels = labels.filter((label) => label.isMain)
-              const compareLabels = labels.filter((label) => !label.isMain)
-
-              mainLabels.sort((a, b) => parseFloat(b.text) - parseFloat(a.text))
-              compareLabels.sort((a, b) => parseFloat(b.text) - parseFloat(a.text))
-
-              const sortedLabels = [...mainLabels, ...compareLabels]
-              const margin = 10
-
-              const canSpreadHorizontally = (labels: any[]) => {
-                const minX = Math.min(...labels.map((l) => l.x))
-                const maxX = Math.max(...labels.map((l) => l.x))
-                const requiredWidth = (labels.length - 1) * 50 + 50
-                const availableWidth = chartArea.right - chartArea.left - margin * 2
-                return requiredWidth <= availableWidth && minX - margin >= chartArea.left && maxX + margin <= chartArea.right
-              }
-
-              const canSpread = canSpreadHorizontally(sortedLabels)
-
-              sortedLabels.forEach((label, index) => {
-                ctx.save()
-                ctx.font = '600 14px Pretendard, sans-serif'
-                ctx.fillStyle = label.color
-                ctx.textAlign = 'center'
-                ctx.textBaseline = 'bottom'
-
-                const textWidth = ctx.measureText(label.text).width
-                const textHeight = 14
-
-                let finalX = label.x
-                let finalY = label.y
-
-                if (label.isMain) {
-                  finalY = label.y - 2
-                } else {
-                  if (labels.length > 1) {
-                    if (canSpread) {
-                      if (index === 1) {
-                        finalX = label.x - 30
-                        finalY = label.isMin ? label.y - 15 : label.y + 20
-                      } else if (index === 2) {
-                        finalX = label.x + 30
-                        finalY = label.isMin ? label.y - 15 : label.y + 20
-                      } else {
-                        const offset = 25 + (index - 3) * 20
-                        if (index % 2 === 0) {
-                          finalX = label.x + offset
-                        } else {
-                          finalX = label.x - offset
-                        }
-                        finalY = label.isMin ? label.y - 15 : label.y + 20
-                      }
-                    } else {
-                      const compareIndex = sortedLabels.filter((l) => !l.isMain).indexOf(label)
-                      if (label.isMin) {
-                        finalY = label.y - 15 - compareIndex * 20
-                      } else {
-                        finalY = label.y + 20 + compareIndex * 20
-                      }
-                    }
-                  } else {
-                    finalX = label.x
-                    finalY = label.isMin ? label.y - 15 : label.y + 20
-                  }
-                }
-
-                const adjustedX = Math.max(
-                  chartArea.left + margin + textWidth / 2,
-                  Math.min(chartArea.right - margin - textWidth / 2, finalX),
-                )
-                const adjustedY = Math.max(chartArea.top + margin + textHeight, Math.min(chartArea.bottom - margin, finalY))
-
-                ctx.fillText(label.text, adjustedX, adjustedY)
-                ctx.restore()
-              })
-            })
-          },
-        }
-
-        chartInstance.current = new Chart(ctx, {
-          type: 'line',
-          data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-              padding: {
-                top: 30,
-                bottom: 9,
-              },
-            },
-            elements: {
-              point: {
-                radius: 0,
-              },
-            },
-            plugins: {
-              tooltip: {
-                enabled: false,
-              },
-              legend: {
-                display: false,
-              },
-            },
-            scales: {
-              y: {
-                grace: '10%',
-                display: false,
-                title: {
-                  display: false,
-                },
-                grid: {
-                  display: false,
-                },
-              },
-              x: {
-                type: 'time',
-                display: true,
-                title: {
-                  display: false,
-                },
-                grid: {
-                  display: false,
-                },
-                border: {
-                  display: false,
-                },
-                ticks: {
-                  display: false,
-                },
-                // 차트 사이즈 확대를 위해 틱 제거,  라벨플러그인 추가
-                // ticks: hasTicks
-                //   ? {
-                //       autoSkip: false,
-                //       maxRotation: 0,
-                //       minRotation: 0,
-                //       color: '#868E96',
-                //       font: {
-                //         size: 12,
-                //         family: 'Pretendard',
-                //         weight: 400,
-                //       },
-                //       source: 'labels',
-                //       callback(tickValue: string | number, index: number, ticks: Tick[]) {
-                //         if (index === 0 || index === ticks.length - 1) {
-                //           const value = typeof tickValue === 'number' ? tickValue : parseFloat(tickValue)
-
-                //           return dayjs(value).format('MMM DD, YYYY')
-                //         }
-
-                //         return ''
-                //       },
-                //     }
-                //   : {
-                //       display: false,
-                //     },
-              },
-            },
-          },
-          plugins: [minMaxLabelPlugin, edgeLabels],
-        })
-      }
+    let bottomPadding: number
+    if (minLabelCount <= 1) {
+      bottomPadding = DATE_BOTTOM_OFFSET + 10
+    } else {
+      const labelSpacing = LABEL_SPACING / 2
+      bottomPadding = DATE_BOTTOM_OFFSET + (minLabelCount - 1) * labelSpacing + 6
     }
+
+    chartInstance.current = new Chart(ctx, {
+      type: 'line',
+      data: chartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: {
+            top: topPadding,
+            bottom: bottomPadding,
+            left: 20,
+            right: 20,
+          },
+        },
+        elements: {
+          point: {
+            radius: 0,
+          },
+        },
+        plugins: {
+          tooltip: {
+            enabled: false,
+          },
+          legend: {
+            display: false,
+          },
+        },
+        scales: {
+          y: {
+            grace: '10%',
+            display: false,
+            title: {
+              display: false,
+            },
+            grid: {
+              display: false,
+            },
+            afterDataLimits(scale: { min: number; max: number }) {
+              const range = scale.max - scale.min
+              const labelTotalCount = maxLabelCount + minLabelCount
+              const paddingRatio = labelTotalCount <= 2 ? 0.05 : Math.max(0.1, labelTotalCount * 0.03)
+              const scaleTopPadding = range * paddingRatio
+              const scaleBottomPadding = range * paddingRatio
+              scale.min = scale.min - scaleBottomPadding
+              scale.max = scale.max + scaleTopPadding
+            },
+          },
+          x: {
+            type: 'time',
+            display: true,
+            title: {
+              display: false,
+            },
+            grid: {
+              display: false,
+            },
+            border: {
+              display: false,
+            },
+            ticks: {
+              display: false,
+            },
+          },
+        },
+      },
+      plugins: [createMinMaxLabelPlugin(), createEdgeLabelsPlugin()],
+    })
 
     return () => {
       if (chartInstance.current) {
         chartInstance.current.destroy()
       }
     }
-  }, [data, generateChartData, hasTicks])
+  }, [data, generateChartData])
 
-  return <canvas ref={chartRef} style={{ maxWidth: '100%' }} />
+  return <canvas ref={chartRef} style={{ maxWidth: '100%', marginLeft: '5px', marginRight: '5px' }} />
 }
+
+const extractUnitFromTitle = (title: string) => {
+  const match = title.match(/\(([^)]+)\)$/)
+  return match ? match[1] : null
+}
+
+const createDummyDisplayData = () => ({
+  mainChart: {
+    specificIndicatorName: 'CURRENT',
+    rawData: DUMMY_CHART_DATA.mainChart.map((value, index) => ({
+      date: String(index),
+      value,
+    })),
+  },
+  compareCharts: [
+    {
+      specificIndicatorName: 'PAST_5Y_AVG',
+      rawData: DUMMY_CHART_DATA.compareCharts.map((value, index) => ({
+        date: String(index),
+        value,
+      })),
+    },
+  ],
+  isPermitted: false,
+  marketMetaData: {
+    chartMarkRank: 0,
+    goodsNo: 0,
+    goodsDataNo: 0,
+    goodsDataSourceNo: 0,
+    goodsDataNm: '',
+    goodsDataSourceNm: '',
+    currency: '',
+    currentUnitCd: '',
+    visibleChartType: '',
+    interval: '',
+    lastUpdateDt: '',
+    indexStartDt: '',
+    lastValue: 0,
+    yoyChangeRate: 0,
+    momChangeRate: 0,
+    wowChangeRate: 0,
+    dodChangeRate: 0,
+    changeRates: [
+      { label: 'DoD', value: 0 },
+      { label: 'WoW', value: 0 },
+    ],
+  },
+})
 
 const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locked }) => {
   const navigate = useNavigate()
@@ -567,67 +795,16 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
     return null
   }
 
-  const metaData = locked ? { ...data.marketMetaData, ...dummyMetaData } : data.marketMetaData
-
-  // 타이틀에서 단위 추출 (괄호 안의 내용)
-  const extractUnitFromTitle = (title: string) => {
-    const match = title.match(/\(([^)]+)\)$/)
-    return match ? match[1] : null
-  }
-
+  const metaData = locked ? { ...data.marketMetaData, ...DUMMY_META_DATA } : data.marketMetaData
   const titleWithoutUnit = metaData.goodsDataNm?.replace(/\s*\([^)]+\)$/, '') || ''
   const extractedUnit = extractUnitFromTitle(metaData.goodsDataNm || '')
-
-  const displayData = locked
-    ? {
-      mainChart: {
-        specificIndicatorName: 'CURRENT',
-        rawData: dummyChartData.mainChart.map((value, index) => ({
-          date: String(index),
-          value,
-        })),
-      },
-      compareCharts: [
-        {
-          specificIndicatorName: 'PAST_5Y_AVG',
-          rawData: dummyChartData.compareCharts.map((value, index) => ({
-            date: String(index),
-            value,
-          })),
-        },
-      ],
-      isPermitted: false,
-      marketMetaData: {
-        chartMarkRank: 0,
-        goodsNo: 0,
-        goodsDataNo: 0,
-        goodsDataSourceNo: 0,
-        goodsDataNm: '',
-        goodsDataSourceNm: '',
-        currency: '',
-        currentUnitCd: '',
-        visibleChartType: '',
-        interval: '',
-        lastUpdateDt: '',
-        indexStartDt: '',
-        lastValue: 0,
-        yoyChangeRate: 0,
-        momChangeRate: 0,
-        wowChangeRate: 0,
-        dodChangeRate: 0,
-        changeRates: [
-          { label: 'DoD', value: 0 },
-          { label: 'WoW', value: 0 },
-        ],
-      },
-    }
-    : data
+  const displayData = locked ? createDummyDisplayData() : data
 
   return (
     <Box
       borderRadius={1}
       sx={{
-        padding: '25px',
+        padding: '25px 10px',
         borderRadius: '4px',
         border: '1px solid',
         borderColor: '#E9ECEF',
@@ -659,7 +836,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
           width: '100%',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1, overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1, overflow: 'hidden', paddingLeft: '15px' }}>
           <TruncatedTextWithTooltip
             text={titleWithoutUnit}
             component="span"
@@ -685,7 +862,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
             </Typography>
           )}
         </Box>
-        <ChevronRightIcon sx={{ color: 'gray.60', minWidth: '24px', ml: '8px' }} />
+        <ChevronRightIcon sx={{ color: 'gray.60', minWidth: '24px', ml: '8px', paddingRight: '15px' }} />
       </Box>
       {size === 'large' && (
         <Box position={'relative'}>
@@ -696,10 +873,17 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
               sx={{
                 filter: locked ? 'blur(6px)' : 'none',
                 minHeight: '33.6px',
+                paddingLeft: '15px',
+                paddingRight: '15px',
               }}
             >
               <Typography sx={{ fontWeight: 600 }} color="gray.90" component="div" variant="heading2">
-                {metaData.lastValue || ''}
+                {typeof metaData.lastValue === 'number' && Number.isFinite(metaData.lastValue)
+                  ? parseFloat(metaData.lastValue.toFixed(2)).toLocaleString('ko-KR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                  : metaData.lastValue || ''}
               </Typography>
 
               <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto', mt: '3px' }} gap={3}>
@@ -708,7 +892,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
                     <Fragment key={index}>
                       {index !== 0 && (
                         <Box sx={{ mt: '3px' }}>
-                          <MILine thickness={'1px'} direction={'vertical'} length={18} />
+                          <MILine thickness="1px" direction="vertical" length={18} />
                         </Box>
                       )}
                       <Typography color="gray.70" component="div" variant="body1M16">
@@ -723,13 +907,13 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
               </Box>
             </Box>
             <Box mt={3} height={188} sx={{ overflow: 'visible', filter: locked ? 'blur(6px)' : 'none', position: 'relative' }}>
-              {/* Legend - compare 차트가 있을 때만 표시 */}
               {displayData.compareCharts && displayData.compareCharts.length > 0 && (
                 <Box
+                  mt={-0.5}
                   display="flex"
                   justifyContent="center"
                   flexWrap="wrap"
-                  gap={2}
+                  gap={3}
                   sx={{
                     filter: locked ? 'blur(6px)' : 'none',
                     position: 'absolute',
@@ -746,7 +930,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
                         width={12}
                         height={2}
                         sx={{
-                          backgroundColor: '#40597A',
+                          backgroundColor: MAIN_COLOR,
                           borderRadius: '1px',
                         }}
                       />
@@ -756,8 +940,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
                     </Box>
                   )}
                   {displayData.compareCharts?.map((chart, index) => {
-                    const compareColors = ['#EF6B35', '#9B59B6', '#3498DB', '#1ABC9C', '#F39C12', '#E74C3C', '#2ECC71', '#F1C40F']
-                    const color = compareColors[index % compareColors.length]
+                    const color = COMPARE_COLORS[index % COMPARE_COLORS.length]
                     return (
                       <Box key={index} display="flex" alignItems="center" gap={1}>
                         <Box
@@ -766,7 +949,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
                           sx={{
                             backgroundColor: color,
                             borderRadius: '1px',
-                            backgroundImage: `repeating-linear-gradient(90deg, ${color}, ${color} 5px, transparent 5px, transparent 10px)`, // 점선 효과
+                            backgroundImage: `repeating-linear-gradient(90deg, ${color}, ${color} 5px, transparent 5px, transparent 10px)`,
                           }}
                         />
                         <Typography variant="body3R12" color="gray.70">
@@ -777,7 +960,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
                   })}
                 </Box>
               )}
-              <SimpleLineChart data={displayData} hasTicks />
+              <SimpleLineChart data={displayData} />
             </Box>
           </Box>
           {locked && <LockedOverlay />}
