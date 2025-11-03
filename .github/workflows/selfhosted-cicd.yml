@@ -18,6 +18,8 @@ env:
   IMAGE_SHA: ${{ github.sha }}
   BRANCH_TAG: ${{ github.ref_name }}-latest
   COMPOSE_DIR: ${{ secrets.COMPOSE_DIR_FRONTEND || '/opt/app' }}
+  ACR_USER_NAME: ${{ secrets.ACR_USERNAME }}
+  ACR_USER_PASS: ${{ secrets.ACR_PASSWORD }}
 
 jobs:
   build-push-deploy:
@@ -39,8 +41,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          username: ${{ env.ACR_USER_NAME }}
+          password: ${{ env.ACR_USER_PASS }}
 
       - name: Derive image tags
         id: tags
