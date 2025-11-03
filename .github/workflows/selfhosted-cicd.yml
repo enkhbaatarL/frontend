@@ -37,7 +37,7 @@ jobs:
 
       # ---- 레지스트리 로그인 (옵션 A: ACR Admin 계정) ----
       - name: Docker login ACR (admin)
-        if: ${{ secrets.ACR_USERNAME && secrets.ACR_PASSWORD }}
+        if: ${{ env.ACR_USER_NAME && env.ACR_USER_PASS }}
         uses: docker/login-action@v3
         with:
           registry: ${{ env.ACR_LOGIN_SERVER }}
