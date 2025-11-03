@@ -24,7 +24,7 @@ import MIProvider from '@/providers/MIProvider'
 import useAuthStore from '@/store/useAuthStore'
 
 const MIMainRedirect = () => {
-  const { miHome } = useCompanyCondition()
+  const { miHome, isDeniedDashboardPageLoading } = useCompanyCondition()
 
   const location = useLocation()
   const targetCompanyNo = (location.state as { targetCompanyNo?: number } | null)?.targetCompanyNo
@@ -40,8 +40,15 @@ const MIMainRedirect = () => {
     }
   }, [needsCompanySwitch, targetCompanyNo, loadAccessCompanyInfo])
 
-  // ADMIN -> 회사 선택에 의해 '/mi'로 진입한 경우, 스토어가 갱신될 때까지 대기
-  if (!homeUrl || needsCompanySwitch) return <></>
+  // 권한 데이터 로딩 중이거나 회사 전환이 필요한 경우 대기
+  if (isDeniedDashboardPageLoading || needsCompanySwitch) {
+    return <></>
+  }
+
+  if (!homeUrl) {
+    const fallbackUrl = accessCompanyInfo?.isFuture ? 'dashboard' : 'forecast'
+    return <Navigate to={`/mi/${fallbackUrl}`} replace />
+  }
 
   // 리다이렉트 시 state를 초기화하여 targetCompanyNo 잔존 방지
   return <Navigate to={homeUrl} replace />

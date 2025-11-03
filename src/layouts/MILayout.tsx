@@ -91,16 +91,16 @@ const MILayout = () => {
   const { stickyHeader } = useStickyHeader()
   const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0)
 
-  const { extractPage } = useCompanyCondition()
+  const { extractPage, isDeniedDashboardPageLoading } = useCompanyCondition()
 
   useEffect(() => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
 
   const getActiveMenu = useMemo(() => {
-    if (!extractPage) return []
+    if (isDeniedDashboardPageLoading || extractPage === undefined) return []
     return activeMenu.filter((item) => !extractPage.includes(item))
-  }, [extractPage])
+  }, [extractPage, isDeniedDashboardPageLoading])
 
   useEffect(() => setIsScrolled(currentScroll > 0), [currentScroll])
 
@@ -215,9 +215,9 @@ const MILayout = () => {
     }
 
     if (location.state?.noticePopup) {
-      fetchNotice()
+      fetchNotice().then()
     }
-  }, [location.state])
+  }, [location.state, accessCompanyInfo?.customerCompanyNo])
 
   const handleDontShowToday = () => {
     if (noticeData) {
@@ -289,7 +289,12 @@ const MILayout = () => {
         >
           {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
-            <MIHeaderMainLayout pages={mainMenu} activeMenu={getActiveMenu} onMoveTab={(callback) => saveScroll(callback)} />
+            <MIHeaderMainLayout
+              pages={mainMenu}
+              activeMenu={getActiveMenu}
+              onMoveTab={(callback) => saveScroll(callback)}
+              isLoading={isDeniedDashboardPageLoading || extractPage === undefined}
+            />
             {stickyHeader && (
               <Box
                 data-sticky-header

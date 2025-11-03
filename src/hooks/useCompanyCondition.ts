@@ -17,7 +17,7 @@ export const useCompanyCondition = () => {
     () => accessCompanyInfo?.customerCompanyNo ?? user?.companyNo,
     [accessCompanyInfo?.customerCompanyNo, user?.companyNo],
   )
-  const { data: deniedDashboardPage } = useQuery({
+  const { data: deniedDashboardPage, isLoading: isDeniedDashboardPageLoading } = useQuery({
     queryKey: ['getDashboardAccess', comNo],
     queryFn: async () => await forecastDataService.getForecastDataExists(comNo!),
     select: (res): MiPagesType[] => {
@@ -76,8 +76,9 @@ export const useCompanyCondition = () => {
     if (accessCompanyInfo?.isFuture) {
       return 'dashboard'
     }
+
     return miPages.find((page) => !extractPage.includes(page))
   }
 
-  return { extractPage, miHome, allCompanies, companyList }
+  return { extractPage, miHome, allCompanies, companyList, isDeniedDashboardPageLoading }
 }
