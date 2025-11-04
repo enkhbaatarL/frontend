@@ -13,10 +13,25 @@ interface ScrollWrapperProps {
   scrollToBottomOffset?: number | string | boolean
   sx?: SxProps<Theme>
   styScroll?: CSSProperties
+  onScrollableChange?: (isScrollable: boolean) => void
 }
 
 const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
-  ({ children, className, id, offsetTop = 0, maxHeight = 268, scrollToBottomTrigger, scrollToBottomOffset, sx, styScroll }, ref) => {
+  (
+    {
+      children,
+      className,
+      id,
+      offsetTop = 0,
+      maxHeight = 268,
+      scrollToBottomTrigger,
+      scrollToBottomOffset,
+      sx,
+      styScroll,
+      onScrollableChange,
+    },
+    ref,
+  ) => {
     const scrollWrapperId = useMemo(() => id ?? `scroll-wrapper-${Math.random().toString(36).substring(2, 11)}`, [id])
 
     const containerRef = useRef<HTMLDivElement>(null)
@@ -49,6 +64,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       const scrollable = scrollHeight > clientHeight
 
       setIsScrollable(scrollable)
+      onScrollableChange?.(scrollable)
 
       if (!scrollable) {
         setThumbHeight(0)
@@ -65,7 +81,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       if (thumb) {
         thumb.style.top = `${(scrollTop / scrollHeight) * clientHeight + offsetTop}px`
       }
-    }, [offsetTop, thumbRef])
+    }, [offsetTop, thumbRef, onScrollableChange])
 
     // Handle mouse down on the thumb
     const handleMouseDown = useCallback((e: MouseEvent<HTMLDivElement>) => {

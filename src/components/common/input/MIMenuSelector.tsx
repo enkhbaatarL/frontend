@@ -1,6 +1,7 @@
 import { Box, Menu, MenuItem, MenuProps, SxProps, Typography } from '@mui/material'
 import { JSX, PropsWithChildren, useEffect, useState } from 'react'
 
+import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import { useOverlayClick } from '@/hooks/useOverlayClick'
 import theme from '@/theming'
 
@@ -20,6 +21,7 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
   const { children, value, options = [], menuProps, size, minWidthMenu = 71, sx, disablePortal } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [menuBottom, setMenuBottom] = useState<number | null>(null)
+  const [isScrollable, setIsScrollable] = useState(false)
 
   const open = Boolean(anchorEl)
 
@@ -74,6 +76,23 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
           anchorOrigin={menuProps?.anchorOrigin ?? { vertical: 'bottom', horizontal: 'left' }}
           transformOrigin={menuProps?.transformOrigin ?? { vertical: 'top', horizontal: 'left' }}
           disablePortal={disablePortal}
+          slotProps={{
+            paper: {
+              sx: {
+                overflow: 'hidden',
+                maxHeight: '300px',
+              },
+            },
+            list: {
+              sx: {
+                padding: 0,
+                overflow: 'hidden',
+                position: 'relative',
+                height: '100%',
+                maxHeight: '300px',
+              },
+            },
+          }}
           sx={{
             ...(disablePortal && {
               position: 'absolute',
@@ -87,43 +106,50 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
                 boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.20)',
                 position: 'unset',
                 maxWidth: '100%',
-                maxHeight: 'unset',
                 transform: 'none',
-                '.MuiList-root': {
-                  width: '100% !important',
-                  paddingRight: '0 !important',
-                },
               },
             }),
             ...sx,
           }}
           {...(menuProps && { ...menuProps, anchorOrigin: undefined, transformOrigin: undefined })}
         >
-          {options.map((item, index) => (
-            <MenuItem
-              key={index}
-              onClick={() => {
-                props.onChange?.(item)
-                handleOverlayClose()
-              }}
-              sx={{
-                padding: '8px 12px',
-                backgroundColor: value?.value === item.value ? `${theme.palette.gray[5]} !important` : 'inherit',
-                '&:hover': {
-                  backgroundColor: theme.palette.gray[5],
-                },
-              }}
-            >
-              <Typography
-                variant={value?.value === item.value ? 'body2M14' : 'body2R14'}
-                color={value?.value === item.value ? 'gray.90' : 'gray.70'}
-                sx={{ fontSize: size === 'h28' ? '12px' : '14px' }}
+          <ScrollWrapper
+            maxHeight={300}
+            onScrollableChange={setIsScrollable}
+            sx={{
+              padding: '4px 0',
+              height: '100%',
+              '& .disabledScroll': {
+                paddingRight: isScrollable ? '12px !important' : '0 !important',
+              },
+            }}
+          >
+            {options.map((item, index) => (
+              <MenuItem
+                key={index}
+                onClick={() => {
+                  props.onChange?.(item)
+                  handleOverlayClose()
+                }}
+                sx={{
+                  padding: '8px 12px',
+                  backgroundColor: value?.value === item.value ? `${theme.palette.gray[5]} !important` : 'inherit',
+                  '&:hover': {
+                    backgroundColor: theme.palette.gray[5],
+                  },
+                }}
               >
-                {item?.icon && <span style={{ verticalAlign: 'sub', marginRight: '8px' }}>{item?.icon}</span>}
-                {item.label}
-              </Typography>
-            </MenuItem>
-          ))}
+                <Typography
+                  variant={value?.value === item.value ? 'body2M14' : 'body2R14'}
+                  color={value?.value === item.value ? 'gray.90' : 'gray.70'}
+                  sx={{ fontSize: size === 'h28' ? '12px' : '14px' }}
+                >
+                  {item?.icon && <span style={{ verticalAlign: 'sub', marginRight: '8px' }}>{item?.icon}</span>}
+                  {item.label}
+                </Typography>
+              </MenuItem>
+            ))}
+          </ScrollWrapper>
         </Menu>
       )}
     </Box>
