@@ -8,7 +8,7 @@ const UncheckedIcon = (props: SvgIconProps): JSX.Element => (
       fillRule="evenodd"
       clipRule="evenodd"
       d="M8 4H16C18.2091 4 20 5.79086 20 8V16C20 18.2091 18.2091 20 16 20H8C5.79086 20 4 18.2091 4 16V8C4 5.79086 5.79086 4 8 4ZM8 6C6.89543 6 6 6.89543 6 8V16C6 17.1046 6.89543 18 8 18H16C17.1046 18 18 17.1046 18 16V8C18 6.89543 17.1046 6 16 6H8Z"
-      fill="currentColor"
+      fill="#CED4DA"
     />
   </SvgIcon>
 )
@@ -101,8 +101,8 @@ const CustomCheckbox = styled(Checkbox)(() => ({
   // Base styles
   padding: 0,
   borderRadius: 2,
-  width: 20,
-  height: 20,
+  width: 24,
+  height: 24,
   boxSizing: 'border-box',
   margin: 0,
 
