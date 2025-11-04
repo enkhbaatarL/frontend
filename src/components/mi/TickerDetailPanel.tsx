@@ -1,19 +1,17 @@
 import { Box, Typography, Tooltip } from '@mui/material'
-import cloneDeep from 'lodash-es/cloneDeep'
 import { MouseEvent, useRef, useState, useEffect } from 'react'
-// import { useTranslation } from 'react-i18next'
 
 import MIButton from '@/components/common/button/MIButton'
 import MILine from '@/components/common/divider/MILine'
-import { ProcessedMarketDataItem } from '@/components/mi/Ticker'
+import { ExtendedMarketDataItemInfo } from '@/service/mi/forecast'
 
 interface TickerDetailPanelProps {
-  item: ProcessedMarketDataItem
+  item: ExtendedMarketDataItemInfo
   onClose?: (event: MouseEvent<HTMLButtonElement>) => void
   onViewDetails?: (event: MouseEvent<HTMLButtonElement>) => void
 }
 
-const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & any) => {
+const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & React.ComponentProps<typeof Typography>) => {
   const textRef = useRef<HTMLDivElement>(null)
   const [isOverflowing, setIsOverflowing] = useState(false)
 
@@ -39,36 +37,7 @@ const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string }
   )
 }
 
-const TickerDetailPanel = ({ item: originalItem, onClose, onViewDetails }: TickerDetailPanelProps) => {
-  const item = cloneDeep(originalItem)
-
-  const getChangeData = () => {
-    const { dodChangeValue, dodChangeRate, wowChangeValue, wowChangeRate, momChangeValue, momChangeRate } = item.marketMetaDataSummary
-
-    if (dodChangeValue !== null && dodChangeValue !== undefined && dodChangeRate !== null && dodChangeRate !== undefined) {
-      return { change: dodChangeValue, changePercent: dodChangeRate, period: 'DoD' }
-    }
-    if (wowChangeValue !== null && wowChangeValue !== undefined && wowChangeRate !== null && wowChangeRate !== undefined) {
-      return { change: wowChangeValue, changePercent: wowChangeRate, period: 'WoW' }
-    }
-    if (momChangeValue !== null && momChangeValue !== undefined && momChangeRate !== null && momChangeRate !== undefined) {
-      return { change: momChangeValue, changePercent: momChangeRate, period: 'MoM' }
-    }
-    return { change: 0, changePercent: 0, period: undefined }
-  }
-
-  const changeData = getChangeData()
-  item.marketMetaDataSummary.change = changeData.change
-  item.marketMetaDataSummary.changePercent = changeData.changePercent
-  const currency = item.marketMetaDataSummary.currency || ''
-  const currentUnitCd = item.marketMetaDataSummary.currentUnitCd || ''
-  const unitParts = [currency, currentUnitCd].filter(Boolean)
-  item.marketMetaDataSummary.unit = unitParts.length > 0 ? unitParts.join('/') : '-'
-  item.marketMetaDataSummary.period = changeData.period ? changeData.period : '-'
-  item.marketMetaDataSummary.previousValue = item.marketMetaDataSummary.previousValue || '-'
-  item.marketMetaDataSummary.providerName = item.marketMetaDataSummary.providerName || '-'
-  item.marketMetaDataSummary.goodsDataSourceExpn = item.marketMetaDataSummary.goodsDataSourceExpn || undefined
-
+const TickerDetailPanel = ({ item, onClose, onViewDetails }: TickerDetailPanelProps) => {
   // change 값에 따른 색상 결정
   const getChangeColor = (value: number) => {
     if (value > 0) return 'increase'

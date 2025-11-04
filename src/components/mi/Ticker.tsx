@@ -7,57 +7,11 @@ import { useNavigate } from 'react-router-dom'
 import TickerDetailPanel from './TickerDetailPanel'
 
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
-import { MarketDataItemInfo } from '@/service/mi/forecast'
-
-type MarketMetaDataSummary = MarketDataItemInfo['marketMetaDataSummary']
-
-export interface ProcessedMarketDataItem extends MarketDataItemInfo {
-  marketMetaDataSummary: MarketMetaDataSummary & {
-    change: number
-    changePercent: number
-    direction: string
-    unit: string
-    goodsDataSourceExpn?: string
-    period?: string
-    previousValue?: string
-    dayRange?: string
-    providerName?: string
-  }
-}
-
-const getMinimumAvailableChange = ({ lastValue, dodChangeValue, wowChangeValue, momChangeValue }: MarketMetaDataSummary) => {
-  let changeEntry: { unit: string; change: number }
-  if (dodChangeValue !== null) {
-    changeEntry = { unit: 'DoD', change: dodChangeValue }
-  } else if (wowChangeValue !== null) {
-    changeEntry = { unit: 'WoW', change: wowChangeValue }
-  } else {
-    changeEntry = { unit: 'MoM', change: momChangeValue ?? 0 }
-  }
-  const { unit, change } = changeEntry
-  const changePercent = lastValue !== 0 ? +((change / (lastValue - change)) * 100).toFixed(2) : 0
-  let direction: string
-  if (change > 0) {
-    direction = 'up'
-  } else if (change < 0) {
-    direction = 'down'
-  } else {
-    direction = 'flat'
-  }
-  return { unit, change, changePercent, direction }
-}
+import { ExtendedMarketDataItemInfo } from '@/service/mi/forecast'
+import { formatNumberToDecimal, formatValue } from '@/utils/number'
 
 interface Props {
-  data?: MarketDataItemInfo[]
-}
-
-const getChangeColor = (direction: string): string => {
-  if (direction === 'up') {
-    return '#498B47'
-  } else if (direction === 'down') {
-    return '#CC4D50'
-  }
-  return '#495057'
+  data?: ExtendedMarketDataItemInfo[]
 }
 
 interface DisplayData {
@@ -66,19 +20,17 @@ interface DisplayData {
   change: number
   changePercent: number
   lastUpdateDt: string
-  unit: string
+  period: string
   currency: string
 }
 
 const MarketItemContent = ({
   displayData,
-  isPositive,
   color,
   isPermitted,
   selected,
 }: {
   displayData: DisplayData
-  isPositive: boolean
   color: string
   isPermitted: boolean
   selected: boolean
@@ -121,10 +73,10 @@ const MarketItemContent = ({
       </Typography>
       <Box display={'flex'} alignItems={'center'} gap={'4px'}>
         <Typography lineHeight={1.4} color="#495057" variant="body2" fontWeight={600} fontSize={'14px'}>
-          {displayData.lastValue?.toLocaleString() ?? '0'}
+          {formatValue(displayData.lastValue)}
         </Typography>
         <Typography lineHeight={1.4} color={!isPermitted ? '#495057' : color} variant="body2" fontWeight={600} fontSize={'14px'}>
-          {`${isPositive ? '+' : ''}${displayData.changePercent}%`}
+          {formatNumberToDecimal(displayData.changePercent)}%
         </Typography>
       </Box>
     </Box>
@@ -136,13 +88,11 @@ const MarketItem = ({
   selected,
   onClickItem,
 }: {
-  item: ProcessedMarketDataItem
+  item: ExtendedMarketDataItemInfo
   selected: boolean
   onClickItem: (event: MouseEvent) => void
 }) => {
   const summary = item.marketMetaDataSummary
-  const isPositive = summary.direction === 'up'
-  const color = getChangeColor(summary.direction)
   const isPermitted = item.isPermitted
 
   const displayData = {
@@ -151,7 +101,7 @@ const MarketItem = ({
     change: isPermitted ? summary.change : 0.0,
     changePercent: isPermitted ? summary.changePercent : 0.0,
     lastUpdateDt: isPermitted ? dayjs(summary.lastUpdateDt).format('YYYY-MM-DD') : 'YYYY-MM-DD',
-    unit: isPermitted ? summary.unit : 'N/A',
+    period: isPermitted ? summary.period : '-',
     currency: isPermitted ? summary.currency : 'N/A',
   }
 
@@ -174,13 +124,7 @@ const MarketItem = ({
     >
       <Box sx={{ position: 'relative' }}>
         <Box sx={{ filter: !isPermitted ? 'blur(3px)' : 'none' }}>
-          <MarketItemContent
-            displayData={displayData}
-            isPositive={isPositive}
-            color={color}
-            isPermitted={isPermitted}
-            selected={selected}
-          />
+          <MarketItemContent displayData={displayData} color={summary.changeColor} isPermitted={isPermitted} selected={selected} />
         </Box>
         {!isPermitted && (
           <Box
@@ -206,20 +150,7 @@ const Ticker = ({ data = [] }: Props) => {
 
   const panelRef = useRef<HTMLDivElement>(null)
 
-  const mappedList: ProcessedMarketDataItem[] = useMemo(
-    () =>
-      data.map((item) => {
-        const summary = item.marketMetaDataSummary
-        return {
-          ...item,
-          marketMetaDataSummary: {
-            ...summary,
-            ...getMinimumAvailableChange(summary),
-          },
-        }
-      }),
-    [data],
-  )
+  const mappedList: ExtendedMarketDataItemInfo[] = useMemo(() => data, [data])
 
   const handleItemClick = useCallback(
     (index: number, event: MouseEvent) => {

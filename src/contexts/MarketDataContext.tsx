@@ -1,9 +1,9 @@
 import { createContext, useContext } from 'react'
 
-import { MarketDataItemInfo } from '@/service/mi/forecast'
+import { MarketDataItemInfo, ExtendedMarketDataItemInfo } from '@/service/mi/forecast'
 
 interface MarketDataContextType {
-  marketDataList: MarketDataItemInfo[]
+  marketDataList: ExtendedMarketDataItemInfo[]
   setMarketDataList: (data: MarketDataItemInfo[]) => void
   marketDataIsLoading: boolean
   setMarketDataIsLoading: (loading: boolean) => void

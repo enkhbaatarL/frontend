@@ -9,6 +9,7 @@ import MIChip from '@/components/common/chip/MIChip'
 import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { ICompareGraph, IMarketData } from '@/service/mi/marketData'
+import { formatValue } from '@/utils/number'
 
 interface MarketDataChartProps {
   data?: IMarketData
@@ -249,12 +250,7 @@ const collectLabelsFromDataset = (meta: ChartMetaWithPoints, info: MinMaxInfo, c
     const numValue = typeof value === 'string' ? parseFloat(value) : value
     if (!Number.isFinite(x) || !Number.isFinite(y) || numValue === null || numValue === undefined || !Number.isFinite(numValue)) return
 
-    const formattedValue = Number.isFinite(numValue)
-      ? parseFloat(numValue.toFixed(2)).toLocaleString('ko-KR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-      : String(numValue)
+    const formattedValue = Number.isFinite(numValue) ? formatValue(numValue) : String(numValue)
     allLabels.push({ x: x as number, y: y as number, text: formattedValue, color, isMain, isMin })
   }
 
@@ -878,12 +874,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
               }}
             >
               <Typography sx={{ fontWeight: 600 }} color="gray.90" component="div" variant="heading2">
-                {typeof metaData.lastValue === 'number' && Number.isFinite(metaData.lastValue)
-                  ? parseFloat(metaData.lastValue.toFixed(2)).toLocaleString('ko-KR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })
-                  : metaData.lastValue || ''}
+                {Number.isFinite(metaData.lastValue) ? formatValue(metaData.lastValue) : metaData.lastValue || ''}
               </Typography>
 
               <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto', mt: '3px' }} gap={3}>

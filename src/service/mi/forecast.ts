@@ -17,7 +17,7 @@ export interface IForecastLastInsightsInfo {
   goodsNm: string
 }
 
-interface MarketMetaDataSummary {
+export interface MarketMetaDataSummary {
   chartMarkRank: number
   goodsNo: number
   goodsDataNo: number
@@ -36,11 +36,32 @@ interface MarketMetaDataSummary {
   wowChangeValue: number | null
   dodChangeRate: number | null
   dodChangeValue: number | null
+  frequency?: string
+  providerName?: string
+  goodsDataSourceExpn?: string
+  previousValue?: number
+  recentChangeValue?: number
+  recentChangeRate?: number
 }
 
 export interface MarketDataItemInfo {
   isPermitted: boolean
   marketMetaDataSummary: MarketMetaDataSummary
+}
+
+export interface ExtendedMarketDataItemInfo {
+  isPermitted: boolean
+  marketMetaDataSummary: Omit<MarketMetaDataSummary, 'previousValue' | 'providerName' | 'goodsDataSourceExpn'> & {
+    change: number
+    changeColor: string
+    changePercent: number
+    changePercentColor: string
+    period: string
+    unit: string
+    previousValue: string | number
+    providerName: string
+    goodsDataSourceExpn?: string
+  }
 }
 interface ChartLine {
   isPermitted: boolean

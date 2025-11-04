@@ -512,7 +512,7 @@ export const MIPageSkeletons = {
   // Data Detail 상세 페이지 패턴
   DataDetail: () => (
     <Box>
-      <MIBaseSkeleton.BaseElement width={'100%'} height={'298px'} />
+      <MIBaseSkeleton.BaseElement width={'100%'} height={'214px'} />
       <Box
         minWidth={'1380px'}
         width={'1380px'}

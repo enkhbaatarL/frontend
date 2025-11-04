@@ -1,115 +1,12 @@
 import { Box, Stack, Typography, TypographyProps, Tooltip } from '@mui/material'
 import { ReactNode, useRef, useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
+import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
+import { useMarketData } from '@/contexts/MarketDataContext'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
-
-const sampleData = [
-  {
-    name: 'ICE Brent (USD/bbl)',
-    value: '66.34',
-    change: '-0.55',
-    changePercent: '-0.84%',
-    period: 'D',
-  },
-  {
-    name: 'NYMEX WTI (USD/bbl)',
-    value: '63.00',
-    change: '-1.05',
-    changePercent: '-1.69%',
-    period: 'W',
-  },
-  {
-    name: 'Dubai Spot (USD/bbl)Dubai Spot (USD/bbl)Dubai Spot (USD/bbl)',
-    value: '68.05',
-    change: '+0.39',
-    changePercent: '+0.10%',
-    period: 'M',
-  },
-  {
-    name: 'NYMEX JKM (USD/MMBtu)',
-    value: '10.93',
-    change: '-0.02',
-    changePercent: '-0.18%',
-    period: 'Q',
-  },
-  {
-    name: 'ICE TTF (USD/MMBtu)',
-    value: '10.69',
-    change: '-0.02',
-    changePercent: '-0.17%',
-    period: 'Q',
-  },
-  {
-    name: 'NYMEX HH (USD/MMBtu)',
-    value: '2.27',
-    change: '-0.12',
-    changePercent: '-4.29%',
-    period: 'Q',
-  },
-  {
-    name: 'EU Storage (bcm)',
-    value: '62.16',
-    change: '+0.27',
-    changePercent: '+0.44%',
-    period: 'Q',
-  },
-  {
-    name: 'US Permian Wells Drilled',
-    value: '431.0',
-    change: '-5',
-    changePercent: '-1.10%',
-    period: 'Q',
-  },
-  {
-    name: 'US Haynesville Wells Drilled',
-    value: '38.0',
-    change: '-1',
-    changePercent: '-1.82%',
-    period: 'Q',
-  },
-  {
-    name: 'US Appalachia Wells Drilled',
-    value: '65.0',
-    change: '-1',
-    changePercent: '-2.50%',
-    period: 'Q',
-  },
-  {
-    name: 'Singapore Gasoil (USD/ton)',
-    value: '720.50',
-    change: '+5.20',
-    changePercent: '+0.73%',
-    period: 'D',
-  },
-  {
-    name: 'Rotterdam Gasoline (USD/ton)',
-    value: '680.10',
-    change: '-3.40',
-    changePercent: '-0.50%',
-    period: 'D',
-  },
-  {
-    name: 'Henry Hub Spot (USD/MMBtu)',
-    value: '2.35',
-    change: '+0.08',
-    changePercent: '+3.52%',
-    period: 'D',
-  },
-  {
-    name: 'Japan LNG Import (USD/MMBtu)',
-    value: '11.20',
-    change: '+0.15',
-    changePercent: '+1.36%',
-    period: 'M',
-  },
-  {
-    name: 'China LNG Import (USD/MMBtu)',
-    value: '10.85',
-    change: '-0.10',
-    changePercent: '-0.91%',
-    period: 'M',
-  },
-]
+import { formatNumberToDecimal, formatValue } from '@/utils/number'
 
 const HeaderCell = ({ children, width, textAlign }: { children: ReactNode; width: string; textAlign: TypographyProps['textAlign'] }) => (
   <Typography px="8px" variant="body2SB14" color="gray.60" width={width} boxSizing="border-box" textAlign={textAlign}>
@@ -118,7 +15,7 @@ const HeaderCell = ({ children, width, textAlign }: { children: ReactNode; width
 )
 
 interface BodyCellProps extends TypographyProps {
-  width: string
+  width?: string
   textAlign: TypographyProps['textAlign']
   color: TypographyProps['color']
 }
@@ -167,77 +64,153 @@ const BodyCell = ({ children, width, textAlign, color, ...props }: BodyCellProps
   )
 }
 
-const Watchlist = () => (
-  <Box padding="12px">
-    <SectionHeader
-      title="Watchlist"
-      link="/mi/market-data"
-      tooltipTitle="시장에서 가장 중요하게 모니터링되는 가격 및 공급 지표를 제공합니다. 실시간 변동을 통해 시장의 단기 흐름과 가격 방향성을 파악할 수 있습니다."
-      mb="10px"
-      bold
-    />
-    <Stack>
-      <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
-        <HeaderCell width="276px" textAlign="left">
-          Name
-        </HeaderCell>
-        <HeaderCell width="100px" textAlign="right">
-          Price
-        </HeaderCell>
-        <HeaderCell width="90px" textAlign="right">
-          Change
-        </HeaderCell>
-        <HeaderCell width="90px" textAlign="right">
-          Change %
-        </HeaderCell>
-      </Stack>
-      {sampleData.map((data, index) => (
-        <Stack
-          key={`${data.name}-${index}`}
-          direction="row"
-          alignItems="center"
-          height="38px"
-          gap="4px"
-          borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
-          sx={{
-            '&:hover': {
-              backgroundColor: '#F8F9FA',
-            },
-            cursor: 'pointer',
-          }}
-        >
-          <BodyCell width="34px" textAlign="left" color="gray.70" pr="3px">
-            <Stack
-              width="20px"
-              height="20px"
-              color="#FFFFFF"
-              borderRadius="50%"
-              alignItems="center"
-              justifyContent="center"
-              fontSize={12}
-              sx={{
-                backgroundColor: 'gray.50',
-              }}
-            >
-              {data.period}
-            </Stack>
-          </BodyCell>
-          <BodyCell width="242px" textAlign="left" color="gray.70" pl="3px">
-            {data.name}
-          </BodyCell>
-          <BodyCell width="100px" textAlign="right" color="gray.70">
-            {data.value}
-          </BodyCell>
-          <BodyCell width="90px" textAlign="right" color={data.change.startsWith('-') ? 'decrease' : 'increase'}>
-            {data.change}
-          </BodyCell>
-          <BodyCell width="90px" textAlign="right" color={data.changePercent.startsWith('-') ? 'decrease' : 'increase'}>
-            {data.changePercent}
-          </BodyCell>
+const Watchlist = () => {
+  const { marketDataList, marketDataIsLoading } = useMarketData()
+  const navigate = useNavigate()
+
+  return (
+    <Box padding="12px">
+      <SectionHeader
+        title="Watchlist"
+        link="/mi/market-data"
+        tooltipTitle="시장에서 가장 중요하게 모니터링되는 가격 및 공급 지표를 제공합니다. 실시간 변동을 통해 시장의 단기 흐름과 가격 방향성을 파악할 수 있습니다."
+        mb="10px"
+        bold
+      />
+      <Stack sx={{ userSelect: 'none' }}>
+        <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
+          <HeaderCell width="276px" textAlign="left">
+            Name
+          </HeaderCell>
+          <HeaderCell width="100px" textAlign="right">
+            Price
+          </HeaderCell>
+          <HeaderCell width="90px" textAlign="right">
+            Change
+          </HeaderCell>
+          <HeaderCell width="90px" textAlign="right">
+            Change %
+          </HeaderCell>
         </Stack>
-      ))}
-    </Stack>
-  </Box>
-)
+        {marketDataIsLoading ? (
+          <>
+            {Array.from({ length: 10 }, (_, index) => (
+              <Stack
+                key={`watchlist-skeleton-${index}`}
+                direction="row"
+                alignItems="center"
+                height="38px"
+                gap="4px"
+                borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+              >
+                <Box display="flex" alignItems="center" width="100%" gap="4px">
+                  <Box width="34px" pr="3px" display="flex" alignItems="center" justifyContent="center">
+                    <MIBaseSkeleton.Avatar width={20} height={20} />
+                  </Box>
+                  <Box width="238px" pl="3px">
+                    <MIBaseSkeleton.TextLine width="180px" height={14} />
+                  </Box>
+                  <Box width="100px" display="flex" justifyContent="flex-end">
+                    <MIBaseSkeleton.TextLine width="60px" height={14} />
+                  </Box>
+                  <Box width="90px" display="flex" justifyContent="flex-end">
+                    <MIBaseSkeleton.TextLine width="50px" height={14} />
+                  </Box>
+                  <Box width="90px" display="flex" justifyContent="flex-end" pr="16px">
+                    <MIBaseSkeleton.TextLine width="45px" height={14} />
+                  </Box>
+                </Box>
+              </Stack>
+            ))}
+          </>
+        ) : (
+          <>
+            {marketDataList.slice(0, 15).map(({ isPermitted, marketMetaDataSummary: item }, index) => (
+              <Stack
+                key={`watchlist-item-${item.goodsNo}-${item.goodsDataNo}-${item.goodsDataSourceNo}`}
+                direction="row"
+                alignItems="center"
+                height="38px"
+                gap="4px"
+                borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: isPermitted ? '#F8F9FA' : 'transparent',
+                  },
+                  cursor: isPermitted ? 'pointer' : 'auto',
+                  position: 'relative',
+                }}
+                onClick={
+                  isPermitted
+                    ? () => {
+                      navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`, {
+                        state: { goodsDataSrcNo: item.goodsDataSourceNo },
+                      })
+                    }
+                    : undefined
+                }
+              >
+                <Box
+                  sx={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: '100%',
+                    gap: '4px',
+                    filter: isPermitted ? 'none' : 'blur(3px)',
+                  }}
+                >
+                  <BodyCell width="34px" textAlign="left" color="gray.70" pr="3px">
+                    <Stack
+                      width="20px"
+                      height="20px"
+                      color="#FFFFFF"
+                      borderRadius="50%"
+                      alignItems="center"
+                      justifyContent="center"
+                      fontSize={12}
+                      sx={{
+                        backgroundColor: 'gray.50',
+                      }}
+                    >
+                      {item.frequency ?? 'D'}
+                    </Stack>
+                  </BodyCell>
+                  <BodyCell width="238px" textAlign="left" color="gray.70" pl="3px">
+                    {item.goodsDataSourceNm}
+                  </BodyCell>
+                  <BodyCell width="100px" textAlign="right" color="gray.70">
+                    {isPermitted ? formatValue(item.lastValue) : '12.34'}
+                  </BodyCell>
+                  <BodyCell width="90px" textAlign="right" color={isPermitted ? item.changeColor : 'gray.70'}>
+                    {isPermitted ? formatValue(item.change) : '56.78'}
+                  </BodyCell>
+                  <BodyCell width="90px" textAlign="right" color={isPermitted ? item.changePercentColor : 'gray.70'}>
+                    {isPermitted ? formatNumberToDecimal(item.changePercent) : '12.34'}%
+                  </BodyCell>
+                </Box>
+                {!isPermitted && (
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    position="absolute"
+                    sx={{
+                      inset: 0,
+                      backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                      color: '#868E96',
+                    }}
+                  >
+                    <LockOutlinedIcon width={24} height={24} />
+                  </Box>
+                )}
+              </Stack>
+            ))}
+          </>
+        )}
+      </Stack>
+    </Box>
+  )
+}
 
 export default Watchlist

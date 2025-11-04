@@ -71,13 +71,13 @@ const ForecastPage = () => {
     if (marketDataListError) {
       setMarketDataList([])
     }
-  }, [marketDataListError, setMarketDataList])
+  }, [marketDataListError])
 
   useEffect(() => {
     if (marketDataList) {
       setMarketDataList(marketDataList)
     }
-  }, [marketDataList, setMarketDataList])
+  }, [marketDataList])
 
   return (
     <MISkeleton variant={'dashboard'} loading={basicInfoIsLoading}>
