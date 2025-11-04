@@ -1,4 +1,5 @@
-import { Navigate, RouteObject } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Navigate, RouteObject, useLocation } from 'react-router-dom'
 
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MILayout from '@/layouts/MILayout'
@@ -21,12 +22,37 @@ import NotificationPage from '@/pages/mi/notification/NotificationPage'
 import ParallelCoordinatesPage from '@/pages/mi/parallelCoordinates/ParallelCoordinatesPage'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import MIProvider from '@/providers/MIProvider'
+import useAuthStore from '@/store/useAuthStore'
 
 const MIMainRedirect = () => {
-  const { miHome } = useCompanyCondition()
+  const { miHome, isDeniedDashboardPageLoading } = useCompanyCondition()
+
+  const location = useLocation()
+  const targetCompanyNo = (location.state as { targetCompanyNo?: number } | null)?.targetCompanyNo
+  const { accessCompanyInfo, user, loadAccessCompanyInfo } = useAuthStore()
+  const currentCompanyNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo
+  const needsCompanySwitch = !!targetCompanyNo && currentCompanyNo !== targetCompanyNo
+
   const homeUrl = miHome()
-  if (!homeUrl) return <></>
-  return <Navigate to={homeUrl} state={{ noticePopup: true }} replace />
+
+  useEffect(() => {
+    if (needsCompanySwitch && targetCompanyNo) {
+      loadAccessCompanyInfo(targetCompanyNo)
+    }
+  }, [needsCompanySwitch, targetCompanyNo, loadAccessCompanyInfo])
+
+  // 권한 데이터 로딩 중이거나 회사 전환이 필요한 경우 대기
+  if (isDeniedDashboardPageLoading || needsCompanySwitch) {
+    return <></>
+  }
+
+  if (!homeUrl) {
+    const fallbackUrl = accessCompanyInfo?.isFuture ? 'dashboard' : 'forecast'
+    return <Navigate to={`/mi/${fallbackUrl}`} replace />
+  }
+
+  // 리다이렉트 시 state를 초기화하여 targetCompanyNo 잔존 방지
+  return <Navigate to={homeUrl} replace />
 }
 
 const MIRoutes: RouteObject = {

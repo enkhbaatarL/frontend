@@ -7,6 +7,10 @@
     "dev": "vite --host",
     "dev-vdi": "vite --host --mode vdi",
     "build": "tsc -b && vite build",
+    "build:local": "cross-env VITE_PROFILE=local VITE_USE_EXTERNAL_LOGIN=false tsc -b && vite build",
+    "build:dev": "cross-env VITE_PROFILE=dev VITE_USE_EXTERNAL_LOGIN=false tsc -b && vite build",
+    "build:prod": "cross-env VITE_PROFILE=prod VITE_USE_EXTERNAL_LOGIN=false tsc -b && vite build",
+    "build:prod:external": "cross-env VITE_PROFILE=prod VITE_USE_EXTERNAL_LOGIN=true tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "prepare": "husky install"
@@ -63,6 +67,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "@eslint/js": "^9.21.0",
     "@stylistic/eslint-plugin-js": "^4.2.0",
     "@types/lodash-es": "^4.17.12",

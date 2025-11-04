@@ -52,7 +52,7 @@ export interface ForecastChartProps {
   height: number | string
   months: (string | null)[]
   forecastDatasets: Array<ForecastDataset>
-  showForecastTrend?: boolean
+  showForecastTrendBackground?: boolean
   hidePoint?: boolean
   isMIAgent?: boolean
   bottomLabel?: string
@@ -85,7 +85,7 @@ const ForecastChart = (props: ForecastChartProps) => {
     height,
     forecastDatasets,
     months,
-    showForecastTrend = false,
+    showForecastTrendBackground = false,
     isMIAgent = false,
     bottomLabel = '',
     topLabel,
@@ -106,6 +106,7 @@ const ForecastChart = (props: ForecastChartProps) => {
   // 호버 시 정상 날짜를 저장해두기 위한 ref
   const lastHoverDateRef = useRef<string>('')
   const prevTooltipRef = useRef<unknown | null>(null)
+  const prevTooltipPositionRef = useRef<{ top: number; left: number } | null>(null)
 
   useEffect(() => {
     if (selectedContent === null) {
@@ -119,7 +120,8 @@ const ForecastChart = (props: ForecastChartProps) => {
 
       if (!chartTooltip) {
         setTooltip((prev) => ({ ...prev, visible: false }))
-
+        prevTooltipRef.current = null
+        prevTooltipPositionRef.current = null
         return
       }
 
@@ -146,15 +148,25 @@ const ForecastChart = (props: ForecastChartProps) => {
           goodsDataSourceNo: chartTooltip.content[0].goodsDataSourceNo,
         })
       }
-      if (!isEqual(prevTooltipRef.current, filteredTooltipContent)) {
+
+      const newTop = chartTooltip.y
+      const newLeft = chartTooltip.x + 20 + 20
+
+      // 내용이 변경되었거나, 위치가 변경된 경우 업데이트
+      const contentChanged = !isEqual(prevTooltipRef.current, filteredTooltipContent)
+      const positionChanged =
+        !prevTooltipPositionRef.current || prevTooltipPositionRef.current.top !== newTop || prevTooltipPositionRef.current.left !== newLeft
+
+      if (contentChanged || positionChanged) {
         prevTooltipRef.current = filteredTooltipContent
+        prevTooltipPositionRef.current = { top: newTop, left: newLeft }
 
         setTooltip({
           minWidth: 293,
           visible: true,
           viewDetail: chartTooltip.viewDetail,
-          top: chartTooltip.y,
-          left: chartTooltip.x + 20 + 20,
+          top: newTop,
+          left: newLeft,
           label: chartTooltip.viewDetail ? lastHoverDateRef.current : chartTooltip.label, // 클릭 시 저장된 날짜, 호버 시 현재 날짜
           content: chartTooltip.content,
           onClose: () => {
@@ -180,7 +192,9 @@ const ForecastChart = (props: ForecastChartProps) => {
       })
     } else {
       newDatasets.forEach((dataset) => {
-        dataset.borderColor = convertToRgbaWithOpacity(dataset.borderColor as string, 1)
+        if (dataset.borderColor) {
+          dataset.borderColor = convertToRgbaWithOpacity(dataset.borderColor as string, 1)
+        }
       })
       props.onSelectedContent(null)
     }
@@ -222,6 +236,8 @@ const ForecastChart = (props: ForecastChartProps) => {
       }
       tooltip.onClose?.()
       verticalLineAndHighlightPlugin.reset()
+      prevTooltipRef.current = null
+      prevTooltipPositionRef.current = null
     },
     [datasets, tooltip],
   )
@@ -280,6 +296,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             hidden: false,
             category: 'forecast',
             pointRadius: dataset.hidePoint ? 0 : 3,
+            pointHoverRadius: dataset.hidePoint ? 0 : 3,
             yAxisID: dataset.yAxisID ?? 'y',
             spanGaps: false, // null 값일 때 선이 연결되지 않도록 변경
             metadata: dataset.metadata,
@@ -296,6 +313,7 @@ const ForecastChart = (props: ForecastChartProps) => {
             tension: 0,
             category: type,
             pointRadius: dataset.hidePoint ? 0 : 3,
+            pointHoverRadius: dataset.hidePoint ? 0 : 3,
             yAxisID,
             spanGaps: true,
             metadata: dataset.metadata,
@@ -430,6 +448,10 @@ const ForecastChart = (props: ForecastChartProps) => {
             maintainAspectRatio: false,
             animation: false,
             events: ['mouseup', 'mousedown', 'mousemove', 'mouseout'],
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
             layout: {
               padding: {
                 top: 12,
@@ -536,7 +558,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                 onPointerMove: externalTooltipHandler, // 마우스 이동 시 호출
                 onViewForecastPoint: viewForecastPointHandler, // 포인트 클릭 시 호출
                 hoverImages: hoverDotImagesRef.current, // 마우스 오버 시 마커 이미지
-                showForecastTrend, // 예측 라인 표시 여부
+                showForecastTrendBackground, // 예측 부합 배경 표시 여부
               },
               legend: {
                 display: false,

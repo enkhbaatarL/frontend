@@ -91,16 +91,16 @@ const MILayout = () => {
   const { stickyHeader } = useStickyHeader()
   const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0)
 
-  const { extractPage } = useCompanyCondition()
+  const { extractPage, isDeniedDashboardPageLoading } = useCompanyCondition()
 
   useEffect(() => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
 
   const getActiveMenu = useMemo(() => {
-    if (!extractPage) return []
+    if (isDeniedDashboardPageLoading || extractPage === undefined) return []
     return activeMenu.filter((item) => !extractPage.includes(item))
-  }, [extractPage])
+  }, [extractPage, isDeniedDashboardPageLoading])
 
   useEffect(() => setIsScrolled(currentScroll > 0), [currentScroll])
 
@@ -215,9 +215,9 @@ const MILayout = () => {
     }
 
     if (location.state?.noticePopup) {
-      fetchNotice()
+      fetchNotice().then()
     }
-  }, [location.state])
+  }, [location.state, accessCompanyInfo?.customerCompanyNo])
 
   const handleDontShowToday = () => {
     if (noticeData) {
@@ -238,7 +238,7 @@ const MILayout = () => {
   // MEMO: 상반기 개발(~ 25.06.30) 기준
   // -> 개인정보 처리방침 제외
   // -> 고객사 custom iframe page 제외
-  const showMiAgent = !['/mi/privacy-policy', '/mi/custom'].includes(location.pathname)
+  const showMiAgent = accessCompanyInfo?.isMari && !['/mi/privacy-policy', '/mi/custom'].includes(location.pathname)
 
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
@@ -254,6 +254,16 @@ const MILayout = () => {
     return basePosition + stickyHeaderHeight
   }, [isScrolled, stickyHeaderHeight])
 
+  const backgroundStyle = useMemo(() => {
+    if (location.pathname === '/mi/dashboard') {
+      return 'linear-gradient(300deg, #D5D6D8 0%, #FCFCFC 30%, #E6E6E7 60%, #FAFAFA 100%)'
+    }
+    if (location.pathname.startsWith('/mi/forecast') || showTicker) {
+      return '#F2F5F7'
+    }
+    return undefined
+  }, [location.pathname, showTicker])
+
   return (
     <MIProvider>
       <ScrollWrapper
@@ -268,12 +278,7 @@ const MILayout = () => {
       >
         <div
           style={{
-            background:
-              location.pathname === '/mi/dashboard'
-                ? 'linear-gradient(300deg, #D5D6D8 0%, #FCFCFC 30%, #E6E6E7 60%, #FAFAFA 100%)'
-                : showTicker
-                  ? '#F2F5F7'
-                  : undefined,
+            background: backgroundStyle,
 
             display: 'flex',
             flexDirection: 'column',
@@ -284,7 +289,12 @@ const MILayout = () => {
         >
           {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
-            <MIHeaderMainLayout pages={mainMenu} activeMenu={getActiveMenu} onMoveTab={(callback) => saveScroll(callback)} />
+            <MIHeaderMainLayout
+              pages={mainMenu}
+              activeMenu={getActiveMenu}
+              onMoveTab={(callback) => saveScroll(callback)}
+              isLoading={isDeniedDashboardPageLoading || extractPage === undefined}
+            />
             {stickyHeader && (
               <Box
                 data-sticky-header
@@ -301,7 +311,7 @@ const MILayout = () => {
           <Box
             sx={{
               paddingTop,
-              paddingBottom: isScrolled ? `${headerTopHeight}px` : 0,
+              paddingBottom: `calc(${isScrolled ? headerTopHeight : 0}px + 136px)`,
               flex: 1,
               transition: 'padding 0.15s linear',
             }}

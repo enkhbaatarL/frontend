@@ -15,13 +15,22 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const user = useAuthStore((state) => state.user)
   const location = useLocation()
   const navigate = useNavigate()
-  const { miHome, extractPage = [] } = useCompanyCondition()
+  const { miHome, extractPage = [], isDeniedDashboardPageLoading } = useCompanyCondition()
   const pathName = useMemo(() => location.pathname.replace('/mi/', ''), [location.pathname])
 
   useEffect(() => {
+    // 권한 데이터 로딩 후 페이지 차단 체크
+    if (isDeniedDashboardPageLoading || extractPage === undefined) return
+
     const blockedPage = extractPage.some((prefix) => pathName.startsWith(prefix))
-    if (blockedPage) navigate(`/mi/${miHome()}`)
-  }, [extractPage, miHome, navigate, pathName])
+    if (blockedPage) {
+      const homeUrl = miHome()
+
+      if (homeUrl) {
+        navigate(`/mi/${homeUrl}`)
+      }
+    }
+  }, [extractPage, miHome, navigate, pathName, isDeniedDashboardPageLoading])
 
   useEffect(() => {
     setNavigate(navigate)

@@ -1,14 +1,14 @@
 import { Box } from '@mui/material'
 import { useMemo } from 'react'
 
-import EnergyForecastChart from './company-charts/EnergyForecastChart'
-
 import DefaultForecastChart from '@/pages/mi/forecast/components/company-charts/DefaultForecastChart'
+import EnergyForecastChart from '@/pages/mi/forecast/components/company-charts/EnergyForecastChart'
 import EnSForecastChart from '@/pages/mi/forecast/components/company-charts/EnSForecastChart'
-import GasForecastChart from '@/pages/mi/forecast/components/company-charts/GasForecastChart.tsx'
+import ExchangeRateForecastChart from '@/pages/mi/forecast/components/company-charts/ExchangeRateForecastChart'
+import GasForecastChart from '@/pages/mi/forecast/components/company-charts/GasForecastChart'
 import HynixForecastChart from '@/pages/mi/forecast/components/company-charts/HynixForecastChart'
-import OnForecastChart from '@/pages/mi/forecast/components/company-charts/OnForecastChart.tsx'
-import SiltronForecastChart from '@/pages/mi/forecast/components/company-charts/SiltronForecastChart.tsx'
+import OnForecastChart from '@/pages/mi/forecast/components/company-charts/OnForecastChart'
+import SiltronForecastChart from '@/pages/mi/forecast/components/company-charts/SiltronForecastChart'
 import { SelectedReportChartContent } from '@/pages/mi/forecast/components/ReportComponent'
 import { IForecastChartData } from '@/service/mi/forecast'
 
@@ -20,8 +20,8 @@ const CompanyChartComponents = {
   2014: GasForecastChart, // Gas
   2018: OnForecastChart, // ON
   2008: SiltronForecastChart, // Siltron
-
-  // 필요에 따라  추가
+  /* --------------------------- */
+  2025: ExchangeRateForecastChart, // 한진
 } as const
 
 type CompanyNo = keyof typeof CompanyChartComponents
@@ -34,9 +34,18 @@ interface CompanyChartRendererProps {
   selectedContent: SelectedReportChartContent | null
   onSelectedContent: (content: SelectedReportChartContent | null) => void
   userRoleCd: string
+  hideForecast?: boolean
 }
 
-const CompanyChartRenderer = ({ companyNo, months, selectedContent, onSelectedContent, data, userRoleCd }: CompanyChartRendererProps) => {
+const CompanyChartRenderer = ({
+  companyNo,
+  months,
+  selectedContent,
+  onSelectedContent,
+  data,
+  userRoleCd,
+  hideForecast,
+}: CompanyChartRendererProps) => {
   const ChartComponent = useMemo(() => {
     if (!companyNo) return DefaultForecastChart
 
@@ -53,6 +62,7 @@ const CompanyChartRenderer = ({ companyNo, months, selectedContent, onSelectedCo
         onSelectedContent={onSelectedContent}
         data={data}
         userRoleCd={userRoleCd}
+        hideForecast={hideForecast}
       />
     </Box>
   )

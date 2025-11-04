@@ -11,7 +11,7 @@ import authService from '@/service/common/auth'
 import useAuthStore from '@/store/useAuthStore'
 
 const LoginPage = () => {
-  const { isProd, isLocal, isExternal } = useEnvironment()
+  const { isProd, isLocal, useExternalLogin } = useEnvironment()
 
   const navigate = useNavigate()
   const { setUser, setToken, clearAuth } = useAuthStore()
@@ -61,23 +61,17 @@ const LoginPage = () => {
 
   useEffect(() => {
     clearAuth()
-  }, [])
+  }, [clearAuth])
 
   useEffect(() => {
-    if (isExternal) {
+    if (useExternalLogin) {
       externalAccessLogin()
-    }
-  }, [isExternal, externalAccessLogin])
-
-  useEffect(() => {
-    if (isProd) {
+    } else if (isProd) {
       ssoLogin()
     }
-  }, [isProd, ssoLogin])
+  }, [useExternalLogin, externalAccessLogin, isProd, ssoLogin])
 
-  if (isExternal || isProd) {
-    return null
-  }
+  if (useExternalLogin || isProd) return null
 
   return (
     <Flex direction="column" gap={20} className="full-height" justify="center" align="center">

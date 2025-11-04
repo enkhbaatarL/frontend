@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { UserRole } from '@/service/admin/members'
+import companiesService, { IAccessCompanyInfo } from '@/service/mi/companies'
 
 let __currentBaseUrl: string | null = null
 
@@ -24,12 +25,6 @@ export interface IUserDetail {
   isExternalLogin?: boolean
 }
 
-export interface IAccessCompanyInfo {
-  customerCompanyNo: number
-  customerCompanyNm: string
-  customerCompanyMipUrl: string
-}
-
 interface AuthState {
   token: string | null
   user: IUserDetail | null
@@ -39,6 +34,7 @@ interface AuthState {
   setToken: (token: string) => void
   setUser: (user: IUserDetail | null) => void
   setAccessCompanyInfo: (accessCompanyInfo: IAccessCompanyInfo | null) => void
+  loadAccessCompanyInfo: (companyNo: number) => void
   clearAuth: () => void
   getUrl: () => string | null
 }
@@ -77,6 +73,13 @@ const useAuthStore = create<AuthState>()(
           return { accessCompanyInfo, customBaseUrl: nextBase }
         }),
 
+      loadAccessCompanyInfo: (companyNo: number) => {
+        const { setAccessCompanyInfo } = get()
+        companiesService.getCompanyDetail(companyNo).then((companyInfo) => {
+          setAccessCompanyInfo(companyInfo)
+        })
+      },
+
       clearAuth: () =>
         set(() => {
           sessionStorage.clear()
@@ -110,6 +113,10 @@ const useAuthStore = create<AuthState>()(
 export default useAuthStore
 
 export const withCustomBaseUrl = (path: string) => {
+  if (import.meta.env.MODE === 'development') {
+    return path.startsWith('/') ? path : `/${path}`
+  }
+
   if (!__currentBaseUrl) {
     const { getUrl } = useAuthStore.getState()
     const url = getUrl()

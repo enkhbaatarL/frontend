@@ -227,7 +227,7 @@ const ExternalLoginPage = () => {
                 width="320px"
                 margin={0}
               >
-                서비스 이용 문의: mi@sk.com
+                서비스 이용 문의: skmiplatform@sk.com
               </Typography>
             </Box>
           </form>

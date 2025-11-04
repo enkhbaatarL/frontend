@@ -15,6 +15,7 @@ import AdminMenu from '@/components/admin/AdminMenu'
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIProfile from '@/components/common/profile/MIProfile'
 import { DRAWER_WIDTH } from '@/constants/admin'
+import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
 
@@ -78,11 +79,13 @@ const DrawerHeader = () => (
 const DrawerProfile = (props: { open: boolean }) => {
   const { open } = props
   const { user } = useAuthStore()
+  const { companyList } = useCompanyCondition()
+  const navigate = useNavigate()
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [isOpen, setIsOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null)
-  const navigate = useNavigate()
 
   const handleClose = () => {
     setAnchorEl(null)
@@ -188,7 +191,13 @@ const DrawerProfile = (props: { open: boolean }) => {
           team={user?.departmentNm ?? ''}
           buttonLabel={user?.isOtherServiceAccessPossible ? '서비스 페이지' : undefined}
           onButtonClick={() => {
-            navigate('/mi')
+            const first = companyList[0]
+
+            if (first?.value) {
+              navigate('/mi', { state: { targetCompanyNo: first.value } })
+            } else {
+              navigate('/mi')
+            }
           }}
         />
       </Menu>

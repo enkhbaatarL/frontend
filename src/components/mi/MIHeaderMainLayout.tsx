@@ -6,9 +6,8 @@ import Button from '@mui/material/Button'
 import Link from '@mui/material/Link'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
-import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -25,9 +24,9 @@ import SignalIcon from '@/components/common/icons/gnb/SignalIcon'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
 import MIHeaderNotice from '@/components/mi/MIHeaderNotice'
 import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
+import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import useEnvironment from '@/hooks/useEnvironment.ts'
 import { UserRole } from '@/service/admin/members'
-import companiesService from '@/service/mi/companies'
 import useAuthStore from '@/store/useAuthStore'
 import { MiPagesType } from '@/types/common'
 import { languageList } from '@/utils/font'
@@ -44,7 +43,7 @@ type SubItem = {
   desc?: string
   disable?: boolean
   show?: boolean
-  iconSlot?: React.ReactNode
+  iconSlot?: ReactNode
   children?: SubItem[]
   section?: 'SERVICES' | 'DEFAULT'
 }
@@ -138,19 +137,27 @@ interface MIHeaderMainLayoutProps {
   pages: Page[]
   activeMenu: MiPagesType[]
   onMoveTab: (callback: () => void) => void
+  isLoading?: boolean
 }
 
-const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayoutProps) => {
+const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab, isLoading = false }: MIHeaderMainLayoutProps) => {
   const { isProd } = useEnvironment()
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, accessCompanyInfo, setAccessCompanyInfo, clearAuth } = useAuthStore()
+  const { user, accessCompanyInfo, loadAccessCompanyInfo, clearAuth } = useAuthStore()
   const { i18n, t } = useTranslation()
 
-  const [selectedCompany, setSelectedCompany] = useState<{ label: string; value: number; customerCompanyMipUrl: string } | null>(null)
   const [isOpenCompany, setIsOpenCompany] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState<{ label: string; value: string }>({ label: '한국어', value: 'ko' })
   const [isOpenLanguageSelect, setIsOpenLanguageSelect] = useState(false)
+
+  const selectedCompany = useMemo(() => {
+    const label = accessCompanyInfo?.customerCompanyNm ?? user?.companyNm ?? ''
+    const value = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo ?? 0
+    const customerCompanyMipUrl = accessCompanyInfo?.customerCompanyMipUrl ?? user?.companyMipUrl ?? ''
+    if (!label) return null
+    return { label, value, customerCompanyMipUrl }
+  }, [accessCompanyInfo, user])
 
   // 현재 언어에 따라 선택된 언어 상태 초기화
   useEffect(() => {
@@ -159,23 +166,15 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
     setSelectedLanguage(currentLanguageOption)
   }, [i18n.language])
 
-  const { data: allCompanies } = useQuery({
-    queryKey: ['getAllCompanies'],
-    queryFn: async () => await companiesService.getAllCompanies(),
-    refetchOnWindowFocus: false,
-    gcTime: 0,
-    enabled: user?.userRoleCd === UserRole.ADMIN && user?.isOtherServiceAccessPossible,
-  })
+  const { companyList } = useCompanyCondition()
 
-  const companyList = useMemo(
-    () =>
-      allCompanies?.map(({ customerCompanyNo, customerCompanyNm, customerCompanyMipUrl }) => ({
-        label: customerCompanyNm,
-        value: customerCompanyNo,
-        customerCompanyMipUrl,
-      })) ?? [],
-    [allCompanies],
-  )
+  // 비관리자(USER) 로그인 시, 사용자 프로필 기반 설정
+  useEffect(() => {
+    if (user?.userRoleCd === UserRole.USER && !accessCompanyInfo && user?.companyNo && user?.companyNm) {
+      loadAccessCompanyInfo(user.companyNo)
+    }
+  }, [user, accessCompanyInfo, loadAccessCompanyInfo])
+
   const updatedMainMenus = useMemo(() => {
     const activeSet = new Set(activeMenu.map((m) => String(m)))
     return pages.map((item) => {
@@ -202,31 +201,6 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
       ),
     [activeMenu, t],
   )
-
-  useEffect(() => {
-    if (!selectedCompany) {
-      if (user?.userRoleCd === UserRole.USER) {
-        setSelectedCompany({
-          label: accessCompanyInfo?.customerCompanyNm ?? user?.companyNm ?? '',
-          value: accessCompanyInfo?.customerCompanyNo ?? user?.companyNo ?? 0,
-          customerCompanyMipUrl: accessCompanyInfo?.customerCompanyMipUrl ?? '',
-        })
-      } else if (companyList.length > 0) {
-        const def = companyList.find((c) => c.value === (accessCompanyInfo?.customerCompanyNo ?? user?.companyNo))
-        setSelectedCompany(def ?? companyList[0])
-      }
-    }
-  }, [companyList, selectedCompany, accessCompanyInfo, user])
-
-  useEffect(() => {
-    if (selectedCompany) {
-      setAccessCompanyInfo({
-        customerCompanyNo: selectedCompany.value,
-        customerCompanyNm: selectedCompany.label,
-        customerCompanyMipUrl: selectedCompany.customerCompanyMipUrl,
-      })
-    }
-  }, [selectedCompany, setAccessCompanyInfo])
 
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
@@ -311,12 +285,13 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
                 options={companyList}
                 onOpen={setIsOpenCompany}
                 onChange={({ value, label }) => {
-                  setSelectedCompany({
+                  const newCompany = {
                     value: value as number,
                     label,
                     customerCompanyMipUrl: companyList.find((c) => c.value === value)?.customerCompanyMipUrl ?? '',
-                  })
-                  navigate('/mi')
+                  }
+
+                  navigate('/mi', { state: { targetCompanyNo: newCompany.value } })
                 }}
                 disablePortal
               >
@@ -455,181 +430,183 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab }: MIHeaderMainLayout
                 }
               }}
             >
-              <img src={logoImg} alt="AI Market Insights" />
+              <img src={logoImg} alt="AI Market Insights" draggable={false} />
             </Box>
 
             <Box sx={{ flexGrow: 1, display: 'flex' }}>
-              {updatedMainMenus
-                .filter((page) => page.show)
-                .map((page) => {
-                  const pageKey = String(page.url)
-                  const isOpen = openKey === pageKey
-                  const isActiveTop = isPathActive(`/mi/${pageKey}`) || (updatedSubmenus[pageKey]?.some((s) => isPathActive(s.to)) ?? false)
+              {!isLoading &&
+                updatedMainMenus
+                  .filter((page) => page.show)
+                  .map((page) => {
+                    const pageKey = String(page.url)
+                    const isOpen = openKey === pageKey
+                    const isActiveTop =
+                      isPathActive(`/mi/${pageKey}`) || (updatedSubmenus[pageKey]?.some((s) => isPathActive(s.to)) ?? false)
 
-                  return (
-                    <Box
-                      key={page.label}
-                      onMouseEnter={(e) => onTopMouseEnter(pageKey, e.currentTarget as HTMLElement)}
-                      onMouseLeave={onTopMouseLeave}
-                    >
-                      <Button
-                        ref={(el) => {
-                          topBtnRefs.current[pageKey] = el
-                        }}
-                        disableRipple
-                        onClick={(e) => {
-                          e.preventDefault()
-                          onMoveTab(() => handleTopClick(pageKey))
-                        }}
-                        onKeyDown={(e) => handleTopKeyDown(e, pageKey, e.currentTarget as HTMLElement)}
-                        sx={{
-                          position: 'relative',
-                          px: 4,
-                          py: '22px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5,
-                          borderRadius: 0,
-                          backgroundColor: isOpen ? '#e8e9eb' : 'transparent',
-                          '&:hover': { backgroundColor: '#e8e9eb' },
-                          '.gnb-label': {
-                            color: isOpen || isActiveTop ? '#ff1122' : undefined,
-                            transition: 'color .15s ease',
-                          },
-                        }}
+                    return (
+                      <Box
+                        key={page.label}
+                        onMouseEnter={(e) => onTopMouseEnter(pageKey, e.currentTarget as HTMLElement)}
+                        onMouseLeave={onTopMouseLeave}
                       >
-                        <Typography
-                          variant="body1M16"
+                        <Button
+                          ref={(el) => {
+                            topBtnRefs.current[pageKey] = el
+                          }}
+                          disableRipple
+                          onClick={(e) => {
+                            e.preventDefault()
+                            onMoveTab(() => handleTopClick(pageKey))
+                          }}
+                          onKeyDown={(e) => handleTopKeyDown(e, pageKey, e.currentTarget as HTMLElement)}
                           sx={{
-                            textAlign: 'center',
-                            color: isActiveTop ? 'mari.Primary' : 'contentText.normal',
-                            fontWeight: isActiveTop ? 600 : 'normal',
+                            position: 'relative',
+                            px: 4,
+                            py: '22px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            borderRadius: 0,
+                            backgroundColor: isOpen ? '#e8e9eb' : 'transparent',
+                            '&:hover': { backgroundColor: '#e8e9eb' },
+                            '.gnb-label': {
+                              color: isOpen || isActiveTop ? '#ff1122' : undefined,
+                              transition: 'color .15s ease',
+                            },
                           }}
                         >
-                          {page.label}
-                        </Typography>
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            bottom: -2.5,
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '100%',
-                            height: '2px',
-                            backgroundColor: 'mari.Primary',
-                            opacity: isActiveTop ? 1 : 0,
-                            transition: 'opacity 0.35s ease',
-                          }}
-                        />
-                      </Button>
-
-                      <Popper open={isOpen} anchorEl={anchorEl} placement="bottom-start" style={{ zIndex: 1300 }}>
-                        <ClickAwayListener onClickAway={handleClickAway}>
-                          <Paper
-                            onMouseEnter={clearHoverTimer}
-                            onMouseLeave={onTopMouseLeave}
+                          <Typography
+                            variant="body1M16"
                             sx={{
-                              marginTop: '5px',
-                              minWidth: 258,
-                              boxShadow: '0px 0px 10px rgba(0,0,0,0.05)',
-                              borderRadius: '0px',
-                              overflow: 'hidden',
+                              textAlign: 'center',
+                              color: isActiveTop ? 'mari.Primary' : 'contentText.normal',
+                              fontWeight: isActiveTop ? 600 : 'normal',
                             }}
                           >
-                            <Box
+                            {page.label}
+                          </Typography>
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              bottom: -2.5,
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              width: '100%',
+                              height: '2px',
+                              backgroundColor: 'mari.Primary',
+                              opacity: isActiveTop ? 1 : 0,
+                              transition: 'opacity 0.35s ease',
+                            }}
+                          />
+                        </Button>
+
+                        <Popper open={isOpen} anchorEl={anchorEl} placement="bottom-start" style={{ zIndex: 1300 }}>
+                          <ClickAwayListener onClickAway={handleClickAway}>
+                            <Paper
+                              onMouseEnter={clearHoverTimer}
+                              onMouseLeave={onTopMouseLeave}
                               sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                margin: '8px 0 8px 0',
+                                marginTop: '5px',
+                                minWidth: 258,
+                                boxShadow: '0px 0px 10px rgba(0,0,0,0.05)',
+                                borderRadius: '0px',
+                                overflow: 'hidden',
                               }}
                             >
-                              {(updatedSubmenus[pageKey] ?? []).map((item, idx) => {
-                                const active = isPathActive(item.to)
-                                const isServices = item.section === 'SERVICES'
-                                return (
-                                  item.show && (
-                                    <Box key={`${item.label}-${idx}`}>
-                                      {isServices && (
-                                        <Box
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  margin: '8px 0 8px 0',
+                                }}
+                              >
+                                {(updatedSubmenus[pageKey] ?? []).map((item, idx) => {
+                                  const active = isPathActive(item.to)
+                                  const isServices = item.section === 'SERVICES'
+                                  return (
+                                    item.show && (
+                                      <Box key={`${item.label}-${idx}`}>
+                                        {isServices && (
+                                          <Box
+                                            sx={{
+                                              px: 2,
+                                              pt: 3,
+                                              pb: 1,
+                                              color: 'gray.60',
+                                              fontSize: 12,
+                                              fontWeight: 600,
+                                              lineHeight: 1.6,
+                                            }}
+                                          >
+                                            SERVICES
+                                          </Box>
+                                        )}
+
+                                        <Link
+                                          href=""
+                                          onClick={(e) => {
+                                            e.preventDefault()
+                                            setOpenKey(null)
+                                            navigate(item.to)
+                                          }}
+                                          underline="none"
                                           sx={{
-                                            px: 2,
-                                            pt: 3,
-                                            pb: 1,
-                                            color: 'gray.60',
-                                            fontSize: 12,
-                                            fontWeight: 600,
-                                            lineHeight: 1.6,
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            gap: 1.25,
+                                            height: item.desc ? '58px' : '38px',
+                                            transition: 'background-color .15s',
+                                            color: (() => {
+                                              if (item.disable) return 'gray.60'
+                                              if (active) return 'mari.Primary'
+                                              return '#495057'
+                                            })(),
+                                            cursor: item.disable ? 'default' : 'pointer',
+                                            backgroundColor: active ? '#ffffff' : 'transparent',
+                                            '&:hover': {
+                                              backgroundColor: '#e8e9eb',
+                                            },
                                           }}
                                         >
-                                          SERVICES
-                                        </Box>
-                                      )}
-
-                                      <Link
-                                        href=""
-                                        onClick={(e) => {
-                                          e.preventDefault()
-                                          setOpenKey(null)
-                                          navigate(item.to)
-                                        }}
-                                        underline="none"
-                                        sx={{
-                                          display: 'flex',
-                                          alignItems: 'flex-start',
-                                          gap: 1.25,
-                                          height: item.desc ? '58px' : '38px',
-                                          transition: 'background-color .15s',
-                                          color: (() => {
-                                            if (item.disable) return 'gray.60'
-                                            if (active) return 'mari.Primary'
-                                            return '#495057'
-                                          })(),
-                                          cursor: item.disable ? 'default' : 'pointer',
-                                          backgroundColor: active ? '#ffffff' : 'transparent',
-                                          '&:hover': {
-                                            backgroundColor: '#e8e9eb',
-                                          },
-                                        }}
-                                      >
-                                        <Box
-                                          sx={{ mt: '8px', ml: item.iconSlot ? '6px' : '2px' }}
-                                          // color={active ? 'mari.Primary' : item.disable ? 'contentText.Disabled' : 'gray.80'}
-                                          color={active ? 'mari.Primary' : 'gray.80'}
-                                        >
-                                          {item.iconSlot ?? <Box />}
-                                        </Box>
-
-                                        <Box paddingY={'8px'}>
-                                          <Typography
-                                            variant="body1SB16"
+                                          <Box
+                                            sx={{ mt: '8px', ml: item.iconSlot ? '6px' : '2px' }}
                                             // color={active ? 'mari.Primary' : item.disable ? 'contentText.Disabled' : 'gray.80'}
                                             color={active ? 'mari.Primary' : 'gray.80'}
                                           >
-                                            {item.label}
-                                          </Typography>
-                                          {item.desc && (
+                                            {item.iconSlot ?? <Box />}
+                                          </Box>
+
+                                          <Box paddingY={'8px'}>
                                             <Typography
-                                              variant="body2M14"
-                                              // color={item.disable ? 'contentText.Disabled' : 'gray.60'}
-                                              color={'gray.60'}
-                                              sx={{ mt: 0.25, display: 'block' }}
+                                              variant="body1SB16"
+                                              // color={active ? 'mari.Primary' : item.disable ? 'contentText.Disabled' : 'gray.80'}
+                                              color={active ? 'mari.Primary' : 'gray.80'}
                                             >
-                                              {item.desc}
+                                              {item.label}
                                             </Typography>
-                                          )}
-                                        </Box>
-                                      </Link>
-                                    </Box>
+                                            {item.desc && (
+                                              <Typography
+                                                variant="body2M14"
+                                                // color={item.disable ? 'contentText.Disabled' : 'gray.60'}
+                                                color={'gray.60'}
+                                                sx={{ mt: 0.25, display: 'block' }}
+                                              >
+                                                {item.desc}
+                                              </Typography>
+                                            )}
+                                          </Box>
+                                        </Link>
+                                      </Box>
+                                    )
                                   )
-                                )
-                              })}
-                            </Box>
-                          </Paper>
-                        </ClickAwayListener>
-                      </Popper>
-                    </Box>
-                  )
-                })}
+                                })}
+                              </Box>
+                            </Paper>
+                          </ClickAwayListener>
+                        </Popper>
+                      </Box>
+                    )
+                  })}
             </Box>
 
             <Grid container alignItems="center" wrap="nowrap" direction="row" spacing={4} sx={{ flexGrow: 0 }}>
