@@ -5,7 +5,7 @@ import { JSX, PropsWithChildren, ReactElement, useMemo, useState, MouseEvent } f
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
 import theme from '@/theming'
 
-export type MIButtonSize = 'h42' | 'h34' | 'h32' | 'h28'
+export type MIButtonSize = 'h42' | 'h36' | 'h34' | 'h32' | 'h28'
 export type MIButtonType = 'filled' | 'outlined' | 'ghost'
 export type MIButtonContentType = 'text' | 'link' | 'icon' | 'select'
 export type MIButtonColor = 'primary' | 'gray' | 'gray2' | 'white' | 'red' | `#${string}`
@@ -28,6 +28,7 @@ export interface MIButtonProps {
   width?: number | string
   minWidth?: number | string
   padding?: number | string
+  borderRadius?: number | string
   active?: boolean
   disableHoverColor?: boolean
   valueSelect?: {
@@ -80,6 +81,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
     onClick,
     toolTipProps = {},
     hoverBgColor = '',
+    borderRadius = '4px',
   } = props
 
   const [isActive, setIsActive] = useState(false)
@@ -98,6 +100,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
       h28: theme.typography.body3SB12,
       h32: theme.typography.body2SB14,
       h34: theme.typography.body2SB14,
+      h36: theme.typography.body2SB14,
       h42: theme.typography.body1SB16,
     }[size]
 
@@ -105,6 +108,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
       h28: contentType === 'icon' ? '3px' : startIcon ? '3px 11px 3px 8px' : '3px 11px',
       h32: contentType === 'icon' ? '5px' : contentType === 'link' ? '4px' : startIcon ? '5px 13px 5px 8px' : '5px 13px',
       h34: contentType === 'icon' ? '6px' : contentType === 'select' ? '7px 8px' : startIcon ? '6px 15px 6px 8px' : '6px 15px',
+      h36: contentType === 'icon' ? '7px' : contentType === 'select' ? '8px 8px' : startIcon ? '7px 15px 7px 8px' : '7px 15px',
       h42: contentType === 'icon' ? '9px' : startIcon ? '9px 15px 9px 8px' : '9px 15px',
     }[size]
 
@@ -112,6 +116,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
       h28: '28px',
       h32: '32px',
       h34: '34px',
+      h36: '36px',
       h42: '42px',
     }[size]
 
@@ -119,6 +124,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
       h28: contentType === 'icon' ? '28px' : 'auto',
       h32: contentType === 'icon' ? '32px' : 'auto',
       h34: contentType === 'icon' ? '34px' : 'auto',
+      h36: contentType === 'icon' ? '36px' : 'auto',
       h42: contentType === 'icon' ? '42px' : 'auto',
     }[size]
 
@@ -259,7 +265,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
 
   const renderButtonContent = () => (
     <Tooltip placement={placement} title={toolTip} {...toolTipProps}>
-      <span>
+      <span style={{ userSelect: 'none' }}>
         <Box
           component="button"
           disabled={disabled}
@@ -278,7 +284,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
           sx={{
             whiteSpace: 'nowrap',
             transition: 'all 0.3s',
-            borderRadius: '4px',
+            borderRadius,
             cursor: !disabled ? 'pointer' : 'default',
             fontFamily: theme.typography.fontFamily,
             ...styleBaseSize,

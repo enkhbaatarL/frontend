@@ -13,6 +13,7 @@ interface Props extends ButtonProps {
   label?: ReactNode
   displayType?: 'button' | 'select'
   variant?: 'text' | 'outlined' | 'contained'
+  buttonHoverBgColor?: string
   placement?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
   menuPositionOffset?: MenuPositionOffset
   fadeIn?: 'left' | 'right' | 'center'
@@ -29,6 +30,7 @@ const MIMenu = ({
   label,
   displayType = 'button',
   variant = 'text',
+  buttonHoverBgColor,
   placement = 'bottom-start',
   menuPositionOffset = {},
   fadeIn,
@@ -96,10 +98,7 @@ const MIMenu = ({
     return open ? 'contentBorder.Active' : 'contentBorder.Normal'
   }
 
-  const getHoverBackgroundColor = () => {
-    if (variant !== 'outlined') return undefined
-    return open ? 'contentBG.Active' : 'transparent'
-  }
+  const getHoverBackgroundColor = () => (variant !== 'outlined' ? undefined : 'contentBG.Active')
 
   const borderColor = getBorderColor()
   const hoverBackgroundColor = getHoverBackgroundColor()
@@ -176,7 +175,7 @@ const MIMenu = ({
             justifyContent: 'space-between',
             textTransform: 'none',
             backgroundColor: variant === 'outlined' && open ? 'contentBG.Active' : undefined,
-            transition: 'background-color 0.2s ease-in-out, border-color 0.2s ease-in-out',
+            transition: 'background-color 0.2s ease-in-out, border-color 0.4s ease-in-out',
             '&:disabled': {
               backgroundColor: props.disabled && variant === 'text' ? 'transparent' : undefined,
             },
@@ -184,7 +183,7 @@ const MIMenu = ({
             borderWidth: '1px',
             borderRadius: '10px',
             '&:hover': {
-              backgroundColor: hoverBackgroundColor,
+              backgroundColor: buttonHoverBgColor ?? hoverBackgroundColor,
               borderColor,
               borderWidth: '1px',
             },

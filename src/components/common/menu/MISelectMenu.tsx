@@ -2,6 +2,7 @@ import { Box, Typography, Stack, Switch, ButtonProps, PaperProps, ListSubheader,
 import { ReactNode, useMemo, useState, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import CheckIcon from '@/components/common/icons/agent/CheckIcon'
 import MIMenu, { MenuPositionOffset } from '@/components/common/menu/MIMenu'
 
@@ -32,6 +33,7 @@ interface Props extends ButtonProps {
   groupLabels?: { [groupKey: string]: ReactNode }
   disablePortal?: boolean
   closeOnScroll?: boolean
+  maxHeight?: number | string
 }
 
 const MISelectMenu = ({
@@ -50,6 +52,7 @@ const MISelectMenu = ({
   groupLabels = {},
   disablePortal = false,
   closeOnScroll = false,
+  maxHeight = 300,
   ...props
 }: Props) => {
   const { t } = useTranslation()
@@ -411,9 +414,19 @@ const MISelectMenu = ({
       closeOnScroll={closeOnScroll}
       {...props}
     >
-      <Stack gap="8px" sx={{ padding: '12px' }}>
-        {renderMenuItems()}
-      </Stack>
+      <ScrollWrapper
+        maxHeight={maxHeight}
+        offsetTop={12}
+        offsetBottom={12}
+        scrollbarGap={6}
+        sx={{
+          padding: '0',
+        }}
+      >
+        <Stack gap="8px" sx={{ padding: '12px' }}>
+          {renderMenuItems()}
+        </Stack>
+      </ScrollWrapper>
     </MIMenu>
   )
 }

@@ -179,7 +179,7 @@ const NewsFeed = () => {
             selected={categoryCode}
             onSelected={setCategoryCode}
             items={marketCategoryCodeOptions}
-            sx={{ minWidth: 148 }}
+            sx={{ minWidth: 148, height: '36px' }}
             groupDisplayType="divider"
           />
           <MIMenu
@@ -190,6 +190,9 @@ const NewsFeed = () => {
             placement="bottom-end"
             menuPositionOffset={{ right: -10 }}
             onOpenChange={setIsSettingsMenuOpen}
+            sx={{
+              height: '36px',
+            }}
           >
             <Stack padding="12px" gap="12px" minWidth={154} boxSizing="border-box">
               {switchOptions.map((item) => (

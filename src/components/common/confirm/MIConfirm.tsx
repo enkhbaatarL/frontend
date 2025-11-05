@@ -76,7 +76,7 @@ const MIConfirm = ({
       }}
     >
       <DialogTitle>
-        <span style={{ fontWeight: children ? 700 : 600 }}>{title}</span>
+        <span style={{ fontWeight: children ? 700 : 600, userSelect: 'none' }}>{title}</span>
         {children && (
           <MIButton
             startIcon={<CloseIcon />}

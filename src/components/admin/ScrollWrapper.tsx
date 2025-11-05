@@ -8,12 +8,14 @@ interface ScrollWrapperProps {
   className?: string
   id?: string
   offsetTop?: number
+  offsetBottom?: number
   maxHeight?: number | string
   scrollToBottomTrigger?: number | string | boolean
   scrollToBottomOffset?: number | string | boolean
   sx?: SxProps<Theme>
   styScroll?: CSSProperties
   onScrollableChange?: (isScrollable: boolean) => void
+  scrollbarGap?: number
 }
 
 const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
@@ -23,12 +25,14 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       className,
       id,
       offsetTop = 0,
+      offsetBottom = 0,
       maxHeight = 268,
       scrollToBottomTrigger,
       scrollToBottomOffset,
       sx,
       styScroll,
       onScrollableChange,
+      scrollbarGap = 0,
     },
     ref,
   ) => {
@@ -72,16 +76,21 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
         return
       }
 
-      const height = (clientHeight / scrollHeight) * clientHeight
+      const availableHeight = clientHeight - offsetTop - offsetBottom
+      const height = (clientHeight / scrollHeight) * availableHeight
 
       setThumbHeight(height)
 
       const thumb = thumbRef.current
 
       if (thumb) {
-        thumb.style.top = `${(scrollTop / scrollHeight) * clientHeight + offsetTop}px`
+        const maxScrollTop = scrollHeight - clientHeight
+        const scrollRatio = maxScrollTop > 0 ? scrollTop / maxScrollTop : 0
+        const maxThumbTop = availableHeight - height
+        const thumbTop = offsetTop + scrollRatio * maxThumbTop
+        thumb.style.top = `${thumbTop}px`
       }
-    }, [offsetTop, thumbRef, onScrollableChange])
+    }, [offsetTop, offsetBottom, thumbRef, onScrollableChange])
 
     // Handle mouse down on the thumb
     const handleMouseDown = useCallback((e: MouseEvent<HTMLDivElement>) => {
@@ -190,7 +199,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
     }, [scrollToBottomOffset])
 
     return (
-      <Box sx={{ position: 'relative', maxHeight, overflow: 'hidden', padding: `${offsetTop}px 0`, ...sx }}>
+      <Box sx={{ position: 'relative', maxHeight, overflow: 'hidden', padding: `${offsetTop}px 0 ${offsetBottom}px 0`, ...sx }}>
         <Box
           className={`disabledScroll ${className ?? ''}`}
           ref={(node: HTMLDivElement | null) => {
@@ -201,7 +210,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
           sx={{
             maxHeight,
             overflowY: 'auto',
-            paddingRight: '0',
+            paddingRight: isScrollable ? `${scrollbarGap}px` : '0',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
           }}
@@ -218,7 +227,6 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
               top: `${offsetTop}px`,
               right: 4,
               width: 4,
-              bottom: 30,
               height: `${thumbHeight}px`,
               backgroundColor: '#CED4DA',
               borderRadius: '10px',
@@ -244,7 +252,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
               top: `${offsetTop}px`,
               right: 0,
               width: 12,
-              bottom: 0,
+              bottom: `${offsetBottom}px`,
               cursor: 'pointer',
               zIndex: 1,
               border: 'none',

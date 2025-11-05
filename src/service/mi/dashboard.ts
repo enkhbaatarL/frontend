@@ -68,6 +68,16 @@ const dashboardService = {
 
     return response.data.data
   },
+  async getTopicSimilarKeywords(query: string, limit?: number): Promise<string[]> {
+    const response: AxiosResponse<ICommonResponse<string[]>> = await api.get('mi/autocomplete/topic', {
+      params: {
+        query,
+        limit,
+      },
+    })
+
+    return response.data.data
+  },
 }
 
 export default dashboardService
