@@ -13,8 +13,9 @@ import {
   Typography,
 } from '@mui/material'
 import { throttle } from 'lodash-es'
-import { useMemo, useRef, useState, useEffect, useCallback, KeyboardEvent, MouseEvent, SyntheticEvent } from 'react'
+import { useMemo, useRef, useState, useEffect, useCallback, ReactNode, KeyboardEvent, MouseEvent, SyntheticEvent } from 'react'
 
+import MIInputClearIcon from '@/components/common/input/MIInputClearIcon'
 import theme from '@/theming'
 
 export interface Props extends Omit<AutocompleteProps<string, false, false, boolean>, 'options' | 'renderInput'> {
@@ -24,9 +25,23 @@ export interface Props extends Omit<AutocompleteProps<string, false, false, bool
   textFieldProps?: TextFieldProps
   showSearchIcon?: boolean
   onSearch?: (value: string) => void
+  onClear?: () => void
+  showOptionsOnFocus?: boolean
+  disableCache?: boolean
 }
 
-const AsyncAutocomplete = ({ width, height, asyncFunction, textFieldProps, showSearchIcon = false, onSearch, ...props }: Props) => {
+const AsyncAutocomplete = ({
+  width,
+  height,
+  asyncFunction,
+  textFieldProps,
+  showSearchIcon = false,
+  onSearch,
+  onClear,
+  showOptionsOnFocus = false,
+  disableCache = false,
+  ...props
+}: Props) => {
   const inputRef = useRef<HTMLDivElement>(null)
   const inputElementRef = useRef<HTMLInputElement | null>(null)
   const cacheRef = useRef<Map<string, string[]>>(new Map())
@@ -34,30 +49,36 @@ const AsyncAutocomplete = ({ width, height, asyncFunction, textFieldProps, showS
   const [isFocused, setIsFocused] = useState(false)
   const [options, setOptions] = useState<string[]>([])
   const [highlightedOption, setHighlightedOption] = useState<string | null>(null)
+  const [isComposing, setIsComposing] = useState(false)
 
-  const isOpenOptions = useMemo(
-    () => isFocused && (props.value ?? '').trim().length > 0 && options.length > 0,
-    [isFocused, props.value, options],
-  )
+  const isOpenOptions = useMemo(() => {
+    if (!isFocused || options.length === 0) return false
+    if (showOptionsOnFocus) return true
+    return (props.value ?? '').trim().length > 0
+  }, [isFocused, props.value, options, showOptionsOnFocus])
 
   const throttledSearch = useMemo(() => {
     if (!asyncFunction) return null
 
     return throttle((keyword: string) => {
-      const cached = cacheRef.current.get(keyword)
+      if (!disableCache) {
+        const cached = cacheRef.current.get(keyword)
 
-      if (cached !== undefined) {
-        setOptions(cached)
-        return
+        if (cached !== undefined) {
+          setOptions(cached)
+          return
+        }
       }
 
       asyncFunction(keyword).then((response) => {
         const result = response ?? []
-        cacheRef.current.set(keyword, result) // 캐싱
+        if (!disableCache) {
+          cacheRef.current.set(keyword, result)
+        }
         setOptions(result)
       })
     }, 500)
-  }, [asyncFunction])
+  }, [asyncFunction, disableCache])
 
   // 현재 입력값과 매칭되는 첫 번째 옵션
   const firstSuggestion = useMemo(() => {
@@ -95,8 +116,35 @@ const AsyncAutocomplete = ({ width, height, asyncFunction, textFieldProps, showS
     [props.value, onSearch],
   )
 
+  const handleClear = useCallback(
+    (e?: MouseEvent<HTMLDivElement>) => {
+      e?.preventDefault()
+      e?.stopPropagation()
+
+      if (props.onChange) {
+        props.onChange(e as SyntheticEvent<Element>, null, 'clear')
+      }
+      if (props.onInputChange) {
+        props.onInputChange(e as SyntheticEvent<Element>, '', 'clear')
+      }
+      if (onClear) {
+        onClear()
+      }
+
+      inputElementRef.current?.blur()
+    },
+    [props, onClear],
+  )
+
   const handleKeyDown = (e: KeyboardEvent) => {
-    // Tab 키로 미리보기 옵션 자동완성
+    // IME 조합 중인지 확인 (한글, 일본어 등 조합형 문자 입력 중)
+    const nativeIsComposing = (e.nativeEvent as unknown as { isComposing?: boolean }).isComposing ?? false
+    const composing = isComposing || nativeIsComposing
+
+    if (composing) {
+      return // IME 조합 -> SKIP
+    }
+
     if (e.key === 'Tab') {
       e.preventDefault()
       if (previewOption && !e.shiftKey) {
@@ -114,11 +162,14 @@ const AsyncAutocomplete = ({ width, height, asyncFunction, textFieldProps, showS
     }
   }
 
+  const { sx: propsSx, onChange: propsOnChange, ...restProps } = props
+
   const handleChange = (event: SyntheticEvent<Element>, value: string | null, reason: AutocompleteChangeReason) => {
-    if (props.onChange) {
-      props.onChange(event, value, reason)
+    if (propsOnChange) {
+      propsOnChange(event, value, reason)
     }
 
+    // 마우스로 옵션 선택 시 onSearch 호출
     if (reason === 'selectOption' && value && onSearch) {
       onSearch(value.trim())
       inputElementRef.current?.blur()
@@ -136,17 +187,23 @@ const AsyncAutocomplete = ({ width, height, asyncFunction, textFieldProps, showS
   }
 
   useEffect(() => {
-    if (!throttledSearch || !props.value?.trim()) {
+    if (!throttledSearch) {
       setOptions([])
       return
     }
 
-    throttledSearch(props.value)
-  }, [throttledSearch, props.value])
+    const inputValue = props.value ?? ''
+    const trimmedValue = inputValue.trim()
+
+    if ((showOptionsOnFocus && isFocused) || trimmedValue.length > 0) {
+      // 포커스 상태이고 showOptionsOnFocus가 true일 때는 빈 문자열로도 검색
+      throttledSearch(trimmedValue)
+    } else {
+      setOptions([])
+    }
+  }, [throttledSearch, props.value, showOptionsOnFocus, isFocused])
 
   useEffect(() => () => throttledSearch?.cancel(), [throttledSearch])
-
-  const { sx: propsSx, ...restProps } = props
 
   const heightValue = useMemo(() => {
     if (!height) return null
@@ -183,6 +240,8 @@ const AsyncAutocomplete = ({ width, height, asyncFunction, textFieldProps, showS
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             onKeyDown={handleKeyDown}
+            onCompositionStart={() => setIsComposing(true)}
+            onCompositionEnd={() => setIsComposing(false)}
             sx={{
               width: '100%',
               height: '100%',
@@ -217,13 +276,34 @@ const AsyncAutocomplete = ({ width, height, asyncFunction, textFieldProps, showS
                   ? textFieldProps.slotProps.input
                   : {}),
                 endAdornment: (
-                  <>
+                  <Stack direction="row" alignItems="center" gap="8px">
                     {params.InputProps?.endAdornment}
                     {typeof textFieldProps?.slotProps?.input === 'object' &&
                     textFieldProps?.slotProps?.input !== null &&
                     'endAdornment' in textFieldProps.slotProps.input
-                      ? (textFieldProps.slotProps.input as { endAdornment?: React.ReactNode }).endAdornment
+                      ? (textFieldProps.slotProps.input as { endAdornment?: ReactNode }).endAdornment
                       : null}
+                    {onClear && isFocused && props.value && (
+                      <InputAdornment
+                        position="end"
+                        sx={{
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginRight: showSearchIcon ? '8px' : 0,
+                          minWidth: 'auto',
+                          padding: 0,
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                        }}
+                        onClick={handleClear}
+                      >
+                        <MIInputClearIcon width={20} height={20} style={{ cursor: 'pointer' }} />
+                      </InputAdornment>
+                    )}
                     {showSearchIcon && (
                       <InputAdornment
                         position="end"
@@ -245,7 +325,7 @@ const AsyncAutocomplete = ({ width, height, asyncFunction, textFieldProps, showS
                         <SearchIcon sx={{ fontSize: 20 }} style={{ color: theme.palette.content['iconEnabled'], cursor: 'pointer' }} />
                       </InputAdornment>
                     )}
-                  </>
+                  </Stack>
                 ),
               },
               ...(textFieldProps?.slotProps
