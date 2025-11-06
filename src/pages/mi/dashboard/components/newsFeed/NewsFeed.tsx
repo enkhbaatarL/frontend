@@ -181,6 +181,7 @@ const NewsFeed = () => {
             items={marketCategoryCodeOptions}
             sx={{ minWidth: 148, height: '36px' }}
             groupDisplayType="divider"
+            enableHoverBackground
           />
           <MIMenu
             open={isSettingsMenuOpen}
@@ -190,6 +191,7 @@ const NewsFeed = () => {
             placement="bottom-end"
             menuPositionOffset={{ right: -10 }}
             onOpenChange={setIsSettingsMenuOpen}
+            enableHoverBackground
             sx={{
               height: '36px',
             }}

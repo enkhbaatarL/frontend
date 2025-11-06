@@ -122,8 +122,16 @@ const Feed = ({
             onApply={handleApplyFilters}
             showSaveOption={true}
             initialSaveOn={Boolean(localStorage.getItem('newsFeedFilters'))}
+            enableHoverBackground
           />
-          <MISelectMenu variant="outlined" selected={order} onSelected={onOrderChange} items={orderOptions} sx={{ minWidth: 110 }} />
+          <MISelectMenu
+            variant="outlined"
+            selected={order}
+            onSelected={onOrderChange}
+            items={orderOptions}
+            sx={{ minWidth: 110 }}
+            enableHoverBackground
+          />
         </Stack>
       </Stack>
       <Stack mt="12px">

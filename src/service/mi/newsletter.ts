@@ -31,6 +31,7 @@ export interface INewsletterItem {
 
 export interface INewsletterListRequest extends IPaginationRequest {
   keyword?: string
+  dateFilter?: string
 }
 
 export interface IFeaturedNewsletterItem {

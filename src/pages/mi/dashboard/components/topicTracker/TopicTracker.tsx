@@ -357,6 +357,7 @@ const TopicTracker = () => {
             placement="bottom-end"
             menuPositionOffset={{ right: -10 }}
             onOpenChange={setIsSettingsMenuOpen}
+            enableHoverBackground
             sx={{
               height: '36px',
             }}

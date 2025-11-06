@@ -8,8 +8,8 @@ import MILine from '@/components/common/divider/MILine'
 import MIFilterGroup from '@/components/common/filter/MIFilterGroup'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
-import MISelect from '@/components/common/select/MISelect'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import MIPageHeadline from '@/components/mi/MIPageHeadline'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
@@ -144,16 +144,17 @@ const NewsPage = () => {
                   onClear={() => updateFilterWithSearch('keyword', '')}
                 />
                 <Stack direction="row" gap="12px">
-                  <MISelect
-                    sizeSelect="h40"
-                    width={160}
-                    options={orderOptions}
-                    value={filter.sort ?? 'NEWEST'}
-                    onChange={(e) => updateFilterWithSearch('sort', String(e.target.value ?? 'NEWEST'))}
+                  <MISelectMenu
+                    variant="outlined"
+                    sx={{ width: 160 }}
+                    items={orderOptions}
+                    selected={filter.sort ?? 'NEWEST'}
+                    onSelected={(selected: string) => updateFilterWithSearch('sort', selected)}
                   />
                   <MIDateRangePicker
-                    sizeInput={'h40'}
                     width={380}
+                    sizeInput="h40"
+                    borderRadius="10px"
                     startDate={filter.startDate ? dayjs(filter.startDate) : undefined}
                     endDate={filter.endDate ? dayjs(filter.endDate) : undefined}
                     onChange={handleDateChange}

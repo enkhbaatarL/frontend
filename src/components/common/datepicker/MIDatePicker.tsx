@@ -17,6 +17,11 @@ import theme from '@/theming'
 
 import 'dayjs/locale/ko'
 
+interface MIDatePickerProps extends DatePickerProps<Dayjs> {
+  size?: 'h26' | 'h28' | 'h34' | 'h36' | 'h40'
+  borderRadius?: string | number
+}
+
 const isSunday = (date: Dayjs): boolean => date.day() === 0
 
 const MIDatePickerDay = (props: PickersDayProps<Dayjs>) => {
@@ -72,17 +77,22 @@ const MIInputAdornment = (props: InputAdornmentProps) => {
   const childProps = (children as ReactElement).props as BoxProps
 
   return (
-    <InputAdornment {...rest}>
-      <Box className="mi-calendar__calendar-button" onClick={childProps.onClick} p="4px" sx={{ cursor: 'pointer', borderRadius: '4px' }}>
+    <InputAdornment {...rest} sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box
+        className="mi-calendar__calendar-button"
+        onClick={childProps.onClick}
+        p="4px"
+        sx={{ cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
         <CalendarTodayIcon className="mi-calendar__calendar-icon" />
       </Box>
     </InputAdornment>
   )
 }
 
-export default function MIDatePicker(props: DatePickerProps<Dayjs> & { size?: 'h26' | 'h28' | 'h34' | 'h36' | 'h40' }) {
+export default function MIDatePicker(props: Readonly<MIDatePickerProps>) {
   const today = dayjs()
-  const { value, ...restProps } = props
+  const { value, borderRadius, ...restProps } = props
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -115,7 +125,14 @@ export default function MIDatePicker(props: DatePickerProps<Dayjs> & { size?: 'h
           },
           textField: {
             fullWidth: true,
-            sx: { ...datePickerTextStyleSx(props.size) },
+            sx: {
+              ...datePickerTextStyleSx(props.size),
+              ...(borderRadius && {
+                '& .MuiInputBase-root': {
+                  borderRadius,
+                },
+              }),
+            },
           },
         }}
         value={value}

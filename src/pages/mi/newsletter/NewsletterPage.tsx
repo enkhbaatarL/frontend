@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import MariBadge from '@/components/common/bage/MariBadge'
 import MIButtonArrow from '@/components/common/button/MIButtonArrow'
 import MISearchInput from '@/components/common/input/MISearchInput'
-import MISelect from '@/components/common/select/MISelect'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import MIPageHeadline from '@/components/mi/MIPageHeadline'
@@ -140,8 +140,8 @@ const NewsLettersPage = () => {
   }, [updateFilterWithSearch])
 
   const handleDateFilterChange = useCallback(
-    (e: { target: { value: string | number | boolean | (string | number | boolean)[] } }) => {
-      updateFilter('dateFilter', e.target.value as string)
+    (selected: string) => {
+      updateFilter('dateFilter', selected)
     },
     [updateFilter],
   )
@@ -309,18 +309,21 @@ const NewsLettersPage = () => {
                   onClear={handleSearchClear}
                 />
                 <Box width="160px">
-                  <MISelect
-                    value={''}
-                    sizeSelect="h40"
-                    onChange={handleDateFilterChange}
-                    options={[
+                  <MISelectMenu
+                    variant="outlined"
+                    selected={''}
+                    onSelected={handleDateFilterChange}
+                    items={[
                       { label: 'Last 7 days', value: '7days' },
                       { label: 'Last 30 days', value: '30days' },
                       { label: 'Last 90 days', value: '90days' },
                     ]}
                     placeholder="All dates"
-                    darkPlaceholder
                     disabled
+                    sx={{
+                      minWidth: '160px',
+                      height: '40px',
+                    }}
                   />
                 </Box>
               </Box>
