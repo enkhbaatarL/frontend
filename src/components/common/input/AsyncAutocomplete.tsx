@@ -260,6 +260,9 @@ const AsyncAutocomplete = ({
                   padding: '8px 0',
                   height: '100%',
                   boxSizing: 'border-box',
+                  '&::placeholder': {
+                    userSelect: 'none',
+                  },
                 },
                 '& .MuiInputAdornment-root': {
                   marginRight: 0,
