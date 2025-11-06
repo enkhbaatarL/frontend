@@ -404,6 +404,7 @@ const TopicTracker = () => {
         ]}
       >
         <AsyncAutocomplete
+          height={46}
           asyncFunction={dashboardService.getTopicSimilarKeywords}
           value={topicName}
           textFieldProps={{
