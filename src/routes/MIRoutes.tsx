@@ -4,10 +4,11 @@ import { Navigate, RouteObject, useLocation } from 'react-router-dom'
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MILayout from '@/layouts/MILayout'
 import PolicyPage from '@/pages/common/PolicyPage'
+import AIMarketSummaryPage from '@/pages/mi/aiMarketSummary/AIMarketSummaryPage'
 import CustomPage from '@/pages/mi/custom/CustomPage'
 import DashboardPage from '@/pages/mi/dashboard/DashboardPage'
 import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
-import EconomicEventPage from '@/pages/mi/economicEvent/EconomicEventPage'
+import EventCalendarPage from '@/pages/mi/eventCalendar/EventCalendarPage'
 import ForecastPage from '@/pages/mi/forecast/ForecastPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
@@ -21,6 +22,7 @@ import NoticesPage from '@/pages/mi/notice/NoticesPage'
 import NotificationPage from '@/pages/mi/notification/NotificationPage'
 import ParallelCoordinatesPage from '@/pages/mi/parallelCoordinates/ParallelCoordinatesPage'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
+import TopicTrackerPage from '@/pages/mi/topicTracker/TopicTrackerPage'
 import MIProvider from '@/providers/MIProvider'
 import useAuthStore from '@/store/useAuthStore'
 
@@ -72,6 +74,18 @@ const MIRoutes: RouteObject = {
       element: <DashboardPage />,
     },
     {
+      path: 'ai-market-summary',
+      element: <AIMarketSummaryPage />,
+    },
+    {
+      path: 'topic-tracker',
+      element: <TopicTrackerPage />,
+    },
+    {
+      path: 'event-calendar',
+      element: <EventCalendarPage />,
+    },
+    {
       path: 'newsletters',
       children: [
         {
@@ -83,10 +97,6 @@ const MIRoutes: RouteObject = {
           element: <NewsletterDetailPage />,
         },
       ],
-    },
-    {
-      path: 'economic-event',
-      element: <EconomicEventPage />,
     },
     {
       path: 'forecast',

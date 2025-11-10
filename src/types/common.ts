@@ -23,16 +23,3 @@ export interface IFilterItem {
   key: string
   value: string
 }
-
-export type MiPagesType =
-  | 'dashboard'
-  | 'forecast'
-  | 'market'
-  | 'signal-map'
-  | 'newsletters'
-  | 'economic-event'
-  | 'market-news'
-  | 'parallel-coordinates'
-  | 'custom'
-  | 'market-data'
-  | 'insights'

@@ -7,126 +7,22 @@ import Link from '@mui/material/Link'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import clsx from 'clsx'
-import { useCallback, useEffect, useMemo, useRef, useState, ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 import style from './MIHeaderMainLayout.module.scss'
 
 import logoImg from '@/assets/logo.svg'
-import DashboardIcon from '@/components/common/icons/gnb/DashboardIcon'
-import ForecastIcon from '@/components/common/icons/gnb/ForecastIcon'
-import MetricsIcon from '@/components/common/icons/gnb/MetricsIcon'
-import NewsIcon from '@/components/common/icons/gnb/NewsIcon'
-// import ParallelIcon from '@/components/common/icons/gnb/ParallelIcon'
-import ReportIcon from '@/components/common/icons/gnb/ReportIcon'
-import SignalIcon from '@/components/common/icons/gnb/SignalIcon'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
 import MIHeaderNotice from '@/components/mi/MIHeaderNotice'
 import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
+import { SUBMENU_MAP, MENU_CONFIG } from '@/constants/menu'
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import useEnvironment from '@/hooks/useEnvironment.ts'
 import { UserRole } from '@/service/admin/members'
 import useAuthStore from '@/store/useAuthStore'
-import { MiPagesType } from '@/types/common'
 import { languageList } from '@/utils/font'
-
-export interface Page {
-  label: string
-  url: MiPagesType
-  show?: boolean
-}
-
-type SubItem = {
-  label: string
-  to: string
-  desc?: string
-  disable?: boolean
-  show?: boolean
-  iconSlot?: ReactNode
-  children?: SubItem[]
-  section?: 'SERVICES' | 'DEFAULT'
-}
-
-const SUBMENUS: Record<string, SubItem[]> = {
-  dashboard: [
-    {
-      label: 'Dashboard',
-      to: '/mi/dashboard',
-      desc: 'submenu.dashboard.desc',
-      disable: false,
-      show: false,
-      iconSlot: <DashboardIcon />,
-    },
-    {
-      label: 'Newsletters',
-      to: '/mi/newsletters',
-      disable: false,
-      show: false,
-      section: 'SERVICES',
-    },
-    // {
-    //   label: 'Economic Event Calendar',
-    //   to: '/mi/economic-event',
-    //   disable: false,
-    //   show: false,
-    // },
-  ],
-  forecast: [
-    {
-      label: 'AI Forecast Model',
-      to: '/mi/forecast',
-      desc: 'submenu.forecast.desc',
-      iconSlot: <ForecastIcon />,
-      show: false,
-    },
-    {
-      label: 'Signal Map',
-      to: '/mi/signal-map',
-      desc: 'submenu.signalMap.desc',
-      iconSlot: <SignalIcon />,
-      show: false,
-    },
-  ],
-  market: [
-    {
-      label: 'Market Metrics',
-      to: '/mi/market-data',
-      desc: 'submenu.marketMetrics.desc',
-      iconSlot: <MetricsIcon />,
-      show: false,
-    },
-    {
-      label: 'Market Reports',
-      to: '/mi/insights',
-      desc: 'submenu.marketReports.desc',
-      iconSlot: <ReportIcon />,
-      show: false,
-    },
-    {
-      label: 'Market News',
-      to: '/mi/market-news',
-      desc: 'submenu.marketNews.desc',
-      disable: false,
-      show: false,
-      iconSlot: <NewsIcon />,
-    },
-    // {
-    //   label: 'Parallel Coordinates',
-    //   to: '/mi/parallel-coordinates',
-    //   desc: 'submenu.parallelCoordinates.desc',
-    //   disable: false,
-    //   show: false,
-    //   iconSlot: <ParallelIcon />,
-    // },
-    {
-      label: 'Qualitative Analysis',
-      to: '/mi/custom',
-      section: 'SERVICES',
-      show: false,
-    },
-  ],
-}
 
 const boards = [
   { label: 'Notice', url: '/mi/notices' },
@@ -134,13 +30,10 @@ const boards = [
 ]
 
 interface MIHeaderMainLayoutProps {
-  pages: Page[]
-  activeMenu: MiPagesType[]
   onMoveTab: (callback: () => void) => void
-  isLoading?: boolean
 }
 
-const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab, isLoading = false }: MIHeaderMainLayoutProps) => {
+const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
   const { isProd } = useEnvironment()
   const navigate = useNavigate()
   const location = useLocation()
@@ -166,7 +59,9 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab, isLoading = false }:
     setSelectedLanguage(currentLanguageOption)
   }, [i18n.language])
 
-  const { companyList } = useCompanyCondition()
+  const { companyList, activeMenu, isDeniedDashboardPageLoading } = useCompanyCondition()
+
+  const isLoading = isDeniedDashboardPageLoading || activeMenu.length === 0
 
   // 비관리자(USER) 로그인 시, 사용자 프로필 기반 설정
   useEffect(() => {
@@ -176,24 +71,24 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab, isLoading = false }:
   }, [user, accessCompanyInfo, loadAccessCompanyInfo])
 
   const updatedMainMenus = useMemo(() => {
-    const activeSet = new Set(activeMenu.map((m) => String(m)))
-    return pages.map((item) => {
-      const url = String(item.url)
-      const show = activeSet.has(url)
+    const activeSet = new Set(activeMenu)
+    return MENU_CONFIG.map((item) => {
+      const indexPage = item.index
+      const show = activeSet.has(indexPage)
       return { ...item, show }
     })
-  }, [pages, activeMenu])
+  }, [activeMenu])
 
   const updatedSubmenus = useMemo(
     () =>
       Object.fromEntries(
-        Object.entries(SUBMENUS).map(([main, items]) => [
+        Object.entries(SUBMENU_MAP).map(([main, items]) => [
           main,
           items.map((item) => {
             const url = item.to.split('/mi/').pop() ?? ''
             return {
               ...item,
-              show: activeMenu.includes(url as MiPagesType),
+              show: activeMenu.includes(url),
               desc: item.desc ? t(item.desc) : item.desc,
             }
           }),
@@ -438,27 +333,27 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab, isLoading = false }:
                 updatedMainMenus
                   .filter((page) => page.show)
                   .map((page) => {
-                    const pageKey = String(page.url)
-                    const isOpen = openKey === pageKey
+                    const indexPage = page.index
+                    const isOpen = openKey === indexPage
                     const isActiveTop =
-                      isPathActive(`/mi/${pageKey}`) || (updatedSubmenus[pageKey]?.some((s) => isPathActive(s.to)) ?? false)
+                      isPathActive(`/mi/${indexPage}`) || (updatedSubmenus[indexPage]?.some((s) => isPathActive(s.to)) ?? false)
 
                     return (
                       <Box
                         key={page.label}
-                        onMouseEnter={(e) => onTopMouseEnter(pageKey, e.currentTarget as HTMLElement)}
+                        onMouseEnter={(e) => onTopMouseEnter(indexPage, e.currentTarget as HTMLElement)}
                         onMouseLeave={onTopMouseLeave}
                       >
                         <Button
                           ref={(el) => {
-                            topBtnRefs.current[pageKey] = el
+                            topBtnRefs.current[indexPage] = el
                           }}
                           disableRipple
                           onClick={(e) => {
                             e.preventDefault()
-                            onMoveTab(() => handleTopClick(pageKey))
+                            onMoveTab(() => handleTopClick(indexPage))
                           }}
-                          onKeyDown={(e) => handleTopKeyDown(e, pageKey, e.currentTarget as HTMLElement)}
+                          onKeyDown={(e) => handleTopKeyDown(e, indexPage, e.currentTarget as HTMLElement)}
                           sx={{
                             position: 'relative',
                             px: 4,
@@ -520,7 +415,7 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab, isLoading = false }:
                                   margin: '8px 0 8px 0',
                                 }}
                               >
-                                {(updatedSubmenus[pageKey] ?? []).map((item, idx) => {
+                                {(updatedSubmenus[indexPage] ?? []).map((item, idx) => {
                                   const active = isPathActive(item.to)
                                   const isServices = item.section === 'SERVICES'
                                   return (
@@ -569,11 +464,11 @@ const MIHeaderMainLayout = ({ pages, activeMenu, onMoveTab, isLoading = false }:
                                           }}
                                         >
                                           <Box
-                                            sx={{ mt: '8px', ml: item.iconSlot ? '6px' : '2px' }}
+                                            sx={{ mt: '8px', ml: item.IconComponent ? '6px' : '2px' }}
                                             // color={active ? 'mari.Primary' : item.disable ? 'contentText.Disabled' : 'gray.80'}
                                             color={active ? 'mari.Primary' : 'gray.80'}
                                           >
-                                            {item.iconSlot ?? <Box />}
+                                            {item.IconComponent ? <item.IconComponent /> : <Box />}
                                           </Box>
 
                                           <Box paddingY={'8px'}>
