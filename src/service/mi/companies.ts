@@ -11,6 +11,7 @@ export interface IAccessCompanyInfo {
   isQualitative?: boolean
   isMari?: boolean
   isFuture?: boolean
+  newsMarketCategoryCode?: string
 }
 
 const companiesService = {
