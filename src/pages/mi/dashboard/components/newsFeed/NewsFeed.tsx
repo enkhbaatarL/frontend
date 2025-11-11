@@ -10,7 +10,7 @@ import useCodeData from '@/hooks/useCodeData'
 import DashboardCard from '@/pages/mi/dashboard/components/common/DashboardCard'
 import Feed from '@/pages/mi/dashboard/components/newsFeed/Feed'
 import Timeline from '@/pages/mi/dashboard/components/newsFeed/Timeline'
-import dashboardService from '@/service/mi/dashboard'
+import dashboardService, { Directionality } from '@/service/mi/dashboard'
 import { getMarketIconInfo } from '@/utils/marketIcons'
 
 const getMarketCategoryLabel = (codeId: string) => {
@@ -82,7 +82,7 @@ const SettingsMenuItem = ({
 
 const NewsFeed = () => {
   const [categoryCode, setCategoryCode] = useState<string>('')
-  const [sentiments, setSentiments] = useState<string[]>([])
+  const [sentiments, setSentiments] = useState<Directionality[]>([])
   const [impactScores, setImpactScores] = useState<string[]>([])
   const [regions, setRegions] = useState<string[]>([])
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false)
@@ -134,7 +134,7 @@ const NewsFeed = () => {
     }))
   }
 
-  const handleApplyFilters = (newSentiments: string[], newImpactScores: string[], newRegions: string[], save?: boolean) => {
+  const handleApplyFilters = (newSentiments: Directionality[], newImpactScores: string[], newRegions: string[], save?: boolean) => {
     setSentiments(newSentiments)
     setImpactScores(newImpactScores)
     setRegions(newRegions)

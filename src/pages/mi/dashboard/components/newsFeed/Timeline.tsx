@@ -5,7 +5,7 @@ import { useRef, useMemo, useState, useEffect } from 'react'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 import FeedItem from '@/pages/mi/dashboard/components/newsFeed/FeedItem'
-import { INewsFeedItem, DirectionType } from '@/service/mi/dashboard'
+import { INewsFeedItem, Directionality } from '@/service/mi/dashboard'
 
 interface TimelineBarProps {
   data: INewsFeedItem[]
@@ -102,7 +102,7 @@ const TimelineItem = ({ item, isHovered = false, hoverColor = '#F0F8FF', ...prop
               transition: 'all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             }}
           >
-            {item.impctScre}
+            {item.impactScore}
           </Typography>
         </Stack>
       </Stack>
@@ -157,9 +157,8 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
   const items = useMemo(
     () =>
       [...data]
-        .filter((item) => item.impctScre > 8) // 8점 이상의
-        .sort((a, b) => b.impctScre - a.impctScre)
-        .slice(0, 11) // 상위 11개를
+        .sort((a, b) => b.impactScore - a.impactScore)
+        .slice(0, 11) // 상위 11개
         .sort((a, b) => dayjs(a.firstCreated).valueOf() - dayjs(b.firstCreated).valueOf()), // 시간순 정렬
     [data],
   )
@@ -231,9 +230,9 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
     })
   }, [items, containerWidth, barStartTime, barEndTime, itemHeights])
 
-  const getColor = (trend: DirectionType) => {
-    if (trend === DirectionType.Upward) return '#3386C2'
-    if (trend === DirectionType.Downward) return '#A02A74'
+  const getColor = (trend: Directionality) => {
+    if (trend === Directionality.Upward) return '#3386C2'
+    if (trend === Directionality.Downward) return '#A02A74'
     return '#868E96'
   }
 
@@ -288,17 +287,17 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
         <Box height="6px" borderRadius="100px" sx={{ backgroundColor: '#DEE2E6' }} />
         {timelineItems.map(({ item, index, evenNumber, itemLineHeight, left, isRightSide }) => {
           const isHovered = hoveredItemIndex === index
-          const isSelected = selectedItemId === item.nwsSigId.toString()
+          const isSelected = selectedItemId === item.newsSignalId.toString()
           const shouldHighlight = isHovered || isSelected
 
           return (
-            <Box key={`${item.nwsSigId}`} position="absolute" top="-6px" left={left}>
+            <Box key={`${item.newsSignalId}`} position="absolute" top="-6px" left={left}>
               <Box
                 position="absolute"
                 width="18px"
                 height="18px"
                 borderRadius="50%"
-                border={`4px solid ${getColor(item.drctnlt)}`}
+                border={`4px solid ${getColor(item.directionality)}`}
                 boxSizing="border-box"
                 sx={{
                   '&::before': {
@@ -316,7 +315,7 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
                     all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
                     box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)
                   `,
-                  backgroundColor: shouldHighlight ? getColor(item.drctnlt) : 'white',
+                  backgroundColor: shouldHighlight ? getColor(item.directionality) : 'white',
                   zIndex: shouldHighlight ? 5 : 1,
                 }}
               />
@@ -332,7 +331,7 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
                 <TimelineItem
                   item={item}
                   isHovered={shouldHighlight}
-                  hoverColor={shouldHighlight ? getColor(item.drctnlt) : undefined}
+                  hoverColor={shouldHighlight ? getColor(item.directionality) : undefined}
                   onMouseEnter={(e) => {
                     e.stopPropagation()
                     handleMouseEnter(index)
@@ -343,7 +342,7 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
                   }}
                   onClick={(e) => {
                     e.stopPropagation()
-                    onItemClick?.(item.nwsSigId.toString())
+                    onItemClick?.(item.newsSignalId.toString())
                   }}
                 />
                 <Stack
@@ -363,7 +362,7 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
                     height="100%"
                     sx={{
                       transition: 'all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                      background: shouldHighlight ? getColor(item.drctnlt) : '#DEE2E6',
+                      background: shouldHighlight ? getColor(item.directionality) : '#DEE2E6',
                     }}
                   />
                 </Stack>
@@ -417,7 +416,7 @@ const Timeline = ({ onItemClick, timeLineItems, loading = false, ...props }: Tim
   }
 
   const selectedItem = useMemo(
-    () => timeLineItems?.find((item) => item.nwsSigId.toString() === selectedItemId),
+    () => timeLineItems?.find((item) => item.newsSignalId.toString() === selectedItemId),
     [timeLineItems, selectedItemId],
   )
 
@@ -506,7 +505,7 @@ const Timeline = ({ onItemClick, timeLineItems, loading = false, ...props }: Tim
         >
           {selectedItem && (
             <FeedItem
-              key={selectedItem.nwsSigId}
+              key={selectedItem.newsSignalId}
               item={selectedItem}
               onClose={handleItemClose}
               isHighlighted={isHighlighted}

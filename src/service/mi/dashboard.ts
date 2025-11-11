@@ -15,30 +15,30 @@ export interface MarketItem {
   impact?: string
 }
 
-export enum DirectionType {
+export enum Directionality {
   Upward = 'Upward',
   Downward = 'Downward',
   Neutral = 'Neutral',
 }
 
 export interface INewsFeedItem {
-  nwsSigId: number
-  dataRegistrationSn: number
+  newsSignalId: number
+  dataRegistrationSerialNo: number
   firstCreated: string
-  nwsMrktCtgrCd: string
+  newsMarketCategoryCode: string
   newsSummaryId: number
   briefSummary: string
   summary: string[]
   title: string
   provider: string
-  impctScre: number
-  drctnlt: DirectionType
+  impactScore: number
+  directionality: Directionality
   regions: string[]
 }
 
 export interface INewsFeedFilter {
   sort: string
-  sentiments: string[]
+  sentiments: Directionality[]
   impactScores: string[]
   regions: string[]
 }

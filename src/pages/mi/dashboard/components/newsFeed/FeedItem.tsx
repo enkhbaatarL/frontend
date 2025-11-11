@@ -8,27 +8,21 @@ import CloseIcon from '@/components/common/icons/CloseIcon'
 import useCodeData from '@/hooks/useCodeData'
 import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
 import CategoryChip from '@/pages/mi/dashboard/components/common/CategoryChip'
-import TrendIcon from '@/pages/mi/dashboard/components/newsFeed/TrendIcon'
-import { INewsFeedItem, DirectionType } from '@/service/mi/dashboard'
+import DirectionalIcon from '@/pages/mi/dashboard/components/newsFeed/DirectionalIcon'
+import { INewsFeedItem, Directionality } from '@/service/mi/dashboard'
 import { getMarketIcon } from '@/utils/marketIcons'
 
 const getFeedIcon = (type: string): string | undefined => getMarketIcon(type)
 
-const getTrendColor = (drctnlt: DirectionType) => {
-  switch (drctnlt) {
-    case DirectionType.Upward:
+const getDirectionalColor = (directionality: Directionality) => {
+  switch (directionality) {
+    case Directionality.Upward:
       return '#3386C2'
-    case DirectionType.Downward:
+    case Directionality.Downward:
       return '#A02A74'
     default:
       return '#A8A8A8' // Neutral
   }
-}
-
-const getImpactLevel = (score: number): string => {
-  if (score >= 9) return 'HIGH'
-  if (score >= 7) return 'MEDIUM'
-  return 'LOW'
 }
 
 interface FeedItemProps extends StackProps {
@@ -43,8 +37,7 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
   const [isExpanded, setIsExpanded] = useState(false)
   const aiSummaryRef = useRef<AiSummaryHandle>(null)
 
-  const trendColor = getTrendColor(item.drctnlt)
-  const impactLevel = getImpactLevel(item.impctScre)
+  const directionalColor = getDirectionalColor(item.directionality)
 
   const navigate = useNavigate()
 
@@ -70,7 +63,7 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
       setIsExpanded(true)
       setTimeout(() => aiSummaryRef.current?.open(), 100)
     }
-  }, [focusMode, item.nwsSigId])
+  }, [focusMode, item.newsSignalId])
 
   const handleClick = () => {
     if (focusMode) return
@@ -126,9 +119,9 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
           left: '0',
           right: '0',
           bottom: '0',
-          border: `2px solid ${trendColor}`,
+          border: `2px solid ${directionalColor}`,
           borderRadius: '10px',
-          boxShadow: `0 0 0 1px ${trendColor}40, 0 2px 8px ${trendColor}30`,
+          boxShadow: `0 0 0 1px ${directionalColor}40, 0 2px 8px ${directionalColor}30`,
           pointerEvents: 'none',
           zIndex: 1,
           opacity: shouldFlash ? 1 : 0,
@@ -145,9 +138,15 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
     >
       <Stack direction="row" justifyContent="space-between">
         <Stack direction="row" gap="8px">
-          {getFeedIcon(item.nwsMrktCtgrCd) && (
-            <CategoryChip tooltipTitle={marketCategoryCodeList?.find((code) => code.codeId === item.nwsMrktCtgrCd)?.codeNm}>
-              <Box component="img" width={22} height={22} src={getFeedIcon(item.nwsMrktCtgrCd)} alt={item.nwsMrktCtgrCd} />
+          {getFeedIcon(item.newsMarketCategoryCode) && (
+            <CategoryChip tooltipTitle={marketCategoryCodeList?.find((code) => code.codeId === item.newsMarketCategoryCode)?.codeNm}>
+              <Box
+                component="img"
+                width={22}
+                height={22}
+                src={getFeedIcon(item.newsMarketCategoryCode)}
+                alt={item.newsMarketCategoryCode}
+              />
             </CategoryChip>
           )}
           {item.regions.map((region) => (
@@ -160,12 +159,12 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
               </Stack>
             </CategoryChip>
           ))}
-          <CategoryChip tooltipTitle={item.drctnlt}>
-            <TrendIcon sentiment={item.drctnlt} impact={impactLevel} />
+          <CategoryChip tooltipTitle={item.directionality}>
+            <DirectionalIcon directionality={item.directionality} impactScore={item.impactScore} />
           </CategoryChip>
-          <CategoryChip padding="6px 8px" tooltipTitle={`Impact Score: ${item.impctScre}`}>
+          <CategoryChip padding="6px 8px" tooltipTitle={`Impact Score: ${item.impactScore}`}>
             <Typography variant="body2SB14" color="content.textNormal">
-              {item.impctScre}
+              {item.impactScore}
             </Typography>
           </CategoryChip>
         </Stack>
