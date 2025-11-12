@@ -155,7 +155,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
       let fileName = ''
 
       // Content-Disposition 헤더에서 파일명 추출
-      if (contentDisposition.includes("filename*=UTF-8''")) {
+      if (contentDisposition.includes('filename*=UTF-8\'\'')) {
         // UTF-8 인코딩된 파일명 처리
         const match = contentDisposition.match(/filename\*=UTF-8''([^;\n]*)/)
         if (match) {
@@ -253,86 +253,86 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
         </MITableCell>
       ),
     },
-    {
-      field: 'baselineChangeRate',
-      headerName: columnHeaders.baselineChangeRateHeader,
-      align: 'right',
-      flex: 1,
-      renderCell: (param) => (
-        <MITableCell>
-          <Box sx={{ filter: !param.row.isBaselinePermitted ? 'blur(3px)' : 'none' }}>
-            {param.value !== '-' && (
-              <Typography
-                variant={'tableBody2'}
-                fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
-                color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
-              >
-                {param.value > 0 ? '+'.concat(param.value) : param.value}%
-              </Typography>
-            )}
-          </Box>
-        </MITableCell>
-      ),
-    },
+    // {
+    //   field: 'baselineChangeRate',
+    //   headerName: columnHeaders.baselineChangeRateHeader,
+    //   align: 'right',
+    //   flex: 1,
+    //   renderCell: (param) => (
+    //     <MITableCell>
+    //       <Box sx={{ filter: !param.row.isBaselinePermitted ? 'blur(3px)' : 'none' }}>
+    //         {param.value !== '-' && (
+    //           <Typography
+    //             variant={'tableBody2'}
+    //             fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
+    //             color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
+    //           >
+    //             {param.value > 0 ? '+'.concat(param.value) : param.value}%
+    //           </Typography>
+    //         )}
+    //       </Box>
+    //     </MITableCell>
+    //   ),
+    // },
     // baseline2 데이터가 있을 때만 컬럼 추가
     ...(hasBaseline2Data
       ? [
-          {
-            field: 'baseline2Price',
-            headerName: columnHeaders.baseline2Header,
-            align: 'right' as const,
-            flex: 1,
-            renderCell: (param: any) => (
-              <MITableCell
-                sx={{
-                  width: '100%',
-                  cursor: 'pointer',
-                  color: 'gray.70',
-                  display: 'flex',
-                  justifyContent: 'end',
-                  alignItems: 'center',
-                  backgroundColor: !param.row.isBaseline2Maximum && !param.row.isBaseline2Minimum ? 'unset' : '#F9F8F6',
-                  filter: !param.row.isBaseline2Permitted ? 'blur(3px)' : 'none',
-                  '.MuiSvgIcon-root': {
-                    verticalAlign: 'text-top',
-                    marginRight: '4px',
+        {
+          field: 'baseline2Price',
+          headerName: columnHeaders.baseline2Header,
+          align: 'right' as const,
+          flex: 1,
+          renderCell: (param: any) => (
+            <MITableCell
+              sx={{
+                width: '100%',
+                cursor: 'pointer',
+                color: 'gray.70',
+                display: 'flex',
+                justifyContent: 'end',
+                alignItems: 'center',
+                backgroundColor: !param.row.isBaseline2Maximum && !param.row.isBaseline2Minimum ? 'unset' : '#F9F8F6',
+                filter: !param.row.isBaseline2Permitted ? 'blur(3px)' : 'none',
+                '.MuiSvgIcon-root': {
+                  verticalAlign: 'text-top',
+                  marginRight: '4px',
+                },
+                '.MuiChip-label': {
+                  '.MuiTypography-root': {
+                    fontWeight: 600,
                   },
-                  '.MuiChip-label': {
-                    '.MuiTypography-root': {
-                      fontWeight: 600,
-                    },
-                  },
-                }}
-              >
-                {param.row.isBaseline2Maximum ? <UpIcon /> : param.row.isBaseline2Minimum ? <DownIcon /> : ''}
-                <Typography variant={'tableBody2'} color={'gray.90'}>
-                  {param.value}
-                </Typography>
-              </MITableCell>
-            ),
-          },
-          {
-            field: 'baseline2ChangeRate',
-            headerName: columnHeaders.baseline2ChangeRateHeader,
-            align: 'right' as const,
-            flex: 1,
-            renderCell: (param: any) => (
-              <MITableCell>
-                <Box sx={{ filter: !param.row.isBaseline2Permitted ? 'blur(3px)' : 'none' }}>
-                  {param.value !== '-' && (
-                    <Typography
-                      variant={'tableBody2'}
-                      fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
-                      color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
-                    >
-                      {param.value > 0 ? '+'.concat(param.value) : param.value}%
-                    </Typography>
-                  )}
-                </Box>
-              </MITableCell>
-            ),
-          },
-        ]
+                },
+              }}
+            >
+              {param.row.isBaseline2Maximum ? <UpIcon /> : param.row.isBaseline2Minimum ? <DownIcon /> : ''}
+              <Typography variant={'tableBody2'} color={'gray.90'}>
+                {param.value}
+              </Typography>
+            </MITableCell>
+          ),
+        },
+        // {
+        //   field: 'baseline2ChangeRate',
+        //   headerName: columnHeaders.baseline2ChangeRateHeader,
+        //   align: 'right' as const,
+        //   flex: 1,
+        //   renderCell: (param: any) => (
+        //     <MITableCell>
+        //       <Box sx={{ filter: !param.row.isBaseline2Permitted ? 'blur(3px)' : 'none' }}>
+        //         {param.value !== '-' && (
+        //           <Typography
+        //             variant={'tableBody2'}
+        //             fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
+        //             color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
+        //           >
+        //             {param.value > 0 ? '+'.concat(param.value) : param.value}%
+        //           </Typography>
+        //         )}
+        //       </Box>
+        //     </MITableCell>
+        //   ),
+        // },
+      ]
       : []),
     {
       field: 'counterpartPrice',
@@ -361,10 +361,10 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
             ...(!param.row.isCounterpartMaximum && !param.row.isCounterpartMinimum
               ? {}
               : {
-                  '.MuiTypography-root.MuiTypography-tableBody2': {
-                    fontWeight: 600,
-                  },
-                }),
+                '.MuiTypography-root.MuiTypography-tableBody2': {
+                  fontWeight: 600,
+                },
+              }),
           }}
         >
           <Box
