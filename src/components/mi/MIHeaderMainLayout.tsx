@@ -97,6 +97,20 @@ const SUBMENUS: Record<string, SubItem[]> = {
       show: false,
     },
     {
+      label: 'Sales Analysis',
+      to: '/mi/sales-analysis',
+      desc: 'submenu.salesAnalysis.desc',
+      iconSlot: <MetricsIcon />,
+      show: false,
+    },
+    {
+      label: 'Market Map',
+      to: '/mi/market-map',
+      desc: 'submenu.marketMap.desc',
+      iconSlot: <MetricsIcon />,
+      show: false,
+    },
+    {
       label: 'Market Reports',
       to: '/mi/insights',
       desc: 'submenu.marketReports.desc',
@@ -122,6 +136,12 @@ const SUBMENUS: Record<string, SubItem[]> = {
     {
       label: 'Qualitative Analysis',
       to: '/mi/custom',
+      section: 'SERVICES',
+      show: false,
+    },
+    {
+      label: 'MI Activity Log',
+      to: '/mi/mi-activity-log',
       section: 'SERVICES',
       show: false,
     },

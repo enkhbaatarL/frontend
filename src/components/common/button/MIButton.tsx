@@ -30,6 +30,8 @@ export interface MIButtonProps {
   padding?: number | string
   active?: boolean
   disableHoverColor?: boolean
+  borderRadius?: number | string
+  sx?: SxProps
   valueSelect?: {
     icon?: JSX.Element
     label: string
@@ -80,6 +82,8 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
     onClick,
     toolTipProps = {},
     hoverBgColor = '',
+    borderRadius = '4px',
+    sx,
   } = props
 
   const [isActive, setIsActive] = useState(false)
@@ -278,7 +282,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
           sx={{
             whiteSpace: 'nowrap',
             transition: 'all 0.3s',
-            borderRadius: '4px',
+            borderRadius,
             cursor: !disabled ? 'pointer' : 'default',
             fontFamily: theme.typography.fontFamily,
             ...styleBaseSize,
@@ -287,6 +291,7 @@ export default function MIButton(props: PropsWithChildren<MIButtonProps>) {
             justifyContent: contentType === 'select' ? 'space-between' : 'center',
             ...(isOpenMenu && { backgroundColor: 'content.backgroundHover', color: theme.palette.gray[90] }),
             ...(contentType === 'select' && { minWidth }),
+            ...(sx ? (Array.isArray(sx) ? sx : [sx]) : []),
           }}
         >
           {contentType === 'select' ? (

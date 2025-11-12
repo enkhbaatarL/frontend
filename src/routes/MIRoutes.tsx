@@ -12,6 +12,8 @@ import ForecastPage from '@/pages/mi/forecast/ForecastPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
+import MarketMapPage from '@/pages/mi/marketMap/MarketMapPage'
+import MIActivityLogPage from '@/pages/mi/miActivityLog/MIActivityLogPage'
 import NewsDetailPage from '@/pages/mi/news/NewsDetailPage'
 import NewsPage from '@/pages/mi/news/NewsPage'
 import NewsletterDetailPage from '@/pages/mi/newsletter/NewsletterDetailPage'
@@ -20,6 +22,7 @@ import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
 import NotificationPage from '@/pages/mi/notification/NotificationPage'
 import ParallelCoordinatesPage from '@/pages/mi/parallelCoordinates/ParallelCoordinatesPage'
+import SalesAnalysisPage from '@/pages/mi/salesAnalysis/SalesAnalysisPage'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import MIProvider from '@/providers/MIProvider'
 import useAuthStore from '@/store/useAuthStore'
@@ -120,6 +123,18 @@ const MIRoutes: RouteObject = {
           element: <NewsDetailPage />,
         },
       ],
+    },
+    {
+      path: 'sales-analysis',
+      element: <SalesAnalysisPage />,
+    },
+    {
+      path: 'market-map',
+      element: <MarketMapPage />,
+    },
+    {
+      path: 'mi-activity-log',
+      element: <MIActivityLogPage />,
     },
     {
       path: 'parallel-coordinates',

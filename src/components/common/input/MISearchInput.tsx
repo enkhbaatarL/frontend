@@ -1,5 +1,5 @@
 import SearchIcon from '@mui/icons-material/Search'
-import { Box, MenuItem, Typography, InputAdornment, TextField } from '@mui/material'
+import { Box, MenuItem, Typography, InputAdornment, TextField, SxProps, Theme } from '@mui/material'
 import { disassembleToGroups } from 'es-hangul'
 import { t } from 'i18next'
 import { useCallback, useEffect, useMemo, useRef, useState, ChangeEvent } from 'react'
@@ -17,9 +17,10 @@ interface Props {
   onSearch: (value: string) => void
   onClear: () => void
   width?: number
+  sx?: SxProps<Theme>
 }
 
-const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onClear, width }: Props) => {
+const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onClear, width, sx }: Props) => {
   const [history, setHistory] = useState<string[]>(JSON.parse(localStorage.getItem(`${storageKey}-search-history`) ?? '[]'))
   const [isFocused, setIsFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -143,60 +144,63 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
           input: inputProps,
         }}
         autoComplete="off"
-        sx={{
-          '& .MuiInputBase-root': {
-            alignItems: 'center',
-            borderRadius: '4px',
-            height: '40px',
-            padding: '10px 6px',
-            ...theme.typography.body2R14,
-            '& input': {
-              height: '25px',
-              fontSize: '14px',
-              fontWeight: 400,
-              padding: '0 6px',
-              width: '100%',
-              borderRadius: '0',
-              '&::placeholder': {
+        sx={[
+          {
+            '& .MuiInputBase-root': {
+              alignItems: 'center',
+              borderRadius: '4px',
+              height: '40px',
+              padding: '10px 6px',
+              ...theme.typography.body2R14,
+              '& input': {
+                height: '25px',
+                fontSize: '14px',
                 fontWeight: 400,
-                color: `${theme.palette.gray['40']} !important`,
+                padding: '0 6px',
+                width: '100%',
+                borderRadius: '0',
+                '&::placeholder': {
+                  fontWeight: 400,
+                  color: `${theme.palette.gray['40']} !important`,
+                },
               },
-            },
-            '.MuiSvgIcon-root': {
-              marginRight: '8px !important',
-            },
-            '.MuiInputAdornment-root': {
-              marginRight: 0,
-              '&.MuiInputAdornment-positionEnd': {
+              '.MuiSvgIcon-root': {
+                marginRight: '8px !important',
+              },
+              '.MuiInputAdornment-root': {
                 marginRight: 0,
-              },
-            },
-          },
-          '& .MuiInputBase-root .MuiSvgIcon-root': {
-            marginRight: 2,
-            color: '#868E96',
-          },
-          '& .MuiInputBase-root.Mui-focused': {
-            '.MuiInputAdornment-root': {
-              marginRight: 0,
-              'svg:last-child': {
-                color: theme.palette.content['iconActive'],
-                path: {
-                  fill: theme.palette.content['iconActive'],
-                },
-              },
-              'svg.iconClear': {
-                color: theme.palette.content['iconEnabled'],
-                path: {
-                  fill: theme.palette.content['iconEnabled'],
+                '&.MuiInputAdornment-positionEnd': {
+                  marginRight: 0,
                 },
               },
             },
+            '& .MuiInputBase-root .MuiSvgIcon-root': {
+              marginRight: 2,
+              color: '#868E96',
+            },
+            '& .MuiInputBase-root.Mui-focused': {
+              '.MuiInputAdornment-root': {
+                marginRight: 0,
+                'svg:last-child': {
+                  color: theme.palette.content['iconActive'],
+                  path: {
+                    fill: theme.palette.content['iconActive'],
+                  },
+                },
+                'svg.iconClear': {
+                  color: theme.palette.content['iconEnabled'],
+                  path: {
+                    fill: theme.palette.content['iconEnabled'],
+                  },
+                },
+              },
+            },
+            '& .MuiInputAdornment-root': {
+              margin: 0,
+            },
           },
-          '& .MuiInputAdornment-root': {
-            margin: 0,
-          },
-        }}
+          ...(sx ? (Array.isArray(sx) ? sx : [sx]) : []),
+        ]}
       />
       {openHistoryList && (
         <Box

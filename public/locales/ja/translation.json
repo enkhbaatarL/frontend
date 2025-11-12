@@ -34,6 +34,12 @@
     "marketMetrics": {
       "desc": "市場指標・価格データ"
     },
+    "salesAnalysis": {
+      "desc": "Sales analysis items"
+    },
+    "marketMap": {
+      "desc": "Market size and outlook"
+    },
     "marketReports": {
       "desc": "分析レポート・インサイト"
     },

@@ -20,12 +20,15 @@ interface Props {
   title: ReactNode
   children?: ReactNode
   width?: string | number
+  height?: string | number
   handleClose: () => void
   justifyContentAction?: 'space-between' | 'end' | 'start' | 'center'
   actions?: ActionButton[]
   hideFooter?: boolean
   zIndex?: number
   disableClose?: boolean
+  paperSx?: Record<string, unknown>
+  contentSx?: Record<string, unknown>
 }
 
 const MIConfirm = ({
@@ -33,12 +36,15 @@ const MIConfirm = ({
   title,
   children,
   width = 400,
+  height,
   handleClose,
   justifyContentAction = 'end',
   hideFooter = false,
   actions = [{ label: t('확인'), variant: 'filled', color: 'primary', onClick: handleClose }],
   zIndex,
   disableClose = false,
+  paperSx,
+  contentSx,
 }: Props) => {
   useEffect(() => {
     const className = 'mi-confirm-open'
@@ -60,7 +66,13 @@ const MIConfirm = ({
         paper: {
           sx: {
             width: typeof width === 'number' ? `${width}px` : width,
-            maxHeight: 800,
+            ...(height
+              ? {
+                  height: typeof height === 'number' ? `${height}px` : height,
+                  maxHeight: typeof height === 'number' ? `${height}px` : height,
+                }
+              : { maxHeight: 800 }),
+            ...paperSx,
           },
         },
       }}
@@ -96,7 +108,7 @@ const MIConfirm = ({
       </DialogTitle>
 
       {children && (
-        <DialogContent>
+        <DialogContent sx={contentSx}>
           <DialogContentText component="div" sx={{ whiteSpace: 'pre-line' }}>
             {children}
           </DialogContentText>

@@ -35,4 +35,7 @@ export type MiPagesType =
   | 'parallel-coordinates'
   | 'custom'
   | 'market-data'
+  | 'sales-analysis'
+  | 'market-map'
   | 'insights'
+  | 'mi-activity-log'

@@ -143,6 +143,34 @@ const marketDataService = {
   async clearRecentViewed(customerCompanyNo: number): Promise<void> {
     await api.delete(withCustomBaseUrl(`/mi/market-data/companies/${customerCompanyNo}/recent-viewed`))
   },
+
+  /**
+   * Market Map 데이터를 조회합니다.
+   * @param customerCompanyNo - 고객사 번호
+   */
+  async getMarketMapDatas(customerCompanyNo?: number): Promise<IMarketData[]> {
+    if (!customerCompanyNo) throw new Error('customerCompanyNo is required')
+
+    const response: AxiosResponse<ICommonResponse<IMarketData[]>> = await api.get(
+      withCustomBaseUrl(`/mi/market-map/companies/${customerCompanyNo}/market-datas`),
+    )
+
+    return response.data.data
+  },
+
+  /**
+   * Sales Analysis 데이터를 조회합니다.
+   * @param customerCompanyNo - 고객사 번호
+   */
+  async getSalesAnalysisDatas(customerCompanyNo?: number): Promise<IMarketData[]> {
+    if (!customerCompanyNo) throw new Error('customerCompanyNo is required')
+
+    const response: AxiosResponse<ICommonResponse<IMarketData[]>> = await api.get(
+      withCustomBaseUrl(`/mi/sales-analysis/companies/${customerCompanyNo}/dashboard`),
+    )
+
+    return response.data.data
+  },
 }
 
 export default marketDataService
