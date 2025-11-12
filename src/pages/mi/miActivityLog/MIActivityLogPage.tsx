@@ -736,27 +736,22 @@ const MIActivityLogPage = () => {
             <Box display="flex" gap="20px">
               <Box width={220}>
                 <MIField label="Type">
-                  <MISelect
-                    placeholder="Select type"
-                    value={selectedRow.type}
-                    options={TYPE_OPTIONS}
-                    width={220}
-                    sizeSelect="h36"
-                    useAllOption={false}
-                    type="button"
-                    readOnly
+                  <Box
                     sx={{
-                      '& .MuiInputBase-root': {
-                        borderRadius: '10px',
-                      },
-                      '& .MuiOutlinedInput-root': {
-                        height: '36px !important',
-                      },
-                      '& .MuiOutlinedInput-root .MuiAutocomplete-input': {
-                        paddingLeft: '2px !important',
-                      },
+                      width: '220px',
+                      height: '36px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      borderRadius: '10px',
+                      backgroundColor: '#F1F3F5',
+                      boxSizing: 'border-box',
+                      padding: '0 12px',
+                      color: '#495057',
+                      fontSize: '14px',
                     }}
-                  />
+                  >
+                    {selectedRow.type}
+                  </Box>
                 </MIField>
               </Box>
               <Box width={220}>
@@ -786,27 +781,22 @@ const MIActivityLogPage = () => {
             <Box display="flex" gap="20px">
               <Box width={220}>
                 <MIField label="Priority">
-                  <MISelect
-                    placeholder="Select priority"
-                    value={selectedRow.priority}
-                    options={PRIORITY_OPTIONS}
-                    width={220}
-                    sizeSelect="h36"
-                    useAllOption={false}
-                    type="button"
-                    readOnly
+                  <Box
                     sx={{
-                      '& .MuiInputBase-root': {
-                        borderRadius: '10px',
-                      },
-                      '& .MuiOutlinedInput-root': {
-                        height: '36px !important',
-                      },
-                      '& .MuiOutlinedInput-root .MuiAutocomplete-input': {
-                        paddingLeft: '2px !important',
-                      },
+                      width: '220px',
+                      height: '36px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      borderRadius: '10px',
+                      backgroundColor: '#F1F3F5',
+                      boxSizing: 'border-box',
+                      padding: '0 12px',
+                      color: '#495057',
+                      fontSize: '14px',
                     }}
-                  />
+                  >
+                    {selectedRow.priority}
+                  </Box>
                 </MIField>
               </Box>
               <Box width={220}>
