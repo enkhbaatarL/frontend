@@ -2,6 +2,7 @@
 import { Box, Grid2 as Grid, Stack, Typography } from '@mui/material'
 import dayjs, { Dayjs } from 'dayjs'
 import { useMemo, useState } from 'react'
+import { disassembleToGroups } from 'es-hangul'
 
 import type { GridColDef } from '@mui/x-data-grid'
 
@@ -125,12 +126,18 @@ const MIActivityLogPage = () => {
     source: '',
   })
 
+  const normalizeText = (text: string) => disassembleToGroups(text).flat().join('').toLowerCase()
+
   const filteredRows = useMemo(() => {
-    const normalizedQuery = appliedSearch.trim().toLowerCase()
+    const normalizedQuery = normalizeText(appliedSearch.trim())
+
     return events.filter((event) => {
       const matchesType = selectedTypes.length === 0 || selectedTypes.includes(event.type)
-      if (!normalizedQuery) return matchesType
-      const searchable = [
+      if (!normalizedQuery) {
+        return matchesType
+      }
+
+      const searchFields = [
         event.account,
         event.description,
         event.source,
@@ -138,10 +145,16 @@ const MIActivityLogPage = () => {
         event.team,
         event.type,
         event.priority,
+        dayjs(event.date).isValid() ? dayjs(event.date).format('YYYY-MM-DD') : event.date,
       ]
-        .join(' ')
-        .toLowerCase()
-      return matchesType && searchable.includes(normalizedQuery)
+
+      const matchesSearch = searchFields.some((field) => {
+        if (!field) return false
+        return normalizeText(String(field)).includes(normalizedQuery)
+      })
+
+      return matchesType && matchesSearch
+
     })
   }, [appliedSearch, selectedTypes, events])
 
@@ -362,8 +375,10 @@ const MIActivityLogPage = () => {
                   value={searchValue}
                   onChange={(value) => {
                     setSearchValue(value)
-                    setAppliedSearch(value)
-                    setPage(1)
+                    if (value.trim() === '' && appliedSearch !== '') {
+                      setAppliedSearch('')
+                      setPage(1)
+                    }
                   }}
                   placeholder="Search for description"
                   onSearch={(value) => {
