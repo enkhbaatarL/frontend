@@ -3,11 +3,11 @@ import dayjs, { Dayjs } from 'dayjs'
 import { Fragment, useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
 import MILine from '@/components/common/divider/MILine'
 import MIFilterGroup from '@/components/common/filter/MIFilterGroup'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
+import MIDateRangePickerMenu from '@/components/common/menu/MIDateRangePickerMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
@@ -42,12 +42,32 @@ const renderNewsSkeletonGroup = (key: number, removeMarginBottom = false) => (
   </Box>
 )
 
+const STORAGE_KEY = 'newsPageDateRange'
+
 const NewsPage = () => {
   const navigate = useNavigate()
   const today = dayjs()
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [hasInitialData, setHasInitialData] = useState(false)
+
+  const savedDateRange = useMemo(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try {
+        const { startDate, endDate } = JSON.parse(saved)
+        return {
+          startDate: startDate ? dayjs(startDate, 'YYYYMMDD') : undefined,
+          endDate: endDate ? dayjs(endDate, 'YYYYMMDD') : undefined,
+        }
+      } catch {
+        return null
+      }
+    }
+    return null
+  }, [])
+
+  const hasSavedDateRange = savedDateRange !== null
 
   const {
     filter,
@@ -65,8 +85,8 @@ const NewsPage = () => {
     {
       keyword: '',
       sort: 'NEWEST',
-      startDate: today.subtract(1, 'year').format('YYYYMMDD'),
-      endDate: today.format('YYYYMMDD'),
+      startDate: savedDateRange?.startDate?.format('YYYYMMDD') ?? today.subtract(1, 'year').format('YYYYMMDD'),
+      endDate: savedDateRange?.endDate?.format('YYYYMMDD') ?? today.format('YYYYMMDD'),
       categories: [],
       regions: [],
       industries: [],
@@ -151,13 +171,29 @@ const NewsPage = () => {
                     selected={filter.sort ?? 'NEWEST'}
                     onSelected={(selected: string) => updateFilterWithSearch('sort', selected)}
                   />
-                  <MIDateRangePicker
-                    width={380}
-                    sizeInput="h40"
-                    borderRadius="10px"
-                    startDate={filter.startDate ? dayjs(filter.startDate) : undefined}
-                    endDate={filter.endDate ? dayjs(filter.endDate) : undefined}
-                    onChange={handleDateChange}
+                  <MIDateRangePickerMenu
+                    dateRange={
+                      filter.startDate && filter.endDate
+                        ? { startDate: dayjs(filter.startDate), endDate: dayjs(filter.endDate) }
+                        : undefined
+                    }
+                    menuPositionOffset={{ right: -14 }}
+                    initialSaveOn={hasSavedDateRange}
+                    limitDateRange={[1, 'years']}
+                    onApply={handleDateChange}
+                    onSave={(dates) => {
+                      if (dates) {
+                        localStorage.setItem(
+                          STORAGE_KEY,
+                          JSON.stringify({
+                            startDate: dates.startDate?.format('YYYYMMDD'),
+                            endDate: dates.endDate?.format('YYYYMMDD'),
+                          }),
+                        )
+                      } else {
+                        localStorage.removeItem(STORAGE_KEY)
+                      }
+                    }}
                   />
                 </Stack>
               </Stack>

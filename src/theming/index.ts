@@ -400,6 +400,7 @@ const theme = createTheme({
       Activew: '#FFFFFF',
       Activeb: '#343A40',
       ActivePrimary: '#2E3F5E',
+      ActiveSecondary: '#49608A',
       Hover: '#343A40',
       Disabled: '#CED4DA',
       Enabled: '#868E96',

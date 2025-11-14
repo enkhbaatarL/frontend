@@ -73,6 +73,13 @@ const MISelectMenu = ({
 
   const handleToggle = multiple ? handleMultipleToggle : handleSingleSelect
 
+  const isItemSelected = (value: string): boolean => {
+    if (Array.isArray(selected)) {
+      return selected.includes(value)
+    }
+    return selected === value
+  }
+
   const groupedItems = useMemo(() => {
     if (groupDisplayType === 'none') {
       return { groups: {}, ungroupedItems: items }
@@ -107,7 +114,12 @@ const MISelectMenu = ({
       )
     }
 
-    const selectedItems = items.filter((item) => selected.includes(item.value))
+    const selectedItems = items.filter((item) => {
+      if (Array.isArray(selected)) {
+        return selected.includes(item.value)
+      }
+      return selected === item.value
+    })
     if (selectedItems.length === 0) return placeholder
     if (selectedItems.length > 2) {
       return (
@@ -135,7 +147,7 @@ const MISelectMenu = ({
       return (
         <>
           {groupedItems.ungroupedItems.map(({ label, value, disabled }) => {
-            const isSelected = selected.includes(value)
+            const isSelected = isItemSelected(value)
 
             return (
               <Box
@@ -197,7 +209,7 @@ const MISelectMenu = ({
               {groupIndex > 0 && <Divider />}
 
               {groupItems.map(({ label, value, disabled }) => {
-                const isSelected = selected.includes(value)
+                const isSelected = isItemSelected(value)
 
                 return (
                   <Box
@@ -262,7 +274,7 @@ const MISelectMenu = ({
     return (
       <>
         {groupedItems.ungroupedItems.map(({ label, value, disabled }) => {
-          const isSelected = selected.includes(value)
+          const isSelected = isItemSelected(value)
 
           return (
             <Box

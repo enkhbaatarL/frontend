@@ -9,7 +9,7 @@ export interface MenuPositionOffset {
   bottom?: number
 }
 
-interface Props extends ButtonProps {
+export interface MIMenuProps extends ButtonProps {
   label?: ReactNode
   displayType?: 'button' | 'select'
   variant?: 'text' | 'outlined' | 'contained'
@@ -44,7 +44,7 @@ const MIMenu = ({
   disablePortal = false,
   enableHoverBackground = false,
   ...props
-}: Props) => {
+}: MIMenuProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const prevOpen = useRef(open)
 

@@ -4,7 +4,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, ReactNode } from 'react
 
 import MIButton from '@/components/common/button/MIButton'
 import MIFilterGroup from '@/components/common/filter/MIFilterGroup'
-import MIMenu from '@/components/common/menu/MIMenu'
+import MIMenu, { MIMenuProps } from '@/components/common/menu/MIMenu'
 
 export interface FilterGroupConfig {
   key: string
@@ -17,7 +17,7 @@ export interface FilterValues {
   [key: string]: string[]
 }
 
-interface MIFilterMenuProps {
+interface MIFilterMenuProps extends MIMenuProps {
   label?: ReactNode
   filterGroups: FilterGroupConfig[][]
   initialValues?: FilterValues
@@ -41,6 +41,7 @@ const MIFilterMenu = ({
   initialSaveOn = false,
   groupLayout = 'vertical-horizontal',
   enableHoverBackground = false,
+  ...props
 }: MIFilterMenuProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [save, setSave] = useState(initialSaveOn)
@@ -204,6 +205,7 @@ const MIFilterMenu = ({
       label={defaultLabel}
       displayType="select"
       enableHoverBackground={enableHoverBackground}
+      {...props}
     >
       <Stack>
         {renderFilterGroups()}
@@ -214,6 +216,7 @@ const MIFilterMenu = ({
           alignItems="center"
           borderTop="1px solid"
           borderColor="contentBorder.Normal"
+          gap="16px"
         >
           {showSaveOption && (
             <FormControlLabel
