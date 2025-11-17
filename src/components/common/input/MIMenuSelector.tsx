@@ -81,6 +81,7 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
               sx: {
                 overflow: 'hidden',
                 maxHeight: '300px',
+                minWidth: minWidthMenu,
               },
             },
             list: {

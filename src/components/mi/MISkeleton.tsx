@@ -22,6 +22,7 @@ interface Props {
     | 'newsletter'
     | 'marketNews'
     | 'marketNewsDetail'
+    | 'aiMarketSummary'
   itemCount?: number
   rows?: number
   columns?: number

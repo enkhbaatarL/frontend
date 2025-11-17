@@ -135,6 +135,7 @@ const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, di
             color={'gray'}
             size={'h28'}
             minWidth={69}
+            disablePortal={false}
             valueSelect={{
               label: String(size),
               value: String(size),
