@@ -8,7 +8,7 @@ import AIMarketSummaryPage from '@/pages/mi/aiMarketSummary/AIMarketSummaryPage'
 import CustomPage from '@/pages/mi/custom/CustomPage'
 import DashboardPage from '@/pages/mi/dashboard/DashboardPage'
 import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
-import EventCalendarPage from '@/pages/mi/eventCalendar/EventCalendarPage'
+import EconomicCalendarPage from '@/pages/mi/economicCalendar/EconomicCalendarPage'
 import ForecastPage from '@/pages/mi/forecast/ForecastPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
@@ -82,8 +82,8 @@ const MIRoutes: RouteObject = {
       element: <TopicTrackerPage />,
     },
     {
-      path: 'event-calendar',
-      element: <EventCalendarPage />,
+      path: 'economic-calendar',
+      element: <EconomicCalendarPage />,
     },
     {
       path: 'newsletters',

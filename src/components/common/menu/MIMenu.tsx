@@ -49,7 +49,11 @@ const MIMenu = ({
   const prevOpen = useRef(open)
 
   const handleToggle = () => {
-    onOpenChange?.(!open)
+    const newOpen = !open
+    onOpenChange?.(newOpen)
+    if (!newOpen) {
+      onClose?.()
+    }
   }
 
   const handleClose = useCallback(
@@ -67,8 +71,10 @@ const MIMenu = ({
     if (event.key === 'Tab') {
       event.preventDefault()
       onOpenChange?.(false)
+      onClose?.()
     } else if (event.key === 'Escape') {
       onOpenChange?.(false)
+      onClose?.()
     }
   }
 

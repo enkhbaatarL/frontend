@@ -32,7 +32,7 @@ export const useCompanyCondition = () => {
           'market-news',
           'ai-market-summary',
           'topic-tracker',
-          'event-calendar',
+          'economic-calendar',
           'newsletters',
           'parallel-coordinates',
         ]

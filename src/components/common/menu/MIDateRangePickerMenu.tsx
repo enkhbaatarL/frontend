@@ -78,9 +78,10 @@ interface MIDateRangePickerMenuProps extends MIMenuProps {
   initialSaveOn?: boolean
   enableHoverBackground?: boolean
   limitDateRange?: [number, ManipulateType]
+  datePresets?: DatePresetOption[]
 }
 
-interface DatePresetOption {
+export interface DatePresetOption {
   label: string
   value: DateRange
 }
@@ -144,7 +145,7 @@ const CreateCustomMonthButton = (type: 'next' | 'previous') => {
 }
 
 const createTodayIndicatorSvg = (fillColor: string) => `
-  <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width="14" height="8" viewBox="0 0 14 8" xmlns="http://www.w3.org/2000/svg">
     <path
       d="M5.88079 0.293044C6.27131 -0.0974806 6.90447 -0.09748 7.295 0.293044L12.8808 5.87883C13.5108 6.5088 13.0646 7.58594 12.1737 7.58594H1.0021C0.111199 7.58594 -0.334967 6.5088 0.294998 5.87883L5.88079 0.293044Z"
       fill="${fillColor}"
@@ -161,6 +162,7 @@ const MIDateRangePickerMenu = ({
   enableHoverBackground = false,
   showPreset = true,
   limitDateRange,
+  datePresets,
   ...props
 }: MIDateRangePickerMenuProps) => {
   const theme = useTheme()
@@ -194,9 +196,13 @@ const MIDateRangePickerMenu = ({
       { label: 'Last 7 days', value: { startDate: last7days, endDate: today } },
       { label: 'Last 30 days', value: { startDate: last30days, endDate: today } },
       { label: 'Last 3 months', value: { startDate: last3months, endDate: today } },
-      { label: 'Custom', value: { startDate: undefined, endDate: undefined } },
     ],
     [today, yesterday, last7days, last30days, last3months],
+  )
+
+  const presets = useMemo(
+    () => [...(datePresets ?? DATE_PRESETS), { label: 'Custom', value: { startDate: undefined, endDate: undefined } }],
+    [datePresets, DATE_PRESETS],
   )
 
   const validateMaxDateRange = useCallback(
@@ -327,12 +333,12 @@ const MIDateRangePickerMenu = ({
 
   const getPresetLabel = useCallback(
     (startDate?: Dayjs, endDate?: Dayjs) =>
-      DATE_PRESETS.find(
+      presets.find(
         ({ value }) =>
           value.startDate?.format('YYYY-MM-DD') === startDate?.format('YYYY-MM-DD') &&
           value.endDate?.format('YYYY-MM-DD') === endDate?.format('YYYY-MM-DD'),
       )?.label ?? 'Custom',
-    [DATE_PRESETS],
+    [presets],
   )
 
   const dateLabel = useMemo(
@@ -391,7 +397,8 @@ const MIDateRangePickerMenu = ({
           {showPreset && (
             <>
               <Stack gap="8px" minWidth="160px">
-                {DATE_PRESETS.map(({ label: presetLabel, value }) => {
+                {presets.map((preset) => {
+                  const { label: presetLabel, value } = preset
                   const isSelected = getPresetLabel(internalStartDate, internalEndDate) === presetLabel
 
                   return (

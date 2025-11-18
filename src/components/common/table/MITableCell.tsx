@@ -12,10 +12,11 @@ export interface MITableCellProps extends PropsWithChildren {
   onClick?: () => void
   value?: string | number
   cursorPointer?: boolean
+  color?: TypographyProps['color']
   sx?: SxProps<Theme>
 }
 export default function MITableCell(props: Readonly<MITableCellProps>) {
-  const { tooltip = false, tooltipContent, value, onClick, typography, children, cursorPointer, sx } = props
+  const { tooltip = false, tooltipContent, value, onClick, typography, children, cursorPointer, sx, color } = props
   const { ref, isEllipsis } = useEllipsisDetection()
   const positionRef = useRef<{ x: number; y: number }>({
     x: 0,
@@ -54,7 +55,7 @@ export default function MITableCell(props: Readonly<MITableCellProps>) {
           component="div"
           onMouseMove={handleMouseMove}
           variant="tableBody2"
-          color="gray.90"
+          color={color ?? 'gray.90'}
           onClick={onClick}
           sx={{
             cursor: cursorPointer || onClick ? 'pointer' : 'default',

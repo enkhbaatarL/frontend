@@ -44,8 +44,8 @@ export const MENU_CONFIG: MainMenuItem[] = [
         to: 'topic-tracker',
       },
       {
-        label: 'Event Calendar',
-        to: 'event-calendar',
+        label: 'Economic Calendar',
+        to: 'economic-calendar',
       },
       {
         label: 'Newsletters',
