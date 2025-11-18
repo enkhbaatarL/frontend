@@ -652,7 +652,16 @@ const EconomicCalendarPage = () => {
                   },
                 }}
               >
-                <MITable rowId="id" columns={columns} rows={sampleData} loading={isListLoading} disableHover={false} />
+                <MITable
+                  rowId="id"
+                  columns={columns}
+                  rows={sampleData}
+                  loading={isListLoading}
+                  disableHover={false}
+                  onRowClick={(params) => {
+                    navigate(`/mi/economic-calendar/${params.row.id}`)
+                  }}
+                />
               </Box>
               {sampleData.length > 0 && (
                 <MIPagination
