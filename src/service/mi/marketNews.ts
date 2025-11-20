@@ -29,6 +29,9 @@ export interface INewsListItem {
   firstCreated: string
   title: string
   provider: string
+  categories: string[]
+  regions: string[]
+  industries: string[]
 }
 
 const marketNewsService = {
