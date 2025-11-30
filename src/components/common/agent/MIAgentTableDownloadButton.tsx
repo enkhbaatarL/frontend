@@ -3,19 +3,20 @@ import { ButtonHTMLAttributes } from 'react'
 import * as XLSX from 'xlsx-js-style'
 
 import MIButton from '@/components/common/button/MIButton'
-import { IChatQnaAnswerBundle } from '@/service/mi/agent'
+import { IConversation } from '@/hooks/useMIAgent'
+import { StreamEventType } from '@/service/mi/agent'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   'data-table-id'?: string
 }
 
 interface TableDownloadButtonProps extends ButtonProps {
-  bundle: IChatQnaAnswerBundle
+  tables: NonNullable<IConversation['answer']>[StreamEventType.TABLE]
   chatRoomTitle?: string
 }
 
-export const MIAgentTableDownloadButton = ({ bundle, chatRoomTitle, ...props }: TableDownloadButtonProps) => {
-  const table = (bundle.tables ?? []).find((table) => table.tableId === props['data-table-id'])
+export const MIAgentTableDownloadButton = ({ tables, chatRoomTitle, ...props }: TableDownloadButtonProps) => {
+  const table = tables.find((table) => table.tableId === props['data-table-id'])
 
   if (!table) return null
 

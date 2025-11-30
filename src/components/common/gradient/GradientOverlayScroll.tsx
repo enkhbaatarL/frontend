@@ -22,19 +22,26 @@ interface GradientOverlayScrollProps {
   children: ReactNode
   top?: GradientSideOption
   bottom?: GradientSideOption
+  inputRef?: RefObject<HTMLTextAreaElement | null>
 }
 
 const hexToRgbObj = (hex: string) => {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
+  const r = Number.parseInt(hex.slice(1, 3), 16)
+  const g = Number.parseInt(hex.slice(3, 5), 16)
+  const b = Number.parseInt(hex.slice(5, 7), 16)
 
   return { r, g, b }
 }
 
-const GradientOverlayScroll = ({ children, top = { display: false }, bottom = { display: false } }: GradientOverlayScrollProps) => {
+const GradientOverlayScroll = ({
+  children,
+  top = { display: false },
+  bottom = { display: false },
+  inputRef,
+}: GradientOverlayScrollProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const internalTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const textareaRef = inputRef || internalTextareaRef
   const [showTop, setShowTop] = useState(false)
   const [showBottom, setShowBottom] = useState(false)
 
@@ -54,14 +61,14 @@ const GradientOverlayScroll = ({ children, top = { display: false }, bottom = { 
 
     updateScrollState()
     container.addEventListener('scroll', updateScrollState)
-    const resizeObserver = new window.ResizeObserver(updateScrollState)
+    const resizeObserver = new globalThis.ResizeObserver(updateScrollState)
     resizeObserver.observe(container)
 
     return () => {
       container.removeEventListener('scroll', updateScrollState)
       resizeObserver.disconnect()
     }
-  }, [top.display, bottom.display])
+  }, [top.display, bottom.display, textareaRef])
 
   let content: ReactNode
   if (

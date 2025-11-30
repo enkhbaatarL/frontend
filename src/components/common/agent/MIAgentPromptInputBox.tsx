@@ -63,7 +63,7 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
       return 'loading-disabled'
     }
 
-    if (promptText === '') {
+    if (promptText === '' || promptText.trim() === '') {
       return 'send-disabled'
     }
 
@@ -75,6 +75,7 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
       sx={{
         display: 'flex',
         width: '100%',
+        maxWidth: '660px',
         flexDirection: 'column',
         alignItems: 'flex-start',
         borderRadius: '12px',
@@ -82,7 +83,11 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
         borderColor: isFocused ? '#748FFC' : '#E0E0E0',
         outline: 'none',
         boxShadow: isFocused ? '2px 4px 20px 0px rgba(39, 106, 207, 0.25)' : 'none',
-        transition: 'border-color 0.2s, box-shadow 0.2s',
+        transition: (theme) =>
+          theme.transitions.create(['border-color', 'box-shadow', 'width', 'max-width'], {
+            duration: theme.transitions.duration.standard,
+            easing: theme.transitions.easing.easeInOut,
+          }),
         backgroundColor: '#fff',
         '&:hover': {
           borderColor: '#748FFC',
@@ -93,6 +98,7 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
         cursor: 'text',
         pointerEvents: isGenerating ? 'none' : 'initial',
         userSelect: 'none',
+        willChange: 'width, max-width',
       }}
       onClick={() => {
         inputRef.current?.focus()
@@ -100,11 +106,11 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
     >
       <Box padding="20px 20px 0" width={'100%'} boxSizing={'border-box'} minHeight={'62px'} position="relative">
         <GradientOverlayScroll
+          inputRef={inputRef}
           top={{ display: true, height: 18, color: '#ffffff', offset: 0 }}
           bottom={{ display: true, height: 18, color: '#ffffff', offset: 6 }}
         >
           <TextareaAutosize
-            ref={inputRef}
             placeholder={isGenerating ? t('mari.promptMessage.generating') : (placeholder ?? t('mari.promptMessage.placeholder'))}
             value={promptText}
             maxLength={2000}

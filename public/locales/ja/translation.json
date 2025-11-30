@@ -276,27 +276,31 @@
     "privacyPolicy": "プライバシーポリシー"
   },
   "mari": {
-    "streamMessage": {  
-      "general_request": "一般的な質問の回答を探しています。",
-      "single_metric": "単一指標の分析のためにデータを検索しています。",
-      "timeseries_trend": "時系列トレンドを分析するためにデータを検索しています。",
-      "item_comparison": "データを比較分析するために情報を検索しています。",
-      "similarity_pattern": "類似パターンを分析するためにデータを検索しています。",
-      "market_impact": "産業への影響を分析するためにデータを検索しています。",
-      "event_impact": "イベントの影響を分析するためにデータを検索しています。",
-      "execute": "検索された情報を基に回答を生成しています。",
-      "plan": "質問への回答を見つけるためにデータを検索しています。",
-      "query_rewriter": "質問内容を解析しています。"
+    "agent": {
+      "sources": "出典",
+      "suggestedQuestions": "追加質問の提案"
     },
-    "greetingMessage": {
-      "title": "信頼性の高いデータで、\n市場の動きを正確に読み取ることができます。",
-      "description": "LSEGで収集されたグローバルデータを基に",
-      "description2": "価格水準、推移の変化、異常の有無など、各指標に関する主要情報を確し、",
-      "description3": "関連する市場動向を簡潔に把握することができます"
+    "streamMessage": {
+      "PreparePromptNode": "分析に使用するプロンプトリソースを準備中です...",
+      "RewriteQueryNode": "質問の意図を明確に把握しています...",
+      "PlannerNode": "分析目標に合わせてデータと方法を最適化し、分析計画を策定中です。",
+      "DataCollectNode": "分析に必要な核心データを迅速に収集しています。",
+      "DataAnalysisNode": "収集されたデータからインサイトを導出し、トレンドを分析します。",
+      "WebSearchNode": "ウェブニュース/イベントデータの検索を実行します。",
+      "RdbSearchNode": "リレーショナルデータベース（RDB）から時系列データ、価格情報、スプレッドなどの構造化された数値データをクエリします。",
+      "VectorSearchNode": "埋め込まれたレポート、文書、分析資料などのデータを類似度ベースで検索します。",
+      "TimeseriesTrendNode": "時系列データのパターンとトレンドを分析し、類似区間を見つけて予測インサイトを導出します...",
+      "EventCausalityNode": "収集されたデータ内でイベント間の因果関係を分析します。",
+      "EffectSizeNode": "収集されたデータ内でイベントの影響力を分析します。",
+      "ParsingSourcesNode": "回答に使用された出典を整理中です",
+      "ParsingSuggestedQuestionsNode": "おすすめの質問を生成中です"
     },
     "promptMessage": {
-      "placeholder": "何を知りたいですか？",
+      "placeholder": "Ask MARI",
       "generating": "回答を生成中"
+    },
+    "errorMessage": {
+      "loadError": "会話の読み込み中に問題が発生しました"
     },
     "answer": {
       "generating": "回答生成中",

@@ -1,4 +1,4 @@
-import { Box, Typography, List, ListItem, Tooltip } from '@mui/material'
+import { Box, Typography, List, ListItem, Tooltip, Theme } from '@mui/material'
 import { useState, useMemo, memo } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -16,6 +16,7 @@ export interface MiAgentHistoryProps {
   onEditTitle: (chatId: string, newTitle: string) => Promise<void>
   onDelete: (chatId: string) => Promise<void>
   disabled?: boolean
+  selectedChatRoomId?: string | null
 }
 
 const historyIconStyles = {
@@ -42,6 +43,7 @@ const MiAgentHistory = ({
   onEditTitle,
   onDelete,
   disabled,
+  selectedChatRoomId,
 }: MiAgentHistoryProps) => {
   const [isExpanded, setIsExpanded] = useState(true)
   const { t } = useTranslation()
@@ -52,9 +54,12 @@ const MiAgentHistory = ({
       alignItems: 'start',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      height: '100%',
+      height: windowExpend ? '100%' : '0px',
       width: windowExpend ? (isExpanded ? '200px' : '68px') : '0px',
-      transition: 'width 0.3s cubic-bezier(0.65, 0, 0.35, 1), height 0.3s cubic-bezier(0.65, 0, 0.35, 1)',
+      minWidth: windowExpend ? (isExpanded ? '200px' : '68px') : '0px',
+      maxWidth: windowExpend ? (isExpanded ? '200px' : '68px') : '0px',
+      minHeight: windowExpend ? '100%' : '0px',
+      maxHeight: windowExpend ? '100%' : '0px',
       backgroundColor: 'white',
       borderTopLeftRadius: '12px',
       borderBottomLeftRadius: '12px',
@@ -62,6 +67,16 @@ const MiAgentHistory = ({
       position: 'relative',
       overflow: 'hidden',
       whiteSpace: 'nowrap',
+      flexShrink: 0,
+      transition: (theme: Theme) =>
+        theme.transitions.create(['width', 'min-width', 'max-width', 'opacity', 'transform'], {
+          duration: theme.transitions.duration.standard,
+          easing: theme.transitions.easing.easeInOut,
+        }),
+      opacity: windowExpend ? 1 : 0,
+      transform: windowExpend ? 'translateX(0)' : 'translateX(-10px)',
+      willChange: 'width, transform, opacity',
+      backfaceVisibility: 'hidden',
     }),
     [isExpanded, windowExpend],
   )
@@ -133,10 +148,10 @@ const MiAgentHistory = ({
                 {chatRooms?.map((item) => (
                   <ListItem key={item.chatRoomId} disablePadding>
                     <MIAgentHistoryItem
-                      selected={item.isSelected}
+                      selected={selectedChatRoomId === item.chatRoomId}
                       item={item}
                       onSelected={(id) => {
-                        if (!item.isSelected) onSelectChat(id)
+                        if (selectedChatRoomId !== id) onSelectChat(id)
                       }}
                       onEditTitle={onEditTitle}
                       onDelete={onDelete}

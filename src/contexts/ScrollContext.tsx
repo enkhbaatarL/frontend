@@ -2,8 +2,7 @@ import { createContext, useContext } from 'react'
 
 export interface ScrollContextType {
   scrollRef: { current: HTMLDivElement | null }
-  scrollToBottom: (needSpace?: number) => void
-  scrollToNewMessage: (needSpace?: number) => void
+  scrollToBottom: (behavior?: ScrollBehavior) => void
 }
 
 const ScrollContext = createContext<ScrollContextType | null>(null)

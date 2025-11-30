@@ -114,10 +114,10 @@ const NewAgentButton: FC<NewAgentButtonProps> = ({ top = 126, right }) => {
       }
     }
 
-    window.addEventListener('keydown', escapeHandler)
+    globalThis.addEventListener('keydown', escapeHandler)
 
     return () => {
-      window.removeEventListener('keydown', escapeHandler)
+      globalThis.removeEventListener('keydown', escapeHandler)
     }
   }, [showChatWindow])
 
@@ -238,7 +238,13 @@ const NewAgentButton: FC<NewAgentButtonProps> = ({ top = 126, right }) => {
           }}
         >
           {showChatWindow && (
-            <MIAgentChatWindow top={top} onChangeExpand={onExpandWindow} windowExpend={windowExpend} onClose={handleClose} />
+            <MIAgentChatWindow
+              top={top}
+              onChangeExpand={onExpandWindow}
+              windowExpend={windowExpend}
+              onClose={handleClose}
+              offsetLeft={offsetLeft}
+            />
           )}
         </Box>
       </Box>
