@@ -330,8 +330,7 @@ const agentService = {
         }
       }
 
-      const err = e instanceof Error ? e : new Error(String(e))
-      throw err
+      throw e instanceof Error ? e : new Error(String(e))
     }
   },
 

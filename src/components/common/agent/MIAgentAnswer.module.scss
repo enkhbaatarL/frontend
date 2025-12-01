@@ -97,11 +97,7 @@
   table {
     width: 100%;
     border-spacing: 0;
-    margin-bottom: 24px;
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1px solid;
-    border-color: #DEE2E6;
+    border: none;
     background-color: white;
 
     thead {
@@ -231,13 +227,13 @@
 .pendingQuestionText {
   position: relative;
   display: inline-block;
-  
+
   background: linear-gradient(90deg, #828b95 0%, #c2c8cf 40%, #d9dde3 50%, #c2c8cf 60%, #828b95 100%);
   background-size: 400% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  
+
   animation: questionShimmer 5s linear infinite;
 }
 

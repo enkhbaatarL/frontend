@@ -102,8 +102,7 @@ class ChunkManager {
     }
 
     // 초당 문자 수 계산
-    const charsPerSecond = (totalLength / timeSpan) * 1000
-    return charsPerSecond
+    return (totalLength / timeSpan) * 1000
   }
 
   /**
@@ -417,37 +416,12 @@ const useMIAgent = () => {
     })
   }, [chatQnaHistory?.pages])
 
-  /**
-   * 마지막 대화의 isNew를 false로 변경 (애니메이션 완료 후)
-   */
-  const markLastConversationAsOld = useCallback(() => {
-    setConversations((prev) => {
-      if (prev.length === 0) return prev
-
-      const lastIndex = prev.length - 1
-      const lastConversation = prev[lastIndex]
-
-      if (lastConversation.isNew) {
-        return [
-          ...prev.slice(0, lastIndex),
-          {
-            ...lastConversation,
-            isNew: false,
-          },
-        ]
-      }
-
-      return prev
-    })
-  }, [])
-
   return {
     state,
     inquire,
     selectedChatRoom: selectedChatRoomInfo,
     setSelectedChatRoomId,
     updateStatusMessage,
-    markLastConversationAsOld,
     conversations,
     chatRoom: {
       list: chatRooms,

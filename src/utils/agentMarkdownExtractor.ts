@@ -1,5 +1,5 @@
 export interface Source {
-  index: number | string
+  index: string
   sourceNm: string
   url: string
 }
@@ -9,11 +9,38 @@ export interface SuggestedQuestion {
   text: string
 }
 
+export interface ParsedTable {
+  tableId: string
+  headers: string[]
+  rows: string[][]
+}
+
 export type ParsingStatus = 'idle' | 'parsing_sources' | 'parsing_questions'
+
+import remarkGfm from 'remark-gfm'
+import remarkParse from 'remark-parse'
+import { unified } from 'unified'
 
 export interface ParsedData {
   sources: Source[] | null
   suggestedQuestions: SuggestedQuestion[] | null
+  tables: ParsedTable[] | null
+}
+
+// remark AST 타입 정의
+interface TableNode {
+  type: 'table'
+  children: TableRowNode[]
+}
+
+interface TableRowNode {
+  type: 'tableRow'
+  children: TableCellNode[]
+}
+
+interface TableCellNode {
+  type: 'tableCell'
+  children: Array<{ type: string; value?: string; children?: Array<{ type: string; value?: string }> }>
 }
 
 /**
@@ -90,14 +117,7 @@ export const parseSources = (text: string): Source[] | null => {
       try {
         const sources: Source[] = JSON.parse(jsonString)
         if (Array.isArray(sources) && sources.length > 0) {
-          const isValid = sources.every(
-            (source) =>
-              source &&
-              typeof source === 'object' &&
-              (typeof source.index === 'number' || typeof source.index === 'string') &&
-              typeof source.sourceNm === 'string' &&
-              typeof source.url === 'string',
-          )
+          const isValid = sources.every((source) => source && typeof source === 'object' && typeof source.index === 'string')
           if (isValid) {
             return sources
           }
@@ -135,10 +155,7 @@ export const parseSuggestedQuestions = (text: string): SuggestedQuestion[] | nul
       try {
         const questions: SuggestedQuestion[] = JSON.parse(jsonString)
         if (Array.isArray(questions) && questions.length > 0) {
-          const isValid = questions.every(
-            (question) =>
-              question && typeof question === 'object' && typeof question.index === 'number' && typeof question.text === 'string',
-          )
+          const isValid = questions.every((question) => question && typeof question === 'object')
           if (isValid) {
             return questions
           }
@@ -159,13 +176,32 @@ export const parseSuggestedQuestions = (text: string): SuggestedQuestion[] | nul
  * @returns 파싱 상태
  */
 export const getSourcesParsingStatus = (text: string, currentSources: Source[] | null): 'idle' | 'parsing' | 'complete' => {
-  if (currentSources) {
+  if (currentSources && currentSources.length > 0) {
     return 'complete'
   }
-  if (text.includes('<!-- SOURCES:')) {
-    const parsed = parseSources(text)
-    return parsed ? 'complete' : 'parsing'
+
+  const sourcesCommentStart = text.indexOf('<!-- SOURCES:')
+  if (sourcesCommentStart === -1) {
+    return 'idle'
   }
+
+  // SOURCES 주석이 시작된 위치 이후에 --> 가 있는지 확인
+  const afterCommentStart = text.substring(sourcesCommentStart)
+  const sourcesCommentEnd = afterCommentStart.indexOf('-->')
+
+  if (sourcesCommentEnd === -1) {
+    // 주석이 열려있지만 닫히지 않았으면 파싱 중
+    return 'parsing'
+  }
+
+  // 주석이 닫혔으면 파싱 시도
+  const parsed = parseSources(text)
+  if (parsed && parsed.length > 0) {
+    return 'complete'
+  }
+
+  // 주석은 닫혔지만 파싱 실패 (잘못된 형식일 수 있음)
+  // 이 경우에도 'idle'로 반환하여 메시지를 표시하지 않음
   return 'idle'
 }
 
@@ -179,12 +215,120 @@ export const getSuggestedQuestionsParsingStatus = (
   text: string,
   currentQuestions: SuggestedQuestion[] | null,
 ): 'idle' | 'parsing' | 'complete' => {
-  if (currentQuestions) {
+  if (currentQuestions && currentQuestions.length > 0) {
     return 'complete'
   }
-  if (text.includes('<!-- SUGGESTED_QUESTIONS:')) {
-    const parsed = parseSuggestedQuestions(text)
-    return parsed ? 'complete' : 'parsing'
+
+  const questionsCommentStart = text.indexOf('<!-- SUGGESTED_QUESTIONS:')
+  if (questionsCommentStart === -1) {
+    return 'idle'
   }
+
+  // SUGGESTED_QUESTIONS 주석이 시작된 위치 이후에 --> 가 있는지 확인
+  const afterCommentStart = text.substring(questionsCommentStart)
+  const questionsCommentEnd = afterCommentStart.indexOf('-->')
+
+  if (questionsCommentEnd === -1) {
+    // 주석이 열려있지만 닫히지 않았으면 파싱 중
+    return 'parsing'
+  }
+
+  // 주석이 닫혔으면 파싱 시도
+  const parsed = parseSuggestedQuestions(text)
+  if (parsed && parsed.length > 0) {
+    return 'complete'
+  }
+
+  // 주석은 닫혔지만 파싱 실패 (잘못된 형식일 수 있음)
+  // 이 경우에도 'idle'로 반환하여 메시지를 표시하지 않음
   return 'idle'
+}
+
+/**
+ * 텍스트 노드에서 텍스트를 추출합니다.
+ */
+const extractTextFromNode = (node: { type: string; value?: string; children?: Array<{ type: string; value?: string }> }): string => {
+  if (node.value) {
+    return node.value
+  }
+  if (node.children) {
+    return node.children.map((child) => extractTextFromNode(child)).join('')
+  }
+  return ''
+}
+
+/**
+ * 테이블 셀에서 텍스트를 추출합니다.
+ */
+const extractCellText = (cell: TableCellNode): string => {
+  if (!cell.children || cell.children.length === 0) {
+    return ''
+  }
+  return cell.children
+    .map((child) => extractTextFromNode(child))
+    .join('')
+    .trim()
+}
+
+/**
+ * unified와 remark를 사용하여 마크다운 텍스트에서 테이블을 파싱합니다.
+ * @param text 파싱할 마크다운 텍스트
+ * @returns 파싱된 테이블 배열
+ */
+export const parseMarkdownTables = (text: string): ParsedTable[] => {
+  try {
+    const processor = unified().use(remarkParse).use(remarkGfm)
+    const ast = processor.parse(text)
+
+    const tables: ParsedTable[] = []
+    let tableIndex = 0
+
+    // AST를 순회하며 테이블 노드 찾기
+    const traverse = (node: { type: string; children?: unknown[] }): void => {
+      if (node.type === 'table') {
+        const tableNode = node as TableNode
+        const rows = tableNode.children
+
+        if (rows.length === 0) {
+          return
+        }
+
+        // 첫 번째 행은 헤더 (remark-gfm은 헤더를 별도로 처리하지 않으므로 첫 행이 헤더)
+        const headerRow = rows[0]
+        const headers = headerRow.children.map((cell) => extractCellText(cell))
+
+        // 나머지 행들은 데이터
+        const dataRows: string[][] = []
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i]
+          const cells = row.children.map((cell) => extractCellText(cell))
+          dataRows.push(cells)
+        }
+
+        if (headers.length > 0) {
+          tables.push({
+            tableId: `table-${tableIndex++}`,
+            headers,
+            rows: dataRows,
+          })
+        }
+      }
+
+      // 자식 노드 재귀적으로 탐색
+      if (node.children) {
+        for (const child of node.children) {
+          if (typeof child === 'object' && child !== null && 'type' in child) {
+            traverse(child as { type: string; children?: unknown[] })
+          }
+        }
+      }
+    }
+
+    traverse(ast)
+
+    return tables
+  } catch (error) {
+    console.error('Failed to parse markdown tables:', error)
+    return []
+  }
 }

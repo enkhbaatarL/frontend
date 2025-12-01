@@ -8,15 +8,19 @@ import remarkGfm from 'remark-gfm'
 
 import suggestionIcon from '@/assets/agent/suggestion.svg'
 import style from '@/components/common/agent/MIAgentAnswer.module.scss'
+import { MIAgentTableDownloadButton } from '@/components/common/agent/MIAgentTableDownloadButton'
+import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
 import { IConversation, chunkManager } from '@/hooks/useMIAgent'
 import { StreamEventType } from '@/service/mi/agent'
 import {
   parseSources,
   parseSuggestedQuestions,
+  parseMarkdownTables,
   getSourcesParsingStatus,
   getSuggestedQuestionsParsingStatus,
   type Source,
   type SuggestedQuestion,
+  type ParsedTable,
 } from '@/utils/agentMarkdownExtractor'
 
 interface Props {
@@ -26,93 +30,157 @@ interface Props {
   onSendMessage?: (message: string) => void
 }
 
-const createMarkdownComponents = (sources: Source[] | null) => ({
-  a: ({ href, children, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) => {
-    let referenceType = undefined
+const createMarkdownComponents = (
+  sources: Source[] | null,
+  markdownTables: ParsedTable[] | null,
+  chatRoomTitle?: string,
+  tableIndexRef?: { current: number },
+  isAnimationComplete?: boolean,
+) => {
+  // 컴포넌트 생성 시 테이블 인덱스 초기화
+  if (tableIndexRef) {
+    tableIndexRef.current = 0
+  }
 
-    if (typeof children === 'string') {
-      if (/^\d+$/.test(children)) referenceType = 'number'
-      if (/^[A-Z]+$/.test(children)) referenceType = 'char'
-    }
+  return {
+    a: ({ href, children, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) => {
+      let referenceType = undefined
 
-    if (referenceType === 'number') {
-      const source = sources?.find((s) => s.index === Number(children))
-      if (source) {
-        const tooltipTitle = source.sourceNm
+      if (typeof children === 'string') {
+        if (children.startsWith('web_')) referenceType = 'number'
+        if (/^[A-Z]+$/.test(children)) referenceType = 'char'
+      }
 
-        return (
-          <Tooltip
-            title={tooltipTitle}
-            placement="top-start"
-            followCursor
-            slotProps={{
-              popper: {
-                modifiers: [
-                  {
-                    name: 'offset',
-                    options: {
-                      offset: [0, -6],
+      if (referenceType === 'number' && typeof children === 'string') {
+        const source = sources?.find((s) => s.index === children)
+
+        if (source) {
+          const tooltipTitle = source.sourceNm
+
+          return (
+            <Tooltip
+              title={tooltipTitle}
+              placement="top-start"
+              followCursor
+              slotProps={{
+                popper: {
+                  modifiers: [
+                    {
+                      name: 'offset',
+                      options: {
+                        offset: [0, -6],
+                      },
                     },
-                  },
-                ],
-              },
-            }}
-          >
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              {...props}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                verticalAlign: 'middle',
-                textDecoration: 'none',
-                color: '#212529',
-                fontWeight: 500,
-                fontSize: '12px',
-                fontStyle: 'normal',
+                  ],
+                },
               }}
             >
-              <Stack
-                component="span"
-                display="inline-flex"
-                minWidth="20px"
-                height="20px"
-                direction="row"
-                alignItems="center"
-                borderRadius="4px"
-                bgcolor="gray.30"
-                color="contentText.Normal"
-                gap="2px"
-                justifyContent="center"
-                padding="0 4px"
-                boxSizing="border-box"
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                {...props}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  verticalAlign: 'middle',
+                  textDecoration: 'none',
+                  color: '#212529',
+                  fontWeight: 500,
+                  fontSize: '12px',
+                  fontStyle: 'normal',
+                }}
               >
-                {children}
-              </Stack>
-            </a>
-          </Tooltip>
-        )
+                <Stack
+                  component="span"
+                  display="inline-flex"
+                  minWidth="20px"
+                  height="20px"
+                  direction="row"
+                  alignItems="center"
+                  borderRadius="4px"
+                  bgcolor="gray.30"
+                  color="contentText.Normal"
+                  gap="2px"
+                  justifyContent="center"
+                  padding="0 4px"
+                  boxSizing="border-box"
+                >
+                  {children.replace(/^web_/, '')}
+                </Stack>
+              </a>
+            </Tooltip>
+          )
+        }
       }
-    }
 
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        {...props}
-        className={style.link}
-        style={{ fontWeight: 600, textDecoration: 'none', ...props?.style }}
-      >
-        {children}
-      </a>
-    )
-  },
-})
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          {...props}
+          className={style.link}
+          style={{ fontWeight: 600, textDecoration: 'none', ...props?.style }}
+        >
+          {children}
+        </a>
+      )
+    },
+    table: ({ children, ...props }: React.ComponentPropsWithoutRef<'table'> & { 'data-table-id'?: string }) => {
+      const currentIndex = tableIndexRef ? tableIndexRef.current++ : 0
 
-const MIAgentAnswer = ({ conversation, onAnimationComplete, onSendMessage }: Props) => {
+      const currentTable = markdownTables?.[currentIndex]
+      const shouldShowDownloadButton = !!currentTable && (isAnimationComplete ?? false)
+
+      return (
+        <Box sx={{ marginTop: '16px', marginBottom: '16px' }}>
+          {shouldShowDownloadButton && currentTable && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                marginBottom: '8px',
+                minHeight: '32px',
+              }}
+            >
+              <MIAgentTableDownloadButton
+                data-table-id={currentTable.tableId}
+                markdownTables={markdownTables}
+                chatRoomTitle={chatRoomTitle}
+              >
+                <DataTrendChartDownloadIcon />
+              </MIAgentTableDownloadButton>
+            </Box>
+          )}
+          <Box borderRadius="6px" overflow="hidden" border="1px solid" borderColor="contentBorder.Normal">
+            <Box
+              component="table"
+              {...props}
+              sx={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                '& th, & td': {
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                },
+                '& th': {
+                  backgroundColor: 'gray.20',
+                  fontWeight: 600,
+                },
+              }}
+            >
+              {children}
+            </Box>
+          </Box>
+        </Box>
+      )
+    },
+  }
+}
+
+const MIAgentAnswer = ({ conversation, chatRoomTitle, onAnimationComplete, onSendMessage }: Props) => {
   const answerRef = useRef<HTMLDivElement>(null)
   const [displayMessage, setDisplayMessage] = useState<string>('')
   const [currentAnimatingChunk, setCurrentAnimatingChunk] = useState<{ text: string; key: number } | null>(null)
@@ -124,6 +192,8 @@ const MIAgentAnswer = ({ conversation, onAnimationComplete, onSendMessage }: Pro
   const lastQnaNoRef = useRef<number | null>(null)
   const loggedErrorQnaNoRef = useRef<number | null>(null) // 에러 로그를 출력한 qnaNo 추적
   const animationCompleteCalledRef = useRef<boolean>(false) // onAnimationComplete 호출 여부 추적
+  const [isAnimationComplete, setIsAnimationComplete] = useState<boolean>(false) // 애니메이션 완료 상태 (리렌더링용)
+  const tableIndexRef = useRef<number>(0) // 테이블 인덱스를 추적하기 위한 ref
   const { t } = useTranslation()
 
   // 출처
@@ -136,6 +206,13 @@ const MIAgentAnswer = ({ conversation, onAnimationComplete, onSendMessage }: Pro
   const suggestedQuestions = useMemo<SuggestedQuestion[] | null>(() => {
     if (typeof displayMessage !== 'string' || !displayMessage) return null
     return parseSuggestedQuestions(displayMessage)
+  }, [displayMessage])
+
+  // 마크다운 테이블
+  const markdownTables = useMemo<ParsedTable[] | null>(() => {
+    if (typeof displayMessage !== 'string' || !displayMessage) return null
+    const tables = parseMarkdownTables(displayMessage)
+    return tables.length > 0 ? tables : null
   }, [displayMessage])
 
   const sourcesParsingStatus = useMemo(() => {
@@ -167,7 +244,14 @@ const MIAgentAnswer = ({ conversation, onAnimationComplete, onSendMessage }: Pro
   const BASE_CHUNK_LENGTH_THRESHOLD = 100 // 기준 청크 길이 (문자 수)
   const BASE_SPEED_THRESHOLD = 50
 
-  const markdownComponents = useMemo(() => createMarkdownComponents(sources), [sources])
+  const markdownComponents = useMemo(
+    () => createMarkdownComponents(sources, markdownTables, chatRoomTitle, tableIndexRef, isAnimationComplete),
+    [sources, markdownTables, chatRoomTitle, isAnimationComplete],
+  )
+
+  useEffect(() => {
+    tableIndexRef.current = 0
+  }, [markdownTables])
 
   /**
    * 청크 길이와 속도에 따라 처리 간격을 동적으로 계산
@@ -280,6 +364,7 @@ const MIAgentAnswer = ({ conversation, onAnimationComplete, onSendMessage }: Pro
       chunkQueueRef.current = []
       loggedErrorQnaNoRef.current = null
       animationCompleteCalledRef.current = false
+      setIsAnimationComplete(false) // 애니메이션 완료 상태 초기화
       if (animationTimerRef.current) {
         clearTimeout(animationTimerRef.current)
         animationTimerRef.current = null
@@ -303,7 +388,7 @@ const MIAgentAnswer = ({ conversation, onAnimationComplete, onSendMessage }: Pro
   // FULLTEXT가 왔을 때 최종 메시지로 업데이트
   useEffect(() => {
     const finalMessageRaw = conversation.answer?.[StreamEventType.MESSAGE] ?? ''
-    let finalMessage = ''
+    let finalMessage
 
     if (finalMessageRaw && typeof finalMessageRaw !== 'string') {
       finalMessage = t('mari.errorMessage.loadError')
@@ -412,6 +497,7 @@ const MIAgentAnswer = ({ conversation, onAnimationComplete, onSendMessage }: Pro
     ) {
       const timeoutId = setTimeout(() => {
         animationCompleteCalledRef.current = true
+        setIsAnimationComplete(true)
         onAnimationComplete()
       }, 100)
 
@@ -507,8 +593,8 @@ const MIAgentAnswer = ({ conversation, onAnimationComplete, onSendMessage }: Pro
     }
 
     if (sources) {
-      // 링크 참조 [1]등 앞에 공백이 없으면 공백 추가([1][2] -> [1] [2] 형식으로 변환)
-      content = content.replaceAll(/([^\s])(?=\[[A-Z0-9]+\])/g, '$1 ')
+      // 링크 참조 [web_1]등 앞에 공백이 없으면 공백 추가([web_1][web_2] -> [web_1] [web_2] 형식으로 변환)
+      content = content.replaceAll(/([^\s])(?=\[web_\d+\])/g, '$1 ')
       const sourcesText = sources.map((source) => `[${source.index}]: ${source.url}`).join('  \n')
       content = `${sourcesText}\n\n${content}`
     }
@@ -520,115 +606,123 @@ const MIAgentAnswer = ({ conversation, onAnimationComplete, onSendMessage }: Pro
   const hasStatusMessage = Boolean(conversation.statusMessage)
   const hasStreamingContent = Boolean(displayMessage || currentAnimatingChunk)
 
+  const isParsingComplete = sourcesParsingStatus !== 'parsing' && suggestedQuestionsParsingStatus !== 'parsing'
+  const shouldShowContent = isParsingComplete
+
   if (!hasAnswerContent && !hasStatusMessage && !hasStreamingContent) return null
 
   return (
     <Box className={clsx(style.MiAgentAnswer)} ref={answerRef}>
-      <ReactMarkdown
-        key={`markdown-${conversation.qnaNo}`}
-        components={markdownComponents}
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
-      >
-        {displayContent}
-      </ReactMarkdown>
+      {shouldShowContent && (
+        <ReactMarkdown
+          key={`markdown-${conversation.qnaNo}`}
+          components={markdownComponents}
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw]}
+        >
+          {displayContent}
+        </ReactMarkdown>
+      )}
       {conversation.statusMessage && (
         <Box key={`${conversation.qnaNo ?? 'global'}-${conversation.statusMessage}`} className={style.statusMessage}>
-          {conversation.statusMessage}
+          {conversation.statusMessage ?? parsingLoadingMessage}
         </Box>
       )}
-      <Stack gap="20px">
-        {sources && (
-          <Stack py="12px" className={conversation.isNew ? style.parsedDataContainer : undefined}>
-            <Typography variant="contentTitle" color="content.textBlack" py="8px">
-              {t('mari.agent.sources')}
-            </Typography>
-            <Stack mt="12px" gap="10px">
-              <Stack gap="4px">
-                <Typography variant="subtext3" color="contentText.Normal">
-                  Web Search
-                </Typography>
-                <Stack gap="6px">
-                  {sources.map((source, index) => (
-                    <Stack
-                      key={source.index}
-                      direction="row"
-                      width="fit-content"
-                      padding="6px 8px"
-                      borderRadius="4px"
-                      border="1px solid"
-                      borderColor="contentBorder.Normal"
-                      gap="6px"
-                      boxSizing="border-box"
-                      className={conversation.isNew ? style.parsedDataItem : undefined}
-                      sx={{
-                        animationDelay: `${index * 200}ms`,
-                        backgroundColor: 'mari.MariBG',
-                        '&:hover': {
-                          cursor: 'pointer',
-                          borderColor: 'contentBorder.Active',
-                          backgroundColor: 'contentBG.Hover',
-                        },
-                        userSelect: 'none',
-                      }}
-                      onClick={() => {
-                        window.open(source.url, '_blank')
-                      }}
-                    >
-                      <Typography variant="subtext" color="content.textBlack">
-                        {source.index}
-                      </Typography>
-                      <Typography variant="subtext" color="content.textBlack">
-                        {source.sourceNm}
-                      </Typography>
-                    </Stack>
-                  ))}
+      {parsingLoadingMessage && (
+        <Box key={`${conversation.qnaNo ?? 'global'}-${parsingLoadingMessage}`} className={style.statusMessage}>
+          {parsingLoadingMessage}
+        </Box>
+      )}
+
+      {animationCompleteCalledRef.current && (
+        <Stack gap="20px">
+          {sources && (
+            <Stack py="12px" className={conversation.isNew ? style.parsedDataContainer : undefined}>
+              <Typography variant="contentTitle" color="content.textBlack" py="8px">
+                {t('mari.agent.sources')}
+              </Typography>
+              <Stack mt="12px" gap="10px">
+                <Stack gap="4px">
+                  <Typography variant="subtext3" color="contentText.Normal">
+                    Web Search
+                  </Typography>
+                  <Stack gap="6px">
+                    {sources.map((source, index) => (
+                      <Stack
+                        key={source.index}
+                        direction="row"
+                        width="fit-content"
+                        padding="6px 8px"
+                        borderRadius="4px"
+                        border="1px solid"
+                        borderColor="contentBorder.Normal"
+                        gap="6px"
+                        boxSizing="border-box"
+                        className={conversation.isNew ? style.parsedDataItem : undefined}
+                        sx={{
+                          animationDelay: `${index * 200}ms`,
+                          backgroundColor: 'mari.MariBG',
+                          '&:hover': {
+                            cursor: 'pointer',
+                            borderColor: 'contentBorder.Active',
+                            backgroundColor: 'contentBG.Hover',
+                          },
+                          userSelect: 'none',
+                        }}
+                        onClick={() => {
+                          window.open(source.url, '_blank')
+                        }}
+                      >
+                        <Typography variant="subtext" color="content.textBlack">
+                          {typeof source.index === 'string' ? source.index.replace(/^web_/, '') : String(source.index)}
+                        </Typography>
+                        <Typography variant="subtext" color="content.textBlack">
+                          {source.sourceNm}
+                        </Typography>
+                      </Stack>
+                    ))}
+                  </Stack>
                 </Stack>
               </Stack>
             </Stack>
-          </Stack>
-        )}
-        {suggestedQuestions && (
-          <Stack py="8px" className={conversation.isNew ? style.parsedDataContainer : undefined}>
-            <Typography variant="contentTitle" color="content.textBlack">
-              {t('mari.agent.suggestedQuestions')}
-            </Typography>
-            <Stack py="6px" gap="6px">
-              {suggestedQuestions.map((question, index) => (
-                <Stack
-                  key={question.index}
-                  direction="row"
-                  width="fit-content"
-                  padding="6px 8px"
-                  gap="6px"
-                  borderRadius="4px"
-                  className={conversation.isNew ? style.parsedDataItem : undefined}
-                  sx={{
-                    userSelect: 'none',
-                    cursor: 'pointer',
-                    animationDelay: `${index * 200}ms`,
-                    '&:hover': {
-                      backgroundColor: 'gray.20',
-                    },
-                  }}
-                  onClick={() => {
-                    onSendMessage?.(question.text)
-                  }}
-                >
-                  <img src={suggestionIcon} alt="suggestion" draggable={false} />
-                  <Typography variant="body2M14" color="content.textBlack">
-                    {question.text}
-                  </Typography>
-                </Stack>
-              ))}
+          )}
+          {suggestedQuestions && (
+            <Stack py="8px" className={conversation.isNew ? style.parsedDataContainer : undefined}>
+              <Typography variant="contentTitle" color="content.textBlack">
+                {t('mari.agent.suggestedQuestions')}
+              </Typography>
+              <Stack py="6px" gap="6px">
+                {suggestedQuestions.map((question, index) => (
+                  <Stack
+                    key={question.index}
+                    direction="row"
+                    width="fit-content"
+                    padding="6px 8px"
+                    gap="6px"
+                    borderRadius="4px"
+                    className={conversation.isNew ? style.parsedDataItem : undefined}
+                    sx={{
+                      userSelect: 'none',
+                      cursor: 'pointer',
+                      animationDelay: `${index * 200}ms`,
+                      '&:hover': {
+                        backgroundColor: 'gray.20',
+                      },
+                    }}
+                    onClick={() => {
+                      onSendMessage?.(question.text)
+                    }}
+                  >
+                    <img src={suggestionIcon} alt="suggestion" draggable={false} />
+                    <Typography variant="body2M14" color="content.textBlack">
+                      {question.text}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
             </Stack>
-          </Stack>
-        )}
-      </Stack>
-      {parsingLoadingMessage && (
-        <Box key={`${conversation.qnaNo ?? 'global'}-${parsingLoadingMessage}`} className={style.statusMessage} mt="6px">
-          {parsingLoadingMessage}
-        </Box>
+          )}
+        </Stack>
       )}
     </Box>
   )

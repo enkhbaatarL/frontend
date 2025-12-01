@@ -50,7 +50,7 @@ const MIAgentAnswerFooter = ({ copyableContent, onFeedback, onRetry, initialFeed
         setSubmitMessage(t('mari.answer.feedback.submitSuccess'))
       }, 1000)
     }
-  }, [isSubmit, initialFeedback])
+  }, [isSubmit, initialFeedback, t])
 
   return (
     <>

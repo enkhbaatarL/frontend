@@ -70,10 +70,13 @@ const MIAgentConversationItem = ({
       const sources = parseSources(answerMessage)
       const suggestedQuestions = parseSuggestedQuestions(answerMessage)
 
-      answerMessage = answerMessage.replaceAll(/<!--.*?-->/gs, '').trimEnd()
+      answerMessage = answerMessage
+        .replaceAll(/<!--.*?-->/gs, '')
+        .replaceAll(/\[web_/gs, '[')
+        .trimEnd()
 
       if (sources) {
-        answerMessage += `\n\n## ${t('mari.agent.sources')}\n${sources.map((source) => `[${source.index} ${source.sourceNm}](${source.url})`).join('  \n')}`
+        answerMessage += `\n\n## ${t('mari.agent.sources')}\n${sources.map((source) => `[${source.index.replace(/^web_/, '')} ${source.sourceNm}](${source.url})`).join('  \n')}`
       }
 
       if (suggestedQuestions) {

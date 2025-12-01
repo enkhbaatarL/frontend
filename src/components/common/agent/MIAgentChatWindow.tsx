@@ -193,32 +193,14 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     }
   }, [shouldCheckScroll, isGenerating, handleScroll, scrollRef])
 
-  const handleAnimationComplete = useCallback(
-    (index: number) => {
-      setAnimationComplete((prev) => {
-        const newState = [...prev]
-        newState[index] = true
+  const handleAnimationComplete = useCallback((index: number) => {
+    setAnimationComplete((prev) => {
+      const newState = [...prev]
+      newState[index] = true
 
-        const allAnimationsComplete = newState.filter((state) => state !== undefined).every((complete) => complete)
-
-        // 모든 애니메이션이 완료되었다면 마지막 대화의 isNew를 false로 변경
-        if (allAnimationsComplete && MIAgent.conversations.length > 0) {
-          MIAgent.markLastConversationAsOld()
-          requestAnimationFrame(() => {
-            // setTimeout(scrollToBottom, 100)
-          })
-          // retry 기능을 사용할 때만 스크롤 체크
-          if (isRetrying) {
-            setShouldCheckScroll(true)
-            setIsRetrying(false)
-          }
-        }
-
-        return newState
-      })
-    },
-    [MIAgent, scrollToBottom, isRetrying],
-  )
+      return newState
+    })
+  }, [])
 
   const handleAnimationStarted = useCallback((index: number) => {
     setAnimationComplete((prev) => {
