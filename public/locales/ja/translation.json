@@ -324,7 +324,7 @@
           "placeholder": "不満の理由を入力"
         }
       },
-      "disclaimer": "AIの回答は確認のうえでご活用ください"
+      "disclaimer": "重要な情報や判断が必要な内容は確認のうえでご活用ください"
     },
     "source": {
       "miDatasetSubtitle": "メタモデル及び購読データ検索",

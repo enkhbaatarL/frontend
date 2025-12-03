@@ -80,7 +80,9 @@ const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> 
   const { token: savedToken } = useAuthStore.getState()
   const processQueue = (): Promise<void> =>
     new Promise((resolve) => {
-      requestQueue.forEach((callback) => callback())
+      for (const callback of requestQueue) {
+        callback()
+      }
       requestQueue = []
       resolve()
     })

@@ -1,11 +1,11 @@
-import { Box, Typography, List, ListItem, Tooltip, Theme } from '@mui/material'
+import { Box, Typography, List, ListItem, Tooltip, Theme, Stack, Collapse, Fade } from '@mui/material'
 import { useState, useMemo, memo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import HistoryIcon from '../icons/agent/HistoryIcon'
-
+import axLogo from '@/assets/agent/a.x.svg'
 import MIAgentHistoryItem from '@/components/common/agent/MIAgentHistoryItem'
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
+import HistoryIcon from '@/components/common/icons/agent/HistoryIcon'
 import { IChatRoom } from '@/hooks/useMIAgent'
 
 export interface MiAgentHistoryProps {
@@ -55,9 +55,9 @@ const MiAgentHistory = ({
       flexDirection: 'column',
       justifyContent: 'space-between',
       height: windowExpend ? '100%' : '0px',
-      width: windowExpend ? (isExpanded ? '200px' : '68px') : '0px',
-      minWidth: windowExpend ? (isExpanded ? '200px' : '68px') : '0px',
-      maxWidth: windowExpend ? (isExpanded ? '200px' : '68px') : '0px',
+      width: windowExpend ? (isExpanded ? '200px' : '78px') : '0px',
+      minWidth: windowExpend ? (isExpanded ? '200px' : '78px') : '0px',
+      maxWidth: windowExpend ? (isExpanded ? '200px' : '78px') : '0px',
       minHeight: windowExpend ? '100%' : '0px',
       maxHeight: windowExpend ? '100%' : '0px',
       backgroundColor: 'white',
@@ -83,11 +83,13 @@ const MiAgentHistory = ({
 
   return (
     <Box sx={containerStyles}>
-      <Tooltip title={isExpanded ? 'Collapse' : 'Open'} placement="right-start">
-        <Box sx={historyIconStyles} onClick={() => setIsExpanded(!isExpanded)}>
-          <HistoryIcon />
-        </Box>
-      </Tooltip>
+      <Stack height="70px" justifyContent="center" alignItems="center" padding="19px 12px" boxSizing="border-box">
+        <Tooltip title={isExpanded ? 'Collapse' : 'Open'} placement="right-start">
+          <Box sx={historyIconStyles} onClick={() => setIsExpanded(!isExpanded)}>
+            <HistoryIcon />
+          </Box>
+        </Tooltip>
+      </Stack>
 
       <List
         sx={{
@@ -98,87 +100,144 @@ const MiAgentHistory = ({
           boxSizing: 'border-box',
           width: '100%',
           textAlign: 'left',
+          padding: 0,
         }}
       >
-        {isExpanded && (
-          <>
-            <Box sx={{ mb: '6px', paddingX: '12px' }}>
-              <Typography
-                variant="body3"
+        <Collapse
+          in={isExpanded}
+          timeout={300}
+          sx={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            '& .MuiCollapse-wrapper': {
+              transition: (theme: Theme) =>
+                theme.transitions.create('height', {
+                  duration: theme.transitions.duration.standard,
+                  easing: theme.transitions.easing.easeInOut,
+                }),
+            },
+          }}
+        >
+          <Fade in={isExpanded} timeout={300}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, width: '100%' }}>
+              <Stack
+                height="37px"
+                padding="10px 20px"
+                boxSizing="border-box"
+                justifyContent="center"
+                alignItems="start"
                 sx={{
-                  padding: '12px 8px 8px 8px',
+                  transition: (theme: Theme) =>
+                    theme.transitions.create('padding', {
+                      duration: theme.transitions.duration.standard,
+                      easing: theme.transitions.easing.easeInOut,
+                    }),
                 }}
-                color="gray.60"
               >
-                {t('common.recent')}
-              </Typography>
-            </Box>
-            {loading ? (
-              <ListItem disablePadding>
-                <Box sx={{ padding: '12px', height: '44px', display: 'flex', alignItems: 'center' }}>
-                  <MIAgentSpinner />
-                </Box>
-              </ListItem>
-            ) : (
-              <Box
-                sx={{
-                  flex: 1,
-                  overflowY: 'auto',
-                  overflowX: 'hidden',
-                  paddingX: '12px',
-                  position: 'relative',
-                  '&::-webkit-scrollbar': {
-                    width: '6px',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    background: 'transparent',
-                    borderRadius: '3px',
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    background: '#CED4DA',
-                    borderRadius: '3px',
-                    '&:hover': {
-                      background: '#ADB5BD',
+                <Typography variant="body3" color="gray.60" height="17px">
+                  {t('common.recent')}
+                </Typography>
+              </Stack>
+              {loading ? (
+                <ListItem disablePadding>
+                  <Box sx={{ padding: '12px', height: '44px', display: 'flex', alignItems: 'center' }}>
+                    <MIAgentSpinner />
+                  </Box>
+                </ListItem>
+              ) : (
+                <Box
+                  sx={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    paddingX: '12px',
+                    position: 'relative',
+                    '&::-webkit-scrollbar': {
+                      width: '6px',
                     },
-                  },
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#CED4DA transparent',
-                }}
-              >
-                {chatRooms?.map((item) => (
-                  <ListItem key={item.chatRoomId} disablePadding>
-                    <MIAgentHistoryItem
-                      selected={selectedChatRoomId === item.chatRoomId}
-                      item={item}
-                      onSelected={(id) => {
-                        if (selectedChatRoomId !== id) onSelectChat(id)
-                      }}
-                      onEditTitle={onEditTitle}
-                      onDelete={onDelete}
-                      disabled={disabled}
-                    />
-                  </ListItem>
-                ))}
-              </Box>
-            )}
-          </>
-        )}
+                    '&::-webkit-scrollbar-track': {
+                      background: 'transparent',
+                      borderRadius: '3px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: '#CED4DA',
+                      borderRadius: '3px',
+                      '&:hover': {
+                        background: '#ADB5BD',
+                      },
+                    },
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#CED4DA transparent',
+                  }}
+                >
+                  {chatRooms?.map((item) => (
+                    <ListItem key={item.chatRoomId} disablePadding>
+                      <MIAgentHistoryItem
+                        selected={selectedChatRoomId === item.chatRoomId}
+                        item={item}
+                        onSelected={(id) => {
+                          if (selectedChatRoomId !== id) onSelectChat(id)
+                        }}
+                        onEditTitle={onEditTitle}
+                        onDelete={onDelete}
+                        disabled={disabled}
+                      />
+                    </ListItem>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          </Fade>
+        </Collapse>
       </List>
 
-      {isExpanded ? (
-        <Box sx={{ padding: '12px', display: 'flex', justifyContent: 'center' }}>
-          <Typography variant="caption" color="text.secondary">
+      <Stack
+        direction="row"
+        width="100%"
+        alignItems="center"
+        justifyContent="flex-start"
+        padding="24px 22px"
+        gap="5px"
+        boxSizing="border-box"
+        sx={{
+          minHeight: '61px',
+          transition: (theme: Theme) =>
+            theme.transitions.create(['padding'], {
+              duration: theme.transitions.duration.standard,
+              easing: theme.transitions.easing.easeInOut,
+            }),
+          userSelect: 'none',
+        }}
+      >
+        <Box
+          sx={{
+            maxWidth: isExpanded ? '100px' : '0px',
+            overflow: 'hidden',
+            opacity: isExpanded ? 1 : 0,
+            transition: (theme: Theme) =>
+              theme.transitions.create(['max-width', 'opacity'], {
+                duration: theme.transitions.duration.standard,
+                easing: theme.transitions.easing.easeInOut,
+              }),
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
             Powered by
           </Typography>
-          <Typography variant="caption" fontWeight="bold" sx={{ ml: 0.5 }}>
-            A.X
-          </Typography>
         </Box>
-      ) : (
-        <Typography variant="caption" fontWeight="bold" sx={{ textAlign: 'center', marginBottom: '12px', width: '100%' }}>
-          A.X
-        </Typography>
-      )}
+        <Box
+          component="img"
+          src={axLogo}
+          alt="A.X Logo"
+          width="29px"
+          height="13px"
+          sx={{
+            flexShrink: 0,
+          }}
+        />
+      </Stack>
     </Box>
   )
 }

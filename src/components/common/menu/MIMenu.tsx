@@ -25,6 +25,8 @@ export interface MIMenuProps extends ButtonProps {
   closeOnScroll?: boolean
   disablePortal?: boolean
   enableHoverBackground?: boolean
+  zIndex?: number
+  disableRipple?: boolean
 }
 
 const MIMenu = ({
@@ -43,6 +45,8 @@ const MIMenu = ({
   closeOnScroll = false,
   disablePortal = false,
   enableHoverBackground = false,
+  zIndex = 900,
+  disableRipple,
   ...props
 }: MIMenuProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -180,7 +184,7 @@ const MIMenu = ({
           onClick={handleToggle}
           endIcon={getEndIcon()}
           variant={variant}
-          disableRipple={variant === 'outlined'}
+          disableRipple={disableRipple ?? variant === 'outlined'}
           aria-controls={open ? 'mi-menu' : undefined}
           aria-expanded={open ? 'true' : undefined}
           aria-haspopup="true"
@@ -237,7 +241,7 @@ const MIMenu = ({
         placement={placement}
         transition
         disablePortal={disablePortal ?? false}
-        sx={{ zIndex: 900 }}
+        sx={{ zIndex }}
         modifiers={popperModifiers}
       >
         {({ TransitionProps, placement: popperPlacement }) => (

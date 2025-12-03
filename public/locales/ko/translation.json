@@ -11,7 +11,7 @@
     "copyFail": "복사에 실패했습니다.",
     "cancel": "취소",
     "confirm": "확인",
-    "recent": "최근",
+    "recent": "Recent",
     "edit": "수정",
     "delete": "삭제",
     "source": "출처",
@@ -321,7 +321,7 @@
           "placeholder": "불만족 사유 입력"
         }
       },
-      "disclaimer": "AI 응답은 검토 후 활용하시기 바랍니다"
+      "disclaimer": "중요한 정보나 판단이 필요한 내용은 확인 후 활용해 주세요."
     },
     "source": {
       "miDatasetSubtitle": "메타모델 및 구독데이터 검색",

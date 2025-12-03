@@ -165,6 +165,11 @@ const useMIAgent = () => {
     queryFn: () => agentService.getChatRooms(),
   })
 
+  const refetchChatRoomsRef = useRef(refetchChatRooms)
+  useEffect(() => {
+    refetchChatRoomsRef.current = refetchChatRooms
+  }, [refetchChatRooms])
+
   const {
     data: chatQnaHistory,
     fetchNextPage: fetchPrevHistory,
@@ -238,14 +243,16 @@ const useMIAgent = () => {
           if (event === StreamEventType.COMPLETE) {
             updateState(MIAgentState.COMPLETE)
             setTimeout(() => updateState(MIAgentState.IDLE), 1000)
-            if (selectedChatRoom.isNew) {
-              refetchChatRooms()
-              setSelectedChatRoom((prev) => ({
-                ...prev,
-                id: selectedChatRoom.id,
-                isNew: false,
-              }))
-            }
+            setSelectedChatRoom((prev) => {
+              if (prev.isNew && prev.id) {
+                refetchChatRoomsRef.current()
+                return {
+                  ...prev,
+                  isNew: false,
+                }
+              }
+              return prev
+            })
             return
           }
 
@@ -253,22 +260,24 @@ const useMIAgent = () => {
 
           if (qnaNo === null) return
 
-          setConversations((prev) => {
-            const optimisticIndex = prev.findIndex((conv) => conv.qnaNo === null && conv.question === message)
+          if (event !== StreamEventType.CHUNK) {
+            setConversations((prev) => {
+              const optimisticIndex = prev.findIndex((conv) => conv.qnaNo === null && conv.question === message)
 
-            if (optimisticIndex !== -1) {
-              // 낙관적 업데이트된 질문을 실제 qnaNo로 업데이트
-              const updatedConversation: IConversation = {
-                ...prev[optimisticIndex],
-                qnaNo,
-                auditInfo: streamData,
+              if (optimisticIndex !== -1) {
+                // 낙관적 업데이트된 질문을 실제 qnaNo로 업데이트
+                const updatedConversation: IConversation = {
+                  ...prev[optimisticIndex],
+                  qnaNo,
+                  auditInfo: streamData,
+                }
+                return [...prev.slice(0, optimisticIndex), updatedConversation, ...prev.slice(optimisticIndex + 1)]
               }
-              return [...prev.slice(0, optimisticIndex), updatedConversation, ...prev.slice(optimisticIndex + 1)]
-            }
 
-            // 낙관적 업데이트가 없으면 기존 로직대로 처리
-            return ensureConversationExists(prev, qnaNo, message, { auditInfo: streamData })
-          })
+              // 낙관적 업데이트가 없으면 기존 로직대로 처리
+              return ensureConversationExists(prev, qnaNo, message, { auditInfo: streamData })
+            })
+          }
 
           switch (event) {
             case StreamEventType.MESSAGE: {
@@ -289,22 +298,44 @@ const useMIAgent = () => {
 
               chunkManager.addChunk(qnaNo, streamData)
 
+              // CHUNK 이벤트에서는 statusMessage만 업데이트하고, 실제로 변경이 있을 때만 setConversations 호출
               setConversations((prev) => {
-                const ensuredPrev = ensureConversationExists(prev, qnaNo, message, {
-                  statusMessage: undefined,
-                })
+                const existingIndex = prev.findIndex((conversation) => conversation.qnaNo === qnaNo)
 
-                const index = ensuredPrev.findIndex((conversation) => conversation.qnaNo === qnaNo)
-                if (index === -1) return ensuredPrev
+                // qnaNo가 없으면 생성 (최초 CHUNK 이벤트)
+                if (existingIndex === -1) {
+                  const ensuredPrev = ensureConversationExists(prev, qnaNo, message, {
+                    statusMessage: undefined,
+                    auditInfo: streamData,
+                  })
+                  return ensuredPrev
+                }
 
-                const currentConversation = ensuredPrev[index]
+                const currentConversation = prev[existingIndex]
 
+                // statusMessage가 이미 undefined면 업데이트 불필요
+                if (currentConversation.statusMessage === undefined && currentConversation.qnaNo === qnaNo) {
+                  return prev
+                }
+
+                // qnaNo가 null이었던 경우 업데이트
+                if (currentConversation.qnaNo === null && currentConversation.question === message) {
+                  const updatedConversation: IConversation = {
+                    ...currentConversation,
+                    qnaNo,
+                    auditInfo: streamData,
+                    statusMessage: undefined,
+                  }
+                  return [...prev.slice(0, existingIndex), updatedConversation, ...prev.slice(existingIndex + 1)]
+                }
+
+                // statusMessage만 제거
                 const updatedConversation: IConversation = {
                   ...currentConversation,
                   statusMessage: undefined,
                 }
 
-                return [...ensuredPrev.slice(0, index), updatedConversation, ...ensuredPrev.slice(index + 1)]
+                return [...prev.slice(0, existingIndex), updatedConversation, ...prev.slice(existingIndex + 1)]
               })
 
               break
@@ -314,18 +345,27 @@ const useMIAgent = () => {
               chunkManager.clearChunks(qnaNo)
 
               setConversations((prev) => {
-                const ensuredPrev = ensureConversationExists(prev, qnaNo, message, {
-                  answer: {
-                    [StreamEventType.MESSAGE]: streamData,
-                  } as NonNullable<IConversation['answer']>,
-                  statusMessage: undefined,
-                })
+                const existingIndex = prev.findIndex((conversation) => conversation.qnaNo === qnaNo)
 
-                const index = ensuredPrev.findIndex((conversation) => conversation.qnaNo === qnaNo)
-                if (index === -1) return ensuredPrev
+                // qnaNo가 없으면 생성
+                if (existingIndex === -1) {
+                  return ensureConversationExists(prev, qnaNo, message, {
+                    answer: {
+                      [StreamEventType.MESSAGE]: streamData,
+                    } as NonNullable<IConversation['answer']>,
+                    statusMessage: undefined,
+                    auditInfo: streamData,
+                  })
+                }
 
-                const currentConversation = ensuredPrev[index]
-                const currentAnswer = currentConversation.answer ?? {}
+                const currentConversation = prev[existingIndex]
+                const currentAnswer = currentConversation.answer ?? ({} as NonNullable<IConversation['answer']>)
+                const currentMessage = currentAnswer[StreamEventType.MESSAGE]
+
+                // answer가 이미 동일하면 업데이트 불필요
+                if (currentMessage === streamData && currentConversation.statusMessage === undefined) {
+                  return prev
+                }
 
                 const updatedAnswer: NonNullable<IConversation['answer']> = {
                   ...currentAnswer,
@@ -338,7 +378,7 @@ const useMIAgent = () => {
                   statusMessage: undefined,
                 }
 
-                return [...ensuredPrev.slice(0, index), updatedConversation, ...ensuredPrev.slice(index + 1)]
+                return [...prev.slice(0, existingIndex), updatedConversation, ...prev.slice(existingIndex + 1)]
               })
               break
             }
@@ -351,12 +391,21 @@ const useMIAgent = () => {
           updateState(MIAgentState.IDLE)
         }
       },
-    [updateState, selectedChatRoom.isNew, selectedChatRoom.id, refetchChatRooms, updateStatusMessage, t, ensureConversationExists],
+    [updateState, updateStatusMessage, t, ensureConversationExists],
   )
 
   const inquire = useCallback(
     async (message: string, shouldWebSearch: boolean = false) => {
       const chatRoomId = selectedChatRoom.id ?? uuid()
+
+      // 새 채팅방이 생성된 경우 selectedChatRoom.id에 저장
+      if (!selectedChatRoom.id) {
+        setSelectedChatRoom((prev) => ({
+          ...prev,
+          id: chatRoomId,
+          isNew: true,
+        }))
+      }
 
       setConversations((prev) => {
         const hasPendingQuestion = prev.some((conv) => conv.qnaNo === null && conv.question === message)
@@ -389,19 +438,34 @@ const useMIAgent = () => {
     [chatRooms, selectedChatRoom.id],
   )
 
-  useEffect(() => {
-    if (!chatQnaHistory?.pages || chatQnaHistory.pages.length === 0) return
-
-    const newHistoryList = chatQnaHistory.pages
+  const historyList = useMemo(() => {
+    if (!chatQnaHistory?.pages || chatQnaHistory.pages.length === 0) return []
+    return chatQnaHistory.pages
       .filter((page): page is IPaginationResponse<IChatQnaRes> => page !== null)
       .flatMap((page) => page.detail)
       .reverse()
+  }, [chatQnaHistory?.pages])
 
-    if (newHistoryList.length === 0) return
+  const prevHistoryQnaNosRef = useRef<Set<number | null>>(new Set())
+
+  useEffect(() => {
+    if (historyList.length === 0) return
+
+    const currentQnaNos = new Set(historyList.map((conv) => conv.qnaNo))
+
+    // qnaNo 집합이 변경되지 않았다면 업데이트하지 않음
+    if (
+      prevHistoryQnaNosRef.current.size === currentQnaNos.size &&
+      Array.from(prevHistoryQnaNosRef.current).every((qnaNo) => currentQnaNos.has(qnaNo))
+    ) {
+      return
+    }
+
+    prevHistoryQnaNosRef.current = currentQnaNos
 
     setConversations((prev) => {
       const existingQnaNos = new Set(prev.map((conv) => conv.qnaNo))
-      const newConversations = newHistoryList.filter((conv) => !existingQnaNos.has(conv.qnaNo))
+      const newConversations = historyList.filter((conv) => !existingQnaNos.has(conv.qnaNo))
 
       if (newConversations.length === 0) {
         return prev
@@ -414,7 +478,7 @@ const useMIAgent = () => {
 
       return [...updatedConversations, ...prev]
     })
-  }, [chatQnaHistory?.pages])
+  }, [historyList])
 
   return {
     state,

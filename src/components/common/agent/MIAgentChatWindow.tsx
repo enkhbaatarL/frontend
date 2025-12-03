@@ -1,7 +1,8 @@
-import { Box, Stack, Typography, Collapse, Fade, Portal } from '@mui/material'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import { Box, Stack, Typography, Collapse, Fade, Portal, IconButton } from '@mui/material'
 import { keyframes } from '@mui/system'
 import { useQuery } from '@tanstack/react-query'
-import { useState, useMemo, useCallback, useLayoutEffect, useEffect, UIEvent } from 'react'
+import { useState, useMemo, useCallback, useLayoutEffect, useEffect, UIEvent, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import MIAgentConversation from '@/components/common/agent/MIAgentConversation'
@@ -9,12 +10,15 @@ import MIAgentHeaderBox from '@/components/common/agent/MIAgentHeaderBox'
 import MIAgentHistory from '@/components/common/agent/MIAgentHistory'
 import MIAgentPromptInputBox from '@/components/common/agent/MIAgentPromptInputBox'
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
+import CloseChatIcon from '@/components/common/icons/agent/CloseChatIcon'
+import ExpandIcon from '@/components/common/icons/agent/ExpandIcon'
 import { useScroll } from '@/contexts/ScrollContext'
 import useMIAgent, { MIAgentState } from '@/hooks/useMIAgent'
 import useSnackbar from '@/hooks/useSnackbar'
 import MIAgentScrollProvider from '@/providers/MIAgentScrollProvider'
 import agentService from '@/service/mi/agent'
 import useAuthStore from '@/store/useAuthStore'
+import { getCookie, setCookie } from '@/utils/cookie'
 
 export interface MIAgentChatWindowProps {
   top: number
@@ -35,17 +39,20 @@ interface SelectModeOption {
   subtitle: string
   checked: boolean
   disabled: boolean
+  fixed?: boolean
 }
 
 const LOCAL_STORAGE_KEY = 'mi-agent-select-mode-option'
+const MAXIMIZE_VIEW_HIDDEN_COOKIE_KEY = 'mi-agent-maximize-view-hidden'
 
 const DEFAULT_SELECT_MODE_OPTIONS: SelectModeOption[] = [
   {
     id: '1',
     title: 'MI Dataset',
     subtitle: 'mari.source.miDatasetSubtitle',
-    checked: false,
+    checked: true,
     disabled: true,
+    fixed: true,
   },
   {
     id: '2',
@@ -63,7 +70,9 @@ const loadSelectModeOptionsFromStorage = (): SelectModeOption[] => {
       const parsedOptions = JSON.parse(stored) as SelectModeOption[]
       return DEFAULT_SELECT_MODE_OPTIONS.map((defaultOption) => {
         const storedOption = parsedOptions.find((option) => option.id === defaultOption.id)
-        return storedOption ? { ...defaultOption, checked: storedOption.checked } : defaultOption
+        return storedOption
+          ? { ...defaultOption, checked: defaultOption.fixed ? defaultOption.checked : storedOption.checked }
+          : defaultOption
       })
     }
   } catch (error) {
@@ -105,6 +114,8 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
   const [animationComplete, setAnimationComplete] = useState<boolean[]>([])
   const [shouldCheckScroll, setShouldCheckScroll] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
+  const [showScrollToBottomButton, setShowScrollToBottomButton] = useState(false)
+  const promptInputBoxRef = useRef<HTMLDivElement>(null)
 
   const { accessCompanyInfo } = useAuthStore.getState()
 
@@ -136,6 +147,26 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
 
   const isGenerating = useMemo(() => MIAgent.state === MIAgentState.STREAMING, [MIAgent.state])
 
+  const hasConversations = useMemo(
+    () => MIAgent.conversations.length > 0 && MIAgent.conversations[0]?.qnaNo !== null,
+    [MIAgent.conversations],
+  )
+
+  // 마지막 대화가 isNew이고 애니메이션이 완료되었는지 확인
+  const shouldShowExpandButton = useMemo(() => {
+    const hiddenCookie = getCookie(MAXIMIZE_VIEW_HIDDEN_COOKIE_KEY)
+    if (hiddenCookie) {
+      return false
+    }
+
+    const lastConversation = MIAgent.conversations.at(-1)
+
+    if (!(MIAgent.state === MIAgentState.COMPLETE || MIAgent.state === MIAgentState.IDLE)) return false // TODO: 조건 업데이트 후 조정 필요
+    if (!lastConversation?.isNew) return false
+
+    return animationComplete.at(-1)
+  }, [MIAgent.conversations, MIAgent.state, animationComplete])
+
   const fetchPreviousHistory = useCallback(async () => {
     if (MIAgent.history.isLast) return false
 
@@ -159,29 +190,34 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     async (e: UIEvent<HTMLDivElement>) => {
       if (initialHistoryLoading || isGenerating) return
 
-      const { scrollTop } = e.currentTarget
+      const container = e.currentTarget
+      const { scrollTop, scrollHeight, clientHeight } = container
+
+      // 스크롤이 하단 근처인지 확인 (30px 이내)
+      const distanceFromBottom = scrollHeight - clientHeight - scrollTop
+      const isAtBottom = distanceFromBottom <= 30
+      setShowScrollToBottomButton(!isAtBottom && hasConversations)
 
       if (scrollTop === 0) {
         await fetchPreviousHistory()
       }
     },
-    [initialHistoryLoading, isGenerating, fetchPreviousHistory],
+    [initialHistoryLoading, isGenerating, fetchPreviousHistory, hasConversations],
   )
   useEffect(() => {
     if (initialHistoryLoading) return
 
-    const allAnimationsComplete = animationComplete.length > 0 && animationComplete.every((v) => v)
+    const allAnimationsComplete = animationComplete.length > 0 && animationComplete.every(Boolean)
     const isActuallyComplete = MIAgent.state === MIAgentState.COMPLETE
 
     if (allAnimationsComplete && isActuallyComplete) {
-      requestAnimationFrame(() => setTimeout(scrollToBottom, 100))
-
       if (isRetrying) {
         setShouldCheckScroll(true)
         setIsRetrying(false)
       }
     }
-  }, [MIAgent.state, animationComplete, scrollToBottom, isRetrying, initialHistoryLoading])
+  }, [MIAgent.state, animationComplete, isRetrying, initialHistoryLoading])
+
   // retry 완료 후 스크롤 체크
   useEffect(() => {
     if (shouldCheckScroll && !isGenerating) {
@@ -238,6 +274,55 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     }
   }, [MIAgent.conversations, scrollToBottom, initialHistoryLoading])
 
+  const checkScrollPosition = useCallback(() => {
+    if (!hasConversations) {
+      setShowScrollToBottomButton(false)
+      return
+    }
+
+    const container = scrollRef.current
+    if (!container) return
+
+    const { scrollTop, scrollHeight, clientHeight } = container
+    const distanceFromBottom = scrollHeight - clientHeight - scrollTop
+    const isAtBottom = distanceFromBottom <= 10
+    setShowScrollToBottomButton(!isAtBottom)
+  }, [hasConversations, scrollRef])
+
+  useEffect(() => {
+    if (!hasConversations) {
+      setShowScrollToBottomButton(false)
+      return undefined
+    }
+
+    const container = scrollRef.current
+    if (!container) return undefined
+
+    checkScrollPosition()
+
+    container.addEventListener('scroll', checkScrollPosition)
+
+    return () => {
+      container.removeEventListener('scroll', checkScrollPosition)
+    }
+  }, [hasConversations, scrollRef, MIAgent.conversations, checkScrollPosition])
+
+  // 프롬프트 입력란 높이 변경 감지
+  useEffect(() => {
+    const inputBoxElement = promptInputBoxRef.current
+    if (!inputBoxElement || !hasConversations) return undefined
+
+    const resizeObserver = new ResizeObserver(() => {
+      checkScrollPosition()
+    })
+
+    resizeObserver.observe(inputBoxElement)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [hasConversations, checkScrollPosition])
+
   const handleRetry = async (qnaNo: number) => {
     requestAnimationFrame(async () => {
       scrollToBottom()
@@ -251,11 +336,6 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
       }, 100)
     })
   }
-
-  const hasConversations = useMemo(
-    () => MIAgent.conversations.length > 0 && MIAgent.conversations[0]?.qnaNo !== null,
-    [MIAgent.conversations],
-  )
 
   const toggleExpand = () => {
     onChangeExpand?.(!windowExpend)
@@ -306,92 +386,43 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
   }, [scrollRef, scrollToAnchor, MIAgent.history.isLoading])
 
   // 최초 히스토리 로드 처리
-  useLayoutEffect(() => {
-    if (!hasConversations || !initialHistoryLoading) return () => {}
+  useEffect(() => {
+    if (!initialHistoryLoading) return undefined
 
-    let previousConversationsLength = MIAgent.conversations.length
-    let isChecking = false
-    let resizeObserver: ResizeObserver | null = null
-    let resizeTimeout: NodeJS.Timeout | null = null
+    const currentHasConversations = MIAgent.conversations.length > 0 && MIAgent.conversations[0]?.qnaNo !== null
 
-    const checkAndLoadHistory = async () => {
-      if (!scrollRef.current || isChecking || MIAgent.history.isLoading) return
-
-      const container = scrollRef.current
-      const { scrollHeight, clientHeight, scrollTop } = container
-      const hasScrollbar = scrollHeight > clientHeight
-      // 히스토리 로드 시에는 스크롤이 맨 위에 있어야 함 (5px 오차 허용)
-      const isAtTop = scrollTop <= 5
-
-      if (hasScrollbar && !isAtTop) {
-        setInitialHistoryLoading(false)
-        return
-      }
-
-      if (MIAgent.history.isLast) {
-        setInitialHistoryLoading(false)
-        return
-      }
-
-      if (isAtTop) {
-        isChecking = true
-        const success = await fetchPreviousHistory()
-
-        if (success && MIAgent.conversations.length > previousConversationsLength) {
-          previousConversationsLength = MIAgent.conversations.length
-          requestAnimationFrame(() => {
-            setTimeout(() => {
-              isChecking = false
-              checkAndLoadHistory()
-            }, 100)
-          })
-        } else {
-          isChecking = false
+    if (!currentHasConversations) {
+      const timeoutId = setTimeout(() => {
+        if (MIAgent.conversations.length === 0) {
           setInitialHistoryLoading(false)
         }
-      } else {
-        // 스크롤이 맨 위가 아니면 히스토리 로드 완료
-        setInitialHistoryLoading(false)
+      }, 500)
+      return () => {
+        clearTimeout(timeoutId)
       }
     }
 
-    const timeoutId = setTimeout(() => {
-      if (!scrollRef.current) return
-
-      // 새로운 챗이 아닌 길이변화가 생긴경우 히스토리 로드 간주
-      if (!MIAgent.conversations.at(-1)?.isNew) {
-        resizeObserver = new ResizeObserver(() => {
-          // 디바운싱: ResizeObserver가 너무 자주 호출되지 않도록
-          if (resizeTimeout) {
-            clearTimeout(resizeTimeout)
-          }
-          resizeTimeout = setTimeout(() => {
-            if (!isChecking && !MIAgent.history.isLoading) {
-              requestAnimationFrame(() => {
-                checkAndLoadHistory()
-              })
-            }
-          }, 100)
-        })
-
-        resizeObserver.observe(scrollRef.current)
-
-        requestAnimationFrame(() => {
-          checkAndLoadHistory().then()
-        })
+    // 히스토리 로드 완료 후 이전 페이지가 있으면 fetchPreviousHistory 한 번만 호출
+    // fetchPreviousHistory 내부에서 isLast 검증을 하므로 자동으로 멈춤
+    const loadPreviousHistory = async () => {
+      if (!MIAgent.history.isLoading) {
+        await fetchPreviousHistory()
       }
-    }, 0)
+      setInitialHistoryLoading(false)
+    }
+
+    let timeoutId: NodeJS.Timeout | null = null
+    const rafId = requestAnimationFrame(() => {
+      timeoutId = setTimeout(() => {
+        loadPreviousHistory().then()
+      }, 100)
+    })
 
     return () => {
-      clearTimeout(timeoutId)
-      if (resizeTimeout) {
-        clearTimeout(resizeTimeout)
-      }
-      if (resizeObserver) {
-        resizeObserver.disconnect()
-      }
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      if (timeoutId) clearTimeout(timeoutId)
     }
-  }, [MIAgent.conversations, MIAgent.history, hasConversations, initialHistoryLoading, scrollRef, fetchPreviousHistory])
+  }, [initialHistoryLoading, MIAgent.conversations, MIAgent.history.isLast, MIAgent.history.isLoading, fetchPreviousHistory])
 
   return (
     <>
@@ -488,13 +519,14 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
               overflow: 'hidden',
               height: '100%',
               minHeight: 0,
+              position: 'relative',
             }}
           >
             {/* Header area */}
             <Box sx={{ flexShrink: 0 }}>
               <MIAgentHeaderBox
                 onExpand={toggleExpand}
-                minimized={windowExpend}
+                minimized={!windowExpend}
                 onClose={() => {
                   onClose?.()
                   onChangeExpand?.(false)
@@ -515,7 +547,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
                 minHeight: 0,
                 overflow: 'hidden',
                 position: 'relative',
-                justifyContent: 'center',
+                justifyContent: MIAgent.conversations.length > 0 ? 'flex-start' : 'center',
               }}
             >
               <Stack flex={hasConversations ? 1 : 'none'} overflow="hidden" position="relative">
@@ -661,14 +693,18 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
               </Stack>
             </Box>
             {/* Footer area */}
-            <Box
+            <Stack
+              ref={promptInputBoxRef}
               sx={{
                 padding: '12px',
                 flexShrink: 0,
                 display: 'flex',
+                position: 'relative',
+                alignItems: 'center',
                 justifyContent: 'center',
                 width: '100%',
                 boxSizing: 'border-box',
+                gap: '10px',
                 transition: (theme) =>
                   theme.transitions.create(['opacity', 'transform'], {
                     duration: theme.transitions.duration.standard,
@@ -676,13 +712,125 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
                   }),
               }}
             >
+              <Stack
+                component="button"
+                onClick={() => onChangeExpand?.(true)}
+                direction="row"
+                gap="12px"
+                height="44px"
+                boxSizing="border-box"
+                alignItems="center"
+                justifyContent="center"
+                color="contentIcon.Enabled"
+                sx={{
+                  position: 'absolute',
+                  top: '-44px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 1000,
+                  backgroundColor: 'commonColor.White',
+                  border: '1px solid',
+                  borderColor: 'contentBorder.Normal',
+                  borderRadius: '200px',
+                  padding: '10px 12px',
+                  cursor: 'pointer',
+                  opacity: !windowExpend && shouldShowExpandButton ? (showScrollToBottomButton ? 1 : 0.3) : 0,
+                  pointerEvents: !windowExpend && shouldShowExpandButton ? 'auto' : 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    opacity: 1,
+                    backgroundColor: 'contentBG.Hover',
+                    borderColor: 'contentBorder.Hover',
+                  },
+                  '&:has(.close-area:hover)': {
+                    backgroundColor: 'commonColor.White',
+                    borderColor: 'contentBorder.Normal',
+                  },
+                  '&:has(.close-area:hover) .text-area': {
+                    opacity: 0.6,
+                    color: 'contentIcon.Disabled',
+                  },
+                }}
+              >
+                <Stack
+                  className="text-area"
+                  direction="row"
+                  gap="8px"
+                  sx={{
+                    transition: 'opacity 0.2s ease, color 0.2s ease',
+                  }}
+                >
+                  <ExpandIcon width={20} height={20} />
+                  <Typography variant="body2M14" color="contentText.Normal">
+                    Maximize View
+                  </Typography>
+                </Stack>
+                <Stack
+                  className="close-area"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    // 쿠키 설정 (1일 후 만료)
+                    setCookie(MAXIMIZE_VIEW_HIDDEN_COOKIE_KEY, 'hidden', 1)
+                  }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    color: 'contentIcon.Enabled',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      color: 'contentIcon.Activeb',
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    },
+                  }}
+                >
+                  <CloseChatIcon width={16} height={16} />
+                </Stack>
+              </Stack>
+              <Fade in={showScrollToBottomButton} timeout={400}>
+                <IconButton
+                  onClick={() => scrollToBottom('smooth')}
+                  disableRipple
+                  sx={{
+                    position: 'absolute',
+                    top: '-38px',
+                    right: '32px',
+                    width: '32px',
+                    height: '32px',
+                    zIndex: 1000,
+                    color: 'contentIcon.Enabled',
+                    backgroundColor: 'commonColor.White',
+                    border: '1px solid',
+                    borderColor: 'contentBorder.Normal',
+                    boxShadow: '0px 0px 15px 0px #00000026',
+                    '&:hover': {
+                      backgroundColor: 'contentBG.Hover',
+                      borderColor: 'contentBorder.Hover',
+                    },
+                    transition:
+                      'background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:active': {
+                      transform: 'scale(0.95)',
+                    },
+                  }}
+                >
+                  <KeyboardArrowDownIcon sx={{ fontSize: '20px' }} />
+                </IconButton>
+              </Fade>
               <MIAgentPromptInputBox
                 onSendMessage={handleSendMessage}
                 isGenerating={isGenerating}
                 selectModeOption={selectModeOption}
                 onSelectModeOptionChange={updateSelectModeOption}
               />
-            </Box>
+              <Typography variant="subtext2" color="contentText.Subtext" fontSize="10px" lineHeight="1.4" sx={{ userSelect: 'none' }}>
+                MARI is improving every day. Thank you for your support as we continue to grow.
+              </Typography>
+            </Stack>
           </Box>
         </Box>
       </Box>

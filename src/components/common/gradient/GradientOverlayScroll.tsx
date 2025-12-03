@@ -23,6 +23,7 @@ interface GradientOverlayScrollProps {
   top?: GradientSideOption
   bottom?: GradientSideOption
   inputRef?: RefObject<HTMLTextAreaElement | null>
+  height?: string
 }
 
 const hexToRgbObj = (hex: string) => {
@@ -38,6 +39,7 @@ const GradientOverlayScroll = ({
   top = { display: false },
   bottom = { display: false },
   inputRef,
+  height = '100%',
 }: GradientOverlayScrollProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const internalTextareaRef = useRef<HTMLTextAreaElement>(null)
@@ -87,7 +89,7 @@ const GradientOverlayScroll = ({
   }
 
   return (
-    <Box position="relative" width="100%" height="100%">
+    <Box position="relative" width="100%" height={height}>
       {showTop && (
         <Box
           sx={{

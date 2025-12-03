@@ -1,6 +1,6 @@
 import ErrorIcon from '@mui/icons-material/Error'
 import { ListItemButton, Typography, styled, TooltipProps, Tooltip, tooltipClasses, Box, Input, InputAdornment } from '@mui/material'
-import { useMemo, useState, useRef, useEffect, useCallback, KeyboardEvent, ChangeEvent, MouseEvent } from 'react'
+import { useMemo, useState, useRef, useEffect, useCallback, KeyboardEvent, ChangeEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
@@ -9,6 +9,7 @@ import DeleteIcon from '@/components/common/icons/agent/DeleteIcon'
 import EditIcon from '@/components/common/icons/agent/EditIcon'
 import MoreIcon from '@/components/common/icons/agent/MoreIcon'
 import MIInputClearIcon from '@/components/common/input/MIInputClearIcon'
+import MIDropdownMenu, { DropdownMenuItem } from '@/components/common/menu/MIDropdownMenu'
 import { IChatRoomRes } from '@/service/mi/agent'
 
 interface Props {
@@ -19,26 +20,6 @@ interface Props {
   onDelete: (chatId: string) => Promise<void>
   disabled?: boolean
 }
-
-const HtmlTooltip = styled(({ className, ...props }: TooltipProps) => <Tooltip {...props} classes={{ popper: className }} />)(
-  ({ theme }) => ({
-    [`& .${tooltipClasses.tooltip}`]: {
-      background: '#fff',
-      color: theme.palette.contentText.Black,
-      width: '90px',
-      height: '88px',
-      minWidth: '90px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-      flexShrink: '0',
-      borderRadius: '4px',
-      boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.10)',
-      marginLeft: '8px!important',
-      padding: '8px 0',
-    },
-  }),
-)
 
 const TitleTooltip = styled(({ className, ...props }: TooltipProps) => <Tooltip {...props} classes={{ popper: className }} />)(
   ({ theme }) => ({
@@ -85,22 +66,6 @@ const titleStyles = {
   maxWidth: '116px',
 }
 
-const tooltipActionStyles = {
-  display: 'flex',
-  height: '36px',
-  padding: '8px 14px',
-  flexDirection: 'row',
-  justifyContent: 'flex-start',
-  alignItems: 'center',
-  gap: '8px',
-  color: 'contentIcon.Enabled',
-  '&:hover': {
-    color: 'contentIcon.Activeb',
-    cursor: 'pointer',
-    backgroundColor: '#F8F9FA',
-  },
-}
-
 const moreIconStyles = {
   display: 'flex',
   justifyContent: 'center',
@@ -130,12 +95,11 @@ const editingInputStyles = {
 
 const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete, disabled }: Props) => {
   const { t } = useTranslation()
-  const tooltipRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLDivElement>(null)
 
   const [title, setTitle] = useState(item.title)
   const [isEditing, setIsEditing] = useState(false)
-  const [tooltipOpen, setTooltipOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [isTextTruncated, setIsTextTruncated] = useState(false)
   const [isHover, setIsHover] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -182,37 +146,39 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
     }
   }, [item.title])
 
-  useEffect(() => {
-    const handleClickOutside = (event: globalThis.MouseEvent) => {
-      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
-        setTooltipOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
-
-  const tooltipActions = useMemo(
+  const menuItems = useMemo<DropdownMenuItem[]>(
     () => [
       {
-        name: t('common.edit'),
-        icon: EditIcon,
+        label: (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Box sx={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <EditIcon />
+            </Box>
+            <Typography color="contentText.Normal" variant="body2R14">
+              {t('common.edit')}
+            </Typography>
+          </Box>
+        ),
         action: () => {
           setIsEditing(true)
-          setTooltipOpen(false)
+          setMenuOpen(false)
           setIsHover(false)
         },
       },
       {
-        name: t('common.delete'),
-        icon: DeleteIcon,
-        action: (e: MouseEvent<HTMLDivElement>) => {
-          e.stopPropagation()
+        label: (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Box sx={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DeleteIcon />
+            </Box>
+            <Typography color="contentText.Normal" variant="body2R14">
+              {t('common.delete')}
+            </Typography>
+          </Box>
+        ),
+        action: () => {
           setIsDeleteModalOpen(true)
-          setTooltipOpen(false)
+          setMenuOpen(false)
           setIsHover(false)
         },
       },
@@ -280,7 +246,7 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
           placement="bottom-start"
           disableInteractive
           followCursor
-          open={isTextTruncated && !tooltipOpen && isHover}
+          open={isTextTruncated && !menuOpen && isHover}
         >
           <ListItemButton
             selected={selected}
@@ -304,59 +270,37 @@ const MIAgentHistoryItem = ({ item, selected, onSelected, onEditTitle, onDelete,
                 item.title
               )}
             </Typography>
-            {!isUpdating && isHover && (
-              <HtmlTooltip
-                open={tooltipOpen}
-                onClose={() => setTooltipOpen(false)}
-                title={
-                  <Box
-                    ref={tooltipRef}
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      boxSizing: 'border-box',
-                      width: '100%',
-                      height: '100%',
-                    }}
-                  >
-                    {tooltipActions.map((action, index) => (
-                      <Box key={index} sx={tooltipActionStyles} onClick={action.action}>
-                        <Box
-                          sx={{
-                            width: '20px',
-                            height: '20px',
-                          }}
-                        >
-                          {action.icon({})}
-                        </Box>
-                        <Typography
-                          color="contentText.Normal"
-                          variant="body2R14"
-                          sx={{
-                            '&:hover': {
-                              color: 'contentText.Black',
-                              fontWeight: 500,
-                            },
-                          }}
-                        >
-                          {action.name}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                }
-                placement="right-start"
+            {!isUpdating && (isHover || menuOpen) && (
+              <Box
+                onClick={(e) => {
+                  e.stopPropagation()
+                }}
+                sx={{ display: 'flex', alignItems: 'center' }}
               >
-                <Box
-                  sx={moreIconStyles}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setTooltipOpen(!tooltipOpen)
+                <MIDropdownMenu
+                  items={menuItems}
+                  label={
+                    <Box sx={moreIconStyles}>
+                      <MoreIcon />
+                    </Box>
+                  }
+                  variant="text"
+                  placement="bottom-start"
+                  menuPositionOffset={{ top: -42, left: 42 }}
+                  zIndex={1500}
+                  disablePortal={false}
+                  groupDisplayType="none"
+                  open={menuOpen}
+                  onOpenChange={setMenuOpen}
+                  paperProps={{
+                    sx: {
+                      minWidth: '110px',
+                    },
                   }}
-                >
-                  <MoreIcon />
-                </Box>
-              </HtmlTooltip>
+                  buttonHoverBgColor="transparent"
+                  disableRipple
+                />
+              </Box>
             )}
           </ListItemButton>
         </TitleTooltip>

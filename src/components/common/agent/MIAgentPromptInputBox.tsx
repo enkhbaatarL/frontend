@@ -104,44 +104,69 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
         inputRef.current?.focus()
       }}
     >
-      <Box padding="20px 20px 0" width={'100%'} boxSizing={'border-box'} minHeight={'62px'} position="relative">
-        <GradientOverlayScroll
-          inputRef={inputRef}
-          top={{ display: true, height: 18, color: '#ffffff', offset: 0 }}
-          bottom={{ display: true, height: 18, color: '#ffffff', offset: 6 }}
+      <Box
+        padding="20px 20px 0"
+        width={'100%'}
+        boxSizing={'border-box'}
+        minHeight={'62px'}
+        position="relative"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          transition: (theme) =>
+            theme.transitions.create('height', {
+              duration: theme.transitions.duration.shorter,
+              easing: theme.transitions.easing.easeInOut,
+            }),
+        }}
+      >
+        <Box
+          sx={{
+            flex: '1 1 auto',
+            minHeight: 0,
+            position: 'relative',
+          }}
         >
-          <TextareaAutosize
-            placeholder={isGenerating ? t('mari.promptMessage.generating') : (placeholder ?? t('mari.promptMessage.placeholder'))}
-            value={promptText}
-            maxLength={2000}
-            className={'MIScrollbar'}
-            style={{
-              width: '100%',
-              fontFamily: 'Pretendard',
-              fontSize: '16px',
-              fontStyle: 'normal',
-              fontWeight: '400',
-              lineHeight: '1.4',
-              color: isGenerating ? '#CED4DA' : '#333333',
-              border: 'none',
-              resize: 'none',
-              outline: 'none',
-              backgroundColor: 'transparent',
-              overflowY: 'auto',
-            }}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
-              setPromptText(e.target.value)
-            }}
-            onKeyDown={handleKeyDown}
-            onCompositionStart={() => setIsComposing(true)}
-            onCompositionEnd={() => setIsComposing(false)}
-            onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setIsInputFocused(false)}
-            disabled={isGenerating}
-            minRows={1}
-            maxRows={6}
-          />
-        </GradientOverlayScroll>
+          <GradientOverlayScroll
+            inputRef={inputRef}
+            top={{ display: true, height: 18, color: '#ffffff', offset: 0 }}
+            bottom={{ display: true, height: 18, color: '#ffffff', offset: 6 }}
+            height="auto"
+          >
+            <TextareaAutosize
+              placeholder={isGenerating ? t('mari.promptMessage.generating') : (placeholder ?? t('mari.promptMessage.placeholder'))}
+              value={promptText}
+              maxLength={2000}
+              className={'MIScrollbar'}
+              style={{
+                width: '100%',
+                fontFamily: 'Pretendard',
+                fontSize: '16px',
+                fontStyle: 'normal',
+                fontWeight: '400',
+                lineHeight: '1.4',
+                color: isGenerating ? '#CED4DA' : '#333333',
+                border: 'none',
+                resize: 'none',
+                outline: 'none',
+                backgroundColor: 'transparent',
+                overflowY: 'auto',
+                transition: 'height 0.1s ease-in-out',
+              }}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+                setPromptText(e.target.value)
+              }}
+              onKeyDown={handleKeyDown}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
+              disabled={isGenerating}
+              minRows={1}
+              maxRows={6}
+            />
+          </GradientOverlayScroll>
+        </Box>
       </Box>
       <Box
         paddingX="20px"
@@ -162,7 +187,6 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
             onOpenChange={setIsDropdownOpen}
             settingsItems={selectModeOption}
             onChangeSelectedItem={handleToggleOption}
-            modePosition={'top'}
             disabled={isGenerating}
           />
         </Box>

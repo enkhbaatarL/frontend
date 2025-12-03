@@ -35,6 +35,7 @@ interface Props extends ButtonProps {
   closeOnScroll?: boolean
   maxHeight?: number | string
   enableHoverBackground?: boolean
+  zIndex?: number
 }
 
 const MISelectMenu = ({
@@ -55,6 +56,7 @@ const MISelectMenu = ({
   closeOnScroll = false,
   maxHeight = 300,
   enableHoverBackground = false,
+  zIndex,
   ...props
 }: Props) => {
   const { t } = useTranslation()
@@ -427,6 +429,7 @@ const MISelectMenu = ({
       disablePortal={disablePortal}
       closeOnScroll={closeOnScroll}
       enableHoverBackground={enableHoverBackground}
+      zIndex={zIndex}
       {...props}
     >
       <ScrollWrapper

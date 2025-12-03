@@ -1,4 +1,4 @@
-import { Box, Stack, Tooltip, Typography } from '@mui/material'
+import { Box, Stack, Tooltip } from '@mui/material'
 import clsx from 'clsx'
 import { useRef, useMemo, useEffect, useState, useCallback, AnchorHTMLAttributes } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -6,8 +6,9 @@ import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
 
-import suggestionIcon from '@/assets/agent/suggestion.svg'
 import style from '@/components/common/agent/MIAgentAnswer.module.scss'
+import MIAgentSources from '@/components/common/agent/MIAgentSources'
+import MIAgentSuggestedQuestions from '@/components/common/agent/MIAgentSuggestedQuestions'
 import { MIAgentTableDownloadButton } from '@/components/common/agent/MIAgentTableDownloadButton'
 import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
 import { IConversation, chunkManager } from '@/hooks/useMIAgent'
@@ -382,8 +383,15 @@ const MIAgentAnswer = ({ conversation, chatRoomTitle, onAnimationComplete, onSen
           loggedErrorQnaNoRef.current = null
         }
       }
+
+      // 이미 완료된 대화(스트리밍이 아닌 대화)인 경우 즉시 animationComplete 설정
+      if (baseMessage && chunkManager.getChunks(conversation.qnaNo).length === 0) {
+        animationCompleteCalledRef.current = true
+        setIsAnimationComplete(true)
+        onAnimationComplete?.()
+      }
     }
-  }, [conversation.qnaNo, conversation.answer, t])
+  }, [conversation.qnaNo, conversation.answer, t, onAnimationComplete])
 
   // FULLTEXT가 왔을 때 최종 메시지로 업데이트
   useEffect(() => {
@@ -636,91 +644,9 @@ const MIAgentAnswer = ({ conversation, chatRoomTitle, onAnimationComplete, onSen
 
       {animationCompleteCalledRef.current && (
         <Stack gap="20px">
-          {sources && (
-            <Stack py="12px" className={conversation.isNew ? style.parsedDataContainer : undefined}>
-              <Typography variant="contentTitle" color="content.textBlack" py="8px">
-                {t('mari.agent.sources')}
-              </Typography>
-              <Stack mt="12px" gap="10px">
-                <Stack gap="4px">
-                  <Typography variant="subtext3" color="contentText.Normal">
-                    Web Search
-                  </Typography>
-                  <Stack gap="6px">
-                    {sources.map((source, index) => (
-                      <Stack
-                        key={source.index}
-                        direction="row"
-                        width="fit-content"
-                        padding="6px 8px"
-                        borderRadius="4px"
-                        border="1px solid"
-                        borderColor="contentBorder.Normal"
-                        gap="6px"
-                        boxSizing="border-box"
-                        className={conversation.isNew ? style.parsedDataItem : undefined}
-                        sx={{
-                          animationDelay: `${index * 200}ms`,
-                          backgroundColor: 'mari.MariBG',
-                          '&:hover': {
-                            cursor: 'pointer',
-                            borderColor: 'contentBorder.Active',
-                            backgroundColor: 'contentBG.Hover',
-                          },
-                          userSelect: 'none',
-                        }}
-                        onClick={() => {
-                          window.open(source.url, '_blank')
-                        }}
-                      >
-                        <Typography variant="subtext" color="content.textBlack">
-                          {typeof source.index === 'string' ? source.index.replace(/^web_/, '') : String(source.index)}
-                        </Typography>
-                        <Typography variant="subtext" color="content.textBlack">
-                          {source.sourceNm}
-                        </Typography>
-                      </Stack>
-                    ))}
-                  </Stack>
-                </Stack>
-              </Stack>
-            </Stack>
-          )}
+          {sources && <MIAgentSources sources={sources} isNew={conversation.isNew} />}
           {suggestedQuestions && (
-            <Stack py="8px" className={conversation.isNew ? style.parsedDataContainer : undefined}>
-              <Typography variant="contentTitle" color="content.textBlack">
-                {t('mari.agent.suggestedQuestions')}
-              </Typography>
-              <Stack py="6px" gap="6px">
-                {suggestedQuestions.map((question, index) => (
-                  <Stack
-                    key={question.index}
-                    direction="row"
-                    width="fit-content"
-                    padding="6px 8px"
-                    gap="6px"
-                    borderRadius="4px"
-                    className={conversation.isNew ? style.parsedDataItem : undefined}
-                    sx={{
-                      userSelect: 'none',
-                      cursor: 'pointer',
-                      animationDelay: `${index * 200}ms`,
-                      '&:hover': {
-                        backgroundColor: 'gray.20',
-                      },
-                    }}
-                    onClick={() => {
-                      onSendMessage?.(question.text)
-                    }}
-                  >
-                    <img src={suggestionIcon} alt="suggestion" draggable={false} />
-                    <Typography variant="body2M14" color="content.textBlack">
-                      {question.text}
-                    </Typography>
-                  </Stack>
-                ))}
-              </Stack>
-            </Stack>
+            <MIAgentSuggestedQuestions suggestedQuestions={suggestedQuestions} isNew={conversation.isNew} onSendMessage={onSendMessage} />
           )}
         </Stack>
       )}
