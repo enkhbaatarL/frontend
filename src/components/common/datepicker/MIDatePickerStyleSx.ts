@@ -33,7 +33,7 @@ const getTextFieldSize = (size?: 'h26' | 'h28' | 'h34' | 'h36' | 'h40') => {
     case 'h40':
       return {
         boxSizing: 'border-box',
-        height: '38px',
+        height: '40px',
         padding: '10px 12px !important',
       }
     default:
@@ -140,8 +140,27 @@ export const datePickerLayoutStyleSx = {
   height: '279px',
 }
 
+const getInputBaseRootHeight = (size?: Size) => {
+  switch (size) {
+    case 'h26':
+      return '26px'
+    case 'h28':
+      return '28px'
+    case 'h34':
+      return '34px'
+    case 'h36':
+      return '36px'
+    case 'h40':
+      return '40px'
+    default:
+      return '34px'
+  }
+}
+
 export const datePickerTextStyleSx = (size?: Size) => ({
   minWidth: '0 !important',
+  height: getInputBaseRootHeight(size),
+  boxSizing: 'border-box',
   '& fieldset': { display: 'none' },
   '& .MuiInputBase-root .MuiInputAdornment-root': {
     marginLeft: '4px',
@@ -152,6 +171,8 @@ export const datePickerTextStyleSx = (size?: Size) => ({
     borderRadius: '4px',
     paddingRight: 3,
     caretColor: 'transparent',
+    height: `${getInputBaseRootHeight(size)} !important`,
+    boxSizing: 'border-box',
     '& svg': {
       display: 'block',
       ...getSvgStyle(size),
@@ -195,8 +216,12 @@ export const datePickerTextStyleSx = (size?: Size) => ({
       },
     },
   },
+  '& .MuiOutlinedInput-root': {
+    height: `${getInputBaseRootHeight(size)} !important`,
+  },
   '& .MuiInputBase-input': {
     ...getTextFieldSize(size),
     paddingRight: '0 !important',
+    lineHeight: '1',
   },
 })

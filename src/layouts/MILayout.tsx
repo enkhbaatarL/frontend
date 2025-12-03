@@ -6,20 +6,19 @@ import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIAgentButton from '@/components/common/agent/MIAgentButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
-import MIHeaderMainLayout, { Page } from '@/components/mi/MIHeaderMainLayout'
+import MIHeaderMainLayout from '@/components/mi/MIHeaderMainLayout'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import Ticker from '@/components/mi/Ticker'
+import { MENU_CONFIG } from '@/constants/menu'
 import { useMarketData } from '@/contexts/MarketDataContext'
 import { useResetKeyContext } from '@/contexts/ResetKeyContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
-import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import { useScrollRestoration } from '@/hooks/useScrollRestoration'
 import { MarketDataProvider } from '@/providers/MarketDataProvider'
 import MIProvider from '@/providers/MIProvider'
 import { StickyHeaderProvider } from '@/providers/StickyHeaderProvider'
 import boardService, { INoticeDetailInfo, INoticePopupInfo } from '@/service/mi/board'
 import useAuthStore from '@/store/useAuthStore'
-import { MiPagesType } from '@/types/common'
 
 // 쿠키 설정 함수
 const setCookie = (name: string, value: string, expiryDays: number) => {
@@ -43,38 +42,6 @@ const getCookie = (name: string): string | null => {
   return null
 }
 
-const mainMenu: Page[] = [
-  {
-    label: 'Dashboard',
-    url: 'dashboard',
-  },
-  {
-    label: 'AI Forecast',
-    url: 'forecast',
-  },
-  {
-    label: 'Market Data',
-    url: 'market',
-  },
-]
-
-const activeMenu: MiPagesType[] = [
-  'dashboard',
-  'forecast',
-  'market',
-  'newsletters',
-  'economic-event',
-  'signal-map',
-  'market-data',
-  'sales-analysis',
-  'market-map',
-  'insights',
-  'mi-activity-log',
-  'market-news',
-  'parallel-coordinates',
-  'custom',
-]
-
 const headerTopHeight = 36
 
 const MILayout = () => {
@@ -86,7 +53,7 @@ const MILayout = () => {
   const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
   const location = useLocation()
   const { saveScroll, currentScroll, preRenderMinHeight } = useScrollRestoration({
-    urls: mainMenu.map((m) => m.url),
+    urls: MENU_CONFIG.map((menu) => menu.index),
     ref: scrollRef,
   })
   const [isScrolled, setIsScrolled] = useState(currentScroll !== 0)
@@ -94,16 +61,9 @@ const MILayout = () => {
   const { stickyHeader } = useStickyHeader()
   const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0)
 
-  const { extractPage, isDeniedDashboardPageLoading } = useCompanyCondition()
-
   useEffect(() => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
-
-  const getActiveMenu = useMemo(() => {
-    if (isDeniedDashboardPageLoading || extractPage === undefined) return []
-    return activeMenu.filter((item) => !extractPage.includes(item))
-  }, [extractPage, isDeniedDashboardPageLoading])
 
   useEffect(() => setIsScrolled(currentScroll > 0), [currentScroll])
 
@@ -292,12 +252,7 @@ const MILayout = () => {
         >
           {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
-            <MIHeaderMainLayout
-              pages={mainMenu}
-              activeMenu={getActiveMenu}
-              onMoveTab={(callback) => saveScroll(callback)}
-              isLoading={isDeniedDashboardPageLoading || extractPage === undefined}
-            />
+            <MIHeaderMainLayout onMoveTab={(callback) => saveScroll(callback)} />
             {stickyHeader && (
               <Box
                 data-sticky-header

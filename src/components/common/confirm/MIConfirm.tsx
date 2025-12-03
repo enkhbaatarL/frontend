@@ -68,9 +68,9 @@ const MIConfirm = ({
             width: typeof width === 'number' ? `${width}px` : width,
             ...(height
               ? {
-                  height: typeof height === 'number' ? `${height}px` : height,
-                  maxHeight: typeof height === 'number' ? `${height}px` : height,
-                }
+                height: typeof height === 'number' ? `${height}px` : height,
+                maxHeight: typeof height === 'number' ? `${height}px` : height,
+              }
               : { maxHeight: 800 }),
             ...paperSx,
           },
@@ -88,7 +88,7 @@ const MIConfirm = ({
       }}
     >
       <DialogTitle>
-        <span style={{ fontWeight: children ? 700 : 600 }}>{title}</span>
+        <span style={{ fontWeight: children ? 700 : 600, userSelect: 'none' }}>{title}</span>
         {children && (
           <MIButton
             startIcon={<CloseIcon />}

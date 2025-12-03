@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import MariBadge from '@/components/common/bage/MariBadge'
 import MIButtonArrow from '@/components/common/button/MIButtonArrow'
 import MISearchInput from '@/components/common/input/MISearchInput'
-import MISelect from '@/components/common/select/MISelect'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import MIPageHeadline from '@/components/mi/MIPageHeadline'
@@ -19,16 +19,21 @@ import useSnackbar from '@/hooks/useSnackbar'
 import NewsletterCard from '@/pages/mi/newsletter/components/NewsletterCard'
 import newsletterService, {
   IFeaturedNewsletterItem,
+  IFeaturedNewsletterListRequest,
   INewsletterItem,
   INewsletterListRequest,
   NewsletterStatus,
 } from '@/service/mi/newsletter'
-import { IPaginationRequest, IPaginationResponse } from '@/types/api'
+import useAuthStore from '@/store/useAuthStore'
+import { IPaginationResponse } from '@/types/api'
 
 const NewsLettersPage = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { showSnackbar } = useSnackbar()
+  const { accessCompanyInfo } = useAuthStore()
+
+  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
   const [loadingNewsletterIds, setLoadingNewsletterIds] = useState<Set<string>>(new Set())
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -41,9 +46,11 @@ const NewsLettersPage = () => {
     updatePage: updateFeaturedPage,
     isLoading: featuredNewsletterListIsLoading,
     optimisticUpdate: optimisticUpdateFeatured,
-  } = useSearchFilter<IPaginationRequest, IPaginationResponse<IFeaturedNewsletterItem>>(
+  } = useSearchFilter<IFeaturedNewsletterListRequest, IPaginationResponse<IFeaturedNewsletterItem>>(
     (params) => newsletterService.getFeaturedNewsletters(params),
-    {},
+    {
+      companyNo: customerCompanyNo,
+    },
     {
       page: 1,
       size: 6,
@@ -66,6 +73,7 @@ const NewsLettersPage = () => {
   } = useSearchFilter<INewsletterListRequest, IPaginationResponse<INewsletterItem>>(
     (params) => newsletterService.getNewsletterList(params),
     {
+      companyNo: customerCompanyNo,
       keyword: '',
     },
     {
@@ -140,8 +148,8 @@ const NewsLettersPage = () => {
   }, [updateFilterWithSearch])
 
   const handleDateFilterChange = useCallback(
-    (e: { target: { value: string | number | boolean | (string | number | boolean)[] } }) => {
-      updateFilter('dateFilter', e.target.value as string)
+    (selected: string) => {
+      updateFilter('dateFilter', selected)
     },
     [updateFilter],
   )
@@ -309,18 +317,21 @@ const NewsLettersPage = () => {
                   onClear={handleSearchClear}
                 />
                 <Box width="160px">
-                  <MISelect
-                    value={''}
-                    sizeSelect="h40"
-                    onChange={handleDateFilterChange}
-                    options={[
+                  <MISelectMenu
+                    variant="outlined"
+                    selected={''}
+                    onSelected={handleDateFilterChange}
+                    items={[
                       { label: 'Last 7 days', value: '7days' },
                       { label: 'Last 30 days', value: '30days' },
                       { label: 'Last 90 days', value: '90days' },
                     ]}
                     placeholder="All dates"
-                    darkPlaceholder
                     disabled
+                    sx={{
+                      minWidth: '160px',
+                      height: '40px',
+                    }}
                   />
                 </Box>
               </Box>

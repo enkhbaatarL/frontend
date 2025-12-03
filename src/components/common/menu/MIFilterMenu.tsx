@@ -4,7 +4,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, ReactNode } from 'react
 
 import MIButton from '@/components/common/button/MIButton'
 import MIFilterGroup from '@/components/common/filter/MIFilterGroup'
-import MIMenu from '@/components/common/menu/MIMenu'
+import MIMenu, { MIMenuProps } from '@/components/common/menu/MIMenu'
 
 export interface FilterGroupConfig {
   key: string
@@ -17,7 +17,7 @@ export interface FilterValues {
   [key: string]: string[]
 }
 
-interface MIFilterMenuProps {
+interface MIFilterMenuProps extends MIMenuProps {
   label?: ReactNode
   filterGroups: FilterGroupConfig[][]
   initialValues?: FilterValues
@@ -28,6 +28,7 @@ interface MIFilterMenuProps {
   groupLayout?:
     | 'horizontal-vertical' // 세로 묶음을 가로로 배치 (기본값)
     | 'vertical-horizontal' // 가로 묶음을 세로로 배치
+  enableHoverBackground?: boolean
 }
 
 const MIFilterMenu = ({
@@ -39,6 +40,8 @@ const MIFilterMenu = ({
   showSaveOption = true,
   initialSaveOn = false,
   groupLayout = 'vertical-horizontal',
+  enableHoverBackground = false,
+  ...props
 }: MIFilterMenuProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [save, setSave] = useState(initialSaveOn)
@@ -51,9 +54,9 @@ const MIFilterMenu = ({
   // 각 필터 그룹별로 상태 관리
   const [filterStates, setFilterStates] = useState<FilterValues>(() => {
     const states: FilterValues = {}
-    allFilterGroups.forEach((group) => {
+    for (const group of allFilterGroups) {
       states[group.key] = initialValues[group.key] ?? []
-    })
+    }
     return states
   })
 
@@ -69,9 +72,9 @@ const MIFilterMenu = ({
 
     if (hasInitialValuesChanged) {
       const newStates: FilterValues = {}
-      allFilterGroups.forEach((group) => {
+      for (const group of allFilterGroups) {
         newStates[group.key] = initialValues[group.key] ?? []
-      })
+      }
       setFilterStates(newStates)
       prevInitialValuesRef.current = initialValues
     }
@@ -90,9 +93,9 @@ const MIFilterMenu = ({
 
   const handleClear = () => {
     const clearedStates: FilterValues = {}
-    allFilterGroups.forEach((group) => {
+    for (const group of allFilterGroups) {
       clearedStates[group.key] = []
-    })
+    }
     setFilterStates(clearedStates)
   }
 
@@ -195,7 +198,15 @@ const MIFilterMenu = ({
   }
 
   return (
-    <MIMenu open={isMenuOpen} onOpenChange={setIsMenuOpen} variant="outlined" label={defaultLabel} displayType="select">
+    <MIMenu
+      open={isMenuOpen}
+      onOpenChange={setIsMenuOpen}
+      variant="outlined"
+      label={defaultLabel}
+      displayType="select"
+      enableHoverBackground={enableHoverBackground}
+      {...props}
+    >
       <Stack>
         {renderFilterGroups()}
         <Stack
@@ -205,6 +216,7 @@ const MIFilterMenu = ({
           alignItems="center"
           borderTop="1px solid"
           borderColor="contentBorder.Normal"
+          gap="16px"
         >
           {showSaveOption && (
             <FormControlLabel

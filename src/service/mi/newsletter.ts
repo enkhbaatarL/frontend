@@ -30,7 +30,13 @@ export interface INewsletterItem {
 }
 
 export interface INewsletterListRequest extends IPaginationRequest {
+  companyNo: number
   keyword?: string
+  dateFilter?: string
+}
+
+export interface IFeaturedNewsletterListRequest extends IPaginationRequest {
+  companyNo: number
 }
 
 export interface IFeaturedNewsletterItem {
@@ -151,7 +157,7 @@ const newsletterService = {
    * 각 뉴스레터별로 가장 최근 발행된 호를 반환합니다.
    * @param params - { page: 페이지 번호, size: 페이지당 항목 수 }
    */
-  async getFeaturedNewsletters(params?: Partial<IPaginationRequest>): Promise<IPaginationResponse<IFeaturedNewsletterItem>> {
+  async getFeaturedNewsletters(params?: Partial<IFeaturedNewsletterListRequest>): Promise<IPaginationResponse<IFeaturedNewsletterItem>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IFeaturedNewsletterItem>>> = await api.get(
       '/mi/newsletter/featured',
       {
@@ -163,22 +169,32 @@ const newsletterService = {
 
   /**
    * 특정 뉴스레터의 발행 리스트를 조회합니다.
+   * @param {number} companyNo - 회사 번호
    * @param {string} newsletterId - 뉴스레터 ID
    * @returns {Promise<{ date: string; no: string }[]>} 발행 리스트
    */
-  async getNewsletterIssues(newsletterId: string): Promise<INewsletterIssueResponse> {
-    const response: AxiosResponse<ICommonResponse<INewsletterIssueResponse>> = await api.get(`/mi/newsletter/${newsletterId}/issues`)
+  async getNewsletterIssues(companyNo: number, newsletterId: string): Promise<INewsletterIssueResponse> {
+    const response: AxiosResponse<ICommonResponse<INewsletterIssueResponse>> = await api.get(`/mi/newsletter/${newsletterId}/issues`, {
+      params: {
+        companyNo,
+      },
+    })
     return response.data.data
   },
 
   /**
    * 특정 뉴스레터의 특정 발행호 상세 정보를 조회합니다.
+   * @param {number} companyNo - 회사 번호
    * @param {string} newsletterId - 뉴스레터 ID
    * @param {string} issueNo - 발행호 번호
    * @returns {Promise<INewsletterIssueDetail>} 뉴스레터 발행호 상세 정보
    */
-  async getNewsletterIssueDetail(newsletterId: string, issueNo: string): Promise<INewsletterIssueDetail> {
-    const response: AxiosResponse<ICommonResponse<INewsletterIssueDetail>> = await api.get(`mi/newsletter/${newsletterId}/${issueNo}`)
+  async getNewsletterIssueDetail(companyNo: number, newsletterId: string, issueNo: string): Promise<INewsletterIssueDetail> {
+    const response: AxiosResponse<ICommonResponse<INewsletterIssueDetail>> = await api.get(`/mi/newsletter/${newsletterId}/${issueNo}`, {
+      params: {
+        companyNo,
+      },
+    })
 
     return response.data.data
   },

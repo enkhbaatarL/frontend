@@ -1,14 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
-import { miPages } from '@/lib/constants'
+import { ACTIVE_MENU_PATHS, MiPagesType } from '@/constants/menu'
 import { UserRole } from '@/service/admin/members'
 import companiesService from '@/service/mi/companies'
 import forecastDataService from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
-import { MiPagesType } from '@/types/common'
 
-const extractPages: MiPagesType[] = ['signal-map', 'forecast']
+const DEFAULT_PAGES: MiPagesType[] = ['market-data', 'insights']
+const EXTRA_PAGES: MiPagesType[] = ['signal-map', 'forecast']
 
 export const useCompanyCondition = () => {
   const { accessCompanyInfo, user } = useAuthStore()
@@ -17,28 +17,41 @@ export const useCompanyCondition = () => {
     () => accessCompanyInfo?.customerCompanyNo ?? user?.companyNo,
     [accessCompanyInfo?.customerCompanyNo, user?.companyNo],
   )
+
   const { data: deniedDashboardPage, isLoading: isDeniedDashboardPageLoading } = useQuery({
     queryKey: ['getDashboardAccess', comNo],
     queryFn: async () => await forecastDataService.getForecastDataExists(comNo!),
     select: (res): MiPagesType[] => {
-      const baseDenied: MiPagesType[] = res === true ? [] : [...(extractPages ?? [])]
+      const baseDenied: MiPagesType[] = res === true ? [] : [...(EXTRA_PAGES ?? [])]
 
-      const deniedFuturePages = !accessCompanyInfo?.isFuture
-        ? [
-            'dashboard' as MiPagesType,
-            'custom' as MiPagesType,
-            'market-news' as MiPagesType,
-            'newsletters' as MiPagesType,
-            'economic-event' as MiPagesType,
-            'parallel-coordinates' as MiPagesType,
-        ]
-        : []
+      const deniedFuturePages: MiPagesType[] = accessCompanyInfo?.isFuture
+        ? []
+        : ['dashboard', 'market-news', 'ai-market-summary', 'topic-tracker', 'economic-calendar', 'newsletters', 'parallel-coordinates']
 
+      // 각 플래그에 따라 선택적 메뉴 제어
+      const deniedOptionalPages: MiPagesType[] = []
+
+      // Qualitative Analysis (custom)
       if (!accessCompanyInfo?.isQualitative) {
-        deniedFuturePages.push('custom' as MiPagesType)
+        deniedOptionalPages.push('custom')
       }
 
-      return [...baseDenied, ...deniedFuturePages]
+      // Sales Analysis
+      if (!accessCompanyInfo?.isSalesAnalysis) {
+        deniedOptionalPages.push('sales-analysis')
+      }
+
+      // Market Map
+      if (!accessCompanyInfo?.isMarketMap) {
+        deniedOptionalPages.push('market-map')
+      }
+
+      // MI Activity Log
+      if (!accessCompanyInfo?.isMiActivityLog) {
+        deniedOptionalPages.push('mi-activity-log')
+      }
+
+      return [...baseDenied, ...deniedFuturePages, ...deniedOptionalPages]
     },
     enabled: !!comNo,
     refetchOnWindowFocus: false,
@@ -67,6 +80,11 @@ export const useCompanyCondition = () => {
     return deniedDashboardPage
   }, [deniedDashboardPage])
 
+  const activeMenu = useMemo(() => {
+    if (extractPage === undefined) return DEFAULT_PAGES
+    return ACTIVE_MENU_PATHS.filter((item) => !extractPage.includes(item))
+  }, [extractPage])
+
   /**
    * 홈 주소
    */
@@ -78,8 +96,8 @@ export const useCompanyCondition = () => {
       return 'dashboard'
     }
 
-    return miPages.find((page) => !extractPage.includes(page))
+    return activeMenu.find((page) => !extractPage.includes(page))
   }
 
-  return { extractPage, miHome, allCompanies, companyList, isDeniedDashboardPageLoading }
+  return { extractPage, activeMenu, miHome, allCompanies, companyList, isDeniedDashboardPageLoading }
 }

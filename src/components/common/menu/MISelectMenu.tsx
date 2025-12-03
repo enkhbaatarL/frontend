@@ -2,6 +2,7 @@ import { Box, Typography, Stack, Switch, ButtonProps, PaperProps, ListSubheader,
 import { ReactNode, useMemo, useState, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import CheckIcon from '@/components/common/icons/agent/CheckIcon'
 import MIMenu, { MenuPositionOffset } from '@/components/common/menu/MIMenu'
 
@@ -32,6 +33,8 @@ interface Props extends ButtonProps {
   groupLabels?: { [groupKey: string]: ReactNode }
   disablePortal?: boolean
   closeOnScroll?: boolean
+  maxHeight?: number | string
+  enableHoverBackground?: boolean
 }
 
 const MISelectMenu = ({
@@ -50,6 +53,8 @@ const MISelectMenu = ({
   groupLabels = {},
   disablePortal = false,
   closeOnScroll = false,
+  maxHeight = 300,
+  enableHoverBackground = false,
   ...props
 }: Props) => {
   const { t } = useTranslation()
@@ -67,6 +72,13 @@ const MISelectMenu = ({
   }
 
   const handleToggle = multiple ? handleMultipleToggle : handleSingleSelect
+
+  const isItemSelected = (value: string): boolean => {
+    if (Array.isArray(selected)) {
+      return selected.includes(value)
+    }
+    return selected === value
+  }
 
   const groupedItems = useMemo(() => {
     if (groupDisplayType === 'none') {
@@ -102,7 +114,12 @@ const MISelectMenu = ({
       )
     }
 
-    const selectedItems = items.filter((item) => selected.includes(item.value))
+    const selectedItems = items.filter((item) => {
+      if (Array.isArray(selected)) {
+        return selected.includes(item.value)
+      }
+      return selected === item.value
+    })
     if (selectedItems.length === 0) return placeholder
     if (selectedItems.length > 2) {
       return (
@@ -130,7 +147,7 @@ const MISelectMenu = ({
       return (
         <>
           {groupedItems.ungroupedItems.map(({ label, value, disabled }) => {
-            const isSelected = selected.includes(value)
+            const isSelected = isItemSelected(value)
 
             return (
               <Box
@@ -192,7 +209,7 @@ const MISelectMenu = ({
               {groupIndex > 0 && <Divider />}
 
               {groupItems.map(({ label, value, disabled }) => {
-                const isSelected = selected.includes(value)
+                const isSelected = isItemSelected(value)
 
                 return (
                   <Box
@@ -257,7 +274,7 @@ const MISelectMenu = ({
     return (
       <>
         {groupedItems.ungroupedItems.map(({ label, value, disabled }) => {
-          const isSelected = selected.includes(value)
+          const isSelected = isItemSelected(value)
 
           return (
             <Box
@@ -409,11 +426,22 @@ const MISelectMenu = ({
       onOpenChange={setOpen}
       disablePortal={disablePortal}
       closeOnScroll={closeOnScroll}
+      enableHoverBackground={enableHoverBackground}
       {...props}
     >
-      <Stack gap="8px" sx={{ padding: '12px' }}>
-        {renderMenuItems()}
-      </Stack>
+      <ScrollWrapper
+        maxHeight={maxHeight}
+        offsetTop={12}
+        offsetBottom={12}
+        scrollbarGap={6}
+        sx={{
+          padding: '0',
+        }}
+      >
+        <Stack gap="8px" sx={{ padding: '12px' }}>
+          {renderMenuItems()}
+        </Stack>
+      </ScrollWrapper>
     </MIMenu>
   )
 }

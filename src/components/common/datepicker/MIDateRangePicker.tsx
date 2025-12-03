@@ -15,6 +15,7 @@ interface MIDateRangePickerProps {
   endDate?: Dayjs | string
   useApplyButton?: boolean
   width?: string | number
+  borderRadius?: string | number
 }
 
 export default function MIDateRangePicker({
@@ -26,6 +27,7 @@ export default function MIDateRangePicker({
   endDate,
   useApplyButton = false,
   width,
+  borderRadius,
 }: Readonly<MIDateRangePickerProps>) {
   const dateValues = useMemo(() => {
     const convertToDayjs = (date: Dayjs | string | undefined) => {
@@ -84,6 +86,7 @@ export default function MIDateRangePicker({
         size={sizeInput}
         value={useApplyButton ? internalStartDate : dateValues.startDate}
         onChange={handleStartChange}
+        borderRadius={borderRadius}
       />
       <Typography color="gray.50" component="span">
         ~
@@ -95,6 +98,7 @@ export default function MIDateRangePicker({
         value={useApplyButton ? internalEndDate : dateValues.endDate}
         onChange={handleEndChange}
         minDate={useApplyButton ? internalStartDate : dateValues.startDate}
+        borderRadius={borderRadius}
       />
       {useApplyButton && (
         <MIButton type="filled" size="h28" onClick={handleApply} disabled={!isApplyEnabled}>

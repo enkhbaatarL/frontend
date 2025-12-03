@@ -10,7 +10,7 @@ import useCodeData from '@/hooks/useCodeData'
 import DashboardCard from '@/pages/mi/dashboard/components/common/DashboardCard'
 import Feed from '@/pages/mi/dashboard/components/newsFeed/Feed'
 import Timeline from '@/pages/mi/dashboard/components/newsFeed/Timeline'
-import dashboardService from '@/service/mi/dashboard'
+import dashboardService, { Directionality } from '@/service/mi/dashboard'
 import { getMarketIconInfo } from '@/utils/marketIcons'
 
 const getMarketCategoryLabel = (codeId: string) => {
@@ -82,7 +82,7 @@ const SettingsMenuItem = ({
 
 const NewsFeed = () => {
   const [categoryCode, setCategoryCode] = useState<string>('')
-  const [sentiments, setSentiments] = useState<string[]>([])
+  const [sentiments, setSentiments] = useState<Directionality[]>([])
   const [impactScores, setImpactScores] = useState<string[]>([])
   const [regions, setRegions] = useState<string[]>([])
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false)
@@ -134,7 +134,7 @@ const NewsFeed = () => {
     }))
   }
 
-  const handleApplyFilters = (newSentiments: string[], newImpactScores: string[], newRegions: string[], save?: boolean) => {
+  const handleApplyFilters = (newSentiments: Directionality[], newImpactScores: string[], newRegions: string[], save?: boolean) => {
     setSentiments(newSentiments)
     setImpactScores(newImpactScores)
     setRegions(newRegions)
@@ -179,8 +179,9 @@ const NewsFeed = () => {
             selected={categoryCode}
             onSelected={setCategoryCode}
             items={marketCategoryCodeOptions}
-            sx={{ minWidth: 148 }}
+            sx={{ minWidth: 148, height: '36px' }}
             groupDisplayType="divider"
+            enableHoverBackground
           />
           <MIMenu
             open={isSettingsMenuOpen}
@@ -190,6 +191,10 @@ const NewsFeed = () => {
             placement="bottom-end"
             menuPositionOffset={{ right: -10 }}
             onOpenChange={setIsSettingsMenuOpen}
+            enableHoverBackground
+            sx={{
+              height: '36px',
+            }}
           >
             <Stack padding="12px" gap="12px" minWidth={154} boxSizing="border-box">
               {switchOptions.map((item) => (

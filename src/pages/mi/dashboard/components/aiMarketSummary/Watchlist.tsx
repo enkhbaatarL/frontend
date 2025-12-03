@@ -201,7 +201,7 @@ const Watchlist = () => {
                       color: '#868E96',
                     }}
                   >
-                    <LockOutlinedIcon width={24} height={24} />
+                    <LockOutlinedIcon width={20} height={20} />
                   </Box>
                 )}
               </Stack>

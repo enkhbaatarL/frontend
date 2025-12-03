@@ -1,8 +1,8 @@
 // src/pages/mi/miActivityLog/MIActivityLogPage.tsx
 import { Box, Grid2 as Grid, Stack, Typography } from '@mui/material'
 import dayjs, { Dayjs } from 'dayjs'
-import { useMemo, useState } from 'react'
 import { disassembleToGroups } from 'es-hangul'
+import { useCallback, useMemo, useState } from 'react'
 
 import type { GridColDef } from '@mui/x-data-grid'
 
@@ -107,7 +107,7 @@ const TYPE_OPTIONS = [
 ]
 
 const MIActivityLogPage = () => {
-  const [searchValue, setSearchValue] = useState('')
+  const [searchKeyword, setSearchKeyword] = useState('')
   const [appliedSearch, setAppliedSearch] = useState('')
   const [selectedTypes, setSelectedTypes] = useState<ActivityType[]>([])
   const [page, setPage] = useState(1)
@@ -154,9 +154,23 @@ const MIActivityLogPage = () => {
       })
 
       return matchesType && matchesSearch
-
     })
   }, [appliedSearch, selectedTypes, events])
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchKeyword(value)
+  }, [])
+
+  const handleSearch = useCallback((searchTerm: string) => {
+    setAppliedSearch(searchTerm)
+    setPage(1)
+  }, [])
+
+  const handleSearchClear = useCallback(() => {
+    setSearchKeyword('')
+    setAppliedSearch('')
+    setPage(1)
+  }, [])
 
   const paginatedRows = useMemo(() => {
     const startIndex = (page - 1) * pageSize
@@ -255,17 +269,17 @@ const MIActivityLogPage = () => {
     setPage(1)
   }
 
-  const isSaveDisabled = useMemo(() => {
-    return (
+  const isSaveDisabled = useMemo(
+    () =>
       !formData.account ||
       formData.type === undefined ||
       formData.priority === undefined ||
       !formData.description ||
       !formData.team ||
       !formData.date ||
-      !formData.source
-    )
-  }, [formData])
+      !formData.source,
+    [formData],
+  )
 
   // ✅ GridColDef 명시 + singleSelect 컬럼 명시로 TS2322 해결
   const columns: GridColDef<ActivityLogItem>[] = useMemo(
@@ -372,34 +386,22 @@ const MIActivityLogPage = () => {
               <Box sx={{ width: 300 }}>
                 <MISearchInput
                   storageKey="mi-activity-log"
-                  value={searchValue}
-                  onChange={(value) => {
-                    setSearchValue(value)
-                    if (value.trim() === '' && appliedSearch !== '') {
-                      setAppliedSearch('')
-                      setPage(1)
-                    }
-                  }}
+                  value={searchKeyword}
+                  onChange={handleSearchChange}
                   placeholder="Search for description"
-                  onSearch={(value) => {
-                    setAppliedSearch(value)
-                    setPage(1)
-                  }}
-                  onClear={() => {
-                    setSearchValue('')
-                    setAppliedSearch('')
-                    setPage(1)
-                  }}
+                  onSearch={handleSearch}
+                  onClear={handleSearchClear}
                   width={300}
-                  sx={{
-                    '& .MuiInputBase-root': {
-                      borderRadius: '10px',
-                      height: '36px',
-                    },
-                  }}
+                  height={36}
                 />
               </Box>
-              <MIFilterDropdown label="Type" options={typeFilterOptions} selectedValues={selectedTypes} onApply={handleTypeApply} onClear={handleTypeClear} />
+              <MIFilterDropdown
+                label="Type"
+                options={typeFilterOptions}
+                selectedValues={selectedTypes}
+                onApply={handleTypeApply}
+                onClear={handleTypeClear}
+              />
             </Grid>
             <MIButton
               type="filled"

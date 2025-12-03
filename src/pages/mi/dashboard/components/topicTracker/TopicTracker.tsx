@@ -1,5 +1,7 @@
+import AddIcon from '@mui/icons-material/Add'
+import SettingsIcon from '@mui/icons-material/Settings'
 import SouthAmericaIcon from '@mui/icons-material/SouthAmerica'
-import { Box, Divider, Stack, Typography } from '@mui/material'
+import { Box, Divider, Stack, Switch, Typography, useTheme } from '@mui/material'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -8,10 +10,16 @@ import topicSampleImg2 from '@/assets/dashboard/temp/topic-sample2.png'
 // import topicSampleImg3 from '@/assets/dashboard/temp/topic-sample3.png'
 import topicSampleImg4 from '@/assets/dashboard/temp/topic-sample4.png'
 import topicTrackerIcon from '@/assets/dashboard/topic-tracker.svg'
+import MIButton from '@/components/common/button/MIButton'
+import MIConfirm from '@/components/common/confirm/MIConfirm'
+import AsyncAutocomplete from '@/components/common/input/AsyncAutocomplete'
+import MIMenu from '@/components/common/menu/MIMenu'
+import { SelectMenuItem } from '@/components/common/menu/MISelectMenu'
 import MITopic from '@/components/common/topic/MITopic'
 import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
 import CategoryChip from '@/pages/mi/dashboard/components/common/CategoryChip'
 import DashboardCard from '@/pages/mi/dashboard/components/common/DashboardCard'
+import dashboardService from '@/service/mi/dashboard'
 
 const topics = [
   {
@@ -224,14 +232,144 @@ const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
   )
 }
 
+const SettingsMenuItem = ({
+  item: { label, value, disabled },
+  isDisplayed,
+  onToggle,
+}: {
+  item: SelectMenuItem
+  isDisplayed: boolean
+  onToggle: (value: string) => void
+}) => (
+  <Box
+    key={value}
+    onClick={() => (disabled ? null : onToggle(value))}
+    borderRadius="10px"
+    py="4px"
+    sx={{
+      cursor: disabled ? 'default' : 'pointer',
+      textWrap: 'nowrap',
+    }}
+  >
+    <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" gap="12px" component="div">
+      <Typography
+        variant="body2M14"
+        color={isDisplayed ? 'gray.70' : 'gray.60'}
+        sx={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          maxWidth: '100%',
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        {label}
+      </Typography>
+      <Switch
+        checked={isDisplayed}
+        size="small"
+        disabled={disabled}
+        sx={{
+          margin: 0,
+        }}
+      />
+    </Stack>
+  </Box>
+)
+
 const TopicTracker = () => {
+  const theme = useTheme()
+
   const [selectedTopic, setSelectedTopic] = useState(topics[0].value)
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false)
+  const [displayStates, setDisplayStates] = useState<{ [key: string]: boolean }>({
+    trump_tariff: true,
+    'opec+': true,
+    sanctions: true,
+  })
+  const [isAddTopicDialogOpen, setIsAddTopicDialogOpen] = useState(false)
+  const [topicName, setTopicName] = useState('')
+
+  const switchOptions: SelectMenuItem[] = topics
+    .filter(({ value, isPending }) => !isPending && value !== '')
+    .map(({ label, value }) => ({ label, value }))
+
+  const handleSwitchToggle = (value: string) => {
+    setDisplayStates((prev) => ({
+      ...prev,
+      [value]: !prev[value],
+    }))
+  }
+
+  const handleAddTopic = (name: string) => {
+    // TODO: 실제 API 호출로 토픽 추가 로직 구현
+    console.info('Adding topic:', name)
+    setIsAddTopicDialogOpen(false)
+    setTopicName('')
+  }
+
+  const handleAddTopicClick = () => {
+    setTopicName('')
+    setIsAddTopicDialogOpen(true)
+  }
+
+  const handleDialogClose = () => {
+    setIsAddTopicDialogOpen(false)
+    setTopicName('')
+  }
 
   return (
     <DashboardCard
       icon={topicTrackerIcon}
       title="Topic Tracker"
       link="/mi/topic-tracker"
+      headerContent={
+        <Stack direction="row" gap="8px">
+          <MIButton
+            type="outlined"
+            size="h36"
+            borderRadius="10px"
+            startIcon={
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  '& svg': {
+                    fontSize: 20,
+                    '& path': {
+                      fill: theme.palette.gray[70],
+                    },
+                  },
+                }}
+              >
+                <AddIcon />
+              </Box>
+            }
+            onClick={handleAddTopicClick}
+          >
+            Add a Topic
+          </MIButton>
+          <MIMenu
+            open={isSettingsMenuOpen}
+            label={<SettingsIcon sx={{ width: 20, height: 20, color: 'gray.70' }} />}
+            displayType="button"
+            variant="outlined"
+            placement="bottom-end"
+            menuPositionOffset={{ right: -10 }}
+            onOpenChange={setIsSettingsMenuOpen}
+            enableHoverBackground
+            sx={{
+              height: '36px',
+            }}
+          >
+            <Stack padding="12px" gap="12px" minWidth={154} boxSizing="border-box">
+              {switchOptions.map((item) => (
+                <SettingsMenuItem key={item.value} item={item} isDisplayed={displayStates[item.value]} onToggle={handleSwitchToggle} />
+              ))}
+            </Stack>
+          </MIMenu>
+        </Stack>
+      }
       sx={{
         overflow: 'visible',
       }}
@@ -245,6 +383,38 @@ const TopicTracker = () => {
           <TopicTrackerItem key={item.id} item={item} />
         ))}
       </Stack>
+      <MIConfirm
+        open={isAddTopicDialogOpen}
+        title="Add a Topic to Track"
+        width={450}
+        handleClose={handleDialogClose}
+        actions={[
+          {
+            label: 'Cancel',
+            variant: 'outlined',
+            color: 'gray',
+            onClick: handleDialogClose,
+          },
+          {
+            label: 'Add',
+            variant: 'filled',
+            color: 'primary',
+            disabled: !topicName.trim(),
+            onClick: () => handleAddTopic(topicName.trim()),
+          },
+        ]}
+      >
+        <AsyncAutocomplete
+          height={46}
+          asyncFunction={dashboardService.getTopicSimilarKeywords}
+          value={topicName}
+          textFieldProps={{
+            placeholder: 'Type a topic',
+            autoFocus: true,
+          }}
+          onInputChange={(_, newValue) => setTopicName(newValue)}
+        />
+      </MIConfirm>
     </DashboardCard>
   )
 }

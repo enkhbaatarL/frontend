@@ -24,12 +24,16 @@ interface LabelInfo {
   color: string
   isMain: boolean
   isMin: boolean
+  datasetIndex: number
+  pointIndex: number
 }
 
 interface LabelPosition extends LabelInfo {
   textWidth: number
   adjustedX: number
   adjustedY: number
+  finalX: number
+  finalY: number
 }
 
 const COMPARE_COLORS = ['#EF6B35', '#9B59B6', '#3498DB', '#1ABC9C', '#F39C12', '#E74C3C', '#2ECC71', '#F1C40F']
@@ -154,7 +158,8 @@ const getMinMax = (values: number[]) => {
   let minIdx = -1
   let maxIdx = -1
 
-  values.forEach((value, index) => {
+  for (let index = 0; index < values.length; index++) {
+    const value = values[index]
     if (value < min) {
       min = value
       minIdx = index
@@ -163,7 +168,7 @@ const getMinMax = (values: number[]) => {
       max = value
       maxIdx = index
     }
-  })
+  }
 
   return { min, max, minIdx, maxIdx }
 }
@@ -238,20 +243,38 @@ interface ChartMetaWithPoints {
   data: ExtendedPoint[]
 }
 
-const collectLabelsFromDataset = (meta: ChartMetaWithPoints, info: MinMaxInfo, color: string, isMain: boolean, allLabels: LabelInfo[]) => {
+const collectLabelsFromDataset = (
+  meta: ChartMetaWithPoints,
+  info: MinMaxInfo,
+  color: string,
+  isMain: boolean,
+  allLabels: LabelInfo[],
+  datasetIndex: number,
+) => {
   const collectOne = (index: number, value: number | string | null, isMin: boolean) => {
     const element = meta.data[index]
     if (!element) return
 
-    const position = typeof element.tooltipPosition === 'function' ? element.tooltipPosition() : { x: element.x, y: element.y }
-    const x = position.x ?? element.x
-    const y = position.y ?? element.y
+    const finalPosition = typeof element.tooltipPosition === 'function' ? element.tooltipPosition(true) : { x: element.x, y: element.y }
 
-    const numValue = typeof value === 'string' ? parseFloat(value) : value
+    const x = finalPosition.x ?? element.x ?? 0
+    const y = finalPosition.y ?? element.y ?? 0
+
+    const numValue = typeof value === 'string' ? Number.parseFloat(value) : value
     if (!Number.isFinite(x) || !Number.isFinite(y) || numValue === null || numValue === undefined || !Number.isFinite(numValue)) return
 
     const formattedValue = Number.isFinite(numValue) ? formatValue(numValue) : String(numValue)
-    allLabels.push({ x: x as number, y: y as number, text: formattedValue, color, isMain, isMin })
+
+    allLabels.push({
+      x,
+      y,
+      text: formattedValue,
+      color,
+      isMain,
+      isMin,
+      datasetIndex,
+      pointIndex: index,
+    })
   }
 
   if (info.min === info.max && info.minIdx === info.maxIdx) {
@@ -277,7 +300,7 @@ const collectMinMaxLabels = (chart: LineChart, allLabels: LabelInfo[]) => {
     const info = dataset._minMaxInfo
     if (info) {
       const meta = chart.getDatasetMeta(mainDatasetIndex) as unknown as ChartMetaWithPoints
-      collectLabelsFromDataset(meta, info, info.color ?? MAIN_MARKER_COLOR, true, allLabels)
+      collectLabelsFromDataset(meta, info, info.color ?? MAIN_MARKER_COLOR, true, allLabels, mainDatasetIndex)
     }
   }
 
@@ -285,15 +308,15 @@ const collectMinMaxLabels = (chart: LineChart, allLabels: LabelInfo[]) => {
     .map((d, index) => (d.label?.includes('MinMaxMarkers') && d.label !== 'MinMaxMarkers' ? index : -1))
     .filter((index) => index >= 0)
 
-  compareDatasetIndices.forEach((datasetIndex: number) => {
+  for (const datasetIndex of compareDatasetIndices) {
     const dataset = datasets[datasetIndex]
     const info = dataset._minMaxInfo
     if (info) {
       const meta = chart.getDatasetMeta(datasetIndex) as unknown as ChartMetaWithPoints
       const color = info.color ?? COMPARE_COLORS[0]
-      collectLabelsFromDataset(meta, info, color, false, allLabels)
+      collectLabelsFromDataset(meta, info, color, false, allLabels, datasetIndex)
     }
-  })
+  }
 }
 
 const calculateInitialPositions = (ctx: CanvasRenderingContext2D, labels: LabelInfo[], chart: LineChart): LabelPosition[] => {
@@ -333,6 +356,8 @@ const calculateInitialPositions = (ctx: CanvasRenderingContext2D, labels: LabelI
       textWidth,
       adjustedX: label.x,
       adjustedY: finalY,
+      finalX: label.x,
+      finalY: label.y,
     }
   })
 }
@@ -351,8 +376,8 @@ const groupLabelsByTextOverlap = (labels: LabelPosition[]): LabelPosition[][] =>
   const groups: LabelPosition[][] = []
   const processed = new Set<LabelPosition>()
 
-  labels.forEach((label) => {
-    if (processed.has(label)) return
+  for (const label of labels) {
+    if (processed.has(label)) continue
 
     const group: LabelPosition[] = [label]
     processed.add(label)
@@ -360,8 +385,8 @@ const groupLabelsByTextOverlap = (labels: LabelPosition[]): LabelPosition[][] =>
     let found = true
     while (found) {
       found = false
-      labels.forEach((otherLabel) => {
-        if (processed.has(otherLabel)) return
+      for (const otherLabel of labels) {
+        if (processed.has(otherLabel)) continue
 
         const overlaps = group.some((groupLabel) => checkTextOverlap(groupLabel, otherLabel))
         if (overlaps) {
@@ -369,11 +394,11 @@ const groupLabelsByTextOverlap = (labels: LabelPosition[]): LabelPosition[][] =>
           processed.add(otherLabel)
           found = true
         }
-      })
+      }
     }
 
     groups.push(group)
-  })
+  }
 
   return groups
 }
@@ -392,7 +417,7 @@ const resolveLabelCollisions = (positions: LabelPosition[], chart: LineChart): L
   if (minLabels.length > 0) {
     const textOverlapGroups = groupLabelsByTextOverlap(minLabels)
 
-    textOverlapGroups.forEach((group) => {
+    for (const group of textOverlapGroups) {
       group.sort((a, b) => {
         if (a.isMain !== b.isMain) {
           return a.isMain ? -1 : 1
@@ -405,17 +430,17 @@ const resolveLabelCollisions = (positions: LabelPosition[], chart: LineChart): L
       firstLabel.adjustedY = baseY
 
       const otherLabels = group.slice(1)
-      otherLabels.forEach((label, index) => {
-        const targetY = Math.min(baseY + (index + 1) * LABEL_SPACING, maxLabelBottom - labelTextHeight / 2)
-        label.adjustedY = targetY
-      })
-    })
+      for (let index = 0; index < otherLabels.length; index++) {
+        const label = otherLabels[index]
+        label.adjustedY = Math.min(baseY + (index + 1) * LABEL_SPACING, maxLabelBottom - labelTextHeight / 2)
+      }
+    }
   }
 
   if (maxLabels.length > 0) {
     const textOverlapGroups = groupLabelsByTextOverlap(maxLabels)
 
-    textOverlapGroups.forEach((group) => {
+    for (const group of textOverlapGroups) {
       group.sort((a, b) => {
         if (a.isMain !== b.isMain) {
           return a.isMain ? -1 : 1
@@ -428,11 +453,11 @@ const resolveLabelCollisions = (positions: LabelPosition[], chart: LineChart): L
       firstLabel.adjustedY = baseY
 
       const otherLabels = group.slice(1)
-      otherLabels.forEach((label, index) => {
-        const targetY = Math.max(baseY - (index + 1) * LABEL_SPACING, chartArea.top - estimatedTopPadding + labelTextHeight / 2)
-        label.adjustedY = targetY
-      })
-    })
+      for (let index = 0; index < otherLabels.length; index++) {
+        const label = otherLabels[index]
+        label.adjustedY = Math.max(baseY - (index + 1) * LABEL_SPACING, chartArea.top - estimatedTopPadding + labelTextHeight / 2)
+      }
+    }
   }
 
   const minLabelPositions = positions.filter((p) => p.isMin)
@@ -443,9 +468,9 @@ const resolveLabelCollisions = (positions: LabelPosition[], chart: LineChart): L
 
     if (labelBottomEdge > safeMaxLabelBottom) {
       const adjustment = labelBottomEdge - safeMaxLabelBottom
-      minLabelPositions.forEach((label) => {
+      for (const label of minLabelPositions) {
         label.adjustedY -= adjustment
-      })
+      }
     }
   }
 
@@ -460,6 +485,7 @@ const drawSingleLabel = (
   chartArea: ChartArea,
   estimatedTopPadding: number,
   labelTextHeight: number,
+  chart: LineChart,
 ) => {
   ctx.save()
   ctx.font = LABEL_FONT
@@ -467,18 +493,45 @@ const drawSingleLabel = (
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
-  let x = position?.adjustedX ?? label.x
+  if (!position) {
+    let x = label.x
+    const textWidth = ctx.measureText(label.text).width
+    const halfWidth = textWidth / 2
+    const margin = -8
+
+    x = Math.max(chartArea.left + halfWidth + margin, Math.min(x, chartArea.right - halfWidth - margin))
+
+    const y = label.isMin
+      ? Math.min(label.y + 10, maxLabelBottom - labelTextHeight / 2)
+      : Math.max(label.y - 10, chartArea.top - estimatedTopPadding + labelTextHeight / 2)
+
+    ctx.fillText(label.text, x, y)
+    ctx.restore()
+    return
+  }
+
+  const meta = chart.getDatasetMeta(position.datasetIndex) as unknown as ChartMetaWithPoints
+  const element = meta.data[position.pointIndex]
+  if (!element) {
+    ctx.restore()
+    return
+  }
+
+  const currentPosition = typeof element.tooltipPosition === 'function' ? element.tooltipPosition(false) : { x: element.x, y: element.y }
+  const currentX = currentPosition.x ?? element.x ?? position.finalX
+  const currentY = currentPosition.y ?? element.y ?? position.finalY
+
+  const deltaX = currentX - position.finalX
+  const deltaY = currentY - position.finalY
+
+  let x = position.adjustedX + deltaX
   const textWidth = ctx.measureText(label.text).width
   const halfWidth = textWidth / 2
   const margin = -8
 
   x = Math.max(chartArea.left + halfWidth + margin, Math.min(x, chartArea.right - halfWidth - margin))
 
-  const y =
-    position?.adjustedY ??
-    (label.isMin
-      ? Math.min(label.y + 10, maxLabelBottom - labelTextHeight / 2)
-      : Math.max(label.y - 10, chartArea.top - estimatedTopPadding + labelTextHeight / 2))
+  const y = position.adjustedY + deltaY
 
   ctx.fillText(label.text, x, y)
   ctx.restore()
@@ -505,9 +558,9 @@ const createMinMaxLabelPlugin = () => ({
     const labelPositions = calculateInitialPositions(ctx, allLabels, chart)
     const resolvedPositions = resolveLabelCollisions(labelPositions, chart)
 
-    resolvedPositions.forEach((position) => {
-      drawSingleLabel(ctx, position, position, maxLabelBottom, chartArea, estimatedTopPadding, labelTextHeight)
-    })
+    for (const position of resolvedPositions) {
+      drawSingleLabel(ctx, position, position, maxLabelBottom, chartArea, estimatedTopPadding, labelTextHeight, chart)
+    }
 
     ctx.restore()
   },
@@ -554,8 +607,9 @@ const createMainDataset = (mainData: number[], getGradient: ReturnType<typeof cr
 const createCompareDatasets = (compareCharts: ICompareGraph[]): ExtendedDataset[] => {
   const datasets: ExtendedDataset[] = []
 
-  compareCharts.forEach((compareChart, index) => {
-    if (!compareChart.rawData) return
+  for (let index = 0; index < compareCharts.length; index++) {
+    const compareChart = compareCharts[index]
+    if (!compareChart.rawData) continue
 
     const compareData = compareChart.rawData.map((point) => point.value)
     const { min, max, minIdx, maxIdx } = getMinMax(compareData)
@@ -591,7 +645,7 @@ const createCompareDatasets = (compareCharts: ICompareGraph[]): ExtendedDataset[
       showLine: false,
       _minMaxInfo: { min: realMin, max: realMax, minIdx, maxIdx, color },
     })
-  })
+  }
 
   return datasets
 }
@@ -737,7 +791,7 @@ const SimpleLineChart: FC<{ data?: IMarketData }> = ({ data }) => {
 }
 
 const extractUnitFromTitle = (title: string) => {
-  const match = title.match(/\(([^)]+)\)$/)
+  const match = /\(([^)]+)\)$/.exec(title)
   return match ? match[1] : null
 }
 

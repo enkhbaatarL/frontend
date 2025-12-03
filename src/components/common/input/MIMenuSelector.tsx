@@ -81,6 +81,7 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
               sx: {
                 overflow: 'hidden',
                 maxHeight: '300px',
+                minWidth: minWidthMenu,
               },
             },
             list: {
@@ -115,14 +116,16 @@ const MIMenuSelector = (props: PropsWithChildren<MIMenuSelectorProps>) => {
         >
           <ScrollWrapper
             maxHeight={300}
-            onScrollableChange={setIsScrollable}
+            offsetTop={6}
+            offsetBottom={6}
             sx={{
               padding: '4px 0',
               height: '100%',
               '& .disabledScroll': {
-                paddingRight: isScrollable ? '12px !important' : '0 !important',
+                paddingRight: `${isScrollable ? 12 : 0}px !important`,
               },
             }}
+            onScrollableChange={setIsScrollable}
           >
             {options.map((item, index) => (
               <MenuItem

@@ -9,10 +9,11 @@ export interface MenuPositionOffset {
   bottom?: number
 }
 
-interface Props extends ButtonProps {
+export interface MIMenuProps extends ButtonProps {
   label?: ReactNode
   displayType?: 'button' | 'select'
   variant?: 'text' | 'outlined' | 'contained'
+  buttonHoverBgColor?: string
   placement?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
   menuPositionOffset?: MenuPositionOffset
   fadeIn?: 'left' | 'right' | 'center'
@@ -23,12 +24,14 @@ interface Props extends ButtonProps {
   onOpenChange?: (open: boolean) => void
   closeOnScroll?: boolean
   disablePortal?: boolean
+  enableHoverBackground?: boolean
 }
 
 const MIMenu = ({
   label,
   displayType = 'button',
   variant = 'text',
+  buttonHoverBgColor,
   placement = 'bottom-start',
   menuPositionOffset = {},
   fadeIn,
@@ -39,13 +42,18 @@ const MIMenu = ({
   onOpenChange,
   closeOnScroll = false,
   disablePortal = false,
+  enableHoverBackground = false,
   ...props
-}: Props) => {
+}: MIMenuProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const prevOpen = useRef(open)
 
   const handleToggle = () => {
-    onOpenChange?.(!open)
+    const newOpen = !open
+    onOpenChange?.(newOpen)
+    if (!newOpen) {
+      onClose?.()
+    }
   }
 
   const handleClose = useCallback(
@@ -63,8 +71,10 @@ const MIMenu = ({
     if (event.key === 'Tab') {
       event.preventDefault()
       onOpenChange?.(false)
+      onClose?.()
     } else if (event.key === 'Escape') {
       onOpenChange?.(false)
+      onClose?.()
     }
   }
 
@@ -98,7 +108,7 @@ const MIMenu = ({
 
   const getHoverBackgroundColor = () => {
     if (variant !== 'outlined') return undefined
-    return open ? 'contentBG.Active' : 'transparent'
+    return enableHoverBackground || open ? 'contentBG.Active' : 'transparent'
   }
 
   const borderColor = getBorderColor()
@@ -130,6 +140,11 @@ const MIMenu = ({
 
     return `${horizontalOrigin} ${verticalOrigin}`
   }
+
+  const menuWidth =
+    props.sx && typeof props.sx === 'object' && !Array.isArray(props.sx)
+      ? ((props.sx as Record<string, unknown>)?.width as string | number | undefined)
+      : undefined
 
   const popperModifiers = useMemo(() => {
     const modifiers: Array<Record<string, unknown>> = []
@@ -176,15 +191,16 @@ const MIMenu = ({
             justifyContent: 'space-between',
             textTransform: 'none',
             backgroundColor: variant === 'outlined' && open ? 'contentBG.Active' : undefined,
-            transition: 'background-color 0.2s ease-in-out, border-color 0.2s ease-in-out',
+            transition: 'background-color 0.15s ease-in-out, border-color 0.4s ease-in-out',
             '&:disabled': {
               backgroundColor: props.disabled && variant === 'text' ? 'transparent' : undefined,
+              borderColor: props.disabled && variant === 'outlined' ? 'contentBorder.Disabled' : undefined,
             },
             borderColor,
             borderWidth: '1px',
             borderRadius: '10px',
-            '&:hover': {
-              backgroundColor: hoverBackgroundColor,
+            '&:hover:not(:disabled)': {
+              backgroundColor: buttonHoverBgColor ?? hoverBackgroundColor,
               borderColor,
               borderWidth: '1px',
             },
@@ -234,12 +250,13 @@ const MIMenu = ({
             <Paper
               {...paperProps}
               sx={{
+                ...paperProps?.sx,
+                ...(menuWidth && { minWidth: menuWidth }),
                 boxShadow: '0px 0px 4px 0px rgba(0, 0, 0, 0.1)',
                 borderRadius: '10px',
                 border: '1px solid',
                 borderColor: variant === 'outlined' ? 'contentBorder.Normal' : 'gray.20',
                 userSelect: 'none',
-                ...paperProps?.sx,
               }}
             >
               <ClickAwayListener onClickAway={handleClose} mouseEvent="onMouseDown" touchEvent="onTouchStart">

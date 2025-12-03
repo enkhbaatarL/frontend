@@ -10,8 +10,8 @@ import MILine from '@/components/common/divider/MILine'
 import MIFilterGroup from '@/components/common/filter/MIFilterGroup'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
-import MISelect from '@/components/common/select/MISelect'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import MIPageHeadline from '@/components/mi/MIPageHeadline'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
@@ -316,21 +316,23 @@ const InsightsPage = () => {
                 />
               </Box>
               <Grid container direction={'row'} wrap={'nowrap'} gap={3.5}>
-                <MISelect
+                <MISelectMenu
                   sx={{ width: 160 }}
-                  sizeSelect="h40"
-                  type={'button'}
-                  options={sortOptions}
-                  value={filter.sort ?? 'NEWEST'}
-                  onChange={(e) => updateFilterWithSearch('sort', String(e.target.value ?? 'NEWEST'))}
+                  variant="outlined"
+                  items={sortOptions}
+                  selected={filter.sort ?? 'NEWEST'}
+                  onSelected={
+                    ((selected: string) => updateFilterWithSearch('sort', String(selected ?? 'NEWEST'))) as (selected: string) => void
+                  }
                 />
-                <MISelect
+                <MISelectMenu
                   sx={{ width: 160 }}
-                  sizeSelect="h40"
-                  type={'button'}
-                  options={periodOptions}
-                  value={filter.period ?? 'ALL_DATES'}
-                  onChange={(e) => updateFilterWithSearch('period', String(e.target.value ?? 'ALL_DATES'))}
+                  variant="outlined"
+                  items={periodOptions}
+                  selected={filter.period ?? 'ALL_DATES'}
+                  onSelected={
+                    ((selected: string) => updateFilterWithSearch('period', String(selected ?? 'ALL_DATES'))) as (selected: string) => void
+                  }
                 />
               </Grid>
             </Grid>

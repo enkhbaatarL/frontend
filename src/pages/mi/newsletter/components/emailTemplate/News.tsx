@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIInputBox from '@/components/common/input/MIInputBox'
+import MIMaskInput from '@/components/common/input/MIMaskInout'
 import { timeFormat, dateFormat, titleLength, contentLength } from '@/components/common/input/validators'
+import { PREDEFINED_MASKS } from '@/constants/masks'
 import EditPanal from '@/pages/mi/newsletter/components/EditPanal'
 import { IRelatedNewsEventItem, NewsletterDetailPageMode } from '@/service/mi/newsletter'
 
@@ -273,27 +275,39 @@ const Chart = ({
                       }}
                     >
                       <Box width="150px" display="flex" flexDirection="column" gap="4px">
-                        <MIInputBox
+                        <MIMaskInput
                           label={t('newsletter.editMode.createdDate')}
                           required
                           value={getFieldValue(item.newsId, 'createdDate', item.createdDate)}
-                          onChange={(value) => handleFieldChange(item.newsId, 'createdDate', value)}
-                          placeholder="YYYY-MM-DD"
+                          mask={PREDEFINED_MASKS.DATE}
+                          onUpdateValue={(value) => {
+                            if (value) {
+                              handleFieldChange(item.newsId, 'createdDate', value)
+                            }
+                          }}
                           error={localUnPublishedNewsIds.includes(item.newsId) ? false : !isFieldValid(item, 'createdDate')}
                           helperText={localUnPublishedNewsIds.includes(item.newsId) ? '' : getFieldError(item, 'createdDate')}
                           offInitialError={isNewItem(item)}
                           disabled={localUnPublishedNewsIds.includes(item.newsId)}
+                          width="100%"
+                          resetOnInvalid={false}
                         />
-                        <MIInputBox
+                        <MIMaskInput
                           label={t('newsletter.editMode.time')}
                           required
                           value={getFieldValue(item.newsId, 'createTime', item.createTime)}
-                          onChange={(value) => handleFieldChange(item.newsId, 'createTime', value)}
-                          placeholder="00:00"
+                          mask={PREDEFINED_MASKS.TIME}
+                          onUpdateValue={(value) => {
+                            if (value) {
+                              handleFieldChange(item.newsId, 'createTime', value)
+                            }
+                          }}
                           error={localUnPublishedNewsIds.includes(item.newsId) ? false : !isFieldValid(item, 'createTime')}
                           helperText={localUnPublishedNewsIds.includes(item.newsId) ? '' : getFieldError(item, 'createTime')}
                           offInitialError={isNewItem(item)}
                           disabled={localUnPublishedNewsIds.includes(item.newsId)}
+                          width="100%"
+                          resetOnInvalid={false}
                         />
                         <MIInputBox
                           label={t('newsletter.editMode.source')}

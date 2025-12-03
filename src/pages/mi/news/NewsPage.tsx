@@ -1,53 +1,102 @@
-import { Box, Stack, Typography } from '@mui/material'
+import Crop169OutlinedIcon from '@mui/icons-material/Crop169Outlined'
+import ViewAgendaOutlinedIcon from '@mui/icons-material/ViewAgendaOutlined'
+import { Box, Fade, Stack, Typography } from '@mui/material'
 import dayjs, { Dayjs } from 'dayjs'
-import { Fragment, useMemo, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo, useState, useEffect } from 'react'
+import { SwitchTransition } from 'react-transition-group'
 
-import MIDateRangePicker from '@/components/common/datepicker/MIDateRangePicker'
+import MIToggleButton from '@/components/common/button/MIToggleButton'
 import MILine from '@/components/common/divider/MILine'
-import MIFilterGroup from '@/components/common/filter/MIFilterGroup'
-import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
+import MIDateRangePickerMenu from '@/components/common/menu/MIDateRangePickerMenu'
+import MIFilterMenu from '@/components/common/menu/MIFilterMenu'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
-import MISelect from '@/components/common/select/MISelect'
-import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import MIPageHeadline from '@/components/mi/MIPageHeadline'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import useCodeData from '@/hooks/useCodeData'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
+import NewsItemsGridView from '@/pages/mi/news/NewsItemsGridView'
+import NewsItemsListView from '@/pages/mi/news/NewsItemsListView'
 import marketNewsService, { INewsListItem, INewsListRequest } from '@/service/mi/marketNews'
 import { IPaginationResponse } from '@/types/api'
+
+const viewOptions = [
+  {
+    label: <Crop169OutlinedIcon />,
+    value: 'LIST',
+  },
+  {
+    label: <ViewAgendaOutlinedIcon sx={{ rotate: '90deg' }} />,
+    value: 'GRID',
+  },
+]
 
 const orderOptions = [
   { label: 'Newest', value: 'NEWEST' },
   { label: 'Oldest', value: 'OLDEST' },
 ]
 
-const newsSkeletonFields = [
-  { width: '100%', height: '24px', marginBottom: '6px' }, // title
-  { width: '280px', height: '20px', marginBottom: '6px' }, // provider + date
-]
-
-const renderNewsSkeletonGroup = (key: number, removeMarginBottom = false) => (
-  <Box key={key} padding="12px 18px" marginBottom={removeMarginBottom ? undefined : '6px'}>
-    {newsSkeletonFields.map((field, idx) => (
-      <MIBaseSkeleton.InputField
-        key={`skeleton-${key}-${idx}`}
-        width={field.width}
-        height={field.height}
-        sx={{ marginBottom: field.marginBottom }}
-      />
-    ))}
-  </Box>
-)
+const STORAGE_KEY = 'newsPageDateRange'
+const VIEW_TYPE_STORAGE_KEY = 'newsPageViewType'
+const FILTERS_STORAGE_KEY = 'newsPageFilters'
 
 const NewsPage = () => {
-  const navigate = useNavigate()
   const today = dayjs()
+
+  const savedViewType = useMemo(() => {
+    const saved = localStorage.getItem(VIEW_TYPE_STORAGE_KEY)
+    if (saved === 'GRID' || saved === 'LIST') {
+      return saved
+    }
+    return 'LIST'
+  }, [])
+
+  const [viewType, setViewType] = useState<'GRID' | 'LIST'>(savedViewType)
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [hasInitialData, setHasInitialData] = useState(false)
+
+  const savedDateRange = useMemo(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try {
+        const { startDate, endDate } = JSON.parse(saved)
+        return {
+          startDate: startDate ? dayjs(startDate, 'YYYYMMDD') : undefined,
+          endDate: endDate ? dayjs(endDate, 'YYYYMMDD') : undefined,
+        }
+      } catch {
+        return null
+      }
+    }
+    return null
+  }, [])
+
+  const hasSavedDateRange = savedDateRange !== null
+
+  const savedFilters = useMemo(() => {
+    const saved = localStorage.getItem(FILTERS_STORAGE_KEY)
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch {
+        return null
+      }
+    }
+    return null
+  }, [])
+
+  const initialFilterValues = useMemo(
+    () => ({
+      markets: savedFilters?.markets ?? [],
+      industries: savedFilters?.industries ?? [],
+      regions: savedFilters?.regions ?? [],
+      providers: savedFilters?.providers ?? [],
+    }),
+    [savedFilters],
+  )
 
   const {
     filter,
@@ -65,11 +114,11 @@ const NewsPage = () => {
     {
       keyword: '',
       sort: 'NEWEST',
-      startDate: today.subtract(1, 'year').format('YYYYMMDD'),
-      endDate: today.format('YYYYMMDD'),
-      categories: [],
-      regions: [],
-      industries: [],
+      startDate: savedDateRange?.startDate?.format('YYYYMMDD') ?? today.subtract(1, 'year').format('YYYYMMDD'),
+      endDate: savedDateRange?.endDate?.format('YYYYMMDD') ?? today.format('YYYYMMDD'),
+      categories: savedFilters?.markets ?? [],
+      regions: savedFilters?.regions ?? [],
+      industries: savedFilters?.industries ?? [],
     },
     {
       page: 1,
@@ -79,6 +128,11 @@ const NewsPage = () => {
       initialFetch: true,
       useAbortController: true,
     },
+  )
+
+  const appliedFiltersCount = useMemo(
+    () => (filter.categories?.length ?? 0) + (filter.industries?.length ?? 0) + (filter.regions?.length ?? 0),
+    [filter.categories, filter.industries, filter.regions],
   )
 
   const { marketCategoryCodeList, industrySectorCodeList, regionCategoryCodeList, isLoading: codeDataLoading } = useCodeData()
@@ -109,6 +163,33 @@ const NewsPage = () => {
     ])
   }
 
+  const handleApplyFilters = (filterValues: { [key: string]: string[] }, save?: boolean) => {
+    const markets = filterValues.markets ?? []
+    const industries = filterValues.industries ?? []
+    const regions = filterValues.regions ?? []
+    const providers = filterValues.providers ?? []
+
+    updateMultiFilterWithSearch([
+      ['categories', markets],
+      ['industries', industries],
+      ['regions', regions],
+    ])
+
+    if (save) {
+      localStorage.setItem(
+        FILTERS_STORAGE_KEY,
+        JSON.stringify({
+          markets,
+          industries,
+          regions,
+          providers,
+        }),
+      )
+    } else {
+      localStorage.removeItem(FILTERS_STORAGE_KEY)
+    }
+  }
+
   useEffect(() => {
     if (newsList?.detail?.length) {
       setHasInitialData(true)
@@ -135,146 +216,140 @@ const NewsPage = () => {
           <Stack direction="row" gap="24px">
             <Stack flexGrow={1} gap="24px">
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <MISearchInput
-                  storageKey="market-news"
-                  value={filter.keyword ?? ''}
-                  placeholder="Search for News"
-                  onChange={(value) => updateFilter('keyword', value)}
-                  onSearch={(value) => updateFilterWithSearch('keyword', value)}
-                  onClear={() => updateFilterWithSearch('keyword', '')}
-                />
                 <Stack direction="row" gap="12px">
-                  <MISelect
-                    sizeSelect="h40"
-                    width={160}
-                    options={orderOptions}
-                    value={filter.sort ?? 'NEWEST'}
-                    onChange={(e) => updateFilterWithSearch('sort', String(e.target.value ?? 'NEWEST'))}
+                  <MISearchInput
+                    storageKey="market-news"
+                    value={filter.keyword ?? ''}
+                    placeholder="Search for News"
+                    onChange={(value) => updateFilter('keyword', value)}
+                    onSearch={(value) => updateFilterWithSearch('keyword', value)}
+                    onClear={() => updateFilterWithSearch('keyword', '')}
                   />
-                  <MIDateRangePicker
-                    sizeInput={'h40'}
-                    width={380}
-                    startDate={filter.startDate ? dayjs(filter.startDate) : undefined}
-                    endDate={filter.endDate ? dayjs(filter.endDate) : undefined}
-                    onChange={handleDateChange}
+                  <MIFilterMenu
+                    onApply={handleApplyFilters}
+                    filterGroups={[
+                      [
+                        {
+                          key: 'markets',
+                          title: 'Markets',
+                          filters:
+                            marketCategoryCodeList?.map(({ codeId, codeNm }) => ({
+                              label: codeNm,
+                              value: codeId,
+                            })) ?? [],
+                          width: 180,
+                        },
+                      ],
+                      [
+                        {
+                          key: 'industries',
+                          title: 'Industries',
+                          filters:
+                            industrySectorCodeList?.map(({ codeId, codeNm }) => ({
+                              label: codeNm,
+                              value: codeId,
+                            })) ?? [],
+                          width: 180,
+                        },
+                      ],
+                      [
+                        {
+                          key: 'regions',
+                          title: 'Regions',
+                          filters:
+                            regionCategoryCodeList?.map(({ codeId, codeNm }) => ({
+                              label: codeNm,
+                              value: codeId,
+                            })) ?? [],
+                          width: 180,
+                        },
+                      ],
+                      // [{
+                      //   key: 'providers',
+                      //   title: 'Providers',
+                      //   filters: [
+                      //     { label: 'Reuters', value: 'Reuters' },
+                      //     { label: 'Bloomberg', value: 'Bloomberg' },
+                      //   ],
+                      //   width: 180,
+                      // }],
+                    ]}
+                    initialValues={initialFilterValues}
+                    appliedFiltersCount={appliedFiltersCount}
+                    showSaveOption={true}
+                    initialSaveOn={Boolean(localStorage.getItem(FILTERS_STORAGE_KEY))}
+                    enableHoverBackground
+                  />
+                </Stack>
+                <Stack direction="row" gap="12px">
+                  <MIDateRangePickerMenu
+                    dateRange={
+                      filter.startDate && filter.endDate
+                        ? { startDate: dayjs(filter.startDate), endDate: dayjs(filter.endDate) }
+                        : undefined
+                    }
+                    menuPositionOffset={{ right: -14 }}
+                    initialSaveOn={hasSavedDateRange}
+                    limitDateRange={[1, 'years']}
+                    onApply={handleDateChange}
+                    onSave={(dates) => {
+                      if (dates) {
+                        localStorage.setItem(
+                          STORAGE_KEY,
+                          JSON.stringify({
+                            startDate: dates.startDate?.format('YYYYMMDD'),
+                            endDate: dates.endDate?.format('YYYYMMDD'),
+                          }),
+                        )
+                      } else {
+                        localStorage.removeItem(STORAGE_KEY)
+                      }
+                    }}
+                  />
+                  <MISelectMenu
+                    variant="outlined"
+                    items={orderOptions}
+                    selected={filter.sort ?? 'NEWEST'}
+                    onSelected={(selected: string) => updateFilterWithSearch('sort', selected)}
+                  />
+                  <MIToggleButton
+                    options={viewOptions}
+                    value={viewType}
+                    onChange={(_event, newValue) => {
+                      const finalViewType = (newValue ?? 'LIST') as 'GRID' | 'LIST'
+                      setViewType(finalViewType)
+                      localStorage.setItem(VIEW_TYPE_STORAGE_KEY, finalViewType)
+                    }}
                   />
                 </Stack>
               </Stack>
-              <Stack gap="6px">
+              <Stack gap="30px">
                 <MILine backgroundColor="gray.30" />
-                {isListLoading ? (
-                  <Box>
-                    {Array.from({ length: pagination?.size ?? 10 }, (_, i) => (
-                      <Fragment key={i}>
-                        {renderNewsSkeletonGroup(i, i === (pagination?.size ?? 10) - 1)}
-                        {i < (pagination?.size ?? 10) - 1 && <MILine backgroundColor="gray.30" />}
-                      </Fragment>
-                    ))}
-                  </Box>
-                ) : (
-                  newsList?.detail?.map((item) => (
-                    <Fragment key={item.newsSummaryId}>
-                      <Stack
-                        padding="12px 18px"
-                        borderRadius="10px"
-                        gap="6px"
-                        onClick={() => navigate(`/mi/market-news/${item.newsSummaryId}`)}
-                        sx={{
-                          cursor: 'pointer',
-                          backgroundColor: 'transparent',
-                          transition: 'all 0.2s ease-in-out',
-                          '&:hover': {
-                            backgroundColor: 'contentBG.Hover',
-                          },
-                        }}
-                      >
-                        <Typography variant="body1" color="contentText.Normal">
-                          {item.title}
-                        </Typography>
-                        <Stack direction="row" alignItems="center" gap="10px" height="20px">
-                          <Typography variant="body2R14" color="contentText.Subtext">
-                            {item.provider}
-                          </Typography>
-                          <MILine length={8} direction="vertical" backgroundColor="gray.30" />
-                          <Typography variant="body2R14" color="contentText.Subtext">
-                            {dayjs(item.firstCreated).format('MMMM D, YYYY [at] h:mm A')}
-                          </Typography>
-                        </Stack>
+                <Box>
+                  <SwitchTransition mode="out-in">
+                    <Fade key={viewType} timeout={120}>
+                      <Stack gap="6px">
+                        {viewType === 'LIST' ? (
+                          <NewsItemsListView
+                            newsList={newsList?.detail ?? []}
+                            isLoading={isListLoading}
+                            skeletonCount={pagination?.size ?? 10}
+                          />
+                        ) : (
+                          <NewsItemsGridView
+                            newsList={newsList?.detail ?? []}
+                            isLoading={isListLoading}
+                            skeletonCount={pagination?.size ?? 10}
+                          />
+                        )}
                       </Stack>
-                      <MILine backgroundColor="gray.30" />
-                    </Fragment>
-                  ))
-                )}
+                    </Fade>
+                  </SwitchTransition>
+                </Box>
               </Stack>
               {(newsList?.detail?.length ?? 0) > 0 && (
                 <MIPagination data={newsList} size={pagination?.size} onPageChange={updatePage} onSizeChange={updateSize} />
               )}
-              {!newsListIsLoading && newsList?.detail?.length === 0 && (
-                <Box
-                  display={'flex'}
-                  alignItems={'center'}
-                  justifyContent={'center'}
-                  width={'100%'}
-                  height={'732px'}
-                  sx={{ backgroundColor: '#F8F9FA', border: '1px solid #DEE2E6', borderRadius: '4px' }}
-                >
-                  <Box display={'flex'} flexDirection={'column'} height={'fit-content'} alignItems={'center'}>
-                    <ErrorOutlineIcon />
-                    <Typography variant="body3SB12" color="gray.60" mt={'10px'}>
-                      No results found
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
-            </Stack>
-
-            {/* 필터영역 */}
-            <Stack width={286}>
-              <Stack border="1px solid" borderColor="gray.30" borderRadius={1} padding="24px 12px" boxSizing="border-box" gap="24px">
-                <MIFilterGroup
-                  title={
-                    <Stack direction="row" alignItems="center" gap="10px">
-                      <Typography variant="sidePanelTitle" color="contentText.Normal">
-                        Markets
-                      </Typography>
-                      <Box
-                        padding="4px 6px"
-                        borderRadius="4px"
-                        border="1px solid"
-                        borderColor="contentBorder.Normal"
-                        boxSizing="border-box"
-                        height="22px"
-                        display="flex"
-                        alignItems="center"
-                      >
-                        <Typography variant="subtext3" color="contentText.Normal">
-                          Sentiments
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  }
-                  filters={marketCategoryCodeList?.map((code) => ({ label: code.codeNm, value: code.codeId })) ?? []}
-                  selectedFilters={filter.categories}
-                  onFilterChange={(selectedFilters) => updateFilterWithSearch('categories', selectedFilters)}
-                  padding="16px"
-                  bgcolor="contentBG.Primaryactive"
-                  border="1px solid"
-                  borderColor="contentBorder.Normal"
-                  borderRadius="4px"
-                />
-                <MIFilterGroup
-                  title="Industries"
-                  filters={industrySectorCodeList?.map((code) => ({ label: code.codeNm, value: code.codeId })) ?? []}
-                  selectedFilters={filter.industries}
-                  onFilterChange={(selectedFilters) => updateFilterWithSearch('industries', selectedFilters)}
-                />
-                <MIFilterGroup
-                  title="Regions"
-                  filters={regionCategoryCodeList?.map((code) => ({ label: code.codeNm, value: code.codeId })) ?? []}
-                  selectedFilters={filter.regions}
-                  onFilterChange={(selectedFilters) => updateFilterWithSearch('regions', selectedFilters)}
-                />
-              </Stack>
             </Stack>
           </Stack>
         </Stack>

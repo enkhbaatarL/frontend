@@ -30,6 +30,7 @@ import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
 import newsletterService, { INewsletterIssueDetail, IRelatedNewsEventItem, NewsletterDetailPageMode } from '@/service/mi/newsletter'
+import useAuthStore from '@/store/useAuthStore'
 import useDialog from '@/store/useDialog'
 
 dayjs.extend(utc)
@@ -91,6 +92,9 @@ const NewsletterDetailPage = () => {
   const [deletedNewsIds, setDeletedNewsIds] = useState<string[]>([])
 
   const { newsletterId, issueNo } = useParams()
+  const { accessCompanyInfo } = useAuthStore()
+
+  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
   const {
     data: newsletterIssueDetailData,
@@ -101,7 +105,7 @@ const NewsletterDetailPage = () => {
       if (!newsletterId || !issueNo) {
         return Promise.resolve(null)
       }
-      return newsletterService.getNewsletterIssueDetail(newsletterId, issueNo)
+      return newsletterService.getNewsletterIssueDetail(customerCompanyNo, newsletterId, issueNo)
     },
     {},
     {
@@ -120,7 +124,7 @@ const NewsletterDetailPage = () => {
         return null
       }
 
-      return newsletterService.getNewsletterIssues(newsletterId)
+      return newsletterService.getNewsletterIssues(customerCompanyNo, newsletterId)
     },
     refetchOnWindowFocus: false,
     gcTime: 0,
@@ -544,7 +548,7 @@ Content-Transfer-Encoding: 7bit
       console.error('Preview 생성 중 오류:', error)
       showSnackbar(t('newsletter.editMode.error.previewError'), { variant: 'error' })
     }
-  }, [createEmailContentHTML, showSnackbar])
+  }, [createEmailContentHTML, showSnackbar, t])
 
   const baseNewsCount = useMemo(
     () => (newsletterIssueDetailData?.issueDetail.relatedNews.newsEventItems?.length ?? 0) - deletedNewsIds.length,
