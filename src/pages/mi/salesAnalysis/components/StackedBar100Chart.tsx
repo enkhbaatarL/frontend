@@ -1,14 +1,6 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Typography } from '@mui/material'
-import {
-  Chart,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  BarController,
-  Legend,
-  Tooltip,
-} from 'chart.js'
+import { Chart, CategoryScale, LinearScale, BarElement, BarController, Legend, Tooltip } from 'chart.js'
 import { FC, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -54,7 +46,7 @@ const buildStackedBar100ChartData = (data: IMarketData) => {
 
   const mainLabel = data.mainChart?.specificIndicatorName ?? data.marketMetaData?.goodsDataNm ?? ''
   const firstCompare = compareData[0]
-  const compareLabel = firstCompare?.specificIndicatorName ?? data.marketMetaData?.goodsDataNm ?? (compareData.length > 0 ? `Series 1` : '')
+  const compareLabel = firstCompare?.specificIndicatorName ?? data.marketMetaData?.goodsDataNm ?? (compareData.length > 0 ? 'Series 1' : '')
 
   // 100% stacked bar를 위해 각 라벨별 합계를 구하고 비율로 변환
   const normalizedData = labels.map((_, index) => {
@@ -78,14 +70,14 @@ const buildStackedBar100ChartData = (data: IMarketData) => {
     },
     ...(compareData.length > 0
       ? [
-          {
-            label: compareLabel,
-            data: normalizedData.map((d) => d.compare),
-            backgroundColor: '#7A8790',
-            borderColor: '#7A8790',
-            borderWidth: 1,
-          },
-        ]
+        {
+          label: compareLabel,
+          data: normalizedData.map((d) => d.compare),
+          backgroundColor: '#7A8790',
+          borderColor: '#7A8790',
+          borderWidth: 1,
+        },
+      ]
       : []),
   ]
 
@@ -97,9 +89,7 @@ const StackedBar100Chart: FC<StackedBar100ChartProps> = ({ data, locked = false 
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart<'bar'> | null>(null)
 
-  const title: string = useMemo(() => {
-    return data?.marketMetaData?.goodsDataNm ?? 'Sales Analysis'
-  }, [data])
+  const title: string = useMemo(() => data?.marketMetaData?.goodsDataNm ?? 'Sales Analysis', [data])
 
   useEffect(() => {
     if (chartInstance.current) {
@@ -107,7 +97,7 @@ const StackedBar100Chart: FC<StackedBar100ChartProps> = ({ data, locked = false 
       chartInstance.current = null
     }
 
-    if (!data) return
+    if (!data) return undefined
 
     const { labels, datasets } = buildStackedBar100ChartData(data)
 
@@ -161,8 +151,8 @@ const StackedBar100Chart: FC<StackedBar100ChartProps> = ({ data, locked = false 
                   maxTicksLimit: 6,
                   font: { family: 'Pretendard', size: 12, weight: 'normal' },
                   color: '#868e96',
-                  callback: function (value) {
-                    return value + '%'
+                  callback(value) {
+                    return `${value}%`
                   },
                 },
                 grid: { color: 'rgba(0,0,0,0.06)' },
@@ -254,4 +244,3 @@ const StackedBar100Chart: FC<StackedBar100ChartProps> = ({ data, locked = false 
 }
 
 export default StackedBar100Chart
-

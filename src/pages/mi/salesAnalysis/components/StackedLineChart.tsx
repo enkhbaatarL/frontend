@@ -128,7 +128,7 @@ const StackedLineChart: FC<StackedLineChartProps> = ({ data, locked = false, sho
       chartInstance.current = null
     }
 
-    if (!data) return
+    if (!data) return undefined
 
     const { labels, datasets } = buildStackedLineChartData(data, showLabel)
 
@@ -214,9 +214,9 @@ const StackedLineChart: FC<StackedLineChartProps> = ({ data, locked = false, sho
         '&:hover': locked
           ? undefined
           : {
-              borderColor: 'contentBorder.Primaryactive',
-              backgroundColor: 'background.default',
-            },
+            borderColor: 'contentBorder.Primaryactive',
+            backgroundColor: 'background.default',
+          },
       }}
       onClick={() =>
         !locked &&

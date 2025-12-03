@@ -70,9 +70,7 @@ const StackedBarChart: FC<StackedBarChartProps> = ({ data, locked = false }) => 
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart<'bar'> | null>(null)
 
-  const title: string = useMemo(() => {
-    return data?.marketMetaData?.goodsDataNm ?? 'Sales Analysis'
-  }, [data])
+  const title: string = useMemo(() => data?.marketMetaData?.goodsDataNm ?? 'Sales Analysis', [data])
 
   useEffect(() => {
     if (chartInstance.current) {
@@ -80,7 +78,7 @@ const StackedBarChart: FC<StackedBarChartProps> = ({ data, locked = false }) => 
       chartInstance.current = null
     }
 
-    if (!data) return
+    if (!data) return undefined
 
     const { labels, datasets } = buildStackedBarChartData(data)
 
@@ -164,9 +162,9 @@ const StackedBarChart: FC<StackedBarChartProps> = ({ data, locked = false }) => 
         '&:hover': locked
           ? undefined
           : {
-              borderColor: 'contentBorder.Primaryactive',
-              backgroundColor: 'background.default',
-            },
+            borderColor: 'contentBorder.Primaryactive',
+            backgroundColor: 'background.default',
+          },
       }}
       onClick={() =>
         !locked &&

@@ -83,10 +83,10 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
   }, [conversation.statusCd, conversation.isNew, animationComplete, onAnimationComplete, showSnackbar])
 
   useEffect(() => {
-    if (!bundles.length) return () => {}
+    if (!bundles.length) return undefined
     if (isDone) {
       onAnimationComplete()
-      return () => {}
+      return undefined
     }
     if (currentIdx < bundles.length - 1) {
       const timeout = setTimeout(() => {
@@ -95,7 +95,7 @@ const MIAgentConversationItem = ({ conversation, chatRoom, onRetry, animationCom
       return () => clearTimeout(timeout)
     }
 
-    return () => {}
+    return undefined
   }, [bundles.length, currentIdx])
 
   return (

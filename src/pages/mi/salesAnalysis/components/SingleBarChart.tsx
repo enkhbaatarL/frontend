@@ -1,14 +1,6 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Typography } from '@mui/material'
-import {
-  Chart,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  BarController,
-  Legend,
-  Tooltip,
-} from 'chart.js'
+import { Chart, CategoryScale, LinearScale, BarElement, BarController, Legend, Tooltip } from 'chart.js'
 import { FC, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -65,9 +57,7 @@ const SingleBarChart: FC<SingleBarChartProps> = ({ data, locked = false }) => {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart<'bar'> | null>(null)
 
-  const title: string = useMemo(() => {
-    return data?.marketMetaData?.goodsDataNm ?? 'Sales Analysis'
-  }, [data])
+  const title: string = useMemo(() => data?.marketMetaData?.goodsDataNm ?? 'Sales Analysis', [data])
 
   useEffect(() => {
     if (chartInstance.current) {
@@ -75,7 +65,7 @@ const SingleBarChart: FC<SingleBarChartProps> = ({ data, locked = false }) => {
       chartInstance.current = null
     }
 
-    if (!data) return
+    if (!data) return undefined
 
     const { labels, datasets } = buildSingleBarChartData(data)
 
@@ -207,4 +197,3 @@ const SingleBarChart: FC<SingleBarChartProps> = ({ data, locked = false }) => {
 }
 
 export default SingleBarChart
-

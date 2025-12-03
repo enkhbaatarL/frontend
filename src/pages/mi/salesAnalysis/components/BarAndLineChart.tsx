@@ -22,17 +22,7 @@ import { useNavigate } from 'react-router-dom'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { IMarketData } from '@/service/mi/marketData'
 
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  BarController,
-  PointElement,
-  LineElement,
-  LineController,
-  Legend,
-  Tooltip,
-)
+Chart.register(CategoryScale, LinearScale, BarElement, BarController, PointElement, LineElement, LineController, Legend, Tooltip)
 
 type MixedType = 'bar' | 'line'
 
@@ -123,17 +113,16 @@ const LockedOverlay = () => (
   </Box>
 )
 
-const buildBarAndLineChartData = (data: IMarketData): {
+const buildBarAndLineChartData = (
+  data: IMarketData,
+): {
   labels: string[]
   datasets: ChartDataset<MixedType, number[]>[]
 } => {
   const rawData = data.mainChart?.rawData ?? []
   const compareData = data.compareCharts ?? []
 
-  const allDates: string[] = [
-    ...rawData.map((p) => p.date),
-    ...compareData.flatMap((s) => s.rawData.map((p) => p.date)),
-  ]
+  const allDates: string[] = [...rawData.map((p) => p.date), ...compareData.flatMap((s) => s.rawData.map((p) => p.date))]
   const labels = Array.from(new Set(allDates)).sort()
 
   const mapPoints = (points: { date: string; value: number }[]) => {
@@ -143,10 +132,7 @@ const buildBarAndLineChartData = (data: IMarketData): {
 
   const mainLabel = data.mainChart?.specificIndicatorName ?? data.marketMetaData?.goodsDataNm ?? ''
   const firstCompare = compareData[0]
-  const compareLabel =
-    firstCompare?.specificIndicatorName ??
-    data.marketMetaData?.goodsDataNm ??
-    (compareData.length > 0 ? `Series 1` : '')
+  const compareLabel = firstCompare?.specificIndicatorName ?? data.marketMetaData?.goodsDataNm ?? (compareData.length > 0 ? 'Series 1' : '')
 
   const datasets: ChartDataset<MixedType, number[]>[] = [
     {
@@ -173,33 +159,26 @@ const buildBarAndLineChartData = (data: IMarketData): {
             yAxisID: 'y',
             order: 1,
           } as ChartDataset<MixedType, number[]>,
-        ]
+      ]
       : []),
   ]
 
   return { labels, datasets }
 }
 
-const BarAndLineChart: FC<BarAndLineChartProps> = ({
-  data,
-  locked = false,
-  showBarLabel = false,
-  showLineLabel = false,
-}) => {
+const BarAndLineChart: FC<BarAndLineChartProps> = ({ data, locked = false, showBarLabel = false, showLineLabel = false }) => {
   const navigate = useNavigate()
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart<MixedType> | null>(null)
 
-  const title: string = useMemo(() => {
-    return data?.marketMetaData?.goodsDataNm ?? 'Sales Analysis'
-  }, [data])
+  const title: string = useMemo(() => data?.marketMetaData?.goodsDataNm ?? 'Sales Analysis', [data])
 
   useEffect(() => {
     if (chartInstance.current) {
       chartInstance.current.destroy()
       chartInstance.current = null
     }
-    if (!data) return
+    if (!data) return undefined
 
     const { labels, datasets } = buildBarAndLineChartData(data)
 
@@ -229,7 +208,7 @@ const BarAndLineChart: FC<BarAndLineChartProps> = ({
                 },
               },
               tooltip: { enabled: !locked },
-              ...( { showBarLabel, showLineLabel } as any ),
+              ...({ showBarLabel, showLineLabel } as any),
             },
             scales: {
               x: {
@@ -237,13 +216,10 @@ const BarAndLineChart: FC<BarAndLineChartProps> = ({
                   maxRotation: 0,
                   autoSkip: false,
                   callback(index) {
-                    const allLabels: any = (this as any).getLabels
-                      ? (this as any).getLabels()
-                      : (this as any).chart.data.labels
+                    const allLabels: any = (this as any).getLabels ? (this as any).getLabels() : (this as any).chart.data.labels
                     const label = allLabels[index]
                     if (index === 0) return `\u2002\u2002\u2002\u2002\u2002\u2002\u2002${label}`
-                    if (index === allLabels.length - 1)
-                      return `${label}\u2002\u2002\u2002\u2002\u2002\u2002\u2002`
+                    if (index === allLabels.length - 1) return `${label}\u2002\u2002\u2002\u2002\u2002\u2002\u2002`
                     return ''
                   },
                   font: { family: 'Pretendard', size: 12, weight: 'normal' },
@@ -265,10 +241,7 @@ const BarAndLineChart: FC<BarAndLineChartProps> = ({
               },
             },
           },
-          plugins: [
-            barLabelPlugin as unknown as Plugin<MixedType>,
-            lineLabelPlugin as unknown as Plugin<MixedType>,
-          ],
+          plugins: [barLabelPlugin as unknown as Plugin<MixedType>, lineLabelPlugin as unknown as Plugin<MixedType>],
         }
 
         chartInstance.current = new Chart(ctx, config)
@@ -298,9 +271,9 @@ const BarAndLineChart: FC<BarAndLineChartProps> = ({
         '&:hover': locked
           ? undefined
           : {
-              borderColor: 'contentBorder.Primaryactive',
-              backgroundColor: 'background.default',
-            },
+            borderColor: 'contentBorder.Primaryactive',
+            backgroundColor: 'background.default',
+          },
       }}
       onClick={() =>
         !locked &&
