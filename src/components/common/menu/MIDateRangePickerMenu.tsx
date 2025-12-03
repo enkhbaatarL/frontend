@@ -21,7 +21,7 @@ import 'react-day-picker/style.css'
 
 import MIButton from '@/components/common/button/MIButton'
 import CheckIcon from '@/components/common/icons/agent/CheckIcon'
-import MIMaskInput, { MIMaskInputRef } from '@/components/common/input/MIMaskInout'
+import MIMaskInput, { MIMaskInputRef } from '@/components/common/input/MIMaskInput'
 import MIMenu, { MIMenuProps } from '@/components/common/menu/MIMenu'
 import { PREDEFINED_MASKS } from '@/constants/masks'
 import useSnackbar from '@/hooks/useSnackbar'

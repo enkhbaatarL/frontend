@@ -141,7 +141,7 @@ const Reference = ({ referenceData, marketOpenTime, marketCloseTime }: Props) =>
                                     <tr key={row.cells.join(',')}>
                                       {row.cells.map((cell, index) => (
                                         <td
-                                          key={cell}
+                                          key={`${index}-${cell}`}
                                           style={{
                                             padding: '9px 12px',
                                             textAlign: index === 0 ? 'center' : 'right',
