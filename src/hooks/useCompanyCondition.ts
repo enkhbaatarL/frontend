@@ -51,6 +51,11 @@ export const useCompanyCondition = () => {
         deniedOptionalPages.push('mi-activity-log')
       }
 
+      // Newsletters
+      if (!accessCompanyInfo?.isNewsletter) {
+        deniedOptionalPages.push('newsletters')
+      }
+
       return [...baseDenied, ...deniedFuturePages, ...deniedOptionalPages]
     },
     enabled: !!comNo,
