@@ -19,16 +19,21 @@ import useSnackbar from '@/hooks/useSnackbar'
 import NewsletterCard from '@/pages/mi/newsletter/components/NewsletterCard'
 import newsletterService, {
   IFeaturedNewsletterItem,
+  IFeaturedNewsletterListRequest,
   INewsletterItem,
   INewsletterListRequest,
   NewsletterStatus,
 } from '@/service/mi/newsletter'
-import { IPaginationRequest, IPaginationResponse } from '@/types/api'
+import useAuthStore from '@/store/useAuthStore'
+import { IPaginationResponse } from '@/types/api'
 
 const NewsLettersPage = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { showSnackbar } = useSnackbar()
+  const { accessCompanyInfo } = useAuthStore()
+
+  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
   const [loadingNewsletterIds, setLoadingNewsletterIds] = useState<Set<string>>(new Set())
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -41,9 +46,11 @@ const NewsLettersPage = () => {
     updatePage: updateFeaturedPage,
     isLoading: featuredNewsletterListIsLoading,
     optimisticUpdate: optimisticUpdateFeatured,
-  } = useSearchFilter<IPaginationRequest, IPaginationResponse<IFeaturedNewsletterItem>>(
+  } = useSearchFilter<IFeaturedNewsletterListRequest, IPaginationResponse<IFeaturedNewsletterItem>>(
     (params) => newsletterService.getFeaturedNewsletters(params),
-    {},
+    {
+      companyNo: customerCompanyNo,
+    },
     {
       page: 1,
       size: 6,
@@ -66,6 +73,7 @@ const NewsLettersPage = () => {
   } = useSearchFilter<INewsletterListRequest, IPaginationResponse<INewsletterItem>>(
     (params) => newsletterService.getNewsletterList(params),
     {
+      companyNo: customerCompanyNo,
       keyword: '',
     },
     {
