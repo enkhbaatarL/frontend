@@ -434,27 +434,58 @@ const useMIAgent = () => {
 
   const stop = useCallback(
     (message: string) => {
-      let accumulatedMessage = message
+      let targetQnaNo: number | null = null
+      let finalMessage = message
 
-      // conversations를 역순으로 순회하여 가장 최근 스트리밍 중인 대화 찾기
-      for (let i = conversations.length - 1; i >= 0; i--) {
-        const conv = conversations[i]
-        if (conv.qnaNo !== null) {
-          const chunks = chunkManager.getChunks(conv.qnaNo)
-          if (chunks.length > 0) {
-            accumulatedMessage = chunks.join('')
-            accumulatedMessage +=
-              '\n\n<span style="color: #ADB5BD; font-weight: 500; font-size: 14px; user-select: none;">MARI stopped answering</span>'
-            break
-          }
+      // 최신 대화 추출
+      const reversedConversations = [...conversations].reverse()
+      const targetConversation = reversedConversations.find((conv) => conv.qnaNo !== null)
+
+      if (targetConversation && targetConversation.qnaNo) {
+        targetQnaNo = targetConversation.qnaNo
+
+        const chunks = chunkManager.getChunks(targetQnaNo)
+
+        if (chunks.length > 0) {
+          finalMessage = chunks.join('')
         }
+
+        finalMessage +=
+          '\n\n<span style="color: #ADB5BD; font-weight: 500; font-size: 14px; user-select: none;">MARI stopped answering</span>'
+      }
+
+      updateState(MIAgentState.IDLE)
+
+      // 가상 FULLTEXT 수신 처리 (answer 확정 + statusMessage 제거)
+      if (targetQnaNo) {
+        setConversations((prev) => {
+          const index = prev.findIndex((conv) => conv.qnaNo === targetQnaNo)
+          if (index === -1) return prev
+
+          const currentConversation = prev[index]
+
+          const updatedAnswer: NonNullable<IConversation['answer']> = {
+            ...(currentConversation.answer ?? {}),
+            [StreamEventType.MESSAGE]: finalMessage,
+          } as NonNullable<IConversation['answer']>
+
+          const updatedConversation: IConversation = {
+            ...currentConversation,
+            answer: updatedAnswer,
+            statusMessage: undefined,
+          }
+
+          return [...prev.slice(0, index), updatedConversation, ...prev.slice(index + 1)]
+        })
+
+        chunkManager.clearChunks(targetQnaNo)
       }
 
       if (selectedChatRoom.id) {
-        agentService.cancelStream(selectedChatRoom.id, accumulatedMessage).then()
+        agentService.cancelStream(selectedChatRoom.id, finalMessage).then().catch(console.error)
       }
     },
-    [selectedChatRoom.id, conversations],
+    [selectedChatRoom.id, conversations, updateState],
   )
 
   const selectedChatRoomInfo = useMemo(

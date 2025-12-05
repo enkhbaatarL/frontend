@@ -185,7 +185,7 @@ const MIAgentConversationItem = ({
           )}
         </>
       )}
-      {conversation.statusCd?.startsWith('FAIL') && (
+      {conversation.statusCd?.startsWith('FAIL') && !conversation.answer && (
         <>
           <ErrorMessage messages={getErrorMessage(conversation.statusCd, t)} />
           <MIAgentAnswerFooter
