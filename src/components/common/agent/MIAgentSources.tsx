@@ -52,6 +52,9 @@ const MIAgentSources = ({ sources, isNew }: Props) => {
                 }
               }
 
+              const actualIndex = sources.findIndex((s) => s.index === source.index)
+              const virtualNumber = actualIndex >= 0 ? actualIndex + 1 : index + 1
+
               return (
                 <Stack
                   key={source.index}
@@ -79,7 +82,7 @@ const MIAgentSources = ({ sources, isNew }: Props) => {
                   }}
                 >
                   <Typography variant="subtext" color="content.textBlack">
-                    {typeof source.index === 'string' ? source.index.replace(/^web_/, '') : String(source.index)}
+                    {virtualNumber}
                   </Typography>
                   <Typography variant="subtext" color="content.textBlack">
                     {source.sourceNm}

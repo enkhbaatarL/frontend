@@ -1,6 +1,6 @@
 import { Box, Stack, Tooltip } from '@mui/material'
 import clsx from 'clsx'
-import { useRef, useMemo, useEffect, useState, useCallback, AnchorHTMLAttributes } from 'react'
+import { useRef, useMemo, useEffect, useState, useCallback, AnchorHTMLAttributes, ComponentPropsWithoutRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
@@ -12,7 +12,7 @@ import MIAgentSuggestedQuestions from '@/components/common/agent/MIAgentSuggeste
 import { MIAgentTableDownloadButton } from '@/components/common/agent/MIAgentTableDownloadButton'
 import DataTrendChartDownloadIcon from '@/components/common/data-trend-chart/icons/DataTrendChartDownloadIcon'
 import { IConversation, chunkManager } from '@/hooks/useMIAgent'
-import { StreamEventType } from '@/service/mi/agent'
+import { StreamEventType, ChatRoomErrorStatus } from '@/service/mi/agent'
 import {
   parseSources,
   parseSuggestedQuestions,
@@ -29,6 +29,7 @@ interface Props {
   chatRoomTitle?: string
   onAnimationComplete?: () => void
   onSendMessage?: (message: string) => void
+  animationComplete?: boolean // 부모로부터 완료 상태를 받기 위해 추가
 }
 
 const createMarkdownComponents = (
@@ -37,6 +38,8 @@ const createMarkdownComponents = (
   chatRoomTitle?: string,
   tableIndexRef?: { current: number },
   isAnimationComplete?: boolean,
+  virtualIndexMap?: Map<string, number>,
+  isNew?: boolean,
 ) => {
   // 컴포넌트 생성 시 테이블 인덱스 초기화
   if (tableIndexRef) {
@@ -57,6 +60,8 @@ const createMarkdownComponents = (
 
         if (source) {
           const tooltipTitle = source.sourceNm
+          // 가상 번호 사용 (없으면 원래 번호 사용)
+          const displayNumber = virtualIndexMap?.get(children) ?? children.replace(/^web_/, '')
 
           return (
             <Tooltip
@@ -107,7 +112,7 @@ const createMarkdownComponents = (
                   padding="0 4px"
                   boxSizing="border-box"
                 >
-                  {children.replace(/^web_/, '')}
+                  {displayNumber}
                 </Stack>
               </a>
             </Tooltip>
@@ -128,11 +133,11 @@ const createMarkdownComponents = (
         </a>
       )
     },
-    table: ({ children, ...props }: React.ComponentPropsWithoutRef<'table'> & { 'data-table-id'?: string }) => {
+    table: ({ children, ...props }: ComponentPropsWithoutRef<'table'> & { 'data-table-id'?: string }) => {
       const currentIndex = tableIndexRef ? tableIndexRef.current++ : 0
 
-      const currentTable = markdownTables?.[currentIndex]
-      const shouldShowDownloadButton = !!currentTable && (isAnimationComplete ?? false)
+      const currentTable = markdownTables && currentIndex < markdownTables.length ? markdownTables[currentIndex] : null
+      const shouldShowDownloadButton = !!currentTable && (!isNew || (isAnimationComplete ?? false))
 
       return (
         <Box sx={{ marginTop: '16px', marginBottom: '16px' }}>
@@ -148,7 +153,7 @@ const createMarkdownComponents = (
             >
               <MIAgentTableDownloadButton
                 data-table-id={currentTable.tableId}
-                markdownTables={markdownTables}
+                markdownTables={markdownTables ?? undefined}
                 chatRoomTitle={chatRoomTitle}
               >
                 <DataTrendChartDownloadIcon />
@@ -181,7 +186,13 @@ const createMarkdownComponents = (
   }
 }
 
-const MIAgentAnswer = ({ conversation, chatRoomTitle, onAnimationComplete, onSendMessage }: Props) => {
+const MIAgentAnswer = ({
+  conversation,
+  chatRoomTitle,
+  onAnimationComplete,
+  onSendMessage,
+  animationComplete: propAnimationComplete,
+}: Props) => {
   const answerRef = useRef<HTMLDivElement>(null)
   const [displayMessage, setDisplayMessage] = useState<string>('')
   const [currentAnimatingChunk, setCurrentAnimatingChunk] = useState<{ text: string; key: number } | null>(null)
@@ -197,11 +208,35 @@ const MIAgentAnswer = ({ conversation, chatRoomTitle, onAnimationComplete, onSen
   const tableIndexRef = useRef<number>(0) // 테이블 인덱스를 추적하기 위한 ref
   const { t } = useTranslation()
 
+  tableIndexRef.current = 0
+
   // 출처
   const sources = useMemo<Source[] | null>(() => {
     if (typeof displayMessage !== 'string' || !displayMessage) return null
-    return parseSources(displayMessage)
+    const parsed = parseSources(displayMessage)
+
+    if (!parsed) return null
+
+    // index의 숫자 부분을 기준으로 정렬
+    const sorted = [...parsed].sort((a, b) => {
+      const numA = Number.parseInt(a.index.replace(/^web_/, ''), 10) || 0
+      const numB = Number.parseInt(b.index.replace(/^web_/, ''), 10) || 0
+      return numA - numB
+    })
+
+    return sorted
   }, [displayMessage])
+
+  // 가상 번호 매핑 생성 (원래 index -> 순차 번호 1,2,3,4...)
+  const virtualIndexMap = useMemo<Map<string, number>>(() => {
+    const map = new Map<string, number>()
+    if (sources) {
+      sources.forEach((source, index) => {
+        map.set(source.index, index + 1)
+      })
+    }
+    return map
+  }, [sources])
 
   // 추천 질문
   const suggestedQuestions = useMemo<SuggestedQuestion[] | null>(() => {
@@ -246,13 +281,18 @@ const MIAgentAnswer = ({ conversation, chatRoomTitle, onAnimationComplete, onSen
   const BASE_SPEED_THRESHOLD = 50
 
   const markdownComponents = useMemo(
-    () => createMarkdownComponents(sources, markdownTables, chatRoomTitle, tableIndexRef, isAnimationComplete),
-    [sources, markdownTables, chatRoomTitle, isAnimationComplete],
+    () =>
+      createMarkdownComponents(
+        sources,
+        markdownTables,
+        chatRoomTitle,
+        tableIndexRef,
+        isAnimationComplete || propAnimationComplete,
+        virtualIndexMap,
+        conversation.isNew,
+      ),
+    [sources, markdownTables, chatRoomTitle, isAnimationComplete, propAnimationComplete, virtualIndexMap, conversation.isNew],
   )
-
-  useEffect(() => {
-    tableIndexRef.current = 0
-  }, [markdownTables])
 
   /**
    * 청크 길이와 속도에 따라 처리 간격을 동적으로 계산
@@ -617,6 +657,8 @@ const MIAgentAnswer = ({ conversation, chatRoomTitle, onAnimationComplete, onSen
   const isParsingComplete = sourcesParsingStatus !== 'parsing' && suggestedQuestionsParsingStatus !== 'parsing'
   const shouldShowContent = isParsingComplete
 
+  const isCancelled = conversation.statusCd === ChatRoomErrorStatus.CANCELLED_BY_USER
+
   if (!hasAnswerContent && !hasStatusMessage && !hasStreamingContent) return null
 
   return (
@@ -631,18 +673,18 @@ const MIAgentAnswer = ({ conversation, chatRoomTitle, onAnimationComplete, onSen
           {displayContent}
         </ReactMarkdown>
       )}
-      {conversation.statusMessage && (
+      {conversation.statusMessage && !isCancelled && (
         <Box key={`${conversation.qnaNo ?? 'global'}-${conversation.statusMessage}`} className={style.statusMessage}>
           {conversation.statusMessage ?? parsingLoadingMessage}
         </Box>
       )}
-      {parsingLoadingMessage && (
+      {parsingLoadingMessage && !isCancelled && (
         <Box key={`${conversation.qnaNo ?? 'global'}-${parsingLoadingMessage}`} className={style.statusMessage}>
           {parsingLoadingMessage}
         </Box>
       )}
 
-      {animationCompleteCalledRef.current && (
+      {animationCompleteCalledRef.current && !isCancelled && (
         <Stack gap="20px">
           {sources && <MIAgentSources sources={sources} isNew={conversation.isNew} />}
           {suggestedQuestions && (

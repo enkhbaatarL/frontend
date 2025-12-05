@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { v4 as uuid } from 'uuid'
 
 import i18n from '@/lib/i18n'
-import agentService, { IChatQnaRes, IChatRoomRes, StreamEventType } from '@/service/mi/agent'
+import agentService, { IChatQnaRes, IChatRoomRes, StreamEventType, ChatRoomErrorStatus } from '@/service/mi/agent'
 import { IPaginationResponse } from '@/types/api'
 
 export type IChatRoom = IChatRoomRes
@@ -142,6 +142,8 @@ const initialConversation: IConversation = {
 const useMIAgent = () => {
   const { t } = useTranslation()
 
+  const isAbortedRef = useRef<boolean>(false)
+
   const stateRef = useRef<MIAgentState>(MIAgentState.IDLE)
   const [state, setState] = useState<MIAgentState>(MIAgentState.IDLE)
 
@@ -175,6 +177,7 @@ const useMIAgent = () => {
     fetchNextPage: fetchPrevHistory,
     hasNextPage: hasPrevHistory,
     isFetchingNextPage: isFetchingPrevHistory,
+    refetch: refetchChatQnaHistory,
   } = useInfiniteQuery({
     queryKey: ['chatQna', selectedChatRoom.id],
     queryFn: ({ pageParam = 1 }) => (selectedChatRoom.id ? agentService.getChatQna(selectedChatRoom.id, pageParam) : Promise.resolve(null)),
@@ -182,6 +185,11 @@ const useMIAgent = () => {
     enabled: !!selectedChatRoom.id && !selectedChatRoom.isNew,
     initialPageParam: 1,
   })
+
+  const refetchChatQnaHistoryRef = useRef(refetchChatQnaHistory)
+  useEffect(() => {
+    refetchChatQnaHistoryRef.current = refetchChatQnaHistory
+  }, [refetchChatQnaHistory])
 
   /**
    * 채팅방 선택
@@ -240,6 +248,10 @@ const useMIAgent = () => {
     (message: string) =>
       ({ id, event, data }: EventSourceMessage) => {
         try {
+          if (isAbortedRef.current) {
+            return
+          }
+
           if (event === StreamEventType.COMPLETE) {
             updateState(MIAgentState.COMPLETE)
             setTimeout(() => updateState(MIAgentState.IDLE), 1000)
@@ -395,6 +407,8 @@ const useMIAgent = () => {
 
   const inquire = useCallback(
     async (message: string, shouldWebSearch: boolean = false) => {
+      isAbortedRef.current = false
+
       const chatRoomId = selectedChatRoom.id ?? uuid()
 
       // 새 채팅방이 생성된 경우 selectedChatRoom.id에 저장
@@ -434,6 +448,8 @@ const useMIAgent = () => {
 
   const stop = useCallback(
     (message: string) => {
+      isAbortedRef.current = true
+
       let targetQnaNo: number | null = null
       let finalMessage = message
 
@@ -450,8 +466,9 @@ const useMIAgent = () => {
           finalMessage = chunks.join('')
         }
 
+        // 파싱중 중단될 경우 <!---->로 감싸서 주석 닫기
         finalMessage +=
-          '\n\n<span style="color: #ADB5BD; font-weight: 500; font-size: 14px; user-select: none;">MARI stopped answering</span>'
+          '<!---->\n\n<span style="color: #ADB5BD; font-weight: 500; font-size: 14px; user-select: none;">MARI stopped answering</span>'
       }
 
       updateState(MIAgentState.IDLE)
@@ -473,6 +490,8 @@ const useMIAgent = () => {
             ...currentConversation,
             answer: updatedAnswer,
             statusMessage: undefined,
+            statusCd: ChatRoomErrorStatus.CANCELLED_BY_USER,
+            statusNm: '중단',
           }
 
           return [...prev.slice(0, index), updatedConversation, ...prev.slice(index + 1)]
@@ -484,6 +503,18 @@ const useMIAgent = () => {
       if (selectedChatRoom.id) {
         agentService.cancelStream(selectedChatRoom.id, finalMessage).then().catch(console.error)
       }
+
+      // 새로운 채팅방이면 완료 처리하고 히스토리 다시 불러오기
+      setSelectedChatRoom((prev) => {
+        if (prev.isNew && prev.id) {
+          refetchChatRoomsRef.current()
+          return {
+            ...prev,
+            isNew: false,
+          }
+        }
+        return prev
+      })
     },
     [selectedChatRoom.id, conversations, updateState],
   )
@@ -502,6 +533,12 @@ const useMIAgent = () => {
   }, [chatQnaHistory?.pages])
 
   const prevHistoryQnaNosRef = useRef<Set<number | null>>(new Set())
+
+  useEffect(() => {
+    if (selectedChatRoom.id && !selectedChatRoom.isNew) {
+      refetchChatQnaHistoryRef.current()
+    }
+  }, [selectedChatRoom.id, selectedChatRoom.isNew])
 
   useEffect(() => {
     if (historyList.length === 0) return

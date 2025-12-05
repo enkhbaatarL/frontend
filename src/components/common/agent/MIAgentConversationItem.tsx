@@ -70,13 +70,37 @@ const MIAgentConversationItem = ({
       const sources = parseSources(answerMessage)
       const suggestedQuestions = parseSuggestedQuestions(answerMessage)
 
-      answerMessage = answerMessage
-        .replaceAll(/<!--.*?-->/gs, '')
-        .replaceAll(/\[web_/gs, '[')
-        .trimEnd()
+      answerMessage = answerMessage.replaceAll(/<!--.*?-->/gs, '')
 
-      if (sources) {
-        answerMessage += `\n\n## ${t('mari.agent.sources')}\n${sources.map((source) => `[${source.index.replace(/^web_/, '')} ${source.sourceNm}](${source.url})`).join('  \n')}`
+      if (sources && sources.length > 0) {
+        // sources를 정렬하고 가상 번호 매핑 생성
+        const sorted = [...sources].sort((a, b) => {
+          const numA = Number.parseInt(a.index.replace(/^web_/, ''), 10) || 0
+          const numB = Number.parseInt(b.index.replace(/^web_/, ''), 10) || 0
+          return numA - numB
+        })
+        const virtualIndexMap = new Map<string, number>()
+        sorted.forEach((source, index) => {
+          virtualIndexMap.set(source.index, index + 1)
+        })
+
+        // 본문에 있는 [web_X] 링크를 가상 번호로 변환
+        answerMessage = answerMessage.replaceAll(/\[web_(\d+)\]/g, (_, originalNum) => {
+          const originalIndex = `web_${originalNum}`
+          const virtualNumber = virtualIndexMap.get(originalIndex) ?? originalNum
+          return `[${virtualNumber}]`
+        })
+
+        answerMessage = answerMessage.trimEnd()
+
+        answerMessage += `\n\n## ${t('mari.agent.sources')}\n${sorted
+          .map((source) => {
+            const virtualNumber = virtualIndexMap.get(source.index) ?? source.index.replace(/^web_/, '')
+            return `[${virtualNumber} ${source.sourceNm}](${source.url})`
+          })
+          .join('  \n')}`
+      } else {
+        answerMessage = answerMessage.replaceAll(/\[web_/gs, '[').trimEnd()
       }
 
       if (suggestedQuestions) {
@@ -165,6 +189,7 @@ const MIAgentConversationItem = ({
             chatRoomTitle={chatRoom?.title}
             onAnimationComplete={onAnimationComplete}
             onSendMessage={onSendMessage}
+            animationComplete={animationComplete}
           />
           {conversation.answer && (!conversation.isNew || animationComplete) && (
             <Box className={clsx({ [style.fadeInUp]: conversation.isNew })}>
