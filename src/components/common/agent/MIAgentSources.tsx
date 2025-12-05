@@ -91,7 +91,7 @@ const MIAgentSources = ({ sources, isNew }: Props) => {
         </Stack>
       </Stack>
       {!isShowMore && (
-        <Stack mt="12px" direction="row" alignItems="center" gap="8px">
+        <Stack mt="12px" direction="row" alignItems="center" gap="8px" sx={{ userSelect: 'none' }}>
           {isLoading ? (
             <CircularProgress size={16} sx={{ color: 'gray.70' }} />
           ) : (

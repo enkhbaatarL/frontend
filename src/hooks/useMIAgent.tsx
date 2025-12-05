@@ -304,11 +304,10 @@ const useMIAgent = () => {
 
                 // qnaNo가 없으면 생성 (최초 CHUNK 이벤트)
                 if (existingIndex === -1) {
-                  const ensuredPrev = ensureConversationExists(prev, qnaNo, message, {
+                  return ensureConversationExists(prev, qnaNo, message, {
                     statusMessage: undefined,
                     auditInfo: streamData,
                   })
-                  return ensuredPrev
                 }
 
                 const currentConversation = prev[existingIndex]
@@ -433,6 +432,31 @@ const useMIAgent = () => {
     [selectedChatRoom.id, createStreamMessageHandler],
   )
 
+  const stop = useCallback(
+    (message: string) => {
+      let accumulatedMessage = message
+
+      // conversations를 역순으로 순회하여 가장 최근 스트리밍 중인 대화 찾기
+      for (let i = conversations.length - 1; i >= 0; i--) {
+        const conv = conversations[i]
+        if (conv.qnaNo !== null) {
+          const chunks = chunkManager.getChunks(conv.qnaNo)
+          if (chunks.length > 0) {
+            accumulatedMessage = chunks.join('')
+            accumulatedMessage +=
+              '\n\n<span style="color: #ADB5BD; font-weight: 500; font-size: 14px; user-select: none;">MARI stopped answering</span>'
+            break
+          }
+        }
+      }
+
+      if (selectedChatRoom.id) {
+        agentService.cancelStream(selectedChatRoom.id, accumulatedMessage).then()
+      }
+    },
+    [selectedChatRoom.id, conversations],
+  )
+
   const selectedChatRoomInfo = useMemo(
     () => chatRooms?.find(({ chatRoomId }) => chatRoomId === selectedChatRoom.id),
     [chatRooms, selectedChatRoom.id],
@@ -483,7 +507,9 @@ const useMIAgent = () => {
   return {
     state,
     inquire,
+    stop,
     selectedChatRoom: selectedChatRoomInfo,
+    selectedChatRoomId: selectedChatRoom.id,
     setSelectedChatRoomId,
     updateStatusMessage,
     conversations,

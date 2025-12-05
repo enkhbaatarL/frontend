@@ -91,13 +91,13 @@ const saveSelectModeOptionsToStorage = (options: SelectModeOption[]) => {
 
 const gradientTextAnimation = keyframes`
   0% {
-    background-position: 0% 50%;
+    background-position: 0 50%;
   }
   50% {
     background-position: 100% 50%;
   }
   100% {
-    background-position: 0% 50%;
+    background-position: 0 50%;
   }
 `
 
@@ -115,7 +115,10 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
   const [shouldCheckScroll, setShouldCheckScroll] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
   const [showScrollToBottomButton, setShowScrollToBottomButton] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [isHeightTransitioning, setIsHeightTransitioning] = useState(false)
   const promptInputBoxRef = useRef<HTMLDivElement>(null)
+  const prevHasConversationsRef = useRef(false)
 
   const { accessCompanyInfo } = useAuthStore.getState()
 
@@ -145,12 +148,42 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     gcTime: 1000 * 60 * 5,
   })
 
-  const isGenerating = useMemo(() => MIAgent.state === MIAgentState.STREAMING, [MIAgent.state])
+  const isPendingQuestion = useMemo(
+    // 낙관적 업데이트 상태 (qnaNo가 null인 대화가 있을 때)
+    () => MIAgent.conversations.some((conv) => conv.qnaNo === null && conv.question !== ''),
+    [MIAgent.conversations],
+  )
+
+  const isGenerating = useMemo(
+    () =>
+      isSending || [MIAgentState.CONNECTED, MIAgentState.STREAMING, MIAgentState.GENERATING].includes(MIAgent.state) || isPendingQuestion,
+    [MIAgent.state, isPendingQuestion, isSending],
+  )
 
   const hasConversations = useMemo(
     () => MIAgent.conversations.length > 0 && MIAgent.conversations[0]?.qnaNo !== null,
     [MIAgent.conversations],
   )
+
+  // 높이 transition 감지
+  useEffect(() => {
+    if (prevHasConversationsRef.current !== hasConversations) {
+      setIsHeightTransitioning(true)
+      // transition duration (400ms) + 여유 시간
+      const timeoutId = setTimeout(() => {
+        setIsHeightTransitioning(false)
+      }, 450)
+
+      prevHasConversationsRef.current = hasConversations
+
+      return () => {
+        clearTimeout(timeoutId)
+      }
+    }
+
+    prevHasConversationsRef.current = hasConversations
+    return undefined
+  }, [hasConversations])
 
   // 마지막 대화가 isNew이고 애니메이션이 완료되었는지 확인
   const shouldShowExpandButton = useMemo(() => {
@@ -161,7 +194,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
 
     const lastConversation = MIAgent.conversations.at(-1)
 
-    if (!(MIAgent.state === MIAgentState.COMPLETE || MIAgent.state === MIAgentState.IDLE)) return false // TODO: 조건 업데이트 후 조정 필요
+    if (!(MIAgent.state === MIAgentState.COMPLETE || MIAgent.state === MIAgentState.IDLE)) return false
     if (!lastConversation?.isNew) return false
 
     return animationComplete.at(-1)
@@ -249,6 +282,8 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
   const handleSendMessage = async (message: string) => {
     if (!message) return
 
+    setIsSending(true)
+
     const webSearchOption = selectModeOption.find((option) => option.id === '2')
     const shouldWebSearch = webSearchOption?.checked ?? false
 
@@ -259,6 +294,13 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
       }, 100)
     })
   }
+
+  // 스트림이 시작되거나 낙관적 업데이트가 완료되면 isSending 리셋
+  useEffect(() => {
+    if (isSending && ([MIAgentState.GENERATING, MIAgentState.STREAMING].includes(MIAgent.state) || isPendingQuestion)) {
+      setIsSending(false)
+    }
+  }, [MIAgent.state, isPendingQuestion, isSending])
 
   // 새로운 질문이 추가되면 즉시 스크롤을 위한 낙관적 업데이트
   useEffect(() => {
@@ -506,7 +548,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
               }
             }}
             disabled={isGenerating}
-            selectedChatRoomId={MIAgent.selectedChatRoom?.chatRoomId}
+            selectedChatRoomId={MIAgent.selectedChatRoomId}
           />
           {/* Content area */}
           <Box
@@ -580,6 +622,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
                     onScroll={handleScroll}
                     windowExpend={windowExpend}
                     onSendMessage={handleSendMessage}
+                    hideScrollbar={isHeightTransitioning}
                   />
                 ) : (
                   <>
@@ -823,7 +866,13 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
               </Fade>
               <MIAgentPromptInputBox
                 onSendMessage={handleSendMessage}
+                onStop={(message) => {
+                  setIsSending(false)
+                  MIAgent.stop(message)
+                }}
+                isPendingQuestion={isPendingQuestion}
                 isGenerating={isGenerating}
+                isSending={isSending}
                 selectModeOption={selectModeOption}
                 onSelectModeOptionChange={updateSelectModeOption}
               />

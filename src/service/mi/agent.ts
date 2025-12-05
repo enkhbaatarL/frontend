@@ -251,9 +251,9 @@ const agentService = {
     const url = `/api/v1/mi/mari-agent/chat-rooms/${chatRoomId}/stream`
 
     // 타임아웃 설정 (5분)
-    const abortController = new AbortController()
+    const controller = new AbortController()
     const timeoutId = setTimeout(() => {
-      abortController.abort()
+      controller.abort()
     }, 5 * 60_000)
 
     try {
@@ -263,7 +263,7 @@ const agentService = {
         body: JSON.stringify({ question, shouldWebSearch }),
         credentials: 'include',
         openWhenHidden: true,
-        signal: abortController.signal,
+        signal: controller.signal,
         onmessage(event) {
           dataHandler(event)
         },
@@ -354,6 +354,18 @@ const agentService = {
       isRecommended,
       feedbackCd,
       feedbackComment,
+    })
+  },
+  /**
+   * 특정 채팅룸에서 진행 중인 Stream 질의응답 작업을 중단합니다.
+   * 중단 시점까지 생성된 부분 응답은 DB에 저장됩니다.
+   *
+   * @param {string} chatRoomId - 채팅방 ID
+   * @param {string} message - 중단 시점 메시지
+   */
+  async cancelStream(chatRoomId: string, message: string): Promise<void> {
+    await api.patch(`mi/mari-agent/chat-rooms/${chatRoomId}/stream-cancel`, {
+      message,
     })
   },
 

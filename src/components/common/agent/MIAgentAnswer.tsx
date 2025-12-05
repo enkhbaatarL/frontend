@@ -237,7 +237,7 @@ const MIAgentAnswer = ({ conversation, chatRoomTitle, onAnimationComplete, onSen
     return null
   }, [sourcesParsingStatus, suggestedQuestionsParsingStatus, t])
 
-  const ANIMATION_DURATION = 100
+  const ANIMATION_DURATION = 200
 
   // 청크 처리 간격 설정 (동적 조정)
   const MIN_PROCESSING_INTERVAL_MS = 0

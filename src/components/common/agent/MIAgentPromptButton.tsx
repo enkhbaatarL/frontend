@@ -6,23 +6,18 @@ import sendActivatedIcon from '@/assets/agent/send-activated.svg'
 import sendDisabledIcon from '@/assets/agent/send-disabled.svg'
 import stopActivatedIcon from '@/assets/agent/stop-activated.svg'
 import stopDisabledIcon from '@/assets/agent/stop-disabled.svg'
-import unableDisabledIcon from '@/assets/agent/unable-disabled.svg'
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 
 export interface MIAgentPromptButtonProps {
   inputStatus?: 'send-activated' | 'send-disabled' | 'stop-activated' | 'stop-disabled' | 'loading-disabled' | 'unable-disabled'
-  disabled?: boolean
   onSendMessage: () => void
+  onStop?: (message: string) => void
 }
 
-const MIAgentPromptButton = ({ inputStatus = 'send-activated', disabled, onSendMessage }: MIAgentPromptButtonProps) => {
+const MIAgentPromptButton = ({ inputStatus = 'send-activated', onSendMessage, onStop }: MIAgentPromptButtonProps) => {
   const isInteractive = useMemo(() => inputStatus === 'send-activated' || inputStatus === 'stop-activated', [inputStatus])
 
   const getImageSrc = useCallback(() => {
-    if (disabled) {
-      return unableDisabledIcon
-    }
-
     switch (inputStatus) {
       case 'send-activated':
         return sendActivatedIcon
@@ -37,11 +32,13 @@ const MIAgentPromptButton = ({ inputStatus = 'send-activated', disabled, onSendM
       default:
         return sendActivatedIcon
     }
-  }, [inputStatus, disabled])
+  }, [inputStatus])
 
-  const handleSendMsg = () => {
+  const handleClick = () => {
     if (inputStatus === 'send-activated') {
       onSendMessage()
+    } else if (inputStatus === 'stop-activated' && onStop) {
+      onStop('')
     }
   }
 
@@ -55,7 +52,7 @@ const MIAgentPromptButton = ({ inputStatus = 'send-activated', disabled, onSendM
         cursor: isInteractive ? 'pointer' : 'not-allowed',
         userSelect: 'none',
       }}
-      onClick={handleSendMsg}
+      onClick={handleClick}
     >
       {inputStatus === 'loading-disabled' ? <MIAgentSpinner /> : <img src={getImageSrc()} width={32} height={32} alt={inputStatus} />}
     </Box>

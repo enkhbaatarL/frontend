@@ -1,5 +1,5 @@
-import { Box, Typography, List, ListItem, Tooltip, Theme, Stack, Collapse, Fade } from '@mui/material'
-import { useState, useMemo, memo } from 'react'
+import { Box, Typography, List, ListItem, Tooltip, Theme, Stack, Collapse, Fade, Skeleton, keyframes } from '@mui/material'
+import { useState, useMemo, memo, useEffect, useRef, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import axLogo from '@/assets/agent/a.x.svg'
@@ -35,6 +35,102 @@ const historyIconStyles = {
   },
 }
 
+// Iris In 애니메이션 정의
+const irisInKeyframes = keyframes`
+  0% {
+    clip-path: circle(0% at 50% 50%);
+    opacity: 0;
+  }
+  100% {
+    clip-path: circle(150% at 50% 50%);
+    opacity: 1;
+  }
+`
+
+// 스켈레톤 페이드 아웃 애니메이션 (Iris가 거의 다 열릴 때쯤(60%) 부드럽게 사라짐)
+const skeletonFadeOutKeyframes = keyframes`
+  0% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+`
+
+const ShimmerSkeleton = memo(() => (
+  <Skeleton
+    variant="rectangular"
+    animation="wave"
+    width={184}
+    height={44}
+    sx={{
+      borderRadius: '100px',
+      padding: '8px',
+      boxSizing: 'border-box',
+    }}
+  />
+))
+
+ShimmerSkeleton.displayName = 'ShimmerSkeleton'
+
+const IrisRevealWrapper = ({
+  children,
+  showEffect,
+  onAnimationEnd,
+}: {
+  children: ReactNode
+  showEffect: boolean
+  onAnimationEnd?: () => void
+}) => {
+  const duration = 1800
+
+  return (
+    <Box sx={{ position: 'relative', width: '100%' }}>
+      {showEffect && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 0,
+            boxSizing: 'border-box',
+            display: 'flex',
+            alignItems: 'center',
+            animation: `${skeletonFadeOutKeyframes} ${duration}ms ease-out forwards`,
+          }}
+        >
+          <ShimmerSkeleton />
+        </Box>
+      )}
+
+      <Box
+        onAnimationEnd={showEffect ? onAnimationEnd : undefined}
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          backgroundColor: 'white',
+          transition: (theme) =>
+            theme.transitions.create(['border-radius'], {
+              duration,
+              easing: theme.transitions.easing.easeInOut,
+            }),
+          ...(showEffect && {
+            animation: `${irisInKeyframes} ${duration}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+          }),
+          overflow: 'hidden',
+        }}
+      >
+        {children}
+      </Box>
+    </Box>
+  )
+}
+
 const MiAgentHistory = ({
   loading,
   chatRooms,
@@ -46,7 +142,28 @@ const MiAgentHistory = ({
   selectedChatRoomId,
 }: MiAgentHistoryProps) => {
   const [isExpanded, setIsExpanded] = useState(true)
+  const [triggerReveal, setTriggerReveal] = useState(false) // Iris 애니메이션 트리거 상태
+
+  const prevCreatingRef = useRef(false)
+
   const { t } = useTranslation()
+
+  const isCreatingNewChat = useMemo(() => {
+    if (!selectedChatRoomId) return false
+    return !chatRooms?.some((room) => room.chatRoomId === selectedChatRoomId)
+  }, [selectedChatRoomId, chatRooms])
+
+  // 생성 상태가 true -> false로 변하는 순간 감지 (대화 종료 시점)
+  useEffect(() => {
+    if (prevCreatingRef.current && !isCreatingNewChat) {
+      setTriggerReveal(true)
+    }
+    prevCreatingRef.current = isCreatingNewChat
+  }, [isCreatingNewChat])
+
+  const handleAnimationEnd = () => {
+    setTriggerReveal(false)
+  }
 
   const containerStyles = useMemo(
     () => ({
@@ -172,18 +289,40 @@ const MiAgentHistory = ({
                     scrollbarColor: '#CED4DA transparent',
                   }}
                 >
-                  {chatRooms?.map((item) => (
+                  {/**
+                   * 1. 생성 중일 때는 상단에 스켈레톤 표시
+                   * 2. 생성 완료(reveal) 시점에는 이 영역을 숨기고 아래 리스트의 0번 인덱스에서 Iris 애니메이션 처리
+                   */}
+                  {!triggerReveal && (
+                    <Collapse in={isCreatingNewChat} timeout={300} unmountOnExit>
+                      <Fade in={isCreatingNewChat} timeout={1000}>
+                        <Box>
+                          <ListItem disablePadding key="shimmer-skeleton">
+                            <ShimmerSkeleton />
+                          </ListItem>
+                        </Box>
+                      </Fade>
+                    </Collapse>
+                  )}
+
+                  {chatRooms?.map((item, index) => (
                     <ListItem key={item.chatRoomId} disablePadding>
-                      <MIAgentHistoryItem
-                        selected={selectedChatRoomId === item.chatRoomId}
-                        item={item}
-                        onSelected={(id) => {
-                          if (selectedChatRoomId !== id) onSelectChat(id)
-                        }}
-                        onEditTitle={onEditTitle}
-                        onDelete={onDelete}
-                        disabled={disabled}
-                      />
+                      {/* 0번 인덱스이고, reveal 트리거가 발동되었을 때 Iris 효과 적용 */}
+                      <IrisRevealWrapper
+                        showEffect={index === 0 && triggerReveal}
+                        onAnimationEnd={index === 0 ? handleAnimationEnd : undefined}
+                      >
+                        <MIAgentHistoryItem
+                          selected={selectedChatRoomId === item.chatRoomId}
+                          item={item}
+                          onSelected={(id) => {
+                            if (selectedChatRoomId !== id) onSelectChat(id)
+                          }}
+                          onEditTitle={onEditTitle}
+                          onDelete={onDelete}
+                          disabled={disabled}
+                        />
+                      </IrisRevealWrapper>
                     </ListItem>
                   ))}
                 </Box>

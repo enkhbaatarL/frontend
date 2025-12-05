@@ -294,7 +294,7 @@
     },
     "promptMessage": {
       "placeholder": "Ask MARI",
-      "generating": "답변을 생성중입니다"
+      "generating": "MARI is preparing your insight"
     },
     "errorMessage": {
       "loadError": "대화를 불러오는 도중 문제가 발생하였습니다"

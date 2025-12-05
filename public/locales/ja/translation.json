@@ -297,7 +297,7 @@
     },
     "promptMessage": {
       "placeholder": "Ask MARI",
-      "generating": "回答を生成中"
+      "generating": "MARIがインサイトを準備しています"
     },
     "errorMessage": {
       "loadError": "会話の読み込み中に問題が発生しました"

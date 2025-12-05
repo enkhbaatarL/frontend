@@ -1,15 +1,19 @@
-import { Box, TextareaAutosize } from '@mui/material'
+import { Box, Stack, TextareaAutosize, Typography } from '@mui/material'
 import { ChangeEvent, useRef, useState, KeyboardEvent, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import MIAgentInputBoxDropdown from '@/components/common/agent/MIAgentInputBoxDropdown'
 import MIAgentPromptButton from '@/components/common/agent/MIAgentPromptButton'
+import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import GradientOverlayScroll from '@/components/common/gradient/GradientOverlayScroll'
 
 interface Props {
   onSendMessage: (message: string) => void
+  onStop?: (message: string) => void
   placeholder?: string
+  isPendingQuestion?: boolean
   isGenerating?: boolean
+  isSending?: boolean
   selectModeOption: Array<{
     id: string
     title: string
@@ -28,7 +32,16 @@ interface Props {
   ) => void
 }
 
-const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selectModeOption, onSelectModeOptionChange }: Props) => {
+const MIAgentPromptInputBox = ({
+  onSendMessage,
+  onStop,
+  placeholder,
+  isPendingQuestion,
+  isGenerating,
+  isSending,
+  selectModeOption,
+  onSelectModeOptionChange,
+}: Props) => {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [isComposing, setIsComposing] = useState(false)
   const [isInputFocused, setIsInputFocused] = useState(false)
@@ -42,9 +55,10 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
   }
 
   const handleSendMessage = () => {
+    inputRef.current?.blur()
+    setIsInputFocused(false)
     onSendMessage(promptText)
     setPromptText('')
-    inputRef.current?.blur()
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -59,8 +73,19 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
   const isFocused = useMemo(() => promptText !== '' || isDropdownOpen || isInputFocused, [promptText, isDropdownOpen, isInputFocused])
 
   const inputStatus = useMemo(() => {
+    // isPendingQuestion이 true이면 즉시 stop-disabled 반환 (낙관적 업데이트 중)
+    if (isPendingQuestion) {
+      return 'stop-disabled'
+    }
+
+    // 낙관적 업데이트가 완료되기 전 상태
+    if (isSending && !isPendingQuestion) {
+      return 'stop-disabled'
+    }
+
+    // isGenerating이 true인 경우 stop-activated
     if (isGenerating) {
-      return 'loading-disabled'
+      return 'stop-activated'
     }
 
     if (promptText === '' || promptText.trim() === '') {
@@ -68,7 +93,7 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
     }
 
     return 'send-activated'
-  }, [promptText, isGenerating])
+  }, [promptText, isGenerating, isPendingQuestion, isSending])
 
   return (
     <Box
@@ -128,13 +153,14 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
           }}
         >
           <GradientOverlayScroll
-            inputRef={inputRef}
             top={{ display: true, height: 18, color: '#ffffff', offset: 0 }}
             bottom={{ display: true, height: 18, color: '#ffffff', offset: 6 }}
             height="auto"
           >
             <TextareaAutosize
-              placeholder={isGenerating ? t('mari.promptMessage.generating') : (placeholder ?? t('mari.promptMessage.placeholder'))}
+              ref={inputRef}
+              id="prompt-textarea"
+              placeholder={isGenerating ? '' : (placeholder ?? t('mari.promptMessage.placeholder'))}
               value={promptText}
               maxLength={2000}
               className={'MIScrollbar'}
@@ -145,7 +171,7 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
                 fontStyle: 'normal',
                 fontWeight: '400',
                 lineHeight: '1.4',
-                color: isGenerating ? '#CED4DA' : '#333333',
+                color: '#333333',
                 border: 'none',
                 resize: 'none',
                 outline: 'none',
@@ -165,6 +191,14 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
               minRows={1}
               maxRows={6}
             />
+            {isGenerating && (
+              <Stack direction="row" position="absolute" top="0" left="0" padding="2px" gap="6px">
+                <MIAgentSpinner size={22} />
+                <Typography variant="body1R16" color="contentText.Placeholder">
+                  {t('mari.promptMessage.generating')}
+                </Typography>
+              </Stack>
+            )}
           </GradientOverlayScroll>
         </Box>
       </Box>
@@ -190,7 +224,7 @@ const MIAgentPromptInputBox = ({ onSendMessage, placeholder, isGenerating, selec
             disabled={isGenerating}
           />
         </Box>
-        <MIAgentPromptButton onSendMessage={handleSendMessage} inputStatus={inputStatus} disabled={isGenerating} />
+        <MIAgentPromptButton onSendMessage={handleSendMessage} onStop={onStop} inputStatus={inputStatus} />
       </Box>
     </Box>
   )

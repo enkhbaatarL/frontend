@@ -16,6 +16,7 @@ interface Props {
   loading?: boolean
   windowExpend?: boolean
   onSendMessage?: (message: string) => void
+  hideScrollbar?: boolean
 }
 
 const MIAgentConversation = ({
@@ -28,6 +29,7 @@ const MIAgentConversation = ({
   loading,
   windowExpend = false,
   onSendMessage,
+  hideScrollbar = false,
 }: Props) => {
   const { scrollRef } = useScroll()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -37,6 +39,7 @@ const MIAgentConversation = ({
   const isStatusMessageUpdateRef = useRef<boolean>(false)
   const lastConversationCountRef = useRef<number>(0)
   const skipScrollPreservationUntilRef = useRef<number>(0) // 스크롤 위치 보존을 건너뛸 시간 (timestamp)
+  const shouldMaintainBottomRef = useRef<boolean>(false) // statusMessage 업데이트 시 bottom 유지 여부
 
   useLayoutEffect(() => {
     if (containerRef.current) {
@@ -76,29 +79,47 @@ const MIAgentConversation = ({
     const isAtBottom = distanceFromBottom <= 20
     const shouldSkipPreservation = Date.now() < skipScrollPreservationUntilRef.current
 
-    if (hasStatusMessageChange && !isAtBottom && !shouldSkipPreservation) {
-      isStatusMessageUpdateRef.current = true
-      scrollPositionRef.current = container.scrollTop
+    if (hasStatusMessageChange) {
+      if (isAtBottom) {
+        // bottom에 있을 때는 statusMessage 업데이트 후에도 bottom 유지
+        shouldMaintainBottomRef.current = true
+      } else if (!shouldSkipPreservation) {
+        // bottom이 아니고 스킵 기간이 지났으면 스크롤 위치 보존
+        isStatusMessageUpdateRef.current = true
+        scrollPositionRef.current = container.scrollTop
+      }
     }
 
     previousStatusMessagesRef.current = currentStatusMessages
   }, [conversations])
 
   useLayoutEffect(() => {
-    if (!isStatusMessageUpdateRef.current) return
-
     const container = containerRef.current
     if (!container) {
       isStatusMessageUpdateRef.current = false
+      shouldMaintainBottomRef.current = false
       return
     }
 
-    requestAnimationFrame(() => {
-      if (container && scrollPositionRef.current > 0) {
-        container.scrollTop = scrollPositionRef.current
-        isStatusMessageUpdateRef.current = false
-      }
-    })
+    // statusMessage 업데이트로 인한 스크롤 위치 보존
+    if (isStatusMessageUpdateRef.current) {
+      requestAnimationFrame(() => {
+        if (container && scrollPositionRef.current > 0) {
+          container.scrollTop = scrollPositionRef.current
+          isStatusMessageUpdateRef.current = false
+        }
+      })
+    }
+
+    // bottom 유지가 필요한 경우 (statusMessage 업데이트로 DOM 높이가 변경되었을 때)
+    if (shouldMaintainBottomRef.current) {
+      requestAnimationFrame(() => {
+        if (container) {
+          container.scrollTop = container.scrollHeight - container.clientHeight
+          shouldMaintainBottomRef.current = false
+        }
+      })
+    }
   }, [conversations])
 
   return (
@@ -122,20 +143,20 @@ const MIAgentConversation = ({
           flex: 1,
           paddingY: '12px',
           overflowY: 'auto',
-          scrollbarWidth: 'thin',
-          scrollbarColor: '#CED4DA transparent',
+          scrollbarWidth: hideScrollbar ? 'none' : 'thin',
+          scrollbarColor: hideScrollbar ? 'transparent transparent' : '#CED4DA transparent',
           pointerEvents: loading ? 'none' : 'auto',
           touchAction: loading ? 'none' : 'auto',
           userSelect: loading ? 'none' : 'auto',
           WebkitUserSelect: loading ? 'none' : 'auto',
           '&::-webkit-scrollbar': {
-            width: '4px',
+            width: hideScrollbar ? '0px' : '4px',
           },
           '&::-webkit-scrollbar-track': {
             backgroundColor: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            backgroundColor: '#CED4DA',
+            backgroundColor: hideScrollbar ? 'transparent' : '#CED4DA',
             borderRadius: '10px',
           },
         }}
