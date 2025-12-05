@@ -165,6 +165,11 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     [MIAgent.conversations],
   )
 
+  const isEmptyState = useMemo(
+    () => MIAgent.conversations.length === 0 && !initialHistoryLoading,
+    [MIAgent.conversations.length, initialHistoryLoading],
+  )
+
   // 높이 transition 감지
   useEffect(() => {
     if (prevHasConversationsRef.current !== hasConversations) {
@@ -578,6 +583,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
                   setInitialHistoryLoading(false)
                 }}
                 isGenerating={isGenerating}
+                isEmptyState={isEmptyState}
               />
             </Box>
             {/* Response area */}
@@ -690,7 +696,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
                             </Stack>
                             <Stack py="12px" mb="47px" alignItems="center" gap="10px" sx={{ userSelect: 'none' }}>
                               <Typography variant="body2R14" color="contentText.Subtext">
-                                Ask something like this
+                                Ask something like
                               </Typography>
                               <Stack alignItems="center" gap="6px">
                                 {isLoading ? (
@@ -876,9 +882,13 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
                 selectModeOption={selectModeOption}
                 onSelectModeOptionChange={updateSelectModeOption}
               />
-              <Typography variant="subtext2" color="contentText.Subtext" fontSize="10px" lineHeight="1.4" sx={{ userSelect: 'none' }}>
-                MARI is improving every day. Thank you for your support as we continue to grow.
-              </Typography>
+              <Fade in={true} timeout={300} key={MIAgent.conversations.length > 0 ? 'with-conversations' : 'empty'}>
+                <Typography variant="subtext2" color="contentText.Subtext" sx={{ userSelect: 'none' }}>
+                  {MIAgent.conversations.length > 0
+                    ? 'MARI’s insights may include uncertainties. Please confirm important details when necessary.'
+                    : 'MARI is improving every day. Thank you for your support as we continue to grow.'}
+                </Typography>
+              </Fade>
             </Stack>
           </Box>
         </Box>

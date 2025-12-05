@@ -14,6 +14,7 @@ export interface MIAgentHeaderBoxProps {
   onExpand?: () => void
   onClose?: () => void
   isGenerating: boolean
+  isEmptyState?: boolean
 }
 
 interface HeaderButtonProps {
@@ -110,8 +111,15 @@ const HeaderButton = ({ title, icon, onClick, expanded, disabled = false }: Head
   )
 }
 
-const MIAgentHeaderBox = ({ minimized = true, newChat, isGenerating, onExpand = () => {}, onClose = () => {} }: MIAgentHeaderBoxProps) => {
-  const isNewChatDisabled = isGenerating
+const MIAgentHeaderBox = ({
+  minimized = true,
+  newChat,
+  isGenerating,
+  isEmptyState = false,
+  onExpand = () => {},
+  onClose = () => {},
+}: MIAgentHeaderBoxProps) => {
+  const isNewChatDisabled = isGenerating || isEmptyState
 
   return (
     <Box

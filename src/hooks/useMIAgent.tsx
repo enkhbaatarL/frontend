@@ -191,13 +191,20 @@ const useMIAgent = () => {
     refetchChatQnaHistoryRef.current = refetchChatQnaHistory
   }, [refetchChatQnaHistory])
 
+  const prevHistoryQnaNosRef = useRef<Set<number | null>>(new Set())
+
   /**
    * 채팅방 선택
    */
   const setSelectedChatRoomId = useCallback((id: string | null, isNew: boolean = false) => {
     setConversations([])
     chunkManager.clearAll()
+    prevHistoryQnaNosRef.current = new Set()
     setSelectedChatRoom({ id, isNew })
+
+    if (id && !isNew) {
+      refetchChatQnaHistoryRef.current()
+    }
   }, [])
 
   const updateStatusMessage = useCallback((qnaNo: number | null, statusMessage: string | undefined) => {
@@ -531,8 +538,6 @@ const useMIAgent = () => {
       .flatMap((page) => page.detail)
       .reverse()
   }, [chatQnaHistory?.pages])
-
-  const prevHistoryQnaNosRef = useRef<Set<number | null>>(new Set())
 
   useEffect(() => {
     if (selectedChatRoom.id && !selectedChatRoom.isNew) {
