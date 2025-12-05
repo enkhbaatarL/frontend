@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIInputBox from '@/components/common/input/MIInputBox'
-import MIMaskInput from '@/components/common/input/MIMaskInout'
+import MIMaskInput from '@/components/common/input/MIMaskInput'
 import { timeFormat, dateFormat, titleLength, contentLength } from '@/components/common/input/validators'
 import { PREDEFINED_MASKS } from '@/constants/masks'
 import EditPanal from '@/pages/mi/newsletter/components/EditPanal'

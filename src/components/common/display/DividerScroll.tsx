@@ -63,7 +63,7 @@ const DividerScroll: FunctionComponent<DividerScrollProps> = ({
       }
     }
 
-    return () => {}
+    return undefined
   }, [handleScroll])
 
   return (

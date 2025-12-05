@@ -26,22 +26,37 @@ export const useCompanyCondition = () => {
 
       const deniedFuturePages: MiPagesType[] = accessCompanyInfo?.isFuture
         ? []
-        : [
-          'dashboard',
-          'custom',
-          'market-news',
-          'ai-market-summary',
-          'topic-tracker',
-          'economic-calendar',
-          'newsletters',
-          'parallel-coordinates',
-        ]
+        : ['dashboard', 'market-news', 'ai-market-summary', 'topic-tracker', 'economic-calendar', 'newsletters', 'parallel-coordinates']
 
+      // 각 플래그에 따라 선택적 메뉴 제어
+      const deniedOptionalPages: MiPagesType[] = []
+
+      // Qualitative Analysis (custom)
       if (!accessCompanyInfo?.isQualitative) {
-        deniedFuturePages.push('custom')
+        deniedOptionalPages.push('custom')
       }
 
-      return [...baseDenied, ...deniedFuturePages]
+      // Sales Analysis
+      if (!accessCompanyInfo?.isSalesAnalysis) {
+        deniedOptionalPages.push('sales-analysis')
+      }
+
+      // Market Map
+      if (!accessCompanyInfo?.isMarketMap) {
+        deniedOptionalPages.push('market-map')
+      }
+
+      // MI Activity Log
+      if (!accessCompanyInfo?.isMiActivityLog) {
+        deniedOptionalPages.push('mi-activity-log')
+      }
+
+      // Newsletters
+      if (!accessCompanyInfo?.isNewsletter) {
+        deniedOptionalPages.push('newsletters')
+      }
+
+      return [...baseDenied, ...deniedFuturePages, ...deniedOptionalPages]
     },
     enabled: !!comNo,
     refetchOnWindowFocus: false,

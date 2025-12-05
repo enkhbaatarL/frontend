@@ -82,6 +82,18 @@ export const MENU_CONFIG: MainMenuItem[] = [
         IconComponent: MetricsIcon,
       },
       {
+        label: 'Sales Analysis',
+        to: 'sales-analysis',
+        desc: 'submenu.salesAnalysis.desc',
+        IconComponent: MetricsIcon,
+      },
+      {
+        label: 'Market Map',
+        to: 'market-map',
+        desc: 'submenu.marketMap.desc',
+        IconComponent: MetricsIcon,
+      },
+      {
         label: 'Market Reports',
         to: 'insights',
         desc: 'submenu.marketReports.desc',
@@ -96,6 +108,11 @@ export const MENU_CONFIG: MainMenuItem[] = [
       {
         label: 'Qualitative Analysis',
         to: 'custom',
+        section: 'SERVICES',
+      },
+      {
+        label: 'MI Activity Log',
+        to: 'mi-activity-log',
         section: 'SERVICES',
       },
     ],

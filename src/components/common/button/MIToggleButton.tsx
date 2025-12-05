@@ -14,7 +14,7 @@ interface Props extends ToggleButtonGroupProps {
   enableHoverBackground?: boolean
 }
 
-const MIToggleButton = ({ options, toggleButtonProps, enableHoverBackground = false, ...props }: Props) => {
+const MIToggleButton = ({ options, toggleButtonProps, enableHoverBackground = false, onChange, value, ...props }: Props) => {
   const { sx: toggleButtonSx, ...restToggleButtonProps } = toggleButtonProps ?? {}
 
   const getHoverBackgroundColor = () => {
@@ -23,11 +23,21 @@ const MIToggleButton = ({ options, toggleButtonProps, enableHoverBackground = fa
   }
   const hoverBackgroundColor = getHoverBackgroundColor()
 
+  const handleChange = (event: React.MouseEvent<HTMLElement>, newValue: string | null) => {
+    // exclusive 모드에서 재 선택시 null 처리 방지
+    if (newValue === null && value !== undefined) {
+      return
+    }
+    onChange?.(event, newValue)
+  }
+
   return (
     <ToggleButtonGroup
       exclusive
       aria-label="text alignment"
       disabled={options.every((option) => option.disabled)}
+      value={value}
+      onChange={handleChange}
       {...props}
       sx={{
         '& .MuiToggleButton-root': {

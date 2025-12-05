@@ -290,7 +290,6 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
                   }
                   slotProps={{
                     input: {
-                      disableUnderline: true,
                       ...(() => {
                         if (typeof propsSlotProps?.input === 'object' && propsSlotProps?.input !== null) {
                           return propsSlotProps.input
