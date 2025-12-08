@@ -24,7 +24,7 @@ const ThemeSwitch: Components<Omit<Theme, 'components'>>['MuiSwitch'] = {
           },
           '&.Mui-disabled + .MuiSwitch-track': {
             opacity: 1,
-            backgroundColor: theme.palette.gray[40],
+            backgroundColor: '#9EACC3',
           },
           '&.Mui-disabled .MuiSwitch-thumb': {
             backgroundColor: '#fff',
@@ -57,7 +57,7 @@ const ThemeSwitch: Components<Omit<Theme, 'components'>>['MuiSwitch'] = {
       },
       '& .MuiSwitch-track': {
         borderRadius: 26 / 2,
-        backgroundColor: theme.palette.gray[60],
+        backgroundColor: theme.palette.gray[50],
         opacity: 1,
         transition: theme.transitions.create(['background-color'], {
           duration: 500,

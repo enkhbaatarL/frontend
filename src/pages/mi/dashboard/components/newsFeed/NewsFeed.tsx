@@ -13,16 +13,6 @@ import Timeline from '@/pages/mi/dashboard/components/newsFeed/Timeline'
 import dashboardService, { Directionality } from '@/service/mi/dashboard'
 import { getMarketIconInfo } from '@/utils/marketIcons'
 
-const getMarketCategoryLabel = (codeId: string) => {
-  const { icon, label } = getMarketIconInfo(codeId)
-
-  return label === 'Unknown' ? null : (
-    <Stack direction="row" alignItems="center" gap="6px">
-      <Box component="img" width={22} height={22} src={icon} alt={codeId} /> {label}
-    </Stack>
-  )
-}
-
 const switchOptions: SelectMenuItem[] = [
   { label: 'Timeline', value: 'timeline' },
   { label: 'Feed', value: 'feed', disabled: true },
@@ -117,11 +107,16 @@ const NewsFeed = () => {
   const marketCategoryCodeOptions = useMemo(
     (): SelectMenuItem[] => [
       ...(marketCategoryCodeList
-        ?.map((code) => ({
-          group: 'marketCategory',
-          label: getMarketCategoryLabel(code.codeId),
-          value: code.codeId,
-        }))
+        ?.map((code) => {
+          const { icon, label } = getMarketIconInfo(code.codeId)
+
+          return {
+            group: 'marketCategory',
+            icon: <Box component="img" width={22} height={22} src={icon} alt={code.codeId} />,
+            label,
+            value: code.codeId,
+          }
+        })
         .filter(({ label }) => label !== null) ?? []),
     ],
     [marketCategoryCodeList],
@@ -186,7 +181,6 @@ const NewsFeed = () => {
           <MIMenu
             open={isSettingsMenuOpen}
             label={<SettingsIcon sx={{ width: 20, height: 20, color: 'gray.70' }} />}
-            displayType="button"
             variant="outlined"
             placement="bottom-end"
             menuPositionOffset={{ right: -10 }}
@@ -194,6 +188,7 @@ const NewsFeed = () => {
             enableHoverBackground
             sx={{
               height: '36px',
+              padding: '8px',
             }}
           >
             <Stack padding="12px" gap="12px" minWidth={154} boxSizing="border-box">
