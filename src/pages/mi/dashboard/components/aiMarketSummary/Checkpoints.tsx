@@ -1,12 +1,16 @@
 import CheckIcon from '@mui/icons-material/Check'
 import { Box, Stack, Typography, Collapse, Fade } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import InlineNotice from '@/components/common/notice/InlineNotice'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
-import { MarketItem } from '@/service/mi/dashboard'
+import { IMarketRecapCheckpointItem, IMarketRecapItem } from '@/service/mi/dashboard'
+
+interface Props {
+  checkpoints?: IMarketRecapItem['checkpoints']
+}
 
 const options = [
   { label: 'Detailed', value: 'detailed' },
@@ -19,7 +23,7 @@ const CheckpointsItem = ({
   selectedOption,
   borderBottom = true,
 }: {
-  item: MarketItem
+  item: IMarketRecapCheckpointItem
   selectedOption: string
   borderBottom?: boolean
 }) => (
@@ -34,9 +38,9 @@ const CheckpointsItem = ({
       <Collapse in={selectedOption === 'detailed'} timeout={300}>
         <Stack gap="6px">
           <Stack pl="22px" gap="1px">
-            {item.summary.map((content, index) => (
+            {item.content.map((content, index) => (
               <Typography
-                key={`${item.id}-content-${index}`}
+                key={`${item.checkpointItemId}-content-${index}`}
                 variant="subtext5"
                 color="gray.70"
                 fontWeight={500}
@@ -59,45 +63,9 @@ const CheckpointsItem = ({
   </Box>
 )
 
-const Checkpoints = () => {
+const Checkpoints = ({ checkpoints }: Props) => {
   const [selectedOption, setSelectedOption] = useState('detailed')
   const { t } = useTranslation()
-
-  const sampleData: { detailed: MarketItem[]; narrative: MarketItem } = useMemo(
-    () => ({
-      detailed: [
-        {
-          id: 'c1',
-          title: t('dashboard.sampleData.checkpoints.detailed.0.title'),
-          summary: [t('dashboard.sampleData.checkpoints.detailed.0.summary.0'), t('dashboard.sampleData.checkpoints.detailed.0.summary.1')],
-          sources: [],
-        },
-        {
-          id: 'c2',
-          title: t('dashboard.sampleData.checkpoints.detailed.1.title'),
-          summary: [t('dashboard.sampleData.checkpoints.detailed.1.summary.0'), t('dashboard.sampleData.checkpoints.detailed.1.summary.1')],
-          sources: [],
-        },
-        {
-          id: 'c3',
-          title: t('dashboard.sampleData.checkpoints.detailed.2.title'),
-          summary: [t('dashboard.sampleData.checkpoints.detailed.2.summary.0'), t('dashboard.sampleData.checkpoints.detailed.2.summary.1')],
-          sources: [],
-        },
-      ],
-      narrative: {
-        id: 'c4',
-        title: t('dashboard.sampleData.checkpoints.narrative.title'),
-        summary: [
-          t('dashboard.sampleData.checkpoints.narrative.summary.0'),
-          t('dashboard.sampleData.checkpoints.narrative.summary.1'),
-          t('dashboard.sampleData.checkpoints.narrative.summary.2'),
-        ],
-        sources: [],
-      },
-    }),
-    [t],
-  )
 
   return (
     <Stack padding="6px 12px" borderRadius="10px" gap="6px" sx={{ backgroundColor: '#F8F9FA' }}>
@@ -118,12 +86,12 @@ const Checkpoints = () => {
       <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500}>
         <Box>
           {(selectedOption === 'detailed' || selectedOption === 'focused') &&
-            sampleData.detailed.map((item, index) => (
+            checkpoints?.items.map((item, index) => (
               <CheckpointsItem
-                key={item.id}
+                key={item.checkpointItemId}
                 item={item}
                 selectedOption={selectedOption}
-                borderBottom={index !== sampleData.detailed.length - 1}
+                borderBottom={index !== checkpoints?.items.length - 1}
               />
             ))}
         </Box>
@@ -132,10 +100,10 @@ const Checkpoints = () => {
         <Box>
           {selectedOption === 'narrative' && (
             <Stack padding="12px 20px 16px" gap="6px">
-              <Typography variant="infoDocument">{sampleData.narrative.title}</Typography>
+              <Typography variant="infoDocument">{checkpoints?.narrative.title}</Typography>
               <Stack gap="8px">
-                {sampleData.narrative.summary.map((content, index) => (
-                  <Typography key={`${sampleData.narrative.id}-content-${index}`} variant="subtext5" color="gray.70" fontWeight={500}>
+                {checkpoints?.narrative.content.map((content, index) => (
+                  <Typography key={`narrative-content-${index}`} variant="subtext5" color="gray.70" fontWeight={500}>
                     {content}
                   </Typography>
                 ))}

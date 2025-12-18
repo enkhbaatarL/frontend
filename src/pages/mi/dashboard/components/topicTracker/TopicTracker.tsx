@@ -352,7 +352,6 @@ const TopicTracker = () => {
           <MIMenu
             open={isSettingsMenuOpen}
             label={<SettingsIcon sx={{ width: 20, height: 20, color: 'gray.70' }} />}
-            displayType="button"
             variant="outlined"
             placement="bottom-end"
             menuPositionOffset={{ right: -10 }}
@@ -360,6 +359,7 @@ const TopicTracker = () => {
             enableHoverBackground
             sx={{
               height: '36px',
+              padding: '8px',
             }}
           >
             <Stack padding="12px" gap="12px" minWidth={154} boxSizing="border-box">

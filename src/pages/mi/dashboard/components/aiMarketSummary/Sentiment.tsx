@@ -4,108 +4,108 @@ import { useTranslation } from 'react-i18next'
 
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
+import { DirectionType, IMarketRecapItem } from '@/service/mi/dashboard'
 
-const shimmer = keyframes`
-  0% {
-    transform: translateX(-120%);
-  }
-  70% {
-    transform: translateX(120%);
-  }
-  100% {
-    transform: translateX(120%);
-  }
-`
-
-const createBarExpandKeyframes = (minValue: number, maxValue: number, currentValue: number) => {
-  const minWidth = `${(minValue / (minValue + maxValue)) * 100}%`
-  const currentWidth = `${(currentValue / (minValue + maxValue)) * 100}%`
-  const middleFrame = `${(minValue / currentValue) * 100}%`
-
-  return keyframes`
-    0% {
-      width: 0;
-    }
-    ${middleFrame} {
-      width: ${minWidth};
-    }
-    100% {
-      width: ${currentWidth};
-    }
-  `
+interface Props {
+  sentiments?: IMarketRecapItem['sentiments']
 }
 
-const textFadeIn = keyframes`
-  0% {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  30% {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-`
+const BAR_HEIGHT = 18
+const BAR_MIN_WIDTH = 25
+const ANIMATION_DELAY = '0.5s'
+const STAGGER_DELAY = 50
+const BAR_TRANSITION_DURATION = 150
 
-const sampleItems = [
-  { label: 'Current', key: 'current', value: [53, 27, 20], date: 'Sep 13 07:00 - Sep 14 07:00', disabled: true },
-  { label: 'Previous', key: 'previous', value: [32, 28, 40], date: 'Sep 12 07:00 - Sep 13 07:00' },
-  { label: 'Last 7 Days', key: 'last7days', value: [45, 27, 38], date: 'Sep 13 07:00 - Sep 20 07:00' },
-  { label: 'Last 30 Days', key: 'last30days', value: [10, 62, 34], date: 'Sep 13 07:00 - Oct 12 07:00' },
-]
-
-const getColor = (type: 'positive' | 'neutral' | 'negative') => {
-  if (type === 'positive') return 'linear-gradient(180deg, #3386C2 0%, #1366A2 100%)'
-  if (type === 'negative') return 'linear-gradient(180deg, #A02A74 0%, #881C60 100%)'
-  return 'linear-gradient(180deg, #A8A8A8 0%, #777777 100%)'
+const BAR_COLORS: Record<DirectionType, string> = {
+  [DirectionType.Upward]: 'linear-gradient(180deg, #3386C2 0%, #1366A2 100%)',
+  [DirectionType.Neutral]: 'linear-gradient(180deg, #A8A8A8 0%, #777777 100%)',
+  [DirectionType.Downward]: 'linear-gradient(180deg, #A02A74 0%, #881C60 100%)',
 }
 
-const getSentimentType = (index: number, length: number) => {
-  if (index === 0) return 'positive'
-  if (index === length - 1) return 'negative'
-  return 'neutral'
+const SHIMMER_GRADIENT = `linear-gradient(90deg, 
+  transparent 20%, 
+  rgba(255, 255, 255, 0.1) 30%, 
+  rgba(255, 255, 255, 0.3) 50%, 
+  rgba(255, 255, 255, 0.1) 70%, 
+  transparent 80%
+)`
+
+// ==================== 애니메이션 ====================
+const shimmerAnimation = keyframes`
+  0% { transform: translateX(-120%); }
+  70% { transform: translateX(120%); }
+  100% { transform: translateX(120%); }
+`
+
+const textFadeInAnimation = keyframes`
+  0% { opacity: 0; transform: scale(0.8); }
+  30% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+`
+
+const getSentimentType = (index: number, totalLength: number): DirectionType => {
+  if (index === 0) return DirectionType.Upward
+  if (index === totalLength - 1) return DirectionType.Downward
+  return DirectionType.Neutral
+}
+
+const getTooltipTranslationKey = (directionType: DirectionType): string => {
+  const keyMap: Record<DirectionType, string> = {
+    [DirectionType.Upward]: 'dashboard.sentiments.barTooltip.upward',
+    [DirectionType.Neutral]: 'dashboard.sentiments.barTooltip.neutral',
+    [DirectionType.Downward]: 'dashboard.sentiments.barTooltip.downward',
+  }
+  return keyMap[directionType]
+}
+
+const formatPercentage = (value: number, total: number): string => `${((value / total) * 100).toFixed(1).replace(/\.0$/, '')}%`
+
+const createBarExpandAnimation = (values: number[], currentValue: number) => {
+  const total = values.reduce((sum, val) => sum + val, 0)
+  const maxValue = Math.max(...values)
+  const minValue = Math.min(...values)
+
+  const minWidthPercent = `${(minValue / total) * 100}%`
+  const currentWidthPercent = `${(currentValue / total) * 100}%`
+  const middleFramePercent = `currentValue > 0 ? ${minValue / currentValue} * 100 : 0`
+
+  return {
+    keyframes: keyframes`
+      0% { width: 0; }
+      ${middleFramePercent} { width: ${minWidthPercent}; }
+      100% { width: ${currentWidthPercent}; }
+    `,
+
+    duration: `${maxValue * 0.02}s`,
+  }
 }
 
 interface SentimentBarProps {
   value: number
   valueIndex: number
-  item: {
-    key: string
-    value: number[]
-  }
-  shimmerAnimation: string
-  isFirstItem: boolean
+  total: number
+  counts: number[]
+  itemKey: string
+  isAnimated: boolean
   isVisible: boolean
 }
 
-const SentimentBar = ({ value, valueIndex, item, shimmerAnimation, isFirstItem, isVisible }: SentimentBarProps) => {
+const SentimentBar = ({ value, valueIndex, total, counts, itemKey: _itemKey, isAnimated, isVisible }: SentimentBarProps) => {
   const { t } = useTranslation()
 
-  const total = item.value.reduce((acc: number, curr: number) => acc + curr, 0)
-  const maxIndex = item.value.indexOf(Math.max(...item.value))
-  const sentimentType = getSentimentType(valueIndex, item.value.length)
-  const percentage = `${((value / total) * 100).toFixed(1).replace(/\.0$/, '')}%`
+  const sentimentType = getSentimentType(valueIndex, counts.length)
+  const percentage = formatPercentage(value, total)
+  const isMaxValue = value === Math.max(...counts)
+  const { keyframes: expandKeyframes, duration } = createBarExpandAnimation(counts, value)
 
-  const maxValue = Math.max(...item.value)
-  const minValue = Math.min(...item.value)
-  const animationDuration = `${maxValue * 0.02}s`
-
-  const dynamicKeyframes = createBarExpandKeyframes(minValue, maxValue, value)
-
-  const getTooltipTitle = () => {
-    if (sentimentType === 'positive') return t('dashboard.sentiments.barTooltip.positive')
-    if (sentimentType === 'negative') return t('dashboard.sentiments.barTooltip.negative')
-    return t('dashboard.sentiments.barTooltip.neutral')
-  }
+  const shouldAnimate = isAnimated && isVisible
+  const tooltipKey = getTooltipTranslationKey(sentimentType)
+  const tooltipText = `${t(tooltipKey)} - ${percentage} (${value})`
 
   return (
-    <Tooltip title={`${getTooltipTitle()} - ${percentage} (${value})`} placement="top" disableInteractive followCursor>
+    <Tooltip title={tooltipText} placement="top" disableInteractive followCursor>
       <Box
-        key={`${item.key}-${valueIndex}-${value}`}
-        height={18}
+        height={BAR_HEIGHT}
         borderRadius="100px"
         padding="2px 8px"
         boxSizing="border-box"
@@ -115,16 +115,15 @@ const SentimentBar = ({ value, valueIndex, item, shimmerAnimation, isFirstItem, 
         position="relative"
         overflow="hidden"
         sx={{
-          background: getColor(sentimentType),
-          transition: isVisible ? 'all 0.3s ease-in-out' : 'all 0.15s ease-in-out',
-          minWidth: '25px',
-          width: isFirstItem && isVisible ? '0%' : percentage,
-          '--target-width': percentage,
-          animation: isFirstItem && isVisible ? `${dynamicKeyframes} ${animationDuration} linear forwards` : 'none',
-          animationDelay: '0.5s',
+          background: BAR_COLORS[sentimentType],
+          minWidth: `${BAR_MIN_WIDTH}px`,
+          width: shouldAnimate ? '0%' : percentage,
+          transition: `all ${isVisible ? 0.3 : BAR_TRANSITION_DURATION / 1000}s ease-in-out`,
+          animation: shouldAnimate ? `${expandKeyframes} ${duration} linear forwards` : 'none',
+          animationDelay: ANIMATION_DELAY,
         }}
       >
-        {valueIndex === maxIndex && (
+        {isMaxValue && (
           <Box
             position="absolute"
             top={0}
@@ -132,28 +131,23 @@ const SentimentBar = ({ value, valueIndex, item, shimmerAnimation, isFirstItem, 
             width="100%"
             height="100%"
             sx={{
-              background: `linear-gradient(90deg, 
-            transparent 20%, 
-            rgba(255, 255, 255, 0.1) 30%, 
-            rgba(255, 255, 255, 0.3) 50%, 
-            rgba(255, 255, 255, 0.1) 70%, 
-            transparent 80%
-          )`,
+              background: SHIMMER_GRADIENT,
               animation: `${shimmerAnimation} 4s ease-in-out infinite`,
               zIndex: 1,
             }}
           />
         )}
+
         <Typography
           variant="body2SB14"
           color="contentText.White"
           sx={{
             position: 'relative',
             zIndex: 2,
-            opacity: isFirstItem && isVisible ? 0 : 1,
-            transform: isFirstItem && isVisible ? 'scale(0.8)' : 'scale(1)',
-            animation: isFirstItem && isVisible ? `${textFadeIn} ${animationDuration} ease-out forwards` : 'none',
-            animationDelay: '0.5s',
+            opacity: shouldAnimate ? 0 : 1,
+            transform: shouldAnimate ? 'scale(0.8)' : 'scale(1)',
+            animation: shouldAnimate ? `${textFadeInAnimation} ${duration} ease-out forwards` : 'none',
+            animationDelay: ANIMATION_DELAY,
           }}
         >
           {percentage}
@@ -164,20 +158,19 @@ const SentimentBar = ({ value, valueIndex, item, shimmerAnimation, isFirstItem, 
 }
 
 interface SentimentItemProps {
-  item: {
-    key: string
-    label: string
-    date: string
-    value: number[]
-  }
+  itemKey: string
+  label: string
+  period: string
+  counts: number[]
   index: number
   isVisible: boolean
   showLabels: boolean
-  shimmerAnimation: string
 }
 
-const SentimentItem = ({ item, index, isVisible, showLabels, shimmerAnimation }: SentimentItemProps) => {
-  const { t } = useTranslation()
+const SentimentItem = ({ itemKey, label, period, counts, index, isVisible, showLabels }: SentimentItemProps) => {
+  const total = counts.reduce((sum, val) => sum + val, 0)
+  const transitionDelay = `${index * STAGGER_DELAY}ms`
+  const barTransitionDelay = `${index * STAGGER_DELAY + 150}ms`
 
   return (
     <Box
@@ -186,8 +179,8 @@ const SentimentItem = ({ item, index, isVisible, showLabels, shimmerAnimation }:
         transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
         maxHeight: isVisible ? '200px' : '0px',
         overflow: 'hidden',
-        transition: isVisible ? 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        transitionDelay: isVisible ? `${index * 50}ms` : '0ms',
+        transition: `all ${isVisible ? 0.4 : 0.3}s cubic-bezier(0.4, 0, 0.2, 1)`,
+        transitionDelay: isVisible ? transitionDelay : '0ms',
         pointerEvents: isVisible ? 'auto' : 'none',
         marginBottom: isVisible ? '6px' : '0px',
       }}
@@ -197,35 +190,39 @@ const SentimentItem = ({ item, index, isVisible, showLabels, shimmerAnimation }:
           in={showLabels && isVisible}
           timeout={showLabels && isVisible ? 400 : 200}
           sx={{
-            transition: showLabels && isVisible ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: `all ${showLabels && isVisible ? 0.3 : 0.1}s cubic-bezier(0.4, 0, 0.2, 1)`,
           }}
         >
           <Stack padding="4px 8px" direction="row" alignItems="center" justifyContent="space-between" gap="8px">
             <Typography variant="body1" color="gray.70">
-              {t(`dashboard.sentiments.options.${item.key}Label`)}
+              {label}
             </Typography>
-            <Typography variant="body3" color="gray.70">
-              {item.date}
-            </Typography>
+            {period && (
+              <Typography variant="body3" color="gray.70">
+                {period}
+              </Typography>
+            )}
           </Stack>
         </Collapse>
+
         <Box
           sx={{
             opacity: isVisible ? 1 : 0,
             transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.98)',
-            transition: isVisible ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)',
-            transitionDelay: isVisible ? `${index * 50 + 150}ms` : '0ms',
+            transition: `all ${isVisible ? 0.3 : 0.1}s cubic-bezier(0.4, 0, 0.2, 1)`,
+            transitionDelay: isVisible ? barTransitionDelay : '0ms',
           }}
         >
           <Stack padding="8px" direction="row" alignItems="center" gap="3px" borderRadius="100px" sx={{ backgroundColor: '#E9ECEF' }}>
-            {item.value.map((value, valueIndex) => (
+            {counts.map((value, valueIndex) => (
               <SentimentBar
-                key={`${item.key}-${valueIndex}-${value}`}
+                key={`${itemKey}-${valueIndex}-${value}`}
                 value={value}
                 valueIndex={valueIndex}
-                item={item}
-                shimmerAnimation={shimmerAnimation}
-                isFirstItem={index === 0}
+                total={total}
+                counts={counts}
+                itemKey={itemKey}
+                isAnimated={index === 0}
                 isVisible={isVisible}
               />
             ))}
@@ -236,27 +233,38 @@ const SentimentItem = ({ item, index, isVisible, showLabels, shimmerAnimation }:
   )
 }
 
-const Sentiment = () => {
+const Sentiment = ({ sentiments }: Props) => {
   const { t } = useTranslation()
   const [selectedOptions, setSelectedOptions] = useState<string[]>(['current'])
 
-  const options = useMemo(
+  const menuOptions = useMemo(
     () =>
-      sampleItems.map((item) => ({
-        label: t(`dashboard.sentiments.options.${item.key}Label`),
-        value: item.key,
-        disabled: item.disabled,
+      Object.keys(sentiments ?? {}).map((key, index) => ({
+        label: t(`dashboard.sentiments.options.${key}Label`),
+        value: key,
+        disabled: index === 0, // 첫 번째 항목은 기본 선택
       })),
-    [t],
+    [sentiments, t],
+  )
+
+  const sentimentItems = useMemo(
+    () =>
+      Object.entries(sentiments ?? {}).map(([key, value]) => ({
+        itemKey: key,
+        label: t(`dashboard.sentiments.options.${key}Label`),
+        period: value.period,
+        counts: [value.upwardCount, value.neutralCount, value.downwardCount],
+      })),
+    [sentiments, t],
   )
 
   return (
-    <Stack padding="6px 12px 14px" borderRadius="10px" sx={{ backgroundColor: '#F8F9FA' }}>
+    <Stack padding="6px 12px 14px" borderRadius="10px" sx={{ backgroundColor: '#F8F9FA', userSelect: 'none' }}>
       <SectionHeader title="Sentiment" tooltipTitle={t('dashboard.sentiments.titleTooltip')} padding="7.5px 0 7.5px 6px">
         <MISelectMenu
           selectType="switch"
           multiple
-          items={options}
+          items={menuOptions}
           selected={selectedOptions}
           onSelected={setSelectedOptions}
           menuPositionOffset={{ right: -78 }}
@@ -265,21 +273,16 @@ const Sentiment = () => {
           closeOnScroll
         />
       </SectionHeader>
-      {sampleItems.map((item, index) => {
-        const isVisible = selectedOptions.includes(item.key)
-        const showLabels = selectedOptions.length > 1
 
-        return (
-          <SentimentItem
-            key={item.key}
-            item={item}
-            index={index}
-            isVisible={isVisible}
-            showLabels={showLabels}
-            shimmerAnimation={shimmer}
-          />
-        )
-      })}
+      {sentimentItems.map((item, index) => (
+        <SentimentItem
+          key={item.itemKey}
+          {...item}
+          index={index}
+          isVisible={selectedOptions.includes(item.itemKey)}
+          showLabels={selectedOptions.length > 1}
+        />
+      ))}
     </Stack>
   )
 }
