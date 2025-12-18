@@ -21,7 +21,7 @@ import loadImages, {
   createHoverPointDiamonSVG,
 } from '@/components/common/forecast-chart/utils/loadImage'
 import RefreshIcon from '@/components/common/icons/RefreshIcon'
-import { generateYAxis } from '@/lib/chart/utils/chartUtils'
+import { generateYAxis, getWeekOfMonth } from '@/lib/chart/utils/chartUtils'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
 import { SelectedReportChartContent } from '@/pages/mi/forecast/components/ReportComponent'
 import { IForecastChartData } from '@/service/mi/forecast'
@@ -67,6 +67,7 @@ export interface ForecastChartProps {
   goodsDataSourceNoList: { goodsDataSourceNm: string; goodsDataSourceNo: number; type: string }[]
   data?: IForecastChartData
   userRoleCd: string
+  yRange?: { min: number; max: number }
 }
 
 const initialTooltip: MIForecastChartTooltipProps = {
@@ -97,6 +98,7 @@ const ForecastChart = (props: ForecastChartProps) => {
     selectedContent,
     goodsDataSourceNoList = [],
     userRoleCd = '',
+    yRange,
   } = props
   const chartRef = useRef<ChartJS | null>(null)
   const captureRef = useRef<HTMLDivElement | null>(null)
@@ -132,17 +134,7 @@ const ForecastChart = (props: ForecastChartProps) => {
         }
       })
 
-      // 클릭 시 올바른 날짜 먼저 계산
-      let correctDate = chartTooltip.label
-      if (chartTooltip.viewDetail && chartTooltip.content.length > 0) {
-        const forecastContent = chartTooltip.content.find((item) => item.category === 'forecast')
-        if (forecastContent && forecastContent.index !== undefined) {
-          const monthIndex = Math.max(0, forecastContent.index) // 패딩 고려
-          if (months[monthIndex]) {
-            correctDate = dayjs(months[monthIndex], 'YYYY-MM').format('MMMM YYYY')
-          }
-        }
-      }
+      const correctDateLabel = chartTooltip.label
 
       if (chartTooltip.viewDetail) {
         const forecastContent = chartTooltip.content.find((item) => item.category === 'forecast') || chartTooltip.content[0]
@@ -150,7 +142,7 @@ const ForecastChart = (props: ForecastChartProps) => {
           const safeValue = Number(forecastContent.value ?? 0)
           props.onSelectedContent({
             label: forecastContent.label ?? '',
-            date: correctDate, // 수정된 날짜 사용
+            date: correctDateLabel,
             value: Number(safeValue.toFixed(2)),
             goodsDataSourceNo: forecastContent.goodsDataSourceNo ?? 0,
           })
@@ -175,8 +167,8 @@ const ForecastChart = (props: ForecastChartProps) => {
           viewDetail: chartTooltip.viewDetail,
           top: newTop,
           left: newLeft,
-          label: correctDate, // 수정된 날짜 사용
-          content: filteredTooltipContent, //chartTooltip.content,
+          label: correctDateLabel,
+          content: filteredTooltipContent,
           onClose: () => {
             plugin.clearSelectedPoint()
             props.onSelectedContent(null)
@@ -212,17 +204,20 @@ const ForecastChart = (props: ForecastChartProps) => {
 
   const handleToggleDataset = (index: number) => {
     const newDatasets = [...datasets]
-    const dataset = newDatasets[index]
-    if (selectedContent) return
-    if (!dataset.permission) return
+    const targetDataset = newDatasets[index]
 
-    dataset.hidden = !dataset.hidden
+    if (selectedContent || !targetDataset.permission || !targetDataset.label) return
 
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    const forecast = newDatasets.filter((item: any) => item.label === `${dataset.label} Forecast`)
+    const isCurrentlyHidden = !targetDataset.hidden // 바뀔 상태
 
-    forecast.forEach((d) => {
-      d.hidden = dataset.hidden
+    const getBaseLabel = (label: string) => label.replace(' Forecast Line', '').replace(' Forecast', '').trim()
+
+    const targetBaseLabel = getBaseLabel(targetDataset.label)
+
+    newDatasets.forEach((dataset) => {
+      if (dataset.label && getBaseLabel(dataset.label) === targetBaseLabel) {
+        dataset.hidden = isCurrentlyHidden
+      }
     })
 
     setDatasets(newDatasets)
@@ -307,8 +302,6 @@ const ForecastChart = (props: ForecastChartProps) => {
           })
 
           dataset.data.forEach((_, index) => {
-            if (index <= 1) return
-
             datasets.push({
               label: `${dataset.label} Forecast`,
               data:
@@ -539,7 +532,10 @@ const ForecastChart = (props: ForecastChartProps) => {
                     const monthValue = months[originalIndex]
 
                     if (!monthValue) return ''
-                    return dayjs(monthValue, 'YYYY-MM').format('YY-MM')
+                    const date = dayjs(monthValue)
+                    const month = date.format('MMM')
+                    const week = getWeekOfMonth(date)
+                    return `${month} ${week}W`
                   },
                 },
               },
@@ -550,6 +546,8 @@ const ForecastChart = (props: ForecastChartProps) => {
                   unit: '',
                   borderColor: '#DEE2E6',
                 }),
+                min: yRange?.min,
+                max: yRange?.max,
                 grid: {
                   display: true,
                   color: theme.palette.gray[50],
@@ -594,6 +592,7 @@ const ForecastChart = (props: ForecastChartProps) => {
                 enable: !inactive, // 기능 활성화 여부
                 verticalLinedIndex: 11, // 수직선 그릴 위치
                 maxIndex: 11, // 수직선 끝 위치
+                months, // 원본 months 배열 전달 (인덱스 계산용)
                 onPointerMove: externalTooltipHandler, // 마우스 이동 시 호출
                 onViewForecastPoint: viewForecastPointHandler, // 포인트 클릭 시 호출
                 hoverImages: hoverDotImagesRef.current, // 마우스 오버 시 마커 이미지
@@ -628,6 +627,18 @@ const ForecastChart = (props: ForecastChartProps) => {
   )
 }
 
+const colorMap = ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485']
+
+const getColorByName = (label: string, fallbackIndex: number): string => {
+  if (label.startsWith('Brent')) {
+    return '#EFA460'
+  }
+  if (label.startsWith('Dubai')) {
+    return '#40597A'
+  }
+  return colorMap[fallbackIndex]
+}
+
 const EnergyForecastChart = ({ selectedContent, onSelectedContent, data, userRoleCd }: EnergyForecastChartProps) => {
   const [forecastDatasets, setForecastDatasets] = useState<ForecastDataset[]>([
     {
@@ -640,7 +651,6 @@ const EnergyForecastChart = ({ selectedContent, onSelectedContent, data, userRol
     },
   ])
   const [lastUpdated, setLastUpdated] = useState<string>('')
-  const colorMap = ['#40597A', '#26757B', '#EFA460', '#94826B', '#EFD485']
 
   const formatDate = (date: string) => {
     const dateObj = new Date(date.replace(' ', 'T'))
@@ -663,7 +673,7 @@ const EnergyForecastChart = ({ selectedContent, onSelectedContent, data, userRol
           return {
             data: values,
             label: label[index],
-            color: colorMap[index],
+            color: getColorByName(label[index], index),
             hidePoint: true,
             type: 'future',
             metadata: {
@@ -683,7 +693,7 @@ const EnergyForecastChart = ({ selectedContent, onSelectedContent, data, userRol
           return {
             data: value,
             label: label[index],
-            color: colorMap[index],
+            color: getColorByName(label[index], index),
             hidePoint: false,
             type: 'forecast',
             borderDash: [5, 5],
@@ -704,7 +714,7 @@ const EnergyForecastChart = ({ selectedContent, onSelectedContent, data, userRol
           return {
             data: value,
             label: label[index],
-            color: colorMap[index],
+            color: getColorByName(label[index], index),
             hidePoint: false,
             type: 'actualData',
             metadata: {
@@ -733,6 +743,32 @@ const EnergyForecastChart = ({ selectedContent, onSelectedContent, data, userRol
     return []
   }, [data])
 
+  const yAxisRange = useMemo(() => {
+    if (!data || data.charts.length === 0) return { min: 0, max: 100 }
+
+    let allValues: number[] = []
+
+    data.charts.forEach((chart) => {
+      const actual = (chart.actualChartLines.rawData ?? []).map((d) => d.value)
+      const forecast = (chart.forecastChartLines.rawData ?? []).map((d) => d.value)
+
+      allValues = [...allValues, ...actual, ...forecast]
+    })
+
+    const validValues = allValues.filter((v): v is number => v !== null && v !== undefined && !isNaN(v))
+
+    if (validValues.length === 0) return { min: 0, max: 100 }
+
+    const min = Math.min(...validValues)
+    const max = Math.max(...validValues)
+
+    const padding = (max - min) * 0.1
+    return {
+      min: Math.floor(min - padding),
+      max: Math.ceil(max + padding),
+    }
+  }, [data])
+
   return (
     <ForecastChart
       selectedContent={selectedContent}
@@ -749,6 +785,8 @@ const EnergyForecastChart = ({ selectedContent, onSelectedContent, data, userRol
         type: 'FORECAST',
       }))}
       userRoleCd={userRoleCd}
+      showForecastTrendBackground={false}
+      yRange={yAxisRange}
     />
   )
 }

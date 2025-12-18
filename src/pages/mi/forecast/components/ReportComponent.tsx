@@ -12,6 +12,7 @@ import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import { MIBaseSkeleton, SkeletonWrapper } from '@/components/mi/MIBaseSkeleton.tsx'
+import { getWeekOfMonth } from '@/lib/chart/utils/chartUtils'
 import CompanyChartRenderer from '@/pages/mi/forecast/components/CompanyChartRenderer'
 import DrillDownPopup from '@/pages/mi/forecast/components/DrillDownPopup.tsx'
 import MonthSelector from '@/pages/mi/forecast/components/MonthSelector'
@@ -72,7 +73,7 @@ const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentPro
     queryFn: () =>
       forecastDataService.getForecastChartData(
         accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0,
-        monthSelect.replace('-', '').slice(0, 6),
+        companyNo === 2020 ? monthSelect.replaceAll('-', '') : monthSelect.replace('-', '').slice(0, 6),
       ),
     refetchOnWindowFocus: false,
     gcTime: 0,
@@ -100,7 +101,7 @@ const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentPro
         const month = String(dateObj.getMonth() + 1).padStart(2, '0')
 
         return {
-          label: ` ${year}-${month}`,
+          label: `${year}-${month}`,
           value: date,
         }
       }),
@@ -113,6 +114,12 @@ const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentPro
   }, [chartData])
 
   const formatDate = (date: string) => {
+    if (companyNo === 2020) {
+      const dateObj = dayjs(date)
+      const month = dateObj.format('MMM')
+      const week = getWeekOfMonth(dateObj)
+      return `${month} ${week}W`
+    }
     const [year, month] = date.split('-')
     const shortYear = year.slice(2)
     return `${shortYear}-${month}`
@@ -210,21 +217,34 @@ const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentPro
 
       return [currencyColumn, ...dataColumns]
     } else {
-      const headerName = companyNo === 2008 ? 'Millions Units' : 'Vehicles'
+      let headerName = ''
+
+      if (companyNo === 2008) {
+        headerName = 'Millions Units'
+      } else if (companyNo === 2018) {
+        headerName = 'Vehicles'
+      } else if (companyNo === 2020) {
+        headerName = 'Crude'
+      }
 
       const chartLineDescColumn: GridColDef = {
         field: 'chartLineDescription',
         headerName,
-        flex: 1.5,
+        flex: companyNo === 2020 ? 1 : 1.5,
+        minWidth: companyNo === 2020 ? 80 : undefined,
         align: 'center',
         rowSpanValueGetter: (value) => value,
+        renderCell: ({ value }) =>
+          companyNo === 2020 ? <MITableCell value={value.replace(' Crude', '')} /> : <MITableCell value={value} />,
       }
 
       const dataType: GridColDef = {
         field: 'dataType',
         headerName: '',
-        flex: 1,
-        align: 'center',
+        flex: 1.2,
+        minWidth: companyNo === 2020 ? 80 : undefined,
+        align: 'left',
+        rowSpanValueGetter: () => null,
       }
 
       const dataColumns: GridColDef[] = (chartData.charts[0].actualChartLines.rawData ?? []).map((chart) => ({
@@ -423,7 +443,7 @@ const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentPro
           rows.push({
             id: chart.chartLineDescription.concat(chart.forecastChartLines.dataType),
             chartLineDescription: chart.chartLineDescription,
-            dataType: 'Fcst',
+            dataType: 'Forecast',
             permission: chart.forecastChartLines.isPermitted,
             ...forecastRowData,
           })
@@ -442,7 +462,7 @@ const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentPro
           rows.push({
             id: chart.chartLineDescription.concat(chart.actualChartLines.dataType),
             chartLineDescription: chart.chartLineDescription,
-            dataType: 'Act',
+            dataType: 'Actual',
             permission: chart.actualChartLines.isPermitted,
             ...actualRowData,
           })

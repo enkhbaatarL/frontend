@@ -61,7 +61,14 @@ const MIForecastLegend = ({
   const isMultipleAxes = !!legends.left.length && !!legends.right.length
 
   return (
-    <Box display={'flex'} alignItems={'center'} justifyContent={showActual ? 'space-between' : 'center'} px="24px" py="10px">
+    <Box
+      display={'flex'}
+      alignItems={'center'}
+      justifyContent={showActual ? 'space-between' : 'center'}
+      px="24px"
+      py="10px"
+      sx={{ userSelect: 'none' }}
+    >
       <Box display={'flex'} alignItems={'center'} gap="10px">
         {isMultipleAxes && (
           <Typography variant="body2R14" color="gray.70">
