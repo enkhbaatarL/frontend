@@ -20,6 +20,7 @@ const BAR_COLORS: Record<DirectionType, string> = {
   [DirectionType.Upward]: 'linear-gradient(180deg, #3386C2 0%, #1366A2 100%)',
   [DirectionType.Neutral]: 'linear-gradient(180deg, #A8A8A8 0%, #777777 100%)',
   [DirectionType.Downward]: 'linear-gradient(180deg, #A02A74 0%, #881C60 100%)',
+  [DirectionType.OutOfRange]: 'linear-gradient(180deg, #A8A8A8 0%, #777777 100%)',
 }
 
 const SHIMMER_GRADIENT = `linear-gradient(90deg, 
@@ -54,14 +55,29 @@ const getTooltipTranslationKey = (directionType: DirectionType): string => {
     [DirectionType.Upward]: 'dashboard.sentiments.barTooltip.upward',
     [DirectionType.Neutral]: 'dashboard.sentiments.barTooltip.neutral',
     [DirectionType.Downward]: 'dashboard.sentiments.barTooltip.downward',
+    [DirectionType.OutOfRange]: 'dashboard.sentiments.barTooltip.neutral',
   }
   return keyMap[directionType]
 }
 
-const formatPercentage = (value: number, total: number): string => `${((value / total) * 100).toFixed(1).replace(/\.0$/, '')}%`
+const formatPercentage = (value: number, total: number): string => {
+  if (total === 0) return '0%'
+  return `${((value / total) * 100).toFixed(1).replace(/\.0$/, '')}%`
+}
 
 const createBarExpandAnimation = (values: number[], currentValue: number) => {
   const total = values.reduce((sum, val) => sum + val, 0)
+
+  if (total === 0) {
+    return {
+      keyframes: keyframes`
+        0% { width: 0; }
+        100% { width: 0; }
+      `,
+      duration: '0s',
+    }
+  }
+
   const maxValue = Math.max(...values)
   const minValue = Math.min(...values)
 

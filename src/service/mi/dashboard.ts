@@ -19,6 +19,7 @@ export enum DirectionType {
   Upward = 'Upward',
   Downward = 'Downward',
   Neutral = 'Neutral',
+  OutOfRange = 'OUTOFRANGE',
 }
 
 export interface INewsFeedItem {
@@ -110,6 +111,44 @@ export interface IMarketRecapItem {
   checkpoints: IMarketRecapCheckpoints
 }
 
+// API 응답 타입
+interface IMarketRecapApiResponse {
+  marketRecapId: number
+  criteriaDate: string
+  categoryCode: string
+  sentiments: {
+    current: IMarketRecapSentimentItem
+    previous: IMarketRecapSentimentItem
+    last7days: IMarketRecapSentimentItem
+    last30days: IMarketRecapSentimentItem
+  }
+  highlights: {
+    narrative: {
+      title: string
+      content: string[]
+    }
+    items: Array<{
+      highlightEventId: number
+      nameKorean: string
+      nameEnglish: string
+      momentum: 'UPWARD' | 'DOWNWARD' | 'NULL'
+      relatedEventRepresentativeNewsResNews: IMarketRecapRelatedNews[]
+    }>
+    relatedEventRepresentativeNewsResNews: IMarketRecapRelatedNews[]
+  }
+  checkpoints: {
+    narrative: {
+      title: string
+      content: string[]
+    }
+    items: Array<{
+      checkpointId: number
+      title: string
+      content: string[]
+    }>
+  }
+}
+
 const dashboardService = {
   async getTimeline(categoryCode: string): Promise<INewsFeedItem[]> {
     const response: AxiosResponse<ICommonResponse<INewsFeedItem[]>> = await api.get('mi/market-news/timeline', {
@@ -119,7 +158,8 @@ const dashboardService = {
       },
     })
 
-    return response.data.data
+    // directionality가 'OUTOFRANGE'인 항목 제외
+    return response.data.data.filter((item) => item.directionality !== DirectionType.OutOfRange)
   },
   async getNewsFeed(categoryCode: string, filters: INewsFeedFilter): Promise<INewsFeedItem[]> {
     const params: Record<string, string> = {
@@ -144,7 +184,8 @@ const dashboardService = {
       params,
     })
 
-    return response.data.data
+    // directionality가 'OUTOFRANGE'인 항목 제외
+    return response.data.data.filter((item) => item.directionality !== DirectionType.OutOfRange)
   },
   async getTopicSimilarKeywords(query: string, limit?: number): Promise<string[]> {
     const response: AxiosResponse<ICommonResponse<string[]>> = await api.get('mi/autocomplete/topic', {
@@ -156,107 +197,58 @@ const dashboardService = {
 
     return response.data.data
   },
-  async getMarketRecap(): Promise<IMarketRecapItem> {
-    // TODO: API 연동 후 실제 API 호출로 변경
-    // 임시 가짜 데이터 반환
+  async getMarketRecap(categoryCode: string, criteriaDate?: string): Promise<IMarketRecapItem> {
+    const params: Record<string, string> = {
+      category: categoryCode,
+      criteriaDate: criteriaDate || dayjs().format('YYYYMMDD'),
+    }
+
+    const response: AxiosResponse<ICommonResponse<IMarketRecapApiResponse>> = await api.get('mi/market-news/recap', {
+      params,
+    })
+
+    const apiData = response.data.data
+
+    // momentum 매핑 함수
+    const mapMomentum = (momentum: 'UPWARD' | 'DOWNWARD' | 'NULL'): DirectionType | undefined => {
+      if (momentum === 'UPWARD') return DirectionType.Upward
+      if (momentum === 'DOWNWARD') return DirectionType.Downward
+      if (momentum === 'NULL') return DirectionType.Neutral
+
+      return undefined
+    }
+
+    // API 응답을 내부 인터페이스로 매핑
     return {
       sentiments: {
-        current: {
-          period: 'Last 24H',
-          upwardCount: 45,
-          neutralCount: 30,
-          downwardCount: 25,
-        },
-        week: {
-          period: 'Last 7D',
-          upwardCount: 320,
-          neutralCount: 210,
-          downwardCount: 180,
-        },
-        month: {
-          period: 'Last 30D',
-          upwardCount: 1250,
-          neutralCount: 890,
-          downwardCount: 760,
-        },
+        current: apiData.sentiments.current,
+        previous: apiData.sentiments.previous,
+        last7days: apiData.sentiments.last7days,
+        last30days: apiData.sentiments.last30days,
       },
       highlights: {
-        items: [
-          {
-            highlightItemId: 1,
-            title: 'Oil prices surge on supply concerns',
-            content: [
-              'Crude oil futures jumped 3.2% following OPEC+ production cut announcements',
-              'Geopolitical tensions in the Middle East continue to impact global supply chains',
-              'Refinery margins expanded as demand outlook improved',
-            ],
-            momentum: DirectionType.Upward,
-            relatedNews: [
-              {
-                provider: 'Reuters',
-                newsSummaryId: 1001,
-                title: 'Crude oil futures jumped 3.2% following OPEC+ production cut announcements',
-              },
-              {
-                provider: 'Bloomberg',
-                newsSummaryId: 1002,
-                title: 'Geopolitical tensions in the Middle East continue to impact global supply chains',
-              },
-            ],
-          },
-          {
-            highlightItemId: 2,
-            title: 'Natural gas inventories decline',
-            content: ['Storage levels dropped below seasonal averages', 'Cold weather forecasts drive demand expectations higher'],
-            momentum: DirectionType.Upward,
-            relatedNews: [{ provider: 'Energy Information', newsSummaryId: 1003, title: 'Storage levels dropped below seasonal averages' }],
-          },
-          {
-            highlightItemId: 3,
-            title: 'Renewable energy investments slow',
-            content: ['Policy uncertainty affects project financing', 'Supply chain disruptions impact solar panel installations'],
-            momentum: DirectionType.Downward,
-            relatedNews: [{ provider: 'Financial Times', newsSummaryId: 1004, title: 'Policy uncertainty affects project financing' }],
-          },
-        ],
+        items: apiData.highlights.items.map((item) => ({
+          highlightItemId: item.highlightEventId,
+          title: item.nameEnglish || item.nameKorean,
+          content: [],
+          momentum: mapMomentum(item.momentum),
+          relatedNews: item.relatedEventRepresentativeNewsResNews,
+        })),
         narrative: {
-          title: 'Market Overview: Energy Sector Shows Mixed Signals',
-          content: [
-            'The energy market experienced significant volatility this week, with oil prices reaching new highs while renewable energy investments showed signs of slowing.',
-            'Supply-side constraints continue to drive commodity prices, with OPEC+ production decisions and geopolitical factors playing key roles.',
-            'Investors are closely monitoring inventory levels and demand patterns as the market navigates through uncertain economic conditions.',
-          ],
-          relatedNews: [
-            { provider: 'Market Watch', newsSummaryId: 1005, title: 'The energy market experienced significant volatility this week' },
-            { provider: 'Energy Weekly', newsSummaryId: 1006, title: 'Supply-side constraints continue to drive commodity prices' },
-          ],
+          title: apiData.highlights.narrative.title,
+          content: apiData.highlights.narrative.content,
+          relatedNews: apiData.highlights.relatedEventRepresentativeNewsResNews,
         },
       },
       checkpoints: {
-        items: [
-          {
-            checkpointItemId: 1,
-            title: 'Monitor OPEC+ production decisions',
-            content: ['Next meeting scheduled for early next month', 'Production quotas will impact global supply balance'],
-          },
-          {
-            checkpointItemId: 2,
-            title: 'Track inventory levels',
-            content: ['Weekly EIA reports show declining stocks', 'Seasonal demand patterns emerging'],
-          },
-          {
-            checkpointItemId: 3,
-            title: 'Watch geopolitical developments',
-            content: ['Middle East tensions affecting supply routes', 'Trade policy changes under review'],
-          },
-        ],
+        items: apiData.checkpoints.items.map((item) => ({
+          checkpointItemId: item.checkpointId,
+          title: item.title,
+          content: item.content,
+        })),
         narrative: {
-          title: 'Key Monitoring Points for Energy Markets',
-          content: [
-            'Several critical factors require ongoing attention in the coming weeks, including production decisions from major oil-producing nations and inventory trends across key markets.',
-            'Geopolitical developments continue to introduce volatility, making it essential to stay informed about regional tensions and policy changes.',
-            'Market participants should also monitor demand indicators and economic data that could signal shifts in consumption patterns.',
-          ],
+          title: apiData.checkpoints.narrative.title,
+          content: apiData.checkpoints.narrative.content,
         },
       },
     }

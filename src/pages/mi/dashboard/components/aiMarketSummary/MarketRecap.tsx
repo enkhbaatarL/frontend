@@ -1,16 +1,35 @@
 import { Box, Stack } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 
+import useCodeData from '@/hooks/useCodeData'
 import Checkpoints from '@/pages/mi/dashboard/components/aiMarketSummary/Checkpoints'
 import Highlights from '@/pages/mi/dashboard/components/aiMarketSummary/Highlights'
 import Sentiment from '@/pages/mi/dashboard/components/aiMarketSummary/Sentiment'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 import dashboardService from '@/service/mi/dashboard'
 
-const MarketRecap = () => {
+interface MarketRecapProps {
+  categoryCode?: string
+}
+
+const MarketRecap = ({ categoryCode }: MarketRecapProps) => {
+  const { marketCategoryCodeList } = useCodeData()
+
+  // categoryCode가 없으면 첫 번째 카테고리 사용
+  const defaultCategoryCode = useMemo(() => {
+    if (categoryCode) return categoryCode
+    if (marketCategoryCodeList && marketCategoryCodeList.length > 0) {
+      return marketCategoryCodeList[0].codeId
+    }
+
+    return ''
+  }, [categoryCode, marketCategoryCodeList])
+
   const { data: marketRecap } = useQuery({
-    queryKey: ['getMarketRecap'],
-    queryFn: async () => await dashboardService.getMarketRecap(),
+    queryKey: ['getMarketRecap', defaultCategoryCode],
+    queryFn: async () => await dashboardService.getMarketRecap(defaultCategoryCode),
+    enabled: !!defaultCategoryCode,
   })
 
   return (
