@@ -472,7 +472,7 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
                                           </Box>
 
                                           <Box paddingY={'8px'}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                               <Typography
                                                 variant="body1SB16"
                                                 // color={active ? 'mari.Primary' : item.disable ? 'contentText.Disabled' : 'gray.80'}
@@ -484,20 +484,23 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
                                               {(item.label === 'AI Market Summary' ||
                                                 item.label === 'Topic Tracker' ||
                                                 item.label === 'Economic Calendar') && (
-                                                <Typography
+                                                <Box
                                                   sx={{
-                                                    fontSize: '12px',
-                                                    fontWeight: 400,
-                                                    lineHeight: 1.4,
-                                                    color: '#7A8790',
-                                                    display: 'flex',
+                                                    fontSize: '10px',
+                                                    fontWeight: 600,
+                                                    lineHeight: '160%',
+                                                    color: '#868E96',
+                                                    display: 'inline-flex',
                                                     alignItems: 'center',
-                                                    alignSelf: 'baseline',
-                                                    marginTop: '5px',
+                                                    justifyContent: 'center',
+                                                    padding: '0 4px',
+                                                    borderRadius: '4px',
+                                                    backgroundColor: '#DEE2E6',
+                                                    height: '16px',
                                                   }}
                                                 >
-                                                  Beta
-                                                </Typography>
+                                                  DEMO
+                                                </Box>
                                               )}
                                             </Box>
                                             {item.desc && (
