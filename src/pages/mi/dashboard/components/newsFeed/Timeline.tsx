@@ -182,7 +182,7 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
 
   const itemHeights = useMemo(
     () =>
-      // Impact Score (newsSignificanceScore)만으로 bar 높이 결정
+    // Impact Score (newsSignificanceScore)만으로 bar 높이 결정
 
       items.map((item) => {
         const impactScore = item.newsSignificanceScore ?? item.score ?? 0
@@ -340,7 +340,7 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
                     e.stopPropagation()
                     const itemId = item.newsEventId ?? item.newsSignificanceId
 
-                    if (itemId != null) {
+                    if (itemId !== null && itemId !== undefined) {
                       onItemClick?.(itemId.toString())
                     }
                   }}
