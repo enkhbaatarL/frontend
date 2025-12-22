@@ -6,12 +6,12 @@ import MISelectMenu, { SelectMenuItem } from '@/components/common/menu/MISelectM
 import MISkeleton from '@/components/mi/MISkeleton'
 import useCodeData from '@/hooks/useCodeData'
 import FeedItem from '@/pages/mi/dashboard/components/newsFeed/FeedItem'
-import { Directionality, INewsFeedItem } from '@/service/mi/dashboard'
+import { DirectionType, INewsFeedItem } from '@/service/mi/dashboard'
 
 const sentimentOptions = [
-  { label: 'Upward', value: Directionality.Upward },
-  { label: 'Downward', value: Directionality.Downward },
-  { label: 'Neutral', value: Directionality.Neutral },
+  { label: 'Upward', value: DirectionType.Upward },
+  { label: 'Downward', value: DirectionType.Downward },
+  { label: 'Neutral', value: DirectionType.Neutral },
 ]
 
 const impactOptions = [
@@ -22,10 +22,10 @@ const impactOptions = [
 
 interface FeedProps {
   newsFeedItems?: INewsFeedItem[]
-  onApplyFilters: (sentiments: Directionality[], impactScores: string[], regions: string[], save?: boolean) => void
+  onApplyFilters: (sentiments: DirectionType[], impactScores: string[], regions: string[], save?: boolean) => void
   appliedFiltersCount: number
   initialFilters?: {
-    sentiments: Directionality[]
+    sentiments: DirectionType[]
     impactScores: string[]
     regions: string[]
   }
@@ -86,7 +86,7 @@ const Feed = ({
   )
 
   const handleApplyFilters = (filterValues: { [key: string]: string[] }, save?: boolean) => {
-    onApplyFilters((filterValues.sentiments ?? []) as Directionality[], filterValues.impactScores ?? [], filterValues.regions ?? [], save)
+    onApplyFilters((filterValues.sentiments ?? []) as DirectionType[], filterValues.impactScores ?? [], filterValues.regions ?? [], save)
   }
 
   useEffect(() => {
@@ -178,7 +178,7 @@ const Feed = ({
         ) : (
           <>
             {newsFeedItems?.map((item, index) => (
-              <Fragment key={item.newsSignalId}>
+              <Fragment key={item.newsSignificanceId}>
                 {index !== 0 && <Divider color="#DEE2E6" sx={{ my: '10px' }} />}
                 <FeedItem item={item} />
               </Fragment>

@@ -5,7 +5,7 @@ import { useRef, useMemo, useState, useEffect } from 'react'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 import FeedItem from '@/pages/mi/dashboard/components/newsFeed/FeedItem'
-import { INewsFeedItem, Directionality } from '@/service/mi/dashboard'
+import { INewsFeedItem, DirectionType } from '@/service/mi/dashboard'
 
 interface TimelineBarProps {
   data: INewsFeedItem[]
@@ -102,7 +102,7 @@ const TimelineItem = ({ item, isHovered = false, hoverColor = '#F0F8FF', ...prop
               transition: 'all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             }}
           >
-            {item.impactScore}
+            {item.newsSignificanceScore ?? item.score}
           </Typography>
         </Stack>
       </Stack>
@@ -154,14 +154,14 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timelineItemRefsContainer = useRef<HTMLElement>(null)
 
-  const items = useMemo(
-    () =>
-      [...data]
-        .sort((a, b) => b.impactScore - a.impactScore)
-        .slice(0, 11) // 상위 11개
-        .sort((a, b) => dayjs(a.firstCreated).valueOf() - dayjs(b.firstCreated).valueOf()), // 시간순 정렬
-    [data],
-  )
+  const items = useMemo(() => {
+    const getScore = (item: INewsFeedItem) => item.newsSignificanceScore ?? item.score ?? 0
+
+    return [...data]
+      .sort((a, b) => getScore(b) - getScore(a))
+      .slice(0, 11) // 상위 11개
+      .sort((a, b) => dayjs(a.firstCreated).valueOf() - dayjs(b.firstCreated).valueOf()) // 시간순 정렬
+  }, [data])
 
   const { barStartTime, barEndTime } = useMemo(() => {
     const start = Math.min(...items.map((item) => dayjs(item.firstCreated).valueOf()))
@@ -180,32 +180,23 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
     return { barStartTime: startTime, barEndTime: endTime }
   }, [items])
 
-  const itemHeights = useMemo(() => {
-    const heights: number[] = []
+  const itemHeights = useMemo(
+    () =>
+    // Impact Score (newsSignificanceScore)만으로 bar 높이 결정
 
-    const getRandomHeight = (index: number): number => {
-      if (index === 0) return 42
-      if (index === 1) return 62
+      items.map((item) => {
+        const impactScore = item.newsSignificanceScore ?? item.score ?? 0
 
-      const minHeight = 30
-      const maxHeight = 96
-      const minDifference = 50
-
-      let newHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight
-
-      for (let attempts = 0; attempts < 50; attempts++) {
-        if (!(index >= 2 && heights[index - 2] !== undefined && Math.abs(newHeight - heights[index - 2]) < minDifference)) {
-          break
+        if (impactScore >= 9.0) {
+          return 70 + Math.floor(Math.random() * 27)
+        } else if (impactScore >= 7.0) {
+          return 45 + Math.floor(Math.random() * 26)
+        } else {
+          return 30 + Math.floor(Math.random() * 16)
         }
-        newHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight
-      }
-
-      heights[index] = newHeight
-      return newHeight
-    }
-
-    return items.map((_, index) => getRandomHeight(index))
-  }, [items])
+      }),
+    [items],
+  )
 
   const timelineItems = useMemo(() => {
     if (!containerWidth) return []
@@ -230,9 +221,12 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
     })
   }, [items, containerWidth, barStartTime, barEndTime, itemHeights])
 
-  const getColor = (trend: Directionality) => {
-    if (trend === Directionality.Upward) return '#3386C2'
-    if (trend === Directionality.Downward) return '#A02A74'
+  const getColor = (trend: DirectionType | string) => {
+    const trendStr = typeof trend === 'string' ? trend : trend
+    const normalizedTrend = trendStr.toLowerCase()
+
+    if (normalizedTrend === 'upward' || trend === DirectionType.Upward) return '#3386C2'
+    if (normalizedTrend === 'downward' || trend === DirectionType.Downward) return '#A02A74'
     return '#868E96'
   }
 
@@ -287,11 +281,13 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
         <Box height="6px" borderRadius="100px" sx={{ backgroundColor: '#DEE2E6' }} />
         {timelineItems.map(({ item, index, evenNumber, itemLineHeight, left, isRightSide }) => {
           const isHovered = hoveredItemIndex === index
-          const isSelected = selectedItemId === item.newsSignalId.toString()
+          const itemId = item.newsEventId ?? item.newsSignificanceId
+          const newsSignificanceIdStr = itemId?.toString() ?? ''
+          const isSelected = selectedItemId === newsSignificanceIdStr
           const shouldHighlight = isHovered || isSelected
 
           return (
-            <Box key={`${item.newsSignalId}`} position="absolute" top="-6px" left={left}>
+            <Box key={itemId ?? `item-${index}`} position="absolute" top="-6px" left={left}>
               <Box
                 position="absolute"
                 width="18px"
@@ -342,7 +338,11 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
                   }}
                   onClick={(e) => {
                     e.stopPropagation()
-                    onItemClick?.(item.newsSignalId.toString())
+                    const itemId = item.newsEventId ?? item.newsSignificanceId
+
+                    if (itemId !== null && itemId !== undefined) {
+                      onItemClick?.(itemId.toString())
+                    }
                   }}
                 />
                 <Stack
@@ -371,7 +371,7 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
           )
         })}
       </Box>
-      <Stack direction="row" justifyContent="space-between">
+      <Stack direction="row" justifyContent="space-ween">
         <Typography variant="body2M14" color="gray.60">
           {dayjs(barStartTime).format('MMM D HH:mm')}
         </Typography>
@@ -416,7 +416,11 @@ const Timeline = ({ onItemClick, timeLineItems, loading = false, ...props }: Tim
   }
 
   const selectedItem = useMemo(
-    () => timeLineItems?.find((item) => item.newsSignalId.toString() === selectedItemId),
+    () =>
+      timeLineItems?.find((item) => {
+        const itemId = item.newsEventId ?? item.newsSignificanceId
+        return itemId?.toString() === selectedItemId
+      }),
     [timeLineItems, selectedItemId],
   )
 
@@ -505,7 +509,7 @@ const Timeline = ({ onItemClick, timeLineItems, loading = false, ...props }: Tim
         >
           {selectedItem && (
             <FeedItem
-              key={selectedItem.newsSignalId}
+              key={selectedItem.newsEventId ?? selectedItem.newsSignificanceId}
               item={selectedItem}
               onClose={handleItemClose}
               isHighlighted={isHighlighted}

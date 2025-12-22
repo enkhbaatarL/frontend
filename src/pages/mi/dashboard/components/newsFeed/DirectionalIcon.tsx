@@ -9,27 +9,30 @@ import neutralMediumIcon from '@/assets/icons/sentiment-neutral-medium.svg'
 import positiveHighIcon from '@/assets/icons/sentiment-positive-high.svg'
 import positiveLowIcon from '@/assets/icons/sentiment-positive-low.svg'
 import positiveMediumIcon from '@/assets/icons/sentiment-positive-medium.svg'
-import { Directionality } from '@/service/mi/dashboard'
+import { DirectionType } from '@/service/mi/dashboard'
 
 export type ImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW'
 
 interface Props {
-  directionality: Directionality
+  directionality: DirectionType
   impactScore: number
 }
 
-const getDirectionalIconSrc = (directionality: Directionality, impactLevel: ImpactLevel) => {
-  if (directionality === Directionality.Upward) {
+const getDirectionalIconSrc = (directionality: DirectionType | string, impactLevel: ImpactLevel) => {
+  const directionalityStr = typeof directionality === 'string' ? directionality : directionality
+  const normalizedDirectionality = directionalityStr.toLowerCase()
+
+  if (normalizedDirectionality === 'upward' || directionality === DirectionType.Upward) {
     if (impactLevel === 'HIGH') return positiveHighIcon
     if (impactLevel === 'MEDIUM') return positiveMediumIcon
     return positiveLowIcon
   }
-  if (directionality === Directionality.Downward) {
+  if (normalizedDirectionality === 'downward' || directionality === DirectionType.Downward) {
     if (impactLevel === 'HIGH') return negativeHighIcon
     if (impactLevel === 'MEDIUM') return negativeMediumIcon
     return negativeLowIcon
   }
-  if (directionality === Directionality.Neutral) {
+  if (normalizedDirectionality === 'neutral' || directionality === DirectionType.Neutral) {
     if (impactLevel === 'HIGH') return neutralHighIcon
     if (impactLevel === 'MEDIUM') return neutralMediumIcon
     return neutralLowIcon

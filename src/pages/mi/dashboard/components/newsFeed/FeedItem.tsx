@@ -9,20 +9,22 @@ import useCodeData from '@/hooks/useCodeData'
 import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
 import CategoryChip from '@/pages/mi/dashboard/components/common/CategoryChip'
 import DirectionalIcon from '@/pages/mi/dashboard/components/newsFeed/DirectionalIcon'
-import { INewsFeedItem, Directionality } from '@/service/mi/dashboard'
+import { INewsFeedItem, DirectionType } from '@/service/mi/dashboard'
 import { getMarketIcon } from '@/utils/marketIcons'
 
 const getFeedIcon = (type: string): string | undefined => getMarketIcon(type)
 
-const getDirectionalColor = (directionality: Directionality) => {
-  switch (directionality) {
-    case Directionality.Upward:
-      return '#3386C2'
-    case Directionality.Downward:
-      return '#A02A74'
-    default:
-      return '#A8A8A8' // Neutral
+const getDirectionalColor = (directionality: DirectionType | string) => {
+  const directionalityStr = typeof directionality === 'string' ? directionality : directionality
+  const normalizedDirectionality = directionalityStr.toLowerCase()
+
+  if (normalizedDirectionality === 'upward' || directionality === DirectionType.Upward) {
+    return '#3386C2'
   }
+  if (normalizedDirectionality === 'downward' || directionality === DirectionType.Downward) {
+    return '#A02A74'
+  }
+  return '#A8A8A8' // Neutral
 }
 
 interface FeedItemProps extends StackProps {
@@ -63,7 +65,7 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
       setIsExpanded(true)
       setTimeout(() => aiSummaryRef.current?.open(), 100)
     }
-  }, [focusMode, item.newsSignalId])
+  }, [focusMode, item.newsSignificanceId])
 
   const handleClick = () => {
     if (focusMode) return
@@ -88,8 +90,8 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
 
   const fetchFeedSummary = async (): Promise<AiSummaryData> => {
     const summaryData: AiSummaryData = {
-      title: item.briefSummary,
-      summary: item.summary,
+      title: item.briefSummary ?? '',
+      summary: item.summary ?? [],
     }
 
     return new Promise<AiSummaryData>((resolve) => {
@@ -149,7 +151,7 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
               />
             </CategoryChip>
           )}
-          {item.regions.map((region) => (
+          {item.regions?.map((region) => (
             <CategoryChip key={region} padding="6px 8px 6px 6px">
               <Stack direction="row" alignItems="center" gap="4px">
                 <SouthAmericaIcon sx={{ fontSize: 16, color: 'content.iconEnabled' }} />
@@ -160,13 +162,25 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
             </CategoryChip>
           ))}
           <CategoryChip tooltipTitle={item.directionality}>
-            <DirectionalIcon directionality={item.directionality} impactScore={item.impactScore} />
+            <DirectionalIcon directionality={item.directionality} impactScore={item.newsSignificanceScore ?? item.score ?? 0} />
           </CategoryChip>
-          <CategoryChip padding="6px 8px" tooltipTitle={`Impact Score: ${item.impactScore}`}>
+          <CategoryChip padding="6px 8px" tooltipTitle={`Impact Score: ${item.newsSignificanceScore ?? item.score ?? 0}`}>
             <Typography variant="body2SB14" color="content.textNormal">
-              {item.impactScore}
+              {item.newsSignificanceScore ?? item.score ?? '-'}
             </Typography>
           </CategoryChip>
+          {item.newsEventNameEn && (
+            <CategoryChip
+              padding="6px 10px"
+              sx={{
+                backgroundColor: '#DEE2E6',
+              }}
+            >
+              <Typography variant="labelText" color="content.textNormal">
+                #{item.newsEventNameEn}
+              </Typography>
+            </CategoryChip>
+          )}
         </Stack>
         {focusMode && (
           <Stack width={28} height={28} alignItems="center" justifyContent="center">
@@ -190,11 +204,11 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
           {item.title}
         </Typography>
         <Stack direction="row" gap="8px">
-          <Typography variant="body2SB14" color="content.textNormal">
+          <Typography variant="body2R14" color="content.textNormal">
             {item.provider}
           </Typography>
           <Divider orientation="vertical" flexItem sx={{ height: '12px', borderColor: 'contentBorder.Normal' }} />
-          <Typography variant="body2SB14" color="content.textNormal">
+          <Typography variant="body2R14" color="content.textNormal">
             {dayjs(item.firstCreated).format('MMMM D, YYYY [at] h:mm A')}
           </Typography>
         </Stack>

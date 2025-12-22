@@ -472,13 +472,34 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
                                           </Box>
 
                                           <Box paddingY={'8px'}>
-                                            <Typography
-                                              variant="body1SB16"
-                                              // color={active ? 'mari.Primary' : item.disable ? 'contentText.Disabled' : 'gray.80'}
-                                              color={active ? 'mari.Primary' : 'gray.80'}
-                                            >
-                                              {item.label}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <Typography
+                                                variant="body1SB16"
+                                                // color={active ? 'mari.Primary' : item.disable ? 'contentText.Disabled' : 'gray.80'}
+                                                color={active ? 'mari.Primary' : 'gray.80'}
+                                                sx={{ display: 'flex', alignItems: 'center' }}
+                                              >
+                                                {item.label}
+                                              </Typography>
+                                              {(item.label === 'AI Market Summary' ||
+                                                item.label === 'Topic Tracker' ||
+                                                item.label === 'Economic Calendar') && (
+                                                <Typography
+                                                  sx={{
+                                                    fontSize: '12px',
+                                                    fontWeight: 400,
+                                                    lineHeight: 1.4,
+                                                    color: '#7A8790',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    alignSelf: 'baseline',
+                                                    marginTop: '5px',
+                                                  }}
+                                                >
+                                                  Beta
+                                                </Typography>
+                                              )}
+                                            </Box>
                                             {item.desc && (
                                               <Typography
                                                 variant="body2M14"

@@ -143,7 +143,6 @@ const KeyEconomicIndicators = () => {
     <Box padding="12px">
       <SectionHeader
         title="Key Economic Indicators"
-        link="/mi/economic-event"
         tooltipTitle={t('dashboard.keyEconomicIndicators.tooltipTitle')}
         mb="10px"
         bold

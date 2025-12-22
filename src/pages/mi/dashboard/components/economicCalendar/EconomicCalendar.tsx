@@ -321,7 +321,7 @@ const EconomicCalendar = () => {
     <DashboardCard
       icon={economicCalendarIcon}
       title="Economic Calendar"
-      link="/mi/economic-event"
+      link="/mi/economic-calendar"
       sx={{
         overflow: 'visible',
       }}
