@@ -33,9 +33,28 @@ const MIPageHeadline = ({ title, gradientStart, gradientEnd, height }: Props) =>
     <Box position="relative" display="flex" justifyContent="center" alignItems="center" height="100%">
       <Box position="relative" boxSizing={'border-box'} paddingX={7.5} paddingY={10.5} minWidth={'1440px'} width={'1440px'} margin={'auto'}>
         <Box component="img" position="absolute" right={-44} bottom={-240} src={productSymbol} width={482} height={482} />
-        <Typography color="white" component="h1" fontSize={40} variant="body1M16">
-          {title}
-        </Typography>
+        <Box display="flex" alignItems="baseline" gap="4px">
+          <Typography color="white" component="h1" fontSize={40} variant="body1M16">
+            {title}
+          </Typography>
+          {(title === 'Economic Calendar' || title === 'AI Market Summary' || title === 'Topic Tracker') && (
+            <Box
+              sx={{
+                fontSize: '16px',
+                fontWeight: 500,
+                lineHeight: '140%',
+                color: '#868E96',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 4px',
+                borderRadius: '4px',
+              }}
+            >
+              DEMO
+            </Box>
+          )}
+        </Box>
       </Box>
     </Box>
   </Box>

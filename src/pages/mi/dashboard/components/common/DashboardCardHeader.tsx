@@ -33,25 +33,28 @@ const DashboardCardHeader = ({ icon, title, link, children, padding = '27px 24px
               <img src={icon} alt="icon" width={30} height={30} draggable={false} />
             </Box>
           )}
-          <Box display="flex" alignItems="center" gap="6px">
-            <Typography component="div" color="gray.90" sx={{ fontWeight: 700, fontSize: 22, lineHeight: 1.2 }}>
+          <Box display="flex" alignItems="center" gap="4px">
+            <Typography component="div" color="gray.90" sx={{ fontWeight: 700, fontSize: 22, lineHeight: 0 }}>
               {title}
             </Typography>
             {titleString === 'Topic Tracker' && (
-              <Typography
+              <Box
                 sx={{
-                  fontSize: '12px',
-                  fontWeight: 400,
-                  lineHeight: 1.4,
-                  color: '#7A8790',
-                  display: 'flex',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  lineHeight: '160%',
+                  color: '#868E96',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  alignSelf: 'baseline',
-                  marginTop: '7px',
+                  justifyContent: 'center',
+                  padding: '0 4px',
+                  borderRadius: '4px',
+                  backgroundColor: '#DEE2E6',
+                  height: '16px',
                 }}
               >
-                Beta
-              </Typography>
+                DEMO
+              </Box>
             )}
           </Box>
           {link && <ArrowRightIcon width={30} height={30} />}
