@@ -109,6 +109,8 @@ export interface IMarketRecapItem {
   sentiments: IMarketRecapSentiments
   highlights: IMarketRecapHighlights
   checkpoints: IMarketRecapCheckpoints
+  analysisFrequency?: string
+  analysisPeriod?: string[]
 }
 
 // Key Economic Indicators 관련 타입들
@@ -172,6 +174,8 @@ interface IMarketRecapApiResponse {
       content: string[]
     }>
   }
+  analysisFrequency?: string
+  analysisPeriod?: string[]
 }
 
 const dashboardService = {
@@ -276,6 +280,8 @@ const dashboardService = {
           content: apiData.checkpoints.narrative.content,
         },
       },
+      ...(apiData.analysisFrequency && { analysisFrequency: apiData.analysisFrequency }),
+      ...(apiData.analysisPeriod && { analysisPeriod: apiData.analysisPeriod }),
     }
   },
   async getKeyEconomicIndicators(categoryCode: string, criteriaDate?: string): Promise<IKeyEconomicIndicatorsResponse> {
