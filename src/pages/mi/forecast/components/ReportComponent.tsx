@@ -531,7 +531,7 @@ const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentPro
     try {
       const response = await forecastDataService.getForecastChartDataDownload(
         accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0,
-        monthSelect.replace('-', '').slice(0, 6),
+        companyNo === 2020 ? monthSelect.replaceAll('-', '') : monthSelect.replace('-', '').slice(0, 6),
       )
       downloadFile(response.data, 'Data Table.xlsx')
     } catch (error) {

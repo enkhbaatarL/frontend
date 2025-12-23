@@ -109,7 +109,6 @@ interface SentimentBarProps {
 const SentimentBar = ({ value, valueIndex, total, counts, itemKey: _itemKey, isAnimated, isVisible }: SentimentBarProps) => {
   const { t } = useTranslation()
 
-  // value가 0이면 막대기를 렌더링하지 않음
   if (value === 0) {
     return null
   }
@@ -279,10 +278,23 @@ const Sentiment = ({ sentiments }: Props) => {
     [sentiments, t],
   )
 
+  // 선택된 옵션들의 모든 카운트 합이 0인지 확인
+  const hasNoData = useMemo(() => {
+    if (sentimentItems.length === 0) return true
+
+    const selectedItems = sentimentItems.filter((item) => selectedOptions.includes(item.itemKey))
+    if (selectedItems.length === 0) return true
+
+    // 선택된 모든 항목의 카운트 합이 0인지 확인
+    const totalCount = selectedItems.reduce((sum, item) => sum + item.counts.reduce((itemSum, count) => itemSum + count, 0), 0)
+
+    return totalCount === 0
+  }, [sentimentItems, selectedOptions])
+
   return (
     <Stack padding="6px 12px 14px" borderRadius="10px" sx={{ backgroundColor: '#F8F9FA', userSelect: 'none' }}>
       <SectionHeader title="Sentiment" tooltipTitle={t('dashboard.sentiments.titleTooltip')} padding="7.5px 0 7.5px 6px">
-        {menuOptions.length > 0 && (
+        {menuOptions.length > 0 && !hasNoData && (
           <MISelectMenu
             selectType="switch"
             multiple
@@ -297,7 +309,7 @@ const Sentiment = ({ sentiments }: Props) => {
         )}
       </SectionHeader>
 
-      {sentimentItems.length === 0 ? (
+      {hasNoData ? (
         <Stack height={52} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
           <Typography variant="body2SB14" color="content.textNormal">
             No data available to display.
