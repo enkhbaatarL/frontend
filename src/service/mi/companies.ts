@@ -15,6 +15,7 @@ export interface IAccessCompanyInfo {
   isSalesAnalysis?: boolean
   isMarketMap?: boolean
   isMiActivityLog?: boolean
+  isSalesActivityLog?: boolean
   newsMarketCategoryCode?: string
 }
 

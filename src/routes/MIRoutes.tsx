@@ -24,6 +24,7 @@ import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
 import NotificationPage from '@/pages/mi/notification/NotificationPage'
 import ParallelCoordinatesPage from '@/pages/mi/parallelCoordinates/ParallelCoordinatesPage'
+import SalesActivityLogPage from '@/pages/mi/salesActivityLog/SalesActivityLogPage'
 import SalesAnalysisPage from '@/pages/mi/salesAnalysis/SalesAnalysisPage'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import TopicTrackerPage from '@/pages/mi/topicTracker/TopicTrackerPage'
@@ -155,6 +156,10 @@ const MIRoutes: RouteObject = {
     {
       path: 'mi-activity-log',
       element: <MIActivityLogPage />,
+    },
+    {
+      path: 'sales-activity-log',
+      element: <SalesActivityLogPage />,
     },
     {
       path: 'parallel-coordinates',

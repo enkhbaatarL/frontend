@@ -55,7 +55,7 @@ const sampleData = [
     date: 'Sep 23',
     topic: 'sanctions',
     region: 'Europe',
-    title: "How Russia's Sanctions Evasion Could Create Lasting Costs",
+    title: 'How Russia\'s Sanctions Evasion Could Create Lasting Costs',
     source: 'The New York Times',
     publishedAt: 'September 23, 2025 at 04:40 AM',
   },
@@ -65,7 +65,7 @@ const sampleData = [
     date: 'Sep 23',
     topic: 'trump_tariff',
     region: 'North America',
-    title: "Trump's Tariffs Are Damaging America's Biggest Foreign Source of Screws",
+    title: 'Trump\'s Tariffs Are Damaging America\'s Biggest Foreign Source of Screws',
     source: 'Reuters',
     publishedAt: 'September 23, 2025 at 04:00 AM',
   },
@@ -75,7 +75,7 @@ const sampleData = [
     date: 'Sep 23',
     topic: 'opec+',
     region: 'Middle East',
-    title: "What's The Real Reason Behind OPEC's Surprise Oil Production Boost",
+    title: 'What\'s The Real Reason Behind OPEC\'s Surprise Oil Production Boost',
     source: 'OilPrice.com',
     publishedAt: 'September 23, 2025 at 02:00 AM',
   },
@@ -85,7 +85,7 @@ const sampleData = [
     date: 'Sep 23',
     topic: 'trump_tariff',
     region: 'Asia',
-    title: "India can shrug off Donald Trump's tariffs",
+    title: 'India can shrug off Donald Trump\'s tariffs',
     source: 'Reuters',
     publishedAt: 'September 23, 2025 at 01:15 AM',
   },
@@ -95,7 +95,7 @@ const sampleData = [
     date: 'Sep 22',
     topic: 'trump_tariff',
     region: 'Global',
-    title: "Trump's tariffs, deportations and climate change are making groceries more expensive",
+    title: 'Trump\'s tariffs, deportations and climate change are making groceries more expensive',
     source: 'Reuters',
     publishedAt: 'September 22, 2025 at 17:50 PM',
   },
@@ -105,7 +105,7 @@ const sampleData = [
     date: 'Sep 22',
     topic: 'trump_tariff',
     region: 'Europe',
-    title: "Plan to slash US steel tariffs shelved hours before Donald Trump's UK visit",
+    title: 'Plan to slash US steel tariffs shelved hours before Donald Trump\'s UK visit',
     source: 'Reuters',
     publishedAt: 'September 22, 2025 at 10:30 AM',
   },
@@ -325,53 +325,49 @@ const TopicTracker = () => {
       link="/mi/topic-tracker"
       headerContent={
         <Stack direction="row" gap="8px">
-          {false && (
-            <MIButton
-              type="outlined"
-              size="h36"
-              borderRadius="10px"
-              startIcon={
-                <Box
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    '& svg': {
-                      fontSize: 20,
-                      '& path': {
-                        fill: theme.palette.gray[70],
-                      },
+          <MIButton
+            type="outlined"
+            size="h36"
+            borderRadius="10px"
+            startIcon={
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  '& svg': {
+                    fontSize: 20,
+                    '& path': {
+                      fill: theme.palette.gray[70],
                     },
-                  }}
-                >
-                  <AddIcon />
-                </Box>
-              }
-              onClick={handleAddTopicClick}
-            >
-              Add a Topic
-            </MIButton>
-          )}
-          {false && (
-            <MIMenu
-              open={isSettingsMenuOpen}
-              label={<SettingsIcon sx={{ width: 20, height: 20, color: 'gray.70' }} />}
-              variant="outlined"
-              placement="bottom-end"
-              menuPositionOffset={{ right: -10 }}
-              onOpenChange={setIsSettingsMenuOpen}
-              enableHoverBackground
-              sx={{
-                height: '36px',
-                padding: '8px',
-              }}
-            >
-              <Stack padding="12px" gap="12px" minWidth={154} boxSizing="border-box">
-                {switchOptions.map((item) => (
-                  <SettingsMenuItem key={item.value} item={item} isDisplayed={displayStates[item.value]} onToggle={handleSwitchToggle} />
-                ))}
-              </Stack>
-            </MIMenu>
-          )}
+                  },
+                }}
+              >
+                <AddIcon />
+              </Box>
+            }
+            onClick={handleAddTopicClick}
+          >
+            Add a Topic
+          </MIButton>
+          <MIMenu
+            open={isSettingsMenuOpen}
+            label={<SettingsIcon sx={{ width: 20, height: 20, color: 'gray.70' }} />}
+            variant="outlined"
+            placement="bottom-end"
+            menuPositionOffset={{ right: -10 }}
+            onOpenChange={setIsSettingsMenuOpen}
+            enableHoverBackground
+            sx={{
+              height: '36px',
+              padding: '8px',
+            }}
+          >
+            <Stack padding="12px" gap="12px" minWidth={154} boxSizing="border-box">
+              {switchOptions.map((item) => (
+                <SettingsMenuItem key={item.value} item={item} isDisplayed={displayStates[item.value]} onToggle={handleSwitchToggle} />
+              ))}
+            </Stack>
+          </MIMenu>
         </Stack>
       }
       sx={{

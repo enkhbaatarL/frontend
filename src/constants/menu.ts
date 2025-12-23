@@ -115,6 +115,10 @@ export const MENU_CONFIG: MainMenuItem[] = [
         to: 'mi-activity-log',
         section: 'SERVICES',
       },
+      {
+        label: 'Sales Activity Log',
+        to: 'sales-activity-log',
+      },
     ],
   },
 ]
