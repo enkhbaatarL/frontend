@@ -278,6 +278,8 @@ const SettingsMenuItem = ({
 )
 
 const TopicTracker = () => {
+  const [demo] = useState(true)
+
   const theme = useTheme()
 
   const [selectedTopic, setSelectedTopic] = useState(topics[0].value)
@@ -325,49 +327,53 @@ const TopicTracker = () => {
       link="/mi/topic-tracker"
       headerContent={
         <Stack direction="row" gap="8px">
-          <MIButton
-            type="outlined"
-            size="h36"
-            borderRadius="10px"
-            startIcon={
-              <Box
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  '& svg': {
-                    fontSize: 20,
-                    '& path': {
-                      fill: theme.palette.gray[70],
+          {!demo && (
+            <MIButton
+              type="outlined"
+              size="h36"
+              borderRadius="10px"
+              startIcon={
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    '& svg': {
+                      fontSize: 20,
+                      '& path': {
+                        fill: theme.palette.gray[70],
+                      },
                     },
-                  },
-                }}
-              >
-                <AddIcon />
-              </Box>
-            }
-            onClick={handleAddTopicClick}
-          >
-            Add a Topic
-          </MIButton>
-          <MIMenu
-            open={isSettingsMenuOpen}
-            label={<SettingsIcon sx={{ width: 20, height: 20, color: 'gray.70' }} />}
-            variant="outlined"
-            placement="bottom-end"
-            menuPositionOffset={{ right: -10 }}
-            onOpenChange={setIsSettingsMenuOpen}
-            enableHoverBackground
-            sx={{
-              height: '36px',
-              padding: '8px',
-            }}
-          >
-            <Stack padding="12px" gap="12px" minWidth={154} boxSizing="border-box">
-              {switchOptions.map((item) => (
-                <SettingsMenuItem key={item.value} item={item} isDisplayed={displayStates[item.value]} onToggle={handleSwitchToggle} />
-              ))}
-            </Stack>
-          </MIMenu>
+                  }}
+                >
+                  <AddIcon />
+                </Box>
+              }
+              onClick={handleAddTopicClick}
+            >
+              Add a Topic
+            </MIButton>
+          )}
+          {!demo && (
+            <MIMenu
+              open={isSettingsMenuOpen}
+              label={<SettingsIcon sx={{ width: 20, height: 20, color: 'gray.70' }} />}
+              variant="outlined"
+              placement="bottom-end"
+              menuPositionOffset={{ right: -10 }}
+              onOpenChange={setIsSettingsMenuOpen}
+              enableHoverBackground
+              sx={{
+                height: '36px',
+                padding: '8px',
+              }}
+            >
+              <Stack padding="12px" gap="12px" minWidth={154} boxSizing="border-box">
+                {switchOptions.map((item) => (
+                  <SettingsMenuItem key={item.value} item={item} isDisplayed={displayStates[item.value]} onToggle={handleSwitchToggle} />
+                ))}
+              </Stack>
+            </MIMenu>
+          )}
         </Stack>
       }
       sx={{

@@ -18,7 +18,6 @@ const sampleData = [
     time: '10:00',
     imp: 'Medium',
     event: 'Imports (YoY)',
-    for: 'Aug',
     actual: '-4.1%',
     forecast: '-4.0%',
     previous: '3.3%',
@@ -28,7 +27,6 @@ const sampleData = [
     time: '11:00',
     imp: 'Medium',
     event: 'Exports (YoY)',
-    for: 'Aug',
     actual: '2.5%',
     forecast: '2.0%',
     previous: '1.7%',
@@ -38,7 +36,6 @@ const sampleData = [
     time: '12:00',
     imp: 'Medium',
     event: 'Trade Balance',
-    for: 'Aug',
     actual: '$1.5B',
     forecast: '$1.8B',
     previous: '$2.1B',
@@ -48,7 +45,6 @@ const sampleData = [
     time: '13:00',
     imp: 'Medium',
     event: 'CPI (YoY)',
-    for: 'Aug',
     actual: '3.2%',
     forecast: '3.5%',
     previous: '2.9%',
@@ -58,7 +54,6 @@ const sampleData = [
     time: '14:00',
     imp: 'Medium',
     event: 'Unemployment Rate',
-    for: 'Aug',
     actual: '5.0%',
     forecast: '4.9%',
     previous: '5.1%',
@@ -68,7 +63,6 @@ const sampleData = [
     time: '15:00',
     imp: 'Medium',
     event: 'GDP Growth (QoQ)',
-    for: 'Q2',
     actual: '1.1%',
     forecast: '1.3%',
     previous: '1.0%',
@@ -78,7 +72,6 @@ const sampleData = [
     time: '16:00',
     imp: 'Medium',
     event: 'Retail Sales (MoM)',
-    for: 'Aug',
     actual: '0.8%',
     forecast: '0.6%',
     previous: '1.2%',
@@ -88,7 +81,6 @@ const sampleData = [
     time: '17:00',
     imp: 'Medium',
     event: 'Consumer Confidence',
-    for: 'Aug',
     actual: '82.4',
     forecast: '80.7',
     previous: '83.5',
@@ -98,7 +90,6 @@ const sampleData = [
     time: '18:00',
     imp: 'Medium',
     event: 'Interest Rate',
-    for: 'Aug',
     actual: '0.25%',
     forecast: '0.50%',
     previous: '0.75%',
@@ -108,7 +99,6 @@ const sampleData = [
     time: '19:00',
     imp: 'Medium',
     event: 'Manufacturing PMI',
-    for: 'Aug',
     actual: '54.2',
     forecast: '53.5',
     previous: '55.0',
@@ -118,7 +108,6 @@ const sampleData = [
     time: '20:00',
     imp: 'High',
     event: 'Federal Funds Rate',
-    for: 'Sep',
     actual: '5.25%',
     forecast: '5.50%',
     previous: '5.00%',
@@ -128,7 +117,6 @@ const sampleData = [
     time: '21:00',
     imp: 'High',
     event: 'Non-Farm Payrolls',
-    for: 'Aug',
     actual: '187K',
     forecast: '200K',
     previous: '157K',
@@ -138,7 +126,6 @@ const sampleData = [
     time: '15:00',
     imp: 'Medium',
     event: 'GDP Growth (QoQ)',
-    for: 'Q2',
     actual: 'TBA',
     forecast: '1.1%',
     previous: '1.0%',
@@ -149,7 +136,6 @@ const sampleData = [
     time: '16:00',
     imp: 'Medium',
     event: 'Retail Sales (MoM)',
-    for: 'Aug',
     actual: 'TBA',
     forecast: '0.6%',
     previous: '1.2%',
@@ -160,7 +146,6 @@ const sampleData = [
     time: '17:00',
     imp: 'Medium',
     event: 'Consumer Confidence',
-    for: 'Aug',
     actual: 'TBA',
     forecast: '80.7',
     previous: '83.5',
@@ -171,7 +156,6 @@ const sampleData = [
     time: '18:00',
     imp: 'Medium',
     event: 'Interest Rate',
-    for: 'Aug',
     actual: 'TBA',
     forecast: '0.50%',
     previous: '0.75%',
@@ -182,7 +166,6 @@ const sampleData = [
     time: '19:00',
     imp: 'Medium',
     event: 'Manufacturing PMI',
-    for: 'Aug',
     actual: 'TBA',
     forecast: '53.5',
     previous: '55.0',
@@ -193,7 +176,6 @@ const sampleData = [
     time: '20:00',
     imp: 'High',
     event: 'Federal Funds Rate',
-    for: 'Sep',
     actual: 'TBA',
     forecast: '5.50%',
     previous: '5.00%',
@@ -204,7 +186,6 @@ const sampleData = [
     time: '21:00',
     imp: 'High',
     event: 'Non-Farm Payrolls',
-    for: 'Aug',
     actual: 'TBA',
     forecast: '200K',
     previous: '157K',
@@ -215,7 +196,6 @@ const sampleData = [
     time: '22:00',
     imp: 'Low',
     event: 'Consumer Price Index',
-    for: 'Aug',
     actual: 'TBA',
     forecast: '3.2%',
     previous: '3.0%',
@@ -336,6 +316,7 @@ const EconomicCalendar = () => {
           onSelected={setFilter}
           items={filterOptions}
           sx={{ minWidth: 40 }}
+          disabled
         />
         <UpdatedInfoChip label="Sep 15 09:45" color={{ backgroundColor: '#F1F3F5', color: '#495057' }} />
       </Stack>
@@ -348,11 +329,8 @@ const EconomicCalendar = () => {
             <HeaderCell width="44px" textAlign="center">
               Imp.
             </HeaderCell>
-            <HeaderCell width="146px" textAlign="left">
+            <HeaderCell width="192px" textAlign="left">
               Event
-            </HeaderCell>
-            <HeaderCell width="46px" textAlign="center">
-              For
             </HeaderCell>
             <HeaderCell width="80px" textAlign="right">
               Actual
@@ -385,11 +363,8 @@ const EconomicCalendar = () => {
               <Stack width="44px" justifyContent="center" alignItems="center">
                 <ImportanceIcon level={data.imp as ImportanceLevel} />
               </Stack>
-              <BodyCell width="146px" textAlign="left">
+              <BodyCell width="192px" textAlign="left">
                 {data.event}
-              </BodyCell>
-              <BodyCell width="46px" textAlign="center">
-                {data.for}
               </BodyCell>
               <Stack width="80px" justifyContent="center" alignItems="flex-end" pr="8px">
                 {data.isTBA ? (
