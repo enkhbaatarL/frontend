@@ -37,26 +37,25 @@ const DashboardCardHeader = ({ icon, title, link, children, padding = '27px 24px
             <Typography component="div" color="gray.90" sx={{ fontWeight: 700, fontSize: 22, lineHeight: 0 }}>
               {title}
             </Typography>
-            {titleString === 'Topic Tracker' ||
-              (titleString === 'Economic Calendar' && (
-                <Box
-                  sx={{
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    lineHeight: '160%',
-                    color: '#868E96',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0 4px',
-                    borderRadius: '4px',
-                    backgroundColor: '#DEE2E6',
-                    height: '16px',
-                  }}
-                >
-                  DEMO
-                </Box>
-              ))}
+            {(titleString === 'Topic Tracker' || titleString === 'Economic Calendar') && (
+              <Box
+                sx={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  lineHeight: '160%',
+                  color: '#868E96',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 4px',
+                  borderRadius: '4px',
+                  backgroundColor: '#DEE2E6',
+                  height: '16px',
+                }}
+              >
+                DEMO
+              </Box>
+            )}
           </Box>
           {link && <ArrowRightIcon width={30} height={30} />}
         </Stack>
