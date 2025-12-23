@@ -1,5 +1,5 @@
 import { Box, Stack, Typography, keyframes, Collapse, Tooltip } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
@@ -11,10 +11,10 @@ interface Props {
 }
 
 const BAR_HEIGHT = 18
-const BAR_MIN_WIDTH = 25
 const ANIMATION_DELAY = '0.5s'
 const STAGGER_DELAY = 50
 const BAR_TRANSITION_DURATION = 150
+const BAR_ANIMATION_DURATION = '1s'
 
 const BAR_COLORS: Record<DirectionType, string> = {
   [DirectionType.Upward]: 'linear-gradient(180deg, #3386C2 0%, #1366A2 100%)',
@@ -38,10 +38,9 @@ const shimmerAnimation = keyframes`
   100% { transform: translateX(120%); }
 `
 
-const textFadeInAnimation = keyframes`
-  0% { opacity: 0; transform: scale(0.8); }
-  30% { opacity: 0; transform: scale(0.8); }
-  100% { opacity: 1; transform: scale(1); }
+const createTextSyncAnimation = (contentWidth: number) => keyframes`
+  0% { opacity: 0; transform: scale(0.8); max-width: 0; }
+  100% { opacity: 1; transform: scale(1); max-width: ${contentWidth}px; }
 `
 
 const getSentimentType = (index: number, totalLength: number): DirectionType => {
@@ -78,7 +77,6 @@ const createBarExpandAnimation = (values: number[], currentValue: number) => {
     }
   }
 
-  const maxValue = Math.max(...values)
   const minValue = Math.min(...values)
 
   const minWidthPercent = `${(minValue / total) * 100}%`
@@ -92,7 +90,7 @@ const createBarExpandAnimation = (values: number[], currentValue: number) => {
       100% { width: ${currentWidthPercent}; }
     `,
 
-    duration: `${maxValue * 0.02}s`,
+    duration: BAR_ANIMATION_DURATION,
   }
 }
 
@@ -104,10 +102,43 @@ interface SentimentBarProps {
   itemKey: string
   isAnimated: boolean
   isVisible: boolean
+  containerWidth: number
 }
 
-const SentimentBar = ({ value, valueIndex, total, counts, itemKey: _itemKey, isAnimated, isVisible }: SentimentBarProps) => {
+const SentimentBar = ({
+  value,
+  valueIndex,
+  total,
+  counts,
+  itemKey: _itemKey,
+  isAnimated,
+  isVisible,
+  containerWidth,
+}: SentimentBarProps) => {
   const { t } = useTranslation()
+  const textRef = useRef<HTMLSpanElement>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [contentWidth, setContentWidth] = useState<number>(0)
+
+  useEffect(() => {
+    if (textRef.current) {
+      const originalVisibility = textRef.current.style.visibility
+      const originalOpacity = textRef.current.style.opacity
+      const originalPosition = textRef.current.style.position
+
+      textRef.current.style.visibility = 'hidden'
+      textRef.current.style.opacity = '1'
+      textRef.current.style.position = 'absolute'
+      textRef.current.style.width = 'auto'
+
+      const width = textRef.current.scrollWidth
+      setContentWidth(width)
+
+      textRef.current.style.visibility = originalVisibility
+      textRef.current.style.opacity = originalOpacity
+      textRef.current.style.position = originalPosition
+    }
+  }, [value, total])
 
   if (value === 0) {
     return null
@@ -122,9 +153,17 @@ const SentimentBar = ({ value, valueIndex, total, counts, itemKey: _itemKey, isA
   const tooltipKey = getTooltipTranslationKey(sentimentType)
   const tooltipText = `${t(tooltipKey)} - ${percentage} (${value})`
 
+  // 부모 컨테이너 너비를 기반으로 바의 최종 너비를 미리 계산
+  const percentageValue = Number.parseFloat(percentage.replace('%', ''))
+  const finalBarWidth = containerWidth > 0 ? (containerWidth * percentageValue) / 100 : 0
+  const availableWidth = finalBarWidth > 0 ? finalBarWidth - 16 : 0 // 패딩 16px 제외
+  const shouldShowText = availableWidth >= contentWidth - 2 && contentWidth > 0 && finalBarWidth > 16
+  const textSyncAnimation = shouldShowText && contentWidth > 0 ? createTextSyncAnimation(contentWidth) : null
+
   return (
     <Tooltip title={tooltipText} placement="top" disableInteractive followCursor>
       <Box
+        ref={boxRef}
         height={BAR_HEIGHT}
         borderRadius="100px"
         padding="2px 8px"
@@ -136,7 +175,6 @@ const SentimentBar = ({ value, valueIndex, total, counts, itemKey: _itemKey, isA
         overflow="hidden"
         sx={{
           background: BAR_COLORS[sentimentType],
-          minWidth: `${BAR_MIN_WIDTH}px`,
           width: shouldAnimate ? '0%' : percentage,
           transition: `all ${isVisible ? 0.3 : BAR_TRANSITION_DURATION / 1000}s ease-in-out`,
           animation: shouldAnimate ? `${expandKeyframes} ${duration} linear forwards` : 'none',
@@ -159,15 +197,20 @@ const SentimentBar = ({ value, valueIndex, total, counts, itemKey: _itemKey, isA
         )}
 
         <Typography
+          ref={textRef}
           variant="body2SB14"
           color="contentText.White"
           sx={{
             position: 'relative',
             zIndex: 2,
-            opacity: shouldAnimate ? 0 : 1,
+            width: 'fit-content',
+            opacity: shouldShowText ? (shouldAnimate ? 0 : 1) : 0,
             transform: shouldAnimate ? 'scale(0.8)' : 'scale(1)',
-            animation: shouldAnimate ? `${textFadeInAnimation} ${duration} ease-out forwards` : 'none',
-            animationDelay: ANIMATION_DELAY,
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            visibility: shouldShowText ? 'visible' : 'hidden',
+            animation: shouldShowText && shouldAnimate && textSyncAnimation ? `${textSyncAnimation} ${duration} ease-out forwards` : 'none',
+            animationDelay: shouldShowText ? ANIMATION_DELAY : '0s',
           }}
         >
           {percentage}
@@ -191,6 +234,29 @@ const SentimentItem = ({ itemKey, label, period, counts, index, isVisible, showL
   const total = counts.reduce((sum, val) => sum + val, 0)
   const transitionDelay = `${index * STAGGER_DELAY}ms`
   const barTransitionDelay = `${index * STAGGER_DELAY + 150}ms`
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState<number>(0)
+
+  useEffect(() => {
+    if (!containerRef.current) {
+      return undefined
+    }
+
+    const updateContainerWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth - 16) // padding 16px 제외
+      }
+    }
+
+    updateContainerWidth()
+
+    const resizeObserver = new ResizeObserver(updateContainerWidth)
+    resizeObserver.observe(containerRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [isVisible])
 
   return (
     <Box
@@ -233,7 +299,15 @@ const SentimentItem = ({ itemKey, label, period, counts, index, isVisible, showL
             transitionDelay: isVisible ? barTransitionDelay : '0ms',
           }}
         >
-          <Stack padding="8px" direction="row" alignItems="center" gap="3px" borderRadius="100px" sx={{ backgroundColor: '#E9ECEF' }}>
+          <Stack
+            ref={containerRef}
+            padding="8px"
+            direction="row"
+            alignItems="center"
+            gap="3px"
+            borderRadius="100px"
+            sx={{ backgroundColor: '#E9ECEF' }}
+          >
             {counts.map((value, valueIndex) => (
               <SentimentBar
                 key={`${itemKey}-${valueIndex}-${value}`}
@@ -244,6 +318,7 @@ const SentimentItem = ({ itemKey, label, period, counts, index, isVisible, showL
                 itemKey={itemKey}
                 isAnimated={index === 0}
                 isVisible={isVisible}
+                containerWidth={containerWidth}
               />
             ))}
           </Stack>
