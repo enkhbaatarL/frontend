@@ -137,45 +137,70 @@ const Highlights = ({ highlights }: Props) => {
           closeOnScroll
         />
       </SectionHeader>
-      <InlineNotice noticeKey="dashboard-highlights">{t('dashboard.highlights.inlineNotice')}</InlineNotice>
-      <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500}>
-        <Box>
-          {(selectedOption === 'detailed' || selectedOption === 'focused') &&
-            highlights?.items.map((item, index) => (
-              <HighlightsItem
-                key={item.highlightItemId}
-                item={item}
-                selectedOption={selectedOption}
-                borderBottom={index !== highlights?.items.length - 1}
-                onRelatedNewsItemSelected={handleRelatedNewsItemSelected}
-              />
-            ))}
-        </Box>
-      </Fade>
-      <Fade in={selectedOption === 'narrative'} timeout={500}>
-        <Box>
-          {selectedOption === 'narrative' && (
-            <Stack padding="12px 20px 6px" gap="6px">
-              <Typography variant="infoDocument">{highlights?.narrative.title}</Typography>
-              <Stack gap="8px">
-                {highlights?.narrative.content.map((content, index) => (
-                  <Typography key={`narrative-content-${index}`} variant="subtext5" color="gray.70" fontWeight={500}>
-                    {content}
-                  </Typography>
+      {((highlights?.items && highlights.items.length > 0) || (selectedOption === 'narrative' && highlights?.narrative)) && (
+        <InlineNotice noticeKey="dashboard-highlights">{t('dashboard.highlights.inlineNotice')}</InlineNotice>
+      )}
+      {(!highlights?.items || highlights.items.length === 0) && selectedOption !== 'narrative' ? (
+        <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+          <Typography variant="body2SB14" color="content.textNormal">
+            No data available to display.
+          </Typography>
+        </Stack>
+      ) : (
+        <>
+          <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500}>
+            <Box>
+              {(selectedOption === 'detailed' || selectedOption === 'focused') &&
+                highlights?.items.map((item, index) => (
+                  <HighlightsItem
+                    key={item.highlightItemId}
+                    item={item}
+                    selectedOption={selectedOption}
+                    borderBottom={index !== highlights?.items.length - 1}
+                    onRelatedNewsItemSelected={handleRelatedNewsItemSelected}
+                  />
                 ))}
-                <TagChip
-                  items={
-                    highlights?.narrative.relatedNews?.map((news) => ({ name: news.provider, value: news.newsSummaryId.toString() })) ?? []
-                  }
-                  ellipsisRange={2}
-                  py="4px"
-                  onItemSelected={handleRelatedNewsItemSelected}
-                />
-              </Stack>
-            </Stack>
-          )}
-        </Box>
-      </Fade>
+            </Box>
+          </Fade>
+          <Fade in={selectedOption === 'narrative'} timeout={500}>
+            <Box>
+              {selectedOption === 'narrative' && (
+                <>
+                  {highlights?.narrative ? (
+                    <Stack padding="12px 20px 6px" gap="6px">
+                      <Typography variant="infoDocument">{highlights?.narrative.title}</Typography>
+                      <Stack gap="8px">
+                        {highlights?.narrative.content.map((content, index) => (
+                          <Typography key={`narrative-content-${index}`} variant="subtext5" color="gray.70" fontWeight={500}>
+                            {content}
+                          </Typography>
+                        ))}
+                        <TagChip
+                          items={
+                            highlights?.narrative.relatedNews?.map((news) => ({
+                              name: news.provider,
+                              value: news.newsSummaryId.toString(),
+                            })) ?? []
+                          }
+                          ellipsisRange={2}
+                          py="4px"
+                          onItemSelected={handleRelatedNewsItemSelected}
+                        />
+                      </Stack>
+                    </Stack>
+                  ) : (
+                    <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+                      <Typography variant="body2SB14" color="content.textNormal">
+                        No data available to display.
+                      </Typography>
+                    </Stack>
+                  )}
+                </>
+              )}
+            </Box>
+          </Fade>
+        </>
+      )}
     </Stack>
   )
 }

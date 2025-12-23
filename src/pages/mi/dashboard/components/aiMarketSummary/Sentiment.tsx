@@ -109,6 +109,11 @@ interface SentimentBarProps {
 const SentimentBar = ({ value, valueIndex, total, counts, itemKey: _itemKey, isAnimated, isVisible }: SentimentBarProps) => {
   const { t } = useTranslation()
 
+  // value가 0이면 막대기를 렌더링하지 않음
+  if (value === 0) {
+    return null
+  }
+
   const sentimentType = getSentimentType(valueIndex, counts.length)
   const percentage = formatPercentage(value, total)
   const isMaxValue = value === Math.max(...counts)
@@ -277,28 +282,38 @@ const Sentiment = ({ sentiments }: Props) => {
   return (
     <Stack padding="6px 12px 14px" borderRadius="10px" sx={{ backgroundColor: '#F8F9FA', userSelect: 'none' }}>
       <SectionHeader title="Sentiment" tooltipTitle={t('dashboard.sentiments.titleTooltip')} padding="7.5px 0 7.5px 6px">
-        <MISelectMenu
-          selectType="switch"
-          multiple
-          items={menuOptions}
-          selected={selectedOptions}
-          onSelected={setSelectedOptions}
-          menuPositionOffset={{ right: -78 }}
-          placement="bottom-end"
-          fadeIn="left"
-          closeOnScroll
-        />
+        {menuOptions.length > 0 && (
+          <MISelectMenu
+            selectType="switch"
+            multiple
+            items={menuOptions}
+            selected={selectedOptions}
+            onSelected={setSelectedOptions}
+            menuPositionOffset={{ right: -78 }}
+            placement="bottom-end"
+            fadeIn="left"
+            closeOnScroll
+          />
+        )}
       </SectionHeader>
 
-      {sentimentItems.map((item, index) => (
-        <SentimentItem
-          key={item.itemKey}
-          {...item}
-          index={index}
-          isVisible={selectedOptions.includes(item.itemKey)}
-          showLabels={selectedOptions.length > 1}
-        />
-      ))}
+      {sentimentItems.length === 0 ? (
+        <Stack height={52} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+          <Typography variant="body2SB14" color="content.textNormal">
+            No data available to display.
+          </Typography>
+        </Stack>
+      ) : (
+        sentimentItems.map((item, index) => (
+          <SentimentItem
+            key={item.itemKey}
+            {...item}
+            index={index}
+            isVisible={selectedOptions.includes(item.itemKey)}
+            showLabels={selectedOptions.length > 1}
+          />
+        ))
+      )}
     </Stack>
   )
 }

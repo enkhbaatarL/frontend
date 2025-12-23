@@ -82,36 +82,58 @@ const Checkpoints = ({ checkpoints }: Props) => {
           closeOnScroll
         />
       </SectionHeader>
-      <InlineNotice noticeKey="dashboard-checkpoints">{t('dashboard.checkpoints.inlineNotice')}</InlineNotice>
-      <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500}>
-        <Box>
-          {(selectedOption === 'detailed' || selectedOption === 'focused') &&
-            checkpoints?.items.map((item, index) => (
-              <CheckpointsItem
-                key={item.checkpointItemId}
-                item={item}
-                selectedOption={selectedOption}
-                borderBottom={index !== checkpoints?.items.length - 1}
-              />
-            ))}
-        </Box>
-      </Fade>
-      <Fade in={selectedOption === 'narrative'} timeout={500}>
-        <Box>
-          {selectedOption === 'narrative' && (
-            <Stack padding="12px 20px 16px" gap="6px">
-              <Typography variant="infoDocument">{checkpoints?.narrative.title}</Typography>
-              <Stack gap="8px">
-                {checkpoints?.narrative.content.map((content, index) => (
-                  <Typography key={`narrative-content-${index}`} variant="subtext5" color="gray.70" fontWeight={500}>
-                    {content}
-                  </Typography>
+      {((checkpoints?.items && checkpoints.items.length > 0) || (selectedOption === 'narrative' && checkpoints?.narrative)) && (
+        <InlineNotice noticeKey="dashboard-checkpoints">{t('dashboard.checkpoints.inlineNotice')}</InlineNotice>
+      )}
+      {(!checkpoints?.items || checkpoints.items.length === 0) && selectedOption !== 'narrative' ? (
+        <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+          <Typography variant="body2SB14" color="content.textNormal">
+            No data available to display.
+          </Typography>
+        </Stack>
+      ) : (
+        <>
+          <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500}>
+            <Box>
+              {(selectedOption === 'detailed' || selectedOption === 'focused') &&
+                checkpoints?.items.map((item, index) => (
+                  <CheckpointsItem
+                    key={item.checkpointItemId}
+                    item={item}
+                    selectedOption={selectedOption}
+                    borderBottom={index !== checkpoints?.items.length - 1}
+                  />
                 ))}
-              </Stack>
-            </Stack>
-          )}
-        </Box>
-      </Fade>
+            </Box>
+          </Fade>
+          <Fade in={selectedOption === 'narrative'} timeout={500}>
+            <Box>
+              {selectedOption === 'narrative' && (
+                <>
+                  {checkpoints?.narrative ? (
+                    <Stack padding="12px 20px 16px" gap="6px">
+                      <Typography variant="infoDocument">{checkpoints?.narrative.title}</Typography>
+                      <Stack gap="8px">
+                        {checkpoints?.narrative.content.map((content, index) => (
+                          <Typography key={`narrative-content-${index}`} variant="subtext5" color="gray.70" fontWeight={500}>
+                            {content}
+                          </Typography>
+                        ))}
+                      </Stack>
+                    </Stack>
+                  ) : (
+                    <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+                      <Typography variant="body2SB14" color="content.textNormal">
+                        No data available to display.
+                      </Typography>
+                    </Stack>
+                  )}
+                </>
+              )}
+            </Box>
+          </Fade>
+        </>
+      )}
     </Stack>
   )
 }
