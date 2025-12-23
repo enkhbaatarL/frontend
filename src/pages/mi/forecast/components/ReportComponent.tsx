@@ -116,7 +116,8 @@ const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentPro
   const formatDate = (date: string) => {
     if (companyNo === 2020) {
       const dateObj = dayjs(date)
-      const month = dateObj.format('MMM')
+      const thursdayOfCurrentWeek = dateObj.isoWeekday(4)
+      const month = thursdayOfCurrentWeek.format('MMM')
       const week = getWeekOfMonth(dateObj)
       return `${month} ${week}W`
     }

@@ -533,7 +533,8 @@ const ForecastChart = (props: ForecastChartProps) => {
 
                     if (!monthValue) return ''
                     const date = dayjs(monthValue)
-                    const month = date.format('MMM')
+                    const thursdayOfCurrentWeek = date.isoWeekday(4)
+                    const month = thursdayOfCurrentWeek.format('MMM')
                     const week = getWeekOfMonth(date)
                     return `${month} ${week}W`
                   },

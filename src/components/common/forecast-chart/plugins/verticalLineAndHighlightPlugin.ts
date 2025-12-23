@@ -1059,7 +1059,8 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
           if (originalMonths[monthIndex]) {
             const dateObj = dayjs(originalMonths[monthIndex])
-            const monthStr = dateObj.format('MMMM YYYY')
+            const thursdayOfCurrentWeek = dateObj.isoWeekday(4)
+            const monthStr = thursdayOfCurrentWeek.format('MMMM YYYY')
             const weekStr = getWeekOfMonth(dateObj)
             label = `${monthStr} (${weekStr}W)`
           } else if (months[currentIndex]) {
