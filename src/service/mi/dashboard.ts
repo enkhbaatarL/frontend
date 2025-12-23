@@ -111,6 +111,31 @@ export interface IMarketRecapItem {
   checkpoints: IMarketRecapCheckpoints
 }
 
+// Key Economic Indicators 관련 타입들
+export interface IKeyEconomicIndicatorItem {
+  economicCalendarId: number
+  code: string
+  date: string
+  economicIndicatorName: string
+  economicIndicatorPresentationDay: string
+  economicIndicatorPresentationTime: string
+  economicIndicatorRealValue: number | null
+  economicIndicatorPredictionDay: string | null
+  economicIndicatorPresentationPriorValue: number | null
+  economicIndicatorPredictionValue: number | null
+  unitPrefix: string | null
+  unit: string
+  refinitivPriority: number
+}
+
+export interface IKeyEconomicIndicatorsResponse {
+  economicIndicatorAnalysisId: number
+  categoryCode: string
+  criteriaDate: string
+  content: string[]
+  relatedEconomicIndicators: IKeyEconomicIndicatorItem[]
+}
+
 // API 응답 타입
 interface IMarketRecapApiResponse {
   marketRecapId: number
@@ -252,6 +277,18 @@ const dashboardService = {
         },
       },
     }
+  },
+  async getKeyEconomicIndicators(categoryCode: string, criteriaDate?: string): Promise<IKeyEconomicIndicatorsResponse> {
+    const params: Record<string, string> = {
+      category: categoryCode,
+      criteriaDate: criteriaDate || dayjs().format('YYYYMMDD'),
+    }
+
+    const response: AxiosResponse<ICommonResponse<IKeyEconomicIndicatorsResponse>> = await api.get('mi/econ-cal/key', {
+      params,
+    })
+
+    return response.data.data
   },
 }
 
