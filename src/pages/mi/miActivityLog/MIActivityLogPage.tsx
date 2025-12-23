@@ -1,6 +1,7 @@
 // src/pages/mi/miActivityLog/MIActivityLogPage.tsx
 import { Box, Grid2 as Grid, Stack, Typography } from '@mui/material'
 import dayjs, { Dayjs } from 'dayjs'
+
 import { disassembleToGroups } from 'es-hangul'
 import { useCallback, useMemo, useState } from 'react'
 
@@ -154,6 +155,7 @@ const MIActivityLogPage = () => {
       })
 
       return matchesType && matchesSearch
+
     })
   }, [appliedSearch, selectedTypes, events])
 
@@ -386,8 +388,14 @@ const MIActivityLogPage = () => {
               <Box sx={{ width: 300 }}>
                 <MISearchInput
                   storageKey="mi-activity-log"
-                  value={searchKeyword}
-                  onChange={handleSearchChange}
+                  value={searchValue}
+                  onChange={(value) => {
+                    setSearchValue(value)
+                    if (value.trim() === '' && appliedSearch !== '') {
+                      setAppliedSearch('')
+                      setPage(1)
+                    }
+                  }}
                   placeholder="Search for description"
                   onSearch={handleSearch}
                   onClear={handleSearchClear}
