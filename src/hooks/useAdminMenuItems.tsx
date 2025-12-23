@@ -39,9 +39,9 @@ export const useAdminMenuItems = () => {
     () =>
       user?.userRoleCd === UserRole.OPERATOR
         ? {
-            ...AdminRoutes,
-            children: AdminRoutes.children?.filter((child) => child.path && ['data-providers', 'tokens'].includes(child.path)),
-          }
+          ...AdminRoutes,
+          children: AdminRoutes.children?.filter((child) => child.path && ['data-providers', 'tokens'].includes(child.path)),
+        }
         : AdminRoutes,
     [user?.userRoleCd],
   )

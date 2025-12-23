@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Chart, { ActiveElement, ChartType, InteractionItem, Plugin } from 'chart.js/auto'
+import dayjs from 'dayjs'
 import { debounce, DebouncedFunc } from 'lodash-es'
 
 import { DATA_CATEGORIES, HOVER_INDICATOR, LINE_STYLES } from '@/components/common/forecast-chart/constants'
 import { createMakerSVG } from '@/components/common/forecast-chart/utils/loadImage'
+import { getWeekOfMonth } from '@/lib/chart/utils/chartUtils'
 import { formatDate } from '@/utils/date'
 
 // Define interaction states
@@ -339,20 +341,11 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
           if (!activePoint) return
 
           // 클릭된 포인트의 실제 데이터 인덱스 찾기
-          const clickedDataset = chart.data.datasets[this.selectedPoint.datasetIndex]
-          const clickedData = clickedDataset.data
-          let realIndex = -1
-
-          // 실제 값이 있는 인덱스 찾기
-          for (let i = 0; i < clickedData.length; i++) {
-            if (clickedData[i] !== null && clickedData[i] !== undefined) {
-              realIndex = i - 1 // null padding 때문에 -1
-              break
-            }
-          }
-
-          const months = chart.data.labels || []
-          const currentIndex = Math.max(0, Math.min(realIndex, months.length - 1)) // 범위 체크
+          // this.selectedPoint.index는 차트 인덱스 (null padding 포함)
+          // months 배열은 패딩이 없는 원본 배열이므로 -1을 해야 함
+          const chartIndex = this.selectedPoint.index
+          const months = options.months || []
+          const currentIndex = Math.max(0, Math.min(chartIndex - 1, months.length - 1)) // null padding 보정
 
           // 클릭된 월의 모든 데이터를 툴팁에 포함
           const clickTooltipContent: any[] = []
@@ -375,7 +368,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
           if (clickedValue !== null && clickedValue !== undefined) {
             clickTooltipContent.push({
-              index: this.selectedPoint.datasetIndex,
+              index: this.selectedPoint.index,
               label: clickedForecastDataset.label,
               value: clickedValue,
               category: DATA_CATEGORIES.FORECAST,
@@ -401,6 +394,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
                 !addedLabels.has(dataset.label) // 중복 방지
               ) {
                 clickTooltipContent.push({
+                  index: this.selectedPoint?.index,
                   label: dataset.label,
                   value: this.selectedPoint ? (dataset.data[this.selectedPoint.index] as number) : 0,
                   category: DATA_CATEGORIES.FORECAST,
@@ -437,13 +431,22 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
           // 실제 차트 위치에서 툴팁 위치 계산 (클릭된 포인트의 element 위치 사용)
           const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, chart)
 
+          // 주차 정보를 포함한 라벨 생성
+          let clickLabel = formatDate(months[currentIndex], 'MMMM YYYY')
+          if (months[currentIndex]) {
+            const dateObj = dayjs(months[currentIndex])
+            const monthStr = dateObj.format('MMMM YYYY')
+            const weekStr = getWeekOfMonth(dateObj)
+            clickLabel = `${monthStr} (${weekStr}W)`
+          }
+
           options.onPointerMove?.({
             plugin: this,
             chart,
             tooltip: {
               x: adjustedPosition.x,
               y: adjustedPosition.y,
-              label: formatDate(months[currentIndex], 'MMMM YYYY'),
+              label: clickLabel,
               viewDetail: true,
               content: clickTooltipContent,
             },
@@ -737,23 +740,6 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
       // 선택된 포인트가 있을 때는 선택된 포인트를 기준으로 툴팁 표시
       if (this.selectedPoint) {
-        const months = chart.data.labels || []
-
-        // 클릭된 포인트의 실제 데이터 인덱스 찾기
-        const clickedDataset = chart.data.datasets[this.selectedPoint.datasetIndex]
-        const clickedData = clickedDataset.data
-        let realIndex = -1
-
-        // 실제 값이 있는 인덱스 찾기
-        for (let i = 0; i < clickedData.length; i++) {
-          if (clickedData[i] !== null && clickedData[i] !== undefined) {
-            realIndex = i - 1 // null padding 때문에 -1
-            break
-          }
-        }
-
-        const selectedIndex = Math.max(0, realIndex)
-
         // 클릭된 월의 Forecast 데이터만 툴팁에 포함 (중복 방지)
         const clickTooltipContent: any[] = []
         const addedLabels = new Set<string>() // 중복 방지용
@@ -791,12 +777,17 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
         const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, chart)
 
-        // console.log('Click tooltip date calculation:', {
-        //   selectedIndex,
-        //   monthsLength: months.length,
-        //   selectedMonth: months[selectedIndex],
-        //   formattedDate: formatDate(months[selectedIndex], 'MMMM YYYY'),
-        // })
+        // 주차 정보를 포함한 라벨 생성
+        const originalMonths = options.months || []
+        const chartIndex = this.selectedPoint.index
+        const monthIndex = Math.max(0, Math.min(chartIndex - 1, originalMonths.length - 1))
+        let clickLabel = formatDate(originalMonths[monthIndex], 'MMMM YYYY')
+        if (originalMonths[monthIndex]) {
+          const dateObj = dayjs(originalMonths[monthIndex])
+          const monthStr = dateObj.format('MMMM YYYY')
+          const weekStr = getWeekOfMonth(dateObj)
+          clickLabel = `${monthStr} (${weekStr}W)`
+        }
 
         options.onPointerMove?.({
           plugin: this,
@@ -804,7 +795,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
           tooltip: {
             x: adjustedPosition.x,
             y: adjustedPosition.y,
-            label: formatDate(months[selectedIndex], 'MMMM YYYY'),
+            label: clickLabel,
             viewDetail: true,
             content: clickTooltipContent,
           },
@@ -1061,9 +1052,17 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
             }
           }
 
+          // 주차 정보를 포함한 라벨 생성
           let label: string = ''
+          const originalMonths = options.months || []
+          const monthIndex = Math.max(0, Math.min(currentIndex - 1, originalMonths.length - 1))
 
-          if (months[currentIndex]) {
+          if (originalMonths[monthIndex]) {
+            const dateObj = dayjs(originalMonths[monthIndex])
+            const monthStr = dateObj.format('MMMM YYYY')
+            const weekStr = getWeekOfMonth(dateObj)
+            label = `${monthStr} (${weekStr}W)`
+          } else if (months[currentIndex]) {
             label = formatDate(months[currentIndex], 'MMMM YYYY')
           }
 
@@ -1104,21 +1103,6 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
     const tooltipHeight = rect.height
 
     if (this.selectedPoint) {
-      const months = this._chart.data.labels || []
-
-      const clickedDataset = this._chart.data.datasets[this.selectedPoint.datasetIndex]
-      const clickedData = clickedDataset.data
-      let realIndex = -1
-
-      for (let i = 0; i < clickedData.length; i++) {
-        if (clickedData[i] !== null && clickedData[i] !== undefined) {
-          realIndex = i - 1
-          break
-        }
-      }
-
-      const currentIndex = Math.max(0, Math.min(realIndex, months.length - 1))
-
       const clickTooltipContent: any[] = []
 
       this._chart.data.datasets.forEach((dataset: any) => {
@@ -1162,13 +1146,25 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
         adjustedY = chartArea.top + 10
       }
 
+      // 주차 정보를 포함한 라벨 생성
+      const originalMonths = this._options.months || []
+      const chartIndex = this.selectedPoint.index
+      const monthIndex = Math.max(0, Math.min(chartIndex - 1, originalMonths.length - 1))
+      let clickLabel = formatDate(originalMonths[monthIndex], 'MMMM YYYY')
+      if (originalMonths[monthIndex]) {
+        const dateObj = dayjs(originalMonths[monthIndex])
+        const monthStr = dateObj.format('MMMM YYYY')
+        const weekStr = getWeekOfMonth(dateObj)
+        clickLabel = `${monthStr} (${weekStr}W)`
+      }
+
       this._options.onPointerMove?.({
         plugin: this,
         chart: this._chart,
         tooltip: {
           x: adjustedX,
           y: adjustedY,
-          label: formatDate(months[currentIndex], 'MMMM YYYY'),
+          label: clickLabel,
           viewDetail: true,
           content: clickTooltipContent,
         },
@@ -1180,21 +1176,6 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
     if (!this._chart) return
 
     if (this.selectedPoint) {
-      const months = this._chart.data.labels || []
-
-      const clickedDataset = this._chart.data.datasets[this.selectedPoint.datasetIndex]
-      const clickedData = clickedDataset.data
-      let realIndex = -1
-
-      for (let i = 0; i < clickedData.length; i++) {
-        if (clickedData[i] !== null && clickedData[i] !== undefined) {
-          realIndex = i - 1
-          break
-        }
-      }
-
-      const currentIndex = Math.max(0, Math.min(realIndex, months.length - 1))
-
       const clickTooltipContent: any[] = []
       const addedLabels = new Set<string>() // 중복 방지용
 
@@ -1219,13 +1200,25 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
       const adjustedPosition = adjustTooltipPosition(this.selectedPoint.element.x, this.selectedPoint.element.y, this._chart)
 
+      // 주차 정보를 포함한 라벨 생성
+      const originalMonths = this._options.months || []
+      const chartIndex = this.selectedPoint.index
+      const monthIndex = Math.max(0, Math.min(chartIndex - 1, originalMonths.length - 1))
+      let clickLabel = formatDate(originalMonths[monthIndex], 'MMMM YYYY')
+      if (originalMonths[monthIndex]) {
+        const dateObj = dayjs(originalMonths[monthIndex])
+        const monthStr = dateObj.format('MMMM YYYY')
+        const weekStr = getWeekOfMonth(dateObj)
+        clickLabel = `${monthStr} (${weekStr}W)`
+      }
+
       this._options.onPointerMove?.({
         plugin: this,
         chart: this._chart,
         tooltip: {
           x: adjustedPosition.x,
           y: adjustedPosition.y,
-          label: formatDate(months[currentIndex], 'MMMM YYYY'),
+          label: clickLabel,
           viewDetail,
           content: clickTooltipContent,
         },

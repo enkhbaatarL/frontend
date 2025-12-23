@@ -1,4 +1,4 @@
-import { Stack, Typography } from '@mui/material'
+import { Stack, Typography, TypographyProps } from '@mui/material'
 import { ReactNode } from 'react'
 
 export interface MIBaseButtonLabelProps {
@@ -6,27 +6,32 @@ export interface MIBaseButtonLabelProps {
   children: ReactNode
   suffix?: ReactNode
   gap?: string | number
+  color?: string
+  variant?: TypographyProps['variant']
 }
 
-const MIBaseButtonLabel = ({ prefix, children, suffix, gap = '8px' }: MIBaseButtonLabelProps) => (
+const MIBaseButtonLabel = ({ prefix, children, suffix, gap = '8px', color, variant = 'body2SB14' }: MIBaseButtonLabelProps) => (
   <Stack direction="row" flex={1} alignItems="center" justifyContent="space-between" gap="6px">
-    <Stack direction="row" alignItems="center" gap={gap}>
-      {prefix}
-      <Typography
-        variant="body2SB14"
-        sx={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          maxWidth: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {children}
-      </Typography>
-    </Stack>
+    {!prefix && children === '' ? null : (
+      <Stack direction="row" alignItems="center" gap={gap}>
+        {prefix}
+        <Typography
+          variant={variant}
+          color={color}
+          sx={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {children}
+        </Typography>
+      </Stack>
+    )}
     {suffix}
   </Stack>
 )

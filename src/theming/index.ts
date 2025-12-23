@@ -210,6 +210,7 @@ declare module '@mui/material/styles' {
     chartToolTipNumber?: CSSProperties
     titlePage: CSSProperties
     titleSubPage: CSSProperties
+    titleLarge?: CSSProperties
     bage1: CSSProperties
     bage2: CSSProperties
     titleCardInsight: CSSProperties
@@ -280,6 +281,7 @@ declare module '@mui/material/Typography' {
     chartToolTipNumber: true
     titlePage: true
     titleSubPage: true
+    titleLarge: true
     bage1: true
     bage2: true
     titleCardInsight: true
@@ -759,6 +761,14 @@ const theme = createTheme({
       fontStyle: 'normal',
       fontWeight: 600,
       lineHeight: '1',
+    },
+    titleLarge: {
+      fontSize: '38px',
+      fontStyle: 'normal',
+      fontWeight: 600,
+      lineHeight: '1.4',
+      letterSpacing: '0%',
+      verticalAlign: 'middle',
     },
     bage1: {
       fontSize: '12px',

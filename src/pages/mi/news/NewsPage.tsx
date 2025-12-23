@@ -122,7 +122,7 @@ const NewsPage = () => {
     },
     {
       page: 1,
-      size: 10,
+      size: viewType === 'GRID' ? 30 : 10,
     },
     {
       initialFetch: true,
@@ -226,6 +226,7 @@ const NewsPage = () => {
                     onClear={() => updateFilterWithSearch('keyword', '')}
                   />
                   <MIFilterMenu
+                    sx={{ display: 'none' }}
                     onApply={handleApplyFilters}
                     filterGroups={[
                       [
@@ -317,6 +318,7 @@ const NewsPage = () => {
                     value={viewType}
                     onChange={(_event, newValue) => {
                       const finalViewType = (newValue ?? 'LIST') as 'GRID' | 'LIST'
+                      updateSize(finalViewType === 'GRID' ? 30 : 10)
                       setViewType(finalViewType)
                       localStorage.setItem(VIEW_TYPE_STORAGE_KEY, finalViewType)
                     }}
@@ -339,7 +341,8 @@ const NewsPage = () => {
                           <NewsItemsGridView
                             newsList={newsList?.detail ?? []}
                             isLoading={isListLoading}
-                            skeletonCount={pagination?.size ?? 10}
+                            skeletonCount={pagination?.size ?? 30}
+                            showSentimentsGraph={false}
                           />
                         )}
                       </Stack>

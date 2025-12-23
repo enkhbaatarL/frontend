@@ -23,49 +23,53 @@ interface MIChartTooltipProps {
   top?: number
   left?: number
   content: Record<string, { label?: string; value?: number; color?: string; date: string; hasDivider?: boolean; toFixed?: number }>
+  visibility?: 'visible' | 'hidden'
 }
 
-const MIChartTooltip = forwardRef<HTMLDivElement, Readonly<MIChartTooltipProps>>(({ visible, top, left, content }, ref) => {
-  if (!visible) return null
+const MIChartTooltip = forwardRef<HTMLDivElement, Readonly<MIChartTooltipProps>>(
+  ({ visible, top, left, content, visibility = 'visible' }, ref) => {
+    if (!visible) return null
 
-  const items: Array<{ label?: string; value?: number; color?: string; date: string; hasDivider?: boolean; toFixed?: number }> = []
+    const items: Array<{ label?: string; value?: number; color?: string; date: string; hasDivider?: boolean; toFixed?: number }> = []
 
-  Object.entries(content).forEach(([, value]) => {
-    items.push(value)
-  })
+    Object.entries(content).forEach(([, value]) => {
+      items.push(value)
+    })
 
-  if (items.length === 0) return null
+    if (items.length === 0) return null
 
-  return (
-    <Box
-      ref={ref}
-      sx={{
-        position: 'absolute',
-        top,
-        left,
-        pointerEvents: 'none',
-        padding: '14px',
-        zIndex: 30,
-        borderRadius: '4px',
-        border: '1px solid #DEE2E6',
-        backgroundColor: '#ffffff',
-        boxShadow: '0px 1px 8px 0px rgba(0, 0, 0, 0.10);',
-      }}
-    >
-      <Box mb={'10px'}>
-        <Typography variant="chartToolTipTitle" color="gray.90">
-          {items[0]?.date || '-'}
-        </Typography>
+    return (
+      <Box
+        ref={ref}
+        sx={{
+          position: 'absolute',
+          top,
+          left,
+          pointerEvents: 'none',
+          padding: '14px',
+          zIndex: 30,
+          borderRadius: '4px',
+          border: '1px solid #DEE2E6',
+          backgroundColor: '#ffffff',
+          boxShadow: '0px 1px 8px 0px rgba(0, 0, 0, 0.10);',
+          visibility,
+        }}
+      >
+        <Box mb={'10px'}>
+          <Typography variant="chartToolTipTitle" color="gray.90">
+            {items[0]?.date || '-'}
+          </Typography>
+        </Box>
+        {items.map((item, idx) => (
+          <Fragment key={idx}>
+            {item.hasDivider && <Divider sx={{ my: '8px', borderColor: '#DEE2E6' }} />}
+            <ChartToolTipItem label={item.label as string} value={item.value} color={item.color as string} toFixed={item.toFixed} />
+          </Fragment>
+        ))}
       </Box>
-      {items.map((item, idx) => (
-        <Fragment key={idx}>
-          {item.hasDivider && <Divider sx={{ my: '8px', borderColor: '#DEE2E6' }} />}
-          <ChartToolTipItem label={item.label as string} value={item.value} color={item.color as string} toFixed={item.toFixed} />
-        </Fragment>
-      ))}
-    </Box>
-  )
-})
+    )
+  },
+)
 
 MIChartTooltip.displayName = 'MIChartTooltip'
 

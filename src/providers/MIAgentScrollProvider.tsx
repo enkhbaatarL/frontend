@@ -22,40 +22,35 @@ const MIAgentScrollProvider = ({ children }: MIAgentScrollProviderProps) => {
     })
   }, [scrollRef])
 
-
   const scrollToNewMessage = useCallback(() => {
     const element = scrollRef.current
     if (!element) return
-  
+
     const currentHeight = element.scrollHeight
     const prevHeight = prevScrollHeightRef.current
-  
+
     const delta = currentHeight - prevHeight
-  
+
     if (delta > 0) {
       element.scrollBy({
         top: delta,
         behavior: 'smooth',
       })
     }
-  
+
     prevScrollHeightRef.current = currentHeight
   }, [scrollRef])
 
-  
   const value = useMemo(
     () => ({
       scrollRef,
       scrollToBottom,
-      scrollToNewMessage
+      scrollToNewMessage,
     }),
-    [scrollToBottom,scrollToNewMessage, scrollRef],
+    [scrollToBottom, scrollToNewMessage, scrollRef],
   )
 
   return <ScrollContext.Provider value={value}>{children}</ScrollContext.Provider>
 }
-
-
-
 
 export default MIAgentScrollProvider

@@ -10,10 +10,25 @@ export interface MIBaseButtonProps extends Omit<ButtonProps, 'prefix' | 'suffix'
   enableHoverBackground?: boolean
   prefix?: ReactNode
   suffix?: ReactNode
+  disableRipple?: boolean
 }
 
 const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
-  ({ children, variant = 'text', buttonHoverBgColor, open, enableHoverBackground = false, onClick, prefix, suffix, ...props }, ref) => {
+  (
+    {
+      children,
+      variant = 'text',
+      buttonHoverBgColor,
+      open,
+      enableHoverBackground = false,
+      onClick,
+      prefix,
+      suffix,
+      disableRipple,
+      ...props
+    },
+    ref,
+  ) => {
     const getBorderColor = () => {
       if (variant !== 'outlined') return undefined
       return open ? 'contentBorder.Active' : 'contentBorder.Normal'
@@ -32,7 +47,7 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
         ref={ref}
         onClick={onClick}
         variant={variant}
-        disableRipple={variant === 'outlined'}
+        disableRipple={disableRipple ?? variant === 'outlined'}
         aria-controls={open ? 'mi-menu' : undefined}
         aria-expanded={open ? 'true' : undefined}
         aria-haspopup="true"

@@ -21,6 +21,7 @@ export interface MIMenuProps extends MIBaseButtonProps {
   onOpenChange?: (open: boolean) => void
   closeOnScroll?: boolean
   disablePortal?: boolean
+  zIndex?: number
 }
 
 const MIMenu = ({
@@ -38,6 +39,7 @@ const MIMenu = ({
   closeOnScroll = false,
   disablePortal = false,
   enableHoverBackground = false,
+  zIndex = 900,
   ...props
 }: MIMenuProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -123,6 +125,13 @@ const MIMenu = ({
       ? ((props.sx as Record<string, unknown>)?.width as string | number | undefined)
       : undefined
 
+  // paperProps.sx에 width나 minWidth가 있으면 우선시하고, 없을 때만 menuWidth를 minWidth로 사용
+  const paperSx =
+    paperProps?.sx && typeof paperProps.sx === 'object' && !Array.isArray(paperProps.sx)
+      ? (paperProps.sx as Record<string, unknown>)
+      : undefined
+  const hasPaperWidthOrMinWidth = paperSx && (paperSx.width !== undefined || paperSx.minWidth !== undefined)
+
   const popperModifiers = useMemo(() => {
     const modifiers: Array<Record<string, unknown>> = []
 
@@ -171,7 +180,7 @@ const MIMenu = ({
         placement={placement}
         transition
         disablePortal={disablePortal ?? false}
-        sx={{ zIndex: 900 }}
+        sx={{ zIndex }}
         modifiers={popperModifiers}
       >
         {({ TransitionProps, placement: popperPlacement }) => (
@@ -185,7 +194,7 @@ const MIMenu = ({
               {...paperProps}
               sx={{
                 ...paperProps?.sx,
-                ...(menuWidth && { minWidth: menuWidth }),
+                ...(menuWidth && !hasPaperWidthOrMinWidth && { minWidth: menuWidth }),
                 boxShadow: '0px 0px 4px 0px rgba(0, 0, 0, 0.1)',
                 borderRadius: '10px',
                 border: '1px solid',

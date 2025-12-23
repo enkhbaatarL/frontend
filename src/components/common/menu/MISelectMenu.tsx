@@ -38,6 +38,12 @@ interface Props extends ButtonProps {
   maxHeight?: number | string
   enableHoverBackground?: boolean
   hideChevron?: boolean
+  zIndex?: number
+  disableRipple?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  label?: ReactNode
+  labelPrefix?: ReactNode
 }
 
 const MISelectMenu = ({
@@ -59,10 +65,25 @@ const MISelectMenu = ({
   maxHeight = 300,
   enableHoverBackground = false,
   hideChevron = false,
+  zIndex,
+  disableRipple,
+  open: controlledOpen,
+  onOpenChange,
+  label: externalLabel,
+  labelPrefix: externalPrefix,
   ...props
 }: Props) => {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+
+  // 외부에서 open이 제공되면 controlled, 아니면 uncontrolled
+  const open = controlledOpen ?? internalOpen
+  const setOpen = (newOpen: boolean) => {
+    if (controlledOpen === undefined) {
+      setInternalOpen(newOpen)
+    }
+    onOpenChange?.(newOpen)
+  }
 
   const handleMultipleToggle = (value: string) => {
     const currentArray = Array.isArray(selected) ? selected : [selected]
@@ -121,14 +142,9 @@ const MISelectMenu = ({
       }
     }
 
-    let label: ReactNode | undefined = undefined
+    let label: ReactNode
 
-    const selectedItemList = items.filter((item) => {
-      if (Array.isArray(selected)) {
-        return selected.includes(item.value)
-      }
-      return selected === item.value
-    })
+    const selectedItemList = items.filter((item) => (Array.isArray(selected) ? selected.includes(item.value) : selected === item.value))
 
     if (selectedItemList?.length === 0) {
       label = (
@@ -198,6 +214,7 @@ const MISelectMenu = ({
     const isSelected = isItemSelected(value)
     const prefix = icon
     const suffix = renderSuffix(isSelected, disabled)
+    const labelColor = isSelected ? undefined : 'contentText.Subtext'
 
     return (
       <Box
@@ -222,7 +239,7 @@ const MISelectMenu = ({
           gap="12px"
           component="div"
         >
-          <MIBaseButtonLabel prefix={prefix} suffix={suffix}>
+          <MIBaseButtonLabel prefix={prefix} suffix={suffix} color={labelColor} variant="body2M14">
             {label}
           </MIBaseButtonLabel>
         </Stack>
@@ -278,7 +295,7 @@ const MISelectMenu = ({
 
   return (
     <MIMenu
-      prefix={selectedItems.prefix}
+      prefix={externalPrefix !== undefined ? externalPrefix : selectedItems.prefix}
       suffix={
         !hideChevron &&
         (open ? (
@@ -287,7 +304,7 @@ const MISelectMenu = ({
           <KeyboardArrowDownRounded sx={{ color: 'contentIcon.Enabled' }} />
         ))
       }
-      label={selectedItems.label}
+      label={externalLabel !== undefined ? externalLabel : selectedItems.label}
       variant={variant}
       placement={placement}
       menuPositionOffset={menuPositionOffset}
@@ -298,6 +315,8 @@ const MISelectMenu = ({
       disablePortal={disablePortal}
       closeOnScroll={closeOnScroll}
       enableHoverBackground={enableHoverBackground}
+      zIndex={zIndex}
+      disableRipple={disableRipple}
       {...props}
     >
       <ScrollWrapper

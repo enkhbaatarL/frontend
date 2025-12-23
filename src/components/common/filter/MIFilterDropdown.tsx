@@ -17,7 +17,6 @@ interface MIFilterDropdownProps {
   selectedValues: string[]
   onApply: (values: string[]) => void
   onClear?: () => void
-  width?: number | string
   maxHeight?: number
   disabled?: boolean
 }
@@ -178,13 +177,13 @@ const MIFilterDropdown = ({
                       cursor: isDisabled ? 'default' : 'pointer',
                       ...(checked
                         ? {
-                            ...theme.typography.body2M14,
-                            color: theme.palette.gray[90],
-                          }
+                          ...theme.typography.body2M14,
+                          color: theme.palette.gray[90],
+                        }
                         : {
-                            ...theme.typography.body2R14,
-                            color: theme.palette.gray[70],
-                          }),
+                          ...theme.typography.body2R14,
+                          color: theme.palette.gray[70],
+                        }),
                       ...(isDisabled && {
                         color: theme.palette.gray[50],
                         cursor: 'not-allowed',
@@ -193,9 +192,9 @@ const MIFilterDropdown = ({
                         ...(isDisabled
                           ? {}
                           : {
-                              ...theme.typography.body2M14,
-                              color: theme.palette.gray[90],
-                            }),
+                            ...theme.typography.body2M14,
+                            color: theme.palette.gray[90],
+                          }),
                       },
                     }}
                   >
@@ -273,9 +272,9 @@ const MIFilterDropdown = ({
                   ...(draftValues.length === 0
                     ? {}
                     : {
-                        backgroundColor: theme.palette.primary.main,
-                        boxShadow: 'none',
-                      }),
+                      backgroundColor: theme.palette.primary.main,
+                      boxShadow: 'none',
+                    }),
                   textTransform: 'none',
                   padding: 0,
                   borderRadius: '4px',
@@ -285,14 +284,14 @@ const MIFilterDropdown = ({
                   '&:hover': {
                     ...(draftValues.length === 0
                       ? {
-                          backgroundColor: 'transparent',
-                          color: theme.palette.gray[90],
-                        }
+                        backgroundColor: 'transparent',
+                        color: theme.palette.gray[90],
+                      }
                       : {
-                          backgroundColor: theme.palette.primary.dark,
-                          color: '#FFFFFF',
-                          boxShadow: 'none',
-                        }),
+                        backgroundColor: theme.palette.primary.dark,
+                        color: '#FFFFFF',
+                        boxShadow: 'none',
+                      }),
                   },
                   '&.Mui-disabled': {
                     color: theme.palette.gray[50],
@@ -311,4 +310,3 @@ const MIFilterDropdown = ({
 }
 
 export default MIFilterDropdown
-
