@@ -11,6 +11,7 @@ import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
 import EconomicCalendarDetailPage from '@/pages/mi/economicCalendar/EconomicCalendarDetailPage'
 import EconomicCalendarPage from '@/pages/mi/economicCalendar/EconomicCalendarPage'
 import ForecastPage from '@/pages/mi/forecast/ForecastPage'
+import NewForecastPage from '@/pages/mi/forecast/NewForecastPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
@@ -110,6 +111,10 @@ const MIRoutes: RouteObject = {
           element: <NewsletterDetailPage />,
         },
       ],
+    },
+    {
+      path: 'new-forecast',
+      element: <NewForecastPage />,
     },
     {
       path: 'forecast',

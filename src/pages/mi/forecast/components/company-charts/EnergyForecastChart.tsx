@@ -746,7 +746,7 @@ const EnergyForecastChart = ({ selectedContent, onSelectedContent, data, userRol
   const yAxisRange = useMemo(() => {
     if (!data || data.charts.length === 0) return { min: 0, max: 100 }
 
-    let allValues: number[] = []
+    let allValues: (number | null)[] = []
 
     data.charts.forEach((chart) => {
       const actual = (chart.actualChartLines.rawData ?? []).map((d) => d.value)

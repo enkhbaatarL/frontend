@@ -226,6 +226,7 @@ const NewsPage = () => {
                     onClear={() => updateFilterWithSearch('keyword', '')}
                   />
                   <MIFilterMenu
+                    sx={{ display: 'none' }}
                     onApply={handleApplyFilters}
                     filterGroups={[
                       [

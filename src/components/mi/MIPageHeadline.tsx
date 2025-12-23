@@ -17,6 +17,7 @@ const MIPageHeadline = ({ title, gradientStart, gradientEnd, height }: Props) =>
       position: 'relative',
       height: height ?? '140px',
       overflow: 'hidden',
+      userSelect: 'none',
     }}
   >
     <Box

@@ -31,6 +31,8 @@ interface MIFilterMenuProps extends MIMenuProps {
     | 'vertical-horizontal' // 가로 묶음을 세로로 배치
   enableHoverBackground?: boolean
   hideChevron?: boolean
+  zIndex?: number
+  disableRipple?: boolean
 }
 
 const MIFilterMenu = ({
@@ -44,6 +46,8 @@ const MIFilterMenu = ({
   groupLayout = 'vertical-horizontal',
   enableHoverBackground = false,
   hideChevron = false,
+  zIndex,
+  disableRipple,
   ...props
 }: MIFilterMenuProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -215,6 +219,8 @@ const MIFilterMenu = ({
       variant="outlined"
       label={defaultLabel}
       enableHoverBackground={enableHoverBackground}
+      zIndex={zIndex}
+      disableRipple={disableRipple}
       {...props}
     >
       <Stack>

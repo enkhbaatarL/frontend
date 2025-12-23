@@ -153,7 +153,8 @@ const AIMarketSummaryPage = () => {
       summary:
         'Gold prices reached a new record high as investors seek safe-haven assets amid geopolitical tensions. Central bank policies remain a key factor to watch.',
       summaryDetail: {
-        title: 'Gold Hits Record High: Safe-Haven Demand Amid Geopolitical Uncertainty',
+        title:
+          'Gold prices reached a new record high as investors seek safe-haven assets amid geopolitical tensions. Central bank policies remain a key factor to watch.',
         summary: [
           'Gold prices reached a new record high as investors seek safe-haven assets amid escalating geopolitical tensions.',
           'Central bank policies, particularly interest rate decisions, remain a critical factor influencing gold market dynamics.',
@@ -169,7 +170,8 @@ const AIMarketSummaryPage = () => {
       summary:
         'Copper futures declined due to concerns over global manufacturing slowdown. Chinese demand indicators suggest a potential recovery in Q2.',
       summaryDetail: {
-        title: 'Copper Futures Decline: Manufacturing Slowdown Concerns',
+        title:
+          'Copper futures declined due to concerns over global manufacturing slowdown. Chinese demand indicators suggest a potential recovery in Q2.',
         summary: [
           'Copper futures declined due to growing concerns over a global manufacturing slowdown, particularly in Europe and Asia.',
           'Chinese demand indicators, while currently weak, suggest a potential recovery in the second quarter as stimulus measures take effect.',
@@ -185,7 +187,8 @@ const AIMarketSummaryPage = () => {
       summary:
         'Wheat prices stabilized after recent volatility. Weather patterns in major growing regions will be critical for price direction in the next quarter.',
       summaryDetail: {
-        title: 'Wheat Prices Stabilize: Weather Patterns Key to Future Direction',
+        title:
+          'Wheat prices stabilized after recent volatility. Weather patterns in major growing regions will be critical for price direction in the next quarter.',
         summary: [
           'Wheat prices stabilized after a period of significant volatility driven by supply concerns and export restrictions.',
           'Weather patterns in major growing regions, including the United States, Russia, and Australia, will be critical for price direction.',
@@ -201,7 +204,8 @@ const AIMarketSummaryPage = () => {
       summary:
         'Platinum group metals showed mixed performance with palladium gaining while platinum remained flat. Automotive sector demand remains the primary driver.',
       summaryDetail: {
-        title: 'Platinum Group Metals: Mixed Performance Reflects Sector Dynamics',
+        title:
+          'Platinum group metals showed mixed performance with palladium gaining while platinum remained flat. Automotive sector demand remains the primary driver.',
         summary: [
           'Platinum group metals showed mixed performance, with palladium gaining while platinum remained relatively flat.',
           'Automotive sector demand remains the primary driver, with electric vehicle adoption trends influencing long-term outlook.',
@@ -217,7 +221,8 @@ const AIMarketSummaryPage = () => {
       summary:
         'Energy sector stocks rallied on the back of strong oil prices. Renewable energy investments continue to grow despite traditional energy gains.',
       summaryDetail: {
-        title: 'Energy Sector Rally: Traditional and Renewable Energy Both Gain',
+        title:
+          'Energy sector stocks rallied on the back of strong oil prices. Renewable energy investments continue to grow despite traditional energy gains.',
         summary: [
           'Energy sector stocks rallied significantly on the back of strong oil prices and improved earnings outlooks.',
           'Renewable energy investments continue to grow despite traditional energy sector gains, reflecting diversified energy strategies.',
@@ -233,7 +238,8 @@ const AIMarketSummaryPage = () => {
       summary:
         'Agricultural commodities face headwinds from currency fluctuations. Export volumes remain strong despite pricing pressures.',
       summaryDetail: {
-        title: 'Agricultural Commodities: Currency Headwinds vs. Strong Export Volumes',
+        title:
+          'Agricultural commodities face headwinds from currency fluctuations. Export volumes remain strong despite pricing pressures.',
         summary: [
           'Agricultural commodities face headwinds from currency fluctuations, particularly in emerging market currencies.',
           'Export volumes remain strong despite pricing pressures, indicating robust underlying demand for agricultural products.',

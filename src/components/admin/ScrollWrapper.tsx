@@ -201,6 +201,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
     return (
       <Box sx={{ position: 'relative', maxHeight, overflow: 'hidden', padding: `${offsetTop}px 0 ${offsetBottom}px 0`, ...sx }}>
         <Box
+          id={scrollWrapperId}
           className={`disabledScroll ${className ?? ''}`}
           ref={(node: HTMLDivElement | null) => {
             containerRef.current = node
