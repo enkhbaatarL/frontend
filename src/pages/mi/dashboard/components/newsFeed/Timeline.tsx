@@ -371,7 +371,7 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
           )
         })}
       </Box>
-      <Stack direction="row" justifyContent="space-ween">
+      <Stack direction="row" justifyContent="space-between">
         <Typography variant="body2M14" color="gray.60">
           {dayjs(barStartTime).format('MMM D HH:mm')}
         </Typography>
