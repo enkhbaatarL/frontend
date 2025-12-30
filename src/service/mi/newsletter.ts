@@ -111,6 +111,7 @@ export interface IReferenceDataItem {
       cells: string[]
     }[]
   }
+  isShaded?: boolean
 }
 
 export interface INewsletterIssueDetail {
