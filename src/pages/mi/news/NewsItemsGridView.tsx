@@ -146,13 +146,14 @@ const NewsItemsGridView = ({ newsList, isLoading = false, skeletonCount = 10, sh
     if (newsList.length === 0) {
       return (
         <>
-          <Grid component="div" sx={{ gridColumn: '1 / span 2', gridRow: '1 / span 4' }}>
+          <Grid component="div" sx={{ gridColumn: showSentimentsGraph ? '1 / span 2' : '1 / span 3', gridRow: '1 / span 4' }}>
             <Box
               display="flex"
               alignItems="center"
               justifyContent="center"
               width="100%"
               height="100%"
+              minHeight={GRID_CARD_MIN_HEIGHT * 4}
               boxSizing="border-box"
               sx={{ backgroundColor: '#F8F9FA', border: '1px solid #DEE2E6', borderRadius: '10px' }}
             >
@@ -164,9 +165,11 @@ const NewsItemsGridView = ({ newsList, isLoading = false, skeletonCount = 10, sh
               </Box>
             </Box>
           </Grid>
-          <Grid component="div" sx={{ gridColumn: '3 / span 1', gridRow: '1 / span 4' }}>
-            <SentimentsGraphCard />
-          </Grid>
+          {showSentimentsGraph && (
+            <Grid component="div" sx={{ gridColumn: '3 / span 1', gridRow: '1 / span 4' }}>
+              <SentimentsGraphCard />
+            </Grid>
+          )}
         </>
       )
     }

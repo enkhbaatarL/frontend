@@ -17,7 +17,6 @@ interface MIFilterDropdownProps {
   selectedValues: string[]
   onApply: (values: string[]) => void
   onClear?: () => void
-  width?: number | string
   maxHeight?: number
   disabled?: boolean
 }

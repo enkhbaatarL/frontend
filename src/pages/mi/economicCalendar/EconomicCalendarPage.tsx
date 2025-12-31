@@ -726,7 +726,7 @@ const EconomicCalendarPage = () => {
                       <Fragment key={`recent-viewed-${item.goodsNo}-${item.goodsDataNo}-${index}`}>
                         <Box
                           paddingY={2}
-                          onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
+                          // onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
                           sx={{
                             width: '90%',
                             padding: '12px',
@@ -811,7 +811,7 @@ const EconomicCalendarPage = () => {
                       <Fragment key={`recent-viewed-${item.goodsNo}-${item.goodsDataNo}-${index}`}>
                         <Box
                           paddingY={2}
-                          onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
+                          // onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
                           sx={{
                             width: '90%',
                             padding: '12px',

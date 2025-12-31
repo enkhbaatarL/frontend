@@ -1,6 +1,7 @@
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
-import { Button, Box, Typography, Stack, ButtonProps, Paper, ClickAwayListener, PaperProps, Popper, Grow } from '@mui/material'
+import { Box, Stack, Paper, ClickAwayListener, PaperProps, Popper, Grow } from '@mui/material'
 import { useRef, useEffect, useCallback, ReactNode, useMemo, SyntheticEvent, KeyboardEvent } from 'react'
+
+import MIBaseButton, { MIBaseButtonProps } from '@/components/common/button/MIBaseButton'
 
 export interface MenuPositionOffset {
   top?: number
@@ -9,29 +10,22 @@ export interface MenuPositionOffset {
   bottom?: number
 }
 
-export interface MIMenuProps extends ButtonProps {
+export interface MIMenuProps extends MIBaseButtonProps {
   label?: ReactNode
-  displayType?: 'button' | 'select'
-  variant?: 'text' | 'outlined' | 'contained'
-  buttonHoverBgColor?: string
   placement?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
   menuPositionOffset?: MenuPositionOffset
   fadeIn?: 'left' | 'right' | 'center'
   paperProps?: PaperProps
   children?: ReactNode
   onClose?: () => void
-  open?: boolean
   onOpenChange?: (open: boolean) => void
   closeOnScroll?: boolean
   disablePortal?: boolean
-  enableHoverBackground?: boolean
   zIndex?: number
-  disableRipple?: boolean
 }
 
 const MIMenu = ({
   label,
-  displayType = 'button',
   variant = 'text',
   buttonHoverBgColor,
   placement = 'bottom-start',
@@ -46,7 +40,6 @@ const MIMenu = ({
   disablePortal = false,
   enableHoverBackground = false,
   zIndex = 900,
-  disableRipple,
   ...props
 }: MIMenuProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -105,24 +98,6 @@ const MIMenu = ({
     }
   }, [open, handleClose, closeOnScroll])
 
-  const getBorderColor = () => {
-    if (variant !== 'outlined') return undefined
-    return open ? 'contentBorder.Active' : 'contentBorder.Normal'
-  }
-
-  const getHoverBackgroundColor = () => {
-    if (variant !== 'outlined') return undefined
-    return enableHoverBackground || open ? 'contentBG.Active' : 'transparent'
-  }
-
-  const borderColor = getBorderColor()
-  const hoverBackgroundColor = getHoverBackgroundColor()
-
-  const getEndIcon = () => {
-    if (displayType !== 'select') return undefined
-    return open ? <KeyboardArrowUp /> : <KeyboardArrowDown />
-  }
-
   const getTransformOrigin = (popperPlacement: string) => {
     const isTop = popperPlacement.startsWith('top')
 
@@ -149,6 +124,13 @@ const MIMenu = ({
     props.sx && typeof props.sx === 'object' && !Array.isArray(props.sx)
       ? ((props.sx as Record<string, unknown>)?.width as string | number | undefined)
       : undefined
+
+  // paperProps.sx에 width나 minWidth가 있으면 우선시하고, 없을 때만 menuWidth를 minWidth로 사용
+  const paperSx =
+    paperProps?.sx && typeof paperProps.sx === 'object' && !Array.isArray(paperProps.sx)
+      ? (paperProps.sx as Record<string, unknown>)
+      : undefined
+  const hasPaperWidthOrMinWidth = paperSx && (paperSx.width !== undefined || paperSx.minWidth !== undefined)
 
   const popperModifiers = useMemo(() => {
     const modifiers: Array<Record<string, unknown>> = []
@@ -179,60 +161,17 @@ const MIMenu = ({
   return (
     <Box sx={{ position: 'relative' }}>
       <Stack direction="row" alignItems="center">
-        <Button
+        <MIBaseButton
           ref={buttonRef}
-          onClick={handleToggle}
-          endIcon={getEndIcon()}
           variant={variant}
-          disableRipple={disableRipple ?? variant === 'outlined'}
-          aria-controls={open ? 'mi-menu' : undefined}
-          aria-expanded={open ? 'true' : undefined}
-          aria-haspopup="true"
+          buttonHoverBgColor={buttonHoverBgColor}
+          open={open}
+          onClick={handleToggle}
+          enableHoverBackground={enableHoverBackground}
           {...props}
-          sx={{
-            padding: displayType === 'select' ? '8px 10px' : '8px',
-            height: '40px',
-            justifyContent: 'space-between',
-            textTransform: 'none',
-            backgroundColor: variant === 'outlined' && open ? 'contentBG.Active' : undefined,
-            transition: 'background-color 0.15s ease-in-out, border-color 0.4s ease-in-out',
-            '&:disabled': {
-              backgroundColor: props.disabled && variant === 'text' ? 'transparent' : undefined,
-              borderColor: props.disabled && variant === 'outlined' ? 'contentBorder.Disabled' : undefined,
-            },
-            borderColor,
-            borderWidth: '1px',
-            borderRadius: '10px',
-            '&:hover:not(:disabled)': {
-              backgroundColor: buttonHoverBgColor ?? hoverBackgroundColor,
-              borderColor,
-              borderWidth: '1px',
-            },
-            '& .MuiButton-endIcon': {
-              marginRight: '2px',
-            },
-            ...props.sx,
-          }}
         >
-          {typeof label === 'string' ? (
-            <Typography
-              variant="body2SB14"
-              sx={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                maxWidth: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {label}
-            </Typography>
-          ) : (
-            label
-          )}
-        </Button>
+          {label}
+        </MIBaseButton>
       </Stack>
       <Popper
         open={open ?? false}
@@ -255,7 +194,7 @@ const MIMenu = ({
               {...paperProps}
               sx={{
                 ...paperProps?.sx,
-                ...(menuWidth && { minWidth: menuWidth }),
+                ...(menuWidth && !hasPaperWidthOrMinWidth && { minWidth: menuWidth }),
                 boxShadow: '0px 0px 4px 0px rgba(0, 0, 0, 0.1)',
                 borderRadius: '10px',
                 border: '1px solid',

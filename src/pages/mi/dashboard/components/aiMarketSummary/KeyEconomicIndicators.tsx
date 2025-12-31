@@ -1,3 +1,5 @@
+/* TODO: 데모 배포 후 API 사용 로직으로 복구 필요 */
+
 import { Box, Stack, Typography, TypographyProps, Tooltip } from '@mui/material'
 import { ReactNode, useRef, useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -14,7 +16,6 @@ const sampleData = [
     time: '10:00',
     imp: 'High',
     event: 'KOSPI (Final, Aug)',
-    for: 'Aug',
     actual: '3.8%',
     forecast: '3.7%',
     previous: '3.6%',
@@ -24,7 +25,6 @@ const sampleData = [
     time: '15:00',
     imp: 'Medium',
     event: 'Japan Trade Balance (Jul) Japan Trade Balance (Jul)',
-    for: 'Aug',
     actual: '-4.1%',
     forecast: '-',
     previous: '-4.1%',
@@ -34,7 +34,6 @@ const sampleData = [
     time: '16:30',
     imp: 'Low',
     event: 'Eurozone CPI (Final, Aug)',
-    for: 'Jul',
     actual: '2.0%',
     forecast: '2.0%',
     previous: '2.0%',
@@ -44,7 +43,6 @@ const sampleData = [
     time: '20:00',
     imp: 'Medium',
     event: 'China CPI (Aug)',
-    for: 'Aug',
     actual: '3.5%',
     forecast: '3.4%',
     previous: '3.3%',
@@ -141,13 +139,7 @@ const KeyEconomicIndicators = () => {
 
   return (
     <Box padding="12px">
-      <SectionHeader
-        title="Key Economic Indicators"
-        link="/mi/economic-event"
-        tooltipTitle={t('dashboard.keyEconomicIndicators.tooltipTitle')}
-        mb="10px"
-        bold
-      />
+      <SectionHeader title="Key Economic Indicators" tooltipTitle={t('dashboard.keyEconomicIndicators.tooltipTitle')} mb="10px" bold />
       <Stack gap="10px">
         <Stack>
           <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
@@ -157,11 +149,8 @@ const KeyEconomicIndicators = () => {
             <HeaderCell width="44px" textAlign="center">
               Imp.
             </HeaderCell>
-            <HeaderCell width="150px" textAlign="left">
+            <HeaderCell width="200px" textAlign="left">
               Event
-            </HeaderCell>
-            <HeaderCell width="50px" textAlign="center">
-              For
             </HeaderCell>
             <HeaderCell width="80px" textAlign="right">
               Actual
@@ -194,11 +183,8 @@ const KeyEconomicIndicators = () => {
               <Stack width="44px" justifyContent="center" alignItems="center">
                 <ImportanceIcon level={data.imp as ImportanceLevel} />
               </Stack>
-              <BodyCell width="150px" textAlign="left">
+              <BodyCell width="200px" textAlign="left">
                 {data.event}
-              </BodyCell>
-              <BodyCell width="50px" textAlign="center">
-                {data.for}
               </BodyCell>
               <BodyCell width="80px" textAlign="right">
                 {data.actual}

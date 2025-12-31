@@ -1,8 +1,11 @@
 import { Chart, ChartTypeRegistry } from 'chart.js'
 import dayjs from 'dayjs'
+import isoWeek from 'dayjs/plugin/isoWeek'
 
 import { ChartRange } from '@/types/dataDetailChart'
 import { getCurrentFontFamily } from '@/utils/font'
+
+dayjs.extend(isoWeek)
 
 export const getFormattedDateFromChart = (chart: Chart, index: number, format?: string): string => {
   const dateLabel = chart.scales.x.getLabelForValue(index)
@@ -89,9 +92,19 @@ export const generateYAxis = (params: {
 })
 
 export const getWeekOfMonth = (date: dayjs.Dayjs) => {
-  const firstDay = date.startOf('month')
-  const offset = firstDay.day()
-  return Math.ceil((date.date() + offset) / 7)
+  // ISO 8601 표준 주차 계산
+  const thursdayOfCurrentWeek = date.isoWeekday(4) // 목요일
+
+  const monthOfThursday = thursdayOfCurrentWeek.month()
+  const yearOfThursday = thursdayOfCurrentWeek.year()
+
+  const firstDayOfMonth = dayjs(`${yearOfThursday}-${monthOfThursday + 1}-01`)
+  const firstDayWeekday = firstDayOfMonth.isoWeekday()
+
+  const firstThursday = firstDayWeekday <= 4 ? firstDayOfMonth.isoWeekday(4) : firstDayOfMonth.add(1, 'week').isoWeekday(4)
+
+  const weeksDiff = thursdayOfCurrentWeek.diff(firstThursday, 'week')
+  return Math.max(1, weeksDiff + 1)
 }
 
 export const getChartLabel = (date: dayjs.Dayjs, range?: ChartRange): string => {

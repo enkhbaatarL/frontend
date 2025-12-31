@@ -413,67 +413,68 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
     const comparisonDatasets = useMemo<ChartDatasetType[]>(() => {
       const colors = ['#26757B', '#EFA460', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434']
 
-      return comparisonCharts.map((chart, index) => {
-        return {
-          label: chart.goodsDataSourceName,
-          data: sortedTimestamps.map((timestamp) => {
-            const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
-            const chartIndex = chart.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
-            return {
-              x: timestampToIndex.get(timestamp) ?? 0,
-              y: chartIndex !== undefined && chartIndex !== -1 ? (chart.series[0].values[chartIndex] ?? null) : null,
-            }
-          }),
-          type: 'line',
-          pointRadius: 0,
-          borderColor: hideComparisonChartIndexList.includes(index) ? 'transparent' : colors[index % colors.length],
-          borderWidth: 3,
-          fill: false,
-          tension: 0.1,
-          spanGaps: true,
-          yAxisID: isYAxisSeparated ? `sub-${chart.unitCd?.split('#').pop() ?? ''}` : 'y',
-          metadata: {
-            chipColor: colors[index % colors.length],
-            hasDivider: index === 0,
-            goodsNo: chart.goodsNo,
-            goodsDataNo: chart.goodsDataNo,
-            goodsDataName: chart.goodsDataName,
-            goodsDataSourceNo: chart.goodsDataSourceNo,
-            goodsDataSourceName: chart.goodsDataSourceName,
-          },
-        } as ChartDatasetType
-      })
+      return comparisonCharts.map(
+        (chart, index) =>
+          ({
+            label: chart.goodsDataSourceName,
+            data: sortedTimestamps.map((timestamp) => {
+              const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+              const chartIndex = chart.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+              return {
+                x: timestampToIndex.get(timestamp) ?? 0,
+                y: chartIndex !== undefined && chartIndex !== -1 ? (chart.series[0].values[chartIndex] ?? null) : null,
+              }
+            }),
+            type: 'line',
+            pointRadius: 0,
+            borderColor: hideComparisonChartIndexList.includes(index) ? 'transparent' : colors[index % colors.length],
+            borderWidth: 3,
+            fill: false,
+            tension: 0.1,
+            spanGaps: true,
+            yAxisID: isYAxisSeparated ? `sub-${chart.unitCd?.split('#').pop() ?? ''}` : 'y',
+            metadata: {
+              chipColor: colors[index % colors.length],
+              hasDivider: index === 0,
+              goodsNo: chart.goodsNo,
+              goodsDataNo: chart.goodsDataNo,
+              goodsDataName: chart.goodsDataName,
+              goodsDataSourceNo: chart.goodsDataSourceNo,
+              goodsDataSourceName: chart.goodsDataSourceName,
+            },
+          }) as ChartDatasetType,
+      )
     }, [comparisonCharts, hideComparisonChartIndexList, timestampToIndex, sortedTimestamps, isYAxisSeparated])
 
     const volumeDatasets = useMemo(
       () =>
         volumeDataSeries
           ? [
-              {
-                label: volumeDataSeries.label,
-                data: sortedTimestamps.map((timestamp) => {
-                  const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
-                  const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
-                  return {
-                    x: timestampToIndex.get(timestamp) ?? 0,
-                    y: index !== undefined && index !== -1 ? (volumeDataSeries.values[index] ?? null) : null,
-                  }
-                }),
-                type: 'line',
-                borderWidth: 0,
-                pointRadius: 0,
-                fill: false,
-                tension: 0.1,
-                spanGaps: true,
-                yAxisID: 'y',
-                hidden: true,
-                metadata: {
-                  hasDivider: true,
-                  chipColor: '#2E3F5E',
-                  toFixed: 0,
-                },
+            {
+              label: volumeDataSeries.label,
+              data: sortedTimestamps.map((timestamp) => {
+                const timestampStr = dayjs(timestamp).format('YYYY-MM-DDTHH:mm:ss')
+                const index = mainChart?.timestamps?.findIndex((t) => dayjs(t).format('YYYY-MM-DDTHH:mm:ss') === timestampStr)
+                return {
+                  x: timestampToIndex.get(timestamp) ?? 0,
+                  y: index !== undefined && index !== -1 ? (volumeDataSeries.values[index] ?? null) : null,
+                }
+              }),
+              type: 'line',
+              borderWidth: 0,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.1,
+              spanGaps: true,
+              yAxisID: 'y',
+              hidden: true,
+              metadata: {
+                hasDivider: true,
+                chipColor: '#2E3F5E',
+                toFixed: 0,
               },
-            ]
+            },
+          ]
           : [],
       [mainChart?.timestamps, timestampToIndex, volumeDataSeries, sortedTimestamps],
     )
@@ -815,17 +816,17 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
           },
           ...(isYAxisSeparated
             ? Object.fromEntries(
-                Object.entries(subYAxes).map(([key, value]) => [
-                  key,
-                  {
-                    ...value,
-                    ticks: {
-                      ...value.ticks,
-                      display: false,
-                    },
+              Object.entries(subYAxes).map(([key, value]) => [
+                key,
+                {
+                  ...value,
+                  ticks: {
+                    ...value.ticks,
+                    display: false,
                   },
-                ]),
-              )
+                },
+              ]),
+            )
             : {}),
         },
         plugins: {

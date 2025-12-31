@@ -21,6 +21,7 @@ interface Props {
   chartData?: IChartData
   marketOpenTime?: number
   marketCloseTime?: number
+  isShaded?: boolean
 }
 
 export interface ReferenceChartRef {
@@ -32,7 +33,7 @@ ChartJS.register(CandlestickController, CandlestickElement, OhlcController, Ohlc
 
 type ChartJSOrUndefined = ChartJS | undefined
 
-const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, marketOpenTime, marketCloseTime }, ref) => {
+const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, marketOpenTime, marketCloseTime, isShaded = false }, ref) => {
   const chartRef = useRef<ChartJSOrUndefined | null>(null)
   const [base64ChartImage, setBase64ChartImage] = useState<string>('')
   const [isChartRendered, setIsChartRendered] = useState<boolean>(false)
@@ -360,22 +361,29 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
 
   const datasets = useMemo(
     () =>
-      chartData?.series?.map((s, index) => ({
-        label: s.label || s.seriesId,
-        data: timestamps.map((_: number, dataIndex: number) => ({
-          x: dataIndex,
-          y: s.values?.[dataIndex] ?? null,
-        })),
-        type: 'line' as const,
-        borderColor: getBorderColor(chartData?.series[index].color, index),
-        borderWidth: 1,
-        pointRadius: 0,
-        fill: false,
-        tension: 0.1,
-        spanGaps: true,
-        yAxisID: index === 0 ? 'y' : `sub-${index}`,
-      })) ?? [],
-    [chartData?.series, timestamps, getBorderColor],
+      chartData?.series?.map((s, index) => {
+        const isRightAxis = index > 0
+        const borderColor = getBorderColor(chartData?.series[index].color, index)
+        const shouldFill = isShaded && isRightAxis
+
+        return {
+          label: s.label || s.seriesId,
+          data: timestamps.map((_: number, dataIndex: number) => ({
+            x: dataIndex,
+            y: s.values?.[dataIndex] ?? null,
+          })),
+          type: 'line' as const,
+          borderColor,
+          backgroundColor: shouldFill ? `${borderColor}40` : undefined,
+          borderWidth: 1,
+          pointRadius: 0,
+          fill: shouldFill,
+          tension: 0.1,
+          spanGaps: true,
+          yAxisID: index === 0 ? 'y' : `sub-${index}`,
+        }
+      }) ?? [],
+    [chartData?.series, timestamps, getBorderColor, isShaded],
   )
 
   // 차트가 완전히 렌더링되면 이미지만 표시

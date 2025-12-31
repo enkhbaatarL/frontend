@@ -1,6 +1,6 @@
 {
   "common": {
-    "comma": ", ",
+    "comma": ",",
     "andMore": "and more",
     "detailed": "Detailed",
     "focused": "Focused",
@@ -59,9 +59,9 @@
     "sentiments": {
       "titleTooltip": "최근 24시간 뉴스를 바탕으로 시장 가격 상승에 대한 긍정·중립·부정 반응의 비중을 나타냅니다.",
       "barTooltip": {
-        "positive": "Upward",
+        "upward": "Upward",
         "neutral": "Neutral",
-        "negative": "Downward"
+        "downward": "Downward"
       },
       "options": {
         "currentLabel": "Current",

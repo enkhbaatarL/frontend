@@ -1,6 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
+import { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 export enum NewsletterDetailPageMode {
@@ -110,6 +111,7 @@ export interface IReferenceDataItem {
       cells: string[]
     }[]
   }
+  isShaded?: boolean
 }
 
 export interface INewsletterIssueDetail {
@@ -190,11 +192,14 @@ const newsletterService = {
    * @returns {Promise<INewsletterIssueDetail>} 뉴스레터 발행호 상세 정보
    */
   async getNewsletterIssueDetail(companyNo: number, newsletterId: string, issueNo: string): Promise<INewsletterIssueDetail> {
-    const response: AxiosResponse<ICommonResponse<INewsletterIssueDetail>> = await api.get(`/mi/newsletter/${newsletterId}/${issueNo}`, {
-      params: {
-        companyNo,
+    const response: AxiosResponse<ICommonResponse<INewsletterIssueDetail>> = await api.get(
+      withCustomBaseUrl(`mi/newsletter/${newsletterId}/${issueNo}`),
+      {
+        params: {
+          companyNo,
+        },
       },
-    })
+    )
 
     return response.data.data
   },

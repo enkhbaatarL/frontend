@@ -7,7 +7,7 @@ import companiesService from '@/service/mi/companies'
 import forecastDataService from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
 
-const DEFAULT_PAGES: MiPagesType[] = ['market-data', 'insights']
+// const DEFAULT_PAGES: MiPagesType[] = ['market-data', 'insights']
 const EXTRA_PAGES: MiPagesType[] = ['signal-map', 'forecast']
 
 export const useCompanyCondition = () => {
@@ -51,6 +51,11 @@ export const useCompanyCondition = () => {
         deniedOptionalPages.push('mi-activity-log')
       }
 
+      // Sales Activity Log
+      if (!accessCompanyInfo?.isSalesActivityLog) {
+        deniedOptionalPages.push('sales-activity-log')
+      }
+
       // Newsletters
       if (!accessCompanyInfo?.isNewsletter) {
         deniedOptionalPages.push('newsletters')
@@ -86,7 +91,7 @@ export const useCompanyCondition = () => {
   }, [deniedDashboardPage])
 
   const activeMenu = useMemo(() => {
-    if (extractPage === undefined) return DEFAULT_PAGES
+    if (extractPage === undefined) return ACTIVE_MENU_PATHS
     return ACTIVE_MENU_PATHS.filter((item) => !extractPage.includes(item))
   }, [extractPage])
 

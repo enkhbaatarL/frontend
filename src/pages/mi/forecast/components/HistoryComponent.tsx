@@ -1,6 +1,6 @@
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import { Box, Typography } from '@mui/material'
-import { GridColDef } from '@mui/x-data-grid'
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useState, useEffect, useMemo } from 'react'
@@ -253,27 +253,32 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
         </MITableCell>
       ),
     },
-    // {
-    //   field: 'baselineChangeRate',
-    //   headerName: columnHeaders.baselineChangeRateHeader,
-    //   align: 'right',
-    //   flex: 1,
-    //   renderCell: (param) => (
-    //     <MITableCell>
-    //       <Box sx={{ filter: !param.row.isBaselinePermitted ? 'blur(3px)' : 'none' }}>
-    //         {param.value !== '-' && (
-    //           <Typography
-    //             variant={'tableBody2'}
-    //             fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
-    //             color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
-    //           >
-    //             {param.value > 0 ? '+'.concat(param.value) : param.value}%
-    //           </Typography>
-    //         )}
-    //       </Box>
-    //     </MITableCell>
-    //   ),
-    // },
+    // 에너지(2020)일 때만 baselineChangeRate 컬럼 추가
+    ...(companyNo === 2020
+      ? [
+        {
+          field: 'baselineChangeRate',
+          headerName: columnHeaders.baselineChangeRateHeader,
+          align: 'right' as const,
+          flex: 1,
+          renderCell: (param: GridRenderCellParams<ProcessedHistoryData>) => (
+            <MITableCell>
+              <Box sx={{ filter: !param.row.isBaselinePermitted ? 'blur(3px)' : 'none' }}>
+                {param.value !== '-' && (
+                  <Typography
+                    variant={'tableBody2'}
+                    fontWeight={param.value === '-' ? '400 !important' : '600 !important'}
+                    color={param.value > 0 ? 'chart.green6' : param.value < 0 ? 'chart.red4' : 'gray.90'}
+                  >
+                    {param.value > 0 ? '+'.concat(param.value) : param.value}%
+                  </Typography>
+                )}
+              </Box>
+            </MITableCell>
+          ),
+        },
+      ]
+      : []),
     // baseline2 데이터가 있을 때만 컬럼 추가
     ...(hasBaseline2Data
       ? [
@@ -282,7 +287,7 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
           headerName: columnHeaders.baseline2Header,
           align: 'right' as const,
           flex: 1,
-          renderCell: (param: any) => (
+          renderCell: (param: GridRenderCellParams<ProcessedHistoryData>) => (
             <MITableCell
               sx={{
                 width: '100%',
@@ -501,22 +506,24 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
                 })) ?? []
               }
             />
-            {/* <MISelect
-              width={220}
-              type="button"
-              value={selectedSettingDetailNo?.toString() || ''}
-              onChange={(e) => setSelectedSettingDetailNo(Number(e.target.value))}
-              options={
-                metaData?.data.targets
-                  .flatMap((target) =>
-                    target.settingDetails.map((settingDetail) => ({
-                      label: settingDetail.settingDetailExpn,
-                      value: settingDetail.settingDetailNo.toString(),
-                    })),
-                  )
-                  .filter((option, index, self) => index === self.findIndex((item) => item.value === option.value)) ?? []
-              }
-            /> */}
+            {companyNo === 2020 && (
+              <MISelect
+                width={220}
+                type="button"
+                value={selectedSettingDetailNo?.toString() || ''}
+                onChange={(e) => setSelectedSettingDetailNo(Number(e.target.value))}
+                options={
+                  metaData?.data.targets
+                    .flatMap((target) =>
+                      target.settingDetails.map((settingDetail) => ({
+                        label: settingDetail.settingDetailExpn,
+                        value: settingDetail.settingDetailNo.toString(),
+                      })),
+                    )
+                    .filter((option, index, self) => index === self.findIndex((item) => item.value === option.value)) ?? []
+                }
+              />
+            )}
           </Box>
         </Box>
 

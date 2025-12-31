@@ -521,7 +521,12 @@ const EconomicCalendarDetailPage = () => {
     <MISkeleton variant={'marketNewsDetail'} loading={newsSummaryDataIsLoading}>
       <Box paddingTop={'56px'} paddingBottom={'30px'}>
         <Box paddingX={7.5} boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'} position={'relative'}>
-          <Typography color="contentText.Normal" variant="subtext1" sx={{ cursor: 'pointer' }} onClick={() => navigate('/mi/market-news')}>
+          <Typography
+            color="contentText.Normal"
+            variant="subtext1"
+            sx={{ cursor: 'pointer' }}
+            onClick={() => navigate('/mi/economic-calendar')}
+          >
             Economic Calendar
           </Typography>
           <Typography paddingY={4.5} color="contentText.Black" component="h1" lineHeight={1.2} variant="titleSubPage">

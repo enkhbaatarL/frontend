@@ -2,6 +2,9 @@ import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import ReactMarkdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
+import remarkGfm from 'remark-gfm'
 
 import aiStarIcon from '@/assets/ai.svg'
 import MIButton from '@/components/common/button/MIButton.tsx'
@@ -31,17 +34,18 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
   const shouldShowLoading = !companyNo || !monthSelect || isLoading || isFetching
   const hasNoData = !shouldShowLoading && (!data?.summaries || data.summaries.length === 0)
 
-  // 간단한 연산이므로 useMemo 불필요
   const summaryContent =
     !data?.summaries || data.summaries.length === 0
-      ? ''
+      ? null
       : data.summaries.map((summary: IForecastSummary, index: number) => (
         <Box key={index} mt={index !== 0 ? '20px' : 0}>
           <Typography mb={1.5} variant={'subtext5'} color={'content.textNormal'} component={'div'}>
             {summary.explanatoryTitleContent}
           </Typography>
           <Typography variant={'body2R14'} color={'content.textNormal'} component={'div'}>
-            {(summary.explanatorySummaryContent ?? '').replace(/\\n/g, '\n')}
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+              {(summary.explanatorySummaryContent ?? '').replaceAll('\\n', '\n')}
+            </ReactMarkdown>
           </Typography>
         </Box>
       ))

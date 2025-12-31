@@ -9,7 +9,7 @@ interface DashboardCardHeaderProps {
   title: ReactNode
   link?: string
   children?: ReactNode
-  padding?: string
+  padding?: number | string
   height?: number | string
 }
 
@@ -22,6 +22,8 @@ const DashboardCardHeader = ({ icon, title, link, children, padding = '27px 24px
     }
   }
 
+  const titleString = typeof title === 'string' ? title : String(title)
+
   return (
     <Box height={height} p={padding} display="flex" alignItems="center" boxSizing="border-box" sx={{ userSelect: 'none' }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" width="100%">
@@ -31,9 +33,30 @@ const DashboardCardHeader = ({ icon, title, link, children, padding = '27px 24px
               <img src={icon} alt="icon" width={30} height={30} draggable={false} />
             </Box>
           )}
-          <Typography component="div" color="gray.90" sx={{ fontWeight: 700, fontSize: 22, lineHeight: 1.2 }}>
-            {title}
-          </Typography>
+          <Box display="flex" alignItems="center" gap="4px">
+            <Typography component="div" color="gray.90" sx={{ fontWeight: 700, fontSize: 22, lineHeight: 0 }}>
+              {title}
+            </Typography>
+            {(titleString === 'Topic Tracker' || titleString === 'Economic Calendar') && (
+              <Box
+                sx={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  lineHeight: '160%',
+                  color: '#868E96',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 4px',
+                  borderRadius: '4px',
+                  backgroundColor: '#DEE2E6',
+                  height: '16px',
+                }}
+              >
+                DEMO
+              </Box>
+            )}
+          </Box>
           {link && <ArrowRightIcon width={30} height={30} />}
         </Stack>
         {children}

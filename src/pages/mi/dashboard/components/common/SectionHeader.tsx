@@ -23,9 +23,30 @@ const SectionHeader = ({ title, link, tooltipTitle, height = '32px', bold = fals
   return (
     <Stack direction="row" alignItems="center" justifyContent="space-between" height={height} sx={{ userSelect: 'none' }} {...props}>
       <Box display="flex" alignItems="center" gap={1} onClick={handleClick} sx={{ cursor: link ? 'pointer' : 'default' }}>
-        <Typography color="gray.90" sx={{ fontWeight: bold ? 700 : 600, fontSize: 20, lineHeight: 0 }}>
-          {title}
-        </Typography>
+        <Box display="flex" alignItems="center" gap="4px">
+          <Typography color="gray.90" sx={{ fontWeight: bold ? 700 : 600, fontSize: 20, lineHeight: 0 }}>
+            {title}
+          </Typography>
+          {title === 'Key Economic Indicators' && (
+            <Box
+              sx={{
+                fontSize: '10px',
+                fontWeight: 600,
+                lineHeight: '160%',
+                color: '#868E96',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 4px',
+                borderRadius: '4px',
+                backgroundColor: '#DEE2E6',
+                height: '16px',
+              }}
+            >
+              DEMO
+            </Box>
+          )}
+        </Box>
         {tooltipTitle && <InfoTooltip title={tooltipTitle} />}
         {link && <ArrowRightIcon width={30} height={30} />}
       </Box>

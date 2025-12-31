@@ -1,12 +1,17 @@
 import { Box, Stack, Typography, Collapse, Fade } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 
-import TagChip from '@/components/common/chip/TagChip'
+import TagChip, { ITagChipItem } from '@/components/common/chip/TagChip'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import InlineNotice from '@/components/common/notice/InlineNotice'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
-import { MarketItem, MarketItemType } from '@/service/mi/dashboard'
+import { DirectionType, IMarketRecapItem, IMarketRecapHighlightItem } from '@/service/mi/dashboard'
+
+interface Props {
+  highlights?: IMarketRecapItem['highlights']
+}
 
 const options = [
   { label: 'Detailed', value: 'detailed' },
@@ -14,11 +19,12 @@ const options = [
   { label: 'Narrative', value: 'narrative' },
 ]
 
-const Icon = ({ type }: { type: MarketItemType }) => {
+const Icon = ({ direction }: { direction?: DirectionType }) => {
   const getColor = () => {
-    if (type === 'positive') return 'linear-gradient(180deg, #3386C2 0%, #1366A2 100%)'
-    if (type === 'negative') return 'linear-gradient(180deg, #A02A74 0%, #881C60 100%)'
-    return 'linear-gradient(180deg, #A8A8A8 0%, #777777 100%)'
+    if (direction === DirectionType.Upward) return 'linear-gradient(180deg, #3386C2 0%, #1366A2 100%)'
+    if (direction === DirectionType.Downward) return 'linear-gradient(180deg, #A02A74 0%, #881C60 100%)'
+
+    return 'linear-gradient(180deg, #A8A8A8 0%, #777777 100%)' // Neutral
   }
 
   return (
@@ -37,119 +43,84 @@ const Icon = ({ type }: { type: MarketItemType }) => {
   )
 }
 
-const HighlightsItem = ({
-  item,
-  selectedOption,
-  borderBottom = true,
-}: {
-  item: MarketItem
+interface HighlightsItemProps {
+  item: IMarketRecapHighlightItem
   selectedOption: string
   borderBottom?: boolean
-}) => (
+  onRelatedNewsItemSelected: (item: ITagChipItem) => void
+}
+
+const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNewsItemSelected }: HighlightsItemProps) => (
   <Box px="6px">
     <Stack py="12px" gap="6px" borderBottom={borderBottom ? '1px solid #DEE2E6' : 'none'}>
       <Stack direction="row" gap="8px">
-        <Icon type={item.type ?? 'neutral'} />
+        <Icon direction={item.momentum} />
         <Typography variant="infoDocument">{item.title}</Typography>
       </Stack>
       <Collapse in={selectedOption === 'detailed'} timeout={300}>
         <Stack gap="6px">
           <Stack pl="22px" gap="1px">
-            {item.summary.map((content, index) => (
-              <Typography
-                key={`${item.id}-content-${index}`}
-                variant="subtext5"
-                color="gray.70"
-                fontWeight={500}
+            {item.relatedNews?.slice(0, 3).map((news, index) => (
+              <Box
+                key={`${item.highlightItemId}-news-${index}`}
+                onClick={() => {
+                  onRelatedNewsItemSelected({ name: news.provider, value: news.newsSummaryId.toString() })
+                }}
                 sx={{
-                  textIndent: '-14px',
-                  '&::before': {
-                    content: '"•"',
-                    marginRight: '6px',
-                    color: 'gray.70',
-                  },
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  ml: '-14px',
                 }}
               >
-                {content}
-              </Typography>
+                <Typography
+                  component="span"
+                  variant="subtext5"
+                  color="gray.70"
+                  fontWeight={500}
+                  sx={{
+                    mr: '6px',
+                    flexShrink: 0,
+                  }}
+                >
+                  •
+                </Typography>
+                <Typography
+                  component="span"
+                  variant="subtext5"
+                  color="gray.70"
+                  fontWeight={500}
+                  sx={{
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  {news.title}
+                </Typography>
+              </Box>
             ))}
           </Stack>
-          <TagChip items={item.sources} ellipsisRange={2} padding="6px 20px" />
+          <TagChip
+            items={item.relatedNews?.map((news) => ({ name: news.provider, value: news.newsSummaryId.toString() })) ?? []}
+            ellipsisRange={2}
+            padding="6px 20px"
+            onItemSelected={onRelatedNewsItemSelected}
+          />
         </Stack>
       </Collapse>
     </Stack>
   </Box>
 )
 
-const Highlights = () => {
+const Highlights = ({ highlights }: Props) => {
   const [selectedOption, setSelectedOption] = useState('detailed')
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
-  const sampleData: { detailed: MarketItem[]; narrative: MarketItem } = useMemo(
-    () => ({
-      detailed: [
-        {
-          id: 's1',
-          type: 'positive',
-          title: t('dashboard.sampleData.highlights.detailed.0.title'),
-          summary: [
-            t('dashboard.sampleData.highlights.detailed.0.summary.0'),
-            t('dashboard.sampleData.highlights.detailed.0.summary.1'),
-            t('dashboard.sampleData.highlights.detailed.0.summary.2'),
-          ],
-          sources: [{ name: 'Reuters', link: 'https://reuters.com' }],
-        },
-        {
-          id: 's2',
-          type: 'negative',
-          title: t('dashboard.sampleData.highlights.detailed.1.title'),
-          summary: [
-            t('dashboard.sampleData.highlights.detailed.1.summary.0'),
-            t('dashboard.sampleData.highlights.detailed.1.summary.1'),
-            t('dashboard.sampleData.highlights.detailed.1.summary.2'),
-          ],
-          sources: [
-            { name: 'Reuters', link: 'https://reuters.com' },
-            { name: 'Bloomberg', link: 'https://bloomberg.com' },
-            { name: 'Bloomberg1', link: 'https://bloomberg.com' },
-            { name: 'Bloomberg2', link: 'https://bloomberg.com' },
-            { name: 'Bloomberg3', link: 'https://bloomberg.com' },
-          ],
-        },
-        {
-          id: 's3',
-          type: 'neutral',
-          title: t('dashboard.sampleData.highlights.detailed.2.title'),
-          summary: [
-            t('dashboard.sampleData.highlights.detailed.2.summary.0'),
-            t('dashboard.sampleData.highlights.detailed.2.summary.1'),
-            t('dashboard.sampleData.highlights.detailed.2.summary.2'),
-          ],
-          sources: [
-            { name: 'Reuters', link: 'https://reuters.com' },
-            { name: 'Bloomberg', link: 'https://bloomberg.com' },
-          ],
-        },
-      ],
-      narrative: {
-        id: 's4',
-        title: t('dashboard.sampleData.highlights.narrative.title'),
-        summary: [
-          t('dashboard.sampleData.highlights.narrative.summary.0'),
-          t('dashboard.sampleData.highlights.narrative.summary.1'),
-          t('dashboard.sampleData.highlights.narrative.summary.2'),
-        ],
-        sources: [
-          { name: 'Reuters', link: 'https://reuters.com' },
-          { name: 'Bloomberg', link: 'https://bloomberg.com' },
-          { name: 'Bloomberg1', link: 'https://bloomberg.com' },
-          { name: 'Bloomberg2', link: 'https://bloomberg.com' },
-          { name: 'Bloomberg3', link: 'https://bloomberg.com' },
-        ],
-      },
-    }),
-    [t],
-  )
+  const handleRelatedNewsItemSelected = ({ value }: ITagChipItem) => {
+    navigate(`/mi/market-news/${value}`)
+  }
 
   return (
     <Stack padding="6px 12px" borderRadius="10px" gap="6px" sx={{ backgroundColor: '#F8F9FA' }}>
@@ -166,37 +137,70 @@ const Highlights = () => {
           closeOnScroll
         />
       </SectionHeader>
-      <InlineNotice noticeKey="dashboard-highlights">{t('dashboard.highlights.inlineNotice')}</InlineNotice>
-      <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500}>
-        <Box>
-          {(selectedOption === 'detailed' || selectedOption === 'focused') &&
-            sampleData.detailed.map((item, index) => (
-              <HighlightsItem
-                key={item.id}
-                item={item}
-                selectedOption={selectedOption}
-                borderBottom={index !== sampleData.detailed.length - 1}
-              />
-            ))}
-        </Box>
-      </Fade>
-      <Fade in={selectedOption === 'narrative'} timeout={500}>
-        <Box>
-          {selectedOption === 'narrative' && (
-            <Stack padding="12px 20px 6px" gap="6px">
-              <Typography variant="infoDocument">{sampleData.narrative.title}</Typography>
-              <Stack gap="8px">
-                {sampleData.narrative.summary.map((content, index) => (
-                  <Typography key={`${sampleData.narrative.id}-content-${index}`} variant="subtext5" color="gray.70" fontWeight={500}>
-                    {content}
-                  </Typography>
+      {((highlights?.items && highlights.items.length > 0) || (selectedOption === 'narrative' && highlights?.narrative)) && (
+        <InlineNotice noticeKey="dashboard-highlights">{t('dashboard.highlights.inlineNotice')}</InlineNotice>
+      )}
+      {(!highlights?.items || highlights.items.length === 0) && selectedOption !== 'narrative' ? (
+        <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+          <Typography variant="body2SB14" color="content.textNormal">
+            No data available to display.
+          </Typography>
+        </Stack>
+      ) : (
+        <>
+          <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500}>
+            <Box>
+              {(selectedOption === 'detailed' || selectedOption === 'focused') &&
+                highlights?.items.map((item, index) => (
+                  <HighlightsItem
+                    key={item.highlightItemId}
+                    item={item}
+                    selectedOption={selectedOption}
+                    borderBottom={index !== highlights?.items.length - 1}
+                    onRelatedNewsItemSelected={handleRelatedNewsItemSelected}
+                  />
                 ))}
-              </Stack>
-              <TagChip items={sampleData.narrative.sources} ellipsisRange={2} padding="6px 0 12px" />
-            </Stack>
-          )}
-        </Box>
-      </Fade>
+            </Box>
+          </Fade>
+          <Fade in={selectedOption === 'narrative'} timeout={500}>
+            <Box>
+              {selectedOption === 'narrative' && (
+                <>
+                  {highlights?.narrative ? (
+                    <Stack padding="12px 20px 6px" gap="6px">
+                      <Typography variant="infoDocument">{highlights?.narrative.title}</Typography>
+                      <Stack gap="8px">
+                        {highlights?.narrative.content.map((content, index) => (
+                          <Typography key={`narrative-content-${index}`} variant="subtext5" color="gray.70" fontWeight={500}>
+                            {content}
+                          </Typography>
+                        ))}
+                        <TagChip
+                          items={
+                            highlights?.narrative.relatedNews?.map((news) => ({
+                              name: news.provider,
+                              value: news.newsSummaryId.toString(),
+                            })) ?? []
+                          }
+                          ellipsisRange={2}
+                          py="4px"
+                          onItemSelected={handleRelatedNewsItemSelected}
+                        />
+                      </Stack>
+                    </Stack>
+                  ) : (
+                    <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+                      <Typography variant="body2SB14" color="content.textNormal">
+                        No data available to display.
+                      </Typography>
+                    </Stack>
+                  )}
+                </>
+              )}
+            </Box>
+          </Fade>
+        </>
+      )}
     </Stack>
   )
 }

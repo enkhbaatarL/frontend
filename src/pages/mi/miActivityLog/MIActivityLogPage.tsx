@@ -157,9 +157,9 @@ const MIActivityLogPage = () => {
     })
   }, [appliedSearch, selectedTypes, events])
 
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchKeyword(value)
-  }, [])
+  // const handleSearchChange = useCallback((value: string) => {
+  //   setSearchKeyword(value)
+  // }, [])
 
   const handleSearch = useCallback((searchTerm: string) => {
     setAppliedSearch(searchTerm)
@@ -387,7 +387,13 @@ const MIActivityLogPage = () => {
                 <MISearchInput
                   storageKey="mi-activity-log"
                   value={searchKeyword}
-                  onChange={handleSearchChange}
+                  onChange={(value) => {
+                    setSearchKeyword(value)
+                    if (value.trim() === '' && appliedSearch !== '') {
+                      setAppliedSearch('')
+                      setPage(1)
+                    }
+                  }}
                   placeholder="Search for description"
                   onSearch={handleSearch}
                   onClear={handleSearchClear}

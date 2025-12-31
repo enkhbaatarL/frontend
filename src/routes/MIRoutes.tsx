@@ -11,6 +11,7 @@ import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
 import EconomicCalendarDetailPage from '@/pages/mi/economicCalendar/EconomicCalendarDetailPage'
 import EconomicCalendarPage from '@/pages/mi/economicCalendar/EconomicCalendarPage'
 import ForecastPage from '@/pages/mi/forecast/ForecastPage'
+import NewForecastPage from '@/pages/mi/forecast/NewForecastPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
@@ -24,6 +25,7 @@ import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
 import NotificationPage from '@/pages/mi/notification/NotificationPage'
 import ParallelCoordinatesPage from '@/pages/mi/parallelCoordinates/ParallelCoordinatesPage'
+import SalesActivityLogPage from '@/pages/mi/salesActivityLog/SalesActivityLogPage'
 import SalesAnalysisPage from '@/pages/mi/salesAnalysis/SalesAnalysisPage'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import TopicTrackerPage from '@/pages/mi/topicTracker/TopicTrackerPage'
@@ -112,6 +114,10 @@ const MIRoutes: RouteObject = {
       ],
     },
     {
+      path: 'new-forecast',
+      element: <NewForecastPage />,
+    },
+    {
       path: 'forecast',
       element: <ForecastPage />,
     },
@@ -155,6 +161,10 @@ const MIRoutes: RouteObject = {
     {
       path: 'mi-activity-log',
       element: <MIActivityLogPage />,
+    },
+    {
+      path: 'sales-activity-log',
+      element: <SalesActivityLogPage />,
     },
     {
       path: 'parallel-coordinates',

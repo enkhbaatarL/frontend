@@ -94,79 +94,50 @@ const MIDropdownMenu = ({
     return { groups, ungroupedItems }
   }, [items, groupDisplayType])
 
+  const renderMenuItem = (item: DropdownMenuItem, index: number, groupKey?: string) => {
+    const { disabled, label } = item
+    const key = groupKey ? `${groupKey}-${index}` : index
+
+    return (
+      <Box
+        key={key}
+        onClick={() => (disabled ? null : handleItemClick(item))}
+        borderRadius="10px"
+        sx={{
+          padding: '8px 12px',
+          cursor: disabled ? 'default' : 'pointer',
+          '&:hover': {
+            backgroundColor: disabled ? 'transparent' : 'gray.10',
+          },
+          textWrap: 'nowrap',
+        }}
+      >
+        <Typography
+          variant="body2M14"
+          color={disabled ? 'gray.40' : 'gray.60'}
+          sx={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%',
+          }}
+        >
+          {label}
+        </Typography>
+      </Box>
+    )
+  }
+
   const renderMenuItems = () => {
     if (groupDisplayType === 'divider') {
       return (
         <>
-          {groupedItems.ungroupedItems.map((item, index) => {
-            const { disabled } = item
-
-            return (
-              <Box
-                key={index}
-                onClick={() => handleItemClick(item)}
-                borderRadius="10px"
-                sx={{
-                  padding: '6px 12px',
-                  cursor: disabled ? 'default' : 'pointer',
-                  '&:hover': {
-                    backgroundColor: disabled ? 'transparent' : 'gray.10',
-                  },
-                  textWrap: 'nowrap',
-                }}
-              >
-                <Typography
-                  variant="body2M14"
-                  color={disabled ? 'gray.40' : 'gray.60'}
-                  sx={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: '100%',
-                  }}
-                >
-                  {item.label}
-                </Typography>
-              </Box>
-            )
-          })}
+          {groupedItems.ungroupedItems.map((item, index) => renderMenuItem(item, index))}
 
           {Object.entries(groupedItems.groups).map(([groupKey, groupItems], groupIndex) => (
             <Fragment key={groupKey}>
               {groupIndex > 0 && <Divider />}
-
-              {groupItems.map((item, index) => {
-                const { disabled } = item
-
-                return (
-                  <Box
-                    key={`${groupKey}-${index}`}
-                    onClick={() => handleItemClick(item)}
-                    borderRadius="10px"
-                    sx={{
-                      padding: '6px 12px',
-                      cursor: disabled ? 'default' : 'pointer',
-                      '&:hover': {
-                        backgroundColor: disabled ? 'transparent' : 'gray.10',
-                      },
-                      textWrap: 'nowrap',
-                    }}
-                  >
-                    <Typography
-                      variant="body2M14"
-                      color={disabled ? 'gray.40' : 'gray.60'}
-                      sx={{
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        maxWidth: '100%',
-                      }}
-                    >
-                      {item.label}
-                    </Typography>
-                  </Box>
-                )
-              })}
+              {groupItems.map((item, index) => renderMenuItem(item, index, groupKey))}
             </Fragment>
           ))}
         </>
@@ -175,38 +146,7 @@ const MIDropdownMenu = ({
 
     return (
       <>
-        {groupedItems.ungroupedItems.map((item, index) => {
-          const { disabled } = item
-
-          return (
-            <Box
-              key={index}
-              onClick={() => handleItemClick(item)}
-              borderRadius="10px"
-              sx={{
-                padding: '6px 12px',
-                cursor: disabled ? 'default' : 'pointer',
-                '&:hover': {
-                  backgroundColor: disabled ? 'transparent' : 'gray.10',
-                },
-                textWrap: 'nowrap',
-              }}
-            >
-              <Typography
-                variant="body2M14"
-                color={disabled ? 'gray.40' : 'gray.60'}
-                sx={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '100%',
-                }}
-              >
-                {item.label}
-              </Typography>
-            </Box>
-          )
-        })}
+        {groupedItems.ungroupedItems.map((item, index) => renderMenuItem(item, index))}
 
         {Object.entries(groupedItems.groups).map(([groupKey, groupItems]) => (
           <Box key={groupKey}>
@@ -227,38 +167,7 @@ const MIDropdownMenu = ({
               </ListSubheader>
             )}
 
-            {groupItems.map((item, index) => {
-              const { disabled } = item
-
-              return (
-                <Box
-                  key={`${groupKey}-${index}`}
-                  onClick={() => handleItemClick(item)}
-                  borderRadius="10px"
-                  sx={{
-                    padding: '6px 12px',
-                    cursor: disabled ? 'default' : 'pointer',
-                    '&:hover': {
-                      backgroundColor: disabled ? 'transparent' : 'gray.10',
-                    },
-                    textWrap: 'nowrap',
-                  }}
-                >
-                  <Typography
-                    variant="body2M14"
-                    color={disabled ? 'gray.40' : 'gray.60'}
-                    sx={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      maxWidth: '100%',
-                    }}
-                  >
-                    {item.label}
-                  </Typography>
-                </Box>
-              )
-            })}
+            {groupItems.map((item, index) => renderMenuItem(item, index, groupKey))}
           </Box>
         ))}
       </>
@@ -268,7 +177,6 @@ const MIDropdownMenu = ({
   return (
     <MIMenu
       label={label}
-      displayType="button"
       variant={variant}
       placement={placement}
       menuPositionOffset={menuPositionOffset}

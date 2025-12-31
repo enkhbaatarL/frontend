@@ -59,9 +59,9 @@
     "sentiments": {
       "titleTooltip": "直近24時間のニュースを基に、市場価格に対する上昇・中立・下落の反応割合を示しています。",
       "barTooltip": {
-        "positive": "上昇",
+        "upward": "上昇",
         "neutral": "中立",
-        "negative": "下落"
+        "downward": "下落"
       },
       "options": {
         "currentLabel": "現在",

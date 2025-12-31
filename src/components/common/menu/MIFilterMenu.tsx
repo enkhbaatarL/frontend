@@ -1,3 +1,4 @@
+import { KeyboardArrowDownRounded, KeyboardArrowUpRounded } from '@mui/icons-material'
 import { Divider, FormControlLabel, Stack, Switch, Typography } from '@mui/material'
 import { isEqual } from 'lodash-es'
 import { Fragment, useEffect, useMemo, useRef, useState, ReactNode } from 'react'
@@ -29,6 +30,9 @@ interface MIFilterMenuProps extends MIMenuProps {
     | 'horizontal-vertical' // 세로 묶음을 가로로 배치 (기본값)
     | 'vertical-horizontal' // 가로 묶음을 세로로 배치
   enableHoverBackground?: boolean
+  hideChevron?: boolean
+  zIndex?: number
+  disableRipple?: boolean
 }
 
 const MIFilterMenu = ({
@@ -41,6 +45,9 @@ const MIFilterMenu = ({
   initialSaveOn = false,
   groupLayout = 'vertical-horizontal',
   enableHoverBackground = false,
+  hideChevron = false,
+  zIndex,
+  disableRipple,
   ...props
 }: MIFilterMenuProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -200,11 +207,20 @@ const MIFilterMenu = ({
   return (
     <MIMenu
       open={isMenuOpen}
+      suffix={
+        !hideChevron &&
+        (isMenuOpen ? (
+          <KeyboardArrowUpRounded sx={{ color: 'contentIcon.Enabled' }} />
+        ) : (
+          <KeyboardArrowDownRounded sx={{ color: 'contentIcon.Enabled' }} />
+        ))
+      }
       onOpenChange={setIsMenuOpen}
       variant="outlined"
       label={defaultLabel}
-      displayType="select"
       enableHoverBackground={enableHoverBackground}
+      zIndex={zIndex}
+      disableRipple={disableRipple}
       {...props}
     >
       <Stack>

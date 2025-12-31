@@ -7,9 +7,9 @@ import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import { useMarketData } from '@/contexts/MarketDataContext'
 import AIMarketSummary from '@/pages/mi/dashboard/components/aiMarketSummary/AIMarketSummary'
 import EconomicCalendar from '@/pages/mi/dashboard/components/economicCalendar/EconomicCalendar'
-import MIGuide from '@/pages/mi/dashboard/components/miGuide/MIGuide'
+// import MIGuide from '@/pages/mi/dashboard/components/miGuide/MIGuide'
 import NewsFeed from '@/pages/mi/dashboard/components/newsFeed/NewsFeed'
-import Newsletters from '@/pages/mi/dashboard/components/newsletters/Newsletters'
+// import Newsletters from '@/pages/mi/dashboard/components/newsletters/Newsletters'
 import Toolbar from '@/pages/mi/dashboard/components/Toolbar'
 import TopicTracker from '@/pages/mi/dashboard/components/topicTracker/TopicTracker'
 import forecastDataService from '@/service/mi/forecast'
@@ -62,12 +62,12 @@ const DashboardPage = () => {
         <Stack direction="row" gap="24px">
           <Stack width="740px" gap="24px">
             <NewsFeed />
-            <MIGuide />
-            <Newsletters />
+            {/* <MIGuide /> */}
+            {/* <Newsletters /> */}
           </Stack>
           <Stack width="616px" gap="24px">
-            <TopicTracker />
             <EconomicCalendar />
+            <TopicTracker />
             {/*<FactorMap />*/}
           </Stack>
         </Stack>

@@ -17,9 +17,19 @@ export interface MIPaginationProps<T> {
   onPageChange?: (value: number) => void
   disabled?: boolean
   groupSize?: number
+  paddingTop?: string | number
 }
 
-const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, disabled, groupSize = 5 }: MIPaginationProps<T>) => {
+const MIPagination = <T,>({
+  data,
+  size,
+  sizeList,
+  onSizeChange,
+  onPageChange,
+  disabled,
+  groupSize = 5,
+  paddingTop = '20px',
+}: MIPaginationProps<T>) => {
   const page = data?.currentPage ?? 1
   const count = data?.totalPages ?? 0
 
@@ -55,7 +65,7 @@ const MIPagination = <T,>({ data, size, sizeList, onSizeChange, onPageChange, di
   const goToLastPage = () => onPageChange?.(count)
 
   return data ? (
-    <Box display="flex" alignItems="center" justifyContent="space-between" pt="20px">
+    <Box display="flex" alignItems="center" justifyContent="space-between" pt={paddingTop}>
       <Typography variant="body3" color="gray.60">
         {paginationRange}
       </Typography>
