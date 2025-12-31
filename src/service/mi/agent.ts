@@ -13,6 +13,7 @@ export enum StreamEventType {
   // CONNECTED = 'connected',
   MESSAGE = 'message',
   CHUNK = 'chunk',
+  VECTOR_DATA = 'vector_data',
   FULLTEXT = 'fulltext',
   SERIES = 'series',
   TABLE = 'table',

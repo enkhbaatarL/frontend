@@ -7,6 +7,7 @@ import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
 
 import style from '@/components/common/agent/MIAgentAnswer.module.scss'
+import MIAgentReports from '@/components/common/agent/MIAgentReports'
 import MIAgentSources from '@/components/common/agent/MIAgentSources'
 import MIAgentSuggestedQuestions from '@/components/common/agent/MIAgentSuggestedQuestions'
 import { MIAgentTableDownloadButton } from '@/components/common/agent/MIAgentTableDownloadButton'
@@ -687,6 +688,9 @@ const MIAgentAnswer = ({
       {animationCompleteCalledRef.current && !isCancelled && (
         <Stack gap="20px">
           {sources && <MIAgentSources sources={sources} isNew={conversation.isNew} />}
+          {conversation.reports && conversation.reports.length > 0 && (
+            <MIAgentReports reports={conversation.reports} isNew={conversation.isNew} />
+          )}
           {suggestedQuestions && (
             <MIAgentSuggestedQuestions suggestedQuestions={suggestedQuestions} isNew={conversation.isNew} onSendMessage={onSendMessage} />
           )}

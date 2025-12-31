@@ -281,6 +281,7 @@
   "mari": {
     "agent": {
       "sources": "출처",
+      "reports": "관련 리포트",
       "suggestedQuestions": "추가 질문 제안"
     },
     "streamMessage": {

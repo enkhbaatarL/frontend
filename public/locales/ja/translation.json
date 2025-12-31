@@ -284,6 +284,7 @@
   "mari": {
     "agent": {
       "sources": "出典",
+      "reports": "関連レポート",
       "suggestedQuestions": "追加質問の提案"
     },
     "streamMessage": {

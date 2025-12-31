@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { v4 as uuid } from 'uuid'
 
+import type { Source } from '@/utils/agentMarkdownExtractor'
+
 import i18n from '@/lib/i18n'
 import agentService, { IChatQnaRes, IChatRoomRes, StreamEventType, ChatRoomErrorStatus } from '@/service/mi/agent'
 import { IPaginationResponse } from '@/types/api'
@@ -21,6 +23,15 @@ export enum MIAgentState {
 export interface IConversation extends IChatQnaRes {
   statusMessage?: string
   isNew?: boolean
+  reports?: Source[]
+}
+
+interface VectorDataItem {
+  source?: string
+  title?: string
+  gds_no?: number
+  gds_data_dstg_id?: string
+  goods_data_no?: number
 }
 
 /**
@@ -309,6 +320,53 @@ const useMIAgent = () => {
               const generatingMessage = i18n.exists(generatingMessageKey) ? t(generatingMessageKey) : streamData
               updateStatusMessage(qnaNo, generatingMessage)
 
+              break
+            }
+
+            case StreamEventType.VECTOR_DATA: {
+              try {
+                const vectorData = Array.isArray(streamData) ? (streamData as VectorDataItem[]) : []
+                const reports: Source[] = vectorData.map((item: VectorDataItem, index: number) => {
+                  const url = item.gds_no && item.goods_data_no ? `/mi/data-detail/${item.gds_no}/${item.goods_data_no}` : '#'
+
+                  return {
+                    index: `report_${index + 1}`,
+                    sourceNm: item.title || item.source || '',
+                    url,
+                  }
+                })
+
+                setConversations((prev) => {
+                  const existingIndex = prev.findIndex((conversation) => conversation.qnaNo === qnaNo)
+
+                  if (existingIndex === -1) {
+                    return ensureConversationExists(prev, qnaNo, message, {
+                      reports,
+                    })
+                  }
+
+                  const currentConversation = prev[existingIndex]
+
+                  if (
+                    currentConversation.reports &&
+                    currentConversation.reports.length === reports.length &&
+                    currentConversation.reports.every(
+                      (r, i) => r.index === reports[i].index && r.sourceNm === reports[i].sourceNm && r.url === reports[i].url,
+                    )
+                  ) {
+                    return prev
+                  }
+
+                  const updatedConversation: IConversation = {
+                    ...currentConversation,
+                    reports,
+                  }
+
+                  return [...prev.slice(0, existingIndex), updatedConversation, ...prev.slice(existingIndex + 1)]
+                })
+              } catch (error) {
+                console.error('Error processing VECTOR_DATA:', error)
+              }
               break
             }
 
