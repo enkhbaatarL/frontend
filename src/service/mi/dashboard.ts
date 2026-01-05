@@ -299,7 +299,7 @@ const dashboardService = {
   async getKeyEconomicIndicators(categoryCode: string, criteriaDate?: string): Promise<IKeyEconomicIndicatorsResponse> {
     const params: Record<string, string> = {
       category: categoryCode,
-      criteriaDate: criteriaDate || dayjs().format('YYYYMMDD'),
+      criteriaDate: criteriaDate ?? dayjs().format('YYYYMMDD'),
     }
 
     const response: AxiosResponse<ICommonResponse<IKeyEconomicIndicatorsResponse>> = await api.get('mi/econ-cal/key', {

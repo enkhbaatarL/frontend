@@ -107,7 +107,7 @@ const AsyncAutocomplete = ({
       e?.stopPropagation()
 
       const value = props.value ?? ''
-      if (value.trim() && onSearch) {
+      if (onSearch) {
         onSearch(value.trim())
       }
 

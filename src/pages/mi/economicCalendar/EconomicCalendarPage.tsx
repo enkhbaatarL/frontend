@@ -1,7 +1,7 @@
-import { Box, Chip, Divider, Grid2 as Grid, Stack, Typography, Tooltip } from '@mui/material'
+import { Box, Chip, Divider, Grid2 as Grid, Stack, Typography, Tooltip, TypographyProps } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
-import { useState, useRef, useEffect, Fragment } from 'react'
+import { useState, useRef, useEffect, Fragment, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import levelHighIcon from '@/assets/level-high.svg'
@@ -11,46 +11,31 @@ import levelNotRatedIcon from '@/assets/level-not-rated.svg'
 import MILine from '@/components/common/divider/MILine'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
-import MIDateRangePickerMenu from '@/components/common/menu/MIDateRangePickerMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MITable from '@/components/common/table/MITable'
 import MITableCell from '@/components/common/table/MITableCell'
 import MIPageHeadline from '@/components/mi/MIPageHeadline'
 import MISkeleton from '@/components/mi/MISkeleton'
+import useSearchFilter from '@/hooks/useSearchFilter'
+import economicService, { EconomicCalendarDateRange, type IEconomicCalendarItem } from '@/service/mi/economic'
+import { IPaginationResponse } from '@/types/api'
+import { formatValue } from '@/utils/number'
 
-type ImportanceLevel = 'HIGH' | 'MEDIUM' | 'LOW'
-
-interface EconomicEvent {
-  id: string
-  releaseDate: string
-  time: string
-  country: string
-  currency: string
-  importance: ImportanceLevel
-  event: string
-  period: string
-  actual: string
-  forecast: string
-  prior: string
-  revised: string
-  isTBA?: boolean
-}
-
-const ImportanceIcon = ({ level }: { level: ImportanceLevel }) => {
+const ImportanceIcon = ({ level }: { level: number }) => {
   let icon = levelNotRatedIcon
   let alt = 'level-not-rated'
 
   switch (level) {
-    case 'HIGH':
+    case 3:
       icon = levelHighIcon
       alt = 'level-high'
       break
-    case 'MEDIUM':
+    case 2:
       icon = levelMediumIcon
       alt = 'level-medium'
       break
-    case 'LOW':
+    case 1:
       icon = levelLowIcon
       alt = 'level-low'
       break
@@ -59,6 +44,14 @@ const ImportanceIcon = ({ level }: { level: ImportanceLevel }) => {
   }
 
   return <img src={icon} width={16} height={16} alt={alt} />
+}
+
+const getFormattedValue = (value: number | null, unitPrefix: string | null, unit: string | null) => {
+  if (value === null) return '-'
+
+  const isCurrency = ['$', '€', '¥', '£'].includes(unit ?? '')
+
+  return `${formatValue(value, isCurrency ? (unit ?? '') : '', 'en-US', 1)}${unitPrefix ? unitPrefix : ''}${!isCurrency && unit ? `${unitPrefix ? ' ' : ''}${unit}` : ''}`
 }
 
 const TBABadge = () => (
@@ -77,7 +70,7 @@ const TBABadge = () => (
   />
 )
 
-const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & any) => {
+const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & TypographyProps) => {
   const textRef = useRef<HTMLDivElement>(null)
   const [isOverflowing, setIsOverflowing] = useState(false)
 
@@ -111,10 +104,36 @@ interface RecentViewedItem {
   recentViewedDt: string
 }
 
+interface IGetEconomicCalendarRequest {
+  dateRange: EconomicCalendarDateRange
+  keyword?: string
+  categories?: string
+  importance?: '3' | '2' | '1'
+  page?: number
+  size?: number
+}
+
+interface TableRow {
+  id: string
+  releaseDate: string
+  time: string
+  country: string
+  currency: string
+  importance: number
+  event: string
+  actual: number | null
+  forecast: number | null
+  prior: number | null
+  revised: number | null
+  unitPrefix: string | null
+  unit: string | null
+  status: string
+  isTBA: boolean
+}
+
 const EconomicCalendarPage = () => {
   const navigate = useNavigate()
-  const [isListLoading] = useState(false)
-  const [pagination, setPagination] = useState({ size: 20 })
+  const [dateRange, setDateRange] = useState<EconomicCalendarDateRange>(EconomicCalendarDateRange.TODAY)
 
   const [recentViewedList, setRecentViewedList] = useState<RecentViewedItem[]>([
     {
@@ -158,300 +177,77 @@ const EconomicCalendarPage = () => {
     setRecentViewedList([])
   }
 
-  const sampleData: EconomicEvent[] = [
-    {
-      id: 'e1',
-      releaseDate: '2025-09-03',
-      time: '10:00',
-      country: 'CN',
-      currency: 'CNY',
-      importance: 'MEDIUM',
-      event: 'Imports (YoY)',
-      period: 'Aug',
-      actual: '-4.1%',
-      forecast: '-4.0%',
-      prior: '-3.8%',
-      revised: '-3.9%',
-    },
-    {
-      id: 'e2',
-      releaseDate: '2025-09-03',
-      time: '11:00',
-      country: 'CN',
-      currency: 'CNY',
-      importance: 'MEDIUM',
-      event: 'Exports (YoY)',
-      period: 'Aug',
-      actual: '2.5%',
-      forecast: '2.0%',
-      prior: '1.8%',
-      revised: '1.9%',
-    },
-    {
-      id: 'e3',
-      releaseDate: '2025-09-03',
-      time: '12:00',
-      country: 'CN',
-      currency: 'CNY',
-      importance: 'MEDIUM',
-      event: 'Trade Balance',
-      period: 'Aug',
-      actual: '$1.5B',
-      forecast: '$1.8B',
-      prior: '$1.2B',
-      revised: '$1.3B',
-    },
-    {
-      id: 'e4',
-      releaseDate: '2025-09-03',
-      time: '13:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'MEDIUM',
-      event: 'CPI (YoY)',
-      period: 'Aug',
-      actual: '3.2%',
-      forecast: '3.5%',
-      prior: '3.0%',
-      revised: '3.1%',
-    },
-    {
-      id: 'e5',
-      releaseDate: '2025-09-03',
-      time: '14:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'MEDIUM',
-      event: 'Unemployment Rate',
-      period: 'Aug',
-      actual: '5.0%',
-      forecast: '4.9%',
-      prior: '4.8%',
-      revised: '4.85%',
-    },
-    {
-      id: 'e6',
-      releaseDate: '2025-09-04',
-      time: '15:00',
-      country: 'EU',
-      currency: 'EUR',
-      importance: 'MEDIUM',
-      event: 'GDP Growth (QoQ)',
-      period: 'Q2',
-      actual: '1.1%',
-      forecast: '1.3%',
-      prior: '0.9%',
-      revised: '1.0%',
-    },
-    {
-      id: 'e7',
-      releaseDate: '2025-09-04',
-      time: '16:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'MEDIUM',
-      event: 'Retail Sales (MoM)',
-      period: 'Aug',
-      actual: '0.8%',
-      forecast: '0.6%',
-      prior: '0.5%',
-      revised: '0.55%',
-    },
-    {
-      id: 'e8',
-      releaseDate: '2025-09-04',
-      time: '17:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'MEDIUM',
-      event: 'Consumer Confidence',
-      period: 'Aug',
-      actual: '82.4',
-      forecast: '80.7',
-      prior: '79.5',
-      revised: '80.1',
-    },
-    {
-      id: 'e9',
-      releaseDate: '2025-09-04',
-      time: '18:00',
-      country: 'EU',
-      currency: 'EUR',
-      importance: 'MEDIUM',
-      event: 'Interest Rate',
-      period: 'Aug',
-      actual: '0.25%',
-      forecast: '0.50%',
-      prior: '0.00%',
-      revised: '0.10%',
-    },
-    {
-      id: 'e10',
-      releaseDate: '2025-09-05',
-      time: '19:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'MEDIUM',
-      event: 'Manufacturing PMI',
-      period: 'Aug',
-      actual: '54.2',
-      forecast: '53.5',
-      prior: '52.8',
-      revised: '53.0',
-    },
-    {
-      id: 'e11',
-      releaseDate: '2025-09-05',
-      time: '20:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'HIGH',
-      event: 'Federal Funds Rate',
-      period: 'Sep',
-      actual: '5.25%',
-      forecast: '5.50%',
-      prior: '5.00%',
-      revised: '5.10%',
-    },
-    {
-      id: 'e12',
-      releaseDate: '2025-09-05',
-      time: '21:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'HIGH',
-      event: 'Non-Farm Payrolls',
-      period: 'Aug',
-      actual: '187K',
-      forecast: '200K',
-      prior: '175K',
-      revised: '180K',
-    },
-    {
-      id: 'e13',
-      releaseDate: '2025-09-06',
-      time: '15:00',
-      country: 'JP',
-      currency: 'JPY',
-      importance: 'MEDIUM',
-      event: 'GDP Growth (QoQ)',
-      period: 'Q2',
-      actual: 'TBA',
-      forecast: '1.1%',
-      prior: '0.8%',
-      revised: '0.9%',
-      isTBA: true,
-    },
-    {
-      id: 'e14',
-      releaseDate: '2025-09-06',
-      time: '16:00',
-      country: 'GB',
-      currency: 'GBP',
-      importance: 'MEDIUM',
-      event: 'Retail Sales (MoM)',
-      period: 'Aug',
-      actual: 'TBA',
-      forecast: '0.6%',
-      prior: '0.4%',
-      revised: '0.45%',
-      isTBA: true,
-    },
-    {
-      id: 'e15',
-      releaseDate: '2025-09-06',
-      time: '17:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'MEDIUM',
-      event: 'Consumer Confidence',
-      period: 'Aug',
-      actual: 'TBA',
-      forecast: '80.7',
-      prior: '78.2',
-      revised: '79.0',
-      isTBA: true,
-    },
-    {
-      id: 'e16',
-      releaseDate: '2025-09-07',
-      time: '18:00',
-      country: 'EU',
-      currency: 'EUR',
-      importance: 'MEDIUM',
-      event: 'Interest Rate',
-      period: 'Aug',
-      actual: 'TBA',
-      forecast: '0.50%',
-      prior: '0.25%',
-      revised: '0.30%',
-      isTBA: true,
-    },
-    {
-      id: 'e17',
-      releaseDate: '2025-09-07',
-      time: '19:00',
-      country: 'CN',
-      currency: 'CNY',
-      importance: 'MEDIUM',
-      event: 'Manufacturing PMI',
-      period: 'Aug',
-      actual: 'TBA',
-      forecast: '53.5',
-      prior: '52.1',
-      revised: '52.5',
-      isTBA: true,
-    },
-    {
-      id: 'e18',
-      releaseDate: '2025-09-07',
-      time: '20:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'HIGH',
-      event: 'Federal Funds Rate',
-      period: 'Sep',
-      actual: 'TBA',
-      forecast: '5.50%',
-      prior: '5.25%',
-      revised: '5.30%',
-      isTBA: true,
-    },
-    {
-      id: 'e19',
-      releaseDate: '2025-09-07',
-      time: '21:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'HIGH',
-      event: 'Non-Farm Payrolls',
-      period: 'Aug',
-      actual: 'TBA',
-      forecast: '200K',
-      prior: '187K',
-      revised: '190K',
-      isTBA: true,
-    },
-    {
-      id: 'e20',
-      releaseDate: '2025-09-08',
-      time: '22:00',
-      country: 'US',
-      currency: 'USD',
-      importance: 'LOW',
-      event: 'Consumer Price Index',
-      period: 'Aug',
-      actual: 'TBA',
-      forecast: '3.2%',
-      prior: '3.0%',
-      revised: '3.1%',
-      isTBA: true,
-    },
-  ]
+  const fetchEconomicCalendar = async (params: Partial<IGetEconomicCalendarRequest> & { page?: number; size?: number }) => {
+    const response = await economicService.getEconomicCalendar({
+      dateRange: params.dateRange ?? EconomicCalendarDateRange.TODAY,
+      keyword: params.keyword,
+      categories: params.categories,
+      importance: params.importance,
+      page: params.page ?? 1,
+      size: params.size ?? 20,
+    })
+    return response
+  }
 
-  const today = dayjs()
+  const { pagination, isLoading, data, filter, updateFilter, updateFilterWithSearch, updatePage, updateSize } = useSearchFilter<
+    IGetEconomicCalendarRequest,
+    IPaginationResponse<IEconomicCalendarItem>
+  >(fetchEconomicCalendar, { dateRange }, { page: 1, size: 20 }, { initialFetch: true })
 
-  const [dateRange, setDateRange] = useState({ startDate: today, endDate: today })
+  useEffect(() => {
+    updateFilterWithSearch('dateRange', dateRange)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange])
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      updateFilter('keyword', value)
+    },
+    [updateFilter],
+  )
+
+  const handleSearch = useCallback(
+    (searchTerm: string) => {
+      updateFilterWithSearch('keyword', searchTerm)
+    },
+    [updateFilterWithSearch],
+  )
+
+  const handleSearchClear = useCallback(() => {
+    updateFilterWithSearch('keyword', '')
+  }, [updateFilterWithSearch])
+
+  const dateRangeOptions = useMemo(
+    () => [
+      { label: 'Today', value: EconomicCalendarDateRange.TODAY },
+      { label: 'Yesterday', value: EconomicCalendarDateRange.YESTERDAY },
+      { label: 'Tomorrow', value: EconomicCalendarDateRange.TOMORROW },
+      { label: 'This Week', value: EconomicCalendarDateRange.THISWEEK },
+      { label: 'Next Week', value: EconomicCalendarDateRange.NEXTWEEK },
+    ],
+    [],
+  )
+
+  const tableRows = useMemo(() => {
+    if (!data?.detail) return []
+    return data.detail.map((item) => ({
+      id: item.economicCalendarId.toString(),
+      releaseDate: item.economicIndicatorPresentationDay,
+      time: item.economicIndicatorPresentationTime ? item.economicIndicatorPresentationTime.slice(0, 5) : '',
+      country: item.countryNameCode,
+      currency: item.countryCurrencyCode,
+      importance: item.refinitivPriority,
+      event: item.economicIndicatorName,
+      actual: item.economicIndicatorRealValue,
+      forecast: item.economicIndicatorPredictionValue,
+      prior: item.economicIndicatorPresentationPriorValue,
+      revised: null,
+      unitPrefix: item.unitPrefix,
+      unit: item.unit,
+      status: item.status,
+      isTBA: item.status === 'SCHEDULED',
+    }))
+  }, [data])
 
   const columns: GridColDef[] = [
     {
@@ -490,7 +286,7 @@ const EconomicCalendarPage = () => {
       renderCell: (params) => (
         <MITableCell>
           <Box display="flex" alignItems="center" justifyContent="center" width="100%">
-            <ImportanceIcon level={params.value as ImportanceLevel} />
+            <ImportanceIcon level={params.value} />
           </Box>
         </MITableCell>
       ),
@@ -504,19 +300,12 @@ const EconomicCalendarPage = () => {
       renderCell: (params) => <MITableCell value={params.value} tooltipContent={params.value} />,
     },
     {
-      field: 'period',
-      headerName: 'Period',
-      width: 64,
-      align: 'center',
-      renderCell: (params) => <MITableCell value={params.value} />,
-    },
-    {
       field: 'actual',
       headerName: 'Actual',
       width: 100,
       align: 'right',
       renderCell: (params) => {
-        const row = params.row as EconomicEvent
+        const row = params.row as TableRow
         if (row.isTBA) {
           return (
             <MITableCell>
@@ -528,7 +317,7 @@ const EconomicCalendarPage = () => {
         }
         return (
           <MITableCell
-            value={params.value}
+            value={getFormattedValue(row.actual, row.unitPrefix, row.unit)}
             typography={{
               sx: {
                 fontWeight: 600,
@@ -543,48 +332,57 @@ const EconomicCalendarPage = () => {
       headerName: 'Forecast',
       width: 100,
       align: 'right',
-      renderCell: (params) => (
-        <MITableCell
-          value={params.value}
-          typography={{
-            sx: {
-              fontWeight: 600,
-            },
-          }}
-        />
-      ),
+      renderCell: (params) => {
+        const row = params.row as TableRow
+        return (
+          <MITableCell
+            value={getFormattedValue(row.forecast, row.unitPrefix, row.unit)}
+            typography={{
+              sx: {
+                fontWeight: 600,
+              },
+            }}
+          />
+        )
+      },
     },
     {
       field: 'prior',
       headerName: 'Prior',
       width: 100,
       align: 'right',
-      renderCell: (params) => (
-        <MITableCell
-          value={params.value}
-          typography={{
-            sx: {
-              fontWeight: 600,
-            },
-          }}
-        />
-      ),
+      renderCell: (params) => {
+        const row = params.row as TableRow
+        return (
+          <MITableCell
+            value={getFormattedValue(row.prior, row.unitPrefix, row.unit)}
+            typography={{
+              sx: {
+                fontWeight: 600,
+              },
+            }}
+          />
+        )
+      },
     },
     {
       field: 'revised',
       headerName: 'Revised',
       width: 100,
       align: 'right',
-      renderCell: (params) => (
-        <MITableCell
-          value={params.value}
-          typography={{
-            sx: {
-              fontWeight: 600,
-            },
-          }}
-        />
-      ),
+      renderCell: (params) => {
+        const row = params.row as TableRow
+        return (
+          <MITableCell
+            value={row.revised ? getFormattedValue(row.revised, row.unitPrefix, row.unit) : '-'}
+            typography={{
+              sx: {
+                fontWeight: 600,
+              },
+            }}
+          />
+        )
+      },
     },
   ]
 
@@ -599,12 +397,12 @@ const EconomicCalendarPage = () => {
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Stack direction="row" gap="12px">
                   <MISearchInput
-                    storageKey="ai-market-summary"
-                    value={''}
+                    storageKey="economic-calendar"
+                    value={filter?.keyword ?? ''}
                     placeholder="Search for economic events"
-                    onChange={() => {}}
-                    onSearch={() => {}}
-                    onClear={() => {}}
+                    onChange={handleSearchChange}
+                    onSearch={handleSearch}
+                    onClear={handleSearchClear}
                   />
                 </Stack>
                 <Stack direction="row" gap="12px">
@@ -616,29 +414,12 @@ const EconomicCalendarPage = () => {
                     onSelected={() => {}}
                     disabled
                   />
-                  <MIDateRangePickerMenu
-                    dateRange={dateRange}
-                    onApply={(dates) => setDateRange({ startDate: dates.startDate ?? today, endDate: dates.endDate ?? today })}
-                    limitDateRange={[1, 'weeks']}
-                    datePresets={[
-                      { label: 'Today', value: { startDate: today, endDate: today } },
-                      { label: 'Yesterday', value: { startDate: today.subtract(1, 'day'), endDate: today.subtract(1, 'day') } },
-                      { label: 'Tomorrow', value: { startDate: today.add(1, 'day'), endDate: today.add(1, 'day') } },
-                      {
-                        label: 'This Week',
-                        value: {
-                          startDate: today.startOf('week').add(1, 'day'),
-                          endDate: today.endOf('week').add(1, 'day'),
-                        },
-                      },
-                      {
-                        label: 'Next Week',
-                        value: {
-                          startDate: today.startOf('week').add(8, 'day'),
-                          endDate: today.startOf('week').add(14, 'day'),
-                        },
-                      },
-                    ]}
+                  <MISelectMenu
+                    variant="outlined"
+                    sx={{ width: 160 }}
+                    items={dateRangeOptions}
+                    selected={dateRange}
+                    onSelected={(selected: string) => setDateRange(selected as EconomicCalendarDateRange)}
                   />
                 </Stack>
               </Stack>
@@ -655,34 +436,23 @@ const EconomicCalendarPage = () => {
                 <MITable
                   rowId="id"
                   columns={columns}
-                  rows={sampleData}
-                  loading={isListLoading}
+                  rows={tableRows}
+                  loading={isLoading}
                   disableHover={false}
                   onRowClick={(params) => {
                     navigate(`/mi/economic-calendar/${params.row.id}`)
                   }}
                 />
               </Box>
-              {sampleData.length > 0 && (
+              {data && tableRows.length > 0 && (
                 <MIPagination
-                  data={{
-                    detail: sampleData,
-                    currentPage: 1,
-                    totalPages: 1,
-                    totalElements: sampleData.length,
-                    numberOfElements: sampleData.length,
-                    size: pagination.size,
-                    isFirst: true,
-                    isLast: true,
-                    hasPrevious: false,
-                    hasNext: false,
-                  }}
+                  data={data}
                   size={pagination.size}
-                  onPageChange={() => {}}
-                  onSizeChange={(value) => setPagination({ size: value })}
+                  onPageChange={(page) => updatePage(page)}
+                  onSizeChange={(value) => updateSize(value)}
                 />
               )}
-              {!isListLoading && sampleData.length === 0 && (
+              {!isLoading && tableRows.length === 0 && (
                 <Box
                   display={'flex'}
                   alignItems={'center'}

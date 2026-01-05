@@ -1,6 +1,5 @@
-/* TODO: 데모 배포 후 API 사용 로직으로 복구 필요 */
-
-import { Box, Stack, Typography, TypographyProps, Tooltip } from '@mui/material'
+import { Box, Stack, Typography, TypographyProps, Tooltip, Chip } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import { ReactNode, useRef, useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -8,46 +7,11 @@ import levelHighIcon from '@/assets/level-high.svg'
 import levelLowIcon from '@/assets/level-low.svg'
 import levelMediumIcon from '@/assets/level-medium.svg'
 import levelNotRatedIcon from '@/assets/level-not-rated.svg'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
+import useCodeData from '@/hooks/useCodeData'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
-
-const sampleData = [
-  {
-    id: 'e1',
-    time: '10:00',
-    imp: 'High',
-    event: 'KOSPI (Final, Aug)',
-    actual: '3.8%',
-    forecast: '3.7%',
-    previous: '3.6%',
-  },
-  {
-    id: 'e2',
-    time: '15:00',
-    imp: 'Medium',
-    event: 'Japan Trade Balance (Jul) Japan Trade Balance (Jul)',
-    actual: '-4.1%',
-    forecast: '-',
-    previous: '-4.1%',
-  },
-  {
-    id: 'e3',
-    time: '16:30',
-    imp: 'Low',
-    event: 'Eurozone CPI (Final, Aug)',
-    actual: '2.0%',
-    forecast: '2.0%',
-    previous: '2.0%',
-  },
-  {
-    id: 'e4',
-    time: '20:00',
-    imp: 'Medium',
-    event: 'China CPI (Aug)',
-    actual: '3.5%',
-    forecast: '3.4%',
-    previous: '3.3%',
-  },
-]
+import dashboardService from '@/service/mi/dashboard'
+import { formatValue } from '@/utils/number'
 
 const HeaderCell = ({ children, width, textAlign }: { children: ReactNode; width: string; textAlign: TypographyProps['textAlign'] }) => (
   <Typography px="8px" variant="body2SB14" color="gray.60" width={width} boxSizing="border-box" textAlign={textAlign}>
@@ -98,22 +62,20 @@ const BodyCell = ({ children, width, textAlign }: { children: ReactNode; width: 
   )
 }
 
-type ImportanceLevel = 'High' | 'Medium' | 'Low'
-
-const ImportanceIcon = ({ level }: { level: ImportanceLevel }) => {
+const ImportanceIcon = ({ level }: { level: number }) => {
   let icon = levelNotRatedIcon
   let alt = 'level-not-rated'
 
   switch (level) {
-    case 'High':
+    case 3:
       icon = levelHighIcon
       alt = 'level-high'
       break
-    case 'Medium':
+    case 2:
       icon = levelMediumIcon
       alt = 'level-medium'
       break
-    case 'Low':
+    case 1:
       icon = levelLowIcon
       alt = 'level-low'
       break
@@ -124,18 +86,48 @@ const ImportanceIcon = ({ level }: { level: ImportanceLevel }) => {
   return <img src={icon} width={16} height={16} alt={alt} />
 }
 
+const TBABadge = () => (
+  <Chip
+    label="TBA"
+    size="small"
+    sx={{
+      height: 20,
+      fontSize: '12px',
+      fontWeight: 500,
+      backgroundColor: '#FFFFFF',
+      color: '#495057',
+      border: '1px solid #DEE2E6',
+      borderRadius: '4px',
+    }}
+  />
+)
+
 const KeyEconomicIndicators = () => {
   const { t } = useTranslation()
+  const { marketCategoryCodeList } = useCodeData()
 
-  const sampleSummary = useMemo(
-    () =>
-      [
-        t('dashboard.sampleData.keyEconomicIndicators.sampleSummary.0'),
-        t('dashboard.sampleData.keyEconomicIndicators.sampleSummary.1'),
-        t('dashboard.sampleData.keyEconomicIndicators.sampleSummary.2'),
-      ].filter(Boolean),
-    [t],
-  )
+  // categoryCode가 없으면 첫 번째 카테고리 사용
+  const defaultCategoryCode = useMemo(() => {
+    if (marketCategoryCodeList && marketCategoryCodeList.length > 0) {
+      return marketCategoryCodeList[0].codeId
+    }
+
+    return ''
+  }, [marketCategoryCodeList])
+
+  const { data: keyEconomicIndicatorsData, isLoading } = useQuery({
+    queryKey: ['getKeyEconomicIndicators', defaultCategoryCode],
+    queryFn: async () => await dashboardService.getKeyEconomicIndicators(defaultCategoryCode),
+    enabled: !!defaultCategoryCode,
+  })
+
+  const getFormattedValue = (value: number | null, unitPrefix: string | null, unit: string | null) => {
+    if (value === null) return '-'
+
+    const isCurrency = ['$', '€', '¥', '£'].includes(unit ?? '')
+
+    return `${formatValue(value, isCurrency ? (unit ?? '') : '', 'en-US', 1)}${unitPrefix ? unitPrefix : ''}${!isCurrency && unit ? `${unitPrefix ? ' ' : ''}${unit}` : ''}`
+  }
 
   return (
     <Box padding="12px">
@@ -162,61 +154,105 @@ const KeyEconomicIndicators = () => {
               Prior
             </HeaderCell>
           </Stack>
-          {sampleData.map((data, index) => (
-            <Stack
-              key={data.id}
-              direction="row"
-              alignItems="center"
-              height="38px"
-              gap="4px"
-              borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
-              sx={{
-                '&:hover': {
-                  backgroundColor: '#F8F9FA',
-                },
-                cursor: 'pointer',
-              }}
-            >
-              <BodyCell width="60px" textAlign="center">
-                {data.time}
-              </BodyCell>
-              <Stack width="44px" justifyContent="center" alignItems="center">
-                <ImportanceIcon level={data.imp as ImportanceLevel} />
-              </Stack>
-              <BodyCell width="200px" textAlign="left">
-                {data.event}
-              </BodyCell>
-              <BodyCell width="80px" textAlign="right">
-                {data.actual}
-              </BodyCell>
-              <BodyCell width="80px" textAlign="right">
-                {data.forecast}
-              </BodyCell>
-              <BodyCell width="80px" textAlign="right">
-                {data.previous}
-              </BodyCell>
-            </Stack>
-          ))}
+          {isLoading ? (
+            <>
+              {Array.from({ length: 4 }, (_, index) => (
+                <Stack
+                  key={`key-economic-indicators-skeleton-${index}`}
+                  direction="row"
+                  alignItems="center"
+                  height="38px"
+                  gap="4px"
+                  borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+                >
+                  <Box width="60px" display="flex" justifyContent="center" px="8px">
+                    <MIBaseSkeleton.TextLine width="40px" height={14} />
+                  </Box>
+                  <Box width="44px" display="flex" justifyContent="center" alignItems="center">
+                    <MIBaseSkeleton.Icon width={16} height={16} />
+                  </Box>
+                  <Box width="200px" px="8px">
+                    <MIBaseSkeleton.TextLine width="180px" height={14} />
+                  </Box>
+                  <Box width="80px" display="flex" justifyContent="flex-end" pr="8px">
+                    <MIBaseSkeleton.TextLine width="60px" height={14} />
+                  </Box>
+                  <Box width="80px" display="flex" justifyContent="flex-end" pr="8px">
+                    <MIBaseSkeleton.TextLine width="60px" height={14} />
+                  </Box>
+                  <Box width="80px" display="flex" justifyContent="flex-end" pr="8px">
+                    <MIBaseSkeleton.TextLine width="60px" height={14} />
+                  </Box>
+                </Stack>
+              ))}
+            </>
+          ) : (
+            <>
+              {(keyEconomicIndicatorsData?.relatedEconomicIndicators ?? []).map((data, index) => (
+                <Stack
+                  key={data.economicCalendarId}
+                  direction="row"
+                  alignItems="center"
+                  height="38px"
+                  gap="4px"
+                  borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: '#F8F9FA',
+                    },
+                    cursor: 'pointer',
+                  }}
+                >
+                  <BodyCell width="60px" textAlign="center">
+                    {(data.economicIndicatorPresentationTime ?? '').slice(0, 5)}
+                  </BodyCell>
+                  <Stack width="44px" justifyContent="center" alignItems="center">
+                    <ImportanceIcon level={data.refinitivPriority} />
+                  </Stack>
+                  <BodyCell width="200px" textAlign="left">
+                    {data.economicIndicatorName}
+                  </BodyCell>
+                  <Stack width="80px" justifyContent="center" alignItems="flex-end" pr="8px">
+                    {data.status === 'SCHEDULED' ? (
+                      <TBABadge />
+                    ) : (
+                      <BodyCell width="80px" textAlign="right">
+                        {getFormattedValue(data.economicIndicatorRealValue, data.unitPrefix, data.unit)}
+                      </BodyCell>
+                    )}
+                  </Stack>
+                  <BodyCell width="80px" textAlign="right">
+                    {getFormattedValue(data.economicIndicatorPredictionValue, data.unitPrefix, data.unit)}
+                  </BodyCell>
+                  <BodyCell width="80px" textAlign="right">
+                    {getFormattedValue(data.economicIndicatorPresentationPriorValue, data.unitPrefix, data.unit)}
+                  </BodyCell>
+                </Stack>
+              ))}
+            </>
+          )}
         </Stack>
-        <Stack padding="12px 22px" gap="10px">
-          {sampleSummary.map((content, index) => (
-            <Typography
-              key={`content-${index}`}
-              variant="body1M16"
-              color="gray.70"
-              sx={{
-                textIndent: '-14px',
-                '&::before': {
-                  content: '"•"',
-                  marginRight: '6px',
-                  color: 'gray.70',
-                },
-              }}
-            >
-              {content}
-            </Typography>
-          ))}
-        </Stack>
+        {keyEconomicIndicatorsData?.content && keyEconomicIndicatorsData.content.length > 0 && (
+          <Stack padding="12px 22px" gap="10px">
+            {keyEconomicIndicatorsData.content.map((content, index) => (
+              <Typography
+                key={`content-${index}`}
+                variant="body1M16"
+                color="gray.70"
+                sx={{
+                  textIndent: '-14px',
+                  '&::before': {
+                    content: '"•"',
+                    marginRight: '6px',
+                    color: 'gray.70',
+                  },
+                }}
+              >
+                {content}
+              </Typography>
+            ))}
+          </Stack>
+        )}
       </Stack>
     </Box>
   )
