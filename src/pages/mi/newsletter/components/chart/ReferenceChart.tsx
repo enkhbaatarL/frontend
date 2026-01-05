@@ -212,7 +212,7 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
       onHover: () => {},
       layout: {
         padding: {
-          right: 16,
+          right: 38,
           top: 14,
           left: 38,
           bottom: 30,
