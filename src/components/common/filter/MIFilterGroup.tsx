@@ -1,4 +1,4 @@
-import { Stack, Typography, StackProps, FormGroup, Box, Tooltip } from '@mui/material'
+import { Stack, Typography, StackProps, Box, Tooltip } from '@mui/material'
 import { ReactNode, useState, useRef, useCallback, useEffect } from 'react'
 
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
@@ -11,9 +11,13 @@ interface Props extends Omit<StackProps, 'title'> {
   onFilterChange?: (selectedFilters: string[]) => void
 }
 
+const MAX_ITEMS_PER_COLUMN = 10
+
 const MIFilterGroup = ({ title, type = 'panel', filters, selectedFilters: externalSelectedFilters, onFilterChange, ...props }: Props) => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>(externalSelectedFilters ?? [])
   const [isEllipsis, setIsEllipsis] = useState<{ [key: string]: boolean }>({})
+
+  const isMultiColumn = filters.length > MAX_ITEMS_PER_COLUMN
 
   const textRefs = useRef<{ [key: string]: HTMLSpanElement | null }>({})
 
@@ -73,8 +77,10 @@ const MIFilterGroup = ({ title, type = 'panel', filters, selectedFilters: extern
     }
   }, [externalSelectedFilters])
 
+  const { width, ...restProps } = props
+
   return (
-    <Stack px="6px" boxSizing="border-box" gap={type === 'panel' ? '12px' : '8px'} {...props}>
+    <Stack px="6px" boxSizing="border-box" gap={type === 'panel' ? '12px' : '8px'} width={width} minWidth="max-content" {...restProps}>
       <Typography
         variant={type === 'panel' ? 'sidePanelTitle' : 'body3M12'}
         color={`contentText.${type === 'panel' ? 'Normal' : 'Subtext'}`}
@@ -82,7 +88,16 @@ const MIFilterGroup = ({ title, type = 'panel', filters, selectedFilters: extern
       >
         {title}
       </Typography>
-      <FormGroup sx={{ gap: '12px' }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateRows: isMultiColumn ? `repeat(${MAX_ITEMS_PER_COLUMN}, min-content)` : 'auto',
+          gridAutoFlow: isMultiColumn ? 'column' : 'row',
+          gridAutoColumns: 'max-content',
+          gap: '12px',
+          minWidth: 'max-content',
+        }}
+      >
         {filters.map(({ label, badge, value }) => (
           <Tooltip
             key={value}
@@ -155,7 +170,7 @@ const MIFilterGroup = ({ title, type = 'panel', filters, selectedFilters: extern
             </Box>
           </Tooltip>
         ))}
-      </FormGroup>
+      </Box>
     </Stack>
   )
 }

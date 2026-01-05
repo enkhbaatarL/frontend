@@ -7,6 +7,7 @@ interface UseCodeDataReturn {
   marketCategoryCodeList: ICode[] | undefined
   regionCategoryCodeList: ICode[] | undefined
   industrySectorCodeList: ICode[] | undefined
+  economicCalendarCategoryCodeList: ICode[] | undefined
   isLoading: boolean
   error: Error | null
 }
@@ -21,6 +22,7 @@ const defaultOptions = {
 const marketCategoryKey = 'nws_mrkt_ctgr_cd'
 const regionCategoryKey = 'nws_rgn_spt_cd'
 const industrySectorKey = 'nws_ind_sctr_cd'
+const economicCalendarCategoryKey = 'ecnmc_cal_type_cd'
 
 /**
  * 코드 데이터를 지연 로딩으로 불러오는 훅
@@ -45,6 +47,12 @@ const useCodeData = (): UseCodeDataReturn => {
     ...defaultOptions,
   })
 
+  const economicCalendarCategoryQuery = useQuery({
+    queryKey: ['codeData', economicCalendarCategoryKey],
+    queryFn: async () => await codeService.getCodeFromKey(economicCalendarCategoryKey),
+    ...defaultOptions,
+  })
+
   // 접근할 때 해당 쿼리를 활성화하는 프록시 객체
   const proxy = useMemo(
     () => ({
@@ -66,14 +74,20 @@ const useCodeData = (): UseCodeDataReturn => {
         }
         return industryQuery.data
       },
+      get economicCalendarCategoryCodeList() {
+        if (!economicCalendarCategoryQuery.data && !economicCalendarCategoryQuery.isLoading) {
+          economicCalendarCategoryQuery.refetch().then()
+        }
+        return economicCalendarCategoryQuery.data
+      },
       get isLoading() {
-        return marketQuery.isLoading || regionQuery.isLoading || industryQuery.isLoading
+        return marketQuery.isLoading || regionQuery.isLoading || industryQuery.isLoading || economicCalendarCategoryQuery.isLoading
       },
       get error() {
-        return marketQuery.error || regionQuery.error || industryQuery.error
+        return marketQuery.error || regionQuery.error || industryQuery.error || economicCalendarCategoryQuery.error
       },
     }),
-    [marketQuery, regionQuery, industryQuery],
+    [marketQuery, regionQuery, industryQuery, economicCalendarCategoryQuery],
   )
 
   return proxy

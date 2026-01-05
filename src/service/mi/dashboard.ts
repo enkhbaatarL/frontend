@@ -128,6 +128,8 @@ export interface IKeyEconomicIndicatorItem {
   unitPrefix: string | null
   unit: string
   refinitivPriority: number
+  refinitivType: string
+  status: string
 }
 
 export interface IKeyEconomicIndicatorsResponse {
@@ -136,6 +138,16 @@ export interface IKeyEconomicIndicatorsResponse {
   criteriaDate: string
   content: string[]
   relatedEconomicIndicators: IKeyEconomicIndicatorItem[]
+}
+
+export interface IEconomicCalendarWidgetResponse {
+  updateTime: string
+  economicCalendarWidgetList: IKeyEconomicIndicatorItem[]
+}
+
+export interface IEconomicCalendarWidgetFilter {
+  categories: string[]
+  importance: string[]
 }
 
 // API 응답 타입
@@ -291,6 +303,28 @@ const dashboardService = {
     }
 
     const response: AxiosResponse<ICommonResponse<IKeyEconomicIndicatorsResponse>> = await api.get('mi/econ-cal/key', {
+      params,
+    })
+
+    return response.data.data
+  },
+  async getEconomicCalendarWidget(
+    criteriaDate?: string,
+    filters?: IEconomicCalendarWidgetFilter,
+  ): Promise<IEconomicCalendarWidgetResponse> {
+    const params: Record<string, string> = {
+      criteriaDate: criteriaDate ?? dayjs().format('YYYYMMDD'),
+    }
+
+    if (filters?.categories && filters?.categories.length > 0) {
+      params.categories = filters.categories.join(',')
+    }
+
+    if (filters?.importance && filters?.importance.length > 0) {
+      params.importance = filters.importance.join(',')
+    }
+
+    const response: AxiosResponse<ICommonResponse<IEconomicCalendarWidgetResponse>> = await api.get('mi/econ-cal/widget', {
       params,
     })
 
