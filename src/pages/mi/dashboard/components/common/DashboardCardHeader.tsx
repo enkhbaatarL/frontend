@@ -37,7 +37,7 @@ const DashboardCardHeader = ({ icon, title, link, children, padding = '27px 24px
             <Typography component="div" color="gray.90" sx={{ fontWeight: 700, fontSize: 22, lineHeight: 0 }}>
               {title}
             </Typography>
-            {(titleString === 'Topic Tracker' || titleString === 'Economic Calendar') && (
+            {titleString === 'Topic Tracker' && (
               <Box
                 sx={{
                   fontSize: '10px',

@@ -79,10 +79,13 @@ const MISearchInput = ({ storageKey, value, onChange, placeholder, onSearch, onC
   const handleSearch = useCallback(
     (searchValue?: string) => {
       const valueToSearch = searchValue ?? value
-      if (valueToSearch.trim()) {
+      const trimmedValue = valueToSearch.trim()
+
+      if (trimmedValue) {
         addHistory(valueToSearch)
-        onSearch(valueToSearch.trim())
       }
+
+      onSearch(trimmedValue)
     },
     [value, addHistory, onSearch],
   )

@@ -155,6 +155,17 @@ const MIMenu = ({
       },
     })
 
+    // 메뉴가 화면 밖으로 나가지 않도록 패딩 조정
+    modifiers.push({
+      name: 'preventOverflow',
+      options: {
+        rootBoundary: 'viewport',
+        tether: false,
+        altAxis: true,
+        padding: 16,
+      },
+    })
+
     return modifiers
   }, [menuPositionOffset, placement, variant])
 

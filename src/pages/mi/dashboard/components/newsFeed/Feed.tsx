@@ -180,7 +180,7 @@ const Feed = ({
             {newsFeedItems?.map((item, index) => (
               <Fragment key={item.newsSignificanceId}>
                 {index !== 0 && <Divider color="#DEE2E6" sx={{ my: '10px' }} />}
-                <FeedItem item={item} />
+                <FeedItem item={item} hasSimilarNews />
               </Fragment>
             ))}
             {!newsFeedItems || newsFeedItems.length === 0 ? (

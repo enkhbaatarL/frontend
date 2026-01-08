@@ -107,7 +107,7 @@ const Reference = ({ referenceData, marketOpenTime, marketCloseTime }: Props) =>
                                         chartData={item.chartData}
                                         marketOpenTime={marketOpenTime}
                                         marketCloseTime={marketCloseTime}
-                                        isShaded={item.isShaded}
+                                        isBidirectional={item.isBidirectional}
                                       />
                                     </td>
                                   </tr>

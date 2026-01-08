@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 import topicSampleImg1 from '@/assets/dashboard/temp/topic-sample1.png'
 import topicSampleImg2 from '@/assets/dashboard/temp/topic-sample2.png'
 // import topicSampleImg3 from '@/assets/dashboard/temp/topic-sample3.png'
-import topicSampleImg4 from '@/assets/dashboard/temp/topic-sample4.png'
+// import topicSampleImg4 from '@/assets/dashboard/temp/topic-sample4.png'
 import topicTrackerIcon from '@/assets/dashboard/topic-tracker.svg'
 import MIButton from '@/components/common/button/MIButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -36,11 +36,11 @@ const topics = [
     value: 'opec+',
     image: topicSampleImg2,
   },
-  {
-    label: 'Sanctions',
-    value: 'sanctions',
-    image: topicSampleImg4,
-  },
+  // {
+  //   label: 'Sanctions',
+  //   value: 'sanctions',
+  //   image: topicSampleImg4,
+  // },
   {
     label: 'Federal Reserve',
     value: 'federal_reserve',
@@ -49,16 +49,16 @@ const topics = [
 ]
 
 const sampleData = [
-  {
-    id: 1,
-    time: '04:30',
-    date: 'Sep 23',
-    topic: 'sanctions',
-    region: 'Europe',
-    title: 'How Russia\'s Sanctions Evasion Could Create Lasting Costs',
-    source: 'The New York Times',
-    publishedAt: 'September 23, 2025 at 04:40 AM',
-  },
+  // {
+  //   id: 1,
+  //   time: '04:30',
+  //   date: 'Sep 23',
+  //   topic: 'sanctions',
+  //   region: 'Europe',
+  //   title: 'How Russia\'s Sanctions Evasion Could Create Lasting Costs',
+  //   source: 'The New York Times',
+  //   publishedAt: 'September 23, 2025 at 04:40 AM',
+  // },
   {
     id: 2,
     time: '04:00',
@@ -126,10 +126,10 @@ const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
   const aiSummaryRef = useRef<AiSummaryHandle>(null)
   const { t } = useTranslation()
 
-  const getIcon = (topicValue: string) => {
-    const topic = topics.find(({ value }) => value === topicValue)
-    return topic?.image
-  }
+  // const getIcon = (topicValue: string) => {
+  //   const topic = topics.find(({ value }) => value === topicValue)
+  //   return topic?.image
+  // }
 
   const handleClick = () => {
     const newExpandedState = !isExpanded
@@ -189,8 +189,10 @@ const TopicTrackerItem = ({ item }: { item: (typeof sampleData)[0] }) => {
         </Stack>
         <Stack px="8px" flex={1} overflow="hidden">
           <Stack direction="row" gap="8px">
-            <CategoryChip>
-              <Box component="img" src={getIcon(item.topic) ?? ''} />
+            <CategoryChip padding="6px 8px">
+              <Typography variant="labelText" color="content.textNormal">
+                # {topics.find(({ value }) => value === item.topic)?.label}
+              </Typography>
             </CategoryChip>
             <CategoryChip padding="6px 8px 6px 6px">
               <Stack direction="row" alignItems="center" gap="4px">
