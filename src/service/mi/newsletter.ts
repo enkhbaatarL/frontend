@@ -71,6 +71,7 @@ export interface ISeriesData {
   color?: string
   dtick?: number
   range?: number[]
+  isBidirectional?: boolean
 }
 
 export interface IChartData {
@@ -111,7 +112,6 @@ export interface IReferenceDataItem {
       cells: string[]
     }[]
   }
-  isBidirectional?: boolean
 }
 
 export interface INewsletterIssueDetail {
