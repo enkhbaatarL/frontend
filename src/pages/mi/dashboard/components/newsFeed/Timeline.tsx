@@ -16,13 +16,20 @@ interface TimelineBarProps {
 interface TimelineItemProps extends StackProps {
   item: INewsFeedItem
   isHovered?: boolean
+  isSelected?: boolean
   hoverColor?: string
 }
 
-const TimelineItem = ({ item, isHovered = false, hoverColor = '#F0F8FF', ...props }: TimelineItemProps) => {
+const TimelineItem = ({ item, isHovered = false, isSelected = false, hoverColor = '#F0F8FF', ...props }: TimelineItemProps) => {
   const titleRef = useRef<HTMLDivElement>(null)
 
   const [waitDelay, setWaitDelay] = useState(false)
+
+  const zIndex = useMemo(() => {
+    if (isSelected) return 4
+
+    return isHovered ? 5 : 1
+  }, [isHovered, isSelected])
 
   useEffect(() => {
     const handleHoverStart = () => {
@@ -67,7 +74,7 @@ const TimelineItem = ({ item, isHovered = false, hoverColor = '#F0F8FF', ...prop
         boxShadow: isHovered
           ? '0 8px 32px rgba(51, 134, 194, 0.25), 0 4px 16px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1)'
           : '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.05)',
-        zIndex: isHovered ? 5 : 1,
+        zIndex,
       }}
       {...props}
     >
@@ -82,29 +89,35 @@ const TimelineItem = ({ item, isHovered = false, hoverColor = '#F0F8FF', ...prop
         >
           {dayjs(item.firstCreated).format('HH:mm')}
         </Typography>
-        <Stack
-          height="16px"
-          padding="2px 4px"
-          borderRadius="4px"
-          boxSizing="border-box"
-          alignItems="center"
-          justifyContent="center"
-          sx={{
-            backgroundColor: isHovered ? 'rgba(233, 236, 239, 0.2)' : 'rgba(233, 236, 239, 1)',
-            transition: `background-color ${isHovered ? '0.05s' : '0.25s'} cubic-bezier(0.4, 0, 0.2, 1)`,
-            willChange: 'background-color',
-          }}
-        >
-          <Typography
-            variant="labelText"
-            color={isHovered ? 'white' : 'gray.60'}
+        {item.newsEventNameEn && (
+          <Stack
+            height="16px"
+            padding="2px 4px"
+            borderRadius="4px"
+            boxSizing="border-box"
+            alignItems="center"
+            justifyContent="center"
             sx={{
-              transition: 'all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+              backgroundColor: isHovered ? 'rgba(233, 236, 239, 0.2)' : 'rgba(233, 236, 239, 1)',
+              transition: `background-color ${isHovered ? '0.05s' : '0.25s'} cubic-bezier(0.4, 0, 0.2, 1)`,
+              willChange: 'background-color',
             }}
           >
-            {item.newsSignificanceScore ?? item.score}
-          </Typography>
-        </Stack>
+            <Typography
+              variant="labelText"
+              color={isHovered ? 'white' : 'gray.60'}
+              sx={{
+                transition: 'all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                maxWidth: isHovered ? '160px' : '50px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {item.newsEventNameEn}
+            </Typography>
+          </Stack>
+        )}
       </Stack>
       <Typography
         variant="body4"
@@ -327,6 +340,7 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
                 <TimelineItem
                   item={item}
                   isHovered={shouldHighlight}
+                  isSelected={isSelected}
                   hoverColor={shouldHighlight ? getColor(item.directionality) : undefined}
                   onMouseEnter={(e) => {
                     e.stopPropagation()

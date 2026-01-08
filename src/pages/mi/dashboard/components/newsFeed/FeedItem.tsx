@@ -32,9 +32,10 @@ interface FeedItemProps extends StackProps {
   onClose?: () => void
   isHighlighted?: boolean
   focusMode?: boolean
+  hasSimilarNews?: boolean
 }
 
-const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedItemProps) => {
+const FeedItem = ({ item, onClose, isHighlighted, focusMode, hasSimilarNews, ...props }: FeedItemProps) => {
   const [shouldFlash, setShouldFlash] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const aiSummaryRef = useRef<AiSummaryHandle>(null)
@@ -91,7 +92,7 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
   const fetchFeedSummary = async (): Promise<AiSummaryData> => {
     const summaryData: AiSummaryData = {
       title: item.briefSummary ?? '',
-      summary: item.summary ?? [],
+      summary: (hasSimilarNews ? item.similarNewsList : item.summary) ?? [],
     }
 
     return new Promise<AiSummaryData>((resolve) => {
@@ -213,7 +214,7 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, ...props }: FeedIte
           </Typography>
         </Stack>
       </Stack>
-      <AiSummary ref={aiSummaryRef} fetchSummary={fetchFeedSummary} viewOriginal={handleViewOriginal} />
+      <AiSummary ref={aiSummaryRef} fetchSummary={fetchFeedSummary} viewOriginal={handleViewOriginal} hasSimilarNews={hasSimilarNews} />
     </Stack>
   )
 }
