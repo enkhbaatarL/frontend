@@ -133,6 +133,7 @@ const InsightsPage = () => {
     filter,
     updateFilter,
     updateFilterWithSearch,
+    updateMultiFilterWithSearch,
     data: insightsData,
     pagination,
     updatePage,
@@ -250,14 +251,42 @@ const InsightsPage = () => {
     () => isInitialLoading || focusedIsLoading || filterIsLoading || recentViewedIsLoading || (insightsIsLoading && !hasInitialData),
     [isInitialLoading, focusedIsLoading, filterIsLoading, recentViewedIsLoading, insightsIsLoading, hasInitialData],
   )
-  useEffect(() => {
-    if (filterList?.data?.providers?.length && !(filter?.provFilters && filter?.provFilters.length > 0)) {
-      const providerIds = filterList.data.providers.map((p) => p.codeId)
-      const defaultProvider = providerIds.includes('A_WOODMAC') ? 'A_WOODMAC' : null
 
-      if (defaultProvider) updateFilterWithSearch('provFilters', defaultProvider)
+  useEffect(() => {
+    // isChecked가 true인 항목들을 디폴트로 설정
+
+    if (filterList?.data) {
+      const filterEntries: [string, string][] = []
+
+      if (filterList.data.providers?.length && !(filter?.provFilters && filter?.provFilters.length > 0)) {
+        const checkedProviders = filterList.data.providers.filter((p) => p.isChecked === true).map((p) => p.codeId)
+
+        if (checkedProviders.length > 0) {
+          filterEntries.push(['provFilters', checkedProviders.join(',')])
+        }
+      }
+
+      if (filterList.data.languages?.length && !(filter?.langFilters && filter?.langFilters.length > 0)) {
+        const checkedLanguages = filterList.data.languages.filter((l) => l.isChecked === true).map((l) => l.codeId)
+
+        if (checkedLanguages.length > 0) {
+          filterEntries.push(['langFilters', checkedLanguages.join(',')])
+        }
+      }
+
+      if (filterList.data.documentTypes?.length && !(filter?.docFilters && filter?.docFilters.length > 0)) {
+        const checkedDocTypes = filterList.data.documentTypes.filter((d) => d.isChecked === true).map((d) => d.codeId)
+
+        if (checkedDocTypes.length > 0) {
+          filterEntries.push(['docFilters', checkedDocTypes.join(',')])
+        }
+      }
+
+      if (filterEntries.length > 0) {
+        updateMultiFilterWithSearch(filterEntries as [string, IInsightsRequest[keyof IInsightsRequest]][])
+      }
     }
-  }, [filterList])
+  }, [filterList, filter?.provFilters, filter?.langFilters, filter?.docFilters, updateMultiFilterWithSearch])
 
   useEffect(() => {
     const shouldMarkAsInitialized = filterList?.data && (!filter.docFilters || (filter.sort && filter.period))

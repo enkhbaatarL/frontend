@@ -95,7 +95,7 @@ const MIRoutes: RouteObject = {
           element: <EconomicCalendarPage />,
         },
         {
-          path: ':economicCalendarId',
+          path: ':economicCalendarCode',
           element: <EconomicCalendarDetailPage />,
         },
       ],
