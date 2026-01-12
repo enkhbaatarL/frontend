@@ -20,7 +20,7 @@ import MISkeleton from '@/components/mi/MISkeleton'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import economicService, { EconomicCalendarDateRange, type IEconomicCalendarItem } from '@/service/mi/economic'
 import { IPaginationResponse } from '@/types/api'
-import { formatValue } from '@/utils/number'
+import { getFormattedValue } from '@/utils/economic'
 
 const ImportanceIcon = ({ level }: { level: number }) => {
   let icon = levelNotRatedIcon
@@ -44,14 +44,6 @@ const ImportanceIcon = ({ level }: { level: number }) => {
   }
 
   return <img src={icon} width={16} height={16} alt={alt} />
-}
-
-const getFormattedValue = (value: number | null, unitPrefix: string | null, unit: string | null) => {
-  if (value === null) return '-'
-
-  const isCurrency = ['$', '€', '¥', '£'].includes(unit ?? '')
-
-  return `${formatValue(value, isCurrency ? (unit ?? '') : '', 'en-US', 1)}${unitPrefix ? unitPrefix : ''}${!isCurrency && unit ? `${unitPrefix ? ' ' : ''}${unit}` : ''}`
 }
 
 const TBABadge = () => (
@@ -231,7 +223,7 @@ const EconomicCalendarPage = () => {
   const tableRows = useMemo(() => {
     if (!data?.detail) return []
     return data.detail.map((item) => ({
-      id: item.economicCalendarId.toString(),
+      id: item.code,
       releaseDate: item.economicIndicatorPresentationDay,
       time: item.economicIndicatorPresentationTime ? item.economicIndicatorPresentationTime.slice(0, 5) : '',
       country: item.countryNameCode,
@@ -472,76 +464,76 @@ const EconomicCalendarPage = () => {
             </Stack>
 
             <Stack width={286} flexShrink={0} gap="30px">
-              <Box
-                display={'flex'}
-                flexDirection={'column'}
-                border={'1px solid'}
-                borderColor={'gray.30'}
-                borderRadius={1}
-                py={6}
-                px={3}
-                flexShrink={0}
-                width={286}
-                boxSizing={'border-box'}
-                gap={2}
-              >
-                <Box display="flex" justifyContent="space-between" alignItems="center" px={3}>
-                  <Typography color="gray.70" component="h2" variant="sidePanelTitle">
-                    Favorites
-                  </Typography>
-                </Box>
-                <Box display={'flex'} flexDirection={'column'} gap={'4px'}>
-                  {recentViewedList?.length ? (
-                    recentViewedList.map((item, index) => (
-                      <Fragment key={`recent-viewed-${item.goodsNo}-${item.goodsDataNo}-${index}`}>
-                        <Box
-                          paddingY={2}
-                          // onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
-                          sx={{
-                            width: '90%',
-                            padding: '12px',
-                            overflow: 'hidden',
-                            cursor: 'pointer',
-                            borderRadius: '4px',
-                            '&:hover': {
-                              backgroundColor: 'contentBG.Hover',
-                            },
-                          }}
-                        >
-                          <TruncatedTextWithTooltip
-                            text={item.goodsDataNm}
-                            color="gray.70"
-                            component="div"
-                            lineHeight={1.4}
-                            variant="body4"
-                            sx={{
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          />
-                          <Grid direction={'row'} container alignItems={'center'} gap={1}>
-                            <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
-                              {item.providerNm}
-                            </Typography>
-                            <MILine thickness={1.1} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
-                            <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
-                              {dayjs(item.recentViewedDt).format('YY-MM-DD HH:mm')}
-                            </Typography>
-                          </Grid>
-                        </Box>
-                        {index !== recentViewedList.length - 1 && (
-                          <MILine thickness={1.01} direction="horizontal" backgroundColor="gray.30" />
-                        )}
-                      </Fragment>
-                    ))
-                  ) : (
-                    <Typography color="gray.50" textAlign="center" py={5.5} component="div" variant="body3R12">
-                      No History
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
+              {/*<Box*/}
+              {/*  display={'flex'}*/}
+              {/*  flexDirection={'column'}*/}
+              {/*  border={'1px solid'}*/}
+              {/*  borderColor={'gray.30'}*/}
+              {/*  borderRadius={1}*/}
+              {/*  py={6}*/}
+              {/*  px={3}*/}
+              {/*  flexShrink={0}*/}
+              {/*  width={286}*/}
+              {/*  boxSizing={'border-box'}*/}
+              {/*  gap={2}*/}
+              {/*>*/}
+              {/*  <Box display="flex" justifyContent="space-between" alignItems="center" px={3}>*/}
+              {/*    <Typography color="gray.70" component="h2" variant="sidePanelTitle">*/}
+              {/*      Favorites*/}
+              {/*    </Typography>*/}
+              {/*  </Box>*/}
+              {/*  <Box display={'flex'} flexDirection={'column'} gap={'4px'}>*/}
+              {/*    {recentViewedList?.length ? (*/}
+              {/*      recentViewedList.map((item, index) => (*/}
+              {/*        <Fragment key={`recent-viewed-${item.goodsNo}-${item.goodsDataNo}-${index}`}>*/}
+              {/*          <Box*/}
+              {/*            paddingY={2}*/}
+              {/*            // onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}*/}
+              {/*            sx={{*/}
+              {/*              width: '90%',*/}
+              {/*              padding: '12px',*/}
+              {/*              overflow: 'hidden',*/}
+              {/*              cursor: 'pointer',*/}
+              {/*              borderRadius: '4px',*/}
+              {/*              '&:hover': {*/}
+              {/*                backgroundColor: 'contentBG.Hover',*/}
+              {/*              },*/}
+              {/*            }}*/}
+              {/*          >*/}
+              {/*            <TruncatedTextWithTooltip*/}
+              {/*              text={item.goodsDataNm}*/}
+              {/*              color="gray.70"*/}
+              {/*              component="div"*/}
+              {/*              lineHeight={1.4}*/}
+              {/*              variant="body4"*/}
+              {/*              sx={{*/}
+              {/*                overflow: 'hidden',*/}
+              {/*                textOverflow: 'ellipsis',*/}
+              {/*                whiteSpace: 'nowrap',*/}
+              {/*              }}*/}
+              {/*            />*/}
+              {/*            <Grid direction={'row'} container alignItems={'center'} gap={1}>*/}
+              {/*              <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">*/}
+              {/*                {item.providerNm}*/}
+              {/*              </Typography>*/}
+              {/*              <MILine thickness={1.1} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />*/}
+              {/*              <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">*/}
+              {/*                {dayjs(item.recentViewedDt).format('YY-MM-DD HH:mm')}*/}
+              {/*              </Typography>*/}
+              {/*            </Grid>*/}
+              {/*          </Box>*/}
+              {/*          {index !== recentViewedList.length - 1 && (*/}
+              {/*            <MILine thickness={1.01} direction="horizontal" backgroundColor="gray.30" />*/}
+              {/*          )}*/}
+              {/*        </Fragment>*/}
+              {/*      ))*/}
+              {/*    ) : (*/}
+              {/*      <Typography color="gray.50" textAlign="center" py={5.5} component="div" variant="body3R12">*/}
+              {/*        No History*/}
+              {/*      </Typography>*/}
+              {/*    )}*/}
+              {/*  </Box>*/}
+              {/*</Box>*/}
               <Box
                 display={'flex'}
                 flexDirection={'column'}

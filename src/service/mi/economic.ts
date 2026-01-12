@@ -31,9 +31,17 @@ export interface IEconomicCalendarItem {
   economicIndicatorPredictionValue: number | null
   unitPrefix: string | null
   unit: string | null
+  nextEconomicIndicatorPresentationDay?: string
+  refinitivName?: string
   refinitivPresentationRegion: string
-  refinitivPriority: number
+  refinitivExplanation?: string
+  refinitivSourceOrganization?: string
   refinitivType: string
+  refinitivUnit?: string
+  refinitivPresentationCycle?: string
+  refinitivIsUsed?: boolean
+  refinitivPriority: number
+  refinitivPresentationDatetime?: string
   status: string
   countryNameCode: string
   countryCurrencyCode: string
@@ -44,6 +52,18 @@ const economicService = {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IEconomicCalendarItem>>> = await api.get('mi/econ-cal', {
       params,
     })
+
+    return response.data.data
+  },
+  async getEconomicCalenderDetail(code: string): Promise<IEconomicCalendarItem> {
+    const response: AxiosResponse<ICommonResponse<IEconomicCalendarItem>> = await api.get(`mi/econ-cal/${code}`)
+
+    return response.data.data
+  },
+  async getEconomicCalenderDetailHistory(code: string): Promise<IPaginationResponse<IEconomicCalendarItem>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IEconomicCalendarItem>>> = await api.get(
+      `mi/econ-cal/${code}/history`,
+    )
 
     return response.data.data
   },
