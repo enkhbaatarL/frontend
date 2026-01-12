@@ -185,7 +185,7 @@ const TopicTracker = () => {
   const [topicName, setTopicName] = useState('')
   const [previousItemsLength, setPreviousItemsLength] = useState(4)
 
-  const criteriaDate = dayjs().format('YYYY-MM-DD')
+  const criteriaDate = dayjs().format('YYYYMMDD')
 
   const { data: topicsData, isLoading: isTopicsLoading } = useQuery({
     queryKey: ['topicTrackerTopics'],
