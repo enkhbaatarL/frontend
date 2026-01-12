@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 
 import MILine from '@/components/common/divider/MILine'
 import MITable from '@/components/common/table/MITable'
-import MITopic from '@/components/common/topic/MITopic'
+// import MITopic from '@/components/common/topic/MITopic'
 import MIPageHeadline from '@/components/mi/MIPageHeadline'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import marketDataService, { IMarketData, IRawDataPoint } from '@/service/mi/marketData'
@@ -150,7 +150,7 @@ const MarketMapPage = () => {
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [hasInitialData, setHasInitialData] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<string>(CATEGORY_CODE.ALL)
+  const [selectedCategory, _setSelectedCategory] = useState<string>(CATEGORY_CODE.ALL)
 
   // Market Map API 호출
   const {
@@ -263,16 +263,16 @@ const MarketMapPage = () => {
     [t],
   )
 
-  const topicList = useMemo(
-    () => [
-      { label: getCategoryLabel(CATEGORY_CODE.ALL), value: CATEGORY_CODE.ALL },
-      ...CATEGORY_ORDER.map((category) => ({
-        label: getCategoryLabel(category),
-        value: category,
-      })),
-    ],
-    [getCategoryLabel],
-  )
+  // const topicList = useMemo(
+  //   () => [
+  //     { label: getCategoryLabel(CATEGORY_CODE.ALL), value: CATEGORY_CODE.ALL },
+  //     ...CATEGORY_ORDER.map((category) => ({
+  //       label: getCategoryLabel(category),
+  //       value: category,
+  //     })),
+  //   ],
+  //   [getCategoryLabel],
+  // )
 
   return (
     <MISkeleton variant={'marketData'} loading={isActuallyLoading}>
@@ -280,7 +280,7 @@ const MarketMapPage = () => {
 
       <Box boxSizing="border-box" paddingX={7.5} minWidth="1440px" width="1440px" margin="auto" py={12.5} px={7.5}>
         <Box mb={6}>
-          <MITopic topics={topicList} selectedTopic={selectedCategory} onClick={(topic) => setSelectedCategory(topic.value)} />
+          {/*<MITopic topics={topicList} selectedTopic={selectedCategory} onClick={(topic) => setSelectedCategory(topic.value)} />*/}
         </Box>
         <Box mb={17.5}>
           {Object.entries(displayData).map(([category, charts], categoryIndex, array) => {

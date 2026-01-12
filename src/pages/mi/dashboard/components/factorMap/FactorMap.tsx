@@ -1,33 +1,33 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { Box, Stack, Typography } from '@mui/material'
-import { useState } from 'react'
+// import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import FactorMapIcon from '@/assets/dashboard/factor-map.svg'
 import tempFactorMapImg from '@/assets/dashboard/temp/temp-factor-map.svg'
-import MITopic from '@/components/common/topic/MITopic'
+// import MITopic from '@/components/common/topic/MITopic'
 import DashboardCard from '@/pages/mi/dashboard/components/common/DashboardCard'
 import UpdatedInfoChip from '@/pages/mi/dashboard/components/common/UpdatedInfoChip'
 
-const topics = [
-  {
-    label: 'Aramid',
-    value: 'aramid',
-  },
-  {
-    label: 'Tire Cords',
-    value: 'tire_cords',
-  },
-  {
-    label: 'PET Film',
-    value: 'pet_film',
-  },
-]
+// const topics = [
+//   {
+//     label: 'Aramid',
+//     value: 'aramid',
+//   },
+//   {
+//     label: 'Tire Cords',
+//     value: 'tire_cords',
+//   },
+//   {
+//     label: 'PET Film',
+//     value: 'pet_film',
+//   },
+// ]
 
 const FactorMap = () => {
   const { t } = useTranslation()
 
-  const [selectedTopic, setSelectedTopic] = useState(topics[0].value)
+  // const [selectedTopic, setSelectedTopic] = useState(topics[0].value)
 
   return (
     <DashboardCard
@@ -43,7 +43,7 @@ const FactorMap = () => {
       direction="column"
       gap="0px"
     >
-      <MITopic topics={topics} selectedTopic={selectedTopic} onClick={(topic) => setSelectedTopic(topic.value)} />
+      {/*<MITopic topics={topics} selectedTopic={selectedTopic} onClick={(topic) => setSelectedTopic(topic.value)} />*/}
       <Box padding="40px 6px 28px">
         <img src={tempFactorMapImg} alt="factor-map" draggable={false} />
       </Box>
