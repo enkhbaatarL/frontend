@@ -17,6 +17,7 @@ export interface IAdvancedFilterItem {
   codeNm: string
   codeId: string
   codeExpn: string
+  isChecked?: boolean
 }
 export interface IAdvancedFilter {
   documentTypes: IAdvancedFilterItem[]
