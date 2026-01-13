@@ -179,6 +179,12 @@ const AIMarketSummaryPage = () => {
     return recapsData.detail.map((recap, index) => convertRecapToSummaryItem(recap, index)).filter((item) => item !== null)
   }, [recapsData])
 
+  useEffect(() => {
+    setExpandedRowIds(new Set())
+    setLoadedRowIds(new Set())
+    setLoadingRowId(null)
+  }, [summaryItems])
+
   const isListLoading = recapsIsLoading
 
   const handleApplyFilters = (filterValues: FilterValues, _save?: boolean) => {
