@@ -55,14 +55,14 @@ const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNe
     <Stack py="12px" gap="6px" borderBottom={borderBottom ? '1px solid #DEE2E6' : 'none'}>
       <Stack direction="row" gap="8px">
         <Icon direction={item.momentum} />
-        <Typography variant="infoDocument">{item.title}</Typography>
+        <Typography variant="infoDocument">{item.nameEnglish || item.nameKorean}</Typography>
       </Stack>
       <Collapse in={selectedOption === 'detailed'} timeout={300}>
         <Stack gap="6px">
           <Stack pl="22px" gap="1px">
-            {item.relatedNews?.slice(0, 3).map((news, index) => (
+            {item.relatedEventRepresentativeNewsResNews?.slice(0, 3).map((news, index) => (
               <Box
-                key={`${item.highlightItemId}-news-${index}`}
+                key={`${item.highlightEventId}-news-${index}`}
                 onClick={() => {
                   onRelatedNewsItemSelected({ name: news.provider, value: news.newsSummaryId.toString() })
                 }}
@@ -102,7 +102,10 @@ const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNe
             ))}
           </Stack>
           <TagChip
-            items={item.relatedNews?.map((news) => ({ name: news.provider, value: news.newsSummaryId.toString() })) ?? []}
+            items={
+              item.relatedEventRepresentativeNewsResNews?.map((news) => ({ name: news.provider, value: news.newsSummaryId.toString() })) ??
+              []
+            }
             ellipsisRange={2}
             padding="6px 20px"
             onItemSelected={onRelatedNewsItemSelected}
@@ -153,7 +156,7 @@ const Highlights = ({ highlights }: Props) => {
               {(selectedOption === 'detailed' || selectedOption === 'focused') &&
                 highlights?.items.map((item, index) => (
                   <HighlightsItem
-                    key={item.highlightItemId}
+                    key={item.highlightEventId}
                     item={item}
                     selectedOption={selectedOption}
                     borderBottom={index !== highlights?.items.length - 1}
@@ -177,7 +180,7 @@ const Highlights = ({ highlights }: Props) => {
                         ))}
                         <TagChip
                           items={
-                            highlights?.narrative.relatedNews?.map((news) => ({
+                            highlights?.relatedEventRepresentativeNewsResNews?.map((news) => ({
                               name: news.provider,
                               value: news.newsSummaryId.toString(),
                             })) ?? []

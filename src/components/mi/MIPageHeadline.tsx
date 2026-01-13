@@ -38,7 +38,7 @@ const MIPageHeadline = ({ title, gradientStart, gradientEnd, height }: Props) =>
           <Typography color="white" component="h1" fontSize={40} variant="body1M16">
             {title}
           </Typography>
-          {(title === 'AI Market Summary' || title === 'Topic Tracker') && (
+          {title === 'Topic Tracker' && (
             <Box
               sx={{
                 fontSize: '16px',

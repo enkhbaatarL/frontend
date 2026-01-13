@@ -481,7 +481,7 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
                                               >
                                                 {item.label}
                                               </Typography>
-                                              {(item.label === 'AI Market Summary' || item.label === 'Topic Tracker') && (
+                                              {item.label === 'Topic Tracker' && (
                                                 <Box
                                                   sx={{
                                                     fontSize: '10px',

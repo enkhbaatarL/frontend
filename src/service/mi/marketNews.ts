@@ -1,6 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios.ts'
+import { IMarketRecapCheckpointItem, IMarketRecapHighlightItem } from '@/service/mi/dashboard'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 export interface INewsSummaryData {
@@ -34,6 +35,28 @@ export interface INewsListItem {
   industries: string[]
 }
 
+export type DateRangeOption = 'LAST_30_DAYS' | 'LAST_60_DAYS' | 'LAST_12_MONTHS' | 'ALL_TIME' | ''
+export type RecapCategory = 'HIGHLIGHT' | 'CHECKPOINT'
+export interface INewsRecapsRequest extends IPaginationRequest {
+  sort?: string
+  keyword?: string
+  dateRangeOption?: DateRangeOption
+  recapCategory?: RecapCategory[]
+}
+export interface INewsRecapNarrative {
+  title: string
+  content: string[]
+}
+
+export interface INewsRecapItem {
+  marketRecapId: number
+  criteriaDate: string
+  categoryCode: string
+  recapCategory: RecapCategory
+  narrative: INewsRecapNarrative
+  items: IMarketRecapHighlightItem[] | IMarketRecapCheckpointItem[]
+}
+
 const marketNewsService = {
   async getNewsList(params: Partial<INewsListRequest>, signal?: AbortSignal): Promise<IPaginationResponse<INewsListItem>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsListItem>>> = await api.get('mi/market-news', {
@@ -51,6 +74,15 @@ const marketNewsService = {
   async getNewsSummaryData(newsSummaryId: string): Promise<INewsSummaryData> {
     const response: AxiosResponse<ICommonResponse<INewsSummaryData>> = await api.get(`mi/market-news/${newsSummaryId}`)
 
+    return response.data.data
+  },
+  async getNewsRecaps(params: Partial<INewsRecapsRequest>): Promise<IPaginationResponse<INewsRecapItem>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsRecapItem>>> = await api.get('mi/market-news/recaps', {
+      params: {
+        ...params,
+        recapCategory: params.recapCategory?.join(','),
+      },
+    })
     return response.data.data
   },
 }

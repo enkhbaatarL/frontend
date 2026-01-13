@@ -40,7 +40,7 @@ const CheckpointsItem = ({
           <Stack pl="22px" gap="1px">
             {item.content.map((content, index) => (
               <Typography
-                key={`${item.checkpointItemId}-content-${index}`}
+                key={`${item.checkpointId}-content-${index}`}
                 variant="subtext5"
                 color="gray.70"
                 fontWeight={500}
@@ -98,7 +98,7 @@ const Checkpoints = ({ checkpoints }: Props) => {
               {(selectedOption === 'detailed' || selectedOption === 'focused') &&
                 checkpoints?.items.map((item, index) => (
                   <CheckpointsItem
-                    key={item.checkpointItemId}
+                    key={item.checkpointId}
                     item={item}
                     selectedOption={selectedOption}
                     borderBottom={index !== checkpoints?.items.length - 1}
