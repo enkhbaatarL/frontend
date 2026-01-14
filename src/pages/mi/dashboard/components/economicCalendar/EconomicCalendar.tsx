@@ -217,61 +217,87 @@ const EconomicCalendar = () => {
         )}
       </Stack>
       <Stack gap="10px">
-        <Stack>
-          <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
-            <HeaderCell width="60px" textAlign="center">
-              Time
-            </HeaderCell>
-            <HeaderCell width="44px" textAlign="center">
-              Imp.
-            </HeaderCell>
-            <HeaderCell width="132px" textAlign="left">
-              Event
-            </HeaderCell>
-            <HeaderCell width="100px" textAlign="right">
-              Actual
-            </HeaderCell>
-            <HeaderCell width="100px" textAlign="right">
-              Forecast
-            </HeaderCell>
-            <HeaderCell width="100px" textAlign="right">
-              Prior
-            </HeaderCell>
+        {isLoading ? (
+          <Stack>
+            <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
+              <HeaderCell width="60px" textAlign="center">
+                Time
+              </HeaderCell>
+              <HeaderCell width="44px" textAlign="center">
+                Imp.
+              </HeaderCell>
+              <HeaderCell width="132px" textAlign="left">
+                Event
+              </HeaderCell>
+              <HeaderCell width="100px" textAlign="right">
+                Actual
+              </HeaderCell>
+              <HeaderCell width="100px" textAlign="right">
+                Forecast
+              </HeaderCell>
+              <HeaderCell width="100px" textAlign="right">
+                Prior
+              </HeaderCell>
+            </Stack>
+            {Array.from({ length: 10 }, (_, index) => (
+              <Stack
+                key={`economic-calendar-skeleton-${index}`}
+                direction="row"
+                alignItems="center"
+                height="38px"
+                gap="4px"
+                borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+              >
+                <Box width="60px" display="flex" justifyContent="center" px="8px">
+                  <MIBaseSkeleton.TextLine width="40px" height={14} />
+                </Box>
+                <Box width="44px" display="flex" justifyContent="center" alignItems="center">
+                  <MIBaseSkeleton.Icon width={16} height={16} />
+                </Box>
+                <Box width="132px" px="8px">
+                  <MIBaseSkeleton.TextLine width="120px" height={14} />
+                </Box>
+                <Box width="100px" display="flex" justifyContent="flex-end" pr="8px">
+                  <MIBaseSkeleton.TextLine width="60px" height={14} />
+                </Box>
+                <Box width="100px" display="flex" justifyContent="flex-end" pr="8px">
+                  <MIBaseSkeleton.TextLine width="60px" height={14} />
+                </Box>
+                <Box width="100px" display="flex" justifyContent="flex-end" pr="8px">
+                  <MIBaseSkeleton.TextLine width="60px" height={14} />
+                </Box>
+              </Stack>
+            ))}
           </Stack>
-          {isLoading ? (
-            <>
-              {Array.from({ length: 10 }, (_, index) => (
-                <Stack
-                  key={`economic-calendar-skeleton-${index}`}
-                  direction="row"
-                  alignItems="center"
-                  height="38px"
-                  gap="4px"
-                  borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
-                >
-                  <Box width="60px" display="flex" justifyContent="center" px="8px">
-                    <MIBaseSkeleton.TextLine width="40px" height={14} />
-                  </Box>
-                  <Box width="44px" display="flex" justifyContent="center" alignItems="center">
-                    <MIBaseSkeleton.Icon width={16} height={16} />
-                  </Box>
-                  <Box width="132px" px="8px">
-                    <MIBaseSkeleton.TextLine width="120px" height={14} />
-                  </Box>
-                  <Box width="100px" display="flex" justifyContent="flex-end" pr="8px">
-                    <MIBaseSkeleton.TextLine width="60px" height={14} />
-                  </Box>
-                  <Box width="100px" display="flex" justifyContent="flex-end" pr="8px">
-                    <MIBaseSkeleton.TextLine width="60px" height={14} />
-                  </Box>
-                  <Box width="100px" display="flex" justifyContent="flex-end" pr="8px">
-                    <MIBaseSkeleton.TextLine width="60px" height={14} />
-                  </Box>
-                </Stack>
-              ))}
-            </>
+        ) : !economicCalendarWidgetData?.economicCalendarWidgetList ||
+          economicCalendarWidgetData.economicCalendarWidgetList.length === 0 ? (
+            <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+              <Typography variant="body2SB14" color="content.textNormal">
+              No data available to display.
+              </Typography>
+            </Stack>
           ) : (
-            <>
+            <Stack>
+              <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
+                <HeaderCell width="60px" textAlign="center">
+                Time
+                </HeaderCell>
+                <HeaderCell width="44px" textAlign="center">
+                Imp.
+                </HeaderCell>
+                <HeaderCell width="132px" textAlign="left">
+                Event
+                </HeaderCell>
+                <HeaderCell width="100px" textAlign="right">
+                Actual
+                </HeaderCell>
+                <HeaderCell width="100px" textAlign="right">
+                Forecast
+                </HeaderCell>
+                <HeaderCell width="100px" textAlign="right">
+                Prior
+                </HeaderCell>
+              </Stack>
               {(economicCalendarWidgetData?.economicCalendarWidgetList ?? []).map((data, index) => (
                 <Stack
                   key={data.economicCalendarId}
@@ -313,9 +339,8 @@ const EconomicCalendar = () => {
                   </BodyCell>
                 </Stack>
               ))}
-            </>
+            </Stack>
           )}
-        </Stack>
       </Stack>
     </DashboardCard>
   )

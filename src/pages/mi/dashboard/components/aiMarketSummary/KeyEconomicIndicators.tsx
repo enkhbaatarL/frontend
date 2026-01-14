@@ -133,105 +133,129 @@ const KeyEconomicIndicators = () => {
     <Box padding="12px">
       <SectionHeader title="Key Economic Indicators" tooltipTitle={t('dashboard.keyEconomicIndicators.tooltipTitle')} mb="10px" bold />
       <Stack gap="10px">
-        <Stack>
-          <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
-            <HeaderCell width="60px" textAlign="center">
-              Time
-            </HeaderCell>
-            <HeaderCell width="44px" textAlign="center">
-              Imp.
-            </HeaderCell>
-            <HeaderCell width="200px" textAlign="left">
-              Event
-            </HeaderCell>
-            <HeaderCell width="80px" textAlign="right">
-              Actual
-            </HeaderCell>
-            <HeaderCell width="80px" textAlign="right">
-              Forecast
-            </HeaderCell>
-            <HeaderCell width="80px" textAlign="right">
-              Prior
-            </HeaderCell>
+        {isLoading ? (
+          <Stack>
+            <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
+              <HeaderCell width="60px" textAlign="center">
+                Time
+              </HeaderCell>
+              <HeaderCell width="44px" textAlign="center">
+                Imp.
+              </HeaderCell>
+              <HeaderCell width="200px" textAlign="left">
+                Event
+              </HeaderCell>
+              <HeaderCell width="80px" textAlign="right">
+                Actual
+              </HeaderCell>
+              <HeaderCell width="80px" textAlign="right">
+                Forecast
+              </HeaderCell>
+              <HeaderCell width="80px" textAlign="right">
+                Prior
+              </HeaderCell>
+            </Stack>
+            {Array.from({ length: 4 }, (_, index) => (
+              <Stack
+                key={`key-economic-indicators-skeleton-${index}`}
+                direction="row"
+                alignItems="center"
+                height="38px"
+                gap="4px"
+                borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+              >
+                <Box width="60px" display="flex" justifyContent="center" px="8px">
+                  <MIBaseSkeleton.TextLine width="40px" height={14} />
+                </Box>
+                <Box width="44px" display="flex" justifyContent="center" alignItems="center">
+                  <MIBaseSkeleton.Icon width={16} height={16} />
+                </Box>
+                <Box width="200px" px="8px">
+                  <MIBaseSkeleton.TextLine width="180px" height={14} />
+                </Box>
+                <Box width="80px" display="flex" justifyContent="flex-end" pr="8px">
+                  <MIBaseSkeleton.TextLine width="60px" height={14} />
+                </Box>
+                <Box width="80px" display="flex" justifyContent="flex-end" pr="8px">
+                  <MIBaseSkeleton.TextLine width="60px" height={14} />
+                </Box>
+                <Box width="80px" display="flex" justifyContent="flex-end" pr="8px">
+                  <MIBaseSkeleton.TextLine width="60px" height={14} />
+                </Box>
+              </Stack>
+            ))}
           </Stack>
-          {isLoading ? (
-            <>
-              {Array.from({ length: 4 }, (_, index) => (
-                <Stack
-                  key={`key-economic-indicators-skeleton-${index}`}
-                  direction="row"
-                  alignItems="center"
-                  height="38px"
-                  gap="4px"
-                  borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
-                >
-                  <Box width="60px" display="flex" justifyContent="center" px="8px">
-                    <MIBaseSkeleton.TextLine width="40px" height={14} />
-                  </Box>
-                  <Box width="44px" display="flex" justifyContent="center" alignItems="center">
-                    <MIBaseSkeleton.Icon width={16} height={16} />
-                  </Box>
-                  <Box width="200px" px="8px">
-                    <MIBaseSkeleton.TextLine width="180px" height={14} />
-                  </Box>
-                  <Box width="80px" display="flex" justifyContent="flex-end" pr="8px">
-                    <MIBaseSkeleton.TextLine width="60px" height={14} />
-                  </Box>
-                  <Box width="80px" display="flex" justifyContent="flex-end" pr="8px">
-                    <MIBaseSkeleton.TextLine width="60px" height={14} />
-                  </Box>
-                  <Box width="80px" display="flex" justifyContent="flex-end" pr="8px">
-                    <MIBaseSkeleton.TextLine width="60px" height={14} />
-                  </Box>
+        ) : !keyEconomicIndicatorsData?.relatedEconomicIndicators || keyEconomicIndicatorsData.relatedEconomicIndicators.length === 0 ? (
+          <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+            <Typography variant="body2SB14" color="content.textNormal">
+              No data available to display.
+            </Typography>
+          </Stack>
+        ) : (
+          <Stack>
+            <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
+              <HeaderCell width="60px" textAlign="center">
+                Time
+              </HeaderCell>
+              <HeaderCell width="44px" textAlign="center">
+                Imp.
+              </HeaderCell>
+              <HeaderCell width="200px" textAlign="left">
+                Event
+              </HeaderCell>
+              <HeaderCell width="80px" textAlign="right">
+                Actual
+              </HeaderCell>
+              <HeaderCell width="80px" textAlign="right">
+                Forecast
+              </HeaderCell>
+              <HeaderCell width="80px" textAlign="right">
+                Prior
+              </HeaderCell>
+            </Stack>
+            {(keyEconomicIndicatorsData?.relatedEconomicIndicators ?? []).map((data, index) => (
+              <Stack
+                key={data.economicCalendarId}
+                direction="row"
+                alignItems="center"
+                height="38px"
+                gap="4px"
+                borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: '#F8F9FA',
+                  },
+                  cursor: 'pointer',
+                }}
+              >
+                <BodyCell width="60px" textAlign="center">
+                  {(data.economicIndicatorPresentationTime ?? '').slice(0, 5)}
+                </BodyCell>
+                <Stack width="44px" justifyContent="center" alignItems="center">
+                  <ImportanceIcon level={data.refinitivPriority} />
                 </Stack>
-              ))}
-            </>
-          ) : (
-            <>
-              {(keyEconomicIndicatorsData?.relatedEconomicIndicators ?? []).map((data, index) => (
-                <Stack
-                  key={data.economicCalendarId}
-                  direction="row"
-                  alignItems="center"
-                  height="38px"
-                  gap="4px"
-                  borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
-                  sx={{
-                    '&:hover': {
-                      backgroundColor: '#F8F9FA',
-                    },
-                    cursor: 'pointer',
-                  }}
-                >
-                  <BodyCell width="60px" textAlign="center">
-                    {(data.economicIndicatorPresentationTime ?? '').slice(0, 5)}
-                  </BodyCell>
-                  <Stack width="44px" justifyContent="center" alignItems="center">
-                    <ImportanceIcon level={data.refinitivPriority} />
-                  </Stack>
-                  <BodyCell width="200px" textAlign="left">
-                    {data.economicIndicatorName}
-                  </BodyCell>
-                  <Stack width="80px" justifyContent="center" alignItems="flex-end" pr="8px">
-                    {data.status === 'SCHEDULED' ? (
-                      <TBABadge />
-                    ) : (
-                      <BodyCell width="80px" textAlign="right">
-                        {getFormattedValue(data.economicIndicatorRealValue, data.unitPrefix, data.unit)}
-                      </BodyCell>
-                    )}
-                  </Stack>
-                  <BodyCell width="80px" textAlign="right">
-                    {getFormattedValue(data.economicIndicatorPredictionValue, data.unitPrefix, data.unit)}
-                  </BodyCell>
-                  <BodyCell width="80px" textAlign="right">
-                    {getFormattedValue(data.economicIndicatorPresentationPriorValue, data.unitPrefix, data.unit)}
-                  </BodyCell>
+                <BodyCell width="200px" textAlign="left">
+                  {data.economicIndicatorName}
+                </BodyCell>
+                <Stack width="80px" justifyContent="center" alignItems="flex-end" pr="8px">
+                  {data.status === 'SCHEDULED' ? (
+                    <TBABadge />
+                  ) : (
+                    <BodyCell width="80px" textAlign="right">
+                      {getFormattedValue(data.economicIndicatorRealValue, data.unitPrefix, data.unit)}
+                    </BodyCell>
+                  )}
                 </Stack>
-              ))}
-            </>
-          )}
-        </Stack>
+                <BodyCell width="80px" textAlign="right">
+                  {getFormattedValue(data.economicIndicatorPredictionValue, data.unitPrefix, data.unit)}
+                </BodyCell>
+                <BodyCell width="80px" textAlign="right">
+                  {getFormattedValue(data.economicIndicatorPresentationPriorValue, data.unitPrefix, data.unit)}
+                </BodyCell>
+              </Stack>
+            ))}
+          </Stack>
+        )}
         {keyEconomicIndicatorsData?.content && keyEconomicIndicatorsData.content.length > 0 && (
           <Stack padding="12px 22px" gap="10px">
             {keyEconomicIndicatorsData.content.map((content, index) => (

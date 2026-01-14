@@ -109,7 +109,6 @@ const TopicTrackerPage = () => {
   const [loadingRowId, setLoadingRowId] = useState<number | null>(null)
   const [loadedRowIds, setLoadedRowIds] = useState<Set<number>>(new Set())
   const [sort, setSort] = useState<TopicTrackerSort>('NEWEST')
-  const [dateRangeOption, setDateRangeOption] = useState<TopicTrackerDateRangeOption>('LAST_30_DAYS')
 
   const { regionCategoryCodeList } = useCodeData()
 
@@ -142,7 +141,7 @@ const TopicTrackerPage = () => {
       {
         keyword: '',
         sort: 'NEWEST',
-        dateRangeOption: 'LAST_30_DAYS',
+        dateRangeOption: 'LAST_7_DAYS',
         topics: savedFilters.topics,
         regions: savedFilters.regions,
       },
@@ -244,7 +243,6 @@ const TopicTrackerPage = () => {
   const handleDateRangeChange = useCallback(
     (value: string) => {
       const newDateRange = value as TopicTrackerDateRangeOption
-      setDateRangeOption(newDateRange)
       updateFilterWithSearch('dateRangeOption', newDateRange)
     },
     [updateFilterWithSearch],
@@ -322,6 +320,8 @@ const TopicTrackerPage = () => {
                     }}
                     appliedFiltersCount={appliedFiltersCount}
                     onApply={handleApplyFilters}
+                    showSaveOption
+                    initialSaveOn={Boolean(localStorage.getItem(FILTERS_STORAGE_KEY))}
                     sx={{ minWidth: 105 }}
                   />
                 </Stack>
@@ -336,7 +336,7 @@ const TopicTrackerPage = () => {
                       { label: 'Last 12 months', value: 'LAST_12_MONTHS' },
                       { label: 'All time', value: 'ALL_TIME' },
                     ]}
-                    selected={dateRangeOption}
+                    selected={filter.dateRangeOption ?? 'LAST_7_DAYS'}
                     onSelected={handleDateRangeChange}
                   />
                   <MISelectMenu

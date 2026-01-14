@@ -481,25 +481,6 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
                                               >
                                                 {item.label}
                                               </Typography>
-                                              {item.label === 'Topic Tracker' && (
-                                                <Box
-                                                  sx={{
-                                                    fontSize: '10px',
-                                                    fontWeight: 600,
-                                                    lineHeight: '160%',
-                                                    color: '#868E96',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    padding: '0 4px',
-                                                    borderRadius: '4px',
-                                                    backgroundColor: '#DEE2E6',
-                                                    height: '16px',
-                                                  }}
-                                                >
-                                                  DEMO
-                                                </Box>
-                                              )}
                                             </Box>
                                             {item.desc && (
                                               <Typography

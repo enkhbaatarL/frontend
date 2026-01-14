@@ -78,22 +78,22 @@ const Watchlist = () => {
         bold
       />
       <Stack sx={{ userSelect: 'none' }}>
-        <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
-          <HeaderCell width="276px" textAlign="left">
-            Name
-          </HeaderCell>
-          <HeaderCell width="100px" textAlign="right">
-            Price
-          </HeaderCell>
-          <HeaderCell width="90px" textAlign="right">
-            Change
-          </HeaderCell>
-          <HeaderCell width="90px" textAlign="right">
-            Change %
-          </HeaderCell>
-        </Stack>
         {marketDataIsLoading ? (
           <>
+            <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
+              <HeaderCell width="276px" textAlign="left">
+                Name
+              </HeaderCell>
+              <HeaderCell width="100px" textAlign="right">
+                Price
+              </HeaderCell>
+              <HeaderCell width="90px" textAlign="right">
+                Change
+              </HeaderCell>
+              <HeaderCell width="90px" textAlign="right">
+                Change %
+              </HeaderCell>
+            </Stack>
             {Array.from({ length: 10 }, (_, index) => (
               <Stack
                 key={`watchlist-skeleton-${index}`}
@@ -123,8 +123,28 @@ const Watchlist = () => {
               </Stack>
             ))}
           </>
+        ) : !marketDataList || marketDataList.length === 0 ? (
+          <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+            <Typography variant="body2SB14" color="content.textNormal">
+              No data available to display.
+            </Typography>
+          </Stack>
         ) : (
           <>
+            <Stack direction="row" alignItems="center" height="32px" gap="4px" borderBottom="1px solid #868E96">
+              <HeaderCell width="276px" textAlign="left">
+                Name
+              </HeaderCell>
+              <HeaderCell width="100px" textAlign="right">
+                Price
+              </HeaderCell>
+              <HeaderCell width="90px" textAlign="right">
+                Change
+              </HeaderCell>
+              <HeaderCell width="90px" textAlign="right">
+                Change %
+              </HeaderCell>
+            </Stack>
             {marketDataList.slice(0, 15).map(({ isPermitted, marketMetaDataSummary: item }, index) => (
               <Stack
                 key={`watchlist-item-${item.goodsNo}-${item.goodsDataNo}-${item.goodsDataSourceNo}`}
