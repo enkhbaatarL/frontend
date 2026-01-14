@@ -75,11 +75,12 @@ export interface IMarketRecapRelatedNews {
 }
 
 export interface IMarketRecapHighlightItem {
-  highlightItemId: number
-  title: string
+  highlightEventId: number
+  nameKorean: string
+  nameEnglish: string
   content: string[]
   momentum?: DirectionType
-  relatedNews?: IMarketRecapRelatedNews[]
+  relatedEventRepresentativeNewsResNews?: IMarketRecapRelatedNews[]
 }
 
 export interface IMarketRecapHighlights {
@@ -87,12 +88,12 @@ export interface IMarketRecapHighlights {
   narrative: {
     title: string
     content: string[]
-    relatedNews?: IMarketRecapRelatedNews[]
   }
+  relatedEventRepresentativeNewsResNews?: IMarketRecapRelatedNews[]
 }
 
 export interface IMarketRecapCheckpointItem {
-  checkpointItemId: number
+  checkpointId: number
   title: string
   content: string[]
 }
@@ -151,6 +152,37 @@ export interface IEconomicCalendarWidgetFilter {
 }
 
 // API 응답 타입
+interface IMarketRecapApiHighlightItem {
+  highlightEventId: number
+  nameKorean: string
+  nameEnglish: string
+  momentum: DirectionType
+  relatedEventRepresentativeNewsResNews: IMarketRecapRelatedNews[]
+}
+
+interface IMarketRecapApiHighlights {
+  narrative: {
+    title: string
+    content: string[]
+  }
+  items: IMarketRecapApiHighlightItem[]
+  relatedEventRepresentativeNewsResNews: IMarketRecapRelatedNews[]
+}
+
+interface IMarketRecapApiCheckpointItem {
+  checkpointId: number
+  title: string
+  content: string[]
+}
+
+interface IMarketRecapApiCheckpoints {
+  narrative: {
+    title: string
+    content: string[]
+  }
+  items: IMarketRecapApiCheckpointItem[]
+}
+
 interface IMarketRecapApiResponse {
   marketRecapId: number
   criteriaDate: string
@@ -161,31 +193,8 @@ interface IMarketRecapApiResponse {
     last7days: IMarketRecapSentimentItem
     last30days: IMarketRecapSentimentItem
   }
-  highlights: {
-    narrative: {
-      title: string
-      content: string[]
-    }
-    items: Array<{
-      highlightEventId: number
-      nameKorean: string
-      nameEnglish: string
-      momentum: 'UPWARD' | 'DOWNWARD' | 'NULL'
-      relatedEventRepresentativeNewsResNews: IMarketRecapRelatedNews[]
-    }>
-    relatedEventRepresentativeNewsResNews: IMarketRecapRelatedNews[]
-  }
-  checkpoints: {
-    narrative: {
-      title: string
-      content: string[]
-    }
-    items: Array<{
-      checkpointId: number
-      title: string
-      content: string[]
-    }>
-  }
+  highlights: IMarketRecapApiHighlights
+  checkpoints: IMarketRecapApiCheckpoints
   analysisFrequency?: string
   analysisPeriod?: string[]
 }
@@ -250,15 +259,6 @@ const dashboardService = {
 
     const apiData = response.data.data
 
-    // momentum 매핑 함수
-    const mapMomentum = (momentum: 'UPWARD' | 'DOWNWARD' | 'NULL'): DirectionType | undefined => {
-      if (momentum === 'UPWARD') return DirectionType.Upward
-      if (momentum === 'DOWNWARD') return DirectionType.Downward
-      if (momentum === 'NULL') return DirectionType.Neutral
-
-      return undefined
-    }
-
     // API 응답을 내부 인터페이스로 매핑
     return {
       sentiments: {
@@ -269,21 +269,22 @@ const dashboardService = {
       },
       highlights: {
         items: apiData.highlights.items.map((item) => ({
-          highlightItemId: item.highlightEventId,
-          title: item.nameEnglish || item.nameKorean,
+          highlightEventId: item.highlightEventId,
+          nameKorean: item.nameKorean,
+          nameEnglish: item.nameEnglish,
           content: [],
-          momentum: mapMomentum(item.momentum),
-          relatedNews: item.relatedEventRepresentativeNewsResNews,
+          momentum: item.momentum,
+          relatedEventRepresentativeNewsResNews: item.relatedEventRepresentativeNewsResNews,
         })),
         narrative: {
           title: apiData.highlights.narrative.title,
           content: apiData.highlights.narrative.content,
-          relatedNews: apiData.highlights.relatedEventRepresentativeNewsResNews,
         },
+        relatedEventRepresentativeNewsResNews: apiData.highlights.relatedEventRepresentativeNewsResNews,
       },
       checkpoints: {
         items: apiData.checkpoints.items.map((item) => ({
-          checkpointItemId: item.checkpointId,
+          checkpointId: item.checkpointId,
           title: item.title,
           content: item.content,
         })),

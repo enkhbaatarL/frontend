@@ -18,7 +18,7 @@ import economicService, { type IEconomicCalendarItem } from '@/service/mi/econom
 import { getFormattedValue, getImportanceLabel } from '@/utils/economic'
 
 interface EconomicEvent {
-  id: string
+  id: number
   releaseDate: string
   time: string
   country: string
@@ -99,7 +99,7 @@ const EconomicCalendarDetailPage = () => {
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
 
   const convertToEconomicEvent = (item: IEconomicCalendarItem): EconomicEvent => ({
-    id: item.code,
+    id: item.economicCalendarId,
     releaseDate: item.economicIndicatorPresentationDay,
     time: item.economicIndicatorPresentationTime ? item.economicIndicatorPresentationTime.slice(0, 5) : '',
     country: item.countryNameCode,

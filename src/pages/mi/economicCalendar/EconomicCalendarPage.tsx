@@ -1,7 +1,7 @@
-import { Box, Chip, Divider, Grid2 as Grid, Stack, Typography, Tooltip, TypographyProps } from '@mui/material'
+import { Box, Chip, Divider, Grid2 as Grid, Stack, Tooltip, Typography, TypographyProps } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
-import { useState, useRef, useEffect, Fragment, useMemo, useCallback } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import levelHighIcon from '@/assets/level-high.svg'
@@ -18,7 +18,7 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MIPageHeadline from '@/components/mi/MIPageHeadline'
 import MISkeleton from '@/components/mi/MISkeleton'
 import useSearchFilter from '@/hooks/useSearchFilter'
-import economicService, { EconomicCalendarDateRange, type IEconomicCalendarItem } from '@/service/mi/economic'
+import economicService, { EconomicCalendarDateRange, type IEconomicCalendarItem, type IRecentViewedItem } from '@/service/mi/economic'
 import { IPaginationResponse } from '@/types/api'
 import { getFormattedValue } from '@/utils/economic'
 
@@ -88,14 +88,6 @@ const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string }
   )
 }
 
-interface RecentViewedItem {
-  goodsNo: number
-  goodsDataNo: number
-  goodsDataNm: string
-  providerNm: string
-  recentViewedDt: string
-}
-
 interface IGetEconomicCalendarRequest {
   dateRange: EconomicCalendarDateRange
   keyword?: string
@@ -127,50 +119,37 @@ const EconomicCalendarPage = () => {
   const navigate = useNavigate()
   const [dateRange, setDateRange] = useState<EconomicCalendarDateRange>(EconomicCalendarDateRange.TODAY)
 
-  const [recentViewedList, setRecentViewedList] = useState<RecentViewedItem[]>([
-    {
-      goodsNo: 1,
-      goodsDataNo: 101,
-      goodsDataNm: 'Global Economic Outlook 2025: Market Trends and Forecasts',
-      providerNm: 'Wood Mackenzie',
-      recentViewedDt: dayjs().subtract(1, 'hour').toISOString(),
-    },
-    {
-      goodsNo: 2,
-      goodsDataNo: 102,
-      goodsDataNm: 'Energy Market Analysis: Q3 2025 Quarterly Report',
-      providerNm: 'IHS Markit',
-      recentViewedDt: dayjs().subtract(3, 'hours').toISOString(),
-    },
-    {
-      goodsNo: 3,
-      goodsDataNo: 103,
-      goodsDataNm: 'Commodity Price Trends: Oil and Gas Market Update',
-      providerNm: 'Wood Mackenzie',
-      recentViewedDt: dayjs().subtract(5, 'hours').toISOString(),
-    },
-    {
-      goodsNo: 4,
-      goodsDataNo: 104,
-      goodsDataNm: 'Regional Economic Indicators: Asia-Pacific Analysis',
-      providerNm: 'Bloomberg',
-      recentViewedDt: dayjs().subtract(1, 'day').toISOString(),
-    },
-    {
-      goodsNo: 5,
-      goodsDataNo: 105,
-      goodsDataNm: 'Market Intelligence Report: Energy Sector Overview',
-      providerNm: 'IHS Markit',
-      recentViewedDt: dayjs().subtract(2, 'days').toISOString(),
-    },
-  ])
+  const [recentViewedList, setRecentViewedList] = useState<IRecentViewedItem[]>([])
+  const [isRecentViewedLoading, setIsRecentViewedLoading] = useState(false)
 
-  const handleClearRecentViewed = () => {
-    setRecentViewedList([])
+  useEffect(() => {
+    const fetchRecentViewed = async () => {
+      try {
+        setIsRecentViewedLoading(true)
+        const data = await economicService.getRecentViewed()
+        setRecentViewedList(data)
+      } catch (error) {
+        console.error('Failed to fetch recent viewed:', error)
+        setRecentViewedList([])
+      } finally {
+        setIsRecentViewedLoading(false)
+      }
+    }
+
+    fetchRecentViewed().then()
+  }, [])
+
+  const handleClearRecentViewed = async () => {
+    try {
+      await economicService.clearRecentViewed()
+      setRecentViewedList([])
+    } catch (error) {
+      console.error('Failed to clear recent viewed:', error)
+    }
   }
 
-  const fetchEconomicCalendar = async (params: Partial<IGetEconomicCalendarRequest> & { page?: number; size?: number }) => {
-    const response = await economicService.getEconomicCalendar({
+  const fetchEconomicCalendar = async (params: Partial<IGetEconomicCalendarRequest> & { page?: number; size?: number }) =>
+    await economicService.getEconomicCalendar({
       dateRange: params.dateRange ?? EconomicCalendarDateRange.TODAY,
       keyword: params.keyword,
       categories: params.categories,
@@ -178,8 +157,6 @@ const EconomicCalendarPage = () => {
       page: params.page ?? 1,
       size: params.size ?? 20,
     })
-    return response
-  }
 
   const { pagination, isLoading, data, filter, updateFilter, updateFilterWithSearch, updatePage, updateSize } = useSearchFilter<
     IGetEconomicCalendarRequest,
@@ -568,12 +545,16 @@ const EconomicCalendarPage = () => {
                   </Typography>
                 </Box>
                 <Box display={'flex'} flexDirection={'column'} gap={'4px'}>
-                  {recentViewedList?.length ? (
+                  {isRecentViewedLoading ? (
+                    <Typography color="gray.50" textAlign="center" py={5.5} component="div" variant="body3R12">
+                      Loading...
+                    </Typography>
+                  ) : recentViewedList?.length ? (
                     recentViewedList.map((item, index) => (
-                      <Fragment key={`recent-viewed-${item.goodsNo}-${item.goodsDataNo}-${index}`}>
+                      <Fragment key={`recent-viewed-${item.code}-${index}`}>
                         <Box
                           paddingY={2}
-                          // onClick={() => navigate(`/mi/data-detail/${item.goodsNo}/${item.goodsDataNo}`)}
+                          onClick={() => navigate(`/mi/economic-calendar/${item.code}`)}
                           sx={{
                             width: '90%',
                             padding: '12px',
@@ -586,7 +567,7 @@ const EconomicCalendarPage = () => {
                           }}
                         >
                           <TruncatedTextWithTooltip
-                            text={item.goodsDataNm}
+                            text={item.economicIndicatorName}
                             color="gray.70"
                             component="div"
                             lineHeight={1.4}
@@ -597,13 +578,25 @@ const EconomicCalendarPage = () => {
                               whiteSpace: 'nowrap',
                             }}
                           />
-                          <Grid direction={'row'} container alignItems={'center'} gap={1}>
-                            <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
-                              {item.providerNm}
+                          <Grid direction={'row'} container alignItems={'center'} gap={1} sx={{ minWidth: 0, flexWrap: 'nowrap' }}>
+                            <Typography
+                              color="gray.60"
+                              lineHeight={1.4}
+                              component="div"
+                              variant="body3R12"
+                              sx={{
+                                maxWidth: '100%',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                minWidth: 0,
+                              }}
+                            >
+                              {item.refinitivSourceOrganization}
                             </Typography>
                             <MILine thickness={1.1} margin={'0 6px'} length={6} borderRadius={10} direction={'vertical'} />
-                            <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12">
-                              {dayjs(item.recentViewedDt).format('YY-MM-DD HH:mm')}
+                            <Typography color="gray.60" lineHeight={1.4} component="div" variant="body3R12" sx={{ flexShrink: 0 }}>
+                              {dayjs(item.inquiryDateTime).format('YY-MM-DD HH:mm')}
                             </Typography>
                           </Grid>
                         </Box>

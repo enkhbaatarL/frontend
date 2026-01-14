@@ -1,5 +1,7 @@
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Plugin } from 'chart.js'
-import { useMemo, useRef } from 'react'
+import { Box, Divider, Fade, Stack, Typography } from '@mui/material'
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Plugin, ScriptableContext } from 'chart.js'
+import dayjs from 'dayjs'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import { Chart } from 'react-chartjs-2'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement)
@@ -12,17 +14,72 @@ interface SentimentData {
 }
 
 const SENTIMENT_COLORS = {
-  upward: '#3386C2',
-  neutral: '#A8A8A8',
-  downward: '#A02A74',
+  upward: {
+    start: '#3386C2',
+    end: '#1366A2',
+  },
+  neutral: {
+    start: '#BFBFBF',
+    end: '#969696',
+  },
+  downward: {
+    start: '#A02A74',
+    end: '#71134E',
+  },
+}
+
+const hexToRgba = (hex: string, alpha: number): string => {
+  const r = Number.parseInt(hex.slice(1, 3), 16)
+  const g = Number.parseInt(hex.slice(3, 5), 16)
+  const b = Number.parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+const createGradient = (
+  ctx: CanvasRenderingContext2D,
+  area: { top: number; bottom: number },
+  colors: { start: string; end: string },
+  opacity: number = 1,
+) => {
+  if (!Number.isFinite(area.top) || !Number.isFinite(area.bottom)) {
+    return opacity < 1 ? hexToRgba(colors.start, opacity) : colors.start
+  }
+
+  const gradient = ctx.createLinearGradient(0, area.top, 0, area.bottom)
+
+  const startColor = opacity < 1 ? hexToRgba(colors.start, opacity) : colors.start
+  const endColor = opacity < 1 ? hexToRgba(colors.end, opacity) : colors.end
+
+  gradient.addColorStop(0, startColor)
+  gradient.addColorStop(1, endColor)
+
+  return gradient
 }
 
 interface MISentimentsChartProps {
   data: SentimentData[]
 }
 
+const updatingCharts = new WeakMap<ChartJS<'bar'>, boolean>()
+
+const gradientBarPlugin: Plugin<'bar'> = {
+  id: 'gradientBar',
+  afterLayout: (chart) => {
+    if (updatingCharts.get(chart)) {
+      return
+    }
+
+    updatingCharts.set(chart, true)
+
+    requestAnimationFrame(() => {
+      chart.update('none')
+      updatingCharts.set(chart, false)
+    })
+  },
+}
+
 // 바 사이의 빈 공간을 같은 섹션으로 채워서 Stacked Area Chart처럼 보이게 하는 플러그인
-const stackedAreaFillPlugin: Plugin<'bar'> = {
+const createStackedAreaFillPlugin = (hoveredIndex: number | null): Plugin<'bar'> => ({
   id: 'stackedAreaFill',
   afterDraw(chart) {
     const { ctx, chartArea, scales } = chart
@@ -44,6 +101,9 @@ const stackedAreaFillPlugin: Plugin<'bar'> = {
 
     // 각 바 사이의 영역을 채우기
     for (let i = 0; i < chart.data.labels!.length - 1; i++) {
+      const shouldApplyOpacity = hoveredIndex !== null && hoveredIndex !== i && hoveredIndex !== i + 1
+      const opacity = shouldApplyOpacity ? 0.5 : 1
+
       // 바의 메타데이터를 사용하여 정확한 위치 가져오기
       // 순서: downward (0), neutral (1), upward (2) - 위에서 아래로 upward, neutral, downward가 되도록
       const downwardMeta = chart.getDatasetMeta(0)
@@ -86,6 +146,7 @@ const stackedAreaFillPlugin: Plugin<'bar'> = {
       const nextDownwardBottom = nextDownwardBar.base
 
       // Upward 섹션 영역
+      ctx.globalAlpha = opacity
       ctx.fillStyle = '#ADCFE7'
       ctx.beginPath()
       ctx.moveTo(currentBarRightX, currentUpwardTop)
@@ -114,20 +175,69 @@ const stackedAreaFillPlugin: Plugin<'bar'> = {
       ctx.lineTo(currentBarRightX, currentDownwardBottom)
       ctx.closePath()
       ctx.fill()
+      ctx.globalAlpha = 1
     }
 
     ctx.restore()
   },
+})
+
+interface TooltipState {
+  visible: boolean
+  top: number
+  left: number
+  date: string
+  upward: number
+  neutral: number
+  downward: number
+  normalizedUpward: number
+  normalizedNeutral: number
+  normalizedDownward: number
 }
 
 const MISentimentsChart = ({ data }: MISentimentsChartProps) => {
   const chartRef = useRef<ChartJS<'bar'>>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [tooltip, setTooltip] = useState<TooltipState>({
+    visible: false,
+    top: 0,
+    left: 0,
+    date: '',
+    upward: 0,
+    neutral: 0,
+    downward: 0,
+    normalizedUpward: 0,
+    normalizedNeutral: 0,
+    normalizedDownward: 0,
+  })
 
   const chartData = useMemo(() => {
-    const labels = data.map((item) => item.date)
-    const upwardData = data.map((item) => item.upward)
-    const neutralData = data.map((item) => item.neutral)
-    const downwardData = data.map((item) => item.downward)
+    const labels = data.map((item) => {
+      const date = dayjs(item.date)
+      return date.isValid() ? date.format('MM/DD') : item.date
+    })
+
+    // 100%가 되도록 보정
+    const normalizedData = data.map((item) => {
+      const total = item.upward + item.neutral + item.downward
+      if (total === 0) {
+        return {
+          upward: 0,
+          neutral: 0,
+          downward: 0,
+        }
+      }
+      return {
+        upward: (item.upward / total) * 100,
+        neutral: (item.neutral / total) * 100,
+        downward: (item.downward / total) * 100,
+      }
+    })
+
+    const upwardData = normalizedData.map((item) => item.upward)
+    const neutralData = normalizedData.map((item) => item.neutral)
+    const downwardData = normalizedData.map((item) => item.downward)
 
     return {
       labels,
@@ -135,30 +245,148 @@ const MISentimentsChart = ({ data }: MISentimentsChartProps) => {
         {
           label: 'Downward',
           data: downwardData,
-          backgroundColor: SENTIMENT_COLORS.downward,
-          borderColor: SENTIMENT_COLORS.downward,
+          backgroundColor: (context: ScriptableContext<'bar'>) => {
+            const chart = context.chart
+            const { ctx, chartArea } = chart
+            if (!chartArea) {
+              return SENTIMENT_COLORS.downward.start
+            }
+            const meta = chart.getDatasetMeta(context.datasetIndex)
+            const bar = meta.data[context.dataIndex] as unknown as { x: number; y: number; base: number; width: number } | undefined
+            if (!bar || !Number.isFinite(bar.y) || !Number.isFinite(bar.base)) {
+              return SENTIMENT_COLORS.downward.start
+            }
+            const opacity = hoveredIndex !== null && hoveredIndex !== context.dataIndex ? 0.5 : 1
+            return createGradient(ctx, { top: bar.y, bottom: bar.base }, SENTIMENT_COLORS.downward, opacity)
+          },
+          borderColor: SENTIMENT_COLORS.downward.start,
           borderWidth: 0,
-          maxBarThickness: 28,
+          maxBarThickness: 50,
         },
         {
           label: 'Neutral',
           data: neutralData,
-          backgroundColor: SENTIMENT_COLORS.neutral,
-          borderColor: SENTIMENT_COLORS.neutral,
+          backgroundColor: (context: ScriptableContext<'bar'>) => {
+            const chart = context.chart
+            const { ctx, chartArea } = chart
+            if (!chartArea) {
+              return SENTIMENT_COLORS.neutral.start
+            }
+            const meta = chart.getDatasetMeta(context.datasetIndex)
+            const bar = meta.data[context.dataIndex] as unknown as { x: number; y: number; base: number; width: number } | undefined
+            if (!bar || !Number.isFinite(bar.y) || !Number.isFinite(bar.base)) {
+              return SENTIMENT_COLORS.neutral.start
+            }
+            const opacity = hoveredIndex !== null && hoveredIndex !== context.dataIndex ? 0.5 : 1
+            return createGradient(ctx, { top: bar.y, bottom: bar.base }, SENTIMENT_COLORS.neutral, opacity)
+          },
+          borderColor: SENTIMENT_COLORS.neutral.start,
           borderWidth: 0,
-          maxBarThickness: 28,
+          maxBarThickness: 50,
         },
         {
           label: 'Upward',
           data: upwardData,
-          backgroundColor: SENTIMENT_COLORS.upward,
-          borderColor: SENTIMENT_COLORS.upward,
+          backgroundColor: (context: ScriptableContext<'bar'>) => {
+            const chart = context.chart
+            const { ctx, chartArea } = chart
+            if (!chartArea) {
+              return SENTIMENT_COLORS.upward.start
+            }
+            const meta = chart.getDatasetMeta(context.datasetIndex)
+            const bar = meta.data[context.dataIndex] as unknown as { x: number; y: number; base: number; width: number } | undefined
+            if (!bar || !Number.isFinite(bar.y) || !Number.isFinite(bar.base)) {
+              return SENTIMENT_COLORS.upward.start
+            }
+            const opacity = hoveredIndex !== null && hoveredIndex !== context.dataIndex ? 0.5 : 1
+            return createGradient(ctx, { top: bar.y, bottom: bar.base }, SENTIMENT_COLORS.upward, opacity)
+          },
+          borderColor: SENTIMENT_COLORS.upward.start,
           borderWidth: 0,
-          maxBarThickness: 28,
+          maxBarThickness: 50,
         },
       ],
     }
+  }, [data, hoveredIndex])
+
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart || !containerRef.current) {
+      return undefined
+    }
+
+    const canvas = chart.canvas
+
+    const handleHover = (event: MouseEvent) => {
+      const elements = chart.getElementsAtEventForMode(event, 'index', { intersect: true }, true)
+
+      if (elements.length === 0) {
+        setTooltip((prev) => ({ ...prev, visible: false }))
+        setHoveredIndex(null)
+        return
+      }
+
+      const element = elements[0]
+      const dataIndex = element.index
+
+      const sentimentData = data[dataIndex]
+      if (!sentimentData) {
+        setTooltip((prev) => ({ ...prev, visible: false }))
+        setHoveredIndex(null)
+        return
+      }
+
+      setHoveredIndex(dataIndex)
+
+      const total = sentimentData.upward + sentimentData.neutral + sentimentData.downward
+      const normalizedValues =
+        total === 0
+          ? { upward: 0, neutral: 0, downward: 0 }
+          : {
+            upward: (sentimentData.upward / total) * 100,
+            neutral: (sentimentData.neutral / total) * 100,
+            downward: (sentimentData.downward / total) * 100,
+          }
+
+      const rect = canvas.getBoundingClientRect()
+      const containerRect = containerRef.current!.getBoundingClientRect()
+      const x = event.clientX - rect.left
+      const y = event.clientY - rect.top
+
+      setTooltip({
+        visible: true,
+        top: y + containerRect.top - 10,
+        left: x + containerRect.left + 20,
+        date: sentimentData.date,
+        upward: sentimentData.upward,
+        neutral: sentimentData.neutral,
+        downward: sentimentData.downward,
+        normalizedUpward: normalizedValues.upward,
+        normalizedNeutral: normalizedValues.neutral,
+        normalizedDownward: normalizedValues.downward,
+      })
+    }
+
+    const handleLeave = () => {
+      setTooltip((prev) => ({ ...prev, visible: false }))
+      setHoveredIndex(null)
+    }
+
+    canvas.addEventListener('mousemove', handleHover)
+    canvas.addEventListener('mouseleave', handleLeave)
+
+    return () => {
+      canvas.removeEventListener('mousemove', handleHover)
+      canvas.removeEventListener('mouseleave', handleLeave)
+    }
   }, [data])
+
+  useEffect(() => {
+    const chart = chartRef.current
+    if (chart) {
+      chart.update('none')
+    }
+  }, [hoveredIndex])
 
   const chartOptions = useMemo(
     () => ({
@@ -166,8 +394,10 @@ const MISentimentsChart = ({ data }: MISentimentsChartProps) => {
       maintainAspectRatio: false,
       animation: { duration: 0 },
       indexAxis: 'x' as const,
-      events: [],
-      onHover: () => {},
+      interaction: {
+        mode: 'index' as const,
+        intersect: true,
+      },
       scales: {
         x: {
           stacked: true,
@@ -211,15 +441,100 @@ const MISentimentsChart = ({ data }: MISentimentsChartProps) => {
       },
       layout: {
         padding: {
-          left: 6,
-          right: 6,
+          left: 0,
+          right: 0,
         },
       },
     }),
     [],
   )
 
-  return <Chart ref={chartRef} type="bar" data={chartData} options={chartOptions} plugins={[stackedAreaFillPlugin]} />
+  const stackedAreaFillPlugin = useMemo(() => createStackedAreaFillPlugin(hoveredIndex), [hoveredIndex])
+
+  return (
+    <Box ref={containerRef} sx={{ position: 'relative', width: '100%', height: '100%' }}>
+      <Chart ref={chartRef} type="bar" data={chartData} options={chartOptions} plugins={[gradientBarPlugin, stackedAreaFillPlugin]} />
+      <Fade in={tooltip.visible} timeout={200}>
+        <Stack
+          position="fixed"
+          top={tooltip.top}
+          left={tooltip.left}
+          width="240px"
+          padding="12px"
+          gap="8px"
+          borderRadius="10px"
+          border="1px solid"
+          borderColor="contentBorder.Active"
+          bgcolor="commonColor.White"
+          boxShadow="0px 0px 4px 0px rgba(0, 0, 0, 0.1)"
+          sx={{
+            pointerEvents: tooltip.visible ? 'auto' : 'none',
+          }}
+        >
+          <Stack direction="row" justifyContent="space-between" alignItems="center" gap="8px">
+            <Typography variant="body2SB14" color="contentText.Normal">
+              {tooltip.date}
+            </Typography>
+            <Typography variant="body3R12" color="contentText.Normal">
+              {(tooltip.upward + tooltip.neutral + tooltip.downward).toLocaleString()} Items
+            </Typography>
+          </Stack>
+          <Divider />
+          <Stack padding="4px 6px" direction="row" justifyContent="space-between" alignItems="center" gap="8px">
+            <Stack direction="row" alignItems="center" gap="4px" flex={1}>
+              <Box margin="5px" width="12px" height="12px" borderRadius="2px" bgcolor={SENTIMENT_COLORS.upward.start} />
+              <Typography variant="body2M14" color="contentText.Normal">
+                Upward
+              </Typography>
+            </Stack>
+            <Stack direction="row" justifyContent="center" alignItems="center" gap="6px">
+              <Typography variant="body2M14" color="contentText.Normal">
+                {tooltip.upward.toLocaleString()}
+              </Typography>
+              <Divider orientation="vertical" sx={{ height: '6px', borderColor: 'contentBorder.Normal' }} />
+              <Typography variant="body2M14" color="contentText.Normal">
+                {tooltip.normalizedUpward.toFixed(1)}%
+              </Typography>
+            </Stack>
+          </Stack>
+          <Stack padding="4px 6px" direction="row" justifyContent="space-between" alignItems="center" gap="8px">
+            <Stack direction="row" alignItems="center" gap="4px" flex={1}>
+              <Box margin="5px" width="12px" height="12px" borderRadius="2px" bgcolor={SENTIMENT_COLORS.neutral.start} />
+              <Typography variant="body2M14" color="contentText.Normal">
+                Neutral
+              </Typography>
+            </Stack>
+            <Stack direction="row" justifyContent="center" alignItems="center" gap="6px">
+              <Typography variant="body2M14" color="contentText.Normal">
+                {tooltip.neutral.toLocaleString()}
+              </Typography>
+              <Divider orientation="vertical" sx={{ height: '6px', borderColor: 'contentBorder.Normal' }} />
+              <Typography variant="body2M14" color="contentText.Normal">
+                {tooltip.normalizedNeutral.toFixed(1)}%
+              </Typography>
+            </Stack>
+          </Stack>
+          <Stack padding="4px 6px" direction="row" justifyContent="space-between" alignItems="center" gap="8px">
+            <Stack direction="row" alignItems="center" gap="4px" flex={1}>
+              <Box margin="5px" width="12px" height="12px" borderRadius="2px" bgcolor={SENTIMENT_COLORS.downward.start} />
+              <Typography variant="body2M14" color="contentText.Normal">
+                Downward
+              </Typography>
+            </Stack>
+            <Stack direction="row" justifyContent="center" alignItems="center" gap="6px">
+              <Typography variant="body2M14" color="contentText.Normal">
+                {tooltip.downward.toLocaleString()}
+              </Typography>
+              <Divider orientation="vertical" sx={{ height: '6px', borderColor: 'contentBorder.Normal' }} />
+              <Typography variant="body2M14" color="contentText.Normal">
+                {tooltip.normalizedDownward.toFixed(1)}%
+              </Typography>
+            </Stack>
+          </Stack>
+        </Stack>
+      </Fade>
+    </Box>
+  )
 }
 
 export default MISentimentsChart

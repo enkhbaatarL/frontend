@@ -47,6 +47,13 @@ export interface IEconomicCalendarItem {
   countryCurrencyCode: string
 }
 
+export interface IRecentViewedItem {
+  code: string
+  economicIndicatorName: string
+  inquiryDateTime: string
+  refinitivSourceOrganization: string
+}
+
 const economicService = {
   async getEconomicCalendar(params: IGetEconomicCalendarRequest): Promise<IPaginationResponse<IEconomicCalendarItem>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<IEconomicCalendarItem>>> = await api.get('mi/econ-cal', {
@@ -66,6 +73,14 @@ const economicService = {
     )
 
     return response.data.data
+  },
+  async getRecentViewed(): Promise<IRecentViewedItem[]> {
+    const response: AxiosResponse<ICommonResponse<IRecentViewedItem[]>> = await api.get('mi/econ-cal/recent-viewed')
+
+    return response.data.data
+  },
+  async clearRecentViewed(): Promise<void> {
+    await api.delete('mi/econ-cal/recent-viewed')
   },
 }
 

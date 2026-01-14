@@ -1,6 +1,6 @@
 import Crop169OutlinedIcon from '@mui/icons-material/Crop169Outlined'
 import ViewAgendaOutlinedIcon from '@mui/icons-material/ViewAgendaOutlined'
-import { Box, Fade, Stack, Typography } from '@mui/material'
+import { Box, Divider, Fade, Stack, Typography } from '@mui/material'
 import dayjs, { Dayjs } from 'dayjs'
 import { useMemo, useState, useEffect } from 'react'
 import { SwitchTransition } from 'react-transition-group'
@@ -17,6 +17,8 @@ import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import useCodeData from '@/hooks/useCodeData'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
+import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
+import MISentimentsChart, { SentimentData } from '@/pages/mi/news/components/MISentimentsChart'
 import NewsItemsGridView from '@/pages/mi/news/NewsItemsGridView'
 import NewsItemsListView from '@/pages/mi/news/NewsItemsListView'
 import marketNewsService, { INewsListItem, INewsListRequest } from '@/service/mi/marketNews'
@@ -41,6 +43,27 @@ const orderOptions = [
 const STORAGE_KEY = 'newsPageDateRange'
 const VIEW_TYPE_STORAGE_KEY = 'newsPageViewType'
 const FILTERS_STORAGE_KEY = 'newsPageFilters'
+
+const generateSampleSentimentData = (days: number = 7): SentimentData[] => {
+  const data: SentimentData[] = []
+  const today = dayjs()
+
+  for (let i = days - 1; i >= 0; i--) {
+    const date = today.subtract(i, 'day')
+    const upward = Math.floor(Math.random() * 201)
+    const neutral = Math.floor(Math.random() * 201)
+    const downward = Math.floor(Math.random() * 201)
+
+    data.push({
+      date: date.format('YYYY-MM-DD'),
+      upward,
+      neutral,
+      downward,
+    })
+  }
+
+  return data
+}
 
 const NewsPage = () => {
   const today = dayjs()
@@ -190,6 +213,8 @@ const NewsPage = () => {
     }
   }
 
+  const sentimentData = useMemo(() => generateSampleSentimentData(14), [])
+
   useEffect(() => {
     if (newsList?.detail?.length) {
       setHasInitialData(true)
@@ -209,6 +234,65 @@ const NewsPage = () => {
       <MIPageHeadline title="Market News" gradientStart="#2E313A" gradientEnd="#1F212A" />
 
       <Stack minWidth={1440} width={1440} padding="50px 30px" margin="auto" gap="24px" boxSizing="border-box">
+        <Typography component="h2" variant="titlePage" color="gray.90">
+          News Impact
+        </Typography>
+        <Stack padding="12px 0 24px 0" borderRadius="10px" border="1px solid" borderColor="contentBorder.Normal" bgcolor="common.White">
+          <Stack height={36} direction="row" padding="6px 22px" alignItems="center" justifyContent="space-between">
+            <Stack direction="row" alignItems="center" gap="6px">
+              <Typography variant="body1" color="contentText.Normal">
+                Sentiments
+              </Typography>
+              <InfoTooltip title="Sentiments are calculated based on the news articles published in the last 14 days." />
+            </Stack>
+            <Typography variant="body1" color="contentText.Normal">
+              Brent Crude Price
+            </Typography>
+          </Stack>
+          <Stack borderRadius="10px" overflow="hidden" gap="12px" boxSizing="border-box">
+            <Stack direction="row" height={30} px="16px" justifyContent="start" alignItems="center" gap="8px">
+              <Stack direction="row" alignItems="center" gap="2px">
+                <Box width={12} height={12} margin="5px" borderRadius="3px" bgcolor="#3386C2" />
+                <Typography variant="body2SB14" color="contentText.Normal">
+                  Upward
+                </Typography>
+              </Stack>
+              <Stack direction="row" alignItems="center" gap="2px">
+                <Box width={12} height={12} margin="5px" borderRadius="3px" bgcolor="#A8A8A8" />
+                <Typography variant="body2SB14" color="contentText.Normal">
+                  Neutral
+                </Typography>
+              </Stack>
+              <Stack direction="row" alignItems="center" gap="2px">
+                <Box width={12} height={12} margin="5px" borderRadius="3px" bgcolor="#A02A74" />
+                <Typography variant="body2SB14" color="contentText.Normal">
+                  Downward
+                </Typography>
+              </Stack>
+            </Stack>
+            <Box height={280} boxSizing="border-box">
+              <MISentimentsChart data={sentimentData} />
+            </Box>
+            {/* <Typography
+            px="24px"
+            variant="labelText"
+            color="contentText.Subtext"
+            lineHeight={1.1}
+            sx={{
+              display: '-webkit-box',
+              WebkitLineClamp: 6,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem
+            ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum
+            Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum
+          </Typography> */}
+          </Stack>
+        </Stack>
+        <Divider sx={{ marginY: '16px' }} />
         <Typography component="h2" variant="titlePage" color="gray.90">
           All News
         </Typography>
@@ -342,7 +426,6 @@ const NewsPage = () => {
                             newsList={newsList?.detail ?? []}
                             isLoading={isListLoading}
                             skeletonCount={pagination?.size ?? 30}
-                            showSentimentsGraph={false}
                           />
                         )}
                       </Stack>
