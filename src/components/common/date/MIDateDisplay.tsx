@@ -1,19 +1,16 @@
 import { Box, Typography } from '@mui/material'
-import dayjs from 'dayjs'
+import dayjs, { Dayjs } from 'dayjs'
 import { useMemo } from 'react'
 
 interface MIDateDisplayProps {
-  date?: Date | string | dayjs.Dayjs
+  date?: Dayjs
   showTimezone?: boolean
   timezoneText?: string
   dateFormat?: string
 }
 
 const MIDateDisplay = ({ date, showTimezone = false, timezoneText = 'UTC+9 (KST, Seoul)', dateFormat = 'MMMM D' }: MIDateDisplayProps) => {
-  const formattedDate = useMemo(() => {
-    const targetDate = date ? dayjs(date) : dayjs()
-    return targetDate.format(dateFormat)
-  }, [date, dateFormat])
+  const formattedDate = useMemo(() => (date ? date.format(dateFormat) : dayjs().format(dateFormat)), [date, dateFormat])
 
   return (
     <Box display={'flex'} alignItems={'center'} gap={'10px'} padding={'4px 8px'} width={'fit-content'}>

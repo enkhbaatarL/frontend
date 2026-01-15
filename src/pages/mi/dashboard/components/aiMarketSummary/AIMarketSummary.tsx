@@ -20,9 +20,10 @@ dayjs.extend(utc)
 interface Props {
   period?: string
   dateRange?: string
+  criteriaDate?: string
 }
 
-const AIMarketSummary = ({ period, dateRange }: Props) => {
+const AIMarketSummary = ({ period, dateRange, criteriaDate }: Props) => {
   const { marketCategoryCodeList } = useCodeData()
 
   // categoryCode가 없으면 첫 번째 카테고리 사용
@@ -35,9 +36,9 @@ const AIMarketSummary = ({ period, dateRange }: Props) => {
   }, [marketCategoryCodeList])
 
   const { data: marketRecap } = useQuery({
-    queryKey: ['getMarketRecap', defaultCategoryCode],
-    queryFn: async () => await dashboardService.getMarketRecap(defaultCategoryCode),
-    enabled: !!defaultCategoryCode,
+    queryKey: ['getMarketRecap', defaultCategoryCode, criteriaDate],
+    queryFn: async () => await dashboardService.getMarketRecap(defaultCategoryCode, criteriaDate!),
+    enabled: !!defaultCategoryCode && !!criteriaDate,
   })
 
   // analysisFrequency와 analysisPeriod를 사용해서 날짜 범위 계산
@@ -89,7 +90,7 @@ const AIMarketSummary = ({ period, dateRange }: Props) => {
       </Stack>
       <Stack gap="12px" width={600}>
         <Watchlist />
-        <KeyEconomicIndicators />
+        <KeyEconomicIndicators criteriaDate={criteriaDate} />
       </Stack>
     </DashboardCard>
   )

@@ -110,7 +110,11 @@ const TBABadge = () => (
   />
 )
 
-const EconomicCalendar = () => {
+interface Props {
+  criteriaDate?: string
+}
+
+const EconomicCalendar = ({ criteriaDate }: Props) => {
   const [importance, setImportance] = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
@@ -179,8 +183,9 @@ const EconomicCalendar = () => {
   }, [isInitialized])
 
   const { data: economicCalendarWidgetData, isLoading } = useQuery({
-    queryKey: ['getEconomicCalendarWidget', importance, categories],
-    queryFn: async () => await dashboardService.getEconomicCalendarWidget(undefined, { importance, categories }),
+    queryKey: ['getEconomicCalendarWidget', criteriaDate, importance, categories],
+    queryFn: async () => await dashboardService.getEconomicCalendarWidget(criteriaDate!, { importance, categories }),
+    enabled: !!criteriaDate,
   })
 
   const getFormattedValue = (value: number | null, unitPrefix: string | null, unit: string | null) => {

@@ -102,7 +102,11 @@ const TBABadge = () => (
   />
 )
 
-const KeyEconomicIndicators = () => {
+interface Props {
+  criteriaDate?: string
+}
+
+const KeyEconomicIndicators = ({ criteriaDate }: Props) => {
   const { t } = useTranslation()
   const { marketCategoryCodeList } = useCodeData()
 
@@ -116,9 +120,9 @@ const KeyEconomicIndicators = () => {
   }, [marketCategoryCodeList])
 
   const { data: keyEconomicIndicatorsData, isLoading } = useQuery({
-    queryKey: ['getKeyEconomicIndicators', defaultCategoryCode],
-    queryFn: async () => await dashboardService.getKeyEconomicIndicators(defaultCategoryCode),
-    enabled: !!defaultCategoryCode,
+    queryKey: ['getKeyEconomicIndicators', defaultCategoryCode, criteriaDate],
+    queryFn: async () => await dashboardService.getKeyEconomicIndicators(defaultCategoryCode, criteriaDate!),
+    enabled: !!defaultCategoryCode && !!criteriaDate,
   })
 
   const getFormattedValue = (value: number | null, unitPrefix: string | null, unit: string | null) => {
