@@ -6,6 +6,7 @@ import arBgImg from '@/assets/asset-report-bg.png'
 import bgCardImg from '@/assets/bgcard.png'
 import cmrBgImg from '@/assets/commodity-market-report-bg.png'
 import cntryBgImg from '@/assets/country-report-bg.png'
+import dataBgImg from '@/assets/data-bg.png'
 import diBgImg from '@/assets/deal-insight-bg.png'
 import horizonsBgImg from '@/assets/horizons-bg.png'
 import iBgImg from '@/assets/insight-bg.png'
@@ -27,6 +28,7 @@ export type ReportType =
   | 'A_CNTRY_RPT'
   | 'A_HORIZONS'
   | 'A_EDGE'
+  | 'A_DATA'
 export interface Report {
   type: ReportType
   title: string
@@ -71,6 +73,8 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
         return `url(${cntryBgImg})`
       case 'A_HORIZONS':
         return `url(${horizonsBgImg})`
+      case 'A_DATA':
+        return `url(${dataBgImg})`
       default:
         return `url(${bgCardImg})`
     }
@@ -98,6 +102,8 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
         return 'Horizons'
       case 'A_INFORM':
         return 'Inform'
+      case 'A_DATA':
+        return 'Data'
       default:
         return ''
     }

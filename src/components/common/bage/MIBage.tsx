@@ -13,6 +13,7 @@ export type MIChipColor =
   | 'A_CNTRY_RPT'
   | 'A_HORIZONS'
   | 'A_EDGE'
+  | 'A_DATA'
 export interface MIChipProps extends Omit<ChipProps, 'size' | 'color'> {
   size?: MIChipSize
   color?: MIChipColor
@@ -91,6 +92,11 @@ export default function MIBage(props: Readonly<MIChipProps>) {
       return {
         background: '#376E68',
         color: '#9ED6CD',
+      }
+    if (color === 'A_DATA')
+      return {
+        background: '#E1F2D7',
+        color: '#427127',
       }
     return {}
   }
