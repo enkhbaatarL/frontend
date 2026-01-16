@@ -87,7 +87,7 @@ const Checkpoints = ({ checkpoints }: Props) => {
       )}
       {(!checkpoints?.items || checkpoints.items.length === 0) && selectedOption !== 'narrative' ? (
         <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-          <Typography variant="body2SB14" color="content.textNormal">
+          <Typography variant="body2SB14" color="gray.50">
             No data available to display.
           </Typography>
         </Stack>
@@ -123,7 +123,7 @@ const Checkpoints = ({ checkpoints }: Props) => {
                     </Stack>
                   ) : (
                     <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-                      <Typography variant="body2SB14" color="content.textNormal">
+                      <Typography variant="body2SB14" color="gray.50">
                         No data available to display.
                       </Typography>
                     </Stack>

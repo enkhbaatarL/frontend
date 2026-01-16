@@ -57,6 +57,23 @@ export interface INewsRecapItem {
   items: IMarketRecapHighlightItem[] | IMarketRecapCheckpointItem[]
 }
 
+export interface IDailyTrendRequest {
+  companyNo: number
+  dateRangeOption: string
+}
+
+export interface SentimentData {
+  date: string
+  upward: number
+  neutral: number
+  downward: number
+}
+
+export interface IDailyTrend {
+  criteriaItemName: string
+  data: SentimentData[]
+}
+
 const marketNewsService = {
   async getNewsList(params: Partial<INewsListRequest>, signal?: AbortSignal): Promise<IPaginationResponse<INewsListItem>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsListItem>>> = await api.get('mi/market-news', {
@@ -82,6 +99,12 @@ const marketNewsService = {
         ...params,
         recapCategory: params.recapCategory?.join(','),
       },
+    })
+    return response.data.data
+  },
+  async getDailyTrend(params: Partial<IDailyTrendRequest>): Promise<IDailyTrend> {
+    const response: AxiosResponse<ICommonResponse<IDailyTrend>> = await api.get('mi/market-news/daily-trend', {
+      params,
     })
     return response.data.data
   },

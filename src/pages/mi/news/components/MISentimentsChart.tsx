@@ -4,14 +4,9 @@ import dayjs from 'dayjs'
 import { useMemo, useRef, useState, useEffect } from 'react'
 import { Chart } from 'react-chartjs-2'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement)
+import { SentimentData } from '@/service/mi/marketNews'
 
-interface SentimentData {
-  date: string
-  upward: number
-  neutral: number
-  downward: number
-}
+ChartJS.register(CategoryScale, LinearScale, BarElement)
 
 const SENTIMENT_COLORS = {
   upward: {
@@ -211,6 +206,12 @@ const MISentimentsChart = ({ data }: MISentimentsChartProps) => {
     normalizedNeutral: 0,
     normalizedDownward: 0,
   })
+
+  const hasNoData = useMemo(() => {
+    if (!data || data.length === 0) return true
+    const total = data.reduce((sum, item) => sum + item.upward + item.neutral + item.downward, 0)
+    return total === 0
+  }, [data])
 
   const chartData = useMemo(() => {
     const labels = data.map((item) => {
@@ -451,6 +452,27 @@ const MISentimentsChart = ({ data }: MISentimentsChartProps) => {
 
   const stackedAreaFillPlugin = useMemo(() => createStackedAreaFillPlugin(hoveredIndex), [hoveredIndex])
 
+  if (hasNoData) {
+    return (
+      <Box
+        ref={containerRef}
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          userSelect: 'none',
+        }}
+      >
+        <Typography variant="body2SB14" color="gray.50">
+          No data available to display.
+        </Typography>
+      </Box>
+    )
+  }
+
   return (
     <Box ref={containerRef} sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <Chart ref={chartRef} type="bar" data={chartData} options={chartOptions} plugins={[gradientBarPlugin, stackedAreaFillPlugin]} />
@@ -538,4 +560,3 @@ const MISentimentsChart = ({ data }: MISentimentsChartProps) => {
 }
 
 export default MISentimentsChart
-export type { SentimentData }

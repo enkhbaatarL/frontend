@@ -1,8 +1,9 @@
 import Crop169OutlinedIcon from '@mui/icons-material/Crop169Outlined'
 import ViewAgendaOutlinedIcon from '@mui/icons-material/ViewAgendaOutlined'
 import { Box, Divider, Fade, Stack, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { SwitchTransition } from 'react-transition-group'
 
 import MIToggleButton from '@/components/common/button/MIToggleButton'
@@ -12,16 +13,18 @@ import MIDateRangePickerMenu from '@/components/common/menu/MIDateRangePickerMen
 import MIFilterMenu from '@/components/common/menu/MIFilterMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import MIPageHeadline from '@/components/mi/MIPageHeadline'
-import MISkeleton from '@/components/mi/MISkeleton.tsx'
+import MISkeleton from '@/components/mi/MISkeleton'
 import useCodeData from '@/hooks/useCodeData'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
 import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
-import MISentimentsChart, { SentimentData } from '@/pages/mi/news/components/MISentimentsChart'
+import MISentimentsChart from '@/pages/mi/news/components/MISentimentsChart'
 import NewsItemsGridView from '@/pages/mi/news/NewsItemsGridView'
 import NewsItemsListView from '@/pages/mi/news/NewsItemsListView'
 import marketNewsService, { INewsListItem, INewsListRequest } from '@/service/mi/marketNews'
+import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
 
 const viewOptions = [
@@ -43,30 +46,11 @@ const orderOptions = [
 const STORAGE_KEY = 'newsPageDateRange'
 const VIEW_TYPE_STORAGE_KEY = 'newsPageViewType'
 const FILTERS_STORAGE_KEY = 'newsPageFilters'
-
-const generateSampleSentimentData = (days: number = 7): SentimentData[] => {
-  const data: SentimentData[] = []
-  const today = dayjs()
-
-  for (let i = days - 1; i >= 0; i--) {
-    const date = today.subtract(i, 'day')
-    const upward = Math.floor(Math.random() * 201)
-    const neutral = Math.floor(Math.random() * 201)
-    const downward = Math.floor(Math.random() * 201)
-
-    data.push({
-      date: date.format('YYYY-MM-DD'),
-      upward,
-      neutral,
-      downward,
-    })
-  }
-
-  return data
-}
+const DATE_RANGE_OPTION_STORAGE_KEY = 'newsPageDateRangeOption'
 
 const NewsPage = () => {
   const today = dayjs()
+  const { accessCompanyInfo } = useAuthStore()
 
   const savedViewType = useMemo(() => {
     const saved = localStorage.getItem(VIEW_TYPE_STORAGE_KEY)
@@ -76,7 +60,23 @@ const NewsPage = () => {
     return 'LIST'
   }, [])
 
+  const savedDateRangeOption = useMemo(() => {
+    const saved = localStorage.getItem(DATE_RANGE_OPTION_STORAGE_KEY)
+    if (
+      saved === 'LAST_7_DAYS' ||
+      saved === 'LAST_14_DAYS' ||
+      saved === 'LAST_30_DAYS' ||
+      saved === 'LAST_60_DAYS' ||
+      saved === 'LAST_12_MONTHS' ||
+      saved === 'ALL_TIME'
+    ) {
+      return saved
+    }
+    return 'LAST_14_DAYS'
+  }, [])
+
   const [viewType, setViewType] = useState<'GRID' | 'LIST'>(savedViewType)
+  const [dateRangeOption, setDateRangeOption] = useState<string>(savedDateRangeOption)
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [hasInitialData, setHasInitialData] = useState(false)
@@ -161,6 +161,16 @@ const NewsPage = () => {
   const { marketCategoryCodeList, industrySectorCodeList, regionCategoryCodeList, isLoading: codeDataLoading } = useCodeData()
   const { showSnackbar } = useSnackbar()
 
+  const customerCompanyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? 0, [accessCompanyInfo?.customerCompanyNo])
+
+  const { data: dailyTrendData, isLoading: dailyTrendIsLoading } = useQuery({
+    queryKey: ['dailyTrend', customerCompanyNo, dateRangeOption],
+    queryFn: async () => await marketNewsService.getDailyTrend({ companyNo: customerCompanyNo, dateRangeOption }),
+    enabled: !!customerCompanyNo,
+  })
+
+  const sentimentData = useMemo(() => dailyTrendData?.data ?? [], [dailyTrendData])
+
   const isPageLoading = useMemo(() => isInitialLoading || codeDataLoading, [isInitialLoading, codeDataLoading])
   const isListLoading = useMemo(() => newsListIsLoading && hasInitialData, [newsListIsLoading, hasInitialData])
 
@@ -213,7 +223,10 @@ const NewsPage = () => {
     }
   }
 
-  const sentimentData = useMemo(() => generateSampleSentimentData(14), [])
+  const handleDateRangeChange = useCallback((value: string) => {
+    setDateRangeOption(value)
+    localStorage.setItem(DATE_RANGE_OPTION_STORAGE_KEY, value)
+  }, [])
 
   useEffect(() => {
     if (newsList?.detail?.length) {
@@ -245,9 +258,29 @@ const NewsPage = () => {
               </Typography>
               <InfoTooltip title="Sentiments are calculated based on the news articles published in the last 14 days." />
             </Stack>
-            <Typography variant="body1" color="contentText.Normal">
-              Brent Crude Price
-            </Typography>
+            <Stack direction="row" alignItems="center" gap="10px">
+              {dailyTrendIsLoading ? (
+                <MIBaseSkeleton.TextLine width={120} height={24} />
+              ) : (
+                <Typography variant="body1" color="contentText.Normal">
+                  {dailyTrendData?.criteriaItemName}
+                </Typography>
+              )}
+              <MISelectMenu
+                variant="outlined"
+                sx={{ width: 160 }}
+                items={[
+                  { label: 'Last 7 days', value: 'LAST_7_DAYS' },
+                  { label: 'Last 14 days', value: 'LAST_14_DAYS' },
+                  { label: 'Last 30 days', value: 'LAST_30_DAYS' },
+                  // { label: 'Last 60 days', value: 'LAST_60_DAYS' },
+                  // { label: 'Last 12 months', value: 'LAST_12_MONTHS' },
+                  // { label: 'All time', value: 'ALL_TIME' },
+                ]}
+                selected={dateRangeOption}
+                onSelected={handleDateRangeChange}
+              />
+            </Stack>
           </Stack>
           <Stack borderRadius="10px" overflow="hidden" gap="12px" boxSizing="border-box">
             <Stack direction="row" height={30} px="16px" justifyContent="start" alignItems="center" gap="8px">
@@ -271,7 +304,11 @@ const NewsPage = () => {
               </Stack>
             </Stack>
             <Box height={280} boxSizing="border-box">
-              <MISentimentsChart data={sentimentData} />
+              {dailyTrendIsLoading ? (
+                <MIBaseSkeleton.BaseElement width="100%" height="100%" sx={{ borderRadius: '10px' }} />
+              ) : (
+                <MISentimentsChart data={sentimentData} />
+              )}
             </Box>
             {/* <Typography
             px="24px"

@@ -110,7 +110,11 @@ const TBABadge = () => (
   />
 )
 
-const EconomicCalendar = () => {
+interface Props {
+  criteriaDate?: string
+}
+
+const EconomicCalendar = ({ criteriaDate }: Props) => {
   const [importance, setImportance] = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
@@ -179,8 +183,9 @@ const EconomicCalendar = () => {
   }, [isInitialized])
 
   const { data: economicCalendarWidgetData, isLoading } = useQuery({
-    queryKey: ['getEconomicCalendarWidget', importance, categories],
-    queryFn: async () => await dashboardService.getEconomicCalendarWidget(undefined, { importance, categories }),
+    queryKey: ['getEconomicCalendarWidget', criteriaDate, importance, categories],
+    queryFn: async () => await dashboardService.getEconomicCalendarWidget(criteriaDate!, { importance, categories }),
+    enabled: !!criteriaDate,
   })
 
   const getFormattedValue = (value: number | null, unitPrefix: string | null, unit: string | null) => {
@@ -272,7 +277,7 @@ const EconomicCalendar = () => {
         ) : !economicCalendarWidgetData?.economicCalendarWidgetList ||
           economicCalendarWidgetData.economicCalendarWidgetList.length === 0 ? (
             <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-              <Typography variant="body2SB14" color="content.textNormal">
+              <Typography variant="body2SB14" color="gray.50">
               No data available to display.
               </Typography>
             </Stack>

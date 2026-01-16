@@ -70,7 +70,11 @@ const SettingsMenuItem = ({
   </Box>
 )
 
-const NewsFeed = () => {
+interface Props {
+  criteriaDate?: string
+}
+
+const NewsFeed = ({ criteriaDate }: Props) => {
   const [categoryCode, setCategoryCode] = useState<string>('')
   const [sentiments, setSentiments] = useState<DirectionType[]>([])
   const [impactScores, setImpactScores] = useState<string[]>([])
@@ -87,21 +91,25 @@ const NewsFeed = () => {
   const { marketCategoryCodeList } = useCodeData()
 
   const { data: timelineItems, isLoading: isTimelineLoading } = useQuery({
-    queryKey: ['timeline', categoryCode],
-    queryFn: async () => await dashboardService.getTimeline(categoryCode),
-    enabled: !!categoryCode,
+    queryKey: ['timeline', categoryCode, criteriaDate],
+    queryFn: async () => await dashboardService.getTimeline(categoryCode, criteriaDate!),
+    enabled: !!categoryCode && !!criteriaDate,
   })
 
   const { data: newsFeedItems, isLoading: isNewsFeedLoading } = useQuery({
-    queryKey: ['newsFeed', categoryCode, sort, sentiments.join(','), impactScores.join(','), regions.join(',')],
+    queryKey: ['newsFeed', categoryCode, sort, sentiments.join(','), impactScores.join(','), regions.join(','), criteriaDate],
     queryFn: async () =>
-      await dashboardService.getNewsFeed(categoryCode, {
-        sort,
-        sentiments,
-        impactScores,
-        regions,
-      }),
-    enabled: !!categoryCode,
+      await dashboardService.getNewsFeed(
+        categoryCode,
+        {
+          sort,
+          sentiments,
+          impactScores,
+          regions,
+        },
+        criteriaDate!,
+      ),
+    enabled: !!categoryCode && !!criteriaDate,
   })
 
   const marketCategoryCodeOptions = useMemo(

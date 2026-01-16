@@ -102,7 +102,11 @@ const TBABadge = () => (
   />
 )
 
-const KeyEconomicIndicators = () => {
+interface Props {
+  criteriaDate?: string
+}
+
+const KeyEconomicIndicators = ({ criteriaDate }: Props) => {
   const { t } = useTranslation()
   const { marketCategoryCodeList } = useCodeData()
 
@@ -116,9 +120,9 @@ const KeyEconomicIndicators = () => {
   }, [marketCategoryCodeList])
 
   const { data: keyEconomicIndicatorsData, isLoading } = useQuery({
-    queryKey: ['getKeyEconomicIndicators', defaultCategoryCode],
-    queryFn: async () => await dashboardService.getKeyEconomicIndicators(defaultCategoryCode),
-    enabled: !!defaultCategoryCode,
+    queryKey: ['getKeyEconomicIndicators', defaultCategoryCode, criteriaDate],
+    queryFn: async () => await dashboardService.getKeyEconomicIndicators(defaultCategoryCode, criteriaDate!),
+    enabled: !!defaultCategoryCode && !!criteriaDate,
   })
 
   const getFormattedValue = (value: number | null, unitPrefix: string | null, unit: string | null) => {
@@ -187,7 +191,7 @@ const KeyEconomicIndicators = () => {
           </Stack>
         ) : !keyEconomicIndicatorsData?.relatedEconomicIndicators || keyEconomicIndicatorsData.relatedEconomicIndicators.length === 0 ? (
           <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-            <Typography variant="body2SB14" color="content.textNormal">
+            <Typography variant="body2SB14" color="gray.50">
               No data available to display.
             </Typography>
           </Stack>

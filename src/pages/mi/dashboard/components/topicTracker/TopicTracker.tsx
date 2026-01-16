@@ -173,7 +173,11 @@ const SettingsMenuItem = ({
   </Box>
 )
 
-const TopicTracker = () => {
+interface Props {
+  criteriaDate?: string
+}
+
+const TopicTracker = ({ criteriaDate }: Props) => {
   const [demo] = useState(true)
 
   const theme = useTheme()
@@ -184,8 +188,6 @@ const TopicTracker = () => {
   const [isAddTopicDialogOpen, setIsAddTopicDialogOpen] = useState(false)
   const [topicName, setTopicName] = useState('')
   const [previousItemsLength, setPreviousItemsLength] = useState(4)
-
-  const criteriaDate = dayjs().format('YYYYMMDD')
 
   const { data: topicsData, isLoading: isTopicsLoading } = useQuery({
     queryKey: ['topicTrackerTopics'],
@@ -206,12 +208,12 @@ const TopicTracker = () => {
     queryKey: ['topicTrackerWidget', criteriaDate, selectedTopic],
     queryFn: async () => {
       const data = await topicTrackerService.getWidgetData({
-        criteriaDate,
+        criteriaDate: criteriaDate!,
         newsTopicId: selectedTopic,
       })
       return data
     },
-    enabled: !!topicsData,
+    enabled: !!topicsData && !!criteriaDate,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   })
@@ -411,7 +413,7 @@ const TopicTracker = () => {
             ))}
             {!filteredData || filteredData.length === 0 ? (
               <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-                <Typography variant="body2SB14" color="content.textNormal">
+                <Typography variant="body2SB14" color="gray.50">
                   No data available to display.
                 </Typography>
               </Stack>

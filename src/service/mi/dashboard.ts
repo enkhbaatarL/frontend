@@ -1,5 +1,4 @@
 import { AxiosResponse } from 'axios'
-import dayjs from 'dayjs'
 
 import api from '@/lib/axios.ts'
 import { ICommonResponse } from '@/types/api'
@@ -199,22 +198,27 @@ interface IMarketRecapApiResponse {
   analysisPeriod?: string[]
 }
 
+export interface ICriteriaDateInfo {
+  criteriaDate: string
+  nextUpdate: string
+}
+
 const dashboardService = {
-  async getTimeline(categoryCode: string): Promise<INewsFeedItem[]> {
+  async getTimeline(category: string, criteriaDate: string): Promise<INewsFeedItem[]> {
     const response: AxiosResponse<ICommonResponse<INewsFeedItem[]>> = await api.get('mi/market-news/timeline', {
       params: {
-        criteriaDate: dayjs().format('YYYYMMDD'),
-        category: categoryCode,
+        category,
+        criteriaDate,
       },
     })
 
     // directionality가 'OUTOFRANGE'인 항목 제외
     return response.data.data.filter((item) => item.directionality !== DirectionType.OutOfRange)
   },
-  async getNewsFeed(categoryCode: string, filters: INewsFeedFilter): Promise<INewsFeedItem[]> {
+  async getNewsFeed(category: string, filters: INewsFeedFilter, criteriaDate: string): Promise<INewsFeedItem[]> {
     const params: Record<string, string> = {
-      criteriaDate: dayjs().format('YYYYMMDD'),
-      category: categoryCode,
+      category,
+      criteriaDate,
       sort: filters.sort || 'NEWEST',
     }
 
@@ -247,14 +251,12 @@ const dashboardService = {
 
     return response.data.data
   },
-  async getMarketRecap(categoryCode: string, criteriaDate?: string): Promise<IMarketRecapItem> {
-    const params: Record<string, string> = {
-      category: categoryCode,
-      criteriaDate: criteriaDate || dayjs().format('YYYYMMDD'),
-    }
-
+  async getMarketRecap(category: string, criteriaDate: string): Promise<IMarketRecapItem> {
     const response: AxiosResponse<ICommonResponse<IMarketRecapApiResponse>> = await api.get('mi/market-news/recap', {
-      params,
+      params: {
+        category,
+        criteriaDate,
+      },
     })
 
     const apiData = response.data.data
@@ -297,24 +299,19 @@ const dashboardService = {
       ...(apiData.analysisPeriod && { analysisPeriod: apiData.analysisPeriod }),
     }
   },
-  async getKeyEconomicIndicators(categoryCode: string, criteriaDate?: string): Promise<IKeyEconomicIndicatorsResponse> {
-    const params: Record<string, string> = {
-      category: categoryCode,
-      criteriaDate: criteriaDate ?? dayjs().format('YYYYMMDD'),
-    }
-
+  async getKeyEconomicIndicators(category: string, criteriaDate: string): Promise<IKeyEconomicIndicatorsResponse> {
     const response: AxiosResponse<ICommonResponse<IKeyEconomicIndicatorsResponse>> = await api.get('mi/econ-cal/key', {
-      params,
+      params: {
+        category,
+        criteriaDate,
+      },
     })
 
     return response.data.data
   },
-  async getEconomicCalendarWidget(
-    criteriaDate?: string,
-    filters?: IEconomicCalendarWidgetFilter,
-  ): Promise<IEconomicCalendarWidgetResponse> {
+  async getEconomicCalendarWidget(criteriaDate: string, filters?: IEconomicCalendarWidgetFilter): Promise<IEconomicCalendarWidgetResponse> {
     const params: Record<string, string> = {
-      criteriaDate: criteriaDate ?? dayjs().format('YYYYMMDD'),
+      criteriaDate,
     }
 
     if (filters?.categories && filters?.categories.length > 0) {
@@ -329,6 +326,14 @@ const dashboardService = {
       params,
     })
 
+    return response.data.data
+  },
+  /**
+   * 서버 로컬 시간 기준으로 시장 뉴스 기준일자를 계산하여 반환합니다.
+   * @returns 기준일자 정보
+   */
+  async getCriteriaDate(): Promise<ICriteriaDateInfo> {
+    const response: AxiosResponse<ICommonResponse<ICriteriaDateInfo>> = await api.get('mi/market-news/criteria-date')
     return response.data.data
   },
 }
