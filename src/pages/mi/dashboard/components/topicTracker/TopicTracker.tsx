@@ -413,7 +413,7 @@ const TopicTracker = ({ criteriaDate }: Props) => {
             ))}
             {!filteredData || filteredData.length === 0 ? (
               <Stack height={352} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-                <Typography variant="body2SB14" color="content.textNormal">
+                <Typography variant="body2SB14" color="gray.50">
                   No data available to display.
                 </Typography>
               </Stack>

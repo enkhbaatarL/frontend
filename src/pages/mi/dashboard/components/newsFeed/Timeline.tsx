@@ -492,7 +492,7 @@ const Timeline = ({ onItemClick, timeLineItems, loading = false, ...props }: Tim
           <Stack alignContent="center" justifyContent="center" height="280px">
             {!timeLineItems || timeLineItems?.length === 0 ? (
               <Stack height={280} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-                <Typography variant="body2SB14" color="content.textNormal" mt="-24px">
+                <Typography variant="body2SB14" color="gray.50" mt="-24px">
                   No data available to display.
                 </Typography>
               </Stack>

@@ -386,7 +386,7 @@ const Sentiment = ({ sentiments }: Props) => {
 
       {hasNoData ? (
         <Stack height={52} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
-          <Typography variant="body2SB14" color="content.textNormal">
+          <Typography variant="body2SB14" color="gray.50">
             No data available to display.
           </Typography>
         </Stack>
