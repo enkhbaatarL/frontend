@@ -32,6 +32,12 @@ const DashboardPage = () => {
     [criteriaDateInfo, isCriteriaDateLoading],
   )
 
+  const nextUpdateText = useMemo(() => {
+    if (!criteriaDateInfo?.nextUpdate) return undefined
+    const formattedDate = dayjs(criteriaDateInfo.nextUpdate).format('MMMM D, [at] h:mm A')
+    return `Next Update ${formattedDate}`
+  }, [criteriaDateInfo?.nextUpdate])
+
   const {
     data: marketDataList,
     isError: marketDataListError,
@@ -66,7 +72,7 @@ const DashboardPage = () => {
   return (
     <MISkeleton variant={'dashboard'}>
       <Stack py="24px" maxWidth="1380px" margin="auto" gap="24px">
-        <MIDateDisplay date={criteriaDate ? dayjs(criteriaDate, 'YYYYMMDD') : undefined} />
+        <MIDateDisplay date={criteriaDate ? dayjs(criteriaDate, 'YYYYMMDD') : undefined} text={nextUpdateText} />
         <AIMarketSummary criteriaDate={criteriaDate} />
         <Box mb="-12px">
           <Toolbar />
