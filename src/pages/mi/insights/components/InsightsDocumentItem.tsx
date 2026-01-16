@@ -50,6 +50,8 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
         return 'Country Report'
       case 'A_HORIZONS':
         return 'Horizons'
+      case 'A_DATA':
+        return 'Data'
       default:
         return '-'
     }
@@ -77,7 +79,9 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
       }}
     >
       <Box display={'flex'} alignItems={'center'} gap={1}>
-        {report.types?.map((type) => <MIBage key={type} size={'h20'} color={type as MIChipColor} label={convertToType(type)} />)}
+        {report.types?.map((type) => (
+          <MIBage key={type} size={'h20'} color={type as MIChipColor} label={convertToType(type)} />
+        ))}
       </Box>
       <Box
         sx={{
