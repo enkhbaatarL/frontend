@@ -1,0 +1,117 @@
+import { Box, Tab, TabProps, Tabs, TabsProps } from '@mui/material'
+import { ReactNode, SyntheticEvent, useState, useCallback } from 'react'
+
+interface TabItem {
+  label: string
+  content: ReactNode
+}
+
+interface ForecastTabProps extends Omit<TabsProps, 'onChange'> {
+  tabItems: TabItem[]
+  tabProps?: TabProps
+}
+
+const FADE_IN_KEYFRAMES = {
+  '@keyframes fadeInUp': {
+    '0%': { opacity: 0, transform: 'translateY(4px)' },
+    '100%': { opacity: 1, transform: 'translateY(0)' },
+  },
+}
+
+const a11yProps = (index: number) => ({
+  id: `forecast-tab-${index}`,
+  'aria-controls': `forecast-tabpanel-${index}`,
+})
+
+const ForecastTab = ({ tabItems, tabProps, ...props }: ForecastTabProps) => {
+  const [selectedTab, setSelectedTab] = useState(0)
+
+  const handleChange = useCallback((_: SyntheticEvent, newValue: number) => {
+    setSelectedTab(newValue)
+  }, [])
+
+  return (
+    <Box>
+      <Box
+        px="24px"
+        position="relative"
+        sx={{
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            backgroundColor: 'gray.30',
+            zIndex: 0,
+          },
+        }}
+      >
+        <Tabs
+          value={selectedTab}
+          onChange={handleChange}
+          sx={{
+            position: 'relative',
+            zIndex: 1,
+            '.MuiTabs-indicator': {
+              backgroundColor: 'commonColor.Black',
+            },
+
+            '& .MuiTab-root': {
+              fontWeight: 600,
+              fontSize: '18px',
+              color: 'content.textNormal',
+              padding: '12px 20px 22px 20px',
+              textTransform: 'none',
+              '&.Mui-selected': {
+                color: 'commonColor.Black',
+              },
+            },
+          }}
+          {...props}
+        >
+          {tabItems.map((tab, index) => (
+            <Tab key={tab.label} label={tab.label} disableRipple {...a11yProps(index)} {...tabProps} />
+          ))}
+        </Tabs>
+      </Box>
+
+      <Box position="relative">
+        {tabItems.map((tab, index) => {
+          const isSelected = selectedTab === index
+
+          return (
+            <Box
+              key={index}
+              role="tabpanel"
+              hidden={!isSelected}
+              id={`forecast-tabpanel-${index}`}
+              aria-labelledby={`forecast-tab-${index}`}
+              sx={{
+                display: 'block',
+                position: isSelected ? 'static' : 'absolute',
+                visibility: isSelected ? 'visible' : 'hidden',
+                opacity: isSelected ? 1 : 0,
+                pointerEvents: isSelected ? 'auto' : 'none',
+                animation: isSelected ? 'fadeInUp 0.2s ease-out' : 'none',
+                ...(!isSelected
+                  ? {
+                    left: '-9999px',
+                    top: '-9999px',
+                    width: '100%',
+                  }
+                  : {}),
+                ...FADE_IN_KEYFRAMES,
+              }}
+            >
+              {tab.content}
+            </Box>
+          )
+        })}
+      </Box>
+    </Box>
+  )
+}
+
+export default ForecastTab

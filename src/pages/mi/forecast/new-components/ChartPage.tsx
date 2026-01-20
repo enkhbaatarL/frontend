@@ -12,18 +12,21 @@ const sampleData = [
     goodsDataSourceNo: 4158,
     startDate: '20250708',
     endDate: '20250709',
+    isNew: true,
   },
   {
     label: 'DUBAI CRUDE',
     goodsDataSourceNo: 4158,
     startDate: '20251101',
     endDate: '20251130',
+    isNew: true,
   },
   {
     label: 'BRENT CRUDE',
     goodsDataSourceNo: 5850,
     startDate: '20251201',
     endDate: '20251231',
+    isNew: false,
   },
 ]
 

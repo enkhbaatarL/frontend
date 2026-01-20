@@ -9,6 +9,7 @@ interface ForecastReportCardData {
   goodsDataSourceNo: number
   startDate: string
   endDate: string
+  isNew?: boolean
 }
 
 const ReportContent = () => (
@@ -45,7 +46,7 @@ const ForecastReportCard = ({ data, onPopupClose, isFixedMode = false }: Forecas
 
   const formattedStartDate = dayjs(data.startDate).format('YY/MM/DD')
   const formattedEndDate = dayjs(data.endDate).format('YY/MM/DD')
-  const targetDateRange = `${formattedStartDate}-${formattedEndDate}`
+  const targetDateRange = `${formattedStartDate} - ${formattedEndDate}`
 
   return (
     <MIMorphingPopup
@@ -57,7 +58,7 @@ const ForecastReportCard = ({ data, onPopupClose, isFixedMode = false }: Forecas
       }}
     >
       <Box
-        padding="10px 12px"
+        padding="8px"
         minWidth="260px"
         minHeight="118px"
         bgcolor="commonColor.White"
@@ -75,39 +76,61 @@ const ForecastReportCard = ({ data, onPopupClose, isFixedMode = false }: Forecas
         onClick={() => !isFixedMode && popupRef.current?.open()}
       >
         <Stack gap="4px">
-          <Stack direction="row" height="20px" alignItems="center" justifyContent="space-between" gap="10px">
-            <Typography variant="body2SB14" color="contentText.Normal">
+          <Stack direction="row" height="20px" alignItems="center" justifyContent="space-between" gap="10px" padding="6px 8px">
+            <Typography variant="body1M16" color="commonColor.Black">
               {data.label}
             </Typography>
-            <Box width="8px" height="8px" bgcolor="mari.Primary" borderRadius="50%" />
+            {data.isNew && (
+              <Stack
+                width="36px"
+                height="20px"
+                alignItems="center"
+                justifyContent="center"
+                bgcolor="mari.Primary"
+                borderRadius="100px"
+                padding="6px"
+                boxSizing="border-box"
+              >
+                <Typography fontSize="11px" fontWeight={700} color="commonColor.White">
+                  New
+                </Typography>
+              </Stack>
+            )}
           </Stack>
-          <Stack direction="row" alignItems="center" gap="12px">
-            <Stack>
-              <Typography variant="body3M12" color="contentText.Subtext">
-                TARGET
+          <Stack alignItems="start" gap="4px" padding="4px 8px">
+            <Stack direction="row" alignItems="start" gap="8px" py="4px">
+              <Typography width="70px" variant="body3M12" color="contentText.Subtext">
+                Target Date
               </Typography>
-              <Typography variant="infoDocument" color="contentText.Normal">
-                {targetDateRange}
-              </Typography>
+              <Divider orientation="vertical" flexItem />
+              <Stack px="4px">
+                <Typography variant="body2SB14" color="commonColor.Black">
+                  {targetDateRange}
+                </Typography>
+                <Typography variant="body3" color="contentText.Subtext" fontSize="11px">
+                  7 days
+                </Typography>
+              </Stack>
             </Stack>
-            <Divider orientation="vertical" flexItem sx={{ my: '4px' }} />
-            <Stack>
-              <Typography variant="body3M12" color="contentText.Subtext">
-                AVG. PRICE
+            <Stack direction="row" alignItems="start" gap="8px" py="4px">
+              <Typography width="70px" variant="body3M12" color="contentText.Subtext">
+                Avg. Price
               </Typography>
-              <Typography variant="infoDocument" color="contentText.Normal">
-                76.0-78.2
-              </Typography>
+              <Divider orientation="vertical" flexItem />
+              <Stack px="4px">
+                <Stack direction="row" alignItems="baseline" gap="4px">
+                  <Typography variant="body2SB14" color="commonColor.Black">
+                    78.02
+                  </Typography>
+                  <Typography variant="body2SB14" color="increase.main">
+                    +1.23(2.94%)
+                  </Typography>
+                </Stack>
+                <Typography variant="body3" color="contentText.Subtext" fontSize="11px">
+                  Compare to 77.90 (25/12/31)
+                </Typography>
+              </Stack>
             </Stack>
-          </Stack>
-          <Divider sx={{ my: '4px' }} />
-          <Stack direction="row" alignItems="center" gap="4px">
-            <Typography variant="body3M12" color="contentText.Subtext">
-              RUN
-            </Typography>
-            <Typography variant="body3SB12" color="contentText.Subtext">
-              251201-251203
-            </Typography>
           </Stack>
         </Stack>
       </Box>
