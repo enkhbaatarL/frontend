@@ -1,11 +1,19 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { Box, Collapse, Fade, Stack, Typography } from '@mui/material'
+import { keyframes } from '@mui/material/styles'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import MIButton from '@/components/common/button/MIButton'
+import ShakeableLockIcon from '@/components/common/icons/ShakeableLockIcon'
 import Summarizing from '@/pages/mi/dashboard/components/common/Summarizing'
+
+const shakeAnimation = keyframes`
+  0%, 100% { transform: translateX(0); }
+  25%, 75% { transform: translateX(-2px); }
+  50% { transform: translateX(2px); }
+`
 
 export interface AiSummaryData {
   title: string
@@ -17,6 +25,7 @@ export interface AiNewsSummaryItem {
   title: string
   firstCreated: string
   dataRegistrationSerialNo: number
+  isViewable?: boolean
 }
 
 export interface AiNewsSummaryData {
@@ -27,7 +36,8 @@ export interface AiNewsSummaryData {
 interface Props {
   fetchSummary: () => Promise<AiSummaryData | AiNewsSummaryData>
   viewOriginal?: () => void
-  hasSimilarNews?: boolean
+  showSimilarNews?: boolean
+  itemIsViewable?: boolean
 }
 
 export interface AiSummaryHandle {
@@ -37,13 +47,14 @@ export interface AiSummaryHandle {
   reset: () => void
 }
 
-const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOriginal, hasSimilarNews = false }, ref) => {
+const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOriginal, showSimilarNews = false, itemIsViewable }, ref) => {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
 
   const [isExpanded, setIsExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [aiData, setAiData] = useState<AiSummaryData | AiNewsSummaryData | null>(null)
+  const [shakingTexts, setShakingTexts] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     setAiData(null)
@@ -95,11 +106,30 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOrigin
     reset,
   }))
 
-  const handleNewsClick = (newsSummaryId: number) => {
-    navigate(`/mi/market-news/${newsSummaryId}`)
+  const handleNewsClick = (e: React.MouseEvent, newsSummaryId: number, isViewable?: boolean) => {
+    e.stopPropagation() // FeedItem이 닫히지 않도록 이벤트 버블링 방지
+    if (isViewable !== false) {
+      navigate(`/mi/market-news/${newsSummaryId}`)
+    } else {
+      setShakingTexts((prev) => new Set(prev).add(newsSummaryId))
+      setTimeout(() => {
+        setShakingTexts((prev) => {
+          const next = new Set(prev)
+          next.delete(newsSummaryId)
+          return next
+        })
+      }, 400)
+    }
   }
 
-  const isNewsData = (_data: AiSummaryData | AiNewsSummaryData): _data is AiNewsSummaryData => hasSimilarNews
+  const isNewsData = (data: AiSummaryData | AiNewsSummaryData): data is AiNewsSummaryData => {
+    if (!showSimilarNews) return false
+    if (Array.isArray(data.summary) && data.summary.length > 0) {
+      const firstItem = data.summary[0]
+      return typeof firstItem === 'object' && firstItem !== null && 'newsSummaryId' in firstItem
+    }
+    return showSimilarNews && Array.isArray(data.summary)
+  }
 
   return (
     <Collapse
@@ -123,58 +153,84 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOrigin
                 <Typography variant="body1B16" color="content.textNormal">
                   {aiData?.title}
                 </Typography>
-                <Stack pl="22px">
-                  {/* 데이터 렌더링 분기 처리 */}
-                  {aiData && isNewsData(aiData)
-                    ? // hasSimilarNews === true: 뉴스 리스트 렌더링
-                    aiData.summary.map((news, index) => (
-                      <Box
-                        key={index}
-                        lineHeight={1.4}
-                        sx={{
-                          textIndent: '-14px',
-                          '&::before': {
-                            content: '"•"',
-                            marginRight: '6px',
-                            color: 'gray.70',
-                          },
-                        }}
-                      >
+                {/* 데이터 렌더링 분기 처리 */}
+                {aiData && isNewsData(aiData)
+                  ? // showSimilarNews === true: 뉴스 리스트 렌더링
+                  aiData.summary.length > 0 && (
+                    <Stack pl="22px">
+                      {aiData.summary.map((news, index) => (
+                        <Box
+                          key={index}
+                          onClick={(e) => handleNewsClick(e, news.newsSummaryId, news.isViewable)}
+                          sx={{
+                            cursor: news.isViewable !== false ? 'pointer' : 'default',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            ml: '-14px',
+                          }}
+                        >
+                          <Typography
+                            component="span"
+                            variant="body1M16"
+                            color="gray.70"
+                            sx={{
+                              mr: '6px',
+                              flexShrink: 0,
+                            }}
+                          >
+                              •
+                          </Typography>
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            gap="4px"
+                            sx={{
+                              width: '100%',
+                              minWidth: 0,
+                              animation: shakingTexts.has(news.newsSummaryId) ? `${shakeAnimation} 0.4s ease-in-out` : 'none',
+                            }}
+                          >
+                            <Typography
+                              component="span"
+                              variant="body1M16"
+                              color="content.textNormal"
+                              sx={{
+                                '&:hover': {
+                                  textDecoration: 'underline',
+                                },
+                              }}
+                            >
+                              {news.title}
+                            </Typography>
+                            {news.isViewable === false && <ShakeableLockIcon width={16} height={16} sx={{ animation: 'none' }} />}
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Stack>
+                  )
+                  : // showSimilarNews === false: 일반 텍스트 리스트 렌더링
+                  (aiData as AiSummaryData)?.summary.length > 0 && (
+                    <Stack pl="22px">
+                      {(aiData as AiSummaryData).summary.map((summary, index) => (
                         <Typography
+                          key={index}
                           variant="body1M16"
                           color="content.textNormal"
-                          onClick={() => handleNewsClick(news.newsSummaryId)}
+                          lineHeight={1.4}
                           sx={{
-                            cursor: 'pointer',
-                            '&:hover': {
-                              textDecoration: 'underline',
+                            textIndent: '-14px',
+                            '&::before': {
+                              content: '"•"',
+                              marginRight: '6px',
+                              color: 'gray.70',
                             },
                           }}
                         >
-                          {news.title}
+                          {summary as string}
                         </Typography>
-                      </Box>
-                    ))
-                    : // hasSimilarNews === false: 일반 텍스트 리스트 렌더링
-                    (aiData as AiSummaryData)?.summary.map((summary, index) => (
-                      <Typography
-                        key={index}
-                        variant="body1M16"
-                        color="content.textNormal"
-                        lineHeight={1.4}
-                        sx={{
-                          textIndent: '-14px',
-                          '&::before': {
-                            content: '"•"',
-                            marginRight: '6px',
-                            color: 'gray.70',
-                          },
-                        }}
-                      >
-                        {summary as string}
-                      </Typography>
-                    ))}
-                </Stack>
+                      ))}
+                    </Stack>
+                  )}
 
                 <Stack direction="row" justifyContent="space-between" mt="14px" gap="12px">
                   <Stack justifyContent="center">
@@ -187,7 +243,7 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOrigin
                   </Stack>
 
                   {/* View Original 버튼은 hasSimilarNews가 false일 때만 노출 */}
-                  {!hasSimilarNews && (
+                  {!showSimilarNews && (
                     <MIButton
                       width="100%"
                       color="gray"
@@ -199,9 +255,14 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOrigin
                         e.stopPropagation()
                         viewOriginal?.()
                       }}
+                      disabled={itemIsViewable === false}
                     >
                       <Box display="flex" alignItems="center">
-                        <Typography variant="subtext3" color="content.textNormal" letterSpacing={-0.1}>
+                        <Typography
+                          variant="subtext3"
+                          color={itemIsViewable === false ? undefined : 'content.textNormal'}
+                          letterSpacing={-0.1}
+                        >
                           View Original
                         </Typography>
                       </Box>

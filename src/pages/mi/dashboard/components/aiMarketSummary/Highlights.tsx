@@ -1,13 +1,21 @@
 import { Box, Stack, Typography, Collapse, Fade } from '@mui/material'
+import { keyframes } from '@mui/material/styles'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import TagChip, { ITagChipItem } from '@/components/common/chip/TagChip'
+import ShakeableLockIcon from '@/components/common/icons/ShakeableLockIcon'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import InlineNotice from '@/components/common/notice/InlineNotice'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 import { DirectionType, IMarketRecapItem, IMarketRecapHighlightItem } from '@/service/mi/dashboard'
+
+const shakeAnimation = keyframes`
+  0%, 100% { transform: translateX(0); }
+  25%, 75% { transform: translateX(-2px); }
+  50% { transform: translateX(2px); }
+`
 
 interface Props {
   highlights?: IMarketRecapItem['highlights']
@@ -50,71 +58,106 @@ interface HighlightsItemProps {
   onRelatedNewsItemSelected: (item: ITagChipItem) => void
 }
 
-const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNewsItemSelected }: HighlightsItemProps) => (
-  <Box px="6px">
-    <Stack py="12px" gap="6px" borderBottom={borderBottom ? '1px solid #DEE2E6' : 'none'}>
-      <Stack direction="row" gap="8px">
-        <Icon direction={item.momentum} />
-        <Typography variant="infoDocument">{item.nameEnglish || item.nameKorean}</Typography>
-      </Stack>
-      <Collapse in={selectedOption === 'detailed'} timeout={300}>
-        <Stack gap="6px">
-          <Stack pl="22px" gap="1px">
-            {item.relatedEventRepresentativeNewsResNews?.slice(0, 3).map((news, index) => (
-              <Box
-                key={`${item.highlightEventId}-news-${index}`}
-                onClick={() => {
-                  onRelatedNewsItemSelected({ name: news.provider, value: news.newsSummaryId.toString() })
-                }}
-                sx={{
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  ml: '-14px',
-                }}
-              >
-                <Typography
-                  component="span"
-                  variant="subtext5"
-                  color="gray.70"
-                  fontWeight={500}
-                  sx={{
-                    mr: '6px',
-                    flexShrink: 0,
-                  }}
-                >
-                  •
-                </Typography>
-                <Typography
-                  component="span"
-                  variant="subtext5"
-                  color="gray.70"
-                  fontWeight={500}
-                  sx={{
-                    '&:hover': {
-                      textDecoration: 'underline',
-                    },
-                  }}
-                >
-                  {news.title}
-                </Typography>
-              </Box>
-            ))}
-          </Stack>
-          <TagChip
-            items={
-              item.relatedEventRepresentativeNewsResNews?.map((news) => ({ name: news.provider, value: news.newsSummaryId.toString() })) ??
-              []
-            }
-            ellipsisRange={2}
-            padding="6px 20px"
-            onItemSelected={onRelatedNewsItemSelected}
-          />
+const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNewsItemSelected }: HighlightsItemProps) => {
+  const [shakingTexts, setShakingTexts] = useState<Set<number>>(new Set())
+
+  const handleLockedClick = (newsSummaryId: number) => {
+    setShakingTexts((prev) => new Set(prev).add(newsSummaryId))
+    setTimeout(() => {
+      setShakingTexts((prev) => {
+        const next = new Set(prev)
+        next.delete(newsSummaryId)
+        return next
+      })
+    }, 400)
+  }
+
+  return (
+    <Box px="6px">
+      <Stack py="12px" gap="6px" borderBottom={borderBottom ? '1px solid #DEE2E6' : 'none'}>
+        <Stack direction="row" gap="8px">
+          <Icon direction={item.momentum} />
+          <Typography variant="infoDocument">{item.nameEnglish || item.nameKorean}</Typography>
         </Stack>
-      </Collapse>
-    </Stack>
-  </Box>
-)
+        <Collapse in={selectedOption === 'detailed'} timeout={300}>
+          <Stack gap="6px">
+            <Stack pl="22px" gap="1px">
+              {item.relatedEventRepresentativeNewsResNews?.slice(0, 3).map((news, index) => (
+                <Box
+                  key={`${item.highlightEventId}-news-${index}`}
+                  onClick={
+                    news.isViewable !== false
+                      ? () => {
+                        onRelatedNewsItemSelected({ name: news.provider, value: news.newsSummaryId.toString() })
+                      }
+                      : () => handleLockedClick(news.newsSummaryId)
+                  }
+                  sx={{
+                    cursor: news.isViewable !== false ? 'pointer' : 'default',
+                    display: 'flex',
+                    alignItems: 'center',
+                    ml: '-14px',
+                  }}
+                >
+                  <Typography
+                    component="span"
+                    variant="subtext5"
+                    color="gray.70"
+                    fontWeight={500}
+                    sx={{
+                      mr: '6px',
+                      flexShrink: 0,
+                      alignSelf: 'flex-start',
+                      pt: '2px',
+                    }}
+                  >
+                    •
+                  </Typography>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    gap="4px"
+                    sx={{
+                      width: '100%',
+                      minWidth: 0,
+                      animation: shakingTexts.has(news.newsSummaryId) ? `${shakeAnimation} 0.4s ease-in-out` : 'none',
+                    }}
+                  >
+                    <Typography
+                      component="span"
+                      variant="subtext5"
+                      color="gray.70"
+                      fontWeight={500}
+                      sx={{
+                        '&:hover': {
+                          textDecoration: 'underline',
+                        },
+                      }}
+                    >
+                      {news.title}
+                    </Typography>
+                    {news.isViewable === false && <ShakeableLockIcon width={16} height={16} sx={{ animation: 'none' }} />}
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+            <TagChip
+              items={
+                item.relatedEventRepresentativeNewsResNews?.map((news) => ({
+                  name: news.provider,
+                  value: news.newsSummaryId.toString(),
+                })) ?? []
+              }
+              ellipsisRange={2}
+              padding="6px 20px"
+              onItemSelected={onRelatedNewsItemSelected}
+            />
+          </Stack>
+        </Collapse>
+      </Stack>
+    </Box>
+  )
+}
 
 const Highlights = ({ highlights }: Props) => {
   const [selectedOption, setSelectedOption] = useState('detailed')

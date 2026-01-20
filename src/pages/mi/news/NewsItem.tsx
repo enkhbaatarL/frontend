@@ -1,11 +1,19 @@
-import { Box, Stack, StackProps, Typography } from '@mui/material'
+import { Stack, StackProps, Typography } from '@mui/material'
+import { keyframes } from '@mui/material/styles'
 import dayjs from 'dayjs'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MILine from '@/components/common/divider/MILine'
-import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
+import ShakeableLockIcon from '@/components/common/icons/ShakeableLockIcon'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import { INewsListItem } from '@/service/mi/marketNews'
+
+const shakeAnimation = keyframes`
+  0%, 100% { transform: translateX(0); }
+  25%, 75% { transform: translateX(-2px); }
+  50% { transform: translateX(2px); }
+`
 
 export interface NewsItemProps extends StackProps {
   item?: INewsListItem
@@ -14,6 +22,7 @@ export interface NewsItemProps extends StackProps {
 
 const NewsItem = ({ item, isSkeleton = false, ...props }: NewsItemProps) => {
   const navigate = useNavigate()
+  const [isShaking, setIsShaking] = useState(false)
 
   if (isSkeleton) {
     return (
@@ -43,7 +52,16 @@ const NewsItem = ({ item, isSkeleton = false, ...props }: NewsItemProps) => {
           backgroundColor: item.isViewable ? 'contentBG.Hover' : 'transparent',
         },
       }}
-      onClick={item.isViewable ? () => navigate(`/mi/market-news/${item.newsSummaryId}`) : undefined}
+      onClick={
+        item.isViewable
+          ? () => navigate(`/mi/market-news/${item.newsSummaryId}`)
+          : () => {
+            setIsShaking(true)
+            setTimeout(() => {
+              setIsShaking(false)
+            }, 400)
+          }
+      }
       {...props}
     >
       <Stack direction="row" alignItems="center" gap="4px" height="16px">
@@ -51,7 +69,16 @@ const NewsItem = ({ item, isSkeleton = false, ...props }: NewsItemProps) => {
           {item.provider}
         </Typography>
       </Stack>
-      <Stack direction="row" alignItems="center" gap="0" sx={{ width: '100%', minWidth: 0 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        gap="0"
+        sx={{
+          width: '100%',
+          minWidth: 0,
+          animation: isShaking ? `${shakeAnimation} 0.4s ease-in-out` : 'none',
+        }}
+      >
         <Typography
           variant="body1"
           color="contentText.Normal"
@@ -66,11 +93,7 @@ const NewsItem = ({ item, isSkeleton = false, ...props }: NewsItemProps) => {
         >
           {item.title}
         </Typography>
-        {!item.isViewable && (
-          <Box sx={{ flexShrink: 0, marginTop: '2px', marginLeft: '4px', display: 'inline-flex', alignItems: 'center', color: 'gray.60' }}>
-            <LockOutlinedIcon width={16} height={16} style={{ marginBottom: '2px' }} />
-          </Box>
-        )}
+        {!item.isViewable && <ShakeableLockIcon width={16} height={16} sx={{ animation: 'none', marginLeft: '4px' }} />}
       </Stack>
       <Stack direction="row" alignItems="center" gap="8px" height="16px">
         {item.categories.length > 0 && (

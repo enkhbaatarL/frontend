@@ -28,6 +28,7 @@ export interface ITopicTrackerWidgetItem {
   title: string
   provider: string
   regions: string[]
+  isViewable?: boolean
 }
 
 export interface ITopicTrackerItem {
