@@ -225,8 +225,6 @@ const TopicTracker = ({ criteriaDate }: Props) => {
       return data
     },
     enabled: !!topicsData && !!criteriaDate,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
   })
 
   const filteredData = widgetData?.filter((item) => {

@@ -36,6 +36,7 @@ const ShakeableLockIcon = forwardRef<ShakeableLockIconHandle, ShakeableLockIconP
       component="span"
       sx={{
         flexShrink: 0,
+        marginBottom: '2px',
         display: 'inline-flex',
         alignItems: 'center',
         color: 'gray.60',
