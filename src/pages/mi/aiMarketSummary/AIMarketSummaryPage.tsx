@@ -632,7 +632,7 @@ const AIMarketSummaryPage = () => {
                                                                 wordBreak: 'break-word',
                                                                 overflowWrap: 'break-word',
                                                                 '&:hover':
-                                                                  summaryItem.newsId && summaryItem.isViewable !== false
+                                                                  item.category === 'HIGHLIGHT'
                                                                     ? {
                                                                       textDecoration: 'underline',
                                                                     }

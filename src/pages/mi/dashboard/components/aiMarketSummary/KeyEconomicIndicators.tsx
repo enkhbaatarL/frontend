@@ -2,6 +2,7 @@ import { Box, Stack, Typography, TypographyProps, Tooltip, Chip } from '@mui/mat
 import { useQuery } from '@tanstack/react-query'
 import { ReactNode, useRef, useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 
 import levelHighIcon from '@/assets/level-high.svg'
 import levelLowIcon from '@/assets/level-low.svg'
@@ -107,6 +108,7 @@ interface Props {
 }
 
 const KeyEconomicIndicators = ({ criteriaDate }: Props) => {
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const { marketCategoryCodeList } = useCodeData()
 
@@ -225,6 +227,7 @@ const KeyEconomicIndicators = ({ criteriaDate }: Props) => {
                 height="38px"
                 gap="4px"
                 borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+                onClick={() => navigate(`/mi/economic-calendar/${data.code}`)}
                 sx={{
                   '&:hover': {
                     backgroundColor: '#F8F9FA',
