@@ -59,14 +59,14 @@ interface HighlightsItemProps {
 }
 
 const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNewsItemSelected }: HighlightsItemProps) => {
-  const [shakingTexts, setShakingTexts] = useState<Set<number>>(new Set())
+  const [shakingTexts, setShakingTexts] = useState<Set<string>>(new Set())
 
-  const handleLockedClick = (newsSummaryId: number) => {
-    setShakingTexts((prev) => new Set(prev).add(newsSummaryId))
+  const handleLockedClick = (itemKey: string) => {
+    setShakingTexts((prev) => new Set(prev).add(itemKey))
     setTimeout(() => {
       setShakingTexts((prev) => {
         const next = new Set(prev)
-        next.delete(newsSummaryId)
+        next.delete(itemKey)
         return next
       })
     }, 400)
@@ -82,45 +82,23 @@ const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNe
         <Collapse in={selectedOption === 'detailed'} timeout={300}>
           <Stack gap="6px">
             <Stack pl="22px" gap="1px">
-              {item.relatedEventRepresentativeNewsResNews?.slice(0, 3).map((news, index) => (
-                <Box
-                  key={`${item.highlightEventId}-news-${index}`}
-                  onClick={
-                    news.isViewable !== false
-                      ? () => {
-                        onRelatedNewsItemSelected({ name: news.provider, value: news.newsSummaryId.toString() })
-                      }
-                      : () => handleLockedClick(news.newsSummaryId)
-                  }
-                  sx={{
-                    cursor: news.isViewable !== false ? 'pointer' : 'default',
-                    display: 'flex',
-                    alignItems: 'center',
-                    ml: '-14px',
-                  }}
-                >
-                  <Typography
-                    component="span"
-                    variant="subtext5"
-                    color="gray.70"
-                    fontWeight={500}
+              {item.relatedEventRepresentativeNewsResNews?.slice(0, 3).map((news, index) => {
+                const itemKey = `${item.highlightEventId}-news-${index}`
+                return (
+                  <Box
+                    key={itemKey}
+                    onClick={
+                      news.isViewable !== false
+                        ? () => {
+                          onRelatedNewsItemSelected({ name: news.provider, value: news.newsSummaryId.toString() })
+                        }
+                        : () => handleLockedClick(itemKey)
+                    }
                     sx={{
-                      mr: '6px',
-                      flexShrink: 0,
-                      alignSelf: 'flex-start',
-                      pt: '2px',
-                    }}
-                  >
-                    •
-                  </Typography>
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    gap="4px"
-                    sx={{
-                      width: '100%',
-                      minWidth: 0,
-                      animation: shakingTexts.has(news.newsSummaryId) ? `${shakeAnimation} 0.4s ease-in-out` : 'none',
+                      cursor: news.isViewable !== false ? 'pointer' : 'default',
+                      display: 'flex',
+                      alignItems: 'center',
+                      ml: '-14px',
                     }}
                   >
                     <Typography
@@ -129,17 +107,42 @@ const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNe
                       color="gray.70"
                       fontWeight={500}
                       sx={{
-                        '&:hover': {
-                          textDecoration: 'underline',
-                        },
+                        mr: '6px',
+                        flexShrink: 0,
+                        alignSelf: 'flex-start',
+                        pt: '2px',
                       }}
                     >
-                      {news.title}
+                      •
                     </Typography>
-                    {news.isViewable === false && <ShakeableLockIcon width={16} height={16} sx={{ animation: 'none' }} />}
-                  </Stack>
-                </Box>
-              ))}
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      gap="4px"
+                      sx={{
+                        width: '100%',
+                        minWidth: 0,
+                        animation: shakingTexts.has(itemKey) ? `${shakeAnimation} 0.4s ease-in-out` : 'none',
+                      }}
+                    >
+                      <Typography
+                        component="span"
+                        variant="subtext5"
+                        color="gray.70"
+                        fontWeight={500}
+                        sx={{
+                          '&:hover': {
+                            textDecoration: 'underline',
+                          },
+                        }}
+                      >
+                        {news.title}
+                      </Typography>
+                      {news.isViewable === false && <ShakeableLockIcon width={16} height={16} sx={{ animation: 'none' }} />}
+                    </Stack>
+                  </Box>
+                )
+              })}
             </Stack>
             <TagChip
               items={

@@ -54,7 +54,7 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOrigin
   const [isExpanded, setIsExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [aiData, setAiData] = useState<AiSummaryData | AiNewsSummaryData | null>(null)
-  const [shakingTexts, setShakingTexts] = useState<Set<number>>(new Set())
+  const [shakingTexts, setShakingTexts] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     setAiData(null)
@@ -106,16 +106,16 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOrigin
     reset,
   }))
 
-  const handleNewsClick = (e: React.MouseEvent, newsSummaryId: number, isViewable?: boolean) => {
+  const handleNewsClick = (e: React.MouseEvent, newsSummaryId: number, isViewable?: boolean, itemKey?: string) => {
     e.stopPropagation() // FeedItem이 닫히지 않도록 이벤트 버블링 방지
     if (isViewable !== false) {
       navigate(`/mi/market-news/${newsSummaryId}`)
-    } else {
-      setShakingTexts((prev) => new Set(prev).add(newsSummaryId))
+    } else if (itemKey) {
+      setShakingTexts((prev) => new Set(prev).add(itemKey))
       setTimeout(() => {
         setShakingTexts((prev) => {
           const next = new Set(prev)
-          next.delete(newsSummaryId)
+          next.delete(itemKey)
           return next
         })
       }, 400)
@@ -158,54 +158,57 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOrigin
                   ? // showSimilarNews === true: 뉴스 리스트 렌더링
                   aiData.summary.length > 0 && (
                     <Stack pl="22px">
-                      {aiData.summary.map((news, index) => (
-                        <Box
-                          key={index}
-                          onClick={(e) => handleNewsClick(e, news.newsSummaryId, news.isViewable)}
-                          sx={{
-                            cursor: news.isViewable !== false ? 'pointer' : 'default',
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            ml: '-14px',
-                          }}
-                        >
-                          <Typography
-                            component="span"
-                            variant="body1M16"
-                            color="gray.70"
+                      {aiData.summary.map((news, index) => {
+                        const itemKey = `news-${index}`
+                        return (
+                          <Box
+                            key={itemKey}
+                            onClick={(e) => handleNewsClick(e, news.newsSummaryId, news.isViewable, itemKey)}
                             sx={{
-                              mr: '6px',
-                              flexShrink: 0,
-                            }}
-                          >
-                              •
-                          </Typography>
-                          <Stack
-                            direction="row"
-                            alignItems="center"
-                            gap="4px"
-                            sx={{
-                              width: '100%',
-                              minWidth: 0,
-                              animation: shakingTexts.has(news.newsSummaryId) ? `${shakeAnimation} 0.4s ease-in-out` : 'none',
+                              cursor: news.isViewable !== false ? 'pointer' : 'default',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              ml: '-14px',
                             }}
                           >
                             <Typography
                               component="span"
                               variant="body1M16"
-                              color="content.textNormal"
+                              color="gray.70"
                               sx={{
-                                '&:hover': {
-                                  textDecoration: 'underline',
-                                },
+                                mr: '6px',
+                                flexShrink: 0,
                               }}
                             >
-                              {news.title}
+                                •
                             </Typography>
-                            {news.isViewable === false && <ShakeableLockIcon width={16} height={16} sx={{ animation: 'none' }} />}
-                          </Stack>
-                        </Box>
-                      ))}
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              gap="4px"
+                              sx={{
+                                width: '100%',
+                                minWidth: 0,
+                                animation: shakingTexts.has(itemKey) ? `${shakeAnimation} 0.4s ease-in-out` : 'none',
+                              }}
+                            >
+                              <Typography
+                                component="span"
+                                variant="body1M16"
+                                color="content.textNormal"
+                                sx={{
+                                  '&:hover': {
+                                    textDecoration: 'underline',
+                                  },
+                                }}
+                              >
+                                {news.title}
+                              </Typography>
+                              {news.isViewable === false && <ShakeableLockIcon width={16} height={16} sx={{ animation: 'none' }} />}
+                            </Stack>
+                          </Box>
+                        )
+                      })}
                     </Stack>
                   )
                   : // showSimilarNews === false: 일반 텍스트 리스트 렌더링
