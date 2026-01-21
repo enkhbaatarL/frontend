@@ -145,7 +145,7 @@ const AIMarketSummaryPage = () => {
     {
       sort: 'NEWEST',
       dateRangeOption: 'LAST_30_DAYS',
-      recapCategory: undefined,
+      recapCategories: undefined,
       keyword: '',
     },
     {
@@ -220,7 +220,7 @@ const AIMarketSummaryPage = () => {
   const isListLoading = recapsIsLoading
 
   const handleApplyFilters = (filterValues: FilterValues, _save?: boolean) => {
-    updateFilterWithSearch('recapCategory', (filterValues.category ?? []) as RecapCategory[])
+    updateFilterWithSearch('recapCategories', (filterValues.category ?? []) as RecapCategory[])
   }
 
   const handleSearch = (keyword: string) => {
@@ -317,7 +317,7 @@ const AIMarketSummaryPage = () => {
                     initialValues={{
                       category: [],
                     }}
-                    appliedFiltersCount={filter.recapCategory?.length ?? 0}
+                    appliedFiltersCount={filter.recapCategories?.length ?? 0}
                     onApply={handleApplyFilters}
                     showSaveOption={false}
                     sx={{ minWidth: 105 }}

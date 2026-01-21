@@ -42,7 +42,7 @@ export interface INewsRecapsRequest extends IPaginationRequest {
   sort?: string
   keyword?: string
   dateRangeOption?: DateRangeOption
-  recapCategory?: RecapCategory[]
+  recapCategories?: RecapCategory[]
 }
 export interface INewsRecapNarrative {
   title: string
@@ -97,7 +97,7 @@ const marketNewsService = {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsRecapItem>>> = await api.get('mi/market-news/recaps', {
       params: {
         ...params,
-        recapCategory: params.recapCategory?.join(','),
+        recapCategories: params.recapCategories?.join(','),
       },
     })
     return response.data.data
