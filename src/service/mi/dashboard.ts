@@ -331,9 +331,18 @@ const dashboardService = {
   },
   /**
    * 서버 로컬 시간 기준으로 시장 뉴스 기준일자를 계산하여 반환합니다.
+   * 로컬스토리지에 devCriteriaDate 값이 있으면 우선 반환합니다. (20251210)
    * @returns 기준일자 정보
    */
   async getCriteriaDate(): Promise<ICriteriaDateInfo> {
+    const devCriteriaDate = localStorage.getItem('devCriteriaDate')
+    if (devCriteriaDate) {
+      return {
+        criteriaDate: devCriteriaDate,
+        nextUpdate: '',
+      }
+    }
+
     const response: AxiosResponse<ICommonResponse<ICriteriaDateInfo>> = await api.get('mi/market-news/criteria-date')
     return response.data.data
   },

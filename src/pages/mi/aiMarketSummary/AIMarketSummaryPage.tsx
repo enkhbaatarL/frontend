@@ -609,42 +609,44 @@ const AIMarketSummaryPage = () => {
                                                           >
                                                             •
                                                           </Typography>
-                                                          <Stack
-                                                            direction="row"
-                                                            alignItems="center"
-                                                            gap="4px"
+                                                          <Typography
+                                                            component="span"
+                                                            variant="body1M16"
+                                                            color="content.textNormal"
                                                             sx={{
                                                               width: '100%',
                                                               minWidth: 0,
+                                                              fontSize: '14px',
+                                                              fontWeight: 400,
+                                                              color: '#000000',
+                                                              wordBreak: 'break-word',
+                                                              overflowWrap: 'break-word',
                                                               animation: shakingItemKeys.has(itemKey)
                                                                 ? `${shakeAnimation} 0.4s ease-in-out`
                                                                 : 'none',
+                                                              '&:hover':
+                                                                item.category === 'HIGHLIGHT'
+                                                                  ? {
+                                                                    textDecoration: 'underline',
+                                                                  }
+                                                                  : undefined,
                                                             }}
                                                           >
-                                                            <Typography
-                                                              component="span"
-                                                              variant="body1M16"
-                                                              color="content.textNormal"
-                                                              sx={{
-                                                                fontSize: '14px',
-                                                                fontWeight: 400,
-                                                                color: '#000000',
-                                                                wordBreak: 'break-word',
-                                                                overflowWrap: 'break-word',
-                                                                '&:hover':
-                                                                  item.category === 'HIGHLIGHT'
-                                                                    ? {
-                                                                      textDecoration: 'underline',
-                                                                    }
-                                                                    : undefined,
-                                                              }}
-                                                            >
-                                                              {summaryItem.text}
-                                                            </Typography>
                                                             {summaryItem.isViewable === false && (
-                                                              <ShakeableLockIcon width={16} height={16} sx={{ animation: 'none' }} />
+                                                              <ShakeableLockIcon
+                                                                width={16}
+                                                                height={16}
+                                                                sx={{
+                                                                  animation: 'none',
+                                                                  marginLeft: 0,
+                                                                  marginRight: '4px',
+                                                                  display: 'inline-flex',
+                                                                  verticalAlign: 'middle',
+                                                                }}
+                                                              />
                                                             )}
-                                                          </Stack>
+                                                            {summaryItem.text}
+                                                          </Typography>
                                                         </Box>
                                                       )
                                                     })}

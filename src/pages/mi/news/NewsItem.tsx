@@ -69,32 +69,29 @@ const NewsItem = ({ item, isSkeleton = false, ...props }: NewsItemProps) => {
           {item.provider}
         </Typography>
       </Stack>
-      <Stack
-        direction="row"
-        alignItems="center"
-        gap="0"
+      <Typography
+        variant="body1"
+        color="contentText.Normal"
         sx={{
           width: '100%',
           minWidth: 0,
+          display: '-webkit-box',
+          overflow: 'hidden',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          textOverflow: 'ellipsis',
           animation: isShaking ? `${shakeAnimation} 0.4s ease-in-out` : 'none',
         }}
       >
-        <Typography
-          variant="body1"
-          color="contentText.Normal"
-          sx={{
-            display: '-webkit-box',
-            overflow: 'hidden',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            textOverflow: 'ellipsis',
-            minWidth: 0,
-          }}
-        >
-          {item.title}
-        </Typography>
-        {!item.isViewable && <ShakeableLockIcon width={16} height={16} sx={{ animation: 'none', marginLeft: '4px' }} />}
-      </Stack>
+        {!item.isViewable && (
+          <ShakeableLockIcon
+            width={16}
+            height={16}
+            sx={{ animation: 'none', marginLeft: 0, marginRight: '4px', display: 'inline-flex', verticalAlign: 'middle' }}
+          />
+        )}
+        {item.title}
+      </Typography>
       <Stack direction="row" alignItems="center" gap="8px" height="16px">
         {item.categories.length > 0 && (
           <>

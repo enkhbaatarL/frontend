@@ -115,31 +115,29 @@ const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNe
                     >
                       •
                     </Typography>
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      gap="4px"
+                    <Typography
+                      component="span"
+                      variant="subtext5"
+                      color="gray.70"
+                      fontWeight={500}
                       sx={{
                         width: '100%',
                         minWidth: 0,
                         animation: shakingTexts.has(itemKey) ? `${shakeAnimation} 0.4s ease-in-out` : 'none',
+                        '&:hover': {
+                          textDecoration: 'underline',
+                        },
                       }}
                     >
-                      <Typography
-                        component="span"
-                        variant="subtext5"
-                        color="gray.70"
-                        fontWeight={500}
-                        sx={{
-                          '&:hover': {
-                            textDecoration: 'underline',
-                          },
-                        }}
-                      >
-                        {news.title}
-                      </Typography>
-                      {news.isViewable === false && <ShakeableLockIcon width={16} height={16} sx={{ animation: 'none' }} />}
-                    </Stack>
+                      {news.isViewable === false && (
+                        <ShakeableLockIcon
+                          width={16}
+                          height={16}
+                          sx={{ animation: 'none', marginLeft: 0, marginRight: '4px', display: 'inline-flex', verticalAlign: 'middle' }}
+                        />
+                      )}
+                      {news.title}
+                    </Typography>
                   </Box>
                 )
               })}
