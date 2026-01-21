@@ -244,7 +244,7 @@ const TopicTracker = ({ criteriaDate }: Props) => {
       })
       setDisplayStates(initialStates)
     }
-  }, [topicsData, displayStates])
+  }, [topicsData])
 
   useEffect(() => {
     if (filteredData && filteredData.length > 0) {
