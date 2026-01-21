@@ -33,6 +33,7 @@ const ShakeableLockIcon = forwardRef<ShakeableLockIconHandle, ShakeableLockIconP
 
   return (
     <Box
+      component="span"
       sx={{
         flexShrink: 0,
         display: 'inline-flex',

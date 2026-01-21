@@ -277,7 +277,7 @@ const NewsPage = () => {
                 items={[
                   { label: 'Last 7 days', value: 'LAST_7_DAYS' },
                   { label: 'Last 14 days', value: 'LAST_14_DAYS' },
-                  { label: 'Last 30 days', value: 'LAST_30_DAYS' },
+                  // { label: 'Last 30 days', value: 'LAST_30_DAYS' },
                   // { label: 'Last 60 days', value: 'LAST_60_DAYS' },
                   // { label: 'Last 12 months', value: 'LAST_12_MONTHS' },
                   // { label: 'All time', value: 'ALL_TIME' },
