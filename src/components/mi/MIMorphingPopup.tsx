@@ -1,5 +1,5 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
-import { Box, BoxProps, Stack, Typography } from '@mui/material'
+import { Box, BoxProps, Skeleton, Stack, Typography } from '@mui/material'
 import {
   useState,
   useRef,
@@ -47,6 +47,7 @@ interface PopupProps extends Omit<BoxProps, 'title' | 'content'> {
   title: ReactNode
   content: ReactNode
   hideCloseButton?: boolean
+  showSkeleton?: boolean
   onOpen?: () => void
   onClose?: () => void
 }
@@ -61,7 +62,7 @@ export interface MIMorphingPopupRef {
 }
 
 const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
-  ({ children, popup: { title, content, hideCloseButton, onOpen, onClose, ...popupProps }, ...props }, ref) => {
+  ({ children, popup: { title, content, hideCloseButton, showSkeleton = true, onOpen, onClose, ...popupProps }, ...props }, ref) => {
     const [isOpen, setIsOpen] = useState(false)
     const [isClosing, setIsClosing] = useState(false)
     const [isExpanded, setIsExpanded] = useState(false)
@@ -216,9 +217,9 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
 
       const childrenWithoutBorder = cloneElement(children, {
         ...restProps,
-        border: undefined,
-        borderColor: undefined,
-        borderRadius: undefined,
+        border: extractedBorderStyles.border,
+        borderColor: 'transparent',
+        borderRadius: extractedBorderStyles.borderRadius,
         sx: cleanedSx,
       } as BoxProps)
 
@@ -283,13 +284,15 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
           ref={triggerRef}
           {...props}
           border={borderStyles.border}
-          borderColor={borderStyles.borderColor}
+          borderColor={showSkeleton && isOpen && coords ? 'transparent' : borderStyles.borderColor}
           borderRadius={borderStyles.borderRadius}
           overflow="hidden"
+          position="relative"
           sx={{
-            opacity: isOpen ? 0 : 1,
-            visibility: isOpen ? 'hidden' : 'visible',
-            ...(borderStyles.hoverBorderColor && {
+            opacity: isOpen && !showSkeleton ? 0 : 1,
+            visibility: isOpen && !showSkeleton ? 'hidden' : 'visible',
+            ...(borderStyles.hoverBorderColor &&
+              !isOpen && {
               '&:hover': {
                 borderColor: borderStyles.hoverBorderColor,
               },
@@ -297,7 +300,39 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
             ...props?.sx,
           }}
         >
-          {cleanedChildren}
+          <Box
+            sx={{
+              opacity: showSkeleton && isOpen && coords ? 0 : 1,
+              visibility: showSkeleton && isOpen && coords ? 'hidden' : 'visible',
+            }}
+          >
+            {cleanedChildren}
+          </Box>
+          {showSkeleton && isOpen && coords && (
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              sx={{
+                opacity: isExpanded ? 0.3 : 0,
+                transition: `opacity ${DURATION} ${TRANSITION_CURVE}`,
+                pointerEvents: 'none',
+              }}
+            >
+              <Skeleton
+                variant="rectangular"
+                width="100%"
+                height="100%"
+                animation={false}
+                sx={{
+                  bgcolor: 'rgba(0, 0, 0, 0.08)',
+                  borderRadius: 'inherit',
+                }}
+              />
+            </Box>
+          )}
         </Box>
 
         {isOpen &&
@@ -363,8 +398,6 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                       position="absolute"
                       top={0}
                       left={0}
-                      width={coords.start.width}
-                      boxSizing="border-box"
                       sx={{
                         opacity: isExpanded ? 0 : 1,
                         transition: `opacity ${isClosing ? DURATION_MS : DURATION_MS / 3}ms ${TRANSITION_CURVE}`,
