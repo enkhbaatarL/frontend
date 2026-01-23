@@ -245,15 +245,20 @@ const Chart = ({
                             ? localUnPublishedNewsIds.filter((id) => id !== item.newsId)
                             : [...localUnPublishedNewsIds, item.newsId]
                           setLocalUnPublishedNewsIds(newUnPublishedIds)
+                          // 부모의 unPublishedNewsIds도 즉시 업데이트하여 localStorage에 저장되도록 함
+                          onUnPublishedNewsIdsChange?.(newUnPublishedIds)
 
                           const editedTrend = editingNews[item.newsId]?.['trend']
                           const originalTrend = item.trend ?? ''
                           const effectiveTrend = editedTrend !== undefined ? String(editedTrend) : originalTrend
 
                           if (!isCurrentlyUnpublished) {
+                            // published → unpublished로 변경: showInChart = false
                             handleFieldChange(item.newsId, 'showInChart', false)
                           } else {
-                            handleFieldChange(item.newsId, 'showInChart', effectiveTrend !== '')
+                            // unpublished → published로 변경: trend가 있고 'NONE'이 아니면 true, 아니면 false
+                            const shouldShowInChart = effectiveTrend !== '' && effectiveTrend !== 'NONE'
+                            handleFieldChange(item.newsId, 'showInChart', shouldShowInChart)
                           }
                         }}
                         useInflectionPointSelect
@@ -261,7 +266,9 @@ const Chart = ({
                         onInflectionPointChange={(inflectionPoint) => {
                           handleFieldChange(item.newsId, 'trend', inflectionPoint)
                           if (!localUnPublishedNewsIds.includes(item.newsId)) {
-                            handleFieldChange(item.newsId, 'showInChart', inflectionPoint !== '')
+                            // published 상태에서 trend 변경: trend가 있고 'NONE'이 아니면 true, 아니면 false
+                            const shouldShowInChart = inflectionPoint !== '' && inflectionPoint !== 'NONE'
+                            handleFieldChange(item.newsId, 'showInChart', shouldShowInChart)
                           }
                         }}
                         onDeleteNews={() => onDeleteNews?.(item.newsId)}
@@ -455,9 +462,9 @@ const Chart = ({
                                       {item.title}
                                     </div>
                                     <div style={{ fontWeight: 400, fontSize: '16px', color: '#495057', whiteSpace: 'pre-line' }}>
-                                      {item.content.map((content, index) => (
-                                        <Fragment key={index}>
-                                          {index > 0 && <br />}
+                                      {item.content.map((content, idx) => (
+                                        <Fragment key={idx}>
+                                          {idx > 0 && <br />}
                                           {content}
                                         </Fragment>
                                       ))}

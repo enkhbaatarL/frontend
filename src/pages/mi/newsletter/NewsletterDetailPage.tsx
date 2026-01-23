@@ -20,6 +20,7 @@ import Summarized from './components/emailTemplate/Summarized'
 import Title from './components/emailTemplate/Title'
 
 import MIButton from '@/components/common/button/MIButton'
+import MISimpleConfirm from '@/components/common/confirm/MISimpleConfirm'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
 import AddIcon from '@/components/common/icons/AddIcon'
 import CheckIcon from '@/components/common/icons/agent/CheckIcon'
@@ -68,6 +69,20 @@ const processNewsletterData = (data: INewsletterIssueDetail | null | undefined) 
 const sortNewsByDateTime = (newsItems: IRelatedNewsEventItem[]): IRelatedNewsEventItem[] =>
   [...newsItems].sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0))
 
+const STORAGE_KEY_PREFIX = 'newsletter_issue_draft'
+
+type NewsletterDraftState = {
+  newsletterIssueDetail: INewsletterIssueDetail | null
+  editingNews: Record<string, Record<string, string | boolean>>
+  tempNewsItems: IRelatedNewsEventItem[]
+  unPublishedNewsIds: string[]
+  deletedNewsIds: string[]
+  isSummarizedPublished: boolean
+  mode: NewsletterDetailPageMode
+  sortKey: number
+  expiresAt: number // 만료일 (timestamp)
+}
+
 const NewsletterDetailPage = () => {
   const navigate = useNavigate()
   const { showSnackbar } = useSnackbar()
@@ -79,6 +94,40 @@ const NewsletterDetailPage = () => {
   const chartRef = useRef<InflectionPointChartRef>(null)
 
   const [loadingNewsletterIds, setLoadingNewsletterIds] = useState<Set<string>>(new Set())
+  const { newsletterId, issueNo } = useParams()
+  const { accessCompanyInfo } = useAuthStore()
+
+  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
+
+  const draftStorageKey = useMemo(() => {
+    if (!newsletterId || !issueNo) return null
+    return `${STORAGE_KEY_PREFIX}_${customerCompanyNo}_${newsletterId}_${issueNo}`
+  }, [customerCompanyNo, issueNo, newsletterId])
+
+  const [forceRefresh, setForceRefresh] = useState(0)
+
+  const initialDraftState = useMemo(() => {
+    if (!draftStorageKey) return null
+    const savedDraft = localStorage.getItem(draftStorageKey)
+    if (!savedDraft) return null
+    try {
+      const parsed = JSON.parse(savedDraft) as NewsletterDraftState
+      // 만료일 체크
+      if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
+        localStorage.removeItem(draftStorageKey)
+        return null
+      }
+      return parsed
+    } catch (error) {
+      console.error('Failed to parse newsletter draft from localStorage:', error)
+      localStorage.removeItem(draftStorageKey)
+      return null
+    }
+    // forceRefresh를 의존성에 추가하여 localStorage 삭제 후 재계산되도록 함
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftStorageKey, forceRefresh])
+
+  // 로컬스토리지가 있어도 기본적으로는 API 데이터로 초기화
   const [mode, setMode] = useState<NewsletterDetailPageMode>(NewsletterDetailPageMode.VIEW)
   const [newsletterIssueDetail, setNewsletterIssueDetail] = useState<INewsletterIssueDetail | undefined | null>(undefined)
   const [editingNews, setEditingNews] = useState<Record<string, Record<string, string | boolean>>>({})
@@ -91,10 +140,7 @@ const NewsletterDetailPage = () => {
   const [unPublishedNewsIds, setUnPublishedNewsIds] = useState<string[]>([])
   const [deletedNewsIds, setDeletedNewsIds] = useState<string[]>([])
 
-  const { newsletterId, issueNo } = useParams()
-  const { accessCompanyInfo } = useAuthStore()
-
-  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
+  const [isContinueModalOpen, setIsContinueModalOpen] = useState(false)
 
   const {
     data: newsletterIssueDetailData,
@@ -105,6 +151,7 @@ const NewsletterDetailPage = () => {
       if (!newsletterId || !issueNo) {
         return Promise.resolve(null)
       }
+      // 로컬스토리지가 있어도 항상 API 조회
       return newsletterService.getNewsletterIssueDetail(customerCompanyNo, newsletterId, issueNo)
     },
     {},
@@ -130,6 +177,17 @@ const NewsletterDetailPage = () => {
     gcTime: 0,
     enabled: !!newsletterId,
   })
+
+  // Edit 버튼 클릭 시 로컬스토리지 체크 및 팝업 표시
+  const handleEditClick = useCallback(() => {
+    if (initialDraftState) {
+      // localStorage에 저장된 값이 있으면 팝업 띄우기
+      setIsContinueModalOpen(true)
+    } else {
+      // localStorage에 값이 없으면 바로 edit 모드로 전환
+      setMode(NewsletterDetailPageMode.EDIT)
+    }
+  }, [initialDraftState])
 
   const handleSubscribe = useCallback(
     async (targetNewsletterId: string) => {
@@ -182,6 +240,13 @@ const NewsletterDetailPage = () => {
         [field]: value,
       },
     }))
+
+    // tempNewsItems에도 showInChart 변경을 반영 (로컬스토리지 저장 시 혼동 방지)
+    if (field === 'showInChart') {
+      setTempNewsItems((prev) =>
+        prev.map((item) => (item.newsId === newsId ? { ...item, showInChart: Boolean(value) } : item)),
+      )
+    }
   }, [])
 
   const handleAddNews = useCallback(() => {
@@ -239,9 +304,18 @@ const NewsletterDetailPage = () => {
 
   const handleDeleteNewsConfirm = useCallback(
     (newsId: string) => {
-      if (newsId.startsWith('temp_')) {
+      console.log('newsId', newsId)
+      
+      // newsletterIssueDetail에 있는지 먼저 확인
+      const isInNewsletterDetail = newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems?.some(
+        (item) => item.newsId === newsId
+      )
+      
+      if (newsId.startsWith('temp_') && !isInNewsletterDetail) {
+        // tempNewsItems에만 있는 경우
         setTempNewsItems((prev) => prev.filter((item) => item.newsId !== newsId))
       } else {
+        // newsletterIssueDetail에 있거나 일반 뉴스인 경우
         setDeletedNewsIds((prev) => [...prev, newsId])
       }
 
@@ -253,7 +327,7 @@ const NewsletterDetailPage = () => {
 
       hideDialog()
     },
-    [hideDialog],
+    [hideDialog, newsletterIssueDetail],
   )
 
   const handleDeleteNews = useCallback(
@@ -315,7 +389,15 @@ const NewsletterDetailPage = () => {
         const isUnPublished = currentUnPublishedNewsIds.includes(item.newsId)
 
         const validTrend = edits?.trend ?? item.trend ?? ''
-        const showInChartValue = isUnPublished ? false : validTrend !== ''
+        
+        // editingNews에 showInChart 값이 명시적으로 설정되어 있으면 우선 사용
+        // 없으면 게시 상태와 trend 값에 따라 계산
+        let showInChartValue: boolean
+        if (edits?.showInChart !== undefined) {
+          showInChartValue = Boolean(edits.showInChart)
+        } else {
+          showInChartValue = isUnPublished ? false : validTrend !== '' && validTrend !== 'NONE'
+        }
 
         const createTime = String(edits?.createTime ?? item.createTime)
         const createdDate = String(edits?.createdDate ?? item.createdDate)
@@ -370,9 +452,12 @@ const NewsletterDetailPage = () => {
       // 정렬 키 업데이트하여 DOM 요소 강제 재생성
       setSortKey((prev) => prev + 1)
 
+      // Apply 후에도 edit 모드 유지 (로컬스토리지는 계속 저장됨)
+      // localStorage는 삭제하지 않고 계속 유지
+
       showSnackbar(t('newsletter.editMode.snackbar.newsUpdated'), { variant: 'success' })
     },
-    [newsletterIssueDetail, tempNewsItems, editingNews, showSnackbar, unPublishedNewsIds, deletedNewsIds, t],
+    [newsletterIssueDetail, tempNewsItems, editingNews, showSnackbar, unPublishedNewsIds, deletedNewsIds, t, draftStorageKey],
   )
 
   const initializeNewsletterIssueDetail = useCallback(() => {
@@ -381,6 +466,42 @@ const NewsletterDetailPage = () => {
     setUnPublishedNewsIds([])
     setDeletedNewsIds([])
   }, [newsletterIssueDetailData])
+
+  useEffect(() => {
+    if (mode !== NewsletterDetailPageMode.EDIT || !newsletterIssueDetail || !draftStorageKey) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      // 만료일을 일주일 후로 설정
+      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000 // 7일 후
+      
+      const draftToSave: NewsletterDraftState = {
+        newsletterIssueDetail,
+        editingNews,
+        tempNewsItems,
+        unPublishedNewsIds,
+        deletedNewsIds,
+        isSummarizedPublished,
+        mode,
+        sortKey,
+        expiresAt,
+      }
+      localStorage.setItem(draftStorageKey, JSON.stringify(draftToSave))
+    }, 1000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [
+    deletedNewsIds,
+    editingNews,
+    isSummarizedPublished,
+    mode,
+    draftStorageKey,
+    newsletterIssueDetail,
+    sortKey,
+    tempNewsItems,
+    unPublishedNewsIds,
+  ])
 
   // 스크롤 위치 복원
   useLayoutEffect(() => {
@@ -550,10 +671,95 @@ Content-Transfer-Encoding: 7bit
     }
   }, [createEmailContentHTML, showSnackbar, t])
 
-  const baseNewsCount = useMemo(
-    () => (newsletterIssueDetailData?.issueDetail.relatedNews.newsEventItems?.length ?? 0) - deletedNewsIds.length,
-    [newsletterIssueDetailData, deletedNewsIds],
-  )
+  const handleContinue = useCallback(() => {
+    if (!initialDraftState) {
+      return
+    }
+
+    setIsContinueModalOpen(false)
+    setMode(initialDraftState.mode ?? NewsletterDetailPageMode.EDIT)
+    setEditingNews(initialDraftState.editingNews ?? {})
+    setTempNewsItems(initialDraftState.tempNewsItems ?? [])
+    setDeletedNewsIds(initialDraftState.deletedNewsIds ?? [])
+    setSortKey(initialDraftState.sortKey ?? 0)
+    setIsSummarizedPublished(initialDraftState.isSummarizedPublished ?? true)
+    setUnPublishedNewsIds(initialDraftState.unPublishedNewsIds ?? [])
+    setNewsletterIssueDetail(processNewsletterData(initialDraftState.newsletterIssueDetail))
+  }, [initialDraftState])
+
+  const handleResetDraft = useCallback(() => {
+    if (!draftStorageKey) return
+
+    // localStorage 삭제
+    localStorage.removeItem(draftStorageKey)
+    setIsContinueModalOpen(false)
+
+    // 초기화 클릭 시: API로 조회한 값에서 edit 모드로 전환
+    setEditingNews({})
+    setTempNewsItems([])
+    setDeletedNewsIds([])
+    setUnPublishedNewsIds([])
+    setIsSummarizedPublished(true)
+    setSortKey(0)
+    setMode(NewsletterDetailPageMode.EDIT)
+
+    // forceRefresh를 변경하여 initialDraftState를 재계산
+    setForceRefresh((prev) => prev + 1)
+  }, [draftStorageKey])
+
+  const baseNewsCount = useMemo(() => {
+    const baseCount =
+      newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems?.length ??
+      newsletterIssueDetailData?.issueDetail.relatedNews.newsEventItems?.length ??
+      0
+    return baseCount - deletedNewsIds.length
+  }, [deletedNewsIds, newsletterIssueDetail, newsletterIssueDetailData])
+
+  // 차트/미리보기용으로 편집값을 반영한 뉴스 목록
+  const previewRelatedNews = useMemo(() => {
+    const allItems = [
+      ...(newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems ?? []),
+      ...tempNewsItems,
+    ]
+
+    const updateNewsItem = (item: IRelatedNewsEventItem): IRelatedNewsEventItem => {
+      const edits = editingNews[item.newsId]
+      const isUnPublished = unPublishedNewsIds.includes(item.newsId)
+
+      const validTrend = edits?.trend ?? item.trend ?? ''
+
+      let showInChartValue: boolean
+      if (edits?.showInChart !== undefined) {
+        showInChartValue = Boolean(edits.showInChart)
+      } else {
+        showInChartValue = isUnPublished ? false : validTrend !== '' && validTrend !== 'NONE'
+      }
+
+      const createTime = String(edits?.createTime ?? item.createTime)
+      const createdDate = String(edits?.createdDate ?? item.createdDate)
+
+      const timestamp = createTimestampInNY(createdDate, createTime)
+
+      return {
+        ...item,
+        createTime,
+        createdDate,
+        title: String(edits?.title ?? item.title),
+        content: typeof edits?.content === 'string' ? edits?.content.split('\n') : item.content,
+        source: String(edits?.source ?? item.source ?? ''),
+        trend: validTrend as 'UP' | 'DOWN' | 'NONE' | '',
+        showInChart: showInChartValue,
+        timestamp,
+      }
+    }
+
+    const activeItems = allItems
+      .filter((item) => !deletedNewsIds.includes(item.newsId))
+      .filter((item) => !unPublishedNewsIds.includes(item.newsId))
+      .map(updateNewsItem)
+
+    return sortNewsByDateTime(activeItems)
+  }, [newsletterIssueDetail, tempNewsItems, editingNews, unPublishedNewsIds, deletedNewsIds])
 
   useEffect(() => {
     if (mode === NewsletterDetailPageMode.EDIT) {
@@ -596,8 +802,10 @@ Content-Transfer-Encoding: 7bit
   }, [mode, setStickyHeader, t])
 
   useEffect(() => {
+    // 로컬스토리지가 있어도 기본적으로는 API 데이터로 초기화
+    // Continue 버튼 클릭 시에만 로컬스토리지 값으로 대치됨
     initializeNewsletterIssueDetail()
-  }, [newsletterIssueDetailData, initializeNewsletterIssueDetail])
+  }, [initializeNewsletterIssueDetail, newsletterIssueDetailData])
 
   return (
     <Box position="relative">
@@ -698,7 +906,7 @@ Content-Transfer-Encoding: 7bit
                 color="gray"
                 contentType="text"
                 startIcon={<EditIcon />}
-                onClick={() => setMode(NewsletterDetailPageMode.EDIT)}
+                onClick={handleEditClick}
               >
                 Edit
               </MIButton>
@@ -768,7 +976,7 @@ Content-Transfer-Encoding: 7bit
                 title={newsletterIssueDetail?.issueDetail.newsFlowChart.title ?? ''}
                 basis={newsletterIssueDetail?.issueDetail.newsFlowChart.aggregationTime ?? ''}
                 chartData={newsletterIssueDetail?.issueDetail.newsFlowChart}
-                relatedNews={newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems}
+                relatedNews={previewRelatedNews}
                 mode={mode}
                 marketOpenTime={newsletterIssueDetail?.issueDetail.marketOpenTime}
                 marketCloseTime={newsletterIssueDetail?.issueDetail.marketCloseTime}
@@ -812,6 +1020,28 @@ Content-Transfer-Encoding: 7bit
           </tr>
         </tbody>
       </table>
+
+      <MISimpleConfirm
+        open={isContinueModalOpen}
+        content={t('newsletter.editMode.continueDialog.content')}
+        width={350}
+        zIndex={1600}
+        handleClose={() => setIsContinueModalOpen(false)}
+        actions={[
+          {
+            label: t('common.reset'),
+            variant: 'outlined',
+            color: 'gray',
+            onClick: handleResetDraft,
+          },
+          {
+            label: t('newsletter.editMode.buttonLabel.continue'),
+            variant: 'filled',
+            color: 'primary',
+            onClick: handleContinue,
+          },
+        ]}
+      />
     </Box>
   )
 }
