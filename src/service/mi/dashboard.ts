@@ -35,6 +35,7 @@ export interface INewsFeedItem {
   summary: string[]
   title: string
   provider: string
+  isViewable?: boolean
   newsSignificanceScore?: number
   score?: number
   significantNewsScore?: number
@@ -45,6 +46,7 @@ export interface INewsFeedItem {
     title: string
     firstCreated: string
     dataRegistrationSerialNo: number
+    isViewable?: boolean
   }> | null
 }
 
@@ -71,6 +73,7 @@ export interface IMarketRecapRelatedNews {
   provider: string
   newsSummaryId: number
   title: string
+  isViewable: boolean
 }
 
 export interface IMarketRecapHighlightItem {
@@ -212,8 +215,7 @@ const dashboardService = {
       },
     })
 
-    // directionality가 'OUTOFRANGE'인 항목 제외
-    return response.data.data.filter((item) => item.directionality !== DirectionType.OutOfRange)
+    return response.data.data
   },
   async getNewsFeed(category: string, filters: INewsFeedFilter, criteriaDate: string): Promise<INewsFeedItem[]> {
     const params: Record<string, string> = {
@@ -238,8 +240,7 @@ const dashboardService = {
       params,
     })
 
-    // directionality가 'OUTOFRANGE'인 항목 제외
-    return response.data.data.filter((item) => item.directionality !== DirectionType.OutOfRange)
+    return response.data.data
   },
   async getTopicSimilarKeywords(query: string, limit?: number): Promise<string[]> {
     const response: AxiosResponse<ICommonResponse<string[]>> = await api.get('mi/autocomplete/topic', {
@@ -330,9 +331,18 @@ const dashboardService = {
   },
   /**
    * 서버 로컬 시간 기준으로 시장 뉴스 기준일자를 계산하여 반환합니다.
+   * 로컬스토리지에 devCriteriaDate 값이 있으면 우선 반환합니다. (20251210)
    * @returns 기준일자 정보
    */
   async getCriteriaDate(): Promise<ICriteriaDateInfo> {
+    const devCriteriaDate = localStorage.getItem('devCriteriaDate')
+    if (devCriteriaDate) {
+      return {
+        criteriaDate: devCriteriaDate,
+        nextUpdate: '',
+      }
+    }
+
     const response: AxiosResponse<ICommonResponse<ICriteriaDateInfo>> = await api.get('mi/market-news/criteria-date')
     return response.data.data
   },

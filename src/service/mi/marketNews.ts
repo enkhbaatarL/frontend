@@ -19,7 +19,7 @@ export interface INewsListRequest extends IPaginationRequest {
   keyword?: string
   startDate?: string
   endDate?: string
-  categories?: string[]
+  categories?: string
   regions?: string[]
   industries?: string[]
 }
@@ -33,6 +33,7 @@ export interface INewsListItem {
   categories: string[]
   regions: string[]
   industries: string[]
+  isViewable: boolean
 }
 
 export type DateRangeOption = 'LAST_30_DAYS' | 'LAST_60_DAYS' | 'LAST_12_MONTHS' | 'ALL_TIME' | ''
@@ -41,7 +42,7 @@ export interface INewsRecapsRequest extends IPaginationRequest {
   sort?: string
   keyword?: string
   dateRangeOption?: DateRangeOption
-  recapCategory?: RecapCategory[]
+  recapCategories?: RecapCategory[]
 }
 export interface INewsRecapNarrative {
   title: string
@@ -79,7 +80,6 @@ const marketNewsService = {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsListItem>>> = await api.get('mi/market-news', {
       params: {
         ...params,
-        categories: params.categories?.join(','),
         regions: params.regions?.join(','),
         industries: params.industries?.join(','),
       },
@@ -97,7 +97,7 @@ const marketNewsService = {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsRecapItem>>> = await api.get('mi/market-news/recaps', {
       params: {
         ...params,
-        recapCategory: params.recapCategory?.join(','),
+        recapCategories: params.recapCategories?.join(','),
       },
     })
     return response.data.data

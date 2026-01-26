@@ -111,9 +111,15 @@ const NewsPage = () => {
     return null
   }, [])
 
+  const { marketCategoryCodeList, industrySectorCodeList, regionCategoryCodeList, isLoading: codeDataLoading } = useCodeData()
+
+  const defaultMarket = useMemo(
+    () => accessCompanyInfo?.newsMarketCategoryCode ?? marketCategoryCodeList?.[0]?.codeId,
+    [accessCompanyInfo?.newsMarketCategoryCode, marketCategoryCodeList],
+  )
+
   const initialFilterValues = useMemo(
     () => ({
-      markets: savedFilters?.markets ?? [],
       industries: savedFilters?.industries ?? [],
       regions: savedFilters?.regions ?? [],
       providers: savedFilters?.providers ?? [],
@@ -139,7 +145,7 @@ const NewsPage = () => {
       sort: 'NEWEST',
       startDate: savedDateRange?.startDate?.format('YYYYMMDD') ?? today.subtract(1, 'year').format('YYYYMMDD'),
       endDate: savedDateRange?.endDate?.format('YYYYMMDD') ?? today.format('YYYYMMDD'),
-      categories: savedFilters?.markets ?? [],
+      categories: defaultMarket,
       regions: savedFilters?.regions ?? [],
       industries: savedFilters?.industries ?? [],
     },
@@ -154,11 +160,9 @@ const NewsPage = () => {
   )
 
   const appliedFiltersCount = useMemo(
-    () => (filter.categories?.length ?? 0) + (filter.industries?.length ?? 0) + (filter.regions?.length ?? 0),
-    [filter.categories, filter.industries, filter.regions],
+    () => (filter.industries?.length ?? 0) + (filter.regions?.length ?? 0),
+    [filter.industries, filter.regions],
   )
-
-  const { marketCategoryCodeList, industrySectorCodeList, regionCategoryCodeList, isLoading: codeDataLoading } = useCodeData()
   const { showSnackbar } = useSnackbar()
 
   const customerCompanyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? 0, [accessCompanyInfo?.customerCompanyNo])
@@ -197,13 +201,11 @@ const NewsPage = () => {
   }
 
   const handleApplyFilters = (filterValues: { [key: string]: string[] }, save?: boolean) => {
-    const markets = filterValues.markets ?? []
     const industries = filterValues.industries ?? []
     const regions = filterValues.regions ?? []
     const providers = filterValues.providers ?? []
 
     updateMultiFilterWithSearch([
-      ['categories', markets],
       ['industries', industries],
       ['regions', regions],
     ])
@@ -212,7 +214,6 @@ const NewsPage = () => {
       localStorage.setItem(
         FILTERS_STORAGE_KEY,
         JSON.stringify({
-          markets,
           industries,
           regions,
           providers,
@@ -221,6 +222,10 @@ const NewsPage = () => {
     } else {
       localStorage.removeItem(FILTERS_STORAGE_KEY)
     }
+  }
+
+  const handleMarketsChange = (selectedMarket: string) => {
+    updateFilterWithSearch('categories', selectedMarket)
   }
 
   const handleDateRangeChange = useCallback((value: string) => {
@@ -272,7 +277,7 @@ const NewsPage = () => {
                 items={[
                   { label: 'Last 7 days', value: 'LAST_7_DAYS' },
                   { label: 'Last 14 days', value: 'LAST_14_DAYS' },
-                  { label: 'Last 30 days', value: 'LAST_30_DAYS' },
+                  // { label: 'Last 30 days', value: 'LAST_30_DAYS' },
                   // { label: 'Last 60 days', value: 'LAST_60_DAYS' },
                   // { label: 'Last 12 months', value: 'LAST_12_MONTHS' },
                   // { label: 'All time', value: 'ALL_TIME' },
@@ -310,23 +315,6 @@ const NewsPage = () => {
                 <MISentimentsChart data={sentimentData} />
               )}
             </Box>
-            {/* <Typography
-            px="24px"
-            variant="labelText"
-            color="contentText.Subtext"
-            lineHeight={1.1}
-            sx={{
-              display: '-webkit-box',
-              WebkitLineClamp: 6,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem
-            ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum
-            Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum
-          </Typography> */}
           </Stack>
         </Stack>
         <Divider sx={{ marginY: '16px' }} />
@@ -346,22 +334,21 @@ const NewsPage = () => {
                     onSearch={(value) => updateFilterWithSearch('keyword', value)}
                     onClear={() => updateFilterWithSearch('keyword', '')}
                   />
+                  <MISelectMenu
+                    variant="outlined"
+                    placeholder="Markets"
+                    items={
+                      marketCategoryCodeList?.map(({ codeId, codeNm }) => ({
+                        label: codeNm,
+                        value: codeId,
+                      })) ?? []
+                    }
+                    selected={filter.categories ?? ''}
+                    onSelected={handleMarketsChange}
+                  />
                   <MIFilterMenu
-                    sx={{ display: 'none' }}
                     onApply={handleApplyFilters}
                     filterGroups={[
-                      [
-                        {
-                          key: 'markets',
-                          title: 'Markets',
-                          filters:
-                            marketCategoryCodeList?.map(({ codeId, codeNm }) => ({
-                              label: codeNm,
-                              value: codeId,
-                            })) ?? [],
-                          width: 180,
-                        },
-                      ],
                       [
                         {
                           key: 'industries',

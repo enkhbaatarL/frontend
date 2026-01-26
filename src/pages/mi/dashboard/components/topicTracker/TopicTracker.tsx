@@ -5,6 +5,7 @@ import { Box, Divider, Stack, Switch, Typography, useTheme } from '@mui/material
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { Fragment, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import topicTrackerIcon from '@/assets/dashboard/topic-tracker.svg'
 import MIButton from '@/components/common/button/MIButton'
@@ -25,6 +26,7 @@ const TopicTrackerItem = ({ item }: { item: ITopicTrackerWidgetItem }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const aiSummaryRef = useRef<AiSummaryHandle>(null)
   const { regionCategoryCodeList } = useCodeData()
+  const navigate = useNavigate()
 
   const handleClick = () => {
     const newExpandedState = !isExpanded
@@ -35,6 +37,10 @@ const TopicTrackerItem = ({ item }: { item: ITopicTrackerWidgetItem }) => {
     } else {
       aiSummaryRef.current?.close()
     }
+  }
+
+  const handleViewOriginal = () => {
+    navigate(`/mi/market-news/${item.newsSummaryId}`)
   }
 
   const fetchTopicSummary = async (): Promise<AiSummaryData> => {
@@ -121,7 +127,12 @@ const TopicTrackerItem = ({ item }: { item: ITopicTrackerWidgetItem }) => {
               </Typography>
             </Stack>
           </Stack>
-          <AiSummary ref={aiSummaryRef} fetchSummary={fetchTopicSummary} />
+          <AiSummary
+            ref={aiSummaryRef}
+            fetchSummary={fetchTopicSummary}
+            viewOriginal={handleViewOriginal}
+            itemIsViewable={item.isViewable}
+          />
         </Stack>
       </Stack>
     </Stack>
@@ -214,8 +225,6 @@ const TopicTracker = ({ criteriaDate }: Props) => {
       return data
     },
     enabled: !!topicsData && !!criteriaDate,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
   })
 
   const filteredData = widgetData?.filter((item) => {
@@ -235,7 +244,7 @@ const TopicTracker = ({ criteriaDate }: Props) => {
       })
       setDisplayStates(initialStates)
     }
-  }, [topicsData, displayStates])
+  }, [topicsData])
 
   useEffect(() => {
     if (filteredData && filteredData.length > 0) {

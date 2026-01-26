@@ -1,10 +1,13 @@
 import { Box, Collapse, Grid2 as Grid, Stack, Typography, TypographyProps, Tooltip } from '@mui/material'
+import { keyframes } from '@mui/material/styles'
 import dayjs from 'dayjs'
 import { useState, useRef, useEffect, ReactNode, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import MariBadge from '@/components/common/bage/MariBadge'
 import MILine from '@/components/common/divider/MILine'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
+import ShakeableLockIcon from '@/components/common/icons/ShakeableLockIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIFilterMenu, { FilterValues } from '@/components/common/menu/MIFilterMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
@@ -18,9 +21,21 @@ import { IMarketRecapCheckpointItem, IMarketRecapHighlightItem } from '@/service
 import marketNewsService, { INewsRecapsRequest, INewsRecapItem, DateRangeOption, RecapCategory } from '@/service/mi/marketNews'
 import { IPaginationResponse } from '@/types/api'
 
+const shakeAnimation = keyframes`
+  0%, 100% { transform: translateX(0); }
+  25%, 75% { transform: translateX(-2px); }
+  50% { transform: translateX(2px); }
+`
+
+interface SummaryDetailItem {
+  text: string
+  newsId?: number
+  isViewable?: boolean
+}
+
 interface SummaryDetail {
   title: string
-  summary: string[]
+  summary: SummaryDetailItem[]
 }
 
 interface SummaryItem {
@@ -110,9 +125,11 @@ const BodyCell = ({ children, width, textAlign, color, ...props }: BodyCellProps
 }
 
 const AIMarketSummaryPage = () => {
+  const navigate = useNavigate()
   const [expandedRowIds, setExpandedRowIds] = useState<Set<number>>(new Set())
   const [loadingRowId, setLoadingRowId] = useState<number | null>(null)
   const [loadedRowIds, setLoadedRowIds] = useState<Set<number>>(new Set())
+  const [shakingItemKeys, setShakingItemKeys] = useState<Set<string>>(new Set())
 
   const {
     filter,
@@ -128,7 +145,7 @@ const AIMarketSummaryPage = () => {
     {
       sort: 'NEWEST',
       dateRangeOption: 'LAST_30_DAYS',
-      recapCategory: undefined,
+      recapCategories: undefined,
       keyword: '',
     },
     {
@@ -145,28 +162,43 @@ const AIMarketSummaryPage = () => {
     if (recap.recapCategory === 'HIGHLIGHT') {
       const items = recap.items as IMarketRecapHighlightItem[]
 
+      if (!items || items.length === 0) return null
+
       return {
         id: index,
         date: recap.criteriaDate,
         category: recap.recapCategory,
-        summary: items[0].nameEnglish,
+        summary: items[0]?.nameEnglish || '',
         summaryDetail: items.map((item) => ({
-          title: item.nameEnglish,
-          summary: (item.relatedEventRepresentativeNewsResNews?.map((news) => news.title) || []).filter((title) => title !== null),
+          title: item?.nameEnglish || '',
+          summary: (item?.relatedEventRepresentativeNewsResNews || [])
+            .filter((news) => news && news.title !== null && news.title !== undefined)
+            .map((news) => ({
+              text: news.title,
+              newsId: news.newsSummaryId,
+              isViewable: news.isViewable,
+            })),
         })),
       }
     }
 
     if (recap.recapCategory === 'CHECKPOINT') {
       const items = recap.items as IMarketRecapCheckpointItem[]
+
+      if (!items || items.length === 0) return null
+
       return {
         id: index,
         date: recap.criteriaDate,
         category: recap.recapCategory,
-        summary: items[0].title,
+        summary: items[0]?.title || '',
         summaryDetail: items.map((item) => ({
-          title: item.title,
-          summary: (item.content || []).filter((content) => content !== null),
+          title: item?.title || '',
+          summary: (item?.content || [])
+            .filter((content) => content !== null && content !== undefined)
+            .map((content) => ({
+              text: content,
+            })),
         })),
       }
     }
@@ -188,7 +220,7 @@ const AIMarketSummaryPage = () => {
   const isListLoading = recapsIsLoading
 
   const handleApplyFilters = (filterValues: FilterValues, _save?: boolean) => {
-    updateFilterWithSearch('recapCategory', (filterValues.category ?? []) as RecapCategory[])
+    updateFilterWithSearch('recapCategories', (filterValues.category ?? []) as RecapCategory[])
   }
 
   const handleSearch = (keyword: string) => {
@@ -239,6 +271,17 @@ const AIMarketSummaryPage = () => {
     }
   }
 
+  const handleLockedClick = (itemKey: string) => {
+    setShakingItemKeys((prev) => new Set(prev).add(itemKey))
+    setTimeout(() => {
+      setShakingItemKeys((prev) => {
+        const next = new Set(prev)
+        next.delete(itemKey)
+        return next
+      })
+    }, 400)
+  }
+
   return (
     <MISkeleton variant={'aiMarketSummary'}>
       <MIPageHeadline title="AI Market Summary" gradientStart="#2E313A" gradientEnd="#1F212A" />
@@ -274,7 +317,7 @@ const AIMarketSummaryPage = () => {
                     initialValues={{
                       category: [],
                     }}
-                    appliedFiltersCount={filter.recapCategory?.length ?? 0}
+                    appliedFiltersCount={filter.recapCategories?.length ?? 0}
                     onApply={handleApplyFilters}
                     showSaveOption={false}
                     sx={{ minWidth: 105 }}
@@ -523,32 +566,90 @@ const AIMarketSummaryPage = () => {
                                                     pl="22px"
                                                     sx={{ minWidth: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
                                                   >
-                                                    {(detail.summary || []).map((summary, summaryIndex) => (
-                                                      <Typography
-                                                        key={`${item.id}-detail-${detailIndex}-summary-${summaryIndex}`}
-                                                        variant="body1M16"
-                                                        color="content.textNormal"
-                                                        lineHeight={1.4}
-                                                        sx={{
-                                                          fontSize: '14px',
-                                                          fontWeight: 400,
-                                                          color: '#000000',
-                                                          textIndent: '-14px',
-                                                          wordBreak: 'break-word',
-                                                          overflowWrap: 'break-word',
-                                                          width: '100%',
-                                                          maxWidth: '100%',
-                                                          boxSizing: 'border-box',
-                                                          '&::before': {
-                                                            content: '"•"',
-                                                            marginRight: '6px',
-                                                            color: 'gray.70',
-                                                          },
-                                                        }}
-                                                      >
-                                                        {summary}
-                                                      </Typography>
-                                                    ))}
+                                                    {(detail.summary || []).map((summaryItem, summaryIndex) => {
+                                                      const itemKey = `${item.id}-${detailIndex}-${summaryIndex}`
+                                                      return (
+                                                        <Box
+                                                          key={itemKey}
+                                                          onClick={
+                                                            summaryItem.newsId && summaryItem.isViewable !== false
+                                                              ? (e) => {
+                                                                e.stopPropagation()
+                                                                navigate(`/mi/market-news/${summaryItem.newsId}`)
+                                                              }
+                                                              : summaryItem.newsId && summaryItem.isViewable === false
+                                                                ? (e) => {
+                                                                  e.stopPropagation()
+                                                                  handleLockedClick(itemKey)
+                                                                }
+                                                                : undefined
+                                                          }
+                                                          sx={{
+                                                            cursor:
+                                                              summaryItem.newsId && summaryItem.isViewable !== false
+                                                                ? 'pointer'
+                                                                : 'default',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            ml: '-14px',
+                                                          }}
+                                                        >
+                                                          <Typography
+                                                            component="span"
+                                                            variant="body1M16"
+                                                            color="gray.70"
+                                                            sx={{
+                                                              mr: '6px',
+                                                              flexShrink: 0,
+                                                              alignSelf: 'flex-start',
+                                                              pt: '2px',
+                                                              fontSize: '14px',
+                                                              fontWeight: 400,
+                                                            }}
+                                                          >
+                                                            •
+                                                          </Typography>
+                                                          <Typography
+                                                            component="span"
+                                                            variant="body1M16"
+                                                            color="content.textNormal"
+                                                            sx={{
+                                                              width: '100%',
+                                                              minWidth: 0,
+                                                              fontSize: '14px',
+                                                              fontWeight: 400,
+                                                              color: '#000000',
+                                                              wordBreak: 'break-word',
+                                                              overflowWrap: 'break-word',
+                                                              animation: shakingItemKeys.has(itemKey)
+                                                                ? `${shakeAnimation} 0.4s ease-in-out`
+                                                                : 'none',
+                                                              '&:hover':
+                                                                item.category === 'HIGHLIGHT'
+                                                                  ? {
+                                                                    textDecoration: 'underline',
+                                                                  }
+                                                                  : undefined,
+                                                            }}
+                                                          >
+                                                            {summaryItem.isViewable === false && (
+                                                              <ShakeableLockIcon
+                                                                width={16}
+                                                                height={16}
+                                                                sx={{
+                                                                  animation: 'none',
+                                                                  marginLeft: 0,
+                                                                  marginRight: '4px',
+                                                                  display: 'inline-flex',
+                                                                  verticalAlign: 'middle',
+                                                                }}
+                                                              />
+                                                            )}
+                                                            {summaryItem.text}
+                                                          </Typography>
+                                                        </Box>
+                                                      )
+                                                    })}
                                                   </Stack>
                                                 </Stack>
                                               ))}

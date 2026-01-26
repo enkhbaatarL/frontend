@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 
 import CloseIcon from '@/components/common/icons/CloseIcon'
 import useCodeData from '@/hooks/useCodeData'
-import AiSummary, { AiSummaryHandle, AiSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
+import AiSummary, { AiSummaryHandle, AiSummaryData, AiNewsSummaryData } from '@/pages/mi/dashboard/components/common/AiSummary'
 import CategoryChip from '@/pages/mi/dashboard/components/common/CategoryChip'
 import DirectionalIcon from '@/pages/mi/dashboard/components/newsFeed/DirectionalIcon'
 import { INewsFeedItem, DirectionType } from '@/service/mi/dashboard'
@@ -32,10 +32,10 @@ interface FeedItemProps extends StackProps {
   onClose?: () => void
   isHighlighted?: boolean
   focusMode?: boolean
-  hasSimilarNews?: boolean
+  showSimilarNews?: boolean
 }
 
-const FeedItem = ({ item, onClose, isHighlighted, focusMode, hasSimilarNews, ...props }: FeedItemProps) => {
+const FeedItem = ({ item, onClose, isHighlighted, focusMode, showSimilarNews, ...props }: FeedItemProps) => {
   const [shouldFlash, setShouldFlash] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const aiSummaryRef = useRef<AiSummaryHandle>(null)
@@ -89,17 +89,35 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, hasSimilarNews, ...
     navigate(`/mi/market-news/${item.newsSummaryId}`)
   }
 
-  const fetchFeedSummary = async (): Promise<AiSummaryData> => {
-    const summaryData: AiSummaryData = {
-      title: item.briefSummary ?? '',
-      summary: (hasSimilarNews ? item.similarNewsList : item.summary) ?? [],
+  const fetchFeedSummary = async (): Promise<AiSummaryData | AiNewsSummaryData> => {
+    if (showSimilarNews) {
+      const summaryData: AiNewsSummaryData = {
+        title: item.briefSummary ?? '',
+        summary:
+          item.similarNewsList?.map((news) => ({
+            newsSummaryId: news.newsSummaryId,
+            title: news.title,
+            firstCreated: news.firstCreated,
+            dataRegistrationSerialNo: news.dataRegistrationSerialNo,
+            isViewable: news.isViewable,
+          })) ?? [],
+      }
+      return new Promise<AiNewsSummaryData>((resolve) => {
+        setTimeout(() => {
+          resolve(summaryData)
+        }, 1000)
+      })
+    } else {
+      const summaryData: AiSummaryData = {
+        title: item.briefSummary ?? '',
+        summary: item.summary ?? [],
+      }
+      return new Promise<AiSummaryData>((resolve) => {
+        setTimeout(() => {
+          resolve(summaryData)
+        }, 1000)
+      })
     }
-
-    return new Promise<AiSummaryData>((resolve) => {
-      setTimeout(() => {
-        resolve(summaryData)
-      }, 1000)
-    })
   }
 
   return (
@@ -162,9 +180,11 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, hasSimilarNews, ...
               </Stack>
             </CategoryChip>
           ))}
-          <CategoryChip tooltipTitle={item.directionality}>
-            <DirectionalIcon directionality={item.directionality} impactScore={item.newsSignificanceScore ?? item.score ?? 0} />
-          </CategoryChip>
+          {item.directionality !== DirectionType.OutOfRange && (
+            <CategoryChip tooltipTitle={item.directionality}>
+              <DirectionalIcon directionality={item.directionality} impactScore={item.newsSignificanceScore ?? item.score ?? 0} />
+            </CategoryChip>
+          )}
           <CategoryChip padding="6px 8px" tooltipTitle={`Impact Score: ${item.newsSignificanceScore ?? item.score ?? 0}`}>
             <Typography variant="body2SB14" color="content.textNormal">
               {item.newsSignificanceScore ?? item.score ?? '-'}
@@ -214,7 +234,13 @@ const FeedItem = ({ item, onClose, isHighlighted, focusMode, hasSimilarNews, ...
           </Typography>
         </Stack>
       </Stack>
-      <AiSummary ref={aiSummaryRef} fetchSummary={fetchFeedSummary} viewOriginal={handleViewOriginal} hasSimilarNews={hasSimilarNews} />
+      <AiSummary
+        ref={aiSummaryRef}
+        fetchSummary={fetchFeedSummary}
+        viewOriginal={handleViewOriginal}
+        showSimilarNews={showSimilarNews}
+        itemIsViewable={item.isViewable}
+      />
     </Stack>
   )
 }
