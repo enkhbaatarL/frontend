@@ -15,6 +15,7 @@ import ForecastChartTooltip, { TooltipContent } from '@/pages/mi/forecast/new-co
 import ForecastCrosshairLine, { ForecastCrosshairLineHandle } from '@/pages/mi/forecast/new-components/ForecastCrosshairLine'
 import gridAndAxesPlugin from '@/pages/mi/forecast/new-components/plugins/gridAndAxesPlugin'
 import { generateYAxis } from '@/pages/mi/forecast/new-components/utils/chartUtils'
+import { IForecastSummary } from '@/service/mi/forecast'
 import { ChartData, ChartType as MIChartType } from '@/types/dataDetailChart'
 import { disableContextMenu } from '@/utils/mouse'
 interface ForecastChartGraphProps {
@@ -26,11 +27,13 @@ interface ForecastChartGraphProps {
   chartType?: MIChartType
   chartVisibilityMap?: Map<string, boolean>
   hoveredChartKey?: string | null
-  hoverReportCardInfo?: { goodsDataSourceNo: number; startDate: string; endDate: string } | null
+  hoverReportCardInfo?: IForecastSummary | null
   isLoading?: boolean
   onFixedModeChange?: (isFixedMode: boolean) => void
   spanGaps?: boolean
   chartColorMap?: Map<string, string>
+  disableFixedMode?: boolean
+  monthSelect?: string
 }
 
 const applyOpacity = (color: string, alpha: number): string => {
@@ -50,7 +53,7 @@ const applyOpacity = (color: string, alpha: number): string => {
 ChartJS.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement, zoomPlugin)
 
 const createRedrawLinesPlugin = (
-  hoverReportCardInfo: { goodsDataSourceNo: number; startDate: string; endDate: string } | null,
+  hoverReportCardInfo: IForecastSummary | null,
   chartVisibilityMap?: Map<string, boolean>,
   isFixedMode?: boolean,
   spanGaps: boolean = false,
@@ -161,15 +164,16 @@ const createRedrawLinesPlugin = (
 
         // hoverReportCardInfo가 있고, 현재 데이터셋이 타겟인 경우 -> 날짜 범위 체크
         const hasReportCardHover = effectiveReportCardInfo !== null && effectiveReportCardInfo !== undefined
-        const isReportCardTarget = hasReportCardHover && metadata?.goodsDataSourceNo === effectiveReportCardInfo?.goodsDataSourceNo
+        const isReportCardTarget =
+          hasReportCardHover && metadata?.goodsDataSourceNo === effectiveReportCardInfo?.associatedGoodsDataSourceNo
 
         let startDate: dayjs.Dayjs | null = null
         let endDate: dayjs.Dayjs | null = null
         let timestamps: string[] | undefined = undefined
 
         if ((isReportCardTarget || isHighlight) && effectiveReportCardInfo) {
-          startDate = dayjs(effectiveReportCardInfo.startDate)
-          endDate = dayjs(effectiveReportCardInfo.endDate)
+          startDate = dayjs(effectiveReportCardInfo.startPredictionResultDt)
+          endDate = dayjs(effectiveReportCardInfo.endPredictionResultDt)
           timestamps = metadata?.timestamps
         }
 
@@ -384,6 +388,8 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       onFixedModeChange,
       spanGaps = false,
       chartColorMap,
+      disableFixedMode = false,
+      monthSelect,
     },
     ref,
   ) => {
@@ -789,13 +795,13 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
     }, [allDatasets, isEmptyChart])
 
     const createHighlightDatasets = useCallback(
-      (reportCardInfo: { goodsDataSourceNo: number; startDate: string; endDate: string } | null): ChartDatasetType[] => {
+      (reportCardInfo: IForecastSummary | null): ChartDatasetType[] => {
         if (!reportCardInfo || chartType !== MIChartType.LINE) return []
 
         const result: ChartDatasetType[] = []
 
         chartList.forEach((chart) => {
-          if (chart.goodsDataSourceNo !== reportCardInfo.goodsDataSourceNo) return
+          if (chart.goodsDataSourceNo !== reportCardInfo.associatedGoodsDataSourceNo) return
 
           const mainSeries = chart.series?.find((s) => s.seriesId === 'main') || chart.series?.[0]
           if (!mainSeries) return
@@ -811,8 +817,8 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
           // startDate와 endDate 범위에 해당하는 데이터만 필터링
           const timestamps = chart.timestamps || []
-          const startDate = dayjs(reportCardInfo.startDate)
-          const endDate = dayjs(reportCardInfo.endDate)
+          const startDate = dayjs(reportCardInfo.startPredictionResultDt)
+          const endDate = dayjs(reportCardInfo.endPredictionResultDt)
 
           const highlightData = Array.from({ length: dataPointCount }, (_, index) => {
             const timestamp = timestamps[index]
@@ -1449,6 +1455,15 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             return
           }
 
+          // 고정 모드가 비활성화된 경우 클릭 이벤트 무시
+          if (disableFixedMode) {
+            mouseDownPositionRef.current = null
+            mouseDownScaleRangeRef.current = null
+            isDragConfirmedRef.current = false
+            wasDraggingOnMouseUpRef.current = false
+            return
+          }
+
           if (fixedXScaleIndex === null && chartRef.current?.canvas) {
             const tooltipContent = tooltip.content as Record<string, TooltipContent>
             const forecastItems = Object.values(tooltipContent).filter((item) => item.isForecast === true)
@@ -1839,6 +1854,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               {...tooltip}
               visibility={tooltip.visible && !isTooltipPositionCalculated && tooltip.left === -9999 ? 'hidden' : 'visible'}
               isFixedMode={fixedXScaleIndex !== null}
+              monthSelect={monthSelect}
               onClose={() => {
                 fixedXScaleIndexRef.current = null
                 fixedModeScaleRangeRef.current = null

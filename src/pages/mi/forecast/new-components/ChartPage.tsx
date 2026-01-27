@@ -1,45 +1,33 @@
 import { Box, Stack, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import aiIcon from '@/assets/ai.svg'
 import ForecastChart from '@/pages/mi/forecast/new-components/ForecastChart'
 import ForecastReportCard from '@/pages/mi/forecast/new-components/ForecastReportCard'
-import { IForecastChartData } from '@/service/mi/forecast'
-
-const sampleData = [
-  {
-    label: 'DUBAI CRUDE',
-    goodsDataSourceNo: 4158,
-    startDate: '20250708',
-    endDate: '20250709',
-    isNew: true,
-  },
-  {
-    label: 'DUBAI CRUDE',
-    goodsDataSourceNo: 4158,
-    startDate: '20251101',
-    endDate: '20251130',
-    isNew: true,
-  },
-  {
-    label: 'BRENT CRUDE',
-    goodsDataSourceNo: 5850,
-    startDate: '20251201',
-    endDate: '20251231',
-    isNew: false,
-  },
-]
+import forecastDataService, { IForecastChartData, IForecastSummary } from '@/service/mi/forecast'
+import useAuthStore from '@/store/useAuthStore'
 
 interface ChartPageProps {
   chartData?: IForecastChartData
   chartDataIsLoading?: boolean
+  monthSelect?: string
 }
 
-const ChartPage = ({ chartData, chartDataIsLoading }: ChartPageProps) => {
-  const [hoverReportCardInfo, setHoverReportCardInfo] = useState<{ goodsDataSourceNo: number; startDate: string; endDate: string } | null>(
-    null,
-  )
+const ChartPage = ({ chartData, chartDataIsLoading, monthSelect }: ChartPageProps) => {
+  const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastSummary | null>(null)
   const [isFixedMode, setIsFixedMode] = useState(false)
+  const [goodsDataSourceNo] = useState<number | undefined>(undefined)
+
+  const { accessCompanyInfo, user } = useAuthStore()
+  const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
+
+  // getForecastSummaries
+  const { data: forecastSummaries } = useQuery({
+    queryKey: ['getForecastSummaries', goodsDataSourceNo],
+    queryFn: () => forecastDataService.getForecastSummaries(companyNo, goodsDataSourceNo),
+    enabled: !!monthSelect,
+  })
 
   return (
     <Stack py="20px" gap="20px" boxSizing="border-box" width="100%">
@@ -51,9 +39,9 @@ const ChartPage = ({ chartData, chartDataIsLoading }: ChartPageProps) => {
           </Typography>
         </Stack>
         <Stack direction="row" gap="20px">
-          {sampleData.map((item) => (
+          {forecastSummaries?.map((item, index) => (
             <Box
-              key={`${item.label}-${item.startDate}-${item.endDate}`}
+              key={index}
               onMouseEnter={() => !isFixedMode && setHoverReportCardInfo(item)}
               onMouseLeave={() => !isFixedMode && setHoverReportCardInfo(null)}
               sx={{
@@ -70,6 +58,7 @@ const ChartPage = ({ chartData, chartDataIsLoading }: ChartPageProps) => {
         chartData={chartData}
         chartDataIsLoading={chartDataIsLoading}
         onFixedModeChange={setIsFixedMode}
+        monthSelect={monthSelect}
       />
     </Stack>
   )

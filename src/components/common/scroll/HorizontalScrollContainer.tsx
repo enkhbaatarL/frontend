@@ -8,13 +8,20 @@ interface HorizontalScrollContainerProps extends Omit<StackProps, 'children'> {
   showGradient?: boolean
   showScrollButtons?: boolean
   enableWheelScroll?: boolean
+  buttonPadding?: number | { left?: number; right?: number }
 }
 
 const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollContainerProps>(
-  ({ children, scrollAmount = 0.6, showGradient = true, showScrollButtons = true, enableWheelScroll = true, ...props }, ref) => {
+  (
+    { children, scrollAmount = 0.6, showGradient = true, showScrollButtons = true, enableWheelScroll = true, buttonPadding, ...props },
+    ref,
+  ) => {
     const scrollRef = useRef<HTMLDivElement>(null)
     const [showLeftButton, setShowLeftButton] = useState(false)
     const [showRightButton, setShowRightButton] = useState(false)
+
+    const buttonPaddingLeft = typeof buttonPadding === 'number' ? buttonPadding : (buttonPadding?.left ?? 0)
+    const buttonPaddingRight = typeof buttonPadding === 'number' ? buttonPadding : (buttonPadding?.right ?? 0)
 
     const checkScrollButtons = () => {
       if (scrollRef.current) {
@@ -146,7 +153,7 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
             disableRipple
             sx={{
               position: 'absolute',
-              left: 0,
+              left: buttonPaddingLeft,
               top: '50%',
               transform: 'translateY(-50%)',
               zIndex: 3,
@@ -173,7 +180,7 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
             disableRipple
             sx={{
               position: 'absolute',
-              right: 0,
+              right: buttonPaddingRight,
               top: '50%',
               transform: 'translateY(-50%)',
               zIndex: 3,

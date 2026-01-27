@@ -13,6 +13,7 @@ interface TooltipContent {
   date: string
   toFixed?: number
   isForecast?: boolean
+  goodsDataSourceNo?: number
 }
 
 interface ForecastCrosshairLineProps {
@@ -402,7 +403,11 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
           else if ('c' in point && point.c !== null) value = point.c
         }
 
-        const datasetMetadata = (dataset as { metadata?: { isDashed?: boolean; chipColor?: string; toFixed?: number } }).metadata
+        const datasetMetadata = (
+          dataset as {
+            metadata?: { isDashed?: boolean; chipColor?: string; toFixed?: number; goodsDataSourceNo?: number }
+          }
+        ).metadata
         const isForecast = datasetMetadata?.isDashed ?? false
         const chipColor = datasetMetadata?.chipColor
 
@@ -413,6 +418,7 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
           date: tooltipFormattedDate,
           toFixed: datasetMetadata?.toFixed,
           isForecast,
+          goodsDataSourceNo: datasetMetadata?.goodsDataSourceNo,
         }
       })
 

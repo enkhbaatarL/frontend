@@ -20,13 +20,16 @@ const HORIZONTAL_MARGIN = 96
 const TRANSITION_CURVE = 'cubic-bezier(0.4, 0, 0.2, 1)'
 const DURATION_MS = 400
 const DURATION = `${DURATION_MS}ms`
+const FADEOUT_DURATION_MS = 150
+const FADEOUT_DURATION = `${FADEOUT_DURATION_MS}ms`
 
 interface DimmedOverlayProps {
   isClosing: boolean
   isExpanded: boolean
+  isFadingOut: boolean
 }
 
-const DimmedOverlay = ({ isClosing, isExpanded }: DimmedOverlayProps) => (
+const DimmedOverlay = ({ isClosing, isExpanded, isFadingOut }: DimmedOverlayProps) => (
   <Box
     position="fixed"
     top={0}
@@ -36,8 +39,8 @@ const DimmedOverlay = ({ isClosing, isExpanded }: DimmedOverlayProps) => (
     bgcolor="rgba(0, 0, 0, 0.56)"
     zIndex={1299}
     sx={{
-      opacity: isClosing || !isExpanded ? 0 : 1,
-      transition: `opacity ${DURATION} ${TRANSITION_CURVE}`,
+      opacity: isClosing || !isExpanded || isFadingOut ? 0 : 1,
+      transition: `opacity ${isFadingOut ? FADEOUT_DURATION : DURATION} ${TRANSITION_CURVE}`,
       pointerEvents: 'none',
     }}
   />
@@ -67,6 +70,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
     const [isClosing, setIsClosing] = useState(false)
     const [isExpanded, setIsExpanded] = useState(false)
     const [isAnimDone, setIsAnimDone] = useState(false)
+    const [isFadingOut, setIsFadingOut] = useState(false)
 
     type CoordsType = {
       start: DOMRect
@@ -129,12 +133,19 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         scrollWrapperRef.current.scrollTo({ top: 0, behavior: 'smooth' })
       }
 
+      // 축소 애니메이션 완료 후 페이드아웃 시작
+      setTimeout(() => {
+        setIsFadingOut(true)
+      }, DURATION_MS)
+
+      // 페이드아웃 완료 후 팝업 제거
       setTimeout(() => {
         setIsOpen(false)
         setCoords(null)
         setIsClosing(false)
+        setIsFadingOut(false)
         onClose?.()
-      }, DURATION_MS)
+      }, DURATION_MS + FADEOUT_DURATION_MS)
     }, [onClose])
 
     const open = useCallback(() => {
@@ -146,6 +157,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       setIsClosing(false)
       setIsExpanded(false)
       setIsAnimDone(false)
+      setIsFadingOut(false)
       onOpen?.()
 
       requestAnimationFrame(() => {
@@ -284,13 +296,13 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
           ref={triggerRef}
           {...props}
           border={borderStyles.border}
-          borderColor={showSkeleton && isOpen && coords ? 'transparent' : borderStyles.borderColor}
+          borderColor={showSkeleton && isOpen && coords && !isFadingOut ? 'transparent' : borderStyles.borderColor}
           borderRadius={borderStyles.borderRadius}
           overflow="hidden"
           position="relative"
           sx={{
-            opacity: isOpen && !showSkeleton ? 0 : 1,
-            visibility: isOpen && !showSkeleton ? 'hidden' : 'visible',
+            opacity: isOpen && !showSkeleton && !isFadingOut ? 0 : 1,
+            visibility: isOpen && !showSkeleton && !isFadingOut ? 'hidden' : 'visible',
             ...(borderStyles.hoverBorderColor &&
               !isOpen && {
               '&:hover': {
@@ -302,13 +314,13 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         >
           <Box
             sx={{
-              opacity: showSkeleton && isOpen && coords ? 0 : 1,
-              visibility: showSkeleton && isOpen && coords ? 'hidden' : 'visible',
+              opacity: showSkeleton && isOpen && coords && !isFadingOut ? 0 : 1,
+              visibility: showSkeleton && isOpen && coords && !isFadingOut ? 'hidden' : 'visible',
             }}
           >
             {cleanedChildren}
           </Box>
-          {showSkeleton && isOpen && coords && (
+          {showSkeleton && isOpen && coords && !isFadingOut && (
             <Box
               position="absolute"
               top={0}
@@ -339,7 +351,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
           coords &&
           ReactDOM.createPortal(
             <>
-              <DimmedOverlay isClosing={isClosing} isExpanded={isExpanded} />
+              <DimmedOverlay isClosing={isClosing} isExpanded={isExpanded} isFadingOut={isFadingOut} />
 
               <Box
                 ref={scrollWrapperRef}
@@ -385,9 +397,14 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                   boxSizing="border-box"
                   {...popupProps}
                   sx={{
-                    transition: isAnimDone && !isClosing ? 'none' : `all ${DURATION} ${TRANSITION_CURVE}`,
+                    transition: isFadingOut
+                      ? `all ${DURATION} ${TRANSITION_CURVE}, opacity ${FADEOUT_DURATION} ${TRANSITION_CURVE}`
+                      : isAnimDone && !isClosing
+                        ? 'none'
+                        : `all ${DURATION} ${TRANSITION_CURVE}`,
                     overflow: 'hidden',
                     boxShadow: isExpanded ? 24 : 0,
+                    opacity: isFadingOut ? 0 : 1,
                     ...popupProps?.sx,
                   }}
                   // 팝업 내부 클릭 시 닫기 이벤트 전파 방지

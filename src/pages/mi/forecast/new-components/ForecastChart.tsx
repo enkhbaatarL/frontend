@@ -12,7 +12,7 @@ import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import ForecastChartGraph, { ForecastChartGraphHandle } from '@/pages/mi/forecast/new-components/ForecastChartGraph'
 import ForecastChartLegend from '@/pages/mi/forecast/new-components/ForecastChartLegend'
-import { IForecastChartData } from '@/service/mi/forecast'
+import { IForecastChartData, IForecastSummary } from '@/service/mi/forecast'
 import theme from '@/theming'
 import { ChartType, ChartData } from '@/types/dataDetailChart'
 
@@ -30,13 +30,14 @@ const chartOptions = [
 ]
 
 interface ForecastChartProps {
-  hoverReportCardInfo?: { goodsDataSourceNo: number; startDate: string; endDate: string } | null
+  hoverReportCardInfo?: IForecastSummary | null
   chartData?: IForecastChartData
   chartDataIsLoading?: boolean
   onFixedModeChange?: (isFixedMode: boolean) => void
+  monthSelect?: string
 }
 
-const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onFixedModeChange }: ForecastChartProps) => {
+const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onFixedModeChange, monthSelect }: ForecastChartProps) => {
   const [selectedChartOption, setSelectedChartOption] = useState('line')
   const [isAutosave, setIsAutosave] = useState(false)
   const [chartVisibilityMap, setChartVisibilityMap] = useState<Map<string, boolean>>(new Map())
@@ -265,6 +266,7 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
             isLoading={chartDataIsLoading}
             onFixedModeChange={setIsFixedMode}
             chartColorMap={chartColorMap}
+            monthSelect={monthSelect}
             // spanGaps
           />
         </Box>

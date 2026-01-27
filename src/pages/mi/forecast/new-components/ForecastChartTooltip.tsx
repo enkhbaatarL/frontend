@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { forwardRef, useRef } from 'react'
+import { forwardRef, useRef, useMemo } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import DashLineIcon from '@/components/common/forecast-chart/icons/DashLineIcon'
@@ -17,6 +17,7 @@ export interface TooltipContent {
   toFixed?: number
   isForecast?: boolean
   isFixedMode?: boolean
+  goodsDataSourceNo?: number
 }
 
 const ChartToolTipItem = (props: {
@@ -26,20 +27,29 @@ const ChartToolTipItem = (props: {
   toFixed?: number
   isForecast?: boolean
   isFixedMode?: boolean
+  monthSelect?: string
+  goodsDataSourceNo?: number
+  date?: string
 }) => {
-  const { label, value, color, toFixed, isForecast = false, isFixedMode = false } = props
+  const { label, value, color, toFixed, isForecast = false, isFixedMode = false, monthSelect, goodsDataSourceNo, date } = props
   const LineIcon = isForecast ? DashLineIcon : SolidLineIcon
   const popupRef = useRef<MIMorphingPopupRef>(null)
   const hasValue = value !== undefined
   const canClick = isForecast && hasValue
 
+  // ForecastChartTooltipReportContent를 메모이제이션하여 불필요한 리렌더링 방지
+  const reportContent = useMemo(
+    () => <ForecastChartTooltipReportContent monthSelect={monthSelect} goodsDataSourceNo={goodsDataSourceNo} date={date} />,
+    [monthSelect, goodsDataSourceNo, date],
+  )
+
   const content = (
     <Stack
       minWidth="340px"
+      maxWidth="340px"
       height="40px"
       direction="row"
       alignItems="center"
-      justifyContent="space-between"
       gap="14px"
       px="6px"
       borderRadius="6px"
@@ -76,13 +86,21 @@ const ChartToolTipItem = (props: {
       }}
       onClick={() => (canClick ? popupRef.current?.open() : undefined)}
     >
-      <Stack direction="row" alignItems="center" gap="8px">
-        <LineIcon color={color} />
+      <Stack direction="row" alignItems="center" gap="8px" flex={1} sx={{ minWidth: 0, overflow: 'hidden' }}>
+        <Box sx={{ flexShrink: 0 }}>
+          <LineIcon color={color} />
+        </Box>
         <Typography
+          component="span"
           variant="body1M16"
           color={isFixedMode && !isForecast ? 'contentText.Subtext' : 'commonColor.Black'}
           sx={{
             transition: 'color 0.3s ease-out',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flex: 1,
+            minWidth: 0,
           }}
         >
           {label}
@@ -95,6 +113,8 @@ const ChartToolTipItem = (props: {
           alignItems: 'center',
           justifyContent: 'flex-end',
           minHeight: '30px',
+          flexShrink: 0,
+          width: 'auto',
         }}
       >
         {/* 값 텍스트 - 고정 모드이고 forecast이고 값이 있는 경우 absolute로 배치하여 버튼과 같은 위치에 겹침 */}
@@ -147,7 +167,7 @@ const ChartToolTipItem = (props: {
       ref={popupRef}
       popup={{
         title: 'Forecast Drill-down & Key Drivers',
-        content: <ForecastChartTooltipReportContent />,
+        content: reportContent,
       }}
     >
       {content}
@@ -164,11 +184,12 @@ interface ForecastChartTooltipProps {
   content: Record<string, TooltipContent>
   visibility?: 'visible' | 'hidden'
   isFixedMode?: boolean
+  monthSelect?: string
   onClose?: () => void
 }
 
 const ForecastChartTooltip = forwardRef<HTMLDivElement, Readonly<ForecastChartTooltipProps>>(
-  ({ visible, top, left, content, visibility = 'visible', isFixedMode = false, onClose }, ref) => {
+  ({ visible, top, left, content, visibility = 'visible', isFixedMode = false, monthSelect, onClose }, ref) => {
     if (!visible) return null
 
     const items: Array<TooltipContent> = []
@@ -245,6 +266,9 @@ const ForecastChartTooltip = forwardRef<HTMLDivElement, Readonly<ForecastChartTo
               toFixed={item.toFixed}
               isForecast={item.isForecast}
               isFixedMode={isFixedMode}
+              monthSelect={monthSelect}
+              goodsDataSourceNo={item.goodsDataSourceNo}
+              date={item.date}
             />
           ))}
         </Stack>

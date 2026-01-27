@@ -115,9 +115,22 @@ export interface HistoryMetaData {
   isDownloadable: boolean
   targets: HistoryMetaDataTarget[]
 }
+export interface ForecastBasicInfoTarget {
+  chartPredictSettingDetailNo: number
+  chartPredictSettingNo: number
+  goodsDataSourceNo: number
+  predictChartDetailExpn: string
+  isChartLinePredictVal: boolean
+  chartPredictLineSeparateCd: string
+  associatedGoodsDataSourceNo: number
+  isFuture: boolean
+}
+
 export interface ForecastBasicInfo {
   chartPredictSettingNm: string
   lastUpdateDt: string
+  reportPeriodUnitCd: string
+  targetList: ForecastBasicInfoTarget[]
 }
 export interface IForecastHistoryDetailRequest {
   fulfillDate: string
@@ -191,7 +204,7 @@ export interface IForecastSummary {
   explanatorySummaryContent: string
   explanatoryFilePath: string
 }
-export interface IForecastSummaries {
+export interface IForecastReport {
   summaries: IForecastSummary[]
   isFileDownload: boolean
 }
@@ -256,6 +269,26 @@ export interface IForecastFactorGraphResponse {
   datasource: IDatasource
 }
 
+export interface IForecastReport {
+  date: string
+  marketIndexAnalysisTargetCd: string
+  predictionFulfillDt: string
+  mnemonicCd: string
+  predictChartDetailExpn: string
+  associatedGoodsDataSourceNo: number
+  endPredictionResultDt: string
+  startPredictionResultDt: string
+  predictionCriteriaDt: string
+  predictionResultVal: number
+  predictionCriteriaVal: number
+  predictionResultDiffVal: number
+  predictionResultDiffRate: number
+  isScheduled: boolean
+  explanatoryTitleContent: string
+  explanatorySummaryContent: string
+  explanatoryFilePath: string
+}
+
 /**
  * Forecast 서비스
  */
@@ -274,14 +307,6 @@ const forecastDataService = {
    */
   async getForecastMarketDatas(companyNo: number): Promise<MarketDataItemInfo[]> {
     const response = await api.get(withCustomBaseUrl(`mi/dashboard/companies/${companyNo}/market-datas`))
-    return response.data.data
-  },
-  /**
-   * Forecast 데이터 존재 여부를 조회합니다.
-   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
-   */
-  async getForecastDataExists(companyNo: number): Promise<boolean> {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/data/exists`)
     return response.data.data
   },
   /**
@@ -446,16 +471,6 @@ const forecastDataService = {
     return response.data.data
   },
   /**
-   * Forecast 기본 정보를 조회합니다.
-   * @param companyNo - 고객사 번호
-   */
-  async getForecastBasicInfo(companyNo: number): Promise<ForecastBasicInfo> {
-    const response: AxiosResponse<ICommonResponse<ForecastBasicInfo>> = await api.get(
-      withCustomBaseUrl(`mi/dashboard/companies/${companyNo}/info`),
-    )
-    return response.data.data
-  },
-  /**
    * Forecast 히스토리 메타데이터를 조회합니다.
    */
   async getHistoryMetadata(): Promise<ICommonResponse<HistoryMetaData>> {
@@ -554,8 +569,8 @@ const forecastDataService = {
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    * @param date - YYYYMMDD
    */
-  async getForecastSummary(companyNo: number, date: string): Promise<IForecastSummaries> {
-    const response: AxiosResponse<ICommonResponse<IForecastSummaries>> = await api.get(`mi/dashboard/companies/${companyNo}/summary`, {
+  async getForecastSummary(companyNo: number, date: string): Promise<IForecastReport> {
+    const response: AxiosResponse<ICommonResponse<IForecastReport>> = await api.get(`mi/dashboard/companies/${companyNo}/summary`, {
       params: { date },
     })
     return response.data.data
@@ -594,6 +609,35 @@ const forecastDataService = {
       withCustomBaseUrl(`mi/dashboard/companies/${companyNo}/chart/factor/graph`),
       { params },
     )
+    return response.data.data
+  },
+  /**
+   * Forecast 데이터 존재 여부를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   */
+  async getForecastDataExists(companyNo: number): Promise<boolean> {
+    const response = await api.get(`mi/forecast/companies/${companyNo}/data/exists`)
+    return response.data.data
+  },
+  /**
+   * Forecast 기본 정보를 조회합니다.
+   * @param companyNo - 고객사 번호
+   */
+  async getForecastBasicInfo(companyNo: number): Promise<ForecastBasicInfo> {
+    const response: AxiosResponse<ICommonResponse<ForecastBasicInfo>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/info`),
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast Summary 목록을 조회합니다.
+   * @param companyNo - 고객사 번호
+   * @param goodsDataSourceNo - 데이터 소스 번호
+   */
+  async getForecastReports(companyNo: number, goodsDataSourceNo?: number): Promise<IForecastReport[]> {
+    const response: AxiosResponse<ICommonResponse<IForecastReport[]>> = await api.get(`mi/forecast/companies/${companyNo}/reports`, {
+      params: { goodsDataSourceNo },
+    })
     return response.data.data
   },
 }

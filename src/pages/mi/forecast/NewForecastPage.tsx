@@ -13,6 +13,15 @@ const NewForecastPage = () => {
   const [monthSelect, setMonthSelect] = useState('')
 
   const { accessCompanyInfo, user } = useAuthStore()
+  const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
+
+  const { data: basicInfo } = useQuery({
+    queryKey: ['getForecastBasicInfo', companyNo],
+    queryFn: () => forecastDataService.getForecastBasicInfo(companyNo),
+    enabled: !!companyNo,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
 
   // 대시보드 차트 조회 가능한 날짜 리스트 (임시)
   const { data: chartDates } = useQuery({
@@ -44,7 +53,12 @@ const NewForecastPage = () => {
         label: 'Model',
         content: (
           <Stack gap="20px">
-            <ChartPage chartData={chartData} chartDataIsLoading={chartDataIsLoading} />
+            <ChartPage
+              chartData={chartData}
+              chartDataIsLoading={chartDataIsLoading}
+              monthSelect={monthSelect}
+              targetList={basicInfo?.targetList ?? []}
+            />
             <TablePage chartData={chartData} chartDataIsLoading={chartDataIsLoading} onMonthSelectChange={setMonthSelect} />
           </Stack>
         ),
@@ -54,7 +68,7 @@ const NewForecastPage = () => {
         content: <TablePage chartData={chartData} chartDataIsLoading={chartDataIsLoading} onMonthSelectChange={setMonthSelect} />,
       },
     ],
-    [chartData, chartDataIsLoading],
+    [chartData, chartDataIsLoading, monthSelect],
   )
 
   useEffect(() => {
@@ -73,6 +87,7 @@ const NewForecastPage = () => {
     }
   }, [])
 
+  console.log(basicInfo)
   return (
     <Stack maxWidth="1380px" margin="auto" pt="20px" position="relative" sx={{ userSelect: 'none' }}>
       <Box position="sticky" top={isScrolled ? '-14px' : 0} left="0" bgcolor="commonColor.White" zIndex={200}>
@@ -89,7 +104,7 @@ const NewForecastPage = () => {
             transitionDelay: isScrolled ? '0s' : '0.2s',
           }}
         >
-          Crude Oil Forecast
+          {basicInfo?.chartPredictSettingNm}
         </Typography>
         <Box mt="96px">
           <ForecastTab tabItems={tabItems} />
