@@ -5,12 +5,13 @@ import { useState, useEffect, useMemo } from 'react'
 import ChartPage from '@/pages/mi/forecast/new-components/ChartPage'
 import ForecastTab from '@/pages/mi/forecast/new-components/ForecastTab'
 import TablePage from '@/pages/mi/forecast/new-components/TablePage'
-import forecastDataService from '@/service/mi/forecast'
+import forecastDataService, { IForecastReport } from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
 
 const NewForecastPage = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [monthSelect, setMonthSelect] = useState('')
+  const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
 
   const { accessCompanyInfo, user } = useAuthStore()
   const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
@@ -68,17 +69,23 @@ const NewForecastPage = () => {
               monthSelect={monthSelect}
               targetList={basicInfo?.targetList ?? []}
               forecastReports={forecastReports ?? []}
+              onHoverReportCardChange={setHoverReportCardInfo}
             />
-            <TablePage chartData={chartData} chartDataIsLoading={chartDataIsLoading} onMonthSelectChange={setMonthSelect} />
+            <TablePage 
+              chartData={chartData} 
+              chartDataIsLoading={chartDataIsLoading} 
+              onMonthSelectChange={setMonthSelect}
+              hoverReportCardInfo={hoverReportCardInfo}
+            />
           </Stack>
         ),
       },
       {
         label: 'Records',
-        content: <TablePage chartData={chartData} chartDataIsLoading={chartDataIsLoading} onMonthSelectChange={setMonthSelect} />,
+        content: <TablePage chartData={chartData} chartDataIsLoading={chartDataIsLoading} onMonthSelectChange={setMonthSelect} hoverReportCardInfo={hoverReportCardInfo} />,
       },
     ],
-    [chartData, chartDataIsLoading, monthSelect],
+    [chartData, chartDataIsLoading, monthSelect, hoverReportCardInfo],
   )
 
   useEffect(() => {

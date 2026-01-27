@@ -13,10 +13,16 @@ interface ChartPageProps {
   monthSelect?: string
   targetList?: ForecastBasicInfoTarget[]
   forecastReports?: IForecastReport[]
+  onHoverReportCardChange?: (report: IForecastReport | null) => void
 }
 
-const ChartPage = ({ chartData, chartDataIsLoading, monthSelect, forecastReports }: ChartPageProps) => {
+const ChartPage = ({ chartData, chartDataIsLoading, monthSelect, forecastReports, onHoverReportCardChange }: ChartPageProps) => {
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
+  
+  const handleHoverReportCardChange = (report: IForecastReport | null) => {
+    setHoverReportCardInfo(report)
+    onHoverReportCardChange?.(report)
+  }
   const [isFixedMode, setIsFixedMode] = useState(false)
   const [canScroll, setCanScroll] = useState(false)
   const [scrollPosition, setScrollPosition] = useState(0)
@@ -167,8 +173,8 @@ const ChartPage = ({ chartData, chartDataIsLoading, monthSelect, forecastReports
                 return (
                   <Box
                     key={index}
-                    onMouseEnter={() => !isFixedMode && setHoverReportCardInfo(item)}
-                    onMouseLeave={() => !isFixedMode && setHoverReportCardInfo(null)}
+                    onMouseEnter={() => !isFixedMode && handleHoverReportCardChange(item)}
+                    onMouseLeave={() => !isFixedMode && handleHoverReportCardChange(null)}
                     sx={{
                       opacity: isFixedMode ? 0.6 : fadeOpacity,
                       flexShrink: 0,

@@ -11,16 +11,17 @@ import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
-import { IForecastChartData } from '@/service/mi/forecast'
+import { IForecastChartData, IForecastReport } from '@/service/mi/forecast'
 import theme from '@/theming'
 
 interface TablePageProps {
   chartData?: IForecastChartData
   chartDataIsLoading?: boolean
   onMonthSelectChange: (monthSelect: string) => void
+  hoverReportCardInfo?: IForecastReport | null
 }
 
-const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: TablePageProps) => {
+const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange, hoverReportCardInfo }: TablePageProps) => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -32,16 +33,77 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: Table
     }
   }, [dateRange, onMonthSelectChange])
 
-  const tableColumns = useMemo<GridColDef[]>(() => {
-    if (!chartData) return []
+  // hoverReportCardInfo가 있으면 predictionResultList를 사용하여 chartData 변환
+  const transformedChartData = useMemo<IForecastChartData | undefined>(() => {
+    if (hoverReportCardInfo?.predictionResultList && hoverReportCardInfo.predictionResultList.length > 0) {
+      const resultList = hoverReportCardInfo.predictionResultList
+      
+      // 날짜 형식 변환: "20251215" -> "2025-12-15"
+      const formatDate = (dateStr: string) => {
+        if (dateStr.length === 8) {
+          return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
+        }
+        return dateStr
+      }
+      
+      const transformed = {
+        dashboardMetadata: {
+          marketIndexAnalysisTargetCd: hoverReportCardInfo.marketIndexAnalysisTargetCd,
+          lastUpdateDt: hoverReportCardInfo.predictionFulfillDt,
+          currency: chartData?.dashboardMetadata.currency || '',
+          currentUnitCd: chartData?.dashboardMetadata.currentUnitCd || '',
+          baseDate: hoverReportCardInfo.startPredictionResultDt,
+          dataTableType: 'FORECAST_SINGLE_LAYER',
+          tableHeader: hoverReportCardInfo.predictChartDetailExpn,
+        },
+        charts: [
+          {
+            chartLineDescription: hoverReportCardInfo.predictChartDetailExpn,
+            chartLineType: 'FORECAST',
+            actualChartLines: {
+              dataExplanation: '',
+              isPermitted: true,
+              dataType: 'ACTUAL',
+              goodsDataSourceNo: hoverReportCardInfo.associatedGoodsDataSourceNo,
+              rawData: null,
+            },
+            forecastChartLines: {
+              dataExplanation: '',
+              isPermitted: true,
+              dataType: 'FORECAST',
+              goodsDataSourceNo: hoverReportCardInfo.associatedGoodsDataSourceNo,
+              rawData: resultList.map((item) => ({
+                resultDate: formatDate(item.date),
+                predictDate: formatDate(item.date),
+                value: item.value,
+              })),
+            },
+          },
+        ],
+        dashboardDataSources: [
+          {
+            goodsDataSourceNo: hoverReportCardInfo.associatedGoodsDataSourceNo,
+            dashboardLineName: hoverReportCardInfo.predictChartDetailExpn,
+          },
+        ],
+        isFileDownload: false,
+      }
+      
+      return transformed
+    }
+    return chartData
+  }, [chartData, hoverReportCardInfo])
 
-    const isForecastSingleLayer = chartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
-    const currency = chartData.dashboardMetadata.currency || ''
-    const currentUnitCd = chartData.dashboardMetadata.currentUnitCd || ''
+  const tableColumns = useMemo<GridColDef[]>(() => {
+    if (!transformedChartData) return []
+
+    const isForecastSingleLayer = transformedChartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
+    const currency = transformedChartData.dashboardMetadata.currency || ''
+    const currentUnitCd = transformedChartData.dashboardMetadata.currentUnitCd || ''
 
     const dateColumn: GridColDef = {
       field: 'date',
-      headerName: currency && currentUnitCd ? `${currency}/${currentUnitCd}` : chartData.dashboardMetadata.tableHeader || '',
+      headerName: currency && currentUnitCd ? `${currency}/${currentUnitCd}` : transformedChartData.dashboardMetadata.tableHeader || '',
       flex: 1.5,
       align: 'center',
     }
@@ -49,7 +111,7 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: Table
     if (isForecastSingleLayer) {
       const labelColumns: GridColDef[] = []
 
-      const forecastCharts = chartData.charts.filter((chart) => chart.forecastChartLines.dataType === 'FORECAST')
+      const forecastCharts = transformedChartData.charts.filter((chart) => chart.forecastChartLines.dataType === 'FORECAST')
       if (forecastCharts.length > 0) {
         labelColumns.push({
           field: 'Forecast',
@@ -82,7 +144,7 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: Table
         })
       }
 
-      const actualCharts = chartData.charts.filter((chart) => chart.actualChartLines.dataType === 'ACTUAL')
+      const actualCharts = transformedChartData.charts.filter((chart) => chart.actualChartLines.dataType === 'ACTUAL')
       if (actualCharts.length > 0) {
         labelColumns.push({
           field: 'Actual',
@@ -115,7 +177,7 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: Table
         })
       }
 
-      const futureCharts = chartData.charts.filter((chart) => chart.actualChartLines.dataType === 'FUTURE')
+      const futureCharts = transformedChartData.charts.filter((chart) => chart.actualChartLines.dataType === 'FUTURE')
       futureCharts.forEach((chart) => {
         labelColumns.push({
           field: chart.chartLineDescription,
@@ -152,7 +214,7 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: Table
     } else {
       const labelColumns: GridColDef[] = []
 
-      chartData.charts.forEach((chart) => {
+      transformedChartData.charts.forEach((chart) => {
         if (chart.forecastChartLines.dataType === 'FORECAST') {
           labelColumns.push({
             field: `${chart.chartLineDescription}_Fcst`,
@@ -204,15 +266,15 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: Table
 
       return [dateColumn, ...labelColumns]
     }
-  }, [chartData])
+  }, [transformedChartData])
 
   const tableRows = useMemo(() => {
-    if (!chartData) return []
+    if (!transformedChartData) return []
 
-    const isForecastSingleLayer = chartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
+    const isForecastSingleLayer = transformedChartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
 
     const allDates = new Set<string>()
-    chartData.charts.forEach((chart) => {
+    transformedChartData.charts.forEach((chart) => {
       chart.forecastChartLines.rawData?.forEach((data) => {
         if (data.resultDate) allDates.add(data.resultDate)
       })
@@ -229,21 +291,21 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: Table
           date: dayjs(date).format('YY-MM-DD'),
         }
 
-        const forecastChart = chartData.charts.find((chart) => chart.forecastChartLines.dataType === 'FORECAST')
+        const forecastChart = transformedChartData.charts.find((chart) => chart.forecastChartLines.dataType === 'FORECAST')
         if (forecastChart) {
           const forecastData = forecastChart.forecastChartLines.rawData?.find((data) => data.resultDate === date)
           row['Forecast'] = forecastData?.value ?? '-'
           row['Forecast_permission'] = forecastChart.forecastChartLines.isPermitted
         }
 
-        const actualChart = chartData.charts.find((chart) => chart.actualChartLines.dataType === 'ACTUAL')
+        const actualChart = transformedChartData.charts.find((chart) => chart.actualChartLines.dataType === 'ACTUAL')
         if (actualChart) {
           const actualData = actualChart.actualChartLines.rawData?.find((data) => data.resultDate === date)
           row['Actual'] = actualData?.value ?? '-'
           row['Actual_permission'] = actualChart.actualChartLines.isPermitted
         }
 
-        const futureCharts = chartData.charts.filter((chart) => chart.actualChartLines.dataType === 'FUTURE')
+        const futureCharts = transformedChartData.charts.filter((chart) => chart.actualChartLines.dataType === 'FUTURE')
         futureCharts.forEach((chart) => {
           const futureData = chart.actualChartLines.rawData?.find((data) => data.resultDate === date)
           row[chart.chartLineDescription] = futureData?.value ?? '-'
@@ -259,7 +321,7 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: Table
           date: dayjs(date).format('YY-MM-DD'),
         }
 
-        chartData.charts.forEach((chart) => {
+        transformedChartData.charts.forEach((chart) => {
           if (chart.forecastChartLines.dataType === 'FORECAST') {
             const forecastData = chart.forecastChartLines.rawData?.find((data) => data.resultDate === date)
             row[`${chart.chartLineDescription}_Fcst`] = forecastData?.value ?? '-'
@@ -276,7 +338,7 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: Table
         return row
       })
     }
-  }, [chartData])
+  }, [transformedChartData])
 
   const shouldUseRowSpanning = useMemo(() => false, [])
 
@@ -350,7 +412,7 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange }: Table
           </Stack>
         </Stack>
         <Divider />
-        {chartDataIsLoading || !chartData ? (
+        {chartDataIsLoading || !transformedChartData ? (
           <MIBaseSkeleton.BaseElement2 width={'100%'} height={'236px'} />
         ) : (
           <MITableUser

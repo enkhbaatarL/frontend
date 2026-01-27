@@ -284,6 +284,10 @@ export interface IForecastReport {
   predictionResultDiffRate: number | null
   isScheduled: boolean | null
   isNew?: boolean
+  predictionResultList?: Array<{
+    date: string
+    value: number
+  }>
   // Optional fields for report content
   date?: string
   explanatoryTitleContent?: string

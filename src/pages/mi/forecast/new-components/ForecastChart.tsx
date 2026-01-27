@@ -43,7 +43,29 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
   const [chartVisibilityMap, setChartVisibilityMap] = useState<Map<string, boolean>>(new Map())
   const [hoveredChartKey, setHoveredChartKey] = useState<string | null>(null)
   const [isFixedMode, setIsFixedMode] = useState(false)
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('1D')
+  const [selectedRange, setSelectedRange] = useState<string>('5D')
   const chartGraphRef = useRef<ForecastChartGraphHandle>(null)
+
+  const periodOptions = [
+    { label: '1D', value: '1D' },
+    { label: '1W', value: '1W' },
+    { label: '1M', value: '1M' },
+    { label: '1Q', value: '1Q' },
+    { label: '1Y', value: '1Y' },
+  ]
+
+  const rangeOptions = [
+    { label: '5D', value: '5D' },
+    { label: '1M', value: '1M' },
+    { label: '3M', value: '3M' },
+    { label: '6M', value: '6M' },
+    { label: 'YTD', value: 'YTD' },
+    { label: '1Y', value: '1Y' },
+    { label: '5Y', value: '5Y' },
+    { label: 'All', value: 'ALL' },
+    { label: 'Custom', value: 'CUSTOM' },
+  ]
 
   const handleChartVisibilityToggle = useCallback((label: string, dataType: string, isShow: boolean) => {
     const key = `${label}_${dataType}`
@@ -61,6 +83,50 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
 
   // IForecastChartData를 ChartData 형식으로 변환
   const convertedChartData = useMemo<ChartData[]>(() => {
+    // hoverReportCardInfo가 있고 predictionResultList가 있으면 그것을 사용
+    if (hoverReportCardInfo?.predictionResultList && hoverReportCardInfo.predictionResultList.length > 0) {
+      const resultList = hoverReportCardInfo.predictionResultList
+      
+      // 날짜 형식 변환: "20251215" -> "2025-12-15"
+      const formatDate = (dateStr: string) => {
+        if (dateStr.length === 8) {
+          return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
+        }
+        return dateStr
+      }
+      
+      const timestamps = resultList.map((item) => dayjs(formatDate(item.date)).format('YYYY-MM-DDTHH:mm:ss'))
+      const values = resultList.map((item) => {
+        const value = item.value
+        if (value === null || value === undefined) {
+          return null
+        }
+        return Number(value)
+      })
+      
+      return [
+        {
+          goodsDataSourceName: hoverReportCardInfo.predictChartDetailExpn,
+          goodsDataSourceNo: hoverReportCardInfo.associatedGoodsDataSourceNo,
+          chartType: ChartType.LINE,
+          timestamps,
+          series: [
+            {
+              seriesId: 'main',
+              label: hoverReportCardInfo.predictChartDetailExpn,
+              renderAs: 'MAIN',
+              values,
+              isVisible: true,
+            },
+          ],
+          unitCd: chartData?.dashboardMetadata.currentUnitCd || '',
+          goodsDataName: hoverReportCardInfo.predictChartDetailExpn,
+          dataType: 'FORECAST',
+        } as ChartData & { dataType?: string },
+      ]
+    }
+    
+    // 기본적으로 chartData 사용
     if (!chartData?.charts) return []
 
     const result: ChartData[] = []
@@ -132,7 +198,7 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
     })
 
     return result
-  }, [chartData])
+  }, [chartData, hoverReportCardInfo])
 
   const charts = useMemo(() => convertedChartData, [convertedChartData])
 
@@ -199,13 +265,38 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
     <Stack direction="row">
       <Stack flexGrow={1}>
         <Stack direction="row" p="6px 30px" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" gap="8px">
-            <Typography variant="body2M14" color="contentText.Normal">
-              Last Update
-            </Typography>
-            <Typography variant="body2M14" color="contentText.Normal">
-              2025-12-08 15:32
-            </Typography>
+          <Stack direction="row" alignItems="center" gap="6px" minWidth="224px" height="36px">
+            {periodOptions.map((option) => (
+              <Box
+                key={option.value}
+                component="button"
+                onClick={() => setSelectedPeriod(option.value)}
+                sx={{
+                  width: '40px',
+                  height: '36px',
+                  padding: '8px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: selectedPeriod === option.value ? '#E9ECEF' : 'transparent',
+                  color: '#212529',
+                  fontFamily: 'Pretendard',
+                  fontWeight: 600,
+                  fontSize: '16px',
+                  lineHeight: '140%',
+                  letterSpacing: '0%',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: selectedPeriod === option.value ? '#E9ECEF' : 'rgba(233, 236, 239, 0.5)',
+                  },
+                }}
+              >
+                {option.label}
+              </Box>
+            ))}
           </Stack>
           <Stack direction="row" alignItems="center" gap="8px">
             <MISelectMenu
@@ -269,6 +360,92 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
             monthSelect={monthSelect}
             // spanGaps
           />
+        </Box>
+
+        {/* 그래프 하단 컨트롤 영역 */}
+        <Box
+          sx={{
+            width: '100%',
+            maxWidth: '1148px',
+            padding: '8px 30px',
+            boxSizing: 'border-box',
+          }}
+        >
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            {/* 하단 기간 버튼 그룹 */}
+            <Stack direction="row" alignItems="center" gap="6px" height="36px">
+              {rangeOptions.map((option) => (
+                <Box
+                  key={option.value}
+                  component="button"
+                  onClick={() => setSelectedRange(option.value)}
+                  sx={{
+                    minWidth: '40px',
+                    height: '36px',
+                    padding: '8px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    backgroundColor: selectedRange === option.value ? '#E9ECEF' : 'transparent',
+                    color: '#212529',
+                    fontFamily: 'Pretendard',
+                    fontWeight: 600,
+                    fontSize: '16px',
+                    lineHeight: '140%',
+                    letterSpacing: '0%',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background-color 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: selectedRange === option.value ? '#E9ECEF' : 'rgba(233, 236, 239, 0.5)',
+                    },
+                  }}
+                >
+                  {option.label}
+                </Box>
+              ))}
+            </Stack>
+
+            {/* 오른쪽 Last Update 영역 */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                height: '36px',
+                borderRadius: '10px',
+                gap: '8px',
+                paddingY: '8px',
+              }}
+            >
+              <Typography
+                sx={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '140%',
+                  letterSpacing: '0%',
+                  verticalAlign: 'middle',
+                  color: '#495057',
+                }}
+              >
+                Last Update
+              </Typography>
+              <Typography
+                sx={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '140%',
+                  letterSpacing: '0%',
+                  verticalAlign: 'middle',
+                  color: '#495057',
+                }}
+              >
+                2025-12-08 15:32
+              </Typography>
+            </Box>
+          </Stack>
         </Box>
       </Stack>
       <Stack width="232px" flexShrink={0} p="10px 12px" gap="20px" boxSizing="border-box" position="relative">
