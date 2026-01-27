@@ -31,6 +31,15 @@ const NewForecastPage = () => {
     gcTime: 0,
   })
 
+  // Forecast Reports
+  const { data: forecastReports } = useQuery({
+    queryKey: ['getForecastReports', companyNo],
+    queryFn: () => forecastDataService.getForecastReports(companyNo),
+    enabled: !!companyNo,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
   // monthSelect 초기값 설정 (임시)
   useEffect(() => {
     if (chartDates?.dates[0] && !monthSelect) {
@@ -58,6 +67,7 @@ const NewForecastPage = () => {
               chartDataIsLoading={chartDataIsLoading}
               monthSelect={monthSelect}
               targetList={basicInfo?.targetList ?? []}
+              forecastReports={forecastReports ?? []}
             />
             <TablePage chartData={chartData} chartDataIsLoading={chartDataIsLoading} onMonthSelectChange={setMonthSelect} />
           </Stack>
@@ -87,7 +97,6 @@ const NewForecastPage = () => {
     }
   }, [])
 
-  console.log(basicInfo)
   return (
     <Stack maxWidth="1380px" margin="auto" pt="20px" position="relative" sx={{ userSelect: 'none' }}>
       <Box position="sticky" top={isScrolled ? '-14px' : 0} left="0" bgcolor="commonColor.White" zIndex={200}>

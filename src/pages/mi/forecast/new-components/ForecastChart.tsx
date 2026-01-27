@@ -12,7 +12,7 @@ import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import ForecastChartGraph, { ForecastChartGraphHandle } from '@/pages/mi/forecast/new-components/ForecastChartGraph'
 import ForecastChartLegend from '@/pages/mi/forecast/new-components/ForecastChartLegend'
-import { IForecastChartData, IForecastSummary } from '@/service/mi/forecast'
+import { IForecastChartData, IForecastReport } from '@/service/mi/forecast'
 import theme from '@/theming'
 import { ChartType, ChartData } from '@/types/dataDetailChart'
 
@@ -30,7 +30,7 @@ const chartOptions = [
 ]
 
 interface ForecastChartProps {
-  hoverReportCardInfo?: IForecastSummary | null
+  hoverReportCardInfo?: IForecastReport | null
   chartData?: IForecastChartData
   chartDataIsLoading?: boolean
   onFixedModeChange?: (isFixedMode: boolean) => void

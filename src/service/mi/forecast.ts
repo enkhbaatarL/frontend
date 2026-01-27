@@ -270,7 +270,6 @@ export interface IForecastFactorGraphResponse {
 }
 
 export interface IForecastReport {
-  date: string
   marketIndexAnalysisTargetCd: string
   predictionFulfillDt: string
   mnemonicCd: string
@@ -278,15 +277,18 @@ export interface IForecastReport {
   associatedGoodsDataSourceNo: number
   endPredictionResultDt: string
   startPredictionResultDt: string
-  predictionCriteriaDt: string
+  predictionCriteriaDt: string | null
   predictionResultVal: number
   predictionCriteriaVal: number
-  predictionResultDiffVal: number
-  predictionResultDiffRate: number
-  isScheduled: boolean
-  explanatoryTitleContent: string
-  explanatorySummaryContent: string
-  explanatoryFilePath: string
+  predictionResultDiffVal: number | null
+  predictionResultDiffRate: number | null
+  isScheduled: boolean | null
+  isNew?: boolean
+  // Optional fields for report content
+  date?: string
+  explanatoryTitleContent?: string
+  explanatorySummaryContent?: string
+  explanatoryFilePath?: string
 }
 
 /**

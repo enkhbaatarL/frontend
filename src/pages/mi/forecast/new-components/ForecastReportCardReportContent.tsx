@@ -8,7 +8,8 @@ import remarkGfm from 'remark-gfm'
 import aiIcon from '@/assets/ai.svg'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
-import { IForecastSummary } from '@/service/mi/forecast'
+import { IForecastReport } from '@/service/mi/forecast'
+import { formatValue } from '@/utils/number'
 
 interface InfoLabelProps {
   label: string
@@ -35,7 +36,7 @@ const InfoLabel = ({ label, value, description }: InfoLabelProps) => (
 )
 
 interface ForecastReportCardReportContentProps {
-  data: IForecastSummary
+  data: IForecastReport
 }
 
 const ForecastReportCardReportContent = ({ data }: ForecastReportCardReportContentProps) => {
@@ -46,7 +47,7 @@ const ForecastReportCardReportContent = ({ data }: ForecastReportCardReportConte
   // 날짜 포맷팅
   const targetDateRange = `${dayjs(data.startPredictionResultDt).format('YYYY/MM/DD')} - ${dayjs(data.endPredictionResultDt).format('YYYY/MM/DD')}`
   const daysDiff = dayjs(data.endPredictionResultDt).diff(dayjs(data.startPredictionResultDt), 'day') + 1
-  const runDate = dayjs(data.date).format('YYYY/MM/DD')
+  const runDate = data.date ? dayjs(data.date).format('YYYY/MM/DD') : '-'
   const predictionFulfillDate = dayjs(data.predictionFulfillDt).format('YYYY/MM/DD')
 
   // label은 mnemonicCd 또는 marketIndexAnalysisTargetCd 사용
@@ -80,11 +81,12 @@ const ForecastReportCardReportContent = ({ data }: ForecastReportCardReportConte
               value={
                 <Stack direction="row" alignItems="baseline" gap="4px">
                   <Typography variant="messageText1" color="contentText.Black">
-                    {data.predictionResultVal || '-'}
+                    {formatValue(data.predictionResultVal) || '-'}
                   </Typography>
-                  {data.predictionCriteriaVal && (
-                    <Typography variant="messageText1" color="increase.main">
-                      {data.predictionCriteriaVal}
+                  {data.predictionResultDiffVal !== null && data.predictionResultDiffVal !== 0 && (
+                    <Typography variant="messageText1" color={data.predictionResultDiffVal < 0 ? 'decrease.main' : 'increase.main'}>
+                      {data.predictionResultDiffVal > 0 ? '+' : ''}{data.predictionResultDiffVal}
+                      {data.predictionResultDiffRate !== null && ` (${formatValue(data.predictionResultDiffRate)}%)`}
                     </Typography>
                   )}
                 </Stack>
@@ -94,7 +96,7 @@ const ForecastReportCardReportContent = ({ data }: ForecastReportCardReportConte
             {data.predictionCriteriaDt && (
               <InfoLabel
                 label="PRICE RANGE"
-                value={data.predictionCriteriaVal || '-'}
+                value={formatValue(data.predictionCriteriaVal) || '-'}
                 description={`${dayjs(data.predictionCriteriaDt).format('YY/MM/DD')} · S&P Global Platts`}
               />
             )}
@@ -105,7 +107,7 @@ const ForecastReportCardReportContent = ({ data }: ForecastReportCardReportConte
               <Stack gap="20px">
                 <InfoLabel
                   label="REFERENCE PRICE"
-                  value={data.predictionCriteriaVal || '-'}
+                  value={formatValue(data.predictionCriteriaVal) || '-'}
                   description={`${dayjs(data.predictionCriteriaDt).format('YY/MM/DD')} · S&P Global Platts`}
                 />
               </Stack>

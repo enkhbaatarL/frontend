@@ -15,7 +15,7 @@ import ForecastChartTooltip, { TooltipContent } from '@/pages/mi/forecast/new-co
 import ForecastCrosshairLine, { ForecastCrosshairLineHandle } from '@/pages/mi/forecast/new-components/ForecastCrosshairLine'
 import gridAndAxesPlugin from '@/pages/mi/forecast/new-components/plugins/gridAndAxesPlugin'
 import { generateYAxis } from '@/pages/mi/forecast/new-components/utils/chartUtils'
-import { IForecastSummary } from '@/service/mi/forecast'
+import { IForecastReport } from '@/service/mi/forecast'
 import { ChartData, ChartType as MIChartType } from '@/types/dataDetailChart'
 import { disableContextMenu } from '@/utils/mouse'
 interface ForecastChartGraphProps {
@@ -27,7 +27,7 @@ interface ForecastChartGraphProps {
   chartType?: MIChartType
   chartVisibilityMap?: Map<string, boolean>
   hoveredChartKey?: string | null
-  hoverReportCardInfo?: IForecastSummary | null
+  hoverReportCardInfo?: IForecastReport | null
   isLoading?: boolean
   onFixedModeChange?: (isFixedMode: boolean) => void
   spanGaps?: boolean
@@ -53,7 +53,7 @@ const applyOpacity = (color: string, alpha: number): string => {
 ChartJS.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement, zoomPlugin)
 
 const createRedrawLinesPlugin = (
-  hoverReportCardInfo: IForecastSummary | null,
+  hoverReportCardInfo: IForecastReport | null,
   chartVisibilityMap?: Map<string, boolean>,
   isFixedMode?: boolean,
   spanGaps: boolean = false,
@@ -795,7 +795,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
     }, [allDatasets, isEmptyChart])
 
     const createHighlightDatasets = useCallback(
-      (reportCardInfo: IForecastSummary | null): ChartDatasetType[] => {
+      (reportCardInfo: IForecastReport | null): ChartDatasetType[] => {
         if (!reportCardInfo || chartType !== MIChartType.LINE) return []
 
         const result: ChartDatasetType[] = []

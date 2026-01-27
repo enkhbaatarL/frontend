@@ -28,9 +28,7 @@ const ForecastReportCard = ({ data, onPopupClose, isFixedMode = false }: Forecas
   const diffValueColor = diffValue < 0 ? 'decrease.main' : 'increase.main'
   const diffRate = data.predictionResultDiffRate ? `(${formatValue(data.predictionResultDiffRate)}%)` : '-'
 
-  // // isNew: date가 최근 7일 이내인지 확인
-  // const reportDate = dayjs(data.date)
-  const isNew = true /// 임시
+  const isNew = data.isNew ?? false
 
   return (
     <MIMorphingPopup
@@ -113,7 +111,7 @@ const ForecastReportCard = ({ data, onPopupClose, isFixedMode = false }: Forecas
                     </Typography>
                   )}
                 </Stack>
-                {data.predictionCriteriaDt && (
+                {data.predictionCriteriaDt && data.predictionCriteriaVal !== null && (
                   <Typography variant="body3" color="contentText.Subtext" fontSize="11px" noWrap>
                     Compare to {formatValue(data.predictionCriteriaVal)} ({dayjs(data.predictionCriteriaDt).format('YY/MM/DD')})
                   </Typography>
