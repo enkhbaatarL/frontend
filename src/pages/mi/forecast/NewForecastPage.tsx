@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 
 import ChartPage from '@/pages/mi/forecast/new-components/ChartPage'
 import ForecastTab from '@/pages/mi/forecast/new-components/ForecastTab'
+import RecordsTablePage from '@/pages/mi/forecast/new-components/RecordsTablePage'
 import TablePage from '@/pages/mi/forecast/new-components/TablePage'
 import forecastDataService, { IForecastReport } from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
@@ -82,7 +83,7 @@ const NewForecastPage = () => {
       },
       {
         label: 'Records',
-        content: <TablePage chartData={chartData} chartDataIsLoading={chartDataIsLoading} onMonthSelectChange={setMonthSelect} hoverReportCardInfo={hoverReportCardInfo} />,
+        content: <RecordsTablePage chartData={chartData} chartDataIsLoading={chartDataIsLoading} onMonthSelectChange={setMonthSelect} hoverReportCardInfo={hoverReportCardInfo} />,
       },
     ],
     [chartData, chartDataIsLoading, monthSelect, hoverReportCardInfo],
