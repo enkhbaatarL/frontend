@@ -295,6 +295,25 @@ export interface IForecastReport {
   explanatoryFilePath?: string
 }
 
+export interface IForecastReportDetail {
+  marketIndexAnalysisTargetCd: string
+  predictionFulfillDt: string
+  mnemonicCd: string
+  predictChartDetailExpn: string
+  associatedGoodsDataSourceNo: number
+  endPredictionResultDt: string
+  startPredictionResultDt: string
+  predictionCriteriaDt: string
+  avgPredictionResultVal: number
+  predictionCriteriaVal: number
+  predictionResultDiffVal: number
+  predictionResultDiffRate: number
+  isScheduled: boolean
+  explanatoryTitleContent: string
+  explanatorySummaryContent: string
+  explanatoryFilePath: string
+}
+
 /**
  * Forecast 서비스
  */
@@ -644,6 +663,26 @@ const forecastDataService = {
     const response: AxiosResponse<ICommonResponse<IForecastReport[]>> = await api.get(`mi/forecast/companies/${companyNo}/reports`, {
       params: { goodsDataSourceNo },
     })
+    return response.data.data
+  },
+  /**
+   * Forecast Report 상세 정보를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { marketIndexAnalysisTargetCd: 시장지수분석대상코드, predictionFulfillDt: 예측수행일자, mnemonicCd: MNEMONIC코드, predictionCriteriaDt: 예측기준일자 }
+   */
+  async getForecastReportsDetail(
+    companyNo: number,
+    params: {
+      marketIndexAnalysisTargetCd: string
+      predictionFulfillDt: string
+      mnemonicCd: string
+      predictionCriteriaDt: string
+    },
+  ): Promise<IForecastReportDetail> {
+    const response: AxiosResponse<ICommonResponse<IForecastReportDetail>> = await api.get(
+      `mi/forecast/companies/${companyNo}/reports/detail`,
+      { params },
+    )
     return response.data.data
   },
 }

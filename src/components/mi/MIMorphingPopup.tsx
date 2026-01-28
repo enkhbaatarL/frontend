@@ -97,7 +97,11 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
 
       // 측정용 박스의 너비를 강제로 설정한 뒤 높이를 측정
       measureRef.current.style.width = `${endWidth}px`
-      const measuredHeight = measureRef.current.offsetHeight + 68 // 헤더 높이 68px 추가
+      const contentHeight = measureRef.current.offsetHeight
+      const minHeight = 400 // 최소 높이
+      const maxContentHeight = windowHeight - VERTICAL_MARGIN * 2 - 68 // 최대 콘텐츠 높이 (헤더 68px 제외)
+      const measuredContentHeight = Math.max(minHeight, contentHeight)
+      const measuredHeight = Math.min(measuredContentHeight, maxContentHeight) + 68 // 헤더 높이 68px 추가
 
       // 상단 여백 + 하단 여백 = VERTICAL_MARGIN * 2
       const isTall = measuredHeight + VERTICAL_MARGIN * 2 > windowHeight
@@ -272,7 +276,8 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
           top: isExpanded && !isClosing ? coords.end.top : coords.start.top,
           left: isExpanded && !isClosing ? coords.end.left : coords.start.left,
           width: isExpanded && !isClosing ? coords.end.width : coords.start.width,
-          height: isExpanded && !isClosing ? coords.end.height : coords.start.height,
+          height: isExpanded && !isClosing ? (isAnimDone ? 'auto' : coords.end.height) : coords.start.height,
+          minHeight: isExpanded && !isClosing ? coords.end.height : undefined,
         }
         : {}
 
@@ -390,6 +395,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                   left={containerStyle.left}
                   width={containerStyle.width}
                   height={containerStyle.height}
+                  minHeight={containerStyle.minHeight}
                   bgcolor="commonColor.White"
                   border={borderStyles.border ?? (isAnimDone ? '1px solid' : 'none')}
                   borderColor={isAnimDone ? 'contentBorder.Normal' : (borderStyles.borderColor ?? 'transparent')}
@@ -402,7 +408,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                       : isAnimDone && !isClosing
                         ? 'none'
                         : `all ${DURATION} ${TRANSITION_CURVE}`,
-                    overflow: 'hidden',
+                    overflow: isAnimDone ? 'visible' : 'hidden',
                     boxShadow: isExpanded ? 24 : 0,
                     opacity: isFadingOut ? 0 : 1,
                     ...popupProps?.sx,
@@ -410,7 +416,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                   // 팝업 내부 클릭 시 닫기 이벤트 전파 방지
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Box height={coords.end.height} position="relative">
+                  <Box minHeight={coords.end.height} position="relative" display="flex" flexDirection="column" sx={{ height: isAnimDone ? 'auto' : coords.end.height }}>
                     <Box
                       position="absolute"
                       top={0}
@@ -429,11 +435,15 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                       sx={{
                         opacity: isExpanded ? 1 : 0,
                         transition: `opacity ${isClosing ? DURATION_MS / 3 : DURATION_MS}ms ${TRANSITION_CURVE}`,
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
                       }}
                     >
                       <Stack
                         direction="row"
                         height="68px"
+                        flexShrink={0}
                         padding="20px 24px"
                         borderBottom="1px solid"
                         borderColor="contentBorder.Normal"
@@ -458,7 +468,33 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                           }}
                         />
                       </Stack>
-                      <Box width={coords.end.width}>{content}</Box>
+                      <Box
+                        width={coords.end.width}
+                        sx={{
+                          flex: 1,
+                          minHeight: 0,
+                          maxHeight: `${window.innerHeight - VERTICAL_MARGIN * 2 - 68}px`,
+                          overflowY: 'auto',
+                          overflowX: 'hidden',
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: '#ADB5BD transparent',
+                          '&::-webkit-scrollbar': {
+                            width: '4px',
+                          },
+                          '&::-webkit-scrollbar-track': {
+                            backgroundColor: 'transparent',
+                          },
+                          '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: '#ADB5BD',
+                            borderRadius: '10px',
+                          },
+                          '&::-webkit-scrollbar-thumb:hover': {
+                            backgroundColor: '#868E96',
+                          },
+                        }}
+                      >
+                        {content}
+                      </Box>
                     </Stack>
                   </Box>
                 </Box>

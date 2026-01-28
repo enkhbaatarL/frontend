@@ -1,10 +1,11 @@
 import { Box, Divider, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 
 import MIMorphingPopup, { MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import ForecastReportCardReportContent from '@/pages/mi/forecast/new-components/ForecastReportCardReportContent'
 import { IForecastReport } from '@/service/mi/forecast'
+import useAuthStore from '@/store/useAuthStore'
 import { formatValue } from '@/utils/number'
 
 interface ForecastReportCardProps {
@@ -15,6 +16,9 @@ interface ForecastReportCardProps {
 
 const ForecastReportCard = ({ data, onPopupClose, isFixedMode = false }: ForecastReportCardProps) => {
   const popupRef = useRef<MIMorphingPopupRef>(null)
+  const [isPopupOpen, setIsPopupOpen] = useState(false)
+  const { accessCompanyInfo, user } = useAuthStore()
+  const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
 
   const startDate = dayjs(data.startPredictionResultDt)
   const endDate = dayjs(data.endPredictionResultDt)
@@ -30,13 +34,33 @@ const ForecastReportCard = ({ data, onPopupClose, isFixedMode = false }: Forecas
 
   const isNew = data.isNew ?? false
 
+  // ForecastReportCardReportContent에 전달할 파라미터
+  const reportContentParams = {
+    companyNo,
+    marketIndexAnalysisTargetCd: data.marketIndexAnalysisTargetCd,
+    predictionFulfillDt: data.predictionFulfillDt,
+    mnemonicCd: data.mnemonicCd,
+    predictionCriteriaDt: data.predictionCriteriaDt || '',
+  }
+
+  const handleOpen = () => {
+    setIsPopupOpen(true)
+    popupRef.current?.open()
+  }
+
+  const handleClose = () => {
+    setIsPopupOpen(false)
+    onPopupClose?.()
+  }
+
   return (
     <MIMorphingPopup
       ref={popupRef}
       popup={{
         title: 'AI Forecast Report',
-        content: <ForecastReportCardReportContent data={data} />,
-        onClose: onPopupClose,
+        content: <ForecastReportCardReportContent {...reportContentParams} isOpen={isPopupOpen} />,
+        onOpen: () => setIsPopupOpen(true),
+        onClose: handleClose,
       }}
     >
       <Box
@@ -55,7 +79,7 @@ const ForecastReportCard = ({ data, onPopupClose, isFixedMode = false }: Forecas
             borderColor: isFixedMode ? undefined : 'contentBorder.Hover',
           },
         }}
-        onClick={() => !isFixedMode && popupRef.current?.open()}
+        onClick={() => !isFixedMode && handleOpen()}
       >
         <Stack gap="4px">
           <Stack direction="row" height="20px" alignItems="center" justifyContent="space-between" gap="10px" padding="6px 8px">
