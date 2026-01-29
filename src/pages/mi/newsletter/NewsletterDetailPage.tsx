@@ -138,6 +138,8 @@ const NewsletterDetailPage = () => {
   const [isCapturing, setIsCapturing] = useState(false)
 
   const [isSummarizedPublished, setIsSummarizedPublished] = useState(true)
+  // 실제로 Edit 모드에서 변경이 발생했는지 여부 (변경이 있을 때만 draft 자동 저장)
+  const [hasDraftChanged, setHasDraftChanged] = useState(false)
   const [unPublishedNewsIds, setUnPublishedNewsIds] = useState<string[]>([])
   const [deletedNewsIds, setDeletedNewsIds] = useState<string[]>([])
 
@@ -179,13 +181,20 @@ const NewsletterDetailPage = () => {
     enabled: !!newsletterId,
   })
 
+  // Summarized 컴포넌트의 게시 여부 변경 시 draft 변경 플래그도 함께 설정
+  const handleSummarizedPublishedChange = useCallback((value: boolean) => {
+    setHasDraftChanged(true)
+    setIsSummarizedPublished(value)
+  }, [])
+
   // Edit 버튼 클릭 시 로컬스토리지 체크 및 팝업 표시
   const handleEditClick = useCallback(() => {
     if (initialDraftState) {
-      // localStorage에 저장된 값이 있으면 팝업 띄우기
+      // localStorage에 저장된 값이 있으면 이어쓰기 팝업 표시
       setIsContinueModalOpen(true)
     } else {
       // localStorage에 값이 없으면 바로 edit 모드로 전환
+      setHasDraftChanged(false)
       setMode(NewsletterDetailPageMode.EDIT)
     }
   }, [initialDraftState])
@@ -234,6 +243,7 @@ const NewsletterDetailPage = () => {
   )
 
   const handleNewsUpdate = useCallback((newsId: string, field: string, value: string | boolean) => {
+    setHasDraftChanged(true)
     setEditingNews((prev) => ({
       ...prev,
       [newsId]: {
@@ -251,6 +261,7 @@ const NewsletterDetailPage = () => {
   }, [])
 
   const handleAddNews = useCallback(() => {
+    setHasDraftChanged(true)
     const newNewsId = `temp_${Date.now()}`
     const newNewsItem = {
       newsId: newNewsId,
@@ -278,6 +289,7 @@ const NewsletterDetailPage = () => {
   }, [])
 
   const handleResetNews = useCallback(() => {
+    setHasDraftChanged(true)
     showDialog({
       title: t('newsletter.editMode.resetDialog.title'),
       width: 400,
@@ -306,7 +318,7 @@ const NewsletterDetailPage = () => {
   const handleDeleteNewsConfirm = useCallback(
     (newsId: string) => {
       console.log('newsId', newsId)
-      
+      setHasDraftChanged(true)
       // newsletterIssueDetail에 있는지 먼저 확인
       const isInNewsletterDetail = newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems?.some(
         (item) => item.newsId === newsId
@@ -358,6 +370,9 @@ const NewsletterDetailPage = () => {
   const handleApplyNews = useCallback(
     (latestUnPublishedNewsIds?: string[]) => {
       if (!newsletterIssueDetail) return
+
+      // Apply가 눌렸다는 것은 이미 어떤 형태로든 편집이 일어났다는 의미이므로 draft 저장 대상
+      setHasDraftChanged(true)
 
       // 현재 스크롤 위치 저장
       const currentScrollTop = window.scrollY || document.documentElement.scrollTop
@@ -469,7 +484,8 @@ const NewsletterDetailPage = () => {
   }, [newsletterIssueDetailData])
 
   useEffect(() => {
-    if (mode !== NewsletterDetailPageMode.EDIT || !newsletterIssueDetail || !draftStorageKey) {
+    // 실제 변경(hasDraftChanged)이 발생했을 때만 draft 자동 저장
+    if (mode !== NewsletterDetailPageMode.EDIT || !newsletterIssueDetail || !draftStorageKey || !hasDraftChanged) {
       return undefined
     }
 
@@ -502,6 +518,7 @@ const NewsletterDetailPage = () => {
     sortKey,
     tempNewsItems,
     unPublishedNewsIds,
+    hasDraftChanged,
   ])
 
   // 스크롤 위치 복원
@@ -681,6 +698,8 @@ Content-Transfer-Encoding: 7bit
     }
 
     setIsContinueModalOpen(false)
+    // 이어쓰기 시작 시, 이후 변경분만 다시 자동저장하도록 플래그 초기화
+    setHasDraftChanged(false)
     setMode(initialDraftState.mode ?? NewsletterDetailPageMode.EDIT)
     setEditingNews(initialDraftState.editingNews ?? {})
     setTempNewsItems(initialDraftState.tempNewsItems ?? [])
@@ -705,6 +724,7 @@ Content-Transfer-Encoding: 7bit
     setUnPublishedNewsIds([])
     setIsSummarizedPublished(true)
     setSortKey(0)
+    setHasDraftChanged(false)
     setMode(NewsletterDetailPageMode.EDIT)
 
     // forceRefresh를 변경하여 initialDraftState를 재계산
@@ -968,7 +988,7 @@ Content-Transfer-Encoding: 7bit
                 content={newsletterIssueDetail?.issueDetail.summary ?? ''}
                 mode={mode}
                 isPublished={isSummarizedPublished}
-                onPublishedChange={setIsSummarizedPublished}
+                onPublishedChange={handleSummarizedPublishedChange}
               />
             </td>
           </tr>
