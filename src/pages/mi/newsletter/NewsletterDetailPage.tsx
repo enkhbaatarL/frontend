@@ -182,7 +182,7 @@ const NewsletterDetailPage = () => {
   // Edit 버튼 클릭 시 로컬스토리지 체크 및 팝업 표시
   const handleEditClick = useCallback(() => {
     if (initialDraftState) {
-      // localStorage에 저장된 값이 있으면 팝업 띄우기
+      // localStorage에 저장된 값이 있으면 이어쓰기 팝업 표시
       setIsContinueModalOpen(true)
     } else {
       // localStorage에 값이 없으면 바로 edit 모드로 전환
