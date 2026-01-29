@@ -15,6 +15,7 @@ import Chart from './components/emailTemplate/Chart'
 import Disclaimer from './components/emailTemplate/Disclaimer'
 import Header from './components/emailTemplate/Header'
 import News from './components/emailTemplate/News'
+// import NewsHynix from './components/emailTemplate/NewsHynix'
 import Reference from './components/emailTemplate/Reference'
 import Summarized from './components/emailTemplate/Summarized'
 import Title from './components/emailTemplate/Title'
@@ -632,6 +633,9 @@ Content-Transfer-Encoding: 7bit
     chartRef.current?.resetBoxPositions()
     setMode(NewsletterDetailPageMode.VIEW)
     initializeNewsletterIssueDetail()
+    
+    // forceRefresh 업데이트하여 initialDraftState 재계산 (localStorage는 유지)
+    setForceRefresh((prev) => prev + 1)
   }
 
   const openPreviewWindow = useCallback(async () => {
@@ -1004,6 +1008,17 @@ Content-Transfer-Encoding: 7bit
               />
             </td>
           </tr>
+          {/* <tr>
+            <td>
+              <NewsHynix
+                data={{
+                  type: 'Hynix',
+                  frequency: 'DAILY',
+                  hynixNewsItems: [],
+                }}
+              />
+            </td>
+          </tr> */}
           <tr>
             <td>
               <Reference
