@@ -5,18 +5,32 @@ import aiIcon from '@/assets/ai.svg'
 import MIButtonArrow from '@/components/common/button/MIButtonArrow'
 import ForecastChart from '@/pages/mi/forecast/new-components/ForecastChart'
 import ForecastReportCard from '@/pages/mi/forecast/new-components/ForecastReportCard'
-import { IForecastChartData, ForecastBasicInfoTarget, IForecastReport } from '@/service/mi/forecast'
+import { IForecastChartInfo, ForecastBasicInfoTarget, IForecastReport } from '@/service/mi/forecast'
 
 interface ChartPageProps {
-  chartData?: IForecastChartData
+  chartData?: IForecastChartInfo
   chartDataIsLoading?: boolean
   monthSelect?: string
   targetList?: ForecastBasicInfoTarget[]
   forecastReports?: IForecastReport[]
   onHoverReportCardChange?: (report: IForecastReport | null) => void
+  xAxisUnit?: string
+  period?: string
+  onXAxisUnitChange?: (value: string) => void
+  onPeriodChange?: (value: string) => void
 }
 
-const ChartPage = ({ chartData, chartDataIsLoading, monthSelect, forecastReports, onHoverReportCardChange }: ChartPageProps) => {
+const ChartPage = ({
+  chartData,
+  chartDataIsLoading,
+  monthSelect,
+  forecastReports,
+  onHoverReportCardChange,
+  xAxisUnit,
+  period,
+  onXAxisUnitChange,
+  onPeriodChange,
+}: ChartPageProps) => {
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
   
   const handleHoverReportCardChange = (report: IForecastReport | null) => {
@@ -224,6 +238,11 @@ const ChartPage = ({ chartData, chartDataIsLoading, monthSelect, forecastReports
         chartDataIsLoading={chartDataIsLoading}
         onFixedModeChange={setIsFixedMode}
         monthSelect={monthSelect}
+        xAxisUnit={xAxisUnit}
+        period={period}
+        onXAxisUnitChange={onXAxisUnitChange}
+        onPeriodChange={onPeriodChange}
+        disableLegendMenu={true}
       />
     </Stack>
   )

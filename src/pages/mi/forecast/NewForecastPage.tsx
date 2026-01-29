@@ -17,18 +17,27 @@ const NewForecastPage = () => {
   const { accessCompanyInfo, user } = useAuthStore()
   const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
 
+  // 회사별 기본 xAxisUnit / period 설정
+  const getDefaultAxisAndPeriod = (companyNo: number) => {
+    switch (companyNo) {
+      case 2020:
+        return { xAxisUnit: '1D', period: '1W' }
+      case 2013:
+        return { xAxisUnit: '1M', period: '3M' }
+      case 2015:
+        return { xAxisUnit: '1Q', period: '1Y' }
+      default:
+        return { xAxisUnit: '1D', period: '1W' }
+    }
+  }
+
+  const [xAxisUnit, setXAxisUnit] = useState<string>('')
+  const [period, setPeriod] = useState<string>('')
+
   const { data: basicInfo } = useQuery({
     queryKey: ['getForecastBasicInfo', companyNo],
     queryFn: () => forecastDataService.getForecastBasicInfo(companyNo),
     enabled: !!companyNo,
-    refetchOnWindowFocus: false,
-    gcTime: 0,
-  })
-
-  // 대시보드 차트 조회 가능한 날짜 리스트 (임시)
-  const { data: chartDates } = useQuery({
-    queryKey: ['dashboardChartDates'],
-    queryFn: () => forecastDataService.getForecastChartDates(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -42,20 +51,20 @@ const NewForecastPage = () => {
     gcTime: 0,
   })
 
-  // monthSelect 초기값 설정 (임시)
+  // xAxisUnit / period 기본값 설정 (companyNo 기준)
   useEffect(() => {
-    if (chartDates?.dates[0] && !monthSelect) {
-      setMonthSelect(chartDates.dates[0])
-    }
-  }, [chartDates, monthSelect])
+    if (!companyNo) return
+    const defaults = getDefaultAxisAndPeriod(companyNo)
+    setXAxisUnit(defaults.xAxisUnit)
+    setPeriod(defaults.period)
+  }, [companyNo])
 
   const { data: chartData, isLoading: chartDataIsLoading } = useQuery({
-    queryKey: ['dashboardChartData', monthSelect],
-    queryFn: () =>
-      forecastDataService.getForecastChartData(accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0, monthSelect.replaceAll('-', '')),
+    queryKey: ['getForecastChartInfo', companyNo, xAxisUnit, period],
+    queryFn: () => forecastDataService.getForecastChartInfo(companyNo, { xAxisUnit, period }),
     refetchOnWindowFocus: false,
     gcTime: 0,
-    enabled: !!monthSelect,
+    enabled: !!companyNo && !!xAxisUnit && !!period,
   })
 
   const tabItems = useMemo(
@@ -71,6 +80,10 @@ const NewForecastPage = () => {
               targetList={basicInfo?.targetList ?? []}
               forecastReports={forecastReports ?? []}
               onHoverReportCardChange={setHoverReportCardInfo}
+              xAxisUnit={xAxisUnit}
+              period={period}
+              onXAxisUnitChange={setXAxisUnit}
+              onPeriodChange={setPeriod}
             />
             <TablePage 
               chartData={chartData} 
@@ -86,7 +99,7 @@ const NewForecastPage = () => {
         content: <RecordsTablePage chartData={chartData} chartDataIsLoading={chartDataIsLoading} onMonthSelectChange={setMonthSelect} hoverReportCardInfo={hoverReportCardInfo} />,
       },
     ],
-    [chartData, chartDataIsLoading, monthSelect, hoverReportCardInfo],
+    [chartData, chartDataIsLoading, monthSelect, hoverReportCardInfo, basicInfo?.targetList, forecastReports, xAxisUnit, period],
   )
 
   useEffect(() => {

@@ -11,20 +11,29 @@ import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
-import { IForecastChartData, IForecastReport } from '@/service/mi/forecast'
+import { IForecastChartInfo, IForecastReport } from '@/service/mi/forecast'
 import theme from '@/theming'
 
 interface TablePageProps {
-  chartData?: IForecastChartData
+  chartData?: IForecastChartInfo
   chartDataIsLoading?: boolean
   onMonthSelectChange: (monthSelect: string) => void
   hoverReportCardInfo?: IForecastReport | null
 }
 
 const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange, hoverReportCardInfo }: TablePageProps) => {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  // 기본값: Last 30 days
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = dayjs().startOf('day')
+    const last30days = today.subtract(30, 'day')
+    return {
+      startDate: last30days,
+      endDate: today,
+    }
+  })
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [selectedTarget, setSelectedTarget] = useState<string>('All Targets')
 
   useEffect(() => {
     if (dateRange?.startDate) {
@@ -34,7 +43,7 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange, hoverRe
   }, [dateRange, onMonthSelectChange])
 
   // hoverReportCardInfo가 있으면 predictionResultList를 사용하여 chartData 변환
-  const transformedChartData = useMemo<IForecastChartData | undefined>(() => {
+  const transformedChartData = useMemo<IForecastChartInfo | undefined>(() => {
     if (hoverReportCardInfo?.predictionResultList && hoverReportCardInfo.predictionResultList.length > 0) {
       const resultList = hoverReportCardInfo.predictionResultList
       
@@ -46,12 +55,12 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange, hoverRe
         return dateStr
       }
       
-      const transformed = {
-        dashboardMetadata: {
+      const transformed: IForecastChartInfo = {
+        metadata: {
           marketIndexAnalysisTargetCd: hoverReportCardInfo.marketIndexAnalysisTargetCd,
           lastUpdateDt: hoverReportCardInfo.predictionFulfillDt,
-          currency: chartData?.dashboardMetadata.currency || '',
-          currentUnitCd: chartData?.dashboardMetadata.currentUnitCd || '',
+          currency: chartData?.metadata.currency || '',
+          currentUnitCd: chartData?.metadata.currentUnitCd || '',
           baseDate: hoverReportCardInfo.startPredictionResultDt,
           dataTableType: 'FORECAST_SINGLE_LAYER',
           tableHeader: hoverReportCardInfo.predictChartDetailExpn,
@@ -80,13 +89,19 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange, hoverRe
             },
           },
         ],
-        dashboardDataSources: [
+        chartsDataSource: [
           {
             goodsDataSourceNo: hoverReportCardInfo.associatedGoodsDataSourceNo,
             dashboardLineName: hoverReportCardInfo.predictChartDetailExpn,
           },
         ],
         isFileDownload: false,
+        // hover 상태에서는 축/기간 정보는 원본 chartData 또는 기본값을 사용
+        xAxisUnit: chartData?.xAxisUnit || '1D',
+        period: chartData?.period || '1W',
+        startDate: chartData?.startDate || hoverReportCardInfo.startPredictionResultDt,
+        endDate: chartData?.endDate || hoverReportCardInfo.endPredictionResultDt,
+        dateList: chartData?.dateList || [],
       }
       
       return transformed
@@ -97,13 +112,13 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange, hoverRe
   const tableColumns = useMemo<GridColDef[]>(() => {
     if (!transformedChartData) return []
 
-    const isForecastSingleLayer = transformedChartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
-    const currency = transformedChartData.dashboardMetadata.currency || ''
-    const currentUnitCd = transformedChartData.dashboardMetadata.currentUnitCd || ''
+    const isForecastSingleLayer = transformedChartData.metadata.dataTableType === 'FORECAST_SINGLE_LAYER'
+    const currency = transformedChartData.metadata.currency || ''
+    const currentUnitCd = transformedChartData.metadata.currentUnitCd || ''
 
     const dateColumn: GridColDef = {
       field: 'date',
-      headerName: currency && currentUnitCd ? `${currency}/${currentUnitCd}` : transformedChartData.dashboardMetadata.tableHeader || '',
+      headerName: currency && currentUnitCd ? `${currency}/${currentUnitCd}` : transformedChartData.metadata.currentUnitCd || '',
       flex: 1.5,
       align: 'center',
     }
@@ -271,7 +286,7 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange, hoverRe
   const tableRows = useMemo(() => {
     if (!transformedChartData) return []
 
-    const isForecastSingleLayer = transformedChartData.dashboardMetadata.dataTableType === 'FORECAST_SINGLE_LAYER'
+    const isForecastSingleLayer = transformedChartData.metadata.dataTableType === 'FORECAST_SINGLE_LAYER'
 
     const allDates = new Set<string>()
     transformedChartData.charts.forEach((chart) => {
@@ -363,6 +378,16 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange, hoverRe
     [tableRows.length, page, pageSize, paginatedRows],
   )
 
+  // Target 옵션 (임시로 chartData에서 추출하거나 하드코딩)
+  const targetOptions = useMemo(
+    () => [
+      { label: 'All Targets', value: 'All Targets' },
+      { label: 'Brent Crude', value: 'Brent Crude' },
+      { label: 'Dubai Crude', value: 'Dubai Crude' },
+    ],
+    [],
+  )
+
   return (
     <Box py="30px">
       <Stack gap="24px">
@@ -371,9 +396,9 @@ const TablePage = ({ chartData, chartDataIsLoading, onMonthSelectChange, hoverRe
           <Stack direction="row" gap="12px">
             <MISelectMenu
               variant="outlined"
-              items={[{ label: 'Daily', value: 'daily' }]}
-              selected={'daily'}
-              onSelected={() => {}}
+              items={targetOptions}
+              selected={selectedTarget}
+              onSelected={(value: string) => setSelectedTarget(value)}
               sx={{ height: '36px' }}
               enableHoverBackground
             />

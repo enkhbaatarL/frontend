@@ -10,11 +10,11 @@ import MIDateRangePickerMenu, { DateRange } from '@/components/common/menu/MIDat
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MITableUser from '@/components/common/table/MITableUser'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
-import { IForecastChartData, IForecastReport } from '@/service/mi/forecast'
+import { IForecastChartInfo, IForecastReport } from '@/service/mi/forecast'
 import theme from '@/theming'
 
 interface RecordsTablePageProps {
-  chartData?: IForecastChartData
+  chartData?: IForecastChartInfo
   chartDataIsLoading?: boolean
   onMonthSelectChange: (monthSelect: string) => void
   hoverReportCardInfo?: IForecastReport | null

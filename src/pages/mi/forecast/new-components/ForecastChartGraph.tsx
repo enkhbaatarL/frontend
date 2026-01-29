@@ -369,7 +369,7 @@ type ChartDatasetType = ChartDataset<'line' | 'candlestick' | 'bar', (Point | Fi
 
 export interface ForecastChartGraphHandle {
   resetZoom: () => void
-  canvas: HTMLCanvasElement | null
+  getCanvas: () => HTMLCanvasElement | null
 }
 
 const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<ForecastChartGraphProps>>(
@@ -1247,7 +1247,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
           mouseDownPositionRef.current = null
           mouseDownScaleRangeRef.current = null
         },
-        canvas: chartRef.current?.canvas ?? null,
+        getCanvas: () => chartRef.current?.canvas ?? null,
       }),
       [],
     )
@@ -1954,6 +1954,6 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
   },
 )
 
-ForecastChartGraph.displayName = 'ForecastChartGraph'
 
+ForecastChartGraph.displayName = 'ForecastChartGraph'
 export default ForecastChartGraph

@@ -194,6 +194,29 @@ export interface IForecastChartData {
   }[]
   isFileDownload: boolean
 }
+// 새로운 Forecast 차트 정보 타입 (/mi/forecast/companies/{companyNo}/chart)
+export interface IForecastChartInfoDateItem {
+  label: string
+  startDate: string
+  endDate: string
+  unit: string
+}
+
+// Forecast 차트 정보 응답 타입
+export interface IForecastChartInfo {
+  metadata: IForecastChartMetadata
+  charts: IForecastChart[]
+  chartsDataSource: {
+    goodsDataSourceNo: number
+    dashboardLineName: string
+  }[]
+  isFileDownload: boolean
+  xAxisUnit: string
+  period: string
+  startDate: string
+  endDate: string
+  dateList: IForecastChartInfoDateItem[]
+}
 export interface IForecastFactorCategoryRequest {
   predictDate: string
   goodsDataSourceNo: number
@@ -343,12 +366,32 @@ const forecastDataService = {
     return response.data.data
   },
   /**
-   * Forecast 차트 데이터를 조회합니다.
+   * (구) Forecast 차트 데이터를 조회합니다.
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    * @param date - 조회할 년월
    */
   async getForecastChartData(companyNo: number, date: string): Promise<IForecastChartData> {
     const response = await api.get(withCustomBaseUrl(`mi/dashboard/companies/${companyNo}/chart`), { params: { date } })
+    return response.data.data
+  },
+  /**
+   * (신규) Forecast 차트 정보를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { xAxisUnit: '1D' | '1W' | '1M' | '1Q' | '1Y', period: '1W' | '1M' | '3M' | '6M' | 'YTD' | '1Y' | 'ALL' }
+   */
+  async getForecastChartInfo(
+    companyNo: number,
+    params: {
+      xAxisUnit: string
+      period: string
+    },
+  ): Promise<IForecastChartInfo> {
+    const response: AxiosResponse<ICommonResponse<IForecastChartInfo>> = await api.get(
+      `mi/forecast/companies/${companyNo}/chart`,
+      {
+        params,
+      },
+    )
     return response.data.data
   },
   // async getForecastChartData(companyNo: number, date: string): Promise<IForecastChartData> {
