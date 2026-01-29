@@ -19,7 +19,8 @@
     "defaultPlaceholder": "입력하세요",
     "reset": "초기화",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "register": "등록"
   },
   "submenu": {
     "dashboard": {
@@ -234,7 +235,8 @@
       },
       "buttonLabel": {
         "reset": "Reset",
-        "apply": "Apply"
+        "apply": "Apply",
+        "continue": "이어쓰기"
       },
       "deleteDialog": {
         "title": "선택한 뉴스 항목을 삭제합니다"
@@ -244,6 +246,9 @@
       },
       "snackbar": {
         "newsUpdated": "뉴스 항목이 성공적으로 적용되었습니다"
+      },
+      "continueDialog": {
+        "content": "이전에 작성 중이던 내용이 있습니다. 이어서 작성하시겠습니까?"
       }
     },
     "footer": {

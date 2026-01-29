@@ -117,12 +117,12 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
     // y축 min/max 범위 계산 함수 - 적절한 단위를 자동으로 계산하고 퍼센트 패딩 적용
     const calculateYAxisRange = useCallback(
       (values: number[], paddingTop: number = 0, paddingBottom: number = 0, showNearAxis: boolean = false) => {
-        if (!values.length) return { min: 0, max: 0 }
+        if (!values.length) return { min: 0, max: 0, step: 1 }
 
         // 빈 값(null, undefined, NaN) 필터링
         const validValues = filterValidChartValues(values)
 
-        if (!validValues.length) return { min: 0, max: 0 }
+        if (!validValues.length) return { min: 0, max: 0, step: 1 }
 
         const minValue = Math.min(...validValues)
         const maxValue = Math.max(...validValues)
@@ -134,6 +134,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
           return {
             min: center - padding,
             max: center + padding,
+            step: 1,
           }
         }
 
@@ -170,7 +171,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
           max = Math.ceil(max + step)
         }
 
-        return { min, max }
+        return { min, max, step }
       },
       [],
     )
@@ -587,7 +588,11 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
             timestamps,
             xAxisTicks: 6,
             yAxisTicks: 4,
-            yAxisStep: 1000,
+            yAxisStep: (() => {
+              const values = volumeSeries?.values ?? [0]
+              const { step } = calculateYAxisRange(values, 2, 0)
+              return Math.max(1, Math.round(step))
+            })(),
             decimalPlaces: 0,
             useUnitDisplay: true,
             marketOpenTime,

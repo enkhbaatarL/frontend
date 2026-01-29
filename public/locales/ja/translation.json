@@ -19,7 +19,8 @@
     "defaultPlaceholder": "入力してください",
     "reset": "リセット",
     "showMore": "もっと見る",
-    "showLess": "閉じる"
+    "showLess": "閉じる",
+    "register": "登録"
   },
   "submenu": {
     "dashboard": {
@@ -237,7 +238,8 @@
       },
       "buttonLabel": {
         "reset": "リセット",
-        "apply": "適用"
+        "apply": "適用",
+        "continue": "続ける"
       },
       "deleteDialog": {
         "title": "選択したニュース項目を削除します"
@@ -247,6 +249,9 @@
       },
       "snackbar": {
         "newsUpdated": "ニュース項目が正常に適用されました"
+      },
+      "continueDialog": {
+        "content": "前回作成中の内容があります。続けて作成しますか？"
       }
     },
     "footer": {

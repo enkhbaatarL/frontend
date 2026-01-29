@@ -59,9 +59,38 @@ const LoginPage = () => {
     }
   }
 
+  // 만료된 로컬스토리지 항목 삭제 함수
+  const removeExpiredLocalStorageItems = useCallback((storageKeyPrefix: string) => {
+    const now = Date.now()
+    
+    // 모든 로컬스토리지 키 순회
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith(storageKeyPrefix)) {
+        try {
+          const item = localStorage.getItem(key)
+          if (item) {
+            const parsed = JSON.parse(item)
+            // expiresAt이 있고 만료되었으면 삭제
+            if (parsed.expiresAt && parsed.expiresAt < now) {
+              localStorage.removeItem(key)
+            }
+          }
+        } catch (error) {
+          // 파싱 오류가 있으면 삭제
+          console.error(`Failed to parse localStorage item ${key}:`, error)
+          localStorage.removeItem(key)
+        }
+      }
+    }
+  }, [])
+
   useEffect(() => {
     clearAuth()
-  }, [clearAuth])
+    
+    // 만료된 로컬스토리지 항목 삭제 (임시: Newsletter 관련 로컬스토리지 삭제)
+    removeExpiredLocalStorageItems('newsletter_issue_draft')
+  }, [clearAuth, removeExpiredLocalStorageItems])
 
   useEffect(() => {
     if (useExternalLogin) {
