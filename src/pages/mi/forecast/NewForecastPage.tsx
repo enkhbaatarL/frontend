@@ -86,6 +86,7 @@ const NewForecastPage = () => {
               onPeriodChange={setPeriod}
             />
             <TablePage 
+              basicInfo={basicInfo}
               chartData={chartData} 
               chartDataIsLoading={chartDataIsLoading} 
               onMonthSelectChange={setMonthSelect}
