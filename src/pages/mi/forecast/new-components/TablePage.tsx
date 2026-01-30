@@ -14,6 +14,7 @@ import MITableUser from '@/components/common/table/MITableUser'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
 import forecastDataService, { ForecastBasicInfo, IForecastChartInfo, IForecastReport } from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
+import { downloadFile } from '@/utils/file'
 import theme from '@/theming'
 
 interface TablePageProps {
@@ -498,6 +499,24 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
     }
   }, [tableData, chartTableRows.length, page, pageSize, paginatedRows])
 
+  // 테이블 데이터 엑셀 다운로드
+  const handleDownloadTable = async () => {
+    try {
+      if (!dateRange?.startDate || !dateRange?.endDate || !companyNo) return
+
+      const params = {
+        goodsDataSourceNo: selectedTarget && selectedTarget !== '' ? Number(selectedTarget) : undefined,
+        startDate: dateRange.startDate.format('YYYYMMDD'),
+        endDate: dateRange.endDate.format('YYYYMMDD'),
+        order,
+      }
+
+      const response = await forecastDataService.getForecastReportsTableDataDownload(companyNo, params)
+      downloadFile(response.data, 'Forecast Table.xlsx')
+    } catch (error) {
+      console.error('테이블 다운로드 실패:', error)
+    }
+  }
 
   return (
     <Box py="30px">
@@ -541,6 +560,7 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
                   padding: '8px',
                 }}
                 enableHoverBackground
+                onClick={handleDownloadTable}
               >
                 <ChartDownloadIcon fill={theme.palette.gray[70]} />
               </MIBaseButton>
