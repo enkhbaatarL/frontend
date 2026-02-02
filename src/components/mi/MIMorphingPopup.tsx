@@ -51,6 +51,7 @@ interface PopupProps extends Omit<BoxProps, 'title' | 'content'> {
   content: ReactNode
   hideCloseButton?: boolean
   showSkeleton?: boolean
+  minWidth?: number
   onOpen?: () => void
   onClose?: () => void
 }
@@ -65,7 +66,14 @@ export interface MIMorphingPopupRef {
 }
 
 const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
-  ({ children, popup: { title, content, hideCloseButton, showSkeleton = true, onOpen, onClose, ...popupProps }, ...props }, ref) => {
+  (
+    {
+      children,
+      popup: { title, content, hideCloseButton, showSkeleton = true, minWidth = 1200, onOpen, onClose, ...popupProps },
+      ...props
+    },
+    ref,
+  ) => {
     const [isOpen, setIsOpen] = useState(false)
     const [isClosing, setIsClosing] = useState(false)
     const [isExpanded, setIsExpanded] = useState(false)
@@ -93,15 +101,11 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       const windowWidth = window.innerWidth
 
       // 좌우 여백을 제외한 너비 계산
-      const endWidth = Math.max(260, windowWidth - HORIZONTAL_MARGIN * 2)
+      const endWidth = Math.max(minWidth, windowWidth - HORIZONTAL_MARGIN * 2)
 
       // 측정용 박스의 너비를 강제로 설정한 뒤 높이를 측정
       measureRef.current.style.width = `${endWidth}px`
-      const contentHeight = measureRef.current.offsetHeight
-      const minHeight = 400 // 최소 높이
-      const maxContentHeight = windowHeight - VERTICAL_MARGIN * 2 - 68 // 최대 콘텐츠 높이 (헤더 68px 제외)
-      const measuredContentHeight = Math.max(minHeight, contentHeight)
-      const measuredHeight = Math.min(measuredContentHeight, maxContentHeight) + 68 // 헤더 높이 68px 추가
+      const measuredHeight = measureRef.current.offsetHeight + 68 // 헤더 높이 68px 추가
 
       // 상단 여백 + 하단 여백 = VERTICAL_MARGIN * 2
       const isTall = measuredHeight + VERTICAL_MARGIN * 2 > windowHeight
@@ -120,7 +124,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         },
         isTall,
       }
-    }, [])
+    }, [minWidth])
 
     const handleClose = useCallback(() => {
       // 닫기 시작 시 예약된 'isAnimDone' 타이머 취소
@@ -259,6 +263,24 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       }
     }, [isOpen, calculateCoords])
 
+    // ResizeObserver로 content의 실제 DOM 크기 변화 감지
+    useEffect(() => {
+      if (!isOpen || !isAnimDone || !measureRef.current) return undefined
+
+      const resizeObserver = new ResizeObserver(() => {
+        const newCoords = calculateCoords()
+        if (newCoords) {
+          setCoords(newCoords)
+        }
+      })
+
+      resizeObserver.observe(measureRef.current)
+
+      return () => {
+        resizeObserver.disconnect()
+      }
+    }, [isOpen, isAnimDone, calculateCoords])
+
     useEffect(
       () => () => {
         if (animTimerRef.current) clearTimeout(animTimerRef.current)
@@ -276,8 +298,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
           top: isExpanded && !isClosing ? coords.end.top : coords.start.top,
           left: isExpanded && !isClosing ? coords.end.left : coords.start.left,
           width: isExpanded && !isClosing ? coords.end.width : coords.start.width,
-          height: isExpanded && !isClosing ? (isAnimDone ? 'auto' : coords.end.height) : coords.start.height,
-          minHeight: isExpanded && !isClosing ? coords.end.height : undefined,
+          height: isExpanded && !isClosing ? coords.end.height : coords.start.height,
         }
         : {}
 
@@ -395,7 +416,6 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                   left={containerStyle.left}
                   width={containerStyle.width}
                   height={containerStyle.height}
-                  minHeight={containerStyle.minHeight}
                   bgcolor="commonColor.White"
                   border={borderStyles.border ?? (isAnimDone ? '1px solid' : 'none')}
                   borderColor={isAnimDone ? 'contentBorder.Normal' : (borderStyles.borderColor ?? 'transparent')}
@@ -406,9 +426,9 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                     transition: isFadingOut
                       ? `all ${DURATION} ${TRANSITION_CURVE}, opacity ${FADEOUT_DURATION} ${TRANSITION_CURVE}`
                       : isAnimDone && !isClosing
-                        ? 'none'
+                        ? `top ${DURATION} ${TRANSITION_CURVE}, height ${DURATION} ${TRANSITION_CURVE}` // 옵저버로 높이/위치 변경 시 애니메이션
                         : `all ${DURATION} ${TRANSITION_CURVE}`,
-                    overflow: isAnimDone ? 'visible' : 'hidden',
+                    overflow: 'hidden',
                     boxShadow: isExpanded ? 24 : 0,
                     opacity: isFadingOut ? 0 : 1,
                     ...popupProps?.sx,
@@ -416,7 +436,13 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                   // 팝업 내부 클릭 시 닫기 이벤트 전파 방지
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Box minHeight={coords.end.height} position="relative" display="flex" flexDirection="column" sx={{ height: isAnimDone ? 'auto' : coords.end.height }}>
+                  <Box
+                    height={coords.end.height}
+                    position="relative"
+                    sx={{
+                      transition: isAnimDone && !isClosing ? `height ${DURATION} ${TRANSITION_CURVE}` : 'none',
+                    }}
+                  >
                     <Box
                       position="absolute"
                       top={0}
@@ -435,15 +461,11 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                       sx={{
                         opacity: isExpanded ? 1 : 0,
                         transition: `opacity ${isClosing ? DURATION_MS / 3 : DURATION_MS}ms ${TRANSITION_CURVE}`,
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
                       }}
                     >
                       <Stack
                         direction="row"
                         height="68px"
-                        flexShrink={0}
                         padding="20px 24px"
                         borderBottom="1px solid"
                         borderColor="contentBorder.Normal"
@@ -468,33 +490,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                           }}
                         />
                       </Stack>
-                      <Box
-                        width={coords.end.width}
-                        sx={{
-                          flex: 1,
-                          minHeight: 0,
-                          maxHeight: `${window.innerHeight - VERTICAL_MARGIN * 2 - 68}px`,
-                          overflowY: 'auto',
-                          overflowX: 'hidden',
-                          scrollbarWidth: 'thin',
-                          scrollbarColor: '#ADB5BD transparent',
-                          '&::-webkit-scrollbar': {
-                            width: '4px',
-                          },
-                          '&::-webkit-scrollbar-track': {
-                            backgroundColor: 'transparent',
-                          },
-                          '&::-webkit-scrollbar-thumb': {
-                            backgroundColor: '#ADB5BD',
-                            borderRadius: '10px',
-                          },
-                          '&::-webkit-scrollbar-thumb:hover': {
-                            backgroundColor: '#868E96',
-                          },
-                        }}
-                      >
-                        {content}
-                      </Box>
+                      <Box width={coords.end.width}>{content}</Box>
                     </Stack>
                   </Box>
                 </Box>

@@ -6,12 +6,12 @@ import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
 
+import aiIcon from '@/assets/ai.svg'
 import crudeOilIcon from '@/assets/icons/crude-oil.png'
 import defaultIcon from '@/assets/icons/default.png'
 import evBatteryIcon from '@/assets/icons/ev-battery.png'
 import lngIcon from '@/assets/icons/lng.png'
 import semiconductorIcon from '@/assets/icons/semiconductor.png'
-import aiIcon from '@/assets/ai.svg'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
@@ -26,17 +26,17 @@ interface InfoLabelProps {
 
 const InfoLabel = ({ label, value, description }: InfoLabelProps) => (
   <Stack>
-    <Typography variant="body2SB14" color="contentText.Subtext">
+    <Typography variant="body2SB14" color="contentText.Subtext" noWrap>
       {label}
     </Typography>
     {typeof value === 'string' ? (
-      <Typography variant="messageText1" color="contentText.Black">
+      <Typography variant="messageText1" color="contentText.Black" noWrap>
         {value}
       </Typography>
     ) : (
       value
     )}
-    <Typography variant="body2M14" color="contentText.Subtext">
+    <Typography variant="body2M14" color="contentText.Subtext" noWrap>
       {description}
     </Typography>
   </Stack>
@@ -94,9 +94,16 @@ const ForecastReportCardReportContent = ({
 
   if (isLoading || !data) {
     return (
-      <Stack sx={{ minHeight: '400px' }}>
+      <Stack>
         {/* 상단 정보 영역 스켈레톤 */}
-        <Stack padding="20px 38px" direction="row" justifyContent="space-between" gap="24px" borderBottom="1px solid" borderColor="contentBorder.Normal">
+        <Stack
+          padding="20px 38px"
+          direction="row"
+          justifyContent="space-between"
+          gap="24px"
+          borderBottom="1px solid"
+          borderColor="contentBorder.Normal"
+        >
           <Stack direction="row" alignItems="start" gap="24px" flex={1}>
             <Stack direction="row" gap="12px">
               <MIBaseSkeleton.Avatar width={52} height={52} sx={{ borderRadius: '10px' }} />
@@ -146,7 +153,15 @@ const ForecastReportCardReportContent = ({
         </Stack>
 
         {/* Summary 영역 스켈레톤 */}
-        <Stack padding="24px 38px" direction="row" justifyContent="space-between" alignItems="center" gap="24px" borderBottom="1px solid" borderColor="contentBorder.Active">
+        <Stack
+          padding="24px 38px"
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          gap="24px"
+          borderBottom="1px solid"
+          borderColor="contentBorder.Active"
+        >
           <Stack direction="row" alignItems="center" gap="4px">
             <MIBaseSkeleton.Avatar width={20} height={20} />
             <MIBaseSkeleton.TextLine width={80} height={18} />
@@ -174,29 +189,27 @@ const ForecastReportCardReportContent = ({
   const targetDateRange = `${dayjs(data.startPredictionResultDt).format('YYYY/MM/DD')} - ${dayjs(data.endPredictionResultDt).format('YYYY/MM/DD')}`
   const daysDiff = dayjs(data.endPredictionResultDt).diff(dayjs(data.startPredictionResultDt), 'day') + 1
   const runDate = dayjs(predictionFulfillDt).format('YYYY/MM/DD')
-  
+
   // explanatorySummaryContent의 줄바꿈 처리: \\n, \r\n, \r을 실제 줄바꿈으로 변환
   // \r (캐리지 리턴)은 Windows/Mac에서 사용하는 줄바꿈 문자입니다
   const processedSummaryContent = data.explanatorySummaryContent
     ? data.explanatorySummaryContent
-        .replace(/\r\n/g, '\n') // 실제 \r\n (Windows 줄바꿈) 처리
-        .replace(/\\\\r\\\\n/g, '\n') // 문자열로 된 \\r\\n 처리
-        .replace(/\\r\\n/g, '\n') // 문자열로 된 \r\n 처리
-        .replace(/\r/g, '\n') // 실제 \r (캐리지 리턴) 처리
-        .replace(/\\\\r/g, '\n') // 문자열로 된 \\r 처리
-        .replace(/\\r/g, '\n') // 문자열로 된 \r 처리
-        .replace(/\\\\n/g, '\n') // 문자열로 된 \\n 처리 (백슬래시 2개 + n)
-        .replace(/\\n/g, '\n') // 문자열로 된 \n 처리
-        .replace(/·/g, '\n') // · 기호를 줄바꿈으로 변환
+      .replace(/\r\n/g, '\n') // 실제 \r\n (Windows 줄바꿈) 처리
+      .replace(/\\\\r\\\\n/g, '\n') // 문자열로 된 \\r\\n 처리
+      .replace(/\\r\\n/g, '\n') // 문자열로 된 \r\n 처리
+      .replace(/\r/g, '\n') // 실제 \r (캐리지 리턴) 처리
+      .replace(/\\\\r/g, '\n') // 문자열로 된 \\r 처리
+      .replace(/\\r/g, '\n') // 문자열로 된 \r 처리
+      .replace(/\\\\n/g, '\n') // 문자열로 된 \\n 처리 (백슬래시 2개 + n)
+      .replace(/\\n/g, '\n') // 문자열로 된 \n 처리
+      .replace(/·/g, '\n') // · 기호를 줄바꿈으로 변환
     : ''
 
-  // label은 mnemonicCd 또는 marketIndexAnalysisTargetCd 사용
-  const label = data.marketIndexAnalysisTargetCd || ''
+  const label = data.marketIndexAnalysisTargetCd ?? ''
 
   return (
     <Stack
       sx={{
-        minHeight: '400px',
         height: 'auto',
       }}
     >
@@ -249,7 +262,8 @@ const ForecastReportCardReportContent = ({
                   </Typography>
                   {data.predictionResultDiffVal !== null && data.predictionResultDiffVal !== 0 && (
                     <Typography variant="messageText1" color={data.predictionResultDiffVal < 0 ? 'decrease.main' : 'increase.main'}>
-                      {data.predictionResultDiffVal > 0 ? '+' : ''}{data.predictionResultDiffVal}
+                      {data.predictionResultDiffVal > 0 ? '+' : ''}
+                      {data.predictionResultDiffVal}
                       {data.predictionResultDiffRate !== null && ` (${formatValue(data.predictionResultDiffRate)}%)`}
                     </Typography>
                   )}
