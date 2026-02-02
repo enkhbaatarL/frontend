@@ -438,7 +438,7 @@ const forecastDataService = {
     },
   ): Promise<IForecastChartInfo> {
     const response: AxiosResponse<ICommonResponse<IForecastChartInfo>> = await api.get(
-      `mi/forecast/companies/${companyNo}/chart`,
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/chart`),
       {
         params,
       },
@@ -832,7 +832,7 @@ const forecastDataService = {
     },
   ): Promise<IForecastReportsTableData> {
     const response: AxiosResponse<ICommonResponse<IForecastReportsTableData>> = await api.get(
-      `mi/forecast/companies/${companyNo}/table`,
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/table`),
       { params },
     )
     return response.data.data
