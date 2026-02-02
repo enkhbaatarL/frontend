@@ -519,7 +519,7 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
   }
 
   return (
-    <Box py="30px">
+    <Box p="30px">
       <Stack gap="24px">
         <Stack direction="row" justifyContent="space-between">
           <MIDateRangePickerMenu onApply={setDateRange} dateRange={dateRange} sx={{ height: '36px' }} enableHoverBackground />
