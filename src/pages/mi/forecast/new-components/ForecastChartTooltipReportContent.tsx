@@ -6,6 +6,7 @@ import { Box, Divider, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { ReactNode, memo, useMemo, useRef, useState, useCallback, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
@@ -55,6 +56,7 @@ interface ForecastChartTooltipReportContentProps {
 
 const ForecastChartTooltipReportContent = memo(({ monthSelect, goodsDataSourceNo, date, isVisible = false }: ForecastChartTooltipReportContentProps) => {
   const chartGraphRef = useRef<ForecastChartGraphHandle>(null)
+  const navigate = useNavigate()
   const { accessCompanyInfo, user } = useAuthStore()
   const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -226,39 +228,95 @@ const ForecastChartTooltipReportContent = memo(({ monthSelect, goodsDataSourceNo
         <Stack direction="row" alignItems="start" gap="24px">
           <Stack direction="row" gap="12px">
             <Box width="52px" height="52px" bgcolor="contentBG.Active" borderRadius="10px" />
-            <InfoLabel label="TARGET" value="DUBAI CRUDE" />
+            <InfoLabel label="TARGET" value={factorCategory?.predictChartDetailExpn?.toUpperCase() || '-'} />
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
           <Stack gap="20px">
-            <InfoLabel label="TARGET DATE" value="2026/01/02" description="7 days" />
-            <InfoLabel label="RUN DATE" value="2025/12/30" description="Model execution date" />
+            <InfoLabel
+              label="TARGET DATE"
+              value={
+                factorCategory?.endPredictionResultDt
+                  ? dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').format('YYYY/MM/DD')
+                  : '-'
+              }
+              description={
+                factorCategory?.startPredictionResultDt && factorCategory?.endPredictionResultDt
+                  ? `${dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').diff(
+                      dayjs(factorCategory.startPredictionResultDt, 'YYYYMMDD'),
+                      'day',
+                    )} days`
+                  : undefined
+              }
+            />
+            <InfoLabel
+              label="RUN DATE"
+              value={
+                factorCategory?.predictionFulfillDt
+                  ? dayjs(factorCategory.predictionFulfillDt, 'YYYYMMDD').format('YYYY/MM/DD')
+                  : '-'
+              }
+              description="Model execution date"
+            />
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
           <Stack gap="20px">
             <InfoLabel
               label="PRICE EXP."
               value={
-                <Stack direction="row" alignItems="baseline" gap="4px">
-                  <Typography variant="messageText1" color="contentText.Black">
-                    76.98
-                  </Typography>
-                  <Typography variant="messageText1" color="increase.main">
-                    +1.23(2.94%)
-                  </Typography>
-                </Stack>
+                factorCategory?.avgPredictionResultVal !== undefined &&
+                factorCategory?.avgPredictionResultVal !== null ? (
+                  <Stack direction="row" alignItems="baseline" gap="4px">
+                    <Typography variant="messageText1" color="contentText.Black">
+                      {factorCategory.avgPredictionResultVal.toFixed(2)}
+                    </Typography>
+                    {factorCategory.predictionResultDiffVal !== undefined &&
+                      factorCategory.predictionResultDiffVal !== null &&
+                      factorCategory.predictionResultDiffRate !== undefined &&
+                      factorCategory.predictionResultDiffRate !== null && (
+                        <Typography
+                          variant="messageText1"
+                          color={
+                            factorCategory.predictionResultDiffVal >= 0 ? 'increase.main' : 'decrease.main'
+                          }
+                        >
+                          {factorCategory.predictionResultDiffVal >= 0 ? '+' : ''}
+                          {factorCategory.predictionResultDiffVal.toFixed(2)}(
+                          {factorCategory.predictionResultDiffRate >= 0 ? '+' : ''}
+                          {factorCategory.predictionResultDiffRate.toFixed(2)}%)
+                        </Typography>
+                      )}
+                  </Stack>
+                ) : (
+                  '-'
+                )
               }
               description="Compare to reference price"
             />
-            <InfoLabel label="REFERENCE PRICE" value="75.23" description="25/12/30 · S&P Global Platts" />
+            <InfoLabel
+              label="REFERENCE PRICE"
+              value={
+                factorCategory?.predictionCriteriaVal !== undefined &&
+                factorCategory?.predictionCriteriaVal !== null
+                  ? factorCategory.predictionCriteriaVal.toFixed(2)
+                  : '-'
+              }
+              description={
+                factorCategory?.predictionCriteriaDt
+                  ? `${dayjs(factorCategory.predictionCriteriaDt, 'YYYYMMDD').format('YY/MM/DD')} · S&P Global Platts`
+                  : undefined
+              }
+            />
           </Stack>
         </Stack>
         <Stack minWidth="136px" alignItems="start" gap="8px">
-          <Stack>
+          {/* <Stack>
             <Typography variant="body2SB14" color="contentText.Subtext">
               Date Forecasted
             </Typography>
             <Typography variant="body2SB14" color="contentText.Normal">
-              2026/01/02
+              {factorCategory?.endPredictionResultDt
+                ? dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').format('YYYY/MM/DD')
+                : '-'}
             </Typography>
           </Stack>
           <Stack>
@@ -268,7 +326,7 @@ const ForecastChartTooltipReportContent = memo(({ monthSelect, goodsDataSourceNo
             <Typography variant="body2SB14" color="contentText.Normal">
               Standard v2.0.1
             </Typography>
-          </Stack>
+          </Stack> */}
         </Stack>
       </Stack>
       <Stack padding="20px 38px 0 38px" gap="24px">
@@ -458,7 +516,17 @@ const ForecastChartTooltipReportContent = memo(({ monthSelect, goodsDataSourceNo
                       </Typography>
                     </Stack>
                   </Stack>
-                  <MIBaseButton sx={{ padding: '8px 10px' }}>
+                  <MIBaseButton
+                    sx={{ padding: '8px 10px' }}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (factorGraph?.datasource?.goodsNo && factorGraph?.datasource?.goodsDataNo) {
+                        navigate(`/mi/data-detail/${factorGraph.datasource.goodsNo}/${factorGraph.datasource.goodsDataNo}`, {
+                          state: { goodsDataSrcNo: factorGraph.datasource.goodsDataSourceNo },
+                        })
+                      }
+                    }}
+                  >
                     <OpenInNewRoundedIcon fontSize="small" sx={{ color: theme.palette.gray[70] }} />
                   </MIBaseButton>
                 </Stack>

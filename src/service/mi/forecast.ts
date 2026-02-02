@@ -242,6 +242,19 @@ export interface IForecastReport {
 }
 export interface ICategoryList {
   explanatoryLevelNms: string[]
+  marketIndexAnalysisTargetCd?: string
+  predictionFulfillDt?: string
+  mnemonicCd?: string
+  predictChartDetailExpn?: string
+  associatedGoodsDataSourceNo?: number
+  endPredictionResultDt?: string
+  startPredictionResultDt?: string
+  predictionCriteriaDt?: string
+  avgPredictionResultVal?: number
+  predictionCriteriaVal?: number
+  predictionResultDiffVal?: number
+  predictionResultDiffRate?: number
+  isScheduled?: boolean | null
 }
 export interface IForecastFactorsRequest {
   predictDate: string
