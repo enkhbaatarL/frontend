@@ -43,7 +43,7 @@ const NewForecastPage = () => {
   })
 
   // Forecast Reports
-  const { data: forecastReports } = useQuery({
+  const { data: forecastReports, isLoading: forecastReportsIsLoading } = useQuery({
     queryKey: ['getForecastReports', companyNo],
     queryFn: () => forecastDataService.getForecastReports(companyNo),
     enabled: !!companyNo,
@@ -79,6 +79,7 @@ const NewForecastPage = () => {
               monthSelect={monthSelect}
               targetList={basicInfo?.targetList ?? []}
               forecastReports={forecastReports ?? []}
+              forecastReportsIsLoading={forecastReportsIsLoading}
               onHoverReportCardChange={setHoverReportCardInfo}
               xAxisUnit={xAxisUnit}
               period={period}

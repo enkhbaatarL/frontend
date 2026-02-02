@@ -114,11 +114,11 @@ const MIRoutes: RouteObject = {
       ],
     },
     {
-      path: 'new-forecast',
+      path: 'forecast',
       element: <NewForecastPage />,
     },
     {
-      path: 'forecast',
+      path: 'old-forecast',
       element: <ForecastPage />,
     },
     {
