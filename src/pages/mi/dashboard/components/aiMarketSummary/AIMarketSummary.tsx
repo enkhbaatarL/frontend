@@ -21,19 +21,24 @@ interface Props {
   period?: string
   dateRange?: string
   criteriaDate?: string
+  defaultCategoryCode?: string
 }
 
-const AIMarketSummary = ({ period, dateRange, criteriaDate }: Props) => {
+const AIMarketSummary = ({ period, dateRange, criteriaDate, defaultCategoryCode: propDefaultCategoryCode }: Props) => {
   const { marketCategoryCodeList } = useCodeData()
 
-  // categoryCode가 없으면 첫 번째 카테고리 사용
+  // newsMarketCategoryCode가 있으면 사용, 없으면 첫 번째 카테고리 사용
   const defaultCategoryCode = useMemo(() => {
+    if (propDefaultCategoryCode) {
+      return propDefaultCategoryCode
+    }
+
     if (marketCategoryCodeList && marketCategoryCodeList.length > 0) {
       return marketCategoryCodeList[0].codeId
     }
 
     return ''
-  }, [marketCategoryCodeList])
+  }, [propDefaultCategoryCode, marketCategoryCodeList])
 
   const { data: marketRecap } = useQuery({
     queryKey: ['getMarketRecap', defaultCategoryCode, criteriaDate],
@@ -90,7 +95,7 @@ const AIMarketSummary = ({ period, dateRange, criteriaDate }: Props) => {
       </Stack>
       <Stack gap="12px" width={600}>
         <Watchlist />
-        <KeyEconomicIndicators criteriaDate={criteriaDate} />
+        <KeyEconomicIndicators criteriaDate={criteriaDate} defaultCategoryCode={defaultCategoryCode} />
       </Stack>
     </DashboardCard>
   )

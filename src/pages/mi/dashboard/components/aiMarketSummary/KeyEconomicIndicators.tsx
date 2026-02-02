@@ -105,21 +105,26 @@ const TBABadge = () => (
 
 interface Props {
   criteriaDate?: string
+  defaultCategoryCode?: string
 }
 
-const KeyEconomicIndicators = ({ criteriaDate }: Props) => {
+const KeyEconomicIndicators = ({ criteriaDate, defaultCategoryCode: propDefaultCategoryCode }: Props) => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { marketCategoryCodeList } = useCodeData()
 
-  // categoryCode가 없으면 첫 번째 카테고리 사용
+  // newsMarketCategoryCode가 있으면 사용, 없으면 첫 번째 카테고리 사용
   const defaultCategoryCode = useMemo(() => {
+    if (propDefaultCategoryCode) {
+      return propDefaultCategoryCode
+    }
+
     if (marketCategoryCodeList && marketCategoryCodeList.length > 0) {
       return marketCategoryCodeList[0].codeId
     }
 
     return ''
-  }, [marketCategoryCodeList])
+  }, [propDefaultCategoryCode, marketCategoryCodeList])
 
   const { data: keyEconomicIndicatorsData, isLoading } = useQuery({
     queryKey: ['getKeyEconomicIndicators', defaultCategoryCode, criteriaDate],
