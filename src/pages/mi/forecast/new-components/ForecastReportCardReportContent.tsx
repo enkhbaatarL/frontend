@@ -6,6 +6,11 @@ import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
 
+import crudeOilIcon from '@/assets/icons/crude-oil.png'
+import defaultIcon from '@/assets/icons/default.png'
+import evBatteryIcon from '@/assets/icons/ev-battery.png'
+import lngIcon from '@/assets/icons/lng.png'
+import semiconductorIcon from '@/assets/icons/semiconductor.png'
 import aiIcon from '@/assets/ai.svg'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
@@ -55,6 +60,23 @@ const ForecastReportCardReportContent = ({
   isOpen = false,
 }: ForecastReportCardReportContentProps) => {
   const theme = useTheme()
+
+  // marketIndexAnalysisTargetCd에 따라 아이콘 선택
+  const getMarketIcon = (code: string): string => {
+    if (code === 'EN_CROIL') {
+      return crudeOilIcon
+    } else if (code === 'EN_LNG') {
+      return lngIcon
+    } else if (code === 'BTRY_DMD') {
+      return evBatteryIcon
+    } else if (code === 'SCDT_DMD' || code === 'SCDT_PRC') {
+      return semiconductorIcon
+    } else {
+      return defaultIcon
+    }
+  }
+
+  const marketIcon = getMarketIcon(marketIndexAnalysisTargetCd)
 
   const { data, isLoading } = useQuery({
     queryKey: ['getForecastReportsDetail', companyNo, marketIndexAnalysisTargetCd, predictionFulfillDt, mnemonicCd, predictionCriteriaDt],
@@ -189,7 +211,26 @@ const ForecastReportCardReportContent = ({
       >
         <Stack direction="row" alignItems="start" gap="24px">
           <Stack direction="row" gap="12px">
-            <Box width="52px" height="52px" bgcolor="contentBG.Active" borderRadius="10px" />
+            <Box
+              width="52px"
+              height="52px"
+              bgcolor="contentBG.Active"
+              borderRadius="10px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Box
+                component="img"
+                src={marketIcon}
+                alt="Market Icon"
+                sx={{
+                  width: '43px',
+                  height: '43px',
+                  objectFit: 'contain',
+                }}
+              />
+            </Box>
             <InfoLabel label="TARGET" value={label} />
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
