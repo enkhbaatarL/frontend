@@ -169,7 +169,7 @@ const ForecastReportCardReportContent = ({
     : ''
 
   // label은 mnemonicCd 또는 marketIndexAnalysisTargetCd 사용
-  const label = data.mnemonicCd || data.marketIndexAnalysisTargetCd || ''
+  const label = data.marketIndexAnalysisTargetCd || ''
 
   return (
     <Stack
