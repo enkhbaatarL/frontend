@@ -42,7 +42,6 @@ const ChartToolTipItem = (props: {
   const reportContent = useMemo(
     () => (
       <ForecastChartTooltipReportContent
-        monthSelect={monthSelect}
         goodsDataSourceNo={goodsDataSourceNo}
         date={date}
         isVisible={isPopupOpen}

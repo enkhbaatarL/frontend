@@ -48,13 +48,12 @@ const ContentTab = ({ explanatoryLevelNms, onCategoryChange }: { explanatoryLeve
 )
 
 interface ForecastChartTooltipReportContentProps {
-  monthSelect?: string
   goodsDataSourceNo?: number
   date?: string
   isVisible?: boolean
 }
 
-const ForecastChartTooltipReportContent = memo(({ monthSelect, goodsDataSourceNo, date, isVisible = false }: ForecastChartTooltipReportContentProps) => {
+const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVisible = false }: ForecastChartTooltipReportContentProps) => {
   const chartGraphRef = useRef<ForecastChartGraphHandle>(null)
   const navigate = useNavigate()
   const { accessCompanyInfo, user } = useAuthStore()
@@ -76,7 +75,7 @@ const ForecastChartTooltipReportContent = memo(({ monthSelect, goodsDataSourceNo
   }, [date])
 
   // 카테고리 목록 조회
-  const { data: factorCategory, isLoading: isLoadingFactorCategory } = useQuery({
+  const { data: factorCategory } = useQuery({
     queryKey: ['forecastFactorCategoryNew', companyNo, goodsDataSourceNo, predictDate],
     queryFn: () =>
       forecastDataService.getForecastFactorCategoryNew(companyNo ?? 0, {
@@ -87,7 +86,7 @@ const ForecastChartTooltipReportContent = memo(({ monthSelect, goodsDataSourceNo
   })
 
   // 선택된 카테고리로 factors 조회
-  const { data: factors, isLoading: isLoadingFactors } = useQuery({
+  const { data: factors } = useQuery({
     queryKey: ['forecastFactorsNew', companyNo, goodsDataSourceNo, predictDate, selectedCategory],
     queryFn: () =>
       forecastDataService.getForecastFactorsNew(companyNo ?? 0, {
