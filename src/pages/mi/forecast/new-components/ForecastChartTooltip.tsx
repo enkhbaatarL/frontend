@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { forwardRef, useRef, useMemo } from 'react'
+import { forwardRef, useRef, useMemo, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import DashLineIcon from '@/components/common/forecast-chart/icons/DashLineIcon'
@@ -36,11 +36,19 @@ const ChartToolTipItem = (props: {
   const popupRef = useRef<MIMorphingPopupRef>(null)
   const hasValue = value !== undefined
   const canClick = isForecast && hasValue
+  const [isPopupOpen, setIsPopupOpen] = useState(false)
 
   // ForecastChartTooltipReportContent를 메모이제이션하여 불필요한 리렌더링 방지
   const reportContent = useMemo(
-    () => <ForecastChartTooltipReportContent monthSelect={monthSelect} goodsDataSourceNo={goodsDataSourceNo} date={date} />,
-    [monthSelect, goodsDataSourceNo, date],
+    () => (
+      <ForecastChartTooltipReportContent
+        monthSelect={monthSelect}
+        goodsDataSourceNo={goodsDataSourceNo}
+        date={date}
+        isVisible={isPopupOpen}
+      />
+    ),
+    [monthSelect, goodsDataSourceNo, date, isPopupOpen],
   )
 
   const content = (
@@ -168,6 +176,8 @@ const ChartToolTipItem = (props: {
       popup={{
         title: 'Forecast Drill-down & Key Drivers',
         content: reportContent,
+        onOpen: () => setIsPopupOpen(true),
+        onClose: () => setIsPopupOpen(false),
       }}
     >
       {content}

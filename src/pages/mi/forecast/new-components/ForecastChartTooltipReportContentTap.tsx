@@ -1,31 +1,30 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-const ForecastChartTooltipReportContentTab = () => {
+interface ForecastChartTooltipReportContentTabProps {
+  explanatoryLevelNms?: string[]
+  onCategoryChange?: (category: string) => void
+}
+
+const ForecastChartTooltipReportContentTab = ({ explanatoryLevelNms = [], onCategoryChange }: ForecastChartTooltipReportContentTabProps) => {
   const [selectedTab, setSelectedTab] = useState(0)
 
-  const tabs = [
-    'EIA',
-    'ENERGY1',
-    'ENERGY2',
-    'ENERGY3',
-    'MACRO_RISK',
-    'FINANCE',
-    'FACTOR',
-    'OIL_PRICE',
-    'SUPPLY_CHAIN',
-    'DEMAND_TRENDS',
-    'CLIMATE_POLICY',
-    'GEOPOLITICS',
-    'CURRENCY',
-    'MARKET_SENTIMENT',
-    'TECHNOLOGY',
-    'REGULATORY',
-    'INVENTORY',
-    'TRADE_FLOW',
-    'EXPORTS',
-    'IMPORTS',
-  ]
+  const tabs = explanatoryLevelNms.length > 0 ? explanatoryLevelNms : []
+
+  // 첫 번째 아이템이 선택된 상태로 시작
+  useEffect(() => {
+    if (tabs.length > 0 && onCategoryChange && selectedTab === 0) {
+      onCategoryChange(tabs[0])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [explanatoryLevelNms?.length])
+
+  const handleTabClick = (index: number) => {
+    setSelectedTab(index)
+    if (onCategoryChange && tabs[index]) {
+      onCategoryChange(tabs[index])
+    }
+  }
 
   return (
     <Box position="relative" sx={{ userSelect: 'none' }}>
@@ -54,7 +53,7 @@ const ForecastChartTooltipReportContentTab = () => {
           return (
             <Box
               key={tab}
-              onClick={() => setSelectedTab(index)}
+              onClick={() => handleTabClick(index)}
               padding="10px 24px"
               sx={{
                 fontWeight: 700,

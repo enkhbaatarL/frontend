@@ -222,6 +222,15 @@ export interface IForecastFactorCategoryRequest {
   goodsDataSourceNo: number
   date: string
 }
+export interface IForecastFactorCategoryRequestNew {
+  predictDate: string // YYYYMMDD
+  goodsDataSourceNo: number
+}
+export interface IForecastFactorsRequestNew {
+  predictDate: string // YYYYMMDD
+  goodsDataSourceNo: number
+  explanatoryLevelNm: string
+}
 export interface IForecastSummary {
   explanatoryTitleContent: string
   explanatorySummaryContent: string
@@ -280,6 +289,15 @@ export interface IForecastFactorGraphRequest {
   predictDate: string
   date: string
   mnemonicCd: string
+  explanatoryLevelNm: string
+  predictionInputMnemonicCd: string
+  marketIndexAnalysisTargetCd: string
+  predictionInputMnemonicDetailCd: string
+}
+export interface IForecastFactorGraphRequestNew {
+  goodsDataSourceNo: number
+  predictDate: string // YYYYMMDD
+  date?: string // YYYYMM (optional)
   explanatoryLevelNm: string
   predictionInputMnemonicCd: string
   marketIndexAnalysisTargetCd: string
@@ -695,6 +713,42 @@ const forecastDataService = {
   async getForecastFactorGraph(companyNo: number, params: IForecastFactorGraphRequest) {
     const response: AxiosResponse<ICommonResponse<IForecastFactorGraphResponse>> = await api.get(
       withCustomBaseUrl(`mi/dashboard/companies/${companyNo}/chart/factor/graph`),
+      { params },
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast 차트 주요 요인 분석 카테고리를 조회합니다. (새로운 엔드포인트)
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictDate: 예측 날짜 (YYYYMMDD), goodsDataSourceNo: 데이터 소스 번호 }
+   */
+  async getForecastFactorCategoryNew(companyNo: number, params: IForecastFactorCategoryRequestNew) {
+    const response: AxiosResponse<ICommonResponse<ICategoryList>> = await api.get(
+      `mi/forecast/companies/${companyNo}/chart/factor/category`,
+      { params },
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast 차트 주요 요인 분석 데이터를 조회합니다. (새로운 엔드포인트)
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictDate: 예측 날짜 (YYYYMMDD), goodsDataSourceNo: 데이터 소스 번호, explanatoryLevelNm: 카테고리 }
+   */
+  async getForecastFactorsNew(companyNo: number, params: IForecastFactorsRequestNew) {
+    const response: AxiosResponse<ICommonResponse<IForecastFactorsResponse>> = await api.get(
+      `mi/forecast/companies/${companyNo}/chart/factors`,
+      { params },
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast 차트 주요 요인 분석 그래프를 조회합니다. (새로운 엔드포인트)
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictDate: 예측 날짜 (YYYYMMDD), goodsDataSourceNo: 데이터 소스 번호, explanatoryLevelNm: 카테고리, predictionInputMnemonicCd, marketIndexAnalysisTargetCd, predictionInputMnemonicDetailCd, date: 조회할 년월(YYYYMM, optional) }
+   */
+  async getForecastFactorGraphNew(companyNo: number, params: IForecastFactorGraphRequestNew) {
+    const response: AxiosResponse<ICommonResponse<IForecastFactorGraphResponse>> = await api.get(
+      `mi/forecast/companies/${companyNo}/chart/factor/graph`,
       { params },
     )
     return response.data.data
