@@ -72,9 +72,10 @@ const SettingsMenuItem = ({
 
 interface Props {
   criteriaDate?: string
+  defaultCategoryCode?: string
 }
 
-const NewsFeed = ({ criteriaDate }: Props) => {
+const NewsFeed = ({ criteriaDate, defaultCategoryCode: propDefaultCategoryCode }: Props) => {
   const [categoryCode, setCategoryCode] = useState<string>('')
   const [sentiments, setSentiments] = useState<DirectionType[]>([])
   const [impactScores, setImpactScores] = useState<string[]>([])
@@ -154,7 +155,9 @@ const NewsFeed = ({ criteriaDate }: Props) => {
 
   useEffect(() => {
     if (marketCategoryCodeOptions.length > 0 && !isInitialized) {
-      setCategoryCode(marketCategoryCodeOptions[0].value)
+      // newsMarketCategoryCode가 있으면 사용, 없으면 첫 번째 옵션 사용
+      const initialCategoryCode = propDefaultCategoryCode || marketCategoryCodeOptions[0].value
+      setCategoryCode(initialCategoryCode)
 
       const savedFilters = localStorage.getItem('newsFeedFilters')
 
@@ -168,7 +171,7 @@ const NewsFeed = ({ criteriaDate }: Props) => {
 
       setIsInitialized(true)
     }
-  }, [marketCategoryCodeOptions, isInitialized])
+  }, [marketCategoryCodeOptions, isInitialized, propDefaultCategoryCode])
 
   return (
     <DashboardCard

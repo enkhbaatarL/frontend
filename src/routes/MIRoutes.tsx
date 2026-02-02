@@ -43,20 +43,26 @@ const MIMainRedirect = () => {
 
   const homeUrl = miHome()
 
+  // USER 로그인 시 accessCompanyInfo가 아직 로드되지 않았는지 확인
+  const isUserLoginWithoutAccessInfo = user?.userRoleCd === 'USER' && !accessCompanyInfo
+
   useEffect(() => {
     if (needsCompanySwitch && targetCompanyNo) {
       loadAccessCompanyInfo(targetCompanyNo)
     }
   }, [needsCompanySwitch, targetCompanyNo, loadAccessCompanyInfo])
 
-  // 권한 데이터 로딩 중이거나 회사 전환이 필요한 경우 대기
-  if (isDeniedDashboardPageLoading || needsCompanySwitch) {
-    return <></>
-  }
+  useEffect(() => {
+    // USER 로그인 시 accessCompanyInfo가 없으면 로드
+    if (isUserLoginWithoutAccessInfo && user?.companyNo) {
+      loadAccessCompanyInfo(user.companyNo)
+    }
+  }, [isUserLoginWithoutAccessInfo, user?.companyNo, loadAccessCompanyInfo])
 
-  if (!homeUrl) {
-    const fallbackUrl = accessCompanyInfo?.isFuture ? 'dashboard' : 'forecast'
-    return <Navigate to={`/mi/${fallbackUrl}`} replace />
+  // 권한 데이터 로딩 중이거나 회사 전환이 필요한 경우 대기
+  // homeUrl이 undefined이거나 accessCompanyInfo가 로드되지 않은 경우 대기
+  if (isDeniedDashboardPageLoading || needsCompanySwitch || !homeUrl || isUserLoginWithoutAccessInfo) {
+    return <></>
   }
 
   // 리다이렉트 시 state를 초기화하여 targetCompanyNo 잔존 방지
