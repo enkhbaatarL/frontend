@@ -8,6 +8,11 @@ import dayjs from 'dayjs'
 import { ReactNode, memo, useMemo, useRef, useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import crudeOilIcon from '@/assets/icons/crude-oil.png'
+import defaultIcon from '@/assets/icons/default.png'
+import evBatteryIcon from '@/assets/icons/ev-battery.png'
+import lngIcon from '@/assets/icons/lng.png'
+import semiconductorIcon from '@/assets/icons/semiconductor.png'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
 import ForecastChartGraph, { ForecastChartGraphHandle } from '@/pages/mi/forecast/new-components/ForecastChartGraph'
@@ -80,6 +85,21 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
     }
   }, [date])
 
+  // marketIndexAnalysisTargetCd에 따라 아이콘 선택
+  const getMarketIcon = (code: string): string => {
+    if (code === 'EN_CROIL') {
+      return crudeOilIcon
+    } else if (code === 'EN_LNG') {
+      return lngIcon
+    } else if (code === 'BTRY_DMD') {
+      return evBatteryIcon
+    } else if (code === 'SCDT_DMD' || code === 'SCDT_PRC') {
+      return semiconductorIcon
+    } else {
+      return defaultIcon
+    }
+  }
+
   // 카테고리 목록 조회
   const { data: factorCategory } = useQuery({
     queryKey: ['forecastFactorCategoryNew', companyNo, goodsDataSourceNo, predictDate],
@@ -102,6 +122,8 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
       }),
     enabled: isVisible && !!companyNo && !!goodsDataSourceNo && !!selectedCategory && !!date && !date.startsWith('Index:'),
   })
+
+  const marketIcon = getMarketIcon(factorCategory?.marketIndexAnalysisTargetCd ?? '')
 
   const handleCategoryChange = useCallback((category: string) => {
     setSelectedCategory(category)
@@ -261,7 +283,27 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
         {/* 상세정보 */}
         <Stack direction="row" alignItems="start" gap="24px">
           <Stack direction="row" gap="12px">
-            <Box width="52px" height="52px" bgcolor="contentBG.Active" borderRadius="10px" />
+            <Box
+              width="52px"
+              height="52px"
+              bgcolor="contentBG.Active"
+              borderRadius="10px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Box
+                component="img"
+                src={marketIcon}
+                alt="Market Icon"
+                sx={{
+                  width: '43px',
+                  height: '43px',
+                  objectFit: 'contain',
+                }}
+                draggable={false}
+              />
+            </Box>
             <InfoLabel label="TARGET" value={factorCategory?.predictChartDetailExpn?.toUpperCase() || '-'} />
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
