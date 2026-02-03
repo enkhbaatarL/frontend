@@ -388,6 +388,37 @@ export interface IForecastReportsTableData {
   }
 }
 
+// Forecast Records 응답 데이터 타입
+export interface IForecastRecord {
+  marketIndexAnalysisTargetCd: string
+  predictionFulfillDt: string
+  mnemonicCd: string
+  predictChartDetailExpn: string
+  associatedGoodsDataSourceNo: number
+  endPredictionResultDt: string
+  startPredictionResultDt: string
+  predictionCriteriaDt: string
+  predictionResultVal: number
+  predictionCriteriaVal: number
+  predictionResultDiffVal: number
+  predictionResultDiffRate: number
+  isScheduled: boolean | null
+  isNew: boolean | null
+}
+
+export interface IForecastRecordsResponse {
+  totalPages: number
+  totalElements: number
+  currentPage: number
+  numberOfElements: number
+  size: number
+  isFirst: boolean
+  isLast: boolean
+  hasPrevious: boolean
+  hasNext: boolean
+  detail: IForecastRecord[]
+}
+
 /**
  * Forecast 서비스
  */
@@ -875,6 +906,27 @@ const forecastDataService = {
     }
 
     return response
+  },
+  /**
+   * Forecast Records 데이터를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { goodsDataSourceNo: 데이터 소스 번호(선택), startDate: 조회 시작일자(YYYYMMDD), endDate: 조회 종료일자(YYYYMMDD), order: 정렬 순서(NEWEST/OLDEST, 기본값: NEWEST), page: 페이지번호(기본값: 1), size: 페이지당항목수(기본값: 20) }
+   */
+  async getForecastRecords(
+    companyNo: number,
+    params: {
+      goodsDataSourceNo?: number
+      startDate: string
+      endDate: string
+      order?: 'NEWEST' | 'OLDEST'
+      page?: number
+      size?: number
+    },
+  ): Promise<IForecastRecordsResponse> {
+    const response: AxiosResponse<ICommonResponse<IForecastRecordsResponse>> = await api.get(`mi/forecast/companies/${companyNo}/records`, {
+      params,
+    })
+    return response.data.data
   },
 }
 

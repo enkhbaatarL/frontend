@@ -1,6 +1,8 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
-import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
+import { useMemo, useState, useEffect } from 'react'
 
 import forecastTargetIcon from '@/assets/icons/forecast-target.svg'
 import forecastVectorIcon from '@/assets/icons/forecast-vector.svg'
@@ -10,10 +12,12 @@ import MIDateRangePickerMenu, { DateRange } from '@/components/common/menu/MIDat
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MITableUser from '@/components/common/table/MITableUser'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
-import { IForecastChartInfo, IForecastReport } from '@/service/mi/forecast'
+import forecastDataService, { ForecastBasicInfo, IForecastChartInfo, IForecastReport } from '@/service/mi/forecast'
+import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
 
 interface RecordsTablePageProps {
+  basicInfo?: ForecastBasicInfo
   chartData?: IForecastChartInfo
   chartDataIsLoading?: boolean
   onMonthSelectChange: (monthSelect: string) => void
@@ -44,9 +48,20 @@ interface ModelRecord {
   dailyDataDownloadUrl?: string
 }
 
-const RecordsTablePage = ({ chartDataIsLoading }: RecordsTablePageProps) => {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
-  const [selectedTarget, setSelectedTarget] = useState<string>('All Targets')
+const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePageProps) => {
+  const { accessCompanyInfo, user } = useAuthStore()
+  const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
+
+  // 기본값: Last 30 days
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = dayjs().startOf('day')
+    const last30days = today.subtract(30, 'day')
+    return {
+      startDate: last30days,
+      endDate: today,
+    }
+  })
+  const [selectedTarget, setSelectedTarget] = useState<string>('')
   const [sortOrder, setSortOrder] = useState<string>('NEWEST')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -70,56 +85,71 @@ const RecordsTablePage = ({ chartDataIsLoading }: RecordsTablePageProps) => {
     [],
   )
 
-  // 임시 Model Records 데이터
-  const modelRecordsData: ModelRecord[] = useMemo(
-    () => [
-      {
-        id: '1',
-        target: 'Brent Crude',
-        runDate: '25/12/01',
-        forecastPeriod: '25/12/17-25/12/19',
-        referencePrice: 71.04,
-        forecastPrice: 71.04,
-        actualPrice: 71.04,
-        forecastError: 1.42,
-        forecastDirection: 'Upward',
-        isDirectionMatch: true,
-      },
-      {
-        id: '2',
-        target: 'Dubai Crude',
-        runDate: '25/12/01',
-        forecastPeriod: '25/12/15-25/12/19',
-        referencePrice: 71.04,
-        forecastPrice: 71.04,
-        actualPrice: 71.04,
-        forecastError: 1.42,
-        forecastDirection: 'Downward',
-        isDirectionMatch: true,
-      },
-      // 더 많은 데이터는 나중에 API에서 가져올 예정
-    ],
-    [],
-  )
+  // API 호출을 위한 파라미터 준비
+  const recordsApiParams = useMemo(() => {
+    if (!dateRange?.startDate || !dateRange?.endDate || !companyNo) return null
 
-  // 필터링된 Records 데이터
-  const filteredRecords = useMemo(() => {
-    let filtered = [...modelRecordsData]
-
-    // Target 필터
-    if (selectedTarget !== 'All Targets') {
-      filtered = filtered.filter((record) => record.target === selectedTarget)
+    return {
+      goodsDataSourceNo: selectedTarget && selectedTarget !== '' ? Number(selectedTarget) : undefined,
+      startDate: dateRange.startDate.format('YYYYMMDD'),
+      endDate: dateRange.endDate.format('YYYYMMDD'),
+      order: sortOrder as 'NEWEST' | 'OLDEST',
+      page,
+      size: pageSize,
     }
+  }, [dateRange, selectedTarget, sortOrder, page, pageSize])
 
-    // 정렬
-    if (sortOrder === 'OLDEST') {
-      filtered = filtered.sort((a, b) => a.runDate.localeCompare(b.runDate))
-    } else {
-      filtered = filtered.sort((a, b) => b.runDate.localeCompare(a.runDate))
-    }
+  // Records 데이터 API 호출
+  const { data: recordsData, isLoading: recordsIsLoading } = useQuery({
+    queryKey: ['getForecastRecords', companyNo, recordsApiParams],
+    queryFn: () => forecastDataService.getForecastRecords(companyNo, recordsApiParams!),
+    enabled: !!recordsApiParams && !!companyNo,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
 
-    return filtered
-  }, [modelRecordsData, selectedTarget, sortOrder])
+  // API 응답 데이터를 ModelRecord 형식으로 변환
+  const modelRecordsData: ModelRecord[] = useMemo(() => {
+    if (!recordsData?.detail) return []
+
+    return recordsData.detail.map((record) => {
+      // 날짜 형식 변환: YYYYMMDD -> YY/MM/DD
+      const formatDate = (dateStr: string) => {
+        if (!dateStr || dateStr.length !== 8) return ''
+        return dayjs(dateStr, 'YYYYMMDD').format('YY/MM/DD')
+      }
+
+      const runDate = formatDate(record.predictionFulfillDt)
+      const startDate = formatDate(record.startPredictionResultDt)
+      const endDate = formatDate(record.endPredictionResultDt)
+      const forecastPeriod = `${startDate} - ${endDate}`
+
+      // forecastDirection 계산: predictionResultDiffVal이 양수면 Upward, 음수면 Downward
+      const forecastDirection: 'Upward' | 'Downward' = record.predictionResultDiffVal >= 0 ? 'Upward' : 'Downward'
+
+      // isDirectionMatch: 실제 데이터가 없으므로 임시로 true (나중에 실제 데이터와 비교 필요)
+      const isDirectionMatch = true
+
+      // forecastError: predictionResultDiffRate의 절댓값
+      const forecastError = Math.abs(record.predictionResultDiffRate ?? 0)
+
+      // 고유 ID 생성
+      const id = `${record.marketIndexAnalysisTargetCd}_${record.predictionFulfillDt}_${record.mnemonicCd}`
+
+      return {
+        id,
+        target: record.predictChartDetailExpn,
+        runDate,
+        forecastPeriod,
+        referencePrice: record.predictionCriteriaVal,
+        forecastPrice: record.predictionResultVal,
+        actualPrice: record.predictionResultVal, // 실제 데이터가 없으므로 예측값으로 임시 설정
+        forecastError,
+        forecastDirection,
+        isDirectionMatch,
+      }
+    })
+  }, [recordsData])
 
   // 테이블 컬럼 정의
   const tableColumns = useMemo<GridColDef[]>(
@@ -142,7 +172,7 @@ const RecordsTablePage = ({ chartDataIsLoading }: RecordsTablePageProps) => {
       },
       {
         field: 'forecastPeriod',
-        headerName: 'Forecast Period',
+        headerName: 'Forecast Date',
         minWidth: 150,
         flex: 1.5,
         align: 'center',
@@ -177,7 +207,7 @@ const RecordsTablePage = ({ chartDataIsLoading }: RecordsTablePageProps) => {
       },
       {
         field: 'forecastError',
-        headerName: 'Forecast Error',
+        headerName: 'Forecast 오차율',
         minWidth: 120,
         flex: 1,
         align: 'right',
@@ -209,7 +239,7 @@ const RecordsTablePage = ({ chartDataIsLoading }: RecordsTablePageProps) => {
       },
       {
         field: 'reportDownload',
-        headerName: 'Report Download',
+        headerName: '설명역',
         flex: 1,
         align: 'center',
         headerAlign: 'center',
@@ -239,7 +269,7 @@ const RecordsTablePage = ({ chartDataIsLoading }: RecordsTablePageProps) => {
       },
       {
         field: 'dailyData',
-        headerName: 'Daily Data',
+        headerName: '일별데이터',
         flex: 1,
         align: 'center',
         headerAlign: 'center',
@@ -271,37 +301,43 @@ const RecordsTablePage = ({ chartDataIsLoading }: RecordsTablePageProps) => {
     [],
   )
 
-  // 페이지네이션
-  const paginatedRows = useMemo(() => {
-    const startIndex = (page - 1) * pageSize
-    return filteredRecords.slice(startIndex, startIndex + pageSize)
-  }, [filteredRecords, page, pageSize])
-
+  // 페이지네이션 메타데이터 (API 응답에서 가져옴)
   const paginationMeta = useMemo(
     () => ({
-      totalPages: Math.max(1, Math.ceil(filteredRecords.length / pageSize)),
-      totalElements: filteredRecords.length,
-      currentPage: page,
-      numberOfElements: paginatedRows.length,
-      size: pageSize,
-      isFirst: page <= 1,
-      isLast: page >= Math.ceil(filteredRecords.length / pageSize),
-      hasPrevious: page > 1,
-      hasNext: page < Math.ceil(filteredRecords.length / pageSize),
-      detail: paginatedRows,
+      totalPages: recordsData?.totalPages ?? 1,
+      totalElements: recordsData?.totalElements ?? 0,
+      currentPage: recordsData?.currentPage ?? page,
+      numberOfElements: recordsData?.numberOfElements ?? 0,
+      size: recordsData?.size ?? pageSize,
+      isFirst: recordsData?.isFirst ?? true,
+      isLast: recordsData?.isLast ?? true,
+      hasPrevious: recordsData?.hasPrevious ?? false,
+      hasNext: recordsData?.hasNext ?? false,
+      detail: modelRecordsData,
     }),
-    [filteredRecords.length, page, pageSize, paginatedRows],
+    [recordsData, modelRecordsData, page, pageSize],
   )
 
-  // Target 옵션 (임시로 chartData에서 추출하거나 하드코딩)
-  const targetOptions = useMemo(
-    () => [
-      { label: 'All Targets', value: 'All Targets' },
-      { label: 'Brent Crude', value: 'Brent Crude' },
-      { label: 'Dubai Crude', value: 'Dubai Crude' },
-    ],
-    [],
-  )
+  // 페이지 변경 시 API 재호출을 위해 page state 업데이트
+  useEffect(() => {
+    if (recordsData?.currentPage && recordsData.currentPage !== page) {
+      setPage(recordsData.currentPage)
+    }
+  }, [recordsData?.currentPage, page])
+
+  // Target 옵션을 basicInfo.targetList 기반으로 생성
+  const targetOptions = useMemo(() => {
+    const options = [{ label: 'All Targets', value: '' }]
+    if (basicInfo?.targetList) {
+      basicInfo.targetList.forEach((target) => {
+        options.push({
+          label: target.predictChartDetailExpn,
+          value: String(target.goodsDataSourceNo),
+        })
+      })
+    }
+    return options
+  }, [basicInfo?.targetList])
 
   return (
     <Stack gap="20px" maxWidth="1380px" margin="auto" marginTop="40px">
@@ -446,7 +482,10 @@ const RecordsTablePage = ({ chartDataIsLoading }: RecordsTablePageProps) => {
               variant="outlined"
               items={targetOptions}
               selected={selectedTarget}
-              onSelected={(value: string) => setSelectedTarget(value)}
+              onSelected={(value: string) => {
+                setSelectedTarget(value)
+                setPage(1) // 필터 변경 시 첫 페이지로 리셋
+              }}
               sx={{ height: '36px' }}
               enableHoverBackground
             />
@@ -457,12 +496,18 @@ const RecordsTablePage = ({ chartDataIsLoading }: RecordsTablePageProps) => {
                 { label: 'Oldest', value: 'OLDEST' },
               ]}
               selected={sortOrder}
-              onSelected={(value: string) => setSortOrder(value)}
+              onSelected={(value: string) => {
+                setSortOrder(value)
+                setPage(1) // 정렬 변경 시 첫 페이지로 리셋
+              }}
               sx={{ height: '36px' }}
               enableHoverBackground
             />
             <MIDateRangePickerMenu
-              onApply={setDateRange}
+              onApply={(range) => {
+                setDateRange(range)
+                setPage(1) // 날짜 범위 변경 시 첫 페이지로 리셋
+              }}
               dateRange={dateRange}
               sx={{ height: '36px' }}
               enableHoverBackground
@@ -486,14 +531,14 @@ const RecordsTablePage = ({ chartDataIsLoading }: RecordsTablePageProps) => {
         </Stack>
 
         {/* 테이블 */}
-        {chartDataIsLoading ? (
+        {chartDataIsLoading || recordsIsLoading ? (
           <MIBaseSkeleton.BaseElement2 width={'100%'} height={'400px'} />
         ) : (
           <MITableUser
             tableProps={{
               noRowMessage: '등록된 내용이 없습니다.',
               columns: tableColumns,
-              rows: paginatedRows,
+              rows: modelRecordsData,
               rowId: 'id',
               sx: {
                 '& .MuiDataGrid-cell[data-field="forecastDirection"]': {

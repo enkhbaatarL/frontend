@@ -86,10 +86,10 @@ const NewForecastPage = () => {
               onXAxisUnitChange={setXAxisUnit}
               onPeriodChange={setPeriod}
             />
-            <TablePage 
+            <TablePage
               basicInfo={basicInfo}
-              chartData={chartData} 
-              chartDataIsLoading={chartDataIsLoading} 
+              chartData={chartData}
+              chartDataIsLoading={chartDataIsLoading}
               onMonthSelectChange={setMonthSelect}
               hoverReportCardInfo={hoverReportCardInfo}
             />
@@ -98,7 +98,15 @@ const NewForecastPage = () => {
       },
       {
         label: 'Records',
-        content: <RecordsTablePage chartData={chartData} chartDataIsLoading={chartDataIsLoading} onMonthSelectChange={setMonthSelect} hoverReportCardInfo={hoverReportCardInfo} />,
+        content: (
+          <RecordsTablePage
+            basicInfo={basicInfo}
+            chartData={chartData}
+            chartDataIsLoading={chartDataIsLoading}
+            onMonthSelectChange={setMonthSelect}
+            hoverReportCardInfo={hoverReportCardInfo}
+          />
+        ),
       },
     ],
     [chartData, chartDataIsLoading, monthSelect, hoverReportCardInfo, basicInfo?.targetList, forecastReports, xAxisUnit, period],
