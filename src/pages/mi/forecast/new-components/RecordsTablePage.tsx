@@ -33,6 +33,11 @@ interface ModelAccuracyItem {
   date: string
 }
 
+// Model Accuracy 섹션 임시 비표시 (true로 변경 시 다시 표시)
+const SHOW_MODEL_ACCURACY = false
+// 일별데이터 열 임시 비표시 (true로 변경 시 다시 표시)
+const SHOW_DAILY_DATA_COLUMN = false
+
 // Model Records 데이터 타입
 interface ModelRecord {
   id: string
@@ -313,37 +318,41 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
           </MIBaseButton>
         ),
       },
-      {
-        field: 'dailyData',
-        headerName: '일별데이터',
-        flex: 1,
-        align: 'center',
-        headerAlign: 'center',
-        sortable: false,
-        renderCell: () => (
-          <MIBaseButton
-            variant="outlined"
-            onClick={() => {
-              // 다운로드 로직 추가
-            }}
-            sx={{
-              width: '28px',
-              height: '28px',
-              minWidth: '28px',
-              padding: '4px',
-              borderRadius: '4px',
-              borderColor: '#E5E7EB',
-              backgroundColor: '#FFFFFF',
-              '&:hover': {
-                backgroundColor: '#F9FAFB',
-                borderColor: '#D1D5DB',
-              },
-            }}
-          >
-            <ChartDownloadIcon fill={theme.palette.gray[70]} />
-          </MIBaseButton>
-        ),
-      },
+      ...(SHOW_DAILY_DATA_COLUMN
+        ? [
+          {
+            field: 'dailyData',
+            headerName: '일별데이터',
+            flex: 1,
+            align: 'center' as const,
+            headerAlign: 'center' as const,
+            sortable: false,
+            renderCell: () => (
+              <MIBaseButton
+                variant="outlined"
+                onClick={() => {
+                  // 다운로드 로직 추가
+                }}
+                sx={{
+                  width: '28px',
+                  height: '28px',
+                  minWidth: '28px',
+                  padding: '4px',
+                  borderRadius: '4px',
+                  borderColor: '#E5E7EB',
+                  backgroundColor: '#FFFFFF',
+                  '&:hover': {
+                    backgroundColor: '#F9FAFB',
+                    borderColor: '#D1D5DB',
+                  },
+                }}
+              >
+                <ChartDownloadIcon fill={theme.palette.gray[70]} />
+              </MIBaseButton>
+            ),
+          },
+        ]
+        : []),
     ],
     [handleDownload],
   )
@@ -388,96 +397,97 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
 
   return (
     <Stack gap="20px" maxWidth="1380px" margin="auto" marginTop="40px">
-      {/* Model Accuracy Section */}
-      <Box
-        sx={{
-          padding: '20px 24px',
-          gap: '12px',
-          borderRadius: '10px',
-          border: '1px solid #DEE2E6',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <Stack direction="row" alignItems="center" gap="24px" height="42px">
-          {/* 왼쪽 타이틀 영역 */}
-          <Stack direction="row" alignItems="center" gap="2px">
-            <img src={forecastTargetIcon} alt="Model Accuracy" width={24} height={24} />
-            <Typography
+      {SHOW_MODEL_ACCURACY && (
+        <Box
+          sx={{
+            padding: '20px 24px',
+            gap: '12px',
+            borderRadius: '10px',
+            border: '1px solid #DEE2E6',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <Stack direction="row" alignItems="center" gap="24px" height="42px">
+            {/* 왼쪽 타이틀 영역 */}
+            <Stack direction="row" alignItems="center" gap="2px">
+              <img src={forecastTargetIcon} alt="Model Accuracy" width={24} height={24} />
+              <Typography
+                sx={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 600,
+                  fontSize: '16px',
+                  lineHeight: '140%',
+                  letterSpacing: '0%',
+                  verticalAlign: 'middle',
+                  color: '#000000',
+                }}
+              >
+                Model Accuracy
+              </Typography>
+            </Stack>
+
+            {/* 구분선 */}
+            <Box
               sx={{
-                fontFamily: 'Pretendard',
-                fontWeight: 600,
-                fontSize: '16px',
-                lineHeight: '140%',
-                letterSpacing: '0%',
-                verticalAlign: 'middle',
-                color: '#000000',
+                width: '1px',
+                height: '26px',
+                backgroundColor: '#DEE2E6',
+                padding: '6px 0',
               }}
-            >
-              Model Accuracy
-            </Typography>
-          </Stack>
+            />
 
-          {/* 구분선 */}
-          <Box
-            sx={{
-              width: '1px',
-              height: '26px',
-              backgroundColor: '#DEE2E6',
-              padding: '6px 0',
-            }}
-          />
-
-          {/* 오른쪽 표시 영역 */}
-          <Stack direction="row" alignItems="center" gap="38px" sx={{ padding: '0 12px', flex: 1 }}>
-            {modelAccuracyData.map((item, index) => (
-              <Box key={index} sx={{ width: '220px', height: '42px' }}>
-                {/* 이름 */}
-                <Typography
-                  sx={{
-                    fontFamily: 'Pretendard',
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    lineHeight: '140%',
-                    letterSpacing: '0%',
-                    color: '#212529',
-                    marginBottom: '6px',
-                  }}
-                >
-                  {item.name}
-                </Typography>
-                {/* 수치 영역 */}
-                <Stack direction="row" alignItems="center" gap="6px" height="22px">
+            {/* 오른쪽 표시 영역 */}
+            <Stack direction="row" alignItems="center" gap="38px" sx={{ padding: '0 12px', flex: 1 }}>
+              {modelAccuracyData.map((item, index) => (
+                <Box key={index} sx={{ width: '220px', height: '42px' }}>
+                  {/* 이름 */}
                   <Typography
                     sx={{
                       fontFamily: 'Pretendard',
                       fontWeight: 600,
-                      fontSize: '16px',
-                      lineHeight: '140%',
-                      letterSpacing: '0%',
-                      color: '#212529',
-                    }}
-                  >
-                    {item.percentage.toFixed(2)}%
-                  </Typography>
-                  <Typography
-                    sx={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 500,
                       fontSize: '14px',
                       lineHeight: '140%',
                       letterSpacing: '0%',
-                      color: '#868E96',
+                      color: '#212529',
+                      marginBottom: '6px',
                     }}
                   >
-                    {item.type} • {item.date}
+                    {item.name}
                   </Typography>
-                </Stack>
-              </Box>
-            ))}
+                  {/* 수치 영역 */}
+                  <Stack direction="row" alignItems="center" gap="6px" height="22px">
+                    <Typography
+                      sx={{
+                        fontFamily: 'Pretendard',
+                        fontWeight: 600,
+                        fontSize: '16px',
+                        lineHeight: '140%',
+                        letterSpacing: '0%',
+                        color: '#212529',
+                      }}
+                    >
+                      {item.percentage.toFixed(2)}%
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontFamily: 'Pretendard',
+                        fontWeight: 500,
+                        fontSize: '14px',
+                        lineHeight: '140%',
+                        letterSpacing: '0%',
+                        color: '#868E96',
+                      }}
+                    >
+                      {item.type} • {item.date}
+                    </Typography>
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
           </Stack>
-        </Stack>
-      </Box>
+        </Box>
+      )}
 
       {/* Model Records Section */}
       <Box
