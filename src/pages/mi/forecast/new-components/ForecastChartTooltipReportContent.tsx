@@ -394,8 +394,8 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
                   </Typography>
                 </Stack>
                 <Stack gap="4px">
-                  {factors?.plusFactors?.map((factor) => {
-                    const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
+                  {factors?.plusFactors?.map((factor, index) => {
+                    const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
                     const isSelected = selectedFactor === factorId
                     return (
                       <Stack
@@ -456,8 +456,8 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
                   </Typography>
                 </Stack>
                 <Stack gap="4px">
-                  {factors?.minusFactors?.map((factor) => {
-                    const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
+                  {factors?.minusFactors?.map((factor, index) => {
+                    const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
                     const isSelected = selectedFactor === factorId
                     return (
                       <Stack
