@@ -135,15 +135,15 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
     if (!selectedFactor || !factors) return null
 
     // plusFactors에서 찾기
-    const plusFactor = (factors.plusFactors || []).find((factor) => {
-      const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
+    const plusFactor = (factors.plusFactors || []).find((factor, index) => {
+      const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
       return factorId === selectedFactor
     })
     if (plusFactor) return plusFactor
 
     // minusFactors에서 찾기
-    const minusFactor = (factors.minusFactors || []).find((factor) => {
-      const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
+    const minusFactor = (factors.minusFactors || []).find((factor, index) => {
+      const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
       return factorId === selectedFactor
     })
     if (minusFactor) return minusFactor
