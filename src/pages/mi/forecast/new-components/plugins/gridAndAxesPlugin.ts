@@ -70,7 +70,7 @@ const drawTextWithBackground = (ctx: CanvasRenderingContext2D, options: TextWith
 const gridAndAxesPlugin: Plugin<ChartType> = {
   id: 'gridAndAxes',
 
-  afterDraw(chart: Chart, _args, options: { bottomLabel?: string; topLabel?: string; timestamps?: string[]; dataPointCount?: number }) {
+  afterDraw(chart: Chart, _args, options: { bottomLabel?: string; topLabel?: string; timestamps?: string[]; resultDates?: string[]; dataPointCount?: number }) {
     const ctx = chart.ctx
     const chartArea = chart.chartArea
     const { top, bottom, left, right } = chartArea
@@ -167,7 +167,10 @@ const gridAndAxesPlugin: Plugin<ChartType> = {
             const pixel = xScale.getPixelForValue(currentIndex)
 
             if (pixel !== undefined && !Number.isNaN(pixel) && pixel >= left && pixel <= right) {
-              const label = dayjs(timestamp).format('MM/DD')
+              // resultDates가 있으면 원본 resultDate 사용, 없으면 기존 포맷 사용
+              const label = options.resultDates && options.resultDates[currentIndex]
+                ? options.resultDates[currentIndex] // 원본 resultDate 문자열 그대로 사용
+                : dayjs(timestamp).format('MM/DD') // 기존 포맷
               const labelWidth = ctx.measureText(label).width
               const labelLeft = pixel - labelWidth / 2
               const labelRight = pixel + labelWidth / 2

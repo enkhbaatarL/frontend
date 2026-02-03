@@ -362,6 +362,7 @@ type DatasetMeta = {
   isHighlight?: boolean
   timestamps?: string[]
   predictDates?: string[]
+  resultDates?: string[]
 }
 
 type ChartDatasetType = ChartDataset<'line' | 'candlestick' | 'bar', (Point | FinancialDataPoint)[]> & {
@@ -436,6 +437,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
     }, [chartList])
 
     const firstChartTimestamps = useMemo(() => chartList[0]?.timestamps || [], [chartList])
+    const firstChartResultDates = useMemo(() => (chartList[0] as ChartData & { resultDates?: string[] })?.resultDates || [], [chartList])
 
     const firstChartSeries = useMemo(() => {
       const chart = chartList[0]
@@ -549,6 +551,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             visibilityKey,
             timestamps: chart.timestamps,
             predictDates: (chart as ChartData & { predictDates?: string[] }).predictDates,
+            resultDates: (chart as ChartData & { resultDates?: string[] }).resultDates,
           },
         } as ChartDatasetType
       })
@@ -1199,6 +1202,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
           },
           gridAndAxes: {
             timestamps: firstChartTimestamps,
+            resultDates: firstChartResultDates,
             dataPointCount,
           },
         },
@@ -1206,7 +1210,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       // onPan 콜백은 클로저로 최신 fixedXScaleIndex와 isDragConfirmedRef를 참조하므로 의존성 배열에 추가하지 않음
       // fixedXScaleIndex를 의존성에 추가하면 fixedXScaleIndex 변경 시마다 chartOptions가 재생성되어 불필요한 리렌더링 발생
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [isEmptyChart, dataPointCount, firstChartTimestamps, subYAxes, unitCd, currency, isYAxisSeparated, fullYAxisRange],
+      [isEmptyChart, dataPointCount, firstChartTimestamps, firstChartResultDates, subYAxes, unitCd, currency, isYAxisSeparated, fullYAxisRange],
     )
 
     useEffect(() => {
