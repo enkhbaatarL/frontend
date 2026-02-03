@@ -315,7 +315,6 @@ const NewsletterDetailPage = () => {
 
   const handleDeleteNewsConfirm = useCallback(
     (newsId: string) => {
-      console.log('newsId', newsId)
       setHasDraftChanged(true)
       // newsletterIssueDetail에 있는지 먼저 확인
       const isInNewsletterDetail = newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems?.some((item) => item.newsId === newsId)

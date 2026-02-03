@@ -147,52 +147,7 @@ const ForecastChart = ({
       return dayjs().format('YYYY-MM-DDTHH:mm:ss')
     }
 
-    // hoverReportCardInfo가 있고 predictionResultList가 있으면 그것을 사용
-    if (hoverReportCardInfo?.predictionResultList && hoverReportCardInfo.predictionResultList.length > 0) {
-      const resultList = hoverReportCardInfo.predictionResultList
-
-      // 날짜 형식 변환: "20251215" -> "2025-12-15"
-      const formatDate = (dateStr: string) => {
-        if (dateStr.length === 8) {
-          return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
-        }
-        return dateStr
-      }
-
-      const timestamps = resultList.map((item) => dayjs(formatDate(item.date)).format('YYYY-MM-DDTHH:mm:ss'))
-      const resultDates = resultList.map((item) => item.date) // 원본 date 저장
-      const values = resultList.map((item) => {
-        const value = item.value
-        if (value === null || value === undefined) {
-          return null
-        }
-        return Number(value)
-      })
-
-      return [
-        {
-          goodsDataSourceName: hoverReportCardInfo.predictChartDetailExpn,
-          goodsDataSourceNo: hoverReportCardInfo.associatedGoodsDataSourceNo,
-          chartType: ChartType.LINE,
-          timestamps,
-          resultDates,
-          series: [
-            {
-              seriesId: 'main',
-              label: hoverReportCardInfo.predictChartDetailExpn,
-              renderAs: 'MAIN',
-              values,
-              isVisible: true,
-            },
-          ],
-          unitCd: chartData?.metadata.currentUnitCd || '',
-          goodsDataName: hoverReportCardInfo.predictChartDetailExpn,
-          dataType: 'FORECAST',
-        } as ChartData & { dataType?: string; resultDates?: string[] },
-      ]
-    }
-
-    // 기본적으로 chartData 사용
+    // 기본적으로 chartData 사용 (호버 시에도 기본 그래프는 유지하고, 흐리게 표시 후 highlight로 새 데이터만 선명하게 그림)
     if (!chartData?.charts) return []
 
     const result: ChartData[] = []
@@ -270,6 +225,132 @@ const ForecastChart = ({
     })
 
     return result
+  }, [chartData])
+
+  // 호버 시 리포트 기간(start~end)만 맞춰 predictionResultList를 highlight로 그림 (기본 그래프는 흐리게 유지)
+  const highlightChartData = useMemo((): (ChartData & { dataType?: string; resultDates?: string[] }) | null => {
+    if (!hoverReportCardInfo?.predictionResultList?.length || !chartData?.charts?.length) return null
+
+    const resultList = hoverReportCardInfo.predictionResultList
+    const reportStart = hoverReportCardInfo.startPredictionResultDt
+    const reportEnd = hoverReportCardInfo.endPredictionResultDt
+
+    // 날짜를 YYYYMMDD로 정규화 (형식 차이로 매칭 실패 방지)
+    const toYyyyMmDd = (d: string): string => {
+      if (/^\d{8}$/.test(d)) return d
+      const parsed = dayjs(d)
+      return parsed.isValid() ? parsed.format('YYYYMMDD') : ''
+    }
+    const reportStartNorm = toYyyyMmDd(reportStart)
+    const reportEndNorm = toYyyyMmDd(reportEnd)
+    const resultListByDate = new Map<string, number>()
+    resultList.forEach((p) => {
+      const key = toYyyyMmDd(p.date)
+      if (key && p.value !== null && p.value !== undefined) resultListByDate.set(key, Number(p.value))
+    })
+
+    // 기본 차트의 x축(날짜) - 가장 긴 rawData 사용
+    let baseDates: string[] = []
+    let maxLen = 0
+    chartData.charts.forEach((chart) => {
+      const actualDates = chart.actualChartLines.rawData?.map((r) => r.resultDate) ?? []
+      const forecastDates = chart.forecastChartLines.rawData?.map((r) => r.resultDate) ?? []
+      const dates = actualDates.length >= forecastDates.length ? actualDates : forecastDates
+      if (dates.length > maxLen) {
+        maxLen = dates.length
+        baseDates = dates
+      }
+    })
+    if (baseDates.length === 0) return null
+
+    // rawData.resultDate는 "12/15"(1D) 또는 "W51 2025"(1W 등) → dateList에서 label로 찾아 startDate(YYYYMMDD)로 변환
+    const labelToYyyyMmDd = (label: string): string => {
+      if (/^\d{8}$/.test(label)) return label
+      const fromDateList = chartData.dateList?.find((item) => item.label === label)?.startDate
+      if (fromDateList && /^\d{8}$/.test(fromDateList)) return fromDateList
+      const parsed = dayjs(label)
+      return parsed.isValid() ? parsed.format('YYYYMMDD') : ''
+    }
+
+    // dateList 항목: 1W 등에서는 startDate~endDate 구간이 있음. label로 찾아 구간 반환
+    const getPeriodByLabel = (label: string): { startNorm: string; endNorm: string } | null => {
+      const item = chartData.dateList?.find((d) => d.label === label)
+      if (!item?.startDate || !item?.endDate) return null
+      const startNorm = /^\d{8}$/.test(item.startDate) ? item.startDate : toYyyyMmDd(item.startDate)
+      const endNorm = /^\d{8}$/.test(item.endDate) ? item.endDate : toYyyyMmDd(item.endDate)
+      if (!startNorm || !endNorm) return null
+      return { startNorm, endNorm }
+    }
+
+    const formatLabelToTimestamp = (label: string): string => {
+      if (chartData?.xAxisUnit && chartData.xAxisUnit !== '1D' && chartData.dateList?.length) {
+        const matched = chartData.dateList.find((item) => item.label === label)
+        if (matched) {
+          const src = matched.startDate
+          if (/^\d{8}$/.test(src)) {
+            const y = src.slice(0, 4),
+              m = src.slice(4, 6),
+              d = src.slice(6, 8)
+            return dayjs(`${y}-${m}-${d}`).format('YYYY-MM-DDTHH:mm:ss')
+          }
+          return dayjs(src).format('YYYY-MM-DDTHH:mm:ss')
+        }
+      }
+      if (/^\d{8}$/.test(label)) {
+        const y = label.slice(0, 4),
+          m = label.slice(4, 6),
+          d = label.slice(6, 8)
+        return dayjs(`${y}-${m}-${d}`).format('YYYY-MM-DDTHH:mm:ss')
+      }
+      const parsed = dayjs(label)
+      return parsed.isValid() ? parsed.format('YYYY-MM-DDTHH:mm:ss') : dayjs().format('YYYY-MM-DDTHH:mm:ss')
+    }
+
+    const timestamps = baseDates.map((d) => formatLabelToTimestamp(d))
+    const resultDates = baseDates
+    // 기간(reportStart~reportEnd)과 맞는 구간만 predictionResultList 값으로 채움. 1D는 단일일, 1W 등은 dateList의 startDate~endDate 구간으로 매칭
+    const values = baseDates.map((dateLabel) => {
+      const datePeriod = getPeriodByLabel(dateLabel)
+      if (datePeriod) {
+        // 1W 등: 구간(주)이 리포트 기간과 겹치면, 그 구간 안의 predictionResultList 값들의 평균(또는 단일값) 사용
+        const { startNorm, endNorm } = datePeriod
+        const overlaps = startNorm <= reportEndNorm && endNorm >= reportStartNorm
+        if (!overlaps) return null
+        const valsInPeriod: number[] = []
+        resultListByDate.forEach((val, key) => {
+          if (key >= startNorm && key <= endNorm) valsInPeriod.push(val)
+        })
+        if (valsInPeriod.length === 0) return null
+        if (valsInPeriod.length === 1) return valsInPeriod[0]
+        return valsInPeriod.reduce((a, b) => a + b, 0) / valsInPeriod.length
+      }
+      // 1D: 단일일 매칭
+      const dateNorm = labelToYyyyMmDd(dateLabel)
+      if (!dateNorm) return null
+      if (dateNorm < reportStartNorm || dateNorm > reportEndNorm) return null
+      const value = resultListByDate.get(dateNorm)
+      return value !== undefined ? value : null
+    })
+
+    return {
+      goodsDataSourceName: hoverReportCardInfo.predictChartDetailExpn,
+      goodsDataSourceNo: hoverReportCardInfo.associatedGoodsDataSourceNo,
+      chartType: ChartType.LINE,
+      timestamps,
+      resultDates,
+      series: [
+        {
+          seriesId: 'main',
+          label: hoverReportCardInfo.predictChartDetailExpn,
+          renderAs: 'MAIN',
+          values,
+          isVisible: true,
+        },
+      ],
+      unitCd: chartData?.metadata?.currentUnitCd ?? '',
+      goodsDataName: hoverReportCardInfo.predictChartDetailExpn,
+      dataType: 'FORECAST',
+    } as ChartData & { dataType?: string; resultDates?: string[] }
   }, [chartData, hoverReportCardInfo])
 
   const charts = useMemo(() => convertedChartData, [convertedChartData])
@@ -298,11 +379,24 @@ const ForecastChart = ({
     return colorMap
   }, [chartData?.charts, colors])
 
-  // legend 정보 추출
+  // legend 정보 추출 (호버 시 대응 forecast만 opacity 1, 나머지 흐리게 하기 위해 goodsDataSourceNo 포함)
   const legendInfo = useMemo(() => {
-    const forecastLegends: Array<{ type: 'forecast' | 'actual'; color: string; label: string; dataType: string; originalLabel: string }> =
-      []
-    const actualLegends: Array<{ type: 'forecast' | 'actual'; color: string; label: string; dataType: string; originalLabel: string }> = []
+    const forecastLegends: Array<{
+      type: 'forecast' | 'actual'
+      color: string
+      label: string
+      dataType: string
+      originalLabel: string
+      goodsDataSourceNo: number
+    }> = []
+    const actualLegends: Array<{
+      type: 'forecast' | 'actual'
+      color: string
+      label: string
+      dataType: string
+      originalLabel: string
+      goodsDataSourceNo: number
+    }> = []
 
     convertedChartData.forEach((chart) => {
       const dataType = (chart as ChartData & { dataType?: string }).dataType ?? ''
@@ -320,6 +414,7 @@ const ForecastChart = ({
         label: displayLabel,
         dataType,
         originalLabel,
+        goodsDataSourceNo: chart.goodsDataSourceNo,
       }
 
       if (isForecast) {
@@ -479,6 +574,7 @@ const ForecastChart = ({
               height="556px"
               chartType={ChartType.LINE}
               charts={charts}
+              highlightChartData={highlightChartData}
               currency={chartData?.metadata.currency}
               unitCd={chartData?.metadata.currentUnitCd}
               chartVisibilityMap={chartVisibilityMap}
@@ -654,11 +750,17 @@ const ForecastChart = ({
               {legendInfo.forecastLegends.map((legend, index) => {
                 const visibilityKey = `${legend.originalLabel}_${legend.dataType}`
                 const isShow = chartVisibilityMap.get(visibilityKey) !== false
+                const isHoveredReportForecast =
+                  hoverReportCardInfo !== null &&
+                  hoverReportCardInfo !== undefined &&
+                  legend.originalLabel === hoverReportCardInfo.predictChartDetailExpn
+                const legendOpacity = hoverReportCardInfo ? (isHoveredReportForecast ? 1 : 0.2) : 1
                 return (
                   <Box
                     key={`forecast-${index}`}
                     onMouseEnter={() => setHoveredChartKey(isShow ? visibilityKey : null)}
                     onMouseLeave={() => setHoveredChartKey(null)}
+                    sx={{ opacity: legendOpacity, transition: 'opacity 0.2s ease-in-out' }}
                   >
                     <ForecastChartLegend
                       type={legend.type}
@@ -682,11 +784,13 @@ const ForecastChart = ({
               {legendInfo.actualLegends.map((legend, index) => {
                 const visibilityKey = `${legend.originalLabel}_${legend.dataType}`
                 const isShow = chartVisibilityMap.get(visibilityKey) !== false
+                const legendOpacity = hoverReportCardInfo ? 0.2 : 1
                 return (
                   <Box
                     key={`actual-${index}`}
                     onMouseEnter={() => setHoveredChartKey(isShow ? visibilityKey : null)}
                     onMouseLeave={() => setHoveredChartKey(null)}
+                    sx={{ opacity: legendOpacity, transition: 'opacity 0.2s ease-in-out' }}
                   >
                     <ForecastChartLegend
                       type={legend.type}

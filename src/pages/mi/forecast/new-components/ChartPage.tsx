@@ -39,7 +39,6 @@ const ChartPage = ({
     setHoverReportCardInfo(report)
     onHoverReportCardChange?.(report)
   }
-  const [isFixedMode, setIsFixedMode] = useState(false)
   const [canScroll, setCanScroll] = useState(false)
   const [scrollPosition, setScrollPosition] = useState(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -211,10 +210,10 @@ const ChartPage = ({
                   return (
                     <Box
                       key={index}
-                      onMouseEnter={() => !isFixedMode && handleHoverReportCardChange(item)}
-                      onMouseLeave={() => !isFixedMode && handleHoverReportCardChange(null)}
+                      onMouseEnter={() => handleHoverReportCardChange(item)}
+                      onMouseLeave={() => handleHoverReportCardChange(null)}
                       sx={{
-                        opacity: isFixedMode ? 0.6 : fadeOpacity,
+                        opacity: fadeOpacity,
                         flexShrink: 0,
                         transition: 'opacity 0.3s ease-out',
                         position: 'relative',
@@ -260,7 +259,6 @@ const ChartPage = ({
         hoverReportCardInfo={hoverReportCardInfo}
         chartData={chartData}
         chartDataIsLoading={chartDataIsLoading}
-        onFixedModeChange={setIsFixedMode}
         monthSelect={monthSelect}
         xAxisUnit={xAxisUnit}
         period={period}

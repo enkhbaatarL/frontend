@@ -22,6 +22,7 @@ interface ForecastChartGraphProps {
   currency?: string
   unitCd?: string
   charts?: ChartData[]
+  highlightChartData?: (ChartData & { dataType?: string; resultDates?: string[] }) | null
   isYAxisSeparated?: boolean
   height?: string | number
   chartType?: MIChartType
@@ -381,6 +382,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       currency,
       unitCd,
       charts = [],
+      highlightChartData = null,
       isYAxisSeparated,
       chartType = MIChartType.LINE,
       chartVisibilityMap,
@@ -803,8 +805,42 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       (reportCardInfo: IForecastReport | null): ChartDatasetType[] => {
         if (!reportCardInfo || chartType !== MIChartType.LINE) return []
 
-        const result: ChartDatasetType[] = []
+        // 호버된 리포트 카드의 새 데이터(predictionResultList)가 있으면 그걸로 highlight 1개만 그림 (기본 그래프는 흐리게 유지)
+        if (highlightChartData) {
+          const mainSeries = highlightChartData.series?.find((s) => s.seriesId === 'main') || highlightChartData.series?.[0]
+          const values = mainSeries?.values ?? []
+          const chartColor = chartColorMap?.get(highlightChartData.goodsDataSourceName ?? '') ?? '#2F62A3'
+          const highlightData = Array.from({ length: dataPointCount }, (_, index) => ({
+            x: index,
+            y: index < values.length ? (values[index] ?? null) : null,
+          }))
+          return [
+            {
+              label: `HIGHLIGHT_${highlightChartData.goodsDataSourceName ?? ''}`,
+              data: highlightData,
+              type: 'line' as const,
+              borderColor: chartColor,
+              borderWidth: 2,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              fill: false,
+              tension: 0,
+              spanGaps,
+              yAxisID: isYAxisSeparated ? `sub-${highlightChartData.unitCd?.split('#').pop() ?? ''}` : 'y',
+              metadata: {
+                chipColor: chartColor,
+                goodsDataSourceNo: highlightChartData.goodsDataSourceNo,
+                goodsDataSourceName: highlightChartData.goodsDataSourceName,
+                isDashed: true,
+                isHighlight: true,
+                timestamps: highlightChartData.timestamps,
+              },
+            } as ChartDatasetType,
+          ]
+        }
 
+        // highlightChartData 없으면 기존: chartList에서 같은 goodsDataSourceNo인 차트의 구간만 추출
+        const result: ChartDatasetType[] = []
         chartList.forEach((chart) => {
           if (chart.goodsDataSourceNo !== reportCardInfo.associatedGoodsDataSourceNo) return
 
@@ -820,7 +856,6 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
           if (!isVisible) return
 
-          // startDate와 endDate 범위에 해당하는 데이터만 필터링
           const timestamps = chart.timestamps || []
           const startDate = dayjs(reportCardInfo.startPredictionResultDt)
           const endDate = dayjs(reportCardInfo.endPredictionResultDt)
@@ -867,7 +902,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
         return result
       },
-      [chartType, chartList, dataPointCount, chartVisibilityMap, isYAxisSeparated, chartColorMap, spanGaps],
+      [chartType, chartList, dataPointCount, chartVisibilityMap, isYAxisSeparated, chartColorMap, spanGaps, highlightChartData],
     )
 
     const mainDataset = useMemo(() => [...allDatasets], [allDatasets])
