@@ -33,21 +33,26 @@ interface ModelAccuracyItem {
   date: string
 }
 
-// Model Records 데이터 타입 (임시)
+// Model Records 데이터 타입
 interface ModelRecord {
   id: string
-  target: string
-  runDate: string
-  forecastPeriod: string
-  referencePrice: number
-  forecastPrice: number
-  actualPrice: number
-  forecastError: number
-  forecastDirection: 'Upward' | 'Downward'
-  isDirectionMatch: boolean
-  predictionFulfillDt: string // 원본 predictionFulfillDt (YYYYMMDD 형식)
-  reportDownloadUrl?: string
-  dailyDataDownloadUrl?: string
+  marketIndexAnalysisTargetCd: string
+  predictionFulfillDt: string
+  mnemonicCd: string
+  predictChartDetailExpn: string
+  associatedGoodsDataSourceNo: number
+  endPredictionResultDt: string
+  startPredictionResultDt: string
+  predictionCriteriaDt: string
+  predictionResultVal: number
+  predictionCriteriaVal: number
+  predictionResultDiffVal: number
+  predictionResultDiffRate: number
+  actualVal: number
+  directionVal: 'UPWARD' | 'NEUTRAL' | 'DOWNWARD'
+  isHit: boolean
+  isScheduled: boolean | null
+  isNew: boolean | null
 }
 
 const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePageProps) => {
@@ -87,7 +92,6 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
     [],
   )
 
-  // API 호출을 위한 파라미터 준비
   const recordsApiParams = useMemo(() => {
     if (!dateRange?.startDate || !dateRange?.endDate || !companyNo) return null
 
@@ -115,41 +119,28 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
     if (!recordsData?.detail) return []
 
     return recordsData.detail.map((record, index) => {
-      // 날짜 형식 변환: YYYYMMDD -> YY/MM/DD
-      const formatDate = (dateStr: string) => {
-        if (!dateStr || dateStr.length !== 8) return ''
-        return dayjs(dateStr, 'YYYYMMDD').format('YY/MM/DD')
-      }
-
-      const runDate = formatDate(record.predictionFulfillDt)
-      const startDate = formatDate(record.startPredictionResultDt)
-      const endDate = formatDate(record.endPredictionResultDt)
-      const forecastPeriod = `${startDate} - ${endDate}`
-
-      // forecastDirection 계산: predictionResultDiffVal이 양수면 Upward, 음수면 Downward
-      const forecastDirection: 'Upward' | 'Downward' = record.predictionResultDiffVal >= 0 ? 'Upward' : 'Downward'
-
-      // isDirectionMatch: 실제 데이터가 없으므로 임시로 true (나중에 실제 데이터와 비교 필요)
-      const isDirectionMatch = true
-
-      // forecastError: predictionResultDiffRate의 절댓값
-      const forecastError = Math.abs(record.predictionResultDiffRate ?? 0)
-
       // 고유 ID 생성
       const id = `${record.marketIndexAnalysisTargetCd}_${record.predictionFulfillDt}_${record.mnemonicCd}_${index}`
 
       return {
         id,
-        target: record.predictChartDetailExpn,
-        runDate,
-        forecastPeriod,
-        referencePrice: record.predictionCriteriaVal,
-        forecastPrice: record.predictionResultVal,
-        actualPrice: record.predictionResultVal, // 실제 데이터가 없으므로 예측값으로 임시 설정
-        forecastError,
-        forecastDirection,
-        isDirectionMatch,
-        predictionFulfillDt: record.predictionFulfillDt, // 원본 날짜 저장
+        marketIndexAnalysisTargetCd: record.marketIndexAnalysisTargetCd,
+        predictionFulfillDt: record.predictionFulfillDt,
+        mnemonicCd: record.mnemonicCd,
+        predictChartDetailExpn: record.predictChartDetailExpn,
+        associatedGoodsDataSourceNo: record.associatedGoodsDataSourceNo,
+        endPredictionResultDt: record.endPredictionResultDt,
+        startPredictionResultDt: record.startPredictionResultDt,
+        predictionCriteriaDt: record.predictionCriteriaDt,
+        predictionResultVal: record.predictionResultVal,
+        predictionCriteriaVal: record.predictionCriteriaVal,
+        predictionResultDiffVal: record.predictionResultDiffVal,
+        predictionResultDiffRate: record.predictionResultDiffRate,
+        actualVal: record.actualVal,
+        directionVal: record.directionVal,
+        isHit: record.isHit,
+        isScheduled: record.isScheduled,
+        isNew: record.isNew,
       }
     })
   }, [recordsData])
@@ -158,8 +149,8 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
   const handleDownload = useCallback(
     async (row: ModelRecord) => {
       try {
-        // predictDate를 YYYYMMDD 형식으로 변환
-        const predictDate = dayjs(row.predictionFulfillDt).format('YYYYMMDD')
+        // predictionFulfillDt는 이미 YYYYMMDD 형식
+        const predictDate = row.predictionFulfillDt
         const response = await forecastDataService.getForecastReportFileDownload(companyNo, {
           predictDate,
         })
@@ -185,7 +176,7 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
   const tableColumns = useMemo<GridColDef[]>(
     () => [
       {
-        field: 'target',
+        field: 'predictChartDetailExpn',
         headerName: 'Target',
         minWidth: 120,
         flex: 1,
@@ -193,23 +184,36 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
         headerAlign: 'left',
       },
       {
-        field: 'runDate',
+        field: 'predictionFulfillDt',
         headerName: 'Run Date',
         minWidth: 100,
         flex: 1,
         align: 'center',
         headerAlign: 'center',
+        valueGetter: (_, row) => {
+          if (!row.predictionFulfillDt || row.predictionFulfillDt.length !== 8) return ''
+          return dayjs(row.predictionFulfillDt, 'YYYYMMDD').format('YY/MM/DD')
+        },
       },
       {
-        field: 'forecastPeriod',
+        field: 'startPredictionResultDt',
         headerName: 'Forecast Date',
         minWidth: 150,
         flex: 1.5,
         align: 'center',
         headerAlign: 'center',
+        valueGetter: (_, row) => {
+          const formatDate = (dateStr: string) => {
+            if (!dateStr || dateStr.length !== 8) return ''
+            return dayjs(dateStr, 'YYYYMMDD').format('YY/MM/DD')
+          }
+          const startDate = formatDate(row.startPredictionResultDt)
+          const endDate = formatDate(row.endPredictionResultDt)
+          return `${startDate} - ${endDate}`
+        },
       },
       {
-        field: 'referencePrice',
+        field: 'predictionCriteriaVal',
         headerName: 'Reference Price',
         minWidth: 130,
         flex: 1,
@@ -218,7 +222,7 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
         renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
       },
       {
-        field: 'forecastPrice',
+        field: 'predictionResultVal',
         headerName: 'Forecast Price',
         minWidth: 130,
         flex: 1,
@@ -227,7 +231,7 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
         renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
       },
       {
-        field: 'actualPrice',
+        field: 'actualVal',
         headerName: 'Actual Price',
         minWidth: 120,
         flex: 1,
@@ -236,36 +240,49 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
         renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
       },
       {
-        field: 'forecastError',
+        field: 'predictionResultDiffRate',
         headerName: 'Forecast 오차율',
         minWidth: 120,
         flex: 1,
         align: 'right',
         headerAlign: 'right',
+        valueGetter: (_, row) => Math.abs(row.predictionResultDiffRate ?? 0),
         renderCell: ({ value }) => (value ? `${value.toFixed(2)}%` : '-'),
       },
       {
-        field: 'forecastDirection',
+        field: 'directionVal',
         headerName: 'Forecast Direction',
         minWidth: 150,
         flex: 1,
         align: 'center',
         headerAlign: 'center',
-        renderCell: ({ row }) => (
-          <Box
-            sx={{
-              margin: '-10px -12px',
-              height: 'calc(100% + 0px)',
-              backgroundColor: row.isDirectionMatch ? '#C9DCF4' : 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '10px 12px',
-            }}
-          >
-            {row.forecastDirection}
-          </Box>
-        ),
+        valueGetter: (_, row) => {
+          if (row.directionVal === 'UPWARD') return 'Upward'
+          if (row.directionVal === 'NEUTRAL') return 'Neutral'
+          return 'Downward'
+        },
+        renderCell: ({ row }) => {
+          const getDisplayText = () => {
+            if (row.directionVal === 'UPWARD') return 'Upward'
+            if (row.directionVal === 'NEUTRAL') return 'Neutral'
+            return 'Downward'
+          }
+          return (
+            <Box
+              sx={{
+                margin: '-10px -12px',
+                height: 'calc(100% + 0px)',
+                backgroundColor: row.isHit ? '#C9DCF4' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '10px 12px',
+              }}
+            >
+              {getDisplayText()}
+            </Box>
+          )
+        },
       },
       {
         field: 'reportDownload',
@@ -273,6 +290,7 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
         flex: 1,
         align: 'center',
         headerAlign: 'center',
+        sortable: false,
         renderCell: ({ row }) => (
           <MIBaseButton
             variant="outlined"
@@ -301,6 +319,7 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
         flex: 1,
         align: 'center',
         headerAlign: 'center',
+        sortable: false,
         renderCell: () => (
           <MIBaseButton
             variant="outlined"

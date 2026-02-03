@@ -402,6 +402,9 @@ export interface IForecastRecord {
   predictionCriteriaVal: number
   predictionResultDiffVal: number
   predictionResultDiffRate: number
+  actualVal: number
+  directionVal: 'UPWARD' | 'NEUTRAL' | 'DOWNWARD'
+  isHit: boolean
   isScheduled: boolean | null
   isNew: boolean | null
 }
