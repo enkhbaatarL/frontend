@@ -13,10 +13,9 @@ interface ForecastReportCardProps {
   data?: IForecastReport
   isLoading?: boolean
   onPopupClose?: () => void
-  isFixedMode?: boolean
 }
 
-const ForecastReportCard = ({ data, isLoading = false, onPopupClose, isFixedMode = false }: ForecastReportCardProps) => {
+const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastReportCardProps) => {
   const popupRef = useRef<MIMorphingPopupRef>(null)
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const { accessCompanyInfo, user } = useAuthStore()
@@ -78,13 +77,13 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose, isFixedMode
         borderColor="contentBorder.Normal"
         boxSizing="border-box"
         sx={{
-          cursor: isFixedMode ? 'not-allowed' : 'pointer',
+          cursor: 'pointer',
           '&:hover': {
-            backgroundColor: isFixedMode ? undefined : 'contentBG.Hover',
-            borderColor: isFixedMode ? undefined : 'contentBorder.Hover',
+            backgroundColor: 'contentBG.Hover',
+            borderColor: 'contentBorder.Hover',
           },
         }}
-        onClick={() => !isFixedMode && !showSkeleton && handleOpen()}
+        onClick={() => !showSkeleton && handleOpen()}
       >
         {showSkeleton ? (
           <Stack gap="4px">

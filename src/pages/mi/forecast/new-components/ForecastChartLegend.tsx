@@ -15,7 +15,6 @@ interface Props {
   description?: string
   isShow?: boolean
   onToggle?: (isShow: boolean) => void
-  isFixedMode?: boolean
   disableMenu?: boolean
 }
 
@@ -24,13 +23,11 @@ const Icon = ({
   color,
   isShow,
   setIsShow,
-  isFixedMode,
 }: {
   type: 'forecast' | 'actual'
   color: string
   isShow: boolean
   setIsShow: (isShow: boolean) => void
-  isFixedMode?: boolean
 }) => {
   const LineIcon = type === 'forecast' ? DashLineIcon : SolidLineIcon
 
@@ -59,12 +56,11 @@ const Icon = ({
       height="26px"
       position="relative"
       onClick={(e) => {
-        if (isFixedMode) return
         e.stopPropagation()
         setIsShow(!isShow)
       }}
       sx={{
-        cursor: isFixedMode ? 'not-allowed' : 'pointer',
+        cursor: 'pointer',
         '& .base-icon': {
           ...transitionStyle,
           opacity: 1,
@@ -73,14 +69,12 @@ const Icon = ({
           ...transitionStyle,
           opacity: 0,
         },
-        ...(!isFixedMode && {
-          '&:hover .base-icon': {
-            opacity: 0,
-          },
-          '&:hover .hover-icon': {
-            opacity: 1,
-          },
-        }),
+        '&:hover .base-icon': {
+          opacity: 0,
+        },
+        '&:hover .hover-icon': {
+          opacity: 1,
+        },
       }}
     >
       <Box className="base-icon">{BaseIcon}</Box>
@@ -90,7 +84,7 @@ const Icon = ({
   )
 }
 
-const ForecastChartLegend = ({ type, color, label, description, isShow: externalIsShow, onToggle, isFixedMode = false, disableMenu = false }: Props) => {
+const ForecastChartLegend = ({ type, color, label, description, isShow: externalIsShow, onToggle, disableMenu = false }: Props) => {
   const [internalIsShow, setInternalIsShow] = useState(true)
   const isShow = externalIsShow !== undefined ? externalIsShow : internalIsShow
   const setIsShow = onToggle || setInternalIsShow
@@ -109,12 +103,12 @@ const ForecastChartLegend = ({ type, color, label, description, isShow: external
       className={isMenuOpen ? 'menu-open' : ''}
       sx={{
         transition: 'all 0.2s ease-in-out',
-        cursor: isFixedMode ? 'not-allowed' : 'default',
+        cursor: 'default',
         backgroundColor: isShow ? (isMenuOpen ? 'contentBG.Active' : 'transparent') : 'transparent',
-        ...(!isFixedMode && !disableMenu && {
-          '&:hover': {
-            backgroundColor: isShow && !isMenuOpen ? 'contentBG.Hover' : undefined,
-          },
+        '&:hover': {
+          backgroundColor: isShow && !isMenuOpen ? 'contentBG.Hover' : undefined,
+        },
+        ...(!disableMenu && {
           '&:hover .menu-container': {
             width: isShow ? '26px' : '0px',
             opacity: isShow ? 1 : 0,
@@ -129,7 +123,7 @@ const ForecastChartLegend = ({ type, color, label, description, isShow: external
       }}
     >
       <Box flexShrink={0}>
-        <Icon type={type} color={color} isShow={isShow} setIsShow={setIsShow} isFixedMode={isFixedMode} />
+        <Icon type={type} color={color} isShow={isShow} setIsShow={setIsShow} />
       </Box>
 
       <Stack overflow="hidden" flex={1} minWidth={0} justifyContent="center">

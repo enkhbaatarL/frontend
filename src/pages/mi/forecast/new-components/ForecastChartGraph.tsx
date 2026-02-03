@@ -1210,7 +1210,17 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       // onPan 콜백은 클로저로 최신 fixedXScaleIndex와 isDragConfirmedRef를 참조하므로 의존성 배열에 추가하지 않음
       // fixedXScaleIndex를 의존성에 추가하면 fixedXScaleIndex 변경 시마다 chartOptions가 재생성되어 불필요한 리렌더링 발생
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [isEmptyChart, dataPointCount, firstChartTimestamps, firstChartResultDates, subYAxes, unitCd, currency, isYAxisSeparated, fullYAxisRange],
+      [
+        isEmptyChart,
+        dataPointCount,
+        firstChartTimestamps,
+        firstChartResultDates,
+        subYAxes,
+        unitCd,
+        currency,
+        isYAxisSeparated,
+        fullYAxisRange,
+      ],
     )
 
     useEffect(() => {
@@ -1388,6 +1398,35 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
     const showSkeleton = isLoading || !charts || charts.length === 0
     const showChart = !showSkeleton
+
+    const handleCloseFixedMode = useCallback(() => {
+      fixedXScaleIndexRef.current = null
+      fixedModeScaleRangeRef.current = null
+      fixedTooltipPositionRef.current = null
+      setFixedXScaleIndex(null)
+      setFixedTooltipPosition(null)
+      setRipplePosition(null)
+      setRippleDirection(null)
+
+      isDragConfirmedRef.current = false
+      wasDraggingOnMouseUpRef.current = false
+      setIsPanning(false)
+      mouseDownPositionRef.current = null
+      mouseDownScaleRangeRef.current = null
+
+      crosshairRef.current?.setFixedPosition(null, 0, true)
+      setIsCrosshairVisible(false)
+      setTooltip((prev) => ({ ...prev, visible: false }))
+
+      if (lastMousePositionRef.current && chartRef.current?.canvas) {
+        requestAnimationFrame(() => {
+          const mousePos = lastMousePositionRef.current
+          if (!mousePos || !chartRef.current) return
+
+          updateCrosshairPositionFromMousePos(mousePos)
+        })
+      }
+    }, [updateCrosshairPositionFromMousePos])
 
     return (
       <Box
@@ -1854,6 +1893,21 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
         )}
         {showChart && (
           <>
+            {/* 고정모드 시 팝업 외부 영역 클릭으로 닫기 + 외부 영역 상호작용 차단 */}
+            {fixedXScaleIndex !== null && (
+              <Box
+                aria-hidden
+                onClick={handleCloseFixedMode}
+                sx={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 20,
+                  backgroundColor: 'transparent',
+                  cursor: 'default',
+                  pointerEvents: 'auto',
+                }}
+              />
+            )}
             <ForecastCrosshairLine ref={crosshairRef} chartRef={chartRef} onTooltipChange={externalTooltipHandler} />
             <ForecastChartTooltip
               ref={tooltipRef}
@@ -1861,34 +1915,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               visibility={tooltip.visible && !isTooltipPositionCalculated && tooltip.left === -9999 ? 'hidden' : 'visible'}
               isFixedMode={fixedXScaleIndex !== null}
               monthSelect={monthSelect}
-              onClose={() => {
-                fixedXScaleIndexRef.current = null
-                fixedModeScaleRangeRef.current = null
-                fixedTooltipPositionRef.current = null
-                setFixedXScaleIndex(null)
-                setFixedTooltipPosition(null)
-                setRipplePosition(null)
-                setRippleDirection(null)
-
-                isDragConfirmedRef.current = false
-                wasDraggingOnMouseUpRef.current = false
-                setIsPanning(false)
-                mouseDownPositionRef.current = null
-                mouseDownScaleRangeRef.current = null
-
-                crosshairRef.current?.setFixedPosition(null, 0, true)
-                setIsCrosshairVisible(false)
-                setTooltip((prev) => ({ ...prev, visible: false }))
-
-                if (lastMousePositionRef.current && chartRef.current?.canvas) {
-                  requestAnimationFrame(() => {
-                    const mousePos = lastMousePositionRef.current
-                    if (!mousePos || !chartRef.current) return
-
-                    updateCrosshairPositionFromMousePos(mousePos)
-                  })
-                }
-              }}
+              onClose={handleCloseFixedMode}
             />
           </>
         )}
@@ -1902,13 +1929,13 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               bottom: '47px',
               transform: 'translateX(-50%)',
               pointerEvents: 'auto',
-              zIndex: fixedXScaleIndex !== null ? 11 : 13,
+              zIndex: 13,
             }}
           >
             <Box
               width="36px"
               height="36px"
-              onClick={fixedXScaleIndex === null ? handleZoomOut : undefined}
+              onClick={handleZoomOut}
               sx={{
                 borderTopLeftRadius: '10px',
                 borderBottomLeftRadius: '10px',
@@ -1917,14 +1944,11 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: fixedXScaleIndex === null ? 'pointer' : 'default',
+                cursor: 'pointer',
                 boxSizing: 'border-box',
-                '&:hover':
-                  fixedXScaleIndex === null
-                    ? {
-                      backgroundColor: '#F1F3F5',
-                    }
-                    : {},
+                '&:hover': {
+                  backgroundColor: '#F1F3F5',
+                },
               }}
             >
               <RemoveRoundedIcon sx={{ color: 'gray.70', fontSize: '18px' }} />
@@ -1932,7 +1956,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             <Box
               width="36px"
               height="36px"
-              onClick={fixedXScaleIndex === null ? handleZoomIn : undefined}
+              onClick={handleZoomIn}
               sx={{
                 borderTopRightRadius: '10px',
                 borderBottomRightRadius: '10px',
@@ -1941,14 +1965,11 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: fixedXScaleIndex === null ? 'pointer' : 'default',
+                cursor: 'pointer',
                 boxSizing: 'border-box',
-                '&:hover':
-                  fixedXScaleIndex === null
-                    ? {
-                      backgroundColor: '#F1F3F5',
-                    }
-                    : {},
+                '&:hover': {
+                  backgroundColor: '#F1F3F5',
+                },
               }}
             >
               <AddRoundedIcon sx={{ color: 'gray.70', fontSize: '18px' }} />
@@ -1959,7 +1980,6 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
     )
   },
 )
-
 
 ForecastChartGraph.displayName = 'ForecastChartGraph'
 export default ForecastChartGraph

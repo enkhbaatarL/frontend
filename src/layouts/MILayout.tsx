@@ -221,7 +221,7 @@ const MILayout = () => {
     if (location.pathname === '/mi/dashboard') {
       return 'linear-gradient(300deg, #D5D6D8 0%, #FCFCFC 30%, #E6E6E7 60%, #FAFAFA 100%)'
     }
-    if (location.pathname.startsWith('/mi/forecast') || showTicker) {
+    if (showTicker) {
       return '#F2F5F7'
     }
     return undefined

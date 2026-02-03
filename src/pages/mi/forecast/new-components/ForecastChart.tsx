@@ -2,14 +2,14 @@ import { Box, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 
-import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
 import RefreshIcon from '@/components/common/icons/RefreshIcon'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
+import useSnackbar from '@/hooks/useSnackbar'
 import ForecastChartGraph, { ForecastChartGraphHandle } from '@/pages/mi/forecast/new-components/ForecastChartGraph'
 import ForecastChartLegend from '@/pages/mi/forecast/new-components/ForecastChartLegend'
 import { IForecastChartInfo, IForecastReport } from '@/service/mi/forecast'
-import useSnackbar from '@/hooks/useSnackbar'
 import { ChartType, ChartData } from '@/types/dataDetailChart'
 
 interface ForecastChartProps {
@@ -158,7 +158,7 @@ const ForecastChart = ({
         }
         return dateStr
       }
-      
+
       const timestamps = resultList.map((item) => dayjs(formatDate(item.date)).format('YYYY-MM-DDTHH:mm:ss'))
       const resultDates = resultList.map((item) => item.date) // 원본 date 저장
       const values = resultList.map((item) => {
@@ -435,11 +435,7 @@ const ForecastChart = ({
           </Stack>
           {/* 우측 컨트롤 영역: Reset / Download 버튼 */}
           <Stack direction="row" alignItems="center" gap="8px">
-            <MIBaseButton
-              prefix={<RefreshIcon color="gray.70" />}
-              sx={{ height: '36px', justifyContent: 'center' }}
-              onClick={handleReset}
-            >
+            <MIBaseButton prefix={<RefreshIcon color="gray.70" />} sx={{ height: '36px', justifyContent: 'center' }} onClick={handleReset}>
               Reset
             </MIBaseButton>
             <MIBaseButton sx={{ height: '36px', padding: '8px' }} onClick={handleDownload}>
@@ -590,129 +586,121 @@ const ForecastChart = ({
         </Box>
       </Stack>
 
-        <Stack width="232px" flexShrink={0} p="10px 12px" gap="20px" boxSizing="border-box" position="relative">
-          {/* 스켈레톤 */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '10px',
-              left: '12px',
-              right: '12px',
-              opacity: chartDataIsLoading ? 1 : 0,
-              pointerEvents: chartDataIsLoading ? 'auto' : 'none',
-              transition: 'opacity 0.3s ease-in-out',
-              zIndex: chartDataIsLoading ? 1 : 0,
-            }}
-          >
-            <Stack gap="20px">
-              {/* Forecast 섹션 스켈레톤 */}
-              <Stack gap="8px">
-                <MIBaseSkeleton.TextLine width="80px" height="16px" />
-                {[1, 2, 3].map((index) => (
-                  <Box key={`skeleton-forecast-${index}`} padding="6px">
-                    <Stack direction="row" gap="8px" alignItems="center">
-                      <MIBaseSkeleton.BaseElement width="26px" height="26px" sx={{ borderRadius: '4px', flexShrink: 0 }} />
-                      <Stack flex={1} gap="4px">
-                        <MIBaseSkeleton.TextLine width="100%" height="14px" />
-                        <MIBaseSkeleton.TextLine width="60%" height="12px" />
-                      </Stack>
+      <Stack width="232px" flexShrink={0} p="10px 12px" gap="20px" boxSizing="border-box" position="relative">
+        {/* 스켈레톤 */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '10px',
+            left: '12px',
+            right: '12px',
+            opacity: chartDataIsLoading ? 1 : 0,
+            pointerEvents: chartDataIsLoading ? 'auto' : 'none',
+            transition: 'opacity 0.3s ease-in-out',
+            zIndex: chartDataIsLoading ? 1 : 0,
+          }}
+        >
+          <Stack gap="20px">
+            {/* Forecast 섹션 스켈레톤 */}
+            <Stack gap="8px">
+              <MIBaseSkeleton.TextLine width="80px" height="16px" />
+              {[1, 2, 3].map((index) => (
+                <Box key={`skeleton-forecast-${index}`} padding="6px">
+                  <Stack direction="row" gap="8px" alignItems="center">
+                    <MIBaseSkeleton.BaseElement width="26px" height="26px" sx={{ borderRadius: '4px', flexShrink: 0 }} />
+                    <Stack flex={1} gap="4px">
+                      <MIBaseSkeleton.TextLine width="100%" height="14px" />
+                      <MIBaseSkeleton.TextLine width="60%" height="12px" />
                     </Stack>
-                  </Box>
-                ))}
-              </Stack>
-              {/* Actual 섹션 스켈레톤 */}
-              <Stack gap="8px">
-                <MIBaseSkeleton.TextLine width="60px" height="16px" />
-                {[1, 2].map((index) => (
-                  <Box key={`skeleton-actual-${index}`} padding="6px">
-                    <Stack direction="row" gap="8px" alignItems="center">
-                      <MIBaseSkeleton.BaseElement width="26px" height="26px" sx={{ borderRadius: '4px', flexShrink: 0 }} />
-                      <Stack flex={1} gap="4px">
-                        <MIBaseSkeleton.TextLine width="100%" height="14px" />
-                        <MIBaseSkeleton.TextLine width="60%" height="12px" />
-                      </Stack>
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
+                  </Stack>
+                </Box>
+              ))}
             </Stack>
-          </Box>
+            {/* Actual 섹션 스켈레톤 */}
+            <Stack gap="8px">
+              <MIBaseSkeleton.TextLine width="60px" height="16px" />
+              {[1, 2].map((index) => (
+                <Box key={`skeleton-actual-${index}`} padding="6px">
+                  <Stack direction="row" gap="8px" alignItems="center">
+                    <MIBaseSkeleton.BaseElement width="26px" height="26px" sx={{ borderRadius: '4px', flexShrink: 0 }} />
+                    <Stack flex={1} gap="4px">
+                      <MIBaseSkeleton.TextLine width="100%" height="14px" />
+                      <MIBaseSkeleton.TextLine width="60%" height="12px" />
+                    </Stack>
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          </Stack>
+        </Box>
 
-          <Box
-            sx={{
-              position: 'relative',
-              opacity: chartDataIsLoading ? 0 : 1,
-              pointerEvents: chartDataIsLoading ? 'none' : 'auto',
-              transition: 'opacity 0.3s ease-in-out',
-              zIndex: chartDataIsLoading ? 0 : 2,
-            }}
-          >
-            {legendInfo.forecastLegends.length > 0 && (
-              <Stack gap="8px">
-                <Typography variant="tableHeaderSemibold" color="contentText.Normal">
-                  Forecast
-                </Typography>
-                {legendInfo.forecastLegends.map((legend, index) => {
-                  const visibilityKey = `${legend.originalLabel}_${legend.dataType}`
-                  const isShow = chartVisibilityMap.get(visibilityKey) !== false
-                  return (
-                    <Box
-                      key={`forecast-${index}`}
-                      onMouseEnter={() => !isFixedMode && setHoveredChartKey(isShow ? visibilityKey : null)}
-                      onMouseLeave={() => !isFixedMode && setHoveredChartKey(null)}
-                      sx={{
-                        opacity: isFixedMode ? 0.6 : 1,
-                      }}
-                    >
-                      <ForecastChartLegend
-                        type={legend.type}
-                        color={legend.color}
-                        label={legend.label}
-                        description="Standard Model"
-                        isShow={isShow}
-                        onToggle={(show) => !isFixedMode && handleChartVisibilityToggle(legend.originalLabel, legend.dataType, show)}
-                        isFixedMode={isFixedMode}
-                        disableMenu={disableLegendMenu}
-                      />
-                    </Box>
-                  )
-                })}
-              </Stack>
-            )}
-            {legendInfo.actualLegends.length > 0 && (
-              <Stack gap="8px">
-                <Typography variant="tableHeaderSemibold" color="contentText.Normal">
-                  Actual
-                </Typography>
-                {legendInfo.actualLegends.map((legend, index) => {
-                  const visibilityKey = `${legend.originalLabel}_${legend.dataType}`
-                  const isShow = chartVisibilityMap.get(visibilityKey) !== false
-                  return (
-                    <Box
-                      key={`actual-${index}`}
-                      onMouseEnter={() => !isFixedMode && setHoveredChartKey(isShow ? visibilityKey : null)}
-                      onMouseLeave={() => !isFixedMode && setHoveredChartKey(null)}
-                      sx={{
-                        opacity: isFixedMode ? 0.6 : 1,
-                      }}
-                    >
-                      <ForecastChartLegend
-                        type={legend.type}
-                        color={legend.color}
-                        label={legend.label}
-                        description="Standard Model"
-                        isShow={isShow}
-                        onToggle={(show) => !isFixedMode && handleChartVisibilityToggle(legend.originalLabel, legend.dataType, show)}
-                        isFixedMode={isFixedMode}
-                        disableMenu={disableLegendMenu}
-                      />
-                    </Box>
-                  )
-                })}
-              </Stack>
-            )}
-          </Box>
-        </Stack>
+        <Box
+          sx={{
+            position: 'relative',
+            opacity: chartDataIsLoading ? 0 : 1,
+            pointerEvents: chartDataIsLoading ? 'none' : 'auto',
+            transition: 'opacity 0.3s ease-in-out',
+            zIndex: chartDataIsLoading ? 0 : 2,
+          }}
+        >
+          {legendInfo.forecastLegends.length > 0 && (
+            <Stack gap="8px">
+              <Typography variant="tableHeaderSemibold" color="contentText.Normal">
+                Forecast
+              </Typography>
+              {legendInfo.forecastLegends.map((legend, index) => {
+                const visibilityKey = `${legend.originalLabel}_${legend.dataType}`
+                const isShow = chartVisibilityMap.get(visibilityKey) !== false
+                return (
+                  <Box
+                    key={`forecast-${index}`}
+                    onMouseEnter={() => setHoveredChartKey(isShow ? visibilityKey : null)}
+                    onMouseLeave={() => setHoveredChartKey(null)}
+                  >
+                    <ForecastChartLegend
+                      type={legend.type}
+                      color={legend.color}
+                      label={legend.label}
+                      description="Standard Model"
+                      isShow={isShow}
+                      onToggle={(show) => handleChartVisibilityToggle(legend.originalLabel, legend.dataType, show)}
+                      disableMenu={disableLegendMenu}
+                    />
+                  </Box>
+                )
+              })}
+            </Stack>
+          )}
+          {legendInfo.actualLegends.length > 0 && (
+            <Stack gap="8px">
+              <Typography variant="tableHeaderSemibold" color="contentText.Normal">
+                Actual
+              </Typography>
+              {legendInfo.actualLegends.map((legend, index) => {
+                const visibilityKey = `${legend.originalLabel}_${legend.dataType}`
+                const isShow = chartVisibilityMap.get(visibilityKey) !== false
+                return (
+                  <Box
+                    key={`actual-${index}`}
+                    onMouseEnter={() => setHoveredChartKey(isShow ? visibilityKey : null)}
+                    onMouseLeave={() => setHoveredChartKey(null)}
+                  >
+                    <ForecastChartLegend
+                      type={legend.type}
+                      color={legend.color}
+                      label={legend.label}
+                      description="Standard Model"
+                      isShow={isShow}
+                      onToggle={(show) => handleChartVisibilityToggle(legend.originalLabel, legend.dataType, show)}
+                      disableMenu={disableLegendMenu}
+                    />
+                  </Box>
+                )
+              })}
+            </Stack>
+          )}
+        </Box>
+      </Stack>
     </Stack>
   )
 }

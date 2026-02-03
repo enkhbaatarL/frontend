@@ -41,7 +41,13 @@ const InfoLabel = ({ label, value, description }: InfoLabelProps) => (
   </Stack>
 )
 
-const ContentTab = ({ explanatoryLevelNms, onCategoryChange }: { explanatoryLevelNms?: string[]; onCategoryChange?: (category: string) => void }) => (
+const ContentTab = ({
+  explanatoryLevelNms,
+  onCategoryChange,
+}: {
+  explanatoryLevelNms?: string[]
+  onCategoryChange?: (category: string) => void
+}) => (
   <HorizontalScrollContainer py="20px" scrollAmount={0.6} buttonPadding={8}>
     <ForecastChartTooltipReportContentTab explanatoryLevelNms={explanatoryLevelNms} onCategoryChange={onCategoryChange} />
   </HorizontalScrollContainer>
@@ -105,21 +111,21 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
   // 선택된 factor 객체 찾기
   const selectedFactorObj = useMemo(() => {
     if (!selectedFactor || !factors) return null
-    
+
     // plusFactors에서 찾기
     const plusFactor = (factors.plusFactors || []).find((factor) => {
       const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
       return factorId === selectedFactor
     })
     if (plusFactor) return plusFactor
-    
+
     // minusFactors에서 찾기
     const minusFactor = (factors.minusFactors || []).find((factor) => {
       const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
       return factorId === selectedFactor
     })
     if (minusFactor) return minusFactor
-    
+
     return null
   }, [selectedFactor, factors])
 
@@ -160,13 +166,7 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
       })
     },
     enabled:
-      isVisible &&
-      !!companyNo &&
-      !!goodsDataSourceNo &&
-      !!selectedFactorObj &&
-      !!selectedCategory &&
-      !!date &&
-      !date.startsWith('Index:'),
+      isVisible && !!companyNo && !!goodsDataSourceNo && !!selectedFactorObj && !!selectedCategory && !!date && !date.startsWith('Index:'),
   })
 
   // factorGraph 데이터를 ChartData 형식으로 변환
@@ -214,10 +214,7 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
   }, [factorGraph])
 
   const handleFactorClick = useCallback((factorId: string) => {
-    setSelectedFactor((prev) => {
-      // 같은 factor를 클릭하면 해제, 다른 factor를 클릭하면 새로 선택
-      return prev === factorId ? null : factorId
-    })
+    setSelectedFactor(factorId)
   }, [])
 
   // 카테고리 목록이 로드되면 첫 번째 카테고리 자동 선택
@@ -226,6 +223,29 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
       setSelectedCategory(factorCategory.explanatoryLevelNms[0])
     }
   }, [factorCategory, selectedCategory])
+
+  // PRICE EXP.
+  const priceExpValue = useMemo<ReactNode>(() => {
+    const avg = factorCategory?.avgPredictionResultVal
+    if (avg === undefined || avg === null) return '-'
+    const diffVal = factorCategory?.predictionResultDiffVal
+    const diffRate = factorCategory?.predictionResultDiffRate
+    const hasDiff = diffVal !== undefined && diffVal !== null && diffRate !== undefined && diffRate !== null
+    return (
+      <Stack direction="row" alignItems="baseline" gap="4px">
+        <Typography variant="messageText1" color="contentText.Black">
+          {avg.toFixed(2)}
+        </Typography>
+        {hasDiff && (
+          <Typography variant="messageText1" color={diffVal >= 0 ? 'increase.main' : 'decrease.main'}>
+            {diffVal >= 0 ? '+' : ''}
+            {diffVal.toFixed(2)}({diffRate! >= 0 ? '+' : ''}
+            {diffRate!.toFixed(2)}%)
+          </Typography>
+        )}
+      </Stack>
+    )
+  }, [factorCategory?.avgPredictionResultVal, factorCategory?.predictionResultDiffVal, factorCategory?.predictionResultDiffRate])
 
   return (
     <Stack>
@@ -249,68 +269,30 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
             <InfoLabel
               label="TARGET DATE"
               value={
-                factorCategory?.endPredictionResultDt
-                  ? dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').format('YYYY/MM/DD')
-                  : '-'
+                factorCategory?.endPredictionResultDt ? dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').format('YYYY/MM/DD') : '-'
               }
               description={
                 factorCategory?.startPredictionResultDt && factorCategory?.endPredictionResultDt
                   ? `${dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').diff(
-                      dayjs(factorCategory.startPredictionResultDt, 'YYYYMMDD'),
-                      'day',
-                    )} days`
+                    dayjs(factorCategory.startPredictionResultDt, 'YYYYMMDD'),
+                    'day',
+                  )} days`
                   : undefined
               }
             />
             <InfoLabel
               label="RUN DATE"
-              value={
-                factorCategory?.predictionFulfillDt
-                  ? dayjs(factorCategory.predictionFulfillDt, 'YYYYMMDD').format('YYYY/MM/DD')
-                  : '-'
-              }
+              value={factorCategory?.predictionFulfillDt ? dayjs(factorCategory.predictionFulfillDt, 'YYYYMMDD').format('YYYY/MM/DD') : '-'}
               description="Model execution date"
             />
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
           <Stack gap="20px">
-            <InfoLabel
-              label="PRICE EXP."
-              value={
-                factorCategory?.avgPredictionResultVal !== undefined &&
-                factorCategory?.avgPredictionResultVal !== null ? (
-                  <Stack direction="row" alignItems="baseline" gap="4px">
-                    <Typography variant="messageText1" color="contentText.Black">
-                      {factorCategory.avgPredictionResultVal.toFixed(2)}
-                    </Typography>
-                    {factorCategory.predictionResultDiffVal !== undefined &&
-                      factorCategory.predictionResultDiffVal !== null &&
-                      factorCategory.predictionResultDiffRate !== undefined &&
-                      factorCategory.predictionResultDiffRate !== null && (
-                        <Typography
-                          variant="messageText1"
-                          color={
-                            factorCategory.predictionResultDiffVal >= 0 ? 'increase.main' : 'decrease.main'
-                          }
-                        >
-                          {factorCategory.predictionResultDiffVal >= 0 ? '+' : ''}
-                          {factorCategory.predictionResultDiffVal.toFixed(2)}(
-                          {factorCategory.predictionResultDiffRate >= 0 ? '+' : ''}
-                          {factorCategory.predictionResultDiffRate.toFixed(2)}%)
-                        </Typography>
-                      )}
-                  </Stack>
-                ) : (
-                  '-'
-                )
-              }
-              description="Compare to reference price"
-            />
+            <InfoLabel label="PRICE EXP." value={priceExpValue} description="Compare to reference price" />
             <InfoLabel
               label="REFERENCE PRICE"
               value={
-                factorCategory?.predictionCriteriaVal !== undefined &&
-                factorCategory?.predictionCriteriaVal !== null
+                factorCategory?.predictionCriteriaVal !== undefined && factorCategory?.predictionCriteriaVal !== null
                   ? factorCategory.predictionCriteriaVal.toFixed(2)
                   : '-'
               }

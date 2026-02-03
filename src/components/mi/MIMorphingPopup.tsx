@@ -52,6 +52,7 @@ interface PopupProps extends Omit<BoxProps, 'title' | 'content'> {
   hideCloseButton?: boolean
   showSkeleton?: boolean
   minWidth?: number
+  maxWidth?: number
   onOpen?: () => void
   onClose?: () => void
 }
@@ -69,7 +70,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
   (
     {
       children,
-      popup: { title, content, hideCloseButton, showSkeleton = true, minWidth = 1200, onOpen, onClose, ...popupProps },
+      popup: { title, content, hideCloseButton, showSkeleton = true, minWidth = 1200, maxWidth = 1380, onOpen, onClose, ...popupProps },
       ...props
     },
     ref,
@@ -91,6 +92,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
     const measureRef = useRef<HTMLDivElement>(null)
 
     const scrollWrapperRef = useRef<HTMLDivElement>(null)
+    const contentWrapperRef = useRef<HTMLDivElement>(null)
     const animTimerRef = useRef<NodeJS.Timeout | null>(null)
 
     const calculateCoords = useCallback((): CoordsType => {
@@ -100,8 +102,8 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       const windowHeight = window.innerHeight
       const windowWidth = window.innerWidth
 
-      // 좌우 여백을 제외한 너비 계산
-      const endWidth = Math.max(minWidth, windowWidth - HORIZONTAL_MARGIN * 2)
+      // 좌우 여백을 제외한 너비 계산 (minWidth ~ maxWidth 범위)
+      const endWidth = Math.min(maxWidth, Math.max(minWidth, windowWidth - HORIZONTAL_MARGIN * 2))
 
       // 측정용 박스의 너비를 강제로 설정한 뒤 높이를 측정
       measureRef.current.style.width = `${endWidth}px`
@@ -124,7 +126,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         },
         isTall,
       }
-    }, [minWidth])
+    }, [minWidth, maxWidth])
 
     const handleClose = useCallback(() => {
       // 닫기 시작 시 예약된 'isAnimDone' 타이머 취소
@@ -263,23 +265,36 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       }
     }, [isOpen, calculateCoords])
 
-    // ResizeObserver로 content의 실제 DOM 크기 변화 감지
+    // ResizeObserver로 팝업 내부(표시 중인 content) 크기 변화 감지
+    // ghost가 아닌 contentWrapperRef를 관찰해야 handleFactorClick 등으로 인한
+    // content state 변경 시 실제 표시 높이에 맞춰 팝업 크기가 갱신됨
     useEffect(() => {
-      if (!isOpen || !isAnimDone || !measureRef.current) return undefined
+      const target = contentWrapperRef.current
+      if (!isOpen || !isAnimDone || !target) return undefined
 
       const resizeObserver = new ResizeObserver(() => {
-        const newCoords = calculateCoords()
-        if (newCoords) {
-          setCoords(newCoords)
-        }
+        const contentHeight = target.offsetHeight
+        const measuredHeight = contentHeight + 68 // 헤더 높이 68px
+        setCoords((prev) => {
+          if (!prev) return null
+          const windowHeight = window.innerHeight
+          const isTall = measuredHeight + VERTICAL_MARGIN * 2 > windowHeight
+          const endTop = Math.max(VERTICAL_MARGIN, (windowHeight - measuredHeight) / 2)
+          return {
+            ...prev,
+            end: {
+              ...prev.end,
+              height: measuredHeight,
+              top: endTop,
+            },
+            isTall,
+          }
+        })
       })
 
-      resizeObserver.observe(measureRef.current)
-
-      return () => {
-        resizeObserver.disconnect()
-      }
-    }, [isOpen, isAnimDone, calculateCoords])
+      resizeObserver.observe(target)
+      return () => resizeObserver.disconnect()
+    }, [isOpen, isAnimDone])
 
     useEffect(
       () => () => {
@@ -490,7 +505,9 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                           }}
                         />
                       </Stack>
-                      <Box width={coords.end.width}>{content}</Box>
+                      <Box ref={contentWrapperRef} width={coords.end.width}>
+                        {content}
+                      </Box>
                     </Stack>
                   </Box>
                 </Box>
