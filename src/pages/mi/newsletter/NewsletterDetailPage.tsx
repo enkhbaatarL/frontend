@@ -254,9 +254,7 @@ const NewsletterDetailPage = () => {
 
     // tempNewsItems에도 showInChart 변경을 반영 (로컬스토리지 저장 시 혼동 방지)
     if (field === 'showInChart') {
-      setTempNewsItems((prev) =>
-        prev.map((item) => (item.newsId === newsId ? { ...item, showInChart: Boolean(value) } : item)),
-      )
+      setTempNewsItems((prev) => prev.map((item) => (item.newsId === newsId ? { ...item, showInChart: Boolean(value) } : item)))
     }
   }, [])
 
@@ -320,10 +318,8 @@ const NewsletterDetailPage = () => {
       console.log('newsId', newsId)
       setHasDraftChanged(true)
       // newsletterIssueDetail에 있는지 먼저 확인
-      const isInNewsletterDetail = newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems?.some(
-        (item) => item.newsId === newsId
-      )
-      
+      const isInNewsletterDetail = newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems?.some((item) => item.newsId === newsId)
+
       if (newsId.startsWith('temp_') && !isInNewsletterDetail) {
         // tempNewsItems에만 있는 경우
         setTempNewsItems((prev) => prev.filter((item) => item.newsId !== newsId))
@@ -405,14 +401,14 @@ const NewsletterDetailPage = () => {
         const isUnPublished = currentUnPublishedNewsIds.includes(item.newsId)
 
         const validTrend = edits?.trend ?? item.trend ?? ''
-        
+
         // editingNews에 showInChart 값이 명시적으로 설정되어 있으면 우선 사용
         // 없으면 게시 상태와 trend 값에 따라 계산
         let showInChartValue: boolean
         if (edits?.showInChart !== undefined) {
           showInChartValue = Boolean(edits.showInChart)
         } else {
-          showInChartValue = isUnPublished ? false : validTrend !== '' && validTrend !== 'NONE'
+          showInChartValue = isUnPublished ? false : validTrend !== ''
         }
 
         const createTime = String(edits?.createTime ?? item.createTime)
@@ -492,7 +488,7 @@ const NewsletterDetailPage = () => {
     const timeoutId = window.setTimeout(() => {
       // 만료일을 일주일 후로 설정
       const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000 // 7일 후
-      
+
       const draftToSave: NewsletterDraftState = {
         newsletterIssueDetail,
         editingNews,
@@ -650,7 +646,7 @@ Content-Transfer-Encoding: 7bit
     chartRef.current?.resetBoxPositions()
     setMode(NewsletterDetailPageMode.VIEW)
     initializeNewsletterIssueDetail()
-    
+
     // forceRefresh 업데이트하여 initialDraftState 재계산 (localStorage는 유지)
     setForceRefresh((prev) => prev + 1)
   }
@@ -741,22 +737,21 @@ Content-Transfer-Encoding: 7bit
 
   // 차트/미리보기용으로 편집값을 반영한 뉴스 목록
   const previewRelatedNews = useMemo(() => {
-    const allItems = [
-      ...(newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems ?? []),
-      ...tempNewsItems,
-    ]
+    const allItems = [...(newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems ?? []), ...tempNewsItems]
 
     const updateNewsItem = (item: IRelatedNewsEventItem): IRelatedNewsEventItem => {
       const edits = editingNews[item.newsId]
       const isUnPublished = unPublishedNewsIds.includes(item.newsId)
 
       const validTrend = edits?.trend ?? item.trend ?? ''
+      const trendStr = typeof validTrend === 'string' ? validTrend : ''
 
       let showInChartValue: boolean
       if (edits?.showInChart !== undefined) {
         showInChartValue = Boolean(edits.showInChart)
       } else {
-        showInChartValue = isUnPublished ? false : validTrend !== '' && validTrend !== 'NONE'
+        // UP, DOWN, NONE(중립) 모두 그래프에 표시
+        showInChartValue = isUnPublished ? false : (['UP', 'DOWN', 'NONE'] as const).includes(trendStr as 'UP' | 'DOWN' | 'NONE')
       }
 
       const createTime = String(edits?.createTime ?? item.createTime)
@@ -925,13 +920,7 @@ Content-Transfer-Encoding: 7bit
                   {newsletterIssueDetail?.subscribed ? 'Subscribed' : 'Subscribe'}
                 </MIButton>
               </Box>
-              <MIButton
-                type="outlined"
-                color="gray"
-                contentType="text"
-                startIcon={<EditIcon />}
-                onClick={handleEditClick}
-              >
+              <MIButton type="outlined" color="gray" contentType="text" startIcon={<EditIcon />} onClick={handleEditClick}>
                 Edit
               </MIButton>
             </>

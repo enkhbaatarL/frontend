@@ -253,12 +253,9 @@ const Chart = ({
                           const effectiveTrend = editedTrend !== undefined ? String(editedTrend) : originalTrend
 
                           if (!isCurrentlyUnpublished) {
-                            // published → unpublished로 변경: showInChart = false
                             handleFieldChange(item.newsId, 'showInChart', false)
                           } else {
-                            // unpublished → published로 변경: trend가 있고 'NONE'이 아니면 true, 아니면 false
-                            const shouldShowInChart = effectiveTrend !== '' && effectiveTrend !== 'NONE'
-                            handleFieldChange(item.newsId, 'showInChart', shouldShowInChart)
+                            handleFieldChange(item.newsId, 'showInChart', effectiveTrend !== '')
                           }
                         }}
                         useInflectionPointSelect
@@ -266,9 +263,7 @@ const Chart = ({
                         onInflectionPointChange={(inflectionPoint) => {
                           handleFieldChange(item.newsId, 'trend', inflectionPoint)
                           if (!localUnPublishedNewsIds.includes(item.newsId)) {
-                            // published 상태에서 trend 변경: trend가 있고 'NONE'이 아니면 true, 아니면 false
-                            const shouldShowInChart = inflectionPoint !== '' && inflectionPoint !== 'NONE'
-                            handleFieldChange(item.newsId, 'showInChart', shouldShowInChart)
+                            handleFieldChange(item.newsId, 'showInChart', inflectionPoint !== '')
                           }
                         }}
                         onDeleteNews={() => onDeleteNews?.(item.newsId)}
