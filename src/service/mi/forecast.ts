@@ -795,7 +795,7 @@ const forecastDataService = {
    */
   async getForecastFactorGraphNew(companyNo: number, params: IForecastFactorGraphRequestNew) {
     const response: AxiosResponse<ICommonResponse<IForecastFactorGraphResponse>> = await api.get(
-      `mi/forecast/companies/${companyNo}/chart/factor/graph`,
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/chart/factor/graph`),
       { params },
     )
     return response.data.data
@@ -824,9 +824,12 @@ const forecastDataService = {
    * @param goodsDataSourceNo - 데이터 소스 번호
    */
   async getForecastReports(companyNo: number, goodsDataSourceNo?: number): Promise<IForecastReport[]> {
-    const response: AxiosResponse<ICommonResponse<IForecastReport[]>> = await api.get(`mi/forecast/companies/${companyNo}/reports`, {
-      params: { goodsDataSourceNo },
-    })
+    const response: AxiosResponse<ICommonResponse<IForecastReport[]>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/reports`),
+      {
+        params: { goodsDataSourceNo },
+      },
+    )
     return response.data.data
   },
   /**
@@ -844,7 +847,7 @@ const forecastDataService = {
     },
   ): Promise<IForecastReportDetail> {
     const response: AxiosResponse<ICommonResponse<IForecastReportDetail>> = await api.get(
-      `mi/forecast/companies/${companyNo}/reports/detail`,
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/reports/detail`),
       { params },
     )
     return response.data.data
@@ -885,7 +888,7 @@ const forecastDataService = {
       order?: 'NEWEST' | 'OLDEST'
     },
   ) {
-    const response = await api.get(`mi/forecast/companies/${companyNo}/table/file-download`, {
+    const response = await api.get(withCustomBaseUrl(`mi/forecast/companies/${companyNo}/table/file-download`), {
       params,
       responseType: 'blob',
     })
@@ -926,9 +929,12 @@ const forecastDataService = {
       size?: number
     },
   ): Promise<IForecastRecordsResponse> {
-    const response: AxiosResponse<ICommonResponse<IForecastRecordsResponse>> = await api.get(`mi/forecast/companies/${companyNo}/records`, {
-      params,
-    })
+    const response: AxiosResponse<ICommonResponse<IForecastRecordsResponse>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/records`),
+      {
+        params,
+      },
+    )
     return response.data.data
   },
   /**
