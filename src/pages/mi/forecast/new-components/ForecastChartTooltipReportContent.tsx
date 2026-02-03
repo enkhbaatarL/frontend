@@ -304,7 +304,7 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
                 draggable={false}
               />
             </Box>
-            <InfoLabel label="TARGET" value={factorCategory?.predictChartDetailExpn?.toUpperCase() || '-'} />
+            <InfoLabel label="TARGET" value={factorCategory?.predictChartDetailExpn || '-'} />
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
           <Stack gap="20px">

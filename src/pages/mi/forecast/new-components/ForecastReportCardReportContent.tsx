@@ -206,7 +206,7 @@ const ForecastReportCardReportContent = ({
       .replace(/·/g, '\n') // · 기호를 줄바꿈으로 변환
     : ''
 
-  const label = data.marketIndexAnalysisTargetCd ?? ''
+  const label = data.predictChartDetailExpn ?? ''
 
   return (
     <Stack
