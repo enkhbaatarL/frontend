@@ -242,6 +242,7 @@ const ForecastReportCardReportContent = ({
                   height: '43px',
                   objectFit: 'contain',
                 }}
+                draggable={false}
               />
             </Box>
             <InfoLabel label="TARGET" value={label} />
