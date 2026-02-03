@@ -231,6 +231,7 @@ const ForecastChart = ({
       // forecastChartLines 처리
       if (chart.forecastChartLines.rawData && chart.forecastChartLines.rawData.length > 0) {
         const timestamps = chart.forecastChartLines.rawData.map((item) => formatLabelToTimestamp(item.resultDate))
+        const predictDates = chart.forecastChartLines.rawData.map((item) => item.predictDate || '')
 
         const values = chart.forecastChartLines.rawData.map((item) => {
           const value = item.value
@@ -257,7 +258,8 @@ const ForecastChart = ({
           unitCd: chartData.metadata.currentUnitCd,
           goodsDataName: chart.chartLineDescription,
           dataType: chart.forecastChartLines.dataType,
-        } as ChartData & { dataType?: string })
+          predictDates,
+        } as ChartData & { dataType?: string; predictDates?: string[] })
       }
     })
 

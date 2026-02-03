@@ -14,6 +14,7 @@ export interface TooltipContent {
   value?: number
   color?: string
   date: string
+  predictDate?: string | null
   toFixed?: number
   isForecast?: boolean
   isFixedMode?: boolean
@@ -30,8 +31,9 @@ const ChartToolTipItem = (props: {
   monthSelect?: string
   goodsDataSourceNo?: number
   date?: string
+  predictDate?: string | null
 }) => {
-  const { label, value, color, toFixed, isForecast = false, isFixedMode = false, monthSelect, goodsDataSourceNo, date } = props
+  const { label, value, color, toFixed, isForecast = false, isFixedMode = false, monthSelect, goodsDataSourceNo, date, predictDate } = props
   const LineIcon = isForecast ? DashLineIcon : SolidLineIcon
   const popupRef = useRef<MIMorphingPopupRef>(null)
   const hasValue = value !== undefined
@@ -43,11 +45,11 @@ const ChartToolTipItem = (props: {
     () => (
       <ForecastChartTooltipReportContent
         goodsDataSourceNo={goodsDataSourceNo}
-        date={date}
+        date={predictDate || date}
         isVisible={isPopupOpen}
       />
     ),
-    [monthSelect, goodsDataSourceNo, date, isPopupOpen],
+    [monthSelect, goodsDataSourceNo, date, predictDate, isPopupOpen],
   )
 
   const content = (
@@ -278,6 +280,7 @@ const ForecastChartTooltip = forwardRef<HTMLDivElement, Readonly<ForecastChartTo
               monthSelect={monthSelect}
               goodsDataSourceNo={item.goodsDataSourceNo}
               date={item.date}
+              predictDate={item.predictDate}
             />
           ))}
         </Stack>

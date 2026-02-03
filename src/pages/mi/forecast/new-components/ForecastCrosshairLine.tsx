@@ -11,6 +11,7 @@ interface TooltipContent {
   value?: number
   color?: string
   date: string
+  predictDate?: string | null
   toFixed?: number
   isForecast?: boolean
   goodsDataSourceNo?: number
@@ -246,11 +247,13 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
 
       // 첫 번째 데이터셋의 metadata에서 timestamps 가져오기
       const firstDataset = chart.data.datasets[0]
-      const metadata = (firstDataset as { metadata?: { timestamps?: string[] } })?.metadata
+      const metadata = (firstDataset as { metadata?: { timestamps?: string[]; predictDates?: string[] } })?.metadata
       const timestamps = metadata?.timestamps || []
+      const predictDates = metadata?.predictDates || []
       const roundedIndex = Math.round(xScaleIndex)
       const timestamp = timestamps[roundedIndex]
       const formattedDate = timestamp ? dayjs(timestamp).format('YYYY/MM/DD') : `Index: ${roundedIndex}`
+      const predictDate = predictDates[roundedIndex] || null
 
       const finalMousePosition: { x: number; y: number } = { x: mouseX, y: mouseY }
 
@@ -389,6 +392,9 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
           return fixedTimestamp ? dayjs(fixedTimestamp).format('YYYY/MM/DD') : `Index: ${Math.round(effectiveFixedPosition.xScaleIndex)}`
         })()
         : formattedDate
+      const tooltipPredictDate = effectiveFixedPosition
+        ? predictDates[Math.round(effectiveFixedPosition.xScaleIndex)] || null
+        : predictDate
 
       const tooltipContent: Record<string, TooltipContent> = {}
 
@@ -405,17 +411,23 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
 
         const datasetMetadata = (
           dataset as {
-            metadata?: { isDashed?: boolean; chipColor?: string; toFixed?: number; goodsDataSourceNo?: number }
+            metadata?: { isDashed?: boolean; chipColor?: string; toFixed?: number; goodsDataSourceNo?: number; predictDates?: string[] }
           }
         ).metadata
         const isForecast = datasetMetadata?.isDashed ?? false
         const chipColor = datasetMetadata?.chipColor
+        
+        // 해당 데이터셋의 predictDate 찾기 (isForecast인 경우에만)
+        const datasetPredictDate = isForecast && datasetMetadata?.predictDates
+          ? datasetMetadata.predictDates[tooltipXScaleIndex] || tooltipPredictDate
+          : tooltipPredictDate
 
         tooltipContent[index] = {
           label: dataset.label,
           color: chipColor,
           value,
           date: tooltipFormattedDate,
+          predictDate: datasetPredictDate,
           toFixed: datasetMetadata?.toFixed,
           isForecast,
           goodsDataSourceNo: datasetMetadata?.goodsDataSourceNo,

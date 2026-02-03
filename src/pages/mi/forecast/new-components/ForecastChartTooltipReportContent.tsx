@@ -105,10 +105,22 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
   // 선택된 factor 객체 찾기
   const selectedFactorObj = useMemo(() => {
     if (!selectedFactor || !factors) return null
-    const allFactors = [...(factors.plusFactors || []), ...(factors.minusFactors || [])]
-    return allFactors.find(
-      (factor) => `${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}` === selectedFactor,
-    )
+    
+    // plusFactors에서 찾기
+    const plusFactor = (factors.plusFactors || []).find((factor) => {
+      const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
+      return factorId === selectedFactor
+    })
+    if (plusFactor) return plusFactor
+    
+    // minusFactors에서 찾기
+    const minusFactor = (factors.minusFactors || []).find((factor) => {
+      const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
+      return factorId === selectedFactor
+    })
+    if (minusFactor) return minusFactor
+    
+    return null
   }, [selectedFactor, factors])
 
   // date를 YYYYMM 형식으로 변환 (optional)
@@ -202,7 +214,10 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
   }, [factorGraph])
 
   const handleFactorClick = useCallback((factorId: string) => {
-    setSelectedFactor((prev) => (prev === factorId ? null : factorId))
+    setSelectedFactor((prev) => {
+      // 같은 factor를 클릭하면 해제, 다른 factor를 클릭하면 새로 선택
+      return prev === factorId ? null : factorId
+    })
   }, [])
 
   // 카테고리 목록이 로드되면 첫 번째 카테고리 자동 선택
@@ -356,7 +371,7 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
                 </Stack>
                 <Stack gap="4px">
                   {factors?.plusFactors?.map((factor) => {
-                    const factorId = `${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
+                    const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
                     const isSelected = selectedFactor === factorId
                     return (
                       <Stack
@@ -418,7 +433,7 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
                 </Stack>
                 <Stack gap="4px">
                   {factors?.minusFactors?.map((factor) => {
-                    const factorId = `${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
+                    const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}`
                     const isSelected = selectedFactor === factorId
                     return (
                       <Stack

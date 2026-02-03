@@ -361,6 +361,7 @@ type DatasetMeta = {
   visibilityKey?: string
   isHighlight?: boolean
   timestamps?: string[]
+  predictDates?: string[]
 }
 
 type ChartDatasetType = ChartDataset<'line' | 'candlestick' | 'bar', (Point | FinancialDataPoint)[]> & {
@@ -547,6 +548,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             isDashed: isForecast,
             visibilityKey,
             timestamps: chart.timestamps,
+            predictDates: (chart as ChartData & { predictDates?: string[] }).predictDates,
           },
         } as ChartDatasetType
       })
