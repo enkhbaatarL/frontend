@@ -2,7 +2,7 @@ import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 
 import forecastTargetIcon from '@/assets/icons/forecast-target.svg'
 import forecastVectorIcon from '@/assets/icons/forecast-vector.svg'
@@ -15,6 +15,7 @@ import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
 import forecastDataService, { ForecastBasicInfo, IForecastChartInfo, IForecastReport } from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
+import { downloadFile } from '@/utils/file'
 
 interface RecordsTablePageProps {
   basicInfo?: ForecastBasicInfo
@@ -44,6 +45,7 @@ interface ModelRecord {
   forecastError: number
   forecastDirection: 'Upward' | 'Downward'
   isDirectionMatch: boolean
+  predictionFulfillDt: string // 원본 predictionFulfillDt (YYYYMMDD 형식)
   reportDownloadUrl?: string
   dailyDataDownloadUrl?: string
 }
@@ -112,7 +114,7 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
   const modelRecordsData: ModelRecord[] = useMemo(() => {
     if (!recordsData?.detail) return []
 
-    return recordsData.detail.map((record) => {
+    return recordsData.detail.map((record, index) => {
       // 날짜 형식 변환: YYYYMMDD -> YY/MM/DD
       const formatDate = (dateStr: string) => {
         if (!dateStr || dateStr.length !== 8) return ''
@@ -134,7 +136,7 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
       const forecastError = Math.abs(record.predictionResultDiffRate ?? 0)
 
       // 고유 ID 생성
-      const id = `${record.marketIndexAnalysisTargetCd}_${record.predictionFulfillDt}_${record.mnemonicCd}`
+      const id = `${record.marketIndexAnalysisTargetCd}_${record.predictionFulfillDt}_${record.mnemonicCd}_${index}`
 
       return {
         id,
@@ -147,9 +149,37 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
         forecastError,
         forecastDirection,
         isDirectionMatch,
+        predictionFulfillDt: record.predictionFulfillDt, // 원본 날짜 저장
       }
     })
   }, [recordsData])
+
+  // 리포트 다운로드 핸들러
+  const handleDownload = useCallback(
+    async (row: ModelRecord) => {
+      try {
+        // predictDate를 YYYYMMDD 형식으로 변환
+        const predictDate = dayjs(row.predictionFulfillDt).format('YYYYMMDD')
+        const response = await forecastDataService.getForecastReportFileDownload(companyNo, {
+          predictDate,
+        })
+
+        const cd = response.headers?.['content-disposition'] ?? ''
+
+        if (cd.includes('.zip')) {
+          const fileName = `Report_${predictDate}.zip`
+          downloadFile(response.data, fileName)
+        } else {
+          // prettier-ignore
+          const fileName = cd.split('\'\'').pop().trim()
+          downloadFile(response.data, fileName)
+        }
+      } catch (error) {
+        console.error('Download failed:', error)
+      }
+    },
+    [companyNo],
+  )
 
   // 테이블 컬럼 정의
   const tableColumns = useMemo<GridColDef[]>(
@@ -243,12 +273,10 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
         flex: 1,
         align: 'center',
         headerAlign: 'center',
-        renderCell: () => (
+        renderCell: ({ row }) => (
           <MIBaseButton
             variant="outlined"
-            onClick={() => {
-              // 다운로드 로직 추가
-            }}
+            onClick={() => handleDownload(row)}
             sx={{
               width: '28px',
               height: '28px',
@@ -298,7 +326,7 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
         ),
       },
     ],
-    [],
+    [handleDownload],
   )
 
   // 페이지네이션 메타데이터 (API 응답에서 가져옴)

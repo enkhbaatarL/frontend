@@ -16,6 +16,7 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import forecastDataService from '@/service/mi/forecast'
+import { downloadFile } from '@/utils/file'
 import { formatValue } from '@/utils/number'
 
 interface InfoLabelProps {
@@ -337,9 +338,26 @@ const ForecastReportCardReportContent = ({
             sx={{
               color: 'contentText.Normal',
             }}
-            onClick={() => {
-              if (data.explanatoryFilePath) {
-                window.open(data.explanatoryFilePath, '_blank')
+            onClick={async () => {
+              try {
+                // predictDate를 YYYYMMDD 형식으로 변환
+                const predictDate = dayjs(predictionFulfillDt).format('YYYYMMDD')
+                const response = await forecastDataService.getForecastReportFileDownload(companyNo, {
+                  predictDate,
+                })
+
+                const cd = response.headers?.['content-disposition'] ?? ''
+
+                if (cd.includes('.zip')) {
+                  const fileName = `Report_${predictDate}.zip`
+                  downloadFile(response.data, fileName)
+                } else {
+                  // prettier-ignore
+                  const fileName = cd.split('\'\'').pop().trim()
+                  downloadFile(response.data, fileName)
+                }
+              } catch (error) {
+                console.error('Download failed:', error)
               }
             }}
           >
