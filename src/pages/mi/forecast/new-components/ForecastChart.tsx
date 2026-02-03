@@ -284,16 +284,19 @@ const ForecastChart = ({
     const colorMap = new Map<string, string>()
     let colorIndex = 0
 
-    convertedChartData.forEach((chart) => {
-      const originalLabel = chart.goodsDataSourceName ?? ''
-      if (!colorMap.has(originalLabel)) {
-        colorMap.set(originalLabel, colors[colorIndex % colors.length])
-        colorIndex++
-      }
-    })
+    // 원본 chartData.charts를 기준으로 색상 할당
+    if (chartData?.charts) {
+      chartData.charts.forEach((chart) => {
+        const originalLabel = chart.chartLineDescription ?? ''
+        if (!colorMap.has(originalLabel)) {
+          colorMap.set(originalLabel, colors[colorIndex % colors.length])
+          colorIndex++
+        }
+      })
+    }
 
     return colorMap
-  }, [convertedChartData, colors])
+  }, [chartData?.charts, colors])
 
   // legend 정보 추출
   const legendInfo = useMemo(() => {
