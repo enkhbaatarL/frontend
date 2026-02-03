@@ -1036,8 +1036,12 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             grid: {
               display: false,
             },
-            min: 0,
-            max: dataPointCount > 0 ? dataPointCount - 1 : undefined,
+            // x축 간격 1칸만큼 좌우 여백
+            min: dataPointCount > 0 ? -1 : 0,
+            max: dataPointCount > 0 ? dataPointCount : undefined,
+            bounds: 'data' as const,
+            grace: 0,
+            offset: false,
             border: {
               display: false,
             },
