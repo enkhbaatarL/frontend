@@ -27,7 +27,7 @@ const NewForecastPage = () => {
   const getDefaultAxisAndPeriod = (companyNo: number) => {
     switch (companyNo) {
       case 2020:
-        return { xAxisUnit: '1D', period: '1W' }
+        return { xAxisUnit: '1W', period: '3M' }
       case 2013:
         return { xAxisUnit: '1M', period: '3M' }
       case 2015:
