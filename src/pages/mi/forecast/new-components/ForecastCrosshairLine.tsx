@@ -102,7 +102,7 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
       const timestamps = pluginTimestamps.length > 0 ? pluginTimestamps : metadata?.timestamps || []
       const roundedIndex = Math.round(xScaleIndex)
       const timestamp = timestamps[roundedIndex]
-      dateBox.textContent = timestamp ? dayjs(timestamp).format('MM/DD') : `Index: ${roundedIndex}`
+      dateBox.textContent = timestamp ? dayjs(timestamp).format('YY/MM/DD') : `Index: ${roundedIndex}`
       mainIndicatorContainer.appendChild(dateBox)
 
       const dateBoxWidth = dateBox.offsetWidth

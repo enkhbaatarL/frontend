@@ -14,8 +14,8 @@ import MITableUser from '@/components/common/table/MITableUser'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton.tsx'
 import forecastDataService, { ForecastBasicInfo, IForecastChartInfo, IForecastReport } from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
-import { downloadFile } from '@/utils/file'
 import theme from '@/theming'
+import { downloadFile } from '@/utils/file'
 
 interface TablePageProps {
   basicInfo?: ForecastBasicInfo
@@ -96,7 +96,7 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
   const transformedChartData = useMemo<IForecastChartInfo | undefined>(() => {
     if (hoverReportCardInfo?.predictionResultList && hoverReportCardInfo.predictionResultList.length > 0) {
       const resultList = hoverReportCardInfo.predictionResultList
-      
+
       // 날짜 형식 변환: "20251215" -> "2025-12-15"
       const formatDate = (dateStr: string) => {
         if (dateStr.length === 8) {
@@ -104,7 +104,7 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
         }
         return dateStr
       }
-      
+
       const transformed: IForecastChartInfo = {
         metadata: {
           marketIndexAnalysisTargetCd: hoverReportCardInfo.marketIndexAnalysisTargetCd,
@@ -132,6 +132,7 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
               dataType: 'FORECAST',
               goodsDataSourceNo: hoverReportCardInfo.associatedGoodsDataSourceNo,
               rawData: resultList.map((item) => ({
+                startDate: item.date,
                 resultDate: formatDate(item.date),
                 predictDate: formatDate(item.date),
                 value: item.value,
@@ -153,7 +154,7 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
         endDate: chartData?.endDate || hoverReportCardInfo.endPredictionResultDt,
         dateList: chartData?.dateList || [],
       }
-      
+
       return transformed
     }
     return chartData
@@ -364,7 +365,7 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
   // API 응답 데이터 기반 테이블 행 생성
   const apiTableRows = useMemo(() => {
     if (!tableData?.tableDataList?.detail) return []
-    
+
     // detail이 배열인지 확인
     if (!Array.isArray(tableData.tableDataList.detail)) return []
 

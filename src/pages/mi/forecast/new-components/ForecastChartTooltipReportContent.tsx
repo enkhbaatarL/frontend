@@ -2,7 +2,7 @@ import { LabelImportantRounded, InfoOutlined } from '@mui/icons-material'
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
-import { Box, Divider, Stack, Typography } from '@mui/material'
+import { Box, Divider, Stack, Tooltip, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { ReactNode, memo, useMemo, useRef, useState, useCallback, useEffect, Fragment } from 'react'
@@ -423,7 +423,18 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
           <Typography variant="body1SB16" color="contentText.Black" sx={{ userSelect: 'none' }}>
             MAIN FACTORS
           </Typography>
-          <InfoOutlined fontSize="small" sx={{ color: theme.palette.contentIcon.Enabled }} />
+          <Tooltip
+            title="예측 결과에 영향을 미친 주요 요인별 카테고리"
+            placement="top-start"
+            disableInteractive
+            slotProps={{
+              popper: {
+                modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
+              },
+            }}
+          >
+            <InfoOutlined fontSize="small" sx={{ color: theme.palette.contentIcon.Enabled }} />
+          </Tooltip>
         </Stack>
       </Stack>
 
