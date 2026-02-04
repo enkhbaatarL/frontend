@@ -1288,8 +1288,9 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             },
             limits: {
               x: {
-                min: 0,
-                max: dataPointCount > 0 ? dataPointCount - 1 : undefined,
+                // 초기 뷰와 동일하게 좌우 한 칸 여백(-1 ~ dataPointCount) 유지
+                min: dataPointCount > 0 ? -1 : 0,
+                max: dataPointCount > 0 ? dataPointCount : undefined,
                 minRange: 2,
               },
               y: {
@@ -1458,28 +1459,37 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       const xScale = chart.scales.x
       if (!xScale) return
 
-      const currentMin = xScale.min ?? 0
-      const currentMax = xScale.max ?? dataPointCount - 1
+      const fullMin = -1
+      const fullMax = dataPointCount > 0 ? dataPointCount : 0
+      const currentMin = xScale.min ?? fullMin
+      const currentMax = xScale.max ?? fullMax
       const currentRange = currentMax - currentMin
       const center = (currentMin + currentMax) / 2
-      const zoomFactor = 1.5
+      // 확대(0.6)와 역수 관계로 한 번 축소가 한 번 확대를 되돌리도록 함
+      const zoomFactor = 1 / 0.6
 
       const newRange = currentRange * zoomFactor
       const minRange = 2 // 휠 줌 제한과 동일한 최소 범위
 
-      let newMin = Math.max(0, center - newRange / 2)
-      let newMax = Math.min(dataPointCount - 1, center + newRange / 2)
+      // 축소 시 전체 뷰(좌우 한 칸 여백)를 넘어가면 초기 상태로 스냅
+      const fullRangeWithPadding = fullMax - fullMin
+      if (newRange >= fullRangeWithPadding) {
+        chart.zoomScale('x', { min: fullMin, max: fullMax })
+      } else {
+        let newMin = Math.max(fullMin, center - newRange / 2)
+        let newMax = Math.min(fullMax, center + newRange / 2)
 
-      if (newMax - newMin < minRange) {
-        const rangeDiff = minRange - (newMax - newMin)
-        newMin = Math.max(0, newMin - rangeDiff / 2)
-        newMax = Math.min(dataPointCount - 1, newMax + rangeDiff / 2)
+        if (newMax - newMin < minRange) {
+          const rangeDiff = minRange - (newMax - newMin)
+          newMin = Math.max(fullMin, newMin - rangeDiff / 2)
+          newMax = Math.min(fullMax, newMax + rangeDiff / 2)
+        }
+
+        const finalMin = Math.max(fullMin, newMin)
+        const finalMax = Math.min(fullMax, newMax)
+
+        chart.zoomScale('x', { min: finalMin, max: finalMax })
       }
-
-      const finalMin = Math.max(0, newMin)
-      const finalMax = Math.min(dataPointCount > 0 ? dataPointCount - 1 : 0, newMax)
-
-      chart.zoomScale('x', { min: finalMin, max: finalMax })
 
       // 드래그 상태 해제 및 크로스라인과 툴팁 숨기기 (마우스 이동 시 다시 표시됨)
       setIsPanning(false)

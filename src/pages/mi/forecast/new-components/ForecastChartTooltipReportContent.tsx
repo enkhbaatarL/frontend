@@ -53,7 +53,7 @@ const ContentTab = ({
   explanatoryLevelNms?: string[]
   onCategoryChange?: (category: string) => void
 }) => (
-  <HorizontalScrollContainer py="20px" scrollAmount={0.6} buttonPadding={8}>
+  <HorizontalScrollContainer pt="20px" pb="0" scrollAmount={0.6} buttonPadding={8}>
     <ForecastChartTooltipReportContentTab explanatoryLevelNms={explanatoryLevelNms} onCategoryChange={onCategoryChange} />
   </HorizontalScrollContainer>
 )
@@ -376,8 +376,29 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
           <InfoOutlined fontSize="small" sx={{ color: theme.palette.contentIcon.Enabled }} />
         </Stack>
       </Stack>
-      <Stack>
-        <ContentTab explanatoryLevelNms={factorCategory?.explanatoryLevelNms} onCategoryChange={handleCategoryChange} />
+      <Stack sx={{ width: '100%', minWidth: 0, overflow: 'hidden' }}>
+        <Box
+          width="100%"
+          position="relative"
+          boxSizing="border-box"
+          mb="20px"
+          sx={{
+            '& .tab-section-line': {
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '1px',
+              backgroundColor: theme.palette.contentBorder?.Normal ?? '#E0E0E0',
+              zIndex: 0,
+            },
+          }}
+        >
+          <Box className="tab-section-line" />
+          <Box position="relative" zIndex={1}>
+            <ContentTab explanatoryLevelNms={factorCategory?.explanatoryLevelNms} onCategoryChange={handleCategoryChange} />
+          </Box>
+        </Box>
         {factors?.categorySummary && (
           <Typography padding="12px 38px" fontSize="18px" fontWeight={500} lineHeight="1.4" color="contentText.Black">
             {factors.categorySummary}

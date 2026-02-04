@@ -210,6 +210,8 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
             overflowX: 'auto',
             flex: 1,
             minWidth: 0,
+            width: '100%',
+            boxSizing: 'border-box',
             '&::-webkit-scrollbar': {
               display: 'none',
             },

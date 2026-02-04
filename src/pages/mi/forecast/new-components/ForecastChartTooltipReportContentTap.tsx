@@ -6,7 +6,10 @@ interface ForecastChartTooltipReportContentTabProps {
   onCategoryChange?: (category: string) => void
 }
 
-const ForecastChartTooltipReportContentTab = ({ explanatoryLevelNms = [], onCategoryChange }: ForecastChartTooltipReportContentTabProps) => {
+const ForecastChartTooltipReportContentTab = ({
+  explanatoryLevelNms = [],
+  onCategoryChange,
+}: ForecastChartTooltipReportContentTabProps) => {
   const [selectedTab, setSelectedTab] = useState(0)
 
   const tabs = explanatoryLevelNms.length > 0 ? explanatoryLevelNms : []
@@ -20,6 +23,7 @@ const ForecastChartTooltipReportContentTab = ({ explanatoryLevelNms = [], onCate
   }, [explanatoryLevelNms?.length])
 
   const handleTabClick = (index: number) => {
+    if (selectedTab === index) return
     setSelectedTab(index)
     if (onCategoryChange && tabs[index]) {
       onCategoryChange(tabs[index])
@@ -27,7 +31,7 @@ const ForecastChartTooltipReportContentTab = ({ explanatoryLevelNms = [], onCate
   }
 
   return (
-    <Box position="relative" sx={{ userSelect: 'none' }}>
+    <Box position="relative" sx={{ userSelect: 'none', width: '100%' }}>
       {/* 탭 컨테이너 */}
       <Stack
         direction="row"
@@ -35,16 +39,8 @@ const ForecastChartTooltipReportContentTab = ({ explanatoryLevelNms = [], onCate
         sx={{
           position: 'relative',
           zIndex: 1,
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '1px',
-            backgroundColor: '#E0E0E0',
-            zIndex: 0,
-          },
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {tabs.map((tab, index) => {
@@ -69,6 +65,7 @@ const ForecastChartTooltipReportContentTab = ({ explanatoryLevelNms = [], onCate
                 },
                 ...(isSelected
                   ? {
+                    borderBottom: 'none',
                     '&::before': {
                       content: '""',
                       position: 'absolute',
@@ -96,6 +93,8 @@ const ForecastChartTooltipReportContentTab = ({ explanatoryLevelNms = [], onCate
             </Box>
           )
         })}
+        {/* 오른쪽 여백: 왼쪽 pl과 동일하게 마지막 항목 뒤 공간 확보 */}
+        <Box flexShrink={0} width="38px" />
       </Stack>
     </Box>
   )
