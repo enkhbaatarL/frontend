@@ -251,17 +251,32 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       }
     }, [children])
 
+    // 창/뷰포트 리사이즈 시 팝업 위치/크기 재계산
     useEffect(() => {
       if (!isOpen) return undefined
 
+      let rafId: number | null = null
       const handleResize = () => {
-        const newCoords = calculateCoords()
-        if (newCoords) setCoords(newCoords)
+        if (rafId !== null) cancelAnimationFrame(rafId)
+        rafId = requestAnimationFrame(() => {
+          rafId = null
+          const newCoords = calculateCoords()
+          if (newCoords) setCoords(newCoords)
+        })
       }
 
       window.addEventListener('resize', handleResize)
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', handleResize)
+        window.visualViewport.addEventListener('scroll', handleResize)
+      }
       return () => {
+        if (rafId !== null) cancelAnimationFrame(rafId)
         window.removeEventListener('resize', handleResize)
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener('resize', handleResize)
+          window.visualViewport.removeEventListener('scroll', handleResize)
+        }
       }
     }, [isOpen, calculateCoords])
 

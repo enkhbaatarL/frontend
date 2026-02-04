@@ -356,8 +356,27 @@ const ForecastChart = ({
   const charts = useMemo(() => convertedChartData, [convertedChartData])
 
   const colors = useMemo(
-    () => ['#EFA460', '#40597A', '#2F62A3', '#26757B', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434'],
+    () => ['#26757B', '#8F5B5D', '#2F62A3', '#94826B', '#819E9A', '#7D68A4', '#5C5C5C', '#363434', '#EFA460', '#40597A'],
     [],
+  )
+
+  // 특정 라벨에 대한 고정 색상
+  const labelColorOverrides: Record<string, string> = useMemo(
+    () => ({
+      'Brent Crude': '#EFA460',
+      'Dubai Crude': '#40597A',
+    }),
+    [],
+  )
+
+  const getOverrideColor = useCallback(
+    (label: string): string | undefined => {
+      const trimmed = label.trim()
+      // 대소문자 무시하고 매칭
+      const key = Object.keys(labelColorOverrides).find((k) => k.trim().toLowerCase() === trimmed.toLowerCase())
+      return key ? labelColorOverrides[key] : undefined
+    },
+    [labelColorOverrides],
   )
 
   // 색상 맵 생성 (차트와 레전드에서 공통 사용)
@@ -370,14 +389,15 @@ const ForecastChart = ({
       chartData.charts.forEach((chart) => {
         const originalLabel = chart.chartLineDescription ?? ''
         if (!colorMap.has(originalLabel)) {
-          colorMap.set(originalLabel, colors[colorIndex % colors.length])
-          colorIndex++
+          const overrideColor = getOverrideColor(originalLabel)
+          colorMap.set(originalLabel, overrideColor ?? colors[colorIndex % colors.length])
+          if (overrideColor === undefined) colorIndex++
         }
       })
     }
 
     return colorMap
-  }, [chartData?.charts, colors])
+  }, [chartData?.charts, colors, getOverrideColor])
 
   // legend 정보 추출 (호버 시 대응 forecast만 opacity 1, 나머지 흐리게 하기 위해 goodsDataSourceNo 포함)
   const legendInfo = useMemo(() => {
