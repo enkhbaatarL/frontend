@@ -23,6 +23,7 @@ interface ForecastChartProps {
   onXAxisUnitChange?: (value: string) => void
   onPeriodChange?: (value: string) => void
   disableLegendMenu?: boolean
+  companyNo?: number
 }
 
 const ForecastChart = ({
@@ -36,6 +37,7 @@ const ForecastChart = ({
   onXAxisUnitChange,
   onPeriodChange,
   disableLegendMenu = false,
+  companyNo,
 }: ForecastChartProps) => {
   const { showSnackbar } = useSnackbar()
   const [chartVisibilityMap, setChartVisibilityMap] = useState<Map<string, boolean>>(new Map())
@@ -604,6 +606,7 @@ const ForecastChart = ({
               onFixedModeChange={setIsFixedMode}
               chartColorMap={chartColorMap}
               monthSelect={monthSelect}
+              companyNo={companyNo}
               // spanGaps
             />
           </Stack>

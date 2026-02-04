@@ -19,6 +19,7 @@ interface ChartPageProps {
   period?: string
   onXAxisUnitChange?: (value: string) => void
   onPeriodChange?: (value: string) => void
+  companyNo?: number
 }
 
 const ChartPage = ({
@@ -32,6 +33,7 @@ const ChartPage = ({
   period,
   onXAxisUnitChange,
   onPeriodChange,
+  companyNo,
 }: ChartPageProps) => {
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
 
@@ -265,6 +267,7 @@ const ChartPage = ({
         onXAxisUnitChange={onXAxisUnitChange}
         onPeriodChange={onPeriodChange}
         disableLegendMenu={true}
+        companyNo={companyNo}
       />
     </Stack>
   )

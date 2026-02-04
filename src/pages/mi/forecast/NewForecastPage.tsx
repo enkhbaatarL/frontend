@@ -91,6 +91,7 @@ const NewForecastPage = () => {
               period={period}
               onXAxisUnitChange={setXAxisUnit}
               onPeriodChange={setPeriod}
+              companyNo={companyNo}
             />
             <TablePage
               basicInfo={basicInfo}

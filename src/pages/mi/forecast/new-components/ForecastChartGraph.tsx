@@ -35,6 +35,7 @@ interface ForecastChartGraphProps {
   chartColorMap?: Map<string, string>
   disableFixedMode?: boolean
   monthSelect?: string
+  companyNo?: number
 }
 
 const applyOpacity = (color: string, alpha: number): string => {
@@ -59,6 +60,7 @@ const createRedrawLinesPlugin = (
   isFixedMode?: boolean,
   spanGaps: boolean = false,
   hoveredChartKey?: string | null,
+  companyNo?: number,
 ) => {
   const visibilityMap = chartVisibilityMap
   const effectiveReportCardInfo = isFixedMode ? null : hoverReportCardInfo
@@ -188,7 +190,7 @@ const createRedrawLinesPlugin = (
         const rangeEnd = Math.min(data.length - 1, endIndex)
 
         // 데이터 포인트가 1개일 때 점으로 그리기 위한 반지름
-        const singlePointRadius = 2
+        const singlePointRadius = companyNo === 2015 ? 3 : 2
 
         if (isHighlight) {
           ctx.strokeStyle = borderColor
@@ -438,6 +440,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       chartColorMap,
       disableFixedMode = false,
       monthSelect,
+      companyNo,
     },
     ref,
   ) => {
@@ -547,7 +550,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               down: '#CC4D50',
               unchanged: '#5a5a5a',
             },
-            borderWidth: 1,
+            borderWidth: companyNo === 2015 ? 2 : 1,
             yAxisID: 'y',
             metadata: {
               chipColor: firstChartColor,
@@ -556,6 +559,9 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
           } as ChartDatasetType,
         ]
       }
+
+      // companyNo가 2015일 때 borderWidth 증가량
+      const borderWidthOffset = companyNo === 2015 ? 1 : 0
 
       return chartList.map((chart) => {
         const mainSeries = chart.series?.find((s) => s.seriesId === 'main') || chart.series?.[0]
@@ -579,7 +585,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           clip: true as any,
           borderColor: chartColor,
-          borderWidth: 1,
+          borderWidth: 1 + borderWidthOffset,
           borderDash: isForecast ? [4, 4] : undefined,
           pointRadius: 0,
           fill: false,
@@ -612,6 +618,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       lowDataSeries,
       spanGaps,
       chartColorMap,
+      companyNo,
     ])
 
     const comparisonChartUnits = useMemo(
@@ -864,7 +871,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               data: highlightData,
               type: 'line' as const,
               borderColor: chartColor,
-              borderWidth: 2,
+              borderWidth: companyNo === 2015 ? 3 : 2,
               borderDash: [4, 4],
               pointRadius: 0,
               fill: false,
@@ -926,7 +933,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             data: highlightData,
             type: 'line' as const,
             borderColor: chartColor,
-            borderWidth: 2,
+            borderWidth: companyNo === 2015 ? 3 : 2,
             borderDash: isForecast ? [4, 4] : undefined,
             pointRadius: 0,
             fill: false,
@@ -946,14 +953,22 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
         return result
       },
-      [chartType, chartList, dataPointCount, chartVisibilityMap, isYAxisSeparated, chartColorMap, spanGaps, highlightChartData],
+      [chartType, chartList, dataPointCount, chartVisibilityMap, isYAxisSeparated, chartColorMap, spanGaps, highlightChartData, companyNo],
     )
 
     const mainDataset = useMemo(() => [...allDatasets], [allDatasets])
 
     const redrawLinesPlugin = useMemo(
-      () => createRedrawLinesPlugin(hoverReportCardInfo ?? null, chartVisibilityMap, fixedXScaleIndex !== null, spanGaps, hoveredChartKey),
-      [hoverReportCardInfo, chartVisibilityMap, fixedXScaleIndex, spanGaps, hoveredChartKey],
+      () =>
+        createRedrawLinesPlugin(
+          hoverReportCardInfo ?? null,
+          chartVisibilityMap,
+          fixedXScaleIndex !== null,
+          spanGaps,
+          hoveredChartKey,
+          companyNo,
+        ),
+      [hoverReportCardInfo, chartVisibilityMap, fixedXScaleIndex, spanGaps, hoveredChartKey, companyNo],
     )
 
     useEffect(() => {
@@ -995,7 +1010,8 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
         const chartOpacity = hasReportCardHover ? 0.2 : isHovered ? 1 : hasHover ? 0.2 : 1
 
-        const borderWidth = hasReportCardHover ? 1 : isHovered ? 2 : 1
+        const baseBorderWidth = hasReportCardHover ? 1 : isHovered ? 2 : 1
+        const borderWidth = companyNo === 2015 ? baseBorderWidth + 1 : baseBorderWidth
 
         dataset.borderColor = applyOpacity(chipColor, chartOpacity)
         dataset.borderWidth = borderWidth
