@@ -1,6 +1,7 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useState, useEffect, useMemo } from 'react'
+import { debounce } from 'lodash-es'
+import { useState, useEffect, useMemo, useRef } from 'react'
 
 import ChartPage from '@/pages/mi/forecast/new-components/ChartPage'
 import ForecastTab from '@/pages/mi/forecast/new-components/ForecastTab'
@@ -9,10 +10,15 @@ import TablePage from '@/pages/mi/forecast/new-components/TablePage'
 import forecastDataService, { IForecastReport } from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
 
+/** 스티키가 찰싹 붙는 스크롤 위치 계산용 오프셋(헤더+탭 높이 근사) */
+const STICKY_SNAP_OFFSET = 150
+
 const NewForecastPage = () => {
   const [isScrolled, setIsScrolled] = useState(false)
+  const [selectedTab, setSelectedTab] = useState(0)
   const [monthSelect, setMonthSelect] = useState('')
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
+  const contentWrapperRef = useRef<HTMLDivElement | null>(null)
 
   const { accessCompanyInfo, user } = useAuthStore()
   const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
@@ -116,20 +122,50 @@ const NewForecastPage = () => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
     if (!scrollEl) return undefined
 
-    const handleScroll = () => {
+    let scrollStartTop = scrollEl.scrollTop
+
+    const handleScrollImmediate = () => {
       const currentScrollTop = scrollEl.scrollTop
       setIsScrolled(currentScrollTop > 0)
+    }
+
+    const handleScrollDebounced = debounce(() => {
+      const currentScrollTop = scrollEl.scrollTop
+      const isScrollingUp = currentScrollTop < scrollStartTop
+      const isScrollingDown = currentScrollTop > scrollStartTop
+      const contentEl = contentWrapperRef.current
+
+      if (contentEl) {
+        const containerRect = scrollEl.getBoundingClientRect()
+        const contentRect = contentEl.getBoundingClientRect()
+        const firstContentTop = scrollEl.scrollTop + contentRect.top - containerRect.top - STICKY_SNAP_OFFSET
+
+        if (isScrollingDown && currentScrollTop < firstContentTop) {
+          scrollEl.scrollTo({ top: firstContentTop, behavior: 'smooth' })
+        } else if (isScrollingUp && currentScrollTop + 1 < firstContentTop && currentScrollTop > 0) {
+          scrollEl.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+      }
+
+      scrollStartTop = scrollEl.scrollTop
+    }, 150)
+
+    const handleScroll = () => {
+      handleScrollImmediate()
+      handleScrollDebounced()
     }
 
     handleScroll()
     scrollEl.addEventListener('scroll', handleScroll)
     return () => {
       scrollEl.removeEventListener('scroll', handleScroll)
+      handleScrollDebounced.cancel()
     }
   }, [])
 
   return (
     <Stack maxWidth="1380px" margin="auto" pt="20px" position="relative" sx={{ userSelect: 'none' }}>
+      {/* 스티키: 제목 + 탭 바만 (콘텐츠는 아래 스크롤 영역에 있음) */}
       <Box position="sticky" top={isScrolled ? '-14px' : 0} left="0" bgcolor="commonColor.White" zIndex={200}>
         <Typography
           variant="titleLarge"
@@ -147,8 +183,33 @@ const NewForecastPage = () => {
           {basicInfo?.chartPredictSettingNm}
         </Typography>
         <Box mt="96px">
-          <ForecastTab tabItems={tabItems} />
+          <ForecastTab
+            tabItems={tabItems}
+            tabBarOnly
+            value={selectedTab}
+            onChange={setSelectedTab}
+            rightAdornment={
+              <Typography
+                variant="infoDocument"
+                color="contentText.Normal"
+                sx={{
+                  mr: '70px',
+                  mb: '8px',
+                  transform: `translateY(${isScrolled ? 0 : 6}px)`,
+                  opacity: isScrolled ? 1 : 0,
+                  transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+                  transitionDelay: isScrolled ? '0.2s' : '0s',
+                }}
+              >
+                {basicInfo?.chartPredictSettingNm}
+              </Typography>
+            }
+          />
         </Box>
+      </Box>
+      {/* 탭 콘텐츠: 스티키 밖이라 스크롤 시 탭 바만 상단에 붙음 (스냅 계산용 ref) */}
+      <Box ref={contentWrapperRef} position="relative">
+        {tabItems[selectedTab].content}
       </Box>
     </Stack>
   )
