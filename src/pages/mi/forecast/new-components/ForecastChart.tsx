@@ -789,7 +789,7 @@ const ForecastChart = ({
                       type={legend.type}
                       color={legend.color}
                       label={legend.label}
-                      description="Standard Model"
+                      // description="Standard Model"
                       isShow={isShow}
                       onToggle={(show) => handleChartVisibilityToggle(legend.originalLabel, legend.dataType, show)}
                       disableMenu={disableLegendMenu}
@@ -819,7 +819,7 @@ const ForecastChart = ({
                       type={legend.type}
                       color={legend.color}
                       label={legend.label}
-                      description="Standard Model"
+                      // description="Standard Model"
                       isShow={isShow}
                       onToggle={(show) => handleChartVisibilityToggle(legend.originalLabel, legend.dataType, show)}
                       disableMenu={disableLegendMenu}
