@@ -366,6 +366,8 @@ export interface IForecastReportDetail {
   explanatoryTitleContent: string
   explanatorySummaryContent: string
   explanatoryFilePath: string
+  minPredictionResultVal: number
+  maxPredictionResultVal: number
 }
 
 export interface IForecastReportsTableData {

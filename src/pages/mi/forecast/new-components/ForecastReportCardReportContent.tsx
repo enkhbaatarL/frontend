@@ -207,6 +207,10 @@ const ForecastReportCardReportContent = ({
     : ''
 
   const label = data.predictChartDetailExpn ?? ''
+  const priceRange =
+    data.minPredictionResultVal && data.maxPredictionResultVal
+      ? `${formatValue(data.minPredictionResultVal)} - ${formatValue(data.maxPredictionResultVal)}`
+      : '-'
 
   return (
     <Stack
@@ -273,13 +277,7 @@ const ForecastReportCardReportContent = ({
               }
               description="Compare to reference price"
             />
-            {data.predictionCriteriaDt && (
-              <InfoLabel
-                label="PRICE RANGE"
-                value={formatValue(data.predictionCriteriaVal) || '-'}
-                description={`${dayjs(data.predictionCriteriaDt).format('YY/MM/DD')} · S&P Global Platts`}
-              />
-            )}
+            {data.predictionCriteriaDt && <InfoLabel label="PRICE RANGE" value={priceRange} description="Lowest to highest" />}
           </Stack>
           {data.predictionCriteriaDt && (
             <>
@@ -288,7 +286,7 @@ const ForecastReportCardReportContent = ({
                 <InfoLabel
                   label="REFERENCE PRICE"
                   value={formatValue(data.predictionCriteriaVal) || '-'}
-                  description={`${dayjs(data.predictionCriteriaDt).format('YY/MM/DD')} · S&P Global Platts`}
+                  description={`${dayjs(data.predictionCriteriaDt).format('YY/MM/DD')} · ${data.predictChartDetailExpn}`}
                 />
               </Stack>
             </>

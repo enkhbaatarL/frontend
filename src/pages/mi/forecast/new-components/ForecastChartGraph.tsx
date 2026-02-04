@@ -187,6 +187,9 @@ const createRedrawLinesPlugin = (
         const rangeStart = Math.max(0, startIndex)
         const rangeEnd = Math.min(data.length - 1, endIndex)
 
+        // 데이터 포인트가 1개일 때 점으로 그리기 위한 반지름
+        const singlePointRadius = 2
+
         if (isHighlight) {
           ctx.strokeStyle = borderColor
           ctx.lineWidth = baseBorderWidth
@@ -196,6 +199,9 @@ const createRedrawLinesPlugin = (
             ctx.lineDashOffset = -originPixelX
           }
           let isFirstPoint = true
+          let lastPixelX = 0
+          let lastPixelY = 0
+          let drawnPointCount = 0
 
           for (let i = rangeStart; i <= rangeEnd; i++) {
             const point = data[i]
@@ -216,6 +222,9 @@ const createRedrawLinesPlugin = (
             const pixelX = xScale.getPixelForValue(point.x)
             let pixelY = yScale.getPixelForValue(yValue)
             pixelY = Math.max(chartArea.top + clipPadding, Math.min(chartArea.bottom - clipPadding, pixelY))
+            lastPixelX = pixelX
+            lastPixelY = pixelY
+            drawnPointCount++
 
             if (isFirstPoint) {
               ctx.moveTo(pixelX, pixelY)
@@ -226,11 +235,22 @@ const createRedrawLinesPlugin = (
           }
 
           ctx.stroke()
+          // 데이터가 1개일 때 선 대신 점으로 표시
+          if (drawnPointCount === 1) {
+            ctx.fillStyle = borderColor
+            ctx.beginPath()
+            ctx.arc(lastPixelX, lastPixelY, singlePointRadius, 0, Math.PI * 2)
+            ctx.fill()
+          }
         } else if (isReportCardTarget && startDate && endDate && timestamps) {
           let currentOpacity = 1
           let isFirstPoint = true
           let prevPixelX = 0
           let prevPixelY = 0
+          let drawnPointCount = 0
+          let lastPixelX = 0
+          let lastPixelY = 0
+          let lastPointOpacity = 1
 
           for (let i = rangeStart; i <= rangeEnd; i++) {
             const point = data[i]
@@ -252,6 +272,9 @@ const createRedrawLinesPlugin = (
             const pixelX = xScale.getPixelForValue(point.x)
             let pixelY = yScale.getPixelForValue(yValue)
             pixelY = Math.max(chartArea.top + clipPadding, Math.min(chartArea.bottom - clipPadding, pixelY))
+            lastPixelX = pixelX
+            lastPixelY = pixelY
+            drawnPointCount++
 
             let pointOpacity = 1
             if (timestamp) {
@@ -261,6 +284,7 @@ const createRedrawLinesPlugin = (
               const isInRange = isAfterOrSame && isBeforeOrSame
               pointOpacity = isInRange ? 0 : 0.2
             }
+            lastPointOpacity = pointOpacity
 
             if (!isFirstPoint && currentOpacity !== pointOpacity) {
               ctx.stroke()
@@ -295,6 +319,13 @@ const createRedrawLinesPlugin = (
           }
 
           ctx.stroke()
+          // 데이터가 1개일 때 선 대신 점으로 표시
+          if (drawnPointCount === 1) {
+            ctx.fillStyle = applyOpacity(borderColor, lastPointOpacity)
+            ctx.beginPath()
+            ctx.arc(lastPixelX, lastPixelY, singlePointRadius, 0, Math.PI * 2)
+            ctx.fill()
+          }
         } else {
           ctx.strokeStyle = borderColor
           ctx.lineWidth = baseBorderWidth
@@ -304,6 +335,9 @@ const createRedrawLinesPlugin = (
             ctx.lineDashOffset = -originPixelX
           }
           let isFirstPoint = true
+          let lastPixelX = 0
+          let lastPixelY = 0
+          let drawnPointCount = 0
 
           for (let i = rangeStart; i <= rangeEnd; i++) {
             const point = data[i]
@@ -324,6 +358,9 @@ const createRedrawLinesPlugin = (
             const pixelX = xScale.getPixelForValue(point.x)
             let pixelY = yScale.getPixelForValue(yValue)
             pixelY = Math.max(chartArea.top + clipPadding, Math.min(chartArea.bottom - clipPadding, pixelY))
+            lastPixelX = pixelX
+            lastPixelY = pixelY
+            drawnPointCount++
 
             if (isFirstPoint) {
               ctx.moveTo(pixelX, pixelY)
@@ -334,6 +371,13 @@ const createRedrawLinesPlugin = (
           }
 
           ctx.stroke()
+          // 데이터가 1개일 때 선 대신 점으로 표시
+          if (drawnPointCount === 1) {
+            ctx.fillStyle = borderColor
+            ctx.beginPath()
+            ctx.arc(lastPixelX, lastPixelY, singlePointRadius, 0, Math.PI * 2)
+            ctx.fill()
+          }
         }
       })
 
