@@ -156,8 +156,9 @@ const ForecastChart = ({
     const result: ChartData[] = []
 
     chartData.charts.forEach((chart) => {
-      // actualChartLines 처리
+      // actualChartLines 처리 - dataExplanation 사용
       if (chart.actualChartLines.rawData && chart.actualChartLines.rawData.length > 0) {
+        const displayName = chart.actualChartLines.dataExplanation || chart.chartLineDescription
         const timestamps = chart.actualChartLines.rawData.map((item) => ymdToTimestamp(item.startDate))
         const resultDates = chart.actualChartLines.rawData.map((item) => getDisplayLabelByStartDate(item.startDate) ?? item.resultDate)
 
@@ -170,7 +171,7 @@ const ForecastChart = ({
         })
 
         result.push({
-          goodsDataSourceName: chart.chartLineDescription,
+          goodsDataSourceName: displayName,
           goodsDataSourceNo: chart.actualChartLines.goodsDataSourceNo,
           chartType: ChartType.LINE,
           timestamps,
@@ -178,20 +179,21 @@ const ForecastChart = ({
           series: [
             {
               seriesId: 'main',
-              label: chart.chartLineDescription,
+              label: displayName,
               renderAs: 'MAIN',
               values,
               isVisible: true,
             },
           ],
           unitCd: chartData.metadata.currentUnitCd,
-          goodsDataName: chart.chartLineDescription,
+          goodsDataName: displayName,
           dataType: chart.actualChartLines.dataType,
         } as ChartData & { dataType?: string; resultDates?: string[] })
       }
 
-      // forecastChartLines 처리
+      // forecastChartLines 처리 - dataExplanation 사용
       if (chart.forecastChartLines.rawData && chart.forecastChartLines.rawData.length > 0) {
+        const displayName = chart.forecastChartLines.dataExplanation || chart.chartLineDescription
         const timestamps = chart.forecastChartLines.rawData.map((item) => ymdToTimestamp(item.startDate))
         const resultDates = chart.forecastChartLines.rawData.map((item) => getDisplayLabelByStartDate(item.startDate) ?? item.resultDate)
         const predictDates = chart.forecastChartLines.rawData.map((item) => item.predictDate || '')
@@ -205,7 +207,7 @@ const ForecastChart = ({
         })
 
         result.push({
-          goodsDataSourceName: chart.chartLineDescription,
+          goodsDataSourceName: displayName,
           goodsDataSourceNo: chart.forecastChartLines.goodsDataSourceNo,
           chartType: ChartType.LINE,
           timestamps,
@@ -213,14 +215,14 @@ const ForecastChart = ({
           series: [
             {
               seriesId: 'main',
-              label: chart.chartLineDescription,
+              label: displayName,
               renderAs: 'MAIN',
               values,
               isVisible: true,
             },
           ],
           unitCd: chartData.metadata.currentUnitCd,
-          goodsDataName: chart.chartLineDescription,
+          goodsDataName: displayName,
           dataType: chart.forecastChartLines.dataType,
           predictDates,
         } as ChartData & { dataType?: string; predictDates?: string[]; resultDates?: string[] })
@@ -419,9 +421,8 @@ const ForecastChart = ({
       const originalLabel = chart.goodsDataSourceName ?? ''
       const chartColor = chartColorMap.get(originalLabel)!
 
-      // 팝업에 표시될 라벨: 대문자로 변환 (+ FORECAST인 경우 " FORECAST" 추가)
       const baseLabel = originalLabel.toUpperCase()
-      const displayLabel = isForecast ? `${baseLabel} FORECAST` : baseLabel
+      const displayLabel = baseLabel
 
       const legendItem = {
         type: (isForecast ? 'forecast' : 'actual') as 'forecast' | 'actual',

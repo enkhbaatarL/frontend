@@ -590,12 +590,12 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
         const dataType = (chart as ChartData & { dataType?: string }).dataType
         const isForecast = dataType === 'FORECAST'
 
-        const chartLineDescription = chart.goodsDataSourceName ?? ''
-        const chartColor = chartColorMap?.get(chartLineDescription) ?? '#2F62A3'
+        const displayName = chart.goodsDataSourceName ?? ''
+        const chartColor = chartColorMap?.get(displayName) ?? '#2F62A3'
 
-        const baseLabel = (chart.goodsDataSourceName ?? '').toUpperCase()
-        const displayLabel = isForecast ? `${baseLabel} FORECAST` : baseLabel
-        const visibilityKey = `${chart.goodsDataSourceName ?? ''}_${dataType ?? ''}`
+        // 라벨은 dataExplanation 기반 이름을 대문자로만 변환 (FORECAST 접미사 수동 추가 제거)
+        const displayLabel = displayName.toUpperCase()
+        const visibilityKey = `${displayName}_${dataType ?? ''}`
 
         return {
           label: displayLabel,
