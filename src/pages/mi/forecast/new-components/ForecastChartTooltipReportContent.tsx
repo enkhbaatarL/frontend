@@ -5,7 +5,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { Box, Divider, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { ReactNode, memo, useMemo, useRef, useState, useCallback, useEffect } from 'react'
+import { ReactNode, memo, useMemo, useRef, useState, useCallback, useEffect, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import crudeOilIcon from '@/assets/icons/crude-oil.png'
@@ -15,6 +15,7 @@ import lngIcon from '@/assets/icons/lng.png'
 import semiconductorIcon from '@/assets/icons/semiconductor.png'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import ForecastChartGraph, { ForecastChartGraphHandle } from '@/pages/mi/forecast/new-components/ForecastChartGraph'
 import ForecastChartTooltipReportContentTab from '@/pages/mi/forecast/new-components/ForecastChartTooltipReportContentTap'
 import forecastDataService from '@/service/mi/forecast'
@@ -101,7 +102,7 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
   }
 
   // 카테고리 목록 조회
-  const { data: factorCategory } = useQuery({
+  const { data: factorCategory, isLoading: isLoadingFactorCategory } = useQuery({
     queryKey: ['forecastFactorCategoryNew', companyNo, goodsDataSourceNo, predictDate],
     queryFn: () =>
       forecastDataService.getForecastFactorCategoryNew(companyNo ?? 0, {
@@ -112,7 +113,7 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
   })
 
   // 선택된 카테고리로 factors 조회
-  const { data: factors } = useQuery({
+  const { data: factors, isLoading: isLoadingFactors } = useQuery({
     queryKey: ['forecastFactorsNew', companyNo, goodsDataSourceNo, predictDate, selectedCategory],
     queryFn: () =>
       forecastDataService.getForecastFactorsNew(companyNo ?? 0, {
@@ -269,104 +270,142 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
     )
   }, [factorCategory?.avgPredictionResultVal, factorCategory?.predictionResultDiffVal, factorCategory?.predictionResultDiffRate])
 
+  const showHeaderSkeleton = isVisible && (isLoadingFactorCategory || !factorCategory)
+  const showFactorsSkeleton = showHeaderSkeleton || (!!selectedCategory && isLoadingFactors)
+
   return (
     <Stack>
-      <Stack
-        padding="20px 38px"
-        direction="row"
-        justifyContent="space-between"
-        gap="24px"
-        borderBottom="1px solid"
-        borderColor="contentBorder.Normal"
-        boxSizing="border-box"
-      >
-        {/* 상세정보 */}
-        <Stack direction="row" alignItems="start" gap="24px">
-          <Stack direction="row" gap="12px">
-            <Box
-              width="52px"
-              height="52px"
-              bgcolor="contentBG.Active"
-              borderRadius="10px"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
+      {/* 상단 정보: 로딩 시 해당 위치만 스켈레톤 */}
+      {showHeaderSkeleton ? (
+        <Stack
+          padding="20px 38px"
+          direction="row"
+          justifyContent="space-between"
+          gap="24px"
+          borderBottom="1px solid"
+          borderColor="contentBorder.Normal"
+        >
+          <Stack direction="row" alignItems="start" gap="24px" flex={1}>
+            <Stack direction="row" gap="12px">
+              <MIBaseSkeleton.Avatar width={52} height={52} sx={{ borderRadius: '10px' }} />
+              <Stack gap="8px">
+                <MIBaseSkeleton.TextLine width={80} height={12} />
+                <MIBaseSkeleton.TextLine width={120} height={16} />
+              </Stack>
+            </Stack>
+            <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
+            <Stack gap="20px">
+              <Stack gap="8px">
+                <MIBaseSkeleton.TextLine width={100} height={12} />
+                <MIBaseSkeleton.TextLine width={180} height={16} />
+                <MIBaseSkeleton.TextLine width={120} height={12} />
+              </Stack>
+              <Stack gap="8px">
+                <MIBaseSkeleton.TextLine width={100} height={12} />
+                <MIBaseSkeleton.TextLine width={150} height={16} />
+                <MIBaseSkeleton.TextLine width={120} height={12} />
+              </Stack>
+            </Stack>
+            <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
+            <Stack gap="20px">
+              <Stack gap="8px">
+                <MIBaseSkeleton.TextLine width={100} height={12} />
+                <Stack direction="row" gap="4px" alignItems="baseline">
+                  <MIBaseSkeleton.TextLine width={80} height={16} />
+                  <MIBaseSkeleton.TextLine width={100} height={16} />
+                </Stack>
+                <MIBaseSkeleton.TextLine width={150} height={12} />
+              </Stack>
+              <Stack gap="8px">
+                <MIBaseSkeleton.TextLine width={100} height={12} />
+                <MIBaseSkeleton.TextLine width={100} height={16} />
+                <MIBaseSkeleton.TextLine width={150} height={12} />
+              </Stack>
+            </Stack>
+          </Stack>
+        </Stack>
+      ) : (
+        <Stack
+          padding="20px 38px"
+          direction="row"
+          justifyContent="space-between"
+          gap="24px"
+          borderBottom="1px solid"
+          borderColor="contentBorder.Normal"
+          boxSizing="border-box"
+        >
+          <Stack direction="row" alignItems="start" gap="24px">
+            <Stack direction="row" gap="12px">
               <Box
-                component="img"
-                src={marketIcon}
-                alt="Market Icon"
-                sx={{
-                  width: '43px',
-                  height: '43px',
-                  objectFit: 'contain',
-                }}
-                draggable={false}
+                width="52px"
+                height="52px"
+                bgcolor="contentBG.Active"
+                borderRadius="10px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Box
+                  component="img"
+                  src={marketIcon}
+                  alt="Market Icon"
+                  sx={{
+                    width: '43px',
+                    height: '43px',
+                    objectFit: 'contain',
+                  }}
+                  draggable={false}
+                />
+              </Box>
+              <InfoLabel label="TARGET" value={factorCategory?.predictChartDetailExpn || '-'} />
+            </Stack>
+            <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
+            <Stack gap="20px">
+              <InfoLabel
+                label="TARGET DATE"
+                value={
+                  factorCategory?.endPredictionResultDt ? dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').format('YYYY/MM/DD') : '-'
+                }
+                description={
+                  factorCategory?.startPredictionResultDt && factorCategory?.endPredictionResultDt
+                    ? `${dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').diff(
+                      dayjs(factorCategory.startPredictionResultDt, 'YYYYMMDD'),
+                      'day',
+                    )} days`
+                    : undefined
+                }
               />
-            </Box>
-            <InfoLabel label="TARGET" value={factorCategory?.predictChartDetailExpn || '-'} />
+              <InfoLabel
+                label="RUN DATE"
+                value={
+                  factorCategory?.predictionFulfillDt ? dayjs(factorCategory.predictionFulfillDt, 'YYYYMMDD').format('YYYY/MM/DD') : '-'
+                }
+                description="Model execution date"
+              />
+            </Stack>
+            <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
+            <Stack gap="20px">
+              <InfoLabel label="PRICE EXP." value={priceExpValue} description="Compare to reference price" />
+              <InfoLabel
+                label="REFERENCE PRICE"
+                value={
+                  factorCategory?.predictionCriteriaVal !== undefined && factorCategory?.predictionCriteriaVal !== null
+                    ? factorCategory.predictionCriteriaVal.toFixed(2)
+                    : '-'
+                }
+                description={
+                  factorCategory?.predictionCriteriaDt
+                    ? `${dayjs(factorCategory.predictionCriteriaDt, 'YYYYMMDD').format('YY/MM/DD')} · S&P Global Platts`
+                    : undefined
+                }
+              />
+            </Stack>
           </Stack>
-          <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
-          <Stack gap="20px">
-            <InfoLabel
-              label="TARGET DATE"
-              value={
-                factorCategory?.endPredictionResultDt ? dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').format('YYYY/MM/DD') : '-'
-              }
-              description={
-                factorCategory?.startPredictionResultDt && factorCategory?.endPredictionResultDt
-                  ? `${dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').diff(
-                    dayjs(factorCategory.startPredictionResultDt, 'YYYYMMDD'),
-                    'day',
-                  )} days`
-                  : undefined
-              }
-            />
-            <InfoLabel
-              label="RUN DATE"
-              value={factorCategory?.predictionFulfillDt ? dayjs(factorCategory.predictionFulfillDt, 'YYYYMMDD').format('YYYY/MM/DD') : '-'}
-              description="Model execution date"
-            />
-          </Stack>
-          <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
-          <Stack gap="20px">
-            <InfoLabel label="PRICE EXP." value={priceExpValue} description="Compare to reference price" />
-            <InfoLabel
-              label="REFERENCE PRICE"
-              value={
-                factorCategory?.predictionCriteriaVal !== undefined && factorCategory?.predictionCriteriaVal !== null
-                  ? factorCategory.predictionCriteriaVal.toFixed(2)
-                  : '-'
-              }
-              description={
-                factorCategory?.predictionCriteriaDt
-                  ? `${dayjs(factorCategory.predictionCriteriaDt, 'YYYYMMDD').format('YY/MM/DD')} · S&P Global Platts`
-                  : undefined
-              }
-            />
-          </Stack>
+          <Stack minWidth="136px" alignItems="start" gap="8px" />
         </Stack>
-        <Stack minWidth="136px" alignItems="start" gap="8px">
-          {/* <Stack>
-            <Typography variant="body2SB14" color="contentText.Subtext">
-              Date Forecasted
-            </Typography>
-            <Typography variant="body2SB14" color="contentText.Normal">
-              {factorCategory?.endPredictionResultDt
-                ? dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').format('YYYY/MM/DD')
-                : '-'}
-            </Typography>
-          </Stack>
-          <Stack>
-            <Typography variant="body2SB14" color="contentText.Subtext">
-              Model
-            </Typography>
-            <Typography variant="body2SB14" color="contentText.Normal">
-              Standard v2.0.1
-            </Typography>
-          </Stack> */}
-        </Stack>
-      </Stack>
+      )}
+
+      {/* MAIN FACTORS 제목: 항상 동일 */}
       <Stack padding="20px 38px 0 38px" gap="24px">
         <Stack direction="row" alignItems="center" gap="6px">
           <LabelImportantRounded sx={{ color: theme.palette.contentIcon.Activeb }} />
@@ -376,6 +415,8 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
           <InfoOutlined fontSize="small" sx={{ color: theme.palette.contentIcon.Enabled }} />
         </Stack>
       </Stack>
+
+      {/* 탭: 카테고리 로딩 시 해당 위치만 스켈레톤 */}
       <Stack sx={{ width: '100%', minWidth: 0, overflow: 'hidden' }}>
         <Box
           width="100%"
@@ -396,227 +437,274 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
         >
           <Box className="tab-section-line" />
           <Box position="relative" zIndex={1}>
-            <ContentTab explanatoryLevelNms={factorCategory?.explanatoryLevelNms} onCategoryChange={handleCategoryChange} />
+            {!showHeaderSkeleton && (
+              <ContentTab explanatoryLevelNms={factorCategory?.explanatoryLevelNms} onCategoryChange={handleCategoryChange} />
+            )}
           </Box>
         </Box>
-        {factors?.categorySummary && (
-          <Typography padding="12px 38px" fontSize="18px" fontWeight={500} lineHeight="1.4" color="contentText.Black">
-            {factors.categorySummary}
-          </Typography>
+
+        {/* 카테고리 요약: factors 로딩 시 해당 위치만 스켈레톤 */}
+        {showFactorsSkeleton ? (
+          <Stack padding="12px 38px">
+            <MIBaseSkeleton.TextLine width="90%" height={18} />
+          </Stack>
+        ) : (
+          factors?.categorySummary && (
+            <Typography padding="12px 38px" fontSize="18px" fontWeight={500} lineHeight="1.4" color="contentText.Black">
+              {factors.categorySummary}
+            </Typography>
+          )
         )}
+
+        {/* UPWARD/DOWNWARD 카드: factors 로딩 시 해당 위치만 스켈레톤 */}
         <Stack padding="12px 38px" mb="24px" boxSizing="border-box" sx={{ userSelect: 'none' }}>
           <Stack padding="24px" gap="24px" borderRadius="10px" border="1px solid" borderColor="contentBorder.Active" boxSizing="border-box">
-            <Stack direction="row" gap="24px">
-              <Stack flex={1} gap="8px" sx={{ minWidth: 0 }}>
-                <Stack direction="row" alignItems="center" gap="6px">
-                  <TrendingUpIcon sx={{ color: theme.palette.contentIcon.Activeb }} />
-                  <Typography variant="body1SB16" color="contentText.Black" sx={{ userSelect: 'none' }}>
-                    UPWARD SUB-FACTORS
-                  </Typography>
-                </Stack>
-                <Stack gap="4px">
-                  {factors?.plusFactors?.map((factor, index) => {
-                    const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
-                    const isSelected = selectedFactor === factorId
-                    return (
-                      <Stack
-                        key={factorId}
-                        direction="row"
-                        padding="8px"
-                        alignItems="center"
-                        gap="8px"
-                        boxSizing="border-box"
-                        sx={{
-                          minWidth: 0,
-                          cursor: 'pointer',
-                          borderRadius: '6px',
-                          backgroundColor: isSelected ? 'contentBG.Active' : 'transparent',
-                          '&:hover': {
-                            backgroundColor: 'contentBG.Hover',
-                          },
-                        }}
-                        onClick={() => handleFactorClick(factorId)}
-                      >
-                        <Box
-                          display="flex"
-                          flexShrink={0}
-                          alignItems="center"
-                          justifyContent="center"
-                          width="60px"
-                          height="28px"
-                          borderRadius="6px"
-                          bgcolor="increase.main"
-                        >
-                          <Typography variant="body1" color="contentText.White">
-                            {factor.explanatoryScore.toFixed(2)}
-                          </Typography>
-                        </Box>
-                        <Typography
-                          variant="body2M14"
-                          color="contentText.Black"
-                          sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            flex: 1,
-                            minWidth: 0,
-                          }}
-                        >
-                          {factor.explanatoryLevelDetailNm}
-                        </Typography>
+            {showFactorsSkeleton ? (
+              <Stack direction="row" gap="24px">
+                <Stack flex={1} gap="8px">
+                  <Stack direction="row" alignItems="center" gap="6px">
+                    <MIBaseSkeleton.Avatar width={24} height={24} />
+                    <MIBaseSkeleton.TextLine width={180} height={18} />
+                  </Stack>
+                  <Stack gap="4px">
+                    {[1, 2, 3].map((i) => (
+                      <Stack key={i} direction="row" padding="8px" alignItems="center" gap="8px">
+                        <MIBaseSkeleton.Avatar width={60} height={28} sx={{ borderRadius: '6px' }} />
+                        <MIBaseSkeleton.TextLine width="70%" height={16} />
                       </Stack>
-                    )
-                  })}
+                    ))}
+                  </Stack>
+                </Stack>
+                <Stack flex={1} gap="8px">
+                  <Stack direction="row" alignItems="center" gap="6px">
+                    <MIBaseSkeleton.Avatar width={24} height={24} />
+                    <MIBaseSkeleton.TextLine width={200} height={18} />
+                  </Stack>
+                  <Stack gap="4px">
+                    {[1, 2, 3].map((i) => (
+                      <Stack key={i} direction="row" padding="8px" alignItems="center" gap="8px">
+                        <MIBaseSkeleton.Avatar width={60} height={28} sx={{ borderRadius: '6px' }} />
+                        <MIBaseSkeleton.TextLine width="70%" height={16} />
+                      </Stack>
+                    ))}
+                  </Stack>
                 </Stack>
               </Stack>
-              <Stack flex={1} gap="8px" sx={{ minWidth: 0 }}>
-                <Stack direction="row" alignItems="center" gap="6px">
-                  <TrendingDownIcon sx={{ color: theme.palette.contentIcon.Activeb }} />
-                  <Typography variant="body1SB16" color="contentText.Black" sx={{ userSelect: 'none' }}>
-                    DOWNWARD SUB-FACTORS
-                  </Typography>
-                </Stack>
-                <Stack gap="4px">
-                  {factors?.minusFactors?.map((factor, index) => {
-                    const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
-                    const isSelected = selectedFactor === factorId
-                    return (
-                      <Stack
-                        key={factorId}
-                        direction="row"
-                        padding="8px"
-                        alignItems="center"
-                        gap="8px"
-                        boxSizing="border-box"
-                        sx={{
-                          minWidth: 0,
-                          cursor: 'pointer',
-                          borderRadius: '6px',
-                          backgroundColor: isSelected ? 'contentBG.Active' : 'transparent',
-                          '&:hover': {
-                            backgroundColor: 'contentBG.Hover',
-                          },
-                        }}
-                        onClick={() => handleFactorClick(factorId)}
-                      >
-                        <Box
-                          display="flex"
-                          flexShrink={0}
-                          alignItems="center"
-                          justifyContent="center"
-                          width="60px"
-                          height="28px"
-                          borderRadius="6px"
-                          bgcolor="decrease.main"
-                        >
-                          <Typography variant="body1" color="contentText.White">
-                            {factor.explanatoryScore.toFixed(2)}
-                          </Typography>
-                        </Box>
-                        <Typography
-                          variant="body2M14"
-                          color="contentText.Black"
-                          sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            flex: 1,
-                            minWidth: 0,
-                          }}
-                        >
-                          {factor.explanatoryLevelDetailNm}
-                        </Typography>
-                      </Stack>
-                    )
-                  })}
-                </Stack>
-              </Stack>
-            </Stack>
-            {selectedFactorObj && (
-              <Stack
-                padding="20px"
-                gap="8px"
-                borderRadius="10px"
-                border="1px solid"
-                borderColor="contentBorder.Active"
-                boxSizing="border-box"
-              >
-                <Stack direction="row" gap="6px" padding="12px" sx={{ minWidth: 0 }}>
-                  <Stack flex={1} gap="6px" sx={{ minWidth: 0 }}>
-                    <Stack direction="row" alignItems="center" gap="12px">
-                      <Typography minWidth="120px" variant="body1" color="contentText.Normal">
-                        IMPACT SCORE
-                      </Typography>
-                      <Divider orientation="vertical" flexItem sx={{ my: '4px' }} />
-                      <Typography
-                        variant="body1"
-                        color={selectedFactorObj.explanatoryDirectionSymbolNm === '+' ? 'increase.main' : 'decrease.main'}
-                      >
-                        {selectedFactorObj.explanatoryScore.toFixed(2)}
+            ) : (
+              <Fragment>
+                <Stack direction="row" gap="24px">
+                  <Stack flex={1} gap="8px" sx={{ minWidth: 0 }}>
+                    <Stack direction="row" alignItems="center" gap="6px">
+                      <TrendingUpIcon sx={{ color: theme.palette.contentIcon.Activeb }} />
+                      <Typography variant="body1SB16" color="contentText.Black" sx={{ userSelect: 'none' }}>
+                        UPWARD SUB-FACTORS
                       </Typography>
                     </Stack>
-                    <Stack direction="row" alignItems="center" gap="12px" sx={{ minWidth: 0 }}>
-                      <Typography minWidth="120px" variant="body1" color="contentText.Normal">
-                        SUB-FACTOR
-                      </Typography>
-                      <Divider orientation="vertical" flexItem sx={{ my: '4px' }} />
-                      <Typography
-                        variant="body1"
-                        color="contentText.Black"
-                        sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          flex: 1,
-                          minWidth: 0,
-                        }}
-                      >
-                        {selectedFactorObj.explanatoryLevelDetailNm}
-                      </Typography>
+                    <Stack gap="4px">
+                      {factors?.plusFactors?.map((factor, index) => {
+                        const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
+                        const isSelected = selectedFactor === factorId
+                        return (
+                          <Stack
+                            key={factorId}
+                            direction="row"
+                            padding="8px"
+                            alignItems="center"
+                            gap="8px"
+                            boxSizing="border-box"
+                            sx={{
+                              minWidth: 0,
+                              cursor: 'pointer',
+                              borderRadius: '6px',
+                              backgroundColor: isSelected ? 'contentBG.Active' : 'transparent',
+                              '&:hover': {
+                                backgroundColor: 'contentBG.Hover',
+                              },
+                            }}
+                            onClick={() => handleFactorClick(factorId)}
+                          >
+                            <Box
+                              display="flex"
+                              flexShrink={0}
+                              alignItems="center"
+                              justifyContent="center"
+                              width="60px"
+                              height="28px"
+                              borderRadius="6px"
+                              bgcolor="increase.main"
+                            >
+                              <Typography variant="body1" color="contentText.White">
+                                {factor.explanatoryScore.toFixed(2)}
+                              </Typography>
+                            </Box>
+                            <Typography
+                              variant="body2M14"
+                              color="contentText.Black"
+                              sx={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                            >
+                              {factor.explanatoryLevelDetailNm}
+                            </Typography>
+                          </Stack>
+                        )
+                      })}
                     </Stack>
                   </Stack>
-                  <MIBaseButton
-                    sx={{ padding: '8px 10px' }}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      if (factorGraph?.datasource?.goodsNo && factorGraph?.datasource?.goodsDataNo) {
-                        navigate(`/mi/data-detail/${factorGraph.datasource.goodsNo}/${factorGraph.datasource.goodsDataNo}`, {
-                          state: { goodsDataSrcNo: factorGraph.datasource.goodsDataSourceNo },
-                        })
-                      }
-                    }}
-                  >
-                    <OpenInNewRoundedIcon fontSize="small" sx={{ color: theme.palette.gray[70] }} />
-                  </MIBaseButton>
+                  <Stack flex={1} gap="8px" sx={{ minWidth: 0 }}>
+                    <Stack direction="row" alignItems="center" gap="6px">
+                      <TrendingDownIcon sx={{ color: theme.palette.contentIcon.Activeb }} />
+                      <Typography variant="body1SB16" color="contentText.Black" sx={{ userSelect: 'none' }}>
+                        DOWNWARD SUB-FACTORS
+                      </Typography>
+                    </Stack>
+                    <Stack gap="4px">
+                      {factors?.minusFactors?.map((factor, index) => {
+                        const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
+                        const isSelected = selectedFactor === factorId
+                        return (
+                          <Stack
+                            key={factorId}
+                            direction="row"
+                            padding="8px"
+                            alignItems="center"
+                            gap="8px"
+                            boxSizing="border-box"
+                            sx={{
+                              minWidth: 0,
+                              cursor: 'pointer',
+                              borderRadius: '6px',
+                              backgroundColor: isSelected ? 'contentBG.Active' : 'transparent',
+                              '&:hover': {
+                                backgroundColor: 'contentBG.Hover',
+                              },
+                            }}
+                            onClick={() => handleFactorClick(factorId)}
+                          >
+                            <Box
+                              display="flex"
+                              flexShrink={0}
+                              alignItems="center"
+                              justifyContent="center"
+                              width="60px"
+                              height="28px"
+                              borderRadius="6px"
+                              bgcolor="decrease.main"
+                            >
+                              <Typography variant="body1" color="contentText.White">
+                                {factor.explanatoryScore.toFixed(2)}
+                              </Typography>
+                            </Box>
+                            <Typography
+                              variant="body2M14"
+                              color="contentText.Black"
+                              sx={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                            >
+                              {factor.explanatoryLevelDetailNm}
+                            </Typography>
+                          </Stack>
+                        )
+                      })}
+                    </Stack>
+                  </Stack>
                 </Stack>
-                <Divider sx={{ my: '4px' }} />
-                <Box position="relative" px="16px">
-                  {factorGraph?.graphMetadata?.currentUnitCd && (
-                    <Typography
-                      variant="body2M14"
-                      color="contentText.Black"
-                      sx={{ position: 'absolute', top: 0, left: 20, userSelect: 'none', zIndex: 1 }}
-                    >
-                      Unit: {factorGraph.graphMetadata.currentUnitCd}
-                    </Typography>
-                  )}
-                  <ForecastChartGraph
-                    ref={chartGraphRef}
-                    height="556px"
-                    chartType={ChartType.LINE}
-                    charts={factorChartData}
-                    currency={factorGraph?.graphMetadata?.currency}
-                    unitCd={factorGraph?.graphMetadata?.currentUnitCd}
-                    chartVisibilityMap={new Map()}
-                    hoveredChartKey={null}
-                    hoverReportCardInfo={null}
-                    isLoading={isLoadingFactorGraph}
-                    onFixedModeChange={() => {}}
-                    chartColorMap={new Map()}
-                    disableFixedMode={true}
-                  />
-                </Box>
-              </Stack>
+                {selectedFactorObj && (
+                  <Stack
+                    padding="20px"
+                    gap="8px"
+                    borderRadius="10px"
+                    border="1px solid"
+                    borderColor="contentBorder.Active"
+                    boxSizing="border-box"
+                  >
+                    <Stack direction="row" gap="6px" padding="12px" sx={{ minWidth: 0 }}>
+                      <Stack flex={1} gap="6px" sx={{ minWidth: 0 }}>
+                        <Stack direction="row" alignItems="center" gap="12px">
+                          <Typography minWidth="120px" variant="body1" color="contentText.Normal">
+                            IMPACT SCORE
+                          </Typography>
+                          <Divider orientation="vertical" flexItem sx={{ my: '4px' }} />
+                          <Typography
+                            variant="body1"
+                            color={selectedFactorObj.explanatoryDirectionSymbolNm === '+' ? 'increase.main' : 'decrease.main'}
+                          >
+                            {selectedFactorObj.explanatoryScore.toFixed(2)}
+                          </Typography>
+                        </Stack>
+                        <Stack direction="row" alignItems="center" gap="12px" sx={{ minWidth: 0 }}>
+                          <Typography minWidth="120px" variant="body1" color="contentText.Normal">
+                            SUB-FACTOR
+                          </Typography>
+                          <Divider orientation="vertical" flexItem sx={{ my: '4px' }} />
+                          <Typography
+                            variant="body1"
+                            color="contentText.Black"
+                            sx={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              flex: 1,
+                              minWidth: 0,
+                            }}
+                          >
+                            {selectedFactorObj.explanatoryLevelDetailNm}
+                          </Typography>
+                        </Stack>
+                      </Stack>
+                      <MIBaseButton
+                        sx={{ padding: '8px 10px' }}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          if (factorGraph?.datasource?.goodsNo && factorGraph?.datasource?.goodsDataNo) {
+                            navigate(`/mi/data-detail/${factorGraph.datasource.goodsNo}/${factorGraph.datasource.goodsDataNo}`, {
+                              state: { goodsDataSrcNo: factorGraph.datasource.goodsDataSourceNo },
+                            })
+                          }
+                        }}
+                      >
+                        <OpenInNewRoundedIcon fontSize="small" sx={{ color: theme.palette.gray[70] }} />
+                      </MIBaseButton>
+                    </Stack>
+                    <Divider sx={{ my: '4px' }} />
+                    <Box position="relative" px="16px">
+                      {factorGraph?.graphMetadata?.currentUnitCd && (
+                        <Typography
+                          variant="body2M14"
+                          color="contentText.Black"
+                          sx={{ position: 'absolute', top: 0, left: 20, userSelect: 'none', zIndex: 1 }}
+                        >
+                          Unit: {factorGraph.graphMetadata.currentUnitCd}
+                        </Typography>
+                      )}
+                      <ForecastChartGraph
+                        ref={chartGraphRef}
+                        height="556px"
+                        chartType={ChartType.LINE}
+                        charts={factorChartData}
+                        currency={factorGraph?.graphMetadata?.currency}
+                        unitCd={factorGraph?.graphMetadata?.currentUnitCd}
+                        chartVisibilityMap={new Map()}
+                        hoveredChartKey={null}
+                        hoverReportCardInfo={null}
+                        isLoading={isLoadingFactorGraph}
+                        onFixedModeChange={() => {}}
+                        chartColorMap={new Map()}
+                        disableFixedMode={true}
+                      />
+                    </Box>
+                  </Stack>
+                )}
+              </Fragment>
             )}
           </Stack>
         </Stack>
