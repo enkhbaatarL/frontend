@@ -114,39 +114,40 @@ const ForecastChart = ({
 
   // IForecastChartData를 ChartData 형식으로 변환
   const convertedChartData = useMemo<ChartData[]>(() => {
-    // x축 라벨(또는 날짜 문자열)을 차트에서 사용하는 타임스탬프로 변환
-    const formatLabelToTimestamp = (label: string): string => {
-      // xAxisUnit이 1D가 아니고 dateList가 있으면, label을 dateList의 label과 매칭
-      if (chartData?.xAxisUnit && chartData.xAxisUnit !== '1D' && chartData.dateList?.length) {
-        const matched = chartData.dateList.find((item) => item.label === label)
-        if (matched) {
-          const src = matched.startDate
-          if (/^\d{8}$/.test(src)) {
-            const y = src.slice(0, 4)
-            const m = src.slice(4, 6)
-            const d = src.slice(6, 8)
-            return dayjs(`${y}-${m}-${d}`).format('YYYY-MM-DDTHH:mm:ss')
-          }
-          return dayjs(src).format('YYYY-MM-DDTHH:mm:ss')
-        }
-      }
-
-      // 기본: YYYYMMDD 형식 처리
-      if (/^\d{8}$/.test(label)) {
-        const y = label.slice(0, 4)
-        const m = label.slice(4, 6)
-        const d = label.slice(6, 8)
+    /**
+     * x축 매핑 기준을 rawData.startDate(YYYYMMDD)로 통일한다.
+     * - timestamps: startDate 기반 (툴팁/크로스헤어/리포트 호버 구간 모두 동일 기준)
+     * - resultDates(표시용 라벨): startDate가 dateList 구간에 포함되면 해당 label 사용 (예: W45 2025)
+     */
+    const ymdToTimestamp = (ymd: string): string => {
+      if (/^\d{8}$/.test(ymd)) {
+        const y = ymd.slice(0, 4)
+        const m = ymd.slice(4, 6)
+        const d = ymd.slice(6, 8)
         return dayjs(`${y}-${m}-${d}`).format('YYYY-MM-DDTHH:mm:ss')
       }
+      const parsed = dayjs(ymd)
+      return parsed.isValid() ? parsed.format('YYYY-MM-DDTHH:mm:ss') : dayjs().format('YYYY-MM-DDTHH:mm:ss')
+    }
 
-      // dayjs가 인식 가능한 형식이면 그대로 사용
-      const parsed = dayjs(label)
-      if (parsed.isValid()) {
-        return parsed.format('YYYY-MM-DDTHH:mm:ss')
-      }
+    const normalizeYmd = (d: string): string => {
+      if (/^\d{8}$/.test(d)) return d
+      const parsed = dayjs(d)
+      return parsed.isValid() ? parsed.format('YYYYMMDD') : ''
+    }
 
-      // 최후의 수단: 현재 날짜로 대체 (invalid date 방지)
-      return dayjs().format('YYYY-MM-DDTHH:mm:ss')
+    const getDisplayLabelByStartDate = (startDate: string): string | undefined => {
+      const startNorm = normalizeYmd(startDate)
+      if (!startNorm || !chartData?.dateList?.length) return undefined
+
+      // startDate가 dateList의 start~end 사이에 포함되는 항목을 찾는다.
+      const matched = chartData.dateList.find((item) => {
+        const itemStart = normalizeYmd(item.startDate)
+        const itemEnd = normalizeYmd(item.endDate)
+        if (!itemStart || !itemEnd) return false
+        return startNorm >= itemStart && startNorm <= itemEnd
+      })
+      return matched?.label
     }
 
     // 기본적으로 chartData 사용 (호버 시에도 기본 그래프는 유지하고, 흐리게 표시 후 highlight로 새 데이터만 선명하게 그림)
@@ -157,8 +158,8 @@ const ForecastChart = ({
     chartData.charts.forEach((chart) => {
       // actualChartLines 처리
       if (chart.actualChartLines.rawData && chart.actualChartLines.rawData.length > 0) {
-        const timestamps = chart.actualChartLines.rawData.map((item) => formatLabelToTimestamp(item.resultDate))
-        const resultDates = chart.actualChartLines.rawData.map((item) => item.resultDate)
+        const timestamps = chart.actualChartLines.rawData.map((item) => ymdToTimestamp(item.startDate))
+        const resultDates = chart.actualChartLines.rawData.map((item) => getDisplayLabelByStartDate(item.startDate) ?? item.resultDate)
 
         const values = chart.actualChartLines.rawData.map((item) => {
           const value = item.value
@@ -191,8 +192,8 @@ const ForecastChart = ({
 
       // forecastChartLines 처리
       if (chart.forecastChartLines.rawData && chart.forecastChartLines.rawData.length > 0) {
-        const timestamps = chart.forecastChartLines.rawData.map((item) => formatLabelToTimestamp(item.resultDate))
-        const resultDates = chart.forecastChartLines.rawData.map((item) => item.resultDate)
+        const timestamps = chart.forecastChartLines.rawData.map((item) => ymdToTimestamp(item.startDate))
+        const resultDates = chart.forecastChartLines.rawData.map((item) => getDisplayLabelByStartDate(item.startDate) ?? item.resultDate)
         const predictDates = chart.forecastChartLines.rawData.map((item) => item.predictDate || '')
 
         const values = chart.forecastChartLines.rawData.map((item) => {
@@ -251,68 +252,60 @@ const ForecastChart = ({
       if (key && p.value !== null && p.value !== undefined) resultListByDate.set(key, Number(p.value))
     })
 
-    // 기본 차트의 x축(날짜) - 가장 긴 rawData 사용
-    let baseDates: string[] = []
+    // 기본 차트의 x축(startDate) - 가장 긴 rawData 사용
+    let baseStartDates: string[] = []
     let maxLen = 0
     chartData.charts.forEach((chart) => {
-      const actualDates = chart.actualChartLines.rawData?.map((r) => r.resultDate) ?? []
-      const forecastDates = chart.forecastChartLines.rawData?.map((r) => r.resultDate) ?? []
-      const dates = actualDates.length >= forecastDates.length ? actualDates : forecastDates
-      if (dates.length > maxLen) {
-        maxLen = dates.length
-        baseDates = dates
+      const actualStartDates = chart.actualChartLines.rawData?.map((r) => r.startDate) ?? []
+      const forecastStartDates = chart.forecastChartLines.rawData?.map((r) => r.startDate) ?? []
+      const startDates = actualStartDates.length >= forecastStartDates.length ? actualStartDates : forecastStartDates
+      if (startDates.length > maxLen) {
+        maxLen = startDates.length
+        baseStartDates = startDates
       }
     })
-    if (baseDates.length === 0) return null
+    if (baseStartDates.length === 0) return null
 
-    // rawData.resultDate는 "12/15"(1D) 또는 "W51 2025"(1W 등) → dateList에서 label로 찾아 startDate(YYYYMMDD)로 변환
-    const labelToYyyyMmDd = (label: string): string => {
-      if (/^\d{8}$/.test(label)) return label
-      const fromDateList = chartData.dateList?.find((item) => item.label === label)?.startDate
-      if (fromDateList && /^\d{8}$/.test(fromDateList)) return fromDateList
-      const parsed = dayjs(label)
+    const normalizeYmd = (d: string): string => {
+      if (/^\d{8}$/.test(d)) return d
+      const parsed = dayjs(d)
       return parsed.isValid() ? parsed.format('YYYYMMDD') : ''
     }
 
-    // dateList 항목: 1W 등에서는 startDate~endDate 구간이 있음. label로 찾아 구간 반환
-    const getPeriodByLabel = (label: string): { startNorm: string; endNorm: string } | null => {
-      const item = chartData.dateList?.find((d) => d.label === label)
-      if (!item?.startDate || !item?.endDate) return null
-      const startNorm = /^\d{8}$/.test(item.startDate) ? item.startDate : toYyyyMmDd(item.startDate)
-      const endNorm = /^\d{8}$/.test(item.endDate) ? item.endDate : toYyyyMmDd(item.endDate)
-      if (!startNorm || !endNorm) return null
-      return { startNorm, endNorm }
-    }
-
-    const formatLabelToTimestamp = (label: string): string => {
-      if (chartData?.xAxisUnit && chartData.xAxisUnit !== '1D' && chartData.dateList?.length) {
-        const matched = chartData.dateList.find((item) => item.label === label)
-        if (matched) {
-          const src = matched.startDate
-          if (/^\d{8}$/.test(src)) {
-            const y = src.slice(0, 4),
-              m = src.slice(4, 6),
-              d = src.slice(6, 8)
-            return dayjs(`${y}-${m}-${d}`).format('YYYY-MM-DDTHH:mm:ss')
-          }
-          return dayjs(src).format('YYYY-MM-DDTHH:mm:ss')
-        }
-      }
-      if (/^\d{8}$/.test(label)) {
-        const y = label.slice(0, 4),
-          m = label.slice(4, 6),
-          d = label.slice(6, 8)
+    const ymdToTimestamp = (ymd: string): string => {
+      if (/^\d{8}$/.test(ymd)) {
+        const y = ymd.slice(0, 4)
+        const m = ymd.slice(4, 6)
+        const d = ymd.slice(6, 8)
         return dayjs(`${y}-${m}-${d}`).format('YYYY-MM-DDTHH:mm:ss')
       }
-      const parsed = dayjs(label)
+      const parsed = dayjs(ymd)
       return parsed.isValid() ? parsed.format('YYYY-MM-DDTHH:mm:ss') : dayjs().format('YYYY-MM-DDTHH:mm:ss')
     }
 
-    const timestamps = baseDates.map((d) => formatLabelToTimestamp(d))
-    const resultDates = baseDates
-    // 기간(reportStart~reportEnd)과 맞는 구간만 predictionResultList 값으로 채움. 1D는 단일일, 1W 등은 dateList의 startDate~endDate 구간으로 매칭
-    const values = baseDates.map((dateLabel) => {
-      const datePeriod = getPeriodByLabel(dateLabel)
+    const getPeriodByStartDate = (startDate: string): { startNorm: string; endNorm: string; label?: string } | null => {
+      const startNorm = normalizeYmd(startDate)
+      if (!startNorm || !chartData.dateList?.length) return null
+      const item = chartData.dateList.find((d) => {
+        const itemStart = normalizeYmd(d.startDate)
+        const itemEnd = normalizeYmd(d.endDate)
+        if (!itemStart || !itemEnd) return false
+        return startNorm >= itemStart && startNorm <= itemEnd
+      })
+      if (!item) return null
+      const itemStartNorm = normalizeYmd(item.startDate)
+      const itemEndNorm = normalizeYmd(item.endDate)
+      if (!itemStartNorm || !itemEndNorm) return null
+      return { startNorm: itemStartNorm, endNorm: itemEndNorm, label: item.label }
+    }
+
+    const resultDates = baseStartDates.map((sd) => getPeriodByStartDate(sd)?.label ?? sd)
+    const timestamps = baseStartDates.map((sd) => ymdToTimestamp(sd))
+
+    // 기간(reportStart~reportEnd)과 맞는 구간만 predictionResultList 값으로 채움.
+    // 1D: 단일일 매칭, 1W/1M 등: dateList(start~end) 구간으로 매칭 후 구간 내 predictionResultList 평균.
+    const values = baseStartDates.map((startDate) => {
+      const datePeriod = getPeriodByStartDate(startDate)
       if (datePeriod) {
         // 1W 등: 구간(주)이 리포트 기간과 겹치면, 그 구간 안의 predictionResultList 값들의 평균(또는 단일값) 사용
         const { startNorm, endNorm } = datePeriod
@@ -327,7 +320,7 @@ const ForecastChart = ({
         return valsInPeriod.reduce((a, b) => a + b, 0) / valsInPeriod.length
       }
       // 1D: 단일일 매칭
-      const dateNorm = labelToYyyyMmDd(dateLabel)
+      const dateNorm = normalizeYmd(startDate)
       if (!dateNorm) return null
       if (dateNorm < reportStartNorm || dateNorm > reportEndNorm) return null
       const value = resultListByDate.get(dateNorm)

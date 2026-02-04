@@ -92,10 +92,14 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
       dateBox.style.fontFamily = 'Pretendard'
       dateBox.style.whiteSpace = 'nowrap'
       dateBox.style.boxSizing = 'border-box'
-      // 첫 번째 데이터셋의 metadata에서 timestamps 가져오기
+      // timestamps는 "축 기준"을 사용해야 Index fallback이 발생하지 않는다.
+      // 우선순위: plugins.gridAndAxes.timestamps -> dataset metadata.timestamps
+      const pluginTimestamps =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((chart.config.options as any)?.plugins?.gridAndAxes?.timestamps as string[] | undefined) ?? []
       const firstDataset = chart.data.datasets[0]
       const metadata = (firstDataset as { metadata?: { timestamps?: string[] } })?.metadata
-      const timestamps = metadata?.timestamps || []
+      const timestamps = pluginTimestamps.length > 0 ? pluginTimestamps : metadata?.timestamps || []
       const roundedIndex = Math.round(xScaleIndex)
       const timestamp = timestamps[roundedIndex]
       dateBox.textContent = timestamp ? dayjs(timestamp).format('MM/DD') : `Index: ${roundedIndex}`
@@ -245,10 +249,14 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
       // ignoreFixedPosition이 true이면 fixedPosition을 무시하고 일반 모드로 동작
       const effectiveFixedPosition = ignoreFixedPosition ? null : fixedPositionState
 
-      // 첫 번째 데이터셋의 metadata에서 timestamps 가져오기
+      // timestamps는 "축 기준"을 사용해야 Index fallback이 발생하지 않는다.
+      // 우선순위: plugins.gridAndAxes.timestamps -> dataset metadata.timestamps
+      const pluginTimestamps =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((chart.config.options as any)?.plugins?.gridAndAxes?.timestamps as string[] | undefined) ?? []
       const firstDataset = chart.data.datasets[0]
       const metadata = (firstDataset as { metadata?: { timestamps?: string[]; predictDates?: string[] } })?.metadata
-      const timestamps = metadata?.timestamps || []
+      const timestamps = pluginTimestamps.length > 0 ? pluginTimestamps : metadata?.timestamps || []
       const predictDates = metadata?.predictDates || []
       const roundedIndex = Math.round(xScaleIndex)
       const timestamp = timestamps[roundedIndex]
@@ -392,9 +400,7 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
           return fixedTimestamp ? dayjs(fixedTimestamp).format('YYYY/MM/DD') : `Index: ${Math.round(effectiveFixedPosition.xScaleIndex)}`
         })()
         : formattedDate
-      const tooltipPredictDate = effectiveFixedPosition
-        ? predictDates[Math.round(effectiveFixedPosition.xScaleIndex)] || null
-        : predictDate
+      const tooltipPredictDate = effectiveFixedPosition ? predictDates[Math.round(effectiveFixedPosition.xScaleIndex)] || null : predictDate
 
       const tooltipContent: Record<string, TooltipContent> = {}
 
@@ -416,11 +422,12 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
         ).metadata
         const isForecast = datasetMetadata?.isDashed ?? false
         const chipColor = datasetMetadata?.chipColor
-        
+
         // 해당 데이터셋의 predictDate 찾기 (isForecast인 경우에만)
-        const datasetPredictDate = isForecast && datasetMetadata?.predictDates
-          ? datasetMetadata.predictDates[tooltipXScaleIndex] || tooltipPredictDate
-          : tooltipPredictDate
+        const datasetPredictDate =
+          isForecast && datasetMetadata?.predictDates
+            ? datasetMetadata.predictDates[tooltipXScaleIndex] || tooltipPredictDate
+            : tooltipPredictDate
 
         tooltipContent[index] = {
           label: dataset.label,

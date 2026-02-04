@@ -485,8 +485,30 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       return maxCount
     }, [chartList])
 
-    const firstChartTimestamps = useMemo(() => chartList[0]?.timestamps || [], [chartList])
-    const firstChartResultDates = useMemo(() => (chartList[0] as ChartData & { resultDates?: string[] })?.resultDates || [], [chartList])
+    /**
+     * Crosshair/Tooltip/X축 렌더링에서 사용하는 "축 기준 timestamps"는
+     * 항상 가장 긴 길이(=dataPointCount) 기준으로 맞춰야 Index fallback이 발생하지 않는다.
+     */
+    const axisBase = useMemo(() => {
+      let best = chartList[0]
+      let bestLen = 0
+
+      chartList.forEach((c) => {
+        const series = c.series?.find((s) => s.seriesId === 'main') || c.series?.[0]
+        const valuesLen = series?.values?.length ?? 0
+        const tsLen = c.timestamps?.length ?? 0
+        const len = Math.max(valuesLen, tsLen)
+        if (len > bestLen) {
+          bestLen = len
+          best = c
+        }
+      })
+
+      return best
+    }, [chartList])
+
+    const axisTimestamps = useMemo(() => axisBase?.timestamps || [], [axisBase])
+    const axisResultDates = useMemo(() => (axisBase as (ChartData & { resultDates?: string[] }) | undefined)?.resultDates || [], [axisBase])
 
     const firstChartSeries = useMemo(() => {
       const chart = chartList[0]
@@ -1028,7 +1050,16 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
           setChartAreaCenter({ left: centerX, top: centerY, bottom })
         }
       })
-    }, [hoveredChartKey, hoverReportCardInfo, chartType, chartVisibilityMap, mainDataset, createHighlightDatasets, fixedXScaleIndex])
+    }, [
+      hoveredChartKey,
+      hoverReportCardInfo,
+      chartType,
+      chartVisibilityMap,
+      mainDataset,
+      createHighlightDatasets,
+      fixedXScaleIndex,
+      companyNo,
+    ])
 
     useEffect(() => {
       const chart = chartRef.current
@@ -1301,8 +1332,8 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             },
           },
           gridAndAxes: {
-            timestamps: firstChartTimestamps,
-            resultDates: firstChartResultDates,
+            timestamps: axisTimestamps,
+            resultDates: axisResultDates,
             dataPointCount,
           },
         },
@@ -1310,17 +1341,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       // onPan 콜백은 클로저로 최신 fixedXScaleIndex와 isDragConfirmedRef를 참조하므로 의존성 배열에 추가하지 않음
       // fixedXScaleIndex를 의존성에 추가하면 fixedXScaleIndex 변경 시마다 chartOptions가 재생성되어 불필요한 리렌더링 발생
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [
-        isEmptyChart,
-        dataPointCount,
-        firstChartTimestamps,
-        firstChartResultDates,
-        subYAxes,
-        unitCd,
-        currency,
-        isYAxisSeparated,
-        fullYAxisRange,
-      ],
+      [isEmptyChart, dataPointCount, axisTimestamps, axisResultDates, subYAxes, unitCd, currency, isYAxisSeparated, fullYAxisRange],
     )
 
     useEffect(() => {

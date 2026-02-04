@@ -47,7 +47,47 @@ export const generateYAxis = (params: {
     text: params.label ?? '',
   },
   afterFit(axis: { width: number }) {
-    axis.width = params.isVirtual ? 2 : (params.axisWidth ?? 67)
+    if (params.isVirtual) {
+      axis.width = 2
+      return
+    }
+
+    // tick 라벨 폭을 기반으로 y축 폭을 동적으로 확장한다.
+    // (큰 숫자/천단위 콤마/음수 기호 등으로 라벨이 길어질 때 잘림 방지)
+    const baseWidth = params.axisWidth ?? 67
+    const padding = params.padding ?? 12
+
+    // Chart.js scale 객체에 접근 (타입 단순화)
+    const scaleAny = axis as unknown as {
+      chart?: { ctx?: CanvasRenderingContext2D }
+      ticks?: Array<{ label?: string | string[] }>
+    }
+    const ctx = scaleAny.chart?.ctx
+    const ticks = scaleAny.ticks ?? []
+
+    if (!ctx || ticks.length === 0) {
+      axis.width = baseWidth
+      return
+    }
+
+    // ticks 폰트 설정과 동일한 기준으로 측정
+    ctx.save()
+    ctx.font = `normal 14px ${getCurrentFontFamily()}`
+
+    let maxLabelWidth = 0
+    for (const t of ticks) {
+      const label = t.label
+      if (label === undefined || label === null) continue
+      const text = Array.isArray(label) ? label.join('') : String(label)
+      if (!text) continue
+      const w = ctx.measureText(text).width
+      if (w > maxLabelWidth) maxLabelWidth = w
+    }
+    ctx.restore()
+
+    // 여유폭(패딩 + 여분)을 포함해서 최소 baseWidth 이상으로 확장
+    const extra = 10
+    axis.width = Math.max(baseWidth, Math.ceil(maxLabelWidth + padding + extra))
   },
   position: params.position ?? 'right',
   grid: {

@@ -168,6 +168,7 @@ interface IForecastChartMetadata {
   tableHeader: string
 }
 interface IChartLineRawData {
+  startDate: string
   resultDate: string
   predictDate: string
   value: number | null

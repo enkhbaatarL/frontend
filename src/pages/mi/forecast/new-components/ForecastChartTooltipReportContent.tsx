@@ -29,6 +29,14 @@ interface InfoLabelProps {
   description?: string
 }
 
+const NoDataPlaceholder = () => (
+  <Stack padding="12px" minHeight={120} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+    <Typography variant="body2SB14" color="gray.50">
+      No data available to display.
+    </Typography>
+  </Stack>
+)
+
 const InfoLabel = ({ label, value, description }: InfoLabelProps) => (
   <Stack>
     <Typography variant="body2SB14" color="contentText.Subtext">
@@ -272,6 +280,9 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
 
   const showHeaderSkeleton = isVisible && (isLoadingFactorCategory || !factorCategory)
   const showFactorsSkeleton = showHeaderSkeleton || (!!selectedCategory && isLoadingFactors)
+  const hasPlusFactors = (factors?.plusFactors?.length ?? 0) > 0
+  const hasMinusFactors = (factors?.minusFactors?.length ?? 0) > 0
+  const hasAnySubFactors = hasPlusFactors || hasMinusFactors
 
   return (
     <Stack>
@@ -492,132 +503,144 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
               </Stack>
             ) : (
               <Fragment>
-                <Stack direction="row" gap="24px">
-                  <Stack flex={1} gap="8px" sx={{ minWidth: 0 }}>
-                    <Stack direction="row" alignItems="center" gap="6px">
-                      <TrendingUpIcon sx={{ color: theme.palette.contentIcon.Activeb }} />
-                      <Typography variant="body1SB16" color="contentText.Black" sx={{ userSelect: 'none' }}>
-                        UPWARD SUB-FACTORS
-                      </Typography>
+                {!hasAnySubFactors ? (
+                  <NoDataPlaceholder />
+                ) : (
+                  <Stack direction="row" gap="24px">
+                    <Stack flex={1} gap="8px" sx={{ minWidth: 0 }}>
+                      <Stack direction="row" alignItems="center" gap="6px">
+                        <TrendingUpIcon sx={{ color: theme.palette.contentIcon.Activeb }} />
+                        <Typography variant="body1SB16" color="contentText.Black" sx={{ userSelect: 'none' }}>
+                          UPWARD SUB-FACTORS
+                        </Typography>
+                      </Stack>
+                      <Stack gap="4px">
+                        {hasPlusFactors ? (
+                          factors!.plusFactors!.map((factor, index) => {
+                            const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
+                            const isSelected = selectedFactor === factorId
+                            return (
+                              <Stack
+                                key={factorId}
+                                direction="row"
+                                padding="8px"
+                                alignItems="center"
+                                gap="8px"
+                                boxSizing="border-box"
+                                sx={{
+                                  minWidth: 0,
+                                  cursor: 'pointer',
+                                  borderRadius: '6px',
+                                  backgroundColor: isSelected ? 'contentBG.Active' : 'transparent',
+                                  '&:hover': {
+                                    backgroundColor: 'contentBG.Hover',
+                                  },
+                                }}
+                                onClick={() => handleFactorClick(factorId)}
+                              >
+                                <Box
+                                  display="flex"
+                                  flexShrink={0}
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  width="60px"
+                                  height="28px"
+                                  borderRadius="6px"
+                                  bgcolor="increase.main"
+                                >
+                                  <Typography variant="body1" color="contentText.White">
+                                    {factor.explanatoryScore.toFixed(2)}
+                                  </Typography>
+                                </Box>
+                                <Typography
+                                  variant="body2M14"
+                                  color="contentText.Black"
+                                  sx={{
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    flex: 1,
+                                    minWidth: 0,
+                                  }}
+                                >
+                                  {factor.explanatoryLevelDetailNm}
+                                </Typography>
+                              </Stack>
+                            )
+                          })
+                        ) : (
+                          <NoDataPlaceholder />
+                        )}
+                      </Stack>
                     </Stack>
-                    <Stack gap="4px">
-                      {factors?.plusFactors?.map((factor, index) => {
-                        const factorId = `plus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
-                        const isSelected = selectedFactor === factorId
-                        return (
-                          <Stack
-                            key={factorId}
-                            direction="row"
-                            padding="8px"
-                            alignItems="center"
-                            gap="8px"
-                            boxSizing="border-box"
-                            sx={{
-                              minWidth: 0,
-                              cursor: 'pointer',
-                              borderRadius: '6px',
-                              backgroundColor: isSelected ? 'contentBG.Active' : 'transparent',
-                              '&:hover': {
-                                backgroundColor: 'contentBG.Hover',
-                              },
-                            }}
-                            onClick={() => handleFactorClick(factorId)}
-                          >
-                            <Box
-                              display="flex"
-                              flexShrink={0}
-                              alignItems="center"
-                              justifyContent="center"
-                              width="60px"
-                              height="28px"
-                              borderRadius="6px"
-                              bgcolor="increase.main"
-                            >
-                              <Typography variant="body1" color="contentText.White">
-                                {factor.explanatoryScore.toFixed(2)}
-                              </Typography>
-                            </Box>
-                            <Typography
-                              variant="body2M14"
-                              color="contentText.Black"
-                              sx={{
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                flex: 1,
-                                minWidth: 0,
-                              }}
-                            >
-                              {factor.explanatoryLevelDetailNm}
-                            </Typography>
-                          </Stack>
-                        )
-                      })}
+                    <Stack flex={1} gap="8px" sx={{ minWidth: 0 }}>
+                      <Stack direction="row" alignItems="center" gap="6px">
+                        <TrendingDownIcon sx={{ color: theme.palette.contentIcon.Activeb }} />
+                        <Typography variant="body1SB16" color="contentText.Black" sx={{ userSelect: 'none' }}>
+                          DOWNWARD SUB-FACTORS
+                        </Typography>
+                      </Stack>
+                      <Stack gap="4px">
+                        {hasMinusFactors ? (
+                          factors!.minusFactors!.map((factor, index) => {
+                            const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
+                            const isSelected = selectedFactor === factorId
+                            return (
+                              <Stack
+                                key={factorId}
+                                direction="row"
+                                padding="8px"
+                                alignItems="center"
+                                gap="8px"
+                                boxSizing="border-box"
+                                sx={{
+                                  minWidth: 0,
+                                  cursor: 'pointer',
+                                  borderRadius: '6px',
+                                  backgroundColor: isSelected ? 'contentBG.Active' : 'transparent',
+                                  '&:hover': {
+                                    backgroundColor: 'contentBG.Hover',
+                                  },
+                                }}
+                                onClick={() => handleFactorClick(factorId)}
+                              >
+                                <Box
+                                  display="flex"
+                                  flexShrink={0}
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  width="60px"
+                                  height="28px"
+                                  borderRadius="6px"
+                                  bgcolor="decrease.main"
+                                >
+                                  <Typography variant="body1" color="contentText.White">
+                                    {factor.explanatoryScore.toFixed(2)}
+                                  </Typography>
+                                </Box>
+                                <Typography
+                                  variant="body2M14"
+                                  color="contentText.Black"
+                                  sx={{
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    flex: 1,
+                                    minWidth: 0,
+                                  }}
+                                >
+                                  {factor.explanatoryLevelDetailNm}
+                                </Typography>
+                              </Stack>
+                            )
+                          })
+                        ) : (
+                          <NoDataPlaceholder />
+                        )}
+                      </Stack>
                     </Stack>
                   </Stack>
-                  <Stack flex={1} gap="8px" sx={{ minWidth: 0 }}>
-                    <Stack direction="row" alignItems="center" gap="6px">
-                      <TrendingDownIcon sx={{ color: theme.palette.contentIcon.Activeb }} />
-                      <Typography variant="body1SB16" color="contentText.Black" sx={{ userSelect: 'none' }}>
-                        DOWNWARD SUB-FACTORS
-                      </Typography>
-                    </Stack>
-                    <Stack gap="4px">
-                      {factors?.minusFactors?.map((factor, index) => {
-                        const factorId = `minus-${factor.predictionInputMnemonicCd}-${factor.predictionInputMnemonicDetailCd}-${index}`
-                        const isSelected = selectedFactor === factorId
-                        return (
-                          <Stack
-                            key={factorId}
-                            direction="row"
-                            padding="8px"
-                            alignItems="center"
-                            gap="8px"
-                            boxSizing="border-box"
-                            sx={{
-                              minWidth: 0,
-                              cursor: 'pointer',
-                              borderRadius: '6px',
-                              backgroundColor: isSelected ? 'contentBG.Active' : 'transparent',
-                              '&:hover': {
-                                backgroundColor: 'contentBG.Hover',
-                              },
-                            }}
-                            onClick={() => handleFactorClick(factorId)}
-                          >
-                            <Box
-                              display="flex"
-                              flexShrink={0}
-                              alignItems="center"
-                              justifyContent="center"
-                              width="60px"
-                              height="28px"
-                              borderRadius="6px"
-                              bgcolor="decrease.main"
-                            >
-                              <Typography variant="body1" color="contentText.White">
-                                {factor.explanatoryScore.toFixed(2)}
-                              </Typography>
-                            </Box>
-                            <Typography
-                              variant="body2M14"
-                              color="contentText.Black"
-                              sx={{
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                flex: 1,
-                                minWidth: 0,
-                              }}
-                            >
-                              {factor.explanatoryLevelDetailNm}
-                            </Typography>
-                          </Stack>
-                        )
-                      })}
-                    </Stack>
-                  </Stack>
-                </Stack>
+                )}
                 {selectedFactorObj && (
                   <Stack
                     padding="20px"
