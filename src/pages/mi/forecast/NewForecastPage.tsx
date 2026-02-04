@@ -10,14 +10,14 @@ import TablePage from '@/pages/mi/forecast/new-components/TablePage'
 import forecastDataService, { IForecastReport } from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
 
-/** 스티키가 찰싹 붙는 스크롤 위치 계산용 오프셋(헤더+탭 높이 근사) */
-const STICKY_SNAP_OFFSET = 150
+const STICKY_TOP_WHEN_SCROLLED = -14
 
 const NewForecastPage = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [selectedTab, setSelectedTab] = useState(0)
   const [monthSelect, setMonthSelect] = useState('')
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
+  const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const contentWrapperRef = useRef<HTMLDivElement | null>(null)
 
   const { accessCompanyInfo, user } = useAuthStore()
@@ -135,11 +135,14 @@ const NewForecastPage = () => {
       const isScrollingUp = currentScrollTop < scrollStartTop
       const isScrollingDown = currentScrollTop > scrollStartTop
       const contentEl = contentWrapperRef.current
+      const stickyEl = stickyHeaderRef.current
 
-      if (contentEl) {
+      if (contentEl && stickyEl) {
         const containerRect = scrollEl.getBoundingClientRect()
         const contentRect = contentEl.getBoundingClientRect()
-        const firstContentTop = scrollEl.scrollTop + contentRect.top - containerRect.top - STICKY_SNAP_OFFSET
+        const stickyHeight = stickyEl.getBoundingClientRect().height
+        const stickyBottomWhenStuck = stickyHeight + STICKY_TOP_WHEN_SCROLLED
+        const firstContentTop = scrollEl.scrollTop + contentRect.top - containerRect.top - stickyBottomWhenStuck
 
         if (isScrollingDown && currentScrollTop < firstContentTop) {
           scrollEl.scrollTo({ top: firstContentTop, behavior: 'smooth' })
@@ -166,8 +169,7 @@ const NewForecastPage = () => {
 
   return (
     <Stack maxWidth="1380px" margin="auto" pt="20px" position="relative" sx={{ userSelect: 'none' }}>
-      {/* 스티키: 제목 + 탭 바만 (콘텐츠는 아래 스크롤 영역에 있음) */}
-      <Box position="sticky" top={isScrolled ? '-14px' : 0} left="0" bgcolor="commonColor.White" zIndex={200}>
+      <Box ref={stickyHeaderRef} position="sticky" top={isScrolled ? '-14px' : 0} left="0" bgcolor="commonColor.White" zIndex={200}>
         <Typography
           variant="titleLarge"
           position="absolute"
@@ -208,9 +210,29 @@ const NewForecastPage = () => {
           />
         </Box>
       </Box>
-      {/* 탭 콘텐츠: 스티키 밖이라 스크롤 시 탭 바만 상단에 붙음 (스냅 계산용 ref) */}
       <Box ref={contentWrapperRef} position="relative">
-        {tabItems[selectedTab].content}
+        {tabItems.map((tab, index) => {
+          const isSelected = selectedTab === index
+          return (
+            <Box
+              key={tab.label}
+              aria-hidden={!isSelected}
+              sx={{
+                position: isSelected ? 'relative' : 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                visibility: isSelected ? 'visible' : 'hidden',
+                pointerEvents: isSelected ? 'auto' : 'none',
+                zIndex: isSelected ? 0 : -1,
+                opacity: isSelected ? 1 : 0,
+                transition: 'opacity 0.15s ease-out',
+              }}
+            >
+              {tab.content}
+            </Box>
+          )
+        })}
       </Box>
     </Stack>
   )

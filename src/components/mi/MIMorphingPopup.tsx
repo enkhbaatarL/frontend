@@ -261,7 +261,29 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         rafId = requestAnimationFrame(() => {
           rafId = null
           const newCoords = calculateCoords()
-          if (newCoords) setCoords(newCoords)
+          if (!newCoords) return
+
+          // 현재 표시 중인 컨텐츠 높이 반영: 리사이즈로 계산된 높이보다 크면 그 높이를 유지
+          const contentEl = contentWrapperRef.current
+          if (contentEl) {
+            const actualContentHeight = contentEl.offsetHeight + 68
+            if (actualContentHeight > newCoords.end.height) {
+              const windowHeight = window.innerHeight
+              const isTall = actualContentHeight + VERTICAL_MARGIN * 2 > windowHeight
+              const endTop = Math.max(VERTICAL_MARGIN, (windowHeight - actualContentHeight) / 2)
+              setCoords({
+                ...newCoords,
+                end: {
+                  ...newCoords.end,
+                  height: actualContentHeight,
+                  top: endTop,
+                },
+                isTall,
+              })
+              return
+            }
+          }
+          setCoords(newCoords)
         })
       }
 

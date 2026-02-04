@@ -2,7 +2,7 @@ import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useMemo, useState, useEffect, useCallback } from 'react'
+import { memo, useMemo, useState, useEffect, useCallback } from 'react'
 
 import forecastTargetIcon from '@/assets/icons/forecast-target.svg'
 import forecastVectorIcon from '@/assets/icons/forecast-vector.svg'
@@ -60,7 +60,7 @@ interface ModelRecord {
   isNew: boolean | null
 }
 
-const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePageProps) => {
+const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePageProps) => {
   const { accessCompanyInfo, user } = useAuthStore()
   const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
 
@@ -291,7 +291,7 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
       },
       {
         field: 'reportDownload',
-        headerName: '설명역',
+        headerName: '설명력',
         flex: 1,
         align: 'center',
         headerAlign: 'center',
@@ -394,6 +394,40 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
     }
     return options
   }, [basicInfo?.targetList])
+
+  const onPageChange = useCallback((value: number) => setPage(value), [])
+  const onSizeChange = useCallback((value: number) => {
+    setPageSize(value)
+    setPage(1)
+  }, [])
+
+  const tableProps = useMemo(
+    () => ({
+      noRowMessage: '등록된 내용이 없습니다.',
+      columns: tableColumns,
+      rows: modelRecordsData,
+      rowId: 'id' as const,
+      sx: {
+        '& .MuiDataGrid-cell[data-field="forecastDirection"]': {
+          position: 'relative' as const,
+          padding: 0,
+        },
+      },
+    }),
+    [tableColumns, modelRecordsData],
+  )
+
+  const paginationProps = useMemo(
+    () => ({
+      data: paginationMeta,
+      size: pageSize,
+      onPageChange,
+      onSizeChange,
+      sizeList: [10, 20, 50, 100],
+      paddingTop: '20px',
+    }),
+    [paginationMeta, pageSize, onPageChange, onSizeChange],
+  )
 
   return (
     <Stack gap="20px" maxWidth="1380px" margin="auto" marginTop="40px">
@@ -591,35 +625,13 @@ const RecordsTablePage = ({ basicInfo, chartDataIsLoading }: RecordsTablePagePro
         {chartDataIsLoading || recordsIsLoading ? (
           <MIBaseSkeleton.BaseElement2 width={'100%'} height={'400px'} />
         ) : (
-          <MITableUser
-            tableProps={{
-              noRowMessage: '등록된 내용이 없습니다.',
-              columns: tableColumns,
-              rows: modelRecordsData,
-              rowId: 'id',
-              sx: {
-                '& .MuiDataGrid-cell[data-field="forecastDirection"]': {
-                  position: 'relative',
-                  padding: 0,
-                },
-              },
-            }}
-            paginationProps={{
-              data: paginationMeta,
-              size: pageSize,
-              onPageChange: (value) => setPage(value),
-              onSizeChange: (value) => {
-                setPageSize(value)
-                setPage(1)
-              },
-              sizeList: [10, 20, 50, 100],
-              paddingTop: '20px',
-            }}
-          />
+          <MITableUser tableProps={tableProps} paginationProps={paginationProps} />
         )}
       </Box>
     </Stack>
   )
-}
+})
+
+RecordsTablePage.displayName = 'RecordsTablePage'
 
 export default RecordsTablePage
