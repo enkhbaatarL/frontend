@@ -23,9 +23,16 @@ import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
 import MISentimentsChart from '@/pages/mi/news/components/MISentimentsChart'
 import NewsItemsGridView from '@/pages/mi/news/NewsItemsGridView'
 import NewsItemsListView from '@/pages/mi/news/NewsItemsListView'
+import { DirectionType } from '@/service/mi/dashboard'
 import marketNewsService, { INewsListItem, INewsListRequest } from '@/service/mi/marketNews'
 import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
+
+const sentimentOptions = [
+  { label: 'Upward', value: DirectionType.Upward },
+  { label: 'Downward', value: DirectionType.Downward },
+  { label: 'Neutral', value: DirectionType.Neutral },
+]
 
 const viewOptions = [
   {
@@ -158,6 +165,61 @@ const NewsPage = () => {
       useAbortController: true,
     },
   )
+
+  const filterGroups = useMemo(() => {
+    const commonGroups = [
+      [
+        {
+          key: 'industries',
+          title: 'Industries',
+          filters:
+            industrySectorCodeList?.map(({ codeId, codeNm }) => ({
+              label: codeNm,
+              value: codeId,
+            })) ?? [],
+          width: 180,
+        },
+      ],
+      [
+        {
+          key: 'regions',
+          title: 'Regions',
+          filters:
+            regionCategoryCodeList?.map(({ codeId, codeNm }) => ({
+              label: codeNm,
+              value: codeId,
+            })) ?? [],
+          width: 180,
+        },
+      ],
+    ]
+
+    // 카테고리를 선택한 경우에만 sentiments 필터 노출
+    if (filter.categories === '') {
+      return commonGroups
+    }
+
+    return [
+      [
+        {
+          key: 'sentiments',
+          title: 'Sentiments',
+          filters: sentimentOptions,
+          width: '146px',
+        },
+      ],
+      ...commonGroups,
+      // [{
+      //   key: 'providers',
+      //   title: 'Providers',
+      //   filters: [
+      //     { label: 'Reuters', value: 'Reuters' },
+      //     { label: 'Bloomberg', value: 'Bloomberg' },
+      //   ],
+      //   width: 180,
+      // }],
+    ]
+  }, [filter.categories, industrySectorCodeList, regionCategoryCodeList])
 
   const appliedFiltersCount = useMemo(
     () => (filter.industries?.length ?? 0) + (filter.regions?.length ?? 0),
@@ -337,52 +399,19 @@ const NewsPage = () => {
                   <MISelectMenu
                     variant="outlined"
                     placeholder="Markets"
-                    items={
-                      marketCategoryCodeList?.map(({ codeId, codeNm }) => ({
+                    items={[
+                      { label: 'All Market', value: '' },
+                      ...(marketCategoryCodeList?.map(({ codeId, codeNm }) => ({
                         label: codeNm,
                         value: codeId,
-                      })) ?? []
-                    }
+                      })) ?? []),
+                    ]}
                     selected={filter.categories ?? ''}
                     onSelected={handleMarketsChange}
                   />
                   <MIFilterMenu
                     onApply={handleApplyFilters}
-                    filterGroups={[
-                      [
-                        {
-                          key: 'industries',
-                          title: 'Industries',
-                          filters:
-                            industrySectorCodeList?.map(({ codeId, codeNm }) => ({
-                              label: codeNm,
-                              value: codeId,
-                            })) ?? [],
-                          width: 180,
-                        },
-                      ],
-                      [
-                        {
-                          key: 'regions',
-                          title: 'Regions',
-                          filters:
-                            regionCategoryCodeList?.map(({ codeId, codeNm }) => ({
-                              label: codeNm,
-                              value: codeId,
-                            })) ?? [],
-                          width: 180,
-                        },
-                      ],
-                      // [{
-                      //   key: 'providers',
-                      //   title: 'Providers',
-                      //   filters: [
-                      //     { label: 'Reuters', value: 'Reuters' },
-                      //     { label: 'Bloomberg', value: 'Bloomberg' },
-                      //   ],
-                      //   width: 180,
-                      // }],
-                    ]}
+                    filterGroups={filterGroups}
                     initialValues={initialFilterValues}
                     appliedFiltersCount={appliedFiltersCount}
                     showSaveOption={true}
