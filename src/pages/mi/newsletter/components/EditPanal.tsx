@@ -64,6 +64,7 @@ const EditPannal = ({
         border: '1px solid #DEE2E6',
         borderRadius: '4px',
         width: 'fit-content',
+        minWidth: '152px',
       }}
     >
       <Box
