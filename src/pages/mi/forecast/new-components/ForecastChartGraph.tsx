@@ -471,6 +471,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
     const [rippleDirection, setRippleDirection] = useState<'expand' | 'shrink' | null>(null)
     const [fixedTooltipPosition, setFixedTooltipPosition] = useState<{ top: number; left: number } | null>(null)
     const fixedTooltipPositionRef = useRef<{ top: number; left: number } | null>(null)
+    const fixedModeOverlayRef = useRef<HTMLDivElement>(null)
 
     const chartList = useMemo(() => charts || [], [charts])
 
@@ -1526,6 +1527,24 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       onFixedModeChange?.(fixedXScaleIndex !== null)
     }, [fixedXScaleIndex, onFixedModeChange])
 
+    // 고정모드 오버레이에서 메인 스크롤 영역으로 스크롤 이벤트 전달
+    useEffect(() => {
+      if (fixedXScaleIndex === null) return undefined
+      const overlay = fixedModeOverlayRef.current
+      const scrollEl = document.getElementById('main-scroll-wrapper')
+      if (!overlay || !scrollEl) return undefined
+
+      const onWheel = (e: WheelEvent) => {
+        e.preventDefault()
+        scrollEl.scrollTop += e.deltaY
+      }
+
+      overlay.addEventListener('wheel', onWheel, { passive: false })
+      return () => {
+        overlay.removeEventListener('wheel', onWheel)
+      }
+    }, [fixedXScaleIndex])
+
     const showSkeleton = isLoading || !charts || charts.length === 0
     const showChart = !showSkeleton
 
@@ -2023,9 +2042,10 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
         )}
         {showChart && (
           <>
-            {/* 고정모드 시 팝업 외부 영역 클릭으로 닫기 + 외부 영역 상호작용 차단 */}
+            {/* 고정모드 시 팝업 외부 영역 클릭으로 닫기 */}
             {fixedXScaleIndex !== null && (
               <Box
+                ref={fixedModeOverlayRef}
                 aria-hidden
                 onClick={handleCloseFixedMode}
                 sx={{
