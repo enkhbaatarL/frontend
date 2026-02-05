@@ -1,4 +1,5 @@
-import { Box, Stack, Typography } from '@mui/material'
+import { InfoOutlined } from '@mui/icons-material'
+import { Box, Stack, Tooltip, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -108,7 +109,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
       page,
       size: pageSize,
     }
-  }, [dateRange, selectedTarget, sortOrder, page, pageSize])
+  }, [dateRange, selectedTarget, sortOrder, page, pageSize, companyNo])
 
   // Records 데이터 API 호출
   const { data: recordsData, isLoading: recordsIsLoading } = useQuery({
@@ -224,6 +225,27 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         flex: 1,
         align: 'right',
         headerAlign: 'right',
+        renderHeader: () => (
+          <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="4px">
+            <Typography variant="tableHeaderSemibold" color="gray.60">
+              Reference Price
+            </Typography>
+            {companyNo === 2015 && (
+              <Tooltip
+                title="예측 기준이 되는 직전 실적가로, 실적 발표 전 구간에서는 추정치가 적용됩니다."
+                placement="top-start"
+                disableInteractive
+                slotProps={{
+                  popper: {
+                    modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
+                  },
+                }}
+              >
+                <InfoOutlined sx={{ width: 14, height: 14, color: theme.palette.contentIcon?.Enabled ?? 'inherit' }} />
+              </Tooltip>
+            )}
+          </Stack>
+        ),
         renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
       },
       {
@@ -242,6 +264,27 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         flex: 1,
         align: 'right',
         headerAlign: 'right',
+        renderHeader: () => (
+          <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="4px">
+            <Typography variant="tableHeaderSemibold" color="gray.60">
+              Actual Price
+            </Typography>
+            {companyNo === 2015 && (
+              <Tooltip
+                title="실적 발표를 통해 확정된 실제 가격입니다."
+                placement="top-start"
+                disableInteractive
+                slotProps={{
+                  popper: {
+                    modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
+                  },
+                }}
+              >
+                <InfoOutlined sx={{ width: 14, height: 14, color: theme.palette.contentIcon?.Enabled ?? 'inherit' }} />
+              </Tooltip>
+            )}
+          </Stack>
+        ),
         renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
       },
       {
@@ -354,7 +397,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         ]
         : []),
     ],
-    [handleDownload],
+    [handleDownload, companyNo],
   )
 
   // 페이지네이션 메타데이터 (API 응답에서 가져옴)
@@ -407,10 +450,31 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
       columns: tableColumns,
       rows: modelRecordsData,
       rowId: 'id' as const,
+      disableHover: true,
+      disableRowSelectionOnClick: true,
       sx: {
         '& .MuiDataGrid-cell[data-field="forecastDirection"]': {
           position: 'relative' as const,
           padding: 0,
+        },
+        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+          outline: 'none',
+          boxShadow: 'none',
+          backgroundColor: 'transparent',
+        },
+        '& .MuiDataGrid-row.Mui-selected': {
+          backgroundColor: 'transparent !important',
+        },
+        '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
+          outline: 'none',
+          boxShadow: 'none',
+          backgroundColor: 'transparent',
+        },
+        '& .MuiDataGrid-columnHeader:hover': {
+          backgroundColor: 'transparent !important',
+        },
+        '& .MuiDataGrid-columnHeader, & .MuiDataGrid-columnHeader *': {
+          cursor: 'default',
         },
       },
     }),
