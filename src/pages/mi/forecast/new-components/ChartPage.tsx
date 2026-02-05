@@ -1,11 +1,12 @@
-import { Box, Stack, Typography } from '@mui/material'
-import { useState, useRef, useEffect } from 'react'
+import { Box, Divider, Stack, Typography } from '@mui/material'
+import { useState, useRef, useEffect, useMemo } from 'react'
 
 import aiIcon from '@/assets/ai.svg'
 import MIButtonArrow from '@/components/common/button/MIButtonArrow'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import ForecastChart from '@/pages/mi/forecast/new-components/ForecastChart'
 import ForecastReportCard from '@/pages/mi/forecast/new-components/ForecastReportCard'
-import { IForecastChartInfo, ForecastBasicInfoTarget, IForecastReport } from '@/service/mi/forecast'
+import { IForecastChartInfo, ForecastBasicInfoTarget, IForecastReport, ReportPeriodUnitCd } from '@/service/mi/forecast'
 
 interface ChartPageProps {
   chartData?: IForecastChartInfo
@@ -20,12 +21,16 @@ interface ChartPageProps {
   onXAxisUnitChange?: (value: string) => void
   onPeriodChange?: (value: string) => void
   companyNo?: number
+  reportPeriodUnitCd?: ReportPeriodUnitCd
+  selectedReportTarget?: string
+  onReportTargetChange?: (value: string) => void
 }
 
 const ChartPage = ({
   chartData,
   chartDataIsLoading,
   monthSelect,
+  targetList,
   forecastReports,
   forecastReportsIsLoading = false,
   onHoverReportCardChange,
@@ -34,6 +39,9 @@ const ChartPage = ({
   onXAxisUnitChange,
   onPeriodChange,
   companyNo,
+  reportPeriodUnitCd,
+  selectedReportTarget = '',
+  onReportTargetChange,
 }: ChartPageProps) => {
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
 
@@ -129,14 +137,76 @@ const ChartPage = ({
   const shouldShowRightButton = canScroll && !isAtRightEnd()
   const shouldShowLeftButton = canScroll && (!isAtLeftEnd() || isAtRightEnd())
 
+  const targetSelectItems = useMemo(
+    () => [
+      { label: 'All Targets', value: '' },
+      ...(targetList ?? []).map(({ predictChartDetailExpn, goodsDataSourceNo }: ForecastBasicInfoTarget) => ({
+        label: predictChartDetailExpn,
+        value: String(goodsDataSourceNo),
+      })),
+    ],
+    [targetList],
+  )
+
+  const scheduleInfoText = useMemo(() => {
+    let periodUnit = null
+
+    switch (reportPeriodUnitCd) {
+      case ReportPeriodUnitCd.DAYS:
+        periodUnit = 'daily'
+        break
+      case ReportPeriodUnitCd.WEEKS:
+        periodUnit = 'weekly'
+        break
+      case ReportPeriodUnitCd.MONTHS:
+        periodUnit = 'monthly'
+        break
+      case ReportPeriodUnitCd.QUARTERS:
+        periodUnit = 'quarterly'
+        break
+      case ReportPeriodUnitCd.YEARS:
+        periodUnit = 'yearly'
+        break
+
+      default:
+        return null
+    }
+
+    return `Reports are generated primarily on a ${periodUnit} schedule`
+  }, [reportPeriodUnitCd])
+
   return (
     <Stack py="20px" gap="20px" boxSizing="border-box" width="100%">
       <Stack p="12px 24px" gap="12px">
-        <Stack direction="row" alignItems="center" gap="4px">
-          <Box component="img" src={aiIcon} alt="AI" draggable={false} />
-          <Typography variant="infoDocument" color="commonColor.Black">
-            AI FORECAST REPORT
-          </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" gap="4px">
+          <Stack direction="row" alignItems="center" gap="4px">
+            <Box component="img" src={aiIcon} alt="AI" draggable={false} />
+            <Typography variant="infoDocument" color="commonColor.Black">
+              AI FORECAST REPORT
+            </Typography>
+          </Stack>
+          <Stack direction="row" alignItems="center" gap="12px">
+            <Typography variant="body4" color="contentText.Subtext">
+              {scheduleInfoText}
+            </Typography>
+            <Divider orientation="vertical" sx={{ height: '28px' }} />
+            {/* <MISelectMenu
+              variant="text"
+              items={[
+                { label: 'All Schedules', value: '' },
+                { label: 'Scheduled', value: 'scheduled' },
+                { label: 'Ad Hoc', value: 'ad_hoc' },
+              ]}
+              selected={''}
+              onSelected={() => { }}
+            /> */}
+            <MISelectMenu
+              variant="text"
+              items={targetSelectItems}
+              selected={selectedReportTarget}
+              onSelected={(value: string) => onReportTargetChange?.(value)}
+            />
+          </Stack>
         </Stack>
         <Box
           sx={{

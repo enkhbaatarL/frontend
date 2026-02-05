@@ -17,6 +17,7 @@ const NewForecastPage = () => {
   const [selectedTab, setSelectedTab] = useState(0)
   const [monthSelect, setMonthSelect] = useState('')
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
+  const [selectedReportTarget, setSelectedReportTarget] = useState<string>('')
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const contentWrapperRef = useRef<HTMLDivElement | null>(null)
 
@@ -50,8 +51,8 @@ const NewForecastPage = () => {
 
   // Forecast Reports
   const { data: forecastReports, isLoading: forecastReportsIsLoading } = useQuery({
-    queryKey: ['getForecastReports', companyNo],
-    queryFn: () => forecastDataService.getForecastReports(companyNo),
+    queryKey: ['getForecastReports', companyNo, selectedReportTarget],
+    queryFn: () => forecastDataService.getForecastReports(companyNo, selectedReportTarget ? Number(selectedReportTarget) : undefined),
     enabled: !!companyNo,
     refetchOnWindowFocus: false,
     gcTime: 0,
@@ -92,6 +93,9 @@ const NewForecastPage = () => {
               onXAxisUnitChange={setXAxisUnit}
               onPeriodChange={setPeriod}
               companyNo={companyNo}
+              reportPeriodUnitCd={basicInfo?.reportPeriodUnitCd}
+              selectedReportTarget={selectedReportTarget}
+              onReportTargetChange={setSelectedReportTarget}
             />
             <TablePage
               basicInfo={basicInfo}
@@ -116,7 +120,17 @@ const NewForecastPage = () => {
         ),
       },
     ],
-    [chartData, chartDataIsLoading, monthSelect, hoverReportCardInfo, basicInfo?.targetList, forecastReports, xAxisUnit, period],
+    [
+      chartData,
+      chartDataIsLoading,
+      monthSelect,
+      hoverReportCardInfo,
+      basicInfo?.targetList,
+      forecastReports,
+      xAxisUnit,
+      period,
+      selectedReportTarget,
+    ],
   )
 
   useEffect(() => {

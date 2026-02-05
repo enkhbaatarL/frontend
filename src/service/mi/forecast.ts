@@ -6,6 +6,14 @@ import api from '@/lib/axios.ts'
 import { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse } from '@/types/api.ts'
 
+export enum ReportPeriodUnitCd {
+  DAYS = 'D',
+  WEEKS = 'W',
+  MONTHS = 'M',
+  QUARTERS = 'Q',
+  YEARS = 'Y',
+}
+
 export interface IForecastLastInsightsInfo {
   modifyDt: string
   providerNm: string
@@ -129,7 +137,7 @@ export interface ForecastBasicInfoTarget {
 export interface ForecastBasicInfo {
   chartPredictSettingNm: string
   lastUpdateDt: string
-  reportPeriodUnitCd: string
+  reportPeriodUnitCd: ReportPeriodUnitCd
   targetList: ForecastBasicInfoTarget[]
 }
 export interface IForecastHistoryDetailRequest {
