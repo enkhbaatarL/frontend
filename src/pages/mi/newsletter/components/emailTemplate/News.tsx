@@ -233,122 +233,150 @@ const Chart = ({
             </tr>
             {[...(relatedNews || []), ...tempNewsItems]
               .filter((item) => !deletedNewsIds.includes(item.newsId))
-              .map((item, index) => (
-                <tr key={`${item.newsId}-${item.createdDate}-${item.createTime}-${index}`}>
-                  <td colSpan={2} style={{ padding: '20px 0', width: '100%', position: 'relative' }}>
-                    <Box position="absolute" top="22px" right="-220px">
-                      <EditPanal
-                        isPublished={!localUnPublishedNewsIds.includes(item.newsId)}
-                        onPublishedChange={() => {
-                          const isCurrentlyUnpublished = localUnPublishedNewsIds.includes(item.newsId)
-                          const newUnPublishedIds = isCurrentlyUnpublished
-                            ? localUnPublishedNewsIds.filter((id) => id !== item.newsId)
-                            : [...localUnPublishedNewsIds, item.newsId]
-                          setLocalUnPublishedNewsIds(newUnPublishedIds)
-                          // 부모의 unPublishedNewsIds도 즉시 업데이트하여 localStorage에 저장되도록 함
-                          onUnPublishedNewsIdsChange?.(newUnPublishedIds)
+              .map((item, index, array) => {
+                const isCollapsed = localUnPublishedNewsIds.includes(item.newsId)
 
-                          const editedTrend = editingNews[item.newsId]?.['trend']
-                          const originalTrend = item.trend ?? ''
-                          const effectiveTrend = editedTrend !== undefined ? String(editedTrend) : originalTrend
+                return (
+                  <Fragment key={`${item.newsId}-${item.createdDate}-${item.createTime}-${index}`}>
+                    <tr>
+                      <td colSpan={2} style={{ padding: '20px 0', width: '100%', position: 'relative' }}>
+                        <Box position="absolute" top="21px" right="-206px">
+                          <EditPanal
+                            isPublished={!isCollapsed}
+                            onPublishedChange={() => {
+                              const isCurrentlyUnpublished = localUnPublishedNewsIds.includes(item.newsId)
+                              const newUnPublishedIds = isCurrentlyUnpublished
+                                ? localUnPublishedNewsIds.filter((id) => id !== item.newsId)
+                                : [...localUnPublishedNewsIds, item.newsId]
+                              setLocalUnPublishedNewsIds(newUnPublishedIds)
+                              // 부모의 unPublishedNewsIds도 즉시 업데이트하여 localStorage에 저장되도록 함
+                              onUnPublishedNewsIdsChange?.(newUnPublishedIds)
 
-                          if (!isCurrentlyUnpublished) {
-                            handleFieldChange(item.newsId, 'showInChart', false)
-                          } else {
-                            handleFieldChange(item.newsId, 'showInChart', effectiveTrend !== '')
-                          }
-                        }}
-                        useInflectionPointSelect
-                        inflectionPoint={getFieldValue(item.newsId, 'trend', item.trend ?? '')}
-                        onInflectionPointChange={(inflectionPoint) => {
-                          handleFieldChange(item.newsId, 'trend', inflectionPoint)
-                          if (!localUnPublishedNewsIds.includes(item.newsId)) {
-                            handleFieldChange(item.newsId, 'showInChart', inflectionPoint !== '')
-                          }
-                        }}
-                        onDeleteNews={() => onDeleteNews?.(item.newsId)}
-                      />
-                    </Box>
-                    <Box
-                      sx={{
-                        width: '776px',
-                        display: 'flex',
-                        gap: '6px',
-                      }}
-                    >
-                      <Box width="150px" display="flex" flexDirection="column" gap="4px">
-                        <MIMaskInput
-                          label={t('newsletter.editMode.createdDate')}
-                          required
-                          value={getFieldValue(item.newsId, 'createdDate', item.createdDate)}
-                          mask={PREDEFINED_MASKS.DATE}
-                          onUpdateValue={(value) => {
-                            if (value) {
-                              handleFieldChange(item.newsId, 'createdDate', value)
-                            }
+                              const editedTrend = editingNews[item.newsId]?.['trend']
+                              const originalTrend = item.trend ?? ''
+                              const effectiveTrend = editedTrend !== undefined ? String(editedTrend) : originalTrend
+
+                              if (!isCurrentlyUnpublished) {
+                                handleFieldChange(item.newsId, 'showInChart', false)
+                              } else {
+                                handleFieldChange(item.newsId, 'showInChart', effectiveTrend !== '')
+                              }
+                            }}
+                            // 접힌 상태에서는 게시 토글만 노출되도록 설정
+                            useInflectionPointSelect={!isCollapsed}
+                            inflectionPoint={getFieldValue(item.newsId, 'trend', item.trend ?? '')}
+                            onInflectionPointChange={(inflectionPoint) => {
+                              handleFieldChange(item.newsId, 'trend', inflectionPoint)
+                              if (!localUnPublishedNewsIds.includes(item.newsId)) {
+                                handleFieldChange(item.newsId, 'showInChart', inflectionPoint !== '')
+                              }
+                            }}
+                            onDeleteNews={() => onDeleteNews?.(item.newsId)}
+                          />
+                        </Box>
+                        <Box
+                          sx={{
+                            width: '776px',
+                            display: 'flex',
+                            gap: '6px',
                           }}
-                          error={localUnPublishedNewsIds.includes(item.newsId) ? false : !isFieldValid(item, 'createdDate')}
-                          helperText={localUnPublishedNewsIds.includes(item.newsId) ? '' : getFieldError(item, 'createdDate')}
-                          offInitialError={isNewItem(item)}
-                          disabled={localUnPublishedNewsIds.includes(item.newsId)}
-                          width="100%"
-                          resetOnInvalid={false}
-                        />
-                        <MIMaskInput
-                          label={t('newsletter.editMode.time')}
-                          required
-                          value={getFieldValue(item.newsId, 'createTime', item.createTime)}
-                          mask={PREDEFINED_MASKS.TIME}
-                          onUpdateValue={(value) => {
-                            if (value) {
-                              handleFieldChange(item.newsId, 'createTime', value)
-                            }
-                          }}
-                          error={localUnPublishedNewsIds.includes(item.newsId) ? false : !isFieldValid(item, 'createTime')}
-                          helperText={localUnPublishedNewsIds.includes(item.newsId) ? '' : getFieldError(item, 'createTime')}
-                          offInitialError={isNewItem(item)}
-                          disabled={localUnPublishedNewsIds.includes(item.newsId)}
-                          width="100%"
-                          resetOnInvalid={false}
-                        />
-                        <MIInputBox
-                          label={t('newsletter.editMode.source')}
-                          value={getFieldValue(item.newsId, 'source', item.source ?? '')}
-                          onChange={(value) => handleFieldChange(item.newsId, 'source', value)}
-                          placeholder={t('newsletter.editMode.sourcePlaceholder')}
-                          disabled={localUnPublishedNewsIds.includes(item.newsId)}
-                        />
-                      </Box>
-                      <Box flex={1} display="flex" flexDirection="column" gap="4px">
-                        <MIInputBox
-                          label={t('newsletter.editMode.title')}
-                          required
-                          value={getFieldValue(item.newsId, 'title', item.title)}
-                          onChange={(value) => handleFieldChange(item.newsId, 'title', value)}
-                          placeholder={t('newsletter.editMode.titlePlaceholder')}
-                          error={localUnPublishedNewsIds.includes(item.newsId) ? false : !isFieldValid(item, 'title')}
-                          helperText={localUnPublishedNewsIds.includes(item.newsId) ? '' : getFieldError(item, 'title')}
-                          offInitialError={isNewItem(item)}
-                          disabled={localUnPublishedNewsIds.includes(item.newsId)}
-                        />
-                        <MIInputBox
-                          label={t('newsletter.editMode.content')}
-                          required
-                          value={getFieldValue(item.newsId, 'content', item.content.join('\n'))}
-                          onChange={(value) => handleFieldChange(item.newsId, 'content', value)}
-                          placeholder={t('newsletter.editMode.contentPlaceholder')}
-                          multiline
-                          rows={5}
-                          error={localUnPublishedNewsIds.includes(item.newsId) ? false : !isFieldValid(item, 'content')}
-                          helperText={localUnPublishedNewsIds.includes(item.newsId) ? '' : getFieldError(item, 'content')}
-                          offInitialError={isNewItem(item)}
-                          disabled={localUnPublishedNewsIds.includes(item.newsId)}
-                        />
-                      </Box>
-                    </Box>
-                  </td>
-                </tr>
-              ))}
+                        >
+                          <Box width="150px" display="flex" flexDirection="column" gap="4px">
+                            {!isCollapsed && (
+                              <MIMaskInput
+                                label={t('newsletter.editMode.createdDate')}
+                                required
+                                value={getFieldValue(item.newsId, 'createdDate', item.createdDate)}
+                                mask={PREDEFINED_MASKS.DATE}
+                                onUpdateValue={(value) => {
+                                  if (value) {
+                                    handleFieldChange(item.newsId, 'createdDate', value)
+                                  }
+                                }}
+                                error={isCollapsed ? false : !isFieldValid(item, 'createdDate')}
+                                helperText={isCollapsed ? '' : getFieldError(item, 'createdDate')}
+                                offInitialError={isNewItem(item)}
+                                disabled={localUnPublishedNewsIds.includes(item.newsId)}
+                                width="100%"
+                                resetOnInvalid={false}
+                              />
+                            )}
+                            <MIMaskInput
+                              label={t('newsletter.editMode.time')}
+                              required
+                              value={getFieldValue(item.newsId, 'createTime', item.createTime)}
+                              mask={PREDEFINED_MASKS.TIME}
+                              onUpdateValue={(value) => {
+                                if (value) {
+                                  handleFieldChange(item.newsId, 'createTime', value)
+                                }
+                              }}
+                              error={isCollapsed ? false : !isFieldValid(item, 'createTime')}
+                              helperText={isCollapsed ? '' : getFieldError(item, 'createTime')}
+                              offInitialError={isNewItem(item)}
+                              disabled={localUnPublishedNewsIds.includes(item.newsId)}
+                              width="100%"
+                              resetOnInvalid={false}
+                            />
+                            {!isCollapsed && (
+                              <MIInputBox
+                                label={t('newsletter.editMode.source')}
+                                value={getFieldValue(item.newsId, 'source', item.source ?? '')}
+                                onChange={(value) => handleFieldChange(item.newsId, 'source', value)}
+                                placeholder={t('newsletter.editMode.sourcePlaceholder')}
+                                disabled={localUnPublishedNewsIds.includes(item.newsId)}
+                              />
+                            )}
+                          </Box>
+                          <Box flex={1} display="flex" flexDirection="column" gap="4px">
+                            <MIInputBox
+                              label={t('newsletter.editMode.title')}
+                              required
+                              value={getFieldValue(item.newsId, 'title', item.title)}
+                              onChange={(value) => handleFieldChange(item.newsId, 'title', value)}
+                              placeholder={t('newsletter.editMode.titlePlaceholder')}
+                              error={isCollapsed ? false : !isFieldValid(item, 'title')}
+                              helperText={isCollapsed ? '' : getFieldError(item, 'title')}
+                              offInitialError={isNewItem(item)}
+                              disabled={localUnPublishedNewsIds.includes(item.newsId)}
+                            />
+                            {!isCollapsed && (
+                              <MIInputBox
+                                label={t('newsletter.editMode.content')}
+                                required
+                                value={getFieldValue(item.newsId, 'content', item.content.join('\n'))}
+                                onChange={(value) => handleFieldChange(item.newsId, 'content', value)}
+                                placeholder={t('newsletter.editMode.contentPlaceholder')}
+                                multiline
+                                rows={5}
+                                error={isCollapsed ? false : !isFieldValid(item, 'content')}
+                                helperText={isCollapsed ? '' : getFieldError(item, 'content')}
+                                offInitialError={isNewItem(item)}
+                                disabled={localUnPublishedNewsIds.includes(item.newsId)}
+                              />
+                            )}
+                          </Box>
+                        </Box>
+                      </td>
+                    </tr>
+                    {index < array.length - 1 && (
+                      <tr>
+                        <td colSpan={2} style={{ padding: '0', width: '100%' }}>
+                          <div
+                            style={{
+                              width: '776px',
+                              margin: '0 auto',
+                              height: '0px',
+                              borderBottom: '1px solid #DEE2E6',
+                              opacity: 1,
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
             {canAddNewItem && (
               <tr>
                 <td colSpan={2} style={{ padding: '12px 0 24px 0', width: '100%' }}>
