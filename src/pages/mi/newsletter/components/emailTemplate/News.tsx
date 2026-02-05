@@ -425,6 +425,7 @@ const Chart = ({
             <td colSpan={2} style={{ width: '100%', padding: '0 12px 30px 12px' }}>
               {[...(relatedNews || []), ...tempNewsItems]
                 .filter((item) => !deletedNewsIds.includes(item.newsId))
+                .filter((item) => mode !== NewsletterDetailPageMode.CAPTURE || !localUnPublishedNewsIds.includes(item.newsId))
                 .map((item, index, array) => {
                   // 이전 아이템과 동일한 날짜인지 확인
                   const previousItem = index > 0 ? array[index - 1] : null
@@ -435,8 +436,6 @@ const Chart = ({
                       key={item.newsId}
                       style={{
                         borderBottom: '1px solid #DEE2E6',
-                        display:
-                          mode === NewsletterDetailPageMode.CAPTURE && localUnPublishedNewsIds.includes(item.newsId) ? 'none' : 'block',
                       }}
                     >
                       <thead>
