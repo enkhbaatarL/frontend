@@ -366,30 +366,54 @@ const ForecastChart = ({
     [],
   )
 
-  const getOverrideColor = useCallback(
-    (label: string): string | undefined => {
-      const trimmed = label.trim()
-      // 대소문자 무시하고 매칭
-      const key = Object.keys(labelColorOverrides).find((k) => k.trim().toLowerCase() === trimmed.toLowerCase())
-      return key ? labelColorOverrides[key] : undefined
+  // labelColorOverrides에 해당 라벨이 포함되어 있는지 검사 (대소문자 무시)
+  const isLabelInOverrides = useCallback(
+    (label: string): boolean => {
+      const trimmed = label.trim().toLowerCase()
+      return Object.keys(labelColorOverrides).some((k) => {
+        const keyLower = k.trim().toLowerCase()
+        return trimmed === keyLower || trimmed.startsWith(`${keyLower} `)
+      })
     },
     [labelColorOverrides],
   )
 
-  // 색상 맵 생성 (차트와 레전드에서 공통 사용)
+  // 오버라이드 키 매칭: 정확히 일치하거나 라벨이 키로 시작할 때 (e.g. 'Brent Crude' ↔ 'Brent Crude Forecast')
+  const getOverrideColor = useCallback(
+    (label: string): string | undefined => {
+      if (!isLabelInOverrides(label)) return undefined
+      const trimmed = label.trim().toLowerCase()
+      // 정확 일치 우선, 없으면 접두사 매칭(가장 긴 키 우선)
+      const key = Object.keys(labelColorOverrides)
+        .map((k) => k.trim())
+        .filter((k) => {
+          const keyLower = k.toLowerCase()
+          return trimmed === keyLower || trimmed.startsWith(`${keyLower} `)
+        })
+        .sort((a, b) => b.length - a.length)[0]
+      return key ? labelColorOverrides[key] : undefined
+    },
+    [labelColorOverrides, isLabelInOverrides],
+  )
+
+  // 색상 맵 생성 (차트와 레전드에서 공통 사용). Actual/Forecast 표시명이 달라도 같은 상품이면 동일 색상.
   const chartColorMap = useMemo(() => {
     const colorMap = new Map<string, string>()
     let colorIndex = 0
 
-    // 원본 chartData.charts를 기준으로 색상 할당
     if (chartData?.charts) {
       chartData.charts.forEach((chart) => {
-        const originalLabel = chart.chartLineDescription ?? ''
-        if (!colorMap.has(originalLabel)) {
-          const overrideColor = getOverrideColor(originalLabel)
-          colorMap.set(originalLabel, overrideColor ?? colors[colorIndex % colors.length])
-          if (overrideColor === undefined) colorIndex++
-        }
+        const baseLabel = chart.chartLineDescription ?? ''
+        const actualLabel = chart.actualChartLines?.dataExplanation || baseLabel
+        const forecastLabel = chart.forecastChartLines?.dataExplanation || baseLabel
+
+        // 기준 라벨로 색 결정 후, 동일 차트의 actual/forecast 표시명에도 같은 색 부여
+        const overrideColor = getOverrideColor(baseLabel) ?? getOverrideColor(actualLabel) ?? getOverrideColor(forecastLabel)
+        const color = overrideColor ?? colors[colorIndex % colors.length]
+        if (overrideColor === undefined) colorIndex++
+        ;[baseLabel, actualLabel, forecastLabel].forEach((label) => {
+          if (label && !colorMap.has(label)) colorMap.set(label, color)
+        })
       })
     }
 
@@ -585,24 +609,32 @@ const ForecastChart = ({
               </Typography>
             </Box>
 
-            <ForecastChartGraph
-              ref={chartGraphRef}
-              height="556px"
-              chartType={ChartType.LINE}
-              charts={charts}
-              highlightChartData={highlightChartData}
-              currency={chartData?.metadata.currency}
-              unitCd={chartData?.metadata.currentUnitCd}
-              chartVisibilityMap={chartVisibilityMap}
-              hoveredChartKey={hoveredChartKey}
-              hoverReportCardInfo={hoverReportCardInfo}
-              isLoading={chartDataIsLoading}
-              onFixedModeChange={setIsFixedMode}
-              chartColorMap={chartColorMap}
-              monthSelect={monthSelect}
-              companyNo={companyNo}
-              // spanGaps
-            />
+            {!chartDataIsLoading && charts.length === 0 ? (
+              <Stack height="556px" justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+                <Typography variant="body2SB14" color="gray.50">
+                  No data available to display.
+                </Typography>
+              </Stack>
+            ) : (
+              <ForecastChartGraph
+                ref={chartGraphRef}
+                height="556px"
+                chartType={ChartType.LINE}
+                charts={charts}
+                highlightChartData={highlightChartData}
+                currency={chartData?.metadata.currency}
+                unitCd={chartData?.metadata.currentUnitCd}
+                chartVisibilityMap={chartVisibilityMap}
+                hoveredChartKey={hoveredChartKey}
+                hoverReportCardInfo={hoverReportCardInfo}
+                isLoading={chartDataIsLoading}
+                onFixedModeChange={setIsFixedMode}
+                chartColorMap={chartColorMap}
+                monthSelect={monthSelect}
+                companyNo={companyNo}
+                // spanGaps
+              />
+            )}
           </Stack>
         </Box>
 
