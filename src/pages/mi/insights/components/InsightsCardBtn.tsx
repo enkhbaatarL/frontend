@@ -163,7 +163,7 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
         <img src={pshImg} alt="pshImg" />
       </Box>
       <Grid
-        height={index > 3 ? 220 : 340}
+        height={index > 7 ? 220 : 340}
         container
         direction={'column'}
         alignItems={'start'}
