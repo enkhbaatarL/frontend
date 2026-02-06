@@ -25,8 +25,8 @@ const NewForecastPage = () => {
   const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
 
   // 회사별 기본 xAxisUnit / period 설정
-  const getDefaultAxisAndPeriod = (companyNo: number) => {
-    switch (companyNo) {
+  const getDefaultAxisAndPeriod = (targetCompanyNo: number) => {
+    switch (targetCompanyNo) {
       case 2020:
         return { xAxisUnit: '1W', period: '3M' }
       case 2013:
@@ -96,6 +96,7 @@ const NewForecastPage = () => {
               reportPeriodUnitCd={basicInfo?.reportPeriodUnitCd}
               selectedReportTarget={selectedReportTarget}
               onReportTargetChange={setSelectedReportTarget}
+              onSeeAllReportClick={() => setSelectedTab(1)}
             />
             <TablePage
               basicInfo={basicInfo}

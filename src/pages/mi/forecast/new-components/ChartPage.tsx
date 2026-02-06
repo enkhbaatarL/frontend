@@ -1,3 +1,4 @@
+import EastRoundedIcon from '@mui/icons-material/EastRounded'
 import { Box, Divider, Stack, Typography } from '@mui/material'
 import { useState, useRef, useEffect, useMemo } from 'react'
 
@@ -24,6 +25,7 @@ interface ChartPageProps {
   reportPeriodUnitCd?: ReportPeriodUnitCd
   selectedReportTarget?: string
   onReportTargetChange?: (value: string) => void
+  onSeeAllReportClick?: () => void
 }
 
 const ChartPage = ({
@@ -42,6 +44,7 @@ const ChartPage = ({
   reportPeriodUnitCd,
   selectedReportTarget = '',
   onReportTargetChange,
+  onSeeAllReportClick,
 }: ChartPageProps) => {
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
 
@@ -90,32 +93,19 @@ const ChartPage = ({
     }
   }, [])
 
-  const handleSlideRight = () => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current
-      const cardWidth = 280 // minWidth 260px + gap 20px
-      const scrollAmount = cardWidth
-      const newScrollLeft = container.scrollLeft + scrollAmount
+  // cardWidth: minWidth 260px + gap 20px
+  const CARD_SCROLL_AMOUNT = 280
 
-      container.scrollTo({
-        left: newScrollLeft,
-        behavior: 'smooth',
-      })
-    }
-  }
+  const handleSlide = (direction: 'left' | 'right') => {
+    const container = scrollContainerRef.current
+    if (!container) return
 
-  const handleSlideLeft = () => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current
-      const cardWidth = 280 // minWidth 260px + gap 20px
-      const scrollAmount = cardWidth
-      const newScrollLeft = container.scrollLeft - scrollAmount
+    const delta = direction === 'right' ? CARD_SCROLL_AMOUNT : -CARD_SCROLL_AMOUNT
 
-      container.scrollTo({
-        left: newScrollLeft,
-        behavior: 'smooth',
-      })
-    }
+    container.scrollTo({
+      left: container.scrollLeft + delta,
+      behavior: 'smooth',
+    })
   }
 
   // 왼쪽 끝인지 확인
@@ -256,14 +246,13 @@ const ChartPage = ({
                   let fadeOpacity = 1
                   if (canScroll && scrollContainerRef.current) {
                     const container = scrollContainerRef.current
-                    const cardWidth = 280 // minWidth 260px + gap 20px
-                    const cardLeft = index * cardWidth
+                    const cardLeft = index * CARD_SCROLL_AMOUNT
                     const containerRight = scrollPosition + container.clientWidth
                     const containerLeft = scrollPosition
 
                     // 오른쪽 끝 페이드: 5번째 카드(인덱스 4)가 오른쪽 끝에 살짝 보일 때 (오른쪽 끝이 아닐 때만)
                     const isRightFade =
-                        !isAtRightEnd() && index === 4 && cardLeft < containerRight && cardLeft + cardWidth > containerRight - 50
+                        !isAtRightEnd() && index === 4 && cardLeft < containerRight && cardLeft + CARD_SCROLL_AMOUNT > containerRight - 50
 
                     // 왼쪽 끝 페이드: 첫 번째 카드(인덱스 0)가 왼쪽 끝에 살짝 보일 때 (왼쪽 끝이 아니거나 오른쪽 끝일 때)
                     // 왼쪽 페이드는 더 약하게 (0.5)
@@ -271,7 +260,7 @@ const ChartPage = ({
                         (!isAtLeftEnd() || isAtRightEnd()) &&
                         index === 0 &&
                         cardLeft < containerLeft + 50 &&
-                        cardLeft + cardWidth > containerLeft
+                        cardLeft + CARD_SCROLL_AMOUNT > containerLeft
 
                     if (isRightFade) {
                       fadeOpacity = 0.3
@@ -295,6 +284,31 @@ const ChartPage = ({
                     </Box>
                   )
                 })}
+              <Stack
+                alignItems="center"
+                justifyContent="center"
+                gap="4px"
+                padding="8px"
+                minWidth="110px"
+                minHeight="118px"
+                bgcolor="commonColor.White"
+                borderRadius="10px"
+                border="1px solid"
+                borderColor="contentBorder.Normal"
+                sx={{
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: 'contentBG.Hover',
+                    borderColor: 'contentBorder.Hover',
+                  },
+                }}
+                onClick={() => onSeeAllReportClick?.()}
+              >
+                <Typography variant="labelText" color="contentText.Normal">
+                  See All Report
+                </Typography>
+                <EastRoundedIcon fontSize="small" sx={{ color: 'contentText.Normal' }} />
+              </Stack>
             </Stack>
           </Box>
           {shouldShowRightButton && (
@@ -308,7 +322,7 @@ const ChartPage = ({
                 pointerEvents: 'auto',
               }}
             >
-              <MIButtonArrow direction="right" onClick={handleSlideRight} />
+              <MIButtonArrow direction="right" onClick={() => handleSlide('right')} />
             </Box>
           )}
           {shouldShowLeftButton && (
@@ -322,7 +336,7 @@ const ChartPage = ({
                 pointerEvents: 'auto',
               }}
             >
-              <MIButtonArrow direction="left" onClick={handleSlideLeft} />
+              <MIButtonArrow direction="left" onClick={() => handleSlide('left')} />
             </Box>
           )}
         </Box>
