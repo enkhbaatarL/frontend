@@ -1,6 +1,6 @@
 import { Box, Divider, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import MIMorphingPopup, { MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
@@ -32,9 +32,20 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
   // 날짜 범위 계산 (일 수)
   const daysDiff = startDate && endDate ? endDate.diff(startDate, 'day') + 1 : 0
 
-  const diffValue = data?.predictionResultDiffVal ?? 0
-  const diffValueColor = diffValue < 0 ? 'decrease.main' : 'increase.main'
-  const diffRate = data?.predictionResultDiffRate ? `(${formatValue(data.predictionResultDiffRate)}%)` : '-'
+  const diffDisplay = useMemo(() => {
+    const val = data?.predictionResultDiffVal
+    const num = val !== undefined && val !== null ? Number(val) : null
+    if (num === null || num === 0) return null
+    const rate =
+      data?.predictionResultDiffRate !== undefined && data?.predictionResultDiffRate !== null
+        ? `(${formatValue(data.predictionResultDiffRate)}%)`
+        : '-'
+    const text = `${num}${rate}`
+    return {
+      text,
+      color: num < 0 ? 'decrease.main' : 'increase.main',
+    }
+  }, [data?.predictionResultDiffVal, data?.predictionResultDiffRate])
 
   const isNew = data?.isNew ?? false
 
@@ -70,48 +81,52 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
       <Box
         padding="8px"
         minWidth="260px"
-        minHeight="118px"
+        minHeight="130px"
         bgcolor="commonColor.White"
         borderRadius="10px"
         border="1px solid"
         borderColor="contentBorder.Normal"
         boxSizing="border-box"
         sx={{
-          cursor: 'pointer',
-          '&:hover': {
-            backgroundColor: 'contentBG.Hover',
-            borderColor: 'contentBorder.Hover',
-          },
+          cursor: showSkeleton ? 'default' : 'pointer',
+          ...(showSkeleton
+            ? {}
+            : {
+              '&:hover': {
+                backgroundColor: 'contentBG.Hover',
+                borderColor: 'contentBorder.Hover',
+              },
+            }),
         }}
         onClick={() => !showSkeleton && handleOpen()}
       >
         {showSkeleton ? (
-          <Stack gap="4px">
+          <Stack gap="4px" minHeight="115px">
             <Stack direction="row" height="20px" alignItems="center" justifyContent="space-between" gap="10px" padding="6px 8px">
               <MIBaseSkeleton.TextLine width="120px" height="16px" />
             </Stack>
-            <Stack alignItems="start" gap="4px" padding="4px 8px">
+            <Stack alignItems="start" gap="4px" padding="4px 8px" flex={1}>
               <Stack direction="row" alignItems="start" gap="8px" py="4px">
                 <Box flexShrink={0}>
-                  <MIBaseSkeleton.TextLine width="70px" height="12px" />
+                  <MIBaseSkeleton.TextLine width="70px" height="16px" />
                 </Box>
                 <Divider orientation="vertical" flexItem />
-                <Stack px="4px" gap="4px">
-                  <MIBaseSkeleton.TextLine width="140px" height="14px" />
-                  <MIBaseSkeleton.TextLine width="60px" height="11px" />
+                <Stack px="4px" gap="2px">
+                  <MIBaseSkeleton.TextLine width="140px" height="19px" />
+                  <MIBaseSkeleton.TextLine width="60px" height="14px" />
                 </Stack>
               </Stack>
               <Stack direction="row" alignItems="start" gap="8px" py="4px">
                 <Box flexShrink={0}>
-                  <MIBaseSkeleton.TextLine width="70px" height="12px" />
+                  <MIBaseSkeleton.TextLine width="70px" height="16px" />
                 </Box>
                 <Divider orientation="vertical" flexItem />
-                <Stack px="4px" gap="4px">
+                <Stack px="4px" gap="2px">
                   <Stack direction="row" alignItems="baseline" gap="4px">
-                    <MIBaseSkeleton.TextLine width="60px" height="14px" />
-                    <MIBaseSkeleton.TextLine width="50px" height="14px" />
+                    <MIBaseSkeleton.TextLine width="60px" height="19px" />
+                    <MIBaseSkeleton.TextLine width="50px" height="19px" />
                   </Stack>
-                  <MIBaseSkeleton.TextLine width="150px" height="11px" />
+                  <MIBaseSkeleton.TextLine width="150px" height="14px" />
                 </Stack>
               </Stack>
             </Stack>
@@ -164,10 +179,9 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
                     <Typography variant="body2SB14" color="commonColor.Black">
                       {formatValue(data?.predictionResultVal) ?? '-'}
                     </Typography>
-                    {diffValue && diffValue !== 0 && (
-                      <Typography variant="body2SB14" color={diffValueColor} noWrap>
-                        {diffValue}
-                        {diffRate}
+                    {diffDisplay && (
+                      <Typography variant="body2SB14" color={diffDisplay.color} noWrap>
+                        {diffDisplay.text}
                       </Typography>
                     )}
                   </Stack>
