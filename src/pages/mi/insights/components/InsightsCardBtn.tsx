@@ -43,11 +43,14 @@ interface InsightsCardBtnProps {
   index: number
 }
 
+const SMALL_SIZE_START_INDEX = 8
+
 const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
   const [isHover, setIsHover] = useState(false)
   const navigate = useNavigate()
 
   const isPermitted = useMemo(() => report.viewable, [report.viewable])
+  const isSmallSize = index >= SMALL_SIZE_START_INDEX
 
   const backgroundImageUrl = useMemo(() => {
     if (!isHover) {
@@ -163,7 +166,7 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
         <img src={pshImg} alt="pshImg" />
       </Box>
       <Grid
-        height={index > 7 ? 220 : 340}
+        height={isSmallSize ? 220 : 340}
         container
         direction={'column'}
         alignItems={'start'}
@@ -188,7 +191,7 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
         />
         <Typography
           sx={{
-            WebkitLineClamp: index > 3 ? 3 : 6,
+            WebkitLineClamp: isSmallSize ? 3 : 6,
             transition: 'all 0.2s ease-out 0.03s',
             color: 'white',
             mt: 4.5,
