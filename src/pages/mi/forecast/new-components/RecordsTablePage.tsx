@@ -209,18 +209,15 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
 
   // 테이블 컬럼 정의
   const tableColumns = useMemo<GridColDef[]>(() => {
-    const baseColumns: GridColDef[] = [
-      {
-        field: 'predictChartDetailExpn',
-        headerName: 'Target',
+    // 필드별 컬럼 정의 (참조용)
+    const fieldDefinitions: Record<string, Omit<GridColDef, 'field' | 'headerName'>> = {
+      predictChartDetailExpn: {
         minWidth: 120,
         flex: 1,
         align: 'left',
         headerAlign: 'left',
       },
-      {
-        field: 'predictionFulfillDt',
-        headerName: 'Run Date',
+      predictionFulfillDt: {
         minWidth: 100,
         flex: 1,
         align: 'center',
@@ -230,9 +227,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           return dayjs(row.predictionFulfillDt, 'YYYYMMDD').format('YY/MM/DD')
         },
       },
-      {
-        field: 'startPredictionResultDt',
-        headerName: 'Forecast Date',
+      startPredictionResultDt: {
         minWidth: 150,
         flex: 1.5,
         align: 'center',
@@ -247,78 +242,28 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           return `${startDate} - ${endDate}`
         },
       },
-      {
-        field: 'predictionCriteriaVal',
-        headerName: 'Reference Price',
-        minWidth: 130,
-        flex: 1,
-        align: 'right',
-        headerAlign: 'right',
-        renderHeader: () => (
-          <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="4px">
-            <Typography variant="tableHeaderSemibold" color="gray.60">
-              Reference Price
-            </Typography>
-            {companyNo === 2015 && (
-              <Tooltip
-                title="예측 기준이 되는 직전 실적가로, 실적 발표 전 구간에서는 추정치가 적용됩니다."
-                placement="top-start"
-                disableInteractive
-                slotProps={{
-                  popper: {
-                    modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
-                  },
-                }}
-              >
-                <InfoOutlined sx={{ width: 14, height: 14, color: theme.palette.contentIcon?.Enabled ?? 'inherit' }} />
-              </Tooltip>
-            )}
-          </Stack>
-        ),
-        renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
-      },
-      {
-        field: 'predictionResultVal',
-        headerName: 'Forecast Price',
+      predictionCriteriaVal: {
         minWidth: 130,
         flex: 1,
         align: 'right',
         headerAlign: 'right',
         renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
       },
-      {
-        field: 'actualVal',
-        headerName: 'Actual Price',
+      predictionResultVal: {
+        minWidth: 130,
+        flex: 1,
+        align: 'right',
+        headerAlign: 'right',
+        renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
+      },
+      actualVal: {
         minWidth: 120,
         flex: 1,
         align: 'right',
         headerAlign: 'right',
-        renderHeader: () => (
-          <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="4px">
-            <Typography variant="tableHeaderSemibold" color="gray.60">
-              Actual Price
-            </Typography>
-            {companyNo === 2015 && (
-              <Tooltip
-                title="실적 발표를 통해 확정된 실제 가격입니다."
-                placement="top-start"
-                disableInteractive
-                slotProps={{
-                  popper: {
-                    modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
-                  },
-                }}
-              >
-                <InfoOutlined sx={{ width: 14, height: 14, color: theme.palette.contentIcon?.Enabled ?? 'inherit' }} />
-              </Tooltip>
-            )}
-          </Stack>
-        ),
         renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
       },
-      {
-        field: 'predictionResultDiffRate',
-        headerName: 'Forecast 오차율',
+      predictionResultDiffRate: {
         minWidth: 120,
         flex: 1,
         align: 'right',
@@ -326,9 +271,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         valueGetter: (_, row) => Math.abs(row.predictionResultDiffRate ?? 0),
         renderCell: ({ value }) => (value ? `${value.toFixed(2)}%` : '-'),
       },
-      {
-        field: 'directionVal',
-        headerName: 'Forecast Direction',
+      directionVal: {
         minWidth: 150,
         flex: 1,
         align: 'center',
@@ -361,9 +304,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           )
         },
       },
-      {
-        field: 'reportDownload',
-        headerName: '설명력',
+      reportDownload: {
         flex: 1,
         align: 'center',
         headerAlign: 'center',
@@ -391,10 +332,8 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         ),
       },
       ...(SHOW_DAILY_DATA_COLUMN
-        ? [
-          {
-            field: 'dailyData',
-            headerName: '일별데이터',
+        ? {
+          dailyData: {
             flex: 1,
             align: 'center' as const,
             headerAlign: 'center' as const,
@@ -423,97 +362,87 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
               </MIBaseButton>
             ),
           },
-        ]
-        : []),
-    ]
-
-    // recordHeaders가 없으면 기본 컬럼 반환
-    if (!basicInfo?.recordHeaders || basicInfo.recordHeaders.length === 0) {
-      return baseColumns
+        }
+        : {}),
     }
 
-    // recordHeaders를 Map으로 변환하여 빠른 조회
-    const headerMap = new Map<string, { headerText: string; isVisible: boolean; orderNo: number }>()
-    basicInfo.recordHeaders.forEach((header) => {
-      headerMap.set(header.columnKey, {
-        headerText: header.headerText,
-        isVisible: header.isVisible,
-        orderNo: header.orderNo,
-      })
+    // recordHeaders가 없으면 빈 배열 반환
+    if (!basicInfo?.recordHeaders || basicInfo.recordHeaders.length === 0) {
+      return []
+    }
+
+    // recordHeaders를 기반으로 컬럼 생성
+    // isVisible: true인 것만 필터링하고, orderNo로 정렬
+    const visibleHeaders = basicInfo.recordHeaders.filter((header) => header.isVisible).sort((a, b) => a.orderNo - b.orderNo)
+
+    return visibleHeaders.map((header) => {
+      const fieldDef = fieldDefinitions[header.columnKey]
+      if (!fieldDef) {
+        // 정의가 없는 필드는 기본 컬럼 생성
+        return {
+          field: header.columnKey,
+          headerName: header.headerText,
+          minWidth: 100,
+          flex: 1,
+        } as GridColDef
+      }
+
+      // 필드 정의를 기반으로 컬럼 생성
+      const column: GridColDef = {
+        field: header.columnKey,
+        headerName: header.headerText,
+        ...fieldDef,
+      }
+
+      // predictionCriteriaVal과 actualVal의 경우 renderHeader 추가
+      if (header.columnKey === 'predictionCriteriaVal') {
+        column.renderHeader = () => (
+          <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="4px">
+            <Typography variant="tableHeaderSemibold" color="gray.60">
+              {header.headerText}
+            </Typography>
+            {companyNo === 2015 && (
+              <Tooltip
+                title="예측 기준이 되는 직전 실적가로, 실적 발표 전 구간에서는 추정치가 적용됩니다."
+                placement="top-start"
+                disableInteractive
+                slotProps={{
+                  popper: {
+                    modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
+                  },
+                }}
+              >
+                <InfoOutlined sx={{ width: 14, height: 14, color: theme.palette.contentIcon?.Enabled ?? 'inherit' }} />
+              </Tooltip>
+            )}
+          </Stack>
+        )
+      } else if (header.columnKey === 'actualVal') {
+        column.renderHeader = () => (
+          <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="4px">
+            <Typography variant="tableHeaderSemibold" color="gray.60">
+              {header.headerText}
+            </Typography>
+            {companyNo === 2015 && (
+              <Tooltip
+                title="실적 발표를 통해 확정된 실제 가격입니다."
+                placement="top-start"
+                disableInteractive
+                slotProps={{
+                  popper: {
+                    modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
+                  },
+                }}
+              >
+                <InfoOutlined sx={{ width: 14, height: 14, color: theme.palette.contentIcon?.Enabled ?? 'inherit' }} />
+              </Tooltip>
+            )}
+          </Stack>
+        )
+      }
+
+      return column
     })
-
-    // 컬럼에 recordHeaders 정보 적용
-    const columnsWithOrder = baseColumns
-      .map((column) => {
-        const headerInfo = headerMap.get(column.field)
-        if (!headerInfo) {
-          return { column, orderNo: Infinity }
-        }
-
-        // isVisible이 false면 null 반환 (필터링)
-        if (!headerInfo.isVisible) {
-          return null
-        }
-
-        // headerName을 headerText로 변경
-        const updatedColumn = { ...column, headerName: headerInfo.headerText }
-
-        // renderHeader가 있는 경우 (predictionCriteriaVal, actualVal) headerText 업데이트
-        if (column.renderHeader && column.field === 'predictionCriteriaVal') {
-          updatedColumn.renderHeader = () => (
-            <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="4px">
-              <Typography variant="tableHeaderSemibold" color="gray.60">
-                {headerInfo.headerText}
-              </Typography>
-              {companyNo === 2015 && (
-                <Tooltip
-                  title="예측 기준이 되는 직전 실적가로, 실적 발표 전 구간에서는 추정치가 적용됩니다."
-                  placement="top-start"
-                  disableInteractive
-                  slotProps={{
-                    popper: {
-                      modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
-                    },
-                  }}
-                >
-                  <InfoOutlined sx={{ width: 14, height: 14, color: theme.palette.contentIcon?.Enabled ?? 'inherit' }} />
-                </Tooltip>
-              )}
-            </Stack>
-          )
-        } else if (column.renderHeader && column.field === 'actualVal') {
-          updatedColumn.renderHeader = () => (
-            <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="4px">
-              <Typography variant="tableHeaderSemibold" color="gray.60">
-                {headerInfo.headerText}
-              </Typography>
-              {companyNo === 2015 && (
-                <Tooltip
-                  title="실적 발표를 통해 확정된 실제 가격입니다."
-                  placement="top-start"
-                  disableInteractive
-                  slotProps={{
-                    popper: {
-                      modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
-                    },
-                  }}
-                >
-                  <InfoOutlined sx={{ width: 14, height: 14, color: theme.palette.contentIcon?.Enabled ?? 'inherit' }} />
-                </Tooltip>
-              )}
-            </Stack>
-          )
-        }
-
-        return { column: updatedColumn, orderNo: headerInfo.orderNo }
-      })
-      .filter((item): item is { column: GridColDef; orderNo: number } => item !== null)
-
-    // orderNo에 따라 정렬 (orderNo가 없는 컬럼은 뒤로)
-    columnsWithOrder.sort((a, b) => a.orderNo - b.orderNo)
-
-    // 컬럼만 반환
-    return columnsWithOrder.map((item) => item.column)
   }, [handleDownload, companyNo, basicInfo?.recordHeaders])
 
   // 페이지네이션 메타데이터 (API 응답에서 가져옴)
