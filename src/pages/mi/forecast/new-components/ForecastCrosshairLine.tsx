@@ -132,10 +132,21 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
         const mainDataset = chart.data.datasets[0]
         if (mainDataset) {
           const yAxisId = (mainDataset as { yAxisID: string }).yAxisID ?? 'y'
-          const toFixed = (mainDataset as { metadata?: { toFixed?: number } }).metadata?.toFixed ?? 1
 
           // 마우스 Y 위치를 차트 Y 스케일 값으로 변환
           const yScale = chart.scales[yAxisId]
+
+          // y축 범위에 따라 소수점 자릿수 계산
+          let toFixed = (mainDataset as { metadata?: { toFixed?: number } }).metadata?.toFixed ?? 2
+          if (yScale) {
+            const yRange = yScale.max - yScale.min
+            if (yRange > 0) {
+              const labelStep = yRange / 5
+              const magnitude = Math.floor(Math.log10(labelStep))
+              toFixed = Math.max(0, -magnitude)
+            }
+          }
+
           const mouseYValue = yScale.getValueForPixel(mousePos.y)
 
           if (mouseYValue !== null && mouseYValue !== undefined) {

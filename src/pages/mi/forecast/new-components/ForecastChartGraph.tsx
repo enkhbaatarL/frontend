@@ -842,7 +842,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
     )
 
     const fullYAxisRange = useMemo(() => {
-      if (isEmptyChart) return { min: 0, max: 0 }
+      if (isEmptyChart) return { min: 0, max: 0, step: undefined }
 
       let min = Infinity
       let max = -Infinity
@@ -863,17 +863,73 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       })
 
       if (min === Infinity || max === -Infinity) {
-        return { min: 0, max: 0 }
+        return { min: 0, max: 0, step: undefined }
       }
 
-      const range = max - min
-      const padding = range * 0.1
+      let range = max - min
+
+      // 데이터가 하나이거나 범위가 0일 때 최소 범위 보장
+      if (range === 0) {
+        const value = min
+        if (value !== 0) {
+          range = Math.abs(value) * 0.4 // 위아래 20%
+        } else {
+          range = 0.2
+        }
+        min = value - range / 2
+        max = value + range / 2
+      }
+
+      // 최소 범위 보장
+      const avgValue = (min + max) / 2
+      const minRange = Math.abs(avgValue) * 0.3
+      if (range < minRange && avgValue !== 0) {
+        const center = (min + max) / 2
+        range = minRange
+        min = center - range / 2
+        max = center + range / 2
+      } else {
+        const padding = range * 0.1
+        min = min - padding
+        max = max + padding
+        range = max - min
+      }
+
+      // 틱 간격 계산 - 약 10~15개 틱을 목표
+      const targetTickCount = 10
+      const rawStep = range / targetTickCount
+
+      // 틱 간격: 1, 2, 5 계열의 배수로 반올림
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)))
+      const fraction = rawStep / magnitude
+      let tickInterval: number
+      if (fraction <= 1) tickInterval = 1 * magnitude
+      else if (fraction <= 2) tickInterval = 2 * magnitude
+      else if (fraction <= 5) tickInterval = 5 * magnitude
+      else tickInterval = 10 * magnitude
+
+      // min/max를 tickInterval의 배수로 반올림 (데이터가 포함되도록)
+      const alignedMin = Math.floor(min / tickInterval) * tickInterval
+      const alignedMax = Math.ceil(max / tickInterval) * tickInterval
+
+      // 부동소수점 오차 보정
+      const precision = Math.max(0, -Math.floor(Math.log10(tickInterval))) + 2
+      const factor = Math.pow(10, precision)
 
       return {
-        min: min - padding,
-        max: max + padding,
+        min: Math.round(alignedMin * factor) / factor,
+        max: Math.round(alignedMax * factor) / factor,
+        step: Math.round(tickInterval * factor) / factor,
       }
     }, [allDatasets, isEmptyChart])
+
+    // y축 라벨에 사용할 소수점 자릿수를 step에서 계산
+    const yAxisToFixed = useMemo(() => {
+      const step = fullYAxisRange.step
+      if (!step || step <= 0) return 2
+      const magnitude = Math.floor(Math.log10(step))
+      return Math.max(0, -magnitude)
+    }, [fullYAxisRange])
 
     const createHighlightDatasets = useCallback(
       (reportCardInfo: IForecastReport | null): ChartDatasetType[] => {
@@ -1195,7 +1251,8 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               borderColor: '#000000',
               padding: 14,
               maxTicksLimit: 19, // y축 최대 틱 수 제한
-              toFixed: 1,
+              toFixed: yAxisToFixed,
+              stepSize: fullYAxisRange.step,
             }),
             min: fullYAxisRange.min,
             max: fullYAxisRange.max,
@@ -1203,43 +1260,40 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               scale.min = fullYAxisRange.min
               scale.max = fullYAxisRange.max
             },
-            afterBuildTicks(axis: LinearScale) {
-              if (axis.ticks && axis.ticks.length < 19) {
-                const scale = axis as { min: number; max: number; ticks: Array<{ value: number }> }
-                const min = scale.min ?? 0
-                const max = scale.max ?? 0
-                const range = max - min
-
-                if (range > 0 && !isEmptyChart) {
-                  const step = range / 18
-                  const newTicks: Array<{ value: number }> = []
-
-                  for (let i = 0; i <= 18; i++) {
-                    const value = min + step * i
-                    newTicks.push({ value })
-                  }
-
-                  axis.ticks = newTicks
-                }
-              }
-            },
             afterTickToLabelConversion(axis: LinearScale) {
               if (axis.ticks.length > 0) {
-                const ctx = axis.chart.ctx
-                const chartArea = axis.chart.chartArea
+                const firstIndex = 0
+                const lastIndex = axis.ticks.length - 1
 
-                if (ctx && chartArea) {
-                  const firstTick = axis.ticks[0]
-                  const metrics = ctx.measureText(firstTick.label as string)
-                  const textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
-                  const firstLabelBoundary = axis.getPixelForTick(0) - chartArea.bottom - textHeight
-                  if (firstLabelBoundary < 0) firstTick.label = ''
+                for (let i = 0; i < axis.ticks.length; i++) {
+                  if (i === firstIndex || i === lastIndex) {
+                    continue
+                  }
 
-                  const lastTick = axis.ticks[axis.ticks.length - 1]
-                  const lastMetrics = ctx.measureText(lastTick.label as string)
-                  const lastTextHeight = lastMetrics.actualBoundingBoxAscent + lastMetrics.actualBoundingBoxDescent
-                  const lastLabelBoundary = axis.getPixelForTick(axis.ticks.length - 1) + lastTextHeight / 2
-                  if (lastLabelBoundary > axis.height) lastTick.label = ''
+                  const tick = axis.ticks[i]
+                  if (!tick.label || tick.label === '') {
+                    const tickValue = Number(tick.value)
+                    if (!Number.isNaN(tickValue)) {
+                      tick.label = tickValue.toLocaleString('ko-KR', {
+                        minimumFractionDigits: yAxisToFixed,
+                        maximumFractionDigits: yAxisToFixed,
+                      })
+                    }
+                  }
+                }
+
+                // 중복된 라벨 제거
+                const seenLabels = new Set<string>()
+                for (let i = 0; i < axis.ticks.length; i++) {
+                  const tick = axis.ticks[i]
+                  const label = tick.label as string
+                  if (label && label.trim() !== '') {
+                    if (seenLabels.has(label)) {
+                      tick.label = ''
+                    } else {
+                      seenLabels.add(label)
+                    }
+                  }
                 }
               }
             },
@@ -1342,7 +1396,18 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       // onPan 콜백은 클로저로 최신 fixedXScaleIndex와 isDragConfirmedRef를 참조하므로 의존성 배열에 추가하지 않음
       // fixedXScaleIndex를 의존성에 추가하면 fixedXScaleIndex 변경 시마다 chartOptions가 재생성되어 불필요한 리렌더링 발생
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [isEmptyChart, dataPointCount, axisTimestamps, axisResultDates, subYAxes, unitCd, currency, isYAxisSeparated, fullYAxisRange],
+      [
+        isEmptyChart,
+        dataPointCount,
+        axisTimestamps,
+        axisResultDates,
+        subYAxes,
+        unitCd,
+        currency,
+        isYAxisSeparated,
+        fullYAxisRange,
+        yAxisToFixed,
+      ],
     )
 
     useEffect(() => {

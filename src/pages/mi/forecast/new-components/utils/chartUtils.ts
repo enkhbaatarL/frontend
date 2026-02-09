@@ -39,6 +39,7 @@ export const generateYAxis = (params: {
   padding?: number
   maxTicksLimit?: number
   toFixed?: number
+  stepSize?: number
 }) => ({
   unit: params.unit,
   display: !params.isVirtual,
@@ -113,8 +114,9 @@ export const generateYAxis = (params: {
       family: getCurrentFontFamily(),
       weight: 'normal' as const,
     },
-    beginAtZero: true,
+    beginAtZero: !params.stepSize,
     maxTicksLimit: params.maxTicksLimit ?? 16,
+    stepSize: params.stepSize,
     callback(tickValue: string | number, index: number, ticks: unknown[]) {
       if (index === 0 || index === ticks.length - 1) return ''
       const value = Number(tickValue)
