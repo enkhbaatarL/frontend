@@ -201,12 +201,14 @@ const ChartPage = ({
               selected={''}
               onSelected={() => { }}
             /> */}
-            <MISelectMenu
-              variant="text"
-              items={targetSelectItems}
-              selected={selectedReportTarget}
-              onSelected={(value: string) => onReportTargetChange?.(value)}
-            />
+            {(targetList?.length ?? 0) > 1 && (
+              <MISelectMenu
+                variant="text"
+                items={targetSelectItems}
+                selected={selectedReportTarget}
+                onSelected={(value: string) => onReportTargetChange?.(value)}
+              />
+            )}
           </Stack>
         </Stack>
         <Box
@@ -270,7 +272,7 @@ const ChartPage = ({
                   position: 'relative',
                   width: 'fit-content',
                   minWidth: showReportCardSkeleton ? 5 * CARD_SCROLL_AMOUNT + 4 * 20 : undefined,
-                  minHeight: 153,
+                  minHeight: 154,
                   opacity: showReportCardSkeleton ? 0 : 1,
                   pointerEvents: showReportCardSkeleton ? 'none' : 'auto',
                   transition: 'opacity 0.3s ease-in-out',
