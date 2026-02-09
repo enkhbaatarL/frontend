@@ -188,17 +188,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
       }
 
       const response = await forecastDataService.getForecastRecordsFileDownload(companyNo, params)
-
-      const cd = response.headers?.['content-disposition'] ?? ''
-
-      if (cd.includes('.zip')) {
-        const fileName = `Records_${params.startDate}_${params.endDate}.zip`
-        downloadFile(response.data, fileName)
-      } else {
-        // prettier-ignore
-        const fileName = cd.split('\'\'').pop()?.trim() ?? 'Forecast Records.xlsx'
-        downloadFile(response.data, fileName)
-      }
+      downloadFile(response.data, 'Forecast Records.xlsx')
     } catch (error) {
       console.error('Download failed:', error)
     }
