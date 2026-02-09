@@ -85,6 +85,14 @@ const ChartPage = ({
     }
   }, [forecastReports, forecastReportsIsLoading])
 
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (container) {
+      container.scrollLeft = 0
+      setScrollPosition(0)
+    }
+  }, [selectedReportTarget])
+
   // 스크롤 위치 업데이트
   useEffect(() => {
     const container = scrollContainerRef.current
