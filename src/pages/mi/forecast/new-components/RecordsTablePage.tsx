@@ -178,6 +178,37 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
     [companyNo],
   )
 
+  // 테이블 다운로드 핸들러
+  const handleTableDownload = useCallback(async () => {
+    if (!dateRange?.startDate || !dateRange?.endDate || !companyNo) {
+      return
+    }
+
+    try {
+      const params = {
+        goodsDataSourceNo: selectedTarget && selectedTarget !== '' ? Number(selectedTarget) : undefined,
+        startDate: dateRange.startDate.format('YYYYMMDD'),
+        endDate: dateRange.endDate.format('YYYYMMDD'),
+        order: sortOrder as 'NEWEST' | 'OLDEST',
+      }
+
+      const response = await forecastDataService.getForecastRecordsFileDownload(companyNo, params)
+
+      const cd = response.headers?.['content-disposition'] ?? ''
+
+      if (cd.includes('.zip')) {
+        const fileName = `Records_${params.startDate}_${params.endDate}.zip`
+        downloadFile(response.data, fileName)
+      } else {
+        // prettier-ignore
+        const fileName = cd.split('\'\'').pop()?.trim() ?? 'Forecast Records.xlsx'
+        downloadFile(response.data, fileName)
+      }
+    } catch (error) {
+      console.error('Download failed:', error)
+    }
+  }, [companyNo, dateRange, selectedTarget, sortOrder])
+
   // 테이블 컬럼 정의
   const tableColumns = useMemo<GridColDef[]>(
     () => [
@@ -669,9 +700,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
             />
             <MIBaseButton
               variant="outlined"
-              onClick={() => {
-                // 테이블 다운로드 로직 추가
-              }}
+              onClick={handleTableDownload}
               sx={{
                 width: '36px',
                 height: '36px',

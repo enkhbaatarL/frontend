@@ -979,6 +979,45 @@ const forecastDataService = {
 
     return response
   },
+  /**
+   * Forecast Records 파일을 다운로드합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { goodsDataSourceNo: 데이터 소스 번호(선택), startDate: 조회 시작일자(YYYYMMDD), endDate: 조회 종료일자(YYYYMMDD), order: 정렬 순서(NEWEST/OLDEST, 기본값: NEWEST) }
+   */
+  async getForecastRecordsFileDownload(
+    companyNo: number,
+    params: {
+      goodsDataSourceNo?: number
+      startDate: string
+      endDate: string
+      order?: 'NEWEST' | 'OLDEST'
+    },
+  ) {
+    const response = await api.get(`mi/forecast/companies/${companyNo}/records/file-download`, {
+      params,
+      responseType: 'blob',
+    })
+
+    // 한글 파일명 처리를 위한 Content-Disposition 헤더 수정
+    if (response.headers?.['content-disposition']) {
+      const contentDisposition = response.headers['content-disposition']
+      // filename*=UTF-8'' 형태로 인코딩된 파일명이 있는지 확인
+      if (contentDisposition.includes('filename*=')) {
+        // 이미 올바르게 인코딩되어 있으면 그대로 사용
+        return response
+      } else if (contentDisposition.includes('filename=')) {
+        // filename= 형태인 경우 UTF-8로 인코딩
+        const filenameMatch = contentDisposition.match(/filename=([^;\n]*)/)
+        if (filenameMatch) {
+          const originalFilename = filenameMatch[1].replace(/['"]/g, '')
+          const encodedFilename = encodeURIComponent(originalFilename)
+          response.headers['content-disposition'] = contentDisposition.replace(/filename=[^;\n]*/, `filename*=UTF-8''${encodedFilename}`)
+        }
+      }
+    }
+
+    return response
+  },
 }
 
 export default forecastDataService
