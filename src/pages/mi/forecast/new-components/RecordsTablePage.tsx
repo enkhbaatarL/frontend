@@ -749,17 +749,19 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
 
           {/* Action 영역 */}
           <Stack direction="row" alignItems="center" gap="12px" height="36px">
-            <MISelectMenu
-              variant="outlined"
-              items={targetOptions}
-              selected={selectedTarget}
-              onSelected={(value: string) => {
-                setSelectedTarget(value)
-                setPage(1) // 필터 변경 시 첫 페이지로 리셋
-              }}
-              sx={{ height: '36px' }}
-              enableHoverBackground
-            />
+            {(basicInfo?.targetList?.length ?? 0) > 1 && (
+              <MISelectMenu
+                variant="outlined"
+                items={targetOptions}
+                selected={selectedTarget}
+                onSelected={(value: string) => {
+                  setSelectedTarget(value)
+                  setPage(1) // 필터 변경 시 첫 페이지로 리셋
+                }}
+                sx={{ height: '36px' }}
+                enableHoverBackground
+              />
+            )}
             <MISelectMenu
               variant="outlined"
               items={[

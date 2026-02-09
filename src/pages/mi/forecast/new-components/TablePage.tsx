@@ -525,14 +525,16 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
         <Stack direction="row" justifyContent="space-between">
           <MIDateRangePickerMenu onApply={setDateRange} dateRange={dateRange} sx={{ height: '36px' }} enableHoverBackground />
           <Stack direction="row" gap="12px">
-            <MISelectMenu
-              variant="outlined"
-              items={targetOptions}
-              selected={selectedTarget}
-              onSelected={(value: string) => setSelectedTarget(value)}
-              sx={{ height: '36px' }}
-              enableHoverBackground
-            />
+            {(basicInfo?.targetList?.length ?? 0) > 1 && (
+              <MISelectMenu
+                variant="outlined"
+                items={targetOptions}
+                selected={selectedTarget}
+                onSelected={(value: string) => setSelectedTarget(value)}
+                sx={{ height: '36px' }}
+                enableHoverBackground
+              />
+            )}
             <MISelectMenu
               variant="outlined"
               items={[
