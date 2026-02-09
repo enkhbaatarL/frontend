@@ -1002,7 +1002,7 @@ const forecastDataService = {
       order?: 'NEWEST' | 'OLDEST'
     },
   ) {
-    const response = await api.get(`mi/forecast/companies/${companyNo}/records/file-download`, {
+    const response = await api.get(withCustomBaseUrl(`mi/forecast/companies/${companyNo}/records/file-download`), {
       params,
       responseType: 'blob',
     })
