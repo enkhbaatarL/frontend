@@ -34,9 +34,6 @@ interface ModelAccuracyItem {
   date: string
 }
 
-// 일별데이터 열 임시 비표시 (true로 변경 시 다시 표시)
-const SHOW_DAILY_DATA_COLUMN = false
-
 // Model Records 데이터 타입
 interface ModelRecord {
   id: string
@@ -331,39 +328,66 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           </MIBaseButton>
         ),
       },
-      ...(SHOW_DAILY_DATA_COLUMN
-        ? {
-          dailyData: {
-            flex: 1,
-            align: 'center' as const,
-            headerAlign: 'center' as const,
-            sortable: false,
-            renderCell: () => (
-              <MIBaseButton
-                variant="outlined"
-                onClick={() => {
-                  // 다운로드 로직 추가
-                }}
-                sx={{
-                  width: '28px',
-                  height: '28px',
-                  minWidth: '28px',
-                  padding: '4px',
-                  borderRadius: '4px',
-                  borderColor: '#E5E7EB',
-                  backgroundColor: '#FFFFFF',
-                  '&:hover': {
-                    backgroundColor: '#F9FAFB',
-                    borderColor: '#D1D5DB',
-                  },
-                }}
-              >
-                <ChartDownloadIcon fill={theme.palette.gray[70]} />
-              </MIBaseButton>
-            ),
-          },
-        }
-        : {}),
+      // report 헤더는 reportDownload 필드로 매핑
+      report: {
+        flex: 1,
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        renderCell: () => (
+          <MIBaseButton
+            variant="outlined"
+            onClick={() => {
+              // 다운로드 로직 추가
+            }}
+            sx={{
+              width: '28px',
+              height: '28px',
+              minWidth: '28px',
+              padding: '4px',
+              borderRadius: '4px',
+              borderColor: '#E5E7EB',
+              backgroundColor: '#FFFFFF',
+              '&:hover': {
+                backgroundColor: '#F9FAFB',
+                borderColor: '#D1D5DB',
+              },
+            }}
+          >
+            <ChartDownloadIcon fill={theme.palette.gray[70]} />
+          </MIBaseButton>
+        ),
+      },
+      // dailyDataDownload 헤더는 dailyData 필드로 매핑
+      dailyDataDownload: {
+        flex: 1,
+        align: 'center' as const,
+        headerAlign: 'center' as const,
+        sortable: false,
+        renderCell: () => (
+          <MIBaseButton
+            variant="outlined"
+            onClick={() => {
+              // 다운로드 로직 추가
+            }}
+            sx={{
+              width: '28px',
+              height: '28px',
+              minWidth: '28px',
+              padding: '4px',
+              borderRadius: '4px',
+              borderColor: '#E5E7EB',
+              backgroundColor: '#FFFFFF',
+              '&:hover': {
+                backgroundColor: '#F9FAFB',
+                borderColor: '#D1D5DB',
+              },
+            }}
+          >
+            <ChartDownloadIcon fill={theme.palette.gray[70]} />
+          </MIBaseButton>
+        ),
+      },
     }
 
     // recordHeaders가 없으면 빈 배열 반환
