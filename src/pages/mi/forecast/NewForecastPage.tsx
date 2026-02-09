@@ -1,7 +1,7 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { debounce } from 'lodash-es'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import ChartPage from '@/pages/mi/forecast/new-components/ChartPage'
 import ForecastTab from '@/pages/mi/forecast/new-components/ForecastTab'
@@ -40,6 +40,7 @@ const NewForecastPage = () => {
 
   const [xAxisUnit, setXAxisUnit] = useState<string>('')
   const [period, setPeriod] = useState<string>('')
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const { data: basicInfo } = useQuery({
     queryKey: ['getForecastBasicInfo', companyNo],
@@ -66,13 +67,31 @@ const NewForecastPage = () => {
     setPeriod(defaults.period)
   }, [companyNo])
 
+  const fetchChartWithAbort = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    abortControllerRef.current = new AbortController()
+    return await forecastDataService.getForecastChartInfo(companyNo, { xAxisUnit, period }, abortControllerRef.current.signal)
+  }, [companyNo, xAxisUnit, period])
+
   const { data: chartData, isLoading: chartDataIsLoading } = useQuery({
     queryKey: ['getForecastChartInfo', companyNo, xAxisUnit, period],
-    queryFn: () => forecastDataService.getForecastChartInfo(companyNo, { xAxisUnit, period }),
+    queryFn: fetchChartWithAbort,
     refetchOnWindowFocus: false,
     gcTime: 0,
     enabled: !!companyNo && !!xAxisUnit && !!period,
   })
+
+  useEffect(
+    () => () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    },
+    [],
+  )
 
   const tabItems = useMemo(
     () => [

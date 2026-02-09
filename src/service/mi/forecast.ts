@@ -490,147 +490,17 @@ const forecastDataService = {
       xAxisUnit: string
       period: string
     },
+    signal?: AbortSignal,
   ): Promise<IForecastChartInfo> {
     const response: AxiosResponse<ICommonResponse<IForecastChartInfo>> = await api.get(
       withCustomBaseUrl(`mi/forecast/companies/${companyNo}/chart`),
       {
         params,
+        signal,
       },
     )
     return response.data.data
   },
-  // async getForecastChartData(companyNo: number, date: string): Promise<IForecastChartData> {
-  //   // Mock 데이터 생성 (주단위, 1년치)
-  //   const generateWeeklyDates = (weeks: number): string[] => {
-  //     const dates: string[] = []
-  //     const today = new Date()
-  //     const startDate = new Date(today)
-  //     startDate.setDate(startDate.getDate() - (weeks * 7)) // 52주 전부터 시작
-
-  //     for (let i = 0; i < weeks; i++) {
-  //       const currentDate = new Date(startDate)
-  //       currentDate.setDate(currentDate.getDate() + (i * 7))
-  //       const year = currentDate.getFullYear()
-  //       const month = String(currentDate.getMonth() + 1).padStart(2, '0')
-  //       const day = String(currentDate.getDate()).padStart(2, '0')
-  //       dates.push(`${year}-${month}-${day}`)
-  //     }
-  //     return dates
-  //   }
-
-  //   const generateValue = (baseValue: number, index: number, variance: number = 5): number => {
-  //     const randomChange = (Math.random() - 0.5) * variance
-  //     return Number((baseValue + randomChange).toFixed(2))
-  //   }
-
-  //   const weeklyDates = generateWeeklyDates(52)
-  //   const baseActualValue = 70
-  //   const baseForecastValue = 70.5
-  //   const baseFutureM1Value = 68.5
-  //   const baseFutureM2Value = 67.5
-
-  //   const mockData: IForecastChartData = {
-  //     dashboardMetadata: {
-  //       marketIndexAnalysisTargetCd: 'EN_CROIL',
-  //       lastUpdateDt: new Date().toISOString().split('T')[0],
-  //       currency: null,
-  //       currentUnitCd: null,
-  //       baseDate: date,
-  //       dataTableType: 'FORECAST_SINGLE_LAYER',
-  //       tableHeader: 'USD/bbl',
-  //     },
-  //     charts: [
-  //       {
-  //         chartLineDescription: 'Dubai Crude',
-  //         chartLineType: 'BRANCH',
-  //         actualChartLines: {
-  //           isPermitted: true,
-  //           dataType: 'ACTUAL',
-  //           goodsDataSourceNo: 3416,
-  //           rawData: weeklyDates.map((dateStr, index) => {
-  //             // 실제 데이터는 과거 40주만 있고, 나머지는 null
-  //             const value = index < 40 ? generateValue(baseActualValue, index) : null
-  //             return {
-  //               resultDate: dateStr,
-  //               predictDate: null,
-  //               value: value,
-  //             }
-  //           }),
-  //           dataExplanation: 'Dubai Crude',
-  //         },
-  //         forecastChartLines: {
-  //           isPermitted: true,
-  //           dataType: 'FORECAST',
-  //           goodsDataSourceNo: 4158,
-  //           rawData: weeklyDates.map((dateStr, index) => {
-  //             // 예측 데이터는 모든 기간에 존재
-  //             const value = generateValue(baseForecastValue, index)
-  //             const predictDate = date.replace(/-/g, '')
-  //             return {
-  //               resultDate: dateStr,
-  //               predictDate: predictDate,
-  //               value: value,
-  //             }
-  //           }),
-  //           dataExplanation: 'Forecast',
-  //         },
-  //       },
-  //       {
-  //         chartLineDescription: 'Futures M+1',
-  //         chartLineType: null,
-  //         actualChartLines: {
-  //           isPermitted: true,
-  //           dataType: 'FUTURE',
-  //           goodsDataSourceNo: 298,
-  //           rawData: weeklyDates.map((dateStr, index) => ({
-  //             resultDate: dateStr,
-  //             predictDate: null,
-  //             value: generateValue(baseFutureM1Value, index),
-  //           })),
-  //           dataExplanation: 'Futures M+1',
-  //         },
-  //         forecastChartLines: {
-  //           isPermitted: null,
-  //           dataType: null,
-  //           goodsDataSourceNo: null,
-  //           rawData: null,
-  //           dataExplanation: null,
-  //         },
-  //       },
-  //       {
-  //         chartLineDescription: 'Futures M+2',
-  //         chartLineType: null,
-  //         actualChartLines: {
-  //           isPermitted: true,
-  //           dataType: 'FUTURE',
-  //           goodsDataSourceNo: 300,
-  //           rawData: weeklyDates.map((dateStr, index) => ({
-  //             resultDate: dateStr,
-  //             predictDate: null,
-  //             value: generateValue(baseFutureM2Value, index),
-  //           })),
-  //           dataExplanation: 'Futures M+2',
-  //         },
-  //         forecastChartLines: {
-  //           isPermitted: null,
-  //           dataType: null,
-  //           goodsDataSourceNo: null,
-  //           rawData: null,
-  //           dataExplanation: null,
-  //         },
-  //       },
-  //     ],
-  //     dashboardDataSources: [
-  //       {
-  //         goodsDataSourceNo: 4158,
-  //         dashboardLineName: 'Forecast',
-  //       },
-  //     ],
-  //     isFileDownload: true,
-  //   }
-
-  //   return Promise.resolve(mockData)
-  // },
 
   /**
    * Forecast 차트 데이터를 조회합니다.
