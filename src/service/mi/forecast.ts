@@ -134,12 +134,20 @@ export interface ForecastBasicInfoTarget {
   isFuture: boolean
 }
 
+export interface ForecastRecordHeader {
+  columnKey: string
+  headerText: string
+  isVisible: boolean
+  orderNo: number
+}
+
 export interface ForecastBasicInfo {
   chartPredictSettingNm: string
   lastUpdateDt: string
   reportPeriodUnitCd: ReportPeriodUnitCd
   targetList: ForecastBasicInfoTarget[]
   modelAccuracyVisible?: boolean
+  recordHeaders?: ForecastRecordHeader[]
 }
 export interface IForecastHistoryDetailRequest {
   fulfillDate: string

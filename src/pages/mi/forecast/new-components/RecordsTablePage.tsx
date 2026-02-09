@@ -208,8 +208,8 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
   }, [companyNo, dateRange, selectedTarget, sortOrder])
 
   // 테이블 컬럼 정의
-  const tableColumns = useMemo<GridColDef[]>(
-    () => [
+  const tableColumns = useMemo<GridColDef[]>(() => {
+    const baseColumns: GridColDef[] = [
       {
         field: 'predictChartDetailExpn',
         headerName: 'Target',
@@ -425,9 +425,96 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           },
         ]
         : []),
-    ],
-    [handleDownload, companyNo],
-  )
+    ]
+
+    // recordHeaders가 없으면 기본 컬럼 반환
+    if (!basicInfo?.recordHeaders || basicInfo.recordHeaders.length === 0) {
+      return baseColumns
+    }
+
+    // recordHeaders를 Map으로 변환하여 빠른 조회
+    const headerMap = new Map<string, { headerText: string; isVisible: boolean; orderNo: number }>()
+    basicInfo.recordHeaders.forEach((header) => {
+      headerMap.set(header.columnKey, {
+        headerText: header.headerText,
+        isVisible: header.isVisible,
+        orderNo: header.orderNo,
+      })
+    })
+
+    // 컬럼에 recordHeaders 정보 적용
+    const columnsWithOrder = baseColumns
+      .map((column) => {
+        const headerInfo = headerMap.get(column.field)
+        if (!headerInfo) {
+          return { column, orderNo: Infinity }
+        }
+
+        // isVisible이 false면 null 반환 (필터링)
+        if (!headerInfo.isVisible) {
+          return null
+        }
+
+        // headerName을 headerText로 변경
+        const updatedColumn = { ...column, headerName: headerInfo.headerText }
+
+        // renderHeader가 있는 경우 (predictionCriteriaVal, actualVal) headerText 업데이트
+        if (column.renderHeader && column.field === 'predictionCriteriaVal') {
+          updatedColumn.renderHeader = () => (
+            <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="4px">
+              <Typography variant="tableHeaderSemibold" color="gray.60">
+                {headerInfo.headerText}
+              </Typography>
+              {companyNo === 2015 && (
+                <Tooltip
+                  title="예측 기준이 되는 직전 실적가로, 실적 발표 전 구간에서는 추정치가 적용됩니다."
+                  placement="top-start"
+                  disableInteractive
+                  slotProps={{
+                    popper: {
+                      modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
+                    },
+                  }}
+                >
+                  <InfoOutlined sx={{ width: 14, height: 14, color: theme.palette.contentIcon?.Enabled ?? 'inherit' }} />
+                </Tooltip>
+              )}
+            </Stack>
+          )
+        } else if (column.renderHeader && column.field === 'actualVal') {
+          updatedColumn.renderHeader = () => (
+            <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="4px">
+              <Typography variant="tableHeaderSemibold" color="gray.60">
+                {headerInfo.headerText}
+              </Typography>
+              {companyNo === 2015 && (
+                <Tooltip
+                  title="실적 발표를 통해 확정된 실제 가격입니다."
+                  placement="top-start"
+                  disableInteractive
+                  slotProps={{
+                    popper: {
+                      modifiers: [{ name: 'offset', options: { offset: [-8, -8] } }],
+                    },
+                  }}
+                >
+                  <InfoOutlined sx={{ width: 14, height: 14, color: theme.palette.contentIcon?.Enabled ?? 'inherit' }} />
+                </Tooltip>
+              )}
+            </Stack>
+          )
+        }
+
+        return { column: updatedColumn, orderNo: headerInfo.orderNo }
+      })
+      .filter((item): item is { column: GridColDef; orderNo: number } => item !== null)
+
+    // orderNo에 따라 정렬 (orderNo가 없는 컬럼은 뒤로)
+    columnsWithOrder.sort((a, b) => a.orderNo - b.orderNo)
+
+    // 컬럼만 반환
+    return columnsWithOrder.map((item) => item.column)
+  }, [handleDownload, companyNo, basicInfo?.recordHeaders])
 
   // 페이지네이션 메타데이터 (API 응답에서 가져옴)
   const paginationMeta = useMemo(
