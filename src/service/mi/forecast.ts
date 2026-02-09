@@ -139,6 +139,7 @@ export interface ForecastBasicInfo {
   lastUpdateDt: string
   reportPeriodUnitCd: ReportPeriodUnitCd
   targetList: ForecastBasicInfoTarget[]
+  modelAccuracyVisible?: boolean
 }
 export interface IForecastHistoryDetailRequest {
   fulfillDate: string

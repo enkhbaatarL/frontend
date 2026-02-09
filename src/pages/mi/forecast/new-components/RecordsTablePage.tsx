@@ -34,8 +34,6 @@ interface ModelAccuracyItem {
   date: string
 }
 
-// Model Accuracy 섹션 임시 비표시 (true로 변경 시 다시 표시)
-const SHOW_MODEL_ACCURACY = false
 // 일별데이터 열 임시 비표시 (true로 변경 시 다시 표시)
 const SHOW_DAILY_DATA_COLUMN = false
 
@@ -526,7 +524,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
 
   return (
     <Stack gap="20px" maxWidth="1380px" margin="auto" marginTop="40px">
-      {SHOW_MODEL_ACCURACY && (
+      {basicInfo?.modelAccuracyVisible && (
         <Box
           sx={{
             padding: '20px 24px',
