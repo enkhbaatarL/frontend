@@ -45,6 +45,7 @@ interface ModelRecord {
   endPredictionResultDt: string
   startPredictionResultDt: string
   predictionCriteriaDt: string
+  predictionResultDt: string
   predictionResultVal: number
   predictionCriteriaVal: number
   predictionResultDiffVal: number
@@ -145,6 +146,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         endPredictionResultDt: record.endPredictionResultDt,
         startPredictionResultDt: record.startPredictionResultDt,
         predictionCriteriaDt: record.predictionCriteriaDt,
+        predictionResultDt: record.predictionResultDt,
         predictionResultVal: record.predictionResultVal,
         predictionCriteriaVal: record.predictionCriteriaVal,
         predictionResultDiffVal: record.predictionResultDiffVal,
@@ -244,6 +246,48 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           if (!row.predictionFulfillDt || row.predictionFulfillDt.length !== 8) return ''
           return dayjs(row.predictionFulfillDt, 'YYYYMMDD').format('YY/MM/DD')
         },
+        renderCell: ({ value }) => (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              width: '100%',
+            }}
+          >
+            {value || '-'}
+          </Box>
+        ),
+      },
+      predictionResultDt: {
+        minWidth: 120,
+        flex: 1.5,
+        align: 'center',
+        headerAlign: 'center',
+        valueGetter: (_, row) => {
+          // 이미 포맷된 문자열이면 그대로 사용
+          if (!row.predictionResultDt) return ''
+          // YYYYMMDD 형식(8자리)이면 포맷팅
+          if (row.predictionResultDt.length === 8) {
+            return dayjs(row.predictionResultDt, 'YYYYMMDD').format('YY/MM/DD')
+          }
+          // 이미 포맷된 문자열이면 그대로 반환
+          return row.predictionResultDt
+        },
+        renderCell: ({ value }) => (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              width: '100%',
+            }}
+          >
+            {value || '-'}
+          </Box>
+        ),
       },
       startPredictionResultDt: {
         minWidth: 150,
@@ -324,7 +368,9 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
       },
       // report
       report: {
-        flex: 1,
+        minWidth: 100,
+        width: 100,
+        flex: 0,
         align: 'center',
         headerAlign: 'center',
         sortable: false,
@@ -332,17 +378,26 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           // report 값이 없으면 '-' 표시
           if (!row.report) {
             return (
-              <Typography
+              <Box
                 sx={{
-                  fontFamily: 'Pretendard',
-                  fontWeight: 400,
-                  fontSize: '14px',
-                  lineHeight: '140%',
-                  color: '#868E96',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
                 }}
               >
-                -
-              </Typography>
+                <Typography
+                  sx={{
+                    fontFamily: 'Pretendard',
+                    fontWeight: 400,
+                    fontSize: '14px',
+                    lineHeight: '140%',
+                    color: '#868E96',
+                  }}
+                >
+                  -
+                </Typography>
+              </Box>
             )
           }
 
@@ -372,7 +427,9 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
       },
       // dailyDataDownload 헤더는 dailyData 필드로 매핑
       dailyDataDownload: {
-        flex: 1,
+        minWidth: 100,
+        width: 100,
+        flex: 0,
         align: 'center' as const,
         headerAlign: 'center' as const,
         sortable: false,

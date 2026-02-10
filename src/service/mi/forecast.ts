@@ -268,6 +268,7 @@ export interface ICategoryList {
   endPredictionResultDt?: string
   startPredictionResultDt?: string
   predictionCriteriaDt?: string
+  predictionResultDt?: string
   avgPredictionResultVal?: number
   predictionCriteriaVal?: number
   predictionResultDiffVal?: number
@@ -418,6 +419,7 @@ export interface IForecastRecord {
   endPredictionResultDt: string
   startPredictionResultDt: string
   predictionCriteriaDt: string
+  predictionResultDt: string
   predictionResultVal: number
   predictionCriteriaVal: number
   predictionResultDiffVal: number
