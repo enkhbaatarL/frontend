@@ -69,6 +69,19 @@ const MIMainRedirect = () => {
   return <Navigate to={homeUrl} replace />
 }
 
+// 조건부 Forecast 컴포넌트 래퍼
+const ForecastPageWrapper = () => {
+  const { accessCompanyInfo, user } = useAuthStore()
+  const currentCompanyNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo
+
+  // 2020일 때는 NewForecastPage, 나머지는 ForecastPage
+  if (currentCompanyNo === 2020) {
+    return <NewForecastPage />
+  }
+
+  return <ForecastPage />
+}
+
 const MIRoutes: RouteObject = {
   path: '/mi',
   element: (
@@ -121,11 +134,7 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'forecast',
-      element: <NewForecastPage />,
-    },
-    {
-      path: 'old-forecast',
-      element: <ForecastPage />,
+      element: <ForecastPageWrapper />,
     },
     {
       path: 'signal-map',
