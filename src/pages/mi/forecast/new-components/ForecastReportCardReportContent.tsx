@@ -23,17 +23,21 @@ interface InfoLabelProps {
   label: string
   value: ReactNode
   description?: string
+  adHocLabel?: ReactNode
 }
 
-const InfoLabel = ({ label, value, description }: InfoLabelProps) => (
+const InfoLabel = ({ label, value, description, adHocLabel }: InfoLabelProps) => (
   <Stack>
     <Typography variant="body2SB14" color="contentText.Subtext" noWrap>
       {label}
     </Typography>
     {typeof value === 'string' ? (
-      <Typography variant="messageText1" color="contentText.Black" noWrap>
-        {value}
-      </Typography>
+      <Stack direction="row" alignItems="center" gap="8px">
+        <Typography variant="messageText1" color="contentText.Black" noWrap>
+          {value}
+        </Typography>
+        {adHocLabel}
+      </Stack>
     ) : (
       value
     )}
@@ -228,7 +232,7 @@ const ForecastReportCardReportContent = ({
         boxSizing="border-box"
       >
         <Stack direction="row" alignItems="start" gap="24px">
-          <Stack direction="row" gap="12px">
+          <Stack direction="row" gap="12px" alignItems="center">
             <Box
               width="52px"
               height="52px"
@@ -250,7 +254,27 @@ const ForecastReportCardReportContent = ({
                 draggable={false}
               />
             </Box>
-            <InfoLabel label="TARGET" value={label} />
+            <InfoLabel
+              label="TARGET"
+              value={label}
+              adHocLabel={
+                data.isScheduled ? (
+                  <Typography
+                    sx={{
+                      fontFamily: 'Pretendard',
+                      fontWeight: 500,
+                      fontStyle: 'normal',
+                      fontSize: '20px',
+                      lineHeight: '120%',
+                      letterSpacing: '0%',
+                      color: '#868E96',
+                    }}
+                  >
+                    Ad hoc
+                  </Typography>
+                ) : undefined
+              }
+            />
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
           <Stack gap="20px">

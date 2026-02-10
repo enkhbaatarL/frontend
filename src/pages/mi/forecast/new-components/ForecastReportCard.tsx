@@ -134,9 +134,26 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
         ) : (
           <Stack gap="4px">
             <Stack direction="row" height="20px" alignItems="center" justifyContent="space-between" gap="10px" padding="6px 8px">
-              <Typography variant="body1M16" color="commonColor.Black">
-                {data?.predictChartDetailExpn}
-              </Typography>
+              <Stack direction="row" alignItems="baseline" gap="6px">
+                <Typography variant="body1M16" color="commonColor.Black">
+                  {data?.predictChartDetailExpn}
+                </Typography>
+                {data?.isScheduled && (
+                  <Typography
+                    sx={{
+                      fontFamily: 'Pretendard',
+                      fontWeight: 600,
+                      fontStyle: 'normal',
+                      fontSize: '12px',
+                      lineHeight: '140%',
+                      letterSpacing: '0%',
+                      color: '#868E96',
+                    }}
+                  >
+                    Ad hoc
+                  </Typography>
+                )}
+              </Stack>
               {isNew && (
                 <Stack
                   width="36px"

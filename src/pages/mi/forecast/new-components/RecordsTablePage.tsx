@@ -237,10 +237,49 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
     // 필드별 컬럼 정의 (참조용)
     const fieldDefinitions: Record<string, Omit<GridColDef, 'field' | 'headerName'>> = {
       predictChartDetailExpn: {
-        minWidth: 120,
+        minWidth: 140,
         flex: 1,
         align: 'left',
         headerAlign: 'left',
+        renderCell: ({ row }) => (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              height: '100%',
+              width: '100%',
+            }}
+          >
+            <Stack direction="row" alignItems="center" gap="10px" sx={{ width: '100%' }}>
+              <Typography
+                sx={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  lineHeight: '140%',
+                  letterSpacing: '0%',
+                  color: '#212529',
+                }}
+              >
+                {row.predictChartDetailExpn}
+              </Typography>
+              {row.isScheduled && (
+                <Typography
+                  sx={{
+                    fontFamily: 'Pretendard',
+                    fontWeight: 600,
+                    fontSize: '12px',
+                    lineHeight: '140%',
+                    letterSpacing: '0%',
+                    color: '#868E96',
+                  }}
+                >
+                  Ad hoc
+                </Typography>
+              )}
+            </Stack>
+          </Box>
+        ),
       },
       predictionFulfillDt: {
         minWidth: 100,
