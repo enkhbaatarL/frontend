@@ -898,6 +898,26 @@ const forecastDataService = {
 
     return response
   },
+  /**
+   * Forecast daily records를 엑셀로 다운로드합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictionFulfillDt: 예측수행일자(YYYYMMDD), predictionCriteriaDt: 예측기준일자(YYYYMMDD), marketIndexAnalysisTargetCd: 시장지수분석대상코드, mnemonicCd: MNEMONIC코드 }
+   */
+  async getForecastRecordsDailyDownload(
+    companyNo: number,
+    params: {
+      predictionFulfillDt: string
+      predictionCriteriaDt: string
+      marketIndexAnalysisTargetCd: string
+      mnemonicCd: string
+    },
+  ) {
+    const response = await api.get(withCustomBaseUrl(`mi/forecast/companies/${companyNo}/records/daily-download`), {
+      params,
+      responseType: 'blob',
+    })
+    return response
+  },
 }
 
 export default forecastDataService

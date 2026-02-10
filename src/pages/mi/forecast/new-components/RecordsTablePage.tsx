@@ -185,6 +185,25 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
     [companyNo],
   )
 
+  // 일별 데이터 다운로드 핸들러
+  const handleDailyDataDownload = useCallback(
+    async (row: ModelRecord) => {
+      try {
+        const response = await forecastDataService.getForecastRecordsDailyDownload(companyNo, {
+          predictionFulfillDt: row.predictionFulfillDt,
+          predictionCriteriaDt: row.predictionCriteriaDt,
+          marketIndexAnalysisTargetCd: row.marketIndexAnalysisTargetCd,
+          mnemonicCd: row.mnemonicCd,
+        })
+
+        downloadFile(response.data, 'Daily Records.xlsx')
+      } catch (error) {
+        console.error('Daily data download failed:', error)
+      }
+    },
+    [companyNo],
+  )
+
   // 테이블 다운로드 핸들러
   const handleTableDownload = useCallback(async () => {
     if (!dateRange?.startDate || !dateRange?.endDate || !companyNo) {
@@ -357,12 +376,10 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         align: 'center' as const,
         headerAlign: 'center' as const,
         sortable: false,
-        renderCell: () => (
+        renderCell: ({ row }) => (
           <MIBaseButton
             variant="outlined"
-            onClick={() => {
-              // 다운로드 로직 추가
-            }}
+            onClick={() => handleDailyDataDownload(row)}
             sx={{
               width: '28px',
               height: '28px',
