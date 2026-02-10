@@ -198,7 +198,12 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           mnemonicCd: row.mnemonicCd,
         })
 
-        downloadFile(response.data, 'Daily Records.xlsx')
+        // 파일명 생성: SKT_유가전망_AI모델_예측결과_{날짜}_{타겟명}.xlsx
+        const date = row.predictionCriteriaDt || ''
+        const targetName = row.predictChartDetailExpn || ''
+        const fileName = `SKT_유가전망_AI모델_예측결과_${date}_${targetName}.xlsx`
+
+        downloadFile(response.data, fileName)
       } catch (error) {
         console.error('Daily data download failed:', error)
       }
