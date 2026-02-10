@@ -427,6 +427,7 @@ export interface IForecastRecord {
   isHit: boolean
   isScheduled: boolean | null
   isNew: boolean | null
+  report?: string
 }
 
 export interface IForecastRecordsResponse {

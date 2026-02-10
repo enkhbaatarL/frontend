@@ -54,6 +54,7 @@ interface ModelRecord {
   isHit: boolean
   isScheduled: boolean | null
   isNew: boolean | null
+  report?: string
 }
 
 const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePageProps) => {
@@ -153,6 +154,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         isHit: record.isHit,
         isScheduled: record.isScheduled,
         isNew: record.isNew,
+        report: record.report,
       }
     })
   }, [recordsData])
@@ -161,7 +163,6 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
   const handleDownload = useCallback(
     async (row: ModelRecord) => {
       try {
-        // predictionFulfillDt는 이미 YYYYMMDD 형식
         const predictDate = row.predictionFulfillDt
         const response = await forecastDataService.getForecastReportFileDownload(companyNo, {
           predictDate,
@@ -302,62 +303,53 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           )
         },
       },
-      reportDownload: {
-        flex: 1,
-        align: 'center',
-        headerAlign: 'center',
-        sortable: false,
-        renderCell: ({ row }) => (
-          <MIBaseButton
-            variant="outlined"
-            onClick={() => handleDownload(row)}
-            sx={{
-              width: '28px',
-              height: '28px',
-              minWidth: '28px',
-              padding: '4px',
-              borderRadius: '4px',
-              borderColor: '#E5E7EB',
-              backgroundColor: '#FFFFFF',
-              '&:hover': {
-                backgroundColor: '#F9FAFB',
-                borderColor: '#D1D5DB',
-              },
-            }}
-          >
-            <ChartDownloadIcon fill={theme.palette.gray[70]} />
-          </MIBaseButton>
-        ),
-      },
-      // report 헤더는 reportDownload 필드로 매핑
+      // report
       report: {
         flex: 1,
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: () => (
-          <MIBaseButton
-            variant="outlined"
-            onClick={() => {
-              // 다운로드 로직 추가
-            }}
-            sx={{
-              width: '28px',
-              height: '28px',
-              minWidth: '28px',
-              padding: '4px',
-              borderRadius: '4px',
-              borderColor: '#E5E7EB',
-              backgroundColor: '#FFFFFF',
-              '&:hover': {
-                backgroundColor: '#F9FAFB',
-                borderColor: '#D1D5DB',
-              },
-            }}
-          >
-            <ChartDownloadIcon fill={theme.palette.gray[70]} />
-          </MIBaseButton>
-        ),
+        renderCell: ({ row }) => {
+          // report 값이 없으면 '-' 표시
+          if (!row.report) {
+            return (
+              <Typography
+                sx={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  lineHeight: '140%',
+                  color: '#868E96',
+                }}
+              >
+                -
+              </Typography>
+            )
+          }
+
+          // report 값이 있으면 다운로드 버튼 표시
+          return (
+            <MIBaseButton
+              variant="outlined"
+              onClick={() => handleDownload(row)}
+              sx={{
+                width: '28px',
+                height: '28px',
+                minWidth: '28px',
+                padding: '4px',
+                borderRadius: '4px',
+                borderColor: '#E5E7EB',
+                backgroundColor: '#FFFFFF',
+                '&:hover': {
+                  backgroundColor: '#F9FAFB',
+                  borderColor: '#D1D5DB',
+                },
+              }}
+            >
+              <ChartDownloadIcon fill={theme.palette.gray[70]} />
+            </MIBaseButton>
+          )
+        },
       },
       // dailyDataDownload 헤더는 dailyData 필드로 매핑
       dailyDataDownload: {
