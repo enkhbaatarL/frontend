@@ -87,24 +87,19 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
 
-  // 임시 Model Accuracy 데이터
-  const modelAccuracyData: ModelAccuracyItem[] = useMemo(
-    () => [
-      {
-        name: 'Dubai Crude',
-        percentage: 71.04,
+  // Model Accuracy 데이터 (basicInfo.targetAccuracyList 기반)
+  const modelAccuracyData: ModelAccuracyItem[] = useMemo(() => {
+    if (!basicInfo?.modelAccuracyVisible || !basicInfo?.targetAccuracyList) return []
+
+    return basicInfo.targetAccuracyList.map(
+      (item): ModelAccuracyItem => ({
+        name: item.predictChartDetailExpn,
+        percentage: item.cumulativeHitRate,
         type: 'All-time',
-        date: 'As of 25/12/31',
-      },
-      {
-        name: 'Brent Crude',
-        percentage: 82.59,
-        type: 'All-time',
-        date: 'As of 25/12/31',
-      },
-    ],
-    [],
-  )
+        date: `As of ${item.asOfDate}`,
+      }),
+    )
+  }, [basicInfo?.modelAccuracyVisible, basicInfo?.targetAccuracyList])
 
   const recordsApiParams = useMemo(() => {
     if (!dateRange?.startDate || !dateRange?.endDate || !companyNo) return null
@@ -718,7 +713,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
             {/* 오른쪽 표시 영역 */}
             <Stack direction="row" alignItems="center" gap="38px" sx={{ padding: '0 12px', flex: 1 }}>
               {modelAccuracyData.map((item, index) => (
-                <Box key={index} sx={{ width: '220px', height: '42px' }}>
+                <Box key={index} sx={{ width: '225px', height: '42px' }}>
                   {/* 이름 */}
                   <Typography
                     sx={{
@@ -728,7 +723,6 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
                       lineHeight: '140%',
                       letterSpacing: '0%',
                       color: '#212529',
-                      marginBottom: '6px',
                     }}
                   >
                     {item.name}

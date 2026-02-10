@@ -141,12 +141,19 @@ export interface ForecastRecordHeader {
   orderNo: number
 }
 
+export interface ForecastTargetAccuracy {
+  cumulativeHitRate: number
+  predictChartDetailExpn: string
+  asOfDate: string
+}
+
 export interface ForecastBasicInfo {
   chartPredictSettingNm: string
   lastUpdateDt: string
   reportPeriodUnitCd: ReportPeriodUnitCd
   targetList: ForecastBasicInfoTarget[]
   modelAccuracyVisible?: boolean
+  targetAccuracyList?: ForecastTargetAccuracy[]
   recordHeaders?: ForecastRecordHeader[]
 }
 export interface IForecastHistoryDetailRequest {
