@@ -10,7 +10,7 @@ import DashboardPage from '@/pages/mi/dashboard/DashboardPage'
 import DataDetailPage from '@/pages/mi/dataDetail/DataDetailPage'
 import EconomicCalendarDetailPage from '@/pages/mi/economicCalendar/EconomicCalendarDetailPage'
 import EconomicCalendarPage from '@/pages/mi/economicCalendar/EconomicCalendarPage'
-import ForecastPage from '@/pages/mi/forecast/ForecastPage'
+// import ForecastPage from '@/pages/mi/forecast/ForecastPage'
 import NewForecastPage from '@/pages/mi/forecast/NewForecastPage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
@@ -70,17 +70,17 @@ const MIMainRedirect = () => {
 }
 
 // 조건부 Forecast 컴포넌트 래퍼
-const ForecastPageWrapper = () => {
-  const { accessCompanyInfo, user } = useAuthStore()
-  const currentCompanyNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo
+// const ForecastPageWrapper = () => {
+//   const { accessCompanyInfo, user } = useAuthStore()
+//   const currentCompanyNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo
 
-  // 2020일 때는 NewForecastPage, 나머지는 ForecastPage
-  if (currentCompanyNo === 2020) {
-    return <NewForecastPage />
-  }
+//   // 2020일 때는 NewForecastPage, 나머지는 ForecastPage
+//   if (currentCompanyNo === 2020) {
+//     return <NewForecastPage />
+//   }
 
-  return <ForecastPage />
-}
+//   return <ForecastPage />
+// }
 
 const MIRoutes: RouteObject = {
   path: '/mi',
@@ -134,7 +134,7 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'forecast',
-      element: <ForecastPageWrapper />,
+      element: <NewForecastPage />,
     },
     {
       path: 'signal-map',
