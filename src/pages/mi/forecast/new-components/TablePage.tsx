@@ -29,9 +29,20 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
   const { accessCompanyInfo, user } = useAuthStore()
   const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
 
-  // 기본값: Last 30 days
+  // 기본값: 회사별 초기 기간
+  // - 2020(에너지): 최근 3개월
+  // - 그 외(예: 2013 E&S, 2015 Hynix 등): 최근 30일
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
     const today = dayjs().startOf('day')
+
+    if (companyNo === 2015) {
+      const last2Years = today.subtract(2, 'year')
+      return {
+        startDate: last2Years,
+        endDate: today,
+      }
+    }
+
     const last30days = today.subtract(30, 'day')
     return {
       startDate: last30days,

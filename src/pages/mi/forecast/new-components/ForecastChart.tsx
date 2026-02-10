@@ -47,7 +47,8 @@ const ForecastChart = ({
   const [selectedRange, setSelectedRange] = useState<string>(period || '1W')
   const chartGraphRef = useRef<ForecastChartGraphHandle>(null)
 
-  const periodOptions = [
+  // 회사별 period / range 옵션 설정
+  const defaultPeriodOptions = [
     { label: '1D', value: '1D' },
     { label: '1W', value: '1W' },
     { label: '1M', value: '1M' },
@@ -55,15 +56,45 @@ const ForecastChart = ({
     { label: '1Y', value: '1Y' },
   ]
 
-  const rangeOptions = [
+  const defaultRangeOptions = [
     { label: '1W', value: '1W' },
     { label: '1M', value: '1M' },
     { label: '3M', value: '3M' },
     { label: '6M', value: '6M' },
     { label: 'YTD', value: 'YTD' },
     { label: '1Y', value: '1Y' },
-    { label: 'All', value: 'ALL' },
+    { label: '2Y', value: '2Y' },
   ]
+
+  let periodOptions = defaultPeriodOptions
+  let rangeOptions = defaultRangeOptions
+
+  if (companyNo === 2013) {
+    periodOptions = [
+      { label: '1M', value: '1M' },
+      { label: '1Q', value: '1Q' },
+      { label: '1Y', value: '1Y' },
+    ]
+    rangeOptions = [
+      { label: '1M', value: '1M' },
+      { label: '3M', value: '3M' },
+      { label: '6M', value: '6M' },
+      { label: 'YTD', value: 'YTD' },
+      { label: '1Y', value: '1Y' },
+      { label: '2Y', value: '2Y' },
+    ]
+  } else if (companyNo === 2015) {
+    periodOptions = [
+      { label: '1Q', value: '1Q' },
+      { label: '1Y', value: '1Y' },
+    ]
+    rangeOptions = [
+      { label: '6M', value: '6M' },
+      { label: 'YTD', value: 'YTD' },
+      { label: '1Y', value: '1Y' },
+      { label: '2Y', value: '2Y' },
+    ]
+  }
 
   // 단위/기간 비교를 위한 스케일 맵
   const getScale = (value: string): number => {
@@ -83,8 +114,10 @@ const ForecastChart = ({
         return 6
       case '1Y':
         return 7
-      case 'ALL':
+      case '2Y':
         return 8
+      case 'ALL':
+        return 9
       default:
         return 0
     }

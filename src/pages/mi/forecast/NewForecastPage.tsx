@@ -28,11 +28,11 @@ const NewForecastPage = () => {
   const getDefaultAxisAndPeriod = (targetCompanyNo: number) => {
     switch (targetCompanyNo) {
       case 2020:
-        return { xAxisUnit: '1W', period: '3M' }
+        return { xAxisUnit: '1D', period: '6M' }
       case 2013:
-        return { xAxisUnit: '1M', period: '3M' }
+        return { xAxisUnit: '1M', period: '1Y' }
       case 2015:
-        return { xAxisUnit: '1Q', period: '1Y' }
+        return { xAxisUnit: '1Q', period: '2Y' }
       default:
         return { xAxisUnit: '1D', period: '1W' }
     }

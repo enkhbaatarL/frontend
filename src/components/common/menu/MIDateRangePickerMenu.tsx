@@ -188,6 +188,7 @@ const MIDateRangePickerMenu = ({
   const last7days = useMemo(() => today.subtract(7, 'day'), [today])
   const last30days = useMemo(() => today.subtract(30, 'day'), [today])
   const last3months = useMemo(() => today.subtract(3, 'month'), [today])
+  const last2Years = useMemo(() => today.subtract(2, 'year'), [today])
 
   const DATE_PRESETS: DatePresetOption[] = useMemo(
     () => [
@@ -196,8 +197,9 @@ const MIDateRangePickerMenu = ({
       { label: 'Last 7 days', value: { startDate: last7days, endDate: today } },
       { label: 'Last 30 days', value: { startDate: last30days, endDate: today } },
       { label: 'Last 3 months', value: { startDate: last3months, endDate: today } },
+      { label: 'Last 2 years', value: { startDate: last2Years, endDate: today } },
     ],
-    [today, yesterday, last7days, last30days, last3months],
+    [today, yesterday, last7days, last30days, last3months, last2Years],
   )
 
   const presets = useMemo(
