@@ -722,12 +722,13 @@ const forecastDataService = {
    * Forecast Summary 목록을 조회합니다.
    * @param companyNo - 고객사 번호
    * @param goodsDataSourceNo - 데이터 소스 번호
+   * @param isScheduled - 정기 여부 (true: Scheduled, false: Ad hoc, null: 전체)
    */
-  async getForecastReports(companyNo: number, goodsDataSourceNo?: number): Promise<IForecastReport[]> {
+  async getForecastReports(companyNo: number, goodsDataSourceNo?: number, isScheduled?: boolean | null): Promise<IForecastReport[]> {
     const response: AxiosResponse<ICommonResponse<IForecastReport[]>> = await api.get(
       withCustomBaseUrl(`mi/forecast/companies/${companyNo}/reports`),
       {
-        params: { goodsDataSourceNo },
+        params: { goodsDataSourceNo, isScheduled },
       },
     )
     return response.data.data

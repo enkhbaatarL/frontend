@@ -258,7 +258,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
               >
                 {row.predictChartDetailExpn}
               </Typography>
-              {row.isScheduled && (
+              {!row.isScheduled && (
                 <Typography
                   sx={{
                     fontFamily: 'Pretendard',

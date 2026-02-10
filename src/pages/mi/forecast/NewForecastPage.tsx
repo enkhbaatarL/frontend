@@ -18,6 +18,7 @@ const NewForecastPage = () => {
   const [monthSelect, setMonthSelect] = useState('')
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
   const [selectedReportTarget, setSelectedReportTarget] = useState<string>('')
+  const [scheduleFilter, setScheduleFilter] = useState<boolean | null>(null)
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const contentWrapperRef = useRef<HTMLDivElement | null>(null)
 
@@ -52,8 +53,9 @@ const NewForecastPage = () => {
 
   // Forecast Reports
   const { data: forecastReports, isLoading: forecastReportsIsLoading } = useQuery({
-    queryKey: ['getForecastReports', companyNo, selectedReportTarget],
-    queryFn: () => forecastDataService.getForecastReports(companyNo, selectedReportTarget ? Number(selectedReportTarget) : undefined),
+    queryKey: ['getForecastReports', companyNo, selectedReportTarget, scheduleFilter],
+    queryFn: () =>
+      forecastDataService.getForecastReports(companyNo, selectedReportTarget ? Number(selectedReportTarget) : undefined, scheduleFilter),
     enabled: !!companyNo,
     refetchOnWindowFocus: false,
     gcTime: 0,
@@ -115,6 +117,8 @@ const NewForecastPage = () => {
               reportPeriodUnitCd={basicInfo?.reportPeriodUnitCd}
               selectedReportTarget={selectedReportTarget}
               onReportTargetChange={setSelectedReportTarget}
+              scheduleFilter={scheduleFilter}
+              onScheduleFilterChange={setScheduleFilter}
               onSeeAllReportClick={() => setSelectedTab(1)}
             />
             <TablePage
@@ -150,6 +154,7 @@ const NewForecastPage = () => {
       xAxisUnit,
       period,
       selectedReportTarget,
+      scheduleFilter,
     ],
   )
 

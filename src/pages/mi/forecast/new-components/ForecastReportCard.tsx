@@ -138,7 +138,7 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
                 <Typography variant="body1M16" color="commonColor.Black">
                   {data?.predictChartDetailExpn}
                 </Typography>
-                {data?.isScheduled && (
+                {!data?.isScheduled && (
                   <Typography
                     sx={{
                       fontFamily: 'Pretendard',

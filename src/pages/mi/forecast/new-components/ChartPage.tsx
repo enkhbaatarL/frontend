@@ -25,6 +25,8 @@ interface ChartPageProps {
   reportPeriodUnitCd?: ReportPeriodUnitCd
   selectedReportTarget?: string
   onReportTargetChange?: (value: string) => void
+  scheduleFilter?: boolean | null
+  onScheduleFilterChange?: (value: boolean | null) => void
   onSeeAllReportClick?: () => void
 }
 
@@ -44,9 +46,17 @@ const ChartPage = ({
   reportPeriodUnitCd,
   selectedReportTarget = '',
   onReportTargetChange,
+  scheduleFilter = null,
+  onScheduleFilterChange,
   onSeeAllReportClick,
 }: ChartPageProps) => {
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
+
+  const scheduleFilterSelectValue = useMemo(() => {
+    if (scheduleFilter === true) return 'true'
+    if (scheduleFilter === false) return 'false'
+    return 'null'
+  }, [scheduleFilter])
 
   const handleHoverReportCardChange = (report: IForecastReport | null) => {
     setHoverReportCardInfo(report)
@@ -198,17 +208,31 @@ const ChartPage = ({
             <Typography variant="body4" color="contentText.Subtext">
               {scheduleInfoText}
             </Typography>
-            <Divider orientation="vertical" sx={{ height: '28px' }} />
-            {/* <MISelectMenu
-              variant="text"
-              items={[
-                { label: 'All Schedules', value: '' },
-                { label: 'Scheduled', value: 'scheduled' },
-                { label: 'Ad Hoc', value: 'ad_hoc' },
-              ]}
-              selected={''}
-              onSelected={() => { }}
-            /> */}
+            {companyNo === 2020 && (
+              <>
+                <Divider orientation="vertical" sx={{ height: '28px' }} />
+                <MISelectMenu
+                  variant="text"
+                  items={[
+                    { label: 'All Schedules', value: 'null' },
+                    { label: 'Scheduled', value: 'true' },
+                    { label: 'Ad Hoc', value: 'false' },
+                  ]}
+                  selected={scheduleFilterSelectValue}
+                  onSelected={(value: string) => {
+                    let next: boolean | null
+                    if (value === 'true') {
+                      next = true
+                    } else if (value === 'false') {
+                      next = false
+                    } else {
+                      next = null
+                    }
+                    onScheduleFilterChange?.(next)
+                  }}
+                />
+              </>
+            )}
             {(targetList?.length ?? 0) > 1 && (
               <MISelectMenu
                 variant="text"

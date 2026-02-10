@@ -258,7 +258,7 @@ const ForecastReportCardReportContent = ({
               label="TARGET"
               value={label}
               adHocLabel={
-                data.isScheduled ? (
+                !data.isScheduled ? (
                   <Typography
                     sx={{
                       fontFamily: 'Pretendard',
