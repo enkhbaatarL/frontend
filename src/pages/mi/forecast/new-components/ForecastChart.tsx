@@ -189,8 +189,13 @@ const ForecastChart = ({
     const result: ChartData[] = []
 
     chartData.charts.forEach((chart) => {
-      // actualChartLines 처리 - dataExplanation 사용
-      if (chart.actualChartLines.rawData && chart.actualChartLines.rawData.length > 0) {
+      // actualChartLines 처리 - dataExplanation 사용, dataType이 null이면 그리지 않음
+      if (
+        chart.actualChartLines.dataType !== null &&
+        chart.actualChartLines.dataType !== undefined &&
+        chart.actualChartLines.rawData &&
+        chart.actualChartLines.rawData.length > 0
+      ) {
         const displayName = chart.actualChartLines.dataExplanation || chart.chartLineDescription
         const timestamps = chart.actualChartLines.rawData.map((item) => ymdToTimestamp(item.startDate))
         const resultDates = chart.actualChartLines.rawData.map((item) => getDisplayLabelByStartDate(item.startDate) ?? item.resultDate)
@@ -224,8 +229,13 @@ const ForecastChart = ({
         } as ChartData & { dataType?: string; resultDates?: string[] })
       }
 
-      // forecastChartLines 처리 - dataExplanation 사용
-      if (chart.forecastChartLines.rawData && chart.forecastChartLines.rawData.length > 0) {
+      // forecastChartLines 처리 - dataExplanation 사용, dataType이 null이면 그리지 않음
+      if (
+        chart.forecastChartLines.dataType !== null &&
+        chart.forecastChartLines.dataType !== undefined &&
+        chart.forecastChartLines.rawData &&
+        chart.forecastChartLines.rawData.length > 0
+      ) {
         const displayName = chart.forecastChartLines.dataExplanation || chart.chartLineDescription
         const timestamps = chart.forecastChartLines.rawData.map((item) => ymdToTimestamp(item.startDate))
         const resultDates = chart.forecastChartLines.rawData.map((item) => getDisplayLabelByStartDate(item.startDate) ?? item.resultDate)
