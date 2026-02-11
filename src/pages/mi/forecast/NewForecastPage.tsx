@@ -96,6 +96,12 @@ const NewForecastPage = () => {
     [],
   )
 
+  // 탭 전환 시 스크롤 위치 초기화
+  useEffect(() => {
+    const scrollEl = document.getElementById('main-scroll-wrapper')
+    if (scrollEl) scrollEl.scrollTop = 0
+  }, [selectedTab])
+
   const tabItems = useMemo(
     () => [
       {
@@ -293,15 +299,28 @@ const NewForecastPage = () => {
               key={tab.label}
               aria-hidden={!isSelected}
               sx={{
-                position: isSelected ? 'relative' : 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                visibility: isSelected ? 'visible' : 'hidden',
-                pointerEvents: isSelected ? 'auto' : 'none',
-                zIndex: isSelected ? 0 : -1,
-                opacity: isSelected ? 1 : 0,
-                transition: 'opacity 0.15s ease-out',
+                ...(isSelected && {
+                  position: 'relative',
+                  opacity: 1,
+                  animation: 'forecastTabFadeIn 0.15s ease-out',
+                  '@keyframes forecastTabFadeIn': {
+                    from: { opacity: 0 },
+                    to: { opacity: 1 },
+                  },
+                }),
+                // 숨겨진 탭: height: 0 + overflow: hidden
+                // DOM은 유지하여 pre-render 처리
+                ...(!isSelected && {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: 0,
+                  overflow: 'hidden',
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                  zIndex: -1,
+                }),
               }}
             >
               {tab.content}
