@@ -1,6 +1,6 @@
 import EastRoundedIcon from '@mui/icons-material/EastRounded'
 import { Box, Divider, Stack, Typography } from '@mui/material'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 
 import aiIcon from '@/assets/ai.svg'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
@@ -63,10 +63,28 @@ const ChartPage = ({
     onHoverReportCardChange?.(report)
   }
 
-  // cardWidth: minWidth 260px + gap 20px
-  const CARD_SCROLL_AMOUNT = 280
+  const CARD_MIN_WIDTH = 280
+  const CARD_GAP = 20
 
   const showReportCardSkeleton = forecastReportsIsLoading && (!forecastReports || forecastReports.length === 0)
+
+  // 원하지 않는 스크롤 영역 제어
+  const [isSkeletonTransitioningOut, setIsSkeletonTransitioningOut] = useState(false)
+  const prevLoadingRef = useRef(showReportCardSkeleton)
+
+  useEffect(() => {
+    const wasLoading = prevLoadingRef.current
+    prevLoadingRef.current = showReportCardSkeleton
+
+    if (wasLoading && !showReportCardSkeleton) {
+      setIsSkeletonTransitioningOut(true)
+      const id = setTimeout(() => setIsSkeletonTransitioningOut(false), 300)
+      return () => clearTimeout(id)
+    }
+    return undefined
+  }, [showReportCardSkeleton])
+
+  const showSkeleton = showReportCardSkeleton || isSkeletonTransitioningOut
 
   const targetSelectItems = useMemo(
     () => [
@@ -109,7 +127,7 @@ const ChartPage = ({
   return (
     <Stack py="20px" gap="20px" boxSizing="border-box" width="100%">
       <Stack p="12px 24px" gap="12px">
-        <Stack direction="row" justifyContent="space-between" alignItems="center" gap="4px">
+        <Stack direction="row" height="40px" justifyContent="space-between" alignItems="center" gap="4px">
           <Stack direction="row" alignItems="center" gap="4px">
             <Box component="img" src={aiIcon} alt="AI" draggable={false} />
             <Typography variant="infoDocument" color="commonColor.Black">
@@ -117,49 +135,53 @@ const ChartPage = ({
             </Typography>
           </Stack>
           <Stack direction="row" alignItems="center" gap="12px">
-            <Typography variant="body4" color="contentText.Subtext">
-              {scheduleInfoText}
-            </Typography>
-            {companyNo === 2020 && (
+            {scheduleInfoText && (
               <>
-                <Divider orientation="vertical" sx={{ height: '28px' }} />
-                <MISelectMenu
-                  variant="text"
-                  items={[
-                    { label: 'All Schedules', value: 'null' },
-                    { label: 'Scheduled', value: 'true' },
-                    { label: 'Ad Hoc', value: 'false' },
-                  ]}
-                  selected={scheduleFilterSelectValue}
-                  onSelected={(value: string) => {
-                    let next: boolean | null
-                    if (value === 'true') {
-                      next = true
-                    } else if (value === 'false') {
-                      next = false
-                    } else {
-                      next = null
-                    }
-                    onScheduleFilterChange?.(next)
-                  }}
-                />
+                <Typography variant="body4" color="contentText.Subtext">
+                  {scheduleInfoText}
+                </Typography>
+                {(companyNo === 2020 || (targetList?.length ?? 0) > 1) && <Divider orientation="vertical" sx={{ height: '28px' }} />}
+                {companyNo === 2020 && (
+                  <>
+                    <MISelectMenu
+                      variant="text"
+                      items={[
+                        { label: 'All Schedules', value: 'null' },
+                        { label: 'Scheduled', value: 'true' },
+                        { label: 'Ad Hoc', value: 'false' },
+                      ]}
+                      selected={scheduleFilterSelectValue}
+                      onSelected={(value: string) => {
+                        let next: boolean | null
+                        if (value === 'true') {
+                          next = true
+                        } else if (value === 'false') {
+                          next = false
+                        } else {
+                          next = null
+                        }
+                        onScheduleFilterChange?.(next)
+                      }}
+                    />
+                  </>
+                )}
+                {(targetList?.length ?? 0) > 1 && (
+                  <MISelectMenu
+                    variant="text"
+                    items={targetSelectItems}
+                    selected={selectedReportTarget}
+                    onSelected={(value: string) => onReportTargetChange?.(value)}
+                  />
+                )}
               </>
-            )}
-            {(targetList?.length ?? 0) > 1 && (
-              <MISelectMenu
-                variant="text"
-                items={targetSelectItems}
-                selected={selectedReportTarget}
-                onSelected={(value: string) => onReportTargetChange?.(value)}
-              />
             )}
           </Stack>
         </Stack>
         <Box sx={{ position: 'relative', width: '100%', maxWidth: '1332px' }}>
           <HorizontalScrollContainer
-            key={selectedReportTarget}
-            showScrollButtons={!showReportCardSkeleton}
-            enableWheelScroll={!showReportCardSkeleton}
+            key={`${selectedReportTarget}-${showSkeleton ? 'loading' : (forecastReports?.length ?? 0)}`}
+            showScrollButtons={!showSkeleton}
+            enableWheelScroll={!showSkeleton}
             buttonPadding={10}
             gradientWidth={200}
             sx={{ width: '100%' }}
@@ -181,27 +203,29 @@ const ChartPage = ({
             }}
           >
             <Stack direction="row" position="relative" width="fit-content" gap="20px">
-              {/* 스켈레톤 */}
-              <Stack
-                direction="row"
-                gap="20px"
-                sx={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  width: 'fit-content',
-                  opacity: showReportCardSkeleton ? 1 : 0,
-                  pointerEvents: showReportCardSkeleton ? 'auto' : 'none',
-                  transition: 'opacity 0.3s ease-in-out',
-                  zIndex: showReportCardSkeleton ? 1 : 0,
-                }}
-              >
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Box key={`skeleton-${index}`} sx={{ flexShrink: 0 }}>
-                    <ForecastReportCard isLoading={true} />
-                  </Box>
-                ))}
-              </Stack>
+              {/* 스켈레톤 - 페이드아웃 전환 후 DOM에서 제거하여 스크롤 영역 계산에 영향 없도록 함 */}
+              {showSkeleton && (
+                <Stack
+                  direction="row"
+                  gap="20px"
+                  sx={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: 'fit-content',
+                    zIndex: 1,
+                    opacity: isSkeletonTransitioningOut ? 0 : 1,
+                    pointerEvents: isSkeletonTransitioningOut ? 'none' : 'auto',
+                    transition: 'opacity 0.3s ease-in-out',
+                  }}
+                >
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Box key={`skeleton-${index}`} sx={{ flexShrink: 0 }}>
+                      <ForecastReportCard isLoading={true} />
+                    </Box>
+                  ))}
+                </Stack>
+              )}
 
               <Stack
                 direction="row"
@@ -210,7 +234,7 @@ const ChartPage = ({
                 sx={{
                   position: 'relative',
                   width: 'fit-content',
-                  minWidth: showReportCardSkeleton ? 5 * CARD_SCROLL_AMOUNT + 4 * 20 : undefined,
+                  minWidth: showReportCardSkeleton ? 5 * CARD_MIN_WIDTH + 4 * CARD_GAP : undefined,
                   minHeight: 154,
                   opacity: showReportCardSkeleton ? 0 : 1,
                   pointerEvents: showReportCardSkeleton ? 'none' : 'auto',
