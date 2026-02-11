@@ -52,12 +52,6 @@ const ChartPage = ({
 }: ChartPageProps) => {
   const [hoverReportCardInfo, setHoverReportCardInfo] = useState<IForecastReport | null>(null)
 
-  const scheduleFilterSelectValue = useMemo(() => {
-    if (scheduleFilter === true) return 'true'
-    if (scheduleFilter === false) return 'false'
-    return 'null'
-  }, [scheduleFilter])
-
   const handleHoverReportCardChange = (report: IForecastReport | null) => {
     setHoverReportCardInfo(report)
     onHoverReportCardChange?.(report)
@@ -142,28 +136,18 @@ const ChartPage = ({
                 </Typography>
                 {(companyNo === 2020 || (targetList?.length ?? 0) > 1) && <Divider orientation="vertical" sx={{ height: '28px' }} />}
                 {companyNo === 2020 && (
-                  <>
-                    <MISelectMenu
-                      variant="text"
-                      items={[
-                        { label: 'All Schedules', value: 'null' },
-                        { label: 'Scheduled', value: 'true' },
-                        { label: 'Ad Hoc', value: 'false' },
-                      ]}
-                      selected={scheduleFilterSelectValue}
-                      onSelected={(value: string) => {
-                        let next: boolean | null
-                        if (value === 'true') {
-                          next = true
-                        } else if (value === 'false') {
-                          next = false
-                        } else {
-                          next = null
-                        }
-                        onScheduleFilterChange?.(next)
-                      }}
-                    />
-                  </>
+                  <MISelectMenu
+                    variant="text"
+                    items={[
+                      { label: 'All Schedules', value: null },
+                      { label: 'Scheduled', value: true },
+                      { label: 'Ad Hoc', value: false },
+                    ]}
+                    selected={scheduleFilter}
+                    onSelected={(value: boolean | null) => {
+                      onScheduleFilterChange?.(value)
+                    }}
+                  />
                 )}
                 {(targetList?.length ?? 0) > 1 && (
                   <MISelectMenu
