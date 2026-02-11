@@ -44,6 +44,7 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
     const handleScrollRef = useRef<() => void>(() => {})
     const lastMousePositionRef = useRef({ x: 0, y: 0 })
     const scrollEndTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const isMouseInsideRef = useRef(false)
 
     const buttonPaddingLeft = typeof buttonPadding === 'number' ? buttonPadding : (buttonPadding?.left ?? 0)
     const buttonPaddingRight = typeof buttonPadding === 'number' ? buttonPadding : (buttonPadding?.right ?? 0)
@@ -69,6 +70,10 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
         if (scrollEndTimeoutRef.current) clearTimeout(scrollEndTimeoutRef.current)
         scrollEndTimeoutRef.current = setTimeout(() => {
           scrollEndTimeoutRef.current = null
+          if (!isMouseInsideRef.current) {
+            onScrollEnd(null)
+            return
+          }
           const { x, y } = lastMousePositionRef.current
           const elementUnderCursor = document.elementFromPoint(x, y)
           onScrollEnd(elementUnderCursor)
@@ -79,6 +84,19 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
 
     const handleMouseMove = (e: MouseEvent) => {
       lastMousePositionRef.current = { x: e.clientX, y: e.clientY }
+    }
+
+    const handleMouseEnter = () => {
+      isMouseInsideRef.current = true
+    }
+
+    const handleMouseLeave = () => {
+      isMouseInsideRef.current = false
+      if (onScrollEnd) {
+        if (scrollEndTimeoutRef.current) clearTimeout(scrollEndTimeoutRef.current)
+        scrollEndTimeoutRef.current = null
+        onScrollEnd(null)
+      }
     }
 
     const scrollLeft = () => {
@@ -222,6 +240,8 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
         ref={ref}
         position="relative"
         onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         sx={{
           overflow: 'hidden',
           '&:hover .scroll-button': {
