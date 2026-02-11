@@ -139,22 +139,12 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
                   {data?.predictChartDetailExpn}
                 </Typography>
                 {!data?.isScheduled && (
-                  <Typography
-                    sx={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 600,
-                      fontStyle: 'normal',
-                      fontSize: '12px',
-                      lineHeight: '140%',
-                      letterSpacing: '0%',
-                      color: '#868E96',
-                    }}
-                  >
+                  <Typography variant="subtext3" color="contentText.Subtext">
                     Ad hoc
                   </Typography>
                 )}
               </Stack>
-              {isNew && (
+              {isNew ? (
                 <Stack
                   width="36px"
                   height="20px"
@@ -169,6 +159,10 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
                     New
                   </Typography>
                 </Stack>
+              ) : (
+                <Typography variant="subtext3" color="contentText.Subtext">
+                  {dayjs(data?.predictionFulfillDt).format('YY/MM/DD')}
+                </Typography>
               )}
             </Stack>
             <Stack alignItems="start" gap="4px" padding="4px 8px">

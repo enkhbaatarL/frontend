@@ -1922,16 +1922,14 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             }
           }
 
-          if (animationFrameRef.current === null) {
-            animationFrameRef.current = requestAnimationFrame(() => {
-              animationFrameRef.current = null
+          animationFrameRef.current ??= requestAnimationFrame(() => {
+            animationFrameRef.current = null
 
-              const mousePos = lastMousePositionRef.current
-              if (!mousePos) return
+            const mousePos = lastMousePositionRef.current
+            if (!mousePos) return
 
-              updateCrosshairPositionFromMousePos(mousePos)
-            })
-          }
+            updateCrosshairPositionFromMousePos(mousePos)
+          })
         }}
         onWheel={(event) => {
           if (fixedXScaleIndex !== null) {
