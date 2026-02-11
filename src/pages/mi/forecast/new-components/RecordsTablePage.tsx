@@ -41,21 +41,23 @@ interface ModelRecord {
   predictionFulfillDt: string
   mnemonicCd: string
   predictChartDetailExpn: string
-  associatedGoodsDataSourceNo: number
-  endPredictionResultDt: string
+  associatedGoodsDataSourceNo: number | null
+  endPredictionResultDt: string | null
   startPredictionResultDt: string
   predictionCriteriaDt: string
-  predictionResultDt: string
-  predictionResultVal: number
-  predictionCriteriaVal: number
-  predictionResultDiffVal: number
-  predictionResultDiffRate: number
-  actualVal: number
-  directionVal: 'UPWARD' | 'NEUTRAL' | 'DOWNWARD'
-  isHit: boolean
+  predictionResultDt: string | null
+  predictionResultVal: number | null
+  predictionCriteriaVal: number | null
+  predictionResultDiffVal: number | null
+  predictionResultDiffRate: number | null
+  actualVal: number | null
+  directionVal: 'UPWARD' | 'NEUTRAL' | 'DOWNWARD' | null
+  isHit: boolean | null
   isScheduled: boolean | null
   isNew: boolean | null
   report?: string
+  // 가변적인 필드들을 위한 인덱스 시그니처
+  [key: string]: any
 }
 
 const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePageProps) => {
@@ -133,6 +135,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
 
       return {
         id,
+        // 기본 필드들
         marketIndexAnalysisTargetCd: record.marketIndexAnalysisTargetCd,
         predictionFulfillDt: record.predictionFulfillDt,
         mnemonicCd: record.mnemonicCd,
@@ -152,6 +155,38 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         isScheduled: record.isScheduled,
         isNew: record.isNew,
         report: record.report,
+        // 가변적인 필드
+        ...Object.keys(record).reduce(
+          (acc, key) => {
+            // 이미 매핑된 필드는 제외
+            const mappedKeys = [
+              'marketIndexAnalysisTargetCd',
+              'predictionFulfillDt',
+              'mnemonicCd',
+              'predictChartDetailExpn',
+              'associatedGoodsDataSourceNo',
+              'endPredictionResultDt',
+              'startPredictionResultDt',
+              'predictionCriteriaDt',
+              'predictionResultDt',
+              'predictionResultVal',
+              'predictionCriteriaVal',
+              'predictionResultDiffVal',
+              'predictionResultDiffRate',
+              'actualVal',
+              'directionVal',
+              'isHit',
+              'isScheduled',
+              'isNew',
+              'report',
+            ]
+            if (!mappedKeys.includes(key)) {
+              acc[key] = (record as any)[key]
+            }
+            return acc
+          },
+          {} as Record<string, any>,
+        ),
       }
     })
   }, [recordsData])
@@ -509,11 +544,26 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
       const fieldDef = fieldDefinitions[header.columnKey]
       if (!fieldDef) {
         // 정의가 없는 필드는 기본 컬럼 생성
+        // 가변적인 필드 처리
         return {
           field: header.columnKey,
           headerName: header.headerText,
           minWidth: 100,
           flex: 1,
+          align: 'right',
+          headerAlign: 'right',
+          renderCell: ({ value }) => {
+            // 숫자 타입인 경우 포맷팅
+            if (typeof value === 'number') {
+              return value.toFixed(2)
+            }
+            // null이나 undefined인 경우 '-'
+            if (value === null || value === undefined) {
+              return '-'
+            }
+            // 문자열인 경우 그대로 표시
+            return String(value)
+          },
         } as GridColDef
       }
 
