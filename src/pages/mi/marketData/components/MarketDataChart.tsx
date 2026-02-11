@@ -1,15 +1,18 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Typography, Tooltip, TypographyProps } from '@mui/material'
-import { Chart, ChartArea, ChartDataset, Point, ScriptableContext } from 'chart.js'
+import { Chart, ChartArea, ChartDataset, Point, ScriptableContext, TimeScale } from 'chart.js'
 import dayjs from 'dayjs'
 import { FC, Fragment, memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import '@/lib/chart/adapterDayjs'
 import MIChip from '@/components/common/chip/MIChip'
 import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { ICompareGraph, IMarketData } from '@/service/mi/marketData'
 import { formatValue } from '@/utils/number'
+
+Chart.register(TimeScale)
 
 interface MarketDataChartProps {
   data?: IMarketData
