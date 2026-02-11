@@ -126,6 +126,7 @@ export interface INewsletterIssueDetail {
     emailSubject: string
     title: string
     date: string
+    subInfo?: string | null
     marketOpenTime: number
     marketCloseTime: number
     summary: string

@@ -967,7 +967,10 @@ Content-Transfer-Encoding: 7bit
           </tr>
           <tr>
             <td>
-              <Title title={newsletterIssueDetail?.issueDetail.title ?? ''} date={newsletterIssueDetail?.issueDetail.date ?? ''} />
+              <Title
+                title={newsletterIssueDetail?.issueDetail.title ?? ''}
+                date={newsletterIssueDetail?.issueDetail.subInfo ?? newsletterIssueDetail?.issueDetail.date ?? ''}
+              />
             </td>
           </tr>
           <tr>
