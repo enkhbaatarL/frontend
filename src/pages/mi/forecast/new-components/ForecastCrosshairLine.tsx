@@ -72,11 +72,14 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
       const chartArea = chart.chartArea
       const chartAreaBottom = chartArea.bottom
 
-      let mainIndicatorContainer = chart.canvas.parentElement?.querySelector('#main-indicator-container') as HTMLElement
+      const chartWrapper = chart.canvas.parentElement
+      const chartParent = chartWrapper?.parentElement
+      const appendTarget = chartParent ?? chartWrapper
+      let mainIndicatorContainer = appendTarget?.querySelector('#main-indicator-container') as HTMLElement
 
       if (!mainIndicatorContainer) {
         mainIndicatorContainer = createIndicatorContainer('main-indicator-container')
-        chart.canvas.parentElement?.appendChild(mainIndicatorContainer)
+        appendTarget?.appendChild(mainIndicatorContainer)
       }
 
       mainIndicatorContainer.innerHTML = ''
@@ -215,7 +218,8 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
       }
 
       const chart = chartRef.current
-      const mainIndicatorContainer = chart?.canvas?.parentElement?.querySelector('#main-indicator-container')
+      const chartParent = chart?.canvas?.parentElement?.parentElement
+      const mainIndicatorContainer = (chartParent ?? chart?.canvas?.parentElement)?.querySelector('#main-indicator-container')
       if (mainIndicatorContainer) {
         mainIndicatorContainer.innerHTML = ''
       }
@@ -235,7 +239,8 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
           if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
         }
         const chart = chartRef.current
-        const mainIndicatorContainer = chart?.canvas?.parentElement?.querySelector('#main-indicator-container')
+        const chartParent = chart?.canvas?.parentElement?.parentElement
+        const mainIndicatorContainer = (chartParent ?? chart?.canvas?.parentElement)?.querySelector('#main-indicator-container')
         if (mainIndicatorContainer) {
           mainIndicatorContainer.innerHTML = ''
         }
