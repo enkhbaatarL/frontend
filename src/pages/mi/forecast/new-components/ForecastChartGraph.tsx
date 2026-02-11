@@ -311,8 +311,7 @@ const createRedrawLinesPlugin = (
               ctx.lineTo(pixelX, pixelY)
             }
 
-            const colorWithOpacity = applyOpacity(borderColor, pointOpacity)
-            ctx.strokeStyle = colorWithOpacity
+            ctx.strokeStyle = applyOpacity(borderColor, pointOpacity)
             ctx.lineWidth = baseBorderWidth
 
             prevPixelX = pixelX
@@ -833,11 +832,14 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
     const isEmptyChart = useMemo(
       () =>
-        allDatasets?.[0]?.data.every((value) => {
-          if ('y' in value) return value.y === null
-          if ('c' in value) return value.c === null
-          return true
-        }),
+        !allDatasets?.length ||
+        allDatasets.every((dataset) =>
+          dataset.data.every((value) => {
+            if ('y' in value) return value.y === null
+            if ('c' in value) return value.c === null
+            return true
+          }),
+        ),
       [allDatasets],
     )
 
@@ -903,7 +905,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)))
       const fraction = rawStep / magnitude
       let tickInterval: number
-      if (fraction <= 1) tickInterval = 1 * magnitude
+      if (fraction <= 1) tickInterval = magnitude
       else if (fraction <= 2) tickInterval = 2 * magnitude
       else if (fraction <= 5) tickInterval = 5 * magnitude
       else tickInterval = 10 * magnitude
