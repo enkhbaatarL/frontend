@@ -496,18 +496,11 @@ const ForecastReportCardReportContent = ({
           </ReactMarkdown>
         )}
         {!data.explanatoryTitleContent && !processedSummaryContent && (
-          <Typography
-            sx={{
-              fontFamily: 'Pretendard',
-              fontWeight: 500,
-              fontSize: '18px',
-              lineHeight: '140%',
-              letterSpacing: '0%',
-              color: 'contentText.Black',
-            }}
-          >
-            No content available
-          </Typography>
+          <Stack padding="12px" minHeight={120} justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+            <Typography variant="body2SB14" color="gray.50">
+              No content available
+            </Typography>
+          </Stack>
         )}
       </Box>
     </Stack>

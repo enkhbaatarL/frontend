@@ -81,7 +81,7 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
       <Box
         padding="8px"
         minWidth="280px"
-        minHeight="130px"
+        minHeight="152px"
         bgcolor="commonColor.White"
         borderRadius="10px"
         border="1px solid"

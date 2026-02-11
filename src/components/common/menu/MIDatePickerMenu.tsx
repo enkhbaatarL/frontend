@@ -9,8 +9,7 @@ import 'react-day-picker/style.css'
 import MIButton from '@/components/common/button/MIButton'
 import MIMenu, { MIMenuProps } from '@/components/common/menu/MIMenu'
 
-export interface MIDatePickerMenuProps
-  extends Omit<MIMenuProps, 'label' | 'onChange' | 'value'> {
+export interface MIDatePickerMenuProps extends Omit<MIMenuProps, 'label' | 'onChange' | 'value'> {
   /**
    * 상단 라벨 텍스트 (기본값: "일자")
    */
@@ -188,8 +187,8 @@ const MIDatePickerMenu = ({
         </Typography>
         {required && (
           <Typography sx={{ verticalAlign: 4, fontSize: 12, fontWeight: 900 }} component="span" color="error">
-          *
-        </Typography>
+            *
+          </Typography>
         )}
       </Stack>
       <MIMenu
@@ -198,7 +197,7 @@ const MIDatePickerMenu = ({
           setIsMenuOpen(open)
           if (open) {
             // 열릴 때 기존 value와 동기화
-            setInternalDate(value && value.isValid() ? value : undefined)
+            setInternalDate(value?.isValid() ? value : undefined)
             setCalendarMonth(getInitialMonth(value))
           }
         }}
@@ -290,9 +289,7 @@ const MIDatePickerMenu = ({
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'center',
                   zIndex: 1,
-                  backgroundImage: `url('data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-                    createTodayIndicatorSvg('#FFFFFF'),
-                  )}')`,
+                  backgroundImage: `url('data:image/svg+xml;charset=utf-8,${encodeURIComponent(createTodayIndicatorSvg('#FFFFFF'))}')`,
                 },
               },
             }}
@@ -362,4 +359,3 @@ const MIDatePickerMenu = ({
 }
 
 export default MIDatePickerMenu
-
