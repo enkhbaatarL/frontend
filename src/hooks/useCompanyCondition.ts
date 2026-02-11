@@ -101,6 +101,11 @@ export const useCompanyCondition = () => {
   const miHome = () => {
     if (!extractPage) return undefined
 
+    // Hynix의 경우 forecast로 이동
+    if (comNo === 2015) {
+      return 'forecast'
+    }
+
     // future 메뉴 사용인 고객사의 경우, 로그인 후 첫페이지를 신규대시보드로 지정함
     if (accessCompanyInfo?.isFuture) {
       return 'dashboard'
