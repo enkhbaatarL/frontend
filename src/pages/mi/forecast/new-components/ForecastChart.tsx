@@ -249,6 +249,10 @@ const ForecastChart = ({
           return Number(value)
         })
 
+        // companyNo 2015: forecast junction point(각 시리즈의 첫 값)를 툴팁/크로스헤어에서 null처럼 표시
+        const firstNonNullIndex = values.findIndex((v) => v !== null && v !== undefined)
+        const skipForTooltipIndices = companyNo === 2015 && firstNonNullIndex >= 0 ? [firstNonNullIndex] : []
+
         result.push({
           goodsDataSourceName: displayName,
           goodsDataSourceNo: chart.forecastChartLines.goodsDataSourceNo,
@@ -268,12 +272,13 @@ const ForecastChart = ({
           goodsDataName: displayName,
           dataType: chart.forecastChartLines.dataType,
           predictDates,
-        } as ChartData & { dataType?: string; predictDates?: string[]; resultDates?: string[] })
+          skipForTooltipIndices,
+        } as ChartData & { dataType?: string; predictDates?: string[]; resultDates?: string[]; skipForTooltipIndices?: number[] })
       }
     })
 
     return result
-  }, [chartData])
+  }, [chartData, companyNo])
 
   // 호버 시 리포트 기간(start~end)만 맞춰 predictionResultList를 highlight로 그림 (기본 그래프는 흐리게 유지)
   const highlightChartData = useMemo((): (ChartData & { dataType?: string; resultDates?: string[] }) | null => {

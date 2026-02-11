@@ -626,6 +626,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             timestamps: chart.timestamps,
             predictDates: (chart as ChartData & { predictDates?: string[] }).predictDates,
             resultDates: (chart as ChartData & { resultDates?: string[] }).resultDates,
+            skipForTooltipIndices: (chart as ChartData & { skipForTooltipIndices?: number[] }).skipForTooltipIndices,
           },
         } as ChartDatasetType
       })

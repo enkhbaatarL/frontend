@@ -353,6 +353,11 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
         const meta = chart.getDatasetMeta(i)
         if (meta.hidden) continue
 
+        // companyNo 2015: forecast junction point는 크로스헤어 점을 그리지 않음
+        const datasetMetadata = (dataset as { metadata?: { skipForTooltipIndices?: number[] } }).metadata
+        const pointIndex = Math.round(displayXScaleIndex)
+        if (datasetMetadata?.skipForTooltipIndices?.includes(pointIndex)) continue
+
         // xScaleIndex에 해당하는 데이터 포인트 찾기
         const point = dataset.data.find((p) => typeof p === 'object' && p !== null && 'x' in p && p.x === displayXScaleIndex) as
           | ChartPoint
@@ -433,11 +438,23 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
 
         const datasetMetadata = (
           dataset as {
-            metadata?: { isDashed?: boolean; chipColor?: string; toFixed?: number; goodsDataSourceNo?: number; predictDates?: string[] }
+            metadata?: {
+              isDashed?: boolean
+              chipColor?: string
+              toFixed?: number
+              goodsDataSourceNo?: number
+              predictDates?: string[]
+              skipForTooltipIndices?: number[]
+            }
           }
         ).metadata
         const isForecast = datasetMetadata?.isDashed ?? false
         const chipColor = datasetMetadata?.chipColor
+
+        // companyNo 2015: forecast junction point는 툴팁에서 null처럼 표시
+        const tooltipPointIndex = Math.round(tooltipXScaleIndex)
+        const shouldSkipForTooltip = datasetMetadata?.skipForTooltipIndices?.includes(tooltipPointIndex)
+        const displayValue = shouldSkipForTooltip ? undefined : value
 
         // 해당 데이터셋의 predictDate 찾기 (isForecast인 경우에만)
         const datasetPredictDate =
@@ -448,7 +465,7 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
         tooltipContent[index] = {
           label: dataset.label,
           color: chipColor,
-          value,
+          value: displayValue,
           date: tooltipFormattedDate,
           predictDate: datasetPredictDate,
           toFixed: datasetMetadata?.toFixed,
