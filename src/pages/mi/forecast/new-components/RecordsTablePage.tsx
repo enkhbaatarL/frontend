@@ -763,7 +763,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
             {/* 오른쪽 표시 영역 */}
             <Stack direction="row" alignItems="center" gap="38px" sx={{ padding: '0 12px', flex: 1 }}>
               {modelAccuracyData.map((item, index) => (
-                <Box key={index} sx={{ width: '225px', height: '42px' }}>
+                <Box key={index} sx={{ minWidth: '225px', height: '42px', flexShrink: 0 }}>
                   {/* 이름 */}
                   <Typography
                     sx={{
@@ -774,11 +774,12 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
                       letterSpacing: '0%',
                       color: '#212529',
                     }}
+                    noWrap
                   >
                     {item.name}
                   </Typography>
                   {/* 수치 영역 */}
-                  <Stack direction="row" alignItems="center" gap="6px" height="22px">
+                  <Stack direction="row" alignItems="center" gap="6px" height="22px" sx={{ width: '100%' }}>
                     <Typography
                       sx={{
                         fontFamily: 'Pretendard',
@@ -788,6 +789,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
                         letterSpacing: '0%',
                         color: '#212529',
                       }}
+                      noWrap
                     >
                       {item.percentage.toFixed(2)}%
                     </Typography>
@@ -799,7 +801,9 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
                         lineHeight: '140%',
                         letterSpacing: '0%',
                         color: '#868E96',
+                        whiteSpace: 'nowrap',
                       }}
+                      noWrap
                     >
                       {item.type} • {item.date}
                     </Typography>
