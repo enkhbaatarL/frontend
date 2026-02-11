@@ -1,5 +1,5 @@
-import { Box, Stack, Typography } from '@mui/material'
-import { useState } from 'react'
+import { Box, Stack, Tooltip, Typography } from '@mui/material'
+import { useState, useRef, useEffect } from 'react'
 
 import DashLineIcon from '@/components/common/forecast-chart/icons/DashLineIcon'
 import SolidLineIcon from '@/components/common/forecast-chart/icons/SolidLineIcon'
@@ -90,6 +90,39 @@ const ForecastChartLegend = ({ type, color, label, description, isShow: external
   const setIsShow = onToggle || setInternalIsShow
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [selected, setSelected] = useState('1')
+  const labelRef = useRef<HTMLElement>(null)
+  const [isLabelOverflowing, setIsLabelOverflowing] = useState(false)
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (labelRef.current) {
+        setIsLabelOverflowing(labelRef.current.scrollWidth > labelRef.current.clientWidth)
+      }
+    }
+    checkOverflow()
+    const timer = setTimeout(checkOverflow, 100)
+    window.addEventListener('resize', checkOverflow)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', checkOverflow)
+    }
+  }, [label])
+
+  const labelTypography = (
+    <Typography
+      ref={labelRef}
+      variant="subtext5"
+      color={isShow ? 'commonColor.Black' : 'contentText.Disabled'}
+      sx={{
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        transition: 'color 0.2s',
+      }}
+    >
+      {label}
+    </Typography>
+  )
 
   return (
     <Stack
@@ -127,18 +160,13 @@ const ForecastChartLegend = ({ type, color, label, description, isShow: external
       </Box>
 
       <Stack overflow="hidden" flex={1} minWidth={0} justifyContent="center">
-        <Typography
-          variant="subtext5"
-          color={isShow ? 'commonColor.Black' : 'contentText.Disabled'}
-          sx={{
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            transition: 'color 0.2s',
-          }}
-        >
-          {label}
-        </Typography>
+        {isLabelOverflowing ? (
+          <Tooltip title={label} placement="top" followCursor disableHoverListener={!isLabelOverflowing}>
+            {labelTypography}
+          </Tooltip>
+        ) : (
+          labelTypography
+        )}
         {description && (
           <Typography
             variant="body3"
