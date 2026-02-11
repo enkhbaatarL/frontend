@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { debounce } from 'lodash-es'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import ChartPage from '@/pages/mi/forecast/new-components/ChartPage'
 import ForecastTab from '@/pages/mi/forecast/new-components/ForecastTab'
 import RecordsTablePage from '@/pages/mi/forecast/new-components/RecordsTablePage'
@@ -43,7 +44,7 @@ const NewForecastPage = () => {
   const [period, setPeriod] = useState<string>('')
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  const { data: basicInfo } = useQuery({
+  const { data: basicInfo, isLoading: basicInfoIsLoading } = useQuery({
     queryKey: ['getForecastBasicInfo', companyNo],
     queryFn: () => forecastDataService.getForecastBasicInfo(companyNo),
     enabled: !!companyNo,
@@ -51,12 +52,12 @@ const NewForecastPage = () => {
     gcTime: 0,
   })
 
-  // Forecast Reports
+  // Forecast Reports (basicInfo 로드 후) 조회
   const { data: forecastReports, isLoading: forecastReportsIsLoading } = useQuery({
     queryKey: ['getForecastReports', companyNo, selectedReportTarget, scheduleFilter],
     queryFn: () =>
       forecastDataService.getForecastReports(companyNo, selectedReportTarget ? Number(selectedReportTarget) : undefined, scheduleFilter),
-    enabled: !!companyNo,
+    enabled: !!companyNo && !!basicInfo,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -108,6 +109,7 @@ const NewForecastPage = () => {
               targetList={basicInfo?.targetList ?? []}
               forecastReports={forecastReports ?? []}
               forecastReportsIsLoading={forecastReportsIsLoading}
+              basicInfoIsLoading={basicInfoIsLoading}
               onHoverReportCardChange={setHoverReportCardInfo}
               xAxisUnit={xAxisUnit}
               period={period}
@@ -149,8 +151,11 @@ const NewForecastPage = () => {
       chartDataIsLoading,
       monthSelect,
       hoverReportCardInfo,
-      basicInfo?.targetList,
+      basicInfo,
       forecastReports,
+      forecastReportsIsLoading,
+      basicInfoIsLoading,
+      companyNo,
       xAxisUnit,
       period,
       selectedReportTarget,
@@ -209,21 +214,37 @@ const NewForecastPage = () => {
   return (
     <Stack maxWidth="1380px" margin="auto" pt="20px" position="relative" sx={{ userSelect: 'none' }}>
       <Box ref={stickyHeaderRef} position="sticky" top={isScrolled ? '-14px' : 0} left="0" bgcolor="commonColor.White" zIndex={200}>
-        <Typography
-          variant="titleLarge"
-          position="absolute"
-          top="12px"
-          left="24px"
-          fontSize="38px"
-          sx={{
-            transform: `translateY(${isScrolled ? -6 : 0}px)`,
-            opacity: isScrolled ? 0 : 1,
-            transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out, font-size 0.3s ease-in-out, top 0.3s ease-in-out',
-            transitionDelay: isScrolled ? '0s' : '0.2s',
-          }}
-        >
-          {basicInfo?.chartPredictSettingNm}
-        </Typography>
+        {basicInfoIsLoading ? (
+          <Box
+            position="absolute"
+            top="12px"
+            left="24px"
+            sx={{
+              transform: `translateY(${isScrolled ? -6 : 0}px)`,
+              opacity: isScrolled ? 0 : 1,
+              transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out, font-size 0.3s ease-in-out, top 0.3s ease-in-out',
+              transitionDelay: isScrolled ? '0s' : '0.2s',
+            }}
+          >
+            <MIBaseSkeleton.Title width={280} height={38} />
+          </Box>
+        ) : (
+          <Typography
+            variant="titleLarge"
+            position="absolute"
+            top="12px"
+            left="24px"
+            fontSize="38px"
+            sx={{
+              transform: `translateY(${isScrolled ? -6 : 0}px)`,
+              opacity: isScrolled ? 0 : 1,
+              transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out, font-size 0.3s ease-in-out, top 0.3s ease-in-out',
+              transitionDelay: isScrolled ? '0s' : '0.2s',
+            }}
+          >
+            {basicInfo?.chartPredictSettingNm}
+          </Typography>
+        )}
         <Box mt="96px">
           <ForecastTab
             tabItems={tabItems}
@@ -231,20 +252,35 @@ const NewForecastPage = () => {
             value={selectedTab}
             onChange={setSelectedTab}
             rightAdornment={
-              <Typography
-                variant="infoDocument"
-                color="contentText.Normal"
-                sx={{
-                  mr: '70px',
-                  mb: '8px',
-                  transform: `translateY(${isScrolled ? 0 : 6}px)`,
-                  opacity: isScrolled ? 1 : 0,
-                  transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
-                  transitionDelay: isScrolled ? '0.2s' : '0s',
-                }}
-              >
-                {basicInfo?.chartPredictSettingNm}
-              </Typography>
+              basicInfoIsLoading ? (
+                <Box
+                  sx={{
+                    mr: '70px',
+                    mb: '8px',
+                    transform: `translateY(${isScrolled ? 0 : 6}px)`,
+                    opacity: isScrolled ? 1 : 0,
+                    transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+                    transitionDelay: isScrolled ? '0.2s' : '0s',
+                  }}
+                >
+                  <MIBaseSkeleton.TextLine width={200} height={16} />
+                </Box>
+              ) : (
+                <Typography
+                  variant="infoDocument"
+                  color="contentText.Normal"
+                  sx={{
+                    mr: '70px',
+                    mb: '8px',
+                    transform: `translateY(${isScrolled ? 0 : 6}px)`,
+                    opacity: isScrolled ? 1 : 0,
+                    transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+                    transitionDelay: isScrolled ? '0.2s' : '0s',
+                  }}
+                >
+                  {basicInfo?.chartPredictSettingNm}
+                </Typography>
+              )
             }
           />
         </Box>

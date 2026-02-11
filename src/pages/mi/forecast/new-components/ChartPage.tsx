@@ -5,6 +5,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import aiIcon from '@/assets/ai.svg'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
+import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import ForecastChart from '@/pages/mi/forecast/new-components/ForecastChart'
 import ForecastReportCard from '@/pages/mi/forecast/new-components/ForecastReportCard'
 import { IForecastChartInfo, ForecastBasicInfoTarget, IForecastReport, ReportPeriodUnitCd } from '@/service/mi/forecast'
@@ -16,6 +17,7 @@ interface ChartPageProps {
   targetList?: ForecastBasicInfoTarget[]
   forecastReports?: IForecastReport[]
   forecastReportsIsLoading?: boolean
+  basicInfoIsLoading?: boolean
   onHoverReportCardChange?: (report: IForecastReport | null) => void
   xAxisUnit?: string
   period?: string
@@ -37,6 +39,7 @@ const ChartPage = ({
   targetList,
   forecastReports,
   forecastReportsIsLoading = false,
+  basicInfoIsLoading = false,
   onHoverReportCardChange,
   xAxisUnit,
   period,
@@ -60,7 +63,7 @@ const ChartPage = ({
   const CARD_MIN_WIDTH = 280
   const CARD_GAP = 20
 
-  const showReportCardSkeleton = forecastReportsIsLoading && (!forecastReports || forecastReports.length === 0)
+  const showReportCardSkeleton = (basicInfoIsLoading || forecastReportsIsLoading) && (!forecastReports || forecastReports.length === 0)
 
   // 원하지 않는 스크롤 영역 제어
   const [isSkeletonTransitioningOut, setIsSkeletonTransitioningOut] = useState(false)
@@ -129,35 +132,41 @@ const ChartPage = ({
             </Typography>
           </Stack>
           <Stack direction="row" alignItems="center" gap="12px">
-            {scheduleInfoText && (
-              <>
-                <Typography variant="body4" color="contentText.Subtext">
-                  {scheduleInfoText}
-                </Typography>
-                {(companyNo === 2020 || (targetList?.length ?? 0) > 1) && <Divider orientation="vertical" sx={{ height: '28px' }} />}
-                {companyNo === 2020 && (
-                  <MISelectMenu
-                    variant="text"
-                    items={[
-                      { label: 'All Schedules', value: null },
-                      { label: 'Scheduled', value: true },
-                      { label: 'Ad Hoc', value: false },
-                    ]}
-                    selected={scheduleFilter}
-                    onSelected={(value: boolean | null) => {
-                      onScheduleFilterChange?.(value)
-                    }}
-                  />
-                )}
-                {(targetList?.length ?? 0) > 1 && (
-                  <MISelectMenu
-                    variant="text"
-                    items={targetSelectItems}
-                    selected={selectedReportTarget}
-                    onSelected={(value: string) => onReportTargetChange?.(value)}
-                  />
-                )}
-              </>
+            {basicInfoIsLoading ? (
+              <Stack direction="row" alignItems="center" gap="12px">
+                <MIBaseSkeleton.TextLine width={320} height={14} />
+              </Stack>
+            ) : (
+              scheduleInfoText && (
+                <>
+                  <Typography variant="body4" color="contentText.Subtext">
+                    {scheduleInfoText}
+                  </Typography>
+                  {(companyNo === 2020 || (targetList?.length ?? 0) > 1) && <Divider orientation="vertical" sx={{ height: '28px' }} />}
+                  {companyNo === 2020 && (
+                    <MISelectMenu
+                      variant="text"
+                      items={[
+                        { label: 'All Schedules', value: null },
+                        { label: 'Scheduled', value: true },
+                        { label: 'Ad Hoc', value: false },
+                      ]}
+                      selected={scheduleFilter}
+                      onSelected={(value: boolean | null) => {
+                        onScheduleFilterChange?.(value)
+                      }}
+                    />
+                  )}
+                  {(targetList?.length ?? 0) > 1 && (
+                    <MISelectMenu
+                      variant="text"
+                      items={targetSelectItems}
+                      selected={selectedReportTarget}
+                      onSelected={(value: string) => onReportTargetChange?.(value)}
+                    />
+                  )}
+                </>
+              )
             )}
           </Stack>
         </Stack>
