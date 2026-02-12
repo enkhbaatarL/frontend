@@ -34,6 +34,11 @@ interface ModelAccuracyItem {
   date: string
 }
 
+interface DatePresetOption {
+  label: string
+  value: DateRange
+}
+
 // Model Records 데이터 타입
 interface ModelRecord {
   id: string
@@ -64,26 +69,42 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
   const { accessCompanyInfo, user } = useAuthStore()
   const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.userNo ?? 0
 
+  const today = useMemo(() => dayjs().startOf('day'), [])
+  const yesterday = useMemo(() => today.subtract(1, 'day'), [today])
+  const last7days = useMemo(() => today.subtract(7, 'day'), [today])
+  const last30days = useMemo(() => today.subtract(30, 'day'), [today])
+  const last3months = useMemo(() => today.subtract(3, 'month'), [today])
+  const last2Years = useMemo(() => today.subtract(2, 'year'), [today])
+
   // 기본값: 회사별 초기 기간
   // - 2020(에너지): 최근 3개월
   // - 그 외(예: 2013 E&S, 2015 Hynix 등): 최근 30일
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-    const today = dayjs().startOf('day')
-
     if (companyNo === 2015) {
-      const last2Years = today.subtract(2, 'year')
       return {
         startDate: last2Years,
         endDate: today,
       }
     }
 
-    const last30days = today.subtract(30, 'day')
     return {
       startDate: last30days,
       endDate: today,
     }
   })
+
+  const DATE_PRESETS: DatePresetOption[] = useMemo(
+    () => [
+      { label: 'Today', value: { startDate: today, endDate: today } },
+      { label: 'Yesterday', value: { startDate: yesterday, endDate: yesterday } },
+      { label: 'Last 7 days', value: { startDate: last7days, endDate: today } },
+      { label: 'Last 30 days', value: { startDate: last30days, endDate: today } },
+      { label: 'Last 3 months', value: { startDate: last3months, endDate: today } },
+      { label: 'Last 2 years', value: { startDate: last2Years, endDate: today } },
+    ],
+    [today, yesterday, last7days, last30days, last3months, last2Years],
+  )
+
   const [selectedTarget, setSelectedTarget] = useState<string>('')
   const [sortOrder, setSortOrder] = useState<string>('NEWEST')
   const [page, setPage] = useState(1)
@@ -894,6 +915,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
                 setPage(1) // 날짜 범위 변경 시 첫 페이지로 리셋
               }}
               dateRange={dateRange}
+              datePresets={DATE_PRESETS}
               sx={{ height: '36px' }}
               enableHoverBackground
             />
