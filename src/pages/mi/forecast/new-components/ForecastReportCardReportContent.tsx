@@ -308,7 +308,7 @@ const ForecastReportCardReportContent = ({
                 <InfoLabel
                   label="REFERENCE PRICE"
                   value={formatValue(data.predictionCriteriaVal) || '-'}
-                  description={`${dayjs(data.predictionCriteriaDt).format('YY/MM/DD')} · ${data.predictChartDetailExpn}`}
+                  description={`${dayjs(data.predictionCriteriaDt).format('YY-MM-DD')} · ${data.predictChartDetailExpn}`}
                 />
               </Stack>
             </>

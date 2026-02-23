@@ -375,7 +375,7 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
               <InfoLabel
                 label="TARGET DATE"
                 value={
-                  factorCategory?.endPredictionResultDt ? dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').format('YYYY/MM/DD') : '-'
+                  factorCategory?.endPredictionResultDt ? dayjs(factorCategory.endPredictionResultDt, 'YYYYMMDD').format('YYYY-MM-DD') : '-'
                 }
                 description={
                   factorCategory?.startPredictionResultDt && factorCategory?.endPredictionResultDt
@@ -389,7 +389,7 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
               <InfoLabel
                 label="RUN DATE"
                 value={
-                  factorCategory?.predictionFulfillDt ? dayjs(factorCategory.predictionFulfillDt, 'YYYYMMDD').format('YYYY/MM/DD') : '-'
+                  factorCategory?.predictionFulfillDt ? dayjs(factorCategory.predictionFulfillDt, 'YYYYMMDD').format('YYYY-MM-DD') : '-'
                 }
                 description="Model execution date"
               />
@@ -406,7 +406,7 @@ const ForecastChartTooltipReportContent = memo(({ goodsDataSourceNo, date, isVis
                 }
                 description={
                   factorCategory?.predictionCriteriaDt
-                    ? `${dayjs(factorCategory.predictionCriteriaDt, 'YYYYMMDD').format('YY/MM/DD')} · S&P Global Platts`
+                    ? `${dayjs(factorCategory.predictionCriteriaDt, 'YYYYMMDD').format('YY-MM-DD')} · S&P Global Platts`
                     : undefined
                 }
               />
