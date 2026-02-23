@@ -578,6 +578,9 @@ const ForecastChart = ({
       <Stack flexGrow={1}>
         <Stack direction="row" p="6px 30px" alignItems="center" justifyContent="space-between">
           <Stack direction="row" alignItems="center" gap="6px" minWidth="224px" height="36px">
+            <Typography variant="body4" color="contentText.Subtext">
+              Interval:
+            </Typography>
             {periodOptions.map((option) => (
               <Box
                 key={option.value}
@@ -697,6 +700,9 @@ const ForecastChart = ({
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             {/* 하단 기간 버튼 그룹 */}
             <Stack direction="row" alignItems="center" gap="6px" height="36px">
+              <Typography variant="body4" color="contentText.Subtext">
+                Range:
+              </Typography>
               {rangeOptions.map((option) => (
                 <Box
                   key={option.value}
