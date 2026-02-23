@@ -39,15 +39,17 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
   const last7days = useMemo(() => today.subtract(7, 'day'), [today])
   const last30days = useMemo(() => today.subtract(30, 'day'), [today])
   const last3months = useMemo(() => today.subtract(3, 'month'), [today])
+  const last6months = useMemo(() => today.subtract(6, 'month'), [today])
   const last2Years = useMemo(() => today.subtract(2, 'year'), [today])
 
   // 기본값: 회사별 초기 기간
   // - 2020(에너지): 최근 3개월
-  // - 그 외(예: 2013 E&S, 2015 Hynix 등): 최근 30일
+  // - 2015(Hynix): 최근 6개월
+  // - 그 외(예: 2013 E&S 등): 최근 30일
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
     if (companyNo === 2015) {
       return {
-        startDate: last2Years,
+        startDate: last6months,
         endDate: today,
       }
     }
@@ -65,9 +67,10 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
       { label: 'Last 7 days', value: { startDate: last7days, endDate: today } },
       { label: 'Last 30 days', value: { startDate: last30days, endDate: today } },
       { label: 'Last 3 months', value: { startDate: last3months, endDate: today } },
+      { label: 'Last 6 months', value: { startDate: last6months, endDate: today } },
       { label: 'Last 2 years', value: { startDate: last2Years, endDate: today } },
     ],
-    [today, yesterday, last7days, last30days, last3months, last2Years],
+    [today, yesterday, last7days, last30days, last3months, last6months, last2Years],
   )
 
   const [page, setPage] = useState(1)
