@@ -131,7 +131,7 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
                   {data?.predictChartDetailExpn}
                 </Typography>
                 {!data?.isScheduled && (
-                  <Typography variant="subtext3" color="contentText.Subtext">
+                  <Typography variant="subtext3" color="mari.Primary">
                     Ad hoc
                   </Typography>
                 )}

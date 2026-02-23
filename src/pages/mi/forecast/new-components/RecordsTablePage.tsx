@@ -315,16 +315,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
                 {row.predictChartDetailExpn}
               </Typography>
               {!row.isScheduled && (
-                <Typography
-                  sx={{
-                    fontFamily: 'Pretendard',
-                    fontWeight: 600,
-                    fontSize: '12px',
-                    lineHeight: '140%',
-                    letterSpacing: '0%',
-                    color: '#868E96',
-                  }}
-                >
+                <Typography variant="subtext3" color="mari.Primary">
                   Ad hoc
                 </Typography>
               )}

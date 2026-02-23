@@ -253,17 +253,7 @@ const ForecastReportCardReportContent = ({
               value={label}
               adHocLabel={
                 !data.isScheduled ? (
-                  <Typography
-                    sx={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 500,
-                      fontStyle: 'normal',
-                      fontSize: '20px',
-                      lineHeight: '120%',
-                      letterSpacing: '0%',
-                      color: '#868E96',
-                    }}
-                  >
+                  <Typography fontWeight={500} fontSize="20px" color="mari.Primary">
                     Ad hoc
                   </Typography>
                 ) : undefined
