@@ -1,6 +1,6 @@
 import { Box, Stack, Typography, Collapse, Fade } from '@mui/material'
 import { keyframes } from '@mui/material/styles'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
@@ -10,6 +10,7 @@ import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import InlineNotice from '@/components/common/notice/InlineNotice'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 import { DirectionType, IMarketRecapItem, IMarketRecapHighlightItem } from '@/service/mi/dashboard'
+import useAuthStore from '@/store/useAuthStore'
 
 const shakeAnimation = keyframes`
   0%, 100% { transform: translateX(0); }
@@ -88,14 +89,14 @@ const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNe
                   <Box
                     key={itemKey}
                     onClick={
-                      news.isViewable !== false
+                      news.isViewable
                         ? () => {
                           onRelatedNewsItemSelected({ name: news.provider, value: news.newsSummaryId.toString() })
                         }
                         : () => handleLockedClick(itemKey)
                     }
                     sx={{
-                      cursor: news.isViewable !== false ? 'pointer' : 'default',
+                      cursor: news.isViewable ? 'pointer' : 'default',
                       display: 'flex',
                       alignItems: 'center',
                       ml: '-14px',
@@ -129,7 +130,7 @@ const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNe
                         },
                       }}
                     >
-                      {news.isViewable === false && (
+                      {!news.isViewable && (
                         <ShakeableLockIcon
                           width={16}
                           height={16}
@@ -161,7 +162,11 @@ const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNe
 }
 
 const Highlights = ({ highlights }: Props) => {
-  const [selectedOption, setSelectedOption] = useState('detailed')
+  const { accessCompanyInfo } = useAuthStore()
+  const companyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? -1, [accessCompanyInfo?.customerCompanyNo])
+  const isHynix = companyNo === 2015
+
+  const [selectedOption, setSelectedOption] = useState(() => (isHynix ? 'narrative' : 'detailed'))
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -172,17 +177,19 @@ const Highlights = ({ highlights }: Props) => {
   return (
     <Stack padding="6px 12px" borderRadius="10px" gap="6px" sx={{ backgroundColor: '#F8F9FA' }}>
       <SectionHeader title="Highlights" tooltipTitle={t('dashboard.highlights.tooltipTitle')} padding="7.5px 0 7.5px 6px">
-        <MISelectMenu
-          items={options.map((option) => ({ ...option, label: t(`common.${option.value}`) }))}
-          selected={selectedOption}
-          onSelected={setSelectedOption}
-          paperProps={{
-            sx: {
-              width: '150px',
-            },
-          }}
-          closeOnScroll
-        />
+        {!isHynix && (
+          <MISelectMenu
+            items={options.map((option) => ({ ...option, label: t(`common.${option.value}`) }))}
+            selected={selectedOption}
+            onSelected={setSelectedOption}
+            paperProps={{
+              sx: {
+                width: '150px',
+              },
+            }}
+            closeOnScroll
+          />
+        )}
       </SectionHeader>
       {((highlights?.items && highlights.items.length > 0) || (selectedOption === 'narrative' && highlights?.narrative)) && (
         <InlineNotice noticeKey="dashboard-highlights">{t('dashboard.highlights.inlineNotice')}</InlineNotice>
@@ -213,7 +220,7 @@ const Highlights = ({ highlights }: Props) => {
             <Box>
               {selectedOption === 'narrative' && (
                 <>
-                  {highlights?.narrative ? (
+                  {highlights?.narrative?.content?.length ? (
                     <Stack padding="12px 20px 6px" gap="6px">
                       <Typography variant="infoDocument">{highlights?.narrative.title}</Typography>
                       <Stack gap="8px">
