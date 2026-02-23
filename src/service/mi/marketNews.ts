@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios.ts'
-import { IMarketRecapCheckpointItem, IMarketRecapHighlightItem } from '@/service/mi/dashboard'
+import { DirectionType, IMarketRecapCheckpointItem, IMarketRecapHighlightItem } from '@/service/mi/dashboard'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 export interface INewsSummaryData {
@@ -22,6 +22,7 @@ export interface INewsListRequest extends IPaginationRequest {
   categories?: string
   regions?: string[]
   industries?: string[]
+  sentiments?: DirectionType[]
 }
 
 export interface INewsListItem {
@@ -78,12 +79,15 @@ export interface IDailyTrend {
 
 const marketNewsService = {
   async getNewsList(params: Partial<INewsListRequest>, signal?: AbortSignal): Promise<IPaginationResponse<INewsListItem>> {
+    const apiParams: Record<string, string | number | undefined> = {
+      ...params,
+      regions: params.regions?.join(','),
+      industries: params.industries?.join(','),
+      sentiments: params.sentiments?.map((s) => s.toLowerCase()).join(','),
+    }
+
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsListItem>>> = await api.get('mi/market-news', {
-      params: {
-        ...params,
-        regions: params.regions?.join(','),
-        industries: params.industries?.join(','),
-      },
+      params: apiParams,
       timeout: 120_000,
       signal,
     })

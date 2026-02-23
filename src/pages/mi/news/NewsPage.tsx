@@ -130,6 +130,7 @@ const NewsPage = () => {
       industries: savedFilters?.industries ?? [],
       regions: savedFilters?.regions ?? [],
       providers: savedFilters?.providers ?? [],
+      sentiments: savedFilters?.sentiments ?? [],
     }),
     [savedFilters],
   )
@@ -155,6 +156,7 @@ const NewsPage = () => {
       categories: defaultMarket,
       regions: savedFilters?.regions ?? [],
       industries: savedFilters?.industries ?? [],
+      sentiments: savedFilters?.sentiments ?? [],
     },
     {
       page: 1,
@@ -222,8 +224,8 @@ const NewsPage = () => {
   }, [filter.categories, industrySectorCodeList, regionCategoryCodeList])
 
   const appliedFiltersCount = useMemo(
-    () => (filter.industries?.length ?? 0) + (filter.regions?.length ?? 0),
-    [filter.industries, filter.regions],
+    () => (filter.industries?.length ?? 0) + (filter.regions?.length ?? 0) + (filter.sentiments?.length ?? 0),
+    [filter.industries, filter.regions, filter.sentiments],
   )
   const { showSnackbar } = useSnackbar()
 
@@ -266,10 +268,12 @@ const NewsPage = () => {
     const industries = filterValues.industries ?? []
     const regions = filterValues.regions ?? []
     const providers = filterValues.providers ?? []
+    const sentiments = (filterValues.sentiments ?? []) as DirectionType[]
 
     updateMultiFilterWithSearch([
       ['industries', industries],
       ['regions', regions],
+      ['sentiments', sentiments],
     ])
 
     if (save) {
@@ -279,6 +283,7 @@ const NewsPage = () => {
           industries,
           regions,
           providers,
+          sentiments,
         }),
       )
     } else {
