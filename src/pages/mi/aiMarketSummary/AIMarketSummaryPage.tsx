@@ -19,6 +19,7 @@ import useSearchFilter from '@/hooks/useSearchFilter'
 import Summarizing from '@/pages/mi/dashboard/components/common/Summarizing'
 import { IMarketRecapCheckpointItem, IMarketRecapHighlightItem } from '@/service/mi/dashboard'
 import marketNewsService, { INewsRecapsRequest, INewsRecapItem, DateRangeOption, RecapCategory } from '@/service/mi/marketNews'
+import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
 
 const shakeAnimation = keyframes`
@@ -126,6 +127,8 @@ const BodyCell = ({ children, width, textAlign, color, ...props }: BodyCellProps
 
 const AIMarketSummaryPage = () => {
   const navigate = useNavigate()
+  const { accessCompanyInfo, user } = useAuthStore()
+  const companyNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo ?? 0
   const [expandedRowIds, setExpandedRowIds] = useState<Set<number>>(new Set())
   const [loadingRowId, setLoadingRowId] = useState<number | null>(null)
   const [loadedRowIds, setLoadedRowIds] = useState<Set<number>>(new Set())
@@ -143,6 +146,7 @@ const AIMarketSummaryPage = () => {
   } = useSearchFilter<INewsRecapsRequest, IPaginationResponse<INewsRecapItem>>(
     (params) => marketNewsService.getNewsRecaps(params),
     {
+      companyNo,
       sort: 'NEWEST',
       dateRangeOption: 'LAST_30_DAYS',
       recapCategories: undefined,
@@ -210,6 +214,12 @@ const AIMarketSummaryPage = () => {
     if (!recapsData?.detail) return []
     return recapsData.detail.map((recap, index) => convertRecapToSummaryItem(recap, index)).filter((item) => item !== null)
   }, [recapsData])
+
+  useEffect(() => {
+    if (companyNo && filter.companyNo !== companyNo) {
+      updateFilterWithSearch('companyNo', companyNo)
+    }
+  }, [companyNo, filter.companyNo, updateFilterWithSearch])
 
   useEffect(() => {
     setExpandedRowIds(new Set())

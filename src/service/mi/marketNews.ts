@@ -39,6 +39,7 @@ export interface INewsListItem {
 export type DateRangeOption = 'LAST_30_DAYS' | 'LAST_60_DAYS' | 'LAST_12_MONTHS' | 'ALL_TIME' | ''
 export type RecapCategory = 'HIGHLIGHT' | 'CHECKPOINT'
 export interface INewsRecapsRequest extends IPaginationRequest {
+  companyNo: number
   sort?: string
   keyword?: string
   dateRangeOption?: DateRangeOption
@@ -94,12 +95,16 @@ const marketNewsService = {
     return response.data.data
   },
   async getNewsRecaps(params: Partial<INewsRecapsRequest>): Promise<IPaginationResponse<INewsRecapItem>> {
-    const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsRecapItem>>> = await api.get('mi/market-news/recaps', {
-      params: {
-        ...params,
-        recapCategories: params.recapCategories?.join(','),
+    const { companyNo = 0, ...restParams } = params
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsRecapItem>>> = await api.get(
+      `mi/market-news/companies/${companyNo}/recaps`,
+      {
+        params: {
+          ...restParams,
+          recapCategories: restParams.recapCategories?.join(','),
+        },
       },
-    })
+    )
     return response.data.data
   },
   async getDailyTrend(params: Partial<IDailyTrendRequest>): Promise<IDailyTrend> {
