@@ -24,35 +24,6 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
   // 로딩 중이거나 데이터가 없으면 스켈레톤 표시
   const showSkeleton = isLoading || !data
 
-  // yyyyMMdd 형식인지 확인하는 함수
-  const isYYYYMMDD = (dateStr: string | null | undefined): boolean => {
-    if (!dateStr) return false
-    return /^\d{8}$/.test(dateStr)
-  }
-
-  const startDateStr = data?.startPredictionResultDt
-  const endDateStr = data?.endPredictionResultDt
-  const isStartDateValid = isYYYYMMDD(startDateStr)
-  const isEndDateValid = isYYYYMMDD(endDateStr)
-
-  const startDate = isStartDateValid && startDateStr ? dayjs(startDateStr) : null
-  const endDate = isEndDateValid && endDateStr ? dayjs(endDateStr) : null
-
-  const targetDateRange = (() => {
-    if (isStartDateValid && isEndDateValid && startDate && endDate) {
-      return `${startDate.format('YY/MM/DD')} - ${endDate.format('YY/MM/DD')}`
-    }
-    if (startDateStr && endDateStr) {
-      return `${startDateStr}, ${endDateStr}`
-    }
-    if (startDateStr) return startDateStr
-    if (endDateStr) return endDateStr
-    return ''
-  })()
-
-  // 날짜 범위 계산 (일 수) - yyyyMMdd 형식일 때만 계산
-  const daysDiff = startDate && endDate ? endDate.diff(startDate, 'day') + 1 : 0
-
   const diffDisplay = useMemo(() => {
     const val = data?.predictionResultDiffVal
     const num = val !== undefined && val !== null ? Number(val) : null
@@ -182,7 +153,7 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
                 </Stack>
               ) : (
                 <Typography variant="subtext3" color="contentText.Subtext">
-                  {dayjs(data?.predictionFulfillDt).format('YY/MM/DD')}
+                  {dayjs(data?.predictionFulfillDt).format('YY-MM-DD')}
                 </Typography>
               )}
             </Stack>
@@ -194,13 +165,11 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
                 <Divider orientation="vertical" flexItem />
                 <Stack px="4px">
                   <Typography variant="body2SB14" color="commonColor.Black">
-                    {targetDateRange}
+                    {data?.predictionTargetDt}
                   </Typography>
-                  {isStartDateValid && isEndDateValid && daysDiff > 0 && (
-                    <Typography variant="body3" color="contentText.Subtext" fontSize="11px">
-                      {daysDiff} {daysDiff === 1 ? 'day' : 'days'}
-                    </Typography>
-                  )}
+                  <Typography variant="body3" color="contentText.Subtext" fontSize="11px">
+                    {data?.predictionTargetPeriod}
+                  </Typography>
                 </Stack>
               </Stack>
               <Stack direction="row" alignItems="start" gap="8px" py="4px">
@@ -221,7 +190,7 @@ const ForecastReportCard = ({ data, isLoading = false, onPopupClose }: ForecastR
                   </Stack>
                   {data?.predictionCriteriaDt && data?.predictionCriteriaVal !== null && (
                     <Typography variant="body3" color="contentText.Subtext" fontSize="11px" noWrap>
-                      Compare to {formatValue(data.predictionCriteriaVal)} ({dayjs(data.predictionCriteriaDt).format('YY/MM/DD')})
+                      Compare to {formatValue(data.predictionCriteriaVal)} ({dayjs(data.predictionCriteriaDt).format('YY-MM-DD')})
                     </Typography>
                   )}
                 </Stack>

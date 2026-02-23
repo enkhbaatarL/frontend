@@ -355,6 +355,8 @@ export interface IForecastReport {
   mnemonicCd: string
   predictChartDetailExpn: string
   associatedGoodsDataSourceNo: number
+  predictionTargetDt: string
+  predictionTargetPeriod: string
   endPredictionResultDt: string
   startPredictionResultDt: string
   predictionCriteriaDt: string | null
@@ -381,6 +383,8 @@ export interface IForecastReportDetail {
   mnemonicCd: string
   predictChartDetailExpn: string
   associatedGoodsDataSourceNo: number
+  predictionTargetDt: string
+  predictionTargetPeriod: string
   endPredictionResultDt: string
   startPredictionResultDt: string
   predictionCriteriaDt: string
@@ -394,6 +398,7 @@ export interface IForecastReportDetail {
   explanatoryFilePath: string
   minPredictionResultVal: number
   maxPredictionResultVal: number
+  priceRangeVal: string[]
 }
 
 export interface IForecastReportsTableData {

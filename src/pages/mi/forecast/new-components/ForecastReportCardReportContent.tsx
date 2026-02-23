@@ -191,9 +191,7 @@ const ForecastReportCardReportContent = ({
   }
 
   // 날짜 포맷팅
-  const targetDateRange = `${dayjs(data.startPredictionResultDt).format('YYYY/MM/DD')} - ${dayjs(data.endPredictionResultDt).format('YYYY/MM/DD')}`
-  const daysDiff = dayjs(data.endPredictionResultDt).diff(dayjs(data.startPredictionResultDt), 'day') + 1
-  const runDate = dayjs(predictionFulfillDt).format('YYYY/MM/DD')
+  const runDate = dayjs(predictionFulfillDt).format('YYYY-MM-DD')
 
   // explanatorySummaryContent의 줄바꿈 처리: \\n, \r\n, \r을 실제 줄바꿈으로 변환
   // \r (캐리지 리턴)은 Windows/Mac에서 사용하는 줄바꿈 문자입니다
@@ -211,10 +209,6 @@ const ForecastReportCardReportContent = ({
     : ''
 
   const label = data.predictChartDetailExpn ?? ''
-  const priceRange =
-    data.minPredictionResultVal && data.maxPredictionResultVal
-      ? `${formatValue(data.minPredictionResultVal)} - ${formatValue(data.maxPredictionResultVal)}`
-      : '-'
 
   return (
     <Stack
@@ -278,7 +272,7 @@ const ForecastReportCardReportContent = ({
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
           <Stack gap="20px">
-            <InfoLabel label="TARGET DATE" value={targetDateRange} description={`${daysDiff} ${daysDiff === 1 ? 'day' : 'days'}`} />
+            <InfoLabel label="TARGET DATE" value={data.predictionTargetDt} description={data.predictionTargetPeriod} />
             <InfoLabel label="RUN DATE" value={runDate} description="Model execution date" />
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
@@ -301,7 +295,21 @@ const ForecastReportCardReportContent = ({
               }
               description="Compare to reference price"
             />
-            {data.predictionCriteriaDt && <InfoLabel label="PRICE RANGE" value={priceRange} description="Lowest to highest" />}
+            {data.priceRangeVal.length > 0 && (
+              <InfoLabel
+                label="PRICE RANGE"
+                value={
+                  <Stack>
+                    {data.priceRangeVal.map((val, index) => (
+                      <Typography key={`price-range-${index}`} variant="messageText1" color="contentText.Black" noWrap>
+                        {val}
+                      </Typography>
+                    ))}
+                  </Stack>
+                }
+                description="Lowest to highest"
+              />
+            )}
           </Stack>
           {data.predictionCriteriaDt && (
             <>
