@@ -199,19 +199,27 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
   const apiTableColumns = useMemo<GridColDef[]>(() => {
     if (!tableData?.tableHeaderList) return []
 
-    return tableData.tableHeaderList.map((header, index) => ({
-      field: `col_${index}`,
-      headerName: header,
-      flex: index === 0 ? 1.5 : 1,
-      align: 'center',
-      renderCell: ({ row }) => {
-        const value = row[`col_${index}`]
-        if (value === null || value === undefined) {
-          return <MITableCell value="-" />
-        }
-        return <MITableCell value={value} />
-      },
-    }))
+    const detail = tableData.tableDataList?.detail as (string | number | null)[][] | undefined
+
+    return tableData.tableHeaderList.map((header, index) => {
+      const hasNumericValue = detail?.some((row) => typeof row?.[index] === 'number') // 모든 행을 검사(첫 행이 null/undefined일 때 중앙 정렬되는 문제 방지)
+      const isNumber = hasNumericValue ?? false
+
+      return {
+        field: `col_${index}`,
+        headerName: header,
+        flex: index === 0 ? 1.5 : 1,
+        align: isNumber ? 'right' : 'center',
+        headerAlign: isNumber ? 'right' : 'center',
+        renderCell: ({ row }) => {
+          const value = row[`col_${index}`]
+          if (value === null || value === undefined) {
+            return <MITableCell value="-" />
+          }
+          return <MITableCell value={value} />
+        },
+      }
+    })
   }, [tableData])
 
   // 기존 chartData 기반 테이블 컬럼 (hoverReportCardInfo가 있을 때 사용)
@@ -227,6 +235,7 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
       headerName: currency && currentUnitCd ? `${currency}/${currentUnitCd}` : transformedChartData.metadata.currentUnitCd || '',
       flex: 1.5,
       align: 'center',
+      headerAlign: 'center',
     }
 
     if (isForecastSingleLayer) {
@@ -238,7 +247,8 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
           field: 'Forecast',
           headerName: 'Forecast',
           flex: 1,
-          align: 'center',
+          align: 'right',
+          headerAlign: 'right',
           renderCell: ({ row }) => {
             const value = row['Forecast']
             const permission = row['Forecast_permission']
@@ -271,7 +281,8 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
           field: 'Actual',
           headerName: 'Actual',
           flex: 1,
-          align: 'center',
+          align: 'right',
+          headerAlign: 'right',
           renderCell: ({ row }) => {
             const value = row['Actual']
             const permission = row['Actual_permission']
@@ -304,7 +315,8 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
           field: chart.chartLineDescription,
           headerName: chart.chartLineDescription,
           flex: 1,
-          align: 'center',
+          align: 'right',
+          headerAlign: 'right',
           renderCell: ({ row }) => {
             const value = row[chart.chartLineDescription]
             const permission = row[`${chart.chartLineDescription}_permission`]
@@ -341,7 +353,8 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
             field: `${chart.chartLineDescription}_Fcst`,
             headerName: `${chart.chartLineDescription} (Fcst)`,
             flex: 1,
-            align: 'center',
+            align: 'right',
+            headerAlign: 'right',
             renderCell: ({ row }) => {
               const value = row[`${chart.chartLineDescription}_Fcst`]
               const permission = row[`${chart.chartLineDescription}_Fcst_permission`]
@@ -365,7 +378,8 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
             field: `${chart.chartLineDescription}_Act`,
             headerName: `${chart.chartLineDescription} (Act)`,
             flex: 1,
-            align: 'center',
+            align: 'right',
+            headerAlign: 'right',
             renderCell: ({ row }) => {
               const value = row[`${chart.chartLineDescription}_Act`]
               const permission = row[`${chart.chartLineDescription}_Act_permission`]

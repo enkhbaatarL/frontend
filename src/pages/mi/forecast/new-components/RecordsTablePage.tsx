@@ -558,6 +558,13 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
     return visibleHeaders.map((header) => {
       const fieldDef = fieldDefinitions[header.columnKey]
       if (!fieldDef) {
+        // 첫 행만이 아닌, 해당 필드의 모든 레코드를 검사하여 숫자 타입이 하나라도 있으면 우측 정렬
+        // (첫 행이 null/undefined일 때 '-' 표시로 인해 잘못 중앙 정렬되는 문제 방지)
+        const hasNumericValue = recordsData?.detail?.some(
+          (record) => typeof (record as unknown as Record<string, unknown>)?.[header.columnKey] === 'number',
+        )
+        const isNumber = hasNumericValue ?? false
+
         // 정의가 없는 필드는 기본 컬럼 생성
         // 가변적인 필드 처리
         return {
@@ -565,16 +572,16 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           headerName: header.headerText,
           minWidth: 100,
           flex: 1,
-          align: 'right',
-          headerAlign: 'right',
+          align: isNumber ? 'right' : 'center',
+          headerAlign: isNumber ? 'right' : 'center',
           renderCell: ({ value }) => {
-            // 숫자 타입인 경우 포맷팅
-            if (typeof value === 'number') {
-              return value.toFixed(2)
-            }
             // null이나 undefined인 경우 '-'
             if (value === null || value === undefined) {
               return '-'
+            }
+            // 숫자 타입인 경우 포맷팅
+            if (typeof value === 'number') {
+              return value.toFixed(2)
             }
             // 문자열인 경우 그대로 표시
             return String(value)
