@@ -333,7 +333,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         headerAlign: 'center',
         valueGetter: (_, row) => {
           if (!row.predictionFulfillDt || row.predictionFulfillDt.length !== 8) return ''
-          return dayjs(row.predictionFulfillDt, 'YYYYMMDD').format('YY/MM/DD')
+          return dayjs(row.predictionFulfillDt, 'YYYYMMDD').format('YY-MM-DD')
         },
         renderCell: ({ value }) => (
           <Box
@@ -359,7 +359,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           if (!row.predictionResultDt) return ''
           // YYYYMMDD 형식(8자리)이면 포맷팅
           if (row.predictionResultDt.length === 8) {
-            return dayjs(row.predictionResultDt, 'YYYYMMDD').format('YY/MM/DD')
+            return dayjs(row.predictionResultDt, 'YYYYMMDD').format('YY-MM-DD')
           }
           // 이미 포맷된 문자열이면 그대로 반환
           return row.predictionResultDt
@@ -386,11 +386,11 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         valueGetter: (_, row) => {
           const formatDate = (dateStr: string) => {
             if (!dateStr || dateStr.length !== 8) return ''
-            return dayjs(dateStr, 'YYYYMMDD').format('YY/MM/DD')
+            return dayjs(dateStr, 'YYYYMMDD').format('YY-MM-DD')
           }
           const startDate = formatDate(row.startPredictionResultDt)
           const endDate = formatDate(row.endPredictionResultDt)
-          return `${startDate} - ${endDate}`
+          return `${startDate} ~ ${endDate}`
         },
       },
       predictionCriteriaVal: {

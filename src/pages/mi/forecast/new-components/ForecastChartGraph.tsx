@@ -2124,7 +2124,13 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
                 }}
               />
             )}
-            <ForecastCrosshairLine ref={crosshairRef} chartRef={chartRef} onTooltipChange={externalTooltipHandler} />
+            <ForecastCrosshairLine
+              ref={crosshairRef}
+              chartRef={chartRef}
+              onTooltipChange={externalTooltipHandler}
+              hideBottomDateLabel={companyNo === 2015}
+              useXAxisLabelInTooltip={companyNo === 2015}
+            />
             <ForecastChartTooltip
               ref={tooltipRef}
               {...tooltip}
