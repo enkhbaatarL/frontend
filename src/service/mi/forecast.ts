@@ -681,7 +681,7 @@ const forecastDataService = {
    */
   async getForecastFactorCategoryNew(companyNo: number, params: IForecastFactorCategoryRequestNew) {
     const response: AxiosResponse<ICommonResponse<ICategoryList>> = await api.get(
-      `mi/forecast/companies/${companyNo}/chart/factor/category`,
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/chart/factor/category`),
       { params },
     )
     return response.data.data
