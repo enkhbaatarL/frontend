@@ -288,22 +288,20 @@ const ForecastChart = ({
     return result
   }, [chartData, companyNo])
 
-  // 호버 시 리포트 기간(start~end)만 맞춰 predictionResultList를 highlight로 그림 (기본 그래프는 흐리게 유지)
+  // 호버 시 predictionResultList를 highlight로 표시
   const highlightChartData = useMemo((): (ChartData & { dataType?: string; resultDates?: string[] }) | null => {
     if (!hoverReportCardInfo?.predictionResultList?.length || !chartData?.charts?.length) return null
 
     const resultList = hoverReportCardInfo.predictionResultList
-    const reportStart = hoverReportCardInfo.startPredictionResultDt
-    const reportEnd = hoverReportCardInfo.endPredictionResultDt
 
-    // 날짜를 YYYYMMDD로 정규화 (형식 차이로 매칭 실패 방지)
+    // 날짜 정규화(YYYYMMDD)
     const toYyyyMmDd = (d: string): string => {
+      if (!d) return ''
       if (/^\d{8}$/.test(d)) return d
       const parsed = dayjs(d)
       return parsed.isValid() ? parsed.format('YYYYMMDD') : ''
     }
-    const reportStartNorm = toYyyyMmDd(reportStart)
-    const reportEndNorm = toYyyyMmDd(reportEnd)
+
     const resultListByDate = new Map<string, number>()
     resultList.forEach((p) => {
       const key = toYyyyMmDd(p.date)
@@ -360,27 +358,28 @@ const ForecastChart = ({
     const resultDates = baseStartDates.map((sd) => getPeriodByStartDate(sd)?.label ?? sd)
     const timestamps = baseStartDates.map((sd) => ymdToTimestamp(sd))
 
-    // 기간(reportStart~reportEnd)과 맞는 구간만 predictionResultList 값으로 채움.
-    // 1D: 단일일 매칭, 1W/1M 등: dateList(start~end) 구간으로 매칭 후 구간 내 predictionResultList 평균.
+    // predictionResultList 기반 x축 구간별 값 매핑
+    // 1D: 날짜 정확히 매칭
+    // 그 외: 구간 내 predictionResultList 값을 기반으로 계산 (Hynix: 마지막 값, 나머지: 평균값)
     const values = baseStartDates.map((startDate) => {
       const datePeriod = getPeriodByStartDate(startDate)
       if (datePeriod) {
-        // 1W 등: 구간(주)이 리포트 기간과 겹치면, 그 구간 안의 predictionResultList 값들의 평균(또는 단일값) 사용
         const { startNorm, endNorm } = datePeriod
-        const overlaps = startNorm <= reportEndNorm && endNorm >= reportStartNorm
-        if (!overlaps) return null
-        const valsInPeriod: number[] = []
+        const entriesInPeriod: [string, number][] = []
         resultListByDate.forEach((val, key) => {
-          if (key >= startNorm && key <= endNorm) valsInPeriod.push(val)
+          if (key >= startNorm && key <= endNorm) entriesInPeriod.push([key, val])
         })
-        if (valsInPeriod.length === 0) return null
-        if (valsInPeriod.length === 1) return valsInPeriod[0]
-        return valsInPeriod.reduce((a, b) => a + b, 0) / valsInPeriod.length
+        if (entriesInPeriod.length === 0) return null
+        if (entriesInPeriod.length === 1) return entriesInPeriod[0][1]
+        if (companyNo === 2015) {
+          entriesInPeriod.sort((a, b) => a[0].localeCompare(b[0]))
+          return entriesInPeriod[entriesInPeriod.length - 1][1]
+        }
+        return entriesInPeriod.reduce((sum, [, v]) => sum + v, 0) / entriesInPeriod.length
       }
-      // 1D: 단일일 매칭
+      // 1D: 단일 일자 매칭
       const dateNorm = normalizeYmd(startDate)
       if (!dateNorm) return null
-      if (dateNorm < reportStartNorm || dateNorm > reportEndNorm) return null
       const value = resultListByDate.get(dateNorm)
       return value !== undefined ? value : null
     })
@@ -404,7 +403,7 @@ const ForecastChart = ({
       goodsDataName: hoverReportCardInfo.predictChartDetailExpn,
       dataType: 'FORECAST',
     } as ChartData & { dataType?: string; resultDates?: string[] }
-  }, [chartData, hoverReportCardInfo])
+  }, [chartData, hoverReportCardInfo, companyNo])
 
   const charts = useMemo(() => convertedChartData, [convertedChartData])
 
