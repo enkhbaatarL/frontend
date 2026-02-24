@@ -15,6 +15,7 @@ export interface TooltipContent {
   color?: string
   date: string
   predictDate?: string | null
+  startDate?: string
   toFixed?: number
   isForecast?: boolean
   isFixedMode?: boolean
@@ -32,8 +33,9 @@ const ChartToolTipItem = (props: {
   goodsDataSourceNo?: number
   date?: string
   predictDate?: string | null
+  startDate?: string
 }) => {
-  const { label, value, color, toFixed, isForecast = false, isFixedMode = false, monthSelect, goodsDataSourceNo, date, predictDate } = props
+  const { label, value, color, toFixed, isForecast = false, isFixedMode = false, goodsDataSourceNo, date, predictDate, startDate } = props
   const LineIcon = isForecast ? DashLineIcon : SolidLineIcon
   const popupRef = useRef<MIMorphingPopupRef>(null)
   const hasValue = value !== undefined
@@ -46,10 +48,11 @@ const ChartToolTipItem = (props: {
       <ForecastChartTooltipReportContent
         goodsDataSourceNo={goodsDataSourceNo}
         date={predictDate || date}
+        startDate={startDate}
         isVisible={isPopupOpen}
       />
     ),
-    [monthSelect, goodsDataSourceNo, date, predictDate, isPopupOpen],
+    [goodsDataSourceNo, date, predictDate, isPopupOpen, startDate],
   )
 
   const content = (
@@ -196,11 +199,12 @@ interface ForecastChartTooltipProps {
   visibility?: 'visible' | 'hidden'
   isFixedMode?: boolean
   monthSelect?: string
+  companyNo?: number
   onClose?: () => void
 }
 
 const ForecastChartTooltip = forwardRef<HTMLDivElement, Readonly<ForecastChartTooltipProps>>(
-  ({ visible, top, left, content, visibility = 'visible', isFixedMode = false, monthSelect, onClose }, ref) => {
+  ({ visible, top, left, content, visibility = 'visible', isFixedMode = false, monthSelect, companyNo, onClose }, ref) => {
     if (!visible) return null
 
     const items: Array<TooltipContent> = []
@@ -281,6 +285,7 @@ const ForecastChartTooltip = forwardRef<HTMLDivElement, Readonly<ForecastChartTo
               goodsDataSourceNo={item.goodsDataSourceNo}
               date={item.date}
               predictDate={item.predictDate}
+              startDate={companyNo === 2015 ? item.startDate : undefined}
             />
           ))}
         </Stack>

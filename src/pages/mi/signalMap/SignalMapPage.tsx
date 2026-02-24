@@ -1,4 +1,4 @@
-import { Box, Typography, Tooltip } from '@mui/material'
+import { Box, Tooltip, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import chunk from 'lodash-es/chunk'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
@@ -95,11 +95,10 @@ const SignalMapPage = () => {
     enabled: isInitialized && (!!period || !!companyFilter),
     select: (res) => {
       const topImpactVariables = normalizeTopImpact(res.data)
-      const newRes = {
+      return {
         ...res.data,
         topImpactVariables,
       }
-      return newRes
     },
   })
 

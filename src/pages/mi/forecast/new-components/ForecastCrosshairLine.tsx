@@ -12,6 +12,7 @@ interface TooltipContent {
   color?: string
   date: string
   predictDate?: string | null
+  startDate?: string
   toFixed?: number
   isForecast?: boolean
   goodsDataSourceNo?: number
@@ -278,9 +279,11 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
         const pluginTimestamps = (pluginOptions.timestamps as string[] | undefined) ?? []
         const pluginResultDates = (pluginOptions.resultDates as string[] | undefined) ?? []
         const firstDataset = chart.data.datasets[0]
-        const metadata = (firstDataset as { metadata?: { timestamps?: string[]; predictDates?: string[] } })?.metadata
+        const metadata = (firstDataset as { metadata?: { timestamps?: string[]; predictDates?: string[]; startDates?: string[] } })
+          ?.metadata
         const timestamps = pluginTimestamps.length > 0 ? pluginTimestamps : metadata?.timestamps || []
         const predictDates = metadata?.predictDates || []
+        const startDates = metadata?.startDates || []
         const roundedIndex = Math.round(xScaleIndex)
         const timestamp = timestamps[roundedIndex]
         const formattedDate =
@@ -440,6 +443,9 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
         const tooltipPredictDate = effectiveFixedPosition
           ? predictDates[Math.round(effectiveFixedPosition.xScaleIndex)] || null
           : predictDate
+        const tooltipStartDate = effectiveFixedPosition
+          ? startDates[Math.round(effectiveFixedPosition.xScaleIndex)] || undefined
+          : startDates[roundedIndex] || undefined
 
         const tooltipContent: Record<string, TooltipContent> = {}
 
@@ -462,6 +468,7 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
                 toFixed?: number
                 goodsDataSourceNo?: number
                 predictDates?: string[]
+                startDates?: string[]
                 skipForTooltipIndices?: number[]
               }
             }
@@ -480,12 +487,17 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
               ? datasetMetadata.predictDates[tooltipXScaleIndex] || tooltipPredictDate
               : tooltipPredictDate
 
+          const datasetStartDate = datasetMetadata?.startDates
+            ? datasetMetadata.startDates[Math.round(tooltipXScaleIndex)] || tooltipStartDate
+            : tooltipStartDate
+
           tooltipContent[index] = {
             label: dataset.label,
             color: chipColor,
             value: displayValue,
             date: tooltipFormattedDate,
             predictDate: datasetPredictDate,
+            startDate: datasetStartDate,
             toFixed: datasetMetadata?.toFixed,
             isForecast,
             goodsDataSourceNo: datasetMetadata?.goodsDataSourceNo,

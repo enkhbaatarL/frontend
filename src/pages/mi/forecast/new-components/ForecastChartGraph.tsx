@@ -408,6 +408,7 @@ type DatasetMeta = {
   isHighlight?: boolean
   timestamps?: string[]
   predictDates?: string[]
+  startDates?: string[]
   resultDates?: string[]
 }
 
@@ -625,6 +626,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             visibilityKey,
             timestamps: chart.timestamps,
             predictDates: (chart as ChartData & { predictDates?: string[] }).predictDates,
+            startDates: (chart as ChartData & { startDates?: string[] }).startDates,
             resultDates: (chart as ChartData & { resultDates?: string[] }).resultDates,
             skipForTooltipIndices: (chart as ChartData & { skipForTooltipIndices?: number[] }).skipForTooltipIndices,
           },
@@ -2137,6 +2139,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               visibility={tooltip.visible && !isTooltipPositionCalculated && tooltip.left === -9999 ? 'hidden' : 'visible'}
               isFixedMode={fixedXScaleIndex !== null}
               monthSelect={monthSelect}
+              companyNo={companyNo}
               onClose={handleCloseFixedMode}
             />
           </>

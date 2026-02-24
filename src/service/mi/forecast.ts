@@ -249,10 +249,12 @@ export interface IForecastFactorCategoryRequest {
 }
 export interface IForecastFactorCategoryRequestNew {
   predictDate: string // YYYYMMDD
+  startDate?: string // YYYYMMDD
   goodsDataSourceNo: number
 }
 export interface IForecastFactorsRequestNew {
   predictDate: string // YYYYMMDD
+  startDate?: string // YYYYMMDD
   goodsDataSourceNo: number
   explanatoryLevelNm: string
 }
@@ -274,12 +276,15 @@ export interface ICategoryList {
   associatedGoodsDataSourceNo?: number
   endPredictionResultDt?: string
   startPredictionResultDt?: string
+  predictionTargetDt?: string
+  predictionTargetPeriod?: string
   predictionCriteriaDt?: string
   predictionResultDt?: string
   avgPredictionResultVal?: number
   predictionCriteriaVal?: number
   predictionResultDiffVal?: number
   predictionResultDiffRate?: number
+  priceRangeVal?: string[]
   isScheduled?: boolean | null
 }
 export interface IForecastFactorsRequest {
@@ -927,11 +932,10 @@ const forecastDataService = {
       mnemonicCd: string
     },
   ) {
-    const response = await api.get(withCustomBaseUrl(`mi/forecast/companies/${companyNo}/records/daily-download`), {
+    return await api.get(withCustomBaseUrl(`mi/forecast/companies/${companyNo}/records/daily-download`), {
       params,
       responseType: 'blob',
     })
-    return response
   },
 }
 

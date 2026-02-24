@@ -190,9 +190,6 @@ const ForecastReportCardReportContent = ({
     )
   }
 
-  // 날짜 포맷팅
-  const runDate = dayjs(predictionFulfillDt).format('YYYY-MM-DD')
-
   // explanatorySummaryContent의 줄바꿈 처리: \\n, \r\n, \r을 실제 줄바꿈으로 변환
   // \r (캐리지 리턴)은 Windows/Mac에서 사용하는 줄바꿈 문자입니다
   const processedSummaryContent = data.explanatorySummaryContent
@@ -262,8 +259,12 @@ const ForecastReportCardReportContent = ({
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
           <Stack gap="20px">
-            <InfoLabel label="TARGET DATE" value={data.predictionTargetDt} description={data.predictionTargetPeriod} />
-            <InfoLabel label="RUN DATE" value={runDate} description="Model execution date" />
+            <InfoLabel label="TARGET DATE" value={data.predictionTargetDt ?? '-'} description={data.predictionTargetPeriod ?? '-'} />
+            <InfoLabel
+              label="RUN DATE"
+              value={data.predictionFulfillDt ? dayjs(data.predictionFulfillDt).format('YYYY-MM-DD') : '-'}
+              description="Model execution date"
+            />
           </Stack>
           <Divider orientation="vertical" flexItem sx={{ my: '6px' }} />
           <Stack gap="20px">

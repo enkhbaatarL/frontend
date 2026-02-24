@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
@@ -10,7 +10,7 @@ import useSnackbar from '@/hooks/useSnackbar'
 import ForecastChartGraph, { ForecastChartGraphHandle } from '@/pages/mi/forecast/new-components/ForecastChartGraph'
 import ForecastChartLegend from '@/pages/mi/forecast/new-components/ForecastChartLegend'
 import { IForecastChartInfo, IForecastReport } from '@/service/mi/forecast'
-import { ChartType, ChartData } from '@/types/dataDetailChart'
+import { ChartData, ChartType } from '@/types/dataDetailChart'
 
 interface ForecastChartProps {
   hoverReportCardInfo?: IForecastReport | null
@@ -240,6 +240,7 @@ const ForecastChart = ({
         const timestamps = chart.forecastChartLines.rawData.map((item) => ymdToTimestamp(item.startDate))
         const resultDates = chart.forecastChartLines.rawData.map((item) => getDisplayLabelByStartDate(item.startDate) ?? item.resultDate)
         const predictDates = chart.forecastChartLines.rawData.map((item) => item.predictDate || '')
+        const startDates = chart.forecastChartLines.rawData.map((item) => item.startDate || '')
 
         const values = chart.forecastChartLines.rawData.map((item) => {
           const value = item.value
@@ -272,8 +273,15 @@ const ForecastChart = ({
           goodsDataName: displayName,
           dataType: chart.forecastChartLines.dataType,
           predictDates,
+          startDates,
           skipForTooltipIndices,
-        } as ChartData & { dataType?: string; predictDates?: string[]; resultDates?: string[]; skipForTooltipIndices?: number[] })
+        } as ChartData & {
+          dataType?: string
+          predictDates?: string[]
+          startDates?: string[]
+          resultDates?: string[]
+          skipForTooltipIndices?: number[]
+        })
       }
     })
 
@@ -493,8 +501,7 @@ const ForecastChart = ({
       const originalLabel = chart.goodsDataSourceName ?? ''
       const chartColor = chartColorMap.get(originalLabel)!
 
-      const baseLabel = originalLabel.toUpperCase()
-      const displayLabel = baseLabel
+      const displayLabel = originalLabel.toUpperCase()
 
       const legendItem = {
         type: (isForecast ? 'forecast' : 'actual') as 'forecast' | 'actual',
