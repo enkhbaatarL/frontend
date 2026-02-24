@@ -1,11 +1,12 @@
 import { Chart as ChartJS, ChartDataset } from 'chart.js'
+
 interface TreemapChild {
   sector: string
-  level: number
   change: number
   category?: string
   instrument?: string
 }
+
 interface TreemapDataItem {
   _data: {
     children: TreemapChild[]
@@ -15,7 +16,7 @@ interface TreemapDataItem {
 const ELLIPSIS = '…'
 const FONT_FAMILY = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial'
 
-function drawOneLineEllipsis(
+const drawOneLineEllipsis = (
   ctx: CanvasRenderingContext2D,
   text: string,
   x: number,
@@ -23,7 +24,7 @@ function drawOneLineEllipsis(
   maxWidth: number,
   font: string,
   fillStyle: string,
-) {
+) => {
   if (!text) return
   ctx.font = font
   ctx.fillStyle = fillStyle
@@ -43,7 +44,7 @@ function drawOneLineEllipsis(
   if (t.length) ctx.fillText(t + ELLIPSIS, x, y)
 }
 
-function drawMultiLineWithEllipsis(
+const drawMultiLineWithEllipsis = (
   ctx: CanvasRenderingContext2D,
   text: string,
   x: number,
@@ -53,7 +54,7 @@ function drawMultiLineWithEllipsis(
   font: string,
   lineHeightPx: number,
   fillStyle: string,
-): number {
+): number => {
   if (!text || maxLines <= 0) return 0
   ctx.font = font
   ctx.fillStyle = fillStyle
@@ -132,17 +133,19 @@ const customLabelPlugin = {
       const { x, y, width: w, height: h } = rect
       if (w <= 0 || h <= 0) return
 
-      const level = raw.level ?? 1
-      const isSmallBox = w < 64 || h < 48
-      const padX = isSmallBox ? 6 : 14
-      const padY = isSmallBox ? 6 : 12
+      const shortSide = Math.min(w, h)
+      const fontScale = Math.max(0.7, Math.min(1.3, shortSide / 72))
+
+      const isSmallBox = w < 72 || h < 56
+      const padX = Math.max(8, Math.min(16, Math.round(w * 0.1)))
+      const padY = Math.max(5, Math.min(12, Math.round(h * 0.1)))
       const usableW = Math.max(4, w - padX * 2)
       const usableH = Math.max(4, h - padY * 2)
-      const MIN_FONT = 14
 
-      const catSize = Math.max(MIN_FONT, Math.round(10 + (level - 1) * 0.4))
-      const instSize = Math.max(MIN_FONT, Math.round(10 + (level - 1) * 0.4))
-      const valSize = Math.round(16 + (level - 1) * 0.4)
+      const instSize = Math.max(11, Math.round(13 * fontScale))
+      const valSize = Math.max(13, Math.round(17 * fontScale))
+      const catSize = Math.max(11, Math.round(12 * fontScale))
+
       const catFont = `600 ${catSize}px ${FONT_FAMILY}`
       const instFont = `500 ${instSize}px ${FONT_FAMILY}`
       const valFont = `600 ${valSize}px ${FONT_FAMILY}`
@@ -162,11 +165,12 @@ const customLabelPlugin = {
       if (isSmallBox) {
         ctx.font = valFont
         ctx.fillStyle = valueColor
-        const tw = ctx.measureText(changeText).width
-        if (tw <= usableW && valLH <= usableH) {
-          ctx.textAlign = 'center'
+        // 양수,음수 동일 기준: "- X.XX" 너비로 판단 -> 같은 절댓값이면 동시에 보이거나 숨겨짐
+        const absVal = Math.abs(typeof raw.change === 'number' ? raw.change : 0)
+        const referenceWidth = ctx.measureText(`- ${absVal.toFixed(2)}`).width
+        if (referenceWidth <= usableW && valLH <= usableH) {
           ctx.textBaseline = 'middle'
-          ctx.fillText(changeText, x + w / 2, y + h / 2 - 1)
+          ctx.fillText(changeText, x + padX, y + h / 2 - 1)
         }
         ctx.restore()
         return
@@ -202,7 +206,6 @@ const customLabelPlugin = {
       if (maxInstLines >= 1) {
         usedInstLines = drawMultiLineWithEllipsis(ctx, instrument, x + padX, curY, usableW, maxInstLines, instFont, instLH, titleColor)
         curY += usedInstLines * instLH
-        remainForTitle -= usedInstLines * instLH
       }
 
       ctx.font = valFont

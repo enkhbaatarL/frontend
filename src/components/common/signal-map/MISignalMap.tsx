@@ -12,27 +12,23 @@ interface Props {
     instrumentNm: string
     correlationCalculationVal: number
   }[]
-  thresholdLevels?: number
   useAnimation?: boolean
 }
 
 interface TreemapData {
   category?: string
   sector: string
+  _key?: string
   value: number
   change: number
-  level?: number
 }
 
 interface TreemapRawData {
-  _data: {
-    children: TreemapData[]
-  }
+  _data: { children: TreemapData[] }
   x?: number
   y?: number
   w?: number
   h?: number
-  level?: number
 }
 
 declare module 'chart.js' {
@@ -41,63 +37,38 @@ declare module 'chart.js' {
     tiling?: string
     ratio?: number
   }
-  // 사용자 정의 타입 추가
   interface TooltipPositionerMap {
     myCustomPositioner: (this: TooltipModel<'treemap'>, _elements: ActiveElement[], eventPosition: Point) => Point | false
   }
 }
 
 Tooltip.positioners.myCustomPositioner = function (_elements: ActiveElement[], eventPosition: Point): Point | false {
-  const { width, height, chart } = this
-
-  const tooltipWidth = width ?? 0
-  const tooltipHeight = height ?? 0
-
-  const canvas = chart.canvas
-  const canvasWidth = canvas.clientWidth
-  const canvasHeight = canvas.clientHeight
-
+  const { width = 0, height = 0, chart } = this
+  const { clientWidth: canvasW, clientHeight: canvasH } = chart.canvas
   const { x: mouseX, y: mouseY } = eventPosition
 
-  if (mouseX === null || mouseY === null) {
-    return false
-  }
+  if (mouseX === null || mouseY === null) return false
 
-  // 1. 기본 툴팁 위치: 우하단
-  let targetX = mouseX + 20
-  let targetY = mouseY + tooltipHeight + 20
+  let tx = mouseX + 20
+  let ty = mouseY + height + 20
 
-  // 2. 오른쪽 경계 확인 및 조정
-  const wouldExceedRight = targetX + tooltipWidth > canvasWidth
-  if (wouldExceedRight) {
-    // 오른쪽 경계를 넘으면 마우스 기준 왼쪽으로 이동
-    targetX = mouseX - tooltipWidth - 4
-  }
-
-  // 3. 아래쪽 경계 확인 및 조정
-  const wouldExceedBottom = targetY + tooltipHeight > canvasHeight
-  if (wouldExceedBottom) {
-    // 아래쪽 경계를 넘으면 마우스 기준 위쪽으로 이동
-    targetY = mouseY - 8
-  }
-
-  // 4. 캔버스 경계 확인 및 최종 조정 (Clamp)
-  // 좌/상/우/하 경계 확인 및 조정
-  let finalX = Math.max(0, targetX)
-  let finalY = Math.max(0, targetY)
-  finalX = Math.min(finalX, canvasWidth + tooltipWidth)
-  finalY = Math.min(finalY, canvasHeight + tooltipHeight)
+  if (tx + width > canvasW) tx = mouseX - width - 4
+  if (ty + height > canvasH) ty = mouseY - 8
 
   return {
-    x: finalX,
-    y: finalY,
+    x: Math.min(Math.max(0, tx), canvasW + width),
+    y: Math.min(Math.max(0, ty), canvasH + height),
   }
 }
 
-const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }: Props) => {
+// 박스 면적 범위: 항목 수에 따라 유효 비율 자동 조정 (g=2 -> x2, g>=12 -> x12)
+const MIN_VALUE = 6
+const MAX_VALUE = 72
+
+const MISignalMap = ({ mapData = [], useAnimation = false }: Props) => {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
-  const chartInstanceRef = useRef<{ destroy:() => void }>(null)
+  const chartInstanceRef = useRef<{ destroy(): void }>(null)
 
   const data = useMemo(
     () =>
@@ -109,8 +80,6 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
     [mapData],
   )
 
-  const formatChange = (change: number | undefined) => (typeof change === 'number' ? `${change.toFixed(2)}%` : 'N/A')
-
   const getSectorColor = (context: ScriptableContext<'treemap'>) => {
     const raw = context.raw as TreemapRawData
     const change = raw._data?.children[0].change
@@ -121,7 +90,6 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
     const y = Math.floor(raw.y ?? 0)
     const width = Math.floor(raw.w ?? 0)
     const height = Math.floor(raw.h ?? 0)
-
     const gradient = ctxRef.current.createLinearGradient(x, y, x + width, y + height)
 
     if (change === 0) {
@@ -138,7 +106,7 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
         gradient.addColorStop(0, '#6B2935')
         gradient.addColorStop(1, '#6B2935')
       }
-    } else if (change > 0) {
+    } else {
       if (change < 0.3) {
         gradient.addColorStop(0, '#459578')
         gradient.addColorStop(1, '#459578')
@@ -154,54 +122,44 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
     return gradient
   }
 
-  const normalizeToLevel = (change: number, levels: number, maxChangeValue: number): number => {
-    // 변화율이 0인 경우 다른 항목보다 작게 표시하기 위해 0 반환 (제일 끝에 배치)
-    if (change === 0) {
-      return 0
-    }
-
-    // levels가 1인 경우 미계산
-    if (levels === 1) {
-      return 1
-    }
-
-    const relativePosition = Math.abs(change) / maxChangeValue // 절대값으로 크기 비교
-    const adjustedPosition = Math.sqrt(relativePosition)
-    const level = Math.ceil(adjustedPosition * levels)
-
-    // 레벨이 0이 되지 않도록 최소 1 보장
-    return Math.max(1, Math.min(level, levels))
-  }
-
   useEffect(() => {
     const ctx = chartRef.current?.getContext('2d')
     if (!ctx) return () => {}
 
     ctxRef.current = ctx
-
-    // 이전 차트 인스턴스 제거
     chartInstanceRef.current?.destroy()
 
-    // 데이터 최대 변화율 계산 (0인 경우 제외)
-    const nonZeroChanges = data.map((item: { change: number }) => Math.abs(item.change)).filter((change: number) => change > 0)
-    const maxChange = Math.max(...nonZeroChanges)
-
-    const normalizedData: TreemapData[] = data.map((item) => {
-      const level = normalizeToLevel(item.change, thresholdLevels, maxChange)
-
-      let normalizedValue = 4 + Math.pow(2, level)
-
-      // 변화율이 0인 경우(레벨 0) 레벨 1보다 아주 미세하게 작은 값 할당
-      if (level === 0) {
-        normalizedValue = 4 + Math.pow(2, 1) - 0.01
-      }
-
-      return {
-        ...item,
-        value: normalizedValue,
-        level,
-      }
+    // 절댓값 toFixed(2) 기준 그룹화 -> 같은 표시값은 반드시 같은 크기
+    const displayGroupMap = new Map<string, number[]>()
+    data.forEach((item, idx) => {
+      const absVal = Math.abs(item.change)
+      if (absVal === 0) return
+      const key = absVal.toFixed(2)
+      if (!displayGroupMap.has(key)) displayGroupMap.set(key, [])
+      displayGroupMap.get(key)!.push(idx)
     })
+
+    const sortedGroups = Array.from(displayGroupMap.entries())
+      .filter(([key]) => parseFloat(key) > 0)
+      .sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]))
+
+    const g = sortedGroups.length
+    const rankValueMap = new Map<number, number>()
+
+    const baseRatio = MAX_VALUE / MIN_VALUE
+    const effectiveRatio = Math.pow(baseRatio, Math.min(1, g > 1 ? Math.log(g) / Math.log(baseRatio) : 1))
+
+    sortedGroups.forEach(([, idxList], rankIdx) => {
+      const normalized = g > 1 ? rankIdx / (g - 1) : 1
+      const value = MIN_VALUE * Math.pow(effectiveRatio, normalized)
+      idxList.forEach((idx) => rankValueMap.set(idx, value))
+    })
+
+    const normalizedData: TreemapData[] = data.map((item, idx) => ({
+      ...item,
+      _key: `${item.sector}__${idx}`, // 동일 sector명 병합 방지
+      value: item.change === 0 ? MIN_VALUE * 0.8 : (rankValueMap.get(idx) ?? MIN_VALUE),
+    }))
 
     const chart = new ChartJS(ctx, {
       type: 'treemap',
@@ -210,26 +168,15 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
           {
             data: normalizedData,
             key: 'value',
-            groups: ['sector'],
-            spacing: 0.5,
+            groups: ['_key'],
+            spacing: 1,
             borderWidth: 1,
-            borderRadius: 3,
+            borderRadius: 4,
             borderColor: 'transparent',
             captions: {
               display: true,
               align: 'center',
-              font: {
-                weight: 'bold',
-                size: 14,
-              },
-            },
-            labels: {
-              display: false,
-              formatter: (context: TreemapScriptableContext) => {
-                const { sector, change, level } = (context.raw as unknown as TreemapRawData)._data.children[0]
-                return [sector, formatChange(change), level ? `Level: ${level}` : '']
-              },
-              color: 'white',
+              font: { weight: 'bold', size: 14 },
             },
             backgroundColor: (context: ScriptableContext<'treemap'>) => getSectorColor(context),
           },
@@ -237,14 +184,9 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
       },
       options: {
         maintainAspectRatio: false,
-        animation: useAnimation && {
-          duration: 2000,
-          easing: 'easeInOutQuint',
-        },
+        animation: useAnimation && { duration: 2000, easing: 'easeInOutQuint' },
         plugins: {
-          legend: {
-            display: false,
-          },
+          legend: { display: false },
           tooltip: {
             enabled: true,
             intersect: false,
@@ -252,23 +194,11 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
             z: 100,
             backgroundColor: 'white',
             titleColor: '#333',
-            titleFont: {
-              size: 14,
-              weight: '600',
-              lineHeight: 1,
-            },
+            titleFont: { size: 14, weight: '600', lineHeight: 1 },
             bodyColor: '#333',
-            bodyFont: {
-              size: 14,
-              weight: '500',
-              lineHeight: 1,
-            },
+            bodyFont: { size: 14, weight: '500', lineHeight: 1 },
             footerColor: '#333',
-            footerFont: {
-              size: 24,
-              weight: '600',
-              lineHeight: 1.5,
-            },
+            footerFont: { size: 24, weight: '600', lineHeight: 1.5 },
             padding: 16,
             displayColors: false,
             borderColor: '#e0e0e0',
@@ -279,21 +209,15 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
             callbacks: {
               title: (context: TreemapScriptableContext[]) => {
                 const { category } = (context[0].raw as unknown as TreemapRawData)._data.children[0]
-
-                return category ? category : ''
+                return category ?? ''
               },
-              label: (context: TreemapScriptableContext) => {
-                const { sector } = (context.raw as unknown as TreemapRawData)._data.children[0]
-                return sector
-              },
+              label: (context: TreemapScriptableContext) => (context.raw as unknown as TreemapRawData)._data.children[0].sector,
               footer: (context: TreemapScriptableContext[]) => {
                 const { change } = (context[0].raw as unknown as TreemapRawData)._data.children[0]
                 return change.toFixed(2).replace('-', '- ')
               },
             },
-            animation: {
-              duration: 100,
-            },
+            animation: { duration: 100 },
           },
           customLabelPlugin: true,
         },
@@ -301,13 +225,12 @@ const MISignalMap = ({ mapData = [], thresholdLevels = 6, useAnimation = false }
       plugins: [customLabelPlugin],
     })
 
-    // 차트 인스턴스 저장
     chartInstanceRef.current = chart
 
     return () => {
       chart.destroy()
     }
-  }, [data, thresholdLevels, useAnimation]) // 차트 다시 그리기
+  }, [data, useAnimation])
 
   return (
     <div style={{ width: '100%', height: '100%' }}>

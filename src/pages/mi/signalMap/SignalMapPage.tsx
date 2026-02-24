@@ -80,7 +80,7 @@ const SignalMapPage = () => {
         categoryName: 'Top Impact Variables',
         items: [
           {
-            categoryName: 'All Sectors',
+            categoryName: 'All Factors',
             items: signalData?.topImpactVariables,
           },
         ],
