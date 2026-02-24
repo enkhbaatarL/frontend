@@ -689,6 +689,7 @@ const ForecastChart = ({
                 chartColorMap={chartColorMap}
                 monthSelect={monthSelect}
                 companyNo={companyNo}
+                interval={selectedPeriod}
                 // spanGaps
               />
             )}

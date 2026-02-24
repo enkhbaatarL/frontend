@@ -34,12 +34,28 @@ const ChartToolTipItem = (props: {
   date?: string
   predictDate?: string | null
   startDate?: string
+  companyNo?: number
+  interval?: string
 }) => {
-  const { label, value, color, toFixed, isForecast = false, isFixedMode = false, goodsDataSourceNo, date, predictDate, startDate } = props
+  const {
+    label,
+    value,
+    color,
+    toFixed,
+    isForecast = false,
+    isFixedMode = false,
+    goodsDataSourceNo,
+    date,
+    predictDate,
+    startDate,
+    companyNo,
+    interval,
+  } = props
   const LineIcon = isForecast ? DashLineIcon : SolidLineIcon
   const popupRef = useRef<MIMorphingPopupRef>(null)
   const hasValue = value !== undefined
-  const canClick = isForecast && hasValue
+  const isInteractionDisabled = companyNo === 2015 && interval === '1Y' && isFixedMode
+  const canClick = isForecast && hasValue && !isInteractionDisabled
   const [isPopupOpen, setIsPopupOpen] = useState(false)
 
   // ForecastChartTooltipReportContent를 메모이제이션하여 불필요한 리렌더링 방지
@@ -69,8 +85,9 @@ const ChartToolTipItem = (props: {
         cursor: canClick ? 'pointer' : 'default',
         '&:hover': {
           backgroundColor: canClick ? 'contentBG.Hover' : undefined,
-          // hover 시 값 텍스트 숨기고 버튼 표시 (고정 모드이고 forecast인 경우만)
-          ...(isFixedMode &&
+          // hover 시 값 텍스트 숨기고 버튼 표시 (고정 모드이고 forecast인 경우만, 인터랙션 비활성화 시 제외)
+          ...(!isInteractionDisabled &&
+            isFixedMode &&
             isForecast &&
             hasValue && {
             '& .value-text': {
@@ -82,8 +99,9 @@ const ChartToolTipItem = (props: {
             },
           }),
         },
-        // 기본 상태에서 버튼 숨김 (고정 모드이고 forecast인 경우만)
-        ...(isFixedMode &&
+        // 기본 상태에서 버튼 숨김 (고정 모드이고 forecast인 경우만, 인터랙션 비활성화 시 제외)
+        ...(!isInteractionDisabled &&
+          isFixedMode &&
           isForecast &&
           hasValue && {
           '& .drill-down-button': {
@@ -149,8 +167,8 @@ const ChartToolTipItem = (props: {
         >
           {value === undefined ? '-' : formatValue(value, '', 'en-US', toFixed)}
         </Typography>
-        {/* Drill-down 버튼 - 고정 모드이고 forecast이고 값이 있는 경우만 렌더링, 값 텍스트와 같은 위치에 겹쳐서 배치 */}
-        {isFixedMode && isForecast && hasValue && (
+        {/* Drill-down 버튼 - 고정 모드이고 forecast이고 값이 있는 경우만 렌더링, 인터랙션 비활성화 시 제외, 값 텍스트와 같은 위치에 겹쳐서 배치 */}
+        {!isInteractionDisabled && isFixedMode && isForecast && hasValue && (
           <MIBaseButton
             className="drill-down-button"
             sx={{
@@ -200,11 +218,12 @@ interface ForecastChartTooltipProps {
   isFixedMode?: boolean
   monthSelect?: string
   companyNo?: number
+  interval?: string
   onClose?: () => void
 }
 
 const ForecastChartTooltip = forwardRef<HTMLDivElement, Readonly<ForecastChartTooltipProps>>(
-  ({ visible, top, left, content, visibility = 'visible', isFixedMode = false, monthSelect, companyNo, onClose }, ref) => {
+  ({ visible, top, left, content, visibility = 'visible', isFixedMode = false, monthSelect, companyNo, interval, onClose }, ref) => {
     if (!visible) return null
 
     const items: Array<TooltipContent> = []
@@ -286,6 +305,8 @@ const ForecastChartTooltip = forwardRef<HTMLDivElement, Readonly<ForecastChartTo
               date={item.date}
               predictDate={item.predictDate}
               startDate={companyNo === 2015 ? item.startDate : undefined}
+              companyNo={companyNo}
+              interval={interval}
             />
           ))}
         </Stack>

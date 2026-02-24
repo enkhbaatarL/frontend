@@ -36,6 +36,7 @@ interface ForecastChartGraphProps {
   disableFixedMode?: boolean
   monthSelect?: string
   companyNo?: number
+  interval?: string
 }
 
 const applyOpacity = (color: string, alpha: number): string => {
@@ -441,6 +442,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       disableFixedMode = false,
       monthSelect,
       companyNo,
+      interval,
     },
     ref,
   ) => {
@@ -2140,6 +2142,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               isFixedMode={fixedXScaleIndex !== null}
               monthSelect={monthSelect}
               companyNo={companyNo}
+              interval={interval}
               onClose={handleCloseFixedMode}
             />
           </>
