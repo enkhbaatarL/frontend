@@ -164,6 +164,17 @@ const ForecastChartTooltipReportContent = memo(
       return null
     }, [selectedFactor, factors])
 
+    // date를 YYYYMM 형식으로 변환
+    const dateYYYYMM = useMemo(() => {
+      if (!date) return undefined
+      if (date.startsWith('Index:')) return undefined
+      try {
+        return dayjs(date).format('YYYYMM')
+      } catch {
+        return undefined
+      }
+    }, [date])
+
     // 선택된 factor의 그래프 데이터 조회
     const { data: factorGraph, isLoading: isLoadingFactorGraph } = useQuery({
       queryKey: [
@@ -185,6 +196,7 @@ const ForecastChartTooltipReportContent = memo(
           predictionInputMnemonicCd: selectedFactorObj.predictionInputMnemonicCd,
           marketIndexAnalysisTargetCd: selectedFactorObj.marketIndexAnalysisTargetCd,
           predictionInputMnemonicDetailCd: selectedFactorObj.predictionInputMnemonicDetailCd,
+          date: dateYYYYMM,
         })
       },
       enabled:
@@ -213,7 +225,7 @@ const ForecastChartTooltipReportContent = memo(
       const values = factorGraph.rawData.map((item) => {
         const value = item.value
         if (value === null || value === undefined) {
-          return 0
+          return null
         }
         return Number(value)
       })
@@ -727,6 +739,7 @@ const ForecastChartTooltipReportContent = memo(
                           onFixedModeChange={() => {}}
                           chartColorMap={new Map()}
                           disableFixedMode={true}
+                          spanGaps={true}
                         />
                       </Box>
                     </Stack>

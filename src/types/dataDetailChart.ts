@@ -46,7 +46,7 @@ export interface ChartSeries {
   seriesId: string
   label: string
   renderAs: 'MAIN' | 'COMPARISON'
-  values: number[]
+  values: (number | null)[]
   isVisible: boolean
 }
 
