@@ -230,6 +230,9 @@ const ForecastCrosshairLine = forwardRef<ForecastCrosshairLineHandle, ForecastCr
           mainIndicatorContainer.innerHTML = ''
         }
 
+        // lastMousePosition을 초기화하여, 이후 updateCrosshairPosition이 재생성될 때
+        // useEffect가 마지막 위치로 크로스라인을 다시 그리지 않도록 방지
+        setLastMousePosition(null)
         onTooltipChange({ tooltip: null })
       }
     }, [chartRef, onTooltipChange, fixedPositionState])

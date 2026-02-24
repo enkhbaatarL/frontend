@@ -1839,6 +1839,15 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
         onMouseMove={(event) => {
           event.stopPropagation()
 
+          // 마우스 버튼이 눌리지 않은 상태로 그래프에 재진입한 경우 (밖에서 버튼을 놓은 경우) 드래그 상태 초기화
+          if (event.buttons === 0 && (mouseDownPositionRef.current !== null || isDragConfirmedRef.current)) {
+            mouseDownPositionRef.current = null
+            mouseDownScaleRangeRef.current = null
+            isDragConfirmedRef.current = false
+            wasDraggingOnMouseUpRef.current = false
+            setIsPanning(false)
+          }
+
           if (fixedXScaleIndexRef.current !== null) {
             if (mouseDownPositionRef.current) {
               mouseDownPositionRef.current = null
