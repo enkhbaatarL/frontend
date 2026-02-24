@@ -3,18 +3,25 @@
  * @param {number} amount - The value amount to format
  * @param {string} [currencySymbol='$'] - Currency symbol to prepend (default: $)
  * @param {string} [locale='en-US'] - The locale to use for number formatting
- * @param {number} [toFixed=2] - Number of decimal places (default: 2)
+ * @param {number} [toFixed] - Number of decimal places. When omitted, displays full precision from the source.
  * @returns {string} The formatted value string
  */
-export const formatValue = (amount: number, currencySymbol = '', locale = 'en-US', toFixed = 2) => {
-  // Round to specified decimal places
-  const roundedAmount = Math.round(amount * Math.pow(10, toFixed)) / Math.pow(10, toFixed)
+export const formatValue = (amount: number, currencySymbol: string = '', locale: string = 'en-US', toFixed?: number): string => {
+  let formattedNumber: string
 
-  // Format the number according to locale with specified decimal places
-  const formattedNumber = roundedAmount.toLocaleString(locale, {
-    minimumFractionDigits: toFixed,
-    maximumFractionDigits: toFixed,
-  })
+  if (toFixed !== undefined) {
+    // Round to specified decimal places
+    const roundedAmount = Math.round(amount * Math.pow(10, toFixed)) / Math.pow(10, toFixed)
+    formattedNumber = roundedAmount.toLocaleString(locale, {
+      minimumFractionDigits: toFixed,
+      maximumFractionDigits: toFixed,
+    })
+  } else {
+    // Display with full precision (no decimal restriction)
+    formattedNumber = amount.toLocaleString(locale, {
+      maximumFractionDigits: 20,
+    })
+  }
 
   // Return with currency symbol
   return `${currencySymbol}${formattedNumber}`

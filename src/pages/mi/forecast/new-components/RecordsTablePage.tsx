@@ -398,21 +398,21 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         flex: 1,
         align: 'right',
         headerAlign: 'right',
-        renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
+        renderCell: ({ value }) => (value !== null && value !== undefined ? value : '-'),
       },
       predictionResultVal: {
         minWidth: 130,
         flex: 1,
         align: 'right',
         headerAlign: 'right',
-        renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
+        renderCell: ({ value }) => (value !== null && value !== undefined ? value : '-'),
       },
       actualVal: {
         minWidth: 120,
         flex: 1,
         align: 'right',
         headerAlign: 'right',
-        renderCell: ({ value }) => (value ? value.toFixed(2) : '-'),
+        renderCell: ({ value }) => (value !== null && value !== undefined ? value : '-'),
       },
       predictionResultDiffRate: {
         minWidth: 120,
@@ -420,7 +420,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         align: 'right',
         headerAlign: 'right',
         valueGetter: (_, row) => Math.abs(row.predictionResultDiffRate ?? 0),
-        renderCell: ({ value }) => (value ? `${value.toFixed(2)}%` : '-'),
+        renderCell: ({ value }) => (value ? `${value}%` : '-'),
       },
       directionVal: {
         minWidth: 150,
@@ -579,9 +579,9 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
             if (value === null || value === undefined) {
               return '-'
             }
-            // 숫자 타입인 경우 포맷팅
+            // 숫자 타입인 경우 그대로 표시
             if (typeof value === 'number') {
-              return value.toFixed(2)
+              return value
             }
             // 문자열인 경우 그대로 표시
             return String(value)
@@ -813,7 +813,7 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
                       }}
                       noWrap
                     >
-                      {item.percentage.toFixed(2)}%
+                      {item.percentage}%
                     </Typography>
                     <Typography
                       sx={{

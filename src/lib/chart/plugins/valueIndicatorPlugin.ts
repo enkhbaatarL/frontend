@@ -159,7 +159,7 @@ const valueIndicatorPlugin: ValueIndicatorPlugin = {
       labelBox.style.fontWeight = '500'
       labelBox.style.fontFamily = 'Pretendard'
       labelBox.style.whiteSpace = 'nowrap'
-      labelBox.textContent = formatValue(value)
+      labelBox.textContent = formatValue(value, '', 'en-US', 2)
       labelBox.dataset.yAxisId = yAxisId
       comparisonIndicatorContainer?.appendChild(labelBox)
 

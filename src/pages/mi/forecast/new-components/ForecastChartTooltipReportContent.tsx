@@ -274,13 +274,13 @@ const ForecastChartTooltipReportContent = memo(
       return (
         <Stack direction="row" alignItems="baseline" gap="4px">
           <Typography variant="messageText1" color="contentText.Black">
-            {avg.toFixed(2)}
+            {avg}
           </Typography>
           {hasDiff && (
             <Typography variant="messageText1" color={diffVal >= 0 ? 'increase.main' : 'decrease.main'}>
               {diffVal >= 0 ? '+' : ''}
-              {diffVal.toFixed(2)}({diffRate! >= 0 ? '+' : ''}
-              {diffRate!.toFixed(2)}%)
+              {diffVal}({diffRate! >= 0 ? '+' : ''}
+              {diffRate!}%)
             </Typography>
           )}
         </Stack>
@@ -399,7 +399,7 @@ const ForecastChartTooltipReportContent = memo(
                   label="REFERENCE PRICE"
                   value={
                     factorCategory?.predictionCriteriaVal !== undefined && factorCategory?.predictionCriteriaVal !== null
-                      ? factorCategory.predictionCriteriaVal.toFixed(2)
+                      ? String(factorCategory.predictionCriteriaVal)
                       : '-'
                   }
                   description={
@@ -565,7 +565,7 @@ const ForecastChartTooltipReportContent = memo(
                                     bgcolor="increase.main"
                                   >
                                     <Typography variant="body1" color="contentText.White">
-                                      {factor.explanatoryScore.toFixed(2)}
+                                      {factor.explanatoryScore}
                                     </Typography>
                                   </Box>
                                   <Typography
@@ -631,7 +631,7 @@ const ForecastChartTooltipReportContent = memo(
                                     bgcolor="decrease.main"
                                   >
                                     <Typography variant="body1" color="contentText.White">
-                                      {factor.explanatoryScore.toFixed(2)}
+                                      {factor.explanatoryScore}
                                     </Typography>
                                   </Box>
                                   <Typography
@@ -677,7 +677,7 @@ const ForecastChartTooltipReportContent = memo(
                               variant="body1"
                               color={selectedFactorObj.explanatoryDirectionSymbolNm === '+' ? 'increase.main' : 'decrease.main'}
                             >
-                              {selectedFactorObj.explanatoryScore.toFixed(2)}
+                              {selectedFactorObj.explanatoryScore}
                             </Typography>
                           </Stack>
                           <Stack direction="row" alignItems="center" gap="12px" sx={{ minWidth: 0 }}>

@@ -930,6 +930,25 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       }
     }, [allDatasets, isEmptyChart])
 
+    // 실제 데이터 값에서 최대 소수점 자릿수를 감지 (예: "0.634" → 3)
+    const dataMaxPrecision = useMemo(() => {
+      let maxPrecision = 0
+      chartList.forEach((chart) => {
+        chart.series?.forEach((series) => {
+          series.values?.forEach((v) => {
+            if (v !== null && v !== undefined) {
+              const str = String(v)
+              const dotIndex = str.indexOf('.')
+              if (dotIndex !== -1) {
+                maxPrecision = Math.max(maxPrecision, str.length - dotIndex - 1)
+              }
+            }
+          })
+        })
+      })
+      return maxPrecision
+    }, [chartList])
+
     // y축 라벨에 사용할 소수점 자릿수를 step에서 계산
     const yAxisToFixed = useMemo(() => {
       const step = fullYAxisRange.step
@@ -1042,7 +1061,19 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       [chartType, chartList, dataPointCount, chartVisibilityMap, isYAxisSeparated, chartColorMap, spanGaps, highlightChartData, companyNo],
     )
 
-    const mainDataset = useMemo(() => [...allDatasets], [allDatasets])
+    // dataset metadata에 toFixed를 주입하여 툴팁이 실제 데이터 자릿수를 유지하도록 함
+    // dataMaxPrecision > 0 인 경우에만 명시적으로 설정 (0이면 undefined로 두어 기존 full precision 동작 유지)
+    const mainDataset = useMemo(
+      () =>
+        allDatasets.map((dataset) => ({
+          ...dataset,
+          metadata: {
+            ...dataset.metadata,
+            toFixed: dataMaxPrecision > 0 ? dataMaxPrecision : undefined,
+          },
+        })),
+      [allDatasets, dataMaxPrecision],
+    )
 
     const redrawLinesPlugin = useMemo(
       () =>

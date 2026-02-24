@@ -73,7 +73,7 @@ const MarketItemContent = ({
       </Typography>
       <Box display={'flex'} alignItems={'center'} gap={'4px'}>
         <Typography lineHeight={1.4} color="#495057" variant="body2" fontWeight={600} fontSize={'14px'}>
-          {formatValue(displayData.lastValue)}
+          {formatValue(displayData.lastValue, '', 'en-US', 2)}
         </Typography>
         <Typography lineHeight={1.4} color={!isPermitted ? '#495057' : color} variant="body2" fontWeight={600} fontSize={'14px'}>
           {formatNumberToDecimal(displayData.changePercent)}%

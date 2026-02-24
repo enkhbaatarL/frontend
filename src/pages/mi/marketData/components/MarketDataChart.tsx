@@ -266,7 +266,7 @@ const collectLabelsFromDataset = (
     const numValue = typeof value === 'string' ? Number.parseFloat(value) : value
     if (!Number.isFinite(x) || !Number.isFinite(y) || numValue === null || numValue === undefined || !Number.isFinite(numValue)) return
 
-    const formattedValue = Number.isFinite(numValue) ? formatValue(numValue) : String(numValue)
+    const formattedValue = Number.isFinite(numValue) ? formatValue(numValue, '', 'en-US', 2) : String(numValue)
 
     allLabels.push({
       x,
@@ -931,7 +931,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
               }}
             >
               <Typography sx={{ fontWeight: 600 }} color="gray.90" component="div" variant="heading2">
-                {Number.isFinite(metaData.lastValue) ? formatValue(metaData.lastValue) : metaData.lastValue || ''}
+                {Number.isFinite(metaData.lastValue) ? formatValue(metaData.lastValue, '', 'en-US', 2) : metaData.lastValue || ''}
               </Typography>
 
               <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto', mt: '3px' }} gap={3}>

@@ -19,7 +19,7 @@ const ChartToolTipItem = (props: { label: string; value: number; category: strin
         value
       </Typography>
       <Typography variant="body2SB14" color="gray.90">
-        {formatValue(value)}
+        {formatValue(value, '', 'en-US', 2)}
       </Typography>
     </Box>
   )
