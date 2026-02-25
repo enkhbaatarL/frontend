@@ -25,7 +25,7 @@ const NewsletterDetailTempPage = () => {
           justifyContent: 'center',
         }}
       >
-        <div style={{ position: 'relative', top: '0', left: '0' }}>
+        <div style={{ position: 'relative', top: '38px', left: '0' }}>
           <img
             style={{ position: 'absolute', top: '94px', right: '-220px' }}
             src={imgPath1}
