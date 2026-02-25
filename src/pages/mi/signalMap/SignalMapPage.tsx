@@ -1,6 +1,5 @@
 import { Box, Tooltip, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import chunk from 'lodash-es/chunk'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -48,6 +47,28 @@ const SectionHeader = ({ title, itemCount, subCategories, boldTitle = false }: S
     </Box>
   </Box>
 )
+
+/**
+ * 루트 목록을 줄(row) 단위로 그룹핑합니다.
+ * - 기본: 루트마다 단독 줄
+ * - 예외: 현재 루트와 다음 루트의 하위 항목이 각각 1개이면 같은 줄에 배치
+ */
+const groupRootsIntoRows = (roots: MapCategory[]): MapCategory[][] => {
+  const rows: MapCategory[][] = []
+  let i = 0
+  while (i < roots.length) {
+    const current = roots[i]
+    const next = roots[i + 1]
+    if (current.items.length === 1 && next && next.items.length === 1) {
+      rows.push([current, next])
+      i += 2
+    } else {
+      rows.push([current])
+      i += 1
+    }
+  }
+  return rows
+}
 
 const SignalMapPage = () => {
   const { accessCompanyInfo } = useAuthStore()
@@ -101,11 +122,6 @@ const SignalMapPage = () => {
       }
     },
   })
-
-  const getSortedList = (list?: MapCategory[]) => {
-    if (!list) return []
-    return list.sort((a, b) => a.categoryName.localeCompare(b.categoryName))
-  }
 
   useEffect(() => {
     // 언어 변경 시 상태 초기화
@@ -213,66 +229,80 @@ const SignalMapPage = () => {
           </Box>
           <MIColorRange />
         </Box>
-        {chunk(signalData?.topImpactVariables, 2).map((row, rowIdx) => (
-          <Box
-            key={rowIdx}
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '1fr',
-              gap: '24px',
-              mb: 5,
-            }}
-          >
-            {row.map((root, colIdx) => {
-              const subItems = root?.items.sort((a, b) => a.categoryName.localeCompare(b.categoryName))
-              return (
-                <Box key={colIdx}>
+        {customerCompanyNo !== 2015 &&
+          groupRootsIntoRows(signalData?.topImpactVariables ?? []).map((row, rowIdx) => (
+            <Box
+              key={rowIdx}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gap: '24px',
+                mb: 5,
+              }}
+            >
+              {row.map((root, colIdx) => (
+                <Box key={colIdx} mb={6}>
                   <Box mb={5}>
                     <SectionHeader title={root.categoryName} itemCount={root.items.length} boldTitle />
                   </Box>
-                  {subItems.map((subCategory, cateIdx) => (
-                    <Box mb={6} key={cateIdx}>
-                      <SectionHeader title={subCategory.categoryName} itemCount={subCategory.items.length} />
-                      <Box height="460px" marginTop="6px">
-                        <MISignalMap mapData={subCategory.items} useAnimation />
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${Math.min(root.items.length, 2)}, 1fr)`,
+                      gap: '24px',
+                    }}
+                  >
+                    {root.items.map((subCategory, cateIdx) => (
+                      <Box key={cateIdx}>
+                        <SectionHeader title={subCategory.categoryName} itemCount={subCategory.items.length} />
+                        <Box height="460px" marginTop="6px">
+                          <MISignalMap mapData={subCategory.items} useAnimation />
+                        </Box>
                       </Box>
-                    </Box>
-                  ))}
+                    ))}
+                  </Box>
                 </Box>
-              )
-            })}
-          </Box>
-        ))}
-        {chunk(getSortedList(signalData?.list), 2).map((row, rowIdx) => (
-          <Box
-            key={rowIdx}
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '24px',
-              mb: 5,
-            }}
-          >
-            {row.map((root, colIdx) => {
-              const subItems = root?.items.sort((a, b) => a.categoryName.localeCompare(b.categoryName))
-              return (
-                <Box key={colIdx}>
+              ))}
+            </Box>
+          ))}
+        {groupRootsIntoRows(signalData?.list ?? []).map((row, rowIdx) => {
+          const isSingleSubItem = row.every((root) => root.items.length === 1)
+          return (
+            <Box
+              key={rowIdx}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: isSingleSubItem ? 'repeat(2, 1fr)' : '1fr',
+                gap: '24px',
+                mb: 5,
+              }}
+            >
+              {row.map((root, colIdx) => (
+                <Box key={colIdx} mb={6}>
                   <Box mb={5}>
                     <SectionHeader title={root.categoryName} itemCount={root.items.length} boldTitle />
                   </Box>
-                  {subItems.map((subCategory, cateIdx) => (
-                    <Box mb={6} key={cateIdx}>
-                      <SectionHeader title={subCategory.categoryName} itemCount={subCategory.items.length} />
-                      <Box height="460px" marginTop="6px">
-                        <MISignalMap mapData={subCategory.items} useAnimation />
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${Math.min(root.items.length, 2)}, 1fr)`,
+                      gap: '24px',
+                    }}
+                  >
+                    {root.items.map((subCategory, cateIdx) => (
+                      <Box key={cateIdx}>
+                        <SectionHeader title={subCategory.categoryName} itemCount={subCategory.items.length} />
+                        <Box height="460px" marginTop="6px">
+                          <MISignalMap mapData={subCategory.items} useAnimation />
+                        </Box>
                       </Box>
-                    </Box>
-                  ))}
+                    ))}
+                  </Box>
                 </Box>
-              )
-            })}
-          </Box>
-        ))}
+              ))}
+            </Box>
+          )
+        })}
         {!isRenderingComplete && (
           <Box
             minWidth={'1380px'}
