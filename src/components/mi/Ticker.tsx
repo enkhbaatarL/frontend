@@ -17,8 +17,8 @@ interface Props {
 interface DisplayData {
   goodsDataSourceNm: string
   lastValue: number
-  change: number
-  changePercent: number
+  change?: number
+  changePercent?: number
   lastUpdateDt: string
   period: string
   currency: string
@@ -76,7 +76,7 @@ const MarketItemContent = ({
           {formatValue(displayData.lastValue, '', 'en-US', 2)}
         </Typography>
         <Typography lineHeight={1.4} color={!isPermitted ? '#495057' : color} variant="body2" fontWeight={600} fontSize={'14px'}>
-          {formatNumberToDecimal(displayData.changePercent)}%
+          {displayData.changePercent !== undefined ? `${formatNumberToDecimal(displayData.changePercent)}%` : '-'}
         </Typography>
       </Box>
     </Box>
@@ -98,8 +98,8 @@ const MarketItem = ({
   const displayData = {
     goodsDataSourceNm: summary.goodsDataSourceNm,
     lastValue: isPermitted ? (summary.lastValue ?? 0.0) : 0.0,
-    change: isPermitted ? summary.change : 0.0,
-    changePercent: isPermitted ? summary.changePercent : 0.0,
+    change: isPermitted ? summary.change : undefined,
+    changePercent: isPermitted ? summary.changePercent : undefined,
     lastUpdateDt: isPermitted ? dayjs(summary.lastUpdateDt).format('YYYY-MM-DD') : 'YYYY-MM-DD',
     period: isPermitted ? summary.period : '-',
     currency: isPermitted ? summary.currency : 'N/A',

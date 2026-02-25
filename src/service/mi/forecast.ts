@@ -60,9 +60,9 @@ export interface MarketDataItemInfo {
 export interface ExtendedMarketDataItemInfo {
   isPermitted: boolean
   marketMetaDataSummary: Omit<MarketMetaDataSummary, 'previousValue' | 'providerName' | 'goodsDataSourceExpn'> & {
-    change: number
+    change?: number
     changeColor: string
-    changePercent: number
+    changePercent?: number
     changePercentColor: string
     period: string
     unit: string
