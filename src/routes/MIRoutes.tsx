@@ -20,6 +20,7 @@ import MIActivityLogPage from '@/pages/mi/miActivityLog/MIActivityLogPage'
 import NewsDetailPage from '@/pages/mi/news/NewsDetailPage'
 import NewsPage from '@/pages/mi/news/NewsPage'
 import NewsletterDetailPage from '@/pages/mi/newsletter/NewsletterDetailPage'
+import NewsletterDetailTempPage from '@/pages/mi/newsletter/NewsletterDetailTempPage'
 import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
@@ -67,6 +68,18 @@ const MIMainRedirect = () => {
 
   // 리다이렉트 시 state를 초기화하여 targetCompanyNo 잔존 방지
   return <Navigate to={homeUrl} replace />
+}
+
+// Hynix NewsletterDetail 분기
+const NewsletterDetailPageWrapper = () => {
+  const { accessCompanyInfo, user } = useAuthStore()
+  const currentCompanyNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo
+
+  if (currentCompanyNo === 2015) {
+    return <NewsletterDetailTempPage />
+  }
+
+  return <NewsletterDetailPage />
 }
 
 // 조건부 Forecast 컴포넌트 래퍼
@@ -128,7 +141,7 @@ const MIRoutes: RouteObject = {
         },
         {
           path: ':newsletterId/:issueNo',
-          element: <NewsletterDetailPage />,
+          element: <NewsletterDetailPageWrapper />,
         },
       ],
     },
