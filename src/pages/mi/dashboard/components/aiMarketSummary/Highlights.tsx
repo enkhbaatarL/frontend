@@ -202,7 +202,7 @@ const Highlights = ({ highlights }: Props) => {
         </Stack>
       ) : (
         <>
-          <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500}>
+          <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500} unmountOnExit>
             <Box>
               {(selectedOption === 'detailed' || selectedOption === 'focused') &&
                 highlights?.items.map((item, index) => (
@@ -216,7 +216,7 @@ const Highlights = ({ highlights }: Props) => {
                 ))}
             </Box>
           </Fade>
-          <Fade in={selectedOption === 'narrative'} timeout={500}>
+          <Fade in={selectedOption === 'narrative'} timeout={500} unmountOnExit>
             <Box>
               {selectedOption === 'narrative' && (
                 <>

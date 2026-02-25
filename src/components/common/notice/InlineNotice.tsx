@@ -28,7 +28,7 @@ const InlineNotice = ({ noticeKey, children, showCloseButton = true }: InlineNot
   if (disabled) return null
 
   return (
-    <Collapse in={!isClosing} timeout={300}>
+    <Collapse in={!isClosing} timeout={300} unmountOnExit>
       <Fade in={!isClosing} timeout={200}>
         <Box padding="6px 12px" boxSizing="border-box" sx={{ userSelect: 'none' }}>
           <Stack
