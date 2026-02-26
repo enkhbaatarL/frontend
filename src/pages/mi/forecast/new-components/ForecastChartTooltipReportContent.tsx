@@ -22,7 +22,6 @@ import forecastDataService from '@/service/mi/forecast'
 import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
 import { ChartData, ChartType } from '@/types/dataDetailChart'
-import { formatValue } from '@/utils/number'
 
 interface InfoLabelProps {
   label: string
@@ -566,7 +565,7 @@ const ForecastChartTooltipReportContent = memo(
                                     bgcolor="increase.main"
                                   >
                                     <Typography variant="body1" color="contentText.White">
-                                      {formatValue(factor.explanatoryScore, '', 'en-US', companyNo === 2015 ? 3 : 2)}
+                                      {factor.explanatoryScore}
                                     </Typography>
                                   </Box>
                                   <Typography
@@ -632,7 +631,7 @@ const ForecastChartTooltipReportContent = memo(
                                     bgcolor="decrease.main"
                                   >
                                     <Typography variant="body1" color="contentText.White">
-                                      {formatValue(factor.explanatoryScore, '', 'en-US', companyNo === 2015 ? 3 : 2)}
+                                      {factor.explanatoryScore}
                                     </Typography>
                                   </Box>
                                   <Typography
@@ -678,7 +677,7 @@ const ForecastChartTooltipReportContent = memo(
                               variant="body1"
                               color={selectedFactorObj.explanatoryDirectionSymbolNm === '+' ? 'increase.main' : 'decrease.main'}
                             >
-                              {formatValue(selectedFactorObj.explanatoryScore, '', 'en-US', companyNo === 2015 ? 3 : 2)}
+                              {selectedFactorObj.explanatoryScore}
                             </Typography>
                           </Stack>
                           <Stack direction="row" alignItems="center" gap="12px" sx={{ minWidth: 0 }}>
