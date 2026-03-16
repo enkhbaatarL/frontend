@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios.ts'
-import { IMarketRecapCheckpointItem, IMarketRecapHighlightItem } from '@/service/mi/dashboard'
+import { DirectionType, IMarketRecapCheckpointItem, IMarketRecapHighlightItem } from '@/service/mi/dashboard'
 import { ICommonResponse, IPaginationRequest, IPaginationResponse } from '@/types/api'
 
 export interface INewsSummaryData {
@@ -19,9 +19,10 @@ export interface INewsListRequest extends IPaginationRequest {
   keyword?: string
   startDate?: string
   endDate?: string
-  categories?: string[]
+  categories?: string
   regions?: string[]
   industries?: string[]
+  sentiments?: DirectionType[]
 }
 
 export interface INewsListItem {
@@ -33,15 +34,17 @@ export interface INewsListItem {
   categories: string[]
   regions: string[]
   industries: string[]
+  isViewable: boolean
 }
 
 export type DateRangeOption = 'LAST_30_DAYS' | 'LAST_60_DAYS' | 'LAST_12_MONTHS' | 'ALL_TIME' | ''
 export type RecapCategory = 'HIGHLIGHT' | 'CHECKPOINT'
 export interface INewsRecapsRequest extends IPaginationRequest {
+  companyNo: number
   sort?: string
   keyword?: string
   dateRangeOption?: DateRangeOption
-  recapCategory?: RecapCategory[]
+  recapCategories?: RecapCategory[]
 }
 export interface INewsRecapNarrative {
   title: string
@@ -76,13 +79,15 @@ export interface IDailyTrend {
 
 const marketNewsService = {
   async getNewsList(params: Partial<INewsListRequest>, signal?: AbortSignal): Promise<IPaginationResponse<INewsListItem>> {
+    const apiParams: Record<string, string | number | undefined> = {
+      ...params,
+      regions: params.regions?.join(','),
+      industries: params.industries?.join(','),
+      sentiments: params.sentiments?.map((s) => s.toLowerCase()).join(','),
+    }
+
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsListItem>>> = await api.get('mi/market-news', {
-      params: {
-        ...params,
-        categories: params.categories?.join(','),
-        regions: params.regions?.join(','),
-        industries: params.industries?.join(','),
-      },
+      params: apiParams,
       timeout: 120_000,
       signal,
     })
@@ -94,12 +99,16 @@ const marketNewsService = {
     return response.data.data
   },
   async getNewsRecaps(params: Partial<INewsRecapsRequest>): Promise<IPaginationResponse<INewsRecapItem>> {
-    const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsRecapItem>>> = await api.get('mi/market-news/recaps', {
-      params: {
-        ...params,
-        recapCategory: params.recapCategory?.join(','),
+    const { companyNo = 0, ...restParams } = params
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<INewsRecapItem>>> = await api.get(
+      `mi/market-news/companies/${companyNo}/recaps`,
+      {
+        params: {
+          ...restParams,
+          recapCategories: restParams.recapCategories?.join(','),
+        },
       },
-    })
+    )
     return response.data.data
   },
   async getDailyTrend(params: Partial<IDailyTrendRequest>): Promise<IDailyTrend> {

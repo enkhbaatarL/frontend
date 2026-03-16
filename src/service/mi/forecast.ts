@@ -6,6 +6,14 @@ import api from '@/lib/axios.ts'
 import { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse } from '@/types/api.ts'
 
+export enum ReportPeriodUnitCd {
+  DAYS = 'D',
+  WEEKS = 'W',
+  MONTHS = 'M',
+  QUARTERS = 'Q',
+  YEARS = 'Y',
+}
+
 export interface IForecastLastInsightsInfo {
   modifyDt: string
   providerNm: string
@@ -52,9 +60,9 @@ export interface MarketDataItemInfo {
 export interface ExtendedMarketDataItemInfo {
   isPermitted: boolean
   marketMetaDataSummary: Omit<MarketMetaDataSummary, 'previousValue' | 'providerName' | 'goodsDataSourceExpn'> & {
-    change: number
+    change?: number
     changeColor: string
-    changePercent: number
+    changePercent?: number
     changePercentColor: string
     period: string
     unit: string
@@ -115,9 +123,38 @@ export interface HistoryMetaData {
   isDownloadable: boolean
   targets: HistoryMetaDataTarget[]
 }
+export interface ForecastBasicInfoTarget {
+  chartPredictSettingDetailNo: number
+  chartPredictSettingNo: number
+  goodsDataSourceNo: number
+  predictChartDetailExpn: string
+  isChartLinePredictVal: boolean
+  chartPredictLineSeparateCd: string
+  associatedGoodsDataSourceNo: number
+  isFuture: boolean
+}
+
+export interface ForecastRecordHeader {
+  columnKey: string
+  headerText: string
+  isVisible: boolean
+  orderNo: number
+}
+
+export interface ForecastTargetAccuracy {
+  cumulativeHitRate: number
+  predictChartDetailExpn: string
+  asOfDate: string
+}
+
 export interface ForecastBasicInfo {
   chartPredictSettingNm: string
   lastUpdateDt: string
+  reportPeriodUnitCd: ReportPeriodUnitCd
+  targetList: ForecastBasicInfoTarget[]
+  modelAccuracyVisible?: boolean
+  targetAccuracyList?: ForecastTargetAccuracy[]
+  recordHeaders?: ForecastRecordHeader[]
 }
 export interface IForecastHistoryDetailRequest {
   fulfillDate: string
@@ -155,6 +192,7 @@ interface IForecastChartMetadata {
   tableHeader: string
 }
 interface IChartLineRawData {
+  startDate: string
   resultDate: string
   predictDate: string
   value: number | null
@@ -181,22 +219,73 @@ export interface IForecastChartData {
   }[]
   isFileDownload: boolean
 }
+// 새로운 Forecast 차트 정보 타입 (/mi/forecast/companies/{companyNo}/chart)
+export interface IForecastChartInfoDateItem {
+  label: string
+  startDate: string
+  endDate: string
+  unit: string
+}
+
+// Forecast 차트 정보 응답 타입
+export interface IForecastChartInfo {
+  metadata: IForecastChartMetadata
+  charts: IForecastChart[]
+  chartsDataSource: {
+    goodsDataSourceNo: number
+    dashboardLineName: string
+  }[]
+  isFileDownload: boolean
+  xAxisUnit: string
+  period: string
+  startDate: string
+  endDate: string
+  dateList: IForecastChartInfoDateItem[]
+}
 export interface IForecastFactorCategoryRequest {
   predictDate: string
   goodsDataSourceNo: number
   date: string
+}
+export interface IForecastFactorCategoryRequestNew {
+  predictDate: string // YYYYMMDD
+  startDate?: string // YYYYMMDD
+  goodsDataSourceNo: number
+}
+export interface IForecastFactorsRequestNew {
+  predictDate: string // YYYYMMDD
+  startDate?: string // YYYYMMDD
+  goodsDataSourceNo: number
+  explanatoryLevelNm: string
 }
 export interface IForecastSummary {
   explanatoryTitleContent: string
   explanatorySummaryContent: string
   explanatoryFilePath: string
 }
-export interface IForecastSummaries {
+export interface IForecastReport {
   summaries: IForecastSummary[]
   isFileDownload: boolean
 }
 export interface ICategoryList {
   explanatoryLevelNms: string[]
+  marketIndexAnalysisTargetCd?: string
+  predictionFulfillDt?: string
+  mnemonicCd?: string
+  predictChartDetailExpn?: string
+  associatedGoodsDataSourceNo?: number
+  endPredictionResultDt?: string
+  startPredictionResultDt?: string
+  predictionTargetDt?: string
+  predictionTargetPeriod?: string
+  predictionCriteriaDt?: string
+  predictionResultDt?: string
+  avgPredictionResultVal?: number
+  predictionCriteriaVal?: number
+  predictionResultDiffVal?: number
+  predictionResultDiffRate?: number
+  priceRangeVal?: string[]
+  isScheduled?: boolean | null
 }
 export interface IForecastFactorsRequest {
   predictDate: string
@@ -249,11 +338,128 @@ export interface IForecastFactorGraphRequest {
   marketIndexAnalysisTargetCd: string
   predictionInputMnemonicDetailCd: string
 }
+export interface IForecastFactorGraphRequestNew {
+  goodsDataSourceNo: number
+  predictDate: string // YYYYMMDD
+  date?: string // YYYYMM (optional)
+  explanatoryLevelNm: string
+  predictionInputMnemonicCd: string
+  marketIndexAnalysisTargetCd: string
+  predictionInputMnemonicDetailCd: string
+}
 export interface IForecastFactorGraphResponse {
   summary: string
   graphMetadata: IGraphMetaData
   rawData: IRawData[]
   datasource: IDatasource
+}
+
+export interface IForecastReport {
+  marketIndexAnalysisTargetCd: string
+  predictionFulfillDt: string
+  mnemonicCd: string
+  predictChartDetailExpn: string
+  associatedGoodsDataSourceNo: number
+  predictionTargetDt: string
+  predictionTargetPeriod: string
+  endPredictionResultDt: string
+  startPredictionResultDt: string
+  predictionCriteriaDt: string | null
+  predictionResultVal: number
+  predictionCriteriaVal: number
+  predictionResultDiffVal: number | null
+  predictionResultDiffRate: number | null
+  isScheduled: boolean | null
+  isNew?: boolean
+  predictionResultList?: Array<{
+    date: string
+    value: number
+  }>
+  // Optional fields for report content
+  date?: string
+  explanatoryTitleContent?: string
+  explanatorySummaryContent?: string
+  explanatoryFilePath?: string
+}
+
+export interface IForecastReportDetail {
+  marketIndexAnalysisTargetCd: string
+  predictionFulfillDt: string
+  mnemonicCd: string
+  predictChartDetailExpn: string
+  associatedGoodsDataSourceNo: number
+  predictionTargetDt: string
+  predictionTargetPeriod: string
+  endPredictionResultDt: string
+  startPredictionResultDt: string
+  predictionCriteriaDt: string
+  avgPredictionResultVal: number
+  predictionCriteriaVal: number
+  predictionResultDiffVal: number
+  predictionResultDiffRate: number
+  isScheduled: boolean
+  explanatoryTitleContent: string
+  explanatorySummaryContent: string
+  explanatoryFilePath: string
+  minPredictionResultVal: number
+  maxPredictionResultVal: number
+  priceRangeVal: string[]
+}
+
+export interface IForecastReportsTableData {
+  startDate: string
+  endDate: string
+  goodsDataSourceNo: number | null
+  order: string
+  tableHeaderList: string[]
+  tableDataList: {
+    totalPages: number
+    totalElements: number
+    currentPage: number
+    numberOfElements: number
+    size: number
+    isFirst: boolean
+    isLast: boolean
+    hasPrevious: boolean
+    hasNext: boolean
+    detail: Array<Array<string | number | null>>
+  }
+}
+
+// Forecast Records 응답 데이터 타입
+export interface IForecastRecord {
+  marketIndexAnalysisTargetCd: string
+  predictionFulfillDt: string
+  mnemonicCd: string
+  predictChartDetailExpn: string
+  associatedGoodsDataSourceNo: number
+  endPredictionResultDt: string
+  startPredictionResultDt: string
+  predictionCriteriaDt: string
+  predictionResultDt: string
+  predictionResultVal: number
+  predictionCriteriaVal: number
+  predictionResultDiffVal: number
+  predictionResultDiffRate: number
+  actualVal: number
+  directionVal: 'UPWARD' | 'NEUTRAL' | 'DOWNWARD'
+  isHit: boolean
+  isScheduled: boolean | null
+  isNew: boolean | null
+  report?: string
+}
+
+export interface IForecastRecordsResponse {
+  totalPages: number
+  totalElements: number
+  currentPage: number
+  numberOfElements: number
+  size: number
+  isFirst: boolean
+  isLast: boolean
+  hasPrevious: boolean
+  hasNext: boolean
+  detail: IForecastRecord[]
 }
 
 /**
@@ -277,14 +483,6 @@ const forecastDataService = {
     return response.data.data
   },
   /**
-   * Forecast 데이터 존재 여부를 조회합니다.
-   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
-   */
-  async getForecastDataExists(companyNo: number): Promise<boolean> {
-    const response = await api.get(`mi/dashboard/companies/${companyNo}/data/exists`)
-    return response.data.data
-  },
-  /**
    * Forecast 차트 조회 가능한 날짜 리스트를 조회합니다.
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    */
@@ -293,7 +491,7 @@ const forecastDataService = {
     return response.data.data
   },
   /**
-   * Forecast 차트 데이터를 조회합니다.
+   * (구) Forecast 차트 데이터를 조회합니다.
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    * @param date - 조회할 년월
    */
@@ -301,138 +499,28 @@ const forecastDataService = {
     const response = await api.get(withCustomBaseUrl(`mi/dashboard/companies/${companyNo}/chart`), { params: { date } })
     return response.data.data
   },
-  // async getForecastChartData(companyNo: number, date: string): Promise<IForecastChartData> {
-  //   // Mock 데이터 생성 (주단위, 1년치)
-  //   const generateWeeklyDates = (weeks: number): string[] => {
-  //     const dates: string[] = []
-  //     const today = new Date()
-  //     const startDate = new Date(today)
-  //     startDate.setDate(startDate.getDate() - (weeks * 7)) // 52주 전부터 시작
-
-  //     for (let i = 0; i < weeks; i++) {
-  //       const currentDate = new Date(startDate)
-  //       currentDate.setDate(currentDate.getDate() + (i * 7))
-  //       const year = currentDate.getFullYear()
-  //       const month = String(currentDate.getMonth() + 1).padStart(2, '0')
-  //       const day = String(currentDate.getDate()).padStart(2, '0')
-  //       dates.push(`${year}-${month}-${day}`)
-  //     }
-  //     return dates
-  //   }
-
-  //   const generateValue = (baseValue: number, index: number, variance: number = 5): number => {
-  //     const randomChange = (Math.random() - 0.5) * variance
-  //     return Number((baseValue + randomChange).toFixed(2))
-  //   }
-
-  //   const weeklyDates = generateWeeklyDates(52)
-  //   const baseActualValue = 70
-  //   const baseForecastValue = 70.5
-  //   const baseFutureM1Value = 68.5
-  //   const baseFutureM2Value = 67.5
-
-  //   const mockData: IForecastChartData = {
-  //     dashboardMetadata: {
-  //       marketIndexAnalysisTargetCd: 'EN_CROIL',
-  //       lastUpdateDt: new Date().toISOString().split('T')[0],
-  //       currency: null,
-  //       currentUnitCd: null,
-  //       baseDate: date,
-  //       dataTableType: 'FORECAST_SINGLE_LAYER',
-  //       tableHeader: 'USD/bbl',
-  //     },
-  //     charts: [
-  //       {
-  //         chartLineDescription: 'Dubai Crude',
-  //         chartLineType: 'BRANCH',
-  //         actualChartLines: {
-  //           isPermitted: true,
-  //           dataType: 'ACTUAL',
-  //           goodsDataSourceNo: 3416,
-  //           rawData: weeklyDates.map((dateStr, index) => {
-  //             // 실제 데이터는 과거 40주만 있고, 나머지는 null
-  //             const value = index < 40 ? generateValue(baseActualValue, index) : null
-  //             return {
-  //               resultDate: dateStr,
-  //               predictDate: null,
-  //               value: value,
-  //             }
-  //           }),
-  //           dataExplanation: 'Dubai Crude',
-  //         },
-  //         forecastChartLines: {
-  //           isPermitted: true,
-  //           dataType: 'FORECAST',
-  //           goodsDataSourceNo: 4158,
-  //           rawData: weeklyDates.map((dateStr, index) => {
-  //             // 예측 데이터는 모든 기간에 존재
-  //             const value = generateValue(baseForecastValue, index)
-  //             const predictDate = date.replace(/-/g, '')
-  //             return {
-  //               resultDate: dateStr,
-  //               predictDate: predictDate,
-  //               value: value,
-  //             }
-  //           }),
-  //           dataExplanation: 'Forecast',
-  //         },
-  //       },
-  //       {
-  //         chartLineDescription: 'Futures M+1',
-  //         chartLineType: null,
-  //         actualChartLines: {
-  //           isPermitted: true,
-  //           dataType: 'FUTURE',
-  //           goodsDataSourceNo: 298,
-  //           rawData: weeklyDates.map((dateStr, index) => ({
-  //             resultDate: dateStr,
-  //             predictDate: null,
-  //             value: generateValue(baseFutureM1Value, index),
-  //           })),
-  //           dataExplanation: 'Futures M+1',
-  //         },
-  //         forecastChartLines: {
-  //           isPermitted: null,
-  //           dataType: null,
-  //           goodsDataSourceNo: null,
-  //           rawData: null,
-  //           dataExplanation: null,
-  //         },
-  //       },
-  //       {
-  //         chartLineDescription: 'Futures M+2',
-  //         chartLineType: null,
-  //         actualChartLines: {
-  //           isPermitted: true,
-  //           dataType: 'FUTURE',
-  //           goodsDataSourceNo: 300,
-  //           rawData: weeklyDates.map((dateStr, index) => ({
-  //             resultDate: dateStr,
-  //             predictDate: null,
-  //             value: generateValue(baseFutureM2Value, index),
-  //           })),
-  //           dataExplanation: 'Futures M+2',
-  //         },
-  //         forecastChartLines: {
-  //           isPermitted: null,
-  //           dataType: null,
-  //           goodsDataSourceNo: null,
-  //           rawData: null,
-  //           dataExplanation: null,
-  //         },
-  //       },
-  //     ],
-  //     dashboardDataSources: [
-  //       {
-  //         goodsDataSourceNo: 4158,
-  //         dashboardLineName: 'Forecast',
-  //       },
-  //     ],
-  //     isFileDownload: true,
-  //   }
-
-  //   return Promise.resolve(mockData)
-  // },
+  /**
+   * (신규) Forecast 차트 정보를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { xAxisUnit: '1D' | '1W' | '1M' | '1Q' | '1Y', period: '1W' | '1M' | '3M' | '6M' | 'YTD' | '1Y' | 'ALL' }
+   */
+  async getForecastChartInfo(
+    companyNo: number,
+    params: {
+      xAxisUnit: string
+      period: string
+    },
+    signal?: AbortSignal,
+  ): Promise<IForecastChartInfo> {
+    const response: AxiosResponse<ICommonResponse<IForecastChartInfo>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/chart`),
+      {
+        params,
+        signal,
+      },
+    )
+    return response.data.data
+  },
 
   /**
    * Forecast 차트 데이터를 조회합니다.
@@ -443,16 +531,6 @@ const forecastDataService = {
     const response = await api.get(withCustomBaseUrl(`mi/dashboard/companies/${companyNo}/chart`), {
       params: { date },
     })
-    return response.data.data
-  },
-  /**
-   * Forecast 기본 정보를 조회합니다.
-   * @param companyNo - 고객사 번호
-   */
-  async getForecastBasicInfo(companyNo: number): Promise<ForecastBasicInfo> {
-    const response: AxiosResponse<ICommonResponse<ForecastBasicInfo>> = await api.get(
-      withCustomBaseUrl(`mi/dashboard/companies/${companyNo}/info`),
-    )
     return response.data.data
   },
   /**
@@ -554,8 +632,8 @@ const forecastDataService = {
    * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
    * @param date - YYYYMMDD
    */
-  async getForecastSummary(companyNo: number, date: string): Promise<IForecastSummaries> {
-    const response: AxiosResponse<ICommonResponse<IForecastSummaries>> = await api.get(`mi/dashboard/companies/${companyNo}/summary`, {
+  async getForecastSummary(companyNo: number, date: string): Promise<IForecastReport> {
+    const response: AxiosResponse<ICommonResponse<IForecastReport>> = await api.get(`mi/dashboard/companies/${companyNo}/summary`, {
       params: { date },
     })
     return response.data.data
@@ -595,6 +673,269 @@ const forecastDataService = {
       { params },
     )
     return response.data.data
+  },
+  /**
+   * Forecast 차트 주요 요인 분석 카테고리를 조회합니다. (새로운 엔드포인트)
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictDate: 예측 날짜 (YYYYMMDD), goodsDataSourceNo: 데이터 소스 번호 }
+   */
+  async getForecastFactorCategoryNew(companyNo: number, params: IForecastFactorCategoryRequestNew) {
+    const response: AxiosResponse<ICommonResponse<ICategoryList>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/chart/factor/category`),
+      { params },
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast 차트 주요 요인 분석 데이터를 조회합니다. (새로운 엔드포인트)
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictDate: 예측 날짜 (YYYYMMDD), goodsDataSourceNo: 데이터 소스 번호, explanatoryLevelNm: 카테고리 }
+   */
+  async getForecastFactorsNew(companyNo: number, params: IForecastFactorsRequestNew) {
+    const response: AxiosResponse<ICommonResponse<IForecastFactorsResponse>> = await api.get(
+      `mi/forecast/companies/${companyNo}/chart/factors`,
+      { params },
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast 차트 주요 요인 분석 그래프를 조회합니다. (새로운 엔드포인트)
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictDate: 예측 날짜 (YYYYMMDD), goodsDataSourceNo: 데이터 소스 번호, explanatoryLevelNm: 카테고리, predictionInputMnemonicCd, marketIndexAnalysisTargetCd, predictionInputMnemonicDetailCd, date: 조회할 년월(YYYYMM, optional) }
+   */
+  async getForecastFactorGraphNew(companyNo: number, params: IForecastFactorGraphRequestNew) {
+    const response: AxiosResponse<ICommonResponse<IForecastFactorGraphResponse>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/chart/factor/graph`),
+      { params },
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast 데이터 존재 여부를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   */
+  async getForecastDataExists(companyNo: number): Promise<boolean> {
+    const response = await api.get(`mi/forecast/companies/${companyNo}/data/exists`)
+    return response.data.data
+  },
+  /**
+   * Forecast 기본 정보를 조회합니다.
+   * @param companyNo - 고객사 번호
+   */
+  async getForecastBasicInfo(companyNo: number): Promise<ForecastBasicInfo> {
+    const response: AxiosResponse<ICommonResponse<ForecastBasicInfo>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/info`),
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast Summary 목록을 조회합니다.
+   * @param companyNo - 고객사 번호
+   * @param goodsDataSourceNo - 데이터 소스 번호
+   * @param isScheduled - 정기 여부 (true: Scheduled, false: Ad hoc, null: 전체)
+   */
+  async getForecastReports(companyNo: number, goodsDataSourceNo?: number, isScheduled?: boolean | null): Promise<IForecastReport[]> {
+    const response: AxiosResponse<ICommonResponse<IForecastReport[]>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/reports`),
+      {
+        params: { goodsDataSourceNo, isScheduled },
+      },
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast Report 상세 정보를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { marketIndexAnalysisTargetCd: 시장지수분석대상코드, predictionFulfillDt: 예측수행일자, mnemonicCd: MNEMONIC코드, predictionCriteriaDt: 예측기준일자 }
+   */
+  async getForecastReportsDetail(
+    companyNo: number,
+    params: {
+      marketIndexAnalysisTargetCd: string
+      predictionFulfillDt: string
+      mnemonicCd: string
+      predictionCriteriaDt: string
+    },
+  ): Promise<IForecastReportDetail> {
+    const response: AxiosResponse<ICommonResponse<IForecastReportDetail>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/reports/detail`),
+      { params },
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast Reports 테이블 데이터를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { goodsDataSourceNo: 데이터 소스 번호(선택), startDate: 조회 시작일자(YYYYMMDD), endDate: 조회 종료일자(YYYYMMDD), order: 정렬 순서(NEWEST/OLDEST, 기본값: NEWEST), page: 페이지번호(기본값: 1), size: 페이지당항목수(기본값: 20) }
+   */
+  async getForecastReportsTableData(
+    companyNo: number,
+    params: {
+      goodsDataSourceNo?: number
+      startDate: string
+      endDate: string
+      order?: 'NEWEST' | 'OLDEST'
+      page?: number
+      size?: number
+    },
+  ): Promise<IForecastReportsTableData> {
+    const response: AxiosResponse<ICommonResponse<IForecastReportsTableData>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/table`),
+      { params },
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast Reports 테이블 데이터를 엑셀 파일로 다운로드합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { goodsDataSourceNo: 데이터 소스 번호(선택), startDate: 조회 시작일자(YYYYMMDD), endDate: 조회 종료일자(YYYYMMDD), order: 정렬 순서(NEWEST/OLDEST, 기본값: NEWEST) }
+   */
+  async getForecastReportsTableDataDownload(
+    companyNo: number,
+    params: {
+      goodsDataSourceNo?: number
+      startDate: string
+      endDate: string
+      order?: 'NEWEST' | 'OLDEST'
+    },
+  ) {
+    const response = await api.get(withCustomBaseUrl(`mi/forecast/companies/${companyNo}/table/file-download`), {
+      params,
+      responseType: 'blob',
+    })
+
+    // 한글 파일명 처리를 위한 Content-Disposition 헤더 수정
+    if (response.headers?.['content-disposition']) {
+      const contentDisposition = response.headers['content-disposition']
+      // filename*=UTF-8'' 형태로 인코딩된 파일명이 있는지 확인
+      if (contentDisposition.includes('filename*=')) {
+        // 이미 올바르게 인코딩되어 있으면 그대로 사용
+        return response
+      } else if (contentDisposition.includes('filename=')) {
+        // filename= 형태인 경우 UTF-8로 인코딩
+        const filenameMatch = contentDisposition.match(/filename=([^;\n]*)/)
+        if (filenameMatch) {
+          const originalFilename = filenameMatch[1].replace(/['"]/g, '')
+          const encodedFilename = encodeURIComponent(originalFilename)
+          response.headers['content-disposition'] = contentDisposition.replace(/filename=[^;\n]*/, `filename*=UTF-8''${encodedFilename}`)
+        }
+      }
+    }
+
+    return response
+  },
+  /**
+   * Forecast Records 데이터를 조회합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { goodsDataSourceNo: 데이터 소스 번호(선택), startDate: 조회 시작일자(YYYYMMDD), endDate: 조회 종료일자(YYYYMMDD), order: 정렬 순서(NEWEST/OLDEST, 기본값: NEWEST), page: 페이지번호(기본값: 1), size: 페이지당항목수(기본값: 20) }
+   */
+  async getForecastRecords(
+    companyNo: number,
+    params: {
+      goodsDataSourceNo?: number
+      startDate: string
+      endDate: string
+      order?: 'NEWEST' | 'OLDEST'
+      page?: number
+      size?: number
+    },
+  ): Promise<IForecastRecordsResponse> {
+    const response: AxiosResponse<ICommonResponse<IForecastRecordsResponse>> = await api.get(
+      withCustomBaseUrl(`mi/forecast/companies/${companyNo}/records`),
+      {
+        params,
+      },
+    )
+    return response.data.data
+  },
+  /**
+   * Forecast Report 파일을 다운로드합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictDate: 예측 날짜(YYYYMMDD) }
+   */
+  async getForecastReportFileDownload(companyNo: number, params: { predictDate: string }) {
+    const response = await api.get(`mi/forecast/companies/${companyNo}/report/file-download`, {
+      params,
+      responseType: 'blob',
+    })
+
+    // 한글 파일명 처리를 위한 Content-Disposition 헤더 수정
+    if (response.headers?.['content-disposition']) {
+      const contentDisposition = response.headers['content-disposition']
+      // filename*=UTF-8'' 형태로 인코딩된 파일명이 있는지 확인
+      if (contentDisposition.includes('filename*=')) {
+        // 이미 올바르게 인코딩되어 있으면 그대로 사용
+        return response
+      } else if (contentDisposition.includes('filename=')) {
+        // filename= 형태인 경우 UTF-8로 인코딩
+        const filenameMatch = contentDisposition.match(/filename=([^;\n]*)/)
+        if (filenameMatch) {
+          const originalFilename = filenameMatch[1].replace(/['"]/g, '')
+          const encodedFilename = encodeURIComponent(originalFilename)
+          response.headers['content-disposition'] = contentDisposition.replace(/filename=[^;\n]*/, `filename*=UTF-8''${encodedFilename}`)
+        }
+      }
+    }
+
+    return response
+  },
+  /**
+   * Forecast Records 파일을 다운로드합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { goodsDataSourceNo: 데이터 소스 번호(선택), startDate: 조회 시작일자(YYYYMMDD), endDate: 조회 종료일자(YYYYMMDD), order: 정렬 순서(NEWEST/OLDEST, 기본값: NEWEST) }
+   */
+  async getForecastRecordsFileDownload(
+    companyNo: number,
+    params: {
+      goodsDataSourceNo?: number
+      startDate: string
+      endDate: string
+      order?: 'NEWEST' | 'OLDEST'
+    },
+  ) {
+    const response = await api.get(withCustomBaseUrl(`mi/forecast/companies/${companyNo}/records/file-download`), {
+      params,
+      responseType: 'blob',
+    })
+
+    // 한글 파일명 처리를 위한 Content-Disposition 헤더 수정
+    if (response.headers?.['content-disposition']) {
+      const contentDisposition = response.headers['content-disposition']
+      // filename*=UTF-8'' 형태로 인코딩된 파일명이 있는지 확인
+      if (contentDisposition.includes('filename*=')) {
+        // 이미 올바르게 인코딩되어 있으면 그대로 사용
+        return response
+      } else if (contentDisposition.includes('filename=')) {
+        // filename= 형태인 경우 UTF-8로 인코딩
+        const filenameMatch = contentDisposition.match(/filename=([^;\n]*)/)
+        if (filenameMatch) {
+          const originalFilename = filenameMatch[1].replace(/['"]/g, '')
+          const encodedFilename = encodeURIComponent(originalFilename)
+          response.headers['content-disposition'] = contentDisposition.replace(/filename=[^;\n]*/, `filename*=UTF-8''${encodedFilename}`)
+        }
+      }
+    }
+
+    return response
+  },
+  /**
+   * Forecast daily records를 엑셀로 다운로드합니다.
+   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
+   * @param params - { predictionFulfillDt: 예측수행일자(YYYYMMDD), predictionCriteriaDt: 예측기준일자(YYYYMMDD), marketIndexAnalysisTargetCd: 시장지수분석대상코드, mnemonicCd: MNEMONIC코드 }
+   */
+  async getForecastRecordsDailyDownload(
+    companyNo: number,
+    params: {
+      predictionFulfillDt: string
+      predictionCriteriaDt: string
+      marketIndexAnalysisTargetCd: string
+      mnemonicCd: string
+    },
+  ) {
+    return await api.get(withCustomBaseUrl(`mi/forecast/companies/${companyNo}/records/daily-download`), {
+      params,
+      responseType: 'blob',
+    })
   },
 }
 

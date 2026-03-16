@@ -1,20 +1,40 @@
 /**
  * Formats a number as a value with currency symbol, thousands separators, and specified decimal places
- * @param {number} amount - The value amount to format
- * @param {string} [currencySymbol='$'] - Currency symbol to prepend (default: $)
+ * @param {number | null | undefined} amount - The value amount to format
+ * @param {string} [currencySymbol=''] - Currency symbol to prepend
  * @param {string} [locale='en-US'] - The locale to use for number formatting
- * @param {number} [toFixed=2] - Number of decimal places (default: 2)
+ * @param {number} [toFixed] - Number of decimal places. When omitted, displays full precision from the source.
+ * @param {string} [fallback] - When provided, used as replacement when amount is null or undefined. When omitted, runs normal formatting.
  * @returns {string} The formatted value string
  */
-export const formatValue = (amount: number, currencySymbol = '', locale = 'en-US', toFixed = 2) => {
-  // Round to specified decimal places
-  const roundedAmount = Math.round(amount * Math.pow(10, toFixed)) / Math.pow(10, toFixed)
+export const formatValue = (
+  amount: number | null | undefined,
+  currencySymbol: string = '',
+  locale: string = 'en-US',
+  toFixed?: number,
+  fallback?: string,
+): string => {
+  if (fallback !== undefined && (amount === null || amount === undefined)) {
+    return fallback
+  }
 
-  // Format the number according to locale with specified decimal places
-  const formattedNumber = roundedAmount.toLocaleString(locale, {
-    minimumFractionDigits: toFixed,
-    maximumFractionDigits: toFixed,
-  })
+  const value = amount ?? NaN
+
+  let formattedNumber: string
+
+  if (toFixed !== undefined) {
+    // Round to specified decimal places
+    const roundedAmount = Math.round(value * Math.pow(10, toFixed)) / Math.pow(10, toFixed)
+    formattedNumber = roundedAmount.toLocaleString(locale, {
+      minimumFractionDigits: toFixed,
+      maximumFractionDigits: toFixed,
+    })
+  } else {
+    // Display with full precision (no decimal restriction)
+    formattedNumber = value.toLocaleString(locale, {
+      maximumFractionDigits: 20,
+    })
+  }
 
   // Return with currency symbol
   return `${currencySymbol}${formattedNumber}`

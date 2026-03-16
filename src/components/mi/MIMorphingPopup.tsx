@@ -1,5 +1,5 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
-import { Box, BoxProps, Stack, Typography } from '@mui/material'
+import { Box, BoxProps, Skeleton, Stack, Typography } from '@mui/material'
 import {
   useState,
   useRef,
@@ -20,13 +20,16 @@ const HORIZONTAL_MARGIN = 96
 const TRANSITION_CURVE = 'cubic-bezier(0.4, 0, 0.2, 1)'
 const DURATION_MS = 400
 const DURATION = `${DURATION_MS}ms`
+const FADEOUT_DURATION_MS = 150
+const FADEOUT_DURATION = `${FADEOUT_DURATION_MS}ms`
 
 interface DimmedOverlayProps {
   isClosing: boolean
   isExpanded: boolean
+  isFadingOut: boolean
 }
 
-const DimmedOverlay = ({ isClosing, isExpanded }: DimmedOverlayProps) => (
+const DimmedOverlay = ({ isClosing, isExpanded, isFadingOut }: DimmedOverlayProps) => (
   <Box
     position="fixed"
     top={0}
@@ -36,8 +39,8 @@ const DimmedOverlay = ({ isClosing, isExpanded }: DimmedOverlayProps) => (
     bgcolor="rgba(0, 0, 0, 0.56)"
     zIndex={1299}
     sx={{
-      opacity: isClosing || !isExpanded ? 0 : 1,
-      transition: `opacity ${DURATION} ${TRANSITION_CURVE}`,
+      opacity: isClosing || !isExpanded || isFadingOut ? 0 : 1,
+      transition: `opacity ${isFadingOut ? FADEOUT_DURATION : DURATION} ${TRANSITION_CURVE}`,
       pointerEvents: 'none',
     }}
   />
@@ -47,6 +50,9 @@ interface PopupProps extends Omit<BoxProps, 'title' | 'content'> {
   title: ReactNode
   content: ReactNode
   hideCloseButton?: boolean
+  showSkeleton?: boolean
+  minWidth?: number
+  maxWidth?: number
   onOpen?: () => void
   onClose?: () => void
 }
@@ -61,11 +67,19 @@ export interface MIMorphingPopupRef {
 }
 
 const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
-  ({ children, popup: { title, content, hideCloseButton, onOpen, onClose, ...popupProps }, ...props }, ref) => {
+  (
+    {
+      children,
+      popup: { title, content, hideCloseButton, showSkeleton = true, minWidth = 1200, maxWidth = 1380, onOpen, onClose, ...popupProps },
+      ...props
+    },
+    ref,
+  ) => {
     const [isOpen, setIsOpen] = useState(false)
     const [isClosing, setIsClosing] = useState(false)
     const [isExpanded, setIsExpanded] = useState(false)
     const [isAnimDone, setIsAnimDone] = useState(false)
+    const [isFadingOut, setIsFadingOut] = useState(false)
 
     type CoordsType = {
       start: DOMRect
@@ -78,6 +92,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
     const measureRef = useRef<HTMLDivElement>(null)
 
     const scrollWrapperRef = useRef<HTMLDivElement>(null)
+    const contentWrapperRef = useRef<HTMLDivElement>(null)
     const animTimerRef = useRef<NodeJS.Timeout | null>(null)
 
     const calculateCoords = useCallback((): CoordsType => {
@@ -87,8 +102,8 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       const windowHeight = window.innerHeight
       const windowWidth = window.innerWidth
 
-      // 좌우 여백을 제외한 너비 계산
-      const endWidth = Math.max(260, windowWidth - HORIZONTAL_MARGIN * 2)
+      // 좌우 여백을 제외한 너비 계산 (minWidth ~ maxWidth 범위)
+      const endWidth = Math.min(maxWidth, Math.max(minWidth, windowWidth - HORIZONTAL_MARGIN * 2))
 
       // 측정용 박스의 너비를 강제로 설정한 뒤 높이를 측정
       measureRef.current.style.width = `${endWidth}px`
@@ -111,7 +126,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         },
         isTall,
       }
-    }, [])
+    }, [minWidth, maxWidth])
 
     const handleClose = useCallback(() => {
       // 닫기 시작 시 예약된 'isAnimDone' 타이머 취소
@@ -128,12 +143,19 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         scrollWrapperRef.current.scrollTo({ top: 0, behavior: 'smooth' })
       }
 
+      // 축소 애니메이션 완료 후 페이드아웃 시작
+      setTimeout(() => {
+        setIsFadingOut(true)
+      }, DURATION_MS)
+
+      // 페이드아웃 완료 후 팝업 제거
       setTimeout(() => {
         setIsOpen(false)
         setCoords(null)
         setIsClosing(false)
+        setIsFadingOut(false)
         onClose?.()
-      }, DURATION_MS)
+      }, DURATION_MS + FADEOUT_DURATION_MS)
     }, [onClose])
 
     const open = useCallback(() => {
@@ -145,6 +167,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       setIsClosing(false)
       setIsExpanded(false)
       setIsAnimDone(false)
+      setIsFadingOut(false)
       onOpen?.()
 
       requestAnimationFrame(() => {
@@ -216,9 +239,9 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
 
       const childrenWithoutBorder = cloneElement(children, {
         ...restProps,
-        border: undefined,
-        borderColor: undefined,
-        borderRadius: undefined,
+        border: extractedBorderStyles.border,
+        borderColor: 'transparent',
+        borderRadius: extractedBorderStyles.borderRadius,
         sx: cleanedSx,
       } as BoxProps)
 
@@ -228,19 +251,87 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       }
     }, [children])
 
+    // 창/뷰포트 리사이즈 시 팝업 위치/크기 재계산
     useEffect(() => {
       if (!isOpen) return undefined
 
+      let rafId: number | null = null
       const handleResize = () => {
-        const newCoords = calculateCoords()
-        if (newCoords) setCoords(newCoords)
+        if (rafId !== null) cancelAnimationFrame(rafId)
+        rafId = requestAnimationFrame(() => {
+          rafId = null
+          const newCoords = calculateCoords()
+          if (!newCoords) return
+
+          // 현재 표시 중인 컨텐츠 높이 반영: 리사이즈로 계산된 높이보다 크면 그 높이를 유지
+          const contentEl = contentWrapperRef.current
+          if (contentEl) {
+            const actualContentHeight = contentEl.offsetHeight + 68
+            if (actualContentHeight > newCoords.end.height) {
+              const windowHeight = window.innerHeight
+              const isTall = actualContentHeight + VERTICAL_MARGIN * 2 > windowHeight
+              const endTop = Math.max(VERTICAL_MARGIN, (windowHeight - actualContentHeight) / 2)
+              setCoords({
+                ...newCoords,
+                end: {
+                  ...newCoords.end,
+                  height: actualContentHeight,
+                  top: endTop,
+                },
+                isTall,
+              })
+              return
+            }
+          }
+          setCoords(newCoords)
+        })
       }
 
       window.addEventListener('resize', handleResize)
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', handleResize)
+        window.visualViewport.addEventListener('scroll', handleResize)
+      }
       return () => {
+        if (rafId !== null) cancelAnimationFrame(rafId)
         window.removeEventListener('resize', handleResize)
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener('resize', handleResize)
+          window.visualViewport.removeEventListener('scroll', handleResize)
+        }
       }
     }, [isOpen, calculateCoords])
+
+    // ResizeObserver로 팝업 내부(표시 중인 content) 크기 변화 감지
+    // ghost가 아닌 contentWrapperRef를 관찰해야 handleFactorClick 등으로 인한
+    // content state 변경 시 실제 표시 높이에 맞춰 팝업 크기가 갱신됨
+    useEffect(() => {
+      const target = contentWrapperRef.current
+      if (!isOpen || !isAnimDone || !target) return undefined
+
+      const resizeObserver = new ResizeObserver(() => {
+        const contentHeight = target.offsetHeight
+        const measuredHeight = contentHeight + 68 // 헤더 높이 68px
+        setCoords((prev) => {
+          if (!prev) return null
+          const windowHeight = window.innerHeight
+          const isTall = measuredHeight + VERTICAL_MARGIN * 2 > windowHeight
+          const endTop = Math.max(VERTICAL_MARGIN, (windowHeight - measuredHeight) / 2)
+          return {
+            ...prev,
+            end: {
+              ...prev.end,
+              height: measuredHeight,
+              top: endTop,
+            },
+            isTall,
+          }
+        })
+      })
+
+      resizeObserver.observe(target)
+      return () => resizeObserver.disconnect()
+    }, [isOpen, isAnimDone])
 
     useEffect(
       () => () => {
@@ -283,13 +374,15 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
           ref={triggerRef}
           {...props}
           border={borderStyles.border}
-          borderColor={borderStyles.borderColor}
+          borderColor={showSkeleton && isOpen && coords && !isFadingOut ? 'transparent' : borderStyles.borderColor}
           borderRadius={borderStyles.borderRadius}
           overflow="hidden"
+          position="relative"
           sx={{
-            opacity: isOpen ? 0 : 1,
-            visibility: isOpen ? 'hidden' : 'visible',
-            ...(borderStyles.hoverBorderColor && {
+            opacity: isOpen && !showSkeleton && !isFadingOut ? 0 : 1,
+            visibility: isOpen && !showSkeleton && !isFadingOut ? 'hidden' : 'visible',
+            ...(borderStyles.hoverBorderColor &&
+              !isOpen && {
               '&:hover': {
                 borderColor: borderStyles.hoverBorderColor,
               },
@@ -297,14 +390,46 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
             ...props?.sx,
           }}
         >
-          {cleanedChildren}
+          <Box
+            sx={{
+              opacity: showSkeleton && isOpen && coords && !isFadingOut ? 0 : 1,
+              visibility: showSkeleton && isOpen && coords && !isFadingOut ? 'hidden' : 'visible',
+            }}
+          >
+            {cleanedChildren}
+          </Box>
+          {showSkeleton && isOpen && coords && !isFadingOut && (
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              sx={{
+                opacity: isExpanded ? 0.3 : 0,
+                transition: `opacity ${DURATION} ${TRANSITION_CURVE}`,
+                pointerEvents: 'none',
+              }}
+            >
+              <Skeleton
+                variant="rectangular"
+                width="100%"
+                height="100%"
+                animation={false}
+                sx={{
+                  bgcolor: 'rgba(0, 0, 0, 0.08)',
+                  borderRadius: 'inherit',
+                }}
+              />
+            </Box>
+          )}
         </Box>
 
         {isOpen &&
           coords &&
           ReactDOM.createPortal(
             <>
-              <DimmedOverlay isClosing={isClosing} isExpanded={isExpanded} />
+              <DimmedOverlay isClosing={isClosing} isExpanded={isExpanded} isFadingOut={isFadingOut} />
 
               <Box
                 ref={scrollWrapperRef}
@@ -350,21 +475,30 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                   boxSizing="border-box"
                   {...popupProps}
                   sx={{
-                    transition: isAnimDone && !isClosing ? 'none' : `all ${DURATION} ${TRANSITION_CURVE}`,
+                    transition: isFadingOut
+                      ? `all ${DURATION} ${TRANSITION_CURVE}, opacity ${FADEOUT_DURATION} ${TRANSITION_CURVE}`
+                      : isAnimDone && !isClosing
+                        ? `top ${DURATION} ${TRANSITION_CURVE}, height ${DURATION} ${TRANSITION_CURVE}` // 옵저버로 높이/위치 변경 시 애니메이션
+                        : `all ${DURATION} ${TRANSITION_CURVE}`,
                     overflow: 'hidden',
                     boxShadow: isExpanded ? 24 : 0,
+                    opacity: isFadingOut ? 0 : 1,
                     ...popupProps?.sx,
                   }}
                   // 팝업 내부 클릭 시 닫기 이벤트 전파 방지
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Box height={coords.end.height} position="relative">
+                  <Box
+                    height={coords.end.height}
+                    position="relative"
+                    sx={{
+                      transition: isAnimDone && !isClosing ? `height ${DURATION} ${TRANSITION_CURVE}` : 'none',
+                    }}
+                  >
                     <Box
                       position="absolute"
                       top={0}
                       left={0}
-                      width={coords.start.width}
-                      boxSizing="border-box"
                       sx={{
                         opacity: isExpanded ? 0 : 1,
                         transition: `opacity ${isClosing ? DURATION_MS : DURATION_MS / 3}ms ${TRANSITION_CURVE}`,
@@ -408,7 +542,9 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                           }}
                         />
                       </Stack>
-                      <Box width={coords.end.width}>{content}</Box>
+                      <Box ref={contentWrapperRef} width={coords.end.width}>
+                        {content}
+                      </Box>
                     </Stack>
                   </Box>
                 </Box>

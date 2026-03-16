@@ -15,22 +15,28 @@ import ForecastChartTooltip, { TooltipContent } from '@/pages/mi/forecast/new-co
 import ForecastCrosshairLine, { ForecastCrosshairLineHandle } from '@/pages/mi/forecast/new-components/ForecastCrosshairLine'
 import gridAndAxesPlugin from '@/pages/mi/forecast/new-components/plugins/gridAndAxesPlugin'
 import { generateYAxis } from '@/pages/mi/forecast/new-components/utils/chartUtils'
+import { IForecastReport } from '@/service/mi/forecast'
 import { ChartData, ChartType as MIChartType } from '@/types/dataDetailChart'
 import { disableContextMenu } from '@/utils/mouse'
 interface ForecastChartGraphProps {
   currency?: string
   unitCd?: string
   charts?: ChartData[]
+  highlightChartData?: (ChartData & { dataType?: string; resultDates?: string[] }) | null
   isYAxisSeparated?: boolean
   height?: string | number
   chartType?: MIChartType
   chartVisibilityMap?: Map<string, boolean>
   hoveredChartKey?: string | null
-  hoverReportCardInfo?: { goodsDataSourceNo: number; startDate: string; endDate: string } | null
+  hoverReportCardInfo?: IForecastReport | null
   isLoading?: boolean
   onFixedModeChange?: (isFixedMode: boolean) => void
   spanGaps?: boolean
   chartColorMap?: Map<string, string>
+  disableFixedMode?: boolean
+  monthSelect?: string
+  companyNo?: number
+  interval?: string
 }
 
 const applyOpacity = (color: string, alpha: number): string => {
@@ -50,11 +56,12 @@ const applyOpacity = (color: string, alpha: number): string => {
 ChartJS.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement, zoomPlugin)
 
 const createRedrawLinesPlugin = (
-  hoverReportCardInfo: { goodsDataSourceNo: number; startDate: string; endDate: string } | null,
+  hoverReportCardInfo: IForecastReport | null,
   chartVisibilityMap?: Map<string, boolean>,
   isFixedMode?: boolean,
   spanGaps: boolean = false,
   hoveredChartKey?: string | null,
+  companyNo?: number,
 ) => {
   const visibilityMap = chartVisibilityMap
   const effectiveReportCardInfo = isFixedMode ? null : hoverReportCardInfo
@@ -161,15 +168,16 @@ const createRedrawLinesPlugin = (
 
         // hoverReportCardInfo가 있고, 현재 데이터셋이 타겟인 경우 -> 날짜 범위 체크
         const hasReportCardHover = effectiveReportCardInfo !== null && effectiveReportCardInfo !== undefined
-        const isReportCardTarget = hasReportCardHover && metadata?.goodsDataSourceNo === effectiveReportCardInfo?.goodsDataSourceNo
+        const isReportCardTarget =
+          hasReportCardHover && metadata?.goodsDataSourceNo === effectiveReportCardInfo?.associatedGoodsDataSourceNo
 
         let startDate: dayjs.Dayjs | null = null
         let endDate: dayjs.Dayjs | null = null
         let timestamps: string[] | undefined = undefined
 
         if ((isReportCardTarget || isHighlight) && effectiveReportCardInfo) {
-          startDate = dayjs(effectiveReportCardInfo.startDate)
-          endDate = dayjs(effectiveReportCardInfo.endDate)
+          startDate = dayjs(effectiveReportCardInfo.startPredictionResultDt)
+          endDate = dayjs(effectiveReportCardInfo.endPredictionResultDt)
           timestamps = metadata?.timestamps
         }
 
@@ -182,6 +190,9 @@ const createRedrawLinesPlugin = (
         const rangeStart = Math.max(0, startIndex)
         const rangeEnd = Math.min(data.length - 1, endIndex)
 
+        // 데이터 포인트가 1개일 때 점으로 그리기 위한 반지름
+        const singlePointRadius = companyNo === 2015 ? 3 : 2
+
         if (isHighlight) {
           ctx.strokeStyle = borderColor
           ctx.lineWidth = baseBorderWidth
@@ -191,6 +202,9 @@ const createRedrawLinesPlugin = (
             ctx.lineDashOffset = -originPixelX
           }
           let isFirstPoint = true
+          let lastPixelX = 0
+          let lastPixelY = 0
+          let drawnPointCount = 0
 
           for (let i = rangeStart; i <= rangeEnd; i++) {
             const point = data[i]
@@ -211,6 +225,9 @@ const createRedrawLinesPlugin = (
             const pixelX = xScale.getPixelForValue(point.x)
             let pixelY = yScale.getPixelForValue(yValue)
             pixelY = Math.max(chartArea.top + clipPadding, Math.min(chartArea.bottom - clipPadding, pixelY))
+            lastPixelX = pixelX
+            lastPixelY = pixelY
+            drawnPointCount++
 
             if (isFirstPoint) {
               ctx.moveTo(pixelX, pixelY)
@@ -221,11 +238,22 @@ const createRedrawLinesPlugin = (
           }
 
           ctx.stroke()
+          // 데이터가 1개일 때 선 대신 점으로 표시
+          if (drawnPointCount === 1) {
+            ctx.fillStyle = borderColor
+            ctx.beginPath()
+            ctx.arc(lastPixelX, lastPixelY, singlePointRadius, 0, Math.PI * 2)
+            ctx.fill()
+          }
         } else if (isReportCardTarget && startDate && endDate && timestamps) {
           let currentOpacity = 1
           let isFirstPoint = true
           let prevPixelX = 0
           let prevPixelY = 0
+          let drawnPointCount = 0
+          let lastPixelX = 0
+          let lastPixelY = 0
+          let lastPointOpacity = 1
 
           for (let i = rangeStart; i <= rangeEnd; i++) {
             const point = data[i]
@@ -247,6 +275,9 @@ const createRedrawLinesPlugin = (
             const pixelX = xScale.getPixelForValue(point.x)
             let pixelY = yScale.getPixelForValue(yValue)
             pixelY = Math.max(chartArea.top + clipPadding, Math.min(chartArea.bottom - clipPadding, pixelY))
+            lastPixelX = pixelX
+            lastPixelY = pixelY
+            drawnPointCount++
 
             let pointOpacity = 1
             if (timestamp) {
@@ -256,6 +287,7 @@ const createRedrawLinesPlugin = (
               const isInRange = isAfterOrSame && isBeforeOrSame
               pointOpacity = isInRange ? 0 : 0.2
             }
+            lastPointOpacity = pointOpacity
 
             if (!isFirstPoint && currentOpacity !== pointOpacity) {
               ctx.stroke()
@@ -280,8 +312,7 @@ const createRedrawLinesPlugin = (
               ctx.lineTo(pixelX, pixelY)
             }
 
-            const colorWithOpacity = applyOpacity(borderColor, pointOpacity)
-            ctx.strokeStyle = colorWithOpacity
+            ctx.strokeStyle = applyOpacity(borderColor, pointOpacity)
             ctx.lineWidth = baseBorderWidth
 
             prevPixelX = pixelX
@@ -290,6 +321,13 @@ const createRedrawLinesPlugin = (
           }
 
           ctx.stroke()
+          // 데이터가 1개일 때 선 대신 점으로 표시
+          if (drawnPointCount === 1) {
+            ctx.fillStyle = applyOpacity(borderColor, lastPointOpacity)
+            ctx.beginPath()
+            ctx.arc(lastPixelX, lastPixelY, singlePointRadius, 0, Math.PI * 2)
+            ctx.fill()
+          }
         } else {
           ctx.strokeStyle = borderColor
           ctx.lineWidth = baseBorderWidth
@@ -299,6 +337,9 @@ const createRedrawLinesPlugin = (
             ctx.lineDashOffset = -originPixelX
           }
           let isFirstPoint = true
+          let lastPixelX = 0
+          let lastPixelY = 0
+          let drawnPointCount = 0
 
           for (let i = rangeStart; i <= rangeEnd; i++) {
             const point = data[i]
@@ -319,6 +360,9 @@ const createRedrawLinesPlugin = (
             const pixelX = xScale.getPixelForValue(point.x)
             let pixelY = yScale.getPixelForValue(yValue)
             pixelY = Math.max(chartArea.top + clipPadding, Math.min(chartArea.bottom - clipPadding, pixelY))
+            lastPixelX = pixelX
+            lastPixelY = pixelY
+            drawnPointCount++
 
             if (isFirstPoint) {
               ctx.moveTo(pixelX, pixelY)
@@ -329,6 +373,13 @@ const createRedrawLinesPlugin = (
           }
 
           ctx.stroke()
+          // 데이터가 1개일 때 선 대신 점으로 표시
+          if (drawnPointCount === 1) {
+            ctx.fillStyle = borderColor
+            ctx.beginPath()
+            ctx.arc(lastPixelX, lastPixelY, singlePointRadius, 0, Math.PI * 2)
+            ctx.fill()
+          }
         }
       })
 
@@ -357,6 +408,9 @@ type DatasetMeta = {
   visibilityKey?: string
   isHighlight?: boolean
   timestamps?: string[]
+  predictDates?: string[]
+  startDates?: string[]
+  resultDates?: string[]
 }
 
 type ChartDatasetType = ChartDataset<'line' | 'candlestick' | 'bar', (Point | FinancialDataPoint)[]> & {
@@ -365,7 +419,7 @@ type ChartDatasetType = ChartDataset<'line' | 'candlestick' | 'bar', (Point | Fi
 
 export interface ForecastChartGraphHandle {
   resetZoom: () => void
-  canvas: HTMLCanvasElement | null
+  getCanvas: () => HTMLCanvasElement | null
 }
 
 const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<ForecastChartGraphProps>>(
@@ -375,6 +429,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       currency,
       unitCd,
       charts = [],
+      highlightChartData = null,
       isYAxisSeparated,
       chartType = MIChartType.LINE,
       chartVisibilityMap,
@@ -384,6 +439,10 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       onFixedModeChange,
       spanGaps = false,
       chartColorMap,
+      disableFixedMode = false,
+      monthSelect,
+      companyNo,
+      interval,
     },
     ref,
   ) => {
@@ -414,6 +473,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
     const [rippleDirection, setRippleDirection] = useState<'expand' | 'shrink' | null>(null)
     const [fixedTooltipPosition, setFixedTooltipPosition] = useState<{ top: number; left: number } | null>(null)
     const fixedTooltipPositionRef = useRef<{ top: number; left: number } | null>(null)
+    const fixedModeOverlayRef = useRef<HTMLDivElement>(null)
 
     const chartList = useMemo(() => charts || [], [charts])
 
@@ -428,7 +488,30 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       return maxCount
     }, [chartList])
 
-    const firstChartTimestamps = useMemo(() => chartList[0]?.timestamps || [], [chartList])
+    /**
+     * Crosshair/Tooltip/X축 렌더링에서 사용하는 "축 기준 timestamps"는
+     * 항상 가장 긴 길이(=dataPointCount) 기준으로 맞춰야 Index fallback이 발생하지 않는다.
+     */
+    const axisBase = useMemo(() => {
+      let best = chartList[0]
+      let bestLen = 0
+
+      chartList.forEach((c) => {
+        const series = c.series?.find((s) => s.seriesId === 'main') || c.series?.[0]
+        const valuesLen = series?.values?.length ?? 0
+        const tsLen = c.timestamps?.length ?? 0
+        const len = Math.max(valuesLen, tsLen)
+        if (len > bestLen) {
+          bestLen = len
+          best = c
+        }
+      })
+
+      return best
+    }, [chartList])
+
+    const axisTimestamps = useMemo(() => axisBase?.timestamps || [], [axisBase])
+    const axisResultDates = useMemo(() => (axisBase as (ChartData & { resultDates?: string[] }) | undefined)?.resultDates || [], [axisBase])
 
     const firstChartSeries = useMemo(() => {
       const chart = chartList[0]
@@ -492,7 +575,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               down: '#CC4D50',
               unchanged: '#5a5a5a',
             },
-            borderWidth: 1,
+            borderWidth: companyNo === 2015 ? 2 : 1,
             yAxisID: 'y',
             metadata: {
               chipColor: firstChartColor,
@@ -502,17 +585,20 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
         ]
       }
 
+      // companyNo가 2015일 때 borderWidth 증가량
+      const borderWidthOffset = companyNo === 2015 ? 1 : 0
+
       return chartList.map((chart) => {
         const mainSeries = chart.series?.find((s) => s.seriesId === 'main') || chart.series?.[0]
         const dataType = (chart as ChartData & { dataType?: string }).dataType
         const isForecast = dataType === 'FORECAST'
 
-        const chartLineDescription = chart.goodsDataSourceName ?? ''
-        const chartColor = chartColorMap?.get(chartLineDescription) ?? '#2F62A3'
+        const displayName = chart.goodsDataSourceName ?? ''
+        const chartColor = chartColorMap?.get(displayName) ?? '#2F62A3'
 
-        const baseLabel = (chart.goodsDataSourceName ?? '').toUpperCase()
-        const displayLabel = isForecast ? `${baseLabel} FORECAST` : baseLabel
-        const visibilityKey = `${chart.goodsDataSourceName ?? ''}_${dataType ?? ''}`
+        // 라벨은 dataExplanation 기반 이름을 대문자로만 변환 (FORECAST 접미사 수동 추가 제거)
+        const displayLabel = displayName.toUpperCase()
+        const visibilityKey = `${displayName}_${dataType ?? ''}`
 
         return {
           label: displayLabel,
@@ -524,7 +610,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           clip: true as any,
           borderColor: chartColor,
-          borderWidth: 1,
+          borderWidth: 1 + borderWidthOffset,
           borderDash: isForecast ? [4, 4] : undefined,
           pointRadius: 0,
           fill: false,
@@ -541,6 +627,10 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             isDashed: isForecast,
             visibilityKey,
             timestamps: chart.timestamps,
+            predictDates: (chart as ChartData & { predictDates?: string[] }).predictDates,
+            startDates: (chart as ChartData & { startDates?: string[] }).startDates,
+            resultDates: (chart as ChartData & { resultDates?: string[] }).resultDates,
+            skipForTooltipIndices: (chart as ChartData & { skipForTooltipIndices?: number[] }).skipForTooltipIndices,
           },
         } as ChartDatasetType
       })
@@ -555,6 +645,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       lowDataSeries,
       spanGaps,
       chartColorMap,
+      companyNo,
     ])
 
     const comparisonChartUnits = useMemo(
@@ -746,16 +837,19 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
     const isEmptyChart = useMemo(
       () =>
-        allDatasets?.[0]?.data.every((value) => {
-          if ('y' in value) return value.y === null
-          if ('c' in value) return value.c === null
-          return true
-        }),
+        !allDatasets?.length ||
+        allDatasets.every((dataset) =>
+          dataset.data.every((value) => {
+            if ('y' in value) return value.y === null
+            if ('c' in value) return value.c === null
+            return true
+          }),
+        ),
       [allDatasets],
     )
 
     const fullYAxisRange = useMemo(() => {
-      if (isEmptyChart) return { min: 0, max: 0 }
+      if (isEmptyChart) return { min: 0, max: 0, step: undefined }
 
       let min = Infinity
       let max = -Infinity
@@ -776,26 +870,135 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       })
 
       if (min === Infinity || max === -Infinity) {
-        return { min: 0, max: 0 }
+        return { min: 0, max: 0, step: undefined }
       }
 
-      const range = max - min
-      const padding = range * 0.1
+      let range = max - min
+
+      // 데이터가 하나이거나 범위가 0일 때 최소 범위 보장
+      if (range === 0) {
+        const value = min
+        if (value !== 0) {
+          range = Math.abs(value) * 0.4 // 위아래 20%
+        } else {
+          range = 0.2
+        }
+        min = value - range / 2
+        max = value + range / 2
+      }
+
+      // 최소 범위 보장
+      const avgValue = (min + max) / 2
+      const minRange = Math.abs(avgValue) * 0.3
+      if (range < minRange && avgValue !== 0) {
+        const center = (min + max) / 2
+        range = minRange
+        min = center - range / 2
+        max = center + range / 2
+      } else {
+        const padding = range * 0.1
+        min = min - padding
+        max = max + padding
+        range = max - min
+      }
+
+      // 틱 간격 계산 - 약 10~15개 틱을 목표
+      const targetTickCount = 10
+      const rawStep = range / targetTickCount
+
+      // 틱 간격: 1, 2, 5 계열의 배수로 반올림
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)))
+      const fraction = rawStep / magnitude
+      let tickInterval: number
+      if (fraction <= 1) tickInterval = magnitude
+      else if (fraction <= 2) tickInterval = 2 * magnitude
+      else if (fraction <= 5) tickInterval = 5 * magnitude
+      else tickInterval = 10 * magnitude
+
+      // min/max를 tickInterval의 배수로 반올림 (데이터가 포함되도록)
+      const alignedMin = Math.floor(min / tickInterval) * tickInterval
+      const alignedMax = Math.ceil(max / tickInterval) * tickInterval
+
+      // 부동소수점 오차 보정
+      const precision = Math.max(0, -Math.floor(Math.log10(tickInterval))) + 2
+      const factor = Math.pow(10, precision)
 
       return {
-        min: min - padding,
-        max: max + padding,
+        min: Math.round(alignedMin * factor) / factor,
+        max: Math.round(alignedMax * factor) / factor,
+        step: Math.round(tickInterval * factor) / factor,
       }
     }, [allDatasets, isEmptyChart])
 
+    // 실제 데이터 값에서 최대 소수점 자릿수를 감지 (예: "0.634" → 3)
+    const dataMaxPrecision = useMemo(() => {
+      let maxPrecision = 0
+      chartList.forEach((chart) => {
+        chart.series?.forEach((series) => {
+          series.values?.forEach((v) => {
+            if (v !== null && v !== undefined) {
+              const str = String(v)
+              const dotIndex = str.indexOf('.')
+              if (dotIndex !== -1) {
+                maxPrecision = Math.max(maxPrecision, str.length - dotIndex - 1)
+              }
+            }
+          })
+        })
+      })
+      return maxPrecision
+    }, [chartList])
+
+    // y축 라벨에 사용할 소수점 자릿수를 step에서 계산
+    const yAxisToFixed = useMemo(() => {
+      const step = fullYAxisRange.step
+      if (!step || step <= 0) return 2
+      const magnitude = Math.floor(Math.log10(step))
+      return Math.max(0, -magnitude)
+    }, [fullYAxisRange])
+
     const createHighlightDatasets = useCallback(
-      (reportCardInfo: { goodsDataSourceNo: number; startDate: string; endDate: string } | null): ChartDatasetType[] => {
+      (reportCardInfo: IForecastReport | null): ChartDatasetType[] => {
         if (!reportCardInfo || chartType !== MIChartType.LINE) return []
 
-        const result: ChartDatasetType[] = []
+        // 호버된 리포트 카드의 새 데이터(predictionResultList)가 있으면 그걸로 highlight 1개만 그림 (기본 그래프는 흐리게 유지)
+        if (highlightChartData) {
+          const mainSeries = highlightChartData.series?.find((s) => s.seriesId === 'main') || highlightChartData.series?.[0]
+          const values = mainSeries?.values ?? []
+          const chartColor = chartColorMap?.get(highlightChartData.goodsDataSourceName ?? '') ?? '#2F62A3'
+          const highlightData = Array.from({ length: dataPointCount }, (_, index) => ({
+            x: index,
+            y: index < values.length ? (values[index] ?? null) : null,
+          }))
+          return [
+            {
+              label: `HIGHLIGHT_${highlightChartData.goodsDataSourceName ?? ''}`,
+              data: highlightData,
+              type: 'line' as const,
+              borderColor: chartColor,
+              borderWidth: companyNo === 2015 ? 3 : 2,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              fill: false,
+              tension: 0,
+              spanGaps,
+              yAxisID: isYAxisSeparated ? `sub-${highlightChartData.unitCd?.split('#').pop() ?? ''}` : 'y',
+              metadata: {
+                chipColor: chartColor,
+                goodsDataSourceNo: highlightChartData.goodsDataSourceNo,
+                goodsDataSourceName: highlightChartData.goodsDataSourceName,
+                isDashed: true,
+                isHighlight: true,
+                timestamps: highlightChartData.timestamps,
+              },
+            } as ChartDatasetType,
+          ]
+        }
 
+        // highlightChartData 없으면 기존: chartList에서 같은 goodsDataSourceNo인 차트의 구간만 추출
+        const result: ChartDatasetType[] = []
         chartList.forEach((chart) => {
-          if (chart.goodsDataSourceNo !== reportCardInfo.goodsDataSourceNo) return
+          if (chart.goodsDataSourceNo !== reportCardInfo.associatedGoodsDataSourceNo) return
 
           const mainSeries = chart.series?.find((s) => s.seriesId === 'main') || chart.series?.[0]
           if (!mainSeries) return
@@ -809,10 +1012,9 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
           if (!isVisible) return
 
-          // startDate와 endDate 범위에 해당하는 데이터만 필터링
           const timestamps = chart.timestamps || []
-          const startDate = dayjs(reportCardInfo.startDate)
-          const endDate = dayjs(reportCardInfo.endDate)
+          const startDate = dayjs(reportCardInfo.startPredictionResultDt)
+          const endDate = dayjs(reportCardInfo.endPredictionResultDt)
 
           const highlightData = Array.from({ length: dataPointCount }, (_, index) => {
             const timestamp = timestamps[index]
@@ -836,7 +1038,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             data: highlightData,
             type: 'line' as const,
             borderColor: chartColor,
-            borderWidth: 2,
+            borderWidth: companyNo === 2015 ? 3 : 2,
             borderDash: isForecast ? [4, 4] : undefined,
             pointRadius: 0,
             fill: false,
@@ -856,14 +1058,34 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
         return result
       },
-      [chartType, chartList, dataPointCount, chartVisibilityMap, isYAxisSeparated, chartColorMap, spanGaps],
+      [chartType, chartList, dataPointCount, chartVisibilityMap, isYAxisSeparated, chartColorMap, spanGaps, highlightChartData, companyNo],
     )
 
-    const mainDataset = useMemo(() => [...allDatasets], [allDatasets])
+    // dataset metadata에 toFixed를 주입하여 툴팁이 실제 데이터 자릿수를 유지하도록 함
+    // dataMaxPrecision > 0 인 경우에만 명시적으로 설정 (0이면 undefined로 두어 기존 full precision 동작 유지)
+    const mainDataset = useMemo(
+      () =>
+        allDatasets.map((dataset) => ({
+          ...dataset,
+          metadata: {
+            ...dataset.metadata,
+            toFixed: dataMaxPrecision > 0 ? dataMaxPrecision : undefined,
+          },
+        })),
+      [allDatasets, dataMaxPrecision],
+    )
 
     const redrawLinesPlugin = useMemo(
-      () => createRedrawLinesPlugin(hoverReportCardInfo ?? null, chartVisibilityMap, fixedXScaleIndex !== null, spanGaps, hoveredChartKey),
-      [hoverReportCardInfo, chartVisibilityMap, fixedXScaleIndex, spanGaps, hoveredChartKey],
+      () =>
+        createRedrawLinesPlugin(
+          hoverReportCardInfo ?? null,
+          chartVisibilityMap,
+          fixedXScaleIndex !== null,
+          spanGaps,
+          hoveredChartKey,
+          companyNo,
+        ),
+      [hoverReportCardInfo, chartVisibilityMap, fixedXScaleIndex, spanGaps, hoveredChartKey, companyNo],
     )
 
     useEffect(() => {
@@ -905,7 +1127,8 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 
         const chartOpacity = hasReportCardHover ? 0.2 : isHovered ? 1 : hasHover ? 0.2 : 1
 
-        const borderWidth = hasReportCardHover ? 1 : isHovered ? 2 : 1
+        const baseBorderWidth = hasReportCardHover ? 1 : isHovered ? 2 : 1
+        const borderWidth = companyNo === 2015 ? baseBorderWidth + 1 : baseBorderWidth
 
         dataset.borderColor = applyOpacity(chipColor, chartOpacity)
         dataset.borderWidth = borderWidth
@@ -922,7 +1145,16 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
           setChartAreaCenter({ left: centerX, top: centerY, bottom })
         }
       })
-    }, [hoveredChartKey, hoverReportCardInfo, chartType, chartVisibilityMap, mainDataset, createHighlightDatasets, fixedXScaleIndex])
+    }, [
+      hoveredChartKey,
+      hoverReportCardInfo,
+      chartType,
+      chartVisibilityMap,
+      mainDataset,
+      createHighlightDatasets,
+      fixedXScaleIndex,
+      companyNo,
+    ])
 
     useEffect(() => {
       const chart = chartRef.current
@@ -990,8 +1222,12 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             grid: {
               display: false,
             },
-            min: 0,
-            max: dataPointCount > 0 ? dataPointCount - 1 : undefined,
+            // x축 간격 1칸만큼 좌우 여백
+            min: dataPointCount > 0 ? -1 : 0,
+            max: dataPointCount > 0 ? dataPointCount : undefined,
+            bounds: 'data' as const,
+            grace: 0,
+            offset: false,
             border: {
               display: false,
             },
@@ -1053,7 +1289,8 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               borderColor: '#000000',
               padding: 14,
               maxTicksLimit: 19, // y축 최대 틱 수 제한
-              toFixed: 1,
+              toFixed: yAxisToFixed,
+              stepSize: fullYAxisRange.step,
             }),
             min: fullYAxisRange.min,
             max: fullYAxisRange.max,
@@ -1061,43 +1298,40 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               scale.min = fullYAxisRange.min
               scale.max = fullYAxisRange.max
             },
-            afterBuildTicks(axis: LinearScale) {
-              if (axis.ticks && axis.ticks.length < 19) {
-                const scale = axis as { min: number; max: number; ticks: Array<{ value: number }> }
-                const min = scale.min ?? 0
-                const max = scale.max ?? 0
-                const range = max - min
-
-                if (range > 0 && !isEmptyChart) {
-                  const step = range / 18
-                  const newTicks: Array<{ value: number }> = []
-
-                  for (let i = 0; i <= 18; i++) {
-                    const value = min + step * i
-                    newTicks.push({ value })
-                  }
-
-                  axis.ticks = newTicks
-                }
-              }
-            },
             afterTickToLabelConversion(axis: LinearScale) {
               if (axis.ticks.length > 0) {
-                const ctx = axis.chart.ctx
-                const chartArea = axis.chart.chartArea
+                const firstIndex = 0
+                const lastIndex = axis.ticks.length - 1
 
-                if (ctx && chartArea) {
-                  const firstTick = axis.ticks[0]
-                  const metrics = ctx.measureText(firstTick.label as string)
-                  const textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
-                  const firstLabelBoundary = axis.getPixelForTick(0) - chartArea.bottom - textHeight
-                  if (firstLabelBoundary < 0) firstTick.label = ''
+                for (let i = 0; i < axis.ticks.length; i++) {
+                  if (i === firstIndex || i === lastIndex) {
+                    continue
+                  }
 
-                  const lastTick = axis.ticks[axis.ticks.length - 1]
-                  const lastMetrics = ctx.measureText(lastTick.label as string)
-                  const lastTextHeight = lastMetrics.actualBoundingBoxAscent + lastMetrics.actualBoundingBoxDescent
-                  const lastLabelBoundary = axis.getPixelForTick(axis.ticks.length - 1) + lastTextHeight / 2
-                  if (lastLabelBoundary > axis.height) lastTick.label = ''
+                  const tick = axis.ticks[i]
+                  if (!tick.label || tick.label === '') {
+                    const tickValue = Number(tick.value)
+                    if (!Number.isNaN(tickValue)) {
+                      tick.label = tickValue.toLocaleString('ko-KR', {
+                        minimumFractionDigits: yAxisToFixed,
+                        maximumFractionDigits: yAxisToFixed,
+                      })
+                    }
+                  }
+                }
+
+                // 중복된 라벨 제거
+                const seenLabels = new Set<string>()
+                for (let i = 0; i < axis.ticks.length; i++) {
+                  const tick = axis.ticks[i]
+                  const label = tick.label as string
+                  if (label && label.trim() !== '') {
+                    if (seenLabels.has(label)) {
+                      tick.label = ''
+                    } else {
+                      seenLabels.add(label)
+                    }
+                  }
                 }
               }
             },
@@ -1178,8 +1412,9 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             },
             limits: {
               x: {
-                min: 0,
-                max: dataPointCount > 0 ? dataPointCount - 1 : undefined,
+                // 초기 뷰와 동일하게 좌우 한 칸 여백(-1 ~ dataPointCount) 유지
+                min: dataPointCount > 0 ? -1 : 0,
+                max: dataPointCount > 0 ? dataPointCount : undefined,
                 minRange: 2,
               },
               y: {
@@ -1190,7 +1425,8 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             },
           },
           gridAndAxes: {
-            timestamps: firstChartTimestamps,
+            timestamps: axisTimestamps,
+            resultDates: axisResultDates,
             dataPointCount,
           },
         },
@@ -1198,7 +1434,18 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       // onPan 콜백은 클로저로 최신 fixedXScaleIndex와 isDragConfirmedRef를 참조하므로 의존성 배열에 추가하지 않음
       // fixedXScaleIndex를 의존성에 추가하면 fixedXScaleIndex 변경 시마다 chartOptions가 재생성되어 불필요한 리렌더링 발생
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [isEmptyChart, dataPointCount, firstChartTimestamps, subYAxes, unitCd, currency, isYAxisSeparated, fullYAxisRange],
+      [
+        isEmptyChart,
+        dataPointCount,
+        axisTimestamps,
+        axisResultDates,
+        subYAxes,
+        unitCd,
+        currency,
+        isYAxisSeparated,
+        fullYAxisRange,
+        yAxisToFixed,
+      ],
     )
 
     useEffect(() => {
@@ -1241,7 +1488,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
           mouseDownPositionRef.current = null
           mouseDownScaleRangeRef.current = null
         },
-        canvas: chartRef.current?.canvas ?? null,
+        getCanvas: () => chartRef.current?.canvas ?? null,
       }),
       [],
     )
@@ -1337,28 +1584,37 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       const xScale = chart.scales.x
       if (!xScale) return
 
-      const currentMin = xScale.min ?? 0
-      const currentMax = xScale.max ?? dataPointCount - 1
+      const fullMin = -1
+      const fullMax = dataPointCount > 0 ? dataPointCount : 0
+      const currentMin = xScale.min ?? fullMin
+      const currentMax = xScale.max ?? fullMax
       const currentRange = currentMax - currentMin
       const center = (currentMin + currentMax) / 2
-      const zoomFactor = 1.5
+      // 확대(0.6)와 역수 관계로 한 번 축소가 한 번 확대를 되돌리도록 함
+      const zoomFactor = 1 / 0.6
 
       const newRange = currentRange * zoomFactor
       const minRange = 2 // 휠 줌 제한과 동일한 최소 범위
 
-      let newMin = Math.max(0, center - newRange / 2)
-      let newMax = Math.min(dataPointCount - 1, center + newRange / 2)
+      // 축소 시 전체 뷰(좌우 한 칸 여백)를 넘어가면 초기 상태로 스냅
+      const fullRangeWithPadding = fullMax - fullMin
+      if (newRange >= fullRangeWithPadding) {
+        chart.zoomScale('x', { min: fullMin, max: fullMax })
+      } else {
+        let newMin = Math.max(fullMin, center - newRange / 2)
+        let newMax = Math.min(fullMax, center + newRange / 2)
 
-      if (newMax - newMin < minRange) {
-        const rangeDiff = minRange - (newMax - newMin)
-        newMin = Math.max(0, newMin - rangeDiff / 2)
-        newMax = Math.min(dataPointCount - 1, newMax + rangeDiff / 2)
+        if (newMax - newMin < minRange) {
+          const rangeDiff = minRange - (newMax - newMin)
+          newMin = Math.max(fullMin, newMin - rangeDiff / 2)
+          newMax = Math.min(fullMax, newMax + rangeDiff / 2)
+        }
+
+        const finalMin = Math.max(fullMin, newMin)
+        const finalMax = Math.min(fullMax, newMax)
+
+        chart.zoomScale('x', { min: finalMin, max: finalMax })
       }
-
-      const finalMin = Math.max(0, newMin)
-      const finalMax = Math.min(dataPointCount > 0 ? dataPointCount - 1 : 0, newMax)
-
-      chart.zoomScale('x', { min: finalMin, max: finalMax })
 
       // 드래그 상태 해제 및 크로스라인과 툴팁 숨기기 (마우스 이동 시 다시 표시됨)
       setIsPanning(false)
@@ -1374,8 +1630,55 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
       onFixedModeChange?.(fixedXScaleIndex !== null)
     }, [fixedXScaleIndex, onFixedModeChange])
 
+    // 고정모드 오버레이에서 메인 스크롤 영역으로 스크롤 이벤트 전달
+    useEffect(() => {
+      if (fixedXScaleIndex === null) return undefined
+      const overlay = fixedModeOverlayRef.current
+      const scrollEl = document.getElementById('main-scroll-wrapper')
+      if (!overlay || !scrollEl) return undefined
+
+      const onWheel = (e: WheelEvent) => {
+        e.preventDefault()
+        scrollEl.scrollTop += e.deltaY
+      }
+
+      overlay.addEventListener('wheel', onWheel, { passive: false })
+      return () => {
+        overlay.removeEventListener('wheel', onWheel)
+      }
+    }, [fixedXScaleIndex])
+
     const showSkeleton = isLoading || !charts || charts.length === 0
     const showChart = !showSkeleton
+
+    const handleCloseFixedMode = useCallback(() => {
+      fixedXScaleIndexRef.current = null
+      fixedModeScaleRangeRef.current = null
+      fixedTooltipPositionRef.current = null
+      setFixedXScaleIndex(null)
+      setFixedTooltipPosition(null)
+      setRipplePosition(null)
+      setRippleDirection(null)
+
+      isDragConfirmedRef.current = false
+      wasDraggingOnMouseUpRef.current = false
+      setIsPanning(false)
+      mouseDownPositionRef.current = null
+      mouseDownScaleRangeRef.current = null
+
+      crosshairRef.current?.setFixedPosition(null, 0, true)
+      setIsCrosshairVisible(false)
+      setTooltip((prev) => ({ ...prev, visible: false }))
+
+      if (lastMousePositionRef.current && chartRef.current?.canvas) {
+        requestAnimationFrame(() => {
+          const mousePos = lastMousePositionRef.current
+          if (!mousePos || !chartRef.current) return
+
+          updateCrosshairPositionFromMousePos(mousePos)
+        })
+      }
+    }, [updateCrosshairPositionFromMousePos])
 
     return (
       <Box
@@ -1442,6 +1745,15 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
           const wasDragging = wasDraggingOnMouseUpRef.current || isPanning || isDragConfirmedRef.current
 
           if (wasDragging) {
+            mouseDownPositionRef.current = null
+            mouseDownScaleRangeRef.current = null
+            isDragConfirmedRef.current = false
+            wasDraggingOnMouseUpRef.current = false
+            return
+          }
+
+          // 고정 모드가 비활성화된 경우 클릭 이벤트 무시
+          if (disableFixedMode) {
             mouseDownPositionRef.current = null
             mouseDownScaleRangeRef.current = null
             isDragConfirmedRef.current = false
@@ -1558,6 +1870,15 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
         onMouseMove={(event) => {
           event.stopPropagation()
 
+          // 마우스 버튼이 눌리지 않은 상태로 그래프에 재진입한 경우 (밖에서 버튼을 놓은 경우) 드래그 상태 초기화
+          if (event.buttons === 0 && (mouseDownPositionRef.current !== null || isDragConfirmedRef.current)) {
+            mouseDownPositionRef.current = null
+            mouseDownScaleRangeRef.current = null
+            isDragConfirmedRef.current = false
+            wasDraggingOnMouseUpRef.current = false
+            setIsPanning(false)
+          }
+
           if (fixedXScaleIndexRef.current !== null) {
             if (mouseDownPositionRef.current) {
               mouseDownPositionRef.current = null
@@ -1646,16 +1967,14 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             }
           }
 
-          if (animationFrameRef.current === null) {
-            animationFrameRef.current = requestAnimationFrame(() => {
-              animationFrameRef.current = null
+          animationFrameRef.current ??= requestAnimationFrame(() => {
+            animationFrameRef.current = null
 
-              const mousePos = lastMousePositionRef.current
-              if (!mousePos) return
+            const mousePos = lastMousePositionRef.current
+            if (!mousePos) return
 
-              updateCrosshairPositionFromMousePos(mousePos)
-            })
-          }
+            updateCrosshairPositionFromMousePos(mousePos)
+          })
         }}
         onWheel={(event) => {
           if (fixedXScaleIndex !== null) {
@@ -1833,40 +2152,38 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
         )}
         {showChart && (
           <>
-            <ForecastCrosshairLine ref={crosshairRef} chartRef={chartRef} onTooltipChange={externalTooltipHandler} />
+            {/* 고정모드 시 팝업 외부 영역 클릭으로 닫기 */}
+            {fixedXScaleIndex !== null && (
+              <Box
+                ref={fixedModeOverlayRef}
+                aria-hidden
+                onClick={handleCloseFixedMode}
+                sx={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 20,
+                  backgroundColor: 'transparent',
+                  cursor: 'default',
+                  pointerEvents: 'auto',
+                }}
+              />
+            )}
+            <ForecastCrosshairLine
+              ref={crosshairRef}
+              chartRef={chartRef}
+              onTooltipChange={externalTooltipHandler}
+              hideBottomDateLabel={companyNo === 2015}
+              useXAxisLabelInTooltip={companyNo === 2015}
+            />
             <ForecastChartTooltip
               ref={tooltipRef}
               {...tooltip}
               visibility={tooltip.visible && !isTooltipPositionCalculated && tooltip.left === -9999 ? 'hidden' : 'visible'}
               isFixedMode={fixedXScaleIndex !== null}
-              onClose={() => {
-                fixedXScaleIndexRef.current = null
-                fixedModeScaleRangeRef.current = null
-                fixedTooltipPositionRef.current = null
-                setFixedXScaleIndex(null)
-                setFixedTooltipPosition(null)
-                setRipplePosition(null)
-                setRippleDirection(null)
-
-                isDragConfirmedRef.current = false
-                wasDraggingOnMouseUpRef.current = false
-                setIsPanning(false)
-                mouseDownPositionRef.current = null
-                mouseDownScaleRangeRef.current = null
-
-                crosshairRef.current?.setFixedPosition(null, 0, true)
-                setIsCrosshairVisible(false)
-                setTooltip((prev) => ({ ...prev, visible: false }))
-
-                if (lastMousePositionRef.current && chartRef.current?.canvas) {
-                  requestAnimationFrame(() => {
-                    const mousePos = lastMousePositionRef.current
-                    if (!mousePos || !chartRef.current) return
-
-                    updateCrosshairPositionFromMousePos(mousePos)
-                  })
-                }
-              }}
+              monthSelect={monthSelect}
+              companyNo={companyNo}
+              interval={interval}
+              onClose={handleCloseFixedMode}
             />
           </>
         )}
@@ -1880,13 +2197,13 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
               bottom: '47px',
               transform: 'translateX(-50%)',
               pointerEvents: 'auto',
-              zIndex: fixedXScaleIndex !== null ? 11 : 13,
+              zIndex: 13,
             }}
           >
             <Box
               width="36px"
               height="36px"
-              onClick={fixedXScaleIndex === null ? handleZoomOut : undefined}
+              onClick={handleZoomOut}
               sx={{
                 borderTopLeftRadius: '10px',
                 borderBottomLeftRadius: '10px',
@@ -1895,14 +2212,11 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: fixedXScaleIndex === null ? 'pointer' : 'default',
+                cursor: 'pointer',
                 boxSizing: 'border-box',
-                '&:hover':
-                  fixedXScaleIndex === null
-                    ? {
-                      backgroundColor: '#F1F3F5',
-                    }
-                    : {},
+                '&:hover': {
+                  backgroundColor: '#F1F3F5',
+                },
               }}
             >
               <RemoveRoundedIcon sx={{ color: 'gray.70', fontSize: '18px' }} />
@@ -1910,7 +2224,7 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
             <Box
               width="36px"
               height="36px"
-              onClick={fixedXScaleIndex === null ? handleZoomIn : undefined}
+              onClick={handleZoomIn}
               sx={{
                 borderTopRightRadius: '10px',
                 borderBottomRightRadius: '10px',
@@ -1919,14 +2233,11 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: fixedXScaleIndex === null ? 'pointer' : 'default',
+                cursor: 'pointer',
                 boxSizing: 'border-box',
-                '&:hover':
-                  fixedXScaleIndex === null
-                    ? {
-                      backgroundColor: '#F1F3F5',
-                    }
-                    : {},
+                '&:hover': {
+                  backgroundColor: '#F1F3F5',
+                },
               }}
             >
               <AddRoundedIcon sx={{ color: 'gray.70', fontSize: '18px' }} />
@@ -1939,5 +2250,4 @@ const ForecastChartGraph = forwardRef<ForecastChartGraphHandle, Readonly<Forecas
 )
 
 ForecastChartGraph.displayName = 'ForecastChartGraph'
-
 export default ForecastChartGraph

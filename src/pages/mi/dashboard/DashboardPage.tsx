@@ -21,6 +21,7 @@ const DashboardPage = () => {
   const { accessCompanyInfo } = useAuthStore()
   const { setMarketDataList, setMarketDataIsLoading } = useMarketData()
   const companyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? -1, [accessCompanyInfo?.customerCompanyNo])
+  const newsMarketCategoryCode = useMemo(() => accessCompanyInfo?.newsMarketCategoryCode, [accessCompanyInfo?.newsMarketCategoryCode])
 
   const { data: criteriaDateInfo, isLoading: isCriteriaDateLoading } = useQuery({
     queryKey: ['getCriteriaDate'],
@@ -73,13 +74,13 @@ const DashboardPage = () => {
     <MISkeleton variant={'dashboard'}>
       <Stack py="24px" maxWidth="1380px" margin="auto" gap="24px">
         <MIDateDisplay date={criteriaDate ? dayjs(criteriaDate, 'YYYYMMDD') : undefined} text={nextUpdateText} />
-        <AIMarketSummary criteriaDate={criteriaDate} />
+        <AIMarketSummary criteriaDate={criteriaDate} defaultCategoryCode={newsMarketCategoryCode} />
         <Box mb="-12px">
           <Toolbar />
         </Box>
         <Stack direction="row" gap="24px">
           <Stack width="740px" gap="24px">
-            <NewsFeed criteriaDate={criteriaDate} />
+            <NewsFeed criteriaDate={criteriaDate} defaultCategoryCode={newsMarketCategoryCode} />
             {/* <MIGuide /> */}
             {/* <Newsletters /> */}
           </Stack>

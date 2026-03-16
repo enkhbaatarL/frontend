@@ -1,6 +1,7 @@
 import { Box, Stack, Typography, TypographyProps, Tooltip, Chip } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { ReactNode, useRef, useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import economicCalendarIcon from '@/assets/dashboard/economic-calendar.svg'
 import levelHighIcon from '@/assets/level-high.svg'
@@ -115,6 +116,7 @@ interface Props {
 }
 
 const EconomicCalendar = ({ criteriaDate }: Props) => {
+  const navigate = useNavigate()
   const [importance, setImportance] = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
@@ -311,6 +313,7 @@ const EconomicCalendar = ({ criteriaDate }: Props) => {
                   height="38px"
                   gap="4px"
                   borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+                  onClick={() => navigate(`/mi/economic-calendar/${data.code}`)}
                   sx={{
                     '&:hover': {
                       backgroundColor: '#F8F9FA',

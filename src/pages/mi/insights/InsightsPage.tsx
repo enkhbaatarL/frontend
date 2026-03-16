@@ -1,4 +1,4 @@
-import { Box, Grid2 as Grid, Typography, Tooltip } from '@mui/material'
+import { Box, Grid2 as Grid, Typography, Tooltip, TypographyProps } from '@mui/material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState, useRef, Fragment } from 'react'
@@ -62,7 +62,7 @@ const renderSkeletonGroup = (key: number, removeMarginBottom = false) => (
 )
 
 // 말줄임이 적용된 경우에만 툴팁을 표시하는 컴포넌트
-const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & any) => {
+const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string } & TypographyProps) => {
   const textRef = useRef<HTMLDivElement>(null)
   const [isOverflowing, setIsOverflowing] = useState(false)
 

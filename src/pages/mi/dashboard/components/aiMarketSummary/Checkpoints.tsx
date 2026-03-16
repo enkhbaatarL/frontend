@@ -93,7 +93,7 @@ const Checkpoints = ({ checkpoints }: Props) => {
         </Stack>
       ) : (
         <>
-          <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500}>
+          <Fade in={selectedOption === 'detailed' || selectedOption === 'focused'} timeout={500} unmountOnExit>
             <Box>
               {(selectedOption === 'detailed' || selectedOption === 'focused') &&
                 checkpoints?.items.map((item, index) => (
@@ -106,7 +106,7 @@ const Checkpoints = ({ checkpoints }: Props) => {
                 ))}
             </Box>
           </Fade>
-          <Fade in={selectedOption === 'narrative'} timeout={500}>
+          <Fade in={selectedOption === 'narrative'} timeout={500} unmountOnExit>
             <Box>
               {selectedOption === 'narrative' && (
                 <>

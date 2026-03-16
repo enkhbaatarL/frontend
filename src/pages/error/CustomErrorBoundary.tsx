@@ -4,7 +4,7 @@ import { ErrorBoundary } from 'react-error-boundary'
 import ErrorUnknownPage from './ErrorUnknownPage'
 
 /* 에러 로깅 함수 */
-const onError = (error: Error, info: ErrorInfo): void => {
+const onError = (error: unknown, info: ErrorInfo): void => {
   /* 에러 로깅 서비스로 에러 정보 전송 */
   console.error('Debug - :', error, info)
 }

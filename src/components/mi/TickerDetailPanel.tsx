@@ -39,9 +39,11 @@ const TruncatedTextWithTooltip = ({ text, ...typographyProps }: { text: string }
 
 const TickerDetailPanel = ({ item, onClose, onViewDetails }: TickerDetailPanelProps) => {
   // change 값에 따른 색상 결정
-  const getChangeColor = (value: number) => {
-    if (value > 0) return 'increase'
-    if (value < 0) return 'decrease'
+  const getChangeColor = (value?: number) => {
+    const targetValue = value ?? 0
+
+    if (targetValue > 0) return 'increase'
+    if (targetValue < 0) return 'decrease'
     return 'gray.70'
   }
 
@@ -102,7 +104,9 @@ const TickerDetailPanel = ({ item, onClose, onViewDetails }: TickerDetailPanelPr
             {item.marketMetaDataSummary.lastValue}
           </Typography>
           <Typography variant="body1" color={getChangeColor(item.marketMetaDataSummary.change)} sx={{ mt: '-1px' }}>
-            {`${item.marketMetaDataSummary.change} (${item.marketMetaDataSummary.changePercent}%)`}
+            {item.marketMetaDataSummary.change !== undefined && item.marketMetaDataSummary.changePercent !== undefined
+              ? `${item.marketMetaDataSummary.change} (${item.marketMetaDataSummary.changePercent}%)`
+              : '-'}
           </Typography>
           <Typography variant="body3" color="gray.60" sx={{ mt: '-2px' }}>
             {item.marketMetaDataSummary.lastUpdateDt}

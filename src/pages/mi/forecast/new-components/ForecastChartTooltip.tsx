@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { forwardRef, useRef } from 'react'
+import { forwardRef, useRef, useMemo, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import DashLineIcon from '@/components/common/forecast-chart/icons/DashLineIcon'
@@ -14,9 +14,12 @@ export interface TooltipContent {
   value?: number
   color?: string
   date: string
+  predictDate?: string | null
+  startDate?: string
   toFixed?: number
   isForecast?: boolean
   isFixedMode?: boolean
+  goodsDataSourceNo?: number
 }
 
 const ChartToolTipItem = (props: {
@@ -26,20 +29,55 @@ const ChartToolTipItem = (props: {
   toFixed?: number
   isForecast?: boolean
   isFixedMode?: boolean
+  monthSelect?: string
+  goodsDataSourceNo?: number
+  date?: string
+  predictDate?: string | null
+  startDate?: string
+  companyNo?: number
+  interval?: string
 }) => {
-  const { label, value, color, toFixed, isForecast = false, isFixedMode = false } = props
+  const {
+    label,
+    value,
+    color,
+    toFixed,
+    isForecast = false,
+    isFixedMode = false,
+    goodsDataSourceNo,
+    date,
+    predictDate,
+    startDate,
+    companyNo,
+    interval,
+  } = props
   const LineIcon = isForecast ? DashLineIcon : SolidLineIcon
   const popupRef = useRef<MIMorphingPopupRef>(null)
   const hasValue = value !== undefined
-  const canClick = isForecast && hasValue
+  const isInteractionDisabled = companyNo === 2015 && interval === '1Y' && isFixedMode
+  const canClick = isForecast && hasValue && !isInteractionDisabled
+  const [isPopupOpen, setIsPopupOpen] = useState(false)
+
+  // ForecastChartTooltipReportContent를 메모이제이션하여 불필요한 리렌더링 방지
+  const reportContent = useMemo(
+    () => (
+      <ForecastChartTooltipReportContent
+        goodsDataSourceNo={goodsDataSourceNo}
+        date={predictDate || date}
+        startDate={startDate}
+        isVisible={isPopupOpen}
+      />
+    ),
+    [goodsDataSourceNo, date, predictDate, isPopupOpen, startDate],
+  )
 
   const content = (
     <Stack
       minWidth="340px"
+      maxWidth="340px"
       height="40px"
       direction="row"
       alignItems="center"
-      justifyContent="space-between"
       gap="14px"
       px="6px"
       borderRadius="6px"
@@ -47,8 +85,9 @@ const ChartToolTipItem = (props: {
         cursor: canClick ? 'pointer' : 'default',
         '&:hover': {
           backgroundColor: canClick ? 'contentBG.Hover' : undefined,
-          // hover 시 값 텍스트 숨기고 버튼 표시 (고정 모드이고 forecast인 경우만)
-          ...(isFixedMode &&
+          // hover 시 값 텍스트 숨기고 버튼 표시 (고정 모드이고 forecast인 경우만, 인터랙션 비활성화 시 제외)
+          ...(!isInteractionDisabled &&
+            isFixedMode &&
             isForecast &&
             hasValue && {
             '& .value-text': {
@@ -60,8 +99,9 @@ const ChartToolTipItem = (props: {
             },
           }),
         },
-        // 기본 상태에서 버튼 숨김 (고정 모드이고 forecast인 경우만)
-        ...(isFixedMode &&
+        // 기본 상태에서 버튼 숨김 (고정 모드이고 forecast인 경우만, 인터랙션 비활성화 시 제외)
+        ...(!isInteractionDisabled &&
+          isFixedMode &&
           isForecast &&
           hasValue && {
           '& .drill-down-button': {
@@ -76,13 +116,21 @@ const ChartToolTipItem = (props: {
       }}
       onClick={() => (canClick ? popupRef.current?.open() : undefined)}
     >
-      <Stack direction="row" alignItems="center" gap="8px">
-        <LineIcon color={color} />
+      <Stack direction="row" alignItems="center" gap="8px" flex={1} sx={{ minWidth: 0, overflow: 'hidden' }}>
+        <Box sx={{ flexShrink: 0 }}>
+          <LineIcon color={color} />
+        </Box>
         <Typography
+          component="span"
           variant="body1M16"
           color={isFixedMode && !isForecast ? 'contentText.Subtext' : 'commonColor.Black'}
           sx={{
             transition: 'color 0.3s ease-out',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flex: 1,
+            minWidth: 0,
           }}
         >
           {label}
@@ -95,6 +143,8 @@ const ChartToolTipItem = (props: {
           alignItems: 'center',
           justifyContent: 'flex-end',
           minHeight: '30px',
+          flexShrink: 0,
+          width: 'auto',
         }}
       >
         {/* 값 텍스트 - 고정 모드이고 forecast이고 값이 있는 경우 absolute로 배치하여 버튼과 같은 위치에 겹침 */}
@@ -117,8 +167,8 @@ const ChartToolTipItem = (props: {
         >
           {value === undefined ? '-' : formatValue(value, '', 'en-US', toFixed)}
         </Typography>
-        {/* Drill-down 버튼 - 고정 모드이고 forecast이고 값이 있는 경우만 렌더링, 값 텍스트와 같은 위치에 겹쳐서 배치 */}
-        {isFixedMode && isForecast && hasValue && (
+        {/* Drill-down 버튼 - 고정 모드이고 forecast이고 값이 있는 경우만 렌더링, 인터랙션 비활성화 시 제외, 값 텍스트와 같은 위치에 겹쳐서 배치 */}
+        {!isInteractionDisabled && isFixedMode && isForecast && hasValue && (
           <MIBaseButton
             className="drill-down-button"
             sx={{
@@ -147,7 +197,9 @@ const ChartToolTipItem = (props: {
       ref={popupRef}
       popup={{
         title: 'Forecast Drill-down & Key Drivers',
-        content: <ForecastChartTooltipReportContent />,
+        content: reportContent,
+        onOpen: () => setIsPopupOpen(true),
+        onClose: () => setIsPopupOpen(false),
       }}
     >
       {content}
@@ -164,11 +216,14 @@ interface ForecastChartTooltipProps {
   content: Record<string, TooltipContent>
   visibility?: 'visible' | 'hidden'
   isFixedMode?: boolean
+  monthSelect?: string
+  companyNo?: number
+  interval?: string
   onClose?: () => void
 }
 
 const ForecastChartTooltip = forwardRef<HTMLDivElement, Readonly<ForecastChartTooltipProps>>(
-  ({ visible, top, left, content, visibility = 'visible', isFixedMode = false, onClose }, ref) => {
+  ({ visible, top, left, content, visibility = 'visible', isFixedMode = false, monthSelect, companyNo, interval, onClose }, ref) => {
     if (!visible) return null
 
     const items: Array<TooltipContent> = []
@@ -245,6 +300,13 @@ const ForecastChartTooltip = forwardRef<HTMLDivElement, Readonly<ForecastChartTo
               toFixed={item.toFixed}
               isForecast={item.isForecast}
               isFixedMode={isFixedMode}
+              monthSelect={monthSelect}
+              goodsDataSourceNo={item.goodsDataSourceNo}
+              date={item.date}
+              predictDate={item.predictDate}
+              startDate={companyNo === 2015 ? item.startDate : undefined}
+              companyNo={companyNo}
+              interval={interval}
             />
           ))}
         </Stack>

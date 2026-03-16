@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 import { DirectionType, IMarketRecapItem } from '@/service/mi/dashboard'
+import useAuthStore from '@/store/useAuthStore'
 
 interface Props {
   sentiments?: IMarketRecapItem['sentiments']
@@ -36,6 +37,11 @@ const shimmerAnimation = keyframes`
   0% { transform: translateX(-120%); }
   70% { transform: translateX(120%); }
   100% { transform: translateX(120%); }
+`
+
+const legendFadeIn = keyframes`
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 `
 
 const createTextSyncAnimation = (contentWidth: number) => keyframes`
@@ -228,9 +234,10 @@ interface SentimentItemProps {
   index: number
   isVisible: boolean
   showLabels: boolean
+  isInitialItem: boolean
 }
 
-const SentimentItem = ({ itemKey, label, period, counts, index, isVisible, showLabels }: SentimentItemProps) => {
+const SentimentItem = ({ itemKey, label, period, counts, index, isVisible, showLabels, isInitialItem }: SentimentItemProps) => {
   const total = counts.reduce((sum, val) => sum + val, 0)
   const transitionDelay = `${index * STAGGER_DELAY}ms`
   const barTransitionDelay = `${index * STAGGER_DELAY + 150}ms`
@@ -316,7 +323,7 @@ const SentimentItem = ({ itemKey, label, period, counts, index, isVisible, showL
                 total={total}
                 counts={counts}
                 itemKey={itemKey}
-                isAnimated={index === 0}
+                isAnimated={isInitialItem}
                 isVisible={isVisible}
                 containerWidth={containerWidth}
               />
@@ -328,18 +335,34 @@ const SentimentItem = ({ itemKey, label, period, counts, index, isVisible, showL
   )
 }
 
+const DEFAULT_INDEX = 0
+const COMPANY_2015_DEFAULT_INDEX = 2
+
 const Sentiment = ({ sentiments }: Props) => {
   const { t } = useTranslation()
-  const [selectedOptions, setSelectedOptions] = useState<string[]>(['current'])
+  const { accessCompanyInfo } = useAuthStore()
+  const companyNo = useMemo(() => accessCompanyInfo?.customerCompanyNo ?? -1, [accessCompanyInfo?.customerCompanyNo])
+  const defaultIndex = companyNo === 2015 ? COMPANY_2015_DEFAULT_INDEX : DEFAULT_INDEX
+
+  const sentimentKeys = useMemo(() => Object.keys(sentiments ?? {}), [sentiments])
+
+  const [userSelectedOptions, setUserSelectedOptions] = useState<string[] | null>(null)
+
+  const selectedOptions = useMemo(() => {
+    if (userSelectedOptions !== null) return userSelectedOptions
+    if (sentimentKeys.length === 0) return []
+    const defaultKey = sentimentKeys[defaultIndex] ?? sentimentKeys[0]
+    return defaultKey ? [defaultKey] : []
+  }, [userSelectedOptions, sentimentKeys, defaultIndex])
 
   const menuOptions = useMemo(
     () =>
-      Object.keys(sentiments ?? {}).map((key, index) => ({
+      sentimentKeys.map((key, index) => ({
         label: t(`dashboard.sentiments.options.${key}Label`),
         value: key,
-        disabled: index === 0, // 첫 번째 항목은 기본 선택
+        disabled: index === defaultIndex, // 기본 선택 항목은 비활성화
       })),
-    [sentiments, t],
+    [sentimentKeys, t, defaultIndex],
   )
 
   const sentimentItems = useMemo(
@@ -375,7 +398,7 @@ const Sentiment = ({ sentiments }: Props) => {
             multiple
             items={menuOptions}
             selected={selectedOptions}
-            onSelected={setSelectedOptions}
+            onSelected={setUserSelectedOptions}
             menuPositionOffset={{ right: -78 }}
             placement="bottom-end"
             fadeIn="left"
@@ -391,15 +414,71 @@ const Sentiment = ({ sentiments }: Props) => {
           </Typography>
         </Stack>
       ) : (
-        sentimentItems.map((item, index) => (
-          <SentimentItem
-            key={item.itemKey}
-            {...item}
-            index={index}
-            isVisible={selectedOptions.includes(item.itemKey)}
-            showLabels={selectedOptions.length > 1}
-          />
-        ))
+        <>
+          {sentimentItems.map((item, index) => (
+            <SentimentItem
+              key={item.itemKey}
+              {...item}
+              index={index}
+              isVisible={selectedOptions.includes(item.itemKey)}
+              showLabels={selectedOptions.length > 1}
+              isInitialItem={index === defaultIndex}
+            />
+          ))}
+
+          <Stack
+            pt="8px"
+            pb="2px"
+            direction="row"
+            alignItems="center"
+            justifyContent="center"
+            gap="10px"
+            sx={{
+              opacity: 0,
+              animation: `${legendFadeIn} 0.4s ease-out 0.6s forwards`,
+            }}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="center" gap="4px">
+              <Box
+                width={10}
+                height={10}
+                borderRadius="50%"
+                sx={{
+                  background: 'linear-gradient(180deg, #3386C2 0%, #1366A2 100%)',
+                }}
+              />
+              <Typography variant="body3R12" color="gray.70">
+                Upward: 상승 영향
+              </Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" justifyContent="center" gap="4px">
+              <Box
+                width={10}
+                height={10}
+                borderRadius="50%"
+                sx={{
+                  background: 'linear-gradient(180deg, #A8A8A8 0%, #777777 100%)',
+                }}
+              />
+              <Typography variant="body3R12" color="gray.70">
+                Neutral: 중립
+              </Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" justifyContent="center" gap="4px">
+              <Box
+                width={10}
+                height={10}
+                borderRadius="50%"
+                sx={{
+                  background: 'linear-gradient(180deg, #B82E72 0%, #8E1F59 100%)',
+                }}
+              />
+              <Typography variant="body3R12" color="gray.70">
+                Downward: 하락 영향
+              </Typography>
+            </Stack>
+          </Stack>
+        </>
       )}
     </Stack>
   )

@@ -200,13 +200,17 @@ const Watchlist = () => {
                     {item.goodsDataSourceNm}
                   </BodyCell>
                   <BodyCell width="100px" textAlign="right" color="gray.70">
-                    {isPermitted ? formatValue(item.lastValue) : '12.34'}
+                    {isPermitted ? formatValue(item.lastValue, '', 'en-US', 2, '-') : '12.34'}
                   </BodyCell>
                   <BodyCell width="90px" textAlign="right" color={isPermitted ? item.changeColor : 'gray.70'}>
-                    {isPermitted ? formatValue(item.change) : '56.78'}
+                    {isPermitted ? formatValue(item.change, '', 'en-US', 2, '-') : '56.78'}
                   </BodyCell>
                   <BodyCell width="90px" textAlign="right" color={isPermitted ? item.changePercentColor : 'gray.70'}>
-                    {isPermitted ? formatNumberToDecimal(item.changePercent) : '12.34'}%
+                    {isPermitted
+                      ? item.changePercent === null || item.changePercent === undefined
+                        ? '-'
+                        : `${formatNumberToDecimal(item.changePercent)}%`
+                      : '12.34%'}
                   </BodyCell>
                 </Box>
                 {!isPermitted && (

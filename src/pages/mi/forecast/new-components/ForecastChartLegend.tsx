@@ -1,5 +1,5 @@
-import { Box, Stack, Typography } from '@mui/material'
-import { useState } from 'react'
+import { Box, Stack, Tooltip, Typography } from '@mui/material'
+import { useState, useRef, useEffect } from 'react'
 
 import DashLineIcon from '@/components/common/forecast-chart/icons/DashLineIcon'
 import SolidLineIcon from '@/components/common/forecast-chart/icons/SolidLineIcon'
@@ -15,7 +15,7 @@ interface Props {
   description?: string
   isShow?: boolean
   onToggle?: (isShow: boolean) => void
-  isFixedMode?: boolean
+  disableMenu?: boolean
 }
 
 const Icon = ({
@@ -23,13 +23,11 @@ const Icon = ({
   color,
   isShow,
   setIsShow,
-  isFixedMode,
 }: {
   type: 'forecast' | 'actual'
   color: string
   isShow: boolean
   setIsShow: (isShow: boolean) => void
-  isFixedMode?: boolean
 }) => {
   const LineIcon = type === 'forecast' ? DashLineIcon : SolidLineIcon
 
@@ -58,12 +56,11 @@ const Icon = ({
       height="26px"
       position="relative"
       onClick={(e) => {
-        if (isFixedMode) return
         e.stopPropagation()
         setIsShow(!isShow)
       }}
       sx={{
-        cursor: isFixedMode ? 'not-allowed' : 'pointer',
+        cursor: 'pointer',
         '& .base-icon': {
           ...transitionStyle,
           opacity: 1,
@@ -72,14 +69,12 @@ const Icon = ({
           ...transitionStyle,
           opacity: 0,
         },
-        ...(!isFixedMode && {
-          '&:hover .base-icon': {
-            opacity: 0,
-          },
-          '&:hover .hover-icon': {
-            opacity: 1,
-          },
-        }),
+        '&:hover .base-icon': {
+          opacity: 0,
+        },
+        '&:hover .hover-icon': {
+          opacity: 1,
+        },
       }}
     >
       <Box className="base-icon">{BaseIcon}</Box>
@@ -89,12 +84,45 @@ const Icon = ({
   )
 }
 
-const ForecastChartLegend = ({ type, color, label, description, isShow: externalIsShow, onToggle, isFixedMode = false }: Props) => {
+const ForecastChartLegend = ({ type, color, label, description, isShow: externalIsShow, onToggle, disableMenu = false }: Props) => {
   const [internalIsShow, setInternalIsShow] = useState(true)
   const isShow = externalIsShow !== undefined ? externalIsShow : internalIsShow
   const setIsShow = onToggle || setInternalIsShow
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [selected, setSelected] = useState('1')
+  const labelRef = useRef<HTMLElement>(null)
+  const [isLabelOverflowing, setIsLabelOverflowing] = useState(false)
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (labelRef.current) {
+        setIsLabelOverflowing(labelRef.current.scrollWidth > labelRef.current.clientWidth)
+      }
+    }
+    checkOverflow()
+    const timer = setTimeout(checkOverflow, 100)
+    window.addEventListener('resize', checkOverflow)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', checkOverflow)
+    }
+  }, [label])
+
+  const labelTypography = (
+    <Typography
+      ref={labelRef}
+      variant="subtext5"
+      color={isShow ? 'commonColor.Black' : 'contentText.Disabled'}
+      sx={{
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        transition: 'color 0.2s',
+      }}
+    >
+      {label}
+    </Typography>
+  )
 
   return (
     <Stack
@@ -108,12 +136,12 @@ const ForecastChartLegend = ({ type, color, label, description, isShow: external
       className={isMenuOpen ? 'menu-open' : ''}
       sx={{
         transition: 'all 0.2s ease-in-out',
-        cursor: isFixedMode ? 'not-allowed' : 'default',
+        cursor: 'default',
         backgroundColor: isShow ? (isMenuOpen ? 'contentBG.Active' : 'transparent') : 'transparent',
-        ...(!isFixedMode && {
-          '&:hover': {
-            backgroundColor: isShow && !isMenuOpen ? 'contentBG.Hover' : undefined,
-          },
+        '&:hover': {
+          backgroundColor: isShow && !isMenuOpen ? 'contentBG.Hover' : undefined,
+        },
+        ...(!disableMenu && {
           '&:hover .menu-container': {
             width: isShow ? '26px' : '0px',
             opacity: isShow ? 1 : 0,
@@ -128,22 +156,17 @@ const ForecastChartLegend = ({ type, color, label, description, isShow: external
       }}
     >
       <Box flexShrink={0}>
-        <Icon type={type} color={color} isShow={isShow} setIsShow={setIsShow} isFixedMode={isFixedMode} />
+        <Icon type={type} color={color} isShow={isShow} setIsShow={setIsShow} />
       </Box>
 
       <Stack overflow="hidden" flex={1} minWidth={0} justifyContent="center">
-        <Typography
-          variant="subtext5"
-          color={isShow ? 'commonColor.Black' : 'contentText.Disabled'}
-          sx={{
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            transition: 'color 0.2s',
-          }}
-        >
-          {label}
-        </Typography>
+        {isLabelOverflowing ? (
+          <Tooltip title={label} placement="top" followCursor disableHoverListener={!isLabelOverflowing}>
+            {labelTypography}
+          </Tooltip>
+        ) : (
+          labelTypography
+        )}
         {description && (
           <Typography
             variant="body3"
@@ -160,54 +183,56 @@ const ForecastChartLegend = ({ type, color, label, description, isShow: external
         )}
       </Stack>
 
-      <Box
-        className="menu-container"
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          overflow: 'hidden',
-          whiteSpace: 'nowrap',
-          width: '0px',
-          opacity: 0,
-          transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.1s linear',
-          pointerEvents: 'none',
-        }}
-      >
-        <MISelectMenu
-          label=""
-          open={isMenuOpen}
-          onOpenChange={setIsMenuOpen}
-          selected={selected}
-          onSelected={(value: string) => {
-            setSelected(value)
-          }}
-          items={[
-            { label: 'Text', value: '1' },
-            { label: 'Text', value: '2' },
-            { label: 'Text', value: '3' },
-            { label: 'Text', value: '4' },
-            { label: 'Text', value: '5' },
-          ]}
-          placement="bottom-end"
-          menuPositionOffset={{ top: 20, right: -6 }}
-          paperProps={{
-            sx: { minWidth: '166px' },
-            onMouseEnter: (e) => {
-              e.stopPropagation()
-              // setIsHovered(false)
-            },
-          }}
+      {!disableMenu && (
+        <Box
+          className="menu-container"
           sx={{
-            minWidth: '26px',
-            minHeight: '26px',
-            maxWidth: '26px',
-            maxHeight: '26px',
-            padding: '0',
-            '&:hover': { backgroundColor: 'transparent' },
+            display: 'flex',
+            alignItems: 'center',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            width: '0px',
+            opacity: 0,
+            transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.1s linear',
+            pointerEvents: 'none',
           }}
-          disableRipple
-        />
-      </Box>
+        >
+          <MISelectMenu
+            label=""
+            open={isMenuOpen}
+            onOpenChange={setIsMenuOpen}
+            selected={selected}
+            onSelected={(value: string) => {
+              setSelected(value)
+            }}
+            items={[
+              { label: 'Text', value: '1' },
+              { label: 'Text', value: '2' },
+              { label: 'Text', value: '3' },
+              { label: 'Text', value: '4' },
+              { label: 'Text', value: '5' },
+            ]}
+            placement="bottom-end"
+            menuPositionOffset={{ top: 20, right: -6 }}
+            paperProps={{
+              sx: { minWidth: '166px' },
+              onMouseEnter: (e) => {
+                e.stopPropagation()
+                // setIsHovered(false)
+              },
+            }}
+            sx={{
+              minWidth: '26px',
+              minHeight: '26px',
+              maxWidth: '26px',
+              maxHeight: '26px',
+              padding: '0',
+              '&:hover': { backgroundColor: 'transparent' },
+            }}
+            disableRipple
+          />
+        </Box>
+      )}
     </Stack>
   )
 }

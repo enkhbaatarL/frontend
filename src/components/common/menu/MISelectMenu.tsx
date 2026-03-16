@@ -9,23 +9,23 @@ import MIMenu, { MenuPositionOffset } from '@/components/common/menu/MIMenu'
 
 export type DashboardMultipleSelectType = 'default' | 'switch' | 'none'
 
-export interface SelectMenuItem {
+export interface SelectMenuItem<T = string> {
   icon?: ReactNode
   label: ReactNode
-  value: string
+  value: T
   disabled?: boolean
   group?: string
 }
 
 export type GroupDisplayType = 'label' | 'divider' | 'none'
 
-interface Props extends ButtonProps {
+interface Props<T> extends ButtonProps {
   variant?: 'text' | 'outlined' | 'contained'
   selectType?: DashboardMultipleSelectType
   multiple?: boolean
-  selected: string | string[]
-  onSelected: ((selected: string) => void) | ((selected: string[]) => void)
-  items: SelectMenuItem[]
+  selected: T | T[]
+  onSelected: ((selected: T) => void) | ((selected: T[]) => void)
+  items: SelectMenuItem<T>[]
   placeholder?: string
   placement?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
   fadeIn?: 'left' | 'right' | 'center'
@@ -46,7 +46,7 @@ interface Props extends ButtonProps {
   labelPrefix?: ReactNode
 }
 
-const MISelectMenu = ({
+const MISelectMenu = <T,>({
   variant = 'text',
   selected,
   onSelected,
@@ -72,7 +72,7 @@ const MISelectMenu = ({
   label: externalLabel,
   labelPrefix: externalPrefix,
   ...props
-}: Props) => {
+}: Props<T>) => {
   const { t } = useTranslation()
   const [internalOpen, setInternalOpen] = useState(false)
 
@@ -85,20 +85,20 @@ const MISelectMenu = ({
     onOpenChange?.(newOpen)
   }
 
-  const handleMultipleToggle = (value: string) => {
+  const handleMultipleToggle = (value: T) => {
     const currentArray = Array.isArray(selected) ? selected : [selected]
     const newArray = currentArray.includes(value) ? currentArray.filter((item) => item !== value) : [...currentArray, value]
-    ;(onSelected as (selected: string[]) => void)(newArray)
+    ;(onSelected as (selected: T[]) => void)(newArray)
   }
 
-  const handleSingleSelect = (value: string) => {
-    ;(onSelected as (selected: string) => void)(value)
+  const handleSingleSelect = (value: T) => {
+    ;(onSelected as (selected: T) => void)(value)
     setOpen(false)
   }
 
   const handleToggle = multiple ? handleMultipleToggle : handleSingleSelect
 
-  const isItemSelected = (value: string): boolean => {
+  const isItemSelected = (value: T): boolean => {
     if (Array.isArray(selected)) {
       return selected.includes(value)
     }
@@ -110,8 +110,8 @@ const MISelectMenu = ({
       return { groups: {}, ungroupedItems: items }
     }
 
-    const groups: { [key: string]: SelectMenuItem[] } = {}
-    const ungroupedItems: SelectMenuItem[] = []
+    const groups: { [key: string]: SelectMenuItem<T>[] } = {}
+    const ungroupedItems: SelectMenuItem<T>[] = []
 
     for (const item of items) {
       const groupKey = item.group
@@ -156,7 +156,7 @@ const MISelectMenu = ({
       label = (
         <Stack direction="row" alignItems="center" gap="4px">
           {selectedItemList.slice(0, 2).map(({ icon, label: itemLabel, value }, index) => (
-            <Stack direction="row" alignItems="center" key={value}>
+            <Stack direction="row" alignItems="center" key={String(value)}>
               <MIBaseButtonLabel prefix={icon} gap="4px">
                 {itemLabel}
               </MIBaseButtonLabel>
@@ -170,7 +170,7 @@ const MISelectMenu = ({
       label = (
         <Stack direction="row" alignItems="center" gap="4px">
           {selectedItemList.map(({ icon, label: itemLabel, value }, index) => (
-            <Stack direction="row" alignItems="center" key={value}>
+            <Stack direction="row" alignItems="center" key={String(value)}>
               <MIBaseButtonLabel prefix={icon} gap="4px">
                 {itemLabel}
               </MIBaseButtonLabel>
@@ -210,7 +210,7 @@ const MISelectMenu = ({
     return undefined
   }
 
-  const renderMenuItem = ({ icon, label, value, disabled }: SelectMenuItem) => {
+  const renderMenuItem = ({ icon, label, value, disabled }: SelectMenuItem<T>) => {
     const isSelected = isItemSelected(value)
     const prefix = icon
     const suffix = renderSuffix(isSelected, disabled)
@@ -218,7 +218,7 @@ const MISelectMenu = ({
 
     return (
       <Box
-        key={value}
+        key={String(value)}
         onClick={() => (disabled ? null : handleToggle(value))}
         borderRadius="10px"
         sx={{

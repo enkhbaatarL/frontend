@@ -8,7 +8,7 @@ export interface Topic extends ITopicTrackerTopicItem {
   disabled?: boolean
 }
 
-interface Props extends Omit<StackProps, 'onClick'> {
+interface Props extends Omit<StackProps, 'onClick' | 'onScrollEnd'> {
   selectedTopic?: number
   topics: Topic[]
   onClick?: (topic: Topic) => void

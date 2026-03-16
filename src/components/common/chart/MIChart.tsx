@@ -791,7 +791,7 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
               scaleBottom: 0,
             }),
             min: 0,
-            max: Math.max(...(volumeDataSeries?.values ?? [0])),
+            max: Math.max(...(volumeDataSeries?.values?.filter((v): v is number => v !== null) ?? [0])),
             afterTickToLabelConversion: chartOptions.scales.y.afterTickToLabelConversion,
             ticks: {
               maxTicksLimit: 4,

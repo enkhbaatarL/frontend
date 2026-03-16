@@ -24,12 +24,14 @@ export const MarketDataProvider = ({ children }: MarketDataProviderProps) => {
       if (momChangeValue !== null && momChangeValue !== undefined && momChangeRate !== null && momChangeRate !== undefined) {
         return { change: momChangeValue, changePercent: momChangeRate, period: 'MoM' }
       }
-      return { change: 0, changePercent: 0, period: undefined }
+      return { change: undefined, changePercent: undefined, period: undefined }
     }
 
-    const getChangeColor = (value: number) => {
-      if (value > 0) return 'increase'
-      if (value < 0) return 'decrease'
+    const getChangeColor = (value?: number) => {
+      const targetValue = value ?? 0
+
+      if (targetValue > 0) return 'increase'
+      if (targetValue < 0) return 'decrease'
       return 'gray.70'
     }
 

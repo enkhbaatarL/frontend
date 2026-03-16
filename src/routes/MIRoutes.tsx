@@ -20,6 +20,7 @@ import MIActivityLogPage from '@/pages/mi/miActivityLog/MIActivityLogPage'
 import NewsDetailPage from '@/pages/mi/news/NewsDetailPage'
 import NewsPage from '@/pages/mi/news/NewsPage'
 import NewsletterDetailPage from '@/pages/mi/newsletter/NewsletterDetailPage'
+import NewsletterDetailTempPage from '@/pages/mi/newsletter/NewsletterDetailTempPage'
 import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
@@ -43,24 +44,55 @@ const MIMainRedirect = () => {
 
   const homeUrl = miHome()
 
+  // USER 로그인 시 accessCompanyInfo가 아직 로드되지 않았는지 확인
+  const isUserLoginWithoutAccessInfo = user?.userRoleCd === 'USER' && !accessCompanyInfo
+
   useEffect(() => {
     if (needsCompanySwitch && targetCompanyNo) {
       loadAccessCompanyInfo(targetCompanyNo)
     }
   }, [needsCompanySwitch, targetCompanyNo, loadAccessCompanyInfo])
 
-  // 권한 데이터 로딩 중이거나 회사 전환이 필요한 경우 대기
-  if (isDeniedDashboardPageLoading || needsCompanySwitch) {
-    return <></>
-  }
+  useEffect(() => {
+    // USER 로그인 시 accessCompanyInfo가 없으면 로드
+    if (isUserLoginWithoutAccessInfo && user?.companyNo) {
+      loadAccessCompanyInfo(user.companyNo)
+    }
+  }, [isUserLoginWithoutAccessInfo, user?.companyNo, loadAccessCompanyInfo])
 
-  if (!homeUrl) {
-    const fallbackUrl = accessCompanyInfo?.isFuture ? 'dashboard' : 'forecast'
-    return <Navigate to={`/mi/${fallbackUrl}`} replace />
+  // 권한 데이터 로딩 중이거나 회사 전환이 필요한 경우 대기
+  // homeUrl이 undefined이거나 accessCompanyInfo가 로드되지 않은 경우 대기
+  if (isDeniedDashboardPageLoading || needsCompanySwitch || !homeUrl || isUserLoginWithoutAccessInfo) {
+    return <></>
   }
 
   // 리다이렉트 시 state를 초기화하여 targetCompanyNo 잔존 방지
   return <Navigate to={homeUrl} replace />
+}
+
+// Hynix NewsletterDetail 분기
+const NewsletterDetailPageWrapper = () => {
+  const { accessCompanyInfo, user } = useAuthStore()
+  const currentCompanyNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo
+
+  if (currentCompanyNo === 2015) {
+    return <NewsletterDetailTempPage />
+  }
+
+  return <NewsletterDetailPage />
+}
+
+// 조건부 Forecast 컴포넌트 래퍼
+const ForecastPageWrapper = () => {
+  const { accessCompanyInfo, user } = useAuthStore()
+  const currentCompanyNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo
+
+  // 2013일 때는 기존 ForecastPage, 나머지는 NewForecastPage
+  if (currentCompanyNo === 2013) {
+    return <ForecastPage />
+  }
+
+  return <NewForecastPage />
 }
 
 const MIRoutes: RouteObject = {
@@ -109,17 +141,13 @@ const MIRoutes: RouteObject = {
         },
         {
           path: ':newsletterId/:issueNo',
-          element: <NewsletterDetailPage />,
+          element: <NewsletterDetailPageWrapper />,
         },
       ],
     },
     {
-      path: 'new-forecast',
-      element: <NewForecastPage />,
-    },
-    {
       path: 'forecast',
-      element: <ForecastPage />,
+      element: <ForecastPageWrapper />,
     },
     {
       path: 'signal-map',

@@ -2,6 +2,7 @@ import { Box, Stack, Typography, TypographyProps, Tooltip, Chip } from '@mui/mat
 import { useQuery } from '@tanstack/react-query'
 import { ReactNode, useRef, useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 
 import levelHighIcon from '@/assets/level-high.svg'
 import levelLowIcon from '@/assets/level-low.svg'
@@ -104,20 +105,26 @@ const TBABadge = () => (
 
 interface Props {
   criteriaDate?: string
+  defaultCategoryCode?: string
 }
 
-const KeyEconomicIndicators = ({ criteriaDate }: Props) => {
+const KeyEconomicIndicators = ({ criteriaDate, defaultCategoryCode: propDefaultCategoryCode }: Props) => {
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const { marketCategoryCodeList } = useCodeData()
 
-  // categoryCode가 없으면 첫 번째 카테고리 사용
+  // newsMarketCategoryCode가 있으면 사용, 없으면 첫 번째 카테고리 사용
   const defaultCategoryCode = useMemo(() => {
+    if (propDefaultCategoryCode) {
+      return propDefaultCategoryCode
+    }
+
     if (marketCategoryCodeList && marketCategoryCodeList.length > 0) {
       return marketCategoryCodeList[0].codeId
     }
 
     return ''
-  }, [marketCategoryCodeList])
+  }, [propDefaultCategoryCode, marketCategoryCodeList])
 
   const { data: keyEconomicIndicatorsData, isLoading } = useQuery({
     queryKey: ['getKeyEconomicIndicators', defaultCategoryCode, criteriaDate],
@@ -225,6 +232,7 @@ const KeyEconomicIndicators = ({ criteriaDate }: Props) => {
                 height="38px"
                 gap="4px"
                 borderTop={index === 0 ? 'none' : '1px solid #DEE2E6'}
+                onClick={() => navigate(`/mi/economic-calendar/${data.code}`)}
                 sx={{
                   '&:hover': {
                     backgroundColor: '#F8F9FA',

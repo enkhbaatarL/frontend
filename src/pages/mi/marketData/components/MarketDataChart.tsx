@@ -1,15 +1,18 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Typography, Tooltip, TypographyProps } from '@mui/material'
-import { Chart, ChartArea, ChartDataset, Point, ScriptableContext } from 'chart.js'
+import { Chart, ChartArea, ChartDataset, Point, ScriptableContext, TimeScale } from 'chart.js'
 import dayjs from 'dayjs'
 import { FC, Fragment, memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import '@/lib/chart/adapterDayjs'
 import MIChip from '@/components/common/chip/MIChip'
 import MILine from '@/components/common/divider/MILine'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { ICompareGraph, IMarketData } from '@/service/mi/marketData'
 import { formatValue } from '@/utils/number'
+
+Chart.register(TimeScale)
 
 interface MarketDataChartProps {
   data?: IMarketData
@@ -263,7 +266,7 @@ const collectLabelsFromDataset = (
     const numValue = typeof value === 'string' ? Number.parseFloat(value) : value
     if (!Number.isFinite(x) || !Number.isFinite(y) || numValue === null || numValue === undefined || !Number.isFinite(numValue)) return
 
-    const formattedValue = Number.isFinite(numValue) ? formatValue(numValue) : String(numValue)
+    const formattedValue = Number.isFinite(numValue) ? formatValue(numValue, '', 'en-US', 2) : String(numValue)
 
     allLabels.push({
       x,
@@ -928,7 +931,7 @@ const MarketDataChart: FC<MarketDataChartProps> = ({ data, size = 'large', locke
               }}
             >
               <Typography sx={{ fontWeight: 600 }} color="gray.90" component="div" variant="heading2">
-                {Number.isFinite(metaData.lastValue) ? formatValue(metaData.lastValue) : metaData.lastValue || ''}
+                {Number.isFinite(metaData.lastValue) ? formatValue(metaData.lastValue, '', 'en-US', 2) : metaData.lastValue || ''}
               </Typography>
 
               <Box display={'flex'} alignContent={'center'} sx={{ ml: 'auto', mt: '3px' }} gap={3}>

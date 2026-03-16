@@ -140,14 +140,14 @@ const EconomicCalendarDetailPage = () => {
       headerName: 'Ctry.',
       width: 40,
       align: 'center',
-      renderCell: (params) => <MITableCell value={params.value} />,
+      renderCell: (params) => <MITableCell value={params.value || '-'} />,
     },
     {
       field: 'currency',
       headerName: 'Cur.',
       width: 56,
       align: 'center',
-      renderCell: (params) => <MITableCell value={params.value} />,
+      renderCell: (params) => <MITableCell value={params.value || '-'} />,
     },
     {
       field: 'importance',

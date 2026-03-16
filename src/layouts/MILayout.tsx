@@ -30,6 +30,8 @@ const MILayout = () => {
   const [noticeDetailData, setNoticeDetailData] = useState<INoticeDetailInfo | null>(null)
   const [outletKey, setOutletKey] = useState(0)
   const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
+  const user = useAuthStore((state) => state.user)
+  const currentCompanyNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo
   const location = useLocation()
   const { saveScroll, currentScroll, preRenderMinHeight } = useScrollRestoration({
     urls: MENU_CONFIG.map((menu) => menu.index),
@@ -200,11 +202,15 @@ const MILayout = () => {
     if (location.pathname === '/mi/dashboard') {
       return 'linear-gradient(300deg, #D5D6D8 0%, #FCFCFC 30%, #E6E6E7 60%, #FAFAFA 100%)'
     }
-    if (location.pathname.startsWith('/mi/forecast') || showTicker) {
+    if (showTicker) {
+      return '#F2F5F7'
+    }
+    // ForecastPage (companyNo 2013)일 때만 배경색 적용, NewForecastPage는 해당 안 됨
+    if (location.pathname === '/mi/forecast' && currentCompanyNo === 2013) {
       return '#F2F5F7'
     }
     return undefined
-  }, [location.pathname, showTicker])
+  }, [location.pathname, showTicker, currentCompanyNo])
 
   return (
     <MIProvider>

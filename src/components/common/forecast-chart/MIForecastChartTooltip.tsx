@@ -47,11 +47,11 @@ const ChartToolTipItem = (props: { index: number; label: string; value: number; 
       {category === DATA_CATEGORIES.FORECAST_ERROR ? (
         <Typography variant="body2M14" color={value > 0 ? '#3C8A36' : '#A9141A'} sx={{ whiteSpace: 'nowrap' }}>
           {value > 0 ? '+' : ''}
-          {formatValue(value)}
+          {formatValue(value, '', 'en-US', 2)}
         </Typography>
       ) : (
         <Typography variant="body2M14" color="gray.70" sx={{ whiteSpace: 'nowrap' }}>
-          {formatValue(value)}
+          {formatValue(value, '', 'en-US', 2)}
         </Typography>
       )}
     </Box>

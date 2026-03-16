@@ -1,48 +1,140 @@
-import CandlestickChartIcon from '@mui/icons-material/CandlestickChart'
-import LineAxisIcon from '@mui/icons-material/LineAxis'
-import { Box, Divider, Stack, Switch, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
-import ChartNotificationIcon from '@/components/common/forecast-chart/icons/ChartNotificationIcon'
 import RefreshIcon from '@/components/common/icons/RefreshIcon'
-import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
+import useSnackbar from '@/hooks/useSnackbar'
 import ForecastChartGraph, { ForecastChartGraphHandle } from '@/pages/mi/forecast/new-components/ForecastChartGraph'
 import ForecastChartLegend from '@/pages/mi/forecast/new-components/ForecastChartLegend'
-import { IForecastChartData } from '@/service/mi/forecast'
-import theme from '@/theming'
-import { ChartType, ChartData } from '@/types/dataDetailChart'
-
-const chartOptions = [
-  {
-    icon: <LineAxisIcon />,
-    label: 'Line',
-    value: 'line',
-  },
-  {
-    icon: <CandlestickChartIcon />,
-    label: 'Candles',
-    value: 'candles',
-  },
-]
+import { IForecastChartInfo, IForecastReport } from '@/service/mi/forecast'
+import { ChartData, ChartType } from '@/types/dataDetailChart'
 
 interface ForecastChartProps {
-  hoverReportCardInfo?: { goodsDataSourceNo: number; startDate: string; endDate: string } | null
-  chartData?: IForecastChartData
+  hoverReportCardInfo?: IForecastReport | null
+  chartData?: IForecastChartInfo
   chartDataIsLoading?: boolean
   onFixedModeChange?: (isFixedMode: boolean) => void
+  monthSelect?: string
+  xAxisUnit?: string
+  period?: string
+  onXAxisUnitChange?: (value: string) => void
+  onPeriodChange?: (value: string) => void
+  disableLegendMenu?: boolean
+  companyNo?: number
 }
 
-const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onFixedModeChange }: ForecastChartProps) => {
-  const [selectedChartOption, setSelectedChartOption] = useState('line')
-  const [isAutosave, setIsAutosave] = useState(false)
+const ForecastChart = ({
+  hoverReportCardInfo,
+  chartData,
+  chartDataIsLoading,
+  onFixedModeChange,
+  monthSelect,
+  xAxisUnit,
+  period,
+  onXAxisUnitChange,
+  onPeriodChange,
+  disableLegendMenu = false,
+  companyNo,
+}: ForecastChartProps) => {
+  const { showSnackbar } = useSnackbar()
   const [chartVisibilityMap, setChartVisibilityMap] = useState<Map<string, boolean>>(new Map())
   const [hoveredChartKey, setHoveredChartKey] = useState<string | null>(null)
   const [isFixedMode, setIsFixedMode] = useState(false)
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(xAxisUnit || '1D')
+  const [selectedRange, setSelectedRange] = useState<string>(period || '1W')
   const chartGraphRef = useRef<ForecastChartGraphHandle>(null)
+
+  // 회사별 period / range 옵션 설정
+  const defaultPeriodOptions = [
+    { label: '1D', value: '1D' },
+    { label: '1W', value: '1W' },
+    { label: '1M', value: '1M' },
+    { label: '1Q', value: '1Q' },
+    { label: '1Y', value: '1Y' },
+  ]
+
+  const defaultRangeOptions = [
+    { label: '1W', value: '1W' },
+    { label: '1M', value: '1M' },
+    { label: '3M', value: '3M' },
+    { label: '6M', value: '6M' },
+    { label: 'YTD', value: 'YTD' },
+    { label: '1Y', value: '1Y' },
+    { label: '2Y', value: '2Y' },
+  ]
+
+  let periodOptions = defaultPeriodOptions
+  let rangeOptions = defaultRangeOptions
+
+  if (companyNo === 2013) {
+    periodOptions = [
+      { label: '1M', value: '1M' },
+      { label: '1Q', value: '1Q' },
+      { label: '1Y', value: '1Y' },
+    ]
+    rangeOptions = [
+      { label: '1M', value: '1M' },
+      { label: '3M', value: '3M' },
+      { label: '6M', value: '6M' },
+      { label: 'YTD', value: 'YTD' },
+      { label: '1Y', value: '1Y' },
+      { label: '2Y', value: '2Y' },
+    ]
+  } else if (companyNo === 2015) {
+    periodOptions = [
+      { label: '1Q', value: '1Q' },
+      { label: '1Y', value: '1Y' },
+    ]
+    rangeOptions = [
+      { label: '6M', value: '6M' },
+      { label: 'YTD', value: 'YTD' },
+      { label: '1Y', value: '1Y' },
+      { label: '2Y', value: '2Y' },
+    ]
+  }
+
+  // 단위/기간 비교를 위한 스케일 맵
+  const getScale = (value: string): number => {
+    switch (value) {
+      case '1D':
+        return 1
+      case '1W':
+        return 2
+      case '1M':
+        return 3
+      case '1Q':
+      case '3M':
+        return 4
+      case '6M':
+        return 5
+      case 'YTD':
+        return 6
+      case '1Y':
+        return 7
+      case '2Y':
+        return 8
+      case 'ALL':
+        return 9
+      default:
+        return 0
+    }
+  }
+
+  // 외부에서 xAxisUnit/period가 변경되면 내부 선택값 동기화
+  useEffect(() => {
+    if (xAxisUnit) {
+      setSelectedPeriod(xAxisUnit)
+    }
+  }, [xAxisUnit])
+
+  useEffect(() => {
+    if (period) {
+      setSelectedRange(period)
+    }
+  }, [period])
 
   const handleChartVisibilityToggle = useCallback((label: string, dataType: string, isShow: boolean) => {
     const key = `${label}_${dataType}`
@@ -53,21 +145,60 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
     })
   }, [])
 
-  const handleReset = useCallback(() => {
-    chartGraphRef.current?.resetZoom()
-    setChartVisibilityMap(new Map())
-  }, [])
-
   // IForecastChartData를 ChartData 형식으로 변환
   const convertedChartData = useMemo<ChartData[]>(() => {
+    /**
+     * x축 매핑 기준을 rawData.startDate(YYYYMMDD)로 통일한다.
+     * - timestamps: startDate 기반 (툴팁/크로스헤어/리포트 호버 구간 모두 동일 기준)
+     * - resultDates(표시용 라벨): startDate가 dateList 구간에 포함되면 해당 label 사용 (예: W45 2025)
+     */
+    const ymdToTimestamp = (ymd: string): string => {
+      if (/^\d{8}$/.test(ymd)) {
+        const y = ymd.slice(0, 4)
+        const m = ymd.slice(4, 6)
+        const d = ymd.slice(6, 8)
+        return dayjs(`${y}-${m}-${d}`).format('YYYY-MM-DDTHH:mm:ss')
+      }
+      const parsed = dayjs(ymd)
+      return parsed.isValid() ? parsed.format('YYYY-MM-DDTHH:mm:ss') : dayjs().format('YYYY-MM-DDTHH:mm:ss')
+    }
+
+    const normalizeYmd = (d: string): string => {
+      if (/^\d{8}$/.test(d)) return d
+      const parsed = dayjs(d)
+      return parsed.isValid() ? parsed.format('YYYYMMDD') : ''
+    }
+
+    const getDisplayLabelByStartDate = (startDate: string): string | undefined => {
+      const startNorm = normalizeYmd(startDate)
+      if (!startNorm || !chartData?.dateList?.length) return undefined
+
+      // startDate가 dateList의 start~end 사이에 포함되는 항목을 찾는다.
+      const matched = chartData.dateList.find((item) => {
+        const itemStart = normalizeYmd(item.startDate)
+        const itemEnd = normalizeYmd(item.endDate)
+        if (!itemStart || !itemEnd) return false
+        return startNorm >= itemStart && startNorm <= itemEnd
+      })
+      return matched?.label
+    }
+
+    // 기본적으로 chartData 사용 (호버 시에도 기본 그래프는 유지하고, 흐리게 표시 후 highlight로 새 데이터만 선명하게 그림)
     if (!chartData?.charts) return []
 
     const result: ChartData[] = []
 
     chartData.charts.forEach((chart) => {
-      // actualChartLines 처리
-      if (chart.actualChartLines.rawData && chart.actualChartLines.rawData.length > 0) {
-        const timestamps = chart.actualChartLines.rawData.map((item) => dayjs(item.resultDate).format('YYYY-MM-DDTHH:mm:ss'))
+      // actualChartLines 처리 - dataExplanation 사용, dataType이 null이면 그리지 않음
+      if (
+        chart.actualChartLines.dataType !== null &&
+        chart.actualChartLines.dataType !== undefined &&
+        chart.actualChartLines.rawData &&
+        chart.actualChartLines.rawData.length > 0
+      ) {
+        const displayName = chart.actualChartLines.dataExplanation || chart.chartLineDescription
+        const timestamps = chart.actualChartLines.rawData.map((item) => ymdToTimestamp(item.startDate))
+        const resultDates = chart.actualChartLines.rawData.map((item) => getDisplayLabelByStartDate(item.startDate) ?? item.resultDate)
 
         const values = chart.actualChartLines.rawData.map((item) => {
           const value = item.value
@@ -78,28 +209,38 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
         })
 
         result.push({
-          goodsDataSourceName: chart.chartLineDescription,
+          goodsDataSourceName: displayName,
           goodsDataSourceNo: chart.actualChartLines.goodsDataSourceNo,
           chartType: ChartType.LINE,
           timestamps,
+          resultDates,
           series: [
             {
               seriesId: 'main',
-              label: chart.chartLineDescription,
+              label: displayName,
               renderAs: 'MAIN',
               values,
               isVisible: true,
             },
           ],
-          unitCd: chartData.dashboardMetadata.currentUnitCd,
-          goodsDataName: chart.chartLineDescription,
+          unitCd: chartData.metadata.currentUnitCd,
+          goodsDataName: displayName,
           dataType: chart.actualChartLines.dataType,
-        } as ChartData & { dataType?: string })
+        } as ChartData & { dataType?: string; resultDates?: string[] })
       }
 
-      // forecastChartLines 처리
-      if (chart.forecastChartLines.rawData && chart.forecastChartLines.rawData.length > 0) {
-        const timestamps = chart.forecastChartLines.rawData.map((item) => dayjs(item.resultDate).format('YYYY-MM-DDTHH:mm:ss'))
+      // forecastChartLines 처리 - dataExplanation 사용, dataType이 null이면 그리지 않음
+      if (
+        chart.forecastChartLines.dataType !== null &&
+        chart.forecastChartLines.dataType !== undefined &&
+        chart.forecastChartLines.rawData &&
+        chart.forecastChartLines.rawData.length > 0
+      ) {
+        const displayName = chart.forecastChartLines.dataExplanation || chart.chartLineDescription
+        const timestamps = chart.forecastChartLines.rawData.map((item) => ymdToTimestamp(item.startDate))
+        const resultDates = chart.forecastChartLines.rawData.map((item) => getDisplayLabelByStartDate(item.startDate) ?? item.resultDate)
+        const predictDates = chart.forecastChartLines.rawData.map((item) => item.predictDate || '')
+        const startDates = chart.forecastChartLines.rawData.map((item) => item.startDate || '')
 
         const values = chart.forecastChartLines.rawData.map((item) => {
           const value = item.value
@@ -109,58 +250,249 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
           return Number(value)
         })
 
+        // companyNo 2015: forecast junction point(각 시리즈의 첫 값)를 툴팁/크로스헤어에서 null처럼 표시
+        const firstNonNullIndex = values.findIndex((v) => v !== null && v !== undefined)
+        const skipForTooltipIndices = companyNo === 2015 && firstNonNullIndex >= 0 ? [firstNonNullIndex] : []
+
         result.push({
-          goodsDataSourceName: chart.chartLineDescription,
+          goodsDataSourceName: displayName,
           goodsDataSourceNo: chart.forecastChartLines.goodsDataSourceNo,
           chartType: ChartType.LINE,
           timestamps,
+          resultDates,
           series: [
             {
               seriesId: 'main',
-              label: chart.chartLineDescription,
+              label: displayName,
               renderAs: 'MAIN',
               values,
               isVisible: true,
             },
           ],
-          unitCd: chartData.dashboardMetadata.currentUnitCd,
-          goodsDataName: chart.chartLineDescription,
+          unitCd: chartData.metadata.currentUnitCd,
+          goodsDataName: displayName,
           dataType: chart.forecastChartLines.dataType,
-        } as ChartData & { dataType?: string })
+          predictDates,
+          startDates,
+          skipForTooltipIndices,
+        } as ChartData & {
+          dataType?: string
+          predictDates?: string[]
+          startDates?: string[]
+          resultDates?: string[]
+          skipForTooltipIndices?: number[]
+        })
       }
     })
 
     return result
-  }, [chartData])
+  }, [chartData, companyNo])
+
+  // 호버 시 predictionResultList를 highlight로 표시
+  const highlightChartData = useMemo((): (ChartData & { dataType?: string; resultDates?: string[] }) | null => {
+    if (!hoverReportCardInfo?.predictionResultList?.length || !chartData?.charts?.length) return null
+
+    const resultList = hoverReportCardInfo.predictionResultList
+
+    // 날짜 정규화(YYYYMMDD)
+    const toYyyyMmDd = (d: string): string => {
+      if (!d) return ''
+      if (/^\d{8}$/.test(d)) return d
+      const parsed = dayjs(d)
+      return parsed.isValid() ? parsed.format('YYYYMMDD') : ''
+    }
+
+    const resultListByDate = new Map<string, number>()
+    resultList.forEach((p) => {
+      const key = toYyyyMmDd(p.date)
+      if (key && p.value !== null && p.value !== undefined) resultListByDate.set(key, Number(p.value))
+    })
+
+    // 기본 차트의 x축(startDate) - 가장 긴 rawData 사용
+    let baseStartDates: string[] = []
+    let maxLen = 0
+    chartData.charts.forEach((chart) => {
+      const actualStartDates = chart.actualChartLines.rawData?.map((r) => r.startDate) ?? []
+      const forecastStartDates = chart.forecastChartLines.rawData?.map((r) => r.startDate) ?? []
+      const startDates = actualStartDates.length >= forecastStartDates.length ? actualStartDates : forecastStartDates
+      if (startDates.length > maxLen) {
+        maxLen = startDates.length
+        baseStartDates = startDates
+      }
+    })
+    if (baseStartDates.length === 0) return null
+
+    const normalizeYmd = (d: string): string => {
+      if (/^\d{8}$/.test(d)) return d
+      const parsed = dayjs(d)
+      return parsed.isValid() ? parsed.format('YYYYMMDD') : ''
+    }
+
+    const ymdToTimestamp = (ymd: string): string => {
+      if (/^\d{8}$/.test(ymd)) {
+        const y = ymd.slice(0, 4)
+        const m = ymd.slice(4, 6)
+        const d = ymd.slice(6, 8)
+        return dayjs(`${y}-${m}-${d}`).format('YYYY-MM-DDTHH:mm:ss')
+      }
+      const parsed = dayjs(ymd)
+      return parsed.isValid() ? parsed.format('YYYY-MM-DDTHH:mm:ss') : dayjs().format('YYYY-MM-DDTHH:mm:ss')
+    }
+
+    const getPeriodByStartDate = (startDate: string): { startNorm: string; endNorm: string; label?: string } | null => {
+      const startNorm = normalizeYmd(startDate)
+      if (!startNorm || !chartData.dateList?.length) return null
+      const item = chartData.dateList.find((d) => {
+        const itemStart = normalizeYmd(d.startDate)
+        const itemEnd = normalizeYmd(d.endDate)
+        if (!itemStart || !itemEnd) return false
+        return startNorm >= itemStart && startNorm <= itemEnd
+      })
+      if (!item) return null
+      const itemStartNorm = normalizeYmd(item.startDate)
+      const itemEndNorm = normalizeYmd(item.endDate)
+      if (!itemStartNorm || !itemEndNorm) return null
+      return { startNorm: itemStartNorm, endNorm: itemEndNorm, label: item.label }
+    }
+
+    const resultDates = baseStartDates.map((sd) => getPeriodByStartDate(sd)?.label ?? sd)
+    const timestamps = baseStartDates.map((sd) => ymdToTimestamp(sd))
+
+    // predictionResultList 기반 x축 구간별 값 매핑
+    // 1D: 날짜 정확히 매칭
+    // 그 외: 구간 내 predictionResultList 값을 기반으로 계산 (Hynix: 마지막 값, 나머지: 평균값)
+    const values = baseStartDates.map((startDate) => {
+      const datePeriod = getPeriodByStartDate(startDate)
+      if (datePeriod) {
+        const { startNorm, endNorm } = datePeriod
+        const entriesInPeriod: [string, number][] = []
+        resultListByDate.forEach((val, key) => {
+          if (key >= startNorm && key <= endNorm) entriesInPeriod.push([key, val])
+        })
+        if (entriesInPeriod.length === 0) return null
+        if (entriesInPeriod.length === 1) return entriesInPeriod[0][1]
+        if (companyNo === 2015) {
+          entriesInPeriod.sort((a, b) => a[0].localeCompare(b[0]))
+          return entriesInPeriod[entriesInPeriod.length - 1][1]
+        }
+        return entriesInPeriod.reduce((sum, [, v]) => sum + v, 0) / entriesInPeriod.length
+      }
+      // 1D: 단일 일자 매칭
+      const dateNorm = normalizeYmd(startDate)
+      if (!dateNorm) return null
+      const value = resultListByDate.get(dateNorm)
+      return value !== undefined ? value : null
+    })
+
+    return {
+      goodsDataSourceName: hoverReportCardInfo.predictChartDetailExpn,
+      goodsDataSourceNo: hoverReportCardInfo.associatedGoodsDataSourceNo,
+      chartType: ChartType.LINE,
+      timestamps,
+      resultDates,
+      series: [
+        {
+          seriesId: 'main',
+          label: hoverReportCardInfo.predictChartDetailExpn,
+          renderAs: 'MAIN',
+          values,
+          isVisible: true,
+        },
+      ],
+      unitCd: chartData?.metadata?.currentUnitCd ?? '',
+      goodsDataName: hoverReportCardInfo.predictChartDetailExpn,
+      dataType: 'FORECAST',
+    } as ChartData & { dataType?: string; resultDates?: string[] }
+  }, [chartData, hoverReportCardInfo, companyNo])
 
   const charts = useMemo(() => convertedChartData, [convertedChartData])
 
   const colors = useMemo(
-    () => ['#EFA460', '#40597A', '#2F62A3', '#26757B', '#94826B', '#8F5B5D', '#819E9A', '#7D68A4', '#EFD485', '#5C5C5C', '#363434'],
+    () => ['#26757B', '#8F5B5D', '#2F62A3', '#94826B', '#819E9A', '#7D68A4', '#5C5C5C', '#363434', '#EFA460', '#40597A'],
     [],
   )
 
-  // 색상 맵 생성 (차트와 레전드에서 공통 사용)
+  // 특정 라벨에 대한 고정 색상
+  const labelColorOverrides: Record<string, string> = useMemo(
+    () => ({
+      'Brent Crude': '#EFA460',
+      'Dubai Crude': '#40597A',
+    }),
+    [],
+  )
+
+  // labelColorOverrides에 해당 라벨이 포함되어 있는지 검사 (대소문자 무시)
+  const isLabelInOverrides = useCallback(
+    (label: string): boolean => {
+      const trimmed = label.trim().toLowerCase()
+      return Object.keys(labelColorOverrides).some((k) => {
+        const keyLower = k.trim().toLowerCase()
+        return trimmed === keyLower || trimmed.startsWith(`${keyLower} `)
+      })
+    },
+    [labelColorOverrides],
+  )
+
+  // 오버라이드 키 매칭: 정확히 일치하거나 라벨이 키로 시작할 때 (e.g. 'Brent Crude' ↔ 'Brent Crude Forecast')
+  const getOverrideColor = useCallback(
+    (label: string): string | undefined => {
+      if (!isLabelInOverrides(label)) return undefined
+      const trimmed = label.trim().toLowerCase()
+      // 정확 일치 우선, 없으면 접두사 매칭(가장 긴 키 우선)
+      const key = Object.keys(labelColorOverrides)
+        .map((k) => k.trim())
+        .filter((k) => {
+          const keyLower = k.toLowerCase()
+          return trimmed === keyLower || trimmed.startsWith(`${keyLower} `)
+        })
+        .sort((a, b) => b.length - a.length)[0]
+      return key ? labelColorOverrides[key] : undefined
+    },
+    [labelColorOverrides, isLabelInOverrides],
+  )
+
+  // 색상 맵 생성 (차트와 레전드에서 공통 사용). Actual/Forecast 표시명이 달라도 같은 상품이면 동일 색상.
   const chartColorMap = useMemo(() => {
     const colorMap = new Map<string, string>()
     let colorIndex = 0
 
-    convertedChartData.forEach((chart) => {
-      const originalLabel = chart.goodsDataSourceName ?? ''
-      if (!colorMap.has(originalLabel)) {
-        colorMap.set(originalLabel, colors[colorIndex % colors.length])
-        colorIndex++
-      }
-    })
+    if (chartData?.charts) {
+      chartData.charts.forEach((chart) => {
+        const baseLabel = chart.chartLineDescription ?? ''
+        const actualLabel = chart.actualChartLines?.dataExplanation || baseLabel
+        const forecastLabel = chart.forecastChartLines?.dataExplanation || baseLabel
+
+        // 기준 라벨로 색 결정 후, 동일 차트의 actual/forecast 표시명에도 같은 색 부여
+        const overrideColor = getOverrideColor(baseLabel) ?? getOverrideColor(actualLabel) ?? getOverrideColor(forecastLabel)
+        const color = overrideColor ?? colors[colorIndex % colors.length]
+        if (overrideColor === undefined) colorIndex++
+        ;[baseLabel, actualLabel, forecastLabel].forEach((label) => {
+          if (label && !colorMap.has(label)) colorMap.set(label, color)
+        })
+      })
+    }
 
     return colorMap
-  }, [convertedChartData, colors])
+  }, [chartData?.charts, colors, getOverrideColor])
 
-  // legend 정보 추출
+  // legend 정보 추출 (호버 시 대응 forecast만 opacity 1, 나머지 흐리게 하기 위해 goodsDataSourceNo 포함)
   const legendInfo = useMemo(() => {
-    const forecastLegends: Array<{ type: 'forecast' | 'actual'; color: string; label: string; dataType: string; originalLabel: string }> =
-      []
-    const actualLegends: Array<{ type: 'forecast' | 'actual'; color: string; label: string; dataType: string; originalLabel: string }> = []
+    const forecastLegends: Array<{
+      type: 'forecast' | 'actual'
+      color: string
+      label: string
+      dataType: string
+      originalLabel: string
+      goodsDataSourceNo: number
+    }> = []
+    const actualLegends: Array<{
+      type: 'forecast' | 'actual'
+      color: string
+      label: string
+      dataType: string
+      originalLabel: string
+      goodsDataSourceNo: number
+    }> = []
 
     convertedChartData.forEach((chart) => {
       const dataType = (chart as ChartData & { dataType?: string }).dataType ?? ''
@@ -168,9 +500,7 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
       const originalLabel = chart.goodsDataSourceName ?? ''
       const chartColor = chartColorMap.get(originalLabel)!
 
-      // 팝업에 표시될 라벨: 대문자로 변환 (+ FORECAST인 경우 " FORECAST" 추가)
-      const baseLabel = originalLabel.toUpperCase()
-      const displayLabel = isForecast ? `${baseLabel} FORECAST` : baseLabel
+      const displayLabel = originalLabel.toUpperCase()
 
       const legendItem = {
         type: (isForecast ? 'forecast' : 'actual') as 'forecast' | 'actual',
@@ -178,6 +508,7 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
         label: displayLabel,
         dataType,
         originalLabel,
+        goodsDataSourceNo: chart.goodsDataSourceNo,
       }
 
       if (isForecast) {
@@ -190,6 +521,60 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
     return { forecastLegends, actualLegends }
   }, [convertedChartData, chartColorMap])
 
+  // 그래프 리셋
+  const handleReset = useCallback(() => {
+    chartGraphRef.current?.resetZoom()
+    setChartVisibilityMap(new Map())
+  }, [])
+
+  // 그래프 다운로드
+  const handleDownload = useCallback(() => {
+    const canvas = chartGraphRef.current?.getCanvas()
+    if (!canvas || canvas.width === 0 || canvas.height === 0) return
+
+    // 파일 이름 생성
+    const chartName = hoverReportCardInfo?.predictChartDetailExpn || chartData?.metadata.tableHeader || 'Forecast'
+    const lastUpdateDt = chartData?.metadata.lastUpdateDt || hoverReportCardInfo?.predictionFulfillDt || dayjs().format('YYYYMMDD')
+
+    // 날짜 형식 변환 (YYYYMMDD -> YYYY-MM-DD)
+    let formattedDate = lastUpdateDt
+    if (/^\d{8}$/.test(lastUpdateDt)) {
+      const y = lastUpdateDt.slice(0, 4)
+      const m = lastUpdateDt.slice(4, 6)
+      const d = lastUpdateDt.slice(6, 8)
+      formattedDate = `${y}-${m}-${d}`
+    } else {
+      // 이미 YYYY-MM-DD 형식이거나 다른 형식인 경우 dayjs로 파싱 시도
+      const parsed = dayjs(lastUpdateDt)
+      if (parsed.isValid()) {
+        formattedDate = parsed.format('YYYY-MM-DD')
+      }
+    }
+
+    const fileName = `${chartName} Forecast_${formattedDate}.png`
+
+    // 임시 캔버스 생성하여 하얀 배경색 적용
+    const tempCanvas = document.createElement('canvas')
+    const tempCtx = tempCanvas.getContext('2d')
+    if (!tempCtx) return
+
+    tempCanvas.width = canvas.width
+    tempCanvas.height = canvas.height
+
+    // 하얀 배경색 설정
+    tempCtx.fillStyle = '#FFFFFF'
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
+
+    // 원본 캔버스를 임시 캔버스에 그리기
+    tempCtx.drawImage(canvas, 0, 0)
+
+    // 다운로드 링크 생성
+    const link = document.createElement('a')
+    link.download = fileName
+    link.href = tempCanvas.toDataURL('image/png', 1.0)
+    link.click()
+  }, [chartData, hoverReportCardInfo])
+
   useEffect(() => {
     onFixedModeChange?.(isFixedMode)
   }, [isFixedMode, onFixedModeChange])
@@ -198,77 +583,218 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
     <Stack direction="row">
       <Stack flexGrow={1}>
         <Stack direction="row" p="6px 30px" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" gap="8px">
-            <Typography variant="body2M14" color="contentText.Normal">
-              Last Update
+          <Stack direction="row" alignItems="center" gap="6px" minWidth="224px" height="36px">
+            <Typography variant="body4" color="contentText.Subtext">
+              Interval:
             </Typography>
-            <Typography variant="body2M14" color="contentText.Normal">
-              2025-12-08 15:32
-            </Typography>
+            {periodOptions.map((option) => (
+              <Box
+                key={option.value}
+                component="button"
+                onClick={() => {
+                  const newXAxisUnit = option.value
+                  // X축 단위 선택 시: 단위가 전체기간보다 크면 경고 후 무시
+                  if (period && getScale(newXAxisUnit) > getScale(period)) {
+                    showSnackbar('X축 단위는 전체 기간보다 클 수 없습니다.', { variant: 'error' })
+                    return
+                  }
+                  setSelectedPeriod(newXAxisUnit)
+                  onXAxisUnitChange?.(newXAxisUnit)
+                }}
+                sx={{
+                  width: '40px',
+                  height: '36px',
+                  padding: '8px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: selectedPeriod === option.value ? '#E9ECEF' : 'transparent',
+                  color: '#212529',
+                  fontFamily: 'Pretendard',
+                  fontWeight: 600,
+                  fontSize: '16px',
+                  lineHeight: '140%',
+                  letterSpacing: '0%',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: selectedPeriod === option.value ? '#E9ECEF' : 'rgba(233, 236, 239, 0.5)',
+                  },
+                }}
+              >
+                {option.label}
+              </Box>
+            ))}
           </Stack>
+          {/* 우측 컨트롤 영역: Reset / Download 버튼 */}
           <Stack direction="row" alignItems="center" gap="8px">
-            <MISelectMenu
-              selected={selectedChartOption}
-              onSelected={(selected: string) => setSelectedChartOption(selected)}
-              items={chartOptions}
-              sx={{
-                height: '36px',
-              }}
-              hideChevron
-            />
             <MIBaseButton prefix={<RefreshIcon color="gray.70" />} sx={{ height: '36px', justifyContent: 'center' }} onClick={handleReset}>
               Reset
             </MIBaseButton>
-            <Divider orientation="vertical" flexItem />
-            <MIBaseButton sx={{ height: '36px', padding: '8px' }}>
-              <ChartNotificationIcon fill={theme.palette.gray[70]} />
+            <MIBaseButton sx={{ height: '36px', padding: '8px' }} onClick={handleDownload}>
+              <ChartDownloadIcon fill="#495057" />
             </MIBaseButton>
-            <MIBaseButton sx={{ height: '36px', padding: '8px' }}>
-              <ChartDownloadIcon fill={theme.palette.gray[70]} />
-            </MIBaseButton>
-            <Divider orientation="vertical" flexItem />
-            <Box padding="6px" boxSizing="border-box">
-              <Stack
-                direction="row"
-                alignItems="center"
-                gap="8px"
-                onClick={() => setIsAutosave(!isAutosave)}
-                sx={{
-                  cursor: 'pointer',
-                }}
-              >
-                <Switch size="small" checked={isAutosave} sx={{ mr: '0' }} />
-                <Typography
-                  variant="body1M16"
-                  color={isAutosave ? 'contentText.Normal' : 'contentText.Subtext'}
-                  sx={{
-                    transition: 'color 0.3s',
-                  }}
-                >
-                  Autosave
-                </Typography>
-              </Stack>
-            </Box>
           </Stack>
         </Stack>
         <Box padding="0 30px">
-          <ForecastChartGraph
-            ref={chartGraphRef}
-            height="556px"
-            chartType={selectedChartOption === 'line' ? ChartType.LINE : ChartType.CANDLE}
-            charts={charts}
-            currency={chartData?.dashboardMetadata.currency}
-            unitCd={chartData?.dashboardMetadata.currentUnitCd}
-            chartVisibilityMap={chartVisibilityMap}
-            hoveredChartKey={hoveredChartKey}
-            hoverReportCardInfo={hoverReportCardInfo}
-            isLoading={chartDataIsLoading}
-            onFixedModeChange={setIsFixedMode}
-            chartColorMap={chartColorMap}
-            // spanGaps
-          />
+          <Stack>
+            {/* Unit 표시 영역 */}
+            <Box
+              sx={{
+                width: '100%',
+                height: '17px',
+                display: 'flex',
+                alignItems: 'center',
+                marginTop: '21px',
+              }}
+            >
+              <Typography
+                sx={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '100%',
+                  letterSpacing: '0%',
+                  textAlign: 'right',
+                  fontVariantNumeric: 'lining-nums tabular-nums',
+                  color: '#212529',
+                }}
+              >
+                {`Unit: ${chartData?.metadata.tableHeader ?? '-'}`}
+              </Typography>
+            </Box>
+
+            {!chartDataIsLoading && charts.length === 0 ? (
+              <Stack height="556px" justifyContent="center" alignItems="center" sx={{ userSelect: 'none' }}>
+                <Typography variant="body2SB14" color="gray.50">
+                  No data available to display.
+                </Typography>
+              </Stack>
+            ) : (
+              <ForecastChartGraph
+                ref={chartGraphRef}
+                height="556px"
+                chartType={ChartType.LINE}
+                charts={charts}
+                highlightChartData={highlightChartData}
+                currency={chartData?.metadata.currency}
+                unitCd={chartData?.metadata.currentUnitCd}
+                chartVisibilityMap={chartVisibilityMap}
+                hoveredChartKey={hoveredChartKey}
+                hoverReportCardInfo={hoverReportCardInfo}
+                isLoading={chartDataIsLoading}
+                onFixedModeChange={setIsFixedMode}
+                chartColorMap={chartColorMap}
+                monthSelect={monthSelect}
+                companyNo={companyNo}
+                interval={selectedPeriod}
+                // spanGaps
+              />
+            )}
+          </Stack>
+        </Box>
+
+        {/* 그래프 하단 컨트롤 영역 */}
+        <Box
+          sx={{
+            width: '100%',
+            padding: '8px 30px',
+            boxSizing: 'border-box',
+          }}
+        >
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            {/* 하단 기간 버튼 그룹 */}
+            <Stack direction="row" alignItems="center" gap="6px" height="36px">
+              <Typography variant="body4" color="contentText.Subtext">
+                Range:
+              </Typography>
+              {rangeOptions.map((option) => (
+                <Box
+                  key={option.value}
+                  component="button"
+                  onClick={() => {
+                    const newPeriod = option.value
+                    const currentXAxis = xAxisUnit || selectedPeriod
+                    // 전체기간 선택 시: 전체기간이 X축 단위보다 작으면 경고 후 무시
+                    if (currentXAxis && getScale(newPeriod) < getScale(currentXAxis)) {
+                      showSnackbar('전체 기간은 X축 단위보다 작을 수 없습니다.', { variant: 'error' })
+                      return
+                    }
+                    setSelectedRange(newPeriod)
+                    onPeriodChange?.(newPeriod)
+                  }}
+                  sx={{
+                    minWidth: '40px',
+                    height: '36px',
+                    padding: '8px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    backgroundColor: selectedRange === option.value ? '#E9ECEF' : 'transparent',
+                    color: '#212529',
+                    fontFamily: 'Pretendard',
+                    fontWeight: 600,
+                    fontSize: '16px',
+                    lineHeight: '140%',
+                    letterSpacing: '0%',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background-color 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: selectedRange === option.value ? '#E9ECEF' : 'rgba(233, 236, 239, 0.5)',
+                    },
+                  }}
+                >
+                  {option.label}
+                </Box>
+              ))}
+            </Stack>
+
+            {/* 오른쪽 Last Update 영역 */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                height: '36px',
+                borderRadius: '10px',
+                gap: '8px',
+                paddingY: '8px',
+              }}
+            >
+              <Typography
+                sx={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '140%',
+                  letterSpacing: '0%',
+                  verticalAlign: 'middle',
+                  color: '#495057',
+                }}
+              >
+                Last Update
+              </Typography>
+              <Typography
+                sx={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '140%',
+                  letterSpacing: '0%',
+                  verticalAlign: 'middle',
+                  color: '#495057',
+                }}
+              >
+                {chartData?.metadata.lastUpdateDt || '-'}
+              </Typography>
+            </Box>
+          </Stack>
         </Box>
       </Stack>
+
       <Stack width="232px" flexShrink={0} p="10px 12px" gap="20px" boxSizing="border-box" position="relative">
         {/* 스켈레톤 */}
         <Box
@@ -334,23 +860,26 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
               {legendInfo.forecastLegends.map((legend, index) => {
                 const visibilityKey = `${legend.originalLabel}_${legend.dataType}`
                 const isShow = chartVisibilityMap.get(visibilityKey) !== false
+                const isHoveredReportForecast =
+                  hoverReportCardInfo !== null &&
+                  hoverReportCardInfo !== undefined &&
+                  legend.originalLabel === hoverReportCardInfo.predictChartDetailExpn
+                const legendOpacity = hoverReportCardInfo ? (isHoveredReportForecast ? 1 : 0.2) : 1
                 return (
                   <Box
                     key={`forecast-${index}`}
-                    onMouseEnter={() => !isFixedMode && setHoveredChartKey(isShow ? visibilityKey : null)}
-                    onMouseLeave={() => !isFixedMode && setHoveredChartKey(null)}
-                    sx={{
-                      opacity: isFixedMode ? 0.6 : 1,
-                    }}
+                    onMouseEnter={() => setHoveredChartKey(isShow ? visibilityKey : null)}
+                    onMouseLeave={() => setHoveredChartKey(null)}
+                    sx={{ opacity: legendOpacity, transition: 'opacity 0.2s ease-in-out' }}
                   >
                     <ForecastChartLegend
                       type={legend.type}
                       color={legend.color}
                       label={legend.label}
-                      description="Standard Model"
+                      // description="Standard Model"
                       isShow={isShow}
-                      onToggle={(show) => !isFixedMode && handleChartVisibilityToggle(legend.originalLabel, legend.dataType, show)}
-                      isFixedMode={isFixedMode}
+                      onToggle={(show) => handleChartVisibilityToggle(legend.originalLabel, legend.dataType, show)}
+                      disableMenu={disableLegendMenu}
                     />
                   </Box>
                 )
@@ -365,23 +894,22 @@ const ForecastChart = ({ hoverReportCardInfo, chartData, chartDataIsLoading, onF
               {legendInfo.actualLegends.map((legend, index) => {
                 const visibilityKey = `${legend.originalLabel}_${legend.dataType}`
                 const isShow = chartVisibilityMap.get(visibilityKey) !== false
+                const legendOpacity = hoverReportCardInfo ? 0.2 : 1
                 return (
                   <Box
                     key={`actual-${index}`}
-                    onMouseEnter={() => !isFixedMode && setHoveredChartKey(isShow ? visibilityKey : null)}
-                    onMouseLeave={() => !isFixedMode && setHoveredChartKey(null)}
-                    sx={{
-                      opacity: isFixedMode ? 0.6 : 1,
-                    }}
+                    onMouseEnter={() => setHoveredChartKey(isShow ? visibilityKey : null)}
+                    onMouseLeave={() => setHoveredChartKey(null)}
+                    sx={{ opacity: legendOpacity, transition: 'opacity 0.2s ease-in-out' }}
                   >
                     <ForecastChartLegend
                       type={legend.type}
                       color={legend.color}
                       label={legend.label}
-                      description="Standard Model"
+                      // description="Standard Model"
                       isShow={isShow}
-                      onToggle={(show) => !isFixedMode && handleChartVisibilityToggle(legend.originalLabel, legend.dataType, show)}
-                      isFixedMode={isFixedMode}
+                      onToggle={(show) => handleChartVisibilityToggle(legend.originalLabel, legend.dataType, show)}
+                      disableMenu={disableLegendMenu}
                     />
                   </Box>
                 )
