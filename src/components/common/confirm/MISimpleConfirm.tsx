@@ -1,24 +1,18 @@
-import { Box, Dialog, DialogActions, DialogContent } from '@mui/material'
+import { Dialog, DialogActions, DialogContent, DialogProps, Typography } from '@mui/material'
 import { ReactNode, useEffect } from 'react'
 
-import { ActionButton } from './MIConfirm'
+import MIBaseButton, { MIBaseButtonProps } from '@/components/common/button/MIBaseButton'
 
-import MIButton from '@/components/common/button/MIButton'
+export type MISimpleConfirmAction = MIBaseButtonProps & {
+  onClick: () => void | Promise<void>
+}
 
-interface Props {
-  open: boolean
-  /** 팝업에 표시할 내용 */
+interface MISimpleConfirmProps extends Omit<DialogProps, 'children' | 'content'> {
   content: ReactNode
-  /** 버튼 정의 (label, variant, color, onClick 등) */
-  actions: ActionButton[]
-  /** 팝업 닫기 핸들러 (backdrop 클릭 시 호출) */
+  actions: MISimpleConfirmAction[]
   handleClose: () => void
-  /** 가로 크기 (기본 350px, 최소 350px, 최대 800px) */
-  width?: string | number
-  /** 세로 크기 (기본 148px, 최소 126px, 최대 800px) */
-  height?: string | number
-  zIndex?: number
-  /** backdrop 클릭 시 닫기 비활성화 */
+  width?: number // 기본 350px, 최소 350px, 최대 800px
+  height?: number // 기본 148px, 최소 126px, 최대 800px
   disableClose?: boolean
 }
 
@@ -29,8 +23,6 @@ const MIN_HEIGHT = 126
 const MAX_WIDTH = 800
 const MAX_HEIGHT = 800
 
-const clampSize = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
-
 const MISimpleConfirm = ({
   open,
   content,
@@ -38,14 +30,25 @@ const MISimpleConfirm = ({
   handleClose,
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
-  zIndex,
   disableClose = false,
-}: Props) => {
-  const widthNum = typeof width === 'number' ? width : parseInt(String(width), 10) || DEFAULT_WIDTH
-  const heightNum = typeof height === 'number' ? height : parseInt(String(height), 10) || DEFAULT_HEIGHT
-
-  const finalWidth = clampSize(widthNum, MIN_WIDTH, MAX_WIDTH)
-  const finalHeight = clampSize(heightNum, MIN_HEIGHT, MAX_HEIGHT)
+  slotProps: slotPropsProp,
+  sx: sxProp,
+  ...rest
+}: MISimpleConfirmProps) => {
+  const paperSx = {
+    width: `${width}px`,
+    minWidth: `${MIN_WIDTH}px`,
+    maxWidth: `${MAX_WIDTH}px`,
+    height: 'auto',
+    minHeight: `${MIN_HEIGHT}px`,
+    maxHeight: `min(${height}px, ${MAX_HEIGHT}px)`,
+    borderRadius: '12px',
+    padding: '20px',
+    boxSizing: 'border-box',
+    margin: 0,
+    display: 'flex',
+    flexDirection: 'column',
+  }
 
   useEffect(() => {
     const className = 'mi-confirm-open'
@@ -63,24 +66,7 @@ const MISimpleConfirm = ({
 
   return (
     <Dialog
-      slotProps={{
-        paper: {
-          sx: {
-            width: `${finalWidth}px`,
-            minWidth: `${MIN_WIDTH}px`,
-            maxWidth: `${MAX_WIDTH}px`,
-            height: `${finalHeight}px`,
-            minHeight: `${MIN_HEIGHT}px`,
-            maxHeight: `${MAX_HEIGHT}px`,
-            borderRadius: '12px',
-            padding: '20px',
-            boxSizing: 'border-box',
-            margin: 0,
-            display: 'flex',
-            flexDirection: 'column',
-          },
-        },
-      }}
+      {...rest}
       open={open}
       onClose={(_, reason) => {
         if (reason === 'backdropClick' && disableClose) {
@@ -88,42 +74,38 @@ const MISimpleConfirm = ({
         }
         handleClose()
       }}
+      slotProps={{
+        ...slotPropsProp,
+        paper: {
+          ...(typeof slotPropsProp?.paper === 'object' && slotPropsProp?.paper),
+          sx: [paperSx, ...((slotPropsProp?.paper as { sx?: object })?.sx ? [(slotPropsProp!.paper as { sx: object }).sx] : [])],
+        },
+      }}
       sx={{
-        zIndex,
         '& .MuiDialog-container': {
           alignItems: 'center',
           justifyContent: 'center',
         },
+        ...(sxProp && typeof sxProp === 'object' && !Array.isArray(sxProp) ? sxProp : {}),
       }}
     >
       <DialogContent
         sx={{
           padding: 0,
-          flex: 1,
           display: 'flex',
           alignItems: 'center',
-          overflow: 'hidden',
           '&:last-of-type': {
             paddingBottom: 0,
           },
         }}
       >
-        <Box
-          component="div"
-          sx={{
-            fontSize: '16px',
-            fontWeight: 600,
-            lineHeight: '140%',
-            letterSpacing: '0%',
-            color: '#495057',
-            whiteSpace: 'pre-line',
-          }}
-        >
+        <Typography variant="body1" color="content.textNormal">
           {content}
-        </Box>
+        </Typography>
       </DialogContent>
 
       <DialogActions
+        disableSpacing
         sx={{
           padding: 0,
           paddingTop: '20px',
@@ -133,19 +115,17 @@ const MISimpleConfirm = ({
           minHeight: 'auto',
         }}
       >
-        {actions.map((action, index) => (
-          <MIButton
-            size="h34"
-            key={index}
-            type={action.variant ?? 'filled'}
-            color={action.color ?? 'primary'}
-            onClick={action.onClick}
-            disabled={action.disabled}
-            hoverBgColor={action.hoverBgColor}
-          >
-            {action.label}
-          </MIButton>
-        ))}
+        {actions.map((action, index) => {
+          const { sx, ...buttonProps } = action
+
+          return (
+            <MIBaseButton
+              key={index}
+              {...buttonProps}
+              sx={sx && typeof sx === 'object' && !Array.isArray(sx) ? { height: '34px', ...sx } : { height: '34px' }}
+            />
+          )
+        })}
       </DialogActions>
     </Dialog>
   )

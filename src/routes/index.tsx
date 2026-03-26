@@ -5,6 +5,7 @@ import ProtectedRoute from '@/components/common/ProtectedRoute'
 import { ResetKeyProvider } from '@/contexts/ResetKeyContext'
 import CallbackProcessingPage from '@/pages/common/CallbackProcessingPage'
 import LoginPage from '@/pages/common/LoginPage'
+import NewsletterRenderPage from '@/pages/common/NewsletterRenderPage'
 import PdfViewerPage from '@/pages/common/PdfViewerPage'
 import ExternalLoginPage from '@/pages/mi/externalLogin/externalLoginPage'
 import AdminRoutes from '@/routes/AdminRoutes'
@@ -47,6 +48,10 @@ const commonRoutes: ICustomRouteObject[] = [
   {
     path: 'pdf-viewer/:fileId',
     element: <PdfViewerPage />,
+  },
+  {
+    path: 'newsletter-render',
+    element: <NewsletterRenderPage />,
   },
   { ...ErrorRoutes },
   ...healthCheckRoutes,

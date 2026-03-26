@@ -43,6 +43,7 @@ const MIMenu = ({
   ...props
 }: MIMenuProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuContainerRef = useRef<HTMLDivElement>(null)
   const prevOpen = useRef(open)
 
   const handleToggle = () => {
@@ -85,10 +86,13 @@ const MIMenu = ({
   useEffect(() => {
     if (!open) return undefined
 
-    const handleScroll = () => {
-      if (closeOnScroll) {
-        handleClose()
+    const handleScroll = (event: Event) => {
+      if (!closeOnScroll) return
+      const target = event.target as Node
+      if (menuContainerRef.current?.contains(target)) {
+        return
       }
+      handleClose()
     }
 
     window.addEventListener('scroll', handleScroll, true)
@@ -170,7 +174,7 @@ const MIMenu = ({
   }, [menuPositionOffset, placement, variant])
 
   return (
-    <Box sx={{ position: 'relative' }}>
+    <Box position="relative">
       <Stack direction="row" alignItems="center">
         <MIBaseButton
           ref={buttonRef}
@@ -191,7 +195,7 @@ const MIMenu = ({
         placement={placement}
         transition
         disablePortal={disablePortal ?? false}
-        sx={{ zIndex }}
+        style={{ zIndex }}
         modifiers={popperModifiers}
       >
         {({ TransitionProps, placement: popperPlacement }) => (
@@ -214,7 +218,7 @@ const MIMenu = ({
               }}
             >
               <ClickAwayListener onClickAway={handleClose} mouseEvent="onMouseDown" touchEvent="onTouchStart">
-                <Box id="mi-menu" aria-labelledby={props.id ?? 'mi-menu-button'} onKeyDown={handleListKeyDown}>
+                <Box ref={menuContainerRef} id="mi-menu" aria-labelledby={props.id ?? 'mi-menu-button'} onKeyDown={handleListKeyDown}>
                   {children}
                 </Box>
               </ClickAwayListener>

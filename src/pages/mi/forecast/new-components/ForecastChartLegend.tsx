@@ -86,7 +86,7 @@ const Icon = ({
 
 const ForecastChartLegend = ({ type, color, label, description, isShow: externalIsShow, onToggle, disableMenu = false }: Props) => {
   const [internalIsShow, setInternalIsShow] = useState(true)
-  const isShow = externalIsShow !== undefined ? externalIsShow : internalIsShow
+  const isShow = externalIsShow ?? internalIsShow
   const setIsShow = onToggle || setInternalIsShow
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [selected, setSelected] = useState('1')
@@ -198,7 +198,7 @@ const ForecastChartLegend = ({ type, color, label, description, isShow: external
           }}
         >
           <MISelectMenu
-            label=""
+            textLabel=""
             open={isMenuOpen}
             onOpenChange={setIsMenuOpen}
             selected={selected}

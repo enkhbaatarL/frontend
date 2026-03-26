@@ -1,1074 +1,1129 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import { Box, Typography } from '@mui/material'
-import { useQuery } from '@tanstack/react-query'
-import dayjs from 'dayjs'
-import timezone from 'dayjs/plugin/timezone'
-import utc from 'dayjs/plugin/utc'
+import { Backdrop, Box, CircularProgress, Fade, Stack, Typography } from '@mui/material'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import html2canvas from 'html2canvas'
-import { useRef, useState, useCallback, useEffect, useLayoutEffect, CSSProperties, useMemo } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router-dom'
+import { cloneDeep } from 'lodash-es'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Navigate, useParams } from 'react-router-dom'
 
-import { InflectionPointChartRef } from './components/chart/InflectionPointChart'
-import Chart from './components/emailTemplate/Chart'
-import Disclaimer from './components/emailTemplate/Disclaimer'
-import Header from './components/emailTemplate/Header'
-import News from './components/emailTemplate/News'
-// import NewsHynix from './components/emailTemplate/NewsHynix'
-import Reference from './components/emailTemplate/Reference'
-import Summarized from './components/emailTemplate/Summarized'
-import Title from './components/emailTemplate/Title'
-
-import MIButton from '@/components/common/button/MIButton'
 import MISimpleConfirm from '@/components/common/confirm/MISimpleConfirm'
-import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
-import AddIcon from '@/components/common/icons/AddIcon'
-import CheckIcon from '@/components/common/icons/agent/CheckIcon'
-import EditIcon from '@/components/common/icons/agent/EditIcon'
-import LoadingSpinner from '@/components/common/influence-factor-chart/icons/LoadingSpinIcon'
-import MISelect from '@/components/common/select/MISelect'
-import { useStickyHeader } from '@/contexts/StickyHeaderContext'
-import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
-import newsletterService, { INewsletterIssueDetail, IRelatedNewsEventItem, NewsletterDetailPageMode } from '@/service/mi/newsletter'
+import InflectionPointChart from '@/pages/mi/newsletter/components/chart/InflectionPointChart'
+import ChartEditModal from '@/pages/mi/newsletter/components/edit/ChartEditModal'
+import EditToolbar from '@/pages/mi/newsletter/components/edit/EditToolbar'
+import NewsletterEdit from '@/pages/mi/newsletter/components/edit/NewsletterEdit'
+import AnchorNavigation, { type AnchorItem } from '@/pages/mi/newsletter/components/view/AnchorNavigation'
+import DiffViewer from '@/pages/mi/newsletter/components/view/DiffViewer'
+import EmailContent from '@/pages/mi/newsletter/components/view/EmailContent'
+import NewsletterView from '@/pages/mi/newsletter/components/view/NewsletterView'
+import OilPriceRowEmailCapture from '@/pages/mi/newsletter/components/view/OilPriceRowEmailCapture'
+import RevisionToolbar, { INITIAL_VERSION_ID } from '@/pages/mi/newsletter/components/view/RevisionToolbar'
+import { useRenderEmailContent } from '@/pages/mi/newsletter/components/view/useRenderEmailContent'
+import ViewToolbar from '@/pages/mi/newsletter/components/view/ViewToolbar'
+import { useChartImageStore } from '@/pages/mi/newsletter/hooks/useChartImageStore'
+import { useRevisionChanges } from '@/pages/mi/newsletter/hooks/useRevisionChanges'
+import { useSaveNewsletterRevision } from '@/pages/mi/newsletter/hooks/useSaveNewsletterRevision'
+import {
+  filterVisibleNewsFlowItems,
+  findFirstSectionByCanonicalCode,
+  getBlockFields,
+  getCoverProps,
+  getDateIssueProps,
+  getEditorSectionOrderKeysFromSnapshot,
+  getMarketTimes,
+  getNewsFlowProps,
+  getOrderedReferenceSections,
+  getReferenceContentBlocks,
+  getSectionsInOrder,
+  getTitleProps,
+  newsletterEditAnchorDomId,
+  NEWSLETTER_SECTION_EDIT_LABEL,
+  mergeReferenceSectionsIntoSnapshot,
+  newsletterSectionToEmailTemplateKind,
+  isNewsletterEditSnapshotValidForSave,
+  isReferenceBlockRemoved,
+  isReferenceSectionRemoved,
+  NEWSLETTER_SECTION_CODE,
+  shouldSuppressNewsFlowChartUi,
+  updateBlockFieldsByBlockIdPattern,
+  updateCoverShowImage,
+  updateNewsFlowItems,
+  updateNewsFlowPresentationFields,
+  updateSectionFieldsByCode,
+  updateSectionVisibilityById,
+} from '@/pages/mi/newsletter/utils/snapshotUtils'
+import newsletterService, {
+  getIssueDetailSnapshotData,
+  getNewsletterIssueRevisionId,
+  type INewsletterIssueDetail,
+  type INewsletterIssueSnapshotData,
+  type INewsletterSnapshotSection,
+  type INewsletterSubscriptionStatus,
+  type IRelatedNewsEventItem,
+  NewsletterDetailPageMode,
+} from '@/service/mi/newsletter'
 import useAuthStore from '@/store/useAuthStore'
-import useDialog from '@/store/useDialog'
-
-dayjs.extend(utc)
-dayjs.extend(timezone)
-
-const createTimestampInNY = (date: string, time: string): number => {
-  try {
-    // 날짜와 시간을 합쳐서 뉴욕 시간대로 파싱
-    return dayjs.tz(`${date} ${time}`, 'YYYY-MM-DD HH:mm', 'America/New_York').valueOf()
-  } catch (error) {
-    console.error('Invalid date/time format:', error)
-    return dayjs().tz('America/New_York').valueOf()
-  }
-}
-
-const processNewsletterData = (data: INewsletterIssueDetail | null | undefined) => {
-  if (!data) return data
-
-  return {
-    ...data,
-    issueDetail: {
-      ...data.issueDetail,
-      relatedNews: {
-        ...data.issueDetail.relatedNews,
-        newsEventItems: data.issueDetail.relatedNews.newsEventItems.map((item) => ({
-          ...item,
-          content: item.content.map((content) => (content.startsWith('-') ? content : `- ${content}`)),
-          trend: !item.showInChart ? ('' as const) : item.trend,
-        })),
-      },
-    },
-  }
-}
-
-const sortNewsByDateTime = (newsItems: IRelatedNewsEventItem[]): IRelatedNewsEventItem[] =>
-  [...newsItems].sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0))
-
-const STORAGE_KEY_PREFIX = 'newsletter_issue_draft'
-
-type NewsletterDraftState = {
-  newsletterIssueDetail: INewsletterIssueDetail | null
-  editingNews: Record<string, Record<string, string | boolean>>
-  tempNewsItems: IRelatedNewsEventItem[]
-  unPublishedNewsIds: string[]
-  deletedNewsIds: string[]
-  isSummarizedPublished: boolean
-  mode: NewsletterDetailPageMode
-  sortKey: number
-  expiresAt: number // 만료일 (timestamp)
-}
+import useChartEditStore from '@/store/useChartEditStore'
+import { convertBase64ImagesToCid, prepareNewsletterEmailHtml } from '@/utils/email'
 
 const NewsletterDetailPage = () => {
-  const navigate = useNavigate()
-  const { showSnackbar } = useSnackbar()
-  const { onShow: showDialog, onHide: hideDialog } = useDialog()
-  const { setStickyHeader } = useStickyHeader()
-  const { t } = useTranslation()
-
-  const emailContentRef = useRef<HTMLTableElement>(null)
-  const chartRef = useRef<InflectionPointChartRef>(null)
-
-  const [loadingNewsletterIds, setLoadingNewsletterIds] = useState<Set<string>>(new Set())
-  const { newsletterId, issueNo } = useParams()
-  const { accessCompanyInfo } = useAuthStore()
-
-  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
-
-  const draftStorageKey = useMemo(() => {
-    if (!newsletterId || !issueNo) return null
-    return `${STORAGE_KEY_PREFIX}_${customerCompanyNo}_${newsletterId}_${issueNo}`
-  }, [customerCompanyNo, issueNo, newsletterId])
-
-  const [forceRefresh, setForceRefresh] = useState(0)
-
-  const initialDraftState = useMemo(() => {
-    if (!draftStorageKey) return null
-    const savedDraft = localStorage.getItem(draftStorageKey)
-    if (!savedDraft) return null
-    try {
-      const parsed = JSON.parse(savedDraft) as NewsletterDraftState
-      // 만료일 체크
-      if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
-        localStorage.removeItem(draftStorageKey)
-        return null
-      }
-      return parsed
-    } catch (error) {
-      console.error('Failed to parse newsletter draft from localStorage:', error)
-      localStorage.removeItem(draftStorageKey)
-      return null
-    }
-    // forceRefresh를 의존성에 추가하여 localStorage 삭제 후 재계산되도록 함
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftStorageKey, forceRefresh])
-
-  // 로컬스토리지가 있어도 기본적으로는 API 데이터로 초기화
   const [mode, setMode] = useState<NewsletterDetailPageMode>(NewsletterDetailPageMode.VIEW)
-  const [newsletterIssueDetail, setNewsletterIssueDetail] = useState<INewsletterIssueDetail | undefined | null>(undefined)
-  const [editingNews, setEditingNews] = useState<Record<string, Record<string, string | boolean>>>({})
-  const [tempNewsItems, setTempNewsItems] = useState<IRelatedNewsEventItem[]>([])
-  const [savedScrollPosition, setSavedScrollPosition] = useState<number | null>(null)
-  const [sortKey, setSortKey] = useState(0)
-  const [isCapturing, setIsCapturing] = useState(false)
+  const [snapshot, setSnapshot] = useState<INewsletterIssueSnapshotData | null>(null)
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false)
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [forceScrolled, setForceScrolled] = useState<boolean | null>(null)
+  const [isChartModalOpen, setIsChartModalOpen] = useState(false)
+  const [isEnteringEditMode, setIsEnteringEditMode] = useState(false)
+  const [isDraftLoadConfirmOpen, setIsDraftLoadConfirmOpen] = useState(false)
+  const enteringEditRef = useRef(false)
+  const draftLoadChoiceResolveRef = useRef<((useDraft: boolean) => void) | null>(null)
 
-  const [isSummarizedPublished, setIsSummarizedPublished] = useState(true)
-  // 실제로 Edit 모드에서 변경이 발생했는지 여부 (변경이 있을 때만 draft 자동 저장)
-  const [hasDraftChanged, setHasDraftChanged] = useState(false)
-  const [unPublishedNewsIds, setUnPublishedNewsIds] = useState<string[]>([])
-  const [deletedNewsIds, setDeletedNewsIds] = useState<string[]>([])
+  const resolveDraftLoadChoice = useCallback((useDraft: boolean) => {
+    setIsDraftLoadConfirmOpen(false)
+    const resolve = draftLoadChoiceResolveRef.current
+    draftLoadChoiceResolveRef.current = null
+    resolve?.(useDraft)
+  }, [])
 
-  const [isContinueModalOpen, setIsContinueModalOpen] = useState(false)
+  const [selectedVersionId, setSelectedVersionId] = useState<string>(INITIAL_VERSION_ID)
+  /** 비교대상: 직전버전(n vs n-1) | 최초버전(n vs 0) */
+  const [comparisonTarget, setComparisonTarget] = useState<'previous' | 'initial'>('previous')
+
+  /** 앵커 클릭 시 툴바를 먼저 축소한 뒤 스크롤하기 위한 강제값 (null이면 scrollTop 기반) */
+  const effectiveIsScrolled = forceScrolled ?? isScrolled
+  const chartAnchorElRef = useRef<HTMLElement | null>(null)
+  const queryClient = useQueryClient()
+  const { showSnackbar } = useSnackbar()
+  const { accessCompanyInfo } = useAuthStore()
+  const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
+  const { newsletterId, issueNo } = useParams()
+
+  const { data: newsletterIssues } = useQuery({
+    queryKey: ['newsletterIssues', newsletterId],
+    queryFn: () => newsletterService.getNewsletterIssues(customerCompanyNo, newsletterId!),
+    enabled: !!newsletterId && !!customerCompanyNo,
+  })
 
   const {
-    data: newsletterIssueDetailData,
-    optimisticUpdate: optimisticUpdateDetail,
-    isLoading: isNewsletterIssueDetailLoading,
-  } = useSearchFilter<Record<string, never>, INewsletterIssueDetail | null>(
-    () => {
-      if (!newsletterId || !issueNo) {
-        return Promise.resolve(null)
-      }
-      // 로컬스토리지가 있어도 항상 API 조회
-      return newsletterService.getNewsletterIssueDetail(customerCompanyNo, newsletterId, issueNo)
-    },
-    {},
-    {
-      page: 1,
-      size: 1,
-    },
-    {
-      initialFetch: true,
-    },
-  )
+    data: issueDetailData,
+    isLoading: isIssueDetailLoading,
+    isError: isIssueDetailError,
+    refetch: refetchIssueDetail,
+  } = useQuery({
+    queryKey: ['newsletterIssueDetail', newsletterId, issueNo],
+    queryFn: () => newsletterService.getNewsletterIssueDetail(customerCompanyNo, newsletterId!, issueNo!),
+    enabled: !!newsletterId && !!issueNo && !!customerCompanyNo,
+  })
 
-  const { data: newsletterIssues, isLoading: isNewsletterIssuesLoading } = useQuery({
-    queryKey: ['newsletterIssues', newsletterId],
-    queryFn: () => {
-      if (!newsletterId) {
-        return null
-      }
+  /** 쿼리 캐시가 이전 발행호·잘못된 키와 섞이지 않도록 스냅샷 동기화 전에 검증 */
+  const detailMatchesRoute = useMemo(() => {
+    if (!issueDetailData || !newsletterId || !issueNo) return false
+    return String(issueDetailData.newsletterId) === String(newsletterId) && String(issueDetailData.issueNo) === String(issueNo)
+  }, [issueDetailData, newsletterId, issueNo])
 
-      return newsletterService.getNewsletterIssues(customerCompanyNo, newsletterId)
-    },
-    refetchOnWindowFocus: false,
-    gcTime: 0,
+  const { data: subscriptionStatus, isLoading: isSubscriptionStatusLoading } = useQuery({
+    queryKey: ['newsletterSubscription', newsletterId],
+    queryFn: () => newsletterService.getNewsletterSubscription(newsletterId!),
     enabled: !!newsletterId,
   })
 
-  // Summarized 컴포넌트의 게시 여부 변경 시 draft 변경 플래그도 함께 설정
-  const handleSummarizedPublishedChange = useCallback((value: boolean) => {
-    setHasDraftChanged(true)
-    setIsSummarizedPublished(value)
-  }, [])
-
-  // Edit 버튼 클릭 시 로컬스토리지 체크 및 팝업 표시
-  const handleEditClick = useCallback(() => {
-    if (initialDraftState) {
-      // localStorage에 저장된 값이 있으면 이어쓰기 팝업 표시
-      setIsContinueModalOpen(true)
-    } else {
-      // localStorage에 값이 없으면 바로 edit 모드로 전환
-      setHasDraftChanged(false)
-      setMode(NewsletterDetailPageMode.EDIT)
-    }
-  }, [initialDraftState])
-
-  const handleSubscribe = useCallback(
-    async (targetNewsletterId: string) => {
-      if (!newsletterIssueDetail) return
-
-      const newSubscribedState = !newsletterIssueDetail.subscribed
-      const newsletterName = newsletterIssueDetail.name
-
-      setLoadingNewsletterIds((prev) => new Set(prev).add(targetNewsletterId))
-
-      try {
-        await optimisticUpdateDetail(
-          async () => {
-            await newsletterService.updateNewsletterSubscribed(targetNewsletterId, newSubscribedState)
-            return null
-          },
-          {
-            optimisticData: {
-              ...newsletterIssueDetail,
-              subscribed: newSubscribedState,
-            },
-            rollbackOnError: true,
-          },
-        )
-
-        showSnackbar(`${newsletterName} 이메일 구독이 ${newSubscribedState ? '완료' : '해제'}되었습니다`, {
-          variant: 'success',
-        })
-      } catch (error) {
-        console.error('구독/해제 실패:', error)
-        showSnackbar(`${newsletterName} 구독 처리 중 오류가 발생했습니다`, {
-          variant: 'error',
-        })
-      } finally {
-        setLoadingNewsletterIds((prev) => {
-          const newSet = new Set(prev)
-          newSet.delete(targetNewsletterId)
-          return newSet
-        })
+  const { mutate: mutateSubscribe, isPending: isSubscribeMutating } = useMutation({
+    mutationFn: async (vars: { nextSubscribed: boolean; newsletterName: string }) => {
+      if (!newsletterId) throw new Error('newsletterId missing')
+      await newsletterService.updateNewsletterSubscribed(newsletterId, vars.nextSubscribed)
+      return vars
+    },
+    onMutate: async (vars) => {
+      if (!newsletterId) return undefined
+      await queryClient.cancelQueries({ queryKey: ['newsletterSubscription', newsletterId] })
+      const previous = queryClient.getQueryData<INewsletterSubscriptionStatus>(['newsletterSubscription', newsletterId])
+      queryClient.setQueryData<INewsletterSubscriptionStatus>(['newsletterSubscription', newsletterId], (old) => ({
+        newsletterId: String(newsletterId),
+        subscribed: vars.nextSubscribed,
+        subscribedAt: old?.subscribedAt ?? null,
+        unsubscribedAt: old?.unsubscribedAt ?? null,
+      }))
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (newsletterId && context?.previous !== undefined) {
+        queryClient.setQueryData(['newsletterSubscription', newsletterId], context.previous)
+      }
+      showSnackbar('구독 처리 중 오류가 발생했습니다', { variant: 'error' })
+    },
+    onSuccess: ({ nextSubscribed, newsletterName }) => {
+      void queryClient.invalidateQueries({ queryKey: ['newsletterIssueDetail', newsletterId, issueNo] })
+      showSnackbar(`${newsletterName} 이메일 구독이 ${nextSubscribed ? '완료' : '해제'}되었습니다`, {
+        variant: 'success',
+      })
+    },
+    onSettled: () => {
+      if (newsletterId) {
+        void queryClient.invalidateQueries({ queryKey: ['newsletterSubscription', newsletterId] })
       }
     },
-    [newsletterIssueDetail, optimisticUpdateDetail, showSnackbar],
+  })
+
+  const issueDetailSnapshot = useMemo(() => getIssueDetailSnapshotData(issueDetailData), [issueDetailData])
+
+  /** 서버 스냅샷 복사 — 최종저장 diff 기준(base) */
+  const baseSnapshot = useMemo(() => (issueDetailSnapshot ? cloneDeep(issueDetailSnapshot) : null), [issueDetailSnapshot])
+
+  /** 편집 중 로컬 초안(저장 전 포함). 저장 diff·미리보기·편집 UI는 항상 이 값 사용 */
+  const effectiveSnapshot = snapshot ?? baseSnapshot
+
+  /**
+   * 뷰 모드 표시 전용 — GET 상세(`baseSnapshot`)만 반영.
+   * 예전에는 `effectiveSnapshot`을 뷰에도 써서, 저장 안 한 사용자 추가 섹션이 뷰에까지 보였음.
+   */
+  const viewSnapshot = baseSnapshot
+
+  const handleSubscribeToggle = useCallback(() => {
+    if (!newsletterId || isSubscriptionStatusLoading || isSubscribeMutating) return
+    const nextSubscribed = !(subscriptionStatus?.subscribed ?? false)
+    const newsletterName = getCoverProps(viewSnapshot).name || getTitleProps(viewSnapshot).title || '뉴스레터'
+    mutateSubscribe({ nextSubscribed, newsletterName })
+  }, [newsletterId, isSubscriptionStatusLoading, isSubscribeMutating, subscriptionStatus?.subscribed, viewSnapshot, mutateSubscribe])
+
+  const countReferenceCharts = useCallback((snap: INewsletterIssueSnapshotData | null) => {
+    if (!snap) return 0
+    const refs = getOrderedReferenceSections(snap)
+    return refs.reduce((sum, sec) => {
+      if (isReferenceSectionRemoved(sec) || sec.visibility === false) return sum
+      return (
+        sum +
+        getReferenceContentBlocks(sec).filter((b) => b.type === 'CHART' && b.visibility !== false && !isReferenceBlockRemoved(b)).length
+      )
+    }, 0)
+  }, [])
+
+  /**
+   * 편집 초안에만 있는 참고 CHART 슬롯까지 포함 — 뷰↔편집 전환 시 이미지 배열 길이가 부족하지 않게 함
+   */
+  const referenceChartCount = useMemo(
+    () => Math.max(countReferenceCharts(effectiveSnapshot), countReferenceCharts(baseSnapshot)),
+    [countReferenceCharts, effectiveSnapshot, baseSnapshot],
   )
 
-  const handleNewsUpdate = useCallback((newsId: string, field: string, value: string | boolean) => {
-    setHasDraftChanged(true)
-    setEditingNews((prev) => ({
-      ...prev,
-      [newsId]: {
-        ...prev[newsId],
-        [field]: value,
-      },
-    }))
+  const {
+    mainChartImage,
+    coverImage,
+    oilPriceRowImage,
+    referenceChartImages,
+    onMainChartImageReady,
+    onCoverImageReady,
+    onOilPriceRowImageReady,
+    onReferenceChartImageReady,
+    resetImages,
+  } = useChartImageStore(referenceChartCount)
 
-    // tempNewsItems에도 showInChart 변경을 반영 (로컬스토리지 저장 시 혼동 방지)
-    if (field === 'showInChart') {
-      setTempNewsItems((prev) => prev.map((item) => (item.newsId === newsId ? { ...item, showInChart: Boolean(value) } : item)))
-    }
-  }, [])
+  const resetChartSettings = useChartEditStore((s) => s.resetChartSettings)
 
-  const handleAddNews = useCallback(() => {
-    setHasDraftChanged(true)
-    const newNewsId = `temp_${Date.now()}`
-    const newNewsItem = {
-      newsId: newNewsId,
-      title: '',
-      content: [''],
-      timestamp: undefined,
-      createdDate: '',
-      createTime: '',
-      source: '',
-      showInChart: false,
-    }
+  /** `resetImages`는 referenceChartCount 변경 시마다 새 참조 → effect 의존성에 넣으면 스냅샷이 서버 값으로 덮어써짐(예: 섹션 추가 직후) */
+  const resetImagesRef = useRef(resetImages)
+  const resetChartSettingsRef = useRef(resetChartSettings)
+  resetImagesRef.current = resetImages
+  resetChartSettingsRef.current = resetChartSettings
 
-    // 임시 저장소에만 추가
-    setTempNewsItems((prev) => [...prev, newNewsItem])
-
-    setEditingNews((prev) => ({
-      ...prev,
-      [newNewsId]: {
-        title: '',
-        content: '',
-        createTime: newNewsItem.createTime,
-        createdDate: newNewsItem.createdDate,
-      },
-    }))
-  }, [])
-
-  const handleResetNews = useCallback(() => {
-    setHasDraftChanged(true)
-    showDialog({
-      title: t('newsletter.editMode.resetDialog.title'),
-      width: 400,
-      actions: [
-        {
-          label: t('common.cancel'),
-          variant: 'outlined',
-          color: 'gray',
-          onClick: hideDialog,
-        },
-        {
-          label: t('common.reset'),
-          variant: 'filled',
-          color: 'primary',
-          onClick: () => {
-            setEditingNews({})
-            setTempNewsItems([])
-            setDeletedNewsIds([])
-            hideDialog()
-          },
-        },
-      ],
+  const newsFlowProps = getNewsFlowProps(effectiveSnapshot)
+  const refs = getOrderedReferenceSections(effectiveSnapshot)
+  /** 메인 차트에 그릴 데이터가 있는지 */
+  const hasMainChartData =
+    (newsFlowProps.chartData.timestamps?.length ?? 0) > 0 ||
+    newsFlowProps.chartData.series?.some((s) => (s.values?.length ?? 0) > 0) ||
+    false
+  /** 참고자료 차트에 그릴 데이터가 있는지 */
+  const hasReferenceChartData = refs.some((sec) => {
+    if (isReferenceSectionRemoved(sec) || sec.visibility === false) return false
+    return getReferenceContentBlocks(sec).some((b) => {
+      if (b.type !== 'CHART' || b.visibility === false || isReferenceBlockRemoved(b)) return false
+      const c = getBlockFields<{
+        timestamps?: number[]
+        series?: { values?: number[] }[]
+      }>(b)
+      const hasTs = (c?.timestamps?.length ?? 0) > 0
+      const hasSeries = c?.series?.some((s) => (s.values?.length ?? 0) > 0) ?? false
+      return hasTs || hasSeries
     })
-  }, [showDialog, hideDialog, t])
+  })
+  /** 차트 이미지가 필요한지 (실제 차트 데이터가 있어서 이미지 생성 대기 중) */
+  const hasChartsToRender = hasReferenceChartData || hasMainChartData
 
-  const handleDeleteNewsConfirm = useCallback(
-    (newsId: string) => {
-      setHasDraftChanged(true)
-      // newsletterIssueDetail에 있는지 먼저 확인
-      const isInNewsletterDetail = newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems?.some((item) => item.newsId === newsId)
+  const suppressNewsFlowChartUi = useMemo(() => shouldSuppressNewsFlowChartUi(effectiveSnapshot), [effectiveSnapshot])
+  const hasTitleOilPriceRow = useMemo(() => {
+    const t = getTitleProps(effectiveSnapshot)
+    return (
+      t.priceChangeFrom !== undefined &&
+      t.priceChangeTo !== undefined &&
+      Number.isFinite(t.priceChangeFrom) &&
+      Number.isFinite(t.priceChangeTo)
+    )
+  }, [effectiveSnapshot])
 
-      if (newsId.startsWith('temp_') && !isInNewsletterDetail) {
-        // tempNewsItems에만 있는 경우
-        setTempNewsItems((prev) => prev.filter((item) => item.newsId !== newsId))
-      } else {
-        // newsletterIssueDetail에 있거나 일반 뉴스인 경우
-        setDeletedNewsIds((prev) => [...prev, newsId])
-      }
+  const viewNewsFlowProps = useMemo(() => getNewsFlowProps(viewSnapshot), [viewSnapshot])
+  const viewRefsOrdered = useMemo(() => getOrderedReferenceSections(viewSnapshot), [viewSnapshot])
+  const viewHasMainChartData =
+    (viewNewsFlowProps.chartData.timestamps?.length ?? 0) > 0 ||
+    viewNewsFlowProps.chartData.series?.some((s) => (s.values?.length ?? 0) > 0) ||
+    false
+  const viewHasReferenceChartData = viewRefsOrdered.some((sec) => {
+    if (isReferenceSectionRemoved(sec) || sec.visibility === false) return false
+    return getReferenceContentBlocks(sec).some((b) => {
+      if (b.type !== 'CHART' || b.visibility === false || isReferenceBlockRemoved(b)) return false
+      const c = getBlockFields<{
+        timestamps?: number[]
+        series?: { values?: number[] }[]
+      }>(b)
+      const hasTs = (c?.timestamps?.length ?? 0) > 0
+      const hasSeries = c?.series?.some((s) => (s.values?.length ?? 0) > 0) ?? false
+      return hasTs || hasSeries
+    })
+  })
+  const viewHasChartsToRender = viewHasReferenceChartData || viewHasMainChartData
+  const viewSuppressNewsFlowChartUi = useMemo(() => shouldSuppressNewsFlowChartUi(viewSnapshot), [viewSnapshot])
+  const viewHasTitleOilPriceRow = useMemo(() => {
+    const t = getTitleProps(viewSnapshot)
+    return (
+      t.priceChangeFrom !== undefined &&
+      t.priceChangeTo !== undefined &&
+      Number.isFinite(t.priceChangeFrom) &&
+      Number.isFinite(t.priceChangeTo)
+    )
+  }, [viewSnapshot])
 
-      setEditingNews((prev) => {
-        const updated = { ...prev }
-        delete updated[newsId]
-        return updated
-      })
+  /** 미리보기/이메일 가능: 차트가 없으면 바로 가능, 메인 차트만 있으면 해당 이미지 준비 시 허용 (참고자료는 준비되는 대로 사용, 미준비 시 빈 이미지). Title 유가 행이 있으면 캡처 이미지 준비까지 대기 */
+  const isReadyForEmail =
+    (!hasChartsToRender || !hasMainChartData || mainChartImage.length > 0) && (!hasTitleOilPriceRow || oilPriceRowImage.length > 0)
 
-      hideDialog()
-    },
-    [hideDialog, newsletterIssueDetail],
+  /** 뷰 툴바 다운로드 등 — 서버 스냅샷 기준(초안에만 있는 차트는 대기 대상에서 제외) */
+  const isReadyForEmailView =
+    (!viewHasChartsToRender || !viewHasMainChartData || mainChartImage.length > 0) &&
+    (!viewHasTitleOilPriceRow || oilPriceRowImage.length > 0)
+
+  const { render: renderEmailContent } = useRenderEmailContent()
+
+  const { saveFinalRevision, saveDraftRevision, isSaving, isSavingDraft, hasUnsavedChanges } = useSaveNewsletterRevision({
+    newsletterId,
+    issueNo,
+    baseSnapshot,
+    currentState: effectiveSnapshot,
+    revisionNo: issueDetailData?.snapshot?.revisionNo,
+    deltaCount: issueDetailData?.deltaCount,
+  })
+
+  const isEditSnapshotValid = useMemo(() => isNewsletterEditSnapshotValidForSave(effectiveSnapshot), [effectiveSnapshot])
+
+  const issueRevisionId = issueDetailData ? getNewsletterIssueRevisionId(issueDetailData) : undefined
+
+  const { versions: revisionVersions, isLoading: isRevisionLoading } = useRevisionChanges(
+    newsletterId ?? undefined,
+    issueNo ?? undefined,
+    issueRevisionId,
   )
 
-  const handleDeleteNews = useCallback(
-    (newsId: string) => {
-      showDialog({
-        title: t('newsletter.editMode.deleteDialog.title'),
-        width: 400,
-        actions: [
-          {
-            label: t('common.cancel'),
-            variant: 'outlined',
-            color: 'gray',
-            onClick: hideDialog,
-          },
-          {
-            label: t('common.delete'),
-            variant: 'filled',
-            color: 'red',
-            onClick: () => handleDeleteNewsConfirm(newsId),
-          },
-        ],
-      })
-    },
-    [showDialog, hideDialog, handleDeleteNewsConfirm, t],
-  )
+  /**
+   * 편집용 로컬 `snapshot`을 서버 발행호 상세(`issueDetailData`)와 맞춥니다.
+   * - 뷰/개정/캡처 등: 상세 쿼리가 바뀌면 서버 기준으로 로컬을 맞춤(저장 후 리패치 포함).
+   * - 편집 모드: 초안을 유지 — 백그라운드 리패치로 편집 중 내용이 통째로 날아가지 않게 함. 편집 진입 시 동기화는 `handleEnterEditMode`만 담당.
+   */
+  useLayoutEffect(() => {
+    if (!newsletterId || !issueNo) {
+      setSnapshot(null)
+      return
+    }
+    if (!detailMatchesRoute || !issueDetailData) {
+      setSnapshot(null)
+      return
+    }
+    if (mode === NewsletterDetailPageMode.EDIT) {
+      return
+    }
+    const snap = getIssueDetailSnapshotData(issueDetailData)
+    if (!snap) {
+      setSnapshot(null)
+      return
+    }
+    setSnapshot(cloneDeep(snap))
+    resetImagesRef.current()
+    resetChartSettingsRef.current()
+  }, [mode, newsletterId, issueNo, detailMatchesRoute, issueDetailData])
 
-  const handleApplyNews = useCallback(
-    (latestUnPublishedNewsIds?: string[]) => {
-      if (!newsletterIssueDetail) return
-
-      // Apply가 눌렸다는 것은 이미 어떤 형태로든 편집이 일어났다는 의미이므로 draft 저장 대상
-      setHasDraftChanged(true)
-
-      // 현재 스크롤 위치 저장
-      const currentScrollTop = window.scrollY || document.documentElement.scrollTop
-      setSavedScrollPosition(currentScrollTop)
-
-      const currentUnPublishedNewsIds = latestUnPublishedNewsIds ?? unPublishedNewsIds
-
-      // 필수 조건 검증 함수
-      const validateRequiredFields = (item: IRelatedNewsEventItem) => {
-        const time = String(editingNews[item.newsId]?.createTime ?? item.createTime)
-        const date = String(editingNews[item.newsId]?.createdDate ?? item.createdDate)
-        const title = String(editingNews[item.newsId]?.title ?? item.title)
-        const content = String(editingNews[item.newsId]?.content ?? item.content.join('\n'))
-
-        return time.trim() !== '' && date.trim() !== '' && title.trim() !== '' && content.trim() !== ''
+  /**
+   * 편집 진입: 최신 상세를 받은 뒤 로컬 초안으로 반영.
+   * `revision.hasDraft`이면 확인창을 띄운 뒤, 사용자가 "임시저장 불러오기"를 선택했을 때만
+   * GET .../revisions/draft를 호출합니다.
+   */
+  const handleEnterEditMode = useCallback(async () => {
+    if (!newsletterId || !issueNo) return
+    if (enteringEditRef.current) return
+    enteringEditRef.current = true
+    setIsEnteringEditMode(true)
+    try {
+      let detail: INewsletterIssueDetail | undefined
+      try {
+        const result = await refetchIssueDetail()
+        detail = result.data ?? undefined
+      } catch {
+        // 네트워크 실패 시에도 캐시가 있으면 그걸 기준으로 편집 진입
       }
+      detail ??= queryClient.getQueryData<INewsletterIssueDetail>(['newsletterIssueDetail', newsletterId, issueNo])
 
-      // 모든 항목(기존 + 신규)의 필수 조건 검증 (비활성화된 뉴스는 제외)
-      const allItems = [...(newsletterIssueDetail.issueDetail.relatedNews.newsEventItems || []), ...tempNewsItems]
-      const activeItems = allItems.filter((item) => !currentUnPublishedNewsIds.includes(item.newsId))
-      const allItemsValid = activeItems.every(validateRequiredFields)
+      if (detail && String(detail.newsletterId) === String(newsletterId) && String(detail.issueNo) === String(issueNo)) {
+        let snap: INewsletterIssueSnapshotData | null = null
 
-      if (!allItemsValid) {
-        showSnackbar(t('newsletter.editMode.error.requiredFields'), { variant: 'error' })
-        return
-      }
+        if (detail.revision?.hasDraft) {
+          setIsEnteringEditMode(false)
+          const useDraft = await new Promise<boolean>((resolve) => {
+            draftLoadChoiceResolveRef.current = resolve
+            setIsDraftLoadConfirmOpen(true)
+          })
+          setIsDraftLoadConfirmOpen(false)
+          draftLoadChoiceResolveRef.current = null
 
-      const updateNewsItem = (item: IRelatedNewsEventItem): IRelatedNewsEventItem => {
-        const edits = editingNews[item.newsId]
-        const isUnPublished = currentUnPublishedNewsIds.includes(item.newsId)
-
-        const validTrend = edits?.trend ?? item.trend ?? ''
-
-        // editingNews에 showInChart 값이 명시적으로 설정되어 있으면 우선 사용
-        // 없으면 게시 상태와 trend 값에 따라 계산
-        let showInChartValue: boolean
-        if (edits?.showInChart !== undefined) {
-          showInChartValue = Boolean(edits.showInChart)
-        } else {
-          showInChartValue = isUnPublished ? false : validTrend !== ''
+          if (useDraft) {
+            setIsEnteringEditMode(true)
+            try {
+              const draft = await newsletterService.getRevisionDraft(Number(newsletterId), issueNo)
+              if (draft?.content && Array.isArray(draft.content.sections)) {
+                snap = cloneDeep(draft.content)
+                showSnackbar('임시저장된 편집 내용을 불러왔습니다.', { variant: 'success' })
+              } else {
+                snap = getIssueDetailSnapshotData(detail)
+              }
+            } catch {
+              snap = getIssueDetailSnapshotData(detail)
+            } finally {
+              setIsEnteringEditMode(false)
+            }
+          } else {
+            snap = getIssueDetailSnapshotData(detail)
+          }
         }
 
-        const createTime = String(edits?.createTime ?? item.createTime)
-        const createdDate = String(edits?.createdDate ?? item.createdDate)
+        if (!snap) {
+          snap = getIssueDetailSnapshotData(detail)
+        }
 
-        const timestamp = createTimestampInNY(createdDate, createTime)
-
-        return {
-          ...item,
-          createTime,
-          createdDate,
-          title: String(edits?.title ?? item.title),
-          content: typeof edits?.content === 'string' ? edits?.content.split('\n') : item.content,
-          source: String(edits?.source ?? item.source ?? ''),
-          trend: validTrend as 'UP' | 'DOWN' | 'NONE' | '',
-          showInChart: showInChartValue,
-          timestamp,
+        if (snap) {
+          setSnapshot(cloneDeep(snap))
+          resetImagesRef.current()
+          resetChartSettingsRef.current()
         }
       }
 
-      setNewsletterIssueDetail((prev) => {
-        if (!prev) return prev
-
-        // 기존 뉴스 항목들에 수정사항 적용하고 삭제된 뉴스는 제외
-        const updatedExistingNews = prev.issueDetail.relatedNews.newsEventItems
-          .filter((item) => !deletedNewsIds.includes(item.newsId))
-          .map(updateNewsItem)
-
-        // 새로 추가한 항목들에 수정사항 적용 (미게시 뉴스는 제외)
-        const updatedTempNews = tempNewsItems.filter((item) => !currentUnPublishedNewsIds.includes(item.newsId)).map(updateNewsItem)
-
-        // 기존 뉴스와 새로 추가한 뉴스를 합치고 일자+시간 순으로 정렬
-        const allNewsItems = [...updatedExistingNews, ...updatedTempNews]
-        const sortedNewsItems = sortNewsByDateTime(allNewsItems)
-
-        return {
-          ...prev,
-          issueDetail: {
-            ...prev.issueDetail,
-            relatedNews: {
-              ...prev.issueDetail.relatedNews,
-              newsEventItems: sortedNewsItems,
-            },
-          },
-        }
-      })
-
-      // 미게시 뉴스는 tempList로 유지
-      setTempNewsItems((prev) => prev.filter((item) => currentUnPublishedNewsIds.includes(item.newsId)))
-      setEditingNews({})
-      setDeletedNewsIds([])
-
-      // 정렬 키 업데이트하여 DOM 요소 강제 재생성
-      setSortKey((prev) => prev + 1)
-
-      // Apply 후에도 edit 모드 유지 (로컬스토리지는 계속 저장됨)
-      // localStorage는 삭제하지 않고 계속 유지
-
-      showSnackbar(t('newsletter.editMode.snackbar.newsUpdated'), { variant: 'success' })
-    },
-    [newsletterIssueDetail, tempNewsItems, editingNews, showSnackbar, unPublishedNewsIds, deletedNewsIds, t, draftStorageKey],
-  )
-
-  const initializeNewsletterIssueDetail = useCallback(() => {
-    setNewsletterIssueDetail(processNewsletterData(newsletterIssueDetailData))
-    setIsSummarizedPublished(true)
-    setUnPublishedNewsIds([])
-    setDeletedNewsIds([])
-  }, [newsletterIssueDetailData])
+      setMode(NewsletterDetailPageMode.EDIT)
+    } finally {
+      enteringEditRef.current = false
+      setIsEnteringEditMode(false)
+    }
+  }, [newsletterId, issueNo, refetchIssueDetail, queryClient, showSnackbar])
 
   useEffect(() => {
-    // 실제 변경(hasDraftChanged)이 발생했을 때만 draft 자동 저장
-    if (mode !== NewsletterDetailPageMode.EDIT || !newsletterIssueDetail || !draftStorageKey || !hasDraftChanged) {
-      return undefined
+    const scrollEl = document.getElementById('main-scroll-wrapper')
+    if (!scrollEl) return undefined
+
+    const handleScroll = () => setIsScrolled(scrollEl.scrollTop > 0)
+    handleScroll()
+    scrollEl.addEventListener('scroll', handleScroll)
+    return () => scrollEl.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  /** 편집/개정 모드 진입·종료 시 스크롤을 상단으로 */
+  useEffect(() => {
+    const scrollEl = document.getElementById('main-scroll-wrapper')
+    if (scrollEl) scrollEl.scrollTo({ top: 0, behavior: 'instant' })
+  }, [mode])
+
+  /** REVISION 모드 진입 시 최신 버전을 기본 선택.
+   * 사용자가 versions 목록의 버전을 이미 선택했다면 절대 덮어쓰지 않음. */
+  const hasSetInitialForRevisionRef = useRef(false)
+  useEffect(() => {
+    if (mode !== NewsletterDetailPageMode.REVISION) {
+      hasSetInitialForRevisionRef.current = false
+      return
     }
+    if (revisionVersions.length === 0) return
 
-    const timeoutId = window.setTimeout(() => {
-      // 만료일을 일주일 후로 설정
-      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000 // 7일 후
+    // 사용자가 이미 유효한 버전(목록에 있거나 최초버전)을 선택했다면 → 절대 덮어쓰지 않음
+    const isUserChoiceValid = selectedVersionId === INITIAL_VERSION_ID || revisionVersions.some((v) => v.id === selectedVersionId)
+    if (isUserChoiceValid && hasSetInitialForRevisionRef.current) return
 
-      const draftToSave: NewsletterDraftState = {
-        newsletterIssueDetail,
-        editingNews,
-        tempNewsItems,
-        unPublishedNewsIds,
-        deletedNewsIds,
-        isSummarizedPublished,
-        mode,
-        sortKey,
-        expiresAt,
-      }
-      localStorage.setItem(draftStorageKey, JSON.stringify(draftToSave))
-    }, 1000)
+    if (!hasSetInitialForRevisionRef.current) {
+      hasSetInitialForRevisionRef.current = true
+      setSelectedVersionId(revisionVersions[0].id)
+    }
+  }, [mode, revisionVersions, selectedVersionId])
 
-    return () => window.clearTimeout(timeoutId)
+  const handleReset = useCallback(() => {
+    const snap = getIssueDetailSnapshotData(issueDetailData)
+    if (snap) {
+      setSnapshot(cloneDeep(snap))
+      resetImages()
+      resetChartSettings()
+    }
+  }, [issueDetailData, resetImages, resetChartSettings])
+
+  const handleRelatedNewsChange = useCallback((items: IRelatedNewsEventItem[]) => {
+    setSnapshot((prev) => (prev ? updateNewsFlowItems(prev, items) : prev))
+  }, [])
+
+  const handleReferencesChange = useCallback((referenceSections: INewsletterSnapshotSection[]) => {
+    setSnapshot((prev) => (prev ? mergeReferenceSectionsIntoSnapshot(prev, referenceSections) : prev))
+  }, [])
+
+  /** 에디터에서 섹션 순서 변경 시 스냅샷 sections[].order 반영 (순서 불변 시 동일 참조 유지) */
+  const handleSnapshotReorder = useCallback((next: INewsletterIssueSnapshotData) => {
+    setSnapshot((prev) => (prev === next ? prev : next))
+  }, [])
+
+  const handleSectionVisibilityChange = useCallback((sectionId: string, visible: boolean) => {
+    setSnapshot((prev) => (prev ? updateSectionVisibilityById(prev, sectionId, visible) : prev))
+  }, [])
+
+  const handleTitleChange = useCallback((value?: string) => {
+    setSnapshot((prev) =>
+      prev && value !== null ? updateSectionFieldsByCode(prev, NEWSLETTER_SECTION_CODE.TITLE, { title: value }) : prev,
+    )
+  }, [])
+
+  const handleSubtitleChange = useCallback((value?: string) => {
+    setSnapshot((prev) =>
+      prev && value !== null ? updateSectionFieldsByCode(prev, NEWSLETTER_SECTION_CODE.TITLE, { subtitle: value }) : prev,
+    )
+  }, [])
+
+  const parseTitleOilPriceInput = useCallback((value?: string): number | undefined => {
+    if (value === undefined || value.trim() === '') return undefined
+    const n = Number(value)
+    return Number.isFinite(n) ? n : undefined
+  }, [])
+
+  const handlePriceChangeFromChange = useCallback(
+    (value?: string) => {
+      if (value === null) return
+      const n = parseTitleOilPriceInput(value)
+      setSnapshot((prev) => (prev ? updateSectionFieldsByCode(prev, NEWSLETTER_SECTION_CODE.TITLE, { priceChangeFrom: n }) : prev))
+    },
+    [parseTitleOilPriceInput],
+  )
+
+  const handlePriceChangeToChange = useCallback(
+    (value?: string) => {
+      if (value === null) return
+      const n = parseTitleOilPriceInput(value)
+      setSnapshot((prev) => (prev ? updateSectionFieldsByCode(prev, NEWSLETTER_SECTION_CODE.TITLE, { priceChangeTo: n }) : prev))
+    },
+    [parseTitleOilPriceInput],
+  )
+
+  const handleSummaryChange = useCallback((value?: string) => {
+    setSnapshot((prev) =>
+      prev && value !== null ? updateSectionFieldsByCode(prev, NEWSLETTER_SECTION_CODE.SUMMARY, { summaryText: value }) : prev,
+    )
+  }, [])
+
+  const handleNameChange = useCallback((value?: string) => {
+    setSnapshot((prev) =>
+      prev && value !== null ? updateSectionFieldsByCode(prev, NEWSLETTER_SECTION_CODE.COVER, { newsletterName: value }) : prev,
+    )
+  }, [])
+
+  const handleDescriptionChange = useCallback((value?: string) => {
+    setSnapshot((prev) =>
+      prev && value !== null ? updateSectionFieldsByCode(prev, NEWSLETTER_SECTION_CODE.COVER, { newsletterDescription: value }) : prev,
+    )
+  }, [])
+
+  const handleCoverShowImageChange = useCallback((show: boolean) => {
+    setSnapshot((prev) => (prev ? updateCoverShowImage(prev, show) : prev))
+  }, [])
+
+  const handleNewsFlowTitleChange = useCallback((value?: string) => {
+    setSnapshot((prev) => (prev && value !== null ? updateNewsFlowPresentationFields(prev, { title: value }) : prev))
+  }, [])
+
+  const handleNewsFlowAggregationTimeChange = useCallback((value?: string) => {
+    setSnapshot((prev) => (prev && value !== null ? updateNewsFlowPresentationFields(prev, { aggregationTime: value }) : prev))
+  }, [])
+
+  const handleFooterContentChange = useCallback((value?: string) => {
+    setSnapshot((prev) =>
+      prev && value !== null ? updateSectionFieldsByCode(prev, NEWSLETTER_SECTION_CODE.FOOTER, { footerContent: value }) : prev,
+    )
+  }, [])
+
+  const handleFooterShowLogoChange = useCallback((show: boolean) => {
+    setSnapshot((prev) => {
+      if (!prev) return prev
+      const foot = findFirstSectionByCanonicalCode(prev, NEWSLETTER_SECTION_CODE.FOOTER)
+      if (!foot) return prev
+      return updateBlockFieldsByBlockIdPattern(prev, foot.id, 'FOOTER_NOTICE', { showLogo: show })
+    })
+  }, [])
+
+  const handlePreview = useCallback(async () => {
+    if (isPreviewLoading || !effectiveSnapshot || !isReadyForEmail) return
+    setIsChartModalOpen(false)
+    setIsPreviewLoading(true)
+    try {
+      const chartImage = suppressNewsFlowChartUi ? null : (
+        <img src={mainChartImage} alt="flow chart" width={800} style={{ display: 'block', width: '800px', border: 0 }} />
+      )
+      const htmlContent = await renderEmailContent(
+        effectiveSnapshot,
+        chartImage,
+        referenceChartImages,
+        coverImage || undefined,
+        oilPriceRowImage || undefined,
+      )
+
+      const fullHtml = prepareNewsletterEmailHtml(htmlContent, { pageTitle: '뉴스레터 미리보기' })
+
+      const blob = new Blob([fullHtml], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank', 'width=900,height=800,scrollbars=yes,resizable=yes')
+      setTimeout(() => URL.revokeObjectURL(url), 5000)
+    } finally {
+      setIsPreviewLoading(false)
+    }
   }, [
-    deletedNewsIds,
-    editingNews,
-    isSummarizedPublished,
-    mode,
-    draftStorageKey,
-    newsletterIssueDetail,
-    sortKey,
-    tempNewsItems,
-    unPublishedNewsIds,
-    hasDraftChanged,
+    effectiveSnapshot,
+    isPreviewLoading,
+    isReadyForEmail,
+    mainChartImage,
+    coverImage,
+    oilPriceRowImage,
+    referenceChartImages,
+    renderEmailContent,
+    suppressNewsFlowChartUi,
   ])
 
-  // 스크롤 위치 복원
-  useLayoutEffect(() => {
-    if (savedScrollPosition !== null) {
-      // DOM 업데이트 완료 후 스크롤 복원
-      const restoreScroll = () => {
-        window.scrollTo({
-          top: savedScrollPosition,
-          behavior: 'instant',
-        })
-        setSavedScrollPosition(null)
-      }
+  const handleChart = useCallback((anchorEl: HTMLElement) => {
+    chartAnchorElRef.current = anchorEl
+    setIsChartModalOpen((prev) => !prev)
+  }, [])
 
-      // 여러 프레임에 걸쳐 스크롤 복원 시도
-      requestAnimationFrame(() => {
-        requestAnimationFrame(restoreScroll)
-      })
+  useEffect(() => {
+    if (suppressNewsFlowChartUi) setIsChartModalOpen(false)
+  }, [suppressNewsFlowChartUi])
+
+  const handleChartModalClose = useCallback(() => {
+    setIsChartModalOpen(false)
+  }, [])
+
+  const handleSaveDraft = useCallback(async () => {
+    await saveDraftRevision()
+  }, [saveDraftRevision])
+
+  const handleSave = useCallback(async () => {
+    const { success } = await saveFinalRevision()
+    if (success) {
+      setIsChartModalOpen(false)
+      setMode(NewsletterDetailPageMode.VIEW)
     }
-  }, [newsletterIssueDetail, savedScrollPosition])
+  }, [saveFinalRevision])
 
-  const createEmailContentHTML = useCallback(async (): Promise<string> => {
-    setIsCapturing(true)
-    const originalMode = mode
-    setMode(NewsletterDetailPageMode.CAPTURE)
-
-    // 차트가 완전히 렌더링될 때까지 충분히 대기
-    await new Promise((resolve) => {
-      const waitForChartRendering = () => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setTimeout(() => {
-              // ReferenceChart의 이미지 변환 완료 확인
-              const checkChartImages = () => {
-                const chartImages = emailContentRef.current?.querySelectorAll('img[alt="chart"]')
-                if (chartImages && chartImages.length > 0) {
-                  const allImagesLoaded = Array.from(chartImages).every((img) => {
-                    const htmlImg = img as HTMLImageElement
-                    return htmlImg.complete && htmlImg.naturalWidth > 0
-                  })
-
-                  if (allImagesLoaded) {
-                    resolve(undefined)
-                  } else {
-                    setTimeout(checkChartImages, 100)
-                  }
-                } else {
-                  setTimeout(checkChartImages, 200)
-                }
-              }
-
-              checkChartImages()
-            }, 1000)
-          })
-        })
-      }
-      waitForChartRendering()
-    })
-
-    const html = (emailContentRef.current?.outerHTML ?? '').replace(/<canvas[^>]*>.*?<\/canvas>/gis, '')
-    setMode(originalMode)
-    setIsCapturing(false)
-
-    return html
-  }, [mode, setMode])
-
-  const createEMLContent = (subject: string, htmlContent: string) => `From:
-To:
-Subject: ${subject}
-MIME-Version: 1.0
-X-Unsent: 1
-Content-Type: text/html; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-<body>
-  <!--[if mso]><style type="text/css">body, table, td {font-family: 'Malgun Gothic', '맑은 고딕', sans-serif !important;}</style><![endif]-->
-  ${htmlContent.replace(/Pretendard/g, '\'Malgun Gothic\', \'맑은 고딕\'').replace(/\n/g, '<br>')}
-</body>`
-
-  const handleDownloadEML = async () => {
-    const emailSubject =
-      newsletterIssueDetail?.issueDetail.emailSubject ?? `Issue ${issueNo?.padStart(3, '0')} (${newsletterIssueDetail?.issueDetail.date})`
-    const emailContentHTML = await createEmailContentHTML()
-    const emailContent = createEMLContent(emailSubject, emailContentHTML)
-    const blob = new Blob([emailContent], { type: 'message/rfc822' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${emailSubject}.eml`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const handleDownloadPNG = async () => {
-    if (!emailContentRef.current) return
-
+  const handleDownloadImage = useCallback(async () => {
+    if (isDownloadingImage || !viewSnapshot || !isReadyForEmailView) return
+    setIsDownloadingImage(true)
     try {
-      const originalMode = mode
+      const chartImage = viewSuppressNewsFlowChartUi ? null : (
+        <img src={mainChartImage} alt="flow chart" width={800} style={{ display: 'block', width: '800px', border: 0 }} />
+      )
+      const htmlContent = await renderEmailContent(
+        viewSnapshot,
+        chartImage,
+        referenceChartImages,
+        coverImage || undefined,
+        oilPriceRowImage || undefined,
+      )
 
-      setIsCapturing(true)
-      setMode(NewsletterDetailPageMode.CAPTURE)
+      const container = document.createElement('div')
+      container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#fff;'
+      container.innerHTML = htmlContent
+      document.body.appendChild(container)
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0)
-      })
+      await new Promise((r) => setTimeout(r, 100))
 
-      const canvas = await html2canvas(emailContentRef.current, {
+      const canvas = await html2canvas(container, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
         allowTaint: true,
       })
 
+      container.remove()
+
+      const padding = 42
+      const paddedCanvas = document.createElement('canvas')
+      paddedCanvas.width = canvas.width + padding * 2
+      paddedCanvas.height = canvas.height + padding * 2
+      const ctx = paddedCanvas.getContext('2d')
+      if (ctx) {
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height)
+        ctx.drawImage(canvas, padding, padding, canvas.width, canvas.height)
+      }
+
       const link = document.createElement('a')
-      link.download = `Issue ${issueNo?.padStart(3, '0')} (${newsletterIssueDetail?.issueDetail.date})`
-      link.href = canvas.toDataURL('image/png')
+      const { date } = getDateIssueProps(viewSnapshot)
+      link.download = `Issue ${issueNo?.padStart(3, '0')} (${date}).png`
+      link.href = paddedCanvas.toDataURL('image/png')
       link.click()
-
-      setMode(originalMode)
-      setIsCapturing(false)
-    } catch (error) {
-      console.error('PNG 다운로드 실패:', error)
-      showSnackbar(t('newsletter.editMode.error.pngDownloadError'), { variant: 'error' })
-      setIsCapturing(false)
+    } finally {
+      setIsDownloadingImage(false)
     }
-  }
+  }, [
+    viewSnapshot,
+    isDownloadingImage,
+    issueNo,
+    mainChartImage,
+    coverImage,
+    oilPriceRowImage,
+    referenceChartImages,
+    renderEmailContent,
+    isReadyForEmailView,
+    viewSuppressNewsFlowChartUi,
+  ])
 
-  const handleBackToView = () => {
-    chartRef.current?.resetBoxPositions()
-    setMode(NewsletterDetailPageMode.VIEW)
-    initializeNewsletterIssueDetail()
-
-    // forceRefresh 업데이트하여 initialDraftState 재계산 (localStorage는 유지)
-    setForceRefresh((prev) => prev + 1)
-  }
-
-  const openPreviewWindow = useCallback(async () => {
-    try {
-      const previewHtml = await createEmailContentHTML()
-
-      const html = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Newsletter Preview</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
+  /** 공유 모달 → 편집본 메일 발송용 (뷰 스냅샷·다운로드와 동일 기준) */
+  const prepareShareEditionMailPayload = useCallback(async () => {
+    if (!viewSnapshot || !isReadyForEmailView) {
+      throw new Error('이메일을 준비할 수 없습니다. 잠시 후 다시 시도해 주세요.')
     }
-  </style>
-</head>
-<body>
-  ${previewHtml}
-</body>
-</html>`
-
-      const blob = new Blob([html], { type: 'text/html' })
-      const url = URL.createObjectURL(blob)
-
-      window.open(url, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes')
-
-      // 메모리 정리
-      setTimeout(() => {
-        URL.revokeObjectURL(url)
-      }, 5000)
-    } catch (error) {
-      console.error('Preview 생성 중 오류:', error)
-      showSnackbar(t('newsletter.editMode.error.previewError'), { variant: 'error' })
+    const chartImage = viewSuppressNewsFlowChartUi ? null : (
+      <img src={mainChartImage} alt="flow chart" width={800} style={{ display: 'block', width: '800px', border: 0 }} />
+    )
+    const htmlWithBase64 = await renderEmailContent(
+      viewSnapshot,
+      chartImage,
+      referenceChartImages,
+      coverImage || undefined,
+      oilPriceRowImage || undefined,
+    )
+    const { htmlContent, images } = convertBase64ImagesToCid(htmlWithBase64)
+    const { title } = getTitleProps(viewSnapshot)
+    return {
+      subject: viewSnapshot?.meta?.emailSubject ?? title ?? '',
+      htmlBody: prepareNewsletterEmailHtml(htmlContent),
+      images,
     }
-  }, [createEmailContentHTML, showSnackbar, t])
+  }, [
+    viewSnapshot,
+    isReadyForEmailView,
+    viewSuppressNewsFlowChartUi,
+    mainChartImage,
+    coverImage,
+    oilPriceRowImage,
+    referenceChartImages,
+    renderEmailContent,
+  ])
 
-  const handleContinue = useCallback(() => {
-    if (!initialDraftState) {
-      return
-    }
-
-    setIsContinueModalOpen(false)
-    // 이어쓰기 시작 시, 이후 변경분만 다시 자동저장하도록 플래그 초기화
-    setHasDraftChanged(false)
-    setMode(initialDraftState.mode ?? NewsletterDetailPageMode.EDIT)
-    setEditingNews(initialDraftState.editingNews ?? {})
-    setTempNewsItems(initialDraftState.tempNewsItems ?? [])
-    setDeletedNewsIds(initialDraftState.deletedNewsIds ?? [])
-    setSortKey(initialDraftState.sortKey ?? 0)
-    setIsSummarizedPublished(initialDraftState.isSummarizedPublished ?? true)
-    setUnPublishedNewsIds(initialDraftState.unPublishedNewsIds ?? [])
-    setNewsletterIssueDetail(processNewsletterData(initialDraftState.newsletterIssueDetail))
-  }, [initialDraftState])
-
-  const handleResetDraft = useCallback(() => {
-    if (!draftStorageKey) return
-
-    // localStorage 삭제
-    localStorage.removeItem(draftStorageKey)
-    setIsContinueModalOpen(false)
-
-    // 초기화 클릭 시: API로 조회한 값에서 edit 모드로 전환
-    setEditingNews({})
-    setTempNewsItems([])
-    setDeletedNewsIds([])
-    setUnPublishedNewsIds([])
-    setIsSummarizedPublished(true)
-    setSortKey(0)
-    setHasDraftChanged(false)
-    setMode(NewsletterDetailPageMode.EDIT)
-
-    // forceRefresh를 변경하여 initialDraftState를 재계산
-    setForceRefresh((prev) => prev + 1)
-  }, [draftStorageKey])
-
-  const baseNewsCount = useMemo(() => {
-    const baseCount =
-      newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems?.length ??
-      newsletterIssueDetailData?.issueDetail.relatedNews.newsEventItems?.length ??
-      0
-    return baseCount - deletedNewsIds.length
-  }, [deletedNewsIds, newsletterIssueDetail, newsletterIssueDetailData])
-
-  // 차트/미리보기용으로 편집값을 반영한 뉴스 목록
-  const previewRelatedNews = useMemo(() => {
-    const allItems = [...(newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems ?? []), ...tempNewsItems]
-
-    const updateNewsItem = (item: IRelatedNewsEventItem): IRelatedNewsEventItem => {
-      const edits = editingNews[item.newsId]
-      const isUnPublished = unPublishedNewsIds.includes(item.newsId)
-
-      const validTrend = edits?.trend ?? item.trend ?? ''
-      const trendStr = typeof validTrend === 'string' ? validTrend : ''
-
-      let showInChartValue: boolean
-      if (edits?.showInChart !== undefined) {
-        showInChartValue = Boolean(edits.showInChart)
-      } else {
-        // UP, DOWN, NONE(중립) 모두 그래프에 표시
-        showInChartValue = isUnPublished ? false : (['UP', 'DOWN', 'NONE'] as const).includes(trendStr as 'UP' | 'DOWN' | 'NONE')
+  /**
+   * EDIT 모드 앵커 — `NewsletterEdit`의 `sectionOrder`·`newsletterEditAnchorDomId`와 동일 규칙.
+   * 스냅샷에 없는 고정 섹션은 렌더에서도 생략되므로 키 목록에 없으면 앵커에서도 제외.
+   */
+  const editAnchorItems: AnchorItem[] = useMemo(() => {
+    if (mode !== NewsletterDetailPageMode.EDIT || !effectiveSnapshot) return []
+    const keys = getEditorSectionOrderKeysFromSnapshot(effectiveSnapshot)
+    const cover = NEWSLETTER_SECTION_CODE.COVER
+    const footer = NEWSLETTER_SECTION_CODE.FOOTER
+    const middle = keys.filter((id) => id !== cover && id !== footer)
+    /** `NewsletterEdit.sectionOrder`과 동일 — COVER·FOOTER는 항상 양 끝 고정 */
+    const orderedKeys = [cover, ...middle, footer]
+    let referenceOrdinal = 0
+    return orderedKeys.map((editorKey, i) => {
+      const n = String(i + 1).padStart(2, '0')
+      if (editorKey.startsWith('ref:')) {
+        referenceOrdinal += 1
+        const sid = editorKey.slice(4)
+        const sec = effectiveSnapshot.sections.find((s) => s.id === sid)
+        const title = String(sec?.fields?.title ?? '').trim()
+        return {
+          id: newsletterEditAnchorDomId(editorKey),
+          label: `${n} ${title || `Reference ${referenceOrdinal}`}`,
+        }
       }
-
-      const createTime = String(edits?.createTime ?? item.createTime)
-      const createdDate = String(edits?.createdDate ?? item.createdDate)
-
-      const timestamp = createTimestampInNY(createdDate, createTime)
-
       return {
-        ...item,
-        createTime,
-        createdDate,
-        title: String(edits?.title ?? item.title),
-        content: typeof edits?.content === 'string' ? edits?.content.split('\n') : item.content,
-        source: String(edits?.source ?? item.source ?? ''),
-        trend: validTrend as 'UP' | 'DOWN' | 'NONE' | '',
-        showInChart: showInChartValue,
-        timestamp,
+        id: newsletterEditAnchorDomId(editorKey),
+        label: `${n} ${NEWSLETTER_SECTION_EDIT_LABEL[editorKey] ?? editorKey}`,
       }
+    })
+  }, [effectiveSnapshot, mode])
+
+  /**
+   * VIEW/REVISION — `NewsletterView`/`DiffViewer` + `EmailContent`와 동일한 문서 순서·DOM id.
+   * 커버는 `tempHideCover`로 테이블 밖 `id="section-cover"` 한 곳만 쓰임.
+   */
+  const viewAnchorItems: AnchorItem[] = useMemo(() => {
+    if (!viewSnapshot || (mode !== NewsletterDetailPageMode.VIEW && mode !== NewsletterDetailPageMode.REVISION)) {
+      return []
     }
-
-    const activeItems = allItems
-      .filter((item) => !deletedNewsIds.includes(item.newsId))
-      .filter((item) => !unPublishedNewsIds.includes(item.newsId))
-      .map(updateNewsItem)
-
-    return sortNewsByDateTime(activeItems)
-  }, [newsletterIssueDetail, tempNewsItems, editingNews, unPublishedNewsIds, deletedNewsIds])
-
-  useEffect(() => {
-    if (mode === NewsletterDetailPageMode.EDIT) {
-      const editModeHeader = (
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          alignSelf="stretch"
-          gap="10px"
-          padding="12px 0px"
-          width="100%"
-          sx={{
-            backgroundColor: '#212529',
-            opacity: 0.9,
-          }}
-        >
-          <Typography
-            sx={{
-              fontFamily: 'Pretendard',
-              fontWeight: 500,
-              fontSize: '14px',
-              lineHeight: 1.4,
-              textAlign: 'left',
-              color: '#FFFFFF',
-            }}
-          >
-            Newsletter Edit Mode - {t('newsletter.editMode.stickyHeader')}
-          </Typography>
-        </Box>
-      )
-      setStickyHeader(editModeHeader)
-    } else {
-      setStickyHeader(null)
+    const ordered = getSectionsInOrder(viewSnapshot)
+    const refList = getOrderedReferenceSections(viewSnapshot)
+    const items: AnchorItem[] = []
+    let summaryCount = 0
+    let newsFlowCount = 0
+    for (const s of ordered) {
+      const kind = newsletterSectionToEmailTemplateKind(s)
+      if (kind === 'UNKNOWN') continue
+      // if (kind === 'COVER') {
+      //   if (!items.some((it) => it.id === 'section-cover')) {
+      //     items.push({ id: 'section-cover', label: 'Cover' })
+      //   }
+      //   continue
+      // }
+      // if (kind === 'DATE_ISSUE') {
+      //   items.push({ id: `section-dateAndIssue-${s.id}`, label: 'Date & Issue' })
+      //   continue
+      // }
+      // if (kind === 'TITLE') {
+      //   titleCount += 1
+      //   const headline = getTitleProps(viewSnapshot, s).title.trim()
+      //   items.push({
+      //     id: `section-title-${s.id}`,
+      //     label: headline || (titleCount === 1 ? '제목' : `제목 (${titleCount})`),
+      //   })
+      //   continue
+      // }
+      if (kind === 'SUMMARY') {
+        summaryCount += 1
+        items.push({
+          id: `section-summary-${s.id}`,
+          label: summaryCount === 1 ? '핵심 요약' : `핵심 요약 (${summaryCount})`,
+        })
+        continue
+      }
+      if (kind === 'SECTION' || kind === 'NEWS_FLOW' || kind === 'SIG_NEWS') {
+        newsFlowCount += 1
+        const flow = getNewsFlowProps(viewSnapshot, s)
+        const flowTitle = flow.title.trim()
+        const sub = flow.aggregationTime.trim()
+        const label = flowTitle || sub || (newsFlowCount === 1 ? '주요 뉴스 Flow' : `주요 뉴스 Flow (${newsFlowCount})`)
+        items.push({
+          id: kind === 'SIG_NEWS' ? `section-sigNews-${s.id}` : `section-newsFlow-${s.id}`,
+          label,
+        })
+        continue
+      }
+      if (kind === 'REFERENCE') {
+        const refIndex = refList.findIndex((r) => r.id === s.id)
+        if (refIndex >= 0) {
+          items.push({
+            id: `section-reference-${refIndex}`,
+            label: String(s.fields?.title ?? '').trim() || `Reference ${refIndex + 1}`,
+          })
+        }
+        continue
+      }
+      // if (kind === 'FOOTER') {
+      //   items.push({ id: `section-footer-${s.id}`, label: 'Footer' })
+      //   continue
+      // }
     }
+    return items
+  }, [viewSnapshot, mode])
 
-    return () => {
-      setStickyHeader(null)
-    }
-  }, [mode, setStickyHeader, t])
+  /** 현재 모드에 맞는 앵커 항목 */
+  const anchorItems = mode === NewsletterDetailPageMode.EDIT ? editAnchorItems : viewAnchorItems
 
-  useEffect(() => {
-    // 로컬스토리지가 있어도 기본적으로는 API 데이터로 초기화
-    // Continue 버튼 클릭 시에만 로컬스토리지 값으로 대치됨
-    initializeNewsletterIssueDetail()
-  }, [initializeNewsletterIssueDetail, newsletterIssueDetailData])
+  const { marketOpenTime, marketCloseTime } = getMarketTimes(effectiveSnapshot)
+  const newsFlowChartData = useMemo(
+    () => ({
+      chartData: newsFlowProps.chartData,
+      title: newsFlowProps.title,
+      aggregationTime: newsFlowProps.aggregationTime,
+    }),
+    [newsFlowProps],
+  )
+  let chartNode: ReactNode = null
+  if (
+    !suppressNewsFlowChartUi &&
+    (mode === NewsletterDetailPageMode.VIEW || mode === NewsletterDetailPageMode.REVISION || mode === NewsletterDetailPageMode.EDIT)
+  ) {
+    chartNode = (
+      <InflectionPointChart
+        chartData={newsFlowChartData}
+        relatedNews={filterVisibleNewsFlowItems(newsFlowProps.newsEventItems).filter((n) => n.visibility !== false)}
+        mode={mode}
+        marketOpenTime={marketOpenTime}
+        marketCloseTime={marketCloseTime}
+        onChartImageReady={onMainChartImageReady}
+      />
+    )
+  }
+
+  if (isIssueDetailLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (isIssueDetailError || !issueDetailSnapshot) {
+    return <Navigate to={isIssueDetailError ? '/error/unknown' : '/error/404'} replace />
+  }
+
+  let fadeModeKey: 'edit' | 'revision' | 'view'
+  let toolbarContent: ReactNode
+
+  if (mode === NewsletterDetailPageMode.EDIT) {
+    fadeModeKey = 'edit'
+    toolbarContent = (
+      <EditToolbar
+        onReset={handleReset}
+        onPreview={handlePreview}
+        isPreviewDisabled={!effectiveSnapshot || !isReadyForEmail}
+        isPreviewLoading={isPreviewLoading}
+        showChartButton={!suppressNewsFlowChartUi}
+        onChart={handleChart}
+        onEndEdit={() => {
+          setIsChartModalOpen(false)
+          setMode(NewsletterDetailPageMode.VIEW)
+        }}
+        onSaveDraft={handleSaveDraft}
+        onSave={handleSave}
+        isSaving={isSaving}
+        isSavingDraft={isSavingDraft}
+        isSaveDisabled={!hasUnsavedChanges || !isEditSnapshotValid}
+        isChartActive={isChartModalOpen}
+      />
+    )
+  } else if (mode === NewsletterDetailPageMode.REVISION) {
+    fadeModeKey = 'revision'
+    toolbarContent = (
+      <RevisionToolbar
+        versions={revisionVersions}
+        isLoading={isRevisionLoading}
+        selectedVersionId={selectedVersionId}
+        onVersionChange={setSelectedVersionId}
+        onEndRevision={() => setMode(NewsletterDetailPageMode.VIEW)}
+      />
+    )
+  } else {
+    fadeModeKey = 'view'
+    toolbarContent = (
+      <ViewToolbar
+        snapshot={viewSnapshot}
+        isScrolled={effectiveIsScrolled}
+        newsletterIssues={newsletterIssues}
+        isNewsletterSubscribed={subscriptionStatus?.subscribed ?? false}
+        isSubscriptionStatusLoading={isSubscriptionStatusLoading}
+        onSubscribeToggle={handleSubscribeToggle}
+        isSubscriptionMutating={isSubscribeMutating}
+        onEditMode={handleEnterEditMode}
+        isEnteringEditMode={isEnteringEditMode}
+        onRevisionMode={() => setMode(NewsletterDetailPageMode.REVISION)}
+        onDownloadImage={handleDownloadImage}
+        isDownloadingImage={isDownloadingImage}
+        isDownloadDisabled={!viewSnapshot || !isReadyForEmailView}
+        isChartImagePreparing={!!viewSnapshot && !isReadyForEmailView}
+        editionMail={
+          newsletterId && issueNo
+            ? {
+              newsletterId: Number(newsletterId),
+              issueNo,
+              preparePayload: prepareShareEditionMailPayload,
+              canSend: !!viewSnapshot && isReadyForEmailView,
+            }
+            : null
+        }
+      />
+    )
+  }
 
   return (
-    <Box position="relative">
-      {(mode === NewsletterDetailPageMode.CAPTURE || isCapturing || isNewsletterIssueDetailLoading || isNewsletterIssuesLoading) && (
-        <Box
-          position="fixed"
-          top="0"
-          left="0"
-          width="100vw"
-          height="100vh"
-          zIndex={300}
-          sx={{
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: 2,
-            backdropFilter: 'blur(2px)',
-          }}
-        >
-          <LoadingSpinner speed={2} />
-        </Box>
-      )}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        py="12px"
-        pr={mode === NewsletterDetailPageMode.VIEW ? '26px' : '0'}
-        width="800px"
-        margin="38px auto 20px auto"
+    <Stack position="relative">
+      <Backdrop
+        open={isEnteringEditMode}
+        sx={(theme) => ({
+          zIndex: theme.zIndex.modal,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: theme.palette.common.white,
+        })}
       >
-        {mode === NewsletterDetailPageMode.VIEW && (
-          <MISelect
-            type="button"
-            width={198}
-            options={
-              newsletterIssues?.issuedList?.map((issue) => ({
-                label: `Issue ${issue.no.padStart(3, '0')} (${issue.date})`,
-                value: issue.no,
-              })) ?? []
-            }
-            value={issueNo}
-            onChange={(value) => {
-              navigate(`/mi/newsletters/${newsletterId}/${value.target.value}`)
-            }}
-          />
-        )}
-        {mode === NewsletterDetailPageMode.EDIT && (
-          <MIButton
-            type="outlined"
-            color="gray"
-            contentType="icon"
-            startIcon={<ArrowBackIcon sx={{ width: '20px !important', height: '20px !important' }} />}
-            onClick={handleBackToView}
-          />
-        )}
-        <Box display="flex" gap="12px">
-          {mode === NewsletterDetailPageMode.VIEW && (
-            <>
-              <Box display={loadingNewsletterIds.has(newsletterId ?? '') ? 'flex' : 'none'}>
-                <MIButton width={130} type="outlined" color="gray" contentType="text" disabled>
-                  <Box width={'100%'} height={'100%'} overflow="hidden">
-                    <Box
-                      display={'flex'}
-                      alignItems={'center'}
-                      justifyContent={'center'}
-                      width={'20px'}
-                      height={'20px'}
-                      sx={{
-                        backgroundColor: 'linear-gradient(107deg, #C2C2C2 8.8%, #FFF 54.4%, #FFF 67.11%, #C4C4C4 100%)',
-                      }}
-                    >
-                      <LoadingSpinner speed={2} />
-                    </Box>
-                  </Box>
-                </MIButton>
-              </Box>
-              <Box display={loadingNewsletterIds.has(newsletterId ?? '') ? 'none' : 'flex'}>
-                <MIButton
-                  width={130}
-                  type={newsletterIssueDetail?.subscribed ? 'ghost' : 'outlined'}
-                  color="gray"
-                  contentType="text"
-                  startIcon={newsletterIssueDetail?.subscribed ? <CheckIcon /> : <AddIcon />}
-                  active={newsletterIssueDetail?.subscribed}
-                  onClick={() => {
-                    if (newsletterId) {
-                      handleSubscribe(newsletterId)
-                    }
-                  }}
-                >
-                  {newsletterIssueDetail?.subscribed ? 'Subscribed' : 'Subscribe'}
-                </MIButton>
-              </Box>
-              <MIButton type="outlined" color="gray" contentType="text" startIcon={<EditIcon />} onClick={handleEditClick}>
-                Edit
-              </MIButton>
-            </>
-          )}
-          {mode === NewsletterDetailPageMode.EDIT && (
-            <>
-              <MIButton type="outlined" color="gray" contentType="text" onClick={openPreviewWindow}>
-                Preview
-              </MIButton>
-              <MIButton type="filled" color="primary" contentType="text" startIcon={<OpenInNewIcon />} onClick={handleDownloadEML}>
-                Send to Mail Apps
-              </MIButton>
-            </>
-          )}
-          <MIButton type="outlined" color="gray" contentType="icon" startIcon={<ChartDownloadIcon />} onClick={handleDownloadPNG} />
-        </Box>
-      </Box>
-
-      <table
-        ref={emailContentRef}
-        style={
-          {
-            width: '800px',
-            margin: '0 auto',
-            padding: '0',
-            fontFamily: 'Pretendard, sans-serif',
-            backgroundColor: '#ffffff',
-          } as CSSProperties
-        }
-      >
-        <thead>
-          <tr>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <Header
-                headerImg={newsletterIssueDetail?.imageBase64}
-                title={newsletterIssueDetail?.name}
-                subtitle={newsletterIssueDetail?.description}
-              />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <Title
-                title={newsletterIssueDetail?.issueDetail.title ?? ''}
-                date={newsletterIssueDetail?.issueDetail.subInfo ?? newsletterIssueDetail?.issueDetail.date ?? ''}
-              />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <Summarized
-                content={newsletterIssueDetail?.issueDetail.summary ?? ''}
-                mode={mode}
-                isPublished={isSummarizedPublished}
-                onPublishedChange={handleSummarizedPublishedChange}
-              />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <Chart
-                key={`chart-${sortKey}`}
-                chartRef={chartRef}
-                title={newsletterIssueDetail?.issueDetail.newsFlowChart.title ?? ''}
-                basis={newsletterIssueDetail?.issueDetail.newsFlowChart.aggregationTime ?? ''}
-                chartData={newsletterIssueDetail?.issueDetail.newsFlowChart}
-                relatedNews={previewRelatedNews}
-                mode={mode}
-                marketOpenTime={newsletterIssueDetail?.issueDetail.marketOpenTime}
-                marketCloseTime={newsletterIssueDetail?.issueDetail.marketCloseTime}
-              />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <News
-                key={sortKey}
-                basis={newsletterIssueDetail?.issueDetail.relatedNews.aggregationTime ?? ''}
-                relatedNews={newsletterIssueDetail?.issueDetail.relatedNews.newsEventItems}
-                tempNewsItems={tempNewsItems}
-                mode={mode}
-                onNewsUpdate={handleNewsUpdate}
-                onAddNews={handleAddNews}
-                onResetNews={handleResetNews}
-                onApplyNews={handleApplyNews}
-                editingNews={editingNews}
-                unPublishedNewsIds={unPublishedNewsIds}
-                onUnPublishedNewsIdsChange={setUnPublishedNewsIds}
-                onDeleteNews={handleDeleteNews}
-                deletedNewsIds={deletedNewsIds}
-                baseNewsCount={baseNewsCount}
-              />
-            </td>
-          </tr>
-          {/* <tr>
-            <td>
-              <NewsHynix
-                data={{
-                  type: 'Hynix',
-                  frequency: 'DAILY',
-                  hynixNewsItems: [],
-                }}
-              />
-            </td>
-          </tr> */}
-          <tr>
-            <td>
-              <Reference
-                referenceData={newsletterIssueDetail?.issueDetail.references ?? []}
-                marketOpenTime={newsletterIssueDetail?.issueDetail.marketOpenTime}
-                marketCloseTime={newsletterIssueDetail?.issueDetail.marketCloseTime}
-              />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <Disclaimer mode={mode} />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
+        <Stack alignItems="center" gap={2}>
+          <CircularProgress color="inherit" size={40} />
+          <Typography variant="body2" sx={{ color: 'inherit' }}>
+            편집 화면을 불러오는 중입니다…
+          </Typography>
+        </Stack>
+      </Backdrop>
       <MISimpleConfirm
-        open={isContinueModalOpen}
-        content={t('newsletter.editMode.continueDialog.content')}
-        width={350}
-        zIndex={1600}
-        handleClose={() => setIsContinueModalOpen(false)}
+        open={isDraftLoadConfirmOpen}
+        content={
+          <Stack gap="4px">
+            <Box>임시저장된 편집 내용이 있습니다.</Box>
+            <Box>적용하시겠습니까?</Box>
+          </Stack>
+        }
+        handleClose={() => resolveDraftLoadChoice(false)}
+        width={400}
         actions={[
           {
-            label: t('common.reset'),
+            children: '취소',
             variant: 'outlined',
-            color: 'gray',
-            onClick: handleResetDraft,
+            color: 'secondary',
+            onClick: () => resolveDraftLoadChoice(false),
           },
           {
-            label: t('newsletter.editMode.buttonLabel.continue'),
-            variant: 'filled',
+            children: '불러오기',
+            variant: 'contained',
             color: 'primary',
-            onClick: handleContinue,
+            onClick: () => resolveDraftLoadChoice(true),
           },
         ]}
       />
-    </Box>
+      <Box
+        position="sticky"
+        top={70}
+        zIndex={200}
+        sx={{
+          overflow: 'hidden',
+          transition: 'box-shadow 0.3s ease-in-out',
+          boxShadow:
+            mode === NewsletterDetailPageMode.EDIT || mode === NewsletterDetailPageMode.REVISION || effectiveIsScrolled
+              ? '0 2px 8px rgba(0,0,0,0.06)'
+              : 'none',
+        }}
+      >
+        <Fade in appear timeout={{ enter: 480, exit: 480 }} key={fadeModeKey}>
+          <Box>{toolbarContent}</Box>
+        </Fade>
+      </Box>
+      <Box sx={{ pt: '38px', pb: '12px', marginBottom: '20px' }}>
+        <Box sx={{ position: 'relative', width: 800, margin: '0 auto' }}>
+          <Stack justifyContent="space-between" width={800}>
+            {mode === NewsletterDetailPageMode.VIEW && (
+              <div>
+                <NewsletterView
+                  snapshot={viewSnapshot}
+                  isScrolled={effectiveIsScrolled}
+                  onMainChartImageReady={onMainChartImageReady}
+                  referenceChartImages={referenceChartImages}
+                  onReferenceChartImageReady={onReferenceChartImageReady}
+                  onCoverImageReady={onCoverImageReady}
+                  onOilPriceRowImageReady={onOilPriceRowImageReady}
+                />
+              </div>
+            )}
+            {mode === NewsletterDetailPageMode.REVISION && (
+              <DiffViewer
+                newsletterId={newsletterId}
+                issueNo={issueNo}
+                revisionId={issueRevisionId}
+                revisionVersions={revisionVersions}
+                selectedVersionId={selectedVersionId}
+                comparisonTarget={comparisonTarget}
+                isScrolled={false}
+                onMainChartImageReady={onMainChartImageReady}
+                referenceChartImages={referenceChartImages}
+                onReferenceChartImageReady={onReferenceChartImageReady}
+                onCoverImageReady={onCoverImageReady}
+                onOilPriceRowImageReady={onOilPriceRowImageReady}
+                fallbackSnapshot={effectiveSnapshot}
+              />
+            )}
+            {mode === NewsletterDetailPageMode.EDIT && (
+              <OilPriceRowEmailCapture snapshot={effectiveSnapshot} onOilPriceRowImageReady={onOilPriceRowImageReady} />
+            )}
+            {mode === NewsletterDetailPageMode.EDIT && (
+              <NewsletterEdit
+                snapshot={effectiveSnapshot}
+                onMainChartImageReady={onMainChartImageReady}
+                onRelatedNewsChange={handleRelatedNewsChange}
+                onReferencesChange={handleReferencesChange}
+                onReferenceChartImageReady={onReferenceChartImageReady}
+                onTitleChange={handleTitleChange}
+                onSubtitleChange={handleSubtitleChange}
+                onPriceChangeFromChange={handlePriceChangeFromChange}
+                onPriceChangeToChange={handlePriceChangeToChange}
+                onSummaryChange={handleSummaryChange}
+                onNameChange={handleNameChange}
+                onDescriptionChange={handleDescriptionChange}
+                onCoverShowImageChange={handleCoverShowImageChange}
+                onNewsFlowTitleChange={handleNewsFlowTitleChange}
+                onNewsFlowAggregationTimeChange={handleNewsFlowAggregationTimeChange}
+                onSnapshotReorder={handleSnapshotReorder}
+                onFooterContentChange={handleFooterContentChange}
+                onFooterShowLogoChange={handleFooterShowLogoChange}
+                onSectionVisibilityChange={handleSectionVisibilityChange}
+              />
+            )}
+            {mode === NewsletterDetailPageMode.CAPTURE && (
+              <>
+                <OilPriceRowEmailCapture snapshot={effectiveSnapshot} onOilPriceRowImageReady={onOilPriceRowImageReady} />
+                <EmailContent
+                  snapshot={effectiveSnapshot}
+                  chartNode={chartNode}
+                  referenceChartImages={referenceChartImages}
+                  onReferenceChartImageReady={onReferenceChartImageReady}
+                  useLiveChart
+                  coverImage={coverImage || undefined}
+                />
+              </>
+            )}
+          </Stack>
+          {(mode === NewsletterDetailPageMode.VIEW ||
+            mode === NewsletterDetailPageMode.REVISION ||
+            mode === NewsletterDetailPageMode.EDIT) &&
+            (anchorItems.length > 0 || mode === NewsletterDetailPageMode.REVISION) && (
+            <Box
+              sx={{
+                position: 'absolute',
+                left: '100%',
+                top: 0,
+                bottom: 0,
+                marginLeft: '10px',
+              }}
+            >
+              <AnchorNavigation
+                items={anchorItems}
+                newsletterTitle={
+                  mode === NewsletterDetailPageMode.EDIT || mode === NewsletterDetailPageMode.REVISION
+                    ? undefined
+                    : getTitleProps(viewSnapshot).title
+                }
+                isScrolled={effectiveIsScrolled}
+                onPrepareScroll={() => setForceScrolled(true)}
+                onScrollComplete={() => setForceScrolled(null)}
+                stickyTop={mode === NewsletterDetailPageMode.EDIT || mode === NewsletterDetailPageMode.REVISION ? 180 : 170}
+                scrolledOffset={mode === NewsletterDetailPageMode.EDIT || mode === NewsletterDetailPageMode.REVISION ? 184 : 154}
+                unscrolledOffset={mode === NewsletterDetailPageMode.EDIT || mode === NewsletterDetailPageMode.REVISION ? 220 : 360}
+                revisionSection={
+                  mode === NewsletterDetailPageMode.REVISION
+                    ? {
+                      versions: revisionVersions,
+                      selectedVersionId,
+                      onVersionChange: setSelectedVersionId,
+                      comparisonTarget,
+                      onComparisonTargetChange: setComparisonTarget,
+                    }
+                    : undefined
+                }
+              />
+            </Box>
+          )}
+        </Box>
+      </Box>
+
+      {/* 차트 편집 모달 - EDIT 모드에서 차트 버튼 클릭 시 */}
+      {mode === NewsletterDetailPageMode.EDIT && !suppressNewsFlowChartUi && (
+        <ChartEditModal
+          open={isChartModalOpen}
+          onClose={handleChartModalClose}
+          anchorEl={chartAnchorElRef.current}
+          chartData={newsFlowChartData}
+          relatedNews={filterVisibleNewsFlowItems(newsFlowProps.newsEventItems)}
+          marketOpenTime={marketOpenTime}
+          marketCloseTime={marketCloseTime}
+          onChartImageReady={onMainChartImageReady}
+        />
+      )}
+    </Stack>
   )
 }
 

@@ -62,7 +62,7 @@ const LoginPage = () => {
   // 만료된 로컬스토리지 항목 삭제 함수
   const removeExpiredLocalStorageItems = useCallback((storageKeyPrefix: string) => {
     const now = Date.now()
-    
+
     // 모든 로컬스토리지 키 순회
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i)
@@ -87,7 +87,7 @@ const LoginPage = () => {
 
   useEffect(() => {
     clearAuth()
-    
+
     // 만료된 로컬스토리지 항목 삭제 (임시: Newsletter 관련 로컬스토리지 삭제)
     removeExpiredLocalStorageItems('newsletter_issue_draft')
   }, [clearAuth, removeExpiredLocalStorageItems])
@@ -121,14 +121,20 @@ const LoginPage = () => {
             <MIButton
               onClick={async () => {
                 await setUserInfo(devUser)
-                navigate('mi')
+                const redirectPath = localStorage.getItem('redirectAfterLogin')
+                if (redirectPath) {
+                  localStorage.removeItem('redirectAfterLogin')
+                  navigate(redirectPath, { replace: true })
+                } else {
+                  navigate('mi')
+                }
               }}
               width="120px"
             >
               사용자 로그인
             </MIButton>
           </Flex>
-          <Divider sx={{ width: '100%' }} />
+          <Divider flexItem />
           <Flex gap={10}>
             <MIButton
               contentType="select"
@@ -144,7 +150,13 @@ const LoginPage = () => {
             <MIButton
               onClick={async () => {
                 await setUserInfo(devAdmin)
-                navigate('admin')
+                const redirectPath = localStorage.getItem('redirectAfterLogin')
+                if (redirectPath) {
+                  localStorage.removeItem('redirectAfterLogin')
+                  navigate(redirectPath, { replace: true })
+                } else {
+                  navigate('admin')
+                }
               }}
               width="120px"
             >
@@ -166,14 +178,20 @@ const LoginPage = () => {
             <MIButton
               onClick={async () => {
                 await setUserInfo(devOperator)
-                navigate('admin/data-providers/providers')
+                const redirectPath = localStorage.getItem('redirectAfterLogin')
+                if (redirectPath) {
+                  localStorage.removeItem('redirectAfterLogin')
+                  navigate(redirectPath, { replace: true })
+                } else {
+                  navigate('admin/data-providers/providers')
+                }
               }}
               width="120px"
             >
               운영자 로그인
             </MIButton>
           </Flex>
-          <Divider sx={{ width: '100%' }} />
+          <Divider flexItem />
           <MIButton onClick={ssoLogin} width="120px">
             SSO 로그인
           </MIButton>

@@ -21,6 +21,7 @@ export type GroupDisplayType = 'label' | 'divider' | 'none'
 
 interface Props<T> extends ButtonProps {
   variant?: 'text' | 'outlined' | 'contained'
+  buttonHoverBgColor?: string
   selectType?: DashboardMultipleSelectType
   multiple?: boolean
   selected: T | T[]
@@ -43,11 +44,14 @@ interface Props<T> extends ButtonProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
   label?: ReactNode
+  textLabel?: ReactNode
   labelPrefix?: ReactNode
+  footer?: ReactNode
 }
 
 const MISelectMenu = <T,>({
   variant = 'text',
+  buttonHoverBgColor,
   selected,
   onSelected,
   items,
@@ -70,7 +74,10 @@ const MISelectMenu = <T,>({
   open: controlledOpen,
   onOpenChange,
   label: externalLabel,
+  textLabel: externalTextLabel,
   labelPrefix: externalPrefix,
+  footer,
+  disabled,
   ...props
 }: Props<T>) => {
   const { t } = useTranslation()
@@ -187,7 +194,7 @@ const MISelectMenu = <T,>({
     }
   }, [items, multiple, placeholder, selected, t])
 
-  const renderSuffix = (isSelected: boolean, disabled?: boolean): ReactNode => {
+  const renderSuffix = (isSelected: boolean, itemDisabled?: boolean): ReactNode => {
     if (selectType === 'default' && !multiple) {
       return (
         <Box width="20px" height="20px">
@@ -196,36 +203,27 @@ const MISelectMenu = <T,>({
       )
     }
     if (selectType === 'switch') {
-      return (
-        <Switch
-          checked={isSelected}
-          size="small"
-          disabled={disabled}
-          sx={{
-            margin: '0 4px 0 8px',
-          }}
-        />
-      )
+      return <Switch checked={isSelected} size="small" disabled={itemDisabled} style={{ margin: '0 4px 0 8px' }} />
     }
     return undefined
   }
 
-  const renderMenuItem = ({ icon, label, value, disabled }: SelectMenuItem<T>) => {
+  const renderMenuItem = ({ icon, label, value, disabled: itemDisabled }: SelectMenuItem<T>) => {
     const isSelected = isItemSelected(value)
     const prefix = icon
-    const suffix = renderSuffix(isSelected, disabled)
+    const suffix = renderSuffix(isSelected, itemDisabled)
     const labelColor = isSelected ? undefined : 'contentText.Subtext'
 
     return (
       <Box
         key={String(value)}
-        onClick={() => (disabled ? null : handleToggle(value))}
+        onClick={() => (itemDisabled ? null : handleToggle(value))}
         borderRadius="10px"
         sx={{
           padding: `8px ${suffix ? '8px' : '12px'} 8px ${prefix ? '8px' : '12px'}`,
-          cursor: disabled ? 'default' : 'pointer',
+          cursor: itemDisabled ? 'default' : 'pointer',
           '&:hover': {
-            backgroundColor: disabled ? 'transparent' : 'gray.10',
+            backgroundColor: itemDisabled ? 'transparent' : 'gray.10',
           },
           textWrap: 'nowrap',
         }}
@@ -293,18 +291,75 @@ const MISelectMenu = <T,>({
     )
   }
 
+  const hasExternalLabel = externalLabel !== undefined
+
+  const menuLabel = hasExternalLabel ? (
+    <Stack direction="row" alignItems="stretch" flex={1} minWidth={0}>
+      <Box
+        px="10px"
+        display="flex"
+        alignItems="center"
+        bgcolor={open ? 'contentBG.Active' : 'gray.10'}
+        sx={{ transition: 'background-color 0.15s ease-in-out' }}
+      >
+        <Typography variant="body2SB14" color="contentText.Black" noWrap>
+          {externalLabel}
+        </Typography>
+      </Box>
+      <Divider orientation="vertical" flexItem sx={{ borderColor: open ? 'contentBorder.Active' : 'contentBorder.Normal' }} />
+      <Stack
+        direction="row"
+        alignItems="center"
+        gap="6px"
+        pl="10px"
+        pr="8px"
+        flex={1}
+        minWidth={0}
+        sx={
+          buttonHoverBgColor
+            ? {
+              '&:hover': {
+                backgroundColor: buttonHoverBgColor,
+              },
+            }
+            : undefined
+        }
+      >
+        <Typography
+          variant="body2SB14"
+          color={disabled ? 'contentText.Disabled' : open ? 'contentText.Black' : 'contentText.Normal'}
+          noWrap
+        >
+          {externalTextLabel !== undefined ? externalTextLabel : selectedItems.label}
+        </Typography>
+        {!hideChevron &&
+          (open ? (
+            <KeyboardArrowUpRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
+          ) : (
+            <KeyboardArrowDownRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
+          ))}
+      </Stack>
+    </Stack>
+  ) : externalTextLabel !== undefined ? (
+    externalTextLabel
+  ) : (
+    selectedItems.label
+  )
+
   return (
     <MIMenu
-      prefix={externalPrefix !== undefined ? externalPrefix : selectedItems.prefix}
+      prefix={hasExternalLabel ? undefined : externalPrefix !== undefined ? externalPrefix : selectedItems.prefix}
       suffix={
-        !hideChevron &&
-        (open ? (
-          <KeyboardArrowUpRounded sx={{ color: 'contentIcon.Enabled' }} />
-        ) : (
-          <KeyboardArrowDownRounded sx={{ color: 'contentIcon.Enabled' }} />
-        ))
+        hasExternalLabel
+          ? undefined
+          : !hideChevron &&
+            (open ? (
+              <KeyboardArrowUpRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
+            ) : (
+              <KeyboardArrowDownRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
+            ))
       }
-      label={externalLabel !== undefined ? externalLabel : selectedItems.label}
+      label={menuLabel}
       variant={variant}
       placement={placement}
       menuPositionOffset={menuPositionOffset}
@@ -317,7 +372,30 @@ const MISelectMenu = <T,>({
       enableHoverBackground={enableHoverBackground}
       zIndex={zIndex}
       disableRipple={disableRipple}
+      buttonHoverBgColor={buttonHoverBgColor}
+      disabled={disabled}
       {...props}
+      sx={{
+        ...(typeof props.sx === 'object' && !Array.isArray(props.sx) ? (props.sx as Record<string, unknown>) : {}),
+        ...(hasExternalLabel && {
+          padding: 0,
+          overflow: 'hidden',
+          alignItems: 'stretch',
+          // MIBaseButton 구조: Button > Box > Box > MIBaseButtonLabel(Stack) > Stack > Typography > menuLabel
+          // Typography의 line-height가 높이를 제한해 회색 라벨 영역이 위아래로 채워지지 않음 → stretch 체인으로 전체 높이 채움
+          '& > .MuiBox-root': { alignItems: 'stretch', height: '100%' },
+          '& > .MuiBox-root > .MuiBox-root': { alignItems: 'stretch', height: '100%' },
+          '& .MuiStack-root': { alignItems: 'stretch', height: '100%' },
+          '& .MuiDivider-root + .MuiStack-root': { alignItems: 'center' },
+          '& > .MuiBox-root > .MuiBox-root > .MuiStack-root > .MuiStack-root > .MuiTypography-root': {
+            alignSelf: 'stretch',
+            display: 'flex',
+            lineHeight: 1,
+            height: '100%',
+            overflow: 'visible',
+          },
+        }),
+      }}
     >
       <ScrollWrapper
         maxHeight={maxHeight}
@@ -328,10 +406,11 @@ const MISelectMenu = <T,>({
           padding: '0',
         }}
       >
-        <Stack gap="8px" sx={{ padding: '12px' }}>
+        <Stack gap="8px" padding={footer ? '12px 12px 0 12px' : '12px'}>
           {renderMenuItems()}
         </Stack>
       </ScrollWrapper>
+      {footer}
     </MIMenu>
   )
 }

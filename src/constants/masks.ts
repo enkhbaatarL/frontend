@@ -6,6 +6,9 @@ export interface MaskConfig {
 }
 
 export const PREDEFINED_MASKS: Record<string, MaskConfig> = {
+  PLAIN_TEXT: {
+    pattern: /^[\s\S]*$/,
+  },
   DATE: {
     pattern: /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12]\d|30|31)$/,
     placeholder: 'yyyy-mm-dd',

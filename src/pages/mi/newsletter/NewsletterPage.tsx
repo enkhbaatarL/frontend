@@ -303,7 +303,7 @@ const NewsLettersPage = () => {
       </Box>
 
       <Box boxSizing={'border-box'} paddingX={7.5} minWidth={'1440px'} width={'1440px'} margin={'auto'} py={5} px={7.5}>
-        <Box display="flex" pt="38px" gap={7.5} boxSizing={'border-box'} width={'100%'}>
+        <Box display="flex" gap={7.5} boxSizing={'border-box'} width={'100%'}>
           <Box display="flex" flexDirection="column" flex={1}>
             <Box pb="24px" mb="30px" borderBottom={'1px solid'} borderColor={'gray.30'}>
               <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={3}>

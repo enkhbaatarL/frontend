@@ -1,6 +1,7 @@
+import CalendarTodayRoundedIcon from '@mui/icons-material/CalendarTodayRounded'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import { Box, Stack, Typography, useTheme } from '@mui/material'
+import { Box, Stack, SxProps, Theme, Typography, useTheme } from '@mui/material'
 import dayjs, { Dayjs } from 'dayjs'
 import React, { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactElement, useCallback, useMemo, useState } from 'react'
 import { DayPicker, UI } from 'react-day-picker'
@@ -10,26 +11,15 @@ import MIButton from '@/components/common/button/MIButton'
 import MIMenu, { MIMenuProps } from '@/components/common/menu/MIMenu'
 
 export interface MIDatePickerMenuProps extends Omit<MIMenuProps, 'label' | 'onChange' | 'value'> {
-  /**
-   * 상단 라벨 텍스트 (기본값: "일자")
-   */
   label?: string
-  /**
-   * 선택된 날짜
-   */
   value?: Dayjs
-  /**
-   * 확인 버튼 클릭 시 호출되는 콜백
-   */
   onChange: (date?: Dayjs) => void
-  /**
-   * 라벨 우측에 필수(*) 표시 여부
-   */
   required?: boolean
-  /**
-   * 인풋 placeholder (기본값: "일자 선택")
-   */
   placeholder?: string
+  width?: string | number
+  height?: string | number
+  hideLabel?: boolean
+  rootSx?: SxProps<Theme>
 }
 
 const CustomMonths = (props: HTMLAttributes<HTMLDivElement>) => {
@@ -95,11 +85,29 @@ const MIDatePickerMenu = ({
   required = false,
   placeholder = '일자 선택',
   placement = 'bottom-end',
+  width = '140px',
+  height = '40px',
+  hideLabel = false,
+  rootSx,
+  open: controlledOpen,
+  onOpenChange,
+  disabled = false,
   ...menuProps
 }: MIDatePickerMenuProps) => {
   const theme = useTheme()
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isMenuOpen = controlledOpen ?? internalOpen
+  const setIsMenuOpen = useCallback(
+    (newOpen: boolean) => {
+      if (controlledOpen === undefined) {
+        setInternalOpen(newOpen)
+      }
+      onOpenChange?.(newOpen)
+    },
+    [controlledOpen, onOpenChange],
+  )
+
   const [internalDate, setInternalDate] = useState<Dayjs | undefined>(value)
 
   const today = useMemo(() => dayjs().startOf('day'), [])
@@ -126,105 +134,98 @@ const MIDatePickerMenu = ({
     setInternalDate(newDate)
   }, [])
 
-  const handleClear = useCallback(() => {
-    setInternalDate(undefined)
-  }, [])
+  const handleCancel = useCallback(() => {
+    setInternalDate(value)
+    setIsMenuOpen(false)
+  }, [value, setIsMenuOpen])
 
   const handleApply = useCallback(() => {
     onChange(internalDate)
     setIsMenuOpen(false)
-  }, [internalDate, onChange])
+  }, [internalDate, onChange, setIsMenuOpen])
 
-  const displayText = internalDate ? internalDate.format('YYYY-MM-DD') : placeholder
+  const displayText = value ? value.format('YYYY-MM-DD') : placeholder
+
+  const getTextColor = () => {
+    if (disabled) return theme.palette.content.textDisabled
+    if (isMenuOpen) return theme.palette.contentText.Black
+    if (value) return theme.palette.contentText.Normal
+    return theme.palette.contentText.Disabled
+  }
 
   const dateInputLabel = (
-    <Box
+    <Typography
+      noWrap
       sx={{
-        width: '120px',
-        height: '36px',
-        borderRadius: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        gap: '6px',
-        padding: '8px 12px',
-        boxSizing: 'border-box',
-        cursor: 'pointer',
-        backgroundColor: 'transparent',
+        fontFamily: 'Pretendard',
+        fontWeight: 400,
+        fontSize: '14px',
+        lineHeight: '140%',
+        letterSpacing: 0,
+        color: getTextColor(),
       }}
     >
-      <Typography
-        noWrap
-        sx={{
-          fontFamily: 'Pretendard',
-          fontWeight: 400,
-          fontStyle: 'normal',
-          fontSize: '14px',
-          lineHeight: '140%',
-          letterSpacing: 0,
-          verticalAlign: 'middle',
-          color: internalDate ? theme.palette.contentText.Normal : theme.palette.contentText.Disabled,
-        }}
-      >
-        {displayText}
-      </Typography>
-    </Box>
+      {displayText}
+    </Typography>
+  )
+
+  const dateInputSuffix = (
+    <CalendarTodayRoundedIcon
+      sx={{
+        fontSize: '20px',
+        color: disabled ? theme.palette.content.iconDisabled : 'contentIcon.Enabled',
+      }}
+    />
   )
 
   return (
-    <Stack width="120px" height="60px" gap="4px">
-      <Stack direction="row" alignItems="center" gap="4px" height="20px">
-        <Typography
-          variant="body2SB14"
-          sx={{
-            fontSize: '14px',
-            lineHeight: '140%',
-            letterSpacing: 0,
-          }}
-          color="contentText.Normal"
-        >
-          {label}
-        </Typography>
-        {required && (
-          <Typography sx={{ verticalAlign: 4, fontSize: 12, fontWeight: 900 }} component="span" color="error">
-            *
+    <Stack width={width} gap="4px" sx={rootSx}>
+      {!hideLabel && (
+        <Stack direction="row" alignItems="center" gap="2px">
+          <Typography variant="body2SB14" color="contentText.Normal">
+            {label}
           </Typography>
-        )}
-      </Stack>
+          {required && <Box width="4px" height="4px" borderRadius="50%" bgcolor="point.red1" mb="6px" />}
+        </Stack>
+      )}
       <MIMenu
         open={isMenuOpen}
         onOpenChange={(open) => {
           setIsMenuOpen(open)
           if (open) {
-            // 열릴 때 기존 value와 동기화
             setInternalDate(value?.isValid() ? value : undefined)
             setCalendarMonth(getInitialMonth(value))
           }
         }}
         onClose={() => {
-          // 닫힐 때 외부 value로 롤백
           setInternalDate(value)
         }}
         variant="outlined"
         label={dateInputLabel}
+        suffix={dateInputSuffix}
         placement={placement}
-        sx={{ padding: '8px' }}
         enableHoverBackground={false}
+        buttonHoverBgColor="common.white"
         {...menuProps}
+        disabled={disabled}
+        sx={{
+          padding: '8px 12px',
+          borderRadius: '8px',
+          backgroundColor: disabled ? '#F1F3F5' : 'common.white',
+          width: '100%',
+          height,
+          ...(disabled
+            ? {
+              opacity: 0.6,
+              '&.Mui-disabled': {
+                borderColor: theme.palette.contentBorder.Normal,
+              },
+            }
+            : {}),
+          ...(menuProps.sx as Record<string, unknown>),
+        }}
       >
-        <Stack
-          width="332px"
-          height="410px"
-          padding="12px"
-          gap="12px"
-          sx={{
-            borderRadius: '10px',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderColor: 'contentBorder.Normal',
-            boxSizing: 'border-box',
-          }}
-        >
+        <Stack width="332px" height="410px" padding="12px" gap="12px" boxSizing="border-box">
           <Stack
             height="100%"
             sx={{
@@ -301,7 +302,7 @@ const MIDatePickerMenu = ({
               numberOfMonths={1}
               month={calendarMonth}
               onMonthChange={(month) => {
-                if (month instanceof Date && !Number.isNaN(month.getTime())) {
+                if (!Number.isNaN(month.getTime())) {
                   setCalendarMonth(month)
                 }
               }}
@@ -345,8 +346,8 @@ const MIDatePickerMenu = ({
           </Stack>
 
           <Stack direction="row" justifyContent="flex-end" gap="10px">
-            <MIButton type="outlined" disabled={!internalDate} onClick={handleClear}>
-              초기화
+            <MIButton type="outlined" onClick={handleCancel}>
+              취소
             </MIButton>
             <MIButton type="filled" disabled={!internalDate} onClick={handleApply}>
               확인

@@ -27,8 +27,10 @@ interface Props {
   hideFooter?: boolean
   zIndex?: number
   disableClose?: boolean
+  disableBackdropClick?: boolean
   paperSx?: Record<string, unknown>
   contentSx?: Record<string, unknown>
+  titleSx?: Record<string, unknown>
 }
 
 const MIConfirm = ({
@@ -43,8 +45,10 @@ const MIConfirm = ({
   actions = [{ label: t('확인'), variant: 'filled', color: 'primary', onClick: handleClose }],
   zIndex,
   disableClose = false,
+  disableBackdropClick = false,
   paperSx,
   contentSx,
+  titleSx,
 }: Props) => {
   useEffect(() => {
     const className = 'mi-confirm-open'
@@ -78,7 +82,7 @@ const MIConfirm = ({
       }}
       open={open}
       onClose={(_, reason) => {
-        if (reason === 'backdropClick' && disableClose) {
+        if (reason === 'backdropClick' && (disableClose || disableBackdropClick)) {
           return
         }
         handleClose()
@@ -87,7 +91,7 @@ const MIConfirm = ({
         zIndex,
       }}
     >
-      <DialogTitle>
+      <DialogTitle sx={titleSx}>
         <span style={{ fontWeight: children ? 700 : 600, userSelect: 'none' }}>{title}</span>
         {children && (
           <MIButton
@@ -109,14 +113,14 @@ const MIConfirm = ({
 
       {children && (
         <DialogContent sx={contentSx}>
-          <DialogContentText component="div" sx={{ whiteSpace: 'pre-line' }}>
+          <DialogContentText component="div" style={{ whiteSpace: 'pre-line' }}>
             {children}
           </DialogContentText>
         </DialogContent>
       )}
-      <DialogActions sx={{ paddingTop: children ? '30px' : 0, justifyContent: justifyContentAction }}>
-        {!hideFooter &&
-          actions.map((action, index) => (
+      {!hideFooter && (
+        <DialogActions sx={{ paddingTop: children ? '30px' : 0, justifyContent: justifyContentAction }}>
+          {actions.map((action, index) => (
             <MIButton
               size="h34"
               key={index}
@@ -129,7 +133,8 @@ const MIConfirm = ({
               {action.label}
             </MIButton>
           ))}
-      </DialogActions>
+        </DialogActions>
+      )}
     </Dialog>
   )
 }

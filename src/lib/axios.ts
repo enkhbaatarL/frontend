@@ -57,6 +57,19 @@ const api: AxiosInstance = Axios.create({
   withCredentials: true,
 })
 
+/**
+ * 세션 토큰·리프레시·전역 에러 핸들러를 붙이지 않은 인스턴스.
+ * 호출부에서 `Authorization: Bearer …`만 쓸 때 사용 (예: 내부 뉴스레터 렌더용 JWT).
+ */
+export const apiExplicitBearer: AxiosInstance = Axios.create({
+  baseURL: '/api/v1/',
+  headers: {
+    'Cache-Control': 'no-cache',
+  },
+  timeout: 20_000,
+  withCredentials: true,
+})
+
 api.interceptors.request.use((req) => {
   if (req.headers !== undefined) {
     const { token, user, accessCompanyInfo } = useAuthStore.getState()

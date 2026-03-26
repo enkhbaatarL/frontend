@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import { ACTIVE_MENU_PATHS, MiPagesType } from '@/constants/menu'
 import { UserRole } from '@/service/admin/members'
@@ -11,7 +11,8 @@ import useAuthStore from '@/store/useAuthStore'
 const EXTRA_PAGES: MiPagesType[] = ['signal-map', 'forecast']
 
 export const useCompanyCondition = () => {
-  const { accessCompanyInfo, user } = useAuthStore()
+  const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
+  const user = useAuthStore((state) => state.user)
 
   const comNo = useMemo(
     () => accessCompanyInfo?.customerCompanyNo ?? user?.companyNo,
@@ -98,7 +99,7 @@ export const useCompanyCondition = () => {
   /**
    * 홈 주소
    */
-  const miHome = () => {
+  const miHome = useCallback(() => {
     if (!extractPage) return undefined
 
     // Hynix의 경우 forecast로 이동
@@ -112,7 +113,7 @@ export const useCompanyCondition = () => {
     }
 
     return activeMenu.find((page) => !extractPage.includes(page))
-  }
+  }, [extractPage, comNo, accessCompanyInfo?.isFuture, activeMenu])
 
   return { extractPage, activeMenu, miHome, allCompanies, companyList, isDeniedDashboardPageLoading }
 }

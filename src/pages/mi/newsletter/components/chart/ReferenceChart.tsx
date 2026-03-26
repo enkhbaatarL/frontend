@@ -5,14 +5,15 @@ import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import { isEmpty } from 'lodash-es'
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { Chart } from 'react-chartjs-2'
 
 import '@/lib/chart/adapterDayjs'
 import ReferenceChartPlugin from '@/lib/chart/plugins/ReferenceChartPlugin'
 import { generateYAxis } from '@/lib/chart/utils/chartUtils'
 import { IChartData } from '@/service/mi/newsletter'
-import { filterValidChartValues } from '@/utils/dataUtil'
+import { calculateYAxisRange } from '@/utils/dataUtil'
+import { applyRoundedCornersToCanvas } from '@/utils/image'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -21,31 +22,49 @@ interface Props {
   chartData?: IChartData
   marketOpenTime?: number
   marketCloseTime?: number
+  onChartImageReady?: (image: string) => void
 }
 
 export interface ReferenceChartRef {
-  isRendered: () => boolean
-  getImageData: () => string
+  waitForChartImage: () => Promise<string>
 }
 
 ChartJS.register(CandlestickController, CandlestickElement, OhlcController, OhlcElement)
 
 type ChartJSOrUndefined = ChartJS | undefined
 
-const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, marketOpenTime, marketCloseTime }, ref) => {
+const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, marketOpenTime, marketCloseTime, onChartImageReady }, ref) => {
   const chartRef = useRef<ChartJSOrUndefined | null>(null)
   const [base64ChartImage, setBase64ChartImage] = useState<string>('')
   const [isChartRendered, setIsChartRendered] = useState<boolean>(false)
   const chartContainerRef = useRef<HTMLDivElement>(null)
+  const chartImageResolversRef = useRef<((image: string) => void)[]>([])
 
   useImperativeHandle(
     ref,
     () => ({
-      isRendered: () => isChartRendered,
-      getImageData: () => base64ChartImage,
+      waitForChartImage: () => {
+        if (base64ChartImage) return Promise.resolve(base64ChartImage)
+        return new Promise<string>((resolve) => {
+          chartImageResolversRef.current.push(resolve)
+        })
+      },
     }),
-    [isChartRendered, base64ChartImage],
+    [base64ChartImage],
   )
+
+  useEffect(() => {
+    if (!base64ChartImage || chartImageResolversRef.current.length === 0) return
+    chartImageResolversRef.current.forEach((resolve) => resolve(base64ChartImage))
+    chartImageResolversRef.current = []
+  }, [base64ChartImage])
+
+  // 차트 이미지가 생성/변경될 때, 상위로 전파 (즉시 반영)
+  const onChartImageReadyRef = useRef(onChartImageReady)
+  onChartImageReadyRef.current = onChartImageReady
+  useEffect(() => {
+    if (base64ChartImage) onChartImageReadyRef.current?.(base64ChartImage)
+  }, [base64ChartImage])
 
   const convertChartToImage = useCallback((canvas: HTMLCanvasElement, setImageState: (image: string) => void) => {
     if (!canvas || canvas.width === 0 || canvas.height === 0) {
@@ -53,20 +72,9 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
       return
     }
 
-    const tempCanvas = document.createElement('canvas')
-    const tempCtx = tempCanvas.getContext('2d')
-    if (tempCtx) {
-      tempCanvas.width = canvas.width
-      tempCanvas.height = canvas.height
-
-      tempCtx.fillStyle = '#FFFFFF'
-      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
-
-      tempCtx.drawImage(canvas, 0, 0)
-
-      const dataURL = tempCanvas.toDataURL('image/png', 1.0)
-      setImageState(dataURL)
-    }
+    const withRoundedCorners = applyRoundedCornersToCanvas(canvas)
+    const dataURL = withRoundedCorners.toDataURL('image/png', 1)
+    setImageState(dataURL)
   }, [])
 
   const getBorderColor = useCallback((color?: string, index?: number) => {
@@ -82,67 +90,7 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
     return colors[index ?? 0]
   }, [])
 
-  const timestamps = useMemo(() => (chartData?.timestamps || []).map((timestamp) => Number(timestamp)), [chartData?.timestamps])
-  // y축 min/max 범위 계산 함수 - 적절한 단위를 자동으로 계산하고 퍼센트 패딩 적용
-  const calculateYAxisRange = useCallback(
-    (values: number[], paddingTop: number = 0, paddingBottom: number = 0, showNearAxis: boolean = false) => {
-      if (!values.length) return { min: 0, max: 0 }
-
-      // 빈 값(null, undefined, NaN) 필터링
-      const validValues = filterValidChartValues(values)
-
-      if (!validValues.length) return { min: 0, max: 0 }
-
-      const minValue = Math.min(...validValues)
-      const maxValue = Math.max(...validValues)
-      const range = maxValue - minValue
-
-      if (range === 0) {
-        const center = minValue
-        const padding = Math.max(1, Math.abs(center) * 0.1) || 1
-        return {
-          min: center - padding,
-          max: center + padding,
-        }
-      }
-
-      // 단위 계산
-      const magnitude = Math.pow(10, Math.floor(Math.log10(range)))
-      const normalizedRange = range / magnitude
-
-      let step: number
-      if (normalizedRange <= 1) {
-        step = 0.1 * magnitude
-      } else if (normalizedRange <= 2) {
-        step = 0.2 * magnitude
-      } else if (normalizedRange <= 5) {
-        step = 0.5 * magnitude
-      } else {
-        step = magnitude
-      }
-
-      // min과 max를 스텝에 맞게 조정
-      let min = Math.floor(minValue / step) * step
-      let max = Math.ceil(maxValue / step) * step
-
-      // 퍼센트 패딩 적용
-      const adjustedRange = max - min
-      const topPadding = (adjustedRange * paddingTop) / 100
-      const bottomPadding = (adjustedRange * paddingBottom) / 100
-
-      min = min - bottomPadding
-      max = max + topPadding
-
-      // showNearAxis가 true인 경우, 패딩 적용 후 가까운 축이 확장되도록 조정
-      if (showNearAxis) {
-        min = Math.floor(min - step)
-        max = Math.ceil(max + step)
-      }
-
-      return { min, max }
-    },
-    [],
-  )
+  const timestamps = useMemo(() => (chartData?.timestamps || []).map(Number), [chartData?.timestamps])
 
   // sub y축들을 생성하는 로직
   const subYAxes = useMemo(() => {
@@ -260,30 +208,35 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
           ...(() => {
             const range = chartData?.series?.[0]?.range
             const values = chartData?.series?.[0]?.values ?? [0]
-            return !isEmpty(range) ? { min: range?.[0], max: range?.[1] } : calculateYAxisRange(values, 30, 30, true)
+            return isEmpty(range) ? calculateYAxisRange(values, 30, 30, true) : { min: range?.[0], max: range?.[1] }
           })(),
           afterDataLimits(scale: { min: number; max: number }) {
             const range = chartData?.series?.[0]?.range
-            if (!isEmpty(range)) {
-              scale.min = range?.[0] ?? 0
-              scale.max = range?.[1] ?? 0
-            } else {
+            if (isEmpty(range)) {
               const values = chartData?.series?.[0]?.values ?? [0]
               const { min, max } = calculateYAxisRange(values, 30, 30, true)
               scale.min = min
               scale.max = max
+            } else {
+              scale.min = range?.[0] ?? 0
+              scale.max = range?.[1] ?? 0
             }
           },
         },
         ...Object.keys(subYAxes).reduce(
           (acc, key) => {
             const axis = subYAxes[key]
-            const seriesIndex = key === 'virtual' ? -1 : parseInt(key.replace('sub-', ''))
+            const seriesIndex = key === 'virtual' ? -1 : Number.parseInt(key.replace('sub-', ''))
 
             if (seriesIndex >= 1 && chartData?.series?.[seriesIndex]) {
               const values = chartData.series[seriesIndex].values ?? []
               const range = chartData?.series?.[seriesIndex]?.range
-              const yAxisRange = !isEmpty(range) ? { min: range?.[0], max: range?.[1] } : calculateYAxisRange(values, 30, 30, true)
+              const yAxisRange = isEmpty(range)
+                ? calculateYAxisRange(values, 30, 30, true)
+                : {
+                  min: range?.[0],
+                  max: range?.[1],
+                }
 
               acc[key] = {
                 ...axis,
@@ -329,7 +282,6 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
           timestamps,
           xAxisTicks: 6,
           yAxisTicks: 5,
-          decimalPlaces: 2,
           marketOpenTime,
           marketCloseTime,
           yIDs: ['y', ...Object.keys(subYAxes)],
@@ -355,7 +307,7 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
         },
       },
     }),
-    [timestamps, convertChartToImage, marketOpenTime, marketCloseTime, subYAxes, calculateYAxisRange, chartData?.series],
+    [timestamps, convertChartToImage, marketOpenTime, marketCloseTime, subYAxes, chartData?.series],
   )
 
   const datasets = useMemo(

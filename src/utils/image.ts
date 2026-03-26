@@ -1,6 +1,51 @@
 import html2canvas from 'html2canvas'
 import Pica from 'pica'
 
+/** 이메일용 차트 이미지에 적용할 border radius (px) */
+export const CHART_IMAGE_BORDER_RADIUS = 10
+
+/**
+ * 캔버스 이미지에 둥근 모서리를 적용하여 새 캔버스 반환.
+ * 다크모드와 무관하게 흰 배경 + borderRadius로 이메일에서 일관된 렌더링 보장.
+ */
+export const applyRoundedCornersToCanvas = (
+  source: HTMLCanvasElement,
+  borderRadius: number = CHART_IMAGE_BORDER_RADIUS,
+  backgroundColor: string = '#FFFFFF',
+): HTMLCanvasElement => {
+  const out = document.createElement('canvas')
+  out.width = source.width
+  out.height = source.height
+  const ctx = out.getContext('2d')
+  if (!ctx) return out
+
+  ctx.fillStyle = backgroundColor
+  ctx.fillRect(0, 0, out.width, out.height)
+
+  ctx.save()
+  ctx.beginPath()
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(0, 0, out.width, out.height, borderRadius)
+  } else {
+    const r = Math.min(borderRadius, out.width / 2, out.height / 2)
+    ctx.moveTo(r, 0)
+    ctx.lineTo(out.width - r, 0)
+    ctx.quadraticCurveTo(out.width, 0, out.width, r)
+    ctx.lineTo(out.width, out.height - r)
+    ctx.quadraticCurveTo(out.width, out.height, out.width - r, out.height)
+    ctx.lineTo(r, out.height)
+    ctx.quadraticCurveTo(0, out.height, 0, out.height - r)
+    ctx.lineTo(0, r)
+    ctx.quadraticCurveTo(0, 0, r, 0)
+    ctx.closePath()
+  }
+  ctx.clip()
+  ctx.drawImage(source, 0, 0)
+  ctx.restore()
+
+  return out
+}
+
 interface ImageConversionOptions {
   target: HTMLElement
   remove?: string[]
@@ -9,31 +54,6 @@ interface ImageConversionOptions {
     height?: number
   }
   padding?: number
-}
-
-/**
- * 이미지 URL을 base64로 변환하는 함수
- * @param imageUrl 변환할 이미지 URL
- * @returns Promise<string> 변환된 base64 문자열
- */
-export const convertImageToBase64 = async (imageUrl: string): Promise<string> => {
-  try {
-    const response = await fetch(imageUrl)
-    const blob = await response.blob()
-
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        resolve(result)
-      }
-      reader.onerror = reject
-      reader.readAsDataURL(blob)
-    })
-  } catch (error) {
-    console.error('이미지를 base64로 변환하는 중 오류 발생:', error)
-    return ''
-  }
 }
 
 /**
@@ -107,7 +127,7 @@ export const convertElementToImageCanvas = async ({
   })
 
   // 복제된 요소 제거
-  document.body.removeChild(clonedElement)
+  clonedElement.remove()
 
   // 최종 크기 계산
   let contentWidth: number

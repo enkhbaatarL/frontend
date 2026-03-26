@@ -103,8 +103,8 @@ const MIDropdownMenu = ({
         key={key}
         onClick={() => (disabled ? null : handleItemClick(item))}
         borderRadius="10px"
+        padding="8px 12px"
         sx={{
-          padding: '8px 12px',
           cursor: disabled ? 'default' : 'pointer',
           '&:hover': {
             backgroundColor: disabled ? 'transparent' : 'gray.10',
@@ -114,13 +114,11 @@ const MIDropdownMenu = ({
       >
         <Typography
           variant="body2M14"
-          color={disabled ? 'gray.40' : 'gray.60'}
-          sx={{
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            maxWidth: '100%',
-          }}
+          color={disabled ? 'gray.40' : 'contentText.Normal'}
+          overflow="hidden"
+          textOverflow="ellipsis"
+          whiteSpace="nowrap"
+          maxWidth="100%"
         >
           {label}
         </Typography>
@@ -201,7 +199,7 @@ const MIDropdownMenu = ({
           padding: '0',
         }}
       >
-        <Stack gap="8px" sx={{ padding: '12px' }}>
+        <Stack gap="8px" padding="12px">
           {renderMenuItems()}
         </Stack>
       </ScrollWrapper>
