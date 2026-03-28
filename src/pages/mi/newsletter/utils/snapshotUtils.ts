@@ -133,6 +133,12 @@ export const findFirstSectionByCanonicalCode = (
   return snapshot.sections.find((sect) => normSectionCode(sect.code) === k)
 }
 
+/** `fields`에만 저장. API에서 내려온 참고 섹션과 편집기 «섹션 추가» 섹션을 구분 */
+export const USER_ADDED_REFERENCE_SECTION_FIELD = 'userAddedSection' as const
+
+export const isUserAddedReferenceSection = (section: INewsletterSnapshotSection): boolean =>
+  section.fields?.[USER_ADDED_REFERENCE_SECTION_FIELD] === true
+
 /** 이메일 `EmailContent` 분기 — `section.code`·참고 섹션 여부만 사용 */
 export type NewsletterEmailTemplateKind =
   | 'COVER'
@@ -143,11 +149,14 @@ export type NewsletterEmailTemplateKind =
   | 'NEWS_FLOW'
   | 'SIG_NEWS'
   | 'REFERENCE'
+  | 'USER_CUSTOM'
   | 'FOOTER'
   | 'UNKNOWN'
 
 export const newsletterSectionToEmailTemplateKind = (section: INewsletterSnapshotSection): NewsletterEmailTemplateKind => {
-  if (isReferenceSnapshotSection(section)) return 'REFERENCE'
+  if (isReferenceSnapshotSection(section)) {
+    return isUserAddedReferenceSection(section) ? 'USER_CUSTOM' : 'REFERENCE'
+  }
   const c = normSectionCode(section.code)
   if (c === normSectionCode(NEWSLETTER_SECTION_CODE.COVER)) return 'COVER'
   if (c === normSectionCode(NEWSLETTER_SECTION_CODE.DATE_ISSUE)) return 'DATE_ISSUE'
@@ -446,12 +455,6 @@ export const getOrderedReferenceSections = (snapshot: INewsletterIssueSnapshotDa
   return snapshot.sections.filter((s) => isReferenceSnapshotSection(s)).sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
 }
 
-/** `fields`에만 저장. API에서 내려온 참고 섹션과 편집기 «섹션 추가» 섹션을 구분 */
-export const USER_ADDED_REFERENCE_SECTION_FIELD = 'userAddedSection' as const
-
-export const isUserAddedReferenceSection = (section: INewsletterSnapshotSection): boolean =>
-  section.fields?.[USER_ADDED_REFERENCE_SECTION_FIELD] === true
-
 /** Reference 섹션에서 본문 블록만 (CHART / TABLE / IMAGE / REFERENCE_CONTENT TEXT) */
 export const getReferenceContentBlocks = (section: INewsletterSnapshotSection): INewsletterSnapshotBlock[] =>
   (section.blocks ?? [])
@@ -541,45 +544,57 @@ export const replaceReferenceSectionContentBlocks = (
   blocks: newContentBlocks.map((b, i) => ({ ...b, order: i + 1 })),
 })
 
-/** 편집기에서 넘긴 Reference 스냅샷 섹션 배열로 스냅샷의 Reference 구간을 통째로 교체 */
+/**
+ * 편집기에서 넘긴 Reference 스냅샷 섹션 배열로 스냅샷의 Reference 구간을 통째로 교체.
+ *
+ * 기존 reference 섹션의 order는 보존하고, 새로 추가된 섹션만 기존 reference 뒤에 배치합니다.
+ * 이렇게 하면 사용자가 순서를 변경하여 reference 섹션 사이에 비-reference 섹션이
+ * 끼어 있더라도 order 충돌이 발생하지 않습니다.
+ */
 export const mergeReferenceSectionsIntoSnapshot = (
   snapshot: INewsletterIssueSnapshotData,
   refSections: INewsletterSnapshotSection[],
 ): INewsletterIssueSnapshotData => {
-  const existingRefSections = snapshot.sections.filter((s) => isReferenceSnapshotSection(s))
   const nonRefSections = snapshot.sections.filter((s) => !isReferenceSnapshotSection(s))
 
-  const oldRefCount = existingRefSections.length
-  const newRefCount = refSections.length
-  const countDiff = newRefCount - oldRefCount
+  const existingRefOrderMap = new Map<string, number>()
+  for (const s of snapshot.sections) {
+    if (isReferenceSnapshotSection(s)) {
+      existingRefOrderMap.set(s.id, s.order ?? 999)
+    }
+  }
 
-  const refStartOrder =
-    existingRefSections.length > 0
-      ? Math.min(...existingRefSections.map((s) => s.order ?? 999))
-      : Math.max(...nonRefSections.map((s) => s.order ?? 0), -1) + 1
+  const newlyAddedRefs = refSections.filter((s) => !existingRefOrderMap.has(s.id))
+  const newRefCount = newlyAddedRefs.length
+
+  const maxExistingRefOrder =
+    existingRefOrderMap.size > 0 ? Math.max(...existingRefOrderMap.values()) : Math.max(...nonRefSections.map((s) => s.order ?? 0), -1)
 
   const adjustedNonRefSections =
-    countDiff === 0
+    newRefCount === 0
       ? nonRefSections
       : nonRefSections.map((s) => {
-        if ((s.order ?? 999) >= refStartOrder + oldRefCount) {
-          return { ...s, order: (s.order ?? 999) + countDiff }
+        if ((s.order ?? 999) > maxExistingRefOrder) {
+          return { ...s, order: (s.order ?? 999) + newRefCount }
         }
         return s
       })
+
+  let nextNewOrder = maxExistingRefOrder + 1
 
   const newRefSections: INewsletterSnapshotSection[] = refSections.map((sec, idx) => {
     const existingSection = snapshot.sections.find((s) => s.id === sec.id)
     const normalizedBlocks = (sec.blocks ?? []).map((b, i) => ({ ...b, order: i + 1 }))
     const rawC = normSectionCode(sec.code)
     const code = rawC.startsWith('REFERENCE') && /^REFERENCE\d*$/i.test(rawC) ? sec.code : `REFERENCE${idx + 1}`
+    const order = existingRefOrderMap.has(sec.id) ? existingRefOrderMap.get(sec.id)! : nextNewOrder++
     return {
       ...sec,
       id: sec.id,
       code,
       name: sec.name ?? '',
       type: 'SPECIALIZED',
-      order: refStartOrder + idx,
+      order,
       visibility: sec.visibility !== false,
       removed: sec.removed === true,
       target: existingSection?.target ?? sec.target ?? '2020',
@@ -660,6 +675,40 @@ export const createReferenceContentBlock = (
       fileName: params.fileName ?? '',
       content: params.content?.trim() ?? '',
     },
+  }
+}
+
+export const chartViewFromBlock = (block: INewsletterSnapshotBlock) => {
+  const c = getBlockFields<{
+    timestamps?: number[]
+    series?: {
+      seriesId: string
+      label: string
+      renderAs: string
+      values: number[]
+      isVisible: boolean
+    }[]
+  }>(block)
+  const series = (c?.series ?? []).map((s) => ({ ...s, isLineChartDashStyle: null as string | null }))
+  return {
+    timestamps: c?.timestamps ?? [],
+    series,
+  }
+}
+
+export const tableViewFromBlock = (block: INewsletterSnapshotBlock) => {
+  const c = getBlockFields<{
+    tableData?: {
+      tableId?: string | null
+      headers?: { field: string; name: string }[]
+      rows?: { cells: string[] }[]
+    }
+  }>(block)
+  const td = c?.tableData
+  return {
+    tableId: String(td?.tableId ?? ''),
+    headers: td?.headers ?? [],
+    rows: td?.rows ?? [],
   }
 }
 
@@ -1036,12 +1085,35 @@ const isNewsFlowCreateTimeFieldValid = (def: ReturnType<typeof getEffectiveField
 const hasNewsCardFieldDefs = (defs: Record<string, INewsletterSnapshotFieldDef> | undefined): boolean =>
   defs !== undefined && Object.keys(defs).length > 0
 
-/**
- * 편집 UI(필수 표시·시간 형식)와 맞춘 저장 가능 여부.
- * `fieldDefs`가 없는 뉴스 카드는 {@link AddNewsModal}과 동일한 최소 입력을 요구합니다.
- */
-export const isNewsletterEditSnapshotValidForSave = (snapshot: INewsletterIssueSnapshotData | null | undefined): boolean => {
-  if (!snapshot?.sections?.length) return false
+export type NewsletterEditSnapshotSaveValidationIssue =
+  | {
+      kind: 'MISSING_REQUIRED'
+      path: string
+      message: string
+    }
+  | {
+      kind: 'INVALID_FORMAT'
+      path: string
+      message: string
+    }
+
+export type NewsletterEditSnapshotSaveValidationResult = {
+  valid: boolean
+  issues: NewsletterEditSnapshotSaveValidationIssue[]
+}
+
+export const validateNewsletterEditSnapshotForSave = (
+  snapshot: INewsletterIssueSnapshotData | null | undefined,
+): NewsletterEditSnapshotSaveValidationResult => {
+  const issues: NewsletterEditSnapshotSaveValidationIssue[] = []
+
+  const addMissing = (path: string, message: string) => issues.push({ kind: 'MISSING_REQUIRED', path, message })
+  const addInvalid = (path: string, message: string) => issues.push({ kind: 'INVALID_FORMAT', path, message })
+
+  if (!snapshot?.sections?.length) {
+    addMissing('snapshot.sections', '섹션이 없습니다.')
+    return { valid: false, issues }
+  }
 
   const isActiveSection = (s: INewsletterSnapshotSection | undefined): s is INewsletterSnapshotSection =>
     !!s && s.removed !== true && s.visibility !== false
@@ -1049,32 +1121,32 @@ export const isNewsletterEditSnapshotValidForSave = (snapshot: INewsletterIssueS
   const coverSection = findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.COVER)
   if (isActiveSection(coverSection)) {
     const cover = getCoverProps(snapshot, coverSection)
-    if (!isNonEmptyTrimmed(cover.name)) return false
+    if (!isNonEmptyTrimmed(cover.name)) addMissing('COVER.name', 'Cover 이름이 비어있습니다.')
   }
 
   const dateIssueSection = findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.DATE_ISSUE)
   if (isActiveSection(dateIssueSection)) {
     const dateIssue = getDateIssueProps(snapshot, dateIssueSection)
-    if (!isNonEmptyTrimmed(dateIssue.date)) return false
-    if (!isNonEmptyTrimmed(dateIssue.issueNo)) return false
+    if (!isNonEmptyTrimmed(dateIssue.date)) addMissing('DATE_ISSUE.date', '발행일(date)이 비어있습니다.')
+    if (!isNonEmptyTrimmed(dateIssue.issueNo)) addMissing('DATE_ISSUE.issueNo', '회차(issueNo)가 비어있습니다.')
   }
 
   const titleSection = findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.TITLE)
   if (isActiveSection(titleSection)) {
     const titleProps = getTitleProps(snapshot, titleSection)
-    if (!isNonEmptyTrimmed(titleProps.title)) return false
+    if (!isNonEmptyTrimmed(titleProps.title)) addMissing('TITLE.title', '타이틀(title)이 비어있습니다.')
   }
 
   const summarySection = findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.SUMMARY)
   if (isActiveSection(summarySection)) {
     const summaryProps = getSummaryProps(snapshot, summarySection)
-    if (!isNonEmptyTrimmed(summaryProps.summary)) return false
+    if (!isNonEmptyTrimmed(summaryProps.summary)) addMissing('SUMMARY.summary', '요약(summary)이 비어있습니다.')
   }
 
   const footerSection = findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.FOOTER)
   if (isActiveSection(footerSection)) {
     const footerProps = getFooterProps(snapshot, footerSection)
-    if (!isNonEmptyTrimmed(footerProps.footerContent)) return false
+    if (!isNonEmptyTrimmed(footerProps.footerContent)) addMissing('FOOTER.footerContent', '푸터 내용(footerContent)이 비어있습니다.')
   }
 
   const relatedNewsSection = findPrimaryRelatedNewsSection(snapshot)
@@ -1082,19 +1154,32 @@ export const isNewsletterEditSnapshotValidForSave = (snapshot: INewsletterIssueS
   if (isActiveSection(relatedNewsSection)) {
     const dFlowTitle = getEffectiveFieldDef(relatedNewsSection.fieldDefs, 'title')
     const dFlowAgg = getEffectiveFieldDef(relatedNewsSection.fieldDefs, 'aggregationTime')
-    if (!dFlowTitle.disabled && dFlowTitle.required && !isNonEmptyTrimmed(newsFlowProps.title)) return false
-    if (!dFlowAgg.disabled && dFlowAgg.required && !isNonEmptyTrimmed(newsFlowProps.aggregationTime)) return false
+    if (!dFlowTitle.disabled && dFlowTitle.required && !isNonEmptyTrimmed(newsFlowProps.title)) {
+      addMissing('NEWS_FLOW.title', '뉴스플로우 섹션 제목(title)이 비어있습니다.')
+    }
+    if (!dFlowAgg.disabled && dFlowAgg.required && !isNonEmptyTrimmed(newsFlowProps.aggregationTime)) {
+      addMissing('NEWS_FLOW.aggregationTime', '뉴스플로우 집계시간(aggregationTime)이 비어있습니다.')
+    }
 
-    for (const item of filterVisibleNewsFlowItems(newsFlowProps.newsEventItems).filter((n) => n.visibility !== false)) {
+    const visibleItems = filterVisibleNewsFlowItems(newsFlowProps.newsEventItems).filter((n) => n.visibility !== false)
+    for (let idx = 0; idx < visibleItems.length; idx += 1) {
+      const item = visibleItems[idx]
+      const itemKey = item.newsId ? `newsId=${item.newsId}` : `idx=${idx}`
+      const basePath = `NEWS_FLOW.newsEventItems[${itemKey}]`
+
       const fd = item.fieldDefs
       const useStrictNews = !hasNewsCardFieldDefs(fd)
 
       if (useStrictNews) {
-        if (!isNonEmptyTrimmed(item.createdDate)) return false
-        if (!isNewsFlowCreateTimeFieldValid({ disabled: false, required: true }, item.createTime)) return false
-        if (!isNonEmptyTrimmed(item.source)) return false
-        if (!isNonEmptyTrimmed(item.title)) return false
-        if (!isNonEmptyTrimmed((item.content ?? []).join('\n\n'))) return false
+        if (!isNonEmptyTrimmed(item.createdDate)) addMissing(`${basePath}.createdDate`, '뉴스 발행일(createdDate)이 비어있습니다.')
+        if (!isNonEmptyTrimmed(item.createTime)) {
+          addMissing(`${basePath}.createTime`, '뉴스 시간(createTime)이 비어있습니다.')
+        } else if (!isNewsFlowCreateTimeFieldValid({ disabled: false, required: true }, item.createTime)) {
+          addInvalid(`${basePath}.createTime`, '뉴스 시간(createTime) 형식이 올바르지 않습니다.')
+        }
+        if (!isNonEmptyTrimmed(item.source)) addMissing(`${basePath}.source`, '출처(source)가 비어있습니다.')
+        if (!isNonEmptyTrimmed(item.title)) addMissing(`${basePath}.title`, '제목(title)이 비어있습니다.')
+        if (!isNonEmptyTrimmed((item.content ?? []).join('\n\n'))) addMissing(`${basePath}.content`, '내용(content)이 비어있습니다.')
         continue
       }
 
@@ -1105,41 +1190,63 @@ export const isNewsletterEditSnapshotValidForSave = (snapshot: INewsletterIssueS
       const dTitle = getEffectiveFieldDef(fd, 'title')
       const dContent = getEffectiveFieldDef(fd, 'content')
 
-      if (!dDate.disabled && dDate.required && !isNonEmptyTrimmed(item.createdDate)) return false
-      if (!isNewsFlowCreateTimeFieldValid(dTime, item.createTime)) return false
-      if (!dSource.disabled && dSource.required && !isNonEmptyTrimmed(item.source)) return false
-      if (!dLink.disabled && dLink.required && !isNonEmptyTrimmed(item.originalLink)) return false
-      if (!dTitle.disabled && dTitle.required && !isNonEmptyTrimmed(item.title)) return false
+      if (!dDate.disabled && dDate.required && !isNonEmptyTrimmed(item.createdDate))
+        addMissing(`${basePath}.createdDate`, 'createdDate가 비어있습니다.')
+      if (!isNonEmptyTrimmed(item.createTime)) {
+        if (!dTime.disabled && dTime.required) addMissing(`${basePath}.createTime`, 'createTime이 비어있습니다.')
+      } else if (!isNewsFlowCreateTimeFieldValid(dTime, item.createTime)) {
+        addInvalid(`${basePath}.createTime`, 'createTime 형식이 올바르지 않습니다.')
+      }
+      if (!dSource.disabled && dSource.required && !isNonEmptyTrimmed(item.source))
+        addMissing(`${basePath}.source`, 'source가 비어있습니다.')
+      if (!dLink.disabled && dLink.required && !isNonEmptyTrimmed(item.originalLink))
+        addMissing(`${basePath}.originalLink`, 'originalLink가 비어있습니다.')
+      if (!dTitle.disabled && dTitle.required && !isNonEmptyTrimmed(item.title)) addMissing(`${basePath}.title`, 'title이 비어있습니다.')
       const contentJoined = (item.content ?? []).join('\n\n')
-      if (!dContent.disabled && dContent.required && !isNonEmptyTrimmed(contentJoined)) return false
+      if (!dContent.disabled && dContent.required && !isNonEmptyTrimmed(contentJoined))
+        addMissing(`${basePath}.content`, 'content가 비어있습니다.')
     }
   }
 
   for (const section of getOrderedReferenceSections(snapshot)) {
     if (isReferenceSectionRemoved(section) || section.visibility === false) continue
 
+    const secId = section.id ? `id=${section.id}` : `code=${String(section.code ?? '')}`
+    const secPath = `REFERENCE_SECTION[${secId}]`
+
     const sf = section.fields ?? {}
     const secTitle = String(sf.title ?? '')
     const secDesc = String(sf.description ?? '')
     const dSecTitle = getEffectiveFieldDef(section.fieldDefs, 'title')
     const dSecDesc = getEffectiveFieldDef(section.fieldDefs, 'description')
-    if (!dSecTitle.disabled && dSecTitle.required && !isNonEmptyTrimmed(secTitle)) return false
-    if (!dSecDesc.disabled && dSecDesc.required && !isNonEmptyTrimmed(secDesc)) return false
+    if (!dSecTitle.disabled && dSecTitle.required && !isNonEmptyTrimmed(secTitle))
+      addMissing(`${secPath}.title`, '참고자료 섹션 제목(title)이 비어있습니다.')
+    if (!dSecDesc.disabled && dSecDesc.required && !isNonEmptyTrimmed(secDesc))
+      addMissing(`${secPath}.description`, '참고자료 섹션 설명(description)이 비어있습니다.')
 
     for (const block of getReferenceContentBlocks(section)) {
       if (isReferenceBlockRemoved(block) || block.visibility === false) continue
+      const blockId = block.id ? `id=${block.id}` : `type=${block.type}`
+      const blockPath = `${secPath}.blocks[${blockId}]`
 
       if (block.type === 'TEXT') {
-        if (!isNonEmptyTrimmed(block.title)) return false
+        if (!isNonEmptyTrimmed(block.title)) addMissing(`${blockPath}.title`, 'TEXT 블록 제목(title)이 비어있습니다.')
       }
       if (block.type === 'IMAGE') {
-        if (!isNonEmptyTrimmed(block.title)) return false
+        if (!isNonEmptyTrimmed(block.title)) addMissing(`${blockPath}.title`, 'IMAGE 블록 제목(title)이 비어있습니다.')
       }
     }
   }
 
-  return true
+  return { valid: issues.length === 0, issues }
 }
+
+/**
+ * 편집 UI(필수 표시·시간 형식)와 맞춘 저장 가능 여부.
+ * `fieldDefs`가 없는 뉴스 카드는 {@link AddNewsModal}과 동일한 최소 입력을 요구합니다.
+ */
+export const isNewsletterEditSnapshotValidForSave = (snapshot: INewsletterIssueSnapshotData | null | undefined): boolean =>
+  validateNewsletterEditSnapshotForSave(snapshot).valid
 
 export const parseNewsletterIssueSnapshotData = (raw: unknown): INewsletterIssueSnapshotData | null => {
   if (!raw || typeof raw !== 'object') return null

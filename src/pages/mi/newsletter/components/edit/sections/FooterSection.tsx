@@ -11,6 +11,7 @@ interface FooterSectionProps {
   showLogo?: boolean
   onFooterContentChange?: (value?: string) => void
   onShowLogoChange?: (show: boolean) => void
+  showRequiredIndicator?: boolean
   sectionVisibility?: boolean
   onSectionVisibilityChange?: (visible: boolean) => void
 }
@@ -20,6 +21,7 @@ const FooterSection = ({
   showLogo = true,
   onFooterContentChange,
   onShowLogoChange,
+  showRequiredIndicator = false,
   sectionVisibility,
   onSectionVisibilityChange,
 }: FooterSectionProps) => {
@@ -34,6 +36,7 @@ const FooterSection = ({
     <Block
       label={NEWSLETTER_SECTION_EDIT_LABEL[NEWSLETTER_SECTION_CODE.FOOTER]}
       fixed
+      showRequiredIndicator={showRequiredIndicator}
       visibility={sectionVisibility}
       onVisibilityChange={onSectionVisibilityChange}
     >

@@ -10,15 +10,24 @@ interface DateAndIssueSectionProps {
   date: string
   issueNo: string
   blockOrder?: BlockOrderProps
+  showRequiredIndicator?: boolean
   sectionVisibility?: boolean
   onSectionVisibilityChange?: (visible: boolean) => void
 }
 
-const DateAndIssueSection = ({ date, issueNo, blockOrder, sectionVisibility, onSectionVisibilityChange }: DateAndIssueSectionProps) => (
+const DateAndIssueSection = ({
+  date,
+  issueNo,
+  blockOrder,
+  showRequiredIndicator = false,
+  sectionVisibility,
+  onSectionVisibilityChange,
+}: DateAndIssueSectionProps) => (
   <Block
     label={NEWSLETTER_SECTION_EDIT_LABEL[NEWSLETTER_SECTION_CODE.DATE_ISSUE]}
     order={blockOrder}
     collapsedPreview={`${date} ${issueNo}`}
+    showRequiredIndicator={showRequiredIndicator}
     visibility={sectionVisibility}
     onVisibilityChange={onSectionVisibilityChange}
   >

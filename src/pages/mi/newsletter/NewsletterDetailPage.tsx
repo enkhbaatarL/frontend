@@ -1,6 +1,7 @@
 import { Backdrop, Box, CircularProgress, Fade, Stack, Typography } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import html2canvas from 'html2canvas'
+import JSZip from 'jszip'
 import { cloneDeep } from 'lodash-es'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
@@ -25,6 +26,7 @@ import { useSaveNewsletterRevision } from '@/pages/mi/newsletter/hooks/useSaveNe
 import {
   filterVisibleNewsFlowItems,
   findFirstSectionByCanonicalCode,
+  findPrimaryRelatedNewsSection,
   getBlockFields,
   getCoverProps,
   getDateIssueProps,
@@ -39,7 +41,7 @@ import {
   NEWSLETTER_SECTION_EDIT_LABEL,
   mergeReferenceSectionsIntoSnapshot,
   newsletterSectionToEmailTemplateKind,
-  isNewsletterEditSnapshotValidForSave,
+  validateNewsletterEditSnapshotForSave,
   isReferenceBlockRemoved,
   isReferenceSectionRemoved,
   NEWSLETTER_SECTION_CODE,
@@ -52,7 +54,7 @@ import {
   updateSectionVisibilityById,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
 import newsletterService, {
-  getIssueDetailSnapshotData,
+  getIssueDetailEffectiveSnapshotData,
   getNewsletterIssueRevisionId,
   type INewsletterIssueDetail,
   type INewsletterIssueSnapshotData,
@@ -104,16 +106,18 @@ const NewsletterDetailPage = () => {
     enabled: !!newsletterId && !!customerCompanyNo,
   })
 
+  const issueDetailQuery = useQuery({
+    queryKey: ['newsletterIssueDetail', newsletterId, issueNo],
+    queryFn: () => newsletterService.getNewsletterIssueDetail(customerCompanyNo, newsletterId!, issueNo!),
+    enabled: !!newsletterId && !!issueNo && !!customerCompanyNo,
+  })
+
   const {
     data: issueDetailData,
     isLoading: isIssueDetailLoading,
     isError: isIssueDetailError,
     refetch: refetchIssueDetail,
-  } = useQuery({
-    queryKey: ['newsletterIssueDetail', newsletterId, issueNo],
-    queryFn: () => newsletterService.getNewsletterIssueDetail(customerCompanyNo, newsletterId!, issueNo!),
-    enabled: !!newsletterId && !!issueNo && !!customerCompanyNo,
-  })
+  } = issueDetailQuery
 
   /** 쿼리 캐시가 이전 발행호·잘못된 키와 섞이지 않도록 스냅샷 동기화 전에 검증 */
   const detailMatchesRoute = useMemo(() => {
@@ -164,7 +168,7 @@ const NewsletterDetailPage = () => {
     },
   })
 
-  const issueDetailSnapshot = useMemo(() => getIssueDetailSnapshotData(issueDetailData), [issueDetailData])
+  const issueDetailSnapshot = useMemo(() => getIssueDetailEffectiveSnapshotData(issueDetailData), [issueDetailData])
 
   /** 서버 스냅샷 복사 — 최종저장 diff 기준(base) */
   const baseSnapshot = useMemo(() => (issueDetailSnapshot ? cloneDeep(issueDetailSnapshot) : null), [issueDetailSnapshot])
@@ -227,11 +231,13 @@ const NewsletterDetailPage = () => {
 
   const newsFlowProps = getNewsFlowProps(effectiveSnapshot)
   const refs = getOrderedReferenceSections(effectiveSnapshot)
-  /** 메인 차트에 그릴 데이터가 있는지 */
+  /** 메인 차트에 그릴 데이터가 있는지 (섹션이 숨겨져 있으면 차트가 렌더되지 않아 이미지가 생성되지 않으므로 제외) */
+  const newsFlowSection = findPrimaryRelatedNewsSection(effectiveSnapshot)
   const hasMainChartData =
-    (newsFlowProps.chartData.timestamps?.length ?? 0) > 0 ||
-    newsFlowProps.chartData.series?.some((s) => (s.values?.length ?? 0) > 0) ||
-    false
+    newsFlowSection?.visibility !== false &&
+    ((newsFlowProps.chartData.timestamps?.length ?? 0) > 0 ||
+      newsFlowProps.chartData.series?.some((s) => (s.values?.length ?? 0) > 0) ||
+      false)
   /** 참고자료 차트에 그릴 데이터가 있는지 */
   const hasReferenceChartData = refs.some((sec) => {
     if (isReferenceSectionRemoved(sec) || sec.visibility === false) return false
@@ -262,10 +268,12 @@ const NewsletterDetailPage = () => {
 
   const viewNewsFlowProps = useMemo(() => getNewsFlowProps(viewSnapshot), [viewSnapshot])
   const viewRefsOrdered = useMemo(() => getOrderedReferenceSections(viewSnapshot), [viewSnapshot])
+  const viewNewsFlowSection = findPrimaryRelatedNewsSection(viewSnapshot)
   const viewHasMainChartData =
-    (viewNewsFlowProps.chartData.timestamps?.length ?? 0) > 0 ||
-    viewNewsFlowProps.chartData.series?.some((s) => (s.values?.length ?? 0) > 0) ||
-    false
+    viewNewsFlowSection?.visibility !== false &&
+    ((viewNewsFlowProps.chartData.timestamps?.length ?? 0) > 0 ||
+      viewNewsFlowProps.chartData.series?.some((s) => (s.values?.length ?? 0) > 0) ||
+      false)
   const viewHasReferenceChartData = viewRefsOrdered.some((sec) => {
     if (isReferenceSectionRemoved(sec) || sec.visibility === false) return false
     return getReferenceContentBlocks(sec).some((b) => {
@@ -311,7 +319,8 @@ const NewsletterDetailPage = () => {
     deltaCount: issueDetailData?.deltaCount,
   })
 
-  const isEditSnapshotValid = useMemo(() => isNewsletterEditSnapshotValidForSave(effectiveSnapshot), [effectiveSnapshot])
+  const editSaveValidation = useMemo(() => validateNewsletterEditSnapshotForSave(effectiveSnapshot), [effectiveSnapshot])
+  const isEditSnapshotValid = editSaveValidation.valid
 
   const issueRevisionId = issueDetailData ? getNewsletterIssueRevisionId(issueDetailData) : undefined
 
@@ -338,7 +347,7 @@ const NewsletterDetailPage = () => {
     if (mode === NewsletterDetailPageMode.EDIT) {
       return
     }
-    const snap = getIssueDetailSnapshotData(issueDetailData)
+    const snap = getIssueDetailEffectiveSnapshotData(issueDetailData)
     if (!snap) {
       setSnapshot(null)
       return
@@ -388,20 +397,20 @@ const NewsletterDetailPage = () => {
                 snap = cloneDeep(draft.content)
                 showSnackbar('임시저장된 편집 내용을 불러왔습니다.', { variant: 'success' })
               } else {
-                snap = getIssueDetailSnapshotData(detail)
+                snap = getIssueDetailEffectiveSnapshotData(detail)
               }
             } catch {
-              snap = getIssueDetailSnapshotData(detail)
+              snap = getIssueDetailEffectiveSnapshotData(detail)
             } finally {
               setIsEnteringEditMode(false)
             }
           } else {
-            snap = getIssueDetailSnapshotData(detail)
+            snap = getIssueDetailEffectiveSnapshotData(detail)
           }
         }
 
         if (!snap) {
-          snap = getIssueDetailSnapshotData(detail)
+          snap = getIssueDetailEffectiveSnapshotData(detail)
         }
 
         if (snap) {
@@ -455,7 +464,7 @@ const NewsletterDetailPage = () => {
   }, [mode, revisionVersions, selectedVersionId])
 
   const handleReset = useCallback(() => {
-    const snap = getIssueDetailSnapshotData(issueDetailData)
+    const snap = getIssueDetailEffectiveSnapshotData(issueDetailData)
     if (snap) {
       setSnapshot(cloneDeep(snap))
       resetImages()
@@ -686,6 +695,57 @@ const NewsletterDetailPage = () => {
     viewSuppressNewsFlowChartUi,
   ])
 
+  /** Outlook 확인용: HTML을 .eml(RFC822)로 만든 뒤 zip에 넣어 다운로드 */
+  const handleDownloadEml = useCallback(async () => {
+    if (!viewSnapshot || !isReadyForEmailView) return
+    const chartImage = viewSuppressNewsFlowChartUi ? null : (
+      <img src={mainChartImage} alt="flow chart" width={800} style={{ display: 'block', width: '800px', border: 0 }} />
+    )
+    const htmlContent = await renderEmailContent(
+      viewSnapshot,
+      chartImage,
+      referenceChartImages,
+      coverImage || undefined,
+      oilPriceRowImage || undefined,
+    )
+    const htmlBody = prepareNewsletterEmailHtml(htmlContent)
+
+    const { date, issueNo: issueNoForName } = getDateIssueProps(viewSnapshot)
+    const { title } = getTitleProps(viewSnapshot)
+    const subject = viewSnapshot?.meta?.emailSubject ?? title ?? ''
+    const fileIssue = (issueNoForName ?? issueNo ?? '').padStart(3, '0')
+
+    const eml = [
+      `Subject: ${subject}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/html; charset="UTF-8"',
+      'Content-Transfer-Encoding: 8bit',
+      '',
+      htmlBody,
+    ].join('\r\n')
+
+    const emlFileName = `Issue ${fileIssue} (${date}).eml`
+    const zip = new JSZip()
+    zip.file(emlFileName, eml)
+    const zipBlob = await zip.generateAsync({ type: 'blob' })
+    const url = URL.createObjectURL(zipBlob)
+    const link = document.createElement('a')
+    link.download = `Issue ${fileIssue} (${date}).zip`
+    link.href = url
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
+  }, [
+    viewSnapshot,
+    isReadyForEmailView,
+    viewSuppressNewsFlowChartUi,
+    mainChartImage,
+    referenceChartImages,
+    coverImage,
+    oilPriceRowImage,
+    renderEmailContent,
+    issueNo,
+  ])
+
   /** 공유 모달 → 편집본 메일 발송용 (뷰 스냅샷·다운로드와 동일 기준) */
   const prepareShareEditionMailPayload = useCallback(async () => {
     if (!viewSnapshot || !isReadyForEmailView) {
@@ -887,6 +947,11 @@ const NewsletterDetailPage = () => {
         isSaving={isSaving}
         isSavingDraft={isSavingDraft}
         isSaveDisabled={!hasUnsavedChanges || !isEditSnapshotValid}
+        saveDisabledDebugInfo={{
+          hasUnsavedChanges,
+          isEditSnapshotValid,
+          validationIssues: editSaveValidation.issues,
+        }}
         isChartActive={isChartModalOpen}
       />
     )
@@ -913,9 +978,9 @@ const NewsletterDetailPage = () => {
         onSubscribeToggle={handleSubscribeToggle}
         isSubscriptionMutating={isSubscribeMutating}
         onEditMode={handleEnterEditMode}
-        isEnteringEditMode={isEnteringEditMode}
         onRevisionMode={() => setMode(NewsletterDetailPageMode.REVISION)}
         onDownloadImage={handleDownloadImage}
+        onDownloadEml={handleDownloadEml}
         isDownloadingImage={isDownloadingImage}
         isDownloadDisabled={!viewSnapshot || !isReadyForEmailView}
         isChartImagePreparing={!!viewSnapshot && !isReadyForEmailView}
@@ -1033,6 +1098,7 @@ const NewsletterDetailPage = () => {
             {mode === NewsletterDetailPageMode.EDIT && (
               <NewsletterEdit
                 snapshot={effectiveSnapshot}
+                validationIssues={editSaveValidation.issues}
                 onMainChartImageReady={onMainChartImageReady}
                 onRelatedNewsChange={handleRelatedNewsChange}
                 onReferencesChange={handleReferencesChange}

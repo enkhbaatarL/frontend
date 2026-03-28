@@ -18,6 +18,7 @@ interface TitleSectionProps {
   onPriceChangeFromChange?: (value?: string) => void
   onPriceChangeToChange?: (value?: string) => void
   blockOrder?: BlockOrderProps
+  showRequiredIndicator?: boolean
   sectionVisibility?: boolean
   onSectionVisibilityChange?: (visible: boolean) => void
 }
@@ -32,6 +33,7 @@ const TitleSection = ({
   onPriceChangeFromChange,
   onPriceChangeToChange,
   blockOrder,
+  showRequiredIndicator = false,
   sectionVisibility,
   onSectionVisibilityChange,
 }: TitleSectionProps) => {
@@ -55,6 +57,7 @@ const TitleSection = ({
       label={NEWSLETTER_SECTION_EDIT_LABEL[NEWSLETTER_SECTION_CODE.TITLE]}
       order={blockOrder}
       collapsedPreview={collapsedPreview}
+      showRequiredIndicator={showRequiredIndicator}
       visibility={sectionVisibility}
       onVisibilityChange={onSectionVisibilityChange}
     >

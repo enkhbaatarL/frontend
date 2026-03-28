@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosResponse } from 'axios'
-import { compare } from 'fast-json-patch'
+import { applyPatch, compare, type Operation } from 'fast-json-patch'
 import { cloneDeep } from 'lodash-es'
 
 import api, { apiExplicitBearer } from '@/lib/axios'
@@ -203,6 +203,8 @@ export interface IJsonPatchOpRes {
   op: string
   path: string
   value?: unknown
+  /** move / copy 연산의 소스 경로 */
+  from?: string
 }
 
 /** 발행호 상세의 `revision` — 백엔드 NewsletterDetailV2Res.RevisionStateRes */
@@ -258,6 +260,40 @@ export const getNewsletterIssueRevisionId = (detail: INewsletterIssueDetail): nu
  */
 export const getIssueDetailSnapshotData = (detail: INewsletterIssueDetail | null | undefined): INewsletterIssueSnapshotData | null =>
   detail?.snapshot?.data ?? null
+
+const toOperations = (deltas: IJsonPatchOpRes[]): Operation[] =>
+  deltas.map((d) => {
+    const op = d.op as Operation['op']
+    const base: Record<string, unknown> = { op, path: d.path }
+    if (d.value !== undefined) base.value = d.value
+    if (d.from !== undefined) base.from = d.from
+    return base as unknown as Operation
+  })
+
+/**
+ * 발행호 상세 응답에서 "최신 스냅샷"을 계산합니다.
+ * - `snapshot.data`: 서버가 저장한 기준 스냅샷(풀 스냅샷일 수도 있고 아닐 수도 있음)
+ * - `deltaChanges`: 기준 스냅샷 이후 누적된 JSON Patch
+ *
+ * 화면 표시/편집 기준은 이 결과를 사용해야 최신 상태를 반영합니다.
+ */
+export const getIssueDetailEffectiveSnapshotData = (
+  detail: INewsletterIssueDetail | null | undefined,
+): INewsletterIssueSnapshotData | null => {
+  const base = detail?.snapshot?.data ?? null
+  const deltas = detail?.deltaChanges ?? null
+  if (!base) return null
+  if (!deltas || deltas.length === 0) return base
+
+  try {
+    const baseForPatch = cloneDeep(base) as object
+    const result = applyPatch(baseForPatch, toOperations(deltas), true)
+    return (result.newDocument ?? result) as INewsletterIssueSnapshotData
+  } catch (err) {
+    console.warn('[newsletter] getIssueDetailEffectiveSnapshotData applyPatch 실패 — base snapshot을 사용합니다.', err)
+    return base
+  }
+}
 
 /**
  * 최종저장(`PUT .../revisions/save`)에 `snapshotPayload`를 넣을지 — 서버는 payload가 있을 때만 스냅샷 히스토리를 저장합니다.

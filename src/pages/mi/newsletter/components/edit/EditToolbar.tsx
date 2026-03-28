@@ -21,6 +21,16 @@ export type EditToolbarProps = {
   isSavingDraft?: boolean
   /** true면 최종 저장 버튼 비활성(변경 없음 등) */
   isSaveDisabled?: boolean
+  /** 저장 비활성화 원인 디버깅 정보 */
+  saveDisabledDebugInfo?: {
+    hasUnsavedChanges: boolean
+    isEditSnapshotValid: boolean
+    validationIssues?: Array<{
+      kind: 'MISSING_REQUIRED' | 'INVALID_FORMAT'
+      path: string
+      message: string
+    }>
+  }
   isChartActive?: boolean
 }
 
@@ -37,6 +47,7 @@ const EditToolbar = ({
   isSaving = false,
   isSavingDraft = false,
   isSaveDisabled = false,
+  saveDisabledDebugInfo,
   isChartActive = false,
 }: EditToolbarProps) => (
   <>
@@ -152,20 +163,42 @@ const EditToolbar = ({
                 임시저장
               </Typography>
             </MIBaseButton>
-            <MIBaseButton
-              variant="contained"
-              onClick={onSave}
-              disabled={isSaving || isSaveDisabled}
-              sx={{
-                height: '36px',
-                backgroundColor: 'contentIcon.ActivePrimary',
+            <Box
+              display="inline-flex"
+              onContextMenu={() => {
+                const disabled = isSaving || isSaveDisabled
+                if (!disabled) return
+                const hasUnsavedChanges = saveDisabledDebugInfo?.hasUnsavedChanges
+                const isEditSnapshotValid = saveDisabledDebugInfo?.isEditSnapshotValid
+                const validationIssues = saveDisabledDebugInfo?.validationIssues
+                console.info('[Newsletter] 저장 버튼 비활성화 상태 우클릭', {
+                  isSaving,
+                  isSaveDisabled,
+                  reasons: {
+                    isSaving,
+                    hasNoUnsavedChanges: hasUnsavedChanges === undefined ? undefined : !hasUnsavedChanges,
+                    invalidEditSnapshot: isEditSnapshotValid === undefined ? undefined : !isEditSnapshotValid,
+                  },
+                  validationIssues,
+                  debug: saveDisabledDebugInfo,
+                })
               }}
-              buttonHoverBgColor="contentIcon.ActivePrimary"
             >
-              <Typography variant="body2SB14" color={isSaving || isSaveDisabled ? 'contentText.Disabled' : 'contentIcon.Activew'} noWrap>
-                {isSaving ? '저장 중...' : '저장'}
-              </Typography>
-            </MIBaseButton>
+              <MIBaseButton
+                variant="contained"
+                onClick={onSave}
+                disabled={isSaving || isSaveDisabled}
+                sx={{
+                  height: '36px',
+                  backgroundColor: 'contentIcon.ActivePrimary',
+                }}
+                buttonHoverBgColor="contentIcon.ActivePrimary"
+              >
+                <Typography variant="body2SB14" color={isSaving || isSaveDisabled ? 'contentText.Disabled' : 'contentIcon.Activew'} noWrap>
+                  {isSaving ? '저장 중...' : '저장'}
+                </Typography>
+              </MIBaseButton>
+            </Box>
           </Stack>
         </Stack>
       </Stack>

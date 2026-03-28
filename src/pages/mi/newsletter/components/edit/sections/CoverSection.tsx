@@ -15,6 +15,7 @@ interface CoverSectionProps {
   onShowImageChange?: (show: boolean) => void
   onNameChange?: (value?: string) => void
   onDescriptionChange?: (value?: string) => void
+  showRequiredIndicator?: boolean
   sectionVisibility?: boolean
   onSectionVisibilityChange?: (visible: boolean) => void
 }
@@ -28,6 +29,7 @@ const CoverSection = ({
   onShowImageChange,
   onNameChange,
   onDescriptionChange,
+  showRequiredIndicator = false,
   sectionVisibility,
   onSectionVisibilityChange,
 }: CoverSectionProps) => (
@@ -35,6 +37,7 @@ const CoverSection = ({
     label={NEWSLETTER_SECTION_EDIT_LABEL[NEWSLETTER_SECTION_CODE.COVER]}
     fixed
     collapsedPreview={name || undefined}
+    showRequiredIndicator={showRequiredIndicator}
     visibility={sectionVisibility}
     onVisibilityChange={onSectionVisibilityChange}
   >

@@ -2,6 +2,7 @@ import { Box, Stack } from '@mui/material'
 import React, { useCallback, useMemo } from 'react'
 
 import type { BlockOrderProps } from '@/pages/mi/newsletter/components/edit/sections/Block'
+import type { NewsletterEditSnapshotSaveValidationIssue } from '@/pages/mi/newsletter/utils/snapshotUtils'
 
 import CoverSection from '@/pages/mi/newsletter/components/edit/sections/CoverSection'
 import DateAndIssueSection from '@/pages/mi/newsletter/components/edit/sections/DateAndIssueSection'
@@ -40,6 +41,7 @@ const FOOTER_SECTION_KEY = NEWSLETTER_SECTION_CODE.FOOTER
 
 export type NewsletterEditProps = {
   snapshot: INewsletterIssueSnapshotData | null
+  validationIssues?: NewsletterEditSnapshotSaveValidationIssue[]
   onMainChartImageReady?: (image: string) => void
   onRelatedNewsChange?: (items: IRelatedNewsEventItem[]) => void
   onTitleChange?: (value?: string) => void
@@ -63,6 +65,7 @@ export type NewsletterEditProps = {
 
 const NewsletterEdit = ({
   snapshot,
+  validationIssues,
   onMainChartImageReady,
   onRelatedNewsChange,
   onTitleChange,
@@ -83,6 +86,21 @@ const NewsletterEdit = ({
   onSectionVisibilityChange,
 }: NewsletterEditProps) => {
   const suppressNewsFlowChartUi = useMemo(() => shouldSuppressNewsFlowChartUi(snapshot), [snapshot])
+  const missingRequiredPaths = useMemo(
+    () => new Set((validationIssues ?? []).filter((i) => i.kind === 'MISSING_REQUIRED').map((i) => i.path)),
+    [validationIssues],
+  )
+
+  const hasAnyMissingRequiredWithPrefix = useCallback(
+    (prefix: string) => {
+      // Prefix match is intentionally loose to avoid coupling to every exact path format.
+      for (const p of missingRequiredPaths) {
+        if (p === prefix || p.startsWith(`${prefix}.`) || p.startsWith(`${prefix}[`)) return true
+      }
+      return false
+    },
+    [missingRequiredPaths],
+  )
 
   const {
     referenceSections,
@@ -165,6 +183,7 @@ const NewsletterEdit = ({
           onShowImageChange={onCoverShowImageChange}
           onNameChange={onNameChange}
           onDescriptionChange={onDescriptionChange}
+          showRequiredIndicator={hasAnyMissingRequiredWithPrefix('COVER')}
           sectionVisibility={coverSection?.visibility !== false}
           onSectionVisibilityChange={(visible) => (coverSection?.id ? onSectionVisibilityChange?.(coverSection.id, visible) : undefined)}
         />
@@ -175,6 +194,7 @@ const NewsletterEdit = ({
           date={dateIssueProps.date}
           issueNo={dateIssueProps.issueNo}
           blockOrder={getBlockOrder(NEWSLETTER_SECTION_CODE.DATE_ISSUE)}
+          showRequiredIndicator={hasAnyMissingRequiredWithPrefix('DATE_ISSUE')}
           sectionVisibility={dateIssueSection?.visibility !== false}
           onSectionVisibilityChange={(visible) =>
             dateIssueSection?.id ? onSectionVisibilityChange?.(dateIssueSection.id, visible) : undefined
@@ -193,6 +213,7 @@ const NewsletterEdit = ({
           onPriceChangeFromChange={onPriceChangeFromChange}
           onPriceChangeToChange={onPriceChangeToChange}
           blockOrder={getBlockOrder(NEWSLETTER_SECTION_CODE.TITLE)}
+          showRequiredIndicator={hasAnyMissingRequiredWithPrefix('TITLE')}
           sectionVisibility={titleSection?.visibility !== false}
           onSectionVisibilityChange={(visible) => (titleSection?.id ? onSectionVisibilityChange?.(titleSection.id, visible) : undefined)}
         />
@@ -203,6 +224,7 @@ const NewsletterEdit = ({
           summary={summaryProps.summary}
           onSummaryChange={onSummaryChange}
           blockOrder={getBlockOrder(NEWSLETTER_SECTION_CODE.SUMMARY)}
+          showRequiredIndicator={hasAnyMissingRequiredWithPrefix('SUMMARY')}
           sectionVisibility={summarySection?.visibility !== false}
           onSectionVisibilityChange={(visible) =>
             summarySection?.id ? onSectionVisibilityChange?.(summarySection.id, visible) : undefined
@@ -228,6 +250,8 @@ const NewsletterEdit = ({
           blockOrder={getBlockOrder(NEWSLETTER_SECTION_CODE.SECTION)}
           hideNewsFlowChart={suppressNewsFlowChartUi}
           disableNewsItemOrder={disableNewsFlowItemOrder}
+          showRequiredIndicator={hasAnyMissingRequiredWithPrefix('NEWS_FLOW')}
+          getNewsItemMissingRequired={(newsId) => hasAnyMissingRequiredWithPrefix(`NEWS_FLOW.newsEventItems[newsId=${newsId}]`)}
           sectionVisibility={newsFlowSection?.visibility !== false}
           onSectionVisibilityChange={(visible) =>
             newsFlowSection?.id ? onSectionVisibilityChange?.(newsFlowSection.id, visible) : undefined
@@ -241,6 +265,7 @@ const NewsletterEdit = ({
           showLogo={footerProps.showLogo}
           onFooterContentChange={onFooterContentChange}
           onShowLogoChange={onFooterShowLogoChange}
+          showRequiredIndicator={hasAnyMissingRequiredWithPrefix('FOOTER')}
           sectionVisibility={footerSection?.visibility !== false}
           onSectionVisibilityChange={(visible) => (footerSection?.id ? onSectionVisibilityChange?.(footerSection.id, visible) : undefined)}
         />
@@ -262,6 +287,8 @@ const NewsletterEdit = ({
               onAggregationTimeChange={onNewsFlowAggregationTimeChange}
               blockOrder={getBlockOrder(NEWSLETTER_SECTION_CODE.SIG_NEWS)}
               disableNewsItemOrder={disableSigNewsItemOrder}
+              showRequiredIndicator={hasAnyMissingRequiredWithPrefix('NEWS_FLOW')}
+              getNewsItemMissingRequired={(newsId) => hasAnyMissingRequiredWithPrefix(`NEWS_FLOW.newsEventItems[newsId=${newsId}]`)}
               sectionVisibility={sigNewsSection.visibility !== false}
               onSectionVisibilityChange={(visible) =>
                 sigNewsSection?.id ? onSectionVisibilityChange?.(sigNewsSection.id, visible) : undefined
@@ -280,12 +307,13 @@ const NewsletterEdit = ({
       if (!refSection.id || refSection.removed === true) return
       const sectionId = `ref:${refSection.id}`
       const userAdded = isUserAddedReferenceSection(refSection)
-      const shared = {
+      const missingRef = hasAnyMissingRequiredWithPrefix(`REFERENCE_SECTION[id=${refSection.id}]`)
+      const missingRefBlock = (blockId: string) =>
+        hasAnyMissingRequiredWithPrefix(`REFERENCE_SECTION[id=${refSection.id}].blocks[id=${blockId}]`)
+      const sharedBase = {
         section: refSection,
         refIndex,
         blockOrder: getBlockOrder(sectionId),
-        marketOpenTime,
-        marketCloseTime,
         onSectionFieldsChange: (partial: { title?: string; description?: string }) => updateReferenceFieldsById(refSection.id, partial),
         onSectionVisibilityChange: (visible: boolean) => updateReferenceSectionVisibilityById(refSection.id, visible),
         onBlockPatch: (contentBlockIndex: number, patch: ReferenceContentBlockPatch) =>
@@ -294,18 +322,27 @@ const NewsletterEdit = ({
           ? (contentBlockIndex: number) => deleteContentBlockByIndex(refSection.id, contentBlockIndex)
           : undefined,
         onBlockItemOrderChange: (fromIndex: number, targetIndex: number) => reorderContentBlocksById(refSection.id, fromIndex, targetIndex),
-        onChartImageReady: onReferenceChartImageReady,
-        getFlatChartIndex: (contentBlockIndex: number) => getFlatChartIndexBySectionId(refSection.id, contentBlockIndex),
       }
       map[sectionId] = userAdded ? (
         <UserCustomSection
           key={sectionId}
-          {...shared}
+          {...sharedBase}
+          showRequiredIndicator={missingRef}
+          getContentBlockMissingRequired={missingRefBlock}
           onDelete={onReferencesChange ? () => deleteReferenceBySectionId(refSection.id) : undefined}
           onAppendContentBlock={onReferencesChange ? (block) => appendReferenceContentBlock(refSection.id, block) : undefined}
         />
       ) : (
-        <ReferenceSection key={sectionId} {...shared} />
+        <ReferenceSection
+          key={sectionId}
+          {...sharedBase}
+          marketOpenTime={marketOpenTime}
+          marketCloseTime={marketCloseTime}
+          onChartImageReady={onReferenceChartImageReady}
+          getFlatChartIndex={(contentBlockIndex: number) => getFlatChartIndexBySectionId(refSection.id, contentBlockIndex)}
+          showRequiredIndicator={missingRef}
+          getContentBlockMissingRequired={missingRefBlock}
+        />
       )
     })
     return map
@@ -313,6 +350,7 @@ const NewsletterEdit = ({
     snapshot,
     referenceSections,
     getBlockOrder,
+    hasAnyMissingRequiredWithPrefix,
     updateReferenceFieldsById,
     updateReferenceSectionVisibilityById,
     deleteReferenceBySectionId,

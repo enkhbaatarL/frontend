@@ -11,6 +11,7 @@ import Reference from '@/pages/mi/newsletter/components/emailTemplate/Reference'
 import RelatedNews from '@/pages/mi/newsletter/components/emailTemplate/RelatedNews'
 import Summary from '@/pages/mi/newsletter/components/emailTemplate/Summary'
 import TitleAndOilPrice from '@/pages/mi/newsletter/components/emailTemplate/TitleAndOilPrice'
+import UserCustom from '@/pages/mi/newsletter/components/emailTemplate/UserCustom'
 import ChangedLabel from '@/pages/mi/newsletter/components/view/ChangedLabel'
 import {
   filterVisibleNewsFlowItems,
@@ -167,6 +168,34 @@ export const EmailContentTemplate = ({
       return null
     }
 
+    if (type === 'USER_CUSTOM') {
+      const refIndex = orderedReferenceSections.findIndex((r) => r.id === section.id)
+      if (refIndex < 0) return null
+      const refSection = orderedReferenceSections[refIndex]!
+
+      const hasReferenceDiff = !!diffOverrides?.referenceTitles?.[refIndex] || !!diffOverrides?.referenceDescriptions?.[refIndex]
+      return (
+        <tr key={section.id}>
+          <td id={`section-user-custom-${refIndex}`} style={{ paddingBottom: '38px', position: 'relative' }}>
+            {hasReferenceDiff && (
+              <ChangedLabel
+                diffHtmls={[diffOverrides?.referenceTitles?.[refIndex], diffOverrides?.referenceDescriptions?.[refIndex]]}
+                top="12px"
+              />
+            )}
+            {!hasReferenceDiff && orderTag(refSection.id) && <ChangedLabel labelKind="reordered" top="12px" />}
+            <UserCustom
+              section={refSection}
+              titleDiffHtml={diffOverrides?.referenceTitles?.[refIndex]}
+              descriptionDiffHtml={diffOverrides?.referenceDescriptions?.[refIndex]}
+              showRemovedBlocks={includeRemovedNewsFlowItems}
+              diffComparisonSnapshot={diffComparisonSnapshot}
+            />
+          </td>
+        </tr>
+      )
+    }
+
     if (type === 'REFERENCE') {
       const refIndex = orderedReferenceSections.findIndex((r) => r.id === section.id)
       if (refIndex < 0) return null
@@ -282,15 +311,23 @@ export const EmailContentTemplate = ({
                         {showFlowChartRow && (
                           <tr>
                             <td id={`newsletter-chart-section-${section.id}`} style={{ paddingBottom: '24px' }}>
-                              <div
+                              <table
+                                cellPadding={0}
+                                cellSpacing={0}
+                                border={0}
+                                width="800"
                                 style={{
-                                  borderRadius: '10px',
-                                  overflow: 'hidden',
+                                  borderCollapse: 'collapse',
+                                  width: '800px',
                                   background: '#FFFFFF',
                                 }}
                               >
-                                {chartNode}
-                              </div>
+                                <tbody>
+                                  <tr>
+                                    <td style={{ fontSize: 0, lineHeight: 0 }}>{chartNode}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
                             </td>
                           </tr>
                         )}

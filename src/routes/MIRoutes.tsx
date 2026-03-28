@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Navigate, RouteObject, useLocation } from 'react-router-dom'
+import { Navigate, RouteObject, useLocation, useParams, useSearchParams } from 'react-router-dom'
 
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import MILayout from '@/layouts/MILayout'
@@ -72,6 +72,24 @@ const MIMainRedirect = () => {
 // Hynix NewsletterDetail 분기
 const NewsletterDetailPageWrapper = () => <NewsletterDetailPage />
 
+const LegacyNewsletterRedirect = () => {
+  const { newsletterId, issueNo } = useParams()
+  const [searchParams] = useSearchParams()
+
+  const resolvedNewsletterId = newsletterId ?? ''
+  const resolvedIssueNo = issueNo ?? searchParams.get('issueNo') ?? searchParams.get('issue') ?? ''
+
+  if (!resolvedNewsletterId) {
+    return <Navigate to="/mi/newsletters" replace />
+  }
+
+  if (!resolvedIssueNo) {
+    return <Navigate to="/mi/newsletters" replace />
+  }
+
+  return <Navigate to={`/mi/newsletters/${resolvedNewsletterId}/${resolvedIssueNo}`} replace />
+}
+
 // 조건부 Forecast 컴포넌트 래퍼
 const ForecastPageWrapper = () => {
   const { accessCompanyInfo, user } = useAuthStore()
@@ -132,6 +150,24 @@ const MIRoutes: RouteObject = {
         {
           path: ':newsletterId/:issueNo',
           element: <NewsletterDetailPageWrapper />,
+        },
+      ],
+    },
+    // 구버전/외부 링크 호환 (단수형 + query 기반 issueNo)
+    {
+      path: 'newsletter',
+      children: [
+        {
+          index: true,
+          element: <Navigate to="/mi/newsletters" replace />,
+        },
+        {
+          path: ':newsletterId/:issueNo',
+          element: <LegacyNewsletterRedirect />,
+        },
+        {
+          path: ':newsletterId',
+          element: <LegacyNewsletterRedirect />,
         },
       ],
     },

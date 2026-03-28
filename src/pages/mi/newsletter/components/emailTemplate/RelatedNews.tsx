@@ -28,7 +28,7 @@ const RelatedNews = ({ item, titleDiffHtml, contentDiffHtml, visualRemoved }: Re
   >
     <tbody>
       <tr>
-        <td style={{ paddingTop: '24px', paddingBottom: '0' }}>
+        <td className="rn-date-wrap" style={{ paddingTop: '24px', paddingBottom: 0 }}>
           <table width="100%" cellPadding={0} cellSpacing={0} border={0} style={{ borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
@@ -48,16 +48,13 @@ const RelatedNews = ({ item, titleDiffHtml, contentDiffHtml, visualRemoved }: Re
                       &nbsp;&nbsp;
                       <span
                         style={{
-                          display: 'inline-block',
-                          width: '1px',
-                          height: '12px',
-                          backgroundColor: '#868E96',
+                          color: '#868E96',
+                          fontSize: '12px',
+                          lineHeight: '22px',
                           verticalAlign: 'middle',
-                          fontSize: '0',
-                          overflow: 'hidden',
                         }}
                       >
-                        &nbsp;
+                        |
                       </span>
                       &nbsp;&nbsp;
                       <span style={{ fontWeight: 500 }}>{item.source}</span>
@@ -106,6 +103,7 @@ const RelatedNews = ({ item, titleDiffHtml, contentDiffHtml, visualRemoved }: Re
       </tr>
       <tr>
         <td
+          className="rn-title"
           style={{
             paddingBottom: '10px',
             color: '#212529',
@@ -123,6 +121,7 @@ const RelatedNews = ({ item, titleDiffHtml, contentDiffHtml, visualRemoved }: Re
       </tr>
       <tr>
         <td
+          className="rn-content"
           style={{
             paddingBottom: '24px',
             color: '#495057',

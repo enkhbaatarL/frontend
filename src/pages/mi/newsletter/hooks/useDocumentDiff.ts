@@ -48,8 +48,10 @@ export type UseDocumentDiffResult = {
 const toOperations = (deltas: IJsonPatchOpRes[]): Operation[] =>
   deltas.map((d) => {
     const op = d.op as Operation['op']
-    if (d.value !== undefined) return { op, path: d.path, value: d.value } as Operation
-    return { op, path: d.path } as Operation
+    const base: Record<string, unknown> = { op, path: d.path }
+    if (d.value !== undefined) base.value = d.value
+    if (d.from !== undefined) base.from = d.from
+    return base as unknown as Operation
   })
 
 export type ComparisonTarget = 'previous' | 'initial'
@@ -123,7 +125,15 @@ export const useDocumentDiff = (
       const currResult = applyPatch(currentObj, toOperations(deltasToCurrent), true)
       currentObj = (currResult.newDocument ?? currResult) as object
     } catch (err) {
-      console.error('[useDocumentDiff] applyPatch 실패:', err)
+      const opTypes = [...new Set(deltasToCurrent.map((d) => d.op))]
+      console.error('[useDocumentDiff] applyPatch 실패:', err, {
+        selectedVersionSeq,
+        comparisonTarget,
+        deltasCount: deltasToCurrent.length,
+        opTypes,
+        baseSnapshotSeq: revisionDetail.baseSnapshot.seq,
+        historySeqs: histories.map((h) => h.seq),
+      })
       return empty()
     }
 

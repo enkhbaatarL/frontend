@@ -2,7 +2,9 @@ import AddIcon from '@mui/icons-material/Add'
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import EditIcon from '@mui/icons-material/Edit'
+import EmailRoundedIcon from '@mui/icons-material/EmailRounded'
 import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded'
+import ImageRoundedIcon from '@mui/icons-material/ImageRounded'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import SendRoundedIcon from '@mui/icons-material/SendRounded'
 import { Box, Collapse, Stack, Typography } from '@mui/material'
@@ -24,10 +26,10 @@ export type ViewToolbarProps = {
   isScrolled: boolean
   newsletterIssues?: INewsletterIssueResponse | null
   onEditMode: () => void
-  /** 편집 진입 중(상세·초안 로딩) — 더보기 버튼 로딩 표시 */
-  isEnteringEditMode?: boolean
   onRevisionMode: () => void
   onDownloadImage?: () => void
+  /** Outlook 확인용: .eml을 zip에 담아 다운로드 (우클릭 메뉴) */
+  onDownloadEml?: () => void
   isDownloadingImage?: boolean
   /** 다운로드 불가 시 true (예: 데이터 없음) */
   isDownloadDisabled?: boolean
@@ -48,12 +50,12 @@ const ViewToolbar = ({
   isScrolled,
   newsletterIssues,
   onEditMode,
-  isEnteringEditMode = false,
   onRevisionMode,
   onDownloadImage,
-  isDownloadingImage = false,
+  onDownloadEml,
+  isDownloadingImage: _isDownloadingImage = false,
   isDownloadDisabled = false,
-  isChartImagePreparing = false,
+  isChartImagePreparing: _isChartImagePreparing = false,
   isNewsletterSubscribed = false,
   isSubscriptionStatusLoading = false,
   onSubscribeToggle,
@@ -64,6 +66,8 @@ const ViewToolbar = ({
   const { newsletterId, issueNo } = useParams()
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [downloadMenuOpen, setDownloadMenuOpen] = useState(false)
+  const downloadHoldTimerRef = useRef<number | null>(null)
   /** 구독 중일 때 호버 → X 아이콘·「구독해제」 (헤더 확장 시에만 라벨 표시) */
   const [subscribeHovered, setSubscribeHovered] = useState(false)
   /** 구독 해제 요청 직후~뮤테이션 종료까지 실제 구독 여부와 무관하게 미구독 UI(라벨「구독」)로 고정 */
@@ -117,6 +121,18 @@ const ViewToolbar = ({
   const coverProps = getCoverProps(snapshot)
   const dateIssueProps = getDateIssueProps(snapshot)
   const titleProps = getTitleProps(snapshot)
+
+  const hasDownloadOptions = !!onDownloadImage || !!onDownloadEml
+  const downloadBusy = !!onDownloadImage && !isDownloadDisabled && (_isChartImagePreparing || _isDownloadingImage)
+
+  const clearDownloadHoldTimer = () => {
+    if (downloadHoldTimerRef.current !== null) {
+      window.clearTimeout(downloadHoldTimerRef.current)
+      downloadHoldTimerRef.current = null
+    }
+  }
+
+  useEffect(() => clearDownloadHoldTimer, [])
 
   return (
     <Stack
@@ -421,27 +437,73 @@ const ViewToolbar = ({
               </Collapse>
             </Stack>
           </MIBaseButton>
-          <MIBaseButton
+          <MIDropdownMenu
+            label={<ChartDownloadIcon fill={theme.palette.gray[70]} />}
             variant="outlined"
-            onClick={onDownloadImage}
-            disabled={!onDownloadImage || isDownloadDisabled}
-            isLoading={!!onDownloadImage && !isDownloadDisabled && (isChartImagePreparing || isDownloadingImage)}
+            placement="bottom-end"
+            open={downloadMenuOpen}
+            onOpenChange={setDownloadMenuOpen}
+            disabled={!hasDownloadOptions || isDownloadDisabled}
+            isLoading={downloadBusy}
+            onClick={() => {
+              // 좌클릭: 기존 동작 그대로(즉시 PNG 다운로드)
+              if (!onDownloadImage || isDownloadDisabled) return
+              onDownloadImage()
+            }}
+            onPointerDown={(e) => {
+              if (!hasDownloadOptions || isDownloadDisabled || downloadBusy) return
+              if (e.button !== 2) return
+              clearDownloadHoldTimer()
+              downloadHoldTimerRef.current = window.setTimeout(() => {
+                setDownloadMenuOpen(true)
+                downloadHoldTimerRef.current = null
+              }, 800)
+            }}
+            onPointerUp={(e) => {
+              if (e.button === 2) clearDownloadHoldTimer()
+            }}
+            onPointerLeave={() => clearDownloadHoldTimer()}
+            onPointerCancel={() => clearDownloadHoldTimer()}
+            onContextMenu={(e) => {
+              // 기본 컨텍스트 메뉴는 막고, 메뉴 오픈은 홀드 타이머로만 처리
+              if (!hasDownloadOptions || isDownloadDisabled || downloadBusy) return
+              e.preventDefault()
+            }}
+            items={[
+              {
+                label: (
+                  <Stack direction="row" alignItems="center" gap="8px">
+                    <ImageRoundedIcon sx={{ color: 'gray.70', fontSize: '20px' }} />
+                    <Box>이미지(.png)</Box>
+                  </Stack>
+                ),
+                disabled: !onDownloadImage || isDownloadDisabled,
+                action: onDownloadImage,
+              },
+              {
+                label: (
+                  <Stack direction="row" alignItems="center" gap="8px">
+                    <EmailRoundedIcon sx={{ color: 'gray.70', fontSize: '20px' }} />
+                    <Box>Outlook(.eml)</Box>
+                  </Stack>
+                ),
+                disabled: !onDownloadEml || isDownloadDisabled,
+                action: onDownloadEml,
+              },
+            ]}
             sx={{
               height: '36px',
               padding: '8px',
               backgroundColor: 'commonColor.White',
             }}
             buttonHoverBgColor="commonColor.White"
-          >
-            <ChartDownloadIcon fill={theme.palette.gray[70]} />
-          </MIBaseButton>
+          />
           <MIDropdownMenu
             label={<MoreVertIcon sx={{ color: 'gray.70', fontSize: '20px' }} />}
             variant="outlined"
             placement="bottom-end"
             open={moreMenuOpen}
             onOpenChange={setMoreMenuOpen}
-            loading={isEnteringEditMode}
             items={[
               {
                 label: (

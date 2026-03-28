@@ -40,7 +40,7 @@ export const TitleOilPriceRowEmailTable = ({
                 fontFamily: EMAIL_FONT_FAMILY,
                 fontSize: '14px',
                 fontWeight: 500,
-                lineHeight: '1.4',
+                lineHeight: '20px',
               }}
             >
               {oilPriceLabel}
@@ -57,7 +57,7 @@ export const TitleOilPriceRowEmailTable = ({
                       fontFamily: EMAIL_FONT_FAMILY,
                       fontSize: '20px',
                       fontWeight: 600,
-                      lineHeight: '1.4',
+                      lineHeight: '28px',
                     }}
                   >
                     {formatPriceForDisplay(priceChangeFrom)}
@@ -69,6 +69,7 @@ export const TitleOilPriceRowEmailTable = ({
                       fontFamily: EMAIL_FONT_FAMILY,
                       fontSize: '20px',
                       fontWeight: 600,
+                      lineHeight: '28px',
                     }}
                   >
                     →
@@ -80,7 +81,7 @@ export const TitleOilPriceRowEmailTable = ({
                       fontFamily: EMAIL_FONT_FAMILY,
                       fontSize: '20px',
                       fontWeight: 600,
-                      lineHeight: '1.4',
+                      lineHeight: '28px',
                     }}
                   >
                     {formatPriceForDisplay(priceChangeTo)}
@@ -92,6 +93,7 @@ export const TitleOilPriceRowEmailTable = ({
                       fontFamily: EMAIL_FONT_FAMILY,
                       fontSize: '16px',
                       fontWeight: 600,
+                      lineHeight: '22px',
                     }}
                   >
                     {oilPresentation.changeText}

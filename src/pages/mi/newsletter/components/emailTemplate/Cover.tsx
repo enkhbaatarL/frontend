@@ -70,7 +70,6 @@ const Cover = ({ image, frequency, name, description, coverImage, showImage = tr
                                 <tr>
                                   <td
                                     style={{
-                                      display: 'inline-block',
                                       padding: '4px 10px',
                                       borderRadius: '100px',
                                       backgroundColor: '#DEE2E6',

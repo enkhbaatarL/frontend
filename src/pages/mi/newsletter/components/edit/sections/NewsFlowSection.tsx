@@ -45,6 +45,8 @@ interface NewsFlowSectionProps {
   /** 편집기 섹션 눈 아이콘(숨김) */
   sectionVisibility?: boolean
   onSectionVisibilityChange?: (visible: boolean) => void
+  showRequiredIndicator?: boolean
+  getNewsItemMissingRequired?: (newsId: string) => boolean
 }
 
 const NewsFlowSection = ({
@@ -62,6 +64,8 @@ const NewsFlowSection = ({
   disableNewsItemOrder = false,
   sectionVisibility,
   onSectionVisibilityChange,
+  showRequiredIndicator = false,
+  getNewsItemMissingRequired,
 }: NewsFlowSectionProps) => {
   const { getCreateTimeError, isCreateTimeValid } = useCreateTimeValidation()
   const dFlowTitle = getEffectiveFieldDef(sectionFieldDefs, 'title')
@@ -165,6 +169,7 @@ const NewsFlowSection = ({
       label={NEWSLETTER_SECTION_EDIT_LABEL[NEWSLETTER_SECTION_CODE.SECTION]}
       order={blockOrder}
       collapsedPreview={chartData?.title || undefined}
+      showRequiredIndicator={showRequiredIndicator}
       visibility={sectionVisibility}
       onVisibilityChange={onSectionVisibilityChange}
     >
@@ -238,6 +243,7 @@ const NewsFlowSection = ({
                 )
               }
               onDelete={onRelatedNewsChange ? () => handleDeleteNews(item.newsId) : undefined}
+              showRequiredIndicator={getNewsItemMissingRequired?.(item.newsId) ?? false}
             >
               <NewsFormFields
                 fieldDefs={item.fieldDefs}

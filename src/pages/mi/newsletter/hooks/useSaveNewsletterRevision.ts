@@ -78,6 +78,11 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
         queryKey: ['revisionChanges', newsletterId, issueNo],
       })
 
+      /** 수정 이력 상세(델타 리플레이) — baseSnapshot·histories가 달라질 수 있으므로 캐시 제거 */
+      await queryClient.invalidateQueries({
+        queryKey: ['revisionChangeDetail', newsletterId, issueNo],
+      })
+
       return { success: true }
     } catch (err) {
       if (err instanceof SaveRevisionConcurrencyError) {

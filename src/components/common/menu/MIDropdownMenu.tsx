@@ -32,6 +32,8 @@ interface Props extends ButtonProps {
   onOpenChange?: (open: boolean) => void
   buttonHoverBgColor?: string
   disableRipple?: boolean
+  /** 내부 버튼 로딩 스피너 표시 + disabled 처리 */
+  isLoading?: boolean
 }
 
 const MIDropdownMenu = ({

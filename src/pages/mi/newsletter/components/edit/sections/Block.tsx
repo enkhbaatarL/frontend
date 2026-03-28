@@ -31,6 +31,7 @@ interface BlockProps {
    */
   visibility?: boolean
   onVisibilityChange?: (visible: boolean) => void
+  showRequiredIndicator?: boolean
 }
 
 const Block = ({
@@ -43,6 +44,7 @@ const Block = ({
   collapsedPreview,
   visibility,
   onVisibilityChange,
+  showRequiredIndicator = false,
 }: BlockProps) => {
   const isInsideBlock = useIsInsideBlock()
   const { showSnackbar } = useSnackbar()
@@ -179,19 +181,41 @@ const Block = ({
                 {collapsedPreview}
               </Typography>
             )}
-            <MIBaseButton
-              variant="text"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              sx={{
-                padding: '8px 10px',
-              }}
-            >
-              {isCollapsed ? (
-                <KeyboardArrowDownRounded fontSize="small" sx={{ color: 'contentIcon.Enabled' }} />
-              ) : (
-                <KeyboardArrowUpRounded fontSize="small" sx={{ color: 'contentIcon.Enabled' }} />
+            <Stack direction="row" alignItems="center" gap="8px">
+              {showRequiredIndicator && (
+                <Box
+                  component="span"
+                  sx={{
+                    flexShrink: 0,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    height: 28,
+                    px: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: 'point.red1',
+                    bgcolor: 'commonColor.White',
+                  }}
+                >
+                  <Typography variant="body2SB14" sx={{ color: 'point.red1', lineHeight: 1 }} noWrap>
+                    필수 값 입력
+                  </Typography>
+                </Box>
               )}
-            </MIBaseButton>
+              <MIBaseButton
+                variant="text"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                sx={{
+                  padding: '8px 10px',
+                }}
+              >
+                {isCollapsed ? (
+                  <KeyboardArrowDownRounded fontSize="small" sx={{ color: 'contentIcon.Enabled' }} />
+                ) : (
+                  <KeyboardArrowUpRounded fontSize="small" sx={{ color: 'contentIcon.Enabled' }} />
+                )}
+              </MIBaseButton>
+            </Stack>
           </Stack>
           <Collapse in={!isCollapsed}>
             <Box pt="12px" borderTop="1px solid" borderColor="contentBorder.Normal" boxSizing="border-box">

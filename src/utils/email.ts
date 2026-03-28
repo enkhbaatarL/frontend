@@ -61,9 +61,13 @@ export const wrapEmailHtmlDocument = (innerBodyHtml: string, options?: WrapEmail
   <!--[if mso]>
   <style>
   body, table, td, th, p, span, a, li { font-family: ${OUTLOOK_MSO_FONT_FAMILY} !important; }
-  table { border-collapse: collapse; mso-table-lspace: 0; mso-table-rspace: 0; }
+  table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
   td, th, p, div, span, a, li { mso-line-height-rule: exactly; }
   p { margin: 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; }
+  div { margin: 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; }
+  td { mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; mso-para-margin: 0; }
+  img { -ms-interpolation-mode: bicubic; display: block; }
+  a img { border: 0; }
   </style>
   <![endif]-->
   <style>
@@ -76,11 +80,76 @@ ${innerBodyHtml}
 </html>`
 }
 
-/** render 조각 → 엔티티 정규화 → 아웃룩용 전체 HTML 문서 */
+/**
+ * Outlook(Word 엔진)에서 `<td>` padding을 `mso-padding-alt`로 오버라이드합니다.
+ * `mso-padding-alt`는 Outlook Word 엔진에서만 인식되며 다른 클라이언트는 무시합니다.
+ * 원래 padding 값은 유지되어 일반 메일 클라이언트 렌더링에 영향 없습니다.
+ */
+
+/**
+ * RelatedNews 전용 축소 오버라이드 — 필요 시 아래 주석을 해제하여 활성화:
+ *
+ * const MSO_PADDING_ALT_OVERRIDES: Record<string, string> = {
+ *   'rn-date-wrap': '6px 0 0 0',
+ *   'rn-title': '0 0 4px 0',
+ *   'rn-content': '0 0 6px 0',
+ * }
+ * const injectRelatedNewsMsoPaddingAlt = (html: string): string =>
+ *   Object.entries(MSO_PADDING_ALT_OVERRIDES).reduce(
+ *     (h, [cls, msoPad]) =>
+ *       h.replaceAll(
+ *         new RegExp(`class="${cls}"\\s+style="([^"]*)"`, 'g'),
+ *         (_, style: string) => `class="${cls}" style="${style};mso-padding-alt:${msoPad}"`,
+ *       ),
+ *     html,
+ *   )
+ */
+
+/**
+ * `<td>` 인라인 스타일에서 padding 값을 파싱하여 `mso-padding-alt` 축약값을 반환합니다.
+ * 이미 `mso-padding-alt`가 있거나 padding 속성이 없는 경우 null을 반환합니다.
+ */
+const extractMsoPaddingAlt = (style: string): string | null => {
+  if (/mso-padding-alt/.test(style)) return null
+
+  const shorthand = style.match(/(?:^|;)\s*padding\s*:\s*([^;]+)/)
+  if (shorthand) {
+    const parts = shorthand[1].trim().split(/\s+/)
+    switch (parts.length) {
+      case 1:
+        return `${parts[0]} ${parts[0]} ${parts[0]} ${parts[0]}`
+      case 2:
+        return `${parts[0]} ${parts[1]} ${parts[0]} ${parts[1]}`
+      case 3:
+        return `${parts[0]} ${parts[1]} ${parts[2]} ${parts[1]}`
+      default:
+        return parts.slice(0, 4).join(' ')
+    }
+  }
+
+  const get = (p: string) => style.match(new RegExp(`${p}:\\s*([^;]+)`))?.[1]?.trim()
+  const t = get('padding-top')
+  const r = get('padding-right')
+  const b = get('padding-bottom')
+  const l = get('padding-left')
+  if (!t && !r && !b && !l) return null
+  return `${t ?? '0'} ${r ?? '0'} ${b ?? '0'} ${l ?? '0'}`
+}
+
+/** 모든 `<td>`의 padding을 `mso-padding-alt`로 미러링하여 Outlook에서 동일하게 표시 */
+const injectMsoPaddingAltForAllTds = (html: string): string =>
+  html.replaceAll(/<td\b[^>]*\bstyle="([^"]*)"[^>]*>/g, (fullTag, style: string) => {
+    const msoPad = extractMsoPaddingAlt(style)
+    if (!msoPad) return fullTag
+    return fullTag.replace(`style="${style}"`, `style="${style};mso-padding-alt:${msoPad}"`)
+  })
+
+/** render 조각 → 엔티티 정규화 → mso-padding-alt 주입 → 아웃룩용 전체 HTML 문서 */
 export const prepareNewsletterEmailHtml = (reactEmailHtmlFragment: string, options?: WrapEmailHtmlDocumentOptions): string => {
   const inner = extractEmailBodyFragment(reactEmailHtmlFragment)
   const normalized = normalizeEmailFontEntities(inner)
-  return wrapEmailHtmlDocument(normalized, options)
+  const withMsoPadding = injectMsoPaddingAltForAllTds(normalized)
+  return wrapEmailHtmlDocument(withMsoPadding, options)
 }
 
 /**

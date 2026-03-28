@@ -1,15 +1,17 @@
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
 
-import type { INewsletterIssueSnapshotData, INewsletterSnapshotBlock, INewsletterSnapshotSection } from '@/service/mi/newsletter'
+import type { INewsletterIssueSnapshotData, INewsletterSnapshotSection } from '@/service/mi/newsletter'
 
 import ReferenceChart from '@/pages/mi/newsletter/components/chart/ReferenceChart'
 import ItemTitle from '@/pages/mi/newsletter/components/emailTemplate/ItemTitle'
 import ReferenceTable from '@/pages/mi/newsletter/components/emailTemplate/ReferenceTable'
 import ChangedLabel from '@/pages/mi/newsletter/components/view/ChangedLabel'
 import {
+  chartViewFromBlock,
   getBlockFields,
   getReferenceContentBlocks,
   isReferenceBlockRemoved,
+  tableViewFromBlock,
   wasReferenceContentBlockRemovedInSnapshot,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
 import { EMAIL_FONT_FAMILY } from '@/utils/email'
@@ -28,40 +30,6 @@ interface ReferenceProps {
   showRemovedBlocks?: boolean
   /** 비교 스냅샷 — 직전에도 삭제된 블록은 숨김 */
   diffComparisonSnapshot?: INewsletterIssueSnapshotData | null
-}
-
-const chartViewFromBlock = (block: INewsletterSnapshotBlock) => {
-  const c = getBlockFields<{
-    timestamps?: number[]
-    series?: {
-      seriesId: string
-      label: string
-      renderAs: string
-      values: number[]
-      isVisible: boolean
-    }[]
-  }>(block)
-  const series = (c?.series ?? []).map((s) => ({ ...s, isLineChartDashStyle: null as string | null }))
-  return {
-    timestamps: c?.timestamps ?? [],
-    series,
-  }
-}
-
-const tableViewFromBlock = (block: INewsletterSnapshotBlock) => {
-  const c = getBlockFields<{
-    tableData?: {
-      tableId?: string | null
-      headers?: { field: string; name: string }[]
-      rows?: { cells: string[] }[]
-    }
-  }>(block)
-  const td = c?.tableData
-  return {
-    tableId: String(td?.tableId ?? ''),
-    headers: td?.headers ?? [],
-    rows: td?.rows ?? [],
-  }
 }
 
 const Reference = ({
@@ -138,15 +106,23 @@ const Reference = ({
               <tr key={block.id}>
                 <td style={{ position: 'relative', ...removedNonTextStyle }}>
                   {blockRemoved && <ChangedLabel labelKind="deleted" top="12px" />}
-                  <div
+                  <table
+                    cellPadding={0}
+                    cellSpacing={0}
+                    border={0}
+                    width="800"
                     style={{
-                      borderRadius: '10px',
-                      overflow: 'hidden',
+                      borderCollapse: 'collapse',
+                      width: '800px',
                       background: '#FFFFFF',
                     }}
                   >
-                    {chartCellContent}
-                  </div>
+                    <tbody>
+                      <tr>
+                        <td style={{ fontSize: 0, lineHeight: 0 }}>{chartCellContent}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </td>
               </tr>
             )
@@ -178,44 +154,51 @@ const Reference = ({
                   }}
                 >
                   {blockRemoved && <ChangedLabel labelKind="deleted" top="12px" />}
-                  {imageTitle ? (
-                    <div
-                      style={{
-                        paddingLeft: '16px',
-                        paddingRight: '16px',
-                        paddingBottom: '8px',
-                        fontSize: '15px',
-                        fontWeight: 700,
-                        lineHeight: 1.4,
-                        color: '#212529',
-                      }}
-                    >
-                      {imageTitle}
-                    </div>
-                  ) : null}
-                  {src ? (
-                    <img
-                      src={src}
-                      alt=""
-                      width={800}
-                      style={{ display: 'block', width: '800px', maxWidth: '100%', border: 0, borderRadius: 10 }}
-                    />
-                  ) : null}
-                  {caption ? (
-                    <div
-                      style={{
-                        marginTop: '12px',
-                        paddingLeft: '16px',
-                        paddingRight: '16px',
-                        fontSize: '14px',
-                        lineHeight: 1.5,
-                        color: '#333333',
-                        whiteSpace: 'pre-wrap',
-                      }}
-                    >
-                      {caption}
-                    </div>
-                  ) : null}
+                  <table cellPadding={0} cellSpacing={0} border={0} width="800" style={{ borderCollapse: 'collapse', width: '800px' }}>
+                    <tbody>
+                      {imageTitle ? (
+                        <tr>
+                          <td
+                            style={{
+                              paddingLeft: '16px',
+                              paddingRight: '16px',
+                              paddingBottom: '8px',
+                              fontSize: '15px',
+                              fontWeight: 700,
+                              lineHeight: '21px',
+                              color: '#212529',
+                            }}
+                          >
+                            {imageTitle}
+                          </td>
+                        </tr>
+                      ) : null}
+                      {src ? (
+                        <tr>
+                          <td style={{ fontSize: 0, lineHeight: 0 }}>
+                            <img src={src} alt="" width={800} style={{ display: 'block', width: '800px', maxWidth: '100%', border: 0 }} />
+                          </td>
+                        </tr>
+                      ) : null}
+                      {caption ? (
+                        <tr>
+                          <td
+                            style={{
+                              paddingTop: '12px',
+                              paddingLeft: '16px',
+                              paddingRight: '16px',
+                              fontSize: '14px',
+                              lineHeight: '21px',
+                              color: '#333333',
+                              whiteSpace: 'pre-wrap',
+                            }}
+                          >
+                            {caption}
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
                 </td>
               </tr>
             )
@@ -235,7 +218,6 @@ const Reference = ({
               )
             }
 
-            /** 제목 셀: `overflow:hidden`은 내부 div에만 — 삭제됨 라벨이 잘리지 않게 */
             const titleInnerStyle: CSSProperties = {
               whiteSpace: 'nowrap',
               overflow: 'hidden',
@@ -265,12 +247,13 @@ const Reference = ({
                   <tr>
                     <td
                       style={{
+                        ...titleInnerStyle,
                         position: 'relative',
                         paddingBottom: hasContent ? '10px' : '24px',
                       }}
                     >
                       {blockRemoved && <ChangedLabel labelKind="deleted" top="8px" />}
-                      <div style={titleInnerStyle}>{textTitle}</div>
+                      {textTitle}
                     </td>
                   </tr>
                 ) : null}

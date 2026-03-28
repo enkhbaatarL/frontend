@@ -12,11 +12,13 @@ import useSnackbar from '@/hooks/useSnackbar'
 import ReferenceChart from '@/pages/mi/newsletter/components/chart/ReferenceChart'
 import ReferenceTable from '@/pages/mi/newsletter/components/emailTemplate/ReferenceTable'
 import {
+  chartViewFromBlock,
   fullInsertIndexForVisibleBlockTarget,
   getBlockFields,
   getEffectiveFieldDef,
   getReferenceContentBlocks,
   isReferenceBlockRemoved,
+  tableViewFromBlock,
   type ReferenceContentBlockPatch,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
 
@@ -40,6 +42,8 @@ export type ReferenceSectionProps = {
   onOrderChange?: (targetIndex: number) => void
   marketOpenTime?: number
   marketCloseTime?: number
+  showRequiredIndicator?: boolean
+  getContentBlockMissingRequired?: (blockId: string) => boolean
   onSectionFieldsChange: (partial: { title?: string; description?: string }) => void
   onSectionVisibilityChange?: (visible: boolean) => void
   onBlockPatch: (contentBlockIndex: number, patch: ReferenceContentBlockPatch) => void
@@ -47,40 +51,6 @@ export type ReferenceSectionProps = {
   onBlockItemOrderChange: (fromIndex: number, targetIndex: number) => void
   onChartImageReady?: (flatChartIndex: number, image: string) => void
   getFlatChartIndex: (contentBlockIndex: number) => number
-}
-
-const chartViewFromBlock = (block: INewsletterSnapshotBlock) => {
-  const c = getBlockFields<{
-    timestamps?: number[]
-    series?: {
-      seriesId: string
-      label: string
-      renderAs: string
-      values: number[]
-      isVisible: boolean
-    }[]
-  }>(block)
-  const series = (c?.series ?? []).map((s) => ({ ...s, isLineChartDashStyle: null as string | null }))
-  return {
-    timestamps: c?.timestamps ?? [],
-    series,
-  }
-}
-
-const tableViewFromBlock = (block: INewsletterSnapshotBlock) => {
-  const c = getBlockFields<{
-    tableData?: {
-      tableId?: string | null
-      headers?: { field: string; name: string }[]
-      rows?: { cells: string[] }[]
-    }
-  }>(block)
-  const td = c?.tableData
-  return {
-    tableId: String(td?.tableId ?? ''),
-    headers: td?.headers ?? [],
-    rows: td?.rows ?? [],
-  }
 }
 
 const contentFromBlock = (block: INewsletterSnapshotBlock) => getBlockFields<{ content?: string }>(block)?.content ?? ''
@@ -94,6 +64,8 @@ const ReferenceSection = ({
   onOrderChange,
   marketOpenTime,
   marketCloseTime,
+  showRequiredIndicator = false,
+  getContentBlockMissingRequired,
   onSectionFieldsChange,
   onSectionVisibilityChange,
   onBlockPatch,
@@ -147,6 +119,7 @@ const ReferenceSection = ({
       label="Section"
       order={order}
       collapsedPreview={title || undefined}
+      showRequiredIndicator={showRequiredIndicator}
       visibility={section.visibility !== false}
       onVisibilityChange={onSectionVisibilityChange}
     >
@@ -194,6 +167,7 @@ const ReferenceSection = ({
                 onDelete={visibleBlockEntries.length > 1 && onBlockItemDelete ? () => onBlockItemDelete(itemIndex) : undefined}
                 visibility={block.visibility !== false}
                 onVisibilityChange={(v) => onBlockPatch(itemIndex, { visibility: v })}
+                showRequiredIndicator={getContentBlockMissingRequired?.(String(block.id ?? '')) ?? false}
               >
                 <Stack gap="12px">
                   {block.type === 'CHART' && chartData && (

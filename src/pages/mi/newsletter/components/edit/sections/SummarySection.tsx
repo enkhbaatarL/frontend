@@ -8,15 +8,24 @@ interface SummarySectionProps {
   summary: string
   onSummaryChange?: (value?: string) => void
   blockOrder?: BlockOrderProps
+  showRequiredIndicator?: boolean
   sectionVisibility?: boolean
   onSectionVisibilityChange?: (visible: boolean) => void
 }
 
-const SummarySection = ({ summary, onSummaryChange, blockOrder, sectionVisibility, onSectionVisibilityChange }: SummarySectionProps) => (
+const SummarySection = ({
+  summary,
+  onSummaryChange,
+  blockOrder,
+  showRequiredIndicator = false,
+  sectionVisibility,
+  onSectionVisibilityChange,
+}: SummarySectionProps) => (
   <Block
     label={NEWSLETTER_SECTION_EDIT_LABEL[NEWSLETTER_SECTION_CODE.SUMMARY]}
     order={blockOrder}
     collapsedPreview={summary?.trim().split(/\n/)[0] || undefined}
+    showRequiredIndicator={showRequiredIndicator}
     visibility={sectionVisibility}
     onVisibilityChange={onSectionVisibilityChange}
   >

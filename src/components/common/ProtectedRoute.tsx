@@ -1,3 +1,4 @@
+import { Box, CircularProgress } from '@mui/material'
 import { ReactNode, useEffect, useMemo } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 
@@ -15,6 +16,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const user = useAuthStore((state) => state.user)
   const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
+  const loadAccessCompanyInfo = useAuthStore((state) => state.loadAccessCompanyInfo)
   const location = useLocation()
   const navigate = useNavigate()
   const { miHome, extractPage, isDeniedDashboardPageLoading } = useCompanyCondition()
@@ -22,6 +24,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   // USER 로그인 직후 accessCompanyInfo 로딩 중에는 메뉴 권한 판단 불가 → 리다이렉트 보류
   const isCompanyInfoLoading = user?.userRoleCd === UserRole.USER && !accessCompanyInfo
+  const needsCompanyInfoForMi = location.pathname === '/mi' || location.pathname.startsWith('/mi/')
+
+  useEffect(() => {
+    if (!needsCompanyInfoForMi) return
+    if (user?.userRoleCd !== UserRole.USER) return
+    if (accessCompanyInfo) return
+    if (!user?.companyNo) return
+    loadAccessCompanyInfo(user.companyNo)
+  }, [needsCompanyInfoForMi, user?.userRoleCd, user?.companyNo, accessCompanyInfo, loadAccessCompanyInfo])
 
   useEffect(() => {
     // 권한 데이터 로딩 후 페이지 차단 체크
@@ -58,6 +69,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     localStorage.setItem('redirectAfterLogin', redirectPath)
 
     return <Navigate to="/" state={{ from: location }} replace />
+  }
+
+  if (needsCompanyInfoForMi && isCompanyInfoLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+        <CircularProgress />
+      </Box>
+    )
   }
 
   return <CustomErrorBoundary>{children}</CustomErrorBoundary>
