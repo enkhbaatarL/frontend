@@ -70,8 +70,9 @@ export enum RelatedDataType {
 export interface IChatQnaRes {
   qnaNo: number | null
   question: string
+  /** REST/SSE에서 문자열·구조화 객체 등으로 올 수 있음 — UI는 resolveChatAnswerMessageString으로 정규화 */
   answer: null | {
-    [StreamEventType.MESSAGE]: string
+    [StreamEventType.MESSAGE]?: string | Record<string, unknown>
     [StreamEventType.SERIES]: {
       order: number
       type: SeriesType
@@ -80,7 +81,7 @@ export interface IChatQnaRes {
       values: number[]
     }[]
     [StreamEventType.TABLE]: {
-      tableId: string
+      tableId: string | null
       headers: {
         field: string
         name: string

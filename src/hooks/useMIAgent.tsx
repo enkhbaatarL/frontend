@@ -9,6 +9,7 @@ import type { Source } from '@/utils/agentMarkdownExtractor'
 import i18n from '@/lib/i18n'
 import agentService, { IChatQnaRes, IChatRoomRes, StreamEventType, ChatRoomErrorStatus } from '@/service/mi/agent'
 import { IPaginationResponse } from '@/types/api'
+import { normalizeAgentMessagePayload, resolveChatAnswerMessageString } from '@/utils/agentStructuredAnswer'
 
 export type IChatRoom = IChatRoomRes
 
@@ -420,6 +421,9 @@ const useMIAgent = () => {
             case StreamEventType.FULLTEXT: {
               chunkManager.clearChunks(qnaNo)
 
+              const fulltextMessage = normalizeAgentMessagePayload(streamData)
+              const auditPayload = typeof streamData === 'object' && streamData !== null ? streamData : fulltextMessage
+
               setConversations((prev) => {
                 const existingIndex = prev.findIndex((conversation) => conversation.qnaNo === qnaNo)
 
@@ -427,10 +431,10 @@ const useMIAgent = () => {
                 if (existingIndex === -1) {
                   return ensureConversationExists(prev, qnaNo, message, {
                     answer: {
-                      [StreamEventType.MESSAGE]: streamData,
+                      [StreamEventType.MESSAGE]: fulltextMessage,
                     } as NonNullable<IConversation['answer']>,
                     statusMessage: undefined,
-                    auditInfo: streamData,
+                    auditInfo: auditPayload,
                   })
                 }
 
@@ -439,13 +443,13 @@ const useMIAgent = () => {
                 const currentMessage = currentAnswer[StreamEventType.MESSAGE]
 
                 // answer가 이미 동일하면 업데이트 불필요
-                if (currentMessage === streamData && currentConversation.statusMessage === undefined) {
+                if (currentMessage === fulltextMessage && currentConversation.statusMessage === undefined) {
                   return prev
                 }
 
                 const updatedAnswer: NonNullable<IConversation['answer']> = {
                   ...currentAnswer,
-                  [StreamEventType.MESSAGE]: streamData,
+                  [StreamEventType.MESSAGE]: fulltextMessage,
                 } as NonNullable<IConversation['answer']>
 
                 const updatedConversation: IConversation = {
@@ -626,10 +630,27 @@ const useMIAgent = () => {
         return prev
       }
 
-      const updatedConversations = newConversations.map((conv) => ({
-        ...conv,
-        isNew: false,
-      }))
+      const updatedConversations = newConversations.map((conv) => {
+        if (!conv.answer) {
+          return { ...conv, isNew: false }
+        }
+        const resolved = resolveChatAnswerMessageString(conv.answer as Record<string, unknown>)
+        if (!resolved) {
+          return { ...conv, isNew: false }
+        }
+        const rawMsg = conv.answer[StreamEventType.MESSAGE] as unknown
+        if (resolved === rawMsg) {
+          return { ...conv, isNew: false }
+        }
+        return {
+          ...conv,
+          isNew: false,
+          answer: {
+            ...conv.answer,
+            [StreamEventType.MESSAGE]: resolved,
+          },
+        }
+      })
 
       return [...updatedConversations, ...prev]
     })

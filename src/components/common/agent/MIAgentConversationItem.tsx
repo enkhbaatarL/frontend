@@ -9,8 +9,9 @@ import MIAgentAnswerFooter from '@/components/common/agent/MIAgentAnswerFooter'
 import MIAgentMessagePrompt from '@/components/common/agent/MIAgentMessagePrompt'
 import { IChatRoom, IConversation, chunkManager } from '@/hooks/useMIAgent'
 import useSnackbar from '@/hooks/useSnackbar'
-import agentService, { ChatRoomErrorStatus, FeedbackCd, StreamEventType } from '@/service/mi/agent'
+import agentService, { ChatRoomErrorStatus, FeedbackCd } from '@/service/mi/agent'
 import { parseSources, parseSuggestedQuestions } from '@/utils/agentMarkdownExtractor'
+import { normalizeStructuredRelatedData, parseStructuredAgentMessage, resolveChatAnswerMessageString } from '@/utils/agentStructuredAnswer'
 
 const getErrorMessage = (statusCd: string, t: (key: string) => string): string[] => {
   switch (statusCd) {
@@ -65,8 +66,35 @@ const MIAgentConversationItem = ({
   const messageBoxRef = useRef<HTMLDivElement>(null)
 
   const copyableContent = useMemo(() => {
-    let answerMessage = conversation.answer?.[StreamEventType.MESSAGE]
-    if (answerMessage && typeof answerMessage === 'string') {
+    let answerMessage = resolveChatAnswerMessageString(conversation.answer as Record<string, unknown> | null | undefined)
+    if (answerMessage) {
+      const structured = parseStructuredAgentMessage(answerMessage)
+
+      if (structured) {
+        let plain = structured.data.content ?? ''
+        plain = plain.replaceAll(/<!--.*?-->/gs, '')
+
+        if (structured.data.sources?.length) {
+          plain += `\n\n## ${t('mari.agent.sources')}\n${structured.data.sources
+            .map((source, index) => `[${index + 1} ${source.sourceNm}](${source.url})`)
+            .join('\n')}`
+        }
+
+        const relatedList = normalizeStructuredRelatedData(structured.data.relatedData)
+        if (relatedList.length > 0) {
+          plain += `\n\n## ${t('mari.answer.relatedData.explanation')}\n${relatedList
+            .map((d) => `- ${d.displayNm} (${d.type})`)
+            .join('\n')}`
+        }
+
+        const suggestedFromContent = parseSuggestedQuestions(structured.data.content ?? '')
+        if (suggestedFromContent?.length) {
+          plain += `\n\n## ${t('mari.agent.suggestedQuestions')}\n${suggestedFromContent.map((q) => q.text).join('  \n')}`
+        }
+
+        return { plain: plain.trimEnd() }
+      }
+
       const sources = parseSources(answerMessage)
       const suggestedQuestions = parseSuggestedQuestions(answerMessage)
 

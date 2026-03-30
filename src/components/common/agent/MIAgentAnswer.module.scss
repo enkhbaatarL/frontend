@@ -308,3 +308,28 @@
     transform: translateY(0) scale(1);
   }
 }
+
+// ─────────────────────────────────────────────
+// Fulltext 애니메이션 모드 (USE_FULLTEXT_ANIMATION=true)
+// 각 섹션이 순서대로 자연스럽게 등장하는 공통 keyframe
+// ─────────────────────────────────────────────
+@keyframes fulltextReveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 본문 텍스트 (stage 1) — 살짝 긴 duration으로 자연스럽게 등장
+.fulltextContentFadeIn {
+  animation: fulltextReveal 0.5s ease-out both;
+}
+
+// 테이블·시리즈 등 하위 섹션 (stage 2~3) — 빠르게 스냅
+.fulltextSectionFadeIn {
+  animation: fulltextReveal 0.4s ease-out both;
+}
