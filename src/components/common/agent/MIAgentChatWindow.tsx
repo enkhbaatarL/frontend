@@ -46,14 +46,14 @@ const LOCAL_STORAGE_KEY = 'mi-agent-select-mode-option'
 const MAXIMIZE_VIEW_HIDDEN_COOKIE_KEY = 'mi-agent-maximize-view-hidden'
 
 const DEFAULT_SELECT_MODE_OPTIONS: SelectModeOption[] = [
-  {
-    id: '1',
-    title: 'MI Dataset',
-    subtitle: 'mari.source.miDatasetSubtitle',
-    checked: true,
-    disabled: true,
-    fixed: true,
-  },
+  // {
+  //   id: '1',
+  //   title: 'MI Dataset',
+  //   subtitle: 'mari.source.miDatasetSubtitle',
+  //   checked: true,
+  //   disabled: true,
+  //   fixed: true,
+  // },
   {
     id: '2',
     title: 'Web Search',

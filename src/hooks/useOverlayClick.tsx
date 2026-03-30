@@ -10,7 +10,7 @@ interface UseOverlayClickProps<T extends HTMLElement = HTMLElement> {
   borderRadius?: number
 }
 
-function OverlayBox({
+const OverlayBox = ({
   rect,
   onClick,
   zIndex,
@@ -20,33 +20,31 @@ function OverlayBox({
   onClick: () => void
   zIndex: number
   borderRadius: number
-}>) {
-  return (
-    <Box
-      onClick={onClick}
-      sx={{
-        position: 'fixed',
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height,
-        backgroundColor: 'transparent',
-        borderRadius,
-        opacity: 1,
-        cursor: 'pointer',
-        zIndex,
-      }}
-    />
-  )
-}
+}>) => (
+  <Box
+    onClick={onClick}
+    sx={{
+      position: 'fixed',
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+      backgroundColor: 'transparent',
+      borderRadius,
+      opacity: 1,
+      cursor: 'pointer',
+      zIndex,
+    }}
+  />
+)
 
-export function useOverlayClick<T extends HTMLElement = HTMLElement>({
+export const useOverlayClick = <T extends HTMLElement = HTMLElement>({
   open,
   onClose,
   setAnchorEl,
   zIndex = 1000,
   borderRadius = 1,
-}: UseOverlayClickProps<T>) {
+}: UseOverlayClickProps<T>) => {
   const triggerRef = useRef<T | null>(null)
   const [rect, setRect] = useState<DOMRect | null>(null)
 

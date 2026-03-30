@@ -51,10 +51,10 @@ export default function MISegmented(props: PropsWithChildren<MIButtonProps>) {
     }
   }, [size])
 
-  function getBorderRadius(type: MIType, position: MIPosition): string | number {
-    if (type === 'Rectangle' || type === 'rectangle') return '4px'
-    if (type === 'icon') {
-      switch (position) {
+  const getBorderRadius = (buttonType: MIType, buttonPosition: MIPosition): string | number => {
+    if (buttonType === 'Rectangle' || buttonType === 'rectangle') return '4px'
+    if (buttonType === 'icon') {
+      switch (buttonPosition) {
         case 'left':
           return '4px 0 0 4px'
         case 'right':

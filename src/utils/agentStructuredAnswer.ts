@@ -55,7 +55,7 @@ export interface StructuredAgentPayload {
  * SSE/REST에서 message 필드가 JSON 문자열이 아니라 이미 파싱된 객체로 올 때가 있음.
  * parseStructuredAgentMessage 가 기대하는 봉투(`data` 포함) 형태의 문자열로 맞춘다.
  */
-export function normalizeAgentMessagePayload(streamData: unknown): string {
+export const normalizeAgentMessagePayload = (streamData: unknown): string => {
   if (streamData === null || streamData === undefined) return ''
   if (typeof streamData === 'string') return streamData
   if (typeof streamData !== 'object') return ''
@@ -74,7 +74,7 @@ export function normalizeAgentMessagePayload(streamData: unknown): string {
  * QnA 히스토리/REST 응답에서 `answer.message`만 쓰지 않고, 본문이 `answer` 루트의 content·sources 등과 같이 올 수 있음.
  * 스트리밍 FULLTEXT와 동일하게 파싱 가능한 단일 문자열로 합친다.
  */
-export function resolveChatAnswerMessageString(answer: null | undefined | Record<string, unknown>): string {
+export const resolveChatAnswerMessageString = (answer: null | undefined | Record<string, unknown>): string => {
   if (!answer) return ''
   const msg = answer[StreamEventType.MESSAGE]
   let s = normalizeAgentMessagePayload(msg)
@@ -85,7 +85,7 @@ export function resolveChatAnswerMessageString(answer: null | undefined | Record
   return ''
 }
 
-export function parseStructuredAgentMessage(raw: string): StructuredAgentPayload | null {
+export const parseStructuredAgentMessage = (raw: string): StructuredAgentPayload | null => {
   if (!raw || typeof raw !== 'string') return null
   const trimmed = raw.trim()
   if (!trimmed.startsWith('{')) return null
@@ -103,21 +103,20 @@ export function parseStructuredAgentMessage(raw: string): StructuredAgentPayload
 }
 
 /** 스트리밍 중 JSON이 아직 닫히지 않았을 때 본문에 원문 JSON이 깜빡이지 않도록 판별 */
-export function isIncompleteStructuredAgentEnvelope(raw: string): boolean {
+export const isIncompleteStructuredAgentEnvelope = (raw: string): boolean => {
   if (!raw?.trim().startsWith('{') || parseStructuredAgentMessage(raw)) return false
   return /"qnaNo"\s*:/.test(raw) && /"data"\s*:\s*\{/.test(raw)
 }
 
-export function structuredSourcesToSources(items: StructuredSourceItem[]): Source[] {
-  return items.map((s, i) => ({
+export const structuredSourcesToSources = (items: StructuredSourceItem[]): Source[] =>
+  items.map((s, i) => ({
     index: `web_${i + 1}`,
     sourceNm: s.sourceNm,
     url: s.url,
   }))
-}
 
-export function structuredTablesToParsedTables(tables: StructuredTable[]): ParsedTable[] {
-  return tables.map((table, tableIndex) => ({
+export const structuredTablesToParsedTables = (tables: StructuredTable[]): ParsedTable[] =>
+  tables.map((table, tableIndex) => ({
     tableId:
       table.tableId !== null && table.tableId !== undefined && String(table.tableId) !== ''
         ? String(table.tableId)
@@ -125,17 +124,16 @@ export function structuredTablesToParsedTables(tables: StructuredTable[]): Parse
     headers: table.headers.map((h) => h.name),
     rows: table.rows.map((r) => [...r.cells]),
   }))
-}
 
-function isValidRelatedDataItem(item: unknown): item is StructuredRelatedDataItem {
+const isValidRelatedDataItem = (item: unknown): item is StructuredRelatedDataItem => {
   if (item === null || item === undefined || typeof item !== 'object') return false
   const o = item as Record<string, unknown>
   return typeof o.displayNm === 'string'
 }
 
-export function normalizeStructuredRelatedData(
+export const normalizeStructuredRelatedData = (
   related: StructuredRelatedDataItem | StructuredRelatedDataItem[] | undefined,
-): StructuredRelatedDataItem[] {
+): StructuredRelatedDataItem[] => {
   if (related === null || related === undefined) return []
   const list = Array.isArray(related) ? related : [related]
   return list.filter(isValidRelatedDataItem)
