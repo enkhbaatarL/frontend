@@ -950,9 +950,9 @@ const MIAgentAnswer = ({
                   <Typography variant="subtext" color="content.textBlack">
                     {item.displayNm}
                   </Typography>
-                  <Typography variant="subtext3" color="contentText.Disabled">
+                  {/* <Typography variant="subtext3" color="contentText.Disabled">
                     {item.type}
-                  </Typography>
+                  </Typography> */}
                 </Stack>
               )
             })}

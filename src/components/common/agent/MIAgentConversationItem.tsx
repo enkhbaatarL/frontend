@@ -35,7 +35,9 @@ interface Props {
   chatRoom?: IChatRoom
   onRetry: (qnaNo: number) => void
   animationComplete: boolean
-  onAnimationComplete: () => void
+  /** 부모의 `(index) => void` — 항목별로 안정적인 콜백으로 감싸서 사용 */
+  conversationIndex: number
+  onAnimationComplete: (index: number) => void
   isLastChat: boolean
   onSendMessage?: (message: string) => void
   contentWrapperRef?: React.RefObject<HTMLDivElement | null>
@@ -56,6 +58,7 @@ const MIAgentConversationItem = ({
   chatRoom,
   onRetry,
   animationComplete,
+  conversationIndex,
   onAnimationComplete,
   isLastChat,
   onSendMessage,
@@ -64,6 +67,10 @@ const MIAgentConversationItem = ({
   const { showSnackbar } = useSnackbar()
   const { t } = useTranslation()
   const messageBoxRef = useRef<HTMLDivElement>(null)
+
+  const notifyAnimationComplete = useCallback(() => {
+    onAnimationComplete(conversationIndex)
+  }, [onAnimationComplete, conversationIndex])
 
   const copyableContent = useMemo(() => {
     let answerMessage = resolveChatAnswerMessageString(conversation.answer as Record<string, unknown> | null | undefined)
@@ -187,7 +194,7 @@ const MIAgentConversationItem = ({
 
   useEffect(() => {
     if (conversation.statusCd?.startsWith('FAIL') && conversation.isNew && !animationComplete) {
-      onAnimationComplete()
+      notifyAnimationComplete()
 
       if (conversation.statusCd === ChatRoomErrorStatus.FAIL_FORBIDDEN_WORDS) {
         showSnackbar(t('mari.snackbar.forbiddenWords'), {
@@ -195,7 +202,7 @@ const MIAgentConversationItem = ({
         })
       }
     }
-  }, [conversation.statusCd, conversation.isNew, animationComplete, onAnimationComplete, showSnackbar, t])
+  }, [conversation.statusCd, conversation.isNew, animationComplete, notifyAnimationComplete, showSnackbar, t])
 
   const shouldRenderAnswer =
     Boolean(conversation.answer) ||
@@ -215,7 +222,7 @@ const MIAgentConversationItem = ({
           <MIAgentAnswer
             conversation={conversation}
             chatRoomTitle={chatRoom?.title}
-            onAnimationComplete={onAnimationComplete}
+            onAnimationComplete={notifyAnimationComplete}
             onSendMessage={onSendMessage}
             animationComplete={animationComplete}
           />

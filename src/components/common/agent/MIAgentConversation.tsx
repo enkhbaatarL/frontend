@@ -176,7 +176,8 @@ const MIAgentConversation = ({
                 chatRoom={chatRoom}
                 onRetry={onRetry}
                 animationComplete={animationComplete[index]}
-                onAnimationComplete={() => onAnimationComplete(index)}
+                conversationIndex={index}
+                onAnimationComplete={onAnimationComplete}
                 isLastChat={index === conversations.length - 1}
                 onSendMessage={onSendMessage}
                 contentWrapperRef={contentWrapperRef}
