@@ -4,12 +4,13 @@ import dayjs from 'dayjs'
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { Line } from 'react-chartjs-2'
 
-import { IChatQnaAnswerBundle, SeriesType } from '@/service/mi/agent'
+import { IConversation } from '@/hooks/useMIAgent'
+import { SeriesType, StreamEventType } from '@/service/mi/agent'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 interface Props {
-  series: IChatQnaAnswerBundle['series']
+  series: NonNullable<IConversation['answer']>[StreamEventType.SERIES]
   onChartImageUrl?: (url: string) => void
 }
 

@@ -7,7 +7,7 @@
     font-weight: 500;
     line-height: 150%;
     letter-spacing: -0.32px;
-    margin: 12px 0;
+    margin: 24px 0 12px 0;
   }
 
   h2 {
@@ -17,6 +17,7 @@
     font-weight: 700;
     line-height: 150%;
     letter-spacing: -0.18px;
+    margin: 12px 0;
   }
 
   hr {
@@ -54,6 +55,7 @@
   ol {
     margin: 0;
     padding-left: 20px;
+    padding-bottom: 6px;
 
     li {
       color: #212529;
@@ -67,6 +69,7 @@
   ul {
     margin: 0;
     padding-left: 0;
+    padding-bottom: 6px;
 
     li {
       color: #212529;
@@ -96,11 +99,7 @@
   table {
     width: 100%;
     border-spacing: 0;
-    margin-bottom: 24px;
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1px solid;
-    border-color: #DEE2E6;
+    border: none;
     background-color: white;
 
     thead {
@@ -187,28 +186,150 @@
   z-index: 2;
 }
 
-.titleShimmerEffect {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-                  120deg,
-                  rgba(255, 255, 255, 0) 0%,
-                  rgba(255, 255, 255, 0.6) 50%,
-                  rgba(255, 255, 255, 0) 100%
-  );
-  animation: shimmer 1.8s ease-in-out infinite;
-  z-index: 1;
-  pointer-events: none;
+.statusMessage {
+  font-weight: 400 !important;
+  position: relative;
+  display: inline-block;
+  margin-bottom: 4px;
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+
+  // shimmer
+  background: linear-gradient(90deg, #828b95 0%, #c2c8cf 40%, #d9dde3 50%, #c2c8cf 60%, #828b95 100%);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+
+  animation:
+    statusMessageShimmer 5s linear infinite,
+    statusMessageFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-@keyframes shimmer {
+@keyframes statusMessageShimmer {
   0% {
-    left: -100%;
+    background-position: 200% 0;
   }
   100% {
-    left: 100%;
+    background-position: -200% 0;
   }
+}
+
+@keyframes statusMessageFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// 낙관적 업데이트 중인 질문 메시지 (shimmer)
+.pendingQuestionText {
+  position: relative;
+  display: inline-block;
+
+  background: linear-gradient(90deg, #828b95 0%, #c2c8cf 40%, #d9dde3 50%, #c2c8cf 60%, #828b95 100%);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+
+  animation: questionShimmer 5s linear infinite;
+}
+
+@keyframes questionShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+:global(.streamingContent) {
+  color: #868E96 !important;
+  display: inline;
+  white-space: pre-wrap;
+  position: relative;
+  
+  animation: streamingFadeIn 200ms ease-out both;
+  will-change: opacity, top;
+}
+
+@keyframes streamingFadeIn {
+  from {
+    opacity: 0;
+    top: 6px;
+  }
+  to {
+    opacity: 1;
+    top: 0;
+  }
+}
+
+.parsedDataContainer {
+  opacity: 0;
+  animation: parsedDataFadeIn 0.8s ease-in-out forwards;
+}
+
+@keyframes parsedDataFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.parsedDataItem {
+  animation-name: chewyPopIn;
+  animation-duration: 0.8s;
+  animation-timing-function: cubic-bezier(0.25, 1.4, 0.4, 1);
+  animation-fill-mode: both;
+  will-change: transform, opacity;
+}
+
+@keyframes chewyPopIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.9);
+  }
+  20% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Fulltext 애니메이션 모드 (USE_FULLTEXT_ANIMATION=true)
+// 각 섹션이 순서대로 자연스럽게 등장하는 공통 keyframe
+// ─────────────────────────────────────────────
+@keyframes fulltextReveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 본문 텍스트 (stage 1) — 살짝 긴 duration으로 자연스럽게 등장
+.fulltextContentFadeIn {
+  animation: fulltextReveal 0.5s ease-out both;
+}
+
+// 테이블·시리즈 등 하위 섹션 (stage 2~3) — 빠르게 스냅
+.fulltextSectionFadeIn {
+  animation: fulltextReveal 0.4s ease-out both;
 }

@@ -1,27 +1,144 @@
+import { EventSourceMessage } from '@microsoft/fetch-event-source'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { v4 as uuid } from 'uuid'
 
-import { useScroll } from '@/contexts/ScrollContext'
-import agentService, { ChatRoomStatus, IChatQnaRes, IChatRoomRes } from '@/service/mi/agent'
-import { IPaginationResponse } from '@/types/api'
-import delay from '@/utils/delay'
+import type { Source } from '@/utils/agentMarkdownExtractor'
 
-export type MIAgentState = 'default' | 'generating' | 'complete'
+import i18n from '@/lib/i18n'
+import agentService, { IChatQnaRes, IChatRoomRes, StreamEventType, ChatRoomErrorStatus } from '@/service/mi/agent'
+import { IPaginationResponse } from '@/types/api'
+import { normalizeAgentMessagePayload, resolveChatAnswerMessageString } from '@/utils/agentStructuredAnswer'
+
+export type IChatRoom = IChatRoomRes
+
+export enum MIAgentState {
+  IDLE = 'idle',
+  CONNECTED = 'connected',
+  GENERATING = 'generating',
+  STREAMING = 'streaming',
+  COMPLETE = 'complete',
+}
 
 export interface IConversation extends IChatQnaRes {
+  statusMessage?: string
   isNew?: boolean
-  event?: null
+  reports?: Source[]
 }
 
-export interface IChatRoom extends IChatRoomRes {
-  isSelected: boolean
-  isNew: boolean
+interface VectorDataItem {
+  source?: string
+  title?: string
+  gds_no?: number
+  gds_data_dstg_id?: string
+  goods_data_no?: number
 }
 
-const getTempConversation = (message: string): IConversation => ({
+/**
+ * 청크 속도 추적 정보
+ */
+interface ChunkSpeedInfo {
+  timestamps: number[]
+  lastUpdateTime: number
+}
+
+/**
+ * 청크 관리 객체
+ * qnaNo별로 청크 배열을 관리하며, 컴포넌트에서 직접 조회하여 사용
+ * 청크 도착 속도를 추적하여 동적 처리 간격 계산에 활용
+ */
+class ChunkManager {
+  private readonly chunks: Map<number, string[]> = new Map()
+  private readonly speedInfo: Map<number, ChunkSpeedInfo> = new Map()
+  private readonly MAX_TIMESTAMPS = 10 // 최근 10개 청크만 추적
+
+  /**
+   * 특정 qnaNo에 청크 추가
+   */
+  addChunk(qnaNo: number, chunk: string): void {
+    const currentChunks = this.chunks.get(qnaNo) ?? []
+    this.chunks.set(qnaNo, [...currentChunks, chunk])
+
+    // 청크 도착 속도 추적
+    const now = Date.now()
+    let info = this.speedInfo.get(qnaNo)
+    if (!info) {
+      info = { timestamps: [], lastUpdateTime: now }
+      this.speedInfo.set(qnaNo, info)
+    }
+
+    // 타임스탬프 추가 (최대 MAX_TIMESTAMPS개만 유지)
+    info.timestamps.push(now)
+    if (info.timestamps.length > this.MAX_TIMESTAMPS) {
+      info.timestamps.shift()
+    }
+    info.lastUpdateTime = now
+  }
+
+  /**
+   * 특정 qnaNo의 청크 배열 가져오기
+   */
+  getChunks(qnaNo: number | null): string[] {
+    if (qnaNo === null) return []
+    return this.chunks.get(qnaNo) ?? []
+  }
+
+  /**
+   * 특정 qnaNo의 청크 도착 속도 계산 (문자/초)
+   * @returns 초당 문자 수, 또는 null (속도 계산 불가)
+   */
+  getChunkSpeed(qnaNo: number | null): number | null {
+    if (qnaNo === null) return null
+
+    const info = this.speedInfo.get(qnaNo)
+    if (!info || info.timestamps.length < 2) {
+      return null // 속도 계산을 위해 최소 2개 타임스탬프 필요
+    }
+
+    const chunks = this.chunks.get(qnaNo) ?? []
+    if (chunks.length === 0) return null
+
+    // 최근 타임스탬프들로 시간 범위 계산
+    const timestamps = info.timestamps
+    const timeSpan = (timestamps.at(-1) ?? 0) - (timestamps.at(0) ?? 0) // ms
+
+    if (timeSpan === 0) return null
+
+    // 해당 기간 동안 추가된 청크들의 총 길이 계산
+    const recentChunkCount = Math.min(timestamps.length, chunks.length)
+    let totalLength = 0
+    const startIndex = Math.max(0, chunks.length - recentChunkCount)
+    for (let i = startIndex; i < chunks.length; i++) {
+      totalLength += chunks[i].length
+    }
+
+    // 초당 문자 수 계산
+    return (totalLength / timeSpan) * 1000
+  }
+
+  /**
+   * 특정 qnaNo의 청크 초기화
+   */
+  clearChunks(qnaNo: number): void {
+    this.chunks.delete(qnaNo)
+    this.speedInfo.delete(qnaNo)
+  }
+
+  /**
+   * 모든 청크 초기화
+   */
+  clearAll(): void {
+    this.chunks.clear()
+    this.speedInfo.clear()
+  }
+}
+
+export const chunkManager = new ChunkManager()
+
+const initialConversation: IConversation = {
   qnaNo: null,
-  question: message,
+  question: '',
   answer: null,
   isRecommended: null,
   isNotRecommended: null,
@@ -32,16 +149,27 @@ const getTempConversation = (message: string): IConversation => ({
   feedbackComment: null,
   auditInfo: null,
   isNew: true,
-})
+}
 
 const useMIAgent = () => {
-  const [state, setState] = useState<MIAgentState>('default')
+  const { t } = useTranslation()
+
+  const isAbortedRef = useRef<boolean>(false)
+
+  const stateRef = useRef<MIAgentState>(MIAgentState.IDLE)
+  const [state, setState] = useState<MIAgentState>(MIAgentState.IDLE)
+
   const [selectedChatRoom, setSelectedChatRoom] = useState<{ id: string | null; isNew: boolean }>({
     id: null,
     isNew: true,
   })
   const [conversations, setConversations] = useState<IConversation[]>([])
-  const { scrollToBottom } = useScroll()
+
+  const updateState = useCallback((newState: MIAgentState) => {
+    stateRef.current = newState
+    setState(newState)
+  }, [])
+
   const {
     data: chatRooms,
     refetch: refetchChatRooms,
@@ -51,11 +179,17 @@ const useMIAgent = () => {
     queryFn: () => agentService.getChatRooms(),
   })
 
+  const refetchChatRoomsRef = useRef(refetchChatRooms)
+  useEffect(() => {
+    refetchChatRoomsRef.current = refetchChatRooms
+  }, [refetchChatRooms])
+
   const {
     data: chatQnaHistory,
     fetchNextPage: fetchPrevHistory,
     hasNextPage: hasPrevHistory,
     isFetchingNextPage: isFetchingPrevHistory,
+    refetch: refetchChatQnaHistory,
   } = useInfiniteQuery({
     queryKey: ['chatQna', selectedChatRoom.id],
     queryFn: ({ pageParam = 1 }) => (selectedChatRoom.id ? agentService.getChatQna(selectedChatRoom.id, pageParam) : Promise.resolve(null)),
@@ -64,256 +198,478 @@ const useMIAgent = () => {
     initialPageParam: 1,
   })
 
-  const setSelectedChatRoomId = useCallback(
-    (id: string | null, isNew: boolean = false) => {
-      setConversations([])
-      setSelectedChatRoom({ id, isNew })
+  const refetchChatQnaHistoryRef = useRef(refetchChatQnaHistory)
+  useEffect(() => {
+    refetchChatQnaHistoryRef.current = refetchChatQnaHistory
+  }, [refetchChatQnaHistory])
+
+  const prevHistoryQnaNosRef = useRef<Set<number | null>>(new Set())
+
+  /**
+   * 채팅방 선택
+   */
+  const setSelectedChatRoomId = useCallback((id: string | null, isNew: boolean = false) => {
+    setConversations([])
+    chunkManager.clearAll()
+    prevHistoryQnaNosRef.current = new Set()
+    setSelectedChatRoom({ id, isNew })
+
+    if (id && !isNew) {
+      refetchChatQnaHistoryRef.current()
+    }
+  }, [])
+
+  const updateStatusMessage = useCallback((qnaNo: number | null, statusMessage: string | undefined) => {
+    if (qnaNo === null) return
+
+    setConversations((prev) => {
+      const index = prev.findIndex((conversation) => conversation.qnaNo === qnaNo)
+      if (index === -1) return prev
+
+      const updatedConversation: IConversation = {
+        ...prev[index],
+        statusMessage,
+      }
+
+      return [...prev.slice(0, index), updatedConversation, ...prev.slice(index + 1)]
+    })
+  }, [])
+
+  /**
+   * qnaNo로 대화를 검색하고 없으면 추가하는 헬퍼 함수
+   * 비동기 문제를 방지하기 위해 함수형 업데이트 내부에서 사용
+   */
+  const ensureConversationExists = useCallback(
+    (prev: IConversation[], qnaNo: number, message: string, initialData?: Partial<IConversation>): IConversation[] => {
+      const existingIndex = prev.findIndex((conversation) => conversation.qnaNo === qnaNo)
+
+      if (existingIndex === -1) {
+        return [
+          ...prev.map((conversation) => ({
+            ...conversation,
+            isNew: false,
+          })),
+          {
+            ...initialConversation,
+            qnaNo,
+            question: message,
+            ...initialData,
+          },
+        ]
+      }
+
+      return prev
     },
-    [setSelectedChatRoom],
+    [],
   )
 
-  const pushConversations = useCallback((newChat: IConversation) => {
-    setConversations((prev) => [
-      ...prev.map((conversation) => ({
-        ...conversation,
-        isNew: false,
-      })),
-      {
-        ...newChat,
-        isNew: true,
-      },
-    ])
-  }, [])
+  const createStreamMessageHandler = useCallback(
+    (message: string) =>
+      ({ id, event, data }: EventSourceMessage) => {
+        try {
+          if (isAbortedRef.current) {
+            return
+          }
 
-  const replaceConversations = useCallback((newChat: IConversation, index?: number) => {
-    setConversations((prev) => [
-      ...prev.slice(0, index ?? prev.length - 1),
-      {
-        ...newChat,
-        isNew: true,
-      },
-    ])
-  }, [])
+          if (event === StreamEventType.COMPLETE) {
+            updateState(MIAgentState.COMPLETE)
+            setTimeout(() => updateState(MIAgentState.IDLE), 1000)
+            setSelectedChatRoom((prev) => {
+              if (prev.isNew && prev.id) {
+                refetchChatRoomsRef.current()
+                return {
+                  ...prev,
+                  isNew: false,
+                }
+              }
+              return prev
+            })
+            return
+          }
 
-  const getErrorConversation = (originalQuestion: string): IConversation => ({
-    qnaNo: null,
-    question: originalQuestion,
-    answer: null,
-    isRecommended: null,
-    isNotRecommended: null,
-    statusCd: ChatRoomStatus.FAIL,
-    statusNm: '실패',
-    feedbackCd: null,
-    feedbackNm: null,
-    feedbackComment: null,
-    auditInfo: null,
-    isNew: true,
-  })
-  const [isStreamingDone, setIsStreamingDone] = useState(true)
+          const { qnaNo, data: streamData } = JSON.parse(data)
 
-  // const inquireBackup = useCallback(
-  //   async (message: string, shouldWebSearch: boolean = false) => {
-  //     try {
-  //       setConversations((prev) => [...prev, getTempConversation(message)])
-  //       setState('generating')
-  //       requestAnimationFrame(() => {
-  //         setTimeout(() => {
-  //           scrollToBottom()
-  //         }, 200)
-  //       })
-  //       const newChatRoomId = selectedChatRoom.id ?? uuid()
-  //       const newChat = await agentService.sendQna(newChatRoomId, message, shouldWebSearch)
-  //       if (selectedChatRoom.isNew) {
-  //         refetchChatRooms()
-  //         setSelectedChatRoom((prev) => ({
-  //           ...prev,
-  //           id: newChatRoomId,
-  //         }))
-  //       }
-  //       setState('complete')
-  //       await delay(1000)
-  //       setState('default')
-  //       replaceConversations(newChat)
-  //     } catch (error) {
-  //       console.error('Error in inquire:', error)
-  //       // 에러 발생 시 상태 초기화
-  //       setState('complete')
-  //       await delay(1000)
-  //       setState('default')
+          if (qnaNo === null) return
 
-  //       // 에러 메시지를 답변으로 설정
-  //       replaceConversations(getErrorConversation(message))
-  //     }
-  //   },
-  //   [replaceConversations, scrollToBottom, selectedChatRoom.id, selectedChatRoom.isNew, refetchChatRooms],
-  // )
-  const inquire = useCallback(
-    async (message: string, shouldWebSearch: boolean = false) => {
-      try {
-        setIsStreamingDone(false)
-        setConversations((prev) => [...prev, getTempConversation(message)])
-        setState('generating')
+          if (event !== StreamEventType.CHUNK) {
+            setConversations((prev) => {
+              const optimisticIndex = prev.findIndex((conv) => conv.qnaNo === null && conv.question === message)
 
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            scrollToBottom()
-          }, 200)
-        })
+              if (optimisticIndex !== -1) {
+                // 낙관적 업데이트된 질문을 실제 qnaNo로 업데이트
+                const updatedConversation: IConversation = {
+                  ...prev[optimisticIndex],
+                  qnaNo,
+                  auditInfo: streamData,
+                }
+                return [...prev.slice(0, optimisticIndex), updatedConversation, ...prev.slice(optimisticIndex + 1)]
+              }
 
-        const newChatRoomId = selectedChatRoom.id ?? uuid()
-        await agentService.sendQnaStream(
-          newChatRoomId,
-          message,
-          shouldWebSearch,
-          (chunk: any) => {
-            setTimeout(() => {
-              replaceConversations({
-                qnaNo: chunk.data.qnaNo,
-                question: message,
-                isNew: true,
-                event: chunk.event,
-                answer: {
-                  bundles: [chunk.data.answer.bundles[0]],
-                },
-                isRecommended: null,
-                isNotRecommended: null,
-                statusCd: null,
-                statusNm: null,
-                feedbackCd: null,
-                feedbackNm: null,
-                feedbackComment: null,
-                auditInfo: null,
+              // 낙관적 업데이트가 없으면 기존 로직대로 처리
+              return ensureConversationExists(prev, qnaNo, message, { auditInfo: streamData })
+            })
+          }
+
+          switch (event) {
+            case StreamEventType.MESSAGE: {
+              if (stateRef.current === MIAgentState.STREAMING) {
+                break
+              }
+
+              updateState(MIAgentState.GENERATING)
+              const generatingMessageKey = `mari.streamMessage.${id}`
+              const generatingMessage = i18n.exists(generatingMessageKey) ? t(generatingMessageKey) : streamData
+              updateStatusMessage(qnaNo, generatingMessage)
+
+              break
+            }
+
+            case StreamEventType.VECTOR_DATA: {
+              try {
+                const vectorData = Array.isArray(streamData) ? (streamData as VectorDataItem[]) : []
+                const reports: Source[] = vectorData.map((item: VectorDataItem, index: number) => {
+                  const url = item.gds_no && item.goods_data_no ? `/mi/data-detail/${item.gds_no}/${item.goods_data_no}` : '#'
+
+                  return {
+                    index: `report_${index + 1}`,
+                    sourceNm: item.title || item.source || '',
+                    url,
+                  }
+                })
+
+                setConversations((prev) => {
+                  const existingIndex = prev.findIndex((conversation) => conversation.qnaNo === qnaNo)
+
+                  if (existingIndex === -1) {
+                    return ensureConversationExists(prev, qnaNo, message, {
+                      reports,
+                    })
+                  }
+
+                  const currentConversation = prev[existingIndex]
+
+                  if (
+                    currentConversation.reports &&
+                    currentConversation.reports.length === reports.length &&
+                    currentConversation.reports.every(
+                      (r, i) => r.index === reports[i].index && r.sourceNm === reports[i].sourceNm && r.url === reports[i].url,
+                    )
+                  ) {
+                    return prev
+                  }
+
+                  const updatedConversation: IConversation = {
+                    ...currentConversation,
+                    reports,
+                  }
+
+                  return [...prev.slice(0, existingIndex), updatedConversation, ...prev.slice(existingIndex + 1)]
+                })
+              } catch (error) {
+                console.error('Error processing VECTOR_DATA:', error)
+              }
+              break
+            }
+
+            case StreamEventType.CHUNK: {
+              updateState(MIAgentState.STREAMING)
+
+              chunkManager.addChunk(qnaNo, streamData)
+
+              // CHUNK 이벤트에서는 statusMessage만 업데이트하고, 실제로 변경이 있을 때만 setConversations 호출
+              setConversations((prev) => {
+                const existingIndex = prev.findIndex((conversation) => conversation.qnaNo === qnaNo)
+
+                // qnaNo가 없으면 생성 (최초 CHUNK 이벤트)
+                if (existingIndex === -1) {
+                  return ensureConversationExists(prev, qnaNo, message, {
+                    statusMessage: undefined,
+                    auditInfo: streamData,
+                  })
+                }
+
+                const currentConversation = prev[existingIndex]
+
+                // statusMessage가 이미 undefined면 업데이트 불필요
+                if (currentConversation.statusMessage === undefined && currentConversation.qnaNo === qnaNo) {
+                  return prev
+                }
+
+                // qnaNo가 null이었던 경우 업데이트
+                if (currentConversation.qnaNo === null && currentConversation.question === message) {
+                  const updatedConversation: IConversation = {
+                    ...currentConversation,
+                    qnaNo,
+                    auditInfo: streamData,
+                    statusMessage: undefined,
+                  }
+                  return [...prev.slice(0, existingIndex), updatedConversation, ...prev.slice(existingIndex + 1)]
+                }
+
+                // statusMessage만 제거
+                const updatedConversation: IConversation = {
+                  ...currentConversation,
+                  statusMessage: undefined,
+                }
+
+                return [...prev.slice(0, existingIndex), updatedConversation, ...prev.slice(existingIndex + 1)]
               })
 
-              setTimeout(() => {
-                scrollToBottom()
-              }, 100)
-            }, 400)
-          },
-          () => {
-            setState('complete')
-            setTimeout(() => setIsStreamingDone(true), 100)
-            setTimeout(() => setState('default'), 1000)
-
-            if (selectedChatRoom.isNew) {
-              refetchChatRooms()
-              setSelectedChatRoom((prev) => ({
-                ...prev,
-                id: newChatRoomId,
-              }))
+              break
             }
-          },
-          (err) => {
-            console.error('스트리밍 에러:', err)
-            setIsStreamingDone(true)
-            setState('complete')
-            setTimeout(() => setState('default'), 1000)
-            replaceConversations(getErrorConversation(message))
-          },
-        )
 
-        // replaceConversations(newChat);
-      } catch (error) {
-        console.error('Error in inquire:', error)
-        setIsStreamingDone(true)
-        setState('complete')
-        setTimeout(() => setState('default'), 1000)
-        replaceConversations(getErrorConversation(message))
-      }
-    },
-    [replaceConversations, scrollToBottom, selectedChatRoom.id, selectedChatRoom.isNew, refetchChatRooms],
+            case StreamEventType.FULLTEXT: {
+              chunkManager.clearChunks(qnaNo)
+
+              const fulltextMessage = normalizeAgentMessagePayload(streamData)
+              const auditPayload = typeof streamData === 'object' && streamData !== null ? streamData : fulltextMessage
+
+              setConversations((prev) => {
+                const existingIndex = prev.findIndex((conversation) => conversation.qnaNo === qnaNo)
+
+                // qnaNo가 없으면 생성
+                if (existingIndex === -1) {
+                  return ensureConversationExists(prev, qnaNo, message, {
+                    answer: {
+                      [StreamEventType.MESSAGE]: fulltextMessage,
+                    } as NonNullable<IConversation['answer']>,
+                    statusMessage: undefined,
+                    auditInfo: auditPayload,
+                  })
+                }
+
+                const currentConversation = prev[existingIndex]
+                const currentAnswer = currentConversation.answer ?? ({} as NonNullable<IConversation['answer']>)
+                const currentMessage = currentAnswer[StreamEventType.MESSAGE]
+
+                // answer가 이미 동일하면 업데이트 불필요
+                if (currentMessage === fulltextMessage && currentConversation.statusMessage === undefined) {
+                  return prev
+                }
+
+                const updatedAnswer: NonNullable<IConversation['answer']> = {
+                  ...currentAnswer,
+                  [StreamEventType.MESSAGE]: fulltextMessage,
+                } as NonNullable<IConversation['answer']>
+
+                const updatedConversation: IConversation = {
+                  ...currentConversation,
+                  answer: updatedAnswer,
+                  statusMessage: undefined,
+                }
+
+                return [...prev.slice(0, existingIndex), updatedConversation, ...prev.slice(existingIndex + 1)]
+              })
+              break
+            }
+
+            default:
+              break
+          }
+        } catch (error) {
+          console.error('Error in handleStreamMessage:', error)
+          updateState(MIAgentState.IDLE)
+        }
+      },
+    [updateState, updateStatusMessage, t, ensureConversationExists],
   )
 
-  const retry = useCallback(
-    async (qnaNo: number) => {
-      const index = conversations.findIndex((conv) => conv.qnaNo === qnaNo)
+  const inquire = useCallback(
+    async (message: string, shouldWebSearch: boolean = false) => {
+      isAbortedRef.current = false
 
-      if (!selectedChatRoom.id || index === -1) return
+      const chatRoomId = selectedChatRoom.id ?? uuid()
 
-      try {
-        replaceConversations(getTempConversation(conversations[index].question), index)
-        setState('generating')
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            scrollToBottom()
-          }, 200)
-        })
-        const newChat = await agentService.retryQna(selectedChatRoom.id, qnaNo)
-        setState('complete')
-        await delay(1000)
-        setState('default')
-        replaceConversations(newChat, index)
-      } catch (error) {
-        console.error('Error in retryInquire:', error)
-      }
-    },
-    [conversations, replaceConversations, scrollToBottom, selectedChatRoom.id],
-  )
-
-  const chatRoomList = useMemo(
-    () =>
-      chatRooms?.map(
-        (room): IChatRoom => ({
-          ...room,
-          isSelected: room.chatRoomId === selectedChatRoom.id,
-          isNew: room.chatRoomId === selectedChatRoom.id && selectedChatRoom.isNew,
-        }),
-      ) ?? [],
-    [chatRooms, selectedChatRoom.id, selectedChatRoom.isNew],
-  )
-
-  const selectedChatRoomInfo = useMemo(() => chatRoomList.find(({ isSelected }) => isSelected), [chatRoomList])
-
-  const historyList = useMemo(
-    () =>
-      chatQnaHistory?.pages
-        .filter((page): page is IPaginationResponse<IChatQnaRes> => page !== null)
-        .flatMap((page) => page.detail)
-        .reverse() ?? [],
-    [chatQnaHistory?.pages],
-  )
-
-  useEffect(() => {
-    if (historyList.length > 0) {
-      const isDuplicate = conversations.map((conv) => conv.qnaNo).includes(historyList[0].qnaNo)
-
-      if (isDuplicate) {
-        fetchPrevHistory()
-        return
+      // 새 채팅방이 생성된 경우 selectedChatRoom.id에 저장
+      if (!selectedChatRoom.id) {
+        setSelectedChatRoom((prev) => ({
+          ...prev,
+          id: chatRoomId,
+          isNew: true,
+        }))
       }
 
       setConversations((prev) => {
-        const existingQnaNos = new Set(prev.map((conv) => conv.qnaNo))
-        const newConversations = historyList.filter((conv) => !existingQnaNos.has(conv.qnaNo))
-        return [...newConversations, ...prev]
-      })
-    }
-  }, [historyList])
+        const hasPendingQuestion = prev.some((conv) => conv.qnaNo === null && conv.question === message)
+        if (hasPendingQuestion) return prev
 
-  const markLastConversationAsOld = useCallback(() => {
+        // 기존 대화들의 isNew를 false로 변경
+        const updatedPrev = prev.map((conversation) => ({
+          ...conversation,
+          isNew: false,
+        }))
+
+        return [
+          ...updatedPrev,
+          {
+            ...initialConversation,
+            qnaNo: null,
+            question: message,
+            isNew: true,
+          },
+        ]
+      })
+
+      await agentService.sendQnaStream(chatRoomId, message, shouldWebSearch, createStreamMessageHandler(message))
+    },
+    [selectedChatRoom.id, createStreamMessageHandler],
+  )
+
+  const stop = useCallback(
+    (message: string) => {
+      isAbortedRef.current = true
+
+      let targetQnaNo: number | null = null
+      let finalMessage = message
+
+      // 최신 대화 추출
+      const reversedConversations = [...conversations].reverse()
+      const targetConversation = reversedConversations.find((conv) => conv.qnaNo !== null)
+
+      if (targetConversation && targetConversation.qnaNo) {
+        targetQnaNo = targetConversation.qnaNo
+
+        const chunks = chunkManager.getChunks(targetQnaNo)
+
+        if (chunks.length > 0) {
+          finalMessage = chunks.join('')
+        }
+
+        // 파싱중 중단될 경우 <!---->로 감싸서 주석 닫기
+        finalMessage +=
+          '<!---->\n\n<span style="color: #ADB5BD; font-weight: 500; font-size: 14px; user-select: none;">MARI stopped answering</span>'
+      }
+
+      updateState(MIAgentState.IDLE)
+
+      // 가상 FULLTEXT 수신 처리 (answer 확정 + statusMessage 제거)
+      if (targetQnaNo) {
+        setConversations((prev) => {
+          const index = prev.findIndex((conv) => conv.qnaNo === targetQnaNo)
+          if (index === -1) return prev
+
+          const currentConversation = prev[index]
+
+          const updatedAnswer: NonNullable<IConversation['answer']> = {
+            ...(currentConversation.answer ?? {}),
+            [StreamEventType.MESSAGE]: finalMessage,
+          } as NonNullable<IConversation['answer']>
+
+          const updatedConversation: IConversation = {
+            ...currentConversation,
+            answer: updatedAnswer,
+            statusMessage: undefined,
+            statusCd: ChatRoomErrorStatus.CANCELLED_BY_USER,
+            statusNm: '중단',
+          }
+
+          return [...prev.slice(0, index), updatedConversation, ...prev.slice(index + 1)]
+        })
+
+        chunkManager.clearChunks(targetQnaNo)
+      }
+
+      if (selectedChatRoom.id) {
+        agentService.cancelStream(selectedChatRoom.id, finalMessage).then().catch(console.error)
+      }
+
+      // 새로운 채팅방이면 완료 처리하고 히스토리 다시 불러오기
+      setSelectedChatRoom((prev) => {
+        if (prev.isNew && prev.id) {
+          refetchChatRoomsRef.current()
+          return {
+            ...prev,
+            isNew: false,
+          }
+        }
+        return prev
+      })
+    },
+    [selectedChatRoom.id, conversations, updateState],
+  )
+
+  const selectedChatRoomInfo = useMemo(
+    () => chatRooms?.find(({ chatRoomId }) => chatRoomId === selectedChatRoom.id),
+    [chatRooms, selectedChatRoom.id],
+  )
+
+  const historyList = useMemo(() => {
+    if (!chatQnaHistory?.pages || chatQnaHistory.pages.length === 0) return []
+    return chatQnaHistory.pages
+      .filter((page): page is IPaginationResponse<IChatQnaRes> => page !== null)
+      .flatMap((page) => page.detail)
+      .reverse()
+  }, [chatQnaHistory?.pages])
+
+  useEffect(() => {
+    if (selectedChatRoom.id && !selectedChatRoom.isNew) {
+      refetchChatQnaHistoryRef.current()
+    }
+  }, [selectedChatRoom.id, selectedChatRoom.isNew])
+
+  useEffect(() => {
+    if (historyList.length === 0) return
+
+    const currentQnaNos = new Set(historyList.map((conv) => conv.qnaNo))
+
+    // qnaNo 집합이 변경되지 않았다면 업데이트하지 않음
+    if (
+      prevHistoryQnaNosRef.current.size === currentQnaNos.size &&
+      Array.from(prevHistoryQnaNosRef.current).every((qnaNo) => currentQnaNos.has(qnaNo))
+    ) {
+      return
+    }
+
+    prevHistoryQnaNosRef.current = currentQnaNos
+
     setConversations((prev) => {
-      if (prev.length === 0) return prev
-      const newConversations = [...prev]
-      newConversations[newConversations.length - 1].isNew = false
-      return newConversations
+      const existingQnaNos = new Set(prev.map((conv) => conv.qnaNo))
+      const newConversations = historyList.filter((conv) => !existingQnaNos.has(conv.qnaNo))
+
+      if (newConversations.length === 0) {
+        return prev
+      }
+
+      const updatedConversations = newConversations.map((conv) => {
+        if (!conv.answer) {
+          return { ...conv, isNew: false }
+        }
+        const resolved = resolveChatAnswerMessageString(conv.answer as Record<string, unknown>)
+        if (!resolved) {
+          return { ...conv, isNew: false }
+        }
+        const rawMsg = conv.answer[StreamEventType.MESSAGE] as unknown
+        if (resolved === rawMsg) {
+          return { ...conv, isNew: false }
+        }
+        return {
+          ...conv,
+          isNew: false,
+          answer: {
+            ...conv.answer,
+            [StreamEventType.MESSAGE]: resolved,
+          },
+        }
+      })
+
+      return [...updatedConversations, ...prev]
     })
-  }, [])
+  }, [historyList])
 
   return {
     state,
     inquire,
-    isStreamingDone,
-    retry,
+    stop,
+    selectedChatRoom: selectedChatRoomInfo,
+    selectedChatRoomId: selectedChatRoom.id,
+    setSelectedChatRoomId,
+    updateStatusMessage,
+    conversations,
     chatRoom: {
-      list: chatRoomList,
+      list: chatRooms,
       isLoading: chatRoomsLoading,
       refetch: refetchChatRooms,
     },
-    selectedChatRoom: selectedChatRoomInfo,
-    setSelectedChatRoomId,
-    conversations,
-    pushConversations,
-    markLastConversationAsOld,
     history: {
       isLoading: isFetchingPrevHistory,
       fetchPrevHistory,

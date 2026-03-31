@@ -1,9 +1,15 @@
-import { Box, Typography, useTheme } from '@mui/material'
-import { useState, useEffect, useRef } from 'react'
+import { Box, Typography, Stack, Switch } from '@mui/material'
 
-import MIAgentToggleSetting, { MIAgentToggleSettingOption } from './MIAgentToggleSetting'
+import SourceIcon from '@/components/common/icons/agent/SourceIcon'
+import MIMenu from '@/components/common/menu/MIMenu'
 
-import SettingIcon from '@/components/common/icons/SettingIcon'
+export interface MIAgentToggleSettingOption {
+  id: string
+  title: string
+  subtitle: string
+  checked: boolean
+  disabled?: boolean
+}
 
 export interface MIAgentInputBoxDropdownProps {
   isOpen?: boolean
@@ -11,7 +17,6 @@ export interface MIAgentInputBoxDropdownProps {
   onOpenChange?: (isOpen: boolean) => void
   onChangeSelectedItem: (item: MIAgentToggleSettingOption) => void
   settingsItems?: MIAgentToggleSettingOption[]
-  modePosition?: 'top' | 'bottom'
 }
 
 const MIAgentInputBoxDropdown = ({
@@ -20,110 +25,51 @@ const MIAgentInputBoxDropdown = ({
   settingsItems = [],
   disabled,
   onChangeSelectedItem,
-  modePosition = 'bottom',
-}: MIAgentInputBoxDropdownProps) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(isOpen)
-  const [isHovered, setIsHovered] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const theme = useTheme()
-
-  // Sync with external isOpen prop
-  useEffect(() => {
-    setIsDropdownOpen(isOpen)
-  }, [isOpen])
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
-        onOpenChange?.(false)
+}: MIAgentInputBoxDropdownProps) => (
+  <Box sx={{ width: 'fit-content', pointerEvents: disabled ? 'none' : 'initial' }}>
+    <MIMenu
+      variant="outlined"
+      open={isOpen}
+      onOpenChange={onOpenChange}
+      disabled={disabled}
+      zIndex={1600}
+      sx={{
+        padding: '8px 12px',
+        borderRadius: '100px',
+      }}
+      label={
+        <Stack direction="row" alignItems="center" gap="8px">
+          <SourceIcon width={16} height={16} />
+          <Typography variant="body2R14">Source</Typography>
+        </Stack>
       }
-    }
-
-    if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isDropdownOpen, onOpenChange])
-
-  const handleToggleDropdown = () => {
-    const newState = !isDropdownOpen
-
-    setIsDropdownOpen(newState)
-    onOpenChange?.(newState)
-  }
-
-  return (
-    <Box ref={dropdownRef} sx={{ position: 'relative', width: 'fit-content', pointerEvents: disabled ? 'none' : 'initial' }}>
-      <Box
-        sx={{
-          borderRadius: '100px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '8px',
-          paddingX: '8px',
-          paddingY: '7px',
-          border: '1px solid',
-          borderColor: isDropdownOpen
-            ? 'contentBorder.Primaryactive'
-            : isHovered
-              ? 'contentBorder.Hover'
-              : disabled
-                ? 'contentBorder.Disabled'
-                : 'contentBorder.Normal',
-          '&:hover': {
-            cursor: 'pointer',
-          },
-          transition: 'all 0.8s ease',
-          width: '90px',
-          height: '34px',
-          boxSizing: 'border-box',
-        }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={handleToggleDropdown}
-        color={
-          isDropdownOpen
-            ? 'contentIcon.Activeb'
-            : isHovered
-              ? 'contentIcon.Hover'
-              : disabled
-                ? 'contentIcon.Disabled'
-                : 'contentIcon.Enabled'
-        }
-      >
-        <SettingIcon />
-        <Typography variant="body2R14">Source</Typography>
-      </Box>
-
-      {isDropdownOpen && (
-        <Box
-          sx={{
-            position: 'absolute',
-            left: 0,
-            top: modePosition === 'bottom' ? '42px' : 'unset',
-            bottom: modePosition === 'bottom' ? 'unset' : '42px',
-            width: '244px',
-            borderRadius: '12px',
-            border: `1px solid ${theme.palette.grey[300]}`,
-            background: theme.palette.background.paper,
-            boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.10)',
-            zIndex: 1000,
-            padding: '10px 12px',
-            boxSizing: 'border-box',
-            cursor: 'default',
-          }}
-        >
-          <MIAgentToggleSetting items={settingsItems} onChangeSelectedItem={onChangeSelectedItem} />
-        </Box>
-      )}
-    </Box>
-  )
-}
+    >
+      <Stack padding="12px" gap="12px">
+        {settingsItems.map((item) => (
+          <Stack key={item.id} direction="row" alignItems="center" padding="4px 8px" gap="12px">
+            <Stack minWidth={180}>
+              <Typography variant="body2SB14" color="contentText.Black">
+                {item.title}
+              </Typography>
+              <Typography variant="body2M14" color="contentText.Normal">
+                {item.subtitle}
+              </Typography>
+            </Stack>
+            <Switch
+              size="small"
+              checked={item.checked}
+              disabled={item.disabled}
+              onChange={() => {
+                if (!item.disabled) {
+                  onChangeSelectedItem(item)
+                }
+              }}
+            />
+          </Stack>
+        ))}
+      </Stack>
+    </MIMenu>
+  </Box>
+)
 
 export default MIAgentInputBoxDropdown

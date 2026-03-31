@@ -68,10 +68,7 @@ const activityLogService = {
    * @param companyNo - 고객사 번호
    * @param payload - 생성할 Activity Log 데이터
    */
-  async createActivityLog(
-    companyNo: number,
-    payload: ICreateActivityLogRequest,
-  ): Promise<IActivityLogItem> {
+  async createActivityLog(companyNo: number, payload: ICreateActivityLogRequest): Promise<IActivityLogItem> {
     const response: AxiosResponse<ICommonResponse<IActivityLogItem>> = await api.post(
       `/mi/activity-log/companies/${companyNo}/logs`,
       payload,
@@ -82,4 +79,3 @@ const activityLogService = {
 }
 
 export default activityLogService
-

@@ -114,10 +114,10 @@ const NewAgentButton: FC<NewAgentButtonProps> = ({ top = 126, right }) => {
       }
     }
 
-    window.addEventListener('keydown', escapeHandler)
+    globalThis.addEventListener('keydown', escapeHandler)
 
     return () => {
-      window.removeEventListener('keydown', escapeHandler)
+      globalThis.removeEventListener('keydown', escapeHandler)
     }
   }, [showChatWindow])
 
@@ -151,7 +151,7 @@ const NewAgentButton: FC<NewAgentButtonProps> = ({ top = 126, right }) => {
           sx={{
             opacity: showChatWindow ? 0 : 1,
             visibility: showChatWindow ? 'hidden' : 'visible',
-            width: !showChatWindow ? 'auto' : '0px',
+            width: showChatWindow ? '0px' : 'auto',
             height: '0px',
             borderRadius: '12px',
             position: 'relative',
@@ -206,7 +206,9 @@ const NewAgentButton: FC<NewAgentButtonProps> = ({ top = 126, right }) => {
             <Box
               width="48px"
               height="48px"
-              style={{
+              sx={{
+                borderRadius: '50%',
+                overflow: 'hidden',
                 filter: showMariText ? 'drop-shadow(0px 0px 2.4px rgba(54, 79, 199, 0.7))' : 'none',
                 transition: 'filter 0.2s cubic-bezier(0, 0.55, 0.45, 1)',
                 WebkitFilter: showMariText ? 'drop-shadow(0px 0px 2.4px rgba(54, 79, 199, 0.7))' : 'none',
@@ -214,7 +216,18 @@ const NewAgentButton: FC<NewAgentButtonProps> = ({ top = 126, right }) => {
                 willChange: 'filter',
               }}
             >
-              <img width={48} height={48} src={mariSymbol} alt="Mari" />
+              <Box
+                component="img"
+                src={mariSymbol}
+                alt="Mari"
+                width="100%"
+                height="100%"
+                draggable={false}
+                sx={{
+                  display: 'block',
+                  objectFit: 'cover',
+                }}
+              />
             </Box>
           </Button>
         </Box>
@@ -238,7 +251,13 @@ const NewAgentButton: FC<NewAgentButtonProps> = ({ top = 126, right }) => {
           }}
         >
           {showChatWindow && (
-            <MIAgentChatWindow top={top} onChangeExpand={onExpandWindow} windowExpend={windowExpend} onClose={handleClose} />
+            <MIAgentChatWindow
+              top={top}
+              onChangeExpand={onExpandWindow}
+              windowExpend={windowExpend}
+              onClose={handleClose}
+              offsetLeft={offsetLeft}
+            />
           )}
         </Box>
       </Box>

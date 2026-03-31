@@ -3,25 +3,25 @@ import { ButtonHTMLAttributes } from 'react'
 import * as XLSX from 'xlsx-js-style'
 
 import MIButton from '@/components/common/button/MIButton'
-import { IChatQnaAnswerBundle } from '@/service/mi/agent'
+import { ParsedTable } from '@/utils/agentMarkdownExtractor'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   'data-table-id'?: string
 }
 
 interface TableDownloadButtonProps extends ButtonProps {
-  bundle: IChatQnaAnswerBundle
+  markdownTables?: ParsedTable[]
   chatRoomTitle?: string
 }
 
-export const MIAgentTableDownloadButton = ({ bundle, chatRoomTitle, ...props }: TableDownloadButtonProps) => {
-  const table = (bundle.tables ?? []).find((table) => table.tableId === props['data-table-id'])
+export const MIAgentTableDownloadButton = ({ markdownTables, chatRoomTitle, ...props }: TableDownloadButtonProps) => {
+  const markdownTable = markdownTables?.find((t) => t.tableId === props['data-table-id'])
 
-  if (!table) return null
+  if (!markdownTable) return null
 
   const handleDownload = () => {
-    const headers = table.headers.map((header) => header.name)
-    const rows = table.rows.map((row) => row.cells)
+    const headers = markdownTable.headers
+    const rows = markdownTable.rows
 
     const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])

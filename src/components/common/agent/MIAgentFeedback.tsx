@@ -102,7 +102,6 @@ const MIAgentFeedbackBak = ({ onSubmit, onCancel }: MIAgentFeedbackProps) => {
         display: 'flex',
         width: '100%',
         minWidth: '450px',
-        maxWidth: '800px',
         minHeight: '186px',
         maxHeight: '800px',
         flexDirection: 'column',

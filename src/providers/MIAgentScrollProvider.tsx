@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useRef, useCallback } from 'react'
+import { ReactNode, useMemo, useCallback } from 'react'
 
 import ScrollContext from '@/contexts/ScrollContext'
 
@@ -8,46 +8,27 @@ interface MIAgentScrollProviderProps {
 
 const MIAgentScrollProvider = ({ children }: MIAgentScrollProviderProps) => {
   const scrollRef = useMemo(() => ({ current: null as HTMLDivElement | null }), [])
-  const prevScrollHeightRef = useRef<number>(0)
+  const scrollToBottom = useCallback(
+    (behavior: ScrollBehavior = 'smooth') => {
+      const element = scrollRef.current
+      if (!element) return
 
-  const scrollToBottom = useCallback(() => {
-    if (!scrollRef.current) return
-
-    const element = scrollRef.current
-    const scrollTop = element.scrollHeight - element.clientHeight
-
-    element.scrollTo({
-      top: scrollTop,
-      behavior: 'smooth',
-    })
-  }, [scrollRef])
-
-  const scrollToNewMessage = useCallback(() => {
-    const element = scrollRef.current
-    if (!element) return
-
-    const currentHeight = element.scrollHeight
-    const prevHeight = prevScrollHeightRef.current
-
-    const delta = currentHeight - prevHeight
-
-    if (delta > 0) {
-      element.scrollBy({
-        top: delta,
-        behavior: 'smooth',
+      requestAnimationFrame(() => {
+        element.scrollTo({
+          top: element.scrollHeight - element.clientHeight,
+          behavior,
+        })
       })
-    }
-
-    prevScrollHeightRef.current = currentHeight
-  }, [scrollRef])
+    },
+    [scrollRef],
+  )
 
   const value = useMemo(
     () => ({
       scrollRef,
       scrollToBottom,
-      scrollToNewMessage,
     }),
-    [scrollToBottom, scrollToNewMessage, scrollRef],
+    [scrollToBottom, scrollRef],
   )
 
   return <ScrollContext.Provider value={value}>{children}</ScrollContext.Provider>

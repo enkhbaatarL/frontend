@@ -19,28 +19,7 @@ import MIProvider from '@/providers/MIProvider'
 import { StickyHeaderProvider } from '@/providers/StickyHeaderProvider'
 import boardService, { INoticeDetailInfo, INoticePopupInfo } from '@/service/mi/board'
 import useAuthStore from '@/store/useAuthStore'
-
-// 쿠키 설정 함수
-const setCookie = (name: string, value: string, expiryDays: number) => {
-  const date = new Date()
-  date.setTime(date.getTime() + expiryDays * 24 * 60 * 60 * 1000)
-  const expires = `expires=${date.toUTCString()}`
-  document.cookie = `${name}=${value};${expires};path=/`
-}
-
-// 쿠키 가져오기 함수
-const getCookie = (name: string): string | null => {
-  const cookieName = `${name}=`
-  const cookies = document.cookie.split(';')
-
-  for (const cookieStr of cookies) {
-    const cookie = cookieStr.trim()
-    if (cookie.startsWith(cookieName)) {
-      return cookie.substring(cookieName.length, cookie.length)
-    }
-  }
-  return null
-}
+import { getCookie, setCookie } from '@/utils/cookie'
 
 const headerTopHeight = 36
 
