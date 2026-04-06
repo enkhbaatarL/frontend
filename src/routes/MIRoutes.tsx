@@ -12,6 +12,7 @@ import EconomicCalendarDetailPage from '@/pages/mi/economicCalendar/EconomicCale
 import EconomicCalendarPage from '@/pages/mi/economicCalendar/EconomicCalendarPage'
 import ForecastPage from '@/pages/mi/forecast/ForecastPage'
 import NewForecastPage from '@/pages/mi/forecast/NewForecastPage'
+import PositionPlayRemotePage from '@/pages/mi/forecast/PositionPlayRemotePage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
@@ -178,6 +179,10 @@ const MIRoutes: RouteObject = {
     {
       path: 'signal-map',
       element: <SignalMapPage />,
+    },
+    {
+      path: 'position-play',
+      element: <PositionPlayRemotePage />,
     },
     {
       path: 'market-data',

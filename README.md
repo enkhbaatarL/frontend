@@ -50,9 +50,43 @@ You need to set up ESLint in your IDE. For detailed instructions, please refer t
 - **Chart.js (4.4.8) & react-chartjs-2**: Charts
 - **ESLint & Prettier**: Code style
 - **Husky & lint-staged**: Git Hooks
+- **vite-plugin-federation**: Host loads remote micro-frontends
 
 > ⚠️ Multilingual support is partially implemented with `t('string')` format in the code, but currently bypassed for output.   
 > (Future mapping is required)
+
+## 🔌 Module Federation
+
+This app acts as a **host** and loads selected UI from a **remote** application at runtime via [Vite Module Federation](https://github.com/originjs/vite-plugin-federation).
+
+### Configuration (`vite.config.ts`)
+
+| Item | Value |
+|------|--------|
+| Host name | `hostApp` |
+| Remote name | `positionPlayRemote` |
+| Remote entry URL | `{remoteUrl}/assets/remoteEntry.js` |
+| `remoteUrl` | `VITE_POSITION_PLAY_REMOTE_URL` env, or `http://localhost:5174` if unset |
+
+**Shared dependencies** (singleton, version-aligned with the host): `react`, `react-dom`, `react-router-dom`. Host and remote must use compatible major versions so a single instance is shared at runtime.
+
+The Vite build sets `modulePreload: false` and `target: 'esnext'` as required for federation bundling.
+
+### In-app route
+
+- **`/mi/position-play`** — Shell page that lazy-loads the remote module `positionPlayRemote/PositionPlayPage` inside the MI layout (`PositionPlayRemotePage`).
+
+### TypeScript
+
+Remote module paths are declared in `src/types/federation.d.ts` so `import('positionPlayRemote/PositionPlayPage')` type-checks.
+
+### Local development
+
+1. Start the **remote** app so it serves `remoteEntry.js` (default expectation: dev server on port **5174**).
+2. Start this **host** (`npm run dev`).
+3. Open `/mi/position-play`. If the remote is down or the URL is wrong, the page will fail to load the federated chunk.
+
+Override the remote origin with `VITE_POSITION_PLAY_REMOTE_URL` (no trailing path; the host app appends `/assets/remoteEntry.js`).
 
 ## 🛣️ Routing Structure
 
@@ -69,6 +103,7 @@ The application uses React Router v7 with a hierarchical routing structure:
 - `/mi` - Redirects to company-specific home page
 - `/mi/dashboard` - Main dashboard
 - `/mi/signal-map` - Signal map visualization
+- `/mi/position-play` - Position Play (Module Federation remote)
 - `/mi/market-data` - Market data analysis
 - `/mi/insights` - Market insights
 - `/mi/data-detail/:goodsNo/:goodsDataNo` - Detailed data view
@@ -264,6 +299,12 @@ npm run build:dev
 # Build for production environment
 npm run build:prod
 ```
+
+### VITE_POSITION_PLAY_REMOTE_URL
+
+Base URL of the Module Federation **remote** application (scheme + host + port). The host loads `{VITE_POSITION_PLAY_REMOTE_URL}/assets/remoteEntry.js`.
+
+If omitted, the default is `http://localhost:5174` (see `vite.config.ts`).
 
 ### VITE_USE_EXTERNAL_LOGIN
 

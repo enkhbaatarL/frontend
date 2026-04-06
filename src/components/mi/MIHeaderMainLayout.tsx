@@ -334,9 +334,9 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
                   .filter((page) => page.show)
                   .map((page) => {
                     const indexPage = page.index
+                    const submenuItems = updatedSubmenus[indexPage] ?? []
                     const isOpen = openKey === indexPage
-                    const isActiveTop =
-                      isPathActive(`/mi/${indexPage}`) || (updatedSubmenus[indexPage]?.some((s) => isPathActive(s.to)) ?? false)
+                    const isActiveTop = isPathActive(`/mi/${indexPage}`) || submenuItems.some((s) => isPathActive(s.to))
 
                     return (
                       <Box
@@ -415,13 +415,17 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
                                   margin: '8px 0 8px 0',
                                 }}
                               >
-                                {(updatedSubmenus[indexPage] ?? []).map((item, idx) => {
+                                {submenuItems.map((item, idx) => {
                                   const active = isPathActive(item.to)
-                                  const isServices = item.section === 'SERVICES'
+                                  const prevVisible = submenuItems
+                                    .slice(0, idx)
+                                    .reverse()
+                                    .find((row) => row.show)
+                                  const showSectionHeader = item.show && Boolean(item.section) && prevVisible?.section !== item.section
                                   return (
                                     item.show && (
                                       <Box key={`${item.label}-${idx}`}>
-                                        {isServices && (
+                                        {showSectionHeader && (
                                           <Box
                                             sx={{
                                               px: 2,
@@ -433,7 +437,7 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
                                               lineHeight: 1.6,
                                             }}
                                           >
-                                            SERVICES
+                                            {item.section}
                                           </Box>
                                         )}
 

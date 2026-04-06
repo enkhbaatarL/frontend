@@ -1,13 +1,24 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import * as path from 'node:path'
 
+import federation from '@originjs/vite-plugin-federation'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
+
+const POSITION_PLAY_REMOTE_URL = 'http://localhost:5174'
+
+const sharedDeps = {
+  react: { singleton: true, requiredVersion: '^19.0.0' },
+  'react-dom': { singleton: true, requiredVersion: '^19.0.0' },
+  'react-router-dom': { singleton: true, requiredVersion: '^7.0.0' },
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const API_BASE_URL = env.VITE_API_BASE_URL
   const USE_EXTERNAL_LOGIN = env.VITE_USE_EXTERNAL_LOGIN
+  const remoteUrl = env.VITE_POSITION_PLAY_REMOTE_URL || POSITION_PLAY_REMOTE_URL
 
   console.info(`Run: ${mode} / Api: ${API_BASE_URL}`)
   if (USE_EXTERNAL_LOGIN !== undefined) {
@@ -24,6 +35,13 @@ export default defineConfig(({ mode }) => {
           process: true,
         },
       }),
+      federation({
+        name: 'hostApp',
+        remotes: {
+          positionPlayRemote: `${remoteUrl}/assets/remoteEntry.js`,
+        },
+        shared: sharedDeps as never,
+      }),
     ],
     resolve: {
       alias: [
@@ -32,6 +50,10 @@ export default defineConfig(({ mode }) => {
           replacement: `${path.resolve(__dirname, 'src')}/`,
         },
       ],
+    },
+    build: {
+      modulePreload: false,
+      target: 'esnext',
     },
     server: {
       allowedHosts: true,

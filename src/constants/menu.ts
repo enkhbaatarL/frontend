@@ -14,7 +14,7 @@ export interface SubMenuItem {
   disable?: boolean
   show?: boolean
   IconComponent?: ComponentType
-  section?: 'SERVICES' | 'DEFAULT'
+  section?: string
 }
 
 export interface MainMenuItem {
@@ -68,6 +68,11 @@ export const MENU_CONFIG: MainMenuItem[] = [
         to: 'signal-map',
         desc: 'submenu.signalMap.desc',
         IconComponent: SignalIcon,
+      },
+      {
+        label: 'Position Play',
+        to: 'position-play',
+        section: 'TEST',
       },
     ],
   },

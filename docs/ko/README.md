@@ -50,9 +50,43 @@ IDE에 ESLint를 설정해야 합니다. 자세한 지침은 [IDE_SETTING.md](..
 - **Chart.js (4.4.8) & react-chartjs-2**: 차트
 - **ESLint & Prettier**: 코드 스타일
 - **Husky & lint-staged**: Git Hooks
+- **vite-plugin-federation**: 런타임 Remote 마이크로 프론트엔드
 
 > ⚠️ 다국어 지원은 일부 `t('string')` 형식으로 코드 작성 되어 있으나, 현재 바이패스로 출력하고 있습니다. 
 > (차후 맵핑이 필요합니다)
+
+## 🔌 모듈 페더레이션
+
+이 저장소는 **Host** 앱이며, [Vite Module Federation](https://github.com/originjs/vite-plugin-federation)으로 **Remote** 앱의 UI를 런타임 시점에 불러옵니다.
+
+### 설정 (`vite.config.ts`)
+
+| 항목 | 값 |
+|------|-----|
+| Host 이름 | `hostApp` |
+| Remote 이름 | `positionPlayRemote` |
+| Remote 엔트리 URL | `{remoteUrl}/assets/remoteEntry.js` |
+| `remoteUrl` | 환경 변수 `VITE_POSITION_PLAY_REMOTE_URL`, 미설정 시 `http://localhost:5174` |
+
+**공유 의존성**(`singleton`, Host와 맞춘 버전): `react`, `react-dom`, `react-router-dom`. Host·Remote가 호환되는 메이저 버전을 사용하여야 런타임에 단일 인스턴스로 공유됩니다.
+
+페더레이션 빌드를 위해 Vite에서 `modulePreload: false`, `target: 'esnext'`를 사용합니다.
+
+### 앱 내 라우트
+
+- **`/mi/position-play`** — MI 레이아웃(`PositionPlayRemotePage`) 안에서 Remote 모듈 `positionPlayRemote/PositionPlayPage`를 `lazy`로 로드하는 셸 페이지입니다.
+
+### TypeScript
+
+`src/types/federation.d.ts`에 Remote 모듈 경로를 선언해 `import('positionPlayRemote/PositionPlayPage')`가 타입 체크되도록 합니다.
+
+### 로컬 개발
+
+1. **Remote** 앱을 먼저 띄워 `remoteEntry.js`가 서빙되게 합니다(기본 가정: 개발 서버 포트 **5174**).
+2. 이 **Host**를 실행합니다(`npm run dev`).
+3. `/mi/position-play`로 접속합니다. Remote가 꺼져 있거나 URL이 잘못되면 페더레이션 청크 로드에 실패합니다.
+
+Remote의 오리진만 바꿀 때는 `VITE_POSITION_PLAY_REMOTE_URL`을 사용합니다(끝에 경로 없이 scheme·호스트·포트만; Host가 `/assets/remoteEntry.js`를 붙입니다).
 
 ## 🛣️ 라우팅 구조
 
@@ -69,6 +103,7 @@ IDE에 ESLint를 설정해야 합니다. 자세한 지침은 [IDE_SETTING.md](..
 - `/mi` - 회사별 홈페이지로 리다이렉트
 - `/mi/dashboard` - 메인 대시보드
 - `/mi/signal-map` - 시그널 맵 시각화
+- `/mi/position-play` - 포지션 플레이(모듈 페더레이션 Remote)
 - `/mi/market-data` - 시장 데이터 분석
 - `/mi/insights` - 시장 인사이트
 - `/mi/data-detail/:goodsNo/:goodsDataNo` - 상세 데이터 보기
@@ -266,6 +301,12 @@ npm run build:dev
 # 프로덕션 환경으로 빌드
 npm run build:prod
 ```
+
+### VITE_POSITION_PLAY_REMOTE_URL
+
+모듈 페더레이션 **Remote** 애플리케이션의 베이스 URL(scheme + host + port)입니다. Host는 `{VITE_POSITION_PLAY_REMOTE_URL}/assets/remoteEntry.js`를 로드합니다.
+
+미설정 시 기본값은 `http://localhost:5174`입니다(`vite.config.ts` 참고).
 
 ### VITE_USE_EXTERNAL_LOGIN
 
