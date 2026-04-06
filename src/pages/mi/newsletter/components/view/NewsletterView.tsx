@@ -7,7 +7,11 @@ import Cover from '@/pages/mi/newsletter/components/emailTemplate/Cover'
 import EmailContent from '@/pages/mi/newsletter/components/view/EmailContent'
 import OilPriceRowEmailCapture from '@/pages/mi/newsletter/components/view/OilPriceRowEmailCapture'
 import { useNewsletterCoverAndChartProps } from '@/pages/mi/newsletter/hooks/useNewsletterCoverAndChartProps'
-import { filterVisibleNewsFlowItems, shouldSuppressNewsFlowChartUi } from '@/pages/mi/newsletter/utils/snapshotUtils'
+import {
+  enrichNewsFlowItemTimestamps,
+  filterVisibleNewsFlowItems,
+  shouldSuppressNewsFlowChartUi,
+} from '@/pages/mi/newsletter/utils/snapshotUtils'
 import { NewsletterDetailPageMode } from '@/service/mi/newsletter'
 
 type NewsletterViewProps = {
@@ -82,7 +86,9 @@ const NewsletterView = ({
                 title: newsFlowProps.title,
                 aggregationTime: newsFlowProps.aggregationTime,
               }}
-              relatedNews={filterVisibleNewsFlowItems(newsFlowProps.newsEventItems).filter((n) => n.visibility !== false)}
+              relatedNews={enrichNewsFlowItemTimestamps(
+                filterVisibleNewsFlowItems(newsFlowProps.newsEventItems).filter((n) => n.visibility),
+              )}
               mode={NewsletterDetailPageMode.VIEW}
               marketOpenTime={marketOpenTime}
               marketCloseTime={marketCloseTime}

@@ -12,6 +12,7 @@ import NewsFormFields from '@/pages/mi/newsletter/components/edit/NewsFormFields
 import Block, { type BlockOrderProps } from '@/pages/mi/newsletter/components/edit/sections/Block'
 import { useCreateTimeValidation } from '@/pages/mi/newsletter/hooks/useCreateTimeValidation'
 import {
+  enrichNewsFlowItemTimestamps,
   filterVisibleNewsFlowItems,
   getEffectiveFieldDef,
   NEWSLETTER_SECTION_CODE,
@@ -24,7 +25,6 @@ import {
   NewsletterDetailPageMode,
 } from '@/service/mi/newsletter'
 import useChartEditStore from '@/store/useChartEditStore'
-import { createTimestampInNY } from '@/utils/date'
 
 interface NewsFlowSectionProps {
   chartData?: INewsFlowChartData
@@ -78,14 +78,7 @@ const NewsFlowSection = ({
   const { chartType, boxPositions, titleEdits, setChartType, onBoxPositionChange, resetBoxPositions, setTitleEdit } = useChartEditStore()
 
   /** 차트·변곡점 — 삭제(soft)된 뉴스 카드 제외 */
-  const enrichedRelatedNews = useMemo(
-    () =>
-      chartRelatedNews.map((item) => ({
-        ...item,
-        timestamp: item.timestamp ?? createTimestampInNY(item.createdDate ?? '', item.createTime ?? ''),
-      })),
-    [chartRelatedNews],
-  )
+  const enrichedRelatedNews = useMemo(() => enrichNewsFlowItemTimestamps(chartRelatedNews), [chartRelatedNews])
 
   /** 차트 플러그인과 동일한 adjusted timestamp 맵 (newsId → 차트에서 사용하는 timestamp) */
   const newsIdToAdjustedTimestamp = useMemo(() => {

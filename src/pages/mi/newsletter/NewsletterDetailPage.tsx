@@ -24,6 +24,7 @@ import { useChartImageStore } from '@/pages/mi/newsletter/hooks/useChartImageSto
 import { useRevisionChanges } from '@/pages/mi/newsletter/hooks/useRevisionChanges'
 import { useSaveNewsletterRevision } from '@/pages/mi/newsletter/hooks/useSaveNewsletterRevision'
 import {
+  enrichNewsFlowItemTimestamps,
   filterVisibleNewsFlowItems,
   findFirstSectionByCanonicalCode,
   findPrimaryRelatedNewsSection,
@@ -65,7 +66,6 @@ import newsletterService, {
 } from '@/service/mi/newsletter'
 import useAuthStore from '@/store/useAuthStore'
 import useChartEditStore from '@/store/useChartEditStore'
-import { createTimestampInNY } from '@/utils/date'
 import { convertBase64ImagesToCid, prepareNewsletterEmailHtml } from '@/utils/email'
 
 const NewsletterDetailPage = () => {
@@ -904,11 +904,7 @@ const NewsletterDetailPage = () => {
   )
 
   const enrichedNewsFlowItems = useMemo(
-    () =>
-      filterVisibleNewsFlowItems(newsFlowProps.newsEventItems).map((item) => ({
-        ...item,
-        timestamp: item.timestamp ?? createTimestampInNY(item.createdDate ?? '', item.createTime ?? ''),
-      })),
+    () => enrichNewsFlowItemTimestamps(filterVisibleNewsFlowItems(newsFlowProps.newsEventItems)),
     [newsFlowProps.newsEventItems],
   )
 

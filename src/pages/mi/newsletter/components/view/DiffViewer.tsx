@@ -13,6 +13,7 @@ import { useNewsletterCoverAndChartProps } from '@/pages/mi/newsletter/hooks/use
 import { useNewsletterOriginalSnapshot } from '@/pages/mi/newsletter/hooks/useNewsletterOriginalSnapshot'
 import { useRevisionChangeDetail } from '@/pages/mi/newsletter/hooks/useRevisionChangeDetail'
 import {
+  enrichNewsFlowItemTimestamps,
   filterVisibleNewsFlowItems,
   findFirstSectionByCanonicalCode,
   NEWSLETTER_SECTION_CODE,
@@ -168,7 +169,9 @@ const DiffViewer = ({
                 title: newsFlowProps.title,
                 aggregationTime: newsFlowProps.aggregationTime,
               }}
-              relatedNews={filterVisibleNewsFlowItems(newsFlowProps.newsEventItems).filter((n) => n.visibility !== false)}
+              relatedNews={enrichNewsFlowItemTimestamps(
+                filterVisibleNewsFlowItems(newsFlowProps.newsEventItems).filter((n) => n.visibility),
+              )}
               mode={NewsletterDetailPageMode.VIEW}
               marketOpenTime={marketOpenTime}
               marketCloseTime={marketCloseTime}

@@ -101,6 +101,14 @@ export const getEffectiveFieldDef = (
 export const filterVisibleNewsFlowItems = (items: IRelatedNewsEventItem[]): IRelatedNewsEventItem[] =>
   items.filter((n) => n.removed !== true)
 
+/** `timestamp`가 없는 뉴스 항목에 `createdDate + createTime`으로 타임스탬프를 보강.
+ *  차트 플러그인이 범위 밖 뉴스도 올바르게 표시할 수 있도록 모든 소비처에서 사용. */
+export const enrichNewsFlowItemTimestamps = (items: IRelatedNewsEventItem[]): IRelatedNewsEventItem[] =>
+  items.map((item) => ({
+    ...item,
+    timestamp: item.timestamp ?? createTimestampInNY(item.createdDate ?? '', item.createTime ?? ''),
+  }))
+
 /** 뉴스 플로우 섹션 `blocks`에 `type === 'CHART'` 블록이 하나라도 있는지 */
 export const newsFlowSectionHasChartBlock = (section: INewsletterSnapshotSection | null | undefined): boolean =>
   (section?.blocks ?? []).some((b) => b.type === 'CHART')
