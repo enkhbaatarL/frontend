@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify'
 import { CSSProperties, Fragment } from 'react'
 
 import { IRelatedNewsEventItem } from '@/service/mi/newsletter'
-import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled } from '@/utils/email'
+import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled, outlookMsoFontSize } from '@/utils/email'
 
 /** 본문(18px → Outlook 12px)과 동일 비율로 패딩 축소 */
 const RN_BODY_DESIGN_FONT_PX = 18
@@ -93,8 +93,8 @@ const RelatedNews = ({ item, titleDiffHtml, contentDiffHtml, visualRemoved }: Re
                     lineHeight: '22px',
                     paddingBottom: '4px',
                     ...({
-                      msoAnsiFontSize: `${RN_META_OUTLOOK_FONT_PX}px`,
-                      msoFareastFontSize: `${RN_META_OUTLOOK_FONT_PX}px`,
+                      msoAnsiFontSize: outlookMsoFontSize(RN_META_OUTLOOK_FONT_PX),
+                      msoFareastFontSize: outlookMsoFontSize(RN_META_OUTLOOK_FONT_PX),
                       msoLineHeightAlt: msoLineHeightAltScaled(RN_META_DESIGN_LINE_PX, RN_META_DESIGN_FONT_PX, RN_META_OUTLOOK_FONT_PX),
                       msoLineHeightRule: 'exactly',
                       msoPaddingAlt: msoPaddingAltScaled(0, 0, 4, 0, RN_META_DESIGN_FONT_PX, RN_META_OUTLOOK_FONT_PX),
@@ -178,8 +178,8 @@ const RelatedNews = ({ item, titleDiffHtml, contentDiffHtml, visualRemoved }: Re
             textOverflow: 'ellipsis',
             textDecoration: visualRemoved ? 'line-through' : undefined,
             ...({
-              msoAnsiFontSize: '13.5px',
-              msoFareastFontSize: '13.5px',
+              msoAnsiFontSize: outlookMsoFontSize(13.5),
+              msoFareastFontSize: outlookMsoFontSize(13.5),
               msoLineHeightAlt: msoLineHeightAltScaled(28, 20, 13.5),
               msoLineHeightRule: 'exactly',
               msoPaddingAlt: msoPaddingAltScaled(0, 0, 10, 0, 20, 13.5),
@@ -201,8 +201,8 @@ const RelatedNews = ({ item, titleDiffHtml, contentDiffHtml, visualRemoved }: Re
             lineHeight: '27px',
             textDecoration: visualRemoved ? 'line-through' : undefined,
             ...({
-              msoAnsiFontSize: '12px',
-              msoFareastFontSize: '12px',
+              msoAnsiFontSize: outlookMsoFontSize(12),
+              msoFareastFontSize: outlookMsoFontSize(12),
               msoLineHeightAlt: msoLineHeightAltScaled(27, 18, 12),
               msoLineHeightRule: 'exactly',
               msoPaddingAlt: msoPaddingAltScaled(0, 0, 28, 4, RN_BODY_DESIGN_FONT_PX, RN_BODY_OUTLOOK_FONT_PX),

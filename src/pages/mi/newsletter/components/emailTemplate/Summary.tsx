@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify'
 import { CSSProperties, Fragment } from 'react'
 
-import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled } from '@/utils/email'
+import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled, outlookMsoFontSize } from '@/utils/email'
 
 interface SummaryProps {
   summary: string
@@ -15,8 +15,8 @@ const cellStyle = {
   fontWeight: 500,
   lineHeight: '29px',
   ...({
-    msoAnsiFontSize: '12px',
-    msoFareastFontSize: '12px',
+    msoAnsiFontSize: outlookMsoFontSize(12),
+    msoFareastFontSize: outlookMsoFontSize(12),
     msoLineHeightAlt: msoLineHeightAltScaled(29, 18, 12),
     msoLineHeightRule: 'exactly',
   } as CSSProperties),
@@ -39,8 +39,8 @@ const Summary = ({ summary, summaryDiffHtml }: SummaryProps) => (
                     fontWeight: 700,
                     lineHeight: '28px',
                     ...({
-                      msoAnsiFontSize: '13.5px',
-                      msoFareastFontSize: '13.5px',
+                      msoAnsiFontSize: outlookMsoFontSize(13.5),
+                      msoFareastFontSize: outlookMsoFontSize(13.5),
                       msoLineHeightAlt: msoLineHeightAltScaled(28, 20, 13.5),
                       msoLineHeightRule: 'exactly',
                       msoPaddingAlt: msoPaddingAltScaled(0, 0, 10, 0, 20, 13.5),

@@ -65,6 +65,7 @@ import newsletterService, {
 } from '@/service/mi/newsletter'
 import useAuthStore from '@/store/useAuthStore'
 import useChartEditStore from '@/store/useChartEditStore'
+import { createTimestampInNY } from '@/utils/date'
 import { convertBase64ImagesToCid, prepareNewsletterEmailHtml } from '@/utils/email'
 
 const NewsletterDetailPage = () => {
@@ -901,6 +902,16 @@ const NewsletterDetailPage = () => {
     }),
     [newsFlowProps],
   )
+
+  const enrichedNewsFlowItems = useMemo(
+    () =>
+      filterVisibleNewsFlowItems(newsFlowProps.newsEventItems).map((item) => ({
+        ...item,
+        timestamp: item.timestamp ?? createTimestampInNY(item.createdDate ?? '', item.createTime ?? ''),
+      })),
+    [newsFlowProps.newsEventItems],
+  )
+
   let chartNode: ReactNode = null
   if (
     !suppressNewsFlowChartUi &&
@@ -909,7 +920,7 @@ const NewsletterDetailPage = () => {
     chartNode = (
       <InflectionPointChart
         chartData={newsFlowChartData}
-        relatedNews={filterVisibleNewsFlowItems(newsFlowProps.newsEventItems).filter((n) => n.visibility !== false)}
+        relatedNews={enrichedNewsFlowItems.filter((n) => n.visibility)}
         mode={mode}
         marketOpenTime={marketOpenTime}
         marketCloseTime={marketCloseTime}
@@ -1188,7 +1199,7 @@ const NewsletterDetailPage = () => {
           onClose={handleChartModalClose}
           anchorEl={chartAnchorElRef.current}
           chartData={newsFlowChartData}
-          relatedNews={filterVisibleNewsFlowItems(newsFlowProps.newsEventItems)}
+          relatedNews={enrichedNewsFlowItems}
           marketOpenTime={marketOpenTime}
           marketCloseTime={marketCloseTime}
           onChartImageReady={onMainChartImageReady}

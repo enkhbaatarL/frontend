@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify'
 import { CSSProperties, Fragment } from 'react'
 
-import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled } from '@/utils/email'
+import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled, outlookMsoFontSize } from '@/utils/email'
 
 interface ItemTitleProps {
   title: string
@@ -31,8 +31,8 @@ const ItemTitle = ({ title, subtitle, titleDiffHtml, subtitleDiffHtml }: ItemTit
                     fontWeight: 700,
                     lineHeight: '39px',
                     ...({
-                      msoAnsiFontSize: '13.5px',
-                      msoFareastFontSize: '13.5px',
+                      msoAnsiFontSize: outlookMsoFontSize(13.5),
+                      msoFareastFontSize: outlookMsoFontSize(13.5),
                       msoLineHeightAlt: msoLineHeightAltScaled(39, 28, 13.5),
                       msoLineHeightRule: 'exactly',
                     } as CSSProperties),
@@ -51,8 +51,8 @@ const ItemTitle = ({ title, subtitle, titleDiffHtml, subtitleDiffHtml }: ItemTit
                       fontWeight: 600,
                       lineHeight: '22px',
                       ...({
-                        msoAnsiFontSize: '10px',
-                        msoFareastFontSize: '10px',
+                        msoAnsiFontSize: outlookMsoFontSize(10),
+                        msoFareastFontSize: outlookMsoFontSize(10),
                         msoLineHeightAlt: msoLineHeightAltScaled(22, 16, 10),
                         msoLineHeightRule: 'exactly',
                         msoPaddingAlt: msoPaddingAltScaled(4, 0, 0, 0, 16, 10),

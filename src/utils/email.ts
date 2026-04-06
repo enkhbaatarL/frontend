@@ -93,8 +93,36 @@ ${innerBodyHtml}
 }
 
 /**
+ * Outlook(Word 엔진)이 CSS px 값을 내부 pt 단위로 변환할 때 적용하는 비율(72pt / 96px).
+ * font-size, line-height, padding 등 `mso-*` 속성에 공통으로 영향을 줍니다.
+ */
+const OUTLOOK_PX_TO_PT = 0.75
+
+/**
+ * Outlook(Word 엔진)이 `mso-ansi-font-size` px 값을 내부 pt 단위로 변환할 때
+ * {@link OUTLOOK_PX_TO_PT} 비율이 적용되어 선언값보다 작게 렌더링됩니다.
+ *
+ * | 선언(px) | Outlook 표시(pt) |
+ * |----------|-----------------|
+ * |   12     |   9             |
+ * |   15     |   11.5          |
+ * |   17     |   13            |
+ * |   20     |   15            |
+ *
+ * 이 함수는 원하는 Outlook 표시 크기(px)를 입력받아, 축소 후 해당 크기가 나오도록
+ * 보정된 `mso-ansi-font-size` / `mso-fareast-font-size` CSS 값(`"Xpx"`)을 반환합니다.
+ */
+export const outlookMsoFontSize = (desiredPx: number): string => {
+  const compensated = Math.round((desiredPx / OUTLOOK_PX_TO_PT) * 100) / 100
+  return `${compensated}px`
+}
+
+/**
  * `mso-ansi-font-size`로 글자만 줄어들 때, 동일 비율로 패딩을 줄여 Outlook에서 여백이 어색하지 않게 맞춥니다.
  * (일반 클라이언트는 `padding` 그대로, Outlook은 `mso-padding-alt`가 적용됩니다.)
+ *
+ * Outlook의 px→pt 변환({@link OUTLOOK_PX_TO_PT})도 함께 보정하므로,
+ * `msoFontSizePx`에는 **원하는 시각적 크기**(보정 전 값)를 그대로 넘기면 됩니다.
  */
 export const msoPaddingAltScaled = (
   topPx: number,
@@ -105,7 +133,7 @@ export const msoPaddingAltScaled = (
   msoFontSizePx: number,
 ): string => {
   const s = msoFontSizePx / designFontSizePx
-  const r = (n: number) => `${Math.max(0, Math.round(n * s))}px`
+  const r = (n: number) => `${Math.max(0, Math.round((n * s) / OUTLOOK_PX_TO_PT))}px`
   return `${r(topPx)} ${r(rightPx)} ${r(bottomPx)} ${r(leftPx)}`
 }
 
@@ -116,7 +144,7 @@ export const msoPaddingAltScaled = (
  */
 export const msoLineHeightAltScaled = (designLineHeightPx: number, designFontSizePx: number, msoFontSizePx: number): string => {
   const s = msoFontSizePx / designFontSizePx
-  return `${Math.max(1, Math.round(designLineHeightPx * s))}px`
+  return `${Math.max(1, Math.round((designLineHeightPx * s) / OUTLOOK_PX_TO_PT))}px`
 }
 
 /**

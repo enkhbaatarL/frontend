@@ -12,7 +12,7 @@ import {
   isReferenceBlockRemoved,
   wasReferenceContentBlockRemovedInSnapshot,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
-import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled } from '@/utils/email'
+import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled, outlookMsoFontSize } from '@/utils/email'
 
 interface UserCustomProps {
   section: INewsletterSnapshotSection
@@ -82,8 +82,8 @@ const UserCustom = ({
             fontWeight: 600,
             lineHeight: '28px',
             ...({
-              msoAnsiFontSize: '13.5px',
-              msoFareastFontSize: '13.5px',
+              msoAnsiFontSize: outlookMsoFontSize(13.5),
+              msoFareastFontSize: outlookMsoFontSize(13.5),
               msoLineHeightAlt: msoLineHeightAltScaled(28, 20, 13.5),
               msoLineHeightRule: 'exactly',
             } as CSSProperties),
@@ -98,8 +98,8 @@ const UserCustom = ({
             fontWeight: 400,
             lineHeight: '27px',
             ...({
-              msoAnsiFontSize: '10px',
-              msoFareastFontSize: '10px',
+              msoAnsiFontSize: outlookMsoFontSize(10),
+              msoFareastFontSize: outlookMsoFontSize(10),
               msoLineHeightAlt: msoLineHeightAltScaled(27, 18, 10),
               msoLineHeightRule: 'exactly',
             } as CSSProperties),

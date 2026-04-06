@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify'
 import { CSSProperties } from 'react'
 
 import ChangedLabel from '@/pages/mi/newsletter/components/view/ChangedLabel'
-import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled } from '@/utils/email'
+import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, outlookMsoFontSize } from '@/utils/email'
 import { formatPriceForDisplay, oilChangePresentation } from '@/utils/titleOilPriceDisplay'
 
 const DEFAULT_OIL_LABEL = 'Brent Crude'
@@ -169,8 +169,8 @@ const TitleAndOilPrice = ({
                       fontWeight: 700,
                       lineHeight: '39px',
                       ...({
-                        msoAnsiFontSize: '18px',
-                        msoFareastFontSize: '18px',
+                        msoAnsiFontSize: outlookMsoFontSize(18),
+                        msoFareastFontSize: outlookMsoFontSize(18),
                         msoLineHeightAlt: msoLineHeightAltScaled(39, 28, 18),
                         msoLineHeightRule: 'exactly',
                       } as CSSProperties),

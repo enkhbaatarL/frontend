@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify'
 import { CSSProperties } from 'react'
 
 import { formatDate } from '@/utils/date'
-import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled } from '@/utils/email'
+import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, outlookMsoFontSize } from '@/utils/email'
 
 const EMAIL_DATE_DISPLAY_FORMAT = 'YYYY년 M월 D일'
 
@@ -28,8 +28,8 @@ const DateAndIssue = ({ date, dateDiffHtml }: DateAndIssueProps) => (
             fontWeight: 600,
             lineHeight: `${EMAIL_DATE_DESIGN_LINE_HEIGHT_PX}px`,
             ...({
-              msoAnsiFontSize: `${EMAIL_DATE_OUTLOOK_FONT_PX}px`,
-              msoFareastFontSize: `${EMAIL_DATE_OUTLOOK_FONT_PX}px`,
+              msoAnsiFontSize: outlookMsoFontSize(EMAIL_DATE_OUTLOOK_FONT_PX),
+              msoFareastFontSize: outlookMsoFontSize(EMAIL_DATE_OUTLOOK_FONT_PX),
               msoLineHeightAlt: msoLineHeightAltScaled(
                 EMAIL_DATE_DESIGN_LINE_HEIGHT_PX,
                 EMAIL_DATE_DESIGN_FONT_PX,
