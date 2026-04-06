@@ -325,7 +325,16 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
         lineHeight: '1.4',
         color: theme.palette.contentText.Normal,
         padding: 0,
-        ...(multiline ? { whiteSpace: 'pre-wrap' as const, width: '100%' } : {}),
+        ...(multiline
+          ? { whiteSpace: 'pre-wrap' as const, width: '100%' }
+          : {
+            display: 'block' as const,
+            width: '100%',
+            minWidth: 0,
+            whiteSpace: 'nowrap' as const,
+            overflow: 'hidden' as const,
+            textOverflow: 'ellipsis' as const,
+          }),
       }),
       [fontFamily, multiline],
     )
@@ -336,9 +345,12 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
           ? undefined
           : ({
             minHeight: '20px',
+            minWidth: 0,
+            width: '100%',
             display: 'flex' as const,
             alignItems: 'center' as const,
             boxSizing: 'border-box' as const,
+            overflow: 'hidden' as const,
           } as const),
       [multiline],
     )
@@ -455,7 +467,9 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
       if (readOnly) {
         return (
           <Box sx={readOnlySingleLineRowSx}>
-            <Typography sx={readOnlyTypographySx}>{innerValue}</Typography>
+            <Typography sx={readOnlyTypographySx} title={multiline || !innerValue ? undefined : innerValue}>
+              {innerValue}
+            </Typography>
           </Box>
         )
       }

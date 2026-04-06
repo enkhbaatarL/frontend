@@ -62,6 +62,11 @@ export const useCompanyCondition = () => {
         deniedOptionalPages.push('newsletters')
       }
 
+      // Position Play
+      if (!accessCompanyInfo?.isPositionPlay) {
+        deniedOptionalPages.push('position-play')
+      }
+
       return [...baseDenied, ...deniedFuturePages, ...deniedOptionalPages]
     },
     enabled: !!comNo,

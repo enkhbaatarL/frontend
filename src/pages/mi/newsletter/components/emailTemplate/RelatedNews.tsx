@@ -66,6 +66,7 @@ const RelatedNews = ({ item, titleDiffHtml, contentDiffHtml, visualRemoved }: Re
     border={0}
     style={{
       borderCollapse: 'collapse',
+      tableLayout: 'fixed',
       opacity: visualRemoved ? 0.72 : undefined,
     }}
   >
@@ -173,9 +174,8 @@ const RelatedNews = ({ item, titleDiffHtml, contentDiffHtml, visualRemoved }: Re
             fontSize: '20px',
             fontWeight: 600,
             lineHeight: '28px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            wordBreak: 'keep-all',
+            overflowWrap: 'break-word',
             textDecoration: visualRemoved ? 'line-through' : undefined,
             ...({
               msoAnsiFontSize: outlookMsoFontSize(13.5),

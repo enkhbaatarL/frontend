@@ -17,6 +17,7 @@ import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import ShareModal, { type ShareModalEditionMail } from '@/pages/mi/newsletter/components/view/ShareModal'
 import { getCoverProps, getDateIssueProps, getTitleProps } from '@/pages/mi/newsletter/utils/snapshotUtils'
+import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
 
 export type ViewToolbarProps = {
@@ -62,6 +63,7 @@ const ViewToolbar = ({
 }: ViewToolbarProps) => {
   const navigate = useNavigate()
   const { newsletterId, issueNo } = useParams()
+  const accessCompanyInfo = useAuthStore((state) => state.accessCompanyInfo)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const downloadHoldTimerRef = useRef<number | null>(null)
@@ -111,10 +113,12 @@ const ViewToolbar = ({
   const subscribeWidthTransition =
     subscribeLabelWidthPx === undefined || subscribeButtonBusy ? 'none' : `width ${subscribeMotionMs}ms ${subscribeMotionEasing}`
 
-  const shareUrl = useMemo(
-    () => (newsletterId && issueNo ? `${globalThis.location.origin}/mi/newsletters/${newsletterId}/${issueNo}` : globalThis.location.href),
-    [newsletterId, issueNo],
-  )
+  const shareUrl = useMemo(() => {
+    if (!newsletterId || !issueNo) return globalThis.location.href
+    const base = `${globalThis.location.origin}/mi/newsletters/${newsletterId}/${issueNo}`
+    const companyNo = accessCompanyInfo?.customerCompanyNo
+    return companyNo ? `${base}?rdcn=${companyNo}` : base
+  }, [newsletterId, issueNo, accessCompanyInfo?.customerCompanyNo])
   const coverProps = getCoverProps(snapshot)
   const dateIssueProps = getDateIssueProps(snapshot)
   const titleProps = getTitleProps(snapshot)

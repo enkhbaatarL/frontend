@@ -26,6 +26,17 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const isCompanyInfoLoading = user?.userRoleCd === UserRole.USER && !accessCompanyInfo
   const needsCompanyInfoForMi = location.pathname === '/mi' || location.pathname.startsWith('/mi/')
 
+  // 공유 링크 등에서 전달된 rdcn(redirect company number) 파라미터로 관리자 자동 회사 전환
+  const rdcnParam = useMemo(() => {
+    const val = new URLSearchParams(location.search).get('rdcn')
+    if (!val) return null
+    const num = Number(val)
+    return !isNaN(num) && num > 0 ? num : null
+  }, [location.search])
+
+  const isAdminRdcnSwitch =
+    needsCompanyInfoForMi && user?.userRoleCd === UserRole.ADMIN && rdcnParam !== null && accessCompanyInfo?.customerCompanyNo !== rdcnParam
+
   useEffect(() => {
     if (!needsCompanyInfoForMi) return
     if (user?.userRoleCd !== UserRole.USER) return
@@ -35,8 +46,33 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }, [needsCompanyInfoForMi, user?.userRoleCd, user?.companyNo, accessCompanyInfo, loadAccessCompanyInfo])
 
   useEffect(() => {
+    if (isAdminRdcnSwitch && rdcnParam) {
+      loadAccessCompanyInfo(rdcnParam)
+    }
+  }, [isAdminRdcnSwitch, rdcnParam, loadAccessCompanyInfo])
+
+  useEffect(() => {
+    if (!needsCompanyInfoForMi || user?.userRoleCd !== UserRole.ADMIN || rdcnParam === null) return
+    if (accessCompanyInfo?.customerCompanyNo !== rdcnParam) return
+
+    const params = new URLSearchParams(location.search)
+    params.delete('rdcn')
+    const newSearch = params.toString()
+    navigate(location.pathname + (newSearch ? `?${newSearch}` : '') + location.hash, { replace: true })
+  }, [
+    needsCompanyInfoForMi,
+    user?.userRoleCd,
+    rdcnParam,
+    accessCompanyInfo?.customerCompanyNo,
+    navigate,
+    location.search,
+    location.pathname,
+    location.hash,
+  ])
+
+  useEffect(() => {
     // 권한 데이터 로딩 후 페이지 차단 체크
-    if (isCompanyInfoLoading || isDeniedDashboardPageLoading || extractPage === undefined) return
+    if (isCompanyInfoLoading || isAdminRdcnSwitch || isDeniedDashboardPageLoading || extractPage === undefined) return
 
     const blockedPage = extractPage.some((prefix) => pathName.startsWith(prefix))
     if (blockedPage) {
@@ -49,7 +85,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         queueMicrotask(() => navigate(targetPath, { replace: true }))
       }
     }
-  }, [extractPage, pathName, isDeniedDashboardPageLoading, isCompanyInfoLoading, navigate])
+  }, [extractPage, pathName, isDeniedDashboardPageLoading, isCompanyInfoLoading, isAdminRdcnSwitch, navigate])
 
   useEffect(() => {
     setNavigate(navigate)
@@ -71,7 +107,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/" state={{ from: location }} replace />
   }
 
-  if (needsCompanyInfoForMi && isCompanyInfoLoading) {
+  if (needsCompanyInfoForMi && (isCompanyInfoLoading || isAdminRdcnSwitch)) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
         <CircularProgress />
