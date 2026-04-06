@@ -985,6 +985,7 @@ const NewsletterDetailPage = () => {
         snapshot={viewSnapshot}
         isScrolled={effectiveIsScrolled}
         newsletterIssues={newsletterIssues}
+        publishedAt={detailMatchesRoute ? (issueDetailData?.publishedAt ?? null) : null}
         isNewsletterSubscribed={subscriptionStatus?.subscribed ?? false}
         isSubscriptionStatusLoading={isSubscriptionStatusLoading}
         onSubscribeToggle={handleSubscribeToggle}

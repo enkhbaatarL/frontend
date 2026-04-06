@@ -6,6 +6,9 @@ import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import SendRoundedIcon from '@mui/icons-material/SendRounded'
 import { Box, Collapse, Stack, Typography } from '@mui/material'
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
+import 'dayjs/locale/ko'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -16,9 +19,11 @@ import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDow
 import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import ShareModal, { type ShareModalEditionMail } from '@/pages/mi/newsletter/components/view/ShareModal'
-import { getCoverProps, getDateIssueProps, getTitleProps } from '@/pages/mi/newsletter/utils/snapshotUtils'
+import { getCoverProps, getTitleProps } from '@/pages/mi/newsletter/utils/snapshotUtils'
 import useAuthStore from '@/store/useAuthStore'
 import theme from '@/theming'
+
+dayjs.extend(customParseFormat)
 
 export type ViewToolbarProps = {
   snapshot: INewsletterIssueSnapshotData | null
@@ -42,6 +47,8 @@ export type ViewToolbarProps = {
   isSubscriptionMutating?: boolean
   /** 공유 모달에서 편집본 메일 발송 시 사용 */
   editionMail?: ShareModalEditionMail | null
+  /** GET 발행호 상세 `publishedAt`(예: 2025-11-27 00:00:00) — 접힌 툴바 날짜만 */
+  publishedAt?: string | null
 }
 
 const ViewToolbar = ({
@@ -60,6 +67,7 @@ const ViewToolbar = ({
   onSubscribeToggle,
   isSubscriptionMutating = false,
   editionMail,
+  publishedAt = null,
 }: ViewToolbarProps) => {
   const navigate = useNavigate()
   const { newsletterId, issueNo } = useParams()
@@ -120,8 +128,24 @@ const ViewToolbar = ({
     return companyNo ? `${base}?rdcn=${companyNo}` : base
   }, [newsletterId, issueNo, accessCompanyInfo?.customerCompanyNo])
   const coverProps = getCoverProps(snapshot)
-  const dateIssueProps = getDateIssueProps(snapshot)
   const titleProps = getTitleProps(snapshot)
+
+  const collapsedIssueDateLabel = useMemo(() => {
+    if (!publishedAt) return ''
+    const d = dayjs(publishedAt)
+    return d.isValid() ? d.locale('ko').format('YYYY년 M월 D일') : ''
+  }, [publishedAt])
+
+  const issueSelectItems = useMemo(
+    () =>
+      newsletterIssues?.issuedList?.map((issue) => ({
+        label: `Issue ${String(issue.no).padStart(3, '0')} (${dayjs(issue.date, 'YY-MM-DD').format('YYYY-MM-DD')})`,
+        value: issue.no,
+      })) ?? [],
+    [newsletterIssues?.issuedList],
+  )
+
+  const collapsedIssueNoLabel = String(issueNo ?? '').padStart(3, '0')
 
   const hasDownloadOptions = !!onDownloadImage || !!onDownloadEml
   const downloadBusy = !!onDownloadImage && !isDownloadDisabled && (_isChartImagePreparing || _isDownloadingImage)
@@ -188,18 +212,14 @@ const ViewToolbar = ({
                 {titleProps.title}
               </Typography>
               <Typography variant="body2" color="contentText.White" width="496px" noWrap>
-                {dateIssueProps.date} · {coverProps.frequency}
+                Issue {collapsedIssueNoLabel}
+                {collapsedIssueDateLabel ? ` · ${collapsedIssueDateLabel}` : ''}
               </Typography>
             </Stack>
           </Stack>
           <MISelectMenu<string>
             variant="outlined"
-            items={
-              newsletterIssues?.issuedList?.map((issue) => ({
-                label: issue.date,
-                value: issue.no,
-              })) ?? []
-            }
+            items={issueSelectItems}
             selected={issueNo ?? ''}
             onSelected={(value: string) => navigate(`/mi/newsletters/${newsletterId}/${value}`)}
             style={{
