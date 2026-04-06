@@ -32,8 +32,8 @@ const CHANGE_LABEL_STYLES = {
 
 export type ChangedLabelProps = {
   diffHtmls?: (string | undefined)[]
-  /** diff HTML 없이 순서 변경·삭제 등 고정 라벨 */
-  labelKind?: 'reordered' | 'deleted'
+  /** diff HTML 없이 고정 라벨 */
+  labelKind?: 'added' | 'modified' | 'reordered' | 'deleted'
   top?: number | string
 }
 
@@ -82,7 +82,7 @@ const LabelShapeBox = ({
  */
 const ChangedLabel = ({ diffHtmls = [], labelKind, top = 0 }: ChangedLabelProps) => {
   const clipPathId = useId()
-  const changeType = labelKind === 'reordered' ? 'reordered' : labelKind === 'deleted' ? 'deleted' : getChangeTypeFromDiffHtml(...diffHtmls)
+  const changeType = labelKind ?? getChangeTypeFromDiffHtml(...diffHtmls)
   const style = CHANGE_LABEL_STYLES[changeType]
 
   return (

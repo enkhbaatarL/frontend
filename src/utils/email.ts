@@ -41,11 +41,11 @@ export const wrapEmailHtmlDocument = (innerBodyHtml: string, options?: WrapEmail
   const title = options?.pageTitle ?? ''
   const pt = options?.bodyPaddingTop ?? 32
   const pb = options?.bodyPaddingBottom ?? 24
+  // 긴 HTML 템플릿 안에 padding:${n}px 를 두면 IDE 임베디드 CSS 검사기가 length-percentage와 불일치로 표시함 → 속성값만 별도 조합
+  const outerWrapperCellStyle = ['padding:', pt, 'px 0 ', pb, 'px 0;'].join('')
   // 동적 padding 규칙은 TS에서만 조합. <style> 안에 정적 CSS와 ${…}를 섞으면 임베디드 CSS 검사기가 쉼표/구문 오류로 본다
-  const bodyPaddingRule = `body { padding-top: ${pt}px; padding-bottom: ${pb}px; }`
   const documentStyleCss = [
-    'html, body { margin: 0; padding: 0; }',
-    bodyPaddingRule,
+    'html, body { margin: 0; padding: 0; background-color: #F4F5F7; }',
     'table { mso-table-lspace: 0; mso-table-rspace: 0; }',
     'p { margin: 0; }',
     'img { border: 0; outline: 0; text-decoration: none; }',
@@ -74,36 +74,50 @@ export const wrapEmailHtmlDocument = (innerBodyHtml: string, options?: WrapEmail
   ${documentStyleCss}
   </style>
 </head>
-<body>
+<body bgcolor="#F4F5F7">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F4F5F7" style="background-color:#F4F5F7;">
+  <tr>
+    <td align="center" style="${outerWrapperCellStyle}">
+      <table width="872" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="#FFFFFF" style="background-color:#FFFFFF;border:1px solid #DEE2E6;width:872px;max-width:872px;">
+        <tr>
+          <td style="padding:36px 36px 0 36px;mso-padding-alt:36px 36px 0 36px;">
 ${innerBodyHtml}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
 </html>`
 }
 
 /**
- * Outlook(Word 엔진)에서 `<td>` padding을 `mso-padding-alt`로 오버라이드합니다.
- * `mso-padding-alt`는 Outlook Word 엔진에서만 인식되며 다른 클라이언트는 무시합니다.
- * 원래 padding 값은 유지되어 일반 메일 클라이언트 렌더링에 영향 없습니다.
+ * `mso-ansi-font-size`로 글자만 줄어들 때, 동일 비율로 패딩을 줄여 Outlook에서 여백이 어색하지 않게 맞춥니다.
+ * (일반 클라이언트는 `padding` 그대로, Outlook은 `mso-padding-alt`가 적용됩니다.)
  */
+export const msoPaddingAltScaled = (
+  topPx: number,
+  rightPx: number,
+  bottomPx: number,
+  leftPx: number,
+  designFontSizePx: number,
+  msoFontSizePx: number,
+): string => {
+  const s = msoFontSizePx / designFontSizePx
+  const r = (n: number) => `${Math.max(0, Math.round(n * s))}px`
+  return `${r(topPx)} ${r(rightPx)} ${r(bottomPx)} ${r(leftPx)}`
+}
 
 /**
- * RelatedNews 전용 축소 오버라이드 — 필요 시 아래 주석을 해제하여 활성화:
- *
- * const MSO_PADDING_ALT_OVERRIDES: Record<string, string> = {
- *   'rn-date-wrap': '6px 0 0 0',
- *   'rn-title': '0 0 4px 0',
- *   'rn-content': '0 0 6px 0',
- * }
- * const injectRelatedNewsMsoPaddingAlt = (html: string): string =>
- *   Object.entries(MSO_PADDING_ALT_OVERRIDES).reduce(
- *     (h, [cls, msoPad]) =>
- *       h.replaceAll(
- *         new RegExp(`class="${cls}"\\s+style="([^"]*)"`, 'g'),
- *         (_, style: string) => `class="${cls}" style="${style};mso-padding-alt:${msoPad}"`,
- *       ),
- *     html,
- *   )
+ * Outlook 전용 `mso-line-height-alt`(px). 디자인 `line-height`를 `mso-ansi-font-size` / `font-size`와 같은 비율로 줄여,
+ * Word 엔진에서 글자만 작아질 때 행간이 과하게 넓어지지 않게 합니다.
+ * `mso-line-height-rule: exactly`와 함께 쓰는 것을 권장합니다.
  */
+export const msoLineHeightAltScaled = (designLineHeightPx: number, designFontSizePx: number, msoFontSizePx: number): string => {
+  const s = msoFontSizePx / designFontSizePx
+  return `${Math.max(1, Math.round(designLineHeightPx * s))}px`
+}
 
 /**
  * `<td>` 인라인 스타일에서 padding 값을 파싱하여 `mso-padding-alt` 축약값을 반환합니다.

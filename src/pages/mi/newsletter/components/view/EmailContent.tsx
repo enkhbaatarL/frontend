@@ -1,4 +1,4 @@
-import React, { forwardRef, ReactNode } from 'react'
+import React, { type CSSProperties, forwardRef, ReactNode } from 'react'
 
 import type { DiffOverrides } from '@/pages/mi/newsletter/hooks/useDocumentDiff'
 import type { INewsletterIssueSnapshotData, INewsletterSnapshotSection } from '@/service/mi/newsletter'
@@ -109,17 +109,13 @@ export const EmailContentTemplate = ({
 
     if (type === 'DATE_ISSUE') {
       const dateIssueProps = getDateIssueProps(snapshot, section)
+      const dateRowDiff = !!diffOverrides?.date
       return (
         <tr key={section.id}>
           <td id={`section-dateAndIssue-${section.id}`} style={{ padding: 0, position: 'relative' }}>
-            {(diffOverrides?.date || diffOverrides?.issueNo) && <ChangedLabel diffHtmls={[diffOverrides?.date, diffOverrides?.issueNo]} />}
-            {!(diffOverrides?.date || diffOverrides?.issueNo) && orderTag(section.id) && <ChangedLabel labelKind="reordered" />}
-            <DateAndIssue
-              issueNo={dateIssueProps.issueNo}
-              date={dateIssueProps.date}
-              issueNoDiffHtml={diffOverrides?.issueNo}
-              dateDiffHtml={diffOverrides?.date}
-            />
+            {dateRowDiff && <ChangedLabel diffHtmls={[diffOverrides?.date]} />}
+            {!dateRowDiff && orderTag(section.id) && <ChangedLabel labelKind="reordered" />}
+            <DateAndIssue date={dateIssueProps.date} dateDiffHtml={diffOverrides?.date} />
           </td>
         </tr>
       )
@@ -129,7 +125,10 @@ export const EmailContentTemplate = ({
       const titleProps = getTitleProps(snapshot, section)
       return (
         <tr key={section.id}>
-          <td id={`section-title-${section.id}`} style={{ paddingBottom: '38px', position: 'relative' }}>
+          <td
+            id={`section-title-${section.id}`}
+            style={{ paddingBottom: '38px', position: 'relative', ...({ msoPaddingAlt: '0 0 19px 0' } as CSSProperties) }}
+          >
             {(diffOverrides?.title || diffOverrides?.subtitle) && (
               <ChangedLabel diffHtmls={[diffOverrides?.title, diffOverrides?.subtitle]} top="42px" />
             )}
@@ -190,6 +189,7 @@ export const EmailContentTemplate = ({
               descriptionDiffHtml={diffOverrides?.referenceDescriptions?.[refIndex]}
               showRemovedBlocks={includeRemovedNewsFlowItems}
               diffComparisonSnapshot={diffComparisonSnapshot}
+              blockChanges={diffOverrides?.referenceBlockChanges?.[refIndex]}
             />
           </td>
         </tr>
@@ -201,7 +201,7 @@ export const EmailContentTemplate = ({
       if (refIndex < 0) return null
       const refSection = orderedReferenceSections[refIndex]!
       const chartCount = getReferenceContentBlocks(refSection).filter(
-        (b) => b.type === 'CHART' && b.visibility !== false && !isReferenceBlockRemoved(b),
+        (b) => b.type === 'CHART' && b.visibility && !isReferenceBlockRemoved(b),
       ).length
       const chartImages = referenceChartImages?.slice(flatChartStart, flatChartStart + chartCount) ?? []
       const prevFlatStart = flatChartStart
@@ -230,6 +230,7 @@ export const EmailContentTemplate = ({
               descriptionDiffHtml={diffOverrides?.referenceDescriptions?.[refIndex]}
               showRemovedBlocks={includeRemovedNewsFlowItems}
               diffComparisonSnapshot={diffComparisonSnapshot}
+              blockChanges={diffOverrides?.referenceBlockChanges?.[refIndex]}
             />
           </td>
         </tr>
@@ -286,7 +287,15 @@ export const EmailContentTemplate = ({
             return (
               <React.Fragment key={section.id}>
                 <tr>
-                  <td id={sectionFlowDomId} style={{ paddingTop: '12px', paddingBottom: '24px', position: 'relative' }}>
+                  <td
+                    id={sectionFlowDomId}
+                    style={{
+                      paddingTop: '12px',
+                      paddingBottom: '24px',
+                      position: 'relative',
+                      ...({ msoPaddingAlt: '6px 0 12px 0' } as CSSProperties),
+                    }}
+                  >
                     {(diffOverrides?.newsFlowChartTitle || diffOverrides?.newsFlowChartAggregationTime) && (
                       <ChangedLabel
                         diffHtmls={[diffOverrides?.newsFlowChartTitle, diffOverrides?.newsFlowChartAggregationTime]}
@@ -324,14 +333,27 @@ export const EmailContentTemplate = ({
                               >
                                 <tbody>
                                   <tr>
-                                    <td style={{ fontSize: 0, lineHeight: 0 }}>{chartNode}</td>
+                                    <td
+                                      style={{
+                                        fontSize: 0,
+                                        lineHeight: 0,
+                                        padding: 0,
+                                        ...({
+                                          msoLineHeightRule: 'exactly',
+                                          msoLineHeightAlt: '0px',
+                                          msoPaddingAlt: '0 0 0 0',
+                                        } as CSSProperties),
+                                      }}
+                                    >
+                                      {chartNode}
+                                    </td>
                                   </tr>
                                 </tbody>
                               </table>
                             </td>
                           </tr>
                         )}
-                        {newsFlowRows.map(({ item, index: origIndex }, displayIndex) => {
+                        {newsFlowRows.map(({ item, index: origIndex }) => {
                           const isRemoved = item.removed === true
                           const hasRelatedNewsDiff =
                             !!diffOverrides?.relatedNewsTitles?.[origIndex] || !!diffOverrides?.relatedNewsContents?.[origIndex]
@@ -339,7 +361,7 @@ export const EmailContentTemplate = ({
                             <tr key={item.newsId}>
                               <td
                                 style={{
-                                  borderTop: displayIndex > 0 ? '1px solid #DEE2E6' : 'none',
+                                  borderBottom: '1px solid #DEE2E6',
                                   position: 'relative',
                                 }}
                               >

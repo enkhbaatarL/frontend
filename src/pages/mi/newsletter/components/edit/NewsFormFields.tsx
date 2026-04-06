@@ -45,6 +45,17 @@ const NewsFormFields = ({
   const dTitle = getEffectiveFieldDef(fieldDefs, 'title')
   const dContent = getEffectiveFieldDef(fieldDefs, 'content')
 
+  const createTimeRequired = !dTime.disabled && dTime.required
+  const createTimeTrimmed = value.createTime.trim()
+  const createTimeHasError =
+    hasTimeValidation && !dTime.disabled && (createTimeTrimmed === '' ? createTimeRequired : !isCreateTimeValid!(value.createTime))
+  const createTimeHelperText =
+    hasTimeValidation && !dTime.disabled
+      ? createTimeTrimmed === '' && !createTimeRequired
+        ? undefined
+        : getCreateTimeError!(value.createTime) || undefined
+      : undefined
+
   return (
     <Stack gap="12px">
       <Stack direction="row" gap="12px" flexWrap="nowrap">
@@ -69,10 +80,11 @@ const NewsFormFields = ({
             value={value.createTime}
             mask={PREDEFINED_MASKS.TIME}
             onUpdateValue={(v) => onChange({ createTime: v ?? '' })}
-            error={hasTimeValidation ? !isCreateTimeValid!(value.createTime) : false}
-            helperText={hasTimeValidation ? getCreateTimeError!(value.createTime) : undefined}
+            error={createTimeHasError}
+            helperText={createTimeHelperText}
+            offInitialError={hasTimeValidation}
             width="100%"
-            required={dTime.required}
+            required={createTimeRequired}
             disabled={dTime.disabled}
           />
         </Box>

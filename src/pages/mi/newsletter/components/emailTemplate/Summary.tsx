@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify'
-import { Fragment } from 'react'
+import { CSSProperties, Fragment } from 'react'
 
-import { EMAIL_FONT_FAMILY } from '@/utils/email'
+import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled } from '@/utils/email'
 
 interface SummaryProps {
   summary: string
@@ -14,13 +14,19 @@ const cellStyle = {
   fontSize: '18px',
   fontWeight: 500,
   lineHeight: '29px',
-} as const
+  ...({
+    msoAnsiFontSize: '12px',
+    msoFareastFontSize: '12px',
+    msoLineHeightAlt: msoLineHeightAltScaled(29, 18, 12),
+    msoLineHeightRule: 'exactly',
+  } as CSSProperties),
+}
 
 const Summary = ({ summary, summaryDiffHtml }: SummaryProps) => (
   <table width="800" cellPadding={0} cellSpacing={0} border={0} style={{ borderCollapse: 'collapse' }}>
     <tbody>
       <tr>
-        <td style={{ paddingTop: '12px' }}>
+        <td style={{ paddingTop: '12px', ...({ msoPaddingAlt: '6px 0 0 0' } as CSSProperties) }}>
           <table width="100%" cellPadding={0} cellSpacing={0} border={0} style={{ borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
@@ -32,6 +38,13 @@ const Summary = ({ summary, summaryDiffHtml }: SummaryProps) => (
                     fontSize: '20px',
                     fontWeight: 700,
                     lineHeight: '28px',
+                    ...({
+                      msoAnsiFontSize: '13.5px',
+                      msoFareastFontSize: '13.5px',
+                      msoLineHeightAlt: msoLineHeightAltScaled(28, 20, 13.5),
+                      msoLineHeightRule: 'exactly',
+                      msoPaddingAlt: msoPaddingAltScaled(0, 0, 10, 0, 20, 13.5),
+                    } as CSSProperties),
                   }}
                 >
                   핵심 요약

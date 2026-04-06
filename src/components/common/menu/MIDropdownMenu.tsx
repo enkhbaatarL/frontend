@@ -1,5 +1,5 @@
 import { Box, Typography, Stack, ButtonProps, PaperProps, ListSubheader, Divider } from '@mui/material'
-import { ReactNode, useMemo, useState, Fragment } from 'react'
+import { type MouseEventHandler, type PointerEventHandler, type ReactNode, Fragment, useMemo, useState } from 'react'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIMenu, { MenuPositionOffset } from '@/components/common/menu/MIMenu'
@@ -9,6 +9,11 @@ export interface DropdownMenuItem {
   disabled?: boolean
   group?: string
   action?: () => void
+  onMenuItemPointerDown?: PointerEventHandler<HTMLDivElement>
+  onMenuItemPointerUp?: PointerEventHandler<HTMLDivElement>
+  onMenuItemPointerLeave?: () => void
+  onMenuItemPointerCancel?: () => void
+  onMenuItemContextMenu?: MouseEventHandler<HTMLDivElement>
 }
 
 export type GroupDisplayType = 'label' | 'divider' | 'none'
@@ -97,13 +102,26 @@ const MIDropdownMenu = ({
   }, [items, groupDisplayType])
 
   const renderMenuItem = (item: DropdownMenuItem, index: number, groupKey?: string) => {
-    const { disabled, label } = item
+    const {
+      disabled,
+      label,
+      onMenuItemPointerDown,
+      onMenuItemPointerUp,
+      onMenuItemPointerLeave,
+      onMenuItemPointerCancel,
+      onMenuItemContextMenu,
+    } = item
     const key = groupKey ? `${groupKey}-${index}` : index
 
     return (
       <Box
         key={key}
         onClick={() => (disabled ? null : handleItemClick(item))}
+        onPointerDown={onMenuItemPointerDown}
+        onPointerUp={onMenuItemPointerUp}
+        onPointerLeave={onMenuItemPointerLeave}
+        onPointerCancel={onMenuItemPointerCancel}
+        onContextMenu={onMenuItemContextMenu}
         borderRadius="10px"
         padding="8px 12px"
         sx={{

@@ -1,18 +1,22 @@
 import DOMPurify from 'dompurify'
+import { CSSProperties } from 'react'
 
 import { formatDate } from '@/utils/date'
-import { EMAIL_FONT_FAMILY } from '@/utils/email'
+import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled } from '@/utils/email'
 
 const EMAIL_DATE_DISPLAY_FORMAT = 'YYYY년 M월 D일'
 
+/** 웹은 원본 16px 유지, Outlook(Word)만 핵심요약 헤더와 비슷한 13.5px로 축소 */
+const EMAIL_DATE_DESIGN_FONT_PX = 16
+const EMAIL_DATE_DESIGN_LINE_HEIGHT_PX = 22
+const EMAIL_DATE_OUTLOOK_FONT_PX = 13.5
+
 interface DateAndIssueProps {
-  issueNo: string
   date: string
-  issueNoDiffHtml?: string
   dateDiffHtml?: string
 }
 
-const DateAndIssue = ({ issueNo, date, issueNoDiffHtml, dateDiffHtml }: DateAndIssueProps) => (
+const DateAndIssue = ({ date, dateDiffHtml }: DateAndIssueProps) => (
   <table width="800" cellPadding={0} cellSpacing={0} border={0} style={{ borderCollapse: 'collapse' }}>
     <tbody>
       <tr>
@@ -20,14 +24,21 @@ const DateAndIssue = ({ issueNo, date, issueNoDiffHtml, dateDiffHtml }: DateAndI
           style={{
             color: '#495057',
             fontFamily: EMAIL_FONT_FAMILY,
-            fontSize: '16px',
+            fontSize: `${EMAIL_DATE_DESIGN_FONT_PX}px`,
             fontWeight: 600,
-            lineHeight: '22px',
+            lineHeight: `${EMAIL_DATE_DESIGN_LINE_HEIGHT_PX}px`,
+            ...({
+              msoAnsiFontSize: `${EMAIL_DATE_OUTLOOK_FONT_PX}px`,
+              msoFareastFontSize: `${EMAIL_DATE_OUTLOOK_FONT_PX}px`,
+              msoLineHeightAlt: msoLineHeightAltScaled(
+                EMAIL_DATE_DESIGN_LINE_HEIGHT_PX,
+                EMAIL_DATE_DESIGN_FONT_PX,
+                EMAIL_DATE_OUTLOOK_FONT_PX,
+              ),
+              msoLineHeightRule: 'exactly',
+            } as CSSProperties),
           }}
         >
-          Issue{' '}
-          {issueNoDiffHtml ? <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(issueNoDiffHtml) }} /> : issueNo.padStart(3, '0')}{' '}
-          |{' '}
           {dateDiffHtml ? (
             <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(dateDiffHtml) }} />
           ) : (

@@ -2,9 +2,7 @@ import AddIcon from '@mui/icons-material/Add'
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import EditIcon from '@mui/icons-material/Edit'
-import EmailRoundedIcon from '@mui/icons-material/EmailRounded'
 import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded'
-import ImageRoundedIcon from '@mui/icons-material/ImageRounded'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import SendRoundedIcon from '@mui/icons-material/SendRounded'
 import { Box, Collapse, Stack, Typography } from '@mui/material'
@@ -66,7 +64,6 @@ const ViewToolbar = ({
   const { newsletterId, issueNo } = useParams()
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
-  const [downloadMenuOpen, setDownloadMenuOpen] = useState(false)
   const downloadHoldTimerRef = useRef<number | null>(null)
   /** 구독 중일 때 호버 → X 아이콘·「구독해제」 (헤더 확장 시에만 라벨 표시) */
   const [subscribeHovered, setSubscribeHovered] = useState(false)
@@ -134,6 +131,10 @@ const ViewToolbar = ({
 
   useEffect(() => clearDownloadHoldTimer, [])
 
+  useEffect(() => {
+    if (!moreMenuOpen) clearDownloadHoldTimer()
+  }, [moreMenuOpen])
+
   return (
     <Stack
       paddingTop={isScrolled ? '8px' : '46px'}
@@ -183,7 +184,7 @@ const ViewToolbar = ({
                 {titleProps.title}
               </Typography>
               <Typography variant="body2" color="contentText.White" width="496px" noWrap>
-                Issue {(dateIssueProps.issueNo ?? '').padStart(3, '0')} · {dateIssueProps.date} · {coverProps.frequency}
+                {dateIssueProps.date} · {coverProps.frequency}
               </Typography>
             </Stack>
           </Stack>
@@ -191,7 +192,7 @@ const ViewToolbar = ({
             variant="outlined"
             items={
               newsletterIssues?.issuedList?.map((issue) => ({
-                label: `Issue ${issue.no.padStart(3, '0')} (${issue.date})`,
+                label: issue.date,
                 value: issue.no,
               })) ?? []
             }
@@ -437,82 +438,65 @@ const ViewToolbar = ({
               </Collapse>
             </Stack>
           </MIBaseButton>
-          <MIDropdownMenu
-            label={<ChartDownloadIcon fill={theme.palette.gray[70]} />}
+          <MIBaseButton
             variant="outlined"
-            placement="bottom-end"
-            open={downloadMenuOpen}
-            onOpenChange={setDownloadMenuOpen}
-            disabled={!hasDownloadOptions || isDownloadDisabled}
-            isLoading={downloadBusy}
-            onClick={() => {
-              // 좌클릭: 기존 동작 그대로(즉시 PNG 다운로드)
-              if (!onDownloadImage || isDownloadDisabled) return
-              onDownloadImage()
-            }}
-            onPointerDown={(e) => {
-              if (!hasDownloadOptions || isDownloadDisabled || downloadBusy) return
-              if (e.button !== 2) return
-              clearDownloadHoldTimer()
-              downloadHoldTimerRef.current = window.setTimeout(() => {
-                setDownloadMenuOpen(true)
-                downloadHoldTimerRef.current = null
-              }, 800)
-            }}
-            onPointerUp={(e) => {
-              if (e.button === 2) clearDownloadHoldTimer()
-            }}
-            onPointerLeave={() => clearDownloadHoldTimer()}
-            onPointerCancel={() => clearDownloadHoldTimer()}
-            onContextMenu={(e) => {
-              // 기본 컨텍스트 메뉴는 막고, 메뉴 오픈은 홀드 타이머로만 처리
-              if (!hasDownloadOptions || isDownloadDisabled || downloadBusy) return
-              e.preventDefault()
-            }}
-            items={[
-              {
-                label: (
-                  <Stack direction="row" alignItems="center" gap="8px">
-                    <ImageRoundedIcon sx={{ color: 'gray.70', fontSize: '20px' }} />
-                    <Box>이미지(.png)</Box>
-                  </Stack>
-                ),
-                disabled: !onDownloadImage || isDownloadDisabled,
-                action: onDownloadImage,
-              },
-              {
-                label: (
-                  <Stack direction="row" alignItems="center" gap="8px">
-                    <EmailRoundedIcon sx={{ color: 'gray.70', fontSize: '20px' }} />
-                    <Box>Outlook(.eml)</Box>
-                  </Stack>
-                ),
-                disabled: !onDownloadEml || isDownloadDisabled,
-                action: onDownloadEml,
-              },
-            ]}
+            onClick={onEditMode}
             sx={{
               height: '36px',
-              padding: '8px',
               backgroundColor: 'commonColor.White',
+              padding: `8px ${isScrolled ? '6px' : '12px'} 8px 8px`,
+              transition: 'padding 0.3s ease-in-out',
             }}
             buttonHoverBgColor="commonColor.White"
-          />
+          >
+            <Stack direction="row" alignItems="center" gap={isScrolled ? '0px' : '8px'}>
+              <EditIcon sx={{ color: 'gray.70', fontSize: '20px' }} />
+              <Collapse in={!isScrolled} orientation="horizontal" timeout={300}>
+                <Box component="span" style={{ whiteSpace: 'nowrap' }}>
+                  편집
+                </Box>
+              </Collapse>
+            </Stack>
+          </MIBaseButton>
           <MIDropdownMenu
             label={<MoreVertIcon sx={{ color: 'gray.70', fontSize: '20px' }} />}
             variant="outlined"
             placement="bottom-end"
             open={moreMenuOpen}
             onOpenChange={setMoreMenuOpen}
+            isLoading={downloadBusy}
             items={[
               {
                 label: (
                   <Stack direction="row" alignItems="center" gap="8px">
-                    <EditIcon sx={{ color: 'gray.70', fontSize: '20px' }} />
-                    <Box>편집모드</Box>
+                    <ChartDownloadIcon fill={theme.palette.gray[70]} />
+                    <Box>다운로드</Box>
                   </Stack>
                 ),
-                action: onEditMode,
+                disabled: !hasDownloadOptions || isDownloadDisabled,
+                action: () => {
+                  if (!onDownloadImage || isDownloadDisabled) return
+                  onDownloadImage()
+                },
+                onMenuItemPointerDown: (e) => {
+                  if (!onDownloadEml || isDownloadDisabled || downloadBusy) return
+                  if (e.button !== 2) return
+                  clearDownloadHoldTimer()
+                  downloadHoldTimerRef.current = window.setTimeout(() => {
+                    onDownloadEml()
+                    setMoreMenuOpen(false)
+                    downloadHoldTimerRef.current = null
+                  }, 800)
+                },
+                onMenuItemPointerUp: (e) => {
+                  if (e.button === 2) clearDownloadHoldTimer()
+                },
+                onMenuItemPointerLeave: clearDownloadHoldTimer,
+                onMenuItemPointerCancel: clearDownloadHoldTimer,
+                onMenuItemContextMenu: (e) => {
+                  if (!onDownloadEml || isDownloadDisabled || downloadBusy) return
+                  e.preventDefault()
+                },
               },
               {
                 label: (

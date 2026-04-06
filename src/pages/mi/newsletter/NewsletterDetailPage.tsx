@@ -193,11 +193,8 @@ const NewsletterDetailPage = () => {
     if (!snap) return 0
     const refs = getOrderedReferenceSections(snap)
     return refs.reduce((sum, sec) => {
-      if (isReferenceSectionRemoved(sec) || sec.visibility === false) return sum
-      return (
-        sum +
-        getReferenceContentBlocks(sec).filter((b) => b.type === 'CHART' && b.visibility !== false && !isReferenceBlockRemoved(b)).length
-      )
+      if (isReferenceSectionRemoved(sec) || !sec.visibility) return sum
+      return sum + getReferenceContentBlocks(sec).filter((b) => b.type === 'CHART' && b.visibility && !isReferenceBlockRemoved(b)).length
     }, 0)
   }, [])
 
@@ -240,9 +237,9 @@ const NewsletterDetailPage = () => {
       false)
   /** 참고자료 차트에 그릴 데이터가 있는지 */
   const hasReferenceChartData = refs.some((sec) => {
-    if (isReferenceSectionRemoved(sec) || sec.visibility === false) return false
+    if (isReferenceSectionRemoved(sec) || !sec.visibility) return false
     return getReferenceContentBlocks(sec).some((b) => {
-      if (b.type !== 'CHART' || b.visibility === false || isReferenceBlockRemoved(b)) return false
+      if (b.type !== 'CHART' || !b.visibility || isReferenceBlockRemoved(b)) return false
       const c = getBlockFields<{
         timestamps?: number[]
         series?: { values?: number[] }[]
@@ -275,9 +272,9 @@ const NewsletterDetailPage = () => {
       viewNewsFlowProps.chartData.series?.some((s) => (s.values?.length ?? 0) > 0) ||
       false)
   const viewHasReferenceChartData = viewRefsOrdered.some((sec) => {
-    if (isReferenceSectionRemoved(sec) || sec.visibility === false) return false
+    if (isReferenceSectionRemoved(sec) || !sec.visibility) return false
     return getReferenceContentBlocks(sec).some((b) => {
-      if (b.type !== 'CHART' || b.visibility === false || isReferenceBlockRemoved(b)) return false
+      if (b.type !== 'CHART' || !b.visibility || isReferenceBlockRemoved(b)) return false
       const c = getBlockFields<{
         timestamps?: number[]
         series?: { values?: number[] }[]
@@ -792,21 +789,30 @@ const NewsletterDetailPage = () => {
     /** `NewsletterEdit.sectionOrder`과 동일 — COVER·FOOTER는 항상 양 끝 고정 */
     const orderedKeys = [cover, ...middle, footer]
     let referenceOrdinal = 0
-    return orderedKeys.map((editorKey, i) => {
-      const n = String(i + 1).padStart(2, '0')
+    let ordinal = 0
+    return orderedKeys.map((editorKey) => {
+      const isFixedSlot = editorKey === cover || editorKey === footer
       if (editorKey.startsWith('ref:')) {
+        ordinal += 1
         referenceOrdinal += 1
         const sid = editorKey.slice(4)
         const sec = effectiveSnapshot.sections.find((s) => s.id === sid)
         const title = String(sec?.fields?.title ?? '').trim()
         return {
           id: newsletterEditAnchorDomId(editorKey),
-          label: `${n} ${title || `Reference ${referenceOrdinal}`}`,
+          label: `${String(ordinal).padStart(2, '0')} ${title || `Reference ${referenceOrdinal}`}`,
         }
       }
+      if (isFixedSlot) {
+        return {
+          id: newsletterEditAnchorDomId(editorKey),
+          label: NEWSLETTER_SECTION_EDIT_LABEL[editorKey] ?? editorKey,
+        }
+      }
+      ordinal += 1
       return {
         id: newsletterEditAnchorDomId(editorKey),
-        label: `${n} ${NEWSLETTER_SECTION_EDIT_LABEL[editorKey] ?? editorKey}`,
+        label: `${String(ordinal).padStart(2, '0')} ${NEWSLETTER_SECTION_EDIT_LABEL[editorKey] ?? editorKey}`,
       }
     })
   }, [effectiveSnapshot, mode])
@@ -874,7 +880,6 @@ const NewsletterDetailPage = () => {
             label: String(s.fields?.title ?? '').trim() || `Reference ${refIndex + 1}`,
           })
         }
-        continue
       }
       // if (kind === 'FOOTER') {
       //   items.push({ id: `section-footer-${s.id}`, label: 'Footer' })

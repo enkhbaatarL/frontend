@@ -11,12 +11,22 @@ import {
   getDateIssueProps,
   getNewsFlowProps,
   getOrderedReferenceSections,
+  getReferenceContentBlocks,
   getSummaryProps,
   getTitleProps,
+  isReferenceBlockRemoved,
   parseNewsletterIssueSnapshotData,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
 import { textDiffToHtml } from '@/pages/mi/newsletter/utils/textDiffToHtml'
 import { titleOilPricePlainSummaryForDiff } from '@/utils/titleOilPriceDisplay'
+
+export type ReferenceBlockChangeKind = 'added' | 'modified' | 'deleted'
+
+export type ReferenceBlockDiff = {
+  kind: ReferenceBlockChangeKind
+  titleDiffHtml?: string
+  contentDiffHtml?: string
+}
 
 export type DiffOverrides = {
   summary?: string
@@ -28,7 +38,6 @@ export type DiffOverrides = {
   name?: string
   description?: string
   date?: string
-  issueNo?: string
   newsFlowChartTitle?: string
   newsFlowChartAggregationTime?: string
   referenceTitles?: string[]
@@ -37,6 +46,8 @@ export type DiffOverrides = {
   relatedNewsContents?: string[]
   /** 순서만 바뀐(또는 순서+내용) 섹션 — UI에서 `변경됨` 표시용. 직접 이동한 섹션 id만 담음 */
   sectionOrderChangedSectionIds?: string[]
+  /** 레퍼런스/사용자 추가 섹션의 블록별 diff. 배열 인덱스는 orderedReferenceSections 기준 */
+  referenceBlockChanges?: Record<string, ReferenceBlockDiff>[]
 }
 
 export type UseDocumentDiffResult = {
@@ -49,7 +60,7 @@ const toOperations = (deltas: IJsonPatchOpRes[]): Operation[] =>
   deltas.map((d) => {
     const op = d.op as Operation['op']
     const base: Record<string, unknown> = { op, path: d.path }
-    if (d.value !== undefined) base.value = d.value
+    if (d.value !== undefined) base.value = typeof d.value === 'object' && d.value !== null ? cloneDeep(d.value) : d.value
     if (d.from !== undefined) base.from = d.from
     return base as unknown as Operation
   })
@@ -194,10 +205,6 @@ export const useDocumentDiff = (
       diffOverrides.date = textDiffToHtml(prevDi.date, currDi.date)
     }
 
-    if (prevDi.issueNo !== currDi.issueNo) {
-      diffOverrides.issueNo = textDiffToHtml(prevDi.issueNo, currDi.issueNo)
-    }
-
     if (prevNf.title !== currNf.title) {
       diffOverrides.newsFlowChartTitle = textDiffToHtml(prevNf.title, currNf.title)
     }
@@ -210,6 +217,7 @@ export const useDocumentDiff = (
       const prevRefById = new Map(prevRefs.map((r) => [r.id, r]))
       const titles: string[] = []
       const descriptions: string[] = []
+      const blockChanges: Record<string, ReferenceBlockDiff>[] = []
       currRefs.forEach((ref) => {
         const pRef = prevRefById.get(ref.id)
         const prevT = String(pRef?.fields?.title ?? '')
@@ -227,9 +235,66 @@ export const useDocumentDiff = (
         } else {
           descriptions.push(textDiffToHtml(prevD, currD))
         }
+
+        const changes: Record<string, ReferenceBlockDiff> = {}
+        const prevBlocks = pRef ? getReferenceContentBlocks(pRef) : []
+        const currBlocks = getReferenceContentBlocks(ref)
+        const prevBlockMap = new Map(prevBlocks.map((b) => [b.id, b]))
+
+        for (const cb of currBlocks) {
+          const pb = prevBlockMap.get(cb.id)
+          const currRemoved = isReferenceBlockRemoved(cb)
+          const prevRemoved = pb ? isReferenceBlockRemoved(pb) : false
+
+          const prevFields = (pb?.fields ?? {}) as Record<string, unknown>
+          const currFields = (cb.fields ?? {}) as Record<string, unknown>
+          const prevBlockTitle = String(prevFields.title ?? pb?.title ?? '')
+          const currBlockTitle = String(currFields.title ?? cb.title ?? '')
+          const prevContent = String(prevFields.content ?? '')
+          const currContent = String(currFields.content ?? '')
+
+          if (!pb) {
+            if (!currRemoved) {
+              changes[cb.id] = {
+                kind: 'added',
+                titleDiffHtml: currBlockTitle ? textDiffToHtml('', currBlockTitle) : undefined,
+                contentDiffHtml: currContent ? textDiffToHtml('', currContent) : undefined,
+              }
+            }
+            continue
+          }
+
+          if (currRemoved && !prevRemoved) {
+            changes[cb.id] = { kind: 'deleted' }
+            continue
+          }
+          if (!currRemoved && prevRemoved) {
+            changes[cb.id] = {
+              kind: 'added',
+              titleDiffHtml: currBlockTitle ? textDiffToHtml('', currBlockTitle) : undefined,
+              contentDiffHtml: currContent ? textDiffToHtml('', currContent) : undefined,
+            }
+            continue
+          }
+          if (currRemoved) continue
+
+          const titleChanged = prevBlockTitle !== currBlockTitle
+          const contentChanged = prevContent !== currContent
+
+          if (titleChanged || contentChanged) {
+            changes[cb.id] = {
+              kind: 'modified',
+              titleDiffHtml: titleChanged ? textDiffToHtml(prevBlockTitle, currBlockTitle) : undefined,
+              contentDiffHtml: contentChanged ? textDiffToHtml(prevContent, currContent) : undefined,
+            }
+          }
+        }
+
+        blockChanges.push(changes)
       })
       if (titles.some(Boolean)) diffOverrides.referenceTitles = titles
       if (descriptions.some(Boolean)) diffOverrides.referenceDescriptions = descriptions
+      if (blockChanges.some((m) => Object.keys(m).length > 0)) diffOverrides.referenceBlockChanges = blockChanges
     }
 
     const currItems = currNf.newsEventItems

@@ -21,6 +21,7 @@ import {
   getCoverProps,
   getDateIssueProps,
   getEditorSectionOrderKeysFromSnapshot,
+  getFirstNewsCardBlockFieldDefs,
   getFooterProps,
   getMarketTimes,
   getNewsFlowProps,
@@ -192,7 +193,6 @@ const NewsletterEdit = ({
         <DateAndIssueSection
           key={NEWSLETTER_SECTION_CODE.DATE_ISSUE}
           date={dateIssueProps.date}
-          issueNo={dateIssueProps.issueNo}
           blockOrder={getBlockOrder(NEWSLETTER_SECTION_CODE.DATE_ISSUE)}
           showRequiredIndicator={hasAnyMissingRequiredWithPrefix('DATE_ISSUE')}
           sectionVisibility={dateIssueSection?.visibility !== false}
@@ -240,6 +240,7 @@ const NewsletterEdit = ({
             aggregationTime: newsFlowProps.aggregationTime,
           }}
           sectionFieldDefs={newsFlowSection?.fieldDefs}
+          newsCardTemplateFieldDefs={getFirstNewsCardBlockFieldDefs(newsFlowSection)}
           relatedNews={newsFlowProps.newsEventItems}
           marketOpenTime={marketOpenTime}
           marketCloseTime={marketCloseTime}
@@ -281,6 +282,7 @@ const NewsletterEdit = ({
               title={sigNewsProps.title}
               aggregationTime={sigNewsProps.aggregationTime}
               sectionFieldDefs={sigNewsSection.fieldDefs}
+              newsCardTemplateFieldDefs={getFirstNewsCardBlockFieldDefs(sigNewsSection)}
               relatedNews={sigNewsProps.newsEventItems}
               onRelatedNewsChange={onRelatedNewsChange}
               onTitleChange={onNewsFlowTitleChange}
@@ -289,7 +291,7 @@ const NewsletterEdit = ({
               disableNewsItemOrder={disableSigNewsItemOrder}
               showRequiredIndicator={hasAnyMissingRequiredWithPrefix('NEWS_FLOW')}
               getNewsItemMissingRequired={(newsId) => hasAnyMissingRequiredWithPrefix(`NEWS_FLOW.newsEventItems[newsId=${newsId}]`)}
-              sectionVisibility={sigNewsSection.visibility !== false}
+              sectionVisibility={sigNewsSection.visibility}
               onSectionVisibilityChange={(visible) =>
                 sigNewsSection?.id ? onSectionVisibilityChange?.(sigNewsSection.id, visible) : undefined
               }

@@ -1,5 +1,7 @@
+import DOMPurify from 'dompurify'
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
 
+import type { ReferenceBlockDiff } from '@/pages/mi/newsletter/hooks/useDocumentDiff'
 import type { INewsletterIssueSnapshotData, INewsletterSnapshotSection } from '@/service/mi/newsletter'
 
 import ReferenceChart from '@/pages/mi/newsletter/components/chart/ReferenceChart'
@@ -14,7 +16,7 @@ import {
   tableViewFromBlock,
   wasReferenceContentBlockRemovedInSnapshot,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
-import { EMAIL_FONT_FAMILY } from '@/utils/email'
+import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled } from '@/utils/email'
 
 interface ReferenceProps {
   section: INewsletterSnapshotSection
@@ -30,6 +32,8 @@ interface ReferenceProps {
   showRemovedBlocks?: boolean
   /** 비교 스냅샷 — 직전에도 삭제된 블록은 숨김 */
   diffComparisonSnapshot?: INewsletterIssueSnapshotData | null
+  /** 블록 id → diff 정보 (kind + diff HTML) */
+  blockChanges?: Record<string, ReferenceBlockDiff>
 }
 
 const Reference = ({
@@ -44,9 +48,10 @@ const Reference = ({
   descriptionDiffHtml,
   showRemovedBlocks = false,
   diffComparisonSnapshot = null,
+  blockChanges,
 }: ReferenceProps) => {
   // 편집기 눈 아이콘 숨김(`visibility=false`)은 view/미리보기/이메일에서 항상 제외합니다.
-  const allBlocks = getReferenceContentBlocks(section).filter((b) => b.visibility !== false)
+  const allBlocks = getReferenceContentBlocks(section).filter((b) => b.visibility)
   const withRemoved = showRemovedBlocks ? allBlocks : allBlocks.filter((b) => !isReferenceBlockRemoved(b))
   const displayBlocks =
     showRemovedBlocks && diffComparisonSnapshot
@@ -64,14 +69,17 @@ const Reference = ({
     <table width="800" cellPadding={0} cellSpacing={0} border={0} style={{ borderCollapse: 'collapse' }}>
       <tbody>
         <tr>
-          <td style={{ paddingTop: '12px', paddingBottom: '24px' }}>
+          <td style={{ paddingTop: '12px', paddingBottom: '24px', ...({ msoPaddingAlt: '6px 0 12px 0' } as CSSProperties) }}>
             <ItemTitle title={title} subtitle={description} titleDiffHtml={titleDiffHtml} subtitleDiffHtml={descriptionDiffHtml} />
           </td>
         </tr>
 
         {displayBlocks.map((block) => {
           const blockRemoved = isReferenceBlockRemoved(block)
+          const blockDiff = blockChanges?.[block.id]
+          const blockChangeKind = blockDiff?.kind
           const removedNonTextStyle: CSSProperties | undefined = blockRemoved ? { opacity: 0.72 } : undefined
+          const addedBlockBg = !blockRemoved && blockChangeKind === 'added' ? '#e6f7ee' : undefined
 
           if (block.type === 'CHART') {
             let localIdx = 0
@@ -102,39 +110,134 @@ const Reference = ({
               chartCellContent = <img src={chartImage} alt="chart" width={800} style={{ display: 'block', width: '800px', border: 0 }} />
             }
 
+            const chartContent = String(getBlockFields<{ content?: string }>(block)?.content ?? '')
+            const chartContentHtml = blockDiff?.contentDiffHtml
             return (
-              <tr key={block.id}>
-                <td style={{ position: 'relative', ...removedNonTextStyle }}>
-                  {blockRemoved && <ChangedLabel labelKind="deleted" top="12px" />}
-                  <table
-                    cellPadding={0}
-                    cellSpacing={0}
-                    border={0}
-                    width="800"
-                    style={{
-                      borderCollapse: 'collapse',
-                      width: '800px',
-                      background: '#FFFFFF',
-                    }}
+              <Fragment key={block.id}>
+                <tr>
+                  <td
+                    style={{ padding: 0, position: 'relative', ...removedNonTextStyle, ...({ msoPaddingAlt: '0 0 0 0' } as CSSProperties) }}
                   >
-                    <tbody>
-                      <tr>
-                        <td style={{ fontSize: 0, lineHeight: 0 }}>{chartCellContent}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
+                    {blockRemoved && <ChangedLabel labelKind="deleted" top="12px" />}
+                    {!blockRemoved && blockChangeKind && <ChangedLabel labelKind={blockChangeKind} top="12px" />}
+                    <table
+                      cellPadding={0}
+                      cellSpacing={0}
+                      border={0}
+                      width="800"
+                      style={{
+                        borderCollapse: 'collapse',
+                        width: '800px',
+                        background: addedBlockBg ?? '#FFFFFF',
+                      }}
+                    >
+                      <tbody>
+                        <tr>
+                          <td
+                            style={{
+                              fontSize: 0,
+                              lineHeight: 0,
+                              padding: 0,
+                              ...({
+                                msoLineHeightRule: 'exactly',
+                                msoLineHeightAlt: '0px',
+                                msoPaddingAlt: '0 0 0 0',
+                              } as CSSProperties),
+                            }}
+                          >
+                            {chartCellContent}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+                {chartContent.trim() || chartContentHtml ? (
+                  <tr>
+                    <td
+                      style={{
+                        paddingTop: '18px',
+                        paddingLeft: '16px',
+                        paddingBottom: '24px',
+                        color: '#495057',
+                        fontFamily: EMAIL_FONT_FAMILY,
+                        fontSize: '18px',
+                        fontWeight: 400,
+                        lineHeight: '27px',
+                        ...({
+                          msoAnsiFontSize: '12px',
+                          msoFareastFontSize: '12px',
+                          msoLineHeightAlt: msoLineHeightAltScaled(27, 18, 12),
+                          msoLineHeightRule: 'exactly',
+                          msoPaddingAlt: msoPaddingAltScaled(18, 0, 24, 16, 18, 12),
+                        } as CSSProperties),
+                        ...removedNonTextStyle,
+                      }}
+                    >
+                      {chartContentHtml ? (
+                        <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(chartContentHtml) }} />
+                      ) : (
+                        chartContent.split('\n').map((line, lineIdx) => (
+                          <Fragment key={lineIdx}>
+                            {lineIdx > 0 ? <br /> : null}
+                            {line}
+                          </Fragment>
+                        ))
+                      )}
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
             )
           }
           if (block.type === 'TABLE') {
+            const tableContent = String(getBlockFields<{ content?: string }>(block)?.content ?? '')
+            const tableContentHtml = blockDiff?.contentDiffHtml
             return (
-              <tr key={block.id}>
-                <td style={{ paddingLeft: '16px', position: 'relative', ...removedNonTextStyle }}>
-                  {blockRemoved && <ChangedLabel labelKind="deleted" top="12px" />}
-                  <ReferenceTable tableData={tableViewFromBlock(block)} width="760" />
-                </td>
-              </tr>
+              <Fragment key={block.id}>
+                <tr>
+                  <td style={{ paddingLeft: '16px', position: 'relative', backgroundColor: addedBlockBg, ...removedNonTextStyle }}>
+                    {blockRemoved && <ChangedLabel labelKind="deleted" top="12px" />}
+                    {!blockRemoved && blockChangeKind && <ChangedLabel labelKind={blockChangeKind} top="12px" />}
+                    <ReferenceTable tableData={tableViewFromBlock(block)} width="760" />
+                  </td>
+                </tr>
+                {tableContent.trim() || tableContentHtml ? (
+                  <tr>
+                    <td
+                      style={{
+                        paddingTop: '18px',
+                        paddingLeft: '16px',
+                        paddingBottom: '24px',
+                        color: '#495057',
+                        fontFamily: EMAIL_FONT_FAMILY,
+                        fontSize: '18px',
+                        fontWeight: 400,
+                        lineHeight: '27px',
+                        ...({
+                          msoAnsiFontSize: '12px',
+                          msoFareastFontSize: '12px',
+                          msoLineHeightAlt: msoLineHeightAltScaled(27, 18, 12),
+                          msoLineHeightRule: 'exactly',
+                          msoPaddingAlt: msoPaddingAltScaled(18, 0, 24, 16, 18, 12),
+                        } as CSSProperties),
+                        ...removedNonTextStyle,
+                      }}
+                    >
+                      {tableContentHtml ? (
+                        <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(tableContentHtml) }} />
+                      ) : (
+                        tableContent.split('\n').map((line, lineIdx) => (
+                          <Fragment key={lineIdx}>
+                            {lineIdx > 0 ? <br /> : null}
+                            {line}
+                          </Fragment>
+                        ))
+                      )}
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
             )
           }
           if (block.type === 'IMAGE') {
@@ -142,7 +245,9 @@ const Reference = ({
             const src = String(img?.imageBase64 ?? '')
             const caption = String(img?.content ?? '')
             const imageTitle = String(block.title ?? '').trim()
-            if (!src && !blockRemoved) return null
+            const imageTitleHtml = blockDiff?.titleDiffHtml
+            const imageCaptionHtml = blockDiff?.contentDiffHtml
+            if (!src && !blockRemoved && !blockChangeKind) return null
             return (
               <tr key={block.id}>
                 <td
@@ -154,9 +259,16 @@ const Reference = ({
                   }}
                 >
                   {blockRemoved && <ChangedLabel labelKind="deleted" top="12px" />}
-                  <table cellPadding={0} cellSpacing={0} border={0} width="800" style={{ borderCollapse: 'collapse', width: '800px' }}>
+                  {!blockRemoved && blockChangeKind && <ChangedLabel labelKind={blockChangeKind} top="12px" />}
+                  <table
+                    cellPadding={0}
+                    cellSpacing={0}
+                    border={0}
+                    width="800"
+                    style={{ borderCollapse: 'collapse', width: '800px', backgroundColor: addedBlockBg }}
+                  >
                     <tbody>
-                      {imageTitle ? (
+                      {imageTitle || imageTitleHtml ? (
                         <tr>
                           <td
                             style={{
@@ -168,19 +280,31 @@ const Reference = ({
                               lineHeight: '21px',
                               color: '#212529',
                             }}
-                          >
-                            {imageTitle}
-                          </td>
+                            {...(imageTitleHtml
+                              ? { dangerouslySetInnerHTML: { __html: DOMPurify.sanitize(imageTitleHtml) } }
+                              : { children: imageTitle })}
+                          />
                         </tr>
                       ) : null}
                       {src ? (
                         <tr>
-                          <td style={{ fontSize: 0, lineHeight: 0 }}>
+                          <td
+                            style={{
+                              fontSize: 0,
+                              lineHeight: 0,
+                              padding: 0,
+                              ...({
+                                msoLineHeightRule: 'exactly',
+                                msoLineHeightAlt: '0px',
+                                msoPaddingAlt: '0 0 0 0',
+                              } as CSSProperties),
+                            }}
+                          >
                             <img src={src} alt="" width={800} style={{ display: 'block', width: '800px', maxWidth: '100%', border: 0 }} />
                           </td>
                         </tr>
                       ) : null}
-                      {caption ? (
+                      {caption || imageCaptionHtml ? (
                         <tr>
                           <td
                             style={{
@@ -192,9 +316,10 @@ const Reference = ({
                               color: '#333333',
                               whiteSpace: 'pre-wrap',
                             }}
-                          >
-                            {caption}
-                          </td>
+                            {...(imageCaptionHtml
+                              ? { dangerouslySetInnerHTML: { __html: DOMPurify.sanitize(imageCaptionHtml) } }
+                              : { children: caption })}
+                          />
                         </tr>
                       ) : null}
                     </tbody>
@@ -204,15 +329,16 @@ const Reference = ({
             )
           }
           if (block.type === 'TEXT' && (block.id ?? '').includes('REFERENCE_CONTENT')) {
-            const text = String(getBlockFields<{ content?: string }>(block)?.content ?? '')
-            const textTitle = String(block.title ?? '').trim()
+            const bf = getBlockFields<{ content?: string; title?: string }>(block)
+            const text = String(bf?.content ?? '')
+            const textTitle = String(bf?.title ?? block.title ?? '').trim()
             const hasContent = text.trim().length > 0
-            if (!hasContent && !textTitle && !blockRemoved) return null
-            if (!hasContent && !textTitle && blockRemoved) {
+            if (!hasContent && !textTitle && !blockRemoved && !blockChangeKind) return null
+            if (!hasContent && !textTitle && (blockRemoved || blockChangeKind)) {
               return (
                 <tr key={block.id}>
                   <td style={{ position: 'relative', paddingBottom: '24px' }}>
-                    <ChangedLabel labelKind="deleted" top="8px" />
+                    <ChangedLabel labelKind={blockRemoved ? 'deleted' : blockChangeKind!} top="5px" />
                   </td>
                 </tr>
               )
@@ -227,6 +353,12 @@ const Reference = ({
               fontSize: '20px',
               fontWeight: 600,
               lineHeight: '28px',
+              ...({
+                msoAnsiFontSize: '13.5px',
+                msoFareastFontSize: '13.5px',
+                msoLineHeightAlt: msoLineHeightAltScaled(28, 20, 13.5),
+                msoLineHeightRule: 'exactly',
+              } as CSSProperties),
               opacity: blockRemoved ? 0.72 : undefined,
               textDecoration: blockRemoved ? 'line-through' : undefined,
             }
@@ -237,36 +369,56 @@ const Reference = ({
               fontSize: '18px',
               fontWeight: 400,
               lineHeight: '27px',
+              ...({
+                msoAnsiFontSize: '12px',
+                msoFareastFontSize: '12px',
+                msoLineHeightAlt: msoLineHeightAltScaled(27, 18, 12),
+                msoLineHeightRule: 'exactly',
+              } as CSSProperties),
               opacity: blockRemoved ? 0.72 : undefined,
               textDecoration: blockRemoved ? 'line-through' : undefined,
             }
 
+            const blockLabel = blockRemoved ? 'deleted' : blockChangeKind
+            const titleHtml = blockDiff?.titleDiffHtml
+            const contentHtml = blockDiff?.contentDiffHtml
             return (
               <Fragment key={block.id}>
-                {textTitle ? (
+                {textTitle || titleHtml ? (
                   <tr>
-                    <td
-                      style={{
-                        ...titleInnerStyle,
-                        position: 'relative',
-                        paddingBottom: hasContent ? '10px' : '24px',
-                      }}
-                    >
-                      {blockRemoved && <ChangedLabel labelKind="deleted" top="8px" />}
-                      {textTitle}
+                    <td style={{ position: 'relative', paddingBottom: hasContent ? '10px' : '24px' }}>
+                      {blockLabel && <ChangedLabel labelKind={blockLabel} top="5px" />}
+                      <div
+                        style={titleInnerStyle}
+                        {...(titleHtml ? { dangerouslySetInnerHTML: { __html: DOMPurify.sanitize(titleHtml) } } : { children: textTitle })}
+                      />
                     </td>
                   </tr>
                 ) : null}
-                {hasContent ? (
+                {hasContent || contentHtml ? (
                   <tr>
-                    <td style={{ ...contentCellStyle, position: 'relative' }}>
-                      {!textTitle && blockRemoved && <ChangedLabel labelKind="deleted" top="8px" />}
-                      {text.split('\n').map((line, lineIdx) => (
-                        <Fragment key={lineIdx}>
-                          {lineIdx > 0 ? <br /> : null}
-                          {line}
-                        </Fragment>
-                      ))}
+                    <td
+                      style={{
+                        ...contentCellStyle,
+                        ...(textTitle || titleHtml ? { paddingTop: '4px' } : {}),
+                        ...({
+                          msoPaddingAlt:
+                            textTitle || titleHtml ? msoPaddingAltScaled(4, 0, 24, 0, 18, 12) : msoPaddingAltScaled(0, 0, 24, 0, 18, 12),
+                        } as CSSProperties),
+                        position: 'relative',
+                      }}
+                    >
+                      {!textTitle && !titleHtml && blockLabel && <ChangedLabel labelKind={blockLabel} top="5px" />}
+                      {contentHtml ? (
+                        <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(contentHtml) }} />
+                      ) : (
+                        text.split('\n').map((line, lineIdx) => (
+                          <Fragment key={lineIdx}>
+                            {lineIdx > 0 ? <br /> : null}
+                            {line}
+                          </Fragment>
+                        ))
+                      )}
                     </td>
                   </tr>
                 ) : null}

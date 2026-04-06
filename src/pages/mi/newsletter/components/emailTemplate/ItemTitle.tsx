@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify'
-import { Fragment } from 'react'
+import { CSSProperties, Fragment } from 'react'
 
-import { EMAIL_FONT_FAMILY } from '@/utils/email'
+import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled } from '@/utils/email'
 
 interface ItemTitleProps {
   title: string
@@ -27,9 +27,15 @@ const ItemTitle = ({ title, subtitle, titleDiffHtml, subtitleDiffHtml }: ItemTit
                   style={{
                     color: '#212529',
                     fontFamily: EMAIL_FONT_FAMILY,
-                    fontSize: '22px',
-                    fontWeight: 600,
-                    lineHeight: '31px',
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    lineHeight: '39px',
+                    ...({
+                      msoAnsiFontSize: '13.5px',
+                      msoFareastFontSize: '13.5px',
+                      msoLineHeightAlt: msoLineHeightAltScaled(39, 28, 13.5),
+                      msoLineHeightRule: 'exactly',
+                    } as CSSProperties),
                   }}
                   {...(titleDiffHtml ? { dangerouslySetInnerHTML: { __html: DOMPurify.sanitize(titleDiffHtml) } } : { children: title })}
                 />
@@ -44,6 +50,13 @@ const ItemTitle = ({ title, subtitle, titleDiffHtml, subtitleDiffHtml }: ItemTit
                       fontSize: '16px',
                       fontWeight: 600,
                       lineHeight: '22px',
+                      ...({
+                        msoAnsiFontSize: '10px',
+                        msoFareastFontSize: '10px',
+                        msoLineHeightAlt: msoLineHeightAltScaled(22, 16, 10),
+                        msoLineHeightRule: 'exactly',
+                        msoPaddingAlt: msoPaddingAltScaled(4, 0, 0, 0, 16, 10),
+                      } as CSSProperties),
                     }}
                     {...(subtitleDiffHtml
                       ? { dangerouslySetInnerHTML: { __html: DOMPurify.sanitize(subtitleDiffHtml) } }

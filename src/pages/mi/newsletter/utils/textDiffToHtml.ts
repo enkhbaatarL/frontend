@@ -1,11 +1,13 @@
 import DiffMatchPatch from 'diff-match-patch'
 import DOMPurify from 'dompurify'
 
-/** 삭제된 텍스트 스타일 - 취소선, 글씨 #e34449, 배경 #ffecec */
-const DEL_STYLE = 'background-color: #ffecec; color: #e34449; text-decoration: line-through;'
+/** 삭제된 텍스트 스타일 - 취소선, 글씨 #e34449, 배경 #ffecec. padding은 em으로 두어 부모 font-size·Outlook 축소 폰트에 맞춤 */
+const DEL_STYLE =
+  'background-color: #ffecec; color: #e34449; text-decoration: line-through; padding: 0.12em 0.1em; box-decoration-break: clone; -webkit-box-decoration-break: clone;'
 
 /** 추가된 텍스트 스타일 - 효과없음(밑줄X), 글씨 #008855, 배경 #e6f7ee. text-decoration:none으로 <ins> 기본 밑줄 제거 */
-const INS_STYLE = 'background-color: #e6f7ee; color: #008855; text-decoration: none;'
+const INS_STYLE =
+  'background-color: #e6f7ee; color: #008855; text-decoration: none; padding: 0.12em 0.1em; box-decoration-break: clone; -webkit-box-decoration-break: clone;'
 
 /** dangerouslySetInnerHTML 주입 전 XSS 방지를 위한 DOMPurify 설정 */
 const SANITIZE_CONFIG: { ALLOWED_TAGS: string[]; ALLOWED_ATTR: string[] } = {

@@ -21,6 +21,8 @@ interface SigNewsSectionProps {
   relatedNews?: IRelatedNewsEventItem[]
   /** SIG_NEWS 섹션 `section.fieldDefs` — title, aggregationTime 등 */
   sectionFieldDefs?: Record<string, INewsletterSnapshotFieldDef>
+  /** 섹션 `blocks` 중 첫 `NEWS_CARD`의 `fieldDefs` — 뉴스 추가 모달·신규 카드 필수 정책 */
+  newsCardTemplateFieldDefs?: Record<string, INewsletterSnapshotFieldDef>
   title?: string
   aggregationTime?: string
   onTitleChange?: (value?: string) => void
@@ -39,6 +41,7 @@ interface SigNewsSectionProps {
 const SigNewsSection = ({
   relatedNews = [],
   sectionFieldDefs,
+  newsCardTemplateFieldDefs,
   title = '',
   aggregationTime = '',
   onTitleChange,
@@ -193,6 +196,7 @@ const SigNewsSection = ({
               onClose={() => setAddModalOpen(false)}
               onAdd={handleAddNewsFromModal}
               showChartMapping={false}
+              fieldDefs={newsCardTemplateFieldDefs}
             />
             {/* <Typography variant="body3" color="contentText.Subtext">
               수정 또는 추가한 뉴스는 저장 후 시간 순으로 자동 정렬됩니다.
