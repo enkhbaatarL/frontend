@@ -16,6 +16,7 @@ import {
   enrichNewsFlowItemTimestamps,
   filterVisibleNewsFlowItems,
   findFirstSectionByCanonicalCode,
+  getChartBoxPositions,
   NEWSLETTER_SECTION_CODE,
   shouldSuppressNewsFlowChartUi,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
@@ -90,6 +91,7 @@ const DiffViewer = ({
   )
 
   const suppressNewsFlowChart = shouldSuppressNewsFlowChartUi(displaySnapshot)
+  const savedBoxPositions = getChartBoxPositions(displaySnapshot)
 
   if (isLoading && !displaySnapshot) {
     return (
@@ -176,6 +178,7 @@ const DiffViewer = ({
               marketOpenTime={marketOpenTime}
               marketCloseTime={marketCloseTime}
               onChartImageReady={onMainChartImageReady}
+              boxPositions={Object.keys(savedBoxPositions).length > 0 ? savedBoxPositions : undefined}
             />
           )
         }

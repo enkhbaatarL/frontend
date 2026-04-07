@@ -21,6 +21,8 @@ export type ChartEditModalProps = {
   marketCloseTime?: number
   onChartImageReady?: (image: string) => void
   headerGrayBackground?: boolean
+  /** 박스 드래그 종료·리셋 후 스냅샷 CHART 좌표 반영 */
+  onBoxPositionDragEnd?: () => void
 }
 
 const MODAL_WIDTH = 800
@@ -37,6 +39,7 @@ const ChartEditModal = ({
   marketCloseTime,
   onChartImageReady,
   headerGrayBackground = false,
+  onBoxPositionDragEnd,
 }: ChartEditModalProps) => {
   const {
     showVolumePanel,
@@ -51,6 +54,11 @@ const ChartEditModal = ({
     resetBoxPositions,
     setTitleEdit,
   } = useChartEditStore()
+
+  const handleResetChartLayout = useCallback(() => {
+    resetBoxPositions()
+    onBoxPositionDragEnd?.()
+  }, [resetBoxPositions, onBoxPositionDragEnd])
 
   /** null =좌표 미확정, {x,y} = 실제 위치 */
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null)
@@ -324,7 +332,8 @@ const ChartEditModal = ({
             onChartTypeChange={setChartType}
             boxPositions={boxPositions}
             onBoxPositionChange={onBoxPositionChange}
-            onResetBoxPositions={resetBoxPositions}
+            onBoxDragEnd={onBoxPositionDragEnd}
+            onResetBoxPositions={handleResetChartLayout}
             titleEdits={titleEdits}
             onTitleEdit={setTitleEdit}
             chartIdSuffix="modal"

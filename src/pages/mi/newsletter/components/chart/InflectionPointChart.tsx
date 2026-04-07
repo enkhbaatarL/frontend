@@ -15,6 +15,14 @@ import RefreshIcon from '@/components/common/icons/RefreshIcon'
 import ShowChartIcon from '@/components/common/icons/ShowChartIcon'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import InflectionPointChartPlugin from '@/lib/chart/plugins/InflectionPointChartPlugin'
+import {
+  findVolumeSeriesInChart,
+  INFLECTION_CHART_VOLUME_PANEL_COLLAPSED_HEIGHT,
+  INFLECTION_CHART_VOLUME_PANEL_FULL_HEIGHT,
+  INFLECTION_POINT_CHART_EMPTY_STATE_HEIGHT,
+  INFLECTION_POINT_CHART_MAIN_HEIGHT,
+  INFLECTION_POINT_CHART_OUTER_WIDTH,
+} from '@/pages/mi/newsletter/components/chart/inflectionPointChartLayout'
 import { useChartImageCapture } from '@/pages/mi/newsletter/components/chart/useChartImageCapture'
 import { INewsFlowChartData, IRelatedNewsEventItem, NewsletterDetailPageMode } from '@/service/mi/newsletter'
 import { ChartType } from '@/types/dataDetailChart'
@@ -56,6 +64,8 @@ interface Props {
   boxPositions?: BoxPositions
   /** controlled: 박스 위치 변경 시 호출 */
   onBoxPositionChange?: (timestamp: number, position: BoxPosition) => void
+  /** 박스 드래그를 놓은 직후(실제 이동이 있었을 때만) */
+  onBoxDragEnd?: () => void
   /** controlled: 박스 위치 초기화 (미전달 시 내부 reset 사용) */
   onResetBoxPositions?: () => void
   /** controlled: 뉴스 제목 편집 내용 (timestamp → 편집된 제목) */
@@ -75,10 +85,6 @@ ChartJS.register(CandlestickController, CandlestickElement, OhlcController, Ohlc
 
 type ChartJSOrUndefined = ChartJS | undefined
 
-/** 거래량 영역 높이 (표시 높이 조절 시 여기만 수정) */
-const VOLUME_HEIGHT_FULL = 170
-const VOLUME_HEIGHT_COLLAPSED = 32
-
 const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
   (
     {
@@ -94,6 +100,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
       onChartTypeChange,
       boxPositions: boxPositionsProp,
       onBoxPositionChange: onBoxPositionChangeProp,
+      onBoxDragEnd,
       onResetBoxPositions,
       titleEdits: titleEditsProp,
       onTitleEdit: onTitleEditProp,
@@ -222,12 +229,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
       const series = chartData.chartData.series
 
       return {
-        volumeSeries: series.find(
-          (s) =>
-            s.renderAs?.toLowerCase() === 'volume' ||
-            s.seriesId?.toLowerCase().includes('volume') ||
-            s.label?.toLowerCase().includes('volume'),
-        ),
+        volumeSeries: findVolumeSeriesInChart(series),
         closeDataSeries: series.find((s) => s.seriesId?.toLowerCase() === 'close'),
         openDataSeries: series.find((s) => s.seriesId?.toLowerCase() === 'open'),
         highDataSeries: series.find((s) => s.seriesId?.toLowerCase() === 'high'),
@@ -244,6 +246,8 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
     // 차트 이미지가 생성/변경될 때마다 상위로 전파 (즉시 반영)
     const onChartImageReadyRef = useRef(onChartImageReady)
     onChartImageReadyRef.current = onChartImageReady
+    const onBoxDragEndRef = useRef(onBoxDragEnd)
+    onBoxDragEndRef.current = onBoxDragEnd
     useEffect(() => {
       document.body.dataset.mainChartImageReady = base64ChartImage ? String(base64ChartImage.length) : ''
       if (base64ChartImage) onChartImageReadyRef.current?.(base64ChartImage)
@@ -471,6 +475,9 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
             enableBoxDragging: mode === NewsletterDetailPageMode.EDIT,
             boxPositions,
             onBoxPositionChange: handleBoxPositionChange,
+            onBoxDragEnd: () => {
+              onBoxDragEndRef.current?.()
+            },
             titleEdits,
             onTitleEditStart: handleTitleEditStart,
             showHighPoint: true,
@@ -719,7 +726,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
     if (!chartData?.chartData?.series?.length || !hasVisibleData || timestamps.length === 0) {
       return (
         <Box
-          height="352px"
+          height={`${INFLECTION_POINT_CHART_EMPTY_STATE_HEIGHT}px`}
           width="100%"
           sx={{
             position: 'relative',
@@ -738,7 +745,7 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
     }
 
     return (
-      <Box width="776px" boxSizing="border-box">
+      <Box width={`${INFLECTION_POINT_CHART_OUTER_WIDTH}px`} boxSizing="border-box">
         <Collapse in={showChartToolbar} timeout={{ enter: 300, exit: 250 }}>
           <Box display="flex" justifyContent={mode === NewsletterDetailPageMode.EDIT ? 'flex-end' : 'space-between'} gap="8px" mr="32px">
             <MISelectMenu<ChartType>
@@ -769,8 +776,8 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
             )}
           </Box>
         </Collapse>
-        <Box ref={chartContainerRef} width="776px" boxSizing="border-box" sx={{ position: 'relative' }}>
-          <Box height="322px" sx={{ position: 'relative' }}>
+        <Box ref={chartContainerRef} width={`${INFLECTION_POINT_CHART_OUTER_WIDTH}px`} boxSizing="border-box" sx={{ position: 'relative' }}>
+          <Box height={`${INFLECTION_POINT_CHART_MAIN_HEIGHT}px`} sx={{ position: 'relative' }}>
             <Chart
               key={`main-chart-${forceUpdate}`}
               ref={setMainChartRef}
@@ -789,12 +796,12 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'flex-end',
-                maxHeight: shouldShowVolume ? VOLUME_HEIGHT_FULL : VOLUME_HEIGHT_COLLAPSED,
+                maxHeight: shouldShowVolume ? INFLECTION_CHART_VOLUME_PANEL_FULL_HEIGHT : INFLECTION_CHART_VOLUME_PANEL_COLLAPSED_HEIGHT,
                 transition: 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             >
               {/* 고정 높이 → 컨테이너가 줄어들며 위쪽이 overflow로 크롭되는 효과 */}
-              <Box height={VOLUME_HEIGHT_FULL} sx={{ flexShrink: 0 }}>
+              <Box height={INFLECTION_CHART_VOLUME_PANEL_FULL_HEIGHT} sx={{ flexShrink: 0 }}>
                 <Chart
                   key={`volume-chart-${forceUpdate}`}
                   ref={setVolumeChartRef}

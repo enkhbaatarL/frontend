@@ -319,7 +319,8 @@ export const EmailContentTemplate = ({
                       <tbody>
                         {showFlowChartRow && (
                           <tr>
-                            <td id={`newsletter-chart-section-${section.id}`} style={{ paddingBottom: '24px' }}>
+                            <td id={`newsletter-chart-section-${section.id}`} style={{ paddingBottom: '24px', position: 'relative' }}>
+                              {diffOverrides?.newsFlowChartGraphModified && <ChangedLabel labelKind="modified" top="4px" />}
                               <table
                                 cellPadding={0}
                                 cellSpacing={0}

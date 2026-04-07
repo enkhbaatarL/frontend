@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas'
 import JSZip from 'jszip'
 import { cloneDeep } from 'lodash-es'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useBlocker as useRouterBlocker, useParams } from 'react-router-dom'
 
 import MISimpleConfirm from '@/components/common/confirm/MISimpleConfirm'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -21,6 +21,7 @@ import RevisionToolbar, { INITIAL_VERSION_ID } from '@/pages/mi/newsletter/compo
 import { useRenderEmailContent } from '@/pages/mi/newsletter/components/view/useRenderEmailContent'
 import ViewToolbar from '@/pages/mi/newsletter/components/view/ViewToolbar'
 import { useChartImageStore } from '@/pages/mi/newsletter/hooks/useChartImageStore'
+import { useNewsletterLocalDraft } from '@/pages/mi/newsletter/hooks/useNewsletterLocalDraft'
 import { useRevisionChanges } from '@/pages/mi/newsletter/hooks/useRevisionChanges'
 import { useSaveNewsletterRevision } from '@/pages/mi/newsletter/hooks/useSaveNewsletterRevision'
 import {
@@ -29,6 +30,7 @@ import {
   findFirstSectionByCanonicalCode,
   findPrimaryRelatedNewsSection,
   getBlockFields,
+  getChartBoxPositions,
   getCoverProps,
   getDateIssueProps,
   getEditorSectionOrderKeysFromSnapshot,
@@ -48,6 +50,7 @@ import {
   NEWSLETTER_SECTION_CODE,
   shouldSuppressNewsFlowChartUi,
   updateBlockFieldsByBlockIdPattern,
+  updateChartBoxPositions,
   updateCoverShowImage,
   updateNewsFlowItems,
   updateNewsFlowPresentationFields,
@@ -67,6 +70,8 @@ import newsletterService, {
 import useAuthStore from '@/store/useAuthStore'
 import useChartEditStore from '@/store/useChartEditStore'
 import { convertBase64ImagesToCid, prepareNewsletterEmailHtml } from '@/utils/email'
+
+type PendingLeaveAction = { type: 'route' } | { type: 'endEdit' }
 
 const NewsletterDetailPage = () => {
   const [mode, setMode] = useState<NewsletterDetailPageMode>(NewsletterDetailPageMode.VIEW)
@@ -220,6 +225,7 @@ const NewsletterDetailPage = () => {
   } = useChartImageStore(referenceChartCount)
 
   const resetChartSettings = useChartEditStore((s) => s.resetChartSettings)
+  const setStoreBoxPositions = useChartEditStore((s) => s.setBoxPositions)
 
   /** `resetImages`는 referenceChartCount 변경 시마다 새 참조 → effect 의존성에 넣으면 스냅샷이 서버 값으로 덮어써짐(예: 섹션 추가 직후) */
   const resetImagesRef = useRef(resetImages)
@@ -317,6 +323,47 @@ const NewsletterDetailPage = () => {
     deltaCount: issueDetailData?.deltaCount,
   })
 
+  const { getLocalDraft, clearLocalDraft } = useNewsletterLocalDraft({
+    newsletterId,
+    issueNo,
+    isEditMode: mode === NewsletterDetailPageMode.EDIT,
+    currentSnapshot: effectiveSnapshot,
+    hasUnsavedChanges,
+    useLiveChartLayoutForPersist: mode === NewsletterDetailPageMode.EDIT,
+  })
+
+  const [pendingLeaveAction, setPendingLeaveAction] = useState<PendingLeaveAction | null>(null)
+  const [isSavingOnLeave, setIsSavingOnLeave] = useState(false)
+
+  /**
+   * 임시저장 성공 후, 추가 수정이 없는 상태를 추적
+   * `hasUnsavedChanges`는 baseSnapshot(서버 발행본) 기준이라 임시저장 후에도 true이므로,
+   * 이 플래그로 "임시저장 이후 새 수정이 없는" 상태를 구분
+   */
+  const [isDraftSavedWithoutNewEdits, setIsDraftSavedWithoutNewEdits] = useState(false)
+
+  useEffect(() => {
+    if (mode === NewsletterDetailPageMode.EDIT) {
+      setIsDraftSavedWithoutNewEdits(false)
+    }
+  }, [effectiveSnapshot, mode])
+
+  const needsLeaveConfirm = hasUnsavedChanges && !isDraftSavedWithoutNewEdits
+
+  const blocker = useRouterBlocker(
+    ({ currentLocation, nextLocation }) =>
+      mode === NewsletterDetailPageMode.EDIT && needsLeaveConfirm && currentLocation.pathname !== nextLocation.pathname,
+  )
+
+  const blockerRef = useRef(blocker)
+  blockerRef.current = blocker
+
+  useEffect(() => {
+    if (blocker.state === 'blocked' && !pendingLeaveAction) {
+      setPendingLeaveAction({ type: 'route' })
+    }
+  }, [blocker.state, pendingLeaveAction])
+
   const editSaveValidation = useMemo(() => validateNewsletterEditSnapshotForSave(effectiveSnapshot), [effectiveSnapshot])
   const isEditSnapshotValid = editSaveValidation.valid
 
@@ -378,7 +425,28 @@ const NewsletterDetailPage = () => {
       if (detail && String(detail.newsletterId) === String(newsletterId) && String(detail.issueNo) === String(issueNo)) {
         let snap: INewsletterIssueSnapshotData | null = null
 
-        if (detail.revision?.hasDraft) {
+        // 1. 로컬스토리지에 자동 저장된 내용 우선 확인
+        const localDraft = getLocalDraft()
+        if (localDraft) {
+          setIsEnteringEditMode(false)
+          const useLocal = await new Promise<boolean>((resolve) => {
+            draftLoadChoiceResolveRef.current = resolve
+            setIsDraftLoadConfirmOpen(true)
+          })
+          setIsDraftLoadConfirmOpen(false)
+          draftLoadChoiceResolveRef.current = null
+
+          if (useLocal) {
+            snap = cloneDeep(localDraft)
+            clearLocalDraft()
+            showSnackbar('자동 저장된 편집 내용을 불러왔습니다.', { variant: 'success' })
+          } else {
+            clearLocalDraft()
+          }
+        }
+
+        // 2. 로컬 드래프트를 불러오지 않았으면 서버 임시저장본 확인
+        if (!snap && detail.revision?.hasDraft) {
           setIsEnteringEditMode(false)
           const useDraft = await new Promise<boolean>((resolve) => {
             draftLoadChoiceResolveRef.current = resolve
@@ -415,6 +483,10 @@ const NewsletterDetailPage = () => {
           setSnapshot(cloneDeep(snap))
           resetImagesRef.current()
           resetChartSettingsRef.current()
+          const savedPositions = getChartBoxPositions(snap)
+          if (Object.keys(savedPositions).length > 0) {
+            setStoreBoxPositions(savedPositions)
+          }
         }
       }
 
@@ -423,7 +495,7 @@ const NewsletterDetailPage = () => {
       enteringEditRef.current = false
       setIsEnteringEditMode(false)
     }
-  }, [newsletterId, issueNo, refetchIssueDetail, queryClient, showSnackbar])
+  }, [newsletterId, issueNo, refetchIssueDetail, queryClient, showSnackbar, getLocalDraft, clearLocalDraft, setStoreBoxPositions])
 
   useEffect(() => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
@@ -568,6 +640,18 @@ const NewsletterDetailPage = () => {
     })
   }, [])
 
+  /**
+   * 차트 박스 드래그 종료(또는 리셋) 시에만 스냅샷 CHART 블록에 반영.
+   * 드래그 중에는 스토어만 갱신하고, 마우스를 놓은 뒤 한 번만 반영해 리렌더·델타 계산과 충돌하지 않습니다.
+   */
+  const flushChartBoxPositionsToSnapshot = useCallback(() => {
+    const positions = useChartEditStore.getState().boxPositions
+    setSnapshot((prev) => {
+      if (!prev) return prev
+      return updateChartBoxPositions(prev, positions)
+    })
+  }, [])
+
   const handlePreview = useCallback(async () => {
     if (isPreviewLoading || !effectiveSnapshot || !isReadyForEmail) return
     setIsChartModalOpen(false)
@@ -619,16 +703,71 @@ const NewsletterDetailPage = () => {
   }, [])
 
   const handleSaveDraft = useCallback(async () => {
-    await saveDraftRevision()
-  }, [saveDraftRevision])
+    const { success } = await saveDraftRevision()
+    if (success) {
+      clearLocalDraft()
+      setIsDraftSavedWithoutNewEdits(true)
+    }
+  }, [saveDraftRevision, clearLocalDraft])
 
   const handleSave = useCallback(async () => {
     const { success } = await saveFinalRevision()
     if (success) {
+      clearLocalDraft()
       setIsChartModalOpen(false)
       setMode(NewsletterDetailPageMode.VIEW)
     }
-  }, [saveFinalRevision])
+  }, [saveFinalRevision, clearLocalDraft])
+
+  const handleEndEdit = useCallback(() => {
+    if (needsLeaveConfirm) {
+      setPendingLeaveAction({ type: 'endEdit' })
+    } else {
+      clearLocalDraft()
+      setIsChartModalOpen(false)
+      setMode(NewsletterDetailPageMode.VIEW)
+    }
+  }, [needsLeaveConfirm, clearLocalDraft])
+
+  const handleLeaveEditSaveDraft = useCallback(async () => {
+    setIsSavingOnLeave(true)
+    try {
+      const { success } = await saveDraftRevision()
+      if (!success) return
+      clearLocalDraft()
+      const b = blockerRef.current
+      if (b.state === 'blocked') {
+        b.proceed?.()
+      } else {
+        setIsChartModalOpen(false)
+        setMode(NewsletterDetailPageMode.VIEW)
+      }
+      setPendingLeaveAction(null)
+    } finally {
+      setIsSavingOnLeave(false)
+    }
+  }, [saveDraftRevision, clearLocalDraft])
+
+  const handleLeaveEditDiscard = useCallback(() => {
+    clearLocalDraft()
+    const b = blockerRef.current
+    if (b.state === 'blocked') {
+      b.proceed?.()
+    } else {
+      setIsChartModalOpen(false)
+      setMode(NewsletterDetailPageMode.VIEW)
+    }
+    setPendingLeaveAction(null)
+  }, [clearLocalDraft])
+
+  const handleLeaveEditCancel = useCallback(() => {
+    if (isSavingOnLeave) return
+    const b = blockerRef.current
+    if (b.state === 'blocked') {
+      b.reset?.()
+    }
+    setPendingLeaveAction(null)
+  }, [isSavingOnLeave])
 
   const handleDownloadImage = useCallback(async () => {
     if (isDownloadingImage || !viewSnapshot || !isReadyForEmailView) return
@@ -908,11 +1047,11 @@ const NewsletterDetailPage = () => {
     [newsFlowProps.newsEventItems],
   )
 
+  const snapshotBoxPositions = useMemo(() => getChartBoxPositions(effectiveSnapshot), [effectiveSnapshot])
+
+  /** CAPTURE 등에서만 `EmailContent`로 전달. 편집 화면 차트는 `NewsFlowSection`만 사용 */
   let chartNode: ReactNode = null
-  if (
-    !suppressNewsFlowChartUi &&
-    (mode === NewsletterDetailPageMode.VIEW || mode === NewsletterDetailPageMode.REVISION || mode === NewsletterDetailPageMode.EDIT)
-  ) {
+  if (!suppressNewsFlowChartUi && (mode === NewsletterDetailPageMode.VIEW || mode === NewsletterDetailPageMode.REVISION)) {
     chartNode = (
       <InflectionPointChart
         chartData={newsFlowChartData}
@@ -921,6 +1060,7 @@ const NewsletterDetailPage = () => {
         marketOpenTime={marketOpenTime}
         marketCloseTime={marketCloseTime}
         onChartImageReady={onMainChartImageReady}
+        boxPositions={Object.keys(snapshotBoxPositions).length > 0 ? snapshotBoxPositions : undefined}
       />
     )
   }
@@ -950,10 +1090,7 @@ const NewsletterDetailPage = () => {
         isPreviewLoading={isPreviewLoading}
         showChartButton={!suppressNewsFlowChartUi}
         onChart={handleChart}
-        onEndEdit={() => {
-          setIsChartModalOpen(false)
-          setMode(NewsletterDetailPageMode.VIEW)
-        }}
+        onEndEdit={handleEndEdit}
         onSaveDraft={handleSaveDraft}
         onSave={handleSave}
         isSaving={isSaving}
@@ -1002,6 +1139,7 @@ const NewsletterDetailPage = () => {
             ? {
               newsletterId: Number(newsletterId),
               issueNo,
+              defaultSubject: viewSnapshot ? (viewSnapshot.meta?.emailSubject ?? getTitleProps(viewSnapshot).title ?? '') : '',
               preparePayload: prepareShareEditionMailPayload,
               canSend: !!viewSnapshot && isReadyForEmailView,
             }
@@ -1052,6 +1190,41 @@ const NewsletterDetailPage = () => {
             variant: 'contained',
             color: 'primary',
             onClick: () => resolveDraftLoadChoice(true),
+          },
+        ]}
+      />
+      <MISimpleConfirm
+        open={pendingLeaveAction !== null}
+        disableClose={isSavingOnLeave}
+        content={
+          <Stack gap="4px">
+            <Box>저장하지 않은 수정사항이 있습니다.</Box>
+            <Box>임시저장 하시겠습니까?</Box>
+          </Stack>
+        }
+        handleClose={handleLeaveEditCancel}
+        width={460}
+        actions={[
+          {
+            children: '취소',
+            variant: 'outlined',
+            color: 'secondary',
+            onClick: handleLeaveEditCancel,
+            disabled: isSavingOnLeave,
+          },
+          {
+            children: '저장하지 않기',
+            variant: 'outlined',
+            color: 'secondary',
+            onClick: handleLeaveEditDiscard,
+            disabled: isSavingOnLeave,
+          },
+          {
+            children: '임시저장',
+            variant: 'contained',
+            color: 'primary',
+            onClick: handleLeaveEditSaveDraft,
+            disabled: isSavingOnLeave,
           },
         ]}
       />
@@ -1130,6 +1303,8 @@ const NewsletterDetailPage = () => {
                 onFooterContentChange={handleFooterContentChange}
                 onFooterShowLogoChange={handleFooterShowLogoChange}
                 onSectionVisibilityChange={handleSectionVisibilityChange}
+                onBoxPositionDragEnd={flushChartBoxPositionsToSnapshot}
+                flowChartEditModalOpen={isChartModalOpen}
               />
             )}
             {mode === NewsletterDetailPageMode.CAPTURE && (
@@ -1200,6 +1375,7 @@ const NewsletterDetailPage = () => {
           marketOpenTime={marketOpenTime}
           marketCloseTime={marketCloseTime}
           onChartImageReady={onMainChartImageReady}
+          onBoxPositionDragEnd={flushChartBoxPositionsToSnapshot}
         />
       )}
     </Stack>

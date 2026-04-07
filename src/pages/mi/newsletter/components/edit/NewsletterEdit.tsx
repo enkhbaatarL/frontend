@@ -62,6 +62,10 @@ export type NewsletterEditProps = {
   onFooterContentChange?: (value?: string) => void
   onFooterShowLogoChange?: (show: boolean) => void
   onSectionVisibilityChange?: (sectionId: string, visible: boolean) => void
+  /** 차트 뉴스 박스 드래그를 놓은 뒤(또는 위치 리셋 후) 스냅샷에 좌표 반영 */
+  onBoxPositionDragEnd?: () => void
+  /** 플로우 차트 편집 모달이 열린 동안 본문 인라인 차트는 플레이스홀더만 표시 */
+  flowChartEditModalOpen?: boolean
 }
 
 const NewsletterEdit = ({
@@ -85,6 +89,8 @@ const NewsletterEdit = ({
   onFooterContentChange,
   onFooterShowLogoChange,
   onSectionVisibilityChange,
+  onBoxPositionDragEnd,
+  flowChartEditModalOpen = false,
 }: NewsletterEditProps) => {
   const suppressNewsFlowChartUi = useMemo(() => shouldSuppressNewsFlowChartUi(snapshot), [snapshot])
   const missingRequiredPaths = useMemo(
@@ -257,6 +263,8 @@ const NewsletterEdit = ({
           onSectionVisibilityChange={(visible) =>
             newsFlowSection?.id ? onSectionVisibilityChange?.(newsFlowSection.id, visible) : undefined
           }
+          onBoxPositionDragEnd={onBoxPositionDragEnd}
+          flowChartEditModalOpen={flowChartEditModalOpen}
         />
       ),
       [NEWSLETTER_SECTION_CODE.FOOTER]: (
@@ -378,7 +386,9 @@ const NewsletterEdit = ({
     onFooterContentChange,
     onFooterShowLogoChange,
     onSectionVisibilityChange,
+    onBoxPositionDragEnd,
     suppressNewsFlowChartUi,
+    flowChartEditModalOpen,
   ])
 
   return (

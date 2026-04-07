@@ -99,7 +99,7 @@ const MISimpleConfirm = ({
           },
         }}
       >
-        <Typography variant="body1" color="content.textNormal">
+        <Typography component="div" variant="body1" color="content.textNormal">
           {content}
         </Typography>
       </DialogContent>

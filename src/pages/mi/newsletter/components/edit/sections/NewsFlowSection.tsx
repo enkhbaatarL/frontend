@@ -6,6 +6,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import MIButton from '@/components/common/button/MIButton'
 import MIMaskInput from '@/components/common/input/MIMaskInput'
 import InflectionPointChart from '@/pages/mi/newsletter/components/chart/InflectionPointChart'
+import {
+  INFLECTION_POINT_CHART_INLINE_EDIT_PLACEHOLDER_HEIGHT,
+  INFLECTION_POINT_CHART_OUTER_WIDTH,
+} from '@/pages/mi/newsletter/components/chart/inflectionPointChartLayout'
 import AddNewsModal from '@/pages/mi/newsletter/components/edit/AddNewsModal'
 import InflectionPointMenu from '@/pages/mi/newsletter/components/edit/InflectionPointMenu'
 import NewsFormFields from '@/pages/mi/newsletter/components/edit/NewsFormFields'
@@ -25,6 +29,7 @@ import {
   NewsletterDetailPageMode,
 } from '@/service/mi/newsletter'
 import useChartEditStore from '@/store/useChartEditStore'
+import { createTimestampInNY } from '@/utils/date'
 
 interface NewsFlowSectionProps {
   chartData?: INewsFlowChartData
@@ -49,6 +54,10 @@ interface NewsFlowSectionProps {
   onSectionVisibilityChange?: (visible: boolean) => void
   showRequiredIndicator?: boolean
   getNewsItemMissingRequired?: (newsId: string) => boolean
+  /** 박스 드래그를 놓은 뒤·위치 리셋 후 스냅샷 반영(상위에서 처리) */
+  onBoxPositionDragEnd?: () => void
+  /** 플로우 차트 편집 팝업이 열린 동안 인라인 차트 대신 플레이스홀더 표시 */
+  flowChartEditModalOpen?: boolean
 }
 
 const NewsFlowSection = ({
@@ -69,6 +78,8 @@ const NewsFlowSection = ({
   onSectionVisibilityChange,
   showRequiredIndicator = false,
   getNewsItemMissingRequired,
+  onBoxPositionDragEnd,
+  flowChartEditModalOpen = false,
 }: NewsFlowSectionProps) => {
   const { getCreateTimeError, isCreateTimeValid } = useCreateTimeValidation()
   const dFlowTitle = getEffectiveFieldDef(sectionFieldDefs, 'title')
@@ -76,6 +87,11 @@ const NewsFlowSection = ({
   const visibleRelatedNews = useMemo(() => filterVisibleNewsFlowItems(relatedNews), [relatedNews])
   const chartRelatedNews = useMemo(() => visibleRelatedNews.filter((n) => n.visibility !== false), [visibleRelatedNews])
   const { chartType, boxPositions, titleEdits, setChartType, onBoxPositionChange, resetBoxPositions, setTitleEdit } = useChartEditStore()
+
+  const handleResetChartLayout = useCallback(() => {
+    resetBoxPositions()
+    onBoxPositionDragEnd?.()
+  }, [resetBoxPositions, onBoxPositionDragEnd])
 
   /** 차트·변곡점 — 삭제(soft)된 뉴스 카드 제외 */
   const enrichedRelatedNews = useMemo(() => enrichNewsFlowItemTimestamps(chartRelatedNews), [chartRelatedNews])
@@ -190,22 +206,41 @@ const NewsFlowSection = ({
         />
         {!hideNewsFlowChart ? (
           <Box borderRadius="10px" bgcolor="commonColor.White" padding="18px 0 12px" my="12px">
-            <InflectionPointChart
-              chartData={chartData}
-              relatedNews={enrichedRelatedNews}
-              mode={NewsletterDetailPageMode.EDIT}
-              marketOpenTime={marketOpenTime}
-              marketCloseTime={marketCloseTime}
-              onChartImageReady={onChartImageReady}
-              showChartToolbar
-              chartType={chartType}
-              onChartTypeChange={setChartType}
-              boxPositions={boxPositions}
-              onBoxPositionChange={onBoxPositionChange}
-              onResetBoxPositions={resetBoxPositions}
-              titleEdits={titleEdits}
-              onTitleEdit={setTitleEdit}
-            />
+            {flowChartEditModalOpen ? (
+              <Box
+                sx={{
+                  width: INFLECTION_POINT_CHART_OUTER_WIDTH,
+                  height: INFLECTION_POINT_CHART_INLINE_EDIT_PLACEHOLDER_HEIGHT,
+                  margin: '0 auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: 'transparent',
+                  color: '#6C757D',
+                  typography: 'body2',
+                }}
+              >
+                팝업 표시 중
+              </Box>
+            ) : (
+              <InflectionPointChart
+                chartData={chartData}
+                relatedNews={enrichedRelatedNews}
+                mode={NewsletterDetailPageMode.EDIT}
+                marketOpenTime={marketOpenTime}
+                marketCloseTime={marketCloseTime}
+                onChartImageReady={onChartImageReady}
+                showChartToolbar
+                chartType={chartType}
+                onChartTypeChange={setChartType}
+                boxPositions={boxPositions}
+                onBoxPositionChange={onBoxPositionChange}
+                onBoxDragEnd={onBoxPositionDragEnd}
+                onResetBoxPositions={handleResetChartLayout}
+                titleEdits={titleEdits}
+                onTitleEdit={setTitleEdit}
+              />
+            )}
           </Box>
         ) : null}
       </Stack>
@@ -265,6 +300,11 @@ const NewsFlowSection = ({
                   }
                   if (updates.content !== undefined) {
                     next.content = updates.content ? updates.content.split(/\n\n+/).filter(Boolean) : []
+                  }
+                  if (updates.createdDate !== undefined || updates.createTime !== undefined) {
+                    const newDate = next.createdDate ?? item.createdDate ?? ''
+                    const newTime = next.createTime ?? item.createTime ?? ''
+                    next.timestamp = createTimestampInNY(newDate, newTime)
                   }
                   if (Object.keys(next).length > 0) updateNewsItem(item.newsId, next)
                 }}

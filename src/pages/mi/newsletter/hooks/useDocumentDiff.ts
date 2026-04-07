@@ -1,12 +1,14 @@
 import { applyPatch } from 'fast-json-patch'
-import { cloneDeep } from 'lodash-es'
+import { cloneDeep, isEqual } from 'lodash-es'
 import { useMemo } from 'react'
 
 import type { INewsletterIssueSnapshotData, IJsonPatchOpRes, IRevisionChangeDetailResponse } from '@/service/mi/newsletter'
 import type { Operation } from 'fast-json-patch'
 
 import {
+  chartBoxPositionsEqual,
   computeDirectOrderChangeSectionIds,
+  getChartBoxPositions,
   getCoverProps,
   getDateIssueProps,
   getNewsFlowProps,
@@ -40,6 +42,8 @@ export type DiffOverrides = {
   date?: string
   newsFlowChartTitle?: string
   newsFlowChartAggregationTime?: string
+  /** 메인 뉴스플로우 차트(시계열·박스 위치 등) 변경 — 그래프 영역에 '수정됨' */
+  newsFlowChartGraphModified?: boolean
   referenceTitles?: string[]
   referenceDescriptions?: string[]
   relatedNewsTitles?: string[]
@@ -211,6 +215,13 @@ export const useDocumentDiff = (
 
     if (prevNf.aggregationTime !== currNf.aggregationTime) {
       diffOverrides.newsFlowChartAggregationTime = textDiffToHtml(prevNf.aggregationTime, currNf.aggregationTime)
+    }
+
+    const prevBoxPos = getChartBoxPositions(effectivePreviousData)
+    const currBoxPos = getChartBoxPositions(currentData)
+    const graphLayoutChanged = !isEqual(prevNf.chartData, currNf.chartData) || !chartBoxPositionsEqual(prevBoxPos, currBoxPos)
+    if (graphLayoutChanged) {
+      diffOverrides.newsFlowChartGraphModified = true
     }
 
     if (currRefs.length > 0) {

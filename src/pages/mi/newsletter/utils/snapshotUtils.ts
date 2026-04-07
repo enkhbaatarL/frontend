@@ -104,10 +104,20 @@ export const filterVisibleNewsFlowItems = (items: IRelatedNewsEventItem[]): IRel
 /** `timestamp`가 없는 뉴스 항목에 `createdDate + createTime`으로 타임스탬프를 보강.
  *  차트 플러그인이 범위 밖 뉴스도 올바르게 표시할 수 있도록 모든 소비처에서 사용. */
 export const enrichNewsFlowItemTimestamps = (items: IRelatedNewsEventItem[]): IRelatedNewsEventItem[] =>
-  items.map((item) => ({
-    ...item,
-    timestamp: item.timestamp ?? createTimestampInNY(item.createdDate ?? '', item.createTime ?? ''),
-  }))
+  items.map((item) => {
+    const dateStr = item.createdDate ?? ''
+    const timeStr = item.createTime ?? ''
+    if (dateStr && timeStr) {
+      const computed = createTimestampInNY(dateStr, timeStr)
+      if (Number.isFinite(computed)) {
+        return { ...item, timestamp: computed }
+      }
+    }
+    return {
+      ...item,
+      timestamp: item.timestamp ?? createTimestampInNY(dateStr, timeStr),
+    }
+  })
 
 /** 뉴스 플로우 섹션 `blocks`에 `type === 'CHART'` 블록이 하나라도 있는지 */
 export const newsFlowSectionHasChartBlock = (section: INewsletterSnapshotSection | null | undefined): boolean =>
@@ -1270,6 +1280,54 @@ export const validateNewsletterEditSnapshotForSave = (
  */
 export const isNewsletterEditSnapshotValidForSave = (snapshot: INewsletterIssueSnapshotData | null | undefined): boolean =>
   validateNewsletterEditSnapshotForSave(snapshot).valid
+
+/** CHART 블록의 `fields.boxPositions` — 뉴스 박스 드래그 위치 (timestamp→{x,y}) */
+export const getChartBoxPositions = (snapshot: INewsletterIssueSnapshotData | null): Record<number, { x: number; y: number }> => {
+  if (!snapshot) return {}
+  const section = findPrimaryRelatedNewsSection(snapshot)
+  if (!section) return {}
+  const chartBlock = getBlockByType(section, 'CHART')
+  if (!chartBlock) return {}
+  const raw = (chartBlock.fields ?? {}) as Record<string, unknown>
+  const positions = raw.boxPositions
+  if (positions !== null && positions !== undefined && typeof positions === 'object' && !Array.isArray(positions)) {
+    return positions as Record<number, { x: number; y: number }>
+  }
+  return {}
+}
+
+/** CHART 블록의 `fields.boxPositions`를 갱신합니다 */
+export const updateChartBoxPositions = (
+  snapshot: INewsletterIssueSnapshotData,
+  boxPositions: Record<number, { x: number; y: number }>,
+): INewsletterIssueSnapshotData => {
+  const section = findPrimaryRelatedNewsSection(snapshot)
+  if (!section) return snapshot
+  const chartBlock = getBlockByType(section, 'CHART')
+  if (!chartBlock) return snapshot
+  return updateBlockFields(snapshot, section.id, chartBlock.id, { boxPositions })
+}
+
+/** 비교용: CHART `boxPositions`를 비웁니다. 레이아웃 변경은 스토어와 `chartBoxPositionsEqual`로 따로 봅니다 */
+export const stripChartBoxPositions = (snapshot: INewsletterIssueSnapshotData): INewsletterIssueSnapshotData =>
+  updateChartBoxPositions(snapshot, {})
+
+/** 수정 이력 diff — 박스 위치(드래그) 동일 여부 (JSON 키가 문자열로 올 수 있어 정규화) */
+export const chartBoxPositionsEqual = (
+  a: Record<number, { x: number; y: number }>,
+  b: Record<number, { x: number; y: number }>,
+): boolean => {
+  const keysA = new Set(Object.keys(a).map((k) => Number(k)))
+  const keysB = new Set(Object.keys(b).map((k) => Number(k)))
+  if (keysA.size !== keysB.size) return false
+  for (const k of keysA) {
+    if (!keysB.has(k)) return false
+    const pa = a[k]
+    const pb = b[k]
+    if (pa?.x !== pb?.x || pa?.y !== pb?.y) return false
+  }
+  return true
+}
 
 export const parseNewsletterIssueSnapshotData = (raw: unknown): INewsletterIssueSnapshotData | null => {
   if (!raw || typeof raw !== 'object') return null

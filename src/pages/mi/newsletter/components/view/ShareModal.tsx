@@ -3,7 +3,7 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded'
 import LinkRoundedIcon from '@mui/icons-material/LinkRounded'
 import { Box, Divider, IconButton, List, ListItem, Stack, Switch, Typography } from '@mui/material'
 import axios from 'axios'
-import { useCallback, useEffect, useMemo, useState, KeyboardEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, KeyboardEvent } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -88,6 +88,7 @@ const RECIPIENT_TYPE_ITEMS: SelectMenuItem<RecipientType>[] = (
 export interface ShareModalEditionMail {
   newsletterId: number
   issueNo: string
+  defaultSubject: string
   preparePayload: () => Promise<{ subject: string; htmlBody: string; images: File[] }>
   /** false면 차트 캡처 등 미준비 — 보내기 비활성 */
   canSend: boolean
@@ -111,6 +112,8 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
   const [saveRecipientList, setSaveRecipientList] = useState(false)
   const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null)
   const [isSendingEditionMail, setIsSendingEditionMail] = useState(false)
+  const [mailSubject, setMailSubject] = useState('')
+  const mailSubjectInitRef = useRef(false)
 
   const totalCount = toEmails.length + ccEmails.length + bccEmails.length
 
@@ -141,6 +144,17 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
       setIsSendingEditionMail(false)
     }
   }, [open, resetForm])
+
+  useEffect(() => {
+    if (!open) {
+      mailSubjectInitRef.current = false
+      return
+    }
+    if (!mailSubjectInitRef.current) {
+      mailSubjectInitRef.current = true
+      setMailSubject(editionMail?.defaultSubject ?? '')
+    }
+  }, [open, editionMail])
 
   const isValidEmail = useCallback((value: string) => EMAIL_REGEX.test(value.trim()), [])
   const isDuplicate = useCallback(
@@ -236,7 +250,8 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
       }
       setIsSendingEditionMail(true)
       try {
-        const { subject, htmlBody, images } = await editionMail.preparePayload()
+        const { subject: preparedSubject, htmlBody, images } = await editionMail.preparePayload()
+        const subject = mailSubject.trim() || preparedSubject
 
         await newsletterService.sendEditionMail(editionMail.newsletterId, editionMail.issueNo, {
           subject,
@@ -268,7 +283,18 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
     const flat = flattenRecipientBuckets(toEmails, ccEmails, bccEmails)
     await onSend?.(flat, saveRecipientList)
     onClose()
-  }, [editionMail, toEmails, ccEmails, bccEmails, persistRecipientListPreference, onSend, saveRecipientList, onClose, showSnackbar])
+  }, [
+    editionMail,
+    mailSubject,
+    toEmails,
+    ccEmails,
+    bccEmails,
+    persistRecipientListPreference,
+    onSend,
+    saveRecipientList,
+    onClose,
+    showSnackbar,
+  ])
 
   const canAdd = emailInput.trim() && totalCount < MAX_RECIPIENTS && isValidEmail(emailInput.trim()) && !isDuplicate(emailInput.trim())
 
@@ -290,7 +316,7 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
     <MIConfirm
       open={open}
       title="공유하기"
-      width={500}
+      width={620}
       handleClose={onClose}
       disableBackdropClick
       hideFooter
@@ -326,7 +352,32 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
         </Stack>
 
         <Stack gap="12px" padding="24px" flex={1} minHeight={0} overflow="hidden">
-          <Stack gap="4px">
+          {editionMail && (
+            <Stack gap="4px" flexShrink={0}>
+              <Typography variant="subtext2" color="contentText.Normal">
+                메일 제목
+              </Typography>
+              <MIMaskInput
+                multiline
+                minRows={1}
+                maxRows={2}
+                value={mailSubject}
+                onUpdateValue={(v) => setMailSubject(v ?? '')}
+                placeholder="메일 제목을 입력하세요"
+                sx={{
+                  '& .MuiInputBase-root': {
+                    alignItems: 'flex-start',
+                    py: '8px',
+                  },
+                }}
+              />
+            </Stack>
+          )}
+
+          <Stack>
+            <Typography variant="subtext2" color="contentText.Normal">
+              수신자 입력
+            </Typography>
             <Stack direction="row" gap="4px" alignItems="stretch" py="8px">
               <Stack
                 direction="row"

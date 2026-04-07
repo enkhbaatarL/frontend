@@ -4,13 +4,20 @@ import { cloneDeep } from 'lodash-es'
 import { useCallback, useMemo, useState } from 'react'
 
 import useSnackbar from '@/hooks/useSnackbar'
-import { sortNewsFlowNewsCardsByTimeForSave } from '@/pages/mi/newsletter/utils/snapshotUtils'
+import {
+  chartBoxPositionsEqual,
+  getChartBoxPositions,
+  sortNewsFlowNewsCardsByTimeForSave,
+  stripChartBoxPositions,
+  updateChartBoxPositions,
+} from '@/pages/mi/newsletter/utils/snapshotUtils'
 import newsletterService, {
   SaveRevisionConcurrencyError,
   SaveRevisionNetworkError,
   SaveRevisionValidationError,
   type INewsletterIssueSnapshotData,
 } from '@/service/mi/newsletter'
+import useChartEditStore from '@/store/useChartEditStore'
 import { canonicalizeSnapshotLikeServer } from '@/utils/newsletterSnapshotCanonicalize'
 
 export interface UseSaveNewsletterRevisionParams {
@@ -34,16 +41,28 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
   const { showSnackbar } = useSnackbar()
   const [isSaving, setIsSaving] = useState(false)
   const [isSavingDraft, setIsSavingDraft] = useState(false)
+  /** 드래그 중(mouseup 전) 레이아웃만 바뀐 경우 — 스냅샷에는 아직 없을 수 있음 */
+  const storeBoxPositions = useChartEditStore((s) => s.boxPositions)
 
-  /** `newsletterService.saveFinalRevision`과 동일한 기준 — 실제 전송될 델타가 있을 때만 true */
-  const hasUnsavedChanges = useMemo(() => {
+  /** 레이아웃 제외 변경분 — `storeBoxPositions` 갱신마다 전체 diff를 돌리지 않음 */
+  const hasNonLayoutUnsavedChanges = useMemo(() => {
     if (!baseSnapshot || !currentState) return false
-    const stateToCompare = sortNewsFlowNewsCardsByTimeForSave(currentState)
-    const baseNorm = canonicalizeSnapshotLikeServer(baseSnapshot)
-    const currentNorm = canonicalizeSnapshotLikeServer(stateToCompare)
+    const baseStripped = stripChartBoxPositions(baseSnapshot)
+    const currentStripped = stripChartBoxPositions(currentState)
+    const baseSorted = sortNewsFlowNewsCardsByTimeForSave(baseStripped)
+    const currentSorted = sortNewsFlowNewsCardsByTimeForSave(currentStripped)
+    const baseNorm = canonicalizeSnapshotLikeServer(baseSorted)
+    const currentNorm = canonicalizeSnapshotLikeServer(currentSorted)
     const deltas = compare(cloneDeep(baseNorm) as object, cloneDeep(currentNorm) as object)
     return deltas.length > 0
   }, [baseSnapshot, currentState])
+
+  const hasLayoutUnsavedChanges = useMemo(() => {
+    if (!baseSnapshot) return false
+    return !chartBoxPositionsEqual(getChartBoxPositions(baseSnapshot), storeBoxPositions)
+  }, [baseSnapshot, storeBoxPositions])
+
+  const hasUnsavedChanges = hasNonLayoutUnsavedChanges || hasLayoutUnsavedChanges
 
   const saveFinalRevision = useCallback(async (): Promise<{ success: boolean }> => {
     if (!newsletterId || !issueNo || !baseSnapshot || !currentState) {
@@ -51,8 +70,9 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
       return { success: false }
     }
 
-    /** 저장 시 관련 뉴스 order를 시간순으로 맞춘 스냅샷 (CHART는 order 0 고정) */
-    const stateToSave = sortNewsFlowNewsCardsByTimeForSave(currentState)
+    /** mouseup 전 저장 대비: 스토어의 최신 박스 좌표를 병합 */
+    const merged = updateChartBoxPositions(currentState, useChartEditStore.getState().boxPositions)
+    const stateToSave = sortNewsFlowNewsCardsByTimeForSave(merged)
 
     setIsSaving(true)
     try {
@@ -108,7 +128,8 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
       return { success: false }
     }
 
-    const stateToSave = sortNewsFlowNewsCardsByTimeForSave(currentState)
+    const merged = updateChartBoxPositions(currentState, useChartEditStore.getState().boxPositions)
+    const stateToSave = sortNewsFlowNewsCardsByTimeForSave(merged)
 
     setIsSavingDraft(true)
     try {

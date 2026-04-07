@@ -10,6 +10,7 @@ import { useNewsletterCoverAndChartProps } from '@/pages/mi/newsletter/hooks/use
 import {
   enrichNewsFlowItemTimestamps,
   filterVisibleNewsFlowItems,
+  getChartBoxPositions,
   shouldSuppressNewsFlowChartUi,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
 import { NewsletterDetailPageMode } from '@/service/mi/newsletter'
@@ -39,6 +40,7 @@ const NewsletterView = ({
   )
 
   const suppressNewsFlowChart = shouldSuppressNewsFlowChartUi(snapshot)
+  const savedBoxPositions = getChartBoxPositions(snapshot)
 
   return (
     <>
@@ -93,6 +95,7 @@ const NewsletterView = ({
               marketOpenTime={marketOpenTime}
               marketCloseTime={marketCloseTime}
               onChartImageReady={onMainChartImageReady}
+              boxPositions={Object.keys(savedBoxPositions).length > 0 ? savedBoxPositions : undefined}
             />
           )
         }

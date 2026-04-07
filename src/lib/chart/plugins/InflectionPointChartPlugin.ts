@@ -31,6 +31,8 @@ interface InflectionPointPluginOptions {
   enableBoxDragging?: boolean
   boxPositions?: Record<number, { x: number; y: number }>
   onBoxPositionChange?: (timestamp: number, position: { x: number; y: number }) => void
+  /** 박스 드래그를 놓았을 때(실제 이동이 있었을 때만) — 스냅샷 반영 등 */
+  onBoxDragEnd?: () => void
   onInitialPositionsSet?: (positions: Record<number, { x: number; y: number }>) => void
   titleEdits?: Record<number, string>
   onTitleEditStart?: (info: { timestamp: number; x: number; y: number; width: number; height: number; title: string }) => void
@@ -130,6 +132,9 @@ const boxInfoMap = new Map<string, BoxInfo[]>()
 
 // 차트별 초기 위치 저장 (충돌 검사 후 최적화된 위치)
 const initialPositionsMap = new Map<string, Record<number, { x: number; y: number }>>()
+
+/** canvas id만으로 캐시하면 버전 전환(최초↔최신) 시 이전 스냅샷 좌표가 재사용됨 → 시그니처로 무효화 */
+const layoutSignatureByChartId = new Map<string, string>()
 
 // 드래그 상태 초기화
 const CLICK_THRESHOLD = 5
@@ -670,6 +675,33 @@ const adjustDuplicateTimestamps = (news: IRelatedNewsEventItem[]): IRelatedNewsE
   return adjustedNews
 }
 
+const buildInflectionLayoutSignature = (
+  chartArea: { left: number; top: number; right: number; bottom: number },
+  visibleNews: IRelatedNewsEventItem[],
+  timestamps: number[],
+  boxPositions?: Record<number, { x: number; y: number }>,
+  titleEdits?: Record<number, string>,
+): string => {
+  const areaPart = `${Math.round(chartArea.left)}:${Math.round(chartArea.top)}:${Math.round(chartArea.right)}:${Math.round(chartArea.bottom)}`
+  const newsPart = visibleNews.map((n) => `${n.newsId}:${n.timestamp}:${n.title ?? ''}`).join('\u001e')
+  const tsPart = timestamps.join(',')
+  const bp = boxPositions ?? {}
+  const bpPart = Object.entries(bp as Record<string, { x: number; y: number }>)
+    .map(([k, v]) => {
+      if (!v || typeof v.x !== 'number' || typeof v.y !== 'number') return ''
+      return `${Number(k)}:${v.x},${v.y}`
+    })
+    .filter(Boolean)
+    .sort()
+    .join(';')
+  const te = titleEdits ?? {}
+  const tePart = Object.entries(te as Record<string, string>)
+    .map(([k, v]) => `${Number(k)}:${v}`)
+    .sort()
+    .join('\u001f')
+  return `${areaPart}\u001d${tsPart}\u001e${newsPart}\u001e${bpPart}\u001e${tePart}`
+}
+
 /**
  * - 범위 내: 가장 가까운 타임스탬프 인덱스
  * - 범위 이후: 유효한 데이터가 있는 마지막 인덱스 (isOutOfRange: true)
@@ -756,6 +788,24 @@ const drawNewsMarkers = (
 
   const visibleNews = adjustDuplicateTimestamps(relatedNews.filter((news) => news.showInChart)).reverse()
   if (!visibleNews.length) return
+
+  // 드래그 중 boxPositions가 매 프레임 바뀌면 시그니처가 계속 달라져 캐시·히트박스가 흔들림.
+  // 드래그 중에는 시그니처에서 좌표를 빼고, 놓은 뒤 한 번만 전체 시그니처로 동기화.
+  const dragStateForSig = dragStateMap.get(chartId)
+  const omitBoxPosFromLayoutSig = Boolean(options?.enableBoxDragging && dragStateForSig?.isDragging)
+  const layoutSig = buildInflectionLayoutSignature(
+    chartArea,
+    visibleNews,
+    timestamps,
+    omitBoxPosFromLayoutSig ? undefined : boxPositions,
+    options?.titleEdits,
+  )
+  const prevSig = layoutSignatureByChartId.get(chartId)
+  if (prevSig !== layoutSig) {
+    layoutSignatureByChartId.set(chartId, layoutSig)
+    initialPositionsMap.delete(chartId)
+    boxInfoMap.delete(chartId)
+  }
 
   ctx.save()
 
@@ -1019,6 +1069,7 @@ const InflectionPointChartPlugin: Plugin = {
       }
     } else if (event.type === 'mouseup') {
       if (dragState.isMouseDown) {
+        const endedBoxDrag = dragState.isDragging
         if (!dragState.isDragging) {
           const clickedBox = findTopBoxAtPoint(x, y, boxes)
           if (clickedBox?.timestamp && clickedBox.title && clickedBox.titleArea) {
@@ -1039,6 +1090,10 @@ const InflectionPointChartPlugin: Plugin = {
 
         if (chart.canvas) {
           chart.canvas.style.cursor = 'default'
+        }
+
+        if (endedBoxDrag) {
+          pluginOptions.onBoxDragEnd?.()
         }
 
         args.changed = true
