@@ -113,7 +113,7 @@ const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> 
             label: 'Login',
             onClick: async () => {
               useDialog.getState().onHide()
-              navigateFn('/')
+              globalThis.location.href = '/'
             },
           },
         ],
