@@ -1,4 +1,3 @@
-import { QueryClient } from '@tanstack/react-query'
 import Axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { t } from 'i18next'
 import { NavigateFunction } from 'react-router-dom'
@@ -7,7 +6,7 @@ import { ISnackbarOptions } from '@/hooks/useSnackbar'
 import i18n from '@/lib/i18n'
 import useAuthStore from '@/store/useAuthStore'
 import useDialog from '@/store/useDialog'
-import { triggerLayoutReset } from '@/utils/resetLayout'
+
 export interface HttpResponse<T> {
   status: number
   code: string
@@ -15,15 +14,12 @@ export interface HttpResponse<T> {
   data?: T
 }
 
-export const queryClient = new QueryClient()
-
 export interface ErrorHandlerOptions {
   showSnackbar: (message: string, options?: ISnackbarOptions) => void
 }
 
 let navigateFn: NavigateFunction
 
-// 페이지 이동 시 다이얼로그를 닫도록 처리
 const wrapNavigateFn = (navFn: NavigateFunction): NavigateFunction =>
   ((to, options) => {
     const { visible, onHide } = useDialog.getState()
@@ -85,83 +81,113 @@ api.interceptors.request.use((req) => {
   return req
 })
 
-let isRefreshing = false
-let requestQueue: (() => void)[] = []
+/* ── 토큰 갱신 & 재시도 ── */
 
-/** 토큰만료 재발급 process */
-const reissueToken = async (config?: InternalAxiosRequestConfig): Promise<void> => {
-  const { token: savedToken } = useAuthStore.getState()
-  const processQueue = (): Promise<void> =>
-    new Promise((resolve) => {
-      for (const callback of requestQueue) {
-        callback()
+let isRefreshing = false
+let failedQueue: {
+  resolve: (value: AxiosResponse) => void
+  reject: (reason?: unknown) => void
+  config: InternalAxiosRequestConfig
+}[] = []
+
+const showExpiredSessionDialog = () => {
+  const { onShow, onHide } = useDialog.getState()
+  onHide()
+  onShow({
+    title: t('세션이 만료되었습니다.'),
+    disableClose: true,
+    zIndex: 1600,
+    actions: [
+      {
+        label: 'Login',
+        onClick: async () => {
+          useDialog.getState().onHide()
+          globalThis.location.href = '/'
+        },
+      },
+    ],
+  })
+}
+
+const drainQueue = (error: AxiosError | null, newToken: string | null = null) => {
+  for (const entry of failedQueue) {
+    if (error) {
+      entry.reject(error)
+    } else {
+      if (newToken && entry.config.headers) {
+        entry.config.headers['Authorization'] = `Bearer ${newToken}`
       }
-      requestQueue = []
-      resolve()
-    })
-  const errorNavigate = () => {
-    requestQueue = []
-    const { onShow, onHide } = useDialog.getState()
-    onHide()
-    const handleDelete = () => {
-      onShow({
-        title: t('세션이 만료되었습니다.'),
-        disableClose: true,
-        zIndex: 1600,
-        actions: [
-          {
-            label: 'Login',
-            onClick: async () => {
-              useDialog.getState().onHide()
-              globalThis.location.href = '/'
-            },
-          },
-        ],
-      })
+      entry.resolve(api(entry.config) as unknown as AxiosResponse)
     }
-    handleDelete()
   }
-  if (!savedToken) return errorNavigate()
+  failedQueue = []
+}
+
+/**
+ * AUTH-003 토큰 만료 시 토큰을 갱신하고 원래 요청을 재시도한 결과를 반환한다.
+ * 동시 다발 요청이 실패해도 토큰 갱신은 한 번만 수행하고,
+ * 나머지는 큐에 쌓았다가 갱신 완료 후 일괄 재시도한다.
+ */
+const refreshAndRetry = async (failedConfig: InternalAxiosRequestConfig): Promise<AxiosResponse> => {
   if (isRefreshing) {
-    return new Promise((resolve) => {
-      requestQueue.push(() => resolve())
+    return new Promise<AxiosResponse>((resolve, reject) => {
+      failedQueue.push({ resolve, reject, config: failedConfig })
     })
   }
+
   isRefreshing = true
+
   try {
-    const originalRequest = config
-    if (originalRequest) requestQueue.push(() => api(originalRequest))
-    const response = await fetch('/api/v1/auth/token-generation', {
+    const { token: savedToken } = useAuthStore.getState()
+    if (!savedToken) {
+      drainQueue(null)
+      showExpiredSessionDialog()
+      throw new Error('No saved token')
+    }
+
+    const res = await fetch('/api/v1/auth/token-generation', {
       method: 'POST',
       headers: { Authorization: `Bearer ${savedToken}` },
       credentials: 'include',
     })
-    if (!response.ok) return errorNavigate()
-    const data = await response.json()
-    const newToken = data?.data?.accessToken
+
+    if (!res.ok) {
+      drainQueue(null)
+      showExpiredSessionDialog()
+      throw new Error('Token refresh failed')
+    }
+
+    const data = await res.json()
+    const newToken: string = data?.data?.accessToken
     useAuthStore.setState({ token: newToken })
-    await processQueue()
-    setTimeout(() => {
-      triggerLayoutReset()
-    }, 200)
-  } catch {
-    errorNavigate()
+
+    failedConfig.headers['Authorization'] = `Bearer ${newToken}`
+    drainQueue(null, newToken)
+    return api(failedConfig)
+  } catch (err) {
+    const isHandledRefreshExit = err instanceof Error && (err.message === 'No saved token' || err.message === 'Token refresh failed')
+    if (!isHandledRefreshExit) {
+      drainQueue(err as AxiosError)
+      showExpiredSessionDialog()
+    }
+    throw err
   } finally {
-    requestQueue = []
     isRefreshing = false
   }
-
-  return Promise.resolve()
 }
 
 const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
   const status = error.response?.status
   const code = error.response?.data?.code
   const statusText = error.response?.statusText ?? t('알 수 없는 오류')
+  const originalConfig = error.config
 
   if (status && status >= 400) {
-    const { visible, onHide } = useDialog.getState()
+    if (code === 'AUTH-003' && originalConfig) {
+      return refreshAndRetry(originalConfig)
+    }
 
+    const { visible, onHide } = useDialog.getState()
     if (visible) {
       onHide()
     }
@@ -173,9 +199,7 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
       // case 'AUTH-002': // 잘못된 자격증명
       // case 'AUTH-006': // 계정 잠김  계정이 잠겼습니다. 관리자에게 문의하세요.
       // case 'AUTH-004': // 토큰 무효
-      case 'AUTH-003': // 토큰 만료
-        await reissueToken(error.config)
-        break
+      // case 'AUTH-003': // 토큰 만료
       case 'SYS-999': // 401 unknown Error
       case 'AUTH-005': // 권한 부족
       case 'AUTH-007': // 접근 거부
@@ -190,11 +214,11 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
         break
     }
   }
-  return Promise.reject(error)
+  throw error
 }
 
 api.interceptors.response.use(
-  async (res: AxiosResponse) => res,
+  (res: AxiosResponse) => res,
   (error: AxiosError<HttpResponse<unknown>>) => errorHandler(error),
 )
 

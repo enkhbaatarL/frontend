@@ -1,6 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react'
-
-import { setTriggerResetFn } from '@/utils/resetLayout'
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react'
 interface ResetKeyContextType {
   resetKey: number
   triggerReset: () => void
@@ -17,11 +15,10 @@ export const ResetKeyProvider = ({ children }: { children: ReactNode }) => {
   const triggerReset = useCallback(() => {
     setResetKey((prev) => prev + 1)
   }, [])
-  useEffect(() => {
-    setTriggerResetFn(triggerReset)
-  }, [])
 
-  return <ResetKeyContext.Provider value={{ resetKey, triggerReset }}>{children}</ResetKeyContext.Provider>
+  const value = useMemo(() => ({ resetKey, triggerReset }), [resetKey, triggerReset])
+
+  return <ResetKeyContext.Provider value={value}>{children}</ResetKeyContext.Provider>
 }
 
 export const useResetKeyContext = () => useContext(ResetKeyContext)
