@@ -37,6 +37,7 @@ export const useOilPriceRowImageCapture = (
       onOilPriceRowImageReady('')
       return () => {}
     }
+    onOilPriceRowImageReady('')
     const timer = setTimeout(captureOilPriceRow, 500)
     return () => clearTimeout(timer)
   }, [showOilRow, titleProps.priceChangeFrom, titleProps.priceChangeTo, captureOilPriceRow, onOilPriceRowImageReady])
