@@ -746,6 +746,10 @@ export const getSectionsInOrder = (snapshot: INewsletterIssueSnapshotData | null
   return [...snapshot.sections].filter((s) => s.visibility && s.removed !== true).sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
 }
 
+/** `EmailContent`에 COVER 행이 포함되는지 — 뷰에서 `tempHideCover` 밖 단독 커버 블록 노출과 동기화 */
+export const isNewsletterCoverInRenderedSections = (snapshot: INewsletterIssueSnapshotData | null): boolean =>
+  getSectionsInOrder(snapshot).some((s) => newsletterSectionToEmailTemplateKind(s) === 'COVER')
+
 /** COVER·FOOTER는 편집기에서 양 끝 고정 — 순서 변경 diff에서 제외 */
 const isFixedEndSectionOrderId = (snapshot: INewsletterIssueSnapshotData, sectionId: string): boolean => {
   const s = snapshot.sections.find((sec) => sec.id === sectionId)

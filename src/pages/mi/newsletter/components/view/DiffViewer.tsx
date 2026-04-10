@@ -17,6 +17,7 @@ import {
   filterVisibleNewsFlowItems,
   findFirstSectionByCanonicalCode,
   getChartBoxPositions,
+  isNewsletterCoverInRenderedSections,
   NEWSLETTER_SECTION_CODE,
   shouldSuppressNewsFlowChartUi,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
@@ -118,46 +119,49 @@ const DiffViewer = ({
   const coverContentDiff = !!(diffOverrides?.name || diffOverrides?.description)
   const coverOrderOnly =
     !!coverSection?.id && !coverContentDiff && !!diffOverrides?.sectionOrderChangedSectionIds?.includes(coverSection.id)
+  const showAnimatedCover = isNewsletterCoverInRenderedSections(displaySnapshot)
 
   return (
     <>
-      <Box pb="38px">
-        <Collapse
-          in={!isScrolled}
-          timeout={400}
-          sx={{
-            '& .MuiCollapse-wrapperInner': {
-              display: 'flex',
-              flexDirection: 'column',
-            },
-          }}
-        >
-          <Box
-            style={{
-              transform: `translateY(${isScrolled ? -6 : 0}px)`,
-              opacity: isScrolled ? 0 : 1,
-              transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
-              transitionDelay: isScrolled ? '0s' : '0.2s',
+      {showAnimatedCover && (
+        <Box pb="38px">
+          <Collapse
+            in={!isScrolled}
+            timeout={400}
+            sx={{
+              '& .MuiCollapse-wrapperInner': {
+                display: 'flex',
+                flexDirection: 'column',
+              },
             }}
           >
-            <div ref={coverRef} id="section-cover" style={{ position: 'relative' }}>
-              {(diffOverrides?.name || diffOverrides?.description) && (
-                <ChangedLabel diffHtmls={[diffOverrides?.name, diffOverrides?.description]} />
-              )}
-              {coverOrderOnly && <ChangedLabel labelKind="reordered" />}
-              <Cover
-                image={coverProps.imageBase64}
-                frequency={coverProps.frequency}
-                name={coverProps.name}
-                description={coverProps.description}
-                showImage={coverProps.showImage}
-                nameDiffHtml={diffOverrides?.name}
-                descriptionDiffHtml={diffOverrides?.description}
-              />
-            </div>
-          </Box>
-        </Collapse>
-      </Box>
+            <Box
+              style={{
+                transform: `translateY(${isScrolled ? -6 : 0}px)`,
+                opacity: isScrolled ? 0 : 1,
+                transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+                transitionDelay: isScrolled ? '0s' : '0.2s',
+              }}
+            >
+              <div ref={coverRef} id="section-cover" style={{ position: 'relative' }}>
+                {(diffOverrides?.name || diffOverrides?.description) && (
+                  <ChangedLabel diffHtmls={[diffOverrides?.name, diffOverrides?.description]} />
+                )}
+                {coverOrderOnly && <ChangedLabel labelKind="reordered" />}
+                <Cover
+                  image={coverProps.imageBase64}
+                  frequency={coverProps.frequency}
+                  name={coverProps.name}
+                  description={coverProps.description}
+                  showImage={coverProps.showImage}
+                  nameDiffHtml={diffOverrides?.name}
+                  descriptionDiffHtml={diffOverrides?.description}
+                />
+              </div>
+            </Box>
+          </Collapse>
+        </Box>
+      )}
 
       <OilPriceRowEmailCapture snapshot={displaySnapshot} onOilPriceRowImageReady={onOilPriceRowImageReady} />
 
