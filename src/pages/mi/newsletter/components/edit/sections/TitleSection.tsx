@@ -1,5 +1,6 @@
 import EastIcon from '@mui/icons-material/East'
 import { Box, Stack, Typography } from '@mui/material'
+import { memo } from 'react'
 
 import MIMaskInput from '@/components/common/input/MIMaskInput'
 import Block, { type BlockOrderProps } from '@/pages/mi/newsletter/components/edit/sections/Block'
@@ -111,4 +112,4 @@ const TitleSection = ({
   )
 }
 
-export default TitleSection
+export default memo(TitleSection)

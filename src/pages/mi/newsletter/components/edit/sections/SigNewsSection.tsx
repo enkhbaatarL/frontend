@@ -1,7 +1,7 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import { Stack } from '@mui/material'
 import dayjs from 'dayjs'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, memo } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIMaskInput from '@/components/common/input/MIMaskInput'
@@ -93,14 +93,15 @@ const SigNewsSection = ({
   const handleNewsOrderChange = useCallback(
     (newsId: string, targetIndex: number) => {
       if (!onRelatedNewsChange) return
-      const visible = filterVisibleNewsFlowItems(relatedNews)
-      const fromIndex = visible.findIndex((n) => n.newsId === newsId)
+      const active = filterVisibleNewsFlowItems(relatedNews)
+      const fromIndex = active.findIndex((n) => n.newsId === newsId)
       if (fromIndex < 0 || targetIndex === fromIndex) return
-      const nextVisible = [...visible]
-      const [moved] = nextVisible.splice(fromIndex, 1)
-      nextVisible.splice(targetIndex, 0, moved!)
-      const hidden = relatedNews.filter((n) => n.removed === true)
-      onRelatedNewsChange([...nextVisible, ...hidden])
+      const nextActive = [...active]
+      const [moved] = nextActive.splice(fromIndex, 1)
+      nextActive.splice(targetIndex, 0, moved!)
+      let i = 0
+      const merged = relatedNews.map((n) => (n.removed === true ? n : nextActive[i++]!))
+      onRelatedNewsChange(merged)
     },
     [onRelatedNewsChange, relatedNews],
   )
@@ -199,7 +200,7 @@ const SigNewsSection = ({
               fieldDefs={newsCardTemplateFieldDefs}
             />
             {/* <Typography variant="body3" color="contentText.Subtext">
-              수정 또는 추가한 뉴스는 저장 후 시간 순으로 자동 정렬됩니다.
+              저장 시 뉴스 카드 순서는 편집 화면에서 정한 순서가 유지됩니다.
             </Typography> */}
           </Stack>
         )}
@@ -208,4 +209,4 @@ const SigNewsSection = ({
   )
 }
 
-export default SigNewsSection
+export default memo(SigNewsSection)

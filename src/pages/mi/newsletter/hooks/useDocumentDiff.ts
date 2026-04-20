@@ -2,12 +2,17 @@ import { applyPatch } from 'fast-json-patch'
 import { cloneDeep, isEqual } from 'lodash-es'
 import { useMemo } from 'react'
 
+import type { SectionRemovedLifecycle, SectionVisibilityLifecycle } from '@/pages/mi/newsletter/utils/snapshotUtils'
 import type { INewsletterIssueSnapshotData, IJsonPatchOpRes, IRevisionChangeDetailResponse } from '@/service/mi/newsletter'
 import type { Operation } from 'fast-json-patch'
 
 import {
   chartBoxPositionsEqual,
-  computeDirectOrderChangeSectionIds,
+  computeOrderFieldChangeSectionIds,
+  computeSectionOrderRankPositions,
+  computeSectionOrderScreenRankPositions,
+  computeSectionRemovedChanges,
+  computeSectionVisibilityChanges,
   getChartBoxPositions,
   getCoverProps,
   getDateIssueProps,
@@ -48,8 +53,14 @@ export type DiffOverrides = {
   referenceDescriptions?: string[]
   relatedNewsTitles?: string[]
   relatedNewsContents?: string[]
-  /** 순서만 바뀐(또는 순서+내용) 섹션 — UI에서 `변경됨` 표시용. 직접 이동한 섹션 id만 담음 */
+  /** `order` 필드가 바뀐 섹션 id (가시 리스트 인덱스와 무관) */
   sectionOrderChangedSectionIds?: string[]
+  /** 비삭제·가시성 무시 코호트에서의 1-based 순번(실제) */
+  sectionOrderChangePositions?: Record<string, { from: number; to: number }>
+  /** 가시·비삭제 코호트에서의 1-based 순번(메일 노출 순) — 실제와 다를 때 라벨 병기 */
+  sectionOrderChangeScreenPositions?: Record<string, { from: number; to: number }>
+  sectionVisibilityChanges?: Record<string, SectionVisibilityLifecycle>
+  sectionRemovedChanges?: Record<string, SectionRemovedLifecycle>
   /** 레퍼런스/사용자 추가 섹션의 블록별 diff. 배열 인덱스는 orderedReferenceSections 기준 */
   referenceBlockChanges?: Record<string, ReferenceBlockDiff>[]
 }
@@ -336,9 +347,31 @@ export const useDocumentDiff = (
       if (contents.some(Boolean)) diffOverrides.relatedNewsContents = contents
     }
 
-    const sectionOrderChangedSectionIds = computeDirectOrderChangeSectionIds(previousData, currentData)
+    const sectionOrderChangedSectionIds = computeOrderFieldChangeSectionIds(previousData, currentData)
     if (sectionOrderChangedSectionIds.length > 0) {
       diffOverrides.sectionOrderChangedSectionIds = sectionOrderChangedSectionIds
+      const sectionOrderChangePositions = computeSectionOrderRankPositions(previousData, currentData, sectionOrderChangedSectionIds)
+      if (Object.keys(sectionOrderChangePositions).length > 0) {
+        diffOverrides.sectionOrderChangePositions = sectionOrderChangePositions
+      }
+      const sectionOrderChangeScreenPositions = computeSectionOrderScreenRankPositions(
+        previousData,
+        currentData,
+        sectionOrderChangedSectionIds,
+      )
+      if (Object.keys(sectionOrderChangeScreenPositions).length > 0) {
+        diffOverrides.sectionOrderChangeScreenPositions = sectionOrderChangeScreenPositions
+      }
+    }
+
+    const sectionVisibilityChanges = computeSectionVisibilityChanges(previousData, currentData)
+    if (Object.keys(sectionVisibilityChanges).length > 0) {
+      diffOverrides.sectionVisibilityChanges = sectionVisibilityChanges
+    }
+
+    const sectionRemovedChanges = computeSectionRemovedChanges(previousData, currentData)
+    if (Object.keys(sectionRemovedChanges).length > 0) {
+      diffOverrides.sectionRemovedChanges = sectionRemovedChanges
     }
 
     return { previousData, currentData, diffOverrides }

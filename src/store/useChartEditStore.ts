@@ -28,10 +28,6 @@ interface ChartEditState {
   resetChartSettings: () => void
 }
 
-/** 드래그 중 mousemove 연속 호출 시 RAF로 배치하여 무한 루프 방지 */
-let boxPositionRafId: number | null = null
-let pendingBoxPosition: { timestamp: number; position: BoxPosition } | null = null
-
 const useChartEditStore = create<ChartEditState>((set) => ({
   showVolumePanel: true,
   showChartToolbar: false,
@@ -43,22 +39,12 @@ const useChartEditStore = create<ChartEditState>((set) => ({
   setShowChartToolbar: (value) => set({ showChartToolbar: value }),
   setChartType: (value) => set({ chartType: value }),
   onBoxPositionChange: (timestamp, position) => {
-    pendingBoxPosition = { timestamp, position }
-    if (boxPositionRafId !== null) return
-
-    boxPositionRafId = requestAnimationFrame(() => {
-      if (pendingBoxPosition) {
-        const { timestamp: ts, position: pos } = pendingBoxPosition
-        set((state) => ({
-          boxPositions: {
-            ...state.boxPositions,
-            [ts]: pos,
-          },
-        }))
-        pendingBoxPosition = null
-      }
-      boxPositionRafId = null
-    })
+    set((state) => ({
+      boxPositions: {
+        ...state.boxPositions,
+        [timestamp]: position,
+      },
+    }))
   },
   setBoxPositions: (positions) => set({ boxPositions: positions }),
   resetBoxPositions: () => set({ boxPositions: {}, titleEdits: {} }),

@@ -1,4 +1,5 @@
 import { Box, Stack } from '@mui/material'
+import { memo } from 'react'
 
 import type { INewsletterSnapshotFieldDef } from '@/service/mi/newsletter'
 import type { Dayjs } from 'dayjs'
@@ -142,4 +143,4 @@ const NewsFormFields = ({
   )
 }
 
-export default NewsFormFields
+export default memo(NewsFormFields)

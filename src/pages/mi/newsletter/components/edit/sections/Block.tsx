@@ -1,12 +1,15 @@
 import { KeyboardArrowDownRounded, KeyboardArrowUpRounded, Visibility, VisibilityOff, DeleteRounded } from '@mui/icons-material'
 import { Box, Collapse, Stack, Typography } from '@mui/material'
-import { useEffect, useState, type ReactNode } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MISimpleConfirm from '@/components/common/confirm/MISimpleConfirm'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import { BlockContext, useIsInsideBlock } from '@/contexts/BlockContext'
 import useSnackbar from '@/hooks/useSnackbar'
+
+const noopHandler = () => {}
+const visibilityBtnSx = { padding: '8px 10px' } as const
 
 export interface BlockOrderProps {
   siblingIds: string[]
@@ -61,32 +64,72 @@ const Block = ({
   const orderSelectDisabled = fixed || Boolean(order?.disabled)
   const hasOrder = !fixed && order && order.siblingIds.length > 0
   const currentIndex = order ? order.siblingIds.indexOf(order.currentId) : 0
-  const orderItems = hasOrder
-    ? order.siblingIds.map((id, i) => ({
-      label: String(i + 1).padStart(2, '0'),
-      value: id,
-    }))
-    : []
 
-  const handleOrderSelect = (selectedId: string) => {
-    if (!order) return
-    const targetIndex = order.siblingIds.indexOf(selectedId)
-    if (targetIndex >= 0 && targetIndex !== currentIndex) {
-      order.onOrderChange(targetIndex)
-    }
-  }
+  const orderItems = useMemo(
+    () =>
+      hasOrder
+        ? order.siblingIds.map((id, i) => ({
+          label: String(i + 1).padStart(2, '0'),
+          value: id,
+        }))
+        : [],
+    [hasOrder, order?.siblingIds],
+  )
 
-  const getOrderSelectItems = () => {
+  const handleOrderSelect = useCallback(
+    (selectedId: string) => {
+      if (!order) return
+      const targetIndex = order.siblingIds.indexOf(selectedId)
+      if (targetIndex >= 0 && targetIndex !== currentIndex) {
+        order.onOrderChange(targetIndex)
+      }
+    },
+    [order, currentIndex],
+  )
+
+  const orderSelectItems = useMemo(() => {
     if (fixed) return [{ label: 'Fixed', value: 'fixed' }]
     if (hasOrder) return orderItems
     return [{ label: '01', value: '1' }]
-  }
+  }, [fixed, hasOrder, orderItems])
 
-  const getOrderSelectSelected = () => {
+  const orderSelectSelected = useMemo(() => {
     if (fixed) return 'fixed'
-    if (hasOrder) return order.currentId
+    if (hasOrder && order) return order.currentId
     return '1'
-  }
+  }, [fixed, hasOrder, order])
+
+  const handleVisibilityToggle = useCallback(() => {
+    const next = !isVisible
+    if (onVisibilityChange) onVisibilityChange(next)
+    setIsVisible(next)
+  }, [isVisible, onVisibilityChange])
+
+  const handleCollapseToggle = useCallback(() => setIsCollapsed((prev) => !prev), [])
+  const handleConfirmOpen = useCallback(() => setIsConfirmDialogOpen(true), [])
+  const handleConfirmClose = useCallback(() => setIsConfirmDialogOpen(false), [])
+
+  const confirmActions = useMemo(
+    () => [
+      {
+        children: '취소',
+        variant: 'outlined' as const,
+        color: 'secondary' as const,
+        onClick: () => setIsConfirmDialogOpen(false),
+      },
+      {
+        children: '삭제',
+        variant: 'contained' as const,
+        color: 'error' as const,
+        onClick: () => {
+          onDelete?.()
+          showSnackbar('항목이 삭제 되었습니다.', { variant: 'success' })
+          setIsConfirmDialogOpen(false)
+        },
+      },
+    ],
+    [onDelete, showSnackbar],
+  )
 
   useEffect(() => {
     if (!isVisible) {
@@ -123,31 +166,20 @@ const Block = ({
                 label={label}
                 variant="outlined"
                 placement="bottom-end"
-                selected={getOrderSelectSelected()}
-                onSelected={hasOrder && !orderSelectDisabled ? handleOrderSelect : () => {}}
-                items={getOrderSelectItems()}
+                selected={orderSelectSelected}
+                onSelected={hasOrder && !orderSelectDisabled ? handleOrderSelect : noopHandler}
+                items={orderSelectItems}
                 closeOnScroll
                 disabled={orderSelectDisabled}
               />
-              <MIBaseButton
-                variant="outlined"
-                onClick={() => {
-                  const next = !isVisible
-                  if (onVisibilityChange) onVisibilityChange(next)
-                  setIsVisible(next)
-                }}
-                enableHoverBackground
-                sx={{
-                  padding: '8px 10px',
-                }}
-              >
+              <MIBaseButton variant="outlined" onClick={handleVisibilityToggle} enableHoverBackground sx={visibilityBtnSx}>
                 {isVisible ? <Visibility fontSize="small" /> : <VisibilityOff fontSize="small" sx={{ color: 'contentIcon.Enabled' }} />}
               </MIBaseButton>
               {customSlot}
               {onDelete && (
                 <MIBaseButton
                   variant="outlined"
-                  onClick={() => setIsConfirmDialogOpen(true)}
+                  onClick={handleConfirmOpen}
                   enableHoverBackground
                   sx={{
                     padding: '8px 10px',
@@ -202,13 +234,7 @@ const Block = ({
                   </Typography>
                 </Box>
               )}
-              <MIBaseButton
-                variant="text"
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                sx={{
-                  padding: '8px 10px',
-                }}
-              >
+              <MIBaseButton variant="text" onClick={handleCollapseToggle} sx={visibilityBtnSx}>
                 {isCollapsed ? (
                   <KeyboardArrowDownRounded fontSize="small" sx={{ color: 'contentIcon.Enabled' }} />
                 ) : (
@@ -228,29 +254,12 @@ const Block = ({
         <MISimpleConfirm
           open={isConfirmDialogOpen}
           content="선택한 항목을 삭제합니다"
-          handleClose={() => setIsConfirmDialogOpen(false)}
-          actions={[
-            {
-              children: '취소',
-              variant: 'outlined',
-              color: 'secondary',
-              onClick: () => setIsConfirmDialogOpen(false),
-            },
-            {
-              children: '삭제',
-              variant: 'contained',
-              color: 'error',
-              onClick: () => {
-                onDelete()
-                showSnackbar('항목이 삭제 되었습니다.', { variant: 'success' })
-                setIsConfirmDialogOpen(false)
-              },
-            },
-          ]}
+          handleClose={handleConfirmClose}
+          actions={confirmActions}
         />
       )}
     </>
   )
 }
 
-export default Block
+export default memo(Block)

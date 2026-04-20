@@ -1,5 +1,5 @@
 import { Box, Button, ButtonProps, Stack } from '@mui/material'
-import { forwardRef, ReactNode } from 'react'
+import { forwardRef, memo, ReactNode } from 'react'
 
 import LoadingSpinner from '@/components/common/influence-factor-chart/icons/LoadingSpinIcon'
 import MIBaseButtonLabel from '@/components/common/label/MIBaseButtonLabel'
@@ -112,4 +112,4 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
 
 MIBaseButton.displayName = 'MIBaseButton'
 
-export default MIBaseButton
+export default memo(MIBaseButton)

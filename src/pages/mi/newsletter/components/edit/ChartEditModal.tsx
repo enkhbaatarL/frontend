@@ -2,6 +2,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded'
 import { Box, Fade, Stack, Switch, Typography } from '@mui/material'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIMenu from '@/components/common/menu/MIMenu'
@@ -53,7 +54,21 @@ const ChartEditModal = ({
     onBoxPositionChange,
     resetBoxPositions,
     setTitleEdit,
-  } = useChartEditStore()
+  } = useChartEditStore(
+    useShallow((s) => ({
+      showVolumePanel: s.showVolumePanel,
+      setShowVolumePanel: s.setShowVolumePanel,
+      showChartToolbar: s.showChartToolbar,
+      setShowChartToolbar: s.setShowChartToolbar,
+      chartType: s.chartType,
+      setChartType: s.setChartType,
+      boxPositions: s.boxPositions,
+      titleEdits: s.titleEdits,
+      onBoxPositionChange: s.onBoxPositionChange,
+      resetBoxPositions: s.resetBoxPositions,
+      setTitleEdit: s.setTitleEdit,
+    })),
+  )
 
   const handleResetChartLayout = useCallback(() => {
     resetBoxPositions()
@@ -183,6 +198,8 @@ const ChartEditModal = ({
     [position],
   )
 
+  const modalDragRafRef = useRef(0)
+
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!dragRef.current.isDragging) return
@@ -190,13 +207,21 @@ const ChartEditModal = ({
       const rawX = dragRef.current.startLeft + (e.clientX - dragRef.current.startX)
       const rawY = dragRef.current.startTop + (e.clientY - dragRef.current.startY)
       const clamped = clampPosition(rawX, rawY)
-      setPosition(clamped)
+      if (modalDragRafRef.current) cancelAnimationFrame(modalDragRafRef.current)
+      modalDragRafRef.current = requestAnimationFrame(() => {
+        modalDragRafRef.current = 0
+        setPosition(clamped)
+      })
     },
     [clampPosition],
   )
 
   const handleMouseUp = useCallback(() => {
     dragRef.current.isDragging = false
+    if (modalDragRafRef.current) {
+      cancelAnimationFrame(modalDragRafRef.current)
+      modalDragRafRef.current = 0
+    }
     globalThis.removeEventListener('mousemove', handleMouseMove)
     globalThis.removeEventListener('mouseup', handleMouseUp)
   }, [handleMouseMove])

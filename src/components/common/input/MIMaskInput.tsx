@@ -1,6 +1,7 @@
 import { Box, Stack, SxProps, TextField, TextFieldProps, Theme, Typography } from '@mui/material'
 import { debounce } from 'lodash-es'
 import {
+  memo,
   useMemo,
   useRef,
   useCallback,
@@ -594,4 +595,4 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
 
 MIMaskInput.displayName = 'MIMaskInput'
 
-export default MIMaskInput
+export default memo(MIMaskInput)

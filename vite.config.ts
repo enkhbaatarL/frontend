@@ -7,6 +7,8 @@ import { defineConfig, loadEnv } from 'vite'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 const POSITION_PLAY_REMOTE_URL = 'http://localhost:5174'
+/** 임시: preview를 dev와 동일 포트로 맞춤 (동시에 둘 다 띄우면 충돌) */
+const APP_PORT = 5173
 
 const sharedDeps = {
   react: { singleton: true, requiredVersion: '^19.0.0' },
@@ -24,6 +26,16 @@ export default defineConfig(({ mode }) => {
   if (USE_EXTERNAL_LOGIN !== undefined) {
     console.info(`[build-flag] USE_EXTERNAL_LOGIN: ${USE_EXTERNAL_LOGIN}`)
   }
+
+  const apiProxy =
+    API_BASE_URL && /^https?:\/\//i.test(API_BASE_URL.trim())
+      ? {
+        '/api/v1': {
+          target: API_BASE_URL.trim(),
+          changeOrigin: true,
+        },
+      }
+      : undefined
 
   return {
     plugins: [
@@ -56,13 +68,13 @@ export default defineConfig(({ mode }) => {
       target: 'esnext',
     },
     server: {
+      port: APP_PORT,
       allowedHosts: true,
-      proxy: {
-        '/api/v1': {
-          target: API_BASE_URL,
-          changeOrigin: true,
-        },
-      },
+      ...(apiProxy ? { proxy: apiProxy } : {}),
+    },
+    preview: {
+      port: APP_PORT,
+      ...(apiProxy ? { proxy: apiProxy } : {}),
     },
   }
 })

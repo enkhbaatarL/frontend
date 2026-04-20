@@ -122,6 +122,11 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
     const boxPositions = boxPositionsProp ?? boxPositionsInternal
     const titleEdits = titleEditsProp ?? titleEditsInternal
 
+    const boxPositionsRef = useRef(boxPositions)
+    boxPositionsRef.current = boxPositions
+    const titleEditsRef = useRef(titleEdits)
+    titleEditsRef.current = titleEdits
+
     const handleRedrawChart = useCallback(() => {
       if (mainChartRef.current) {
         mainChartRef.current.destroy()
@@ -161,19 +166,19 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
       [onChartTypeChange],
     )
 
-    const handleBoxPositionChange = useCallback(
-      (timestamp: number, position: BoxPosition) => {
-        if (onBoxPositionChangeProp) {
-          onBoxPositionChangeProp(timestamp, position)
-        } else {
-          setBoxPositionsInternal((prev) => ({
-            ...prev,
-            [timestamp]: position,
-          }))
-        }
-      },
-      [onBoxPositionChangeProp],
-    )
+    const onBoxPositionChangePropRef = useRef(onBoxPositionChangeProp)
+    onBoxPositionChangePropRef.current = onBoxPositionChangeProp
+
+    const handleBoxPositionChange = useCallback((timestamp: number, position: BoxPosition) => {
+      if (onBoxPositionChangePropRef.current) {
+        onBoxPositionChangePropRef.current(timestamp, position)
+      } else {
+        setBoxPositionsInternal((prev) => ({
+          ...prev,
+          [timestamp]: position,
+        }))
+      }
+    }, [])
 
     const handleTitleEdit = useCallback(
       (timestamp: number, newTitle: string) => {
@@ -186,13 +191,10 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
       [onTitleEditProp],
     )
 
-    const handleTitleEditStart = useCallback(
-      (info: TitleEditInfo) => {
-        const currentText = titleEdits[info.timestamp] ?? info.title
-        setEditingTitle({ ...info, text: currentText })
-      },
-      [titleEdits],
-    )
+    const handleTitleEditStart = useCallback((info: TitleEditInfo) => {
+      const currentText = titleEditsRef.current[info.timestamp] ?? info.title
+      setEditingTitle({ ...info, text: currentText })
+    }, [])
 
     const handleTitleEditSave = useCallback(() => {
       if (!editingTitle) return
@@ -473,12 +475,16 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
             yAxisStep: closeDataSeries?.dtick,
             relatedNews,
             enableBoxDragging: mode === NewsletterDetailPageMode.EDIT,
-            boxPositions,
+            boxPositions: boxPositionsRef.current,
             onBoxPositionChange: handleBoxPositionChange,
             onBoxDragEnd: () => {
+              requestAnimationFrame(() => {
+                const canvas = mainChartRef.current?.canvas
+                if (canvas) saveMainChartCanvas(canvas)
+              })
               onBoxDragEndRef.current?.()
             },
-            titleEdits,
+            titleEdits: titleEditsRef.current,
             onTitleEditStart: handleTitleEditStart,
             showHighPoint: true,
             highPointData,
@@ -491,14 +497,11 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
           },
         },
       }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- boxPositions/titleEdits는 ref로 관리
       [
         timestamps,
         closeDataSeries?.dtick,
         relatedNews,
-        boxPositions,
-        handleBoxPositionChange,
-        titleEdits,
-        handleTitleEditStart,
         chartData?.chartData?.series,
         mode,
         saveMainChartCanvas,
