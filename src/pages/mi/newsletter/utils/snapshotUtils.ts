@@ -378,6 +378,8 @@ export const updateNewsFlowItems = (
         trend: item.trend ?? 'NONE',
       },
       state: { removed: softRemoved },
+      // INewsletterSnapshotBlock 매칭
+      plotOnChart: false,
     }
   })
 
@@ -603,11 +605,11 @@ export const mergeReferenceSectionsIntoSnapshot = (
     newRefCount === 0
       ? nonRefSections
       : nonRefSections.map((s) => {
-        if ((s.order ?? 999) > maxExistingRefOrder) {
-          return { ...s, order: (s.order ?? 999) + newRefCount }
-        }
-        return s
-      })
+          if ((s.order ?? 999) > maxExistingRefOrder) {
+            return { ...s, order: (s.order ?? 999) + newRefCount }
+          }
+          return s
+        })
 
   let nextNewOrder = maxExistingRefOrder + 1
 
