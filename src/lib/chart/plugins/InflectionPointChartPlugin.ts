@@ -108,7 +108,6 @@ interface DragState {
   draggedBoxWidth: number
   draggedBoxHeight: number
   dragOffset: { x: number; y: number }
-  initialPosition: { x: number; y: number }
   mouseDownPosition: { x: number; y: number }
   targetPosition: { x: number; y: number }
   currentPosition: { x: number; y: number }
@@ -144,16 +143,41 @@ const layoutSignatureByChartId = new Map<string, string>()
 /** 드래그 중 매 프레임 재계산을 회피하기 위한 캐시 */
 interface DragFrameCache {
   visibleNews: IRelatedNewsEventItem[]
-  sortedItems: Array<{
-    news: IRelatedNewsEventItem
-    timestampIndex: number
-    xPosition: number
-    isOutOfRange: boolean
-  }>
   boxInfos: BoxInfo[]
   timeStrings: Map<number, string>
 }
 const dragFrameCacheMap = new Map<string, DragFrameCache>()
+
+/** 드래그 중 박스를 그리는 overlay canvas (chartId → canvas) */
+const overlayCanvasMap = new Map<string, HTMLCanvasElement>()
+
+const getOrCreateOverlayCanvas = (chart: ChartJS): HTMLCanvasElement | null => {
+  const chartId = chart.canvas?.id || ''
+  if (!chartId) return null
+  const existing = overlayCanvasMap.get(chartId)
+  if (existing) {
+    if (existing.width !== chart.canvas.width || existing.height !== chart.canvas.height) {
+      existing.width = chart.canvas.width
+      existing.height = chart.canvas.height
+    }
+    return existing
+  }
+  const parent = chart.canvas?.parentElement
+  if (!parent) return null
+  const overlay = document.createElement('canvas')
+  overlay.width = chart.canvas.width
+  overlay.height = chart.canvas.height
+  overlay.style.position = 'absolute'
+  overlay.style.top = '0'
+  overlay.style.left = '0'
+  overlay.style.pointerEvents = 'none'
+  if (window.getComputedStyle(parent).position === 'static') {
+    parent.style.position = 'relative'
+  }
+  parent.appendChild(overlay)
+  overlayCanvasMap.set(chartId, overlay)
+  return overlay
+}
 
 // 드래그 상태 초기화
 const CLICK_THRESHOLD = 5
@@ -178,14 +202,13 @@ const clampBoxTopLeftToChartArea = (
   }
 }
 
-const initDragState = (_chartId: string): DragState => ({
+const initDragState = (): DragState => ({
   isMouseDown: false,
   isDragging: false,
   draggedBoxTimestamp: null,
   draggedBoxWidth: 0,
   draggedBoxHeight: 0,
   dragOffset: { x: 0, y: 0 },
-  initialPosition: { x: 0, y: 0 },
   mouseDownPosition: { x: 0, y: 0 },
   targetPosition: { x: 0, y: 0 },
   currentPosition: { x: 0, y: 0 },
@@ -206,10 +229,199 @@ const findTopBoxAtPoint = (x: number, y: number, boxes: BoxInfo[]): BoxInfo | nu
   return null
 }
 
+const adjustDuplicateTimestamps = (news: IRelatedNewsEventItem[]): IRelatedNewsEventItem[] => {
+  const timestampGroups = new Map<number, IRelatedNewsEventItem[]>()
+
+  // 타임스탬프별로 그룹화
+  news.forEach((item) => {
+    if (!item.timestamp) return
+
+    if (!timestampGroups.has(item.timestamp)) {
+      timestampGroups.set(item.timestamp, [])
+    }
+    timestampGroups.get(item.timestamp)!.push(item)
+  })
+
+  const adjustedNews: IRelatedNewsEventItem[] = []
+
+  // 각 그룹에서 1ms씩 차이나게 조정
+  timestampGroups.forEach((group, originalTimestamp) => {
+    if (group.length === 1) {
+      // 단일 뉴스는 그대로 유지
+      adjustedNews.push(...group)
+    } else {
+      // 여러 뉴스가 있는 경우 1ms씩 차이나게 조정
+      group.forEach((item, index) => {
+        const adjustedTimestamp = originalTimestamp + index
+        adjustedNews.push({
+          ...item,
+          timestamp: adjustedTimestamp,
+        })
+      })
+    }
+  })
+
+  return adjustedNews
+}
+
+const drawConnectionLine = (params: DrawConnectionLineParams) => {
+  const { ctx, markerX, markerY, boxX, boxY, boxWidth, boxHeight, isAbove } = params
+
+  ctx.strokeStyle = '#212529'
+  ctx.lineWidth = 1
+  ctx.setLineDash([])
+
+  // 박스의 중심 Y 좌표 계산
+  const boxCenterY = boxY + boxHeight / 2
+
+  // 마커와 박스의 상대적 위치에 따라 연결선 시작점 결정
+  const markerStartX = markerX
+  let markerStartY
+
+  // 박스가 마커보다 위에 있는지 아래에 있는지 확인
+  const boxIsAboveMarker = boxCenterY < markerY
+  const boxIsBelowMarker = boxCenterY > markerY
+
+  if (boxIsAboveMarker) {
+    // 박스가 마커 위에 있으면 원의 위쪽 가장자리에서 시작
+    markerStartY = markerY - CIRCLE_RADIUS - 2
+  } else if (boxIsBelowMarker) {
+    // 박스가 마커 아래에 있으면 원의 아래쪽 가장자리에서 시작
+    markerStartY = markerY + CIRCLE_RADIUS + 2
+  } else {
+    // 박스가 마커와 같은 높이에 있으면 원의 가장 가까운 가장자리에서 시작
+    markerStartY = isAbove ? markerY - CIRCLE_RADIUS - 2 : markerY + CIRCLE_RADIUS + 2
+  }
+
+  // 박스 연결점 계산 - 박스의 가장 가까운 가장자리
+  let boxConnectionX: number
+  let boxConnectionY: number
+
+  // X 좌표: 마커가 박스 범위 내에 있으면 마커 X, 아니면 가장 가까운 가장자리
+  if (markerX < boxX) {
+    boxConnectionX = boxX
+  } else if (markerX > boxX + boxWidth) {
+    boxConnectionX = boxX + boxWidth
+  } else {
+    boxConnectionX = markerX
+  }
+
+  // Y 좌표: 박스의 가장 가까운 가장자리에서 약간 안쪽으로
+  const boxPadding = 4 // 박스 내부로 들어갈 거리
+  if (boxIsAboveMarker) {
+    boxConnectionY = boxY + boxHeight - boxPadding // 박스 아래쪽 가장자리에서 안쪽으로
+  } else if (boxIsBelowMarker) {
+    boxConnectionY = boxY + boxPadding // 박스 위쪽 가장자리에서 안쪽으로
+  } else {
+    // 같은 높이에 있으면 isAbove 플래그에 따라 결정
+    boxConnectionY = isAbove ? boxY + boxHeight - boxPadding : boxY + boxPadding
+  }
+
+  ctx.beginPath()
+  ctx.moveTo(markerStartX, markerStartY)
+  ctx.lineTo(boxConnectionX, boxConnectionY)
+
+  ctx.stroke()
+}
+
+/**
+ * 캐시된 BoxInfo를 기반으로 박스를 다시 그린다.
+ * 드래그 fast-path 전용: calculateBoxDimensions / measureText / 충돌검사를 모두 스킵.
+ */
+const renderCachedBoxInfo = (ctx: CanvasRenderingContext2D, box: BoxInfo, timeStr: string, trend?: string) => {
+  const padding = 8
+  const lineHeight = 16
+
+  ctx.fillStyle = '#555555'
+  ctx.font = '600 12px Pretendard,sans-serif'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+
+  const timeX = box.x + padding
+  const timeY = box.y + padding + lineHeight / 2
+
+  ctx.strokeStyle = '#FFFFFF'
+  ctx.lineWidth = 2
+  ctx.strokeText(timeStr, timeX, timeY)
+  ctx.fillText(timeStr, timeX, timeY)
+
+  let titleColor = '#495057'
+  if (trend === 'DOWN') titleColor = '#2F62A3'
+  else if (trend === 'UP') titleColor = '#DF4B4A'
+
+  ctx.fillStyle = titleColor
+  ctx.font = '600 12px Pretendard,sans-serif'
+  ctx.strokeStyle = '#FFFFFF'
+  ctx.lineWidth = 2
+
+  const titleX = box.x + padding
+  const titleLines = box.titleLines ?? []
+  titleLines.forEach((line, index) => {
+    const titleY = box.y + padding + lineHeight + 2 + lineHeight / 2 + index * lineHeight
+    ctx.strokeText(line, titleX, titleY)
+    ctx.fillText(line, titleX, titleY)
+  })
+
+  drawConnectionLine({
+    ctx,
+    markerX: box.xPosition,
+    markerY: box.yPosition,
+    boxX: box.x,
+    boxY: box.y,
+    boxWidth: box.width,
+    boxHeight: box.height,
+    isAbove: box.isAbove,
+  })
+}
+
 const stopDragAnimation = (dragState: DragState): void => {
   if (dragState.animationFrameId) {
     cancelAnimationFrame(dragState.animationFrameId)
     dragState.animationFrameId = 0
+  }
+}
+
+/**
+ * overlay canvas에 캐시된 모든 박스를 다시 그린다.
+ * dragState가 있고 해당 박스가 드래그 중이면 currentPosition으로 위치를 대체한다.
+ */
+const renderOverlayBoxes = (chartId: string, dragState: DragState | null): void => {
+  const overlay = overlayCanvasMap.get(chartId)
+  if (!overlay) return
+  const cache = dragFrameCacheMap.get(chartId)
+  if (!cache) return
+  const overlayCtx = overlay.getContext('2d')
+  if (!overlayCtx) return
+
+  overlayCtx.clearRect(0, 0, overlay.width, overlay.height)
+
+  const draggedTs = dragState?.isDragging ? dragState.draggedBoxTimestamp : null
+  for (const box of cache.boxInfos) {
+    const boxTs = box.timestamp
+    const timeStr = (boxTs && cache.timeStrings.get(boxTs)) || ''
+    const trend = cache.visibleNews.find((n) => n.timestamp === boxTs)?.trend
+
+    if (boxTs && dragState && draggedTs === boxTs) {
+      const ddx = dragState.currentPosition.x - box.x
+      const ddy = dragState.currentPosition.y - box.y
+      renderCachedBoxInfo(
+        overlayCtx,
+        {
+          ...box,
+          x: dragState.currentPosition.x,
+          y: dragState.currentPosition.y,
+          titleArea: {
+            ...box.titleArea,
+            x: box.titleArea.x + ddx,
+            y: box.titleArea.y + ddy,
+          },
+        },
+        timeStr,
+        trend,
+      )
+    } else {
+      renderCachedBoxInfo(overlayCtx, box, timeStr, trend)
+    }
   }
 }
 
@@ -218,6 +430,9 @@ const startDragAnimation = (chartId: string, chart: ChartJS, pluginOptions: Infl
   if (!dragState) return
 
   stopDragAnimation(dragState)
+
+  // overlay가 혹시 없으면 보장 (정상 렌더에서 이미 만들어져 있음이 일반적)
+  getOrCreateOverlayCanvas(chart)
 
   const tick = () => {
     if (!dragState.isDragging || dragState.draggedBoxTimestamp === null) return
@@ -241,10 +456,14 @@ const startDragAnimation = (chartId: string, chart: ChartJS, pluginOptions: Infl
       existing.x = dragState.currentPosition.x
       existing.y = dragState.currentPosition.y
     } else {
-      pluginOptions.boxPositions[ts] = { x: dragState.currentPosition.x, y: dragState.currentPosition.y }
+      pluginOptions.boxPositions[ts] = {
+        x: dragState.currentPosition.x,
+        y: dragState.currentPosition.y,
+      }
     }
 
-    chart.render()
+    // 박스는 항상 overlay에 존재 → 메인 캔버스 재렌더 없이 overlay만 갱신
+    renderOverlayBoxes(chartId, dragState)
 
     if (dragState.isDragging) {
       dragState.animationFrameId = requestAnimationFrame(tick)
@@ -257,13 +476,11 @@ const startDragAnimation = (chartId: string, chart: ChartJS, pluginOptions: Infl
 /** mouseup / mouseout(캔버스 이탈) 공통: RAF가 쓴 좌표 유지, 상위 반영은 다음 프레임에 복사본으로 전달 */
 const releaseBoxPointerInteraction = (
   chart: ChartJS,
-  chartId: string,
   pluginOptions: InflectionPointPluginOptions,
   dragState: DragState,
   boxes: BoxInfo[],
   x: number,
   y: number,
-  afterArgs: { changed?: boolean },
 ): void => {
   if (!dragState.isMouseDown) return
 
@@ -290,28 +507,31 @@ const releaseBoxPointerInteraction = (
   dragState.isDragging = false
   dragState.draggedBoxTimestamp = null
 
-  dragFrameCacheMap.delete(chartId)
-
   if (chart.canvas) {
     chart.canvas.style.cursor = 'default'
   }
 
   if (endedBoxDrag) {
+    chart.draw()
+
     if (draggedTimestamp !== null && pluginOptions.onBoxPositionChange) {
       const finalPos = pluginOptions.boxPositions?.[draggedTimestamp]
       if (finalPos) {
         const ts = draggedTimestamp
         const copy = { x: finalPos.x, y: finalPos.y }
         const cb = pluginOptions.onBoxPositionChange
+        const onDragEnd = pluginOptions.onBoxDragEnd
         requestAnimationFrame(() => {
           cb(ts, copy)
+          onDragEnd?.()
         })
+      } else {
+        pluginOptions.onBoxDragEnd?.()
       }
+    } else {
+      pluginOptions.onBoxDragEnd?.()
     }
-    pluginOptions.onBoxDragEnd?.()
   }
-
-  afterArgs.changed = true
 }
 
 const drawHighPoint = (
@@ -603,66 +823,6 @@ const adjustBoxPosition = (
   return originalBox
 }
 
-const drawConnectionLine = (params: DrawConnectionLineParams) => {
-  const { ctx, markerX, markerY, boxX, boxY, boxWidth, boxHeight, isAbove } = params
-
-  ctx.strokeStyle = '#212529'
-  ctx.lineWidth = 1
-  ctx.setLineDash([])
-
-  // 박스의 중심 Y 좌표 계산
-  const boxCenterY = boxY + boxHeight / 2
-
-  // 마커와 박스의 상대적 위치에 따라 연결선 시작점 결정
-  const markerStartX = markerX
-  let markerStartY
-
-  // 박스가 마커보다 위에 있는지 아래에 있는지 확인
-  const boxIsAboveMarker = boxCenterY < markerY
-  const boxIsBelowMarker = boxCenterY > markerY
-
-  if (boxIsAboveMarker) {
-    // 박스가 마커 위에 있으면 원의 위쪽 가장자리에서 시작
-    markerStartY = markerY - CIRCLE_RADIUS - 2
-  } else if (boxIsBelowMarker) {
-    // 박스가 마커 아래에 있으면 원의 아래쪽 가장자리에서 시작
-    markerStartY = markerY + CIRCLE_RADIUS + 2
-  } else {
-    // 박스가 마커와 같은 높이에 있으면 원의 가장 가까운 가장자리에서 시작
-    markerStartY = isAbove ? markerY - CIRCLE_RADIUS - 2 : markerY + CIRCLE_RADIUS + 2
-  }
-
-  // 박스 연결점 계산 - 박스의 가장 가까운 가장자리
-  let boxConnectionX: number
-  let boxConnectionY: number
-
-  // X 좌표: 마커가 박스 범위 내에 있으면 마커 X, 아니면 가장 가까운 가장자리
-  if (markerX < boxX) {
-    boxConnectionX = boxX
-  } else if (markerX > boxX + boxWidth) {
-    boxConnectionX = boxX + boxWidth
-  } else {
-    boxConnectionX = markerX
-  }
-
-  // Y 좌표: 박스의 가장 가까운 가장자리에서 약간 안쪽으로
-  const boxPadding = 4 // 박스 내부로 들어갈 거리
-  if (boxIsAboveMarker) {
-    boxConnectionY = boxY + boxHeight - boxPadding // 박스 아래쪽 가장자리에서 안쪽으로
-  } else if (boxIsBelowMarker) {
-    boxConnectionY = boxY + boxPadding // 박스 위쪽 가장자리에서 안쪽으로
-  } else {
-    // 같은 높이에 있으면 isAbove 플래그에 따라 결정
-    boxConnectionY = isAbove ? boxY + boxHeight - boxPadding : boxY + boxPadding
-  }
-
-  ctx.beginPath()
-  ctx.moveTo(markerStartX, markerStartY)
-  ctx.lineTo(boxConnectionX, boxConnectionY)
-
-  ctx.stroke()
-}
-
 const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   const {
     ctx,
@@ -744,14 +904,12 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   const timeX = finalBox.x + padding
   const timeY = finalBox.y + padding + lineHeight / 2
 
-  // 흰색 외곽선 추가 (그래프랑 겹쳐도 잘 보이도록)
   ctx.strokeStyle = '#FFFFFF'
   ctx.lineWidth = 2
   ctx.strokeText(time, timeX, timeY)
   ctx.fillText(time, timeX, timeY)
 
-  // 변곡점에 따른 색상 적용
-  let titleColor = '#495057' // 기본 색상
+  let titleColor = '#495057'
   if (params.trend === 'DOWN') {
     titleColor = '#2F62A3'
   } else if (params.trend === 'UP') {
@@ -762,18 +920,15 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   ctx.font = '600 12px Pretendard,sans-serif'
   const titleX = finalBox.x + padding
 
-  // 흰색 외곽선 추가 (그래프랑 겹쳐도 잘 보이도록)
   ctx.strokeStyle = '#FFFFFF'
   ctx.lineWidth = 2
 
-  // 타이틀을 여러 줄로 렌더링
   titleLines.forEach((line, index) => {
     const titleY = finalBox.y + padding + lineHeight + 2 + lineHeight / 2 + index * lineHeight
     ctx.strokeText(line, titleX, titleY)
     ctx.fillText(line, titleX, titleY)
   })
 
-  // 연결선 그리기
   if (chartArea) {
     drawConnectionLine({
       ctx,
@@ -788,92 +943,6 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   }
 
   return finalBox
-}
-
-/**
- * 캐시된 BoxInfo를 기반으로 박스를 다시 그린다.
- * 드래그 fast-path 전용: calculateBoxDimensions / measureText / 충돌검사를 모두 스킵.
- */
-const renderCachedBoxInfo = (ctx: CanvasRenderingContext2D, box: BoxInfo, timeStr: string, trend?: string) => {
-  const padding = 8
-  const lineHeight = 16
-
-  ctx.fillStyle = '#555555'
-  ctx.font = '600 12px Pretendard,sans-serif'
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'middle'
-
-  const timeX = box.x + padding
-  const timeY = box.y + padding + lineHeight / 2
-
-  ctx.strokeStyle = '#FFFFFF'
-  ctx.lineWidth = 2
-  ctx.strokeText(timeStr, timeX, timeY)
-  ctx.fillText(timeStr, timeX, timeY)
-
-  let titleColor = '#495057'
-  if (trend === 'DOWN') titleColor = '#2F62A3'
-  else if (trend === 'UP') titleColor = '#DF4B4A'
-
-  ctx.fillStyle = titleColor
-  ctx.font = '600 12px Pretendard,sans-serif'
-  ctx.strokeStyle = '#FFFFFF'
-  ctx.lineWidth = 2
-
-  const titleX = box.x + padding
-  const titleLines = box.titleLines ?? []
-  titleLines.forEach((line, index) => {
-    const titleY = box.y + padding + lineHeight + 2 + lineHeight / 2 + index * lineHeight
-    ctx.strokeText(line, titleX, titleY)
-    ctx.fillText(line, titleX, titleY)
-  })
-
-  drawConnectionLine({
-    ctx,
-    markerX: box.xPosition,
-    markerY: box.yPosition,
-    boxX: box.x,
-    boxY: box.y,
-    boxWidth: box.width,
-    boxHeight: box.height,
-    isAbove: box.isAbove,
-  })
-}
-
-// 동일한 타임스탬프를 가진 뉴스들을 1ms씩 차이나게 조정하는 함수 (겹쳤을때 버그 회피)
-const adjustDuplicateTimestamps = (news: IRelatedNewsEventItem[]): IRelatedNewsEventItem[] => {
-  const timestampGroups = new Map<number, IRelatedNewsEventItem[]>()
-
-  // 타임스탬프별로 그룹화
-  news.forEach((item) => {
-    if (!item.timestamp) return
-
-    if (!timestampGroups.has(item.timestamp)) {
-      timestampGroups.set(item.timestamp, [])
-    }
-    timestampGroups.get(item.timestamp)!.push(item)
-  })
-
-  const adjustedNews: IRelatedNewsEventItem[] = []
-
-  // 각 그룹에서 1ms씩 차이나게 조정
-  timestampGroups.forEach((group, originalTimestamp) => {
-    if (group.length === 1) {
-      // 단일 뉴스는 그대로 유지
-      adjustedNews.push(...group)
-    } else {
-      // 여러 뉴스가 있는 경우 1ms씩 차이나게 조정
-      group.forEach((item, index) => {
-        const adjustedTimestamp = originalTimestamp + index
-        adjustedNews.push({
-          ...item,
-          timestamp: adjustedTimestamp,
-        })
-      })
-    }
-  })
-
-  return adjustedNews
 }
 
 const buildInflectionLayoutSignature = (
@@ -976,8 +1045,6 @@ const drawNewsMarkers = (
   boxPositions?: Record<number, { x: number; y: number }>,
   options?: InflectionPointPluginOptions,
 ) => {
-  if (!relatedNews?.length) return
-
   let chartId = chart.canvas?.id
   if (!chartId) {
     chartId = `chart-${Date.now()}-${Math.random().toString(36).substring(7)}`
@@ -986,15 +1053,27 @@ const drawNewsMarkers = (
     }
   }
 
+  // 박스는 항상 overlay 캔버스에 그려서, 드래그 시작 시 메인 캔버스를 재렌더할 필요가 없게 한다.
+  const overlayCanvas = getOrCreateOverlayCanvas(chart)
+  const overlayCtx = overlayCanvas?.getContext('2d') ?? null
+  if (overlayCanvas && overlayCtx) {
+    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
+  }
+
+  if (!relatedNews?.length) return
+
+  // overlay가 있으면 박스는 overlay에, 없으면 메인에 폴백
+  const boxCtx = overlayCtx ?? ctx
+
   const dragState = dragStateMap.get(chartId)
   const isDragging = Boolean(options?.enableBoxDragging && dragState?.isDragging)
   const cache = dragFrameCacheMap.get(chartId)
 
   // ── fast-path: 드래그 중이고 캐시가 있으면 재계산 없이 캐시 기반 렌더링 ──
+  // 메인 캔버스는 chart.js가 clear했으므로 마커를 다시 그리고, 박스는 overlay에 renderOverlayBoxes로 그린다.
   if (isDragging && cache) {
     ctx.save()
 
-    // 마커 다시 그리기 (캐시된 visibleNews 사용)
     for (const news of cache.visibleNews) {
       if (!news.timestamp) continue
       const originalTs = news.timestamp - (news.timestamp % 1)
@@ -1013,37 +1092,8 @@ const drawNewsMarkers = (
       }
     }
 
-    // 박스 다시 그리기 (캐시된 BoxInfo 기반, 드래그 박스만 좌표 갱신)
-    const updatedBoxes: BoxInfo[] = []
-    for (const box of cache.boxInfos) {
-      const ts = box.timestamp
-      const timeStr = (ts && cache.timeStrings.get(ts)) || ''
-      const trend = cache.visibleNews.find((n) => n.timestamp === ts)?.trend
+    renderOverlayBoxes(chartId, dragState ?? null)
 
-      if (ts && dragState?.draggedBoxTimestamp === ts) {
-        const pos = boxPositions?.[ts]
-        if (pos) {
-          const dx = pos.x - box.x
-          const dy = pos.y - box.y
-          const updated: BoxInfo = {
-            ...box,
-            x: pos.x,
-            y: pos.y,
-            titleArea: { ...box.titleArea, x: box.titleArea.x + dx, y: box.titleArea.y + dy },
-          }
-          renderCachedBoxInfo(ctx, updated, timeStr, trend)
-          updatedBoxes.push(updated)
-        } else {
-          renderCachedBoxInfo(ctx, box, timeStr, trend)
-          updatedBoxes.push(box)
-        }
-      } else {
-        renderCachedBoxInfo(ctx, box, timeStr, trend)
-        updatedBoxes.push(box)
-      }
-    }
-
-    boxInfoMap.set(chartId, updatedBoxes)
     ctx.restore()
     return
   }
@@ -1154,8 +1204,9 @@ const drawNewsMarkers = (
 
         const effectiveTitle = (news.timestamp && options?.titleEdits?.[news.timestamp]) || news.title
 
+        // 박스와 연결선을 overlay에 그린다 (boxCtx = overlayCtx)
         const boxInfo = drawInfoBox({
-          ctx,
+          ctx: boxCtx,
           xPosition,
           yPosition,
           title: effectiveTitle,
@@ -1191,8 +1242,8 @@ const drawNewsMarkers = (
     }
   }
 
-  // 드래그가 시작되었고 아직 캐시가 없으면, 이번 프레임 결과를 캐시에 저장
-  if (isDragging && !cache && existingBoxes.length > 0) {
+  // 드래그 시작 시 바로 쓰이도록 캐시를 항상 채워둔다. (dayjs.tz 비용은 정상 렌더에 한 번만 발생)
+  if (existingBoxes.length > 0) {
     const timeStrings = new Map<number, string>()
     for (const box of existingBoxes) {
       if (box.timestamp) {
@@ -1201,15 +1252,11 @@ const drawNewsMarkers = (
     }
     dragFrameCacheMap.set(chartId, {
       visibleNews,
-      sortedItems: sortedNews as Array<{
-        news: IRelatedNewsEventItem
-        timestampIndex: number
-        xPosition: number
-        isOutOfRange: boolean
-      }>,
       boxInfos: existingBoxes,
       timeStrings,
     })
+  } else {
+    dragFrameCacheMap.delete(chartId)
   }
 
   ctx.restore()
@@ -1229,7 +1276,9 @@ const InflectionPointChartPlugin: Plugin = {
     if (!dragState?.isDragging) return
 
     const rect = chart.canvas?.getBoundingClientRect()
-    if (!rect) return
+    // false를 돌려받으면 해당 이벤트를 완전히 discard 한다.
+    // eslint-disable-next-line consistent-return
+    if (!rect) return false
 
     const nativeEvent = event.native as MouseEvent | undefined
     const x = (nativeEvent?.clientX ?? event.x ?? 0) - rect.left
@@ -1241,6 +1290,9 @@ const InflectionPointChartPlugin: Plugin = {
     const clamped = clampBoxTopLeftToChartArea(newX, newY, dragState.draggedBoxWidth, dragState.draggedBoxHeight, chart.chartArea)
     dragState.targetPosition.x = clamped.x
     dragState.targetPosition.y = clamped.y
+
+    // eslint-disable-next-line consistent-return
+    return false
   },
   afterEvent(chart, args, options) {
     const pluginOptions = options as InflectionPointPluginOptions
@@ -1259,7 +1311,7 @@ const InflectionPointChartPlugin: Plugin = {
 
     // 드래그 상태 초기화 (필요시)
     if (!dragStateMap.has(chartId)) {
-      dragStateMap.set(chartId, initDragState(chartId))
+      dragStateMap.set(chartId, initDragState())
     }
 
     const dragState = dragStateMap.get(chartId)!
@@ -1320,16 +1372,12 @@ const InflectionPointChartPlugin: Plugin = {
           dragState.draggedBoxHeight = clickedBox.height
           dragState.dragOffset.x = x - clickedBox.x
           dragState.dragOffset.y = y - clickedBox.y
-          dragState.initialPosition.x = clickedBox.x
-          dragState.initialPosition.y = clickedBox.y
           dragState.mouseDownPosition.x = x
           dragState.mouseDownPosition.y = y
           dragState.targetPosition.x = clickedBox.x
           dragState.targetPosition.y = clickedBox.y
           dragState.currentPosition.x = clickedBox.x
           dragState.currentPosition.y = clickedBox.y
-
-          args.changed = true
         }
       }
     } else if (event.type === 'mousemove' && dragState.isMouseDown) {
@@ -1346,7 +1394,7 @@ const InflectionPointChartPlugin: Plugin = {
       }
     } else if (event.type === 'mouseup') {
       if (dragState.isMouseDown) {
-        releaseBoxPointerInteraction(chart, chartId, pluginOptions, dragState, boxes, x, y, args)
+        releaseBoxPointerInteraction(chart, pluginOptions, dragState, boxes, x, y)
       }
     } else if (event.type === 'mouseout') {
       if (!dragState.isMouseDown) return
@@ -1354,7 +1402,7 @@ const InflectionPointChartPlugin: Plugin = {
       if (related && chart.canvas && related instanceof Node && chart.canvas.contains(related)) {
         return
       }
-      releaseBoxPointerInteraction(chart, chartId, pluginOptions, dragState, boxes, x, y, args)
+      releaseBoxPointerInteraction(chart, pluginOptions, dragState, boxes, x, y)
     } else if (event.type === 'mousemove' && !dragState.isMouseDown) {
       const hoveredBox = findTopBoxAtPoint(x, y, boxes)
 
@@ -1509,6 +1557,26 @@ const InflectionPointChartPlugin: Plugin = {
     }
 
     ctx.restore()
+  },
+  /** 차트 리마운트(갱신) 시 overlay 캔버스와 모듈 레벨 캐시를 정리 — 남으면 이전 박스 그림이 DOM에 유령으로 남음 */
+  beforeDestroy(chart) {
+    const chartId = chart.canvas?.id
+    if (!chartId) return
+
+    const dragState = dragStateMap.get(chartId)
+    if (dragState) stopDragAnimation(dragState)
+
+    const overlay = overlayCanvasMap.get(chartId)
+    if (overlay?.parentElement) {
+      overlay.parentElement.removeChild(overlay)
+    }
+
+    overlayCanvasMap.delete(chartId)
+    dragStateMap.delete(chartId)
+    boxInfoMap.delete(chartId)
+    initialPositionsMap.delete(chartId)
+    layoutSignatureByChartId.delete(chartId)
+    dragFrameCacheMap.delete(chartId)
   },
 }
 

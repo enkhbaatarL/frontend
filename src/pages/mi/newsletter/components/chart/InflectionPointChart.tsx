@@ -198,7 +198,19 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
 
     const handleTitleEditSave = useCallback(() => {
       if (!editingTitle) return
-      handleTitleEdit(editingTitle.timestamp, editingTitle.text)
+      const { timestamp, text } = editingTitle
+
+      handleTitleEdit(timestamp, text)
+
+      const mainChart = mainChartRef.current
+      if (mainChart) {
+        const pluginOpts = mainChart.options?.plugins?.InflectionPointChartPlugin as { titleEdits?: Record<number, string> } | undefined
+        if (pluginOpts) {
+          pluginOpts.titleEdits = { ...(pluginOpts.titleEdits ?? {}), [timestamp]: text }
+        }
+        mainChart.update('none')
+      }
+
       setEditingTitle(null)
     }, [editingTitle, handleTitleEdit])
 
