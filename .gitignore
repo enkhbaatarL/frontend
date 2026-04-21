@@ -128,6 +128,9 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# Cursor
+.cursor/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

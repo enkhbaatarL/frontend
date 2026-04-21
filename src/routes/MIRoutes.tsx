@@ -12,7 +12,6 @@ import EconomicCalendarDetailPage from '@/pages/mi/economicCalendar/EconomicCale
 import EconomicCalendarPage from '@/pages/mi/economicCalendar/EconomicCalendarPage'
 import ForecastPage from '@/pages/mi/forecast/ForecastPage'
 import NewForecastPage from '@/pages/mi/forecast/NewForecastPage'
-import PositionPlayRemotePage from '@/pages/mi/forecast/PositionPlayRemotePage'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
@@ -26,8 +25,10 @@ import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
 import NotificationPage from '@/pages/mi/notification/NotificationPage'
 import ParallelCoordinatesPage from '@/pages/mi/parallelCoordinates/ParallelCoordinatesPage'
+import PositionPlayRemotePage from '@/pages/mi/positionPlay/PositionPlayRemotePage'
 import SalesActivityLogPage from '@/pages/mi/salesActivityLog/SalesActivityLogPage'
 import SalesAnalysisPage from '@/pages/mi/salesAnalysis/SalesAnalysisPage'
+import ScenarioWorkbenchPage from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchPage'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import TopicTrackerPage from '@/pages/mi/topicTracker/TopicTrackerPage'
 import MIProvider from '@/providers/MIProvider'
@@ -178,6 +179,10 @@ const MIRoutes: RouteObject = {
     {
       path: 'signal-map',
       element: <SignalMapPage />,
+    },
+    {
+      path: 'scenario-workbench',
+      element: <ScenarioWorkbenchPage />,
     },
     {
       path: 'position-play',
