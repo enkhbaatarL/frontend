@@ -1,6 +1,5 @@
 import { Stack } from '@mui/material'
 import dayjs from 'dayjs'
-import { memo } from 'react'
 
 import MIDatePickerMenu from '@/components/common/menu/MIDatePickerMenu'
 import Block, { type BlockOrderProps } from '@/pages/mi/newsletter/components/edit/sections/Block'
@@ -35,4 +34,4 @@ const DateAndIssueSection = ({
   </Block>
 )
 
-export default memo(DateAndIssueSection)
+export default DateAndIssueSection

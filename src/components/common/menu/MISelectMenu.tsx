@@ -1,6 +1,6 @@
 import { CheckRounded, KeyboardArrowDownRounded, KeyboardArrowUpRounded } from '@mui/icons-material'
 import { Box, Typography, Stack, Switch, ButtonProps, PaperProps, ListSubheader, Divider } from '@mui/material'
-import { memo, ReactElement, ReactNode, useMemo, useState, Fragment } from 'react'
+import { ReactNode, useMemo, useState, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
@@ -48,8 +48,6 @@ interface Props<T> extends ButtonProps {
   labelPrefix?: ReactNode
   footer?: ReactNode
 }
-
-type MISelectMenuComponent = <T>(props: Props<T>) => ReactElement
 
 const MISelectMenu = <T,>({
   variant = 'text',
@@ -417,4 +415,4 @@ const MISelectMenu = <T,>({
   )
 }
 
-export default memo(MISelectMenu) as MISelectMenuComponent
+export default MISelectMenu

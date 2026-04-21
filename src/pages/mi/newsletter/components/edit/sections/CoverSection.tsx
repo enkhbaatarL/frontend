@@ -1,5 +1,4 @@
 import { Box, Stack, Switch, Typography } from '@mui/material'
-import { memo } from 'react'
 
 import MIMaskInput from '@/components/common/input/MIMaskInput'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
@@ -127,4 +126,4 @@ const CoverSection = ({
   </Block>
 )
 
-export default memo(CoverSection)
+export default CoverSection

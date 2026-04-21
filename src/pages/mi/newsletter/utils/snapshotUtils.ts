@@ -13,7 +13,7 @@ import {
   type IReferenceTableData,
   type IRelatedNewsEventItem,
 } from '@/service/mi/newsletter'
-import { createTimestampInNY } from '@/utils/date'
+import { createTimestampInNY, parseDate } from '@/utils/date'
 
 /** 스냅샷 `sections[].code` 기준 고정 식별자(편집 순서·필드 갱신·이메일 분기). */
 export const NEWSLETTER_SECTION_CODE = {
@@ -390,6 +390,45 @@ export const updateNewsFlowItems = (
   return { ...snapshot, sections: newSections }
 }
 
+const coalesceTimeFieldToString = (a: unknown, b: unknown): string => {
+  const pick = (v: unknown): string => {
+    if (typeof v === 'string') return v
+    if (typeof v === 'number' && Number.isFinite(v)) return String(v)
+    return ''
+  }
+  return pick(a) || pick(b)
+}
+
+const newsFieldsToSortTimeMs = (raw: Record<string, unknown>): number => {
+  const ts = raw.timestamp
+  if (typeof ts === 'number' && !Number.isNaN(ts)) return ts
+
+  const createdRaw = raw.createdDate
+  const createdStr = typeof createdRaw === 'string' ? createdRaw : ''
+  const dateNorm = parseDate(createdStr)
+  const timeRaw = coalesceTimeFieldToString(raw.createTime, raw.markTime)
+  if (dateNorm && timeRaw) {
+    const normalizedTime = timeRaw.includes(':')
+      ? timeRaw.slice(0, 5)
+      : timeRaw.length >= 4
+        ? `${timeRaw.slice(0, 2)}:${timeRaw.slice(2, 4)}`
+        : '12:00'
+    try {
+      return createTimestampInNY(dateNorm, normalizedTime)
+    } catch {
+      return 0
+    }
+  }
+  if (dateNorm) {
+    try {
+      return createTimestampInNY(dateNorm, '12:00')
+    } catch {
+      return 0
+    }
+  }
+  return 0
+}
+
 const replaceSectionBlocksInSnapshot = (
   snapshot: INewsletterIssueSnapshotData,
   section: INewsletterSnapshotSection,
@@ -416,7 +455,14 @@ export const sortNewsFlowNewsCardsByTimeForSave = (snapshot: INewsletterIssueSna
     return replaceSectionBlocksInSnapshot(snapshot, section, merged)
   }
 
-  const orderedNewsCards = [...newsBlocks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  const activeNews = newsBlocks.filter((b) => b.state?.removed !== true)
+  const removedNews = newsBlocks.filter((b) => b.state?.removed === true)
+  const sortedActive = [...activeNews].sort((a, b) => {
+    const ca = getBlockFields<Record<string, unknown>>(a) ?? {}
+    const cb = getBlockFields<Record<string, unknown>>(b) ?? {}
+    return newsFieldsToSortTimeMs(ca) - newsFieldsToSortTimeMs(cb)
+  })
+  const newNewsBlocks = [...sortedActive, ...removedNews]
 
   const merged: INewsletterSnapshotBlock[] = []
   let order = 0
@@ -426,7 +472,7 @@ export const sortNewsFlowNewsCardsByTimeForSave = (snapshot: INewsletterIssueSna
   for (const b of otherBlocks) {
     merged.push({ ...b, order: order++ })
   }
-  for (const b of orderedNewsCards) {
+  for (const b of newNewsBlocks) {
     merged.push({ ...b, order: order++ })
   }
 
@@ -528,7 +574,11 @@ export const replaceReferenceSectionContentBlocks = (
 })
 
 /**
- * 편집기에서 넘긴 Reference 스냅샷 섹션 배열로 스냅샷의 Reference 구간을 교체.
+ * 편집기에서 넘긴 Reference 스냅샷 섹션 배열로 스냅샷의 Reference 구간을 통째로 교체.
+ *
+ * 기존 reference 섹션의 order는 보존하고, 새로 추가된 섹션만 기존 reference 뒤에 배치합니다.
+ * 이렇게 하면 사용자가 순서를 변경하여 reference 섹션 사이에 비-reference 섹션이
+ * 끼어 있더라도 order 충돌이 발생하지 않습니다.
  */
 export const mergeReferenceSectionsIntoSnapshot = (
   snapshot: INewsletterIssueSnapshotData,
@@ -708,139 +758,41 @@ const isFixedEndSectionOrderId = (snapshot: INewsletterIssueSnapshotData, sectio
   return c === normSectionCode(NEWSLETTER_SECTION_CODE.COVER) || c === normSectionCode(NEWSLETTER_SECTION_CODE.FOOTER)
 }
 
-/** `removed !== true`만 제외하고 `order`로 정렬(가시성 무시) — “실제” 순번 코호트 */
-export const getNonRemovedSectionsSortedByOrder = (snapshot: INewsletterIssueSnapshotData | null): INewsletterSnapshotSection[] => {
-  if (!snapshot?.sections?.length) return []
-  return [...snapshot.sections].filter((s) => s.removed !== true).sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
-}
-
-/** 1-based. `removed !== true` 코호트에서의 순번(visibility 무시) */
-export const getSectionOrderRankAmongNonRemoved = (snapshot: INewsletterIssueSnapshotData | null, sectionId: string): number | null => {
-  const rows = getNonRemovedSectionsSortedByOrder(snapshot)
-  const idx = rows.findIndex((s) => s.id === sectionId)
-  return idx < 0 ? null : idx + 1
-}
-
-/** 1-based. 메일·`getSectionsInOrder`와 동일(가시·비삭제) */
-export const getSectionOrderRankAmongVisible = (snapshot: INewsletterIssueSnapshotData | null, sectionId: string): number | null => {
-  const rows = getSectionsInOrder(snapshot)
-  const idx = rows.findIndex((s) => s.id === sectionId)
-  return idx < 0 ? null : idx + 1
-}
-
 /**
- * 동일 `id`에 대해 `order` 필드만 비교해 순서 변경 후보 id를 반환합니다.
- * 가시 리스트 인덱스 비교는 사용하지 않습니다.
+ * 이전·현재 스냅샷의 문서 순서를 비교해, "직접 순서가 바뀐" 섹션 id만 반환합니다.
+ * - 한 블록을 멀리 끌어다 놓은 경우: 이동 거리(|Δ인덱스|)가 1보다 큰 섹션만 (밀려난 섹션 제외)
+ * - 인접 교환처럼 모두 한 칸 이내로만 움직인 경우: 위치가 실제로 바뀐 섹션 전부
+ * - COVER·FOOTER는 스냅샷 `order`만 바뀐 경우(고정 슬롯) 변경 이력 순서 배지에 포함하지 않음
  */
-export const computeOrderFieldChangeSectionIds = (
-  previous: INewsletterIssueSnapshotData | null | undefined,
-  current: INewsletterIssueSnapshotData | null | undefined,
-): string[] => {
-  if (!previous || !current) return []
-  const prevById = new Map(previous.sections.map((s) => [s.id, s]))
-  const currById = new Map(current.sections.map((s) => [s.id, s]))
-  const ids = [...prevById.keys()].filter((id) => currById.has(id))
-  const out: string[] = []
-  for (const id of ids) {
-    if (isFixedEndSectionOrderId(current, id)) continue
-    const p = prevById.get(id)!
-    const c = currById.get(id)!
-    if ((p.order ?? 999) !== (c.order ?? 999)) {
-      out.push(id)
-    }
-  }
-  return out
-}
-
-export const computeSectionOrderRankPositions = (
-  previous: INewsletterIssueSnapshotData | null | undefined,
-  current: INewsletterIssueSnapshotData | null | undefined,
-  sectionIds: string[],
-): Record<string, { from: number; to: number }> => {
-  if (!previous || !current || sectionIds.length === 0) return {}
-  const out: Record<string, { from: number; to: number }> = {}
-  for (const id of sectionIds) {
-    const from = getSectionOrderRankAmongNonRemoved(previous, id)
-    const to = getSectionOrderRankAmongNonRemoved(current, id)
-    if (from !== null && to !== null) {
-      out[id] = { from, to }
-    }
-  }
-  return out
-}
-
-/** 가시·비삭제 코호트에서만 랭크. 양쪽 모두 가시일 때만 기록 */
-export const computeSectionOrderScreenRankPositions = (
-  previous: INewsletterIssueSnapshotData | null | undefined,
-  current: INewsletterIssueSnapshotData | null | undefined,
-  sectionIds: string[],
-): Record<string, { from: number; to: number }> => {
-  if (!previous || !current || sectionIds.length === 0) return {}
-  const out: Record<string, { from: number; to: number }> = {}
-  for (const id of sectionIds) {
-    const from = getSectionOrderRankAmongVisible(previous, id)
-    const to = getSectionOrderRankAmongVisible(current, id)
-    if (from !== null && to !== null) {
-      out[id] = { from, to }
-    }
-  }
-  return out
-}
-
-export type SectionVisibilityLifecycle = 'hidden' | 'shown'
-
-export type SectionRemovedLifecycle = 'removed' | 'restored'
-
-export const computeSectionVisibilityChanges = (
-  previous: INewsletterIssueSnapshotData | null | undefined,
-  current: INewsletterIssueSnapshotData | null | undefined,
-): Record<string, SectionVisibilityLifecycle> => {
-  if (!previous || !current) return {}
-  const prevById = new Map(previous.sections.map((s) => [s.id, s]))
-  const currById = new Map(current.sections.map((s) => [s.id, s]))
-  const out: Record<string, SectionVisibilityLifecycle> = {}
-  for (const id of prevById.keys()) {
-    if (!currById.has(id)) continue
-    const p = prevById.get(id)!
-    const c = currById.get(id)!
-    const pRem = p.removed === true
-    const cRem = c.removed === true
-    if (pRem !== cRem) continue
-    if (p.visibility === c.visibility) continue
-    out[id] = c.visibility ? 'shown' : 'hidden'
-  }
-  return out
-}
-
-export const computeSectionRemovedChanges = (
-  previous: INewsletterIssueSnapshotData | null | undefined,
-  current: INewsletterIssueSnapshotData | null | undefined,
-): Record<string, SectionRemovedLifecycle> => {
-  if (!previous || !current) return {}
-  const prevById = new Map(previous.sections.map((s) => [s.id, s]))
-  const currById = new Map(current.sections.map((s) => [s.id, s]))
-  const out: Record<string, SectionRemovedLifecycle> = {}
-  for (const id of prevById.keys()) {
-    if (!currById.has(id)) continue
-    const p = prevById.get(id)!
-    const c = currById.get(id)!
-    const pRem = p.removed === true
-    const cRem = c.removed === true
-    if (pRem === cRem) continue
-    out[id] = cRem ? 'removed' : 'restored'
-  }
-  return out
-}
-
-/** 직전 스냅샷에서는 메일에 보였는데, 현재는 가시 목록에 없는 섹션 id */
-export const getSectionIdsVisibleInPreviousNotInCurrent = (
+export const computeDirectOrderChangeSectionIds = (
   previous: INewsletterIssueSnapshotData | null | undefined,
   current: INewsletterIssueSnapshotData | null | undefined,
 ): string[] => {
   if (!previous || !current) return []
   const prevIds = getSectionsInOrder(previous).map((s) => s.id)
-  const currSet = new Set(getSectionsInOrder(current).map((s) => s.id))
-  return prevIds.filter((id) => !currSet.has(id))
+  const currIds = getSectionsInOrder(current).map((s) => s.id)
+  if (prevIds.length === 0 || currIds.length === 0) return []
+  if (prevIds.join('\0') === currIds.join('\0')) return []
+
+  const prevIdx = new Map<string, number>()
+  prevIds.forEach((id, i) => {
+    prevIdx.set(id, i)
+  })
+  const currIdx = new Map<string, number>()
+  currIds.forEach((id, i) => {
+    currIdx.set(id, i)
+  })
+
+  const candidates = [...new Set([...prevIds, ...currIds])].filter((id) => prevIdx.has(id) && currIdx.has(id))
+  if (candidates.length === 0) return []
+
+  const disp = new Map<string, number>()
+  for (const id of candidates) {
+    disp.set(id, Math.abs(currIdx.get(id)! - prevIdx.get(id)!))
+  }
+  const maxDisp = Math.max(...disp.values())
+  const moved = maxDisp > 1 ? candidates.filter((id) => (disp.get(id) ?? 0) > 1) : candidates.filter((id) => (disp.get(id) ?? 0) > 0)
+  return moved.filter((id) => !isFixedEndSectionOrderId(current, id))
 }
 
 export const sectionToEditorKey = (section: INewsletterSnapshotSection): string | null => {
@@ -885,36 +837,16 @@ export const getEditorSectionOrderKeysFromSnapshot = (snapshot: INewsletterIssue
     .filter((k): k is string => k !== null)
 }
 
-/**
- * 편집·앵커 스크롤용 DOM id — `EmailContent` / `NewsletterView`와 동일 규칙.
- * `snapshot`이 있으면 섹션 `id` 접미사를 붙여(예: `section-dateAndIssue-${id}`) 미리보기·리비전 테이블과 맞춤.
- */
-export const newsletterEditAnchorDomId = (editorKey: string, snapshot?: INewsletterIssueSnapshotData | null): string => {
-  const sid = snapshot ? editorKeyToSnapshotSectionId(snapshot, editorKey) : undefined
-  const withSid = (base: string) => (sid ? `${base}-${sid}` : base)
-
-  if (editorKey === NEWSLETTER_SECTION_CODE.COVER) return withSid('section-cover')
-  if (editorKey === NEWSLETTER_SECTION_CODE.DATE_ISSUE) return withSid('section-dateAndIssue')
-  if (editorKey === NEWSLETTER_SECTION_CODE.TITLE) return withSid('section-title')
-  if (editorKey === NEWSLETTER_SECTION_CODE.SUMMARY) return withSid('section-summary')
-  if (editorKey === NEWSLETTER_SECTION_CODE.SIG_NEWS) return withSid('section-sigNews')
-  if (editorKey === NEWSLETTER_SECTION_CODE.SECTION || editorKey === NEWSLETTER_SECTION_CODE.NEWS_FLOW) {
-    return withSid('section-newsFlow')
-  }
-  if (editorKey === NEWSLETTER_SECTION_CODE.FOOTER) return withSid('section-footer')
-  if (editorKey.startsWith('ref:')) {
-    const refSectionId = editorKey.slice(4)
-    if (!snapshot) return `section-ref-${refSectionId}`
-    const refList = getOrderedReferenceSections(snapshot)
-    const refIndex = refList.findIndex((r) => r.id === refSectionId)
-    if (refIndex >= 0) {
-      const sec = refList[refIndex]!
-      return newsletterSectionToEmailTemplateKind(sec) === 'USER_CUSTOM'
-        ? `section-user-custom-${refIndex}`
-        : `section-reference-${refIndex}`
-    }
-    return `section-ref-${refSectionId}`
-  }
+/** 편집 모드 앵커 스크롤용 DOM id (`AnchorNavigation` 항목과 동일 규칙) */
+export const newsletterEditAnchorDomId = (editorKey: string): string => {
+  if (editorKey === NEWSLETTER_SECTION_CODE.COVER) return 'section-cover'
+  if (editorKey === NEWSLETTER_SECTION_CODE.DATE_ISSUE) return 'section-dateAndIssue'
+  if (editorKey === NEWSLETTER_SECTION_CODE.TITLE) return 'section-title'
+  if (editorKey === NEWSLETTER_SECTION_CODE.SUMMARY) return 'section-summary'
+  if (editorKey === NEWSLETTER_SECTION_CODE.SIG_NEWS) return 'section-sigNews'
+  if (editorKey === NEWSLETTER_SECTION_CODE.SECTION || editorKey === NEWSLETTER_SECTION_CODE.NEWS_FLOW) return 'section-newsFlow'
+  if (editorKey === NEWSLETTER_SECTION_CODE.FOOTER) return 'section-footer'
+  if (editorKey.startsWith('ref:')) return `section-ref-${editorKey.slice(4)}`
   return `section-${editorKey.replace(/:/g, '-')}`
 }
 

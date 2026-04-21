@@ -122,11 +122,6 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
     const boxPositions = boxPositionsProp ?? boxPositionsInternal
     const titleEdits = titleEditsProp ?? titleEditsInternal
 
-    const boxPositionsRef = useRef(boxPositions)
-    boxPositionsRef.current = boxPositions
-    const titleEditsRef = useRef(titleEdits)
-    titleEditsRef.current = titleEdits
-
     const handleRedrawChart = useCallback(() => {
       if (mainChartRef.current) {
         mainChartRef.current.destroy()
@@ -166,19 +161,19 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
       [onChartTypeChange],
     )
 
-    const onBoxPositionChangePropRef = useRef(onBoxPositionChangeProp)
-    onBoxPositionChangePropRef.current = onBoxPositionChangeProp
-
-    const handleBoxPositionChange = useCallback((timestamp: number, position: BoxPosition) => {
-      if (onBoxPositionChangePropRef.current) {
-        onBoxPositionChangePropRef.current(timestamp, position)
-      } else {
-        setBoxPositionsInternal((prev) => ({
-          ...prev,
-          [timestamp]: position,
-        }))
-      }
-    }, [])
+    const handleBoxPositionChange = useCallback(
+      (timestamp: number, position: BoxPosition) => {
+        if (onBoxPositionChangeProp) {
+          onBoxPositionChangeProp(timestamp, position)
+        } else {
+          setBoxPositionsInternal((prev) => ({
+            ...prev,
+            [timestamp]: position,
+          }))
+        }
+      },
+      [onBoxPositionChangeProp],
+    )
 
     const handleTitleEdit = useCallback(
       (timestamp: number, newTitle: string) => {
@@ -191,26 +186,17 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
       [onTitleEditProp],
     )
 
-    const handleTitleEditStart = useCallback((info: TitleEditInfo) => {
-      const currentText = titleEditsRef.current[info.timestamp] ?? info.title
-      setEditingTitle({ ...info, text: currentText })
-    }, [])
+    const handleTitleEditStart = useCallback(
+      (info: TitleEditInfo) => {
+        const currentText = titleEdits[info.timestamp] ?? info.title
+        setEditingTitle({ ...info, text: currentText })
+      },
+      [titleEdits],
+    )
 
     const handleTitleEditSave = useCallback(() => {
       if (!editingTitle) return
-      const { timestamp, text } = editingTitle
-
-      handleTitleEdit(timestamp, text)
-
-      const mainChart = mainChartRef.current
-      if (mainChart) {
-        const pluginOpts = mainChart.options?.plugins?.InflectionPointChartPlugin as { titleEdits?: Record<number, string> } | undefined
-        if (pluginOpts) {
-          pluginOpts.titleEdits = { ...(pluginOpts.titleEdits ?? {}), [timestamp]: text }
-        }
-        mainChart.update('none')
-      }
-
+      handleTitleEdit(editingTitle.timestamp, editingTitle.text)
       setEditingTitle(null)
     }, [editingTitle, handleTitleEdit])
 
@@ -487,16 +473,12 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
             yAxisStep: closeDataSeries?.dtick,
             relatedNews,
             enableBoxDragging: mode === NewsletterDetailPageMode.EDIT,
-            boxPositions: boxPositionsRef.current,
+            boxPositions,
             onBoxPositionChange: handleBoxPositionChange,
             onBoxDragEnd: () => {
-              requestAnimationFrame(() => {
-                const canvas = mainChartRef.current?.canvas
-                if (canvas) saveMainChartCanvas(canvas)
-              })
               onBoxDragEndRef.current?.()
             },
-            titleEdits: titleEditsRef.current,
+            titleEdits,
             onTitleEditStart: handleTitleEditStart,
             showHighPoint: true,
             highPointData,
@@ -509,11 +491,14 @@ const InflectionPointChart = forwardRef<InflectionPointChartRef, Props>(
           },
         },
       }),
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- boxPositions/titleEdits는 ref로 관리
       [
         timestamps,
         closeDataSeries?.dtick,
         relatedNews,
+        boxPositions,
+        handleBoxPositionChange,
+        titleEdits,
+        handleTitleEditStart,
         chartData?.chartData?.series,
         mode,
         saveMainChartCanvas,

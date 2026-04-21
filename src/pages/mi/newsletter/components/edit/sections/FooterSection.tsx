@@ -1,5 +1,5 @@
 import { Box, Stack, Switch, Typography } from '@mui/material'
-import { useState, ChangeEvent, memo } from 'react'
+import { useState, ChangeEvent } from 'react'
 
 import MIMaskInput from '@/components/common/input/MIMaskInput'
 import Block from '@/pages/mi/newsletter/components/edit/sections/Block'
@@ -94,4 +94,4 @@ const FooterSection = ({
   )
 }
 
-export default memo(FooterSection)
+export default FooterSection

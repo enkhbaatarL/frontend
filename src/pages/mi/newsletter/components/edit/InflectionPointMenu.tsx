@@ -3,7 +3,7 @@ import TrendingDownRoundedIcon from '@mui/icons-material/TrendingDownRounded'
 import TrendingFlatRoundedIcon from '@mui/icons-material/TrendingFlatRounded'
 import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded'
 import { Box, Stack, Switch, Typography, useTheme } from '@mui/material'
-import { memo, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import type { IRelatedNewsEventItem } from '@/service/mi/newsletter'
 
@@ -107,4 +107,4 @@ const InflectionPointMenu = ({ showInChart, trend, onShowInChartChange, onTrendC
   )
 }
 
-export default memo(InflectionPointMenu)
+export default InflectionPointMenu

@@ -233,34 +233,30 @@ const NewsletterDetailPage = () => {
   resetImagesRef.current = resetImages
   resetChartSettingsRef.current = resetChartSettings
 
-  const newsFlowProps = useMemo(() => getNewsFlowProps(effectiveSnapshot), [effectiveSnapshot])
-  const refs = useMemo(() => getOrderedReferenceSections(effectiveSnapshot), [effectiveSnapshot])
-  const newsFlowSection = useMemo(() => findPrimaryRelatedNewsSection(effectiveSnapshot), [effectiveSnapshot])
-  const hasMainChartData = useMemo(
-    () =>
-      newsFlowSection?.visibility !== false &&
-      ((newsFlowProps.chartData.timestamps?.length ?? 0) > 0 ||
-        newsFlowProps.chartData.series?.some((s) => (s.values?.length ?? 0) > 0) ||
-        false),
-    [newsFlowSection?.visibility, newsFlowProps.chartData.timestamps, newsFlowProps.chartData.series],
-  )
-  const hasReferenceChartData = useMemo(
-    () =>
-      refs.some((sec) => {
-        if (isReferenceSectionRemoved(sec) || !sec.visibility) return false
-        return getReferenceContentBlocks(sec).some((b) => {
-          if (b.type !== 'CHART' || !b.visibility || isReferenceBlockRemoved(b)) return false
-          const c = getBlockFields<{
-            timestamps?: number[]
-            series?: { values?: number[] }[]
-          }>(b)
-          const hasTs = (c?.timestamps?.length ?? 0) > 0
-          const hasSeries = c?.series?.some((s) => (s.values?.length ?? 0) > 0) ?? false
-          return hasTs || hasSeries
-        })
-      }),
-    [refs],
-  )
+  const newsFlowProps = getNewsFlowProps(effectiveSnapshot)
+  const refs = getOrderedReferenceSections(effectiveSnapshot)
+  /** 메인 차트에 그릴 데이터가 있는지 (섹션이 숨겨져 있으면 차트가 렌더되지 않아 이미지가 생성되지 않으므로 제외) */
+  const newsFlowSection = findPrimaryRelatedNewsSection(effectiveSnapshot)
+  const hasMainChartData =
+    newsFlowSection?.visibility !== false &&
+    ((newsFlowProps.chartData.timestamps?.length ?? 0) > 0 ||
+      newsFlowProps.chartData.series?.some((s) => (s.values?.length ?? 0) > 0) ||
+      false)
+  /** 참고자료 차트에 그릴 데이터가 있는지 */
+  const hasReferenceChartData = refs.some((sec) => {
+    if (isReferenceSectionRemoved(sec) || !sec.visibility) return false
+    return getReferenceContentBlocks(sec).some((b) => {
+      if (b.type !== 'CHART' || !b.visibility || isReferenceBlockRemoved(b)) return false
+      const c = getBlockFields<{
+        timestamps?: number[]
+        series?: { values?: number[] }[]
+      }>(b)
+      const hasTs = (c?.timestamps?.length ?? 0) > 0
+      const hasSeries = c?.series?.some((s) => (s.values?.length ?? 0) > 0) ?? false
+      return hasTs || hasSeries
+    })
+  })
+  /** 차트 이미지가 필요한지 (실제 차트 데이터가 있어서 이미지 생성 대기 중) */
   const hasChartsToRender = hasReferenceChartData || hasMainChartData
 
   const suppressNewsFlowChartUi = useMemo(() => shouldSuppressNewsFlowChartUi(effectiveSnapshot), [effectiveSnapshot])
@@ -505,10 +501,7 @@ const NewsletterDetailPage = () => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
     if (!scrollEl) return undefined
 
-    const handleScroll = () => {
-      const scrolled = scrollEl.scrollTop > 0
-      setIsScrolled((prev) => (prev === scrolled ? prev : scrolled))
-    }
+    const handleScroll = () => setIsScrolled(scrollEl.scrollTop > 0)
     handleScroll()
     scrollEl.addEventListener('scroll', handleScroll)
     return () => scrollEl.removeEventListener('scroll', handleScroll)
@@ -736,18 +729,6 @@ const NewsletterDetailPage = () => {
     }
   }, [needsLeaveConfirm, clearLocalDraft])
 
-  const saveDisabledDebugInfo = useMemo(
-    () => ({
-      hasUnsavedChanges,
-      isEditSnapshotValid,
-      validationIssues: editSaveValidation.issues,
-    }),
-    [hasUnsavedChanges, isEditSnapshotValid, editSaveValidation.issues],
-  )
-
-  const handlePrepareScroll = useCallback(() => setForceScrolled(true), [])
-  const handleScrollComplete = useCallback(() => setForceScrolled(null), [])
-
   const handleLeaveEditSaveDraft = useCallback(async () => {
     setIsSavingOnLeave(true)
     try {
@@ -958,19 +939,19 @@ const NewsletterDetailPage = () => {
         const sec = effectiveSnapshot.sections.find((s) => s.id === sid)
         const title = String(sec?.fields?.title ?? '').trim()
         return {
-          id: newsletterEditAnchorDomId(editorKey, effectiveSnapshot),
+          id: newsletterEditAnchorDomId(editorKey),
           label: `${String(ordinal).padStart(2, '0')} ${title || `Reference ${referenceOrdinal}`}`,
         }
       }
       if (isFixedSlot) {
         return {
-          id: newsletterEditAnchorDomId(editorKey, effectiveSnapshot),
+          id: newsletterEditAnchorDomId(editorKey),
           label: NEWSLETTER_SECTION_EDIT_LABEL[editorKey] ?? editorKey,
         }
       }
       ordinal += 1
       return {
-        id: newsletterEditAnchorDomId(editorKey, effectiveSnapshot),
+        id: newsletterEditAnchorDomId(editorKey),
         label: `${String(ordinal).padStart(2, '0')} ${NEWSLETTER_SECTION_EDIT_LABEL[editorKey] ?? editorKey}`,
       }
     })
@@ -992,13 +973,16 @@ const NewsletterDetailPage = () => {
     for (const s of ordered) {
       const kind = newsletterSectionToEmailTemplateKind(s)
       if (kind === 'UNKNOWN') continue
-      if (kind === 'DATE_ISSUE') {
-        items.push({
-          id: `section-dateAndIssue-${s.id}`,
-          label: NEWSLETTER_SECTION_EDIT_LABEL[NEWSLETTER_SECTION_CODE.DATE_ISSUE] ?? 'Date',
-        })
-        continue
-      }
+      // if (kind === 'COVER') {
+      //   if (!items.some((it) => it.id === 'section-cover')) {
+      //     items.push({ id: 'section-cover', label: 'Cover' })
+      //   }
+      //   continue
+      // }
+      // if (kind === 'DATE_ISSUE') {
+      //   items.push({ id: `section-dateAndIssue-${s.id}`, label: 'Date & Issue' })
+      //   continue
+      // }
       // if (kind === 'TITLE') {
       //   titleCount += 1
       //   const headline = getTitleProps(viewSnapshot, s).title.trim()
@@ -1112,7 +1096,11 @@ const NewsletterDetailPage = () => {
         isSaving={isSaving}
         isSavingDraft={isSavingDraft}
         isSaveDisabled={!hasUnsavedChanges || !isEditSnapshotValid}
-        saveDisabledDebugInfo={saveDisabledDebugInfo}
+        saveDisabledDebugInfo={{
+          hasUnsavedChanges,
+          isEditSnapshotValid,
+          validationIssues: editSaveValidation.issues,
+        }}
         isChartActive={isChartModalOpen}
       />
     )
@@ -1354,8 +1342,8 @@ const NewsletterDetailPage = () => {
                     : getTitleProps(viewSnapshot).title
                 }
                 isScrolled={effectiveIsScrolled}
-                onPrepareScroll={handlePrepareScroll}
-                onScrollComplete={handleScrollComplete}
+                onPrepareScroll={() => setForceScrolled(true)}
+                onScrollComplete={() => setForceScrolled(null)}
                 stickyTop={mode === NewsletterDetailPageMode.EDIT || mode === NewsletterDetailPageMode.REVISION ? 180 : 170}
                 scrolledOffset={mode === NewsletterDetailPageMode.EDIT || mode === NewsletterDetailPageMode.REVISION ? 184 : 154}
                 unscrolledOffset={mode === NewsletterDetailPageMode.EDIT || mode === NewsletterDetailPageMode.REVISION ? 220 : 360}

@@ -1,6 +1,6 @@
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import { Box, Stack, Typography } from '@mui/material'
-import { useMemo, memo } from 'react'
+import { useMemo } from 'react'
 
 import Block, { type BlockOrderProps } from './Block'
 
@@ -336,4 +336,4 @@ const ReferenceSection = ({
   )
 }
 
-export default memo(ReferenceSection)
+export default ReferenceSection

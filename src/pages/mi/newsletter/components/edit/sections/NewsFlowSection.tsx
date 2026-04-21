@@ -1,10 +1,7 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import { Box, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { useShallow } from 'zustand/react/shallow'
-
-import type { NewsFormFieldsValue } from '@/pages/mi/newsletter/components/edit/NewsFormFields'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import MIButton from '@/components/common/button/MIButton'
 import MIMaskInput from '@/components/common/input/MIMaskInput'
@@ -63,146 +60,6 @@ interface NewsFlowSectionProps {
   flowChartEditModalOpen?: boolean
 }
 
-interface NewsFlowNewsCardProps {
-  item: IRelatedNewsEventItem
-  adjTs: number | undefined
-  titleEdits: Record<number, string>
-  siblingIds: string[]
-  disableNewsItemOrder: boolean
-  hideNewsFlowChart: boolean
-  canDelete: boolean
-  updateNewsItem: (newsId: string, updates: Partial<IRelatedNewsEventItem>) => void
-  onOrderChange: (newsId: string, targetIndex: number) => void
-  setTitleEdit: (timestamp: number, title: string) => void
-  getCreateTimeError?: (value: string) => string
-  isCreateTimeValid?: (value: string) => boolean
-  getNewsItemMissingRequired?: (newsId: string) => boolean
-}
-
-const NewsFlowNewsCard = memo(
-  ({
-    item,
-    adjTs,
-    titleEdits,
-    siblingIds,
-    disableNewsItemOrder,
-    hideNewsFlowChart,
-    canDelete,
-    updateNewsItem,
-    onOrderChange,
-    setTitleEdit,
-    getCreateTimeError,
-    isCreateTimeValid,
-    getNewsItemMissingRequired,
-  }: NewsFlowNewsCardProps) => {
-    const displayTitle = (adjTs === undefined ? item.title : (titleEdits[adjTs] ?? item.title)) ?? ''
-    const dShowInChart = getEffectiveFieldDef(item.fieldDefs, 'showInChart')
-
-    const handleVisibilityChange = useCallback(
-      (v: boolean) => updateNewsItem(item.newsId, { visibility: v }),
-      [updateNewsItem, item.newsId],
-    )
-
-    const handleShowInChartChange = useCallback(
-      (v: boolean) => updateNewsItem(item.newsId, { showInChart: v }),
-      [updateNewsItem, item.newsId],
-    )
-
-    const handleTrendChange = useCallback(
-      (v: 'UP' | 'NONE' | 'DOWN') => updateNewsItem(item.newsId, { trend: v }),
-      [updateNewsItem, item.newsId],
-    )
-
-    const handleDelete = useCallback(() => updateNewsItem(item.newsId, { removed: true }), [updateNewsItem, item.newsId])
-
-    const handleOrderChange = useCallback((targetIndex: number) => onOrderChange(item.newsId, targetIndex), [onOrderChange, item.newsId])
-
-    const order = useMemo(
-      () => ({
-        siblingIds,
-        currentId: item.newsId,
-        onOrderChange: handleOrderChange,
-        ...(disableNewsItemOrder ? { disabled: true } : {}),
-      }),
-      [siblingIds, item.newsId, handleOrderChange, disableNewsItemOrder],
-    )
-
-    const customSlot = useMemo(
-      () =>
-        hideNewsFlowChart ? undefined : (
-          <InflectionPointMenu
-            showInChart={item.showInChart}
-            trend={item.trend ?? ''}
-            onShowInChartChange={handleShowInChartChange}
-            onTrendChange={handleTrendChange}
-            disabled={dShowInChart.disabled}
-          />
-        ),
-      [hideNewsFlowChart, item.showInChart, item.trend, handleShowInChartChange, handleTrendChange, dShowInChart.disabled],
-    )
-
-    const value = useMemo<NewsFormFieldsValue>(
-      () => ({
-        createdDate: item.createdDate ? dayjs(item.createdDate) : undefined,
-        createTime: item.createTime ?? '',
-        source: item.source ?? '',
-        originalLink: item.originalLink ?? '',
-        title: displayTitle,
-        content: (item.content ?? []).join('\n\n'),
-      }),
-      [item.createdDate, item.createTime, item.source, item.originalLink, displayTitle, item.content],
-    )
-
-    const handleFormChange = useCallback(
-      (updates: Partial<NewsFormFieldsValue>) => {
-        const next: Partial<IRelatedNewsEventItem> = {}
-        if (updates.createdDate !== undefined) {
-          next.createdDate = updates.createdDate?.format('YYYY-MM-DD') ?? ''
-        }
-        if (updates.createTime !== undefined) next.createTime = updates.createTime
-        if (updates.source !== undefined) next.source = updates.source
-        if (updates.originalLink !== undefined) next.originalLink = updates.originalLink
-        if (updates.title !== undefined) {
-          next.title = updates.title
-          if (adjTs !== undefined) setTitleEdit(adjTs, updates.title)
-        }
-        if (updates.content !== undefined) {
-          next.content = updates.content ? updates.content.split(/\n\n+/).filter(Boolean) : []
-        }
-        if (updates.createdDate !== undefined || updates.createTime !== undefined) {
-          const newDate = next.createdDate ?? item.createdDate ?? ''
-          const newTime = next.createTime ?? item.createTime ?? ''
-          next.timestamp = createTimestampInNY(newDate, newTime)
-        }
-        if (Object.keys(next).length > 0) updateNewsItem(item.newsId, next)
-      },
-      [adjTs, setTitleEdit, updateNewsItem, item.newsId, item.createdDate, item.createTime],
-    )
-
-    return (
-      <Block
-        label="News"
-        order={order}
-        collapsedPreview={displayTitle || undefined}
-        visibility={item.visibility !== false}
-        onVisibilityChange={handleVisibilityChange}
-        customSlot={customSlot}
-        onDelete={canDelete ? handleDelete : undefined}
-        showRequiredIndicator={getNewsItemMissingRequired?.(item.newsId) ?? false}
-      >
-        <NewsFormFields
-          fieldDefs={item.fieldDefs}
-          value={value}
-          onChange={handleFormChange}
-          getCreateTimeError={getCreateTimeError}
-          isCreateTimeValid={isCreateTimeValid}
-        />
-      </Block>
-    )
-  },
-)
-NewsFlowNewsCard.displayName = 'NewsFlowNewsCard'
-
 const NewsFlowSection = ({
   chartData,
   relatedNews = [],
@@ -229,17 +86,7 @@ const NewsFlowSection = ({
   const dFlowAgg = getEffectiveFieldDef(sectionFieldDefs, 'aggregationTime')
   const visibleRelatedNews = useMemo(() => filterVisibleNewsFlowItems(relatedNews), [relatedNews])
   const chartRelatedNews = useMemo(() => visibleRelatedNews.filter((n) => n.visibility !== false), [visibleRelatedNews])
-  const { chartType, boxPositions, titleEdits, setChartType, onBoxPositionChange, resetBoxPositions, setTitleEdit } = useChartEditStore(
-    useShallow((s) => ({
-      chartType: s.chartType,
-      boxPositions: s.boxPositions,
-      titleEdits: s.titleEdits,
-      setChartType: s.setChartType,
-      onBoxPositionChange: s.onBoxPositionChange,
-      resetBoxPositions: s.resetBoxPositions,
-      setTitleEdit: s.setTitleEdit,
-    })),
-  )
+  const { chartType, boxPositions, titleEdits, setChartType, onBoxPositionChange, resetBoxPositions, setTitleEdit } = useChartEditStore()
 
   const handleResetChartLayout = useCallback(() => {
     resetBoxPositions()
@@ -305,20 +152,26 @@ const NewsFlowSection = ({
     [onRelatedNewsChange, relatedNews],
   )
 
-  const siblingIds = useMemo(() => visibleRelatedNews.map((n) => n.newsId), [visibleRelatedNews])
+  /** 스냅샷에서 블록·JSON Patch 추적을 위해 행 제거 대신 soft-delete */
+  const handleDeleteNews = useCallback(
+    (newsId: string) => {
+      if (!onRelatedNewsChange) return
+      onRelatedNewsChange(relatedNews.map((n) => (n.newsId === newsId ? { ...n, removed: true } : n)))
+    },
+    [onRelatedNewsChange, relatedNews],
+  )
 
   const handleNewsOrderChange = useCallback(
     (newsId: string, targetIndex: number) => {
       if (!onRelatedNewsChange) return
-      const active = filterVisibleNewsFlowItems(relatedNews)
-      const fromIndex = active.findIndex((n) => n.newsId === newsId)
+      const visible = filterVisibleNewsFlowItems(relatedNews)
+      const fromIndex = visible.findIndex((n) => n.newsId === newsId)
       if (fromIndex < 0 || targetIndex === fromIndex) return
-      const nextActive = [...active]
-      const [moved] = nextActive.splice(fromIndex, 1)
-      nextActive.splice(targetIndex, 0, moved!)
-      let i = 0
-      const merged = relatedNews.map((n) => (n.removed === true ? n : nextActive[i++]!))
-      onRelatedNewsChange(merged)
+      const nextVisible = [...visible]
+      const [moved] = nextVisible.splice(fromIndex, 1)
+      nextVisible.splice(targetIndex, 0, moved!)
+      const hidden = relatedNews.filter((n) => n.removed === true)
+      onRelatedNewsChange([...nextVisible, ...hidden])
     },
     [onRelatedNewsChange, relatedNews],
   )
@@ -392,24 +245,75 @@ const NewsFlowSection = ({
         ) : null}
       </Stack>
       <Stack pt="12px" gap="12px">
-        {visibleRelatedNews.map((item) => (
-          <NewsFlowNewsCard
-            key={item.newsId}
-            item={item}
-            adjTs={newsIdToAdjustedTimestamp.get(item.newsId)}
-            titleEdits={titleEdits}
-            siblingIds={siblingIds}
-            disableNewsItemOrder={disableNewsItemOrder}
-            hideNewsFlowChart={hideNewsFlowChart}
-            canDelete={!!onRelatedNewsChange}
-            updateNewsItem={updateNewsItem}
-            onOrderChange={handleNewsOrderChange}
-            setTitleEdit={setTitleEdit}
-            getCreateTimeError={getCreateTimeError}
-            isCreateTimeValid={isCreateTimeValid}
-            getNewsItemMissingRequired={getNewsItemMissingRequired}
-          />
-        ))}
+        {visibleRelatedNews.map((item) => {
+          const adjTs = newsIdToAdjustedTimestamp.get(item.newsId)
+          const displayTitle = (adjTs === undefined ? item.title : (titleEdits[adjTs] ?? item.title)) ?? ''
+          const dShowInChart = getEffectiveFieldDef(item.fieldDefs, 'showInChart')
+          return (
+            <Block
+              key={item.newsId}
+              label="News"
+              order={{
+                siblingIds: visibleRelatedNews.map((n) => n.newsId),
+                currentId: item.newsId,
+                onOrderChange: (targetIndex) => handleNewsOrderChange(item.newsId, targetIndex),
+                ...(disableNewsItemOrder ? { disabled: true } : {}),
+              }}
+              collapsedPreview={displayTitle || undefined}
+              visibility={item.visibility !== false}
+              onVisibilityChange={(v) => updateNewsItem(item.newsId, { visibility: v })}
+              customSlot={
+                hideNewsFlowChart ? undefined : (
+                  <InflectionPointMenu
+                    showInChart={item.showInChart}
+                    trend={item.trend ?? ''}
+                    onShowInChartChange={(v) => updateNewsItem(item.newsId, { showInChart: v })}
+                    onTrendChange={(v) => updateNewsItem(item.newsId, { trend: v })}
+                    disabled={dShowInChart.disabled}
+                  />
+                )
+              }
+              onDelete={onRelatedNewsChange ? () => handleDeleteNews(item.newsId) : undefined}
+              showRequiredIndicator={getNewsItemMissingRequired?.(item.newsId) ?? false}
+            >
+              <NewsFormFields
+                fieldDefs={item.fieldDefs}
+                value={{
+                  createdDate: item.createdDate ? dayjs(item.createdDate) : undefined,
+                  createTime: item.createTime ?? '',
+                  source: item.source ?? '',
+                  originalLink: item.originalLink ?? '',
+                  title: displayTitle,
+                  content: (item.content ?? []).join('\n\n'),
+                }}
+                onChange={(updates) => {
+                  const next: Partial<IRelatedNewsEventItem> = {}
+                  if (updates.createdDate !== undefined) {
+                    next.createdDate = updates.createdDate?.format('YYYY-MM-DD') ?? ''
+                  }
+                  if (updates.createTime !== undefined) next.createTime = updates.createTime
+                  if (updates.source !== undefined) next.source = updates.source
+                  if (updates.originalLink !== undefined) next.originalLink = updates.originalLink
+                  if (updates.title !== undefined) {
+                    next.title = updates.title
+                    if (adjTs !== undefined) setTitleEdit(adjTs, updates.title)
+                  }
+                  if (updates.content !== undefined) {
+                    next.content = updates.content ? updates.content.split(/\n\n+/).filter(Boolean) : []
+                  }
+                  if (updates.createdDate !== undefined || updates.createTime !== undefined) {
+                    const newDate = next.createdDate ?? item.createdDate ?? ''
+                    const newTime = next.createTime ?? item.createTime ?? ''
+                    next.timestamp = createTimestampInNY(newDate, newTime)
+                  }
+                  if (Object.keys(next).length > 0) updateNewsItem(item.newsId, next)
+                }}
+                getCreateTimeError={getCreateTimeError}
+                isCreateTimeValid={isCreateTimeValid}
+              />
+            </Block>
+          )
+        })}
         {onRelatedNewsChange && (
           <Stack pt="12px" gap="8px">
             <MIButton type="outlined" size="h42" color="gray" width="100%" startIcon={<AddRoundedIcon />} onClick={handleAddNews}>
@@ -423,7 +327,7 @@ const NewsFlowSection = ({
               fieldDefs={newsCardTemplateFieldDefs}
             />
             <Typography variant="body3" color="contentText.Subtext">
-              저장 시 뉴스 카드 순서는 편집 화면에서 정한 순서가 유지됩니다.
+              수정 또는 추가한 뉴스는 저장 후 시간 순으로 자동 정렬됩니다.
             </Typography>
           </Stack>
         )}

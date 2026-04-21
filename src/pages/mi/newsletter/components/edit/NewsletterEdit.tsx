@@ -158,98 +158,26 @@ const NewsletterEdit = ({
     [orderableIds, handleSectionOrderChange, onSnapshotReorder],
   )
 
-  const coverProps = useMemo(() => getCoverProps(snapshot), [snapshot])
-  const dateIssueProps = useMemo(() => getDateIssueProps(snapshot), [snapshot])
-  const titleProps = useMemo(() => getTitleProps(snapshot), [snapshot])
-  const summaryProps = useMemo(() => getSummaryProps(snapshot), [snapshot])
-  const newsFlowProps = useMemo(() => getNewsFlowProps(snapshot), [snapshot])
-  const newsFlowSection = useMemo(() => findFirstNewsFlowSection(snapshot), [snapshot])
-  const sigNewsSection = useMemo(() => findFirstSigNewsSection(snapshot), [snapshot])
-  const sigNewsProps = useMemo(() => (sigNewsSection ? getNewsFlowProps(snapshot, sigNewsSection) : null), [snapshot, sigNewsSection])
-  const disableNewsFlowItemOrder = newsFlowSection !== undefined && isNewsFlowTimeSortedSectionCode(newsFlowSection.code)
-  const disableSigNewsItemOrder = sigNewsSection !== undefined && isNewsFlowTimeSortedSectionCode(sigNewsSection.code)
-  const marketTimes = useMemo(() => getMarketTimes(snapshot), [snapshot])
-  const footerProps = useMemo(() => getFooterProps(snapshot), [snapshot])
-
-  const coverSection = useMemo(
-    () => (snapshot ? findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.COVER) : null),
-    [snapshot],
-  )
-  const dateIssueSection = useMemo(
-    () => (snapshot ? findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.DATE_ISSUE) : null),
-    [snapshot],
-  )
-  const titleSection = useMemo(
-    () => (snapshot ? findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.TITLE) : null),
-    [snapshot],
-  )
-  const summarySection = useMemo(
-    () => (snapshot ? findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.SUMMARY) : null),
-    [snapshot],
-  )
-  const footerSection = useMemo(
-    () => (snapshot ? findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.FOOTER) : null),
-    [snapshot],
-  )
-
-  const handleSectionVisibility = useCallback(
-    (sectionId: string | undefined, visible: boolean) => {
-      if (sectionId) onSectionVisibilityChange?.(sectionId, visible)
-    },
-    [onSectionVisibilityChange],
-  )
-
-  const getNewsFlowItemMissingRequired = useCallback(
-    (newsId: string) => hasAnyMissingRequiredWithPrefix(`NEWS_FLOW.newsEventItems[newsId=${newsId}]`),
-    [hasAnyMissingRequiredWithPrefix],
-  )
-
-  const newsFlowChartData = useMemo(
-    () => ({
-      chartData: newsFlowProps.chartData,
-      title: newsFlowProps.title,
-      aggregationTime: newsFlowProps.aggregationTime,
-    }),
-    [newsFlowProps.chartData, newsFlowProps.title, newsFlowProps.aggregationTime],
-  )
-
-  const newsFlowCardTemplateFieldDefs = useMemo(() => getFirstNewsCardBlockFieldDefs(newsFlowSection), [newsFlowSection])
-
-  const sigNewsCardTemplateFieldDefs = useMemo(
-    () => (sigNewsSection ? getFirstNewsCardBlockFieldDefs(sigNewsSection) : undefined),
-    [sigNewsSection],
-  )
-
-  const onCoverVisibility = useCallback(
-    (visible: boolean) => handleSectionVisibility(coverSection?.id, visible),
-    [handleSectionVisibility, coverSection?.id],
-  )
-  const onDateIssueVisibility = useCallback(
-    (visible: boolean) => handleSectionVisibility(dateIssueSection?.id, visible),
-    [handleSectionVisibility, dateIssueSection?.id],
-  )
-  const onTitleVisibility = useCallback(
-    (visible: boolean) => handleSectionVisibility(titleSection?.id, visible),
-    [handleSectionVisibility, titleSection?.id],
-  )
-  const onSummaryVisibility = useCallback(
-    (visible: boolean) => handleSectionVisibility(summarySection?.id, visible),
-    [handleSectionVisibility, summarySection?.id],
-  )
-  const onNewsFlowVisibility = useCallback(
-    (visible: boolean) => handleSectionVisibility(newsFlowSection?.id, visible),
-    [handleSectionVisibility, newsFlowSection?.id],
-  )
-  const onFooterVisibility = useCallback(
-    (visible: boolean) => handleSectionVisibility(footerSection?.id, visible),
-    [handleSectionVisibility, footerSection?.id],
-  )
-  const onSigNewsVisibility = useCallback(
-    (visible: boolean) => handleSectionVisibility(sigNewsSection?.id, visible),
-    [handleSectionVisibility, sigNewsSection?.id],
-  )
-
   const sectionMap = useMemo(() => {
+    const coverProps = getCoverProps(snapshot)
+    const dateIssueProps = getDateIssueProps(snapshot)
+    const titleProps = getTitleProps(snapshot)
+    const summaryProps = getSummaryProps(snapshot)
+    const newsFlowProps = getNewsFlowProps(snapshot)
+    const newsFlowSection = findFirstNewsFlowSection(snapshot)
+    const sigNewsSection = findFirstSigNewsSection(snapshot)
+    const sigNewsProps = sigNewsSection ? getNewsFlowProps(snapshot, sigNewsSection) : null
+    const disableNewsFlowItemOrder = newsFlowSection !== undefined && isNewsFlowTimeSortedSectionCode(newsFlowSection.code)
+    const disableSigNewsItemOrder = sigNewsSection !== undefined && isNewsFlowTimeSortedSectionCode(sigNewsSection.code)
+    const { marketOpenTime, marketCloseTime } = getMarketTimes(snapshot)
+    const footerProps = getFooterProps(snapshot)
+
+    const coverSection = snapshot ? findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.COVER) : null
+    const dateIssueSection = snapshot ? findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.DATE_ISSUE) : null
+    const titleSection = snapshot ? findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.TITLE) : null
+    const summarySection = snapshot ? findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.SUMMARY) : null
+    const footerSection = snapshot ? findFirstSectionByCanonicalCode(snapshot, NEWSLETTER_SECTION_CODE.FOOTER) : null
+
     const fixedSectionMap: Record<string, React.ReactNode> = {
       [NEWSLETTER_SECTION_CODE.COVER]: (
         <CoverSection
@@ -264,7 +192,7 @@ const NewsletterEdit = ({
           onDescriptionChange={onDescriptionChange}
           showRequiredIndicator={hasAnyMissingRequiredWithPrefix('COVER')}
           sectionVisibility={coverSection?.visibility !== false}
-          onSectionVisibilityChange={onCoverVisibility}
+          onSectionVisibilityChange={(visible) => (coverSection?.id ? onSectionVisibilityChange?.(coverSection.id, visible) : undefined)}
         />
       ),
       [NEWSLETTER_SECTION_CODE.DATE_ISSUE]: (
@@ -274,7 +202,9 @@ const NewsletterEdit = ({
           blockOrder={getBlockOrder(NEWSLETTER_SECTION_CODE.DATE_ISSUE)}
           showRequiredIndicator={hasAnyMissingRequiredWithPrefix('DATE_ISSUE')}
           sectionVisibility={dateIssueSection?.visibility !== false}
-          onSectionVisibilityChange={onDateIssueVisibility}
+          onSectionVisibilityChange={(visible) =>
+            dateIssueSection?.id ? onSectionVisibilityChange?.(dateIssueSection.id, visible) : undefined
+          }
         />
       ),
       [NEWSLETTER_SECTION_CODE.TITLE]: (
@@ -291,7 +221,7 @@ const NewsletterEdit = ({
           blockOrder={getBlockOrder(NEWSLETTER_SECTION_CODE.TITLE)}
           showRequiredIndicator={hasAnyMissingRequiredWithPrefix('TITLE')}
           sectionVisibility={titleSection?.visibility !== false}
-          onSectionVisibilityChange={onTitleVisibility}
+          onSectionVisibilityChange={(visible) => (titleSection?.id ? onSectionVisibilityChange?.(titleSection.id, visible) : undefined)}
         />
       ),
       [NEWSLETTER_SECTION_CODE.SUMMARY]: (
@@ -302,18 +232,24 @@ const NewsletterEdit = ({
           blockOrder={getBlockOrder(NEWSLETTER_SECTION_CODE.SUMMARY)}
           showRequiredIndicator={hasAnyMissingRequiredWithPrefix('SUMMARY')}
           sectionVisibility={summarySection?.visibility !== false}
-          onSectionVisibilityChange={onSummaryVisibility}
+          onSectionVisibilityChange={(visible) =>
+            summarySection?.id ? onSectionVisibilityChange?.(summarySection.id, visible) : undefined
+          }
         />
       ),
       [NEWSLETTER_SECTION_CODE.SECTION]: (
         <NewsFlowSection
           key={NEWSLETTER_SECTION_CODE.SECTION}
-          chartData={newsFlowChartData}
+          chartData={{
+            chartData: newsFlowProps.chartData,
+            title: newsFlowProps.title,
+            aggregationTime: newsFlowProps.aggregationTime,
+          }}
           sectionFieldDefs={newsFlowSection?.fieldDefs}
-          newsCardTemplateFieldDefs={newsFlowCardTemplateFieldDefs}
+          newsCardTemplateFieldDefs={getFirstNewsCardBlockFieldDefs(newsFlowSection)}
           relatedNews={newsFlowProps.newsEventItems}
-          marketOpenTime={marketTimes.marketOpenTime}
-          marketCloseTime={marketTimes.marketCloseTime}
+          marketOpenTime={marketOpenTime}
+          marketCloseTime={marketCloseTime}
           onChartImageReady={onMainChartImageReady}
           onRelatedNewsChange={onRelatedNewsChange}
           onTitleChange={onNewsFlowTitleChange}
@@ -322,9 +258,11 @@ const NewsletterEdit = ({
           hideNewsFlowChart={suppressNewsFlowChartUi}
           disableNewsItemOrder={disableNewsFlowItemOrder}
           showRequiredIndicator={hasAnyMissingRequiredWithPrefix('NEWS_FLOW')}
-          getNewsItemMissingRequired={getNewsFlowItemMissingRequired}
+          getNewsItemMissingRequired={(newsId) => hasAnyMissingRequiredWithPrefix(`NEWS_FLOW.newsEventItems[newsId=${newsId}]`)}
           sectionVisibility={newsFlowSection?.visibility !== false}
-          onSectionVisibilityChange={onNewsFlowVisibility}
+          onSectionVisibilityChange={(visible) =>
+            newsFlowSection?.id ? onSectionVisibilityChange?.(newsFlowSection.id, visible) : undefined
+          }
           onBoxPositionDragEnd={onBoxPositionDragEnd}
           flowChartEditModalOpen={flowChartEditModalOpen}
         />
@@ -338,7 +276,7 @@ const NewsletterEdit = ({
           onShowLogoChange={onFooterShowLogoChange}
           showRequiredIndicator={hasAnyMissingRequiredWithPrefix('FOOTER')}
           sectionVisibility={footerSection?.visibility !== false}
-          onSectionVisibilityChange={onFooterVisibility}
+          onSectionVisibilityChange={(visible) => (footerSection?.id ? onSectionVisibilityChange?.(footerSection.id, visible) : undefined)}
         />
       ),
     }
@@ -352,7 +290,7 @@ const NewsletterEdit = ({
               title={sigNewsProps.title}
               aggregationTime={sigNewsProps.aggregationTime}
               sectionFieldDefs={sigNewsSection.fieldDefs}
-              newsCardTemplateFieldDefs={sigNewsCardTemplateFieldDefs}
+              newsCardTemplateFieldDefs={getFirstNewsCardBlockFieldDefs(sigNewsSection)}
               relatedNews={sigNewsProps.newsEventItems}
               onRelatedNewsChange={onRelatedNewsChange}
               onTitleChange={onNewsFlowTitleChange}
@@ -360,9 +298,11 @@ const NewsletterEdit = ({
               blockOrder={getBlockOrder(NEWSLETTER_SECTION_CODE.SIG_NEWS)}
               disableNewsItemOrder={disableSigNewsItemOrder}
               showRequiredIndicator={hasAnyMissingRequiredWithPrefix('NEWS_FLOW')}
-              getNewsItemMissingRequired={getNewsFlowItemMissingRequired}
+              getNewsItemMissingRequired={(newsId) => hasAnyMissingRequiredWithPrefix(`NEWS_FLOW.newsEventItems[newsId=${newsId}]`)}
               sectionVisibility={sigNewsSection.visibility}
-              onSectionVisibilityChange={onSigNewsVisibility}
+              onSectionVisibilityChange={(visible) =>
+                sigNewsSection?.id ? onSectionVisibilityChange?.(sigNewsSection.id, visible) : undefined
+              }
             />
           ),
         }
@@ -406,8 +346,8 @@ const NewsletterEdit = ({
         <ReferenceSection
           key={sectionId}
           {...sharedBase}
-          marketOpenTime={marketTimes.marketOpenTime}
-          marketCloseTime={marketTimes.marketCloseTime}
+          marketOpenTime={marketOpenTime}
+          marketCloseTime={marketCloseTime}
           onChartImageReady={onReferenceChartImageReady}
           getFlatChartIndex={(contentBlockIndex: number) => getFlatChartIndexBySectionId(refSection.id, contentBlockIndex)}
           showRequiredIndicator={missingRef}
@@ -417,30 +357,10 @@ const NewsletterEdit = ({
     })
     return map
   }, [
-    coverProps,
-    dateIssueProps,
-    titleProps,
-    summaryProps,
-    newsFlowProps.newsEventItems,
-    newsFlowChartData,
-    newsFlowSection,
-    newsFlowCardTemplateFieldDefs,
-    sigNewsSection,
-    sigNewsProps,
-    sigNewsCardTemplateFieldDefs,
-    disableNewsFlowItemOrder,
-    disableSigNewsItemOrder,
-    marketTimes,
-    footerProps,
-    coverSection,
-    dateIssueSection,
-    titleSection,
-    summarySection,
-    footerSection,
+    snapshot,
     referenceSections,
     getBlockOrder,
     hasAnyMissingRequiredWithPrefix,
-    getNewsFlowItemMissingRequired,
     updateReferenceFieldsById,
     updateReferenceSectionVisibilityById,
     deleteReferenceBySectionId,
@@ -465,13 +385,7 @@ const NewsletterEdit = ({
     onRelatedNewsChange,
     onFooterContentChange,
     onFooterShowLogoChange,
-    onCoverVisibility,
-    onDateIssueVisibility,
-    onTitleVisibility,
-    onSummaryVisibility,
-    onNewsFlowVisibility,
-    onFooterVisibility,
-    onSigNewsVisibility,
+    onSectionVisibilityChange,
     onBoxPositionDragEnd,
     suppressNewsFlowChartUi,
     flowChartEditModalOpen,
@@ -484,7 +398,7 @@ const NewsletterEdit = ({
           const node = sectionMap[id]
           if (!node) return null
           return (
-            <Box key={id} id={newsletterEditAnchorDomId(id, snapshot)}>
+            <Box key={id} id={newsletterEditAnchorDomId(id)}>
               {node}
             </Box>
           )

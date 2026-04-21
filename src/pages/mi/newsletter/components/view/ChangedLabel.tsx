@@ -23,49 +23,17 @@ const CHANGE_LABEL_STYLES = {
     strikethrough: false,
   },
   reordered: {
-    label: '순서변경',
+    label: '변경됨',
     bgcolor: '#EEF3FF',
     textColor: '#3451b2',
     strikethrough: false,
   },
-  visibilityHidden: {
-    label: '숨김',
-    bgcolor: '#f0f2f8',
-    textColor: '#4a5682',
-    strikethrough: false,
-  },
-  visibilityShown: {
-    label: '표시됨',
-    bgcolor: '#E8F7EE',
-    textColor: '#1f8a4c',
-    strikethrough: false,
-  },
-  sectionRestored: {
-    label: '복원됨',
-    bgcolor: '#E8F0FF',
-    textColor: '#3451b2',
-    strikethrough: false,
-  },
-  sectionRemoved: {
-    label: '섹션 삭제됨',
-    bgcolor: '#FDECEC',
-    textColor: '#d64545',
-    strikethrough: false,
-  },
 } as const
-
-export type ChangedLabelFixedKind = keyof typeof CHANGE_LABEL_STYLES
 
 export type ChangedLabelProps = {
   diffHtmls?: (string | undefined)[]
   /** diff HTML 없이 고정 라벨 */
-  labelKind?: ChangedLabelFixedKind
-  /** `labelKind="reordered"`일 때만: 비삭제 코호트 기준 실제 순번(1-based) */
-  orderFrom?: number
-  orderTo?: number
-  /** 실제 순번과 다를 때만: 메일 가시 코호트 기준 순번 */
-  screenFrom?: number
-  screenTo?: number
+  labelKind?: 'added' | 'modified' | 'reordered' | 'deleted'
   top?: number | string
 }
 
@@ -112,23 +80,10 @@ const LabelShapeBox = ({
  * 삭제: "삭제됨"
  * 추가+삭제: "수정됨"
  */
-const ChangedLabel = ({ diffHtmls = [], labelKind, orderFrom, orderTo, screenFrom, screenTo, top = 0 }: ChangedLabelProps) => {
+const ChangedLabel = ({ diffHtmls = [], labelKind, top = 0 }: ChangedLabelProps) => {
   const clipPathId = useId()
-  const changeType: ChangedLabelFixedKind = labelKind ?? getChangeTypeFromDiffHtml(...diffHtmls)
+  const changeType = labelKind ?? getChangeTypeFromDiffHtml(...diffHtmls)
   const style = CHANGE_LABEL_STYLES[changeType]
-  const withScreen =
-    changeType === 'reordered' &&
-    orderFrom !== undefined &&
-    orderTo !== undefined &&
-    screenFrom !== undefined &&
-    screenTo !== undefined &&
-    (screenFrom !== orderFrom || screenTo !== orderTo)
-  const labelText =
-    changeType === 'reordered' && orderFrom !== undefined && orderTo !== undefined
-      ? withScreen
-        ? `순서변경 (${orderFrom} → ${orderTo} · 화면 ${screenFrom} → ${screenTo})`
-        : `순서변경 (${orderFrom} → ${orderTo})`
-      : style.label
 
   return (
     <div style={{ position: 'absolute', top, left: 0, width: 0, overflow: 'visible' }}>
@@ -150,7 +105,7 @@ const ChangedLabel = ({ diffHtmls = [], labelKind, orderFrom, orderTo, screenFro
               fontWeight: 500,
             }}
           >
-            {labelText}
+            {style.label}
           </Typography>
         </LabelShapeBox>
       </div>

@@ -117,20 +117,8 @@ const DiffViewer = ({
 
   const coverSection = findFirstSectionByCanonicalCode(displaySnapshot, NEWSLETTER_SECTION_CODE.COVER)
   const coverContentDiff = !!(diffOverrides?.name || diffOverrides?.description)
-  const coverSectionId = coverSection?.id
-  const coverOrderTag = !!coverSectionId && !!diffOverrides?.sectionOrderChangedSectionIds?.includes(coverSectionId)
-  const coverOrderPos = coverSectionId ? diffOverrides?.sectionOrderChangePositions?.[coverSectionId] : undefined
-  const coverScreenPos = coverSectionId ? diffOverrides?.sectionOrderChangeScreenPositions?.[coverSectionId] : undefined
-  const coverLifecycleKind =
-    coverSectionId && diffOverrides
-      ? diffOverrides.sectionRemovedChanges?.[coverSectionId] === 'restored'
-        ? ('sectionRestored' as const)
-        : diffOverrides.sectionRemovedChanges?.[coverSectionId] === 'removed'
-          ? null
-          : diffOverrides.sectionVisibilityChanges?.[coverSectionId] === 'shown'
-            ? ('visibilityShown' as const)
-            : null
-      : null
+  const coverOrderOnly =
+    !!coverSection?.id && !coverContentDiff && !!diffOverrides?.sectionOrderChangedSectionIds?.includes(coverSection.id)
   const showAnimatedCover = isNewsletterCoverInRenderedSections(displaySnapshot)
 
   return (
@@ -159,17 +147,7 @@ const DiffViewer = ({
                 {(diffOverrides?.name || diffOverrides?.description) && (
                   <ChangedLabel diffHtmls={[diffOverrides?.name, diffOverrides?.description]} />
                 )}
-                {coverLifecycleKind && <ChangedLabel labelKind={coverLifecycleKind} top={coverContentDiff ? '28px' : 0} />}
-                {coverOrderTag && (
-                  <ChangedLabel
-                    labelKind="reordered"
-                    top={coverContentDiff && coverLifecycleKind ? '56px' : coverContentDiff || coverLifecycleKind ? '28px' : 0}
-                    orderFrom={coverOrderPos?.from}
-                    orderTo={coverOrderPos?.to}
-                    screenFrom={coverScreenPos?.from}
-                    screenTo={coverScreenPos?.to}
-                  />
-                )}
+                {coverOrderOnly && <ChangedLabel labelKind="reordered" />}
                 <Cover
                   image={coverProps.imageBase64}
                   frequency={coverProps.frequency}
@@ -213,9 +191,8 @@ const DiffViewer = ({
         useLiveChart
         tempHideCover
         diffOverrides={Object.keys(diffOverrides).length > 0 ? diffOverrides : undefined}
-        includeRemovedNewsFlowItems={true}
+        includeRemovedNewsFlowItems
         diffComparisonSnapshot={previousData}
-        showDroppedSectionGhosts={!!previousData}
       />
     </>
   )
