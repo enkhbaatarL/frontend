@@ -711,14 +711,6 @@ const forecastDataService = {
     return response.data.data
   },
   /**
-   * Forecast 데이터 존재 여부를 조회합니다.
-   * @param companyNo - 관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호
-   */
-  async getForecastDataExists(companyNo: number): Promise<boolean> {
-    const response = await api.get(`mi/forecast/companies/${companyNo}/data/exists`)
-    return response.data.data
-  },
-  /**
    * Forecast 기본 정보를 조회합니다.
    * @param companyNo - 고객사 번호
    */

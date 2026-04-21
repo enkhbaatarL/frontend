@@ -7,7 +7,7 @@ import Link from '@mui/material/Link'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import clsx from 'clsx'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -17,9 +17,9 @@ import logoImg from '@/assets/logo.svg'
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
 import MIHeaderNotice from '@/components/mi/MIHeaderNotice'
 import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
-import { SUBMENU_MAP, MENU_CONFIG } from '@/constants/menu'
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import useEnvironment from '@/hooks/useEnvironment.ts'
+import { buildMiGnbFromCompanyMenus, type MiGnbTopMenu } from '@/lib/miGnbMenuNav'
 import { UserRole } from '@/service/admin/members'
 import useAuthStore from '@/store/useAuthStore'
 import { languageList } from '@/utils/font'
@@ -30,7 +30,7 @@ const boards = [
 ]
 
 interface MIHeaderMainLayoutProps {
-  onMoveTab: (callback: () => void) => void
+  onMoveTab?: (callback: () => void) => void
 }
 
 const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
@@ -52,50 +52,33 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
     return { label, value, customerCompanyMipUrl }
   }, [accessCompanyInfo, user])
 
-  // 현재 언어에 따라 선택된 언어 상태 초기화
   useEffect(() => {
     const currentLang = i18n.language ?? 'ko'
     const currentLanguageOption = languageList.find((option) => option.value === currentLang) ?? languageList[0]
     setSelectedLanguage(currentLanguageOption)
   }, [i18n.language])
 
-  const { companyList, activeMenu, isDeniedDashboardPageLoading } = useCompanyCondition()
+  const { companyList, miHome } = useCompanyCondition()
 
-  const isLoading = isDeniedDashboardPageLoading || activeMenu.length === 0
+  const gnbMenus = useMemo(
+    () =>
+      buildMiGnbFromCompanyMenus(accessCompanyInfo?.menus, {
+        defaultLandingCd: accessCompanyInfo?.defaultLandingCd,
+      }),
+    [accessCompanyInfo?.menus, accessCompanyInfo?.defaultLandingCd],
+  )
 
-  // 비관리자(USER) 로그인 시, 사용자 프로필 기반 설정
+  const resolvedHomePath = miHome()
+
+  const hasDropdownItems = useCallback((menu: MiGnbTopMenu) => menu.rows.some((r) => r.kind === 'item'), [])
+
+  const isLoading = user?.userRoleCd === UserRole.USER && !accessCompanyInfo
+
   useEffect(() => {
     if (user?.userRoleCd === UserRole.USER && !accessCompanyInfo && user?.companyNo && user?.companyNm) {
       loadAccessCompanyInfo(user.companyNo)
     }
   }, [user, accessCompanyInfo, loadAccessCompanyInfo])
-
-  const updatedMainMenus = useMemo(() => {
-    const activeSet = new Set(activeMenu)
-    return MENU_CONFIG.map((item) => {
-      const indexPage = item.index
-      const show = activeSet.has(indexPage)
-      return { ...item, show }
-    })
-  }, [activeMenu])
-
-  const updatedSubmenus = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.entries(SUBMENU_MAP).map(([main, items]) => [
-          main,
-          items.map((item) => {
-            const url = item.to.split('/mi/').pop() ?? ''
-            return {
-              ...item,
-              show: activeMenu.includes(url),
-              desc: item.desc ? t(item.desc) : item.desc,
-            }
-          }),
-        ]),
-      ),
-    [activeMenu, t],
-  )
 
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
@@ -122,18 +105,21 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
     [location.pathname],
   )
 
-  const handleTopClick = (pageUrlKey: string) => {
-    const items = updatedSubmenus[pageUrlKey]
-    if (items && items.length > 0) {
-      navigate(items[0].to)
+  const runNavigate = (path: string) => {
+    if (onMoveTab) {
+      onMoveTab(() => navigate(path))
     } else {
-      navigate(`/mi/${pageUrlKey}`)
+      navigate(path)
     }
   }
 
-  const handleTopKeyDown = (e: React.KeyboardEvent, pageUrlKey: string, currentTarget: HTMLElement) => {
+  const handleTopClick = (menu: MiGnbTopMenu) => {
+    runNavigate(menu.defaultPath)
+  }
+
+  const handleTopKeyDown = (e: KeyboardEvent, menuKey: string, currentTarget: HTMLElement) => {
     if (e.key === 'ArrowDown') {
-      setOpenKey(pageUrlKey)
+      setOpenKey(menuKey)
       setAnchorEl(currentTarget)
     }
     if (e.key === 'Escape') {
@@ -141,18 +127,22 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
     }
   }
 
-  const onTopMouseEnter = (pageUrlKey: string, _currentTarget: HTMLElement) => {
+  const onTopMouseEnter = (menuKey: string) => {
     clearHoverTimer()
     hoverTimer.current = setTimeout(() => {
-      setOpenKey(pageUrlKey)
+      setOpenKey(menuKey)
     }, 1)
   }
+
   const onTopMouseLeave = () => {
     clearHoverTimer()
     hoverTimer.current = setTimeout(() => setOpenKey(null), 1)
   }
 
   const handleClickAway = () => setOpenKey(null)
+
+  const isTopActive = (menu: MiGnbTopMenu) =>
+    isPathActive(menu.defaultPath) || menu.rows.some((r) => r.kind === 'item' && isPathActive(r.to))
 
   return (
     <div className={clsx(style.GNBHeader)}>
@@ -319,7 +309,7 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
               onClick={(e) => {
                 e.preventDefault()
                 if (isProd) {
-                  navigate('/mi')
+                  runNavigate(resolvedHomePath ?? '/mi')
                 } else {
                   navigate('/')
                 }
@@ -330,71 +320,70 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
 
             <Box sx={{ flexGrow: 1, display: 'flex' }}>
               {!isLoading &&
-                updatedMainMenus
-                  .filter((page) => page.show)
-                  .map((page) => {
-                    const indexPage = page.index
-                    const submenuItems = updatedSubmenus[indexPage] ?? []
-                    const isOpen = openKey === indexPage
-                    const isActiveTop = isPathActive(`/mi/${indexPage}`) || submenuItems.some((s) => isPathActive(s.to))
+                gnbMenus.map((menu) => {
+                  const menuKey = menu.key
+                  const isOpen = openKey === menuKey
+                  const isActiveTop = isTopActive(menu)
+                  const showPopper = hasDropdownItems(menu)
 
-                    return (
-                      <Box
-                        key={page.label}
-                        onMouseEnter={(e) => onTopMouseEnter(indexPage, e.currentTarget as HTMLElement)}
-                        onMouseLeave={onTopMouseLeave}
+                  return (
+                    <Box
+                      key={menuKey}
+                      onMouseEnter={() => showPopper && onTopMouseEnter(menuKey)}
+                      onMouseLeave={showPopper ? onTopMouseLeave : undefined}
+                    >
+                      <Button
+                        ref={(el) => {
+                          topBtnRefs.current[menuKey] = el
+                        }}
+                        disableRipple
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handleTopClick(menu)
+                        }}
+                        onKeyDown={(e) => showPopper && handleTopKeyDown(e, menuKey, e.currentTarget as HTMLElement)}
+                        sx={{
+                          position: 'relative',
+                          px: 4,
+                          py: '22px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          borderRadius: 0,
+                          backgroundColor: isOpen ? '#e8e9eb' : 'transparent',
+                          '&:hover': { backgroundColor: '#e8e9eb' },
+                          '.gnb-label': {
+                            color: isOpen || isActiveTop ? '#ff1122' : undefined,
+                            transition: 'color .15s ease',
+                          },
+                        }}
                       >
-                        <Button
-                          ref={(el) => {
-                            topBtnRefs.current[indexPage] = el
-                          }}
-                          disableRipple
-                          onClick={(e) => {
-                            e.preventDefault()
-                            onMoveTab(() => handleTopClick(indexPage))
-                          }}
-                          onKeyDown={(e) => handleTopKeyDown(e, indexPage, e.currentTarget as HTMLElement)}
+                        <Typography
+                          variant="body1M16"
                           sx={{
-                            position: 'relative',
-                            px: 4,
-                            py: '22px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            borderRadius: 0,
-                            backgroundColor: isOpen ? '#e8e9eb' : 'transparent',
-                            '&:hover': { backgroundColor: '#e8e9eb' },
-                            '.gnb-label': {
-                              color: isOpen || isActiveTop ? '#ff1122' : undefined,
-                              transition: 'color .15s ease',
-                            },
+                            textAlign: 'center',
+                            color: isActiveTop ? 'mari.Primary' : 'contentText.normal',
+                            fontWeight: isActiveTop ? 600 : 'normal',
                           }}
                         >
-                          <Typography
-                            variant="body1M16"
-                            sx={{
-                              textAlign: 'center',
-                              color: isActiveTop ? 'mari.Primary' : 'contentText.normal',
-                              fontWeight: isActiveTop ? 600 : 'normal',
-                            }}
-                          >
-                            {page.label}
-                          </Typography>
-                          <Box
-                            sx={{
-                              position: 'absolute',
-                              bottom: -2.5,
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              width: '100%',
-                              height: '2px',
-                              backgroundColor: 'mari.Primary',
-                              opacity: isActiveTop ? 1 : 0,
-                              transition: 'opacity 0.35s ease',
-                            }}
-                          />
-                        </Button>
+                          {menu.topLabel}
+                        </Typography>
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            bottom: -2.5,
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: '100%',
+                            height: '2px',
+                            backgroundColor: 'mari.Primary',
+                            opacity: isActiveTop ? 1 : 0,
+                            transition: 'opacity 0.35s ease',
+                          }}
+                        />
+                      </Button>
 
+                      {showPopper && (
                         <Popper open={isOpen} anchorEl={anchorEl} placement="bottom-start" style={{ zIndex: 1300 }}>
                           <ClickAwayListener onClickAway={handleClickAway}>
                             <Paper
@@ -415,100 +404,90 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
                                   margin: '8px 0 8px 0',
                                 }}
                               >
-                                {submenuItems.map((item, idx) => {
-                                  const active = isPathActive(item.to)
-                                  const prevVisible = submenuItems
-                                    .slice(0, idx)
-                                    .reverse()
-                                    .find((row) => row.show)
-                                  const showSectionHeader = item.show && Boolean(item.section) && prevVisible?.section !== item.section
-                                  return (
-                                    item.show && (
-                                      <Box key={`${item.label}-${idx}`}>
-                                        {showSectionHeader && (
-                                          <Box
-                                            sx={{
-                                              px: 2,
-                                              pt: 3,
-                                              pb: 1,
-                                              color: 'gray.60',
-                                              fontSize: 12,
-                                              fontWeight: 600,
-                                              lineHeight: 1.6,
-                                            }}
-                                          >
-                                            {item.section}
-                                          </Box>
-                                        )}
-
-                                        <Link
-                                          href=""
-                                          onClick={(e) => {
-                                            e.preventDefault()
-                                            setOpenKey(null)
-                                            navigate(item.to)
-                                          }}
-                                          underline="none"
-                                          sx={{
-                                            display: 'flex',
-                                            alignItems: 'flex-start',
-                                            gap: 1.25,
-                                            height: item.desc ? '58px' : '38px',
-                                            transition: 'background-color .15s',
-                                            color: (() => {
-                                              if (item.disable) return 'gray.60'
-                                              if (active) return 'mari.Primary'
-                                              return '#495057'
-                                            })(),
-                                            cursor: item.disable ? 'default' : 'pointer',
-                                            backgroundColor: active ? '#ffffff' : 'transparent',
-                                            '&:hover': {
-                                              backgroundColor: '#e8e9eb',
-                                            },
-                                          }}
-                                        >
-                                          <Box
-                                            sx={{ mt: '8px', ml: item.IconComponent ? '6px' : '2px' }}
-                                            // color={active ? 'mari.Primary' : item.disable ? 'contentText.Disabled' : 'gray.80'}
-                                            color={active ? 'mari.Primary' : 'gray.80'}
-                                          >
-                                            {item.IconComponent ? <item.IconComponent /> : <Box />}
-                                          </Box>
-
-                                          <Box paddingY={'8px'}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                              <Typography
-                                                variant="body1SB16"
-                                                // color={active ? 'mari.Primary' : item.disable ? 'contentText.Disabled' : 'gray.80'}
-                                                color={active ? 'mari.Primary' : 'gray.80'}
-                                                sx={{ display: 'flex', alignItems: 'center' }}
-                                              >
-                                                {item.label}
-                                              </Typography>
-                                            </Box>
-                                            {item.desc && (
-                                              <Typography
-                                                variant="body2M14"
-                                                // color={item.disable ? 'contentText.Disabled' : 'gray.60'}
-                                                color={'gray.60'}
-                                                sx={{ mt: 0.25, display: 'block' }}
-                                              >
-                                                {item.desc}
-                                              </Typography>
-                                            )}
-                                          </Box>
-                                        </Link>
+                                {menu.rows.map((row, idx) => {
+                                  if (row.kind === 'section') {
+                                    const prevKinds = menu.rows.slice(0, idx).map((r) => r.kind)
+                                    const isFirstSection = !prevKinds.includes('item')
+                                    return (
+                                      <Box
+                                        key={`section-${menuKey}-${idx}`}
+                                        sx={{
+                                          px: 2,
+                                          pt: isFirstSection ? 1 : 3,
+                                          pb: 1,
+                                          color: 'gray.60',
+                                          fontSize: 12,
+                                          fontWeight: 600,
+                                          lineHeight: 1.6,
+                                        }}
+                                      >
+                                        {row.title}
                                       </Box>
                                     )
+                                  }
+
+                                  const IconComponent = row.IconComponent
+                                  const active = isPathActive(row.to)
+                                  const hasDesc = Boolean(row.desc)
+                                  const linkMinHeight = hasDesc ? 58 : 38
+
+                                  return (
+                                    <Box key={`${row.to}-${idx}`}>
+                                      <Link
+                                        href=""
+                                        onClick={(e) => {
+                                          e.preventDefault()
+                                          setOpenKey(null)
+                                          runNavigate(row.to)
+                                        }}
+                                        underline="none"
+                                        sx={{
+                                          display: 'flex',
+                                          alignItems: 'flex-start',
+                                          gap: 1.25,
+                                          minHeight: `${linkMinHeight}px`,
+                                          transition: 'background-color .15s',
+                                          color: active ? 'mari.Primary' : '#495057',
+                                          cursor: 'pointer',
+                                          backgroundColor: active ? '#ffffff' : 'transparent',
+                                          '&:hover': {
+                                            backgroundColor: '#e8e9eb',
+                                          },
+                                        }}
+                                      >
+                                        <Box
+                                          sx={{ mt: '8px', ml: IconComponent ? '6px' : '2px' }}
+                                          color={active ? 'mari.Primary' : 'gray.80'}
+                                        >
+                                          {IconComponent ? <IconComponent /> : <Box />}
+                                        </Box>
+
+                                        <Box paddingY={'8px'}>
+                                          <Typography
+                                            variant="body1SB16"
+                                            color={active ? 'mari.Primary' : 'gray.80'}
+                                            sx={{ display: 'flex', alignItems: 'center' }}
+                                          >
+                                            {row.label}
+                                          </Typography>
+                                          {row.desc && (
+                                            <Typography variant="body2M14" color="gray.60" sx={{ mt: 0.25, display: 'block' }}>
+                                              {t(row.desc)}
+                                            </Typography>
+                                          )}
+                                        </Box>
+                                      </Link>
+                                    </Box>
                                   )
                                 })}
                               </Box>
                             </Paper>
                           </ClickAwayListener>
                         </Popper>
-                      </Box>
-                    )
-                  })}
+                      )}
+                    </Box>
+                  )
+                })}
             </Box>
 
             <Grid container alignItems="center" wrap="nowrap" direction="row" spacing={4} sx={{ flexGrow: 0 }}>

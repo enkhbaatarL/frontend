@@ -22,7 +22,7 @@
     "showLess": "Show less",
     "register": "등록"
   },
-  "submenu": {
+  "miMenuItem": {
     "dashboard": {
       "desc": "AI 시장 인사이트 브리핑"
     },

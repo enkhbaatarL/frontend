@@ -66,7 +66,7 @@ const LoginPage = () => {
     // 모든 로컬스토리지 키 순회
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i)
-      if (key && key.startsWith(storageKeyPrefix)) {
+      if (key?.startsWith(storageKeyPrefix)) {
         try {
           const item = localStorage.getItem(key)
           if (item) {
@@ -126,7 +126,7 @@ const LoginPage = () => {
                   localStorage.removeItem('redirectAfterLogin')
                   navigate(redirectPath, { replace: true })
                 } else {
-                  navigate('mi')
+                  navigate('/mi')
                 }
               }}
               width="120px"

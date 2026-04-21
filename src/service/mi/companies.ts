@@ -3,21 +3,23 @@ import { AxiosResponse } from 'axios'
 import api from '@/lib/axios'
 import { ICommonResponse } from '@/types/api'
 
+export type MenuTypeCd = 'MENU_TOP' | 'MENU_ITEM' | 'MENU_GROUP' | 'FLOATING'
+
+export interface IMenuNode {
+  screenElementCd: string
+  typeCd: MenuTypeCd
+  children?: IMenuNode[]
+}
+
 export interface IAccessCompanyInfo {
   customerCompanyNo: number
   customerCompanyNm: string
   customerCompanyCd: string
   customerCompanyMipUrl: string
-  isQualitative?: boolean
-  isMari?: boolean
-  isFuture?: boolean
-  isNewsletter?: boolean
-  isSalesAnalysis?: boolean
-  isMarketMap?: boolean
-  isMiActivityLog?: boolean
-  isSalesActivityLog?: boolean
-  isPositionPlay?: boolean
   newsMarketCategoryCode?: string
+  defaultLandingCd?: string
+  menus?: IMenuNode[]
+  floating?: IMenuNode[]
 }
 
 const companiesService = {

@@ -1,0 +1,183 @@
+import type { IMenuNode } from '@/service/mi/companies'
+import type { ComponentType } from 'react'
+
+import { getMiMenuGroupLabel, getMiMenuItemDef, getMiMenuTopLabel, toMiLocationPath } from '@/constants/miScreenElementNav'
+
+const warnUnknownScreenElement = (role: 'TOP' | 'GROUP' | 'ITEM', screenElementCd: string) => {
+  console.warn(`[MI GNB] Unknown screenElementCd (${role}):`, screenElementCd)
+}
+
+export type MiGnbSubmenuRow =
+  | { kind: 'section'; title: string }
+  | {
+      kind: 'item'
+      screenElementCd: string
+      label: string
+      to: string
+      desc?: string
+      IconComponent?: ComponentType
+    }
+
+export interface MiGnbTopMenu {
+  key: string
+  topLabel: string
+  defaultPath: string
+  rows: MiGnbSubmenuRow[]
+}
+
+const warnUnregisteredMenuItems = (nodes: IMenuNode[] | undefined) => {
+  if (!nodes) return
+  for (const n of nodes) {
+    if (n.typeCd === 'MENU_ITEM' && !getMiMenuItemDef(n.screenElementCd)?.path) {
+      warnUnknownScreenElement('ITEM', n.screenElementCd)
+    }
+    warnUnregisteredMenuItems(n.children ?? [])
+  }
+}
+
+export const isScreenElementInCompanyMenus = (nodes: IMenuNode[] | undefined, screenElementCd: string): boolean => {
+  if (!nodes?.length) return false
+  for (const n of nodes) {
+    if (n.typeCd === 'MENU_ITEM' && n.screenElementCd === screenElementCd) return true
+    if (isScreenElementInCompanyMenus(n.children ?? [], screenElementCd)) return true
+  }
+  return false
+}
+
+const firstLeafPath = (nodes: IMenuNode[] | undefined): string | undefined => {
+  if (!nodes?.length) return undefined
+  for (const n of nodes) {
+    if (n.typeCd === 'MENU_ITEM') {
+      const def = getMiMenuItemDef(n.screenElementCd)
+      if (def?.path) return toMiLocationPath(def.path)
+    }
+    const inner = firstLeafPath(n.children ?? [])
+    if (inner) return inner
+  }
+  return undefined
+}
+
+const buildSubmenuRows = (children: IMenuNode[] | undefined): MiGnbSubmenuRow[] => {
+  if (!children?.length) return []
+  const rows: MiGnbSubmenuRow[] = []
+
+  const pushItem = (screenElementCd: string, def: NonNullable<ReturnType<typeof getMiMenuItemDef>>) => {
+    rows.push({
+      kind: 'item',
+      screenElementCd,
+      label: def.label,
+      to: toMiLocationPath(def.path),
+      desc: def.desc,
+      IconComponent: def.IconComponent,
+    })
+  }
+
+  for (const n of children) {
+    if (n.typeCd === 'MENU_GROUP') {
+      const groupTitle = getMiMenuGroupLabel(n.screenElementCd)
+      if (groupTitle) {
+        rows.push({ kind: 'section', title: groupTitle })
+      } else {
+        warnUnknownScreenElement('GROUP', n.screenElementCd)
+      }
+      for (const c of n.children ?? []) {
+        if (c.typeCd === 'MENU_ITEM') {
+          const def = getMiMenuItemDef(c.screenElementCd)
+          if (def?.path) {
+            pushItem(c.screenElementCd, def)
+          } else {
+            warnUnknownScreenElement('ITEM', c.screenElementCd)
+          }
+        }
+      }
+    } else if (n.typeCd === 'MENU_ITEM') {
+      const def = getMiMenuItemDef(n.screenElementCd)
+      if (def?.path) {
+        pushItem(n.screenElementCd, def)
+      } else {
+        warnUnknownScreenElement('ITEM', n.screenElementCd)
+      }
+    }
+  }
+
+  return rows
+}
+
+export interface BuildMiGnbFromCompanyMenusOptions {
+  /** 회사 상세 `defaultLandingCd` — 해당 TOP의 탭 기본 경로에 사용 */
+  defaultLandingCd?: string
+}
+
+/**
+ * 회사 상세 API `menus` 배열 순서를 유지해 GNB용 트리를 만든다.
+ */
+export const buildMiGnbFromCompanyMenus = (menus: IMenuNode[] | undefined, options?: BuildMiGnbFromCompanyMenusOptions): MiGnbTopMenu[] => {
+  if (!menus?.length) return []
+
+  const defaultLandingCd = options?.defaultLandingCd
+  const tops = menus.filter((m) => m.typeCd === 'MENU_TOP')
+  const result: MiGnbTopMenu[] = []
+
+  tops.forEach((top, index) => {
+    const topLabel = getMiMenuTopLabel(top.screenElementCd)
+    if (!topLabel) {
+      warnUnknownScreenElement('TOP', top.screenElementCd)
+      return
+    }
+
+    const landingInTop = defaultLandingCd && isScreenElementInCompanyMenus(top.children, defaultLandingCd) ? defaultLandingCd : undefined
+    const landingRel = landingInTop ? getMiMenuItemDef(landingInTop)?.path : undefined
+    const landingPath = landingRel ? toMiLocationPath(landingRel) : undefined
+    if (landingInTop && !landingPath) {
+      console.warn('[MI GNB] defaultLandingCd has no registered path:', landingInTop)
+    }
+
+    const defaultPath = landingPath ?? firstLeafPath(top.children)
+    if (!defaultPath) {
+      console.warn('[MI GNB] MENU_TOP has no navigable MENU_ITEM in registry:', top.screenElementCd)
+      warnUnregisteredMenuItems(top.children)
+      return
+    }
+
+    const rows = buildSubmenuRows(top.children)
+    result.push({
+      key: `${top.screenElementCd}-${index}`,
+      topLabel,
+      defaultPath,
+      rows,
+    })
+  })
+
+  return result
+}
+
+/** 스크롤 복원용: `/mi/{segment}` 첫 세그먼트 목록 */
+export const collectMiScrollSegmentsFromMenus = (menus: IMenuNode[] | undefined): string[] => {
+  const segments = new Set<string>()
+  const visit = (nodes: IMenuNode[] | undefined) => {
+    if (!nodes) return
+    for (const n of nodes) {
+      if (n.typeCd === 'MENU_ITEM') {
+        const path = getMiMenuItemDef(n.screenElementCd)?.path
+        if (path) {
+          const seg = path.replace(/^\/+/, '').split('/')[0]
+          if (seg) segments.add(seg)
+        }
+      }
+      visit(n.children ?? [])
+    }
+  }
+  visit(menus)
+  return [...segments]
+}
+
+/** `menus`에서 레지스트리에 등록된 첫 MENU_ITEM의 `/mi/...` 경로 (GNB와 동일한 순서: MENU_TOP 순) */
+export const getFirstNavigableMiLocationFromMenus = (menus: IMenuNode[] | undefined): string | undefined => {
+  if (!menus?.length) return undefined
+  const tops = menus.filter((m) => m.typeCd === 'MENU_TOP')
+  for (const top of tops) {
+    const p = firstLeafPath(top.children)
+    if (p) return p
+  }
+  return firstLeafPath(menus)
+}

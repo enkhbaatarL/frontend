@@ -7,13 +7,14 @@ import MIAgentButton from '@/components/common/agent/MIAgentButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIFooter from '@/components/mi/MIFooter'
 import MIHeaderMainLayout from '@/components/mi/MIHeaderMainLayout'
+import MiMenuRegistryAccessGuard from '@/components/mi/MiMenuRegistryAccessGuard'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import Ticker from '@/components/mi/Ticker'
-import { MENU_CONFIG } from '@/constants/menu'
 import { useMarketData } from '@/contexts/MarketDataContext'
 import { useResetKeyContext } from '@/contexts/ResetKeyContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import { useScrollRestoration } from '@/hooks/useScrollRestoration'
+import { collectMiScrollSegmentsFromMenus } from '@/lib/miGnbMenuNav'
 import { MarketDataProvider } from '@/providers/MarketDataProvider'
 import MIProvider from '@/providers/MIProvider'
 import { StickyHeaderProvider } from '@/providers/StickyHeaderProvider'
@@ -33,8 +34,9 @@ const MILayout = () => {
   const user = useAuthStore((state) => state.user)
   const currentCompanyNo = accessCompanyInfo?.customerCompanyNo ?? user?.companyNo
   const location = useLocation()
+  const scrollUrlSegments = useMemo(() => collectMiScrollSegmentsFromMenus(accessCompanyInfo?.menus), [accessCompanyInfo?.menus])
   const { saveScroll, currentScroll, preRenderMinHeight } = useScrollRestoration({
-    urls: MENU_CONFIG.map((menu) => menu.index),
+    urls: scrollUrlSegments.length > 0 ? scrollUrlSegments : ['forecast'],
     ref: scrollRef,
   })
   const [isScrolled, setIsScrolled] = useState(currentScroll !== 0)
@@ -182,7 +184,9 @@ const MILayout = () => {
   // MEMO: 상반기 개발(~ 25.06.30) 기준
   // -> 개인정보 처리방침 제외
   // -> 고객사 custom iframe page 제외
-  const showMiAgent = accessCompanyInfo?.isMari && !['/mi/privacy-policy', '/mi/custom'].includes(location.pathname)
+  const showMiAgent =
+    !!accessCompanyInfo?.floating?.some((f) => f.screenElementCd === 'MARI') &&
+    !['/mi/privacy-policy', '/mi/custom'].includes(location.pathname)
 
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
@@ -262,7 +266,9 @@ const MILayout = () => {
             <MISkeleton variant={'dailyChart'} loading={marketDataIsLoading}>
               {showTicker && <Ticker data={marketDataList} />}
             </MISkeleton>
-            <Outlet key={outletKey} />
+            <MiMenuRegistryAccessGuard>
+              <Outlet key={outletKey} />
+            </MiMenuRegistryAccessGuard>
           </Box>
           <MIFooter />
         </div>

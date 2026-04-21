@@ -22,7 +22,7 @@
     "showLess": "閉じる",
     "register": "登録"
   },
-  "submenu": {
+  "miMenuItem": {
     "dashboard": {
       "desc": "AI市場インサイト・ブリーフィング"
     },

@@ -34,7 +34,7 @@ import MIProvider from '@/providers/MIProvider'
 import useAuthStore from '@/store/useAuthStore'
 
 const MIMainRedirect = () => {
-  const { miHome, isDeniedDashboardPageLoading } = useCompanyCondition()
+  const { miHome } = useCompanyCondition()
 
   const location = useLocation()
   const targetCompanyNo = (location.state as { targetCompanyNo?: number } | null)?.targetCompanyNo
@@ -60,9 +60,8 @@ const MIMainRedirect = () => {
     }
   }, [isUserLoginWithoutAccessInfo, user?.companyNo, loadAccessCompanyInfo])
 
-  // 권한 데이터 로딩 중이거나 회사 전환이 필요한 경우 대기
-  // homeUrl이 undefined이거나 accessCompanyInfo가 로드되지 않은 경우 대기
-  if (isDeniedDashboardPageLoading || needsCompanySwitch || !homeUrl || isUserLoginWithoutAccessInfo) {
+  // 회사 전환이 필요하거나 USER의 accessCompanyInfo 로드 전에는 대기
+  if (needsCompanySwitch || !homeUrl || isUserLoginWithoutAccessInfo) {
     return <></>
   }
 
@@ -227,6 +226,10 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'parallel-coordinates',
+      element: <ParallelCoordinatesPage />,
+    },
+    {
+      path: 'scenario-workbench',
       element: <ParallelCoordinatesPage />,
     },
     {

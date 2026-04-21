@@ -2,7 +2,6 @@ import { Box, CircularProgress } from '@mui/material'
 import { ReactNode, useEffect, useMemo } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 
-import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import { setNavigate } from '@/lib/axios'
 import CustomErrorBoundary from '@/pages/error/CustomErrorBoundary'
 import { UserRole } from '@/service/admin/members'
@@ -19,10 +18,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const loadAccessCompanyInfo = useAuthStore((state) => state.loadAccessCompanyInfo)
   const location = useLocation()
   const navigate = useNavigate()
-  const { miHome, extractPage, isDeniedDashboardPageLoading } = useCompanyCondition()
-  const pathName = useMemo(() => location.pathname.replace('/mi/', ''), [location.pathname])
-
-  // USER 로그인 직후 accessCompanyInfo 로딩 중에는 메뉴 권한 판단 불가 → 리다이렉트 보류
+  // USER 로그인 직후 accessCompanyInfo 로딩 전에는 MI 진입·후속 처리 판단 불가 → 리다이렉트 보류
   const isCompanyInfoLoading = user?.userRoleCd === UserRole.USER && !accessCompanyInfo
   const needsCompanyInfoForMi = location.pathname === '/mi' || location.pathname.startsWith('/mi/')
 
@@ -31,7 +27,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     const val = new URLSearchParams(location.search).get('rdcn')
     if (!val) return null
     const num = Number(val)
-    return !isNaN(num) && num > 0 ? num : null
+    return !Number.isNaN(num) && num > 0 ? num : null
   }, [location.search])
 
   const isAdminRdcnSwitch =
@@ -69,23 +65,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     location.pathname,
     location.hash,
   ])
-
-  useEffect(() => {
-    // 권한 데이터 로딩 후 페이지 차단 체크
-    if (isCompanyInfoLoading || isAdminRdcnSwitch || isDeniedDashboardPageLoading || extractPage === undefined) return
-
-    const blockedPage = extractPage.some((prefix) => pathName.startsWith(prefix))
-    if (blockedPage) {
-      const homeUrl = miHome()
-      const targetPath = homeUrl ? `/mi/${homeUrl}` : null
-
-      // 이미 해당 경로에 있거나 무한 리다이렉트 방지
-      // 커밋 단계 중 navigate 호출로 인한 React 오류 방지 (다음 틱으로 지연)
-      if (targetPath && location.pathname !== targetPath) {
-        queueMicrotask(() => navigate(targetPath, { replace: true }))
-      }
-    }
-  }, [extractPage, pathName, isDeniedDashboardPageLoading, isCompanyInfoLoading, isAdminRdcnSwitch, navigate])
 
   useEffect(() => {
     setNavigate(navigate)
