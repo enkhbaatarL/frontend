@@ -8,7 +8,14 @@ export interface KpiCardProps {
 }
 
 const KpiCard = ({ title, content, description }: KpiCardProps) => (
-  <Stack bgcolor="gray.5" borderRadius="10px" padding="20px" flex={1} minWidth={0}>
+  <Stack
+    bgcolor="gray.5"
+    borderRadius="10px"
+    padding="20px"
+    flex={1}
+    minWidth={0}
+    sx={{ '&:hover': { backgroundColor: 'contentBG.Hover' } }}
+  >
     <Stack gap="6px" minWidth={0}>
       <Typography color="contentText.Normal" fontSize="13px" fontWeight={600} lineHeight="1.4" noWrap title={title}>
         {title}
