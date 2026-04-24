@@ -19,6 +19,14 @@ const CLASSIFICATION_SX = {
     color: '#6F42C1',
     border: 'none',
   },
+  종료: {
+    height: 24,
+    fontSize: '12px',
+    fontWeight: 600,
+    backgroundColor: '#F1F3F5',
+    color: '#868E96',
+    border: 'none',
+  },
 } as const
 
 interface EventClassificationTagProps {

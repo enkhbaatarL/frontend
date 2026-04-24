@@ -2,34 +2,95 @@ import { Box, FormControlLabel, Stack, Switch } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 
 import EventClassificationTag from '../components/event/EventClassificationTag'
 import EventMarketDirectionCell from '../components/event/EventMarketDirectionCell'
 import EventMarketImpactCell from '../components/event/EventMarketImpactCell'
-import { SCENARIO_WORKBENCH_EVENT_MOCK_ROWS } from '../components/event/eventMockData'
 import EventsClassificationFilter from '../components/event/EventsClassificationFilter'
 
-import type { EventsClassificationFilterValue, ScenarioWorkbenchEventRow } from '../components/event/types'
+import type {
+  EventsClassificationFilterValue,
+  EventClassification,
+  EventMarketDirection,
+  EventMarketImpactLevel,
+  ScenarioWorkbenchEventRow,
+} from '../components/event/types'
 
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MITable from '@/components/common/table/MITable'
 import MITableCell from '@/components/common/table/MITableCell'
+import scenarioWorkbenchEventService, {
+  type IGetScenarioWorkbenchEventsParams,
+  type IScenarioWorkbenchEventListItem,
+  type ScenarioWorkbenchEventCategoryLv1,
+  type ScenarioWorkbenchEventPeriod,
+  type ScenarioWorkbenchEventStatus,
+  type ScenarioWorkbenchImpactLevel,
+  type ScenarioWorkbenchPriceDirection,
+} from '@/service/mi/scenarioWorkbench/event'
 import { IPaginationResponse } from '@/types/api'
 
 type SortOrder = 'latest' | 'oldest'
 type PeriodKey = '1m' | '3m' | '6m' | 'all'
 type CategoryFilterKey = 'all' | '지정학적 리스크' | '수급밸런스'
 
-const parseOccurredAtLabel = (label: string) => {
-  const [datePart] = label.split(' ')
-  if (!datePart) return null
-  const [mm, dd] = datePart.split('-')
-  if (!mm || !dd) return null
-  const y = dayjs().year()
-  return dayjs(`${y}-${mm}-${dd}`)
+const EVENT_CATEGORY_LV1_KO: Record<ScenarioWorkbenchEventCategoryLv1, string> = {
+  GEOPOLITICAL_RISK: '지정학적 리스크',
+  WEATHER_CLIMATE: '기상·기후',
+  INFRASTRUCTURE_FACILITY: '인프라·설비',
+  SUPPLY_DEMAND_BALANCE: '수급밸런스',
+  LOGISTICS_SHIPPING: '물류·해운',
+  ENERGY_MIX_TRANSITION: '에너지 믹스 전환',
+  MACROECONOMY_POLICY: '거시경제·정책',
+  MARKET_TRADING_STRUCTURE: '시장·거래 구조',
+}
+
+const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpactLevel> = {
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+  NONE: 0,
+}
+
+const PRICE_TO_UI: Record<ScenarioWorkbenchPriceDirection, EventMarketDirection> = {
+  UP: '상승',
+  DOWN: '하락',
+  FLAT: '보합',
+  NONE: '보합',
+}
+
+const eventStatusToClassification = (status: ScenarioWorkbenchEventStatus): EventClassification => {
+  if (status === 'NEW') return '신규'
+  if (status === 'UPDATED') return '갱신'
+  return '종료'
+}
+
+const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventListItem): ScenarioWorkbenchEventRow => {
+  const impacts = item.indexImpacts ?? []
+  // 퍼블리싱 변경됨: JKM, TTF, HH 모두 보여주기
+  const jkm = impacts.find((x) => (x.indexName ?? '').toUpperCase() === 'JKM') ?? impacts[0]
+  const marketImpact: EventMarketImpactLevel = jkm ? (IMPACT_LEVEL_TO_UI[jkm.impactLevel] ?? 0) : 0
+  const marketDirection: EventMarketDirection = jkm ? (PRICE_TO_UI[jkm.priceDirection] ?? '보합') : '보합'
+
+  const occurredAt = item.occurredAt ? dayjs(item.occurredAt) : null
+  const updatedAt = item.updatedAt ? dayjs(item.updatedAt) : null
+  const displayTime = occurredAt?.isValid() ? occurredAt : updatedAt
+  const occurredAtLabel = displayTime?.isValid() ? displayTime.format('MM-DD HH:mm') : '-'
+
+  return {
+    id: item.eventId,
+    classification: eventStatusToClassification(item.eventStatus),
+    occurredAtLabel,
+    category: EVENT_CATEGORY_LV1_KO[item.eventCategoryLv1] ?? item.eventCategoryLv1,
+    eventName: item.title,
+    marketImpact,
+    marketDirection,
+    isActive: item.eventStatus !== 'CLOSED',
+  }
 }
 
 const EventsTabPanel = () => {
@@ -58,79 +119,67 @@ const EventsTabPanel = () => {
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
-  const filteredRows = useMemo(() => {
-    let rows: ScenarioWorkbenchEventRow[] =
-      classificationFilter === 'all'
-        ? SCENARIO_WORKBENCH_EVENT_MOCK_ROWS
-        : SCENARIO_WORKBENCH_EVENT_MOCK_ROWS.filter((row) => row.classification === classificationFilter)
-
-    if (activeOnly) {
-      rows = rows.filter((row) => row.isActive)
+  const listRequest = useMemo((): IGetScenarioWorkbenchEventsParams => {
+    const periodMap: Record<PeriodKey, ScenarioWorkbenchEventPeriod> = {
+      '1m': 'ONE_MONTH',
+      '3m': 'THREE_MONTHS',
+      '6m': 'SIX_MONTHS',
+      all: 'ALL',
     }
 
-    if (categoryFilter !== 'all') {
-      rows = rows.filter((row) => row.category === categoryFilter)
+    let eventStatus: ScenarioWorkbenchEventStatus[] | undefined
+    if (classificationFilter === '신규') {
+      eventStatus = ['NEW']
+    } else if (classificationFilter === '갱신') {
+      eventStatus = ['UPDATED']
+    } else if (activeOnly) {
+      eventStatus = ['NEW', 'UPDATED']
     }
 
-    if (period !== 'all') {
-      const months = period === '1m' ? 1 : period === '3m' ? 3 : 6
-      const cutoff = dayjs().subtract(months, 'month').startOf('day')
-      rows = rows.filter((row) => {
-        const d = parseOccurredAtLabel(row.occurredAtLabel)
-        return d !== null && (d.isAfter(cutoff) || d.isSame(cutoff, 'day'))
-      })
+    let eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1[] | undefined
+    if (categoryFilter === '지정학적 리스크') {
+      eventCategoryLv1 = ['GEOPOLITICAL_RISK']
+    } else if (categoryFilter === '수급밸런스') {
+      eventCategoryLv1 = ['SUPPLY_DEMAND_BALANCE']
     }
 
-    const q = committedKeyword.trim().toLowerCase()
-    if (q) {
-      rows = rows.filter((row) => row.eventName.toLowerCase().includes(q))
+    const trimmedKeyword = committedKeyword.trim()
+
+    return {
+      page: pagination.page,
+      size: pagination.size,
+      sort: sortOrder === 'latest' ? 'LATEST' : 'OLDEST',
+      period: periodMap[period],
+      keyword: trimmedKeyword || undefined,
+      eventStatus,
+      eventCategoryLv1,
     }
+  }, [activeOnly, categoryFilter, classificationFilter, committedKeyword, pagination.page, pagination.size, period, sortOrder])
 
-    const sorted = [...rows].sort((a, b) => {
-      const da = parseOccurredAtLabel(a.occurredAtLabel)?.valueOf() ?? 0
-      const db = parseOccurredAtLabel(b.occurredAtLabel)?.valueOf() ?? 0
-      return sortOrder === 'latest' ? db - da : da - db
-    })
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['scenarioWorkbenchEvents', listRequest],
+    queryFn: () => scenarioWorkbenchEventService.getEvents(listRequest),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
 
-    return sorted
-  }, [activeOnly, categoryFilter, classificationFilter, committedKeyword, period, sortOrder])
-
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredRows.length / pagination.size)), [filteredRows.length, pagination.size])
-
-  // 필터링 결과가 줄어들어 현재 페이지 번호가 전체 페이지 수보다 커지는 경우를 대비한 안전 장치
-  // 예: 5페이지를 보다가 검색어로 인해 전체가 1페이지로 줄어들면 safePage는 1이 됨
-  const safePage = Math.min(pagination.page, totalPages)
+  const tableRows = useMemo(() => (data?.events?.detail ?? []).map(mapScenarioWorkbenchEventListItemToRow), [data?.events?.detail])
 
   useEffect(() => {
-    // 현재 페이지가 유효 범위를 벗어났다면(safePage와 다르다면) 유효한 마지막 페이지로 보정
-    if (pagination.page !== safePage) {
-      setPagination((p) => ({ ...p, page: safePage }))
+    if (!data?.events) return
+    const tp = data.events.totalPages
+    if (tp > 0 && pagination.page > tp) {
+      setPagination((p) => ({ ...p, page: tp }))
     }
-  }, [pagination.page, safePage])
-
-  const paginatedRows = useMemo(() => {
-    // 실제 렌더링 시에도 safePage를 기준으로 slice 하여 데이터 부재 오류 방지
-    const page = Math.min(pagination.page, totalPages)
-    const start = (page - 1) * pagination.size
-    return filteredRows.slice(start, start + pagination.size)
-  }, [filteredRows, pagination.page, pagination.size, totalPages])
+  }, [data?.events, pagination.page])
 
   const paginationData: IPaginationResponse<ScenarioWorkbenchEventRow> | undefined = useMemo(() => {
-    if (filteredRows.length === 0) return undefined
-    const page = safePage
+    if (!data?.events || data.events.totalElements === 0) return undefined
     return {
-      detail: paginatedRows,
-      currentPage: page,
-      totalPages,
-      totalElements: filteredRows.length,
-      numberOfElements: paginatedRows.length,
-      size: pagination.size,
-      isFirst: page === 1,
-      isLast: page === totalPages,
-      hasPrevious: page > 1,
-      hasNext: page < totalPages,
+      ...data.events,
+      detail: tableRows,
     }
-  }, [filteredRows.length, paginatedRows, pagination.size, safePage, totalPages])
+  }, [data?.events, tableRows])
 
   const columns: GridColDef<ScenarioWorkbenchEventRow>[] = useMemo(
     () => [
@@ -303,7 +352,9 @@ const EventsTabPanel = () => {
         <MITable<ScenarioWorkbenchEventRow>
           rowId="id"
           columns={columns}
-          rows={paginatedRows}
+          rows={tableRows}
+          loading={isLoading}
+          noRowMessage={isError ? '목록을 불러오지 못했습니다.' : undefined}
           disableHover={false}
           onRowClick={(params) => {
             navigate(`/mi/scenario-workbench/events/${params.row.id}`, {

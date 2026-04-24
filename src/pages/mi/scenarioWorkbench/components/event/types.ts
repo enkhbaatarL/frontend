@@ -1,4 +1,4 @@
-export type EventClassification = '신규' | '갱신'
+export type EventClassification = '신규' | '갱신' | '종료'
 
 export type EventMarketImpactLevel = 0 | 1 | 2 | 3
 
