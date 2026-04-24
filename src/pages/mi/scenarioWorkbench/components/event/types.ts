@@ -17,3 +17,53 @@ export interface ScenarioWorkbenchEventRow {
 }
 
 export type EventsClassificationFilterValue = 'all' | EventClassification
+
+/** 이벤트 상세 — 영향도 분석 표 행 (Figma MI/ Canvas/ Event/ Impact Analysis) */
+export interface EventDetailImpactTableRow {
+  id: string
+  target: string
+  marketImpact: EventMarketImpactLevel
+  direction: EventMarketDirection
+}
+
+/** 이벤트 상세 — KPI 카드 (카테고리·출처 등) */
+export interface EventDetailImpactKpiItem {
+  title: string
+  content: string
+  description?: string
+}
+
+/** MI Records 테이블 */
+export interface EventDetailMiRecordRow {
+  id: string
+  atLabel: string
+  kind: string
+  title: string
+  summary: string
+}
+
+/** 기관 전망 테이블 */
+export interface EventDetailOutlookRow {
+  id: string
+  dateLabel: string
+  institution: string
+  summary: string
+}
+
+/** Fundamental — 상단 표 */
+export interface EventDetailFundamentalMetricRow {
+  id: string
+  item: string
+  currentValue: string
+  criteria: string
+  source: string
+}
+
+/** Fundamental — 하단 표 */
+export interface EventDetailFundamentalIndicatorRow {
+  id: string
+  indicator: string
+  currentValue: string
+  implication: string
+  source: string
+}
