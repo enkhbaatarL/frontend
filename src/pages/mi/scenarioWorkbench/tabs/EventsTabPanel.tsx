@@ -1,4 +1,4 @@
-import { Box, Divider, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -18,6 +18,7 @@ import type {
 
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
+import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MITable from '@/components/common/table/MITable'
 import MITableCell from '@/components/common/table/MITableCell'
@@ -27,15 +28,16 @@ import scenarioWorkbenchEventService, {
   type IScenarioWorkbenchEventListItem,
   type IScenarioWorkbenchImpactIndexSummary,
   type ScenarioWorkbenchEventCategoryLv1,
-  type ScenarioWorkbenchEventPeriod,
   type ScenarioWorkbenchEventStatus,
   type ScenarioWorkbenchImpactLevel,
   type ScenarioWorkbenchPriceDirection,
 } from '@/service/mi/scenarioWorkbench/event'
 import { IPaginationResponse } from '@/types/api'
 
+import { buildWorkbenchEventDatePresets, mapWorkbenchDateRangeToApiParams } from '../components/event/scenarioWorkbenchEventsDateRange'
+
 type SortOrder = 'latest' | 'oldest'
-type PeriodKey = '1m' | '3m' | '6m' | 'all'
+/** 카테고리 MISelectMenu 값: 전체 또는 Lv1 단일 */
 type CategoryFilterValue = 'all' | ScenarioWorkbenchEventCategoryLv1
 
 const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpactLevel> = {
@@ -102,20 +104,17 @@ const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventLis
   }
 }
 
-/** 기간 키에 따른 피그마식 날짜 범위 문구 */
-const getPeriodDateRangeLabel = (period: PeriodKey): string => {
-  const end = dayjs()
-  if (period === 'all') return '전체 기간'
-  const months = period === '1m' ? 1 : period === '3m' ? 3 : 6
-  const start = end.subtract(months, 'month')
-  return `${start.format('YYYY-MM-DD')} — ${end.format('YYYY-MM-DD')}`
+/** 기본 조회 구간: 1개월(오늘 기준) */
+const defaultEventsDateRange = (): DateRange => {
+  const t = dayjs().startOf('day')
+  return { startDate: t.subtract(1, 'month'), endDate: t }
 }
 
 const EventsTabPanel = () => {
   const navigate = useNavigate()
   const [classificationFilter, setClassificationFilter] = useState<EventsClassificationFilterValue>('all')
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest')
-  const [period, setPeriod] = useState<PeriodKey>('1m')
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultEventsDateRange())
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>('all')
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
@@ -137,13 +136,6 @@ const EventsTabPanel = () => {
   }, [])
 
   const listRequest = useMemo((): IGetScenarioWorkbenchEventsParams => {
-    const periodMap: Record<PeriodKey, ScenarioWorkbenchEventPeriod> = {
-      '1m': 'ONE_MONTH',
-      '3m': 'THREE_MONTHS',
-      '6m': 'SIX_MONTHS',
-      all: 'ALL',
-    }
-
     let eventStatus: ScenarioWorkbenchEventStatus[] | undefined
     if (classificationFilter === '신규') {
       eventStatus = ['NEW']
@@ -151,20 +143,27 @@ const EventsTabPanel = () => {
       eventStatus = ['UPDATED']
     }
 
-    const eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1[] | undefined = categoryFilter === 'all' ? undefined : [categoryFilter]
+    const eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1[] | undefined =
+      categoryFilter === 'all' ? undefined : [categoryFilter]
 
     const trimmedKeyword = committedKeyword.trim()
+
+    const dateSlice =
+      appliedDateRange.startDate && appliedDateRange.endDate
+        ? mapWorkbenchDateRangeToApiParams(appliedDateRange.startDate, appliedDateRange.endDate)
+        : { period: 'ONE_MONTH' as const }
 
     return {
       page: pagination.page,
       size: pagination.size,
       sort: sortOrder === 'latest' ? 'LATEST' : 'OLDEST',
-      period: periodMap[period],
+      period: dateSlice.period,
+      ...(dateSlice.period === 'CUSTOM' ? { startDate: dateSlice.startDate, endDate: dateSlice.endDate } : {}),
       keyword: trimmedKeyword || undefined,
       eventStatus,
       eventCategoryLv1,
     }
-  }, [classificationFilter, committedKeyword, categoryFilter, pagination.page, pagination.size, period, sortOrder])
+  }, [appliedDateRange, categoryFilter, classificationFilter, committedKeyword, pagination.page, pagination.size, sortOrder])
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['scenarioWorkbenchEvents', listRequest],
@@ -271,16 +270,7 @@ const EventsTabPanel = () => {
     [],
   )
 
-  const periodItems = useMemo(
-    () => [
-      { label: '1개월', value: '1m' as const },
-      { label: '3개월', value: '3m' as const },
-      { label: '6개월', value: '6m' as const },
-      { label: '전체', value: 'all' as const },
-    ],
-    [],
-  )
-
+  /** 카테고리 단일 선택 메뉴 항목(전체 + Lv1) */
   const categoryMenuItems = useMemo(
     () => [
       { label: '전체', value: 'all' as const },
@@ -292,9 +282,44 @@ const EventsTabPanel = () => {
     [],
   )
 
-  const periodDateLabel = useMemo(() => getPeriodDateRangeLabel(period), [period])
+  /** 워크벤치 Events용 MIDateRangePickerMenu 한글 프리셋 (공용 컴포넌트는 datePresets만 받음) */
+  const workbenchEventDatePresets = useMemo(() => buildWorkbenchEventDatePresets(), [])
+
+  /** Figma 2994:58459에 가깝게 — 공용 MIMenu는 placement/sx/paperProps로만 조정 가능 */
+  const eventsDateRangeMenuLayoutProps = useMemo(
+    () => ({
+      placement: 'bottom-start' as const,
+      paperProps: {
+        elevation: 0,
+        sx: {
+          borderRadius: '10px',
+          boxShadow: '0px 0px 2px rgba(0,0,0,0.1)',
+          border: '1px solid',
+          borderColor: 'contentBorder.Normal',
+          overflow: 'hidden',
+          mt: 0.5,
+        },
+      },
+      sx: {
+        py: 1,
+        px: 1.5,
+        borderRadius: '10px',
+        minHeight: 40,
+        '& .MuiButton-root': { minHeight: 40, borderRadius: '10px' },
+      },
+    }),
+    [],
+  )
 
   const resetPage = () => setPagination((p) => ({ ...p, page: 1 }))
+
+  const handleDateRangeApply = useCallback((dates: DateRange) => {
+    setAppliedDateRange({
+      startDate: dates.startDate,
+      endDate: dates.endDate,
+    })
+    setPagination((p) => ({ ...p, page: 1 }))
+  }, [])
 
   return (
     <Stack gap={2} sx={{ px: 3, py: 2 }}>
@@ -321,42 +346,13 @@ const EventsTabPanel = () => {
               resetPage()
             }}
           />
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 1,
-              border: '1px solid',
-              borderColor: 'contentBorder.Normal',
-              borderRadius: '10px',
-              bgcolor: 'common.white',
-              pl: 1,
-              pr: 0.5,
-              py: 0.5,
-              minHeight: 40,
-            }}
-          >
-            <MISelectMenu
-              variant="text"
-              sx={{
-                minWidth: 72,
-                px: 0.5,
-                '& .MuiButton-root': { py: 0.5, minHeight: 32 },
-              }}
-              hideChevron={false}
-              items={periodItems}
-              selected={period}
-              onSelected={(v: PeriodKey) => {
-                setPeriod(v)
-                resetPage()
-              }}
-            />
-            <Divider orientation="vertical" flexItem sx={{ borderColor: 'contentBorder.Normal', my: 0.5 }} />
-            <Typography variant="body2M14" color="contentText.Black" sx={{ pr: 1, whiteSpace: 'nowrap' }}>
-              {periodDateLabel}
-            </Typography>
-          </Box>
+          <MIDateRangePickerMenu
+            dateRange={appliedDateRange}
+            onApply={handleDateRangeApply}
+            showPreset
+            datePresets={workbenchEventDatePresets}
+            {...eventsDateRangeMenuLayoutProps}
+          />
           <MISelectMenu
             variant="outlined"
             sx={{ minWidth: 112 }}

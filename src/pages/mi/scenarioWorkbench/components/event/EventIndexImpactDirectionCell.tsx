@@ -1,17 +1,35 @@
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
-import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule'
 import { Box, Stack } from '@mui/material'
 
 import type { EventMarketDirection, EventMarketImpactLevel } from './types'
 
-/** 단일 지수(JKM/TTF/HH)용 영향도 점 3개 + 방향 아이콘만 표시 (Figma MI/ Events/ Table/ Row) */
+/** Figma MI/ Events/ Table/ Row/Direction — 상승 삼각형(SVG) */
+const SvgDirectionUp = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+    <path d="M7 2.5L12.5 11H1.5L7 2.5Z" fill="#37B24D" />
+  </svg>
+)
+
+/** Figma MI/ Events/ Table/ Row/Direction — 하락 삼각형(SVG) */
+const SvgDirectionDown = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+    <path d="M7 11.5L1.5 3H12.5L7 11.5Z" fill="#FA5252" />
+  </svg>
+)
+
+/** Figma MI/ Events/ Table/ Row/Direction — 보합(가로 막대) */
+const SvgDirectionFlat = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+    <rect x="2" y="6.5" width="10" height="1.5" rx="0.75" fill="#ADB5BD" />
+  </svg>
+)
+
+/** 단일 지수(JKM/TTF/HH)용 영향도 점 3개 + 방향 아이콘 (Figma MI/ Events/ Table/ Row) */
 interface EventIndexImpactDirectionCellProps {
   level: EventMarketImpactLevel
   direction: EventMarketDirection
 }
 
-/** 영향도 레벨에 따라 채워진 점 개수(0~3)를 반환 */
+/** 영향도 레벨에 따라 채워진 점 개수(0~3) */
 const filledDotCount = (level: EventMarketImpactLevel): number => {
   if (level <= 0) return 0
   if (level === 1) return 1
@@ -19,48 +37,69 @@ const filledDotCount = (level: EventMarketImpactLevel): number => {
   return 3
 }
 
-/** 영향도 점 1개 (채움=primary, 비움=회색 테두리) */
-const ImpactDot = ({ filled }: { filled: boolean }) => (
+/** 채움 색: 0=없음, 1=저영향 회색, 2=중간, 3=높음(mari 톤) */
+const filledColorForLevel = (filledCount: number, index: number): string | undefined => {
+  const filled = index < filledCount
+  if (!filled) return undefined
+  if (filledCount === 1) return '#868E96'
+  if (filledCount === 2) return '#444D7A'
+  return '#364FC7'
+}
+
+/** 영향도 점 1개 (비움 시 테두리만, 채움 시 부모 color로 면 채움) */
+const ImpactDot = ({ filled, emptyBorderMuted }: { filled: boolean; emptyBorderMuted: boolean }) => (
   <Box
     sx={{
       width: 10,
       height: 10,
       borderRadius: '50%',
       flexShrink: 0,
-      bgcolor: filled ? 'mari.Primary' : 'transparent',
-      border: filled ? 'none' : '1.5px solid',
-      borderColor: 'gray.50',
       boxSizing: 'border-box',
+      ...(filled
+        ? { bgcolor: 'currentColor', border: 'none' }
+        : {
+            bgcolor: 'transparent',
+            border: '1.5px solid',
+            borderColor: emptyBorderMuted ? '#ADB5BD' : '#CED4DA',
+          }),
     }}
   />
 )
 
-/** 가격 방향에 따른 14px 아이콘 (상승/하락/보합) */
-const DirectionGlyph = ({ direction }: { direction: EventMarketDirection }) => {
-  if (direction === '상승') {
-    return <ArrowUpwardIcon sx={{ fontSize: 14, color: 'success.main' }} />
-  }
-  if (direction === '하락') {
-    return <ArrowDownwardIcon sx={{ fontSize: 14, color: 'error.main' }} />
-  }
-  return <HorizontalRuleIcon sx={{ fontSize: 14, color: 'gray.50' }} />
-}
-
-/** JKM·TTF·HH 셀: 점 3개 + 방향 */
-const EventIndexImpactDirectionCell = ({ level, direction }: EventIndexImpactDirectionCellProps) => {
+/** 점 행: 채워진 개수에 따라 점 색상 팔레트 적용 (Figma 2994:53856) */
+const ImpactDotsRow = ({ level }: { level: EventMarketImpactLevel }) => {
   const n = filledDotCount(level)
+  const emptyBorderMuted = n === 0
   return (
-    <Stack direction="row" alignItems="center" justifyContent="center" gap={0.75} width="100%">
-      <Stack direction="row" alignItems="center" justifyContent="center" gap="2px" height={22}>
-        {[0, 1, 2].map((i) => (
-          <ImpactDot key={i} filled={i < n} />
-        ))}
-      </Stack>
-      <Box display="flex" alignItems="center" justifyContent="center" width={14} height={14}>
-        <DirectionGlyph direction={direction} />
-      </Box>
+    <Stack direction="row" alignItems="center" justifyContent="center" gap="2px" height={22}>
+      {[0, 1, 2].map((i) => {
+        const filled = i < n
+        const fillCol = filled ? filledColorForLevel(n, i) : undefined
+        return (
+          <Box key={i} sx={{ color: fillCol ?? 'transparent', lineHeight: 0, display: 'flex' }}>
+            <ImpactDot filled={filled} emptyBorderMuted={emptyBorderMuted} />
+          </Box>
+        )
+      })}
     </Stack>
   )
 }
+
+/** 가격 방향에 따른 Figma SVG 아이콘 */
+const DirectionGlyph = ({ direction }: { direction: EventMarketDirection }) => {
+  if (direction === '상승') return <SvgDirectionUp />
+  if (direction === '하락') return <SvgDirectionDown />
+  return <SvgDirectionFlat />
+}
+
+/** JKM·TTF·HH 셀: 점 3개 + 방향 */
+const EventIndexImpactDirectionCell = ({ level, direction }: EventIndexImpactDirectionCellProps) => (
+  <Stack direction="row" alignItems="center" justifyContent="center" gap={0.75} width="100%">
+    <ImpactDotsRow level={level} />
+    <Box display="flex" alignItems="center" justifyContent="center" width={14} height={14}>
+      <DirectionGlyph direction={direction} />
+    </Box>
+  </Stack>
+)
 
 export default EventIndexImpactDirectionCell
