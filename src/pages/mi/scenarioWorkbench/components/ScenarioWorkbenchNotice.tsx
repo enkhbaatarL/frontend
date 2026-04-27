@@ -2,22 +2,23 @@ import { Box, Collapse, Fade, Stack } from '@mui/material'
 import { ReactNode, useState } from 'react'
 
 import CloseIcon from '@/components/common/icons/CloseIcon'
+import { getCookie, setCookie } from '@/utils/cookie'
 
 interface ScenarioWorkbenchNoticeProps {
   noticeKey: string
   children: ReactNode
 }
 
-const STORAGE_KEY = 'disabled-scenario-workbench-notice'
+const COOKIE_PREFIX = 'dismissed-scenario-workbench-notice-'
 
 const ScenarioWorkbenchNotice = ({ noticeKey, children }: ScenarioWorkbenchNoticeProps) => {
-  const [dismissed, setDismissed] = useState(() => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')?.[noticeKey])
+  const [dismissed, setDismissed] = useState(() => getCookie(`${COOKIE_PREFIX}${noticeKey}`) === '1')
   const [isClosing, setIsClosing] = useState(false)
 
   const handleClose = () => {
     setIsClosing(true)
     setTimeout(() => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}'), [noticeKey]: true }))
+      setCookie(`${COOKIE_PREFIX}${noticeKey}`, '1', 1)
       setDismissed(true)
     }, 300)
   }
