@@ -53,6 +53,7 @@ export interface IScenarioWorkbenchImpactIndexSummary {
   priceDirection: ScenarioWorkbenchPriceDirection
 }
 
+/** 이벤트 목록 한 줄 (indexImpacts는 JKM·TTF·HH 등 지수별 요약) */
 export interface IScenarioWorkbenchEventListItem {
   eventId: string
   title: string

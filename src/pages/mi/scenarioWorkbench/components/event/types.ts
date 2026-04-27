@@ -10,8 +10,15 @@ export interface ScenarioWorkbenchEventRow {
   occurredAtLabel: string
   category: string
   eventName: string
-  marketImpact: EventMarketImpactLevel
-  marketDirection: EventMarketDirection
+  /** JKM 지수별 영향도·가격 방향 (목록 JKM 열) */
+  jkmImpact: EventMarketImpactLevel
+  jkmDirection: EventMarketDirection
+  /** TTF 지수별 영향도·가격 방향 (목록 TTF 열) */
+  ttfImpact: EventMarketImpactLevel
+  ttfDirection: EventMarketDirection
+  /** HH 지수별 영향도·가격 방향 (목록 HH 열) */
+  hhImpact: EventMarketImpactLevel
+  hhDirection: EventMarketDirection
   /** 이벤트 활성 여부 (워크벤치 목·필터 UI용) */
   isActive: boolean
 }
