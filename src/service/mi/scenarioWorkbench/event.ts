@@ -30,6 +30,18 @@ export type ScenarioWorkbenchEventCategoryLv1 =
   | 'MACROECONOMY_POLICY'
   | 'MARKET_TRADING_STRUCTURE'
 
+/** 이벤트 유형 Lv1 한글 라벨 (목록·상세 KPI 등 공통) */
+export const SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO: Record<ScenarioWorkbenchEventCategoryLv1, string> = {
+  GEOPOLITICAL_RISK: '지정학적 리스크',
+  WEATHER_CLIMATE: '기상·기후',
+  INFRASTRUCTURE_FACILITY: '인프라·설비',
+  SUPPLY_DEMAND_BALANCE: '수급밸런스',
+  LOGISTICS_SHIPPING: '물류·해운',
+  ENERGY_MIX_TRANSITION: '에너지 믹스 전환',
+  MACROECONOMY_POLICY: '거시경제·정책',
+  MARKET_TRADING_STRUCTURE: '시장·거래 구조',
+}
+
 /** Swagger: ImpactIndexSummaryRes */
 export type ScenarioWorkbenchImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'
 
@@ -84,6 +96,80 @@ export interface IGetScenarioWorkbenchEventsParams {
   keyword?: string
 }
 
+/** Swagger: EventImpactAnalysisRes */
+export interface IScenarioWorkbenchEventImpactAnalysis {
+  indexImpacts: IScenarioWorkbenchImpactIndexSummary[]
+  analysisText: string
+  categoryLv1?: ScenarioWorkbenchEventCategoryLv1
+  categoryLv2?: string
+  sources?: string[]
+}
+
+/** Swagger: EventAiInsightsRes */
+export interface IScenarioWorkbenchEventAiInsights {
+  keySummaries: string[]
+  detailedAnalysis: string
+}
+
+/** Swagger: FundamentalMetricRes */
+export interface IScenarioWorkbenchFundamentalMetric {
+  metricName: string
+  currentValue: string
+  interpretation: string
+  source: string
+}
+
+/** Swagger: FundamentalIndicatorRes */
+export interface IScenarioWorkbenchFundamentalIndicator {
+  indicatorName: string
+  currentValue: string
+  implication: string
+  source: string
+}
+
+/** Swagger: EventFundamentalRes */
+export interface IScenarioWorkbenchEventFundamental {
+  metrics: IScenarioWorkbenchFundamentalMetric[]
+  indicators: IScenarioWorkbenchFundamentalIndicator[]
+}
+
+/** Swagger: EventDetailRes */
+export interface IScenarioWorkbenchEventDetailRes {
+  eventId: string
+  title: string
+  eventStatus: ScenarioWorkbenchEventStatus
+  createdAt: string
+  updatedAt: string
+  impactAnalysis?: IScenarioWorkbenchEventImpactAnalysis
+  aiInsights?: IScenarioWorkbenchEventAiInsights
+  fundamentalDeepdive?: IScenarioWorkbenchEventFundamental
+}
+
+/** Swagger: EventRelatedRecordRes */
+export interface IScenarioWorkbenchEventRelatedRecord {
+  publishedAt: string
+  title: string
+  summary: string
+  source: string
+}
+
+/** Swagger: EventInstitutionOutlookRes */
+export interface IScenarioWorkbenchEventInstitutionOutlook {
+  publishedAt: string
+  institutionName: string
+  outlookSummary: string
+}
+
+export interface IGetScenarioWorkbenchEventRecordsParams {
+  page?: number
+  size?: number
+}
+
+export interface IGetScenarioWorkbenchEventOutlooksParams {
+  page?: number
+  size?: number
+}
+
 const serializeScenarioWorkbenchEventsParams = (params: Record<string, unknown>): string => {
   const usp = new URLSearchParams()
   Object.entries(params).forEach(([key, value]) => {
@@ -116,6 +202,48 @@ const scenarioWorkbenchEventService = {
           eventCategoryLv1: params.eventCategoryLv1,
         },
         paramsSerializer: (p) => serializeScenarioWorkbenchEventsParams(p as Record<string, unknown>),
+      },
+    )
+
+    return response.data.data
+  },
+
+  async getEventDetail(eventId: string): Promise<IScenarioWorkbenchEventDetailRes> {
+    const response: AxiosResponse<ICommonResponse<IScenarioWorkbenchEventDetailRes>> = await api.get(
+      `mi/scenario-workbench/events/${encodeURIComponent(eventId)}`,
+    )
+
+    return response.data.data
+  },
+
+  async getEventRecords(
+    eventId: string,
+    params?: IGetScenarioWorkbenchEventRecordsParams,
+  ): Promise<IPaginationResponse<IScenarioWorkbenchEventRelatedRecord>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IScenarioWorkbenchEventRelatedRecord>>> = await api.get(
+      `mi/scenario-workbench/events/${encodeURIComponent(eventId)}/records`,
+      {
+        params: {
+          page: params?.page ?? 1,
+          size: params?.size ?? 10,
+        },
+      },
+    )
+
+    return response.data.data
+  },
+
+  async getEventOutlooks(
+    eventId: string,
+    params?: IGetScenarioWorkbenchEventOutlooksParams,
+  ): Promise<IPaginationResponse<IScenarioWorkbenchEventInstitutionOutlook>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IScenarioWorkbenchEventInstitutionOutlook>>> = await api.get(
+      `mi/scenario-workbench/events/${encodeURIComponent(eventId)}/outlooks`,
+      {
+        params: {
+          page: params?.page ?? 1,
+          size: params?.size ?? 10,
+        },
       },
     )
 

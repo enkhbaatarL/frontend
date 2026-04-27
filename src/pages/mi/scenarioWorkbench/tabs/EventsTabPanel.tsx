@@ -24,6 +24,7 @@ import MIPagination from '@/components/common/pagination/MIPagination'
 import MITable from '@/components/common/table/MITable'
 import MITableCell from '@/components/common/table/MITableCell'
 import scenarioWorkbenchEventService, {
+  SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO,
   type IGetScenarioWorkbenchEventsParams,
   type IScenarioWorkbenchEventListItem,
   type ScenarioWorkbenchEventCategoryLv1,
@@ -37,17 +38,6 @@ import { IPaginationResponse } from '@/types/api'
 type SortOrder = 'latest' | 'oldest'
 type PeriodKey = '1m' | '3m' | '6m' | 'all'
 type CategoryFilterKey = 'all' | '지정학적 리스크' | '수급밸런스'
-
-const EVENT_CATEGORY_LV1_KO: Record<ScenarioWorkbenchEventCategoryLv1, string> = {
-  GEOPOLITICAL_RISK: '지정학적 리스크',
-  WEATHER_CLIMATE: '기상·기후',
-  INFRASTRUCTURE_FACILITY: '인프라·설비',
-  SUPPLY_DEMAND_BALANCE: '수급밸런스',
-  LOGISTICS_SHIPPING: '물류·해운',
-  ENERGY_MIX_TRANSITION: '에너지 믹스 전환',
-  MACROECONOMY_POLICY: '거시경제·정책',
-  MARKET_TRADING_STRUCTURE: '시장·거래 구조',
-}
 
 const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpactLevel> = {
   HIGH: 3,
@@ -85,7 +75,7 @@ const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventLis
     id: item.eventId,
     classification: eventStatusToClassification(item.eventStatus),
     occurredAtLabel,
-    category: EVENT_CATEGORY_LV1_KO[item.eventCategoryLv1] ?? item.eventCategoryLv1,
+    category: SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[item.eventCategoryLv1] ?? item.eventCategoryLv1,
     eventName: item.title,
     marketImpact,
     marketDirection,

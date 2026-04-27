@@ -14,26 +14,52 @@ import { IPaginationResponse } from '@/types/api'
 
 interface EventDetailMiRecordsTableProps {
   rows: EventDetailMiRecordRow[]
+  /** 서버 페이징 API 연동 시: 응답 페이지 메타 + 콜백 (없으면 기존 클라이언트 slice 모드) */
+  serverPagination?: IPaginationResponse<EventDetailMiRecordRow>
+  onServerPageChange?: (page: number) => void
+  onServerSizeChange?: (size: number) => void
+  loading?: boolean
 }
 
 /** Figma — MI Records (헤더 py30, 표 1380 기준 열 너비) */
-const EventDetailMiRecordsTable = ({ rows }: EventDetailMiRecordsTableProps) => {
+const EventDetailMiRecordsTable = ({
+  rows,
+  serverPagination,
+  onServerPageChange,
+  onServerSizeChange,
+  loading = false,
+}: EventDetailMiRecordsTableProps) => {
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
 
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(rows.length / pagination.size)), [rows.length, pagination.size])
-  const safePage = Math.min(pagination.page, totalPages)
+  const isServerMode = serverPagination != null
+
+  const totalPages = useMemo(() => {
+    if (isServerMode) return Math.max(1, serverPagination.totalPages)
+    return Math.max(1, Math.ceil(rows.length / pagination.size))
+  }, [isServerMode, pagination.size, rows.length, serverPagination])
+
+  const safePage = useMemo(() => {
+    if (isServerMode) return Math.min(serverPagination.currentPage, totalPages)
+    return Math.min(pagination.page, totalPages)
+  }, [isServerMode, pagination.page, serverPagination, totalPages])
 
   useEffect(() => {
+    if (isServerMode) return
     if (pagination.page !== safePage) setPagination((p) => ({ ...p, page: safePage }))
-  }, [pagination.page, safePage])
+  }, [isServerMode, pagination.page, safePage])
 
   const paginatedRows = useMemo(() => {
+    if (isServerMode) return rows
     const page = Math.min(pagination.page, totalPages)
     const start = (page - 1) * pagination.size
     return rows.slice(start, start + pagination.size)
-  }, [rows, pagination.page, pagination.size, totalPages])
+  }, [isServerMode, pagination.page, pagination.size, rows, totalPages])
 
   const paginationData: IPaginationResponse<EventDetailMiRecordRow> | undefined = useMemo(() => {
+    if (isServerMode) {
+      if (serverPagination.totalElements === 0) return undefined
+      return serverPagination
+    }
     if (rows.length === 0) return undefined
     const page = safePage
     return {
@@ -48,7 +74,7 @@ const EventDetailMiRecordsTable = ({ rows }: EventDetailMiRecordsTableProps) => 
       hasPrevious: page > 1,
       hasNext: page < totalPages,
     }
-  }, [paginatedRows, pagination.size, rows.length, safePage, totalPages])
+  }, [isServerMode, paginatedRows, pagination.size, rows.length, safePage, serverPagination, totalPages])
 
   const columns: GridColDef<EventDetailMiRecordRow>[] = useMemo(
     () => [
@@ -94,14 +120,26 @@ const EventDetailMiRecordsTable = ({ rows }: EventDetailMiRecordsTableProps) => 
       />
       <Stack gap={1} sx={{ width: '100%', maxWidth: 1380 }}>
         <Box height={480} sx={{ '& .MuiDataGrid-root': { height: '100%' } }}>
-          <MITable<EventDetailMiRecordRow> rowId="id" columns={columns} rows={paginatedRows} disableHover />
+          <MITable<EventDetailMiRecordRow>
+            rowId="id"
+            columns={columns}
+            rows={paginatedRows}
+            loading={loading}
+            disableHover
+          />
         </Box>
         {paginationData && (
           <MIPagination<EventDetailMiRecordRow>
             data={paginationData}
-            size={pagination.size}
-            onPageChange={(page) => setPagination((p) => ({ ...p, page }))}
-            onSizeChange={(size) => setPagination({ size, page: 1 })}
+            size={isServerMode ? serverPagination.size : pagination.size}
+            onPageChange={(page) => {
+              if (isServerMode) onServerPageChange?.(page)
+              else setPagination((p) => ({ ...p, page }))
+            }}
+            onSizeChange={(size) => {
+              if (isServerMode) onServerSizeChange?.(size)
+              else setPagination({ size, page: 1 })
+            }}
           />
         )}
       </Stack>
