@@ -1,15 +1,15 @@
 import { Box, Stack, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useCallback, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
-import EventDetailAiInsightsSection from '../../components/event/EventDetailAiInsightsSection'
-import EventDetailFundamentalSection from '../../components/event/EventDetailFundamentalSection'
-import EventDetailImpactAnalysisSection from '../../components/event/EventDetailImpactAnalysisSection'
-import EventDetailInstitutionalOutlookTable from '../../components/event/EventDetailInstitutionalOutlookTable'
-import EventDetailMiRecordsTable from '../../components/event/EventDetailMiRecordsTable'
-import EventDetailStickyHeader, { type EventDetailTabKey } from '../../components/event/EventDetailStickyHeader'
+import EventDetailAiInsightsSection from './components/event/EventDetailAiInsightsSection.tsx'
+import EventDetailFundamentalSection from './components/event/EventDetailFundamentalSection.tsx'
+import EventDetailImpactAnalysisSection from './components/event/EventDetailImpactAnalysisSection.tsx'
+import EventDetailInstitutionalOutlookTable from './components/event/EventDetailInstitutionalOutlookTable.tsx'
+import EventDetailMiRecordsTable from './components/event/EventDetailMiRecordsTable.tsx'
+import EventDetailStickyHeader, { type EventDetailTabKey } from './components/event/EventDetailStickyHeader.tsx'
 
 import type {
   EventDetailFundamentalIndicatorRow,
@@ -20,15 +20,15 @@ import type {
   EventDetailOutlookRow,
   EventMarketDirection,
   EventMarketImpactLevel,
-} from '../../components/event/types'
+} from './components/event/types.ts'
 
-import MISkeleton from '@/components/mi/MISkeleton'
+import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import scenarioWorkbenchEventService, {
   SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO,
   type ScenarioWorkbenchImpactLevel,
   type ScenarioWorkbenchPriceDirection,
-} from '@/service/mi/scenarioWorkbench/event'
-import { IPaginationResponse } from '@/types/api'
+} from '@/service/mi/scenarioWorkbench/event.ts'
+import { IPaginationResponse } from '@/types/api.ts'
 
 interface ScenarioWorkbenchEventDetailLocationState {
   eventName?: string
@@ -95,7 +95,11 @@ const ScenarioWorkbenchEventDetailPage = () => {
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
 
-  const { data: detail, isLoading: detailLoading, isError: detailError } = useQuery({
+  const {
+    data: detail,
+    isLoading: detailLoading,
+    isError: detailError,
+  } = useQuery({
     queryKey: ['scenarioWorkbenchEventDetail', eventId],
     queryFn: () => scenarioWorkbenchEventService.getEventDetail(eventId!),
     enabled: !!eventId,
@@ -143,7 +147,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
       return [{ ...a }, { ...b }]
     }
     const lv1 = ia.categoryLv1
-    const categoryContent = lv1 ? SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[lv1] ?? lv1 : a.content
+    const categoryContent = lv1 ? (SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[lv1] ?? lv1) : a.content
     const categoryDesc = ia.categoryLv2 ? ia.categoryLv2.replace(/_/g, ' ') : a.description
     const sourcesContent = ia.sources?.filter(Boolean).length ? ia.sources!.filter(Boolean).join(', ') : b.content
     return [
@@ -277,11 +281,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
               </Typography>
             )}
             <Stack py={3} gap={1.5} width="100%" alignItems="flex-start">
-              <EventDetailImpactAnalysisSection
-                tableRows={impactTableRows}
-                kpiItems={impactKpiPair}
-                narrative={impactNarrative}
-              />
+              <EventDetailImpactAnalysisSection tableRows={impactTableRows} kpiItems={impactKpiPair} narrative={impactNarrative} />
               <EventDetailAiInsightsSection bullets={aiBullets} detailParagraph={aiDetailParagraph} />
               <EventDetailMiRecordsTable
                 rows={recordRows}

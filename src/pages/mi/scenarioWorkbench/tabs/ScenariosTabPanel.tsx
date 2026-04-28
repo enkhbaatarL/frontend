@@ -392,7 +392,7 @@ const ScenariosTabPanel = () => {
     setPageSize(s)
     setPage(1)
   }
-  const handleRowClick = (_params: { row: ScenarioRow }) => navigate('/mi/scenario-workbench/scenario-detail')
+  const handleRowClick = (_params: { row: ScenarioRow }) => navigate(`/mi/scenario-workbench/scenarios/${_params.row.id}`)
 
   const columns: GridColDef<ScenarioRow>[] = [
     {
