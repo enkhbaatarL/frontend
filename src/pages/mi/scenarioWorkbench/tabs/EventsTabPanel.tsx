@@ -1,13 +1,14 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
+import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 
 import EventClassificationTag from '../components/event/EventClassificationTag'
 import EventIndexImpactDirectionCell from '../components/event/EventIndexImpactDirectionCell'
 import EventsClassificationFilter from '../components/event/EventsClassificationFilter'
+import { buildWorkbenchEventDatePresets, mapWorkbenchDateRangeToApiParams } from '../components/event/scenarioWorkbenchEventsDateRange'
 
 import type {
   EventMarketDirection,
@@ -17,8 +18,8 @@ import type {
 } from '../components/event/types'
 
 import MISearchInput from '@/components/common/input/MISearchInput'
-import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MITable from '@/components/common/table/MITable'
 import MITableCell from '@/components/common/table/MITableCell'
@@ -33,8 +34,6 @@ import scenarioWorkbenchEventService, {
   type ScenarioWorkbenchPriceDirection,
 } from '@/service/mi/scenarioWorkbench/event'
 import { IPaginationResponse } from '@/types/api'
-
-import { buildWorkbenchEventDatePresets, mapWorkbenchDateRangeToApiParams } from '../components/event/scenarioWorkbenchEventsDateRange'
 
 type SortOrder = 'latest' | 'oldest'
 /** 카테고리 MISelectMenu 값: 전체 또는 Lv1 단일 */
@@ -143,8 +142,7 @@ const EventsTabPanel = () => {
       eventStatus = ['UPDATED']
     }
 
-    const eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1[] | undefined =
-      categoryFilter === 'all' ? undefined : [categoryFilter]
+    const eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1[] | undefined = categoryFilter === 'all' ? undefined : [categoryFilter]
 
     const trimmedKeyword = committedKeyword.trim()
 

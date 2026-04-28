@@ -30,7 +30,7 @@ const EventDetailInstitutionalOutlookTable = ({
 }: EventDetailInstitutionalOutlookTableProps) => {
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
 
-  const isServerMode = serverPagination != null
+  const isServerMode = serverPagination !== undefined
 
   const totalPages = useMemo(() => {
     if (isServerMode) return Math.max(1, serverPagination.totalPages)
@@ -112,13 +112,7 @@ const EventDetailInstitutionalOutlookTable = ({
       />
       <Stack gap={1} sx={{ width: '100%', maxWidth: 1380 }}>
         <Box height={480} sx={{ '& .MuiDataGrid-root': { height: '100%' } }}>
-          <MITable<EventDetailOutlookRow>
-            rowId="id"
-            columns={columns}
-            rows={paginatedRows}
-            loading={loading}
-            disableHover
-          />
+          <MITable<EventDetailOutlookRow> rowId="id" columns={columns} rows={paginatedRows} loading={loading} disableHover />
         </Box>
         {paginationData && (
           <MIPagination<EventDetailOutlookRow>
