@@ -411,7 +411,7 @@ input::placeholder, textarea::placeholder {
   z-index: 1000;
   top: 0;
   background: #fff;
-  transition: all 0.15s linear;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fixed-header {

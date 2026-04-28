@@ -1,5 +1,5 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
@@ -39,20 +39,32 @@ const MILayout = () => {
     urls: scrollUrlSegments.length > 0 ? scrollUrlSegments : ['forecast'],
     ref: scrollRef,
   })
-  const [isScrolled, setIsScrolled] = useState(currentScroll !== 0)
+  const [isScrolled, setIsScrolled] = useState(() => currentScroll > 0)
   const { marketDataList, marketDataIsLoading } = useMarketData()
-  const { stickyHeader } = useStickyHeader()
+  const { stickyHeader, stickyHeaderOptions } = useStickyHeader()
   const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0)
+  const stickyHeightsPx = stickyHeaderOptions.stickyHeightsPx
+
+  /** stickyHeightsPx 가 있으면 목표 높이가 정해져 있으므로 DOM 측정 없이 isScrolled 와 동일 프레임에서 패딩 전환 → Collapse·GNB 와 동시에 시작 */
+  const stickyHeaderHeightResolved = useMemo(() => {
+    if (stickyHeightsPx) return isScrolled ? stickyHeightsPx.collapsed : stickyHeightsPx.expanded
+    return stickyHeaderHeight
+  }, [isScrolled, stickyHeaderHeight, stickyHeightsPx])
 
   useEffect(() => {
     setOutletKey((prevKey) => prevKey + 1)
   }, [accessCompanyInfo])
 
-  useEffect(() => setIsScrolled(currentScroll > 0), [currentScroll])
+  useEffect(() => {
+    setIsScrolled(currentScroll > 0)
+  }, [currentScroll])
 
   useEffect(() => {
     const currentRef = scrollRef.current
-    const handleScroll = () => setIsScrolled((currentRef?.scrollTop ?? 0) > 0)
+    const handleScroll = () => {
+      const y = currentRef?.scrollTop ?? 0
+      setIsScrolled(y > 0)
+    }
     currentRef?.addEventListener('scroll', handleScroll)
     return () => currentRef?.removeEventListener('scroll', handleScroll)
   }, [])
@@ -70,70 +82,58 @@ const MILayout = () => {
   }, [])
 
   useEffect(() => {
-    if (stickyHeader) {
-      const observer = new MutationObserver(() => {
-        const stickyElement = document.querySelector('[data-sticky-header]')
-        if (stickyElement) {
-          const height = stickyElement.getBoundingClientRect().height
-          if (height > 0 && height !== stickyHeaderHeight) {
-            setStickyHeaderHeight(height)
-          }
-        }
-      })
+    if (!stickyHeader) {
+      setStickyHeaderHeight(0)
+      return undefined
+    }
+    if (stickyHeaderOptions.stickyHeightsPx) {
+      setStickyHeaderHeight(0)
+      return undefined
+    }
 
-      observer.observe(document.body, {
+    let resizeObserver: ResizeObserver | null = null
+    let rafId: number | null = null
+
+    const measureHeight = () => {
+      const stickyElement = document.querySelector('[data-sticky-header]')
+      if (!stickyElement) return
+      const height = stickyElement.getBoundingClientRect().height
+      if (height > 0) {
+        setStickyHeaderHeight((prev) => (height === prev ? prev : height))
+      }
+    }
+
+    const scheduleMeasure = () => {
+      rafId ??= requestAnimationFrame(() => {
+        rafId = null
+        measureHeight()
+      })
+    }
+
+    const mutationObserver = new MutationObserver(() => scheduleMeasure())
+
+    const timeoutId = setTimeout(() => {
+      measureHeight()
+      mutationObserver.observe(document.body, {
         childList: true,
         subtree: true,
         attributes: true,
         attributeFilter: ['style', 'class'],
       })
-
-      return () => observer.disconnect()
-    }
-    return undefined
-  }, [stickyHeader, stickyHeaderHeight])
-
-  useEffect(() => {
-    if (stickyHeader) {
-      let resizeObserver: ResizeObserver | null = null
-
-      const measureHeight = () => {
-        const stickyElement = document.querySelector('[data-sticky-header]')
-        if (stickyElement) {
-          const height = stickyElement.getBoundingClientRect().height
-          if (height > 0) {
-            setStickyHeaderHeight(height)
-          }
-        }
+      const stickyElement = document.querySelector('[data-sticky-header]')
+      if (stickyElement) {
+        resizeObserver = new ResizeObserver(() => scheduleMeasure())
+        resizeObserver.observe(stickyElement)
       }
+    }, 100)
 
-      // DOM이 완전히 렌더링될 때까지 대기
-      const timeoutId = setTimeout(() => {
-        measureHeight()
-
-        const stickyElement = document.querySelector('[data-sticky-header]')
-        if (stickyElement) {
-          resizeObserver = new ResizeObserver(() => {
-            const height = stickyElement.getBoundingClientRect().height
-            if (height > 0) {
-              setStickyHeaderHeight(height)
-            }
-          })
-          resizeObserver.observe(stickyElement)
-        }
-      }, 100)
-
-      return () => {
-        clearTimeout(timeoutId)
-        if (resizeObserver) {
-          resizeObserver.disconnect()
-        }
-      }
-    } else {
-      setStickyHeaderHeight(0)
-      return undefined
+    return () => {
+      clearTimeout(timeoutId)
+      mutationObserver.disconnect()
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      resizeObserver?.disconnect()
     }
-  }, [stickyHeader])
+  }, [stickyHeader, stickyHeaderOptions.stickyHeightsPx])
 
   useEffect(() => {
     const fetchNotice = async () => {
@@ -190,17 +190,32 @@ const MILayout = () => {
 
   const paddingTop = useMemo(() => {
     const defaultPadding = isScrolled ? 70 : 106
-    const totalPadding = defaultPadding + stickyHeaderHeight
+    const totalPadding = defaultPadding + stickyHeaderHeightResolved
 
     return `${totalPadding}px`
-  }, [isScrolled, stickyHeaderHeight])
+  }, [isScrolled, stickyHeaderHeightResolved])
+
+  /**
+   * 스티키 등록·실측으로 `stickyHeaderHeightResolved`만 바뀔 때도 `padding-top`이 220ms 보간되면
+   * 진입 직후 본문이 아래로 내려오는 것처럼 보임 — GNB 접힘(`isScrolled`) 전환 때만 전환 애니메이션.
+   */
+  const prevIsScrolledForMainPaddingRef = useRef(isScrolled)
+  const shouldTransitionMainPadding = prevIsScrolledForMainPaddingRef.current !== isScrolled
+  useLayoutEffect(() => {
+    prevIsScrolledForMainPaddingRef.current = isScrolled
+  }, [isScrolled])
+
+  const mainContentPaddingTransition = shouldTransitionMainPadding
+    ? 'padding-top 220ms cubic-bezier(0.4, 0, 0.2, 1), padding-bottom 220ms cubic-bezier(0.4, 0, 0.2, 1)'
+    : 'none'
 
   const mariAgentTopPosition = useMemo(() => {
     const scrolledGap = isScrolled ? -headerTopHeight : 0
     const basePosition = 117 + scrolledGap
+    const stickyOffset = stickyHeaderOptions.pinMariPosition ? 0 : stickyHeaderHeightResolved
 
-    return basePosition + stickyHeaderHeight
-  }, [isScrolled, stickyHeaderHeight])
+    return basePosition + stickyOffset
+  }, [isScrolled, stickyHeaderHeightResolved, stickyHeaderOptions.pinMariPosition])
 
   const backgroundStyle = useMemo(() => {
     if (location.pathname === '/mi/dashboard') {
@@ -249,6 +264,8 @@ const MILayout = () => {
                   position: 'sticky',
                   top: isScrolled ? '70px' : '106px',
                   zIndex: 8,
+                  /** `.main-header` transform 0.22s와 동일 계열 — 패딩만 즉시 바뀌면 본문이 헤더보다 먼저 움직여 보임 */
+                  transition: 'top 220ms cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
                 {stickyHeader}
@@ -260,7 +277,8 @@ const MILayout = () => {
               paddingTop,
               paddingBottom: `calc(${isScrolled ? headerTopHeight : 0}px + 136px)`,
               flex: 1,
-              transition: 'padding 0.15s linear',
+              overflowAnchor: 'none',
+              transition: mainContentPaddingTransition,
             }}
           >
             <MISkeleton variant={'dailyChart'} loading={marketDataIsLoading}>
