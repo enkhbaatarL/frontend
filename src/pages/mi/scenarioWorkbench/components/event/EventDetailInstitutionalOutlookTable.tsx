@@ -1,4 +1,4 @@
-import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
+import TungstenRoundedIcon from '@mui/icons-material/TungstenRounded'
 import { Box, Stack } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState } from 'react'
@@ -106,7 +106,7 @@ const EventDetailInstitutionalOutlookTable = ({
   return (
     <Stack width="100%" py={7.5} gap={3} id="event-detail-section-outlook">
       <EventDetailSectionHeader
-        icon={<AccountBalanceOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+        icon={<TungstenRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="기관 전망"
         tooltipTitle="기관별 시장 전망 요약입니다."
       />
