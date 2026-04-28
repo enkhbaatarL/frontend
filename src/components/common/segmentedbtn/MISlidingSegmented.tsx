@@ -1,4 +1,5 @@
 import { Box, Stack, StackProps, Typography } from '@mui/material'
+import { useLayoutEffect, useRef, useState } from 'react'
 
 export interface MISlidingSegmentedOption {
   value: string
@@ -13,9 +14,29 @@ export interface MISlidingSegmentedControlProps extends Omit<StackProps, 'option
   disabled?: boolean
 }
 
+interface SliderStyle {
+  left: number
+  width: number
+}
+
 const MISlidingSegmented = ({ options, value, onChange, disabled = false, sx, ...props }: Readonly<MISlidingSegmentedControlProps>) => {
   const selectedIndex = options.findIndex((o) => o.value === value)
   const showSliding = !disabled && selectedIndex >= 0
+
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const [sliderStyle, setSliderStyle] = useState<SliderStyle | null>(null)
+
+  useLayoutEffect(() => {
+    const selectedBtn = buttonRefs.current[selectedIndex]
+    if (!selectedBtn) {
+      setSliderStyle(null)
+      return
+    }
+    setSliderStyle({
+      left: selectedBtn.offsetLeft,
+      width: selectedBtn.offsetWidth,
+    })
+  }, [selectedIndex, options])
 
   return (
     <Stack
@@ -34,23 +55,23 @@ const MISlidingSegmented = ({ options, value, onChange, disabled = false, sx, ..
       sx={sx}
       {...props}
     >
-      {showSliding && (
+      {showSliding && sliderStyle && (
         <Box
           position="absolute"
           top={4}
           bottom={4}
-          width={`calc((100% - 8px) / ${options.length})`}
-          left={`calc(4px + ${selectedIndex} * ((100% - 8px) / ${options.length}))`}
           bgcolor="commonColor.White"
           borderRadius="10px"
           style={{
-            transition: 'left 0.25s ease-out',
+            left: sliderStyle.left,
+            width: sliderStyle.width,
+            transition: 'left 0.25s ease-out, width 0.25s ease-out',
             pointerEvents: 'none',
             boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06)',
           }}
         />
       )}
-      {options.map(({ value: optionValue, label, disabled: optionDisabled }) => {
+      {options.map(({ value: optionValue, label, disabled: optionDisabled }, index) => {
         const isSelected = value === optionValue
         const isDisabled = disabled || optionDisabled
         let textColor = 'contentText.Normal'
@@ -66,6 +87,9 @@ const MISlidingSegmented = ({ options, value, onChange, disabled = false, sx, ..
         return (
           <Stack
             key={optionValue}
+            ref={(el: HTMLButtonElement | null) => {
+              buttonRefs.current[index] = el
+            }}
             component="button"
             type="button"
             alignItems="center"

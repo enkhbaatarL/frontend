@@ -28,8 +28,9 @@ import ParallelCoordinatesPage from '@/pages/mi/parallelCoordinates/ParallelCoor
 import PositionPlayRemotePage from '@/pages/mi/positionPlay/PositionPlayRemotePage'
 import SalesActivityLogPage from '@/pages/mi/salesActivityLog/SalesActivityLogPage'
 import SalesAnalysisPage from '@/pages/mi/salesAnalysis/SalesAnalysisPage'
-import ScenarioWorkbenchEventDetailPage from '@/pages/mi/scenarioWorkbench/tabs/event/EventDetailPage'
+import ScenarioDetailPage from '@/pages/mi/scenarioWorkbench/ScenarioDetailPage'
 import ScenarioWorkbenchPage from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchPage'
+import ScenarioWorkbenchEventDetailPage from '@/pages/mi/scenarioWorkbench/tabs/event/EventDetailPage'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import TopicTrackerPage from '@/pages/mi/topicTracker/TopicTrackerPage'
 import MIProvider from '@/providers/MIProvider'
@@ -183,11 +184,11 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'scenario-workbench',
-      element: <ScenarioWorkbenchPage />,
-    },
-    {
-      path: 'scenario-workbench/events/:eventId',
-      element: <ScenarioWorkbenchEventDetailPage />,
+      children: [
+        { index: true, element: <ScenarioWorkbenchPage /> },
+        { path: 'events/:eventId', element: <ScenarioWorkbenchEventDetailPage /> },
+        { path: 'scenarios/:scenarioId', element: <ScenarioDetailPage /> },
+      ],
     },
     {
       path: 'position-play',
