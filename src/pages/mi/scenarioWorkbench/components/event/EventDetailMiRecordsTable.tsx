@@ -1,4 +1,4 @@
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
+import TungstenRoundedIcon from '@mui/icons-material/TungstenRounded'
 import { Box, Stack } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState } from 'react'
@@ -114,7 +114,7 @@ const EventDetailMiRecordsTable = ({
   return (
     <Stack width="100%" py={7.5} gap={3} id="event-detail-section-records">
       <EventDetailSectionHeader
-        icon={<DescriptionOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+        icon={<TungstenRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="MI Records"
         tooltipTitle="이벤트와 연관된 MI 기록입니다."
       />

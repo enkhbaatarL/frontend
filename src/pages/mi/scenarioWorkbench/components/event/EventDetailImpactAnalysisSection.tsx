@@ -2,8 +2,7 @@ import ManageSearchOutlinedIcon from '@mui/icons-material/ManageSearchOutlined'
 import { Box, Stack, Typography } from '@mui/material'
 
 import EventDetailSectionHeader from './EventDetailSectionHeader'
-import EventImpactDirectionCompact from './EventImpactDirectionCompact'
-import EventImpactDotsCell from './EventImpactDotsCell'
+import { EventImpactDirectionCompact, EventImpactDotsCell } from './EventIndexImpactDirectionCell'
 import KpiCard from '../KpiCard'
 
 import type { EventDetailImpactKpiItem, EventDetailImpactTableRow } from './types'
@@ -19,14 +18,7 @@ interface EventDetailImpactAnalysisSectionProps {
  * 좌 600px: 표(gray.5 패딩 12) + KPI 2열 / 우측 flex: 분석 텍스트(gray.5, px24 py20, radius 8)
  */
 const EventDetailImpactAnalysisSection = ({ tableRows, kpiItems, narrative }: EventDetailImpactAnalysisSectionProps) => (
-  <Stack
-    width="100%"
-    borderBottom="1px solid"
-    borderColor="contentBorder.Normal"
-    py={5}
-    gap={1.5}
-    id="event-detail-section-impact"
-  >
+  <Stack width="100%" borderBottom="1px solid" borderColor="contentBorder.Normal" py={5} gap={1.5} id="event-detail-section-impact">
     <EventDetailSectionHeader
       icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
       title="영향도 분석"
@@ -85,11 +77,7 @@ const EventDetailImpactAnalysisSection = ({ tableRows, kpiItems, narrative }: Ev
         </Box>
         <Stack direction="row" gap={1.5} width="100%">
           <Box flex={1} minWidth={0} sx={{ minHeight: 120 }}>
-            <KpiCard
-              title={kpiItems[0].title}
-              content={kpiItems[0].content}
-              description={kpiItems[0].description ?? ''}
-            />
+            <KpiCard title={kpiItems[0].title} content={kpiItems[0].content} description={kpiItems[0].description ?? ''} />
           </Box>
           <Box flex={1} minWidth={0} sx={{ minHeight: 120 }}>
             <KpiCard title={kpiItems[1].title} content={kpiItems[1].content} description={kpiItems[1].description ?? '\u00a0'} />

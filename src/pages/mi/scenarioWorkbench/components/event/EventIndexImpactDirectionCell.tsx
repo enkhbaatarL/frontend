@@ -58,10 +58,10 @@ const ImpactDot = ({ filled, emptyBorderMuted }: { filled: boolean; emptyBorderM
       ...(filled
         ? { bgcolor: 'currentColor', border: 'none' }
         : {
-            bgcolor: 'transparent',
-            border: '1.5px solid',
-            borderColor: emptyBorderMuted ? '#ADB5BD' : '#CED4DA',
-          }),
+          bgcolor: 'transparent',
+          border: '1.5px solid',
+          borderColor: emptyBorderMuted ? '#ADB5BD' : '#CED4DA',
+        }),
     }}
   />
 )
@@ -91,6 +91,30 @@ const DirectionGlyph = ({ direction }: { direction: EventMarketDirection }) => {
   if (direction === '하락') return <SvgDirectionDown />
   return <SvgDirectionFlat />
 }
+
+/** 영향도 점 3개만 표시하는 셀 (레거시 EventImpactDotsCell 대체) */
+export interface EventImpactDotsCellProps {
+  level: EventMarketImpactLevel
+}
+
+/** 시장영향 3-dot 표현 (Figma MI/ Canvas/ Event/ Impact Analysis) */
+export const EventImpactDotsCell = ({ level }: EventImpactDotsCellProps) => (
+  <Stack direction="row" alignItems="center" justifyContent="center" width="100%" height={22}>
+    <ImpactDotsRow level={level} />
+  </Stack>
+)
+
+/** 가격방향 아이콘만 표시하는 컴팩트 셀 (레거시 EventImpactDirectionCompact 대체) */
+export interface EventImpactDirectionCompactProps {
+  direction: EventMarketDirection
+}
+
+/** 가격방향 셀(14px 아이콘 중앙) */
+export const EventImpactDirectionCompact = ({ direction }: EventImpactDirectionCompactProps) => (
+  <Box display="flex" alignItems="center" justifyContent="center" width="100%" height={40}>
+    <DirectionGlyph direction={direction} />
+  </Box>
+)
 
 /** JKM·TTF·HH 셀: 점 3개 + 방향 */
 const EventIndexImpactDirectionCell = ({ level, direction }: EventIndexImpactDirectionCellProps) => (
