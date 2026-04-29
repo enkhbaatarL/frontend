@@ -2,7 +2,8 @@ import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { debounce } from 'lodash-es'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import EventClassificationTag from '../components/event/EventClassificationTag'
@@ -38,6 +39,8 @@ import { IPaginationResponse } from '@/types/api'
 type SortOrder = 'latest' | 'oldest'
 /** 카테고리 MISelectMenu 값: 전체 또는 Lv1 단일 */
 type CategoryFilterValue = 'all' | ScenarioWorkbenchEventCategoryLv1
+
+const STICKY_TOP_WHEN_SCROLLED = -14
 
 const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpactLevel> = {
   HIGH: 3,
@@ -118,6 +121,82 @@ const EventsTabPanel = () => {
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
+  const [isScrolled, setIsScrolled] = useState(false)
+  const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
+  const contentWrapperRef = useRef<HTMLDivElement | null>(null)
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([null, null])
+  /** 상단으로 smooth 스냅 중에는 scrollTop > 0이어도 헤더/탭을 펼친 상태로 유지 */
+  const expandHeaderDuringSnapRef = useRef(false)
+  const lastScrollTopRef = useRef(0)
+
+  useEffect(() => {
+    const scrollEl = document.getElementById('main-scroll-wrapper')
+    if (scrollEl) scrollEl.scrollTop = 0
+  }, [])
+
+  useEffect(() => {
+    const scrollEl = document.getElementById('main-scroll-wrapper')
+    if (!scrollEl) return undefined
+
+    let scrollStartTop = scrollEl.scrollTop
+    lastScrollTopRef.current = scrollEl.scrollTop
+
+    const handleScrollImmediate = () => {
+      const t = scrollEl.scrollTop
+      const prev = lastScrollTopRef.current
+      if (expandHeaderDuringSnapRef.current && t > prev + 2) {
+        expandHeaderDuringSnapRef.current = false
+      }
+      lastScrollTopRef.current = t
+
+      if (t === 0) {
+        expandHeaderDuringSnapRef.current = false
+        setIsScrolled(false)
+        return
+      }
+      if (!expandHeaderDuringSnapRef.current) {
+        setIsScrolled(true)
+      }
+    }
+
+    const handleScrollDebounced = debounce(() => {
+      const currentScrollTop = scrollEl.scrollTop
+      const isScrollingUp = currentScrollTop < scrollStartTop
+      const isScrollingDown = currentScrollTop > scrollStartTop
+      const contentEl = contentWrapperRef.current
+      const stickyEl = stickyHeaderRef.current
+
+      if (contentEl && stickyEl) {
+        const containerRect = scrollEl.getBoundingClientRect()
+        const contentRect = contentEl.getBoundingClientRect()
+        const stickyHeight = stickyEl.getBoundingClientRect().height
+        const stickyBottomWhenStuck = stickyHeight + STICKY_TOP_WHEN_SCROLLED
+        const firstContentTop = scrollEl.scrollTop + contentRect.top - containerRect.top - stickyBottomWhenStuck
+
+        if (isScrollingDown && currentScrollTop < firstContentTop) {
+          scrollEl.scrollTo({ top: firstContentTop, behavior: 'smooth' })
+        } else if (isScrollingUp && currentScrollTop + 1 < firstContentTop && currentScrollTop > 0) {
+          expandHeaderDuringSnapRef.current = true
+          setIsScrolled(false)
+          scrollEl.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+      }
+
+      scrollStartTop = scrollEl.scrollTop
+    }, 150)
+
+    const handleScroll = () => {
+      handleScrollImmediate()
+      handleScrollDebounced()
+    }
+
+    handleScroll()
+    scrollEl.addEventListener('scroll', handleScroll)
+    return () => {
+      scrollEl.removeEventListener('scroll', handleScroll)
+      handleScrollDebounced.cancel()
+    }
+  }, [])
 
   const handleSearchChange = useCallback((value: string) => {
     setKeyword(value)
@@ -321,89 +400,119 @@ const EventsTabPanel = () => {
 
   return (
     <Stack gap={2} sx={{ px: 3, py: 2 }}>
-      <Typography fontSize={26} fontWeight={700} lineHeight={1.4} pt={20} color="contentText.Black">
-        Events
-      </Typography>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5}>
-        <Stack direction="row" alignItems="center" flexWrap="wrap" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
-          <EventsClassificationFilter
-            value={classificationFilter}
-            onChange={(v) => {
-              setClassificationFilter(v)
-              resetPage()
-            }}
-          />
-          <MISelectMenu
-            variant="outlined"
-            sx={{ minWidth: 120 }}
-            textLabel="카테고리"
-            items={categoryMenuItems}
-            selected={categoryFilter}
-            onSelected={(v: CategoryFilterValue) => {
-              setCategoryFilter(v)
-              resetPage()
-            }}
-          />
-          <MIDateRangePickerMenu
-            dateRange={appliedDateRange}
-            onApply={handleDateRangeApply}
-            showPreset
-            datePresets={workbenchEventDatePresets}
-            {...eventsDateRangeMenuLayoutProps}
-          />
-          <MISelectMenu
-            variant="outlined"
-            sx={{ minWidth: 112 }}
-            items={sortItems}
-            selected={sortOrder}
-            onSelected={(v: SortOrder) => {
-              setSortOrder(v)
-              resetPage()
-            }}
-          />
-          <Box sx={{ flex: 1, minWidth: 8 }} />
-        </Stack>
-        <Stack direction="row" gap="12px" sx={{ flexShrink: 0 }}>
-          <MISearchInput
-            storageKey="scenario-workbench-events"
-            value={keyword}
-            placeholder="이벤트명으로 검색"
-            onChange={handleSearchChange}
-            onSearch={handleSearch}
-            onClear={handleSearchClear}
-            width={246}
-          />
-        </Stack>
-      </Stack>
       <Box
-        sx={{
-          width: '100%',
-          height: 640,
-          '& .MuiDataGrid-root': { height: '100%' },
-        }}
+        ref={stickyHeaderRef}
+        position="sticky"
+        top={isScrolled ? `${STICKY_TOP_WHEN_SCROLLED}px` : 0}
+        left={0}
+        bgcolor="common.white"
+        zIndex={200}
+        sx={{ userSelect: 'none' }}
       >
-        <MITable<ScenarioWorkbenchEventRow>
-          rowId="id"
-          columns={columns}
-          rows={tableRows}
-          loading={isLoading}
-          noRowMessage={isError ? '목록을 불러오지 못했습니다.' : undefined}
-          disableHover={false}
-          onRowClick={(params) => {
-            navigate(`/mi/scenario-workbench/events/${params.row.id}`, {
-              state: { eventName: params.row.eventName },
-            })
-          }}
-        />
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} pt={20} color="contentText.Black">
+          Events
+        </Typography>
       </Box>
-      {paginationData && (
-        <MIPagination<ScenarioWorkbenchEventRow>
-          data={paginationData}
-          size={pagination.size}
-          onPageChange={(page) => setPagination((p) => ({ ...p, page }))}
-          onSizeChange={(size) => setPagination({ size, page: 1 })}
-        />
-      )}
+
+      <Box ref={contentWrapperRef} position="relative">
+        <Stack gap={2} py={2}>
+          <Stack
+            ref={(el) => {
+              sectionRefs.current[0] = el as HTMLDivElement
+            }}
+            gap={1.5}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5}>
+              <Stack direction="row" alignItems="center" flexWrap="wrap" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
+                <EventsClassificationFilter
+                  value={classificationFilter}
+                  onChange={(v) => {
+                    setClassificationFilter(v)
+                    resetPage()
+                  }}
+                />
+                <MISelectMenu
+                  variant="outlined"
+                  sx={{ minWidth: 120 }}
+                  textLabel="카테고리"
+                  items={categoryMenuItems}
+                  selected={categoryFilter}
+                  onSelected={(v: CategoryFilterValue) => {
+                    setCategoryFilter(v)
+                    resetPage()
+                  }}
+                />
+                <MIDateRangePickerMenu
+                  dateRange={appliedDateRange}
+                  onApply={handleDateRangeApply}
+                  showPreset
+                  datePresets={workbenchEventDatePresets}
+                  {...eventsDateRangeMenuLayoutProps}
+                />
+                <MISelectMenu
+                  variant="outlined"
+                  sx={{ minWidth: 112 }}
+                  items={sortItems}
+                  selected={sortOrder}
+                  onSelected={(v: SortOrder) => {
+                    setSortOrder(v)
+                    resetPage()
+                  }}
+                />
+                <Box sx={{ flex: 1, minWidth: 8 }} />
+              </Stack>
+              <Stack direction="row" gap="12px" sx={{ flexShrink: 0 }}>
+                <MISearchInput
+                  storageKey="scenario-workbench-events"
+                  value={keyword}
+                  placeholder="이벤트명으로 검색"
+                  onChange={handleSearchChange}
+                  onSearch={handleSearch}
+                  onClear={handleSearchClear}
+                  width={246}
+                />
+              </Stack>
+            </Stack>
+          </Stack>
+
+          <Stack
+            ref={(el) => {
+              sectionRefs.current[1] = el as HTMLDivElement
+            }}
+            gap={1.5}
+          >
+            <Box
+              sx={{
+                width: '100%',
+                height: 640,
+                '& .MuiDataGrid-root': { height: '100%' },
+              }}
+            >
+              <MITable<ScenarioWorkbenchEventRow>
+                rowId="id"
+                columns={columns}
+                rows={tableRows}
+                loading={isLoading}
+                noRowMessage={isError ? '목록을 불러오지 못했습니다.' : undefined}
+                disableHover={false}
+                onRowClick={(params) => {
+                  navigate(`/mi/scenario-workbench/events/${params.row.id}`, {
+                    state: { eventName: params.row.eventName },
+                  })
+                }}
+              />
+            </Box>
+            {paginationData && (
+              <MIPagination<ScenarioWorkbenchEventRow>
+                data={paginationData}
+                size={pagination.size}
+                onPageChange={(page) => setPagination((p) => ({ ...p, page }))}
+                onSizeChange={(size) => setPagination({ size, page: 1 })}
+              />
+            )}
+          </Stack>
+        </Stack>
+      </Box>
     </Stack>
   )
 }
