@@ -33,13 +33,13 @@ export type ScenarioWorkbenchEventCategoryLv1 =
 /** 이벤트 유형 Lv1 한글 라벨 (목록·상세 KPI 등 공통) */
 export const SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO: Record<ScenarioWorkbenchEventCategoryLv1, string> = {
   GEOPOLITICAL_RISK: '지정학적 리스크',
-  WEATHER_CLIMATE: '기상·기후',
-  INFRASTRUCTURE_FACILITY: '인프라·설비',
+  WEATHER_CLIMATE: '기상/기후',
+  INFRASTRUCTURE_FACILITY: '인프라/설비',
   SUPPLY_DEMAND_BALANCE: '수급밸런스',
-  LOGISTICS_SHIPPING: '물류·해운',
+  LOGISTICS_SHIPPING: '물류/해운',
   ENERGY_MIX_TRANSITION: '에너지 믹스 전환',
-  MACROECONOMY_POLICY: '거시경제·정책',
-  MARKET_TRADING_STRUCTURE: '시장·거래 구조',
+  MACROECONOMY_POLICY: '거시경제/정책',
+  MARKET_TRADING_STRUCTURE: '시장/거래 구조',
 }
 
 /** Swagger: ImpactIndexSummaryRes */
@@ -188,23 +188,20 @@ const serializeScenarioWorkbenchEventsParams = (params: Record<string, unknown>)
 
 const scenarioWorkbenchEventService = {
   async getEvents(params: IGetScenarioWorkbenchEventsParams): Promise<IScenarioWorkbenchEventListRes> {
-    const response: AxiosResponse<ICommonResponse<IScenarioWorkbenchEventListRes>> = await api.get(
-      'mi/scenario-workbench/events',
-      {
-        params: {
-          page: params.page ?? 1,
-          size: params.size ?? 20,
-          sort: params.sort,
-          period: params.period,
-          startDate: params.startDate,
-          endDate: params.endDate,
-          keyword: params.keyword,
-          eventStatus: params.eventStatus,
-          eventCategoryLv1: params.eventCategoryLv1,
-        },
-        paramsSerializer: (p) => serializeScenarioWorkbenchEventsParams(p as Record<string, unknown>),
+    const response: AxiosResponse<ICommonResponse<IScenarioWorkbenchEventListRes>> = await api.get('mi/scenario-workbench/events', {
+      params: {
+        page: params.page ?? 1,
+        size: params.size ?? 20,
+        sort: params.sort,
+        period: params.period,
+        startDate: params.startDate,
+        endDate: params.endDate,
+        keyword: params.keyword,
+        eventStatus: params.eventStatus,
+        eventCategoryLv1: params.eventCategoryLv1,
       },
-    )
+      paramsSerializer: (p) => serializeScenarioWorkbenchEventsParams(p as Record<string, unknown>),
+    })
 
     return response.data.data
   },

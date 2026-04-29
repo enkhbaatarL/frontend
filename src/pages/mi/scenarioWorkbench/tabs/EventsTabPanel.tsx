@@ -20,6 +20,7 @@ import type {
 
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
+import MIFilterMenu, { FilterValues } from '@/components/common/menu/MIFilterMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MITable from '@/components/common/table/MITable'
@@ -37,8 +38,8 @@ import scenarioWorkbenchEventService, {
 import { IPaginationResponse } from '@/types/api'
 
 type SortOrder = 'latest' | 'oldest'
-/** 카테고리 MISelectMenu 값: 전체 또는 Lv1 단일 */
-type CategoryFilterValue = 'all' | ScenarioWorkbenchEventCategoryLv1
+/** 카테고리 필터 값: Lv1 다중 선택 */
+type CategoryFilterValue = ScenarioWorkbenchEventCategoryLv1[]
 
 const STICKY_TOP_WHEN_SCROLLED = -14
 
@@ -117,7 +118,7 @@ const EventsTabPanel = () => {
   const [classificationFilter, setClassificationFilter] = useState<EventsClassificationFilterValue>('all')
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest')
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultEventsDateRange())
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>('all')
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>([])
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
@@ -221,7 +222,7 @@ const EventsTabPanel = () => {
       eventStatus = ['UPDATED']
     }
 
-    const eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1[] | undefined = categoryFilter === 'all' ? undefined : [categoryFilter]
+    const eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1[] | undefined = categoryFilter.length > 0 ? categoryFilter : undefined
 
     const trimmedKeyword = committedKeyword.trim()
 
@@ -347,10 +348,9 @@ const EventsTabPanel = () => {
     [],
   )
 
-  /** 카테고리 단일 선택 메뉴 항목(전체 + Lv1) */
-  const categoryMenuItems = useMemo(
+  /** 카테고리 다중 선택 필터 항목 */
+  const categoryFilterItems = useMemo(
     () => [
-      { label: '전체', value: 'all' as const },
       ...(Object.keys(SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO) as ScenarioWorkbenchEventCategoryLv1[]).map((key) => ({
         label: SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[key],
         value: key,
@@ -388,7 +388,19 @@ const EventsTabPanel = () => {
     [],
   )
 
-  const resetPage = () => setPagination((p) => ({ ...p, page: 1 }))
+  /** 필터/정렬 변경 시 목록 페이지를 1페이지로 초기화 */
+  const resetPage = useCallback(() => {
+    setPagination((p) => ({ ...p, page: 1 }))
+  }, [])
+
+  /** 카테고리 필터 적용 값을 상태와 페이지에 반영 */
+  const handleCategoryFilterApply = useCallback(
+    (filterValues: FilterValues) => {
+      setCategoryFilter((filterValues.category ?? []) as ScenarioWorkbenchEventCategoryLv1[])
+      resetPage()
+    },
+    [resetPage],
+  )
 
   const handleDateRangeApply = useCallback((dates: DateRange) => {
     setAppliedDateRange({
@@ -431,16 +443,23 @@ const EventsTabPanel = () => {
                     resetPage()
                   }}
                 />
-                <MISelectMenu
-                  variant="outlined"
-                  sx={{ minWidth: 120 }}
-                  textLabel="카테고리"
-                  items={categoryMenuItems}
-                  selected={categoryFilter}
-                  onSelected={(v: CategoryFilterValue) => {
-                    setCategoryFilter(v)
-                    resetPage()
-                  }}
+                <MIFilterMenu
+                  filterGroups={[
+                    [
+                      {
+                        key: 'category',
+                        title: '카테고리',
+                        filters: categoryFilterItems,
+                        width: 175,
+                      },
+                    ],
+                  ]}
+                  initialValues={{ category: categoryFilter }}
+                  appliedFiltersCount={categoryFilter.length}
+                  onApply={handleCategoryFilterApply}
+                  showSaveOption={false}
+                  label="카테고리"
+                  sx={{ minWidth: 106 }}
                 />
                 <MIDateRangePickerMenu
                   dateRange={appliedDateRange}
