@@ -1,9 +1,7 @@
-import { ArrowBack } from '@mui/icons-material'
-import { Box, Button, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { debounce } from 'lodash-es'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode, useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import EventDetailAiInsightsSection from './components/event/EventDetailAiInsightsSection.tsx'
@@ -11,6 +9,10 @@ import EventDetailFundamentalSection from './components/event/EventDetailFundame
 import EventDetailImpactAnalysisSection from './components/event/EventDetailImpactAnalysisSection.tsx'
 import EventDetailInstitutionalOutlookTable from './components/event/EventDetailInstitutionalOutlookTable.tsx'
 import EventDetailMiRecordsTable from './components/event/EventDetailMiRecordsTable.tsx'
+import ScenarioWorkbenchDetailHeader, {
+  WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
+  type WorkbenchDetailHeaderSection,
+} from './components/ScenarioWorkbenchDetailHeader'
 
 import type {
   EventDetailFundamentalIndicatorRow,
@@ -24,14 +26,13 @@ import type {
 } from './components/event/types.ts'
 
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
+import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import scenarioWorkbenchEventService, {
   SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO,
   type ScenarioWorkbenchImpactLevel,
   type ScenarioWorkbenchPriceDirection,
 } from '@/service/mi/scenarioWorkbench/event.ts'
 import { IPaginationResponse } from '@/types/api.ts'
-
-const STICKY_TOP_WHEN_SCROLLED = -14
 
 /** 이벤트 상세 탭 키 */
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'fundamental'
@@ -56,6 +57,58 @@ const SECTION_SCROLL_IDS: Record<EventDetailTabKey, string> = {
   records: 'event-detail-section-records',
   outlook: 'event-detail-section-outlook',
   fundamental: 'event-detail-section-fundamental',
+}
+
+/** 시나리오 워크벤치 상세 헤더의 섹션 탭 정의 */
+const EVENT_DETAIL_HEADER_SECTIONS: WorkbenchDetailHeaderSection[] = EVENT_DETAIL_TABS.map((tab) => ({
+  id: SECTION_SCROLL_IDS[tab.key],
+  label: tab.label,
+}))
+
+/** 이벤트 상세 헤더에 필요한 동적 콘텐츠 */
+interface EventDetailHeaderContent {
+  backLabel: string
+  onBack: () => void
+  titleSlot: ReactNode
+  rightAction?: ReactNode
+}
+
+let eventDetailHeaderContent: EventDetailHeaderContent | null = null
+const eventDetailHeaderListeners = new Set<() => void>()
+
+/** 외부 스토어 구독 등록 (헤더 콘텐츠 변경 시 리렌더 트리거) */
+const subscribeEventDetailHeaderContent = (listener: () => void) => {
+  eventDetailHeaderListeners.add(listener)
+  return () => eventDetailHeaderListeners.delete(listener)
+}
+
+/** 외부 스토어 스냅샷 읽기 (동기 렌더링에 사용) */
+const getEventDetailHeaderContentSnapshot = () => eventDetailHeaderContent
+
+/** 외부 스토어 게시 (헤더 콘텐츠 변경 전파) */
+const publishEventDetailHeaderContent = (next: EventDetailHeaderContent) => {
+  eventDetailHeaderContent = next
+  eventDetailHeaderListeners.forEach((l) => l())
+}
+
+/** `ScenarioWorkbenchDetailHeader` 래퍼 — 외부 스토어 기반으로 titleSlot을 갱신 */
+const EventDetailHeaderView = () => {
+  const content = useSyncExternalStore(
+    subscribeEventDetailHeaderContent,
+    getEventDetailHeaderContentSnapshot,
+    getEventDetailHeaderContentSnapshot,
+  )
+  if (!content) return null
+
+  return (
+    <ScenarioWorkbenchDetailHeader
+      sections={EVENT_DETAIL_HEADER_SECTIONS}
+      backLabel={content.backLabel}
+      onBack={content.onBack}
+      titleSlot={content.titleSlot}
+      rightAction={content.rightAction}
+    />
+  )
 }
 
 const DEFAULT_IMPACT_KPI_PAIR: [EventDetailImpactKpiItem, EventDetailImpactKpiItem] = [
@@ -84,83 +137,13 @@ const ScenarioWorkbenchEventDetailPage = () => {
   const location = useLocation()
   const state = location.state as ScenarioWorkbenchEventDetailLocationState | null
 
-  const [activeTab, setActiveTab] = useState<EventDetailTabKey>('impact')
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
-  const [isScrolled, setIsScrolled] = useState(false)
-  const stickyHeaderWrapperRef = useRef<HTMLDivElement | null>(null)
-  const contentWrapperRef = useRef<HTMLDivElement | null>(null)
-  /** 상단으로 smooth 스냅 중에는 scrollTop > 0이어도 헤더/탭을 펼친 상태로 유지 */
-  const expandHeaderDuringSnapRef = useRef(false)
-  const lastScrollTopRef = useRef(0)
+  const { setStickyHeader } = useStickyHeader()
 
   useEffect(() => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
     if (scrollEl) scrollEl.scrollTop = 0
-  }, [])
-
-  useEffect(() => {
-    const scrollEl = document.getElementById('main-scroll-wrapper')
-    if (!scrollEl) return undefined
-
-    let scrollStartTop = scrollEl.scrollTop
-    lastScrollTopRef.current = scrollEl.scrollTop
-
-    const handleScrollImmediate = () => {
-      const t = scrollEl.scrollTop
-      const prev = lastScrollTopRef.current
-      if (expandHeaderDuringSnapRef.current && t > prev + 2) {
-        expandHeaderDuringSnapRef.current = false
-      }
-      lastScrollTopRef.current = t
-
-      if (t === 0) {
-        expandHeaderDuringSnapRef.current = false
-        setIsScrolled(false)
-        return
-      }
-      if (!expandHeaderDuringSnapRef.current) {
-        setIsScrolled(true)
-      }
-    }
-
-    const handleScrollDebounced = debounce(() => {
-      const currentScrollTop = scrollEl.scrollTop
-      const isScrollingUp = currentScrollTop < scrollStartTop
-      const isScrollingDown = currentScrollTop > scrollStartTop
-      const contentEl = contentWrapperRef.current
-      const stickyEl = stickyHeaderWrapperRef.current
-
-      if (contentEl && stickyEl) {
-        const containerRect = scrollEl.getBoundingClientRect()
-        const contentRect = contentEl.getBoundingClientRect()
-        const stickyHeight = stickyEl.getBoundingClientRect().height
-        const stickyBottomWhenStuck = stickyHeight + STICKY_TOP_WHEN_SCROLLED
-        const firstContentTop = scrollEl.scrollTop + contentRect.top - containerRect.top - stickyBottomWhenStuck
-
-        if (isScrollingDown && currentScrollTop < firstContentTop) {
-          scrollEl.scrollTo({ top: firstContentTop, behavior: 'smooth' })
-        } else if (isScrollingUp && currentScrollTop + 1 < firstContentTop && currentScrollTop > 0) {
-          expandHeaderDuringSnapRef.current = true
-          setIsScrolled(false)
-          scrollEl.scrollTo({ top: 0, behavior: 'smooth' })
-        }
-      }
-
-      scrollStartTop = scrollEl.scrollTop
-    }, 150)
-
-    const handleScroll = () => {
-      handleScrollImmediate()
-      handleScrollDebounced()
-    }
-
-    handleScroll()
-    scrollEl.addEventListener('scroll', handleScroll)
-    return () => {
-      scrollEl.removeEventListener('scroll', handleScroll)
-      handleScrollDebounced.cancel()
-    }
   }, [])
 
   const {
@@ -314,36 +297,49 @@ const ScenarioWorkbenchEventDetailPage = () => {
     }
   }, [outlookRows, outlooksData])
 
-  /** sticky 헤더 높이를 반영해 섹션 앵커로 스크롤 */
-  const handleTabChange = useCallback(
-    (tab: EventDetailTabKey) => {
-      setActiveTab(tab)
-      const sectionEl = document.getElementById(SECTION_SCROLL_IDS[tab])
-      if (!sectionEl) return
+  useLayoutEffect(() => {
+    publishEventDetailHeaderContent({
+      backLabel: 'Event',
+      onBack: () => navigate('/mi/scenario-workbench'),
+      titleSlot: (
+        <Stack width="100%">
+          <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#212529' }}>Event</Typography>
+          <Typography fontSize={26} fontWeight={600} color="contentText.Black" lineHeight={1.4} sx={{ wordBreak: 'break-word' }}>
+            {title}
+          </Typography>
+          <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" mt={1}>
+            <Stack direction="row" alignItems="center" gap={0.75} px={1} py={0.5} borderRadius="999px">
+              <Typography fontSize={12} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
+                생성일시
+              </Typography>
+              <Typography fontSize={14} fontWeight={500} color="contentText.Black" lineHeight={1.4}>
+                {generatedAtLabel}
+              </Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" gap={0.75} px={1} py={0.5} borderRadius="999px">
+              <Typography fontSize={12} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
+                업데이트
+              </Typography>
+              <Typography fontSize={14} fontWeight={500} color="contentText.Black" lineHeight={1.4}>
+                {updatedAtLabel}
+              </Typography>
+            </Stack>
+          </Stack>
+        </Stack>
+      ),
+    })
+  }, [generatedAtLabel, navigate, title, updatedAtLabel])
 
-      const scrollEl = document.getElementById('main-scroll-wrapper')
-      const stickyHeight = stickyHeaderWrapperRef.current?.getBoundingClientRect().height ?? 0
-      const stickyOffset = stickyHeight + (isScrolled ? STICKY_TOP_WHEN_SCROLLED : 0)
-
-      if (scrollEl) {
-        const containerRect = scrollEl.getBoundingClientRect()
-        const elRect = sectionEl.getBoundingClientRect()
-        const targetTop = scrollEl.scrollTop + elRect.top - containerRect.top - stickyOffset
-        scrollEl.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' })
-        return
-      }
-
-      const scrollingElement = document.scrollingElement as HTMLElement | null
-      if (!scrollingElement) {
-        sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        return
-      }
-      const elRect = sectionEl.getBoundingClientRect()
-      const targetTop = scrollingElement.scrollTop + elRect.top - stickyOffset
-      window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' })
-    },
-    [isScrolled],
-  )
+  useLayoutEffect(() => {
+    setStickyHeader(<EventDetailHeaderView />, {
+      pinMariPosition: true,
+      stickyHeightsPx: WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
+    })
+    return () => {
+      setStickyHeader(null)
+      eventDetailHeaderContent = null
+    }
+  }, [setStickyHeader])
 
   return (
     <Box boxSizing="border-box" maxWidth={1404} width="100%" margin="auto" paddingX={7.5}>
@@ -358,138 +354,13 @@ const ScenarioWorkbenchEventDetailPage = () => {
         gap={1.5}
         boxSizing="border-box"
       >
-        <Box>
-          <Button
-            variant="contained"
-            startIcon={<ArrowBack sx={{ fontSize: 20, color: '#343A40' }} />}
-            sx={{
-              height: '36px',
-              fontSize: 14,
-              fontWeight: 600,
-              color: '#495057',
-              bgcolor: '#FFFFFF',
-              border: '1px solid #DEE2E6',
-              borderRadius: '10px',
-              padding: '8px',
-              textTransform: 'none',
-              marginTop: '8px',
-              marginBottom: '8px',
-            }}
-            onClick={() => navigate('/mi/scenario-workbench')}
-          >
-            Event
-          </Button>
-        </Box>
-
-        <Box
-          ref={stickyHeaderWrapperRef}
-          position="sticky"
-          top={isScrolled ? `${STICKY_TOP_WHEN_SCROLLED}px` : 0}
-          left="0"
-          bgcolor="commonColor.White"
-          zIndex={200}
-          sx={{ userSelect: 'none' }}
-        >
-          <Stack
-            direction="row"
-            alignItems="center"
-            gap="4px"
-            position="absolute"
-            top="12px"
-            left="0"
-            sx={{
-              transform: `translateY(${isScrolled ? -6 : 0}px)`,
-              opacity: isScrolled ? 0 : 1,
-              transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
-              transitionDelay: isScrolled ? '0s' : '0.2s',
-            }}
-          >
-            <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#212529' }}>Event</Typography>
-          </Stack>
-
-          <Box
-            position="absolute"
-            top="32px"
-            left="0"
-            right={0}
-            sx={{
-              transform: `translateY(${isScrolled ? -6 : 0}px)`,
-              opacity: isScrolled ? 0 : 1,
-              transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
-              transitionDelay: isScrolled ? '0s' : '0.2s',
-            }}
-          >
-            <Typography fontSize={26} fontWeight={600} color="contentText.Black" lineHeight={1.4} sx={{ wordBreak: 'break-word' }}>
-              {title}
-            </Typography>
-            <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" mt={1}>
-              <Stack direction="row" alignItems="center" gap={0.75} px={1} py={0.5} borderRadius="999px">
-                <Typography fontSize={12} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
-                  생성일시
-                </Typography>
-                <Typography fontSize={14} fontWeight={500} color="contentText.Black" lineHeight={1.4}>
-                  {generatedAtLabel}
-                </Typography>
-              </Stack>
-              <Stack direction="row" alignItems="center" gap={0.75} px={1} py={0.5} borderRadius="999px">
-                <Typography fontSize={12} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
-                  업데이트
-                </Typography>
-                <Typography fontSize={14} fontWeight={500} color="contentText.Black" lineHeight={1.4}>
-                  {updatedAtLabel}
-                </Typography>
-              </Stack>
-            </Stack>
-          </Box>
-
-          <Box mt="116px">
-            <Stack width="100%" borderBottom="1px solid" borderColor="contentBorder.Normal" alignItems="stretch">
-              <Stack direction="row" alignItems="flex-end" flex={1} minWidth={0}>
-                {EVENT_DETAIL_TABS.map((tab) => {
-                  const isActive = activeTab === tab.key
-                  return (
-                    <Box
-                      key={tab.key}
-                      component="button"
-                      type="button"
-                      onClick={() => handleTabChange(tab.key)}
-                      sx={{
-                        cursor: 'pointer',
-                        border: 'none',
-                        background: 'none',
-                        minHeight: 62,
-                        px: 2.5,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'flex-start',
-                        borderBottom: isActive ? '2px solid' : '2px solid transparent',
-                        borderBottomColor: isActive ? 'common.black' : 'transparent',
-                        mb: '-1px',
-                      }}
-                    >
-                      <Typography
-                        fontSize={16}
-                        fontWeight={isActive ? 700 : 600}
-                        color="contentText.Black"
-                        lineHeight={1.4}
-                        whiteSpace="nowrap"
-                      >
-                        {tab.label}
-                      </Typography>
-                    </Box>
-                  )
-                })}
-              </Stack>
-            </Stack>
-          </Box>
-        </Box>
         <MISkeleton variant="table" rows={14} columns={4} loading={detailLoading && !detail}>
           {detailError && (
             <Typography px={2} py={1} color="error.main" variant="body2">
               이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
             </Typography>
           )}
-          <Stack ref={contentWrapperRef} py={3} gap={1.5} width="100%" alignItems="flex-start">
+          <Stack py={3} gap={1.5} width="100%" alignItems="flex-start">
             <EventDetailImpactAnalysisSection tableRows={impactTableRows} kpiItems={impactKpiPair} narrative={impactNarrative} />
             <EventDetailAiInsightsSection bullets={aiBullets} detailParagraph={aiDetailParagraph} />
             <EventDetailMiRecordsTable
