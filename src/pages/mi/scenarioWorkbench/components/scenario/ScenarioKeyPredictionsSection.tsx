@@ -12,12 +12,14 @@ interface DirectionalValueProps {
 }
 
 const DirectionalValue = ({ direction, value }: DirectionalValueProps) => {
-  const color = direction === 'up' ? '#498B47' : '#CC4D50'
+  const toneColor = direction === 'up' ? 'increase.main' : 'decrease.main'
   const Icon = direction === 'up' ? ArrowUpwardIcon : ArrowDownwardIcon
   return (
     <Stack direction="row" alignItems="center" gap={direction === 'up' ? '2px' : '4px'}>
-      <Icon sx={{ fontSize: 30, color }} />
-      <Typography sx={{ fontSize: 20, fontWeight: 700, color, lineHeight: 1.4 }}>{value}</Typography>
+      <Icon sx={{ fontSize: '30px', color: toneColor }} />
+      <Typography variant="titleBox" sx={{ color: toneColor, lineHeight: 1.4 }}>
+        {value}
+      </Typography>
     </Stack>
   )
 }
