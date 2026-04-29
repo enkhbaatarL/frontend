@@ -14,6 +14,8 @@ const KpiCard = ({ title, content, description }: KpiCardProps) => (
     padding="20px"
     flex={1}
     minWidth={0}
+    minHeight="120px"
+    boxSizing="border-box"
     sx={{ '&:hover': { backgroundColor: 'contentBG.Hover' } }}
   >
     <Stack gap="6px" minWidth={0}>
