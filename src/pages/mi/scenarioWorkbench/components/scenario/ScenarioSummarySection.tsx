@@ -1,5 +1,6 @@
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { Box, Stack, Typography } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import { CategoryScale, Chart as ChartJS, Filler, LinearScale, LineElement, PointElement, Plugin, Title, Tooltip } from 'chart.js'
 import { useMemo } from 'react'
 import { Line } from 'react-chartjs-2'
@@ -20,7 +21,9 @@ interface PriceStepChipProps {
 
 const PriceStepChip = ({ label }: PriceStepChipProps) => (
   <Box sx={{ bgcolor: 'commonColor.White', borderRadius: '10px', px: '8px', py: '4px' }}>
-    <Typography sx={{ fontSize: 20, fontWeight: 700, color: '#343A40', letterSpacing: '-0.2px' }}>{label}</Typography>
+    <Typography variant="titleBox" sx={{ color: 'gray.80', letterSpacing: '-0.2px' }}>
+      {label}
+    </Typography>
   </Box>
 )
 
@@ -29,6 +32,7 @@ interface ScenarioSummarySectionProps {
 }
 
 const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
+  const theme = useTheme()
   const { priceFlowTitle, priceSteps, flowDescription, forecastTitle, forecastBody, chartUnit, chart } = data
 
   const weeksPerMonth = useMemo(() => {
@@ -60,7 +64,7 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
         if (!xScale || !yScale) return
 
         ctx.save()
-        ctx.strokeStyle = '#DEE2E6'
+        ctx.strokeStyle = theme.palette.gray[30]
         ctx.lineWidth = 1
         ctx.setLineDash([1.5, 1.5])
 
@@ -86,7 +90,7 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
         ctx.restore()
 
         ctx.save()
-        ctx.strokeStyle = '#343A40'
+        ctx.strokeStyle = theme.palette.gray[80]
         ctx.lineWidth = 1
         ctx.setLineDash([])
 
@@ -103,96 +107,104 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
         ctx.restore()
       },
     }),
-    [chart.months, weeksPerMonth],
+    [chart.months, weeksPerMonth, theme],
   )
 
-  const chartData = {
-    labels: chartLabels,
-    datasets: [
-      {
-        data: chartValues,
-        borderColor: '#1C3D5A',
-        backgroundColor: 'transparent',
-        fill: false,
-        tension: 0,
-        pointRadius: 0,
-        borderWidth: 1.5,
-      },
-    ],
-  }
+  const chartData = useMemo(
+    () => ({
+      labels: chartLabels,
+      datasets: [
+        {
+          data: chartValues,
+          borderColor: theme.palette.primary.main,
+          backgroundColor: 'transparent',
+          fill: false,
+          tension: 0,
+          pointRadius: 0,
+          borderWidth: 1.5,
+        },
+      ],
+    }),
+    [chartLabels, chartValues, theme.palette.primary.main],
+  )
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: { duration: 0 },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        mode: 'index' as const,
-        intersect: false,
-        callbacks: {
-          title: () => '',
-        },
-      },
-      title: {
-        display: true,
-        text: chartUnit,
-        align: 'start' as const,
-        color: 'contentText.Normal',
-        font: {
-          size: 14,
-          weight: 500,
-        },
-        padding: { top: 0, bottom: 40 },
-      },
-    },
-    layout: {
-      padding: 0,
-    },
-    scales: {
-      x: {
-        offset: false,
-        grid: { display: false, drawOnChartArea: false, drawTicks: false },
-        ticks: {
-          font: { size: 13 },
-          color: '#495057',
-          autoSkip: false,
-          maxRotation: 0,
-          minRotation: 0,
-          padding: 8,
-          callback(this: unknown, _value: number | string, index: number) {
-            const adjusted = index - LEADING_PAD
-            if (adjusted < 0 || adjusted >= realLabels.length) return ''
-            return adjusted % weeksPerMonth === 0 ? chart.months[adjusted / weeksPerMonth] : ''
+  const chartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 0 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index' as const,
+          intersect: false,
+          callbacks: {
+            title: () => '',
           },
         },
-        border: { display: false },
-      },
-      y: {
-        min: -2,
-        max: 45,
-        grid: { display: false, drawOnChartArea: false, drawTicks: false },
-        ticks: {
-          stepSize: 5,
-          font: { size: 13 },
-          color: '#495057',
-          padding: 36,
-          callback: (value: number | string) => {
-            const n = Number(value)
-            if (n <= 0) return ''
-            return n.toFixed(1)
+        title: {
+          display: true,
+          text: chartUnit,
+          align: 'start' as const,
+          color: theme.palette.contentText.Normal,
+          font: {
+            size: 14,
+            weight: 500,
           },
+          padding: { top: 0, bottom: 40 },
         },
-        border: { display: false },
       },
-    },
-  }
+      layout: {
+        padding: 0,
+      },
+      scales: {
+        x: {
+          offset: false,
+          grid: { display: false, drawOnChartArea: false, drawTicks: false },
+          ticks: {
+            font: { size: 13 },
+            color: theme.palette.contentText.Normal,
+            autoSkip: false,
+            maxRotation: 0,
+            minRotation: 0,
+            padding: 8,
+            callback(this: unknown, _value: number | string, index: number) {
+              const adjusted = index - LEADING_PAD
+              if (adjusted < 0 || adjusted >= realLabels.length) return ''
+              return adjusted % weeksPerMonth === 0 ? chart.months[adjusted / weeksPerMonth] : ''
+            },
+          },
+          border: { display: false },
+        },
+        y: {
+          min: -2,
+          max: 45,
+          grid: { display: false, drawOnChartArea: false, drawTicks: false },
+          ticks: {
+            stepSize: 5,
+            font: { size: 13 },
+            color: theme.palette.contentText.Normal,
+            padding: 36,
+            callback: (value: number | string) => {
+              const n = Number(value)
+              if (n <= 0) return ''
+              return n.toFixed(1)
+            },
+          },
+          border: { display: false },
+        },
+      },
+    }),
+    [chart.months, chartUnit, realLabels.length, theme.palette.contentText.Normal, weeksPerMonth],
+  )
 
   return (
     <Stack direction="row" gap="38px" px="12px" py="12px" alignItems="flex-start">
-      <Stack flex="0 0 50%" minWidth={0} gap="38px" py="30px" borderTop="1px solid #2E3F5E">
+      <Stack flex="0 0 50%" minWidth={0} gap="38px" py="30px" sx={{ borderTop: 1, borderColor: 'primary.main' }}>
         <Stack gap="10px">
-          <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'contentText.Normal' }}>{priceFlowTitle}</Typography>
+          <Typography variant="body1SB16" sx={{ color: 'contentText.Normal' }}>
+            {priceFlowTitle}
+          </Typography>
 
           <Stack>
             <Stack
@@ -201,27 +213,33 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
               gap="4px"
               mb="10px"
               flexWrap="wrap"
-              sx={{ bgcolor: '#F1F3F5', borderRadius: '10px', p: '8px', width: 'fit-content' }}
+              sx={{ bgcolor: 'gray.10', borderRadius: '10px', p: '8px', width: 'fit-content' }}
             >
               {priceSteps.map((step, index) => (
                 <Stack key={`${step.label}-${index}`} direction="row" alignItems="center" gap="4px">
                   <PriceStepChip label={step.label} />
-                  {index < priceSteps.length - 1 && <ArrowForwardIcon sx={{ fontSize: 20, color: 'contentText.Normal' }} />}
+                  {index < priceSteps.length - 1 && <ArrowForwardIcon sx={{ fontSize: '20px', color: 'contentText.Normal' }} />}
                 </Stack>
               ))}
             </Stack>
 
-            <Typography sx={{ fontSize: 14, fontWeight: 500, color: 'contentText.Normal', lineHeight: 1.6 }}>{flowDescription}</Typography>
+            <Typography variant="body2M14" sx={{ color: 'contentText.Normal', lineHeight: 1.6 }}>
+              {flowDescription}
+            </Typography>
           </Stack>
         </Stack>
 
         <Stack gap="10px">
-          <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'contentText.Normal' }}>{forecastTitle}</Typography>
-          <Typography sx={{ fontSize: 18, fontWeight: 500, color: 'contentText.Black', lineHeight: 1.6 }}>{forecastBody}</Typography>
+          <Typography variant="body1SB16" sx={{ color: 'contentText.Normal' }}>
+            {forecastTitle}
+          </Typography>
+          <Typography variant="subtext0" sx={{ color: 'contentText.Black', fontWeight: 500 }}>
+            {forecastBody}
+          </Typography>
         </Stack>
       </Stack>
 
-      <Box flex="1" minWidth={0} pt="24px" borderTop="1px solid #2E3F5E">
+      <Box flex="1" minWidth={0} pt="24px" sx={{ borderTop: 1, borderColor: 'primary.main' }}>
         <Stack py="12px">
           <Box height="390px">
             <Line data={chartData} options={chartOptions} plugins={[chartDecorPlugin]} />

@@ -30,9 +30,9 @@ const MethodBadge = ({ method }: MethodBadgeProps) => {
   const isAI = method === 'AI'
   return (
     <MIChip
-      size="h24"
       color={isAI ? 'purple' : 'gray'}
       type="filled"
+      fontType="body2SB14"
       disableHover
       icon={
         isAI ? (
@@ -43,6 +43,7 @@ const MethodBadge = ({ method }: MethodBadgeProps) => {
       }
       label={isAI ? 'AI' : 'User'}
       sx={{
+        height: '28px',
         borderRadius: '8px',
         border: '1px solid',
         borderColor: 'contentBorder.Normal',
@@ -62,9 +63,9 @@ interface PriceRangeBadgeProps {
 }
 
 const PRICE_DIRECTION_CONFIG: Record<PriceDirection, { bg: string; color: string; symbol: string }> = {
-  Up: { bg: '#EAF7EE', color: '#498B47', symbol: '▲' },
+  Up: { bg: '#EAF7EE', color: 'chart.green6', symbol: '▲' },
   Down: { bg: '#FFEBEB', color: '#E03131', symbol: '▼' },
-  Neutral: { bg: '#ECEDF4', color: '#ADB5BD', symbol: '―' },
+  Neutral: { bg: 'contentBG.PrimaryFade', color: 'gray.50', symbol: '―' },
 }
 
 const PriceRangeBadge = ({ direction, range }: PriceRangeBadgeProps) => {
@@ -92,20 +93,26 @@ interface PriceImpactCellProps {
 }
 
 const PRICE_IMPACT_CONFIG: Record<Exclude<PriceImpactLevel, '없음'>, { Icon: typeof SignalCellularAltIcon; color: string }> = {
-  높음: { Icon: SignalCellularAltIcon, color: '#364FC7' },
+  높음: { Icon: SignalCellularAltIcon, color: 'mari.Primary' },
   중간: { Icon: SignalCellularAlt2BarIcon, color: '#7384D9' },
   낮음: { Icon: SignalCellularAlt1BarIcon, color: '#A7B2E5' },
 }
 
 const PriceImpactCell = ({ level }: PriceImpactCellProps) => {
   if (level === '없음') {
-    return <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'gray.50' }}>없음</Typography>
+    return (
+      <Typography variant="body1SB16" color="gray.50">
+        없음
+      </Typography>
+    )
   }
   const { Icon, color } = PRICE_IMPACT_CONFIG[level]
   return (
-    <Stack direction="row" alignItems="center" gap="4px">
+    <Stack direction="row" alignItems="center" gap={1}>
       <Icon sx={{ fontSize: 20, color }} />
-      <Typography sx={{ fontSize: 16, fontWeight: 600, color }}>{level}</Typography>
+      <Typography variant="body1SB16" sx={{ color }}>
+        {level}
+      </Typography>
     </Stack>
   )
 }
@@ -315,9 +322,9 @@ const TYPE_FILTER_OPTIONS = [
   { value: '사용자', label: '사용자' },
 ] as const
 
-const SORT_OPTIONS = ['최신순', '오래된순'] as const
+const SORT_OPTIONS = ['최신순', '가격 영향도 높은 순', '발생 가능성 높은 순'] as const
 
-const PERIOD_OPTIONS = ['1개월', '3개월', '6개월', '1년'] as const
+const PERIOD_OPTIONS = ['1개월', '3개월', '6개월', '12개월', '전체 기간'] as const
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
@@ -398,26 +405,26 @@ const ScenariosTabPanel = () => {
     {
       field: 'method',
       headerName: '생성타입',
-      minWidth: 56,
+      width: 90,
       align: 'center',
       renderCell: (params) => <MethodBadge method={params.value as ScenarioMethod} />,
     },
     {
       field: 'createdAt',
       headerName: '생성/갱신일시',
-      minWidth: 136,
+      width: 140,
       align: 'center',
     },
     {
       field: 'name',
       headerName: '시나리오명',
       flex: 1,
-      minWidth: 666,
+      minWidth: 660,
     },
     {
       field: 'priceRange',
       headerName: 'JKM 가격 전망',
-      minWidth: 136,
+      width: 160,
       align: 'center',
       renderCell: (params) => {
         const value = params.value as ScenarioRow['priceRange']
@@ -428,21 +435,29 @@ const ScenariosTabPanel = () => {
     {
       field: 'priceImpact',
       headerName: '가격 영향도',
-      minWidth: 136,
+      width: 160,
       align: 'center',
       renderCell: (params) => <PriceImpactCell level={params.value as PriceImpactLevel} />,
     },
     {
       field: 'probability',
       headerName: '발생 가능성',
-      minWidth: 136,
+      width: 160,
       align: 'center',
       renderCell: (params) => {
         const value = params.value as number | null
         if (value === null || value === undefined) {
-          return <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'gray.50' }}>없음</Typography>
+          return (
+            <Typography variant="body1SB16" color="gray.50">
+              없음
+            </Typography>
+          )
         }
-        return <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'contentText.Normal' }}>{`${value.toFixed(1)}%`}</Typography>
+        return (
+          <Typography variant="body1SB16" color="contentText.Normal">
+            {`${value.toFixed(1)}%`}
+          </Typography>
+        )
       },
     },
   ]
@@ -450,19 +465,21 @@ const ScenariosTabPanel = () => {
   return (
     <>
       <ScenarioWorkbenchNotice noticeKey="scenarios">
-        <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'contentText.Black', lineHeight: 1.4 }}>
+        <Typography variant="body2SB14" color="contentText.Black">
           • 직전 상태(어제) 대비 업데이트 내역을 여기에 안내합니다.
         </Typography>
-        <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'contentText.Black', lineHeight: 1.4 }}>
+        <Typography variant="body2SB14" color="contentText.Black">
           • 신규 시나리오 2건이 생성되었고 5건이 업데이트 되었습니다.
         </Typography>
       </ScenarioWorkbenchNotice>
 
-      <Box pt="20px" width="100%">
-        <Typography sx={{ paddingY: '6px', fontSize: 26, fontWeight: 700, color: 'contentText.Black' }}>Scenarios</Typography>
+      <Box width="100%">
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} paddingY={1.5} color="contentText.Black">
+          Scenarios
+        </Typography>
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mt="12px">
-          <Stack direction="row" gap="12px" alignItems="center">
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mt={3}>
+          <Stack direction="row" gap={3} alignItems="center">
             <MISlidingSegmented
               options={TYPE_FILTER_OPTIONS}
               value={typeFilter}
@@ -472,8 +489,9 @@ const ScenariosTabPanel = () => {
 
             <MIDropdownMenu
               variant="outlined"
+              buttonHoverBgColor="gray.20"
               label={
-                <Stack direction="row" alignItems="center" gap="4px">
+                <Stack direction="row" alignItems="center" gap={1}>
                   <Typography variant="body2M14" color="contentText.Black">
                     {sort}
                   </Typography>
@@ -485,8 +503,9 @@ const ScenariosTabPanel = () => {
 
             <MIDropdownMenu
               variant="outlined"
+              buttonHoverBgColor="gray.20"
               label={
-                <Stack direction="row" alignItems="center" gap="4px">
+                <Stack direction="row" alignItems="center" gap={1}>
                   <Typography variant="body2M14" color="contentText.Black">
                     {period}
                   </Typography>
@@ -497,8 +516,8 @@ const ScenariosTabPanel = () => {
             />
           </Stack>
 
-          <Stack direction="row" alignItems="center" gap="12px">
-            <Stack direction="row" alignItems="center" gap="8px" sx={{ cursor: 'pointer' }} onClick={handleToggleActiveOnly}>
+          <Stack direction="row" alignItems="center" gap={3}>
+            <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
               <Switch size="small" checked={showActiveOnly} onChange={handleToggleActiveOnly} />
               <Typography variant="body2M14" color="contentText.Black">
                 활성 시나리오만 보기
@@ -518,24 +537,32 @@ const ScenariosTabPanel = () => {
         </Stack>
 
         <Box
-          mt="8px"
-          sx={{
+          mt={2}
+          sx={(theme) => ({
+            '& .MuiDataGrid-columnHeaders': {
+              marginBottom: theme.spacing(1),
+            },
             '& .MuiDataGrid-columnHeader': {
               border: 'none !important',
-              borderBottom: '0.5px solid #868E96 !important',
-              backgroundColor: 'white !important',
-              padding: '8px 16px !important',
+              borderBottom: `0.5px solid ${theme.palette.gray[60]} !important`,
+              backgroundColor: `${theme.palette.commonColor.White} !important`,
 
               '& .MuiTypography-root': {
-                fontSize: 14,
-                fontWeight: 600,
-                color: '#495057',
+                ...theme.typography.body2SB14,
+                color: theme.palette.gray[70],
               },
             },
-            '& .MuiDataGrid-cell': {
-              padding: '10px 12px !important',
+            '& .MuiTypography-tableBody2': {
+              ...theme.typography.body1M16,
+              padding: 0,
             },
-          }}
+            '& .MuiDataGrid-row': {
+              borderRadius: '10px',
+              '&:hover': {
+                backgroundColor: theme.palette.gray[10],
+              },
+            },
+          })}
         >
           <MITable columns={columns} rows={paginationData.detail} rowId="id" rowHeight={42} hideFooter onRowClick={handleRowClick} />
         </Box>

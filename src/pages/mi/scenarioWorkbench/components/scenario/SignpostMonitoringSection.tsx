@@ -7,11 +7,9 @@ import MITable from '@/components/common/table/MITable'
 
 const textCell = (value: string) => (
   <Typography
+    variant="body2M14"
     sx={{
-      fontSize: 14,
-      fontWeight: 500,
-      color: '#495057',
-      lineHeight: 1.4,
+      color: 'contentText.Normal',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
@@ -67,20 +65,29 @@ const SignpostMonitoringSection = ({ rows }: SignpostMonitoringSectionProps) => 
   <Box
     sx={{
       position: 'relative',
+      paddingY: '24px',
+      '& .MuiDataGrid-columnHeaders': {
+        marginBottom: '4px',
+      },
       '& .MuiDataGrid-columnHeader': {
         border: 'none !important',
-        borderBottom: '0.5px solid #868E96 !important',
+        borderBottom: '0.5px solid gray.60 !important',
         backgroundColor: 'white !important',
-        padding: '8px 16px !important',
 
         '& .MuiTypography-root': {
           fontSize: 14,
           fontWeight: 600,
-          color: '#495057',
+          color: 'contentText.Normal',
         },
       },
       '& .MuiDataGrid-cell': {
         padding: '10px 12px !important',
+      },
+      '& .MuiDataGrid-row': {
+        borderRadius: '10px',
+        '&:hover': {
+          backgroundColor: 'gray.10',
+        },
       },
     }}
   >
@@ -93,7 +100,6 @@ const SignpostMonitoringSection = ({ rows }: SignpostMonitoringSectionProps) => 
         bottom: 0,
         width: '100px',
         pointerEvents: 'none',
-        background: 'linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 100%)',
       }}
     />
   </Box>
