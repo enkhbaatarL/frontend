@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { debounce } from 'lodash-es'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { debounce, type DebouncedFunc } from 'lodash-es'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import ScenarioWorkbenchTab from './components/ScenarioWorkbenchTab'
 import DesignTabPanel from './tabs/DesignTabPanel'
@@ -9,20 +9,67 @@ import OverviewTabPanel from './tabs/OverviewTabPanel'
 import ScenariosTabPanel from './tabs/ScenariosTabPanel'
 
 const STICKY_TOP_WHEN_SCROLLED = -14
-const PAGE_TITLE = 'MI Scenario Workbench'
+const SCROLL_JUMP_IGNORE_EXPAND_AT_ZERO_PX = 96
+const KEEP_MAIN_EPSILON_SCROLLED = 1
+
+const getFirstContentSnapScrollTop = (
+  scrollEl: HTMLElement,
+  contentEl: HTMLElement | null,
+  stickyEl: HTMLElement | null,
+): number | null => {
+  if (!contentEl || !stickyEl) return null
+  const containerRect = scrollEl.getBoundingClientRect()
+  const contentRect = contentEl.getBoundingClientRect()
+  const stickyHeight = stickyEl.getBoundingClientRect().height
+  const stickyBottomWhenStuck = stickyHeight + STICKY_TOP_WHEN_SCROLLED
+  return scrollEl.scrollTop + contentRect.top - containerRect.top - stickyBottomWhenStuck
+}
 
 const ScenarioWorkbenchPage = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [selectedTab, setSelectedTab] = useState(0)
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const contentWrapperRef = useRef<HTMLDivElement | null>(null)
+  const isScrolledRef = useRef(false)
   /** 상단으로 smooth 스냅 중에는 scrollTop > 0이어도 헤더/탭을 펼친 상태로 유지 */
   const expandHeaderDuringSnapRef = useRef(false)
   const lastScrollTopRef = useRef(0)
+  const prevTabRef = useRef<number | null>(null)
 
-  useEffect(() => {
+  const programmaticScrollActiveRef = useRef(false)
+  const scrollSnapBaselineRef = useRef(0)
+  const scrollDebouncedRef = useRef<DebouncedFunc<() => void> | null>(null)
+
+  isScrolledRef.current = isScrolled
+
+  useLayoutEffect(() => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
-    if (scrollEl) scrollEl.scrollTop = 0
+    if (!scrollEl) return
+
+    const switchingTabs = prevTabRef.current !== null && prevTabRef.current !== selectedTab
+
+    scrollDebouncedRef.current?.cancel()
+
+    if (switchingTabs) {
+      expandHeaderDuringSnapRef.current = false
+
+      if (isScrolledRef.current) {
+        const target = getFirstContentSnapScrollTop(scrollEl, contentWrapperRef.current, stickyHeaderRef.current)
+        if (target !== null) {
+          const maxTop = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight)
+          const next = Math.min(Math.max(0, target), maxTop)
+          scrollEl.scrollTo({ top: next, behavior: 'instant' })
+        }
+      } else {
+        scrollEl.scrollTo({ top: 0, behavior: 'instant' })
+      }
+
+      const top = scrollEl.scrollTop
+      lastScrollTopRef.current = top
+      scrollSnapBaselineRef.current = top
+    }
+
+    prevTabRef.current = selectedTab
   }, [selectedTab])
 
   const tabItems = useMemo(
@@ -39,52 +86,75 @@ const ScenarioWorkbenchPage = () => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
     if (!scrollEl) return undefined
 
-    let scrollStartTop = scrollEl.scrollTop
+    scrollSnapBaselineRef.current = scrollEl.scrollTop
     lastScrollTopRef.current = scrollEl.scrollTop
 
     const handleScrollImmediate = () => {
       const t = scrollEl.scrollTop
       const prev = lastScrollTopRef.current
+
+      if (programmaticScrollActiveRef.current) {
+        lastScrollTopRef.current = t
+        return
+      }
+
       if (expandHeaderDuringSnapRef.current && t > prev + 2) {
         expandHeaderDuringSnapRef.current = false
       }
       lastScrollTopRef.current = t
 
-      if (t === 0) {
+      if (t <= KEEP_MAIN_EPSILON_SCROLLED) {
         expandHeaderDuringSnapRef.current = false
+        if (isScrolledRef.current && prev > SCROLL_JUMP_IGNORE_EXPAND_AT_ZERO_PX) {
+          return
+        }
         setIsScrolled(false)
         return
       }
+
       if (!expandHeaderDuringSnapRef.current) {
         setIsScrolled(true)
       }
     }
 
+    const handleWheelExpandHeader = (e: WheelEvent) => {
+      if (e.deltaY >= 0) return
+      if (scrollEl.scrollTop > KEEP_MAIN_EPSILON_SCROLLED) return
+      expandHeaderDuringSnapRef.current = false
+      setIsScrolled(false)
+      if (scrollEl.scrollTop <= KEEP_MAIN_EPSILON_SCROLLED) {
+        programmaticScrollActiveRef.current = true
+        scrollEl.scrollTop = 0
+        lastScrollTopRef.current = 0
+        programmaticScrollActiveRef.current = false
+      }
+    }
+
     const handleScrollDebounced = debounce(() => {
       const currentScrollTop = scrollEl.scrollTop
-      const isScrollingUp = currentScrollTop < scrollStartTop
-      const isScrollingDown = currentScrollTop > scrollStartTop
+      const baseline = scrollSnapBaselineRef.current
+      const isScrollingUp = currentScrollTop < baseline
+      const isScrollingDown = currentScrollTop > baseline
       const contentEl = contentWrapperRef.current
       const stickyEl = stickyHeaderRef.current
 
       if (contentEl && stickyEl) {
-        const containerRect = scrollEl.getBoundingClientRect()
-        const contentRect = contentEl.getBoundingClientRect()
-        const stickyHeight = stickyEl.getBoundingClientRect().height
-        const stickyBottomWhenStuck = stickyHeight + STICKY_TOP_WHEN_SCROLLED
-        const firstContentTop = scrollEl.scrollTop + contentRect.top - containerRect.top - stickyBottomWhenStuck
-
-        if (isScrollingDown && currentScrollTop < firstContentTop) {
-          scrollEl.scrollTo({ top: firstContentTop, behavior: 'smooth' })
-        } else if (isScrollingUp && currentScrollTop + 1 < firstContentTop && currentScrollTop > 0) {
-          expandHeaderDuringSnapRef.current = true
-          setIsScrolled(false)
-          scrollEl.scrollTo({ top: 0, behavior: 'smooth' })
+        const firstContentTop = getFirstContentSnapScrollTop(scrollEl, contentEl, stickyEl)
+        if (firstContentTop !== null) {
+          if (isScrollingDown && currentScrollTop < firstContentTop) {
+            scrollEl.scrollTo({ top: firstContentTop, behavior: 'smooth' })
+          } else if (isScrollingUp && currentScrollTop + 1 < firstContentTop && currentScrollTop > 0) {
+            expandHeaderDuringSnapRef.current = true
+            setIsScrolled(false)
+            scrollEl.scrollTo({ top: 0, behavior: 'smooth' })
+          }
         }
       }
 
-      scrollStartTop = scrollEl.scrollTop
+      scrollSnapBaselineRef.current = scrollEl.scrollTop
     }, 150)
+
+    scrollDebouncedRef.current = handleScrollDebounced
 
     const handleScroll = () => {
       handleScrollImmediate()
@@ -93,9 +163,12 @@ const ScenarioWorkbenchPage = () => {
 
     handleScroll()
     scrollEl.addEventListener('scroll', handleScroll)
+    scrollEl.addEventListener('wheel', handleWheelExpandHeader, { passive: true, capture: true })
     return () => {
       scrollEl.removeEventListener('scroll', handleScroll)
+      scrollEl.removeEventListener('wheel', handleWheelExpandHeader, true)
       handleScrollDebounced.cancel()
+      scrollDebouncedRef.current = null
     }
   }, [])
 
@@ -115,7 +188,7 @@ const ScenarioWorkbenchPage = () => {
             transitionDelay: isScrolled ? '0s' : '0.2s',
           }}
         >
-          {PAGE_TITLE}
+          MI Scenario Workbench
         </Typography>
         <Box mt="96px">
           <ScenarioWorkbenchTab tabItems={tabItems} tabBarOnly value={selectedTab} onChange={setSelectedTab} />
@@ -127,6 +200,9 @@ const ScenarioWorkbenchPage = () => {
           return (
             <Box
               key={tab.label}
+              role="tabpanel"
+              id={`scenario-workbench-tabpanel-${index}`}
+              aria-labelledby={`scenario-workbench-tab-${index}`}
               aria-hidden={!isSelected}
               sx={{
                 ...(isSelected && {
