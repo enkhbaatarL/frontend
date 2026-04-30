@@ -2,8 +2,7 @@ import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { debounce } from 'lodash-es'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import EventClassificationTag from '../components/event/EventClassificationTag'
@@ -40,8 +39,6 @@ import { IPaginationResponse } from '@/types/api'
 type SortOrder = 'latest' | 'oldest'
 /** 카테고리 필터 값: Lv1 다중 선택 */
 type CategoryFilterValue = ScenarioWorkbenchEventCategoryLv1[]
-
-const STICKY_TOP_WHEN_SCROLLED = -14
 
 const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpactLevel> = {
   HIGH: 3,
@@ -122,81 +119,10 @@ const EventsTabPanel = () => {
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
-  const [isScrolled, setIsScrolled] = useState(false)
-  const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
-  const contentWrapperRef = useRef<HTMLDivElement | null>(null)
-  const sectionRefs = useRef<(HTMLDivElement | null)[]>([null, null])
-  /** 상단으로 smooth 스냅 중에는 scrollTop > 0이어도 헤더/탭을 펼친 상태로 유지 */
-  const expandHeaderDuringSnapRef = useRef(false)
-  const lastScrollTopRef = useRef(0)
 
   useEffect(() => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
     if (scrollEl) scrollEl.scrollTop = 0
-  }, [])
-
-  useEffect(() => {
-    const scrollEl = document.getElementById('main-scroll-wrapper')
-    if (!scrollEl) return undefined
-
-    let scrollStartTop = scrollEl.scrollTop
-    lastScrollTopRef.current = scrollEl.scrollTop
-
-    const handleScrollImmediate = () => {
-      const t = scrollEl.scrollTop
-      const prev = lastScrollTopRef.current
-      if (expandHeaderDuringSnapRef.current && t > prev + 2) {
-        expandHeaderDuringSnapRef.current = false
-      }
-      lastScrollTopRef.current = t
-
-      if (t === 0) {
-        expandHeaderDuringSnapRef.current = false
-        setIsScrolled(false)
-        return
-      }
-      if (!expandHeaderDuringSnapRef.current) {
-        setIsScrolled(true)
-      }
-    }
-
-    const handleScrollDebounced = debounce(() => {
-      const currentScrollTop = scrollEl.scrollTop
-      const isScrollingUp = currentScrollTop < scrollStartTop
-      const isScrollingDown = currentScrollTop > scrollStartTop
-      const contentEl = contentWrapperRef.current
-      const stickyEl = stickyHeaderRef.current
-
-      if (contentEl && stickyEl) {
-        const containerRect = scrollEl.getBoundingClientRect()
-        const contentRect = contentEl.getBoundingClientRect()
-        const stickyHeight = stickyEl.getBoundingClientRect().height
-        const stickyBottomWhenStuck = stickyHeight + STICKY_TOP_WHEN_SCROLLED
-        const firstContentTop = scrollEl.scrollTop + contentRect.top - containerRect.top - stickyBottomWhenStuck
-
-        if (isScrollingDown && currentScrollTop < firstContentTop) {
-          scrollEl.scrollTo({ top: firstContentTop, behavior: 'smooth' })
-        } else if (isScrollingUp && currentScrollTop + 1 < firstContentTop && currentScrollTop > 0) {
-          expandHeaderDuringSnapRef.current = true
-          setIsScrolled(false)
-          scrollEl.scrollTo({ top: 0, behavior: 'smooth' })
-        }
-      }
-
-      scrollStartTop = scrollEl.scrollTop
-    }, 150)
-
-    const handleScroll = () => {
-      handleScrollImmediate()
-      handleScrollDebounced()
-    }
-
-    handleScroll()
-    scrollEl.addEventListener('scroll', handleScroll)
-    return () => {
-      scrollEl.removeEventListener('scroll', handleScroll)
-      handleScrollDebounced.cancel()
-    }
   }, [])
 
   const handleSearchChange = useCallback((value: string) => {
@@ -412,28 +338,15 @@ const EventsTabPanel = () => {
 
   return (
     <Stack gap={2} sx={{ px: 3, py: 2 }}>
-      <Box
-        ref={stickyHeaderRef}
-        position="sticky"
-        top={isScrolled ? `${STICKY_TOP_WHEN_SCROLLED}px` : 0}
-        left={0}
-        bgcolor="common.white"
-        zIndex={200}
-        sx={{ userSelect: 'none' }}
-      >
+      <Box bgcolor="common.white" sx={{ userSelect: 'none' }}>
         <Typography fontSize={26} fontWeight={700} lineHeight={1.4} pt={20} color="contentText.Black">
           Events
         </Typography>
       </Box>
 
-      <Box ref={contentWrapperRef} position="relative">
+      <Box position="relative">
         <Stack gap={2} py={2}>
-          <Stack
-            ref={(el) => {
-              sectionRefs.current[0] = el as HTMLDivElement
-            }}
-            gap={1.5}
-          >
+          <Stack gap={1.5}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5}>
               <Stack direction="row" alignItems="center" flexWrap="wrap" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
                 <EventsClassificationFilter
@@ -494,12 +407,7 @@ const EventsTabPanel = () => {
             </Stack>
           </Stack>
 
-          <Stack
-            ref={(el) => {
-              sectionRefs.current[1] = el as HTMLDivElement
-            }}
-            gap={1.5}
-          >
+          <Stack gap={1.5}>
             <Box
               sx={{
                 width: '100%',
