@@ -10,7 +10,6 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { PriceDirection, PriceImpactLevel, ScenarioMethod } from '../components/scenario/types'
-import ScenarioWorkbenchNotice from '../components/ScenarioWorkbenchNotice'
 
 import MIChip from '@/components/common/chip/MIChip'
 import MISearchInput from '@/components/common/input/MISearchInput'
@@ -463,119 +462,108 @@ const ScenariosTabPanel = () => {
   ]
 
   return (
-    <>
-      <ScenarioWorkbenchNotice noticeKey="scenarios">
-        <Typography variant="body2SB14" color="contentText.Black">
-          • 직전 상태(어제) 대비 업데이트 내역을 여기에 안내합니다.
-        </Typography>
-        <Typography variant="body2SB14" color="contentText.Black">
-          • 신규 시나리오 2건이 생성되었고 5건이 업데이트 되었습니다.
-        </Typography>
-      </ScenarioWorkbenchNotice>
+    <Box width="100%">
+      <Typography fontSize={26} fontWeight={700} lineHeight={1.4} pt="18px" pb="6px" color="contentText.Black">
+        Scenarios
+      </Typography>
 
-      <Box width="100%">
-        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} paddingY={1.5} color="contentText.Black">
-          Scenarios
-        </Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" mt={3}>
+        <Stack direction="row" gap={3} alignItems="center">
+          <MISlidingSegmented
+            options={TYPE_FILTER_OPTIONS}
+            value={typeFilter}
+            onChange={handleTypeFilterChange}
+            sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
+          />
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mt={3}>
-          <Stack direction="row" gap={3} alignItems="center">
-            <MISlidingSegmented
-              options={TYPE_FILTER_OPTIONS}
-              value={typeFilter}
-              onChange={handleTypeFilterChange}
-              sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
-            />
+          <MIDropdownMenu
+            variant="outlined"
+            buttonHoverBgColor="gray.20"
+            label={
+              <Stack direction="row" alignItems="center" gap={1}>
+                <Typography variant="body2M14" color="contentText.Black">
+                  {sort}
+                </Typography>
+                <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
+              </Stack>
+            }
+            items={SORT_OPTIONS.map((label) => ({ label, action: () => handleSortChange(label) }))}
+          />
 
-            <MIDropdownMenu
-              variant="outlined"
-              buttonHoverBgColor="gray.20"
-              label={
-                <Stack direction="row" alignItems="center" gap={1}>
-                  <Typography variant="body2M14" color="contentText.Black">
-                    {sort}
-                  </Typography>
-                  <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
-                </Stack>
-              }
-              items={SORT_OPTIONS.map((label) => ({ label, action: () => handleSortChange(label) }))}
-            />
-
-            <MIDropdownMenu
-              variant="outlined"
-              buttonHoverBgColor="gray.20"
-              label={
-                <Stack direction="row" alignItems="center" gap={1}>
-                  <Typography variant="body2M14" color="contentText.Black">
-                    {period}
-                  </Typography>
-                  <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
-                </Stack>
-              }
-              items={PERIOD_OPTIONS.map((label) => ({ label, action: () => handlePeriodChange(label) }))}
-            />
-          </Stack>
-
-          <Stack direction="row" alignItems="center" gap={3}>
-            <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
-              <Switch size="small" checked={showActiveOnly} onChange={handleToggleActiveOnly} />
-              <Typography variant="body2M14" color="contentText.Black">
-                활성 시나리오만 보기
-              </Typography>
-            </Stack>
-
-            <MISearchInput
-              storageKey="scenario-workbench-search"
-              value={searchInput}
-              onChange={setSearchInput}
-              placeholder="시나리오명으로 검색"
-              onSearch={handleSearch}
-              onClear={handleSearchClear}
-              width={246}
-            />
-          </Stack>
+          <MIDropdownMenu
+            variant="outlined"
+            buttonHoverBgColor="gray.20"
+            label={
+              <Stack direction="row" alignItems="center" gap={1}>
+                <Typography variant="body2M14" color="contentText.Black">
+                  {period}
+                </Typography>
+                <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
+              </Stack>
+            }
+            items={PERIOD_OPTIONS.map((label) => ({ label, action: () => handlePeriodChange(label) }))}
+          />
         </Stack>
 
-        <Box
-          mt={2}
-          sx={(theme) => ({
-            '& .MuiDataGrid-columnHeaders': {
-              marginBottom: theme.spacing(1),
-            },
-            '& .MuiDataGrid-columnHeader': {
-              border: 'none !important',
-              borderBottom: `0.5px solid ${theme.palette.gray[60]} !important`,
-              backgroundColor: `${theme.palette.commonColor.White} !important`,
+        <Stack direction="row" alignItems="center" gap={3}>
+          <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
+            <Switch size="small" checked={showActiveOnly} onChange={handleToggleActiveOnly} />
+            <Typography variant="body2M14" color="contentText.Black">
+              활성 시나리오만 보기
+            </Typography>
+          </Stack>
 
-              '& .MuiTypography-root': {
-                ...theme.typography.body2SB14,
-                color: theme.palette.gray[70],
-              },
-            },
-            '& .MuiTypography-tableBody2': {
-              ...theme.typography.body1M16,
-              padding: 0,
-            },
-            '& .MuiDataGrid-row': {
-              borderRadius: '10px',
-              '&:hover': {
-                backgroundColor: theme.palette.gray[10],
-              },
-            },
-          })}
-        >
-          <MITable columns={columns} rows={paginationData.detail} rowId="id" rowHeight={42} hideFooter onRowClick={handleRowClick} />
-        </Box>
+          <MISearchInput
+            storageKey="scenario-workbench-search"
+            value={searchInput}
+            onChange={setSearchInput}
+            placeholder="시나리오명으로 검색"
+            onSearch={handleSearch}
+            onClear={handleSearchClear}
+            width={246}
+          />
+        </Stack>
+      </Stack>
 
-        <MIPaginationSecondary
-          data={paginationData}
-          size={pageSize}
-          sizeList={[20, 50, 100]}
-          onSizeChange={handlePageSizeChange}
-          onPageChange={setPage}
-        />
+      <Box
+        mt={2}
+        sx={(theme) => ({
+          '& .MuiDataGrid-columnHeaders': {
+            marginBottom: theme.spacing(1),
+          },
+          '& .MuiDataGrid-columnHeader': {
+            border: 'none !important',
+            borderBottom: `0.5px solid ${theme.palette.gray[60]} !important`,
+            backgroundColor: `${theme.palette.commonColor.White} !important`,
+
+            '& .MuiTypography-root': {
+              ...theme.typography.body2SB14,
+              color: theme.palette.gray[70],
+            },
+          },
+          '& .MuiTypography-tableBody2': {
+            ...theme.typography.body1M16,
+            padding: 0,
+          },
+          '& .MuiDataGrid-row': {
+            borderRadius: '10px',
+            '&:hover': {
+              backgroundColor: theme.palette.gray[10],
+            },
+          },
+        })}
+      >
+        <MITable columns={columns} rows={paginationData.detail} rowId="id" rowHeight={42} hideFooter onRowClick={handleRowClick} />
       </Box>
-    </>
+
+      <MIPaginationSecondary
+        data={paginationData}
+        size={pageSize}
+        sizeList={[20, 50, 100]}
+        onSizeChange={handlePageSizeChange}
+        onPageChange={setPage}
+      />
+    </Box>
   )
 }
 
