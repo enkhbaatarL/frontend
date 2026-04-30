@@ -14,6 +14,7 @@ import ScenarioWorkbenchDetailHeader, {
   WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   type WorkbenchDetailHeaderSection,
 } from './components/ScenarioWorkbenchDetailHeader'
+import { getScenarioWorkbenchTabPath } from './scenarioWorkbenchRoutes'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
@@ -245,7 +246,7 @@ const ScenarioDetailPage = () => {
   useLayoutEffect(() => {
     publishScenarioDetailHeaderContent({
       backLabel: 'Scenarios',
-      onBack: () => navigate('/mi/scenario-workbench'),
+      onBack: () => navigate(getScenarioWorkbenchTabPath('scenarios')),
       titleSlot: (
         <Stack direction="row" alignItems="flex-end" justifyContent="space-between" width="100%">
           <Stack flex={1} minWidth={0} gap="10px" alignItems="flex-start" pt="20px">

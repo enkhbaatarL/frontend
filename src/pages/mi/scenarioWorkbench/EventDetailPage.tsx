@@ -13,6 +13,7 @@ import ScenarioWorkbenchDetailHeader, {
   WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   type WorkbenchDetailHeaderSection,
 } from './components/ScenarioWorkbenchDetailHeader'
+import { getScenarioWorkbenchTabPath } from './scenarioWorkbenchRoutes.ts'
 
 import type {
   EventDetailFundamentalIndicatorRow,
@@ -300,7 +301,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
   useLayoutEffect(() => {
     publishEventDetailHeaderContent({
       backLabel: 'Event',
-      onBack: () => navigate('/mi/scenario-workbench'),
+      onBack: () => navigate(getScenarioWorkbenchTabPath('events')),
       titleSlot: (
         <Stack width="100%">
           <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#212529' }}>Event</Typography>

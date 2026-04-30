@@ -31,6 +31,7 @@ import SalesAnalysisPage from '@/pages/mi/salesAnalysis/SalesAnalysisPage'
 import EventDetailPage from '@/pages/mi/scenarioWorkbench/EventDetailPage.tsx'
 import ScenarioDetailPage from '@/pages/mi/scenarioWorkbench/ScenarioDetailPage'
 import ScenarioWorkbenchPage from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchPage'
+import { SCENARIO_WORKBENCH_TAB_INFO } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import TopicTrackerPage from '@/pages/mi/topicTracker/TopicTrackerPage'
 import MIProvider from '@/providers/MIProvider'
@@ -185,7 +186,11 @@ const MIRoutes: RouteObject = {
     {
       path: 'scenario-workbench',
       children: [
-        { index: true, element: <ScenarioWorkbenchPage /> },
+        { index: true, element: <Navigate to="overview" replace /> },
+        {
+          element: <ScenarioWorkbenchPage />,
+          children: SCENARIO_WORKBENCH_TAB_INFO.map((tab) => ({ path: tab.segment })),
+        },
         { path: 'events/:eventId', element: <EventDetailPage /> },
         { path: 'scenarios/:scenarioId', element: <ScenarioDetailPage /> },
       ],
@@ -237,10 +242,6 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'parallel-coordinates',
-      element: <ParallelCoordinatesPage />,
-    },
-    {
-      path: 'scenario-workbench',
       element: <ParallelCoordinatesPage />,
     },
     {

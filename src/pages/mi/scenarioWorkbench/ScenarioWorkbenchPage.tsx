@@ -1,16 +1,20 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { debounce, type DebouncedFunc } from 'lodash-es'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import ScenarioWorkbenchTab from './components/ScenarioWorkbenchTab'
-import DesignTabPanel from './tabs/DesignTabPanel'
-import EventsTabPanel from './tabs/EventsTabPanel'
-import OverviewTabPanel from './tabs/OverviewTabPanel'
-import ScenariosTabPanel from './tabs/ScenariosTabPanel'
+import {
+  getScenarioWorkbenchTabIndex,
+  resolveScenarioWorkbenchTabFromPathname,
+  SCENARIO_WORKBENCH_TAB_INFO,
+} from './scenarioWorkbenchRoutes'
 
 const STICKY_TOP_WHEN_SCROLLED = -14
 const SCROLL_JUMP_IGNORE_EXPAND_AT_ZERO_PX = 96
 const KEEP_MAIN_EPSILON_SCROLLED = 1
+
+const getCurrentTabIndexFromLocation = () =>
+  Math.max(0, getScenarioWorkbenchTabIndex(resolveScenarioWorkbenchTabFromPathname(globalThis.location.pathname)))
 
 const getFirstContentSnapScrollTop = (
   scrollEl: HTMLElement,
@@ -27,7 +31,7 @@ const getFirstContentSnapScrollTop = (
 
 const ScenarioWorkbenchPage = () => {
   const [isScrolled, setIsScrolled] = useState(false)
-  const [selectedTab, setSelectedTab] = useState(0)
+  const [selectedTab, setSelectedTab] = useState(() => getCurrentTabIndexFromLocation())
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const contentWrapperRef = useRef<HTMLDivElement | null>(null)
   const isScrolledRef = useRef(false)
@@ -41,6 +45,26 @@ const ScenarioWorkbenchPage = () => {
   const scrollDebouncedRef = useRef<DebouncedFunc<() => void> | null>(null)
 
   isScrolledRef.current = isScrolled
+
+  const handleTabChange = useCallback((index: number) => {
+    const target = SCENARIO_WORKBENCH_TAB_INFO[index]
+    if (!target) return
+
+    setSelectedTab(index)
+
+    if (globalThis.location.pathname !== target.path) {
+      globalThis.history.replaceState(globalThis.history.state, '', target.path)
+    }
+  }, [])
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setSelectedTab(getCurrentTabIndexFromLocation())
+    }
+
+    globalThis.addEventListener('popstate', handlePopState)
+    return () => globalThis.removeEventListener('popstate', handlePopState)
+  }, [])
 
   useLayoutEffect(() => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
@@ -72,13 +96,8 @@ const ScenarioWorkbenchPage = () => {
     prevTabRef.current = selectedTab
   }, [selectedTab])
 
-  const tabItems = useMemo(
-    () => [
-      { label: 'Overview', content: <OverviewTabPanel /> },
-      { label: 'Events', content: <EventsTabPanel /> },
-      { label: 'Scenarios', content: <ScenariosTabPanel /> },
-      { label: 'Design', content: <DesignTabPanel /> },
-    ],
+  const scenarioWorkbenchTabs = useMemo(
+    () => SCENARIO_WORKBENCH_TAB_INFO.map((tab) => ({ ...tab, content: createElement(tab.content) })),
     [],
   )
 
@@ -191,11 +210,11 @@ const ScenarioWorkbenchPage = () => {
           MI Scenario Workbench
         </Typography>
         <Box mt="96px">
-          <ScenarioWorkbenchTab tabItems={tabItems} tabBarOnly value={selectedTab} onChange={setSelectedTab} />
+          <ScenarioWorkbenchTab tabItems={scenarioWorkbenchTabs} tabBarOnly value={selectedTab} onChange={handleTabChange} />
         </Box>
       </Box>
       <Box ref={contentWrapperRef} position="relative">
-        {tabItems.map((tab, index) => {
+        {scenarioWorkbenchTabs.map((tab, index) => {
           const isSelected = selectedTab === index
           return (
             <Box
