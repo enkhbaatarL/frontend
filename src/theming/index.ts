@@ -19,6 +19,7 @@ declare module '@mui/material/styles' {
     chartMulti: Record<string, string>
     point: Record<string, string>
     chart: Record<string, string>
+    increase: Record<string, string>
     decrease: Record<string, string>
     content: Record<string, string>
   }
@@ -325,9 +326,17 @@ const theme = createTheme({
       purple2: '#7048E8',
     },
     chart: {
+      amber3: '#E09A3A',
+      blue1: '#185FA5',
       blue2: '#5191F5',
       green6: '#498B47',
+      purple1: '#F3EFF9',
+      purple2: '#E3DEEC',
+      purple3: '#CBC2DE',
+      purple4: '#998CB7',
+      purple5: '#56457B',
       red4: '#CC4D50',
+      teal2: '#0F8A72',
     },
     increase: {
       main: '#498B47',

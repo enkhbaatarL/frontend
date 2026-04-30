@@ -35,7 +35,7 @@ const columns: GridColDef<SignpostItem>[] = [
     renderCell: (params) => textCell(params.value as string),
   },
   {
-    field: 'marketImpact',
+    field: 'marketImpactSummary',
     headerName: '시장 영향 해석',
     flex: 1,
     minWidth: 180,
@@ -91,7 +91,15 @@ const SignpostMonitoringSection = ({ rows }: SignpostMonitoringSectionProps) => 
       },
     }}
   >
-    <MITable columns={columns} rows={rows} rowId="id" hideFooter getRowHeight={() => 'auto'} />
+    <MITable
+      columns={columns}
+      rows={rows}
+      rowId="id"
+      hideFooter
+      getRowHeight={() => 'auto'}
+      noRowMessage="데이터를 수집 중입니다."
+      disableRowSelectionOnClick
+    />
     <Box
       sx={{
         position: 'absolute',

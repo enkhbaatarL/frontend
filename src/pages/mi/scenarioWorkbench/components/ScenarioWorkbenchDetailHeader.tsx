@@ -287,7 +287,7 @@ const ScenarioWorkbenchDetailHeader = ({
   }, [patchStickyHeaderOptions, stickyHeightsPx])
 
   return (
-    <Box ref={rootRef} maxWidth="1380px" margin="auto" px="12px" pb="12px" width="100%" sx={{ userSelect: 'none' }}>
+    <Box ref={rootRef} maxWidth="1380px" margin="auto" px="12px" width="100%" sx={{ userSelect: 'none' }}>
       <Stack bgcolor="commonColor.White">
         <Collapse
           in={!isMainScrolled}

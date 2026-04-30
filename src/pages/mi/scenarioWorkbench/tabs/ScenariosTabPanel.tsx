@@ -1,132 +1,37 @@
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import PersonIcon from '@mui/icons-material/Person'
-import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt'
-import SignalCellularAlt1BarIcon from '@mui/icons-material/SignalCellularAlt1Bar'
-import SignalCellularAlt2BarIcon from '@mui/icons-material/SignalCellularAlt2Bar'
 import { Box, Stack, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
-import { useMemo, useState } from 'react'
+import dayjs from 'dayjs'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { PriceDirection, PriceImpactLevel, ScenarioMethod } from '../components/scenario/types'
-import ScenarioWorkbenchNotice from '../components/ScenarioWorkbenchNotice'
+import ScenarioWorkbenchTypeBadge from '../components/CreateTypeBadge'
+import { buildWorkbenchEventDatePresets } from '../components/event/scenarioWorkbenchEventsDateRange'
+import ImpactDotsCell from '../components/ImpactDotsCell'
+import ProbabilityGaugeCell from '../components/ProbabilityGaugeCell'
 
-import MIChip from '@/components/common/chip/MIChip'
+import type { CreateType } from '@/service/mi/scenarioWorkbench'
+
 import MISearchInput from '@/components/common/input/MISearchInput'
+import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
 import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
 import MIPagination from '@/components/common/pagination/MIPagination'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import MITable from '@/components/common/table/MITable'
+import MITableCell from '@/components/common/table/MITableCell'
 import { IPaginationResponse } from '@/types/api'
-
-// ── 로컬 셀 컴포넌트 ──────────────────────────────────────────────────────────
-
-interface MethodBadgeProps {
-  method: ScenarioMethod
-}
-
-const MethodBadge = ({ method }: MethodBadgeProps) => {
-  const isAI = method === 'AI'
-  return (
-    <MIChip
-      color={isAI ? 'purple' : 'gray'}
-      type="filled"
-      fontType="body2SB14"
-      disableHover
-      icon={
-        isAI ? (
-          <AutoAwesomeIcon sx={{ fontSize: '16px !important', color: 'mari.Primary !important' }} />
-        ) : (
-          <PersonIcon sx={{ fontSize: '16px !important', color: 'contentText.Normal !important' }} />
-        )
-      }
-      label={isAI ? 'AI' : 'User'}
-      sx={{
-        height: '28px',
-        borderRadius: '8px',
-        border: '1px solid',
-        borderColor: 'contentBorder.Normal',
-        backgroundColor: isAI ? 'contentBG.PrimaryFade' : 'gray.10',
-        color: isAI ? 'mari.Primary' : 'contentText.Normal',
-        fontWeight: 600,
-        gap: '2px',
-        '& .MuiChip-icon': { margin: 0 },
-      }}
-    />
-  )
-}
-
-interface PriceRangeBadgeProps {
-  direction: PriceDirection
-  range: string
-}
-
-const PRICE_DIRECTION_CONFIG: Record<PriceDirection, { bg: string; color: string; symbol: string }> = {
-  Up: { bg: '#EAF7EE', color: 'chart.green6', symbol: '▲' },
-  Down: { bg: '#FFEBEB', color: '#E03131', symbol: '▼' },
-  Neutral: { bg: 'contentBG.PrimaryFade', color: 'gray.50', symbol: '―' },
-}
-
-const PriceRangeBadge = ({ direction, range }: PriceRangeBadgeProps) => {
-  const config = PRICE_DIRECTION_CONFIG[direction]
-  return (
-    <MIChip
-      size="h24"
-      color={direction === 'Up' ? 'green' : direction === 'Down' ? 'red' : 'gray'}
-      type="filled"
-      disableHover
-      label={`${config.symbol} ${range}`}
-      sx={{
-        borderRadius: '8px',
-        backgroundColor: config.bg,
-        color: config.color,
-        fontWeight: 600,
-        gap: '2px',
-      }}
-    />
-  )
-}
-
-interface PriceImpactCellProps {
-  level: PriceImpactLevel
-}
-
-const PRICE_IMPACT_CONFIG: Record<Exclude<PriceImpactLevel, '없음'>, { Icon: typeof SignalCellularAltIcon; color: string }> = {
-  높음: { Icon: SignalCellularAltIcon, color: 'mari.Primary' },
-  중간: { Icon: SignalCellularAlt2BarIcon, color: '#7384D9' },
-  낮음: { Icon: SignalCellularAlt1BarIcon, color: '#A7B2E5' },
-}
-
-const PriceImpactCell = ({ level }: PriceImpactCellProps) => {
-  if (level === '없음') {
-    return (
-      <Typography variant="body1SB16" color="gray.50">
-        없음
-      </Typography>
-    )
-  }
-  const { Icon, color } = PRICE_IMPACT_CONFIG[level]
-  return (
-    <Stack direction="row" alignItems="center" gap={1}>
-      <Icon sx={{ fontSize: 20, color }} />
-      <Typography variant="body1SB16" sx={{ color }}>
-        {level}
-      </Typography>
-    </Stack>
-  )
-}
-
-// ── 타입 ──────────────────────────────────────────────────────────────────────
-
-interface ScenarioRow {
+export interface ScenarioRow {
   id: number
-  method: ScenarioMethod
+  type: CreateType
+  /** 'MM-DD HH:mm' 형식 (placeholder '00-00 00:00' 허용) */
   createdAt: string
   name: string
-  priceRange: { direction: PriceDirection; range: string } | null
-  priceImpact: PriceImpactLevel
-  probability: number | null
+  jkmImpact: number
+  ttfImpact: number
+  hhImpact: number
+  probability: number
+  /** 활성 시나리오만 보기 토글용 */
+  isActive: boolean
 }
 
 // ── 더미 데이터 ───────────────────────────────────────────────────────────────
@@ -134,352 +39,445 @@ interface ScenarioRow {
 const DUMMY_SCENARIOS: ScenarioRow[] = [
   {
     id: 1,
-    method: 'AI',
+    type: 'new',
     createdAt: '00-00 00:00',
     name: '시나리오명',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '높음',
-    probability: 100,
+    jkmImpact: 3,
+    ttfImpact: 3,
+    hhImpact: 2,
+    probability: 5,
+    isActive: true,
   },
   {
     id: 2,
-    method: 'AI',
+    type: 'new',
     createdAt: '03-01 05:32',
     name: '걸프 LNG 인프라 타격, 미복구',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '높음',
-    probability: 32.5,
+    jkmImpact: 3,
+    ttfImpact: 2,
+    hhImpact: 1,
+    probability: 4,
+    isActive: true,
   },
   {
     id: 3,
-    method: 'AI',
+    type: 'new',
     createdAt: '02-28 12:54',
     name: '호르무즈 봉쇄 3개월+ 유지',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '중간',
-    probability: null,
+    jkmImpact: 3,
+    ttfImpact: 3,
+    hhImpact: 2,
+    probability: 3,
+    isActive: true,
   },
   {
     id: 4,
-    method: 'User',
+    type: 'updated',
     createdAt: '00-00 00:00',
-    name: '시나리오명',
-    priceRange: { direction: 'Neutral', range: '$3~5' },
-    priceImpact: '낮음',
-    probability: 11.0,
+    name: '시나리오명 4',
+    jkmImpact: 1,
+    ttfImpact: 1,
+    hhImpact: 0,
+    probability: 2,
+    isActive: true,
   },
   {
     id: 5,
-    method: 'AI',
+    type: 'new',
     createdAt: '00-00 00:00',
-    name: '시나리오명',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '없음',
-    probability: 5.4,
+    name: '시나리오명 5',
+    jkmImpact: 2,
+    ttfImpact: 1,
+    hhImpact: 1,
+    probability: 1,
+    isActive: false,
   },
   {
     id: 6,
-    method: 'AI',
+    type: 'new',
     createdAt: '00-00 00:00',
     name: '시나리오명',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '높음',
-    probability: 8.0,
+    jkmImpact: 3,
+    ttfImpact: 2,
+    hhImpact: 2,
+    probability: 4,
+    isActive: true,
   },
   {
     id: 7,
-    method: 'AI',
+    type: 'new',
     createdAt: '00-00 00:00',
     name: '시나리오명',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '높음',
-    probability: 45.0,
+    jkmImpact: 3,
+    ttfImpact: 3,
+    hhImpact: 3,
+    probability: 5,
+    isActive: true,
   },
   {
     id: 8,
-    method: 'AI',
-    createdAt: '00-00 00:00',
+    type: 'new',
+    createdAt: '02-25 09:10',
     name: '사우디 감산 발표',
-    priceRange: { direction: 'Up', range: '$15~25' },
-    priceImpact: '높음',
-    probability: 78.0,
+    jkmImpact: 2,
+    ttfImpact: 3,
+    hhImpact: 2,
+    probability: 4,
+    isActive: true,
   },
   {
     id: 9,
-    method: 'AI',
+    type: 'updated',
     createdAt: '01-15 09:22',
     name: '유럽 가스 수요 급감',
-    priceRange: { direction: 'Down', range: '$10~18' },
-    priceImpact: '중간',
-    probability: 23.0,
+    jkmImpact: 2,
+    ttfImpact: 3,
+    hhImpact: 1,
+    probability: 3,
+    isActive: true,
   },
   {
     id: 10,
-    method: 'User',
+    type: 'new',
     createdAt: '01-20 14:00',
     name: '중동 지정학적 안정화',
-    priceRange: { direction: 'Neutral', range: '$8~12' },
-    priceImpact: '낮음',
-    probability: 15.0,
+    jkmImpact: 1,
+    ttfImpact: 1,
+    hhImpact: 0,
+    probability: 2,
+    isActive: true,
   },
   {
     id: 11,
-    method: 'AI',
+    type: 'new',
     createdAt: '00-00 00:00',
     name: '시나리오명',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '높음',
-    probability: 100,
+    jkmImpact: 3,
+    ttfImpact: 3,
+    hhImpact: 3,
+    probability: 5,
+    isActive: true,
   },
   {
     id: 12,
-    method: 'AI',
+    type: 'new',
     createdAt: '00-00 00:00',
     name: '시나리오명',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '높음',
-    probability: 100,
+    jkmImpact: 0,
+    ttfImpact: 0,
+    hhImpact: 0,
+    probability: 1,
+    isActive: false,
   },
   {
     id: 13,
-    method: 'AI',
+    type: 'new',
     createdAt: '00-00 00:00',
     name: '시나리오명',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '높음',
-    probability: 100,
+    jkmImpact: 2,
+    ttfImpact: 2,
+    hhImpact: 2,
+    probability: 3,
+    isActive: true,
   },
   {
     id: 14,
-    method: 'User',
+    type: 'updated',
     createdAt: '02-10 11:30',
     name: '러시아 가스 공급 재개',
-    priceRange: { direction: 'Down', range: '$5~15' },
-    priceImpact: '중간',
-    probability: 42.0,
+    jkmImpact: 2,
+    ttfImpact: 3,
+    hhImpact: 1,
+    probability: 3,
+    isActive: true,
   },
   {
     id: 15,
-    method: 'AI',
+    type: 'new',
     createdAt: '02-14 08:00',
     name: '카타르 LNG 증산 계획',
-    priceRange: { direction: 'Down', range: '$12~20' },
-    priceImpact: '낮음',
-    probability: 55.0,
+    jkmImpact: 2,
+    ttfImpact: 2,
+    hhImpact: 1,
+    probability: 4,
+    isActive: true,
   },
   {
     id: 16,
-    method: 'AI',
+    type: 'new',
     createdAt: '00-00 00:00',
     name: '시나리오명',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '높음',
-    probability: 100,
+    jkmImpact: 3,
+    ttfImpact: 2,
+    hhImpact: 2,
+    probability: 5,
+    isActive: true,
   },
   {
     id: 17,
-    method: 'AI',
+    type: 'new',
     createdAt: '00-00 00:00',
     name: '시나리오명',
-    priceRange: { direction: 'Up', range: '$20~35' },
-    priceImpact: '높음',
-    probability: 100,
+    jkmImpact: 1,
+    ttfImpact: 1,
+    hhImpact: 1,
+    probability: 2,
+    isActive: true,
   },
   {
     id: 18,
-    method: 'AI',
+    type: 'updated',
     createdAt: '00-00 00:00',
     name: '시나리오명',
-    priceRange: { direction: 'Neutral', range: '$8~12' },
-    priceImpact: '없음',
-    probability: null,
+    jkmImpact: 0,
+    ttfImpact: 0,
+    hhImpact: 0,
+    probability: 1,
+    isActive: false,
   },
   {
     id: 19,
-    method: 'User',
+    type: 'new',
     createdAt: '03-05 16:45',
     name: '아시아 LNG 수요 급등',
-    priceRange: { direction: 'Up', range: '$25~40' },
-    priceImpact: '높음',
-    probability: 67.0,
+    jkmImpact: 3,
+    ttfImpact: 2,
+    hhImpact: 2,
+    probability: 4,
+    isActive: true,
   },
   {
     id: 20,
-    method: 'AI',
+    type: 'new',
     createdAt: '03-10 07:15',
     name: 'JKM 단기 급락 시나리오',
-    priceRange: { direction: 'Down', range: '$8~15' },
-    priceImpact: '중간',
-    probability: 18.0,
+    jkmImpact: 2,
+    ttfImpact: 1,
+    hhImpact: 1,
+    probability: 2,
+    isActive: true,
   },
 ]
 
 // ── 툴바 옵션 상수 ────────────────────────────────────────────────────────────
 
 const TYPE_FILTER_OPTIONS = [
-  { value: '전체', label: '전체' },
-  { value: 'AI', label: 'AI' },
-  { value: '사용자', label: '사용자' },
+  { value: 'all', label: '전체' },
+  { value: 'new', label: '신규' },
+  { value: 'updated', label: '갱신' },
 ] as const
 
 const SORT_OPTIONS = ['최신순', '가격 영향도 높은 순', '발생 가능성 높은 순'] as const
 
-const PERIOD_OPTIONS = ['1개월', '3개월', '6개월', '12개월', '전체 기간'] as const
-
-// ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
+/** 기본 조회 구간: 6개월 (디자인 캡처와 정렬) */
+const defaultScenariosDateRange = (): DateRange => {
+  const t = dayjs().startOf('day')
+  return { startDate: t.subtract(6, 'month'), endDate: t }
+}
 
 const ScenariosTabPanel = () => {
   const navigate = useNavigate()
 
-  const [typeFilter, setTypeFilter] = useState('전체')
+  const [typeFilter, setTypeFilter] = useState('all')
   const [sort, setSort] = useState('최신순')
-  const [period, setPeriod] = useState('1개월')
-  const [searchInput, setSearchInput] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
-  const [showActiveOnly, setShowActiveOnly] = useState(false)
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultScenariosDateRange())
+  const [showActiveOnly, setShowActiveOnly] = useState(true)
+  const [keyword, setKeyword] = useState('')
+  const [committedKeyword, setCommittedKeyword] = useState('')
+  const [pagination, setPagination] = useState({ size: 20, page: 1 })
+
+  const handleSearchChange = useCallback((value: string) => {
+    setKeyword(value)
+  }, [])
+
+  const handleSearch = useCallback((searchTerm: string) => {
+    setCommittedKeyword(searchTerm)
+    setPagination((p) => ({ ...p, page: 1 }))
+  }, [])
+
+  const handleSearchClear = useCallback(() => {
+    setKeyword('')
+    setCommittedKeyword('')
+    setPagination((p) => ({ ...p, page: 1 }))
+  }, [])
+
+  const handleDateRangeApply = useCallback((dates: DateRange) => {
+    setAppliedDateRange({ startDate: dates.startDate, endDate: dates.endDate })
+    setPagination((p) => ({ ...p, page: 1 }))
+  }, [])
+
+  const handleToggleActiveOnly = useCallback(() => {
+    setShowActiveOnly((prev) => !prev)
+    setPagination((p) => ({ ...p, page: 1 }))
+  }, [])
 
   const filteredRows = useMemo(() => {
     let rows = DUMMY_SCENARIOS
 
-    if (typeFilter === 'AI') rows = rows.filter((r) => r.method === 'AI')
-    else if (typeFilter === '사용자') rows = rows.filter((r) => r.method === 'User')
+    if (typeFilter === 'new') {
+      rows = rows.filter((r) => r.type === 'new')
+    } else if (typeFilter === 'updated') {
+      rows = rows.filter((r) => r.type === 'updated')
+    }
 
-    if (searchQuery) {
-      rows = rows.filter((r) => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    if (showActiveOnly) {
+      rows = rows.filter((r) => r.isActive)
+    }
+
+    const trimmed = committedKeyword.trim().toLowerCase()
+    if (trimmed) {
+      rows = rows.filter((r) => r.name.toLowerCase().includes(trimmed))
     }
 
     return rows
-  }, [typeFilter, searchQuery])
+  }, [typeFilter, committedKeyword, showActiveOnly])
 
-  const pagedRows = useMemo(() => filteredRows.slice((page - 1) * pageSize, page * pageSize), [filteredRows, page, pageSize])
+  const pagedRows = useMemo(
+    () => filteredRows.slice((pagination.page - 1) * pagination.size, pagination.page * pagination.size),
+    [filteredRows, pagination.page, pagination.size],
+  )
 
   const totalElements = filteredRows.length
-  const totalPages = Math.max(1, Math.ceil(totalElements / pageSize))
+  const totalPages = Math.max(1, Math.ceil(totalElements / pagination.size))
 
   const paginationData: IPaginationResponse<ScenarioRow> = {
     totalPages,
     totalElements,
-    currentPage: page,
+    currentPage: pagination.page,
     numberOfElements: pagedRows.length,
-    size: pageSize,
-    isFirst: page === 1,
-    isLast: page === totalPages,
-    hasPrevious: page > 1,
-    hasNext: page < totalPages,
+    size: pagination.size,
+    isFirst: pagination.page === 1,
+    isLast: pagination.page === totalPages,
+    hasPrevious: pagination.page > 1,
+    hasNext: pagination.page < totalPages,
     detail: pagedRows,
   }
 
-  // ── 이벤트 핸들러 ───────────────────────────────────────────────────────────
-
-  const handleTypeFilterChange = (v: string) => {
+  const handleTypeFilterChange = useCallback((v: string) => {
     setTypeFilter(v)
-    setPage(1)
-  }
-  const handleSortChange = (label: string) => {
-    setSort(label)
-    setPage(1)
-  }
-  const handlePeriodChange = (label: string) => {
-    setPeriod(label)
-    setPage(1)
-  }
-  const handleToggleActiveOnly = () => setShowActiveOnly((prev) => !prev)
-  const handleSearch = (v: string) => {
-    setSearchQuery(v)
-    setPage(1)
-  }
-  const handleSearchClear = () => {
-    setSearchInput('')
-    setSearchQuery('')
-    setPage(1)
-  }
-  const handlePageSizeChange = (s: number) => {
-    setPageSize(s)
-    setPage(1)
-  }
-  const handleRowClick = (_params: { row: ScenarioRow }) => navigate(`/mi/scenario-workbench/scenarios/${_params.row.id}`)
+    setPagination((p) => ({ ...p, page: 1 }))
+  }, [])
 
-  const columns: GridColDef<ScenarioRow>[] = [
-    {
-      field: 'method',
-      headerName: '생성타입',
-      width: 90,
-      align: 'center',
-      renderCell: (params) => <MethodBadge method={params.value as ScenarioMethod} />,
-    },
-    {
-      field: 'createdAt',
-      headerName: '생성/갱신일시',
-      width: 140,
-      align: 'center',
-    },
-    {
-      field: 'name',
-      headerName: '시나리오명',
-      flex: 1,
-      minWidth: 660,
-    },
-    {
-      field: 'priceRange',
-      headerName: 'JKM 가격 전망',
-      width: 160,
-      align: 'center',
-      renderCell: (params) => {
-        const value = params.value as ScenarioRow['priceRange']
-        if (!value) return null
-        return <PriceRangeBadge direction={value.direction} range={value.range} />
+  const handleSortChange = useCallback((v: string) => {
+    setSort(v)
+    setPagination((p) => ({ ...p, page: 1 }))
+  }, [])
+
+  const handleRowClick = useCallback(
+    (params: { row: ScenarioRow }) => navigate(`/mi/scenario-workbench/scenarios/${params.row.id}`),
+    [navigate],
+  )
+
+  const columns: GridColDef<ScenarioRow>[] = useMemo(
+    () => [
+      {
+        field: 'type',
+        headerName: '생성타입',
+        width: 88,
+        align: 'center',
+        renderCell: (params) => (
+          <MITableCell>
+            <ScenarioWorkbenchTypeBadge type={params.row.type} />
+          </MITableCell>
+        ),
       },
-    },
-    {
-      field: 'priceImpact',
-      headerName: '가격 영향도',
-      width: 160,
-      align: 'center',
-      renderCell: (params) => <PriceImpactCell level={params.value as PriceImpactLevel} />,
-    },
-    {
-      field: 'probability',
-      headerName: '발생 가능성',
-      width: 160,
-      align: 'center',
-      renderCell: (params) => {
-        const value = params.value as number | null
-        if (value === null || value === undefined) {
-          return (
-            <Typography variant="body1SB16" color="gray.50">
-              없음
-            </Typography>
-          )
-        }
-        return (
-          <Typography variant="body1SB16" color="contentText.Normal">
-            {`${value.toFixed(1)}%`}
-          </Typography>
-        )
+      {
+        field: 'createdAt',
+        headerName: '생성/갱신일시',
+        width: 130,
+        align: 'center',
       },
-    },
-  ]
+      {
+        field: 'name',
+        headerName: '시나리오명',
+        flex: 1,
+        minWidth: 360,
+        align: 'left',
+      },
+      {
+        field: 'jkmImpact',
+        headerName: 'JKM',
+        width: 100,
+        align: 'center',
+        renderCell: (params) => (
+          <MITableCell>
+            <ImpactDotsCell level={params.row.jkmImpact} />
+          </MITableCell>
+        ),
+      },
+      {
+        field: 'ttfImpact',
+        headerName: 'TTF',
+        width: 100,
+        align: 'center',
+        renderCell: (params) => (
+          <MITableCell>
+            <ImpactDotsCell level={params.row.ttfImpact} />
+          </MITableCell>
+        ),
+      },
+      {
+        field: 'hhImpact',
+        headerName: 'HH',
+        width: 100,
+        align: 'center',
+        renderCell: (params) => (
+          <MITableCell>
+            <ImpactDotsCell level={params.row.hhImpact} />
+          </MITableCell>
+        ),
+      },
+      {
+        field: 'probability',
+        headerName: '가능성',
+        width: 120,
+        align: 'center',
+        renderCell: (params) => (
+          <MITableCell>
+            <ProbabilityGaugeCell level={params.row.probability} />
+          </MITableCell>
+        ),
+      },
+    ],
+    [],
+  )
+
+  const workbenchEventDatePresets = useMemo(() => buildWorkbenchEventDatePresets(), [])
+
+  const dateRangeMenuLayoutProps = useMemo(
+    () => ({
+      placement: 'bottom-start' as const,
+      paperProps: {
+        elevation: 0,
+        sx: {
+          borderRadius: '10px',
+          boxShadow: '0px 0px 2px rgba(0,0,0,0.1)',
+          border: '1px solid',
+          borderColor: 'contentBorder.Normal',
+          overflow: 'hidden',
+          mt: 0.5,
+        },
+      },
+      sx: {
+        py: 1,
+        px: 1.5,
+        borderRadius: '10px',
+        minHeight: 40,
+        '& .MuiButton-root': { minHeight: 40, borderRadius: '10px' },
+      },
+    }),
+    [],
+  )
 
   return (
     <>
-      <ScenarioWorkbenchNotice noticeKey="scenarios">
-        <Typography variant="body2SB14" color="contentText.Black">
-          • 직전 상태(어제) 대비 업데이트 내역을 여기에 안내합니다.
-        </Typography>
-        <Typography variant="body2SB14" color="contentText.Black">
-          • 신규 시나리오 2건이 생성되었고 5건이 업데이트 되었습니다.
-        </Typography>
-      </ScenarioWorkbenchNotice>
-
-      <Box width="100%">
-        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} paddingY={1.5} color="contentText.Black">
+      <Stack gap={2} sx={{ px: 3, py: 2 }}>
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} color="contentText.Black">
           Scenarios
         </Typography>
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mt={3}>
-          <Stack direction="row" gap={3} alignItems="center">
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5}>
+          <Stack direction="row" alignItems="center" flexWrap="wrap" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
             <MISlidingSegmented
               options={TYPE_FILTER_OPTIONS}
               value={typeFilter}
@@ -500,23 +498,16 @@ const ScenariosTabPanel = () => {
               }
               items={SORT_OPTIONS.map((label) => ({ label, action: () => handleSortChange(label) }))}
             />
-
-            <MIDropdownMenu
-              variant="outlined"
-              buttonHoverBgColor="gray.20"
-              label={
-                <Stack direction="row" alignItems="center" gap={1}>
-                  <Typography variant="body2M14" color="contentText.Black">
-                    {period}
-                  </Typography>
-                  <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
-                </Stack>
-              }
-              items={PERIOD_OPTIONS.map((label) => ({ label, action: () => handlePeriodChange(label) }))}
+            <MIDateRangePickerMenu
+              dateRange={appliedDateRange}
+              onApply={handleDateRangeApply}
+              showPreset
+              datePresets={workbenchEventDatePresets}
+              {...dateRangeMenuLayoutProps}
             />
           </Stack>
 
-          <Stack direction="row" alignItems="center" gap={3}>
+          <Stack direction="row" alignItems="center" gap={3} sx={{ flexShrink: 0 }}>
             <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
               <Switch size="small" checked={showActiveOnly} onChange={handleToggleActiveOnly} />
               <Typography variant="body2M14" color="contentText.Black">
@@ -525,9 +516,9 @@ const ScenariosTabPanel = () => {
             </Stack>
 
             <MISearchInput
-              storageKey="scenario-workbench-search"
-              value={searchInput}
-              onChange={setSearchInput}
+              storageKey="scenario-workbench-scenarios"
+              value={keyword}
+              onChange={handleSearchChange}
               placeholder="시나리오명으로 검색"
               onSearch={handleSearch}
               onClear={handleSearchClear}
@@ -554,27 +545,46 @@ const ScenariosTabPanel = () => {
             },
             '& .MuiTypography-tableBody2': {
               ...theme.typography.body1M16,
-              padding: 0,
             },
             '& .MuiDataGrid-row': {
               borderRadius: '10px',
+              position: 'relative',
               '&:hover': {
                 backgroundColor: theme.palette.gray[10],
+              },
+              '&.Mui-selected, &.Mui-selected:hover': {
+                backgroundColor: `${theme.palette.contentBG.PrimaryFade} !important`,
+              },
+              '&.Mui-selected::after': {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                borderRadius: '10px',
+                border: `1px solid ${theme.palette.contentBorder.Active}`,
+                pointerEvents: 'none',
               },
             },
           })}
         >
-          <MITable columns={columns} rows={paginationData.detail} rowId="id" rowHeight={42} hideFooter onRowClick={handleRowClick} />
+          <MITable<ScenarioRow>
+            rowId="id"
+            columns={columns}
+            rows={paginationData.detail}
+            rowHeight={42}
+            noRowMessage="시나리오를 생성해 주세요."
+            hideFooter
+            onRowClick={handleRowClick}
+          />
         </Box>
 
-        <MIPagination
+        <MIPagination<ScenarioRow>
           data={paginationData}
-          size={pageSize}
+          size={pagination.size}
           sizeList={[10, 20, 50]}
-          onSizeChange={handlePageSizeChange}
-          onPageChange={setPage}
+          onPageChange={(page) => setPagination((p) => ({ ...p, page }))}
+          onSizeChange={(size) => setPagination({ size, page: 1 })}
         />
-      </Box>
+      </Stack>
     </>
   )
 }
