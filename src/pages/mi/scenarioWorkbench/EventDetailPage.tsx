@@ -5,14 +5,22 @@ import { useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNod
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import EventDetailAiInsightsSection from './components/event/EventDetailAiInsightsSection.tsx'
+import EventDetailDriverTreeScoreboardSection, {
+  type EventDetailDriverTreeRow,
+} from './components/event/EventDetailDriverTreeScoreboardSection.tsx'
 import EventDetailFundamentalSection from './components/event/EventDetailFundamentalSection.tsx'
 import EventDetailImpactAnalysisSection from './components/event/EventDetailImpactAnalysisSection.tsx'
 import EventDetailInstitutionalOutlookTable from './components/event/EventDetailInstitutionalOutlookTable.tsx'
 import EventDetailMiRecordsTable from './components/event/EventDetailMiRecordsTable.tsx'
+// import EventDetailRelatedEventsAndScenariosSection, {
+//   type EventDetailRelatedScenarioRow,
+// } from './components/event/EventDetailRelatedEventsAndScenariosSection.tsx'
 import ScenarioWorkbenchDetailHeader, {
   WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   type WorkbenchDetailHeaderSection,
 } from './components/ScenarioWorkbenchDetailHeader'
+
+// import { SCENARIO_WORKBENCH_EVENT_MOCK_ROWS } from './components/event/eventMockData.ts'
 
 import type {
   EventDetailFundamentalIndicatorRow,
@@ -35,7 +43,7 @@ import scenarioWorkbenchEventService, {
 import { IPaginationResponse } from '@/types/api.ts'
 
 /** 이벤트 상세 탭 키 */
-export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'fundamental'
+export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'fundamental' | 'driverTree' | 'related'
 
 /** 이벤트 상세 탭 라벨 정의 */
 const EVENT_DETAIL_TABS: { key: EventDetailTabKey; label: string }[] = [
@@ -44,6 +52,8 @@ const EVENT_DETAIL_TABS: { key: EventDetailTabKey; label: string }[] = [
   { key: 'records', label: 'MI Records' },
   { key: 'outlook', label: '기관 전망' },
   { key: 'fundamental', label: 'Fundamental Deep-dive' },
+  { key: 'driverTree', label: 'Driver Tree Scoreboard' },
+  { key: 'related', label: '관련 이벤트 및 시나리오' },
 ]
 
 /** 이벤트 상세에서 라우트 state로 넘어오는 값 타입 */
@@ -57,6 +67,8 @@ const SECTION_SCROLL_IDS: Record<EventDetailTabKey, string> = {
   records: 'event-detail-section-records',
   outlook: 'event-detail-section-outlook',
   fundamental: 'event-detail-section-fundamental',
+  driverTree: 'event-detail-section-driver-tree',
+  related: 'event-detail-section-related',
 }
 
 /** 시나리오 워크벤치 상세 헤더의 섹션 탭 정의 */
@@ -258,6 +270,99 @@ const ScenarioWorkbenchEventDetailPage = () => {
     }))
   }, [detail?.eventId, detail?.fundamentalDeepdive?.indicators, eventId])
 
+  /** Driver Tree Scoreboard — API 연동 전까지 퍼블리싱용 목 데이터 */
+  const driverTreeRows = useMemo((): EventDetailDriverTreeRow[] => {
+    const prefix = detail?.eventId ?? eventId ?? 'evt'
+    return [
+      {
+        id: `${prefix}-dt-1`,
+        category: '공급',
+        driver: '가스 생산 capa/가동률',
+        strengthLevel: 3,
+        strengthDirection: '상승',
+        rationale: 'Ras Laffan 등 중동 공급 차질 리스크 반영',
+      },
+      {
+        id: `${prefix}-dt-2`,
+        category: '공급',
+        driver: 'Liquefaction/Spot',
+        strengthLevel: 2,
+        strengthDirection: '상승',
+        rationale: '현물 cargo 경쟁 심화 가능',
+      },
+      {
+        id: `${prefix}-dt-3`,
+        category: '수요',
+        driver: '발전/산업 수요',
+        strengthLevel: 1,
+        strengthDirection: '보합',
+        rationale: '단기 수요는 계절·정책 영향이 더 큼',
+      },
+      {
+        id: `${prefix}-dt-4`,
+        category: '물류',
+        driver: '항로/보험료',
+        strengthLevel: 2,
+        strengthDirection: '상승',
+        rationale: '호르무즈 리스크로 비용·리드타임 증가',
+      },
+      {
+        id: `${prefix}-dt-5`,
+        category: '정책',
+        driver: '전략비축/긴급조치',
+        strengthLevel: 0,
+        strengthDirection: '보합',
+        rationale: '현재 시점에 즉각 조치 시그널 제한적',
+      },
+    ]
+  }, [detail?.eventId, eventId])
+
+  // /** 관련 이벤트 — 워크벤치 Events 탭 목 데이터를 일부 재사용 (추후 API 연동 예정) */
+  // const relatedEventRows = useMemo(() => {
+  //   if (detailLoading) return []
+  //   return SCENARIO_WORKBENCH_EVENT_MOCK_ROWS.slice(0, 5)
+  // }, [detailLoading])
+
+  // /** 관련 시나리오 — 퍼블리싱용 목 데이터 */
+  // const relatedScenarioRows = useMemo((): EventDetailRelatedScenarioRow[] => {
+  //   if (detailLoading) return []
+  //   const prefix = detail?.eventId ?? eventId ?? 'evt'
+  //   return [
+  //     {
+  //       id: `${prefix}-sc-1`,
+  //       scenarioName: '1~2주 내 협상 완료 상황 해소',
+  //       jkmImpact: 1,
+  //       ttfImpact: 1,
+  //       hhImpact: 0,
+  //       probabilityLevel: 4,
+  //     },
+  //     {
+  //       id: `${prefix}-sc-2`,
+  //       scenarioName: '수주 내 호르무즈 정상화',
+  //       jkmImpact: 2,
+  //       ttfImpact: 1,
+  //       hhImpact: 1,
+  //       probabilityLevel: 3,
+  //     },
+  //     {
+  //       id: `${prefix}-sc-3`,
+  //       scenarioName: '호르무즈 봉쇄 3개월+ 유지',
+  //       jkmImpact: 3,
+  //       ttfImpact: 2,
+  //       hhImpact: 1,
+  //       probabilityLevel: 2,
+  //     },
+  //     {
+  //       id: `${prefix}-sc-4`,
+  //       scenarioName: '걸프 LNG 인프라 타격, 복구',
+  //       jkmImpact: 3,
+  //       ttfImpact: 3,
+  //       hhImpact: 2,
+  //       probabilityLevel: 1,
+  //     },
+  //   ]
+  // }, [detail?.eventId, detailLoading, eventId])
+
   const recordRows = useMemo((): EventDetailMiRecordRow[] => {
     const list = recordsData?.detail ?? []
     const page = recordsData?.currentPage ?? 1
@@ -378,6 +483,20 @@ const ScenarioWorkbenchEventDetailPage = () => {
               loading={outlooksLoading}
             />
             <EventDetailFundamentalSection metricRows={fundamentalMetricRows} indicatorRows={fundamentalIndicatorRows} />
+            <EventDetailDriverTreeScoreboardSection rows={driverTreeRows} />
+            {/*
+            <EventDetailRelatedEventsAndScenariosSection
+              relatedEvents={relatedEventRows}
+              relatedScenarios={relatedScenarioRows}
+              onEventDetailClick={(id) => {
+                const found = relatedEventRows.find((r) => r.id === id)
+                navigate(`/mi/scenario-workbench/events/${id}`, {
+                  state: found ? { eventName: found.eventName } : undefined,
+                })
+              }}
+              onScenarioDetailClick={(id) => navigate(`/mi/scenario-workbench/scenarios/${id}`)}
+            />
+            */}
           </Stack>
         </MISkeleton>
       </Box>
