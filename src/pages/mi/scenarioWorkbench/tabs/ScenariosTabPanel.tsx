@@ -15,7 +15,7 @@ import ScenarioWorkbenchNotice from '../components/ScenarioWorkbenchNotice'
 import MIChip from '@/components/common/chip/MIChip'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
-import MIPagination from '@/components/common/pagination/MIPagination'
+import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import MITable from '@/components/common/table/MITable'
 import { IPaginationResponse } from '@/types/api'
@@ -567,10 +567,10 @@ const ScenariosTabPanel = () => {
           <MITable columns={columns} rows={paginationData.detail} rowId="id" rowHeight={42} hideFooter onRowClick={handleRowClick} />
         </Box>
 
-        <MIPagination
+        <MIPaginationSecondary
           data={paginationData}
           size={pageSize}
-          sizeList={[10, 20, 50]}
+          sizeList={[20, 50, 100]}
           onSizeChange={handlePageSizeChange}
           onPageChange={setPage}
         />
