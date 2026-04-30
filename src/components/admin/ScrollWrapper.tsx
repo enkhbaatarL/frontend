@@ -211,6 +211,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
           sx={{
             maxHeight,
             overflowY: 'auto',
+            overscrollBehavior: 'none',
             paddingRight: isScrollable ? `${scrollbarGap}px` : '0',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
