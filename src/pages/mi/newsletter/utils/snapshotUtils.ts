@@ -1439,3 +1439,6 @@ export const emptyNewsletterIssueSnapshotData = (): INewsletterIssueSnapshotData
   meta: {},
   sections: [],
 })
+
+/** API·저장본에 문자열 `\\n`(역슬래시+n)으로 들어온 경우 편집기에서는 실제 줄바꿈으로 표시 */
+export const normalizeNewsContentForEditor = (text: string): string => text.replace(/\\n/g, '\n')
