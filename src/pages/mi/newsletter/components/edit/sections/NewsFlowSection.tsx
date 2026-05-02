@@ -21,6 +21,7 @@ import {
   getEffectiveFieldDef,
   NEWSLETTER_SECTION_CODE,
   NEWSLETTER_SECTION_EDIT_LABEL,
+  normalizeNewsContentForEditor,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
 import {
   type INewsFlowChartData,
@@ -284,7 +285,7 @@ const NewsFlowSection = ({
                   source: item.source ?? '',
                   originalLink: item.originalLink ?? '',
                   title: displayTitle,
-                  content: (item.content ?? []).join('\n\n'),
+                  content: normalizeNewsContentForEditor((item.content ?? []).join('\n\n')),
                 }}
                 onChange={(updates) => {
                   const next: Partial<IRelatedNewsEventItem> = {}

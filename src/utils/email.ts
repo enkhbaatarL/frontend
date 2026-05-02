@@ -61,6 +61,8 @@ export const wrapEmailHtmlDocument = (innerBodyHtml: string, options?: WrapEmail
   <!--[if mso]>
   <style>
   body, table, td, th, p, span, a, li { font-family: ${OUTLOOK_MSO_FONT_FAMILY} !important; }
+  td.rn-date-meta, td.rn-date-meta span, td.rn-date-meta a { font-family: Tahoma, Geneva, sans-serif !important; }
+  .rn-content table.rn-bullet-body, .rn-content table.rn-bullet-body td { font-family: ${OUTLOOK_MSO_FONT_FAMILY} !important; }
   table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
   td, th, p, div, span, a, li { mso-line-height-rule: exactly; }
   p { margin: 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; }
