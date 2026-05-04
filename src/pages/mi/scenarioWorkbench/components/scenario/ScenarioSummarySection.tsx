@@ -6,11 +6,16 @@ import { CategoryScale, Chart as ChartJS, Filler, Legend, LinearScale, LineEleme
 import { useMemo } from 'react'
 import { Line } from 'react-chartjs-2'
 
-import ImpactDotsCell from '../ImpactDotsCell'
-import PriceDirectionIcon from '../PriceDirectionIcon'
-import { ScenarioForecastCard, ScenarioImpactRow, ScenarioImpactTarget, ScenarioSummaryData } from './types'
-import ScenarioWorkbenchDataList from '../table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '../table/ScenarioWorkbenchTableHeader'
+import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
+import PriceDirectionIcon from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
+import {
+  ScenarioForecastCard,
+  ScenarioImpactRow,
+  ScenarioImpactTarget,
+  ScenarioSummaryData,
+} from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
+import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend)
 
@@ -90,7 +95,7 @@ const impactColumns: GridColDef<ScenarioImpactRow>[] = [
 
 const ImpactTable = ({ rows }: { rows: ScenarioImpactRow[] }) => (
   <Box sx={{ bgcolor: 'gray.5', borderRadius: '10px', p: '12px' }}>
-    <ScenarioWorkbenchTableHeader<ScenarioImpactRow> columns={impactColumns} sx={{ mb: 0 }} />
+    <ScenarioWorkbenchTableHeader<ScenarioImpactRow> columns={impactColumns} />
     <ScenarioWorkbenchDataList<ScenarioImpactRow> rowId="target" columns={impactColumns} rows={rows} rowHeight={48} hideLastRowBorder />
   </Box>
 )

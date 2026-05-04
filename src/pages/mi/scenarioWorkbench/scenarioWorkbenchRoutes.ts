@@ -1,8 +1,8 @@
 export const SCENARIO_WORKBENCH_BASE_PATH = '/mi/scenario-workbench'
-import DesignTabPanel from './tabs/DesignTabPanel'
-import EventsTabPanel from './tabs/EventsTabPanel'
-import OverviewTabPanel from './tabs/OverviewTabPanel'
-import ScenariosTabPanel from './tabs/ScenariosTabPanel'
+import DesignTabPanel from '@/pages/mi/scenarioWorkbench/tabs/DesignTabPanel'
+import EventsTabPanel from '@/pages/mi/scenarioWorkbench/tabs/EventsTabPanel'
+import OverviewTabPanel from '@/pages/mi/scenarioWorkbench/tabs/OverviewTabPanel'
+import ScenariosTabPanel from '@/pages/mi/scenarioWorkbench/tabs/ScenariosTabPanel'
 
 export const SCENARIO_WORKBENCH_TAB_INFO = [
   { key: 'overview', label: 'Overview', segment: 'overview', path: `${SCENARIO_WORKBENCH_BASE_PATH}/overview`, content: OverviewTabPanel },

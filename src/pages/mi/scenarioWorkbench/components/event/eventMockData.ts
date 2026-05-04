@@ -1,4 +1,4 @@
-import type { ScenarioWorkbenchEventRow } from './types'
+import type { ScenarioWorkbenchEventRow } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
 /** 시나리오 워크벤치 Events 탭 UI용 목 데이터 (추후 API 연동 시 교체) */
 export const SCENARIO_WORKBENCH_EVENT_MOCK_ROWS: ScenarioWorkbenchEventRow[] = [

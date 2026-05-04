@@ -1,9 +1,13 @@
-import ModelTrainingOutlinedIcon from '@mui/icons-material/ModelTrainingOutlined'
+import ContentPasteSearchOutlinedIcon from '@mui/icons-material/ContentPasteSearchOutlined'
 import { Box, Stack, Typography } from '@mui/material'
 
-import EventDetailSectionHeader from './EventDetailSectionHeader'
+import type {
+  EventDetailFundamentalIndicatorRow,
+  EventDetailFundamentalMetricRow,
+} from '@/pages/mi/scenarioWorkbench/components/event/types'
 
-import type { EventDetailFundamentalIndicatorRow, EventDetailFundamentalMetricRow } from './types'
+import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
+import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
 
 interface EventDetailFundamentalSectionProps {
   metricRows: EventDetailFundamentalMetricRow[]
@@ -24,22 +28,15 @@ const bodyCellSx = {
   py: 1.5,
 }
 
-/** Figma — Fundamental Deep-dive (두 개의 4열 표) */
+/** Fundamental Deep-dive — 두 개의 4열 표 */
 const EventDetailFundamentalSection = ({ metricRows, indicatorRows }: EventDetailFundamentalSectionProps) => (
-  <Stack
-    width="100%"
-    borderBottom="1px solid"
-    borderColor="contentBorder.Normal"
-    py={7.5}
-    gap={3}
-    id="event-detail-section-fundamental"
-  >
+  <Stack width="100%" gap="12px">
     <EventDetailSectionHeader
-      icon={<ModelTrainingOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+      icon={<ContentPasteSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
       title="Fundamental Deep-dive"
       tooltipTitle="펀더멘털 지표와 해석입니다."
     />
-    <Stack gap={1.5} width="100%">
+    <Stack gap="12px" width="100%">
       <Stack direction="row" width="100%">
         {['항목', '현재 값', '해석 기준', '출처'].map((label) => (
           <Box key={label} sx={headerCellSx}>
@@ -52,29 +49,21 @@ const EventDetailFundamentalSection = ({ metricRows, indicatorRows }: EventDetai
       {metricRows.map((row) => (
         <Stack key={row.id} direction="row" width="100%">
           <Box sx={bodyCellSx}>
-            <Typography fontSize={14} fontWeight={500} color="contentText.Normal" lineHeight={1.4}>
-              {row.item}
-            </Typography>
+            <ScenarioWorkbenchEventDetailTableBodyText value={row.item} sx={{ fontWeight: 500 }} />
           </Box>
           <Box sx={{ ...bodyCellSx, display: 'flex', justifyContent: 'flex-end' }}>
-            <Typography fontSize={14} fontWeight={500} color="contentText.Normal" lineHeight={1.4}>
-              {row.currentValue}
-            </Typography>
+            <ScenarioWorkbenchEventDetailTableBodyText value={row.currentValue} sx={{ fontWeight: 500 }} />
           </Box>
           <Box sx={bodyCellSx}>
-            <Typography fontSize={14} fontWeight={500} color="contentText.Normal" lineHeight={1.4}>
-              {row.criteria}
-            </Typography>
+            <ScenarioWorkbenchEventDetailTableBodyText value={row.criteria} sx={{ fontWeight: 500 }} />
           </Box>
           <Box sx={bodyCellSx}>
-            <Typography fontSize={14} fontWeight={500} color="contentText.Normal" lineHeight={1.4}>
-              {row.source}
-            </Typography>
+            <ScenarioWorkbenchEventDetailTableBodyText value={row.source} sx={{ fontWeight: 500 }} />
           </Box>
         </Stack>
       ))}
     </Stack>
-    <Stack gap={1.5} width="100%" pt={1.5}>
+    <Stack gap="12px" width="100%" pt="12px">
       <Stack direction="row" width="100%">
         {['지표', '현재 값', '시사점', '출처'].map((label) => (
           <Box key={label} sx={headerCellSx}>
@@ -87,24 +76,16 @@ const EventDetailFundamentalSection = ({ metricRows, indicatorRows }: EventDetai
       {indicatorRows.map((row) => (
         <Stack key={row.id} direction="row" width="100%">
           <Box sx={bodyCellSx}>
-            <Typography fontSize={14} fontWeight={500} color="contentText.Normal" lineHeight={1.4}>
-              {row.indicator}
-            </Typography>
+            <ScenarioWorkbenchEventDetailTableBodyText value={row.indicator} sx={{ fontWeight: 500 }} />
           </Box>
           <Box sx={{ ...bodyCellSx, display: 'flex', justifyContent: 'flex-end' }}>
-            <Typography fontSize={14} fontWeight={500} color="contentText.Normal" lineHeight={1.4}>
-              {row.currentValue}
-            </Typography>
+            <ScenarioWorkbenchEventDetailTableBodyText value={row.currentValue} sx={{ fontWeight: 500 }} />
           </Box>
           <Box sx={bodyCellSx}>
-            <Typography fontSize={14} fontWeight={500} color="contentText.Normal" lineHeight={1.4}>
-              {row.implication}
-            </Typography>
+            <ScenarioWorkbenchEventDetailTableBodyText value={row.implication} sx={{ fontWeight: 500 }} />
           </Box>
           <Box sx={bodyCellSx}>
-            <Typography fontSize={14} fontWeight={500} color="contentText.Normal" lineHeight={1.4}>
-              {row.source}
-            </Typography>
+            <ScenarioWorkbenchEventDetailTableBodyText value={row.source} sx={{ fontWeight: 500 }} />
           </Box>
         </Stack>
       ))}

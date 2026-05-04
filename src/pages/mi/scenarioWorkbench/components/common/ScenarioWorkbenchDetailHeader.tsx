@@ -5,16 +5,13 @@ import { type ReactNode, type SyntheticEvent, useCallback, useEffect, useLayoutE
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 
-/** MILayout 스티키 `top` 전환과 동일 계열 — Collapse 애니/측정 무시창에 공통 사용 */
 const WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS = 220
 const WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)'
 
-/** Collapse로 접히는 상단 네비 행 높이(px) — 초기 sticky 높이·DOM 측정 보정에 공통 */
 const WORKBENCH_DETAIL_NAV_ROW_PX = 52
 const WORKBENCH_DETAIL_STICKY_HEIGHT_INITIAL_EXPANDED_PX = 264
 const STICKY_HEIGHT_MEASURE_EPS_PX = 2
 
-/** MILayout `paddingTop`과 동기: 접힘 70px / 펼침 106px — 헤더 ref 미마운트 시점 fallback에 사용 */
 const MAIN_HEADER_TOP_COLLAPSED_PX = 70
 const MAIN_HEADER_TOP_EXPANDED_PX = 106
 
@@ -289,7 +286,6 @@ const ScenarioWorkbenchDetailHeader = ({
       <Stack bgcolor="commonColor.White">
         <Collapse
           in={!isMainScrolled}
-          /** 마운트 직후 `in === true`여도 enter 애니메이션이 돌면 상단 블록이 아래로 펼쳐지는 것처럼 보임 */
           appear={false}
           timeout={{
             appear: WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS,
@@ -376,7 +372,6 @@ const ScenarioWorkbenchDetailHeader = ({
                 minHeight: 62,
                 padding: '20px',
                 textTransform: 'none',
-                /** 스크롤 스파이가 빠르게 바뀔 때 600↔700 전환이 레이아웃·시각적으로 떨림 — 인디케이터로만 선택 표시 */
                 '&.Mui-selected': { color: 'commonColor.Black', fontWeight: 600 },
               },
             }}

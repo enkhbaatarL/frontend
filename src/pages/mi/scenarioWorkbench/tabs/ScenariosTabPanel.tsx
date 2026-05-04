@@ -5,17 +5,6 @@ import dayjs from 'dayjs'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import ScenarioWorkbenchTypeBadge from '../components/CreateTypeBadge'
-import { buildWorkbenchEventDatePresets } from '../components/event/scenarioWorkbenchEventsDateRange'
-import ImpactDotsCell from '../components/ImpactDotsCell'
-import ProbabilityGaugeCell from '../components/ProbabilityGaugeCell'
-import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '../components/ScenarioWorkbenchDetailHeader'
-import ScenarioWorkbenchDataList from '../components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader, {
-  SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
-} from '../components/table/ScenarioWorkbenchTableHeader'
-import { useScenarioWorkbenchHeaderCollapsed } from '../ScenarioWorkbenchHeaderCollapseContext'
-
 import type { CreateType } from '@/service/mi/scenarioWorkbench'
 
 import MISearchInput from '@/components/common/input/MISearchInput'
@@ -23,7 +12,16 @@ import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/
 import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
-import MITableCell from '@/components/common/table/MITableCell'
+import { ScenarioWorkbenchTypeBadge } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
+import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
+import ProbabilityGaugeCell from '@/pages/mi/scenarioWorkbench/components/common/ProbabilityGaugeCell'
+import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
+import { buildWorkbenchEventDatePresets } from '@/pages/mi/scenarioWorkbench/components/event/scenarioWorkbenchEventsDateRange'
+import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
+import ScenarioWorkbenchTableHeader, {
+  SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
+} from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
+import { useScenarioWorkbenchHeaderCollapsed } from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchHeaderCollapseContext'
 import { IPaginationResponse } from '@/types/api'
 
 export interface ScenarioRow {
@@ -445,11 +443,7 @@ const ScenariosTabPanel = () => {
         headerName: '생성타입',
         width: 88,
         align: 'center',
-        renderCell: (params) => (
-          <MITableCell>
-            <ScenarioWorkbenchTypeBadge type={params.row.type} />
-          </MITableCell>
-        ),
+        renderCell: (params) => <ScenarioWorkbenchTypeBadge type={params.row.type} />,
       },
       {
         field: 'createdAt',
@@ -469,44 +463,28 @@ const ScenariosTabPanel = () => {
         headerName: 'JKM',
         width: 100,
         align: 'center',
-        renderCell: (params) => (
-          <MITableCell>
-            <ImpactDotsCell level={params.row.jkmImpact} />
-          </MITableCell>
-        ),
+        renderCell: (params) => <ImpactDotsCell level={params.row.jkmImpact} />,
       },
       {
         field: 'ttfImpact',
         headerName: 'TTF',
         width: 100,
         align: 'center',
-        renderCell: (params) => (
-          <MITableCell>
-            <ImpactDotsCell level={params.row.ttfImpact} />
-          </MITableCell>
-        ),
+        renderCell: (params) => <ImpactDotsCell level={params.row.ttfImpact} />,
       },
       {
         field: 'hhImpact',
         headerName: 'HH',
         width: 100,
         align: 'center',
-        renderCell: (params) => (
-          <MITableCell>
-            <ImpactDotsCell level={params.row.hhImpact} />
-          </MITableCell>
-        ),
+        renderCell: (params) => <ImpactDotsCell level={params.row.hhImpact} />,
       },
       {
         field: 'probability',
         headerName: '가능성',
         width: 120,
         align: 'center',
-        renderCell: (params) => (
-          <MITableCell>
-            <ProbabilityGaugeCell level={params.row.probability} />
-          </MITableCell>
-        ),
+        renderCell: (params) => <ProbabilityGaugeCell level={params.row.probability} />,
       },
     ],
     [],
@@ -554,7 +532,7 @@ const ScenariosTabPanel = () => {
           transition: 'box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} pt="18px" pb="6px" px={3} color="contentText.Black">
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" px={3} color="contentText.Black">
           Scenarios
         </Typography>
 
@@ -609,13 +587,14 @@ const ScenariosTabPanel = () => {
           </Stack>
         </Stack>
 
-        <ScenarioWorkbenchTableHeader<ScenarioRow> columns={columns} sx={{ mt: 2, mb: 0 }} />
+        <ScenarioWorkbenchTableHeader<ScenarioRow> columns={columns} sx={{ mt: 2 }} />
       </Box>
 
       <ScenarioWorkbenchDataList<ScenarioRow>
         rowId="id"
         columns={columns}
         rows={paginationData.detail}
+        skeletonRowCount={pagination.size}
         rowHeight={42}
         noRowMessage="시나리오를 생성해 주세요."
         onRowClick={handleRowClick}

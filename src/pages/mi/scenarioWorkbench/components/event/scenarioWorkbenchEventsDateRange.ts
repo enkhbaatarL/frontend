@@ -39,7 +39,7 @@ export const mapWorkbenchDateRangeToApiParams = (start: Dayjs, end: Dayjs): Work
   }
 }
 
-/** Events 탭 날짜 프리셋 (Figma 2994:58459 좌측) */
+/** Events 탭 날짜 프리셋 */
 export const buildWorkbenchEventDatePresets = (today: Dayjs = dayjs()): DatePresetOption[] => {
   const t = today.startOf('day')
   return [

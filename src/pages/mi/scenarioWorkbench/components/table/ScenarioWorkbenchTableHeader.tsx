@@ -1,17 +1,33 @@
-import { Box, Typography, type SxProps, type Theme } from '@mui/material'
+import { Box, Typography, type SxProps, type Theme, type TypographyProps } from '@mui/material'
 import { type GridColDef, type GridRowModel } from '@mui/x-data-grid'
 import { useMemo } from 'react'
 
 export const SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX = 138
+
+const toCssLength = (value: number | string) => (typeof value === 'number' ? `${value}px` : value)
 
 export interface ScenarioWorkbenchTableHeaderProps<T extends GridRowModel> {
   columns: GridColDef<T>[]
   sx?: SxProps<Theme>
   sticky?: boolean
   stickyTop?: number | string // sticky 시 스크롤포트 상단으로부터의 오프셋
+  headerCellPx?: number | string
+  headerCellPy?: number | string
+  headerLabelColor?: TypographyProps['color']
 }
 
-const ScenarioWorkbenchTableHeader = <T extends GridRowModel>({ columns, sx, sticky, stickyTop }: ScenarioWorkbenchTableHeaderProps<T>) => {
+const ScenarioWorkbenchTableHeader = <T extends GridRowModel>({
+  columns,
+  sx,
+  sticky,
+  stickyTop,
+  headerCellPx,
+  headerCellPy,
+  headerLabelColor,
+}: ScenarioWorkbenchTableHeaderProps<T>) => {
+  const px = toCssLength(headerCellPx ?? '12px')
+  const pyDefined = headerCellPy !== undefined && headerCellPy !== null
+  const py = pyDefined ? toCssLength(headerCellPy) : undefined
   const gridTemplateColumns = useMemo(
     () =>
       columns
@@ -37,18 +53,18 @@ const ScenarioWorkbenchTableHeader = <T extends GridRowModel>({ columns, sx, sti
           width: '100%',
           minWidth: 0,
           maxWidth: '100%',
-          height: 36,
+          ...(pyDefined ? { minHeight: 36, height: 'auto' } : { height: 36 }),
           borderBottom: `0.5px solid ${theme.palette.gray[60]}`,
           bgcolor: 'transparent',
+          mb: 0,
           ...(sticky
             ? {
               position: 'sticky',
               top: stickyTop ?? SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
               zIndex: 160,
-              mb: 0,
               pb: 0,
             }
-            : { mb: 1 }),
+            : {}),
         }),
         ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
       ]}
@@ -60,13 +76,14 @@ const ScenarioWorkbenchTableHeader = <T extends GridRowModel>({ columns, sx, sti
             display: 'flex',
             alignItems: 'center',
             justifyContent: col.align === 'center' ? 'center' : col.align === 'right' ? 'flex-end' : 'flex-start',
-            px: '12px',
+            px,
+            ...(py !== undefined ? { py } : {}),
             overflow: 'hidden',
             minWidth: 0,
             boxSizing: 'border-box',
           }}
         >
-          <Typography variant="body2SB14" color="gray.70" noWrap>
+          <Typography variant="body2SB14" color={headerLabelColor ?? 'gray.70'} noWrap>
             {col.headerName ?? ''}
           </Typography>
         </Box>

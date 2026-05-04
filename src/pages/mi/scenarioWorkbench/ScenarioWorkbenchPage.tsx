@@ -2,13 +2,13 @@ import { Box, Stack, Typography } from '@mui/material'
 import { debounce, type DebouncedFunc } from 'lodash-es'
 import { createElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
-import ScenarioWorkbenchTab from './components/ScenarioWorkbenchTab'
-import { ScenarioWorkbenchHeaderCollapseProvider } from './ScenarioWorkbenchHeaderCollapseContext'
+import ScenarioWorkbenchTab from '@/pages/mi/scenarioWorkbench/components/ScenarioWorkbenchTab'
+import { ScenarioWorkbenchHeaderCollapseProvider } from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchHeaderCollapseContext'
 import {
   getScenarioWorkbenchTabIndex,
   resolveScenarioWorkbenchTabFromPathname,
   SCENARIO_WORKBENCH_TAB_INFO,
-} from './scenarioWorkbenchRoutes'
+} from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
 
 const STICKY_TOP_WHEN_SCROLLED = -14
 const SCROLL_JUMP_IGNORE_EXPAND_AT_ZERO_PX = 96

@@ -1,23 +1,10 @@
-import { Box, Typography } from '@mui/material'
+import { Box } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 
-import { SignpostItem } from './types'
-import ScenarioWorkbenchDataList from '../table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '../table/ScenarioWorkbenchTableHeader'
-
-const textCell = (value: string) => (
-  <Typography
-    variant="body2M14"
-    sx={{
-      color: 'contentText.Normal',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    }}
-  >
-    {value}
-  </Typography>
-)
+import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
+import { SignpostItem } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
+import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
 const columns: GridColDef<SignpostItem>[] = [
   {
@@ -25,35 +12,35 @@ const columns: GridColDef<SignpostItem>[] = [
     headerName: '핵심이벤트',
     flex: 1,
     minWidth: 120,
-    renderCell: (params) => textCell(params.value as string),
+    renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.value ?? '')} tooltipWhenTruncated />,
   },
   {
     field: 'currentStatus',
     headerName: '현재 상태 요약',
     flex: 1,
     minWidth: 120,
-    renderCell: (params) => textCell(params.value as string),
+    renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.value ?? '')} tooltipWhenTruncated />,
   },
   {
     field: 'marketImpactSummary',
     headerName: '시장 영향 해석',
     flex: 1,
     minWidth: 180,
-    renderCell: (params) => textCell(params.value as string),
+    renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.value ?? '')} tooltipWhenTruncated />,
   },
   {
     field: 'observationPoint',
     headerName: '관찰 포인트 (Trigger)',
     flex: 1,
     minWidth: 120,
-    renderCell: (params) => textCell(params.value as string),
+    renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.value ?? '')} tooltipWhenTruncated />,
   },
   {
     field: 'source',
     headerName: '출처',
     flex: 1,
     minWidth: 120,
-    renderCell: (params) => textCell(params.value as string),
+    renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.value ?? '')} tooltipWhenTruncated />,
   },
 ]
 
@@ -63,12 +50,13 @@ interface SignpostMonitoringSectionProps {
 
 const SignpostMonitoringSection = ({ rows }: SignpostMonitoringSectionProps) => (
   <Box sx={{ position: 'relative', paddingY: '24px' }}>
-    <ScenarioWorkbenchTableHeader<SignpostItem> columns={columns} sx={{ mb: 0 }} />
+    <ScenarioWorkbenchTableHeader<SignpostItem> columns={columns} />
     <ScenarioWorkbenchDataList<SignpostItem>
       rowId="id"
       columns={columns}
       rows={rows}
       rowHeight={42}
+      cellPreset="miCanvasEvent"
       noRowMessage="데이터를 수집 중입니다."
     />
   </Box>

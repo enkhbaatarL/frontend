@@ -25,7 +25,7 @@ export interface ScenarioWorkbenchEventRow {
 
 export type EventsClassificationFilterValue = 'all' | EventClassification
 
-/** 이벤트 상세 — 영향도 분석 표 행 (Figma MI/ Canvas/ Event/ Impact Analysis) */
+/** 이벤트 상세 — 영향도 분석 표 행 */
 export interface EventDetailImpactTableRow {
   id: string
   target: string

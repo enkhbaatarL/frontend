@@ -1,15 +1,18 @@
 import TungstenRoundedIcon from '@mui/icons-material/TungstenRounded'
-import { Box, Stack } from '@mui/material'
+import { Stack } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState } from 'react'
 
-import EventDetailSectionHeader from './EventDetailSectionHeader'
+import type { EventDetailMiRecordRow } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
-import type { EventDetailMiRecordRow } from './types'
-
-import MIPagination from '@/components/common/pagination/MIPagination'
-import MITable from '@/components/common/table/MITable'
-import MITableCell from '@/components/common/table/MITableCell'
+import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import {
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
+} from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
+import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
+import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
+import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { IPaginationResponse } from '@/types/api'
 
 interface EventDetailMiRecordsTableProps {
@@ -21,7 +24,6 @@ interface EventDetailMiRecordsTableProps {
   loading?: boolean
 }
 
-/** Figma — MI Records (헤더 py30, 표 1380 기준 열 너비) */
 const EventDetailMiRecordsTable = ({
   rows,
   serverPagination,
@@ -78,54 +80,41 @@ const EventDetailMiRecordsTable = ({
 
   const columns: GridColDef<EventDetailMiRecordRow>[] = useMemo(
     () => [
-      {
-        field: 'atLabel',
-        headerName: '일시',
-        width: 160,
-        align: 'center',
-        renderCell: (p) => <MITableCell value={p.value} color="contentText.Normal" />,
-      },
-      {
-        field: 'kind',
-        headerName: '종류',
-        width: 100,
-        align: 'center',
-        renderCell: (p) => <MITableCell value={p.value} />,
-      },
-      {
-        field: 'title',
-        headerName: '타이틀',
-        width: 300,
-        align: 'left',
-        renderCell: (p) => <MITableCell value={p.value} tooltipContent={p.value} />,
-      },
-      {
-        field: 'summary',
-        headerName: '요약',
-        flex: 1,
-        minWidth: 240,
-        align: 'left',
-        renderCell: (p) => <MITableCell value={p.value} tooltipContent={p.value} />,
-      },
+      { field: 'atLabel', headerName: '일시', width: 160, align: 'left' },
+      { field: 'kind', headerName: '종류', width: 100, align: 'left' },
+      { field: 'title', headerName: '타이틀', width: 300, align: 'left' },
+      { field: 'summary', headerName: '요약', flex: 1, minWidth: 240, align: 'left' },
     ],
     [],
   )
 
   return (
-    <Stack width="100%" py={7.5} gap={3} id="event-detail-section-records">
+    <Stack width="100%" gap={6}>
       <EventDetailSectionHeader
         icon={<TungstenRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="MI Records"
         tooltipTitle="이벤트와 연관된 MI 기록입니다."
       />
-      <Stack gap={1} sx={{ width: '100%', maxWidth: 1380 }}>
-        <Box height={480} sx={{ '& .MuiDataGrid-root': { height: '100%' } }}>
-          <MITable<EventDetailMiRecordRow> rowId="id" columns={columns} rows={paginatedRows} loading={loading} disableHover />
-        </Box>
+      <Stack>
+        <ScenarioWorkbenchTableHeader<EventDetailMiRecordRow>
+          columns={columns}
+          headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+          headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
+        />
+        <ScenarioWorkbenchDataList<EventDetailMiRecordRow>
+          rowId="id"
+          columns={columns}
+          rows={paginatedRows}
+          loading={loading}
+          rowHeight={42}
+          cellPreset="miCanvasEvent"
+          noRowMessage="MI 기록이 없습니다."
+        />
         {paginationData && (
-          <MIPagination<EventDetailMiRecordRow>
+          <MIPaginationSecondary<EventDetailMiRecordRow>
             data={paginationData}
             size={isServerMode ? serverPagination.size : pagination.size}
+            sizeList={[10, 15, 20, 50, 100]}
             onPageChange={(page) => {
               if (isServerMode) onServerPageChange?.(page)
               else setPagination((p) => ({ ...p, page }))

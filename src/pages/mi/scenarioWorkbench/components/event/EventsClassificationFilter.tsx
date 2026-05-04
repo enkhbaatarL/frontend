@@ -1,10 +1,8 @@
 import { Box, Stack } from '@mui/material'
 
-import type { EventsClassificationFilterValue } from './types'
+import type { EventsClassificationFilterValue } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
-// import MIToggleButton from '@/components/common/button/MIToggleButton'
-
-/** 전체·신규·갱신 세그먼트 (Figma General/Segmentation — 공통 MIToggleButton 대신 로컬 스타일) */
+/** 전체·신규·갱신 세그먼트 (공통 MIToggleButton 대신 로컬 스타일) */
 interface EventsClassificationFilterProps {
   value: EventsClassificationFilterValue
   onChange: (value: EventsClassificationFilterValue) => void
@@ -58,19 +56,6 @@ const EventsClassificationFilter = ({ value, onChange }: EventsClassificationFil
       )
     })}
   </Stack>
-  /*  <MIToggleButton
-    value={value}
-    onChange={(_, newValue) => {
-      if (newValue === 'all' || newValue === '신규' || newValue === '갱신') {
-        onChange(newValue)
-      }
-    }}
-    options={[
-      { label: '전체', value: 'all' },
-      { label: '신규', value: '신규' },
-      { label: '갱신', value: '갱신' },
-    ]}
-  /> */
 )
 
 export default EventsClassificationFilter

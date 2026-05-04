@@ -15,7 +15,6 @@ const BoxIconWrap = ({ children }: { children: ReactNode }) => (
   </Stack>
 )
 
-/** Figma MI/ Canvas/ Section Header — 30px 아이콘 + 20px SemiBold 제목 + info */
 const EventDetailSectionHeader = ({ icon, title, tooltipTitle }: EventDetailSectionHeaderProps) => (
   <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%">
     <Stack direction="row" alignItems="center" gap={0.75}>

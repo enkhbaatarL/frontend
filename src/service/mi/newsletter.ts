@@ -109,7 +109,6 @@ export interface IRelatedNewsEventItem {
   createdDate: string
   createTime: string
   source: string
-  /** 원문 링크 (Figma: 원문 링크 필드) */
   originalLink?: string
   showInChart: boolean
   trend?: 'UP' | 'DOWN' | 'NONE' | ''

@@ -3,8 +3,8 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import { Box, Stack, Typography } from '@mui/material'
 import { ReactNode } from 'react'
 
-import KpiCard from '../KpiCard'
-import { KeyPrediction, KeyPredictionDirection } from './types'
+import KpiCard from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
+import { KeyPrediction, KeyPredictionDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
 
 interface DirectionalValueProps {
   direction: Exclude<KeyPredictionDirection, 'none'>

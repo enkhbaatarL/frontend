@@ -1,10 +1,21 @@
-import { Box, Skeleton, Stack, Typography, type SxProps, type Theme } from '@mui/material'
+import { Box, Skeleton, Stack, Tooltip, Typography, type SxProps, type Theme, type TypographyProps } from '@mui/material'
 import { type GridColDef, type GridRowModel } from '@mui/x-data-grid'
 import { isValidElement, useMemo, type ReactNode } from 'react'
+
+import useEllipsisDetection from '@/hooks/useEllipsisDetection'
+import ScenarioWorkbenchEventDetailTableBodyText, {
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX,
+} from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
+
+export type ScenarioWorkbenchDataListCellPreset = 'default' | 'miCanvasEvent'
 
 export interface ScenarioWorkbenchDataListProps<T extends GridRowModel>
   extends Partial<{
     loading: boolean
+    skeletonRowCount: number
     noRowMessage: string
     disableHover: boolean
     rowHeight: number
@@ -12,6 +23,8 @@ export interface ScenarioWorkbenchDataListProps<T extends GridRowModel>
     onRowClick: (params: { row: T }) => void
     sx: SxProps<Theme>
     hideLastRowBorder: boolean // 마지막 행 하단 구분선 미표시
+    primitiveCellTypographyVariant: TypographyProps['variant']
+    cellPreset: ScenarioWorkbenchDataListCellPreset
   }> {
   rowId: keyof T
   columns: GridColDef<T>[]
@@ -25,20 +38,68 @@ const renderCellContentToNode = (content: unknown): ReactNode => {
   return String(content)
 }
 
+const DefaultEllipsisTooltip = ({
+  value,
+  children,
+  textAlign,
+}: {
+  value: string
+  children: ReactNode
+  textAlign: 'left' | 'center' | 'right'
+}) => {
+  const { ref, isEllipsis } = useEllipsisDetection(value)
+
+  return (
+    <Tooltip disableHoverListener={!isEllipsis} title={value} placement="top" followCursor>
+      <Box
+        ref={ref}
+        sx={{
+          width: '100%',
+          minWidth: 0,
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+          textAlign,
+        }}
+      >
+        {children}
+      </Box>
+    </Tooltip>
+  )
+}
+
 const ScenarioWorkbenchDataList = <T extends GridRowModel>({
   rowId,
   columns,
   rows,
   loading,
+  skeletonRowCount,
   noRowMessage,
   disableHover,
   onRowClick,
   rowHeight,
   getRowClassName,
   hideLastRowBorder,
+  primitiveCellTypographyVariant,
+  cellPreset,
   sx,
 }: ScenarioWorkbenchDataListProps<T>) => {
+  const preset = cellPreset ?? 'default'
+  const isMiCanvas = preset === 'miCanvasEvent'
+  const cellPx = `${SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}px`
+  const primitiveVariant: TypographyProps['variant'] =
+    primitiveCellTypographyVariant ?? (isMiCanvas ? SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT : 'body1M16')
+  const primitiveBodySx = isMiCanvas ? { lineHeight: SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT } : undefined
+  const cellBoxSx = {
+    px: cellPx,
+    ...(isMiCanvas ? { py: `${SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}px` } : {}),
+    overflow: 'hidden',
+    minWidth: 0,
+    boxSizing: 'border-box' as const,
+  }
+
   const effectiveRowHeight = rowHeight ?? 42
+  const skeletonRows = Math.max(1, skeletonRowCount ?? 8)
   const gridTemplateColumns = useMemo(
     () =>
       columns
@@ -66,11 +127,11 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
   if (loading) {
     body = (
       <Stack gap={0}>
-        {Array.from({ length: 8 }).map((_, idx) => (
+        {Array.from({ length: skeletonRows }).map((_, idx) => (
           <Box
             key={idx}
             sx={(theme) => {
-              const isLastSkeletonRow = idx === 7
+              const isLastSkeletonRow = idx === skeletonRows - 1
               const showBorder = !isLastSkeletonRow || !hideLastRowBorder
               return {
                 display: 'grid',
@@ -82,7 +143,7 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
             }}
           >
             {columns.map((col) => (
-              <Box key={col.field} sx={{ px: '12px', minWidth: 0, boxSizing: 'border-box' }}>
+              <Box key={col.field} sx={cellBoxSx}>
                 <Skeleton variant="rounded" height={Math.min(28, effectiveRowHeight - 8)} />
               </Box>
             ))}
@@ -165,6 +226,15 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
                   : value
                 const node = renderCellContentToNode(content)
 
+                const textAlign: 'left' | 'center' | 'right' = col.align === 'right' ? 'right' : col.align === 'center' ? 'center' : 'left'
+
+                const shouldWrapEllipsisTooltip =
+                  typeof value === 'string' &&
+                  value.length > 0 &&
+                  // 신규/갱신/종료 칩(이벤트), 신규/갱신 칩(시나리오)은 줄이기/툴팁 대상이 아님
+                  col.field !== 'classification' &&
+                  col.field !== 'type'
+
                 return (
                   <Box
                     key={col.field}
@@ -172,16 +242,28 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: cellJustifyContent(col.align),
-                      px: '12px',
-                      overflow: 'hidden',
-                      minWidth: 0,
-                      boxSizing: 'border-box',
+                      ...cellBoxSx,
                     }}
                   >
                     {typeof node === 'string' || typeof node === 'number' ? (
-                      <Typography variant="body1M16" color="contentText.Normal" noWrap>
+                      <ScenarioWorkbenchEventDetailTableBodyText
+                        value={String(node)}
+                        variant={primitiveVariant}
+                        tooltipWhenTruncated
+                        sx={[
+                          {
+                            alignSelf: 'stretch',
+                            flex: '1 1 0',
+                            minWidth: 0,
+                            textAlign,
+                          },
+                          ...(primitiveBodySx ? (Array.isArray(primitiveBodySx) ? primitiveBodySx : [primitiveBodySx]) : []),
+                        ]}
+                      />
+                    ) : shouldWrapEllipsisTooltip ? (
+                      <DefaultEllipsisTooltip value={value} textAlign={textAlign}>
                         {node}
-                      </Typography>
+                      </DefaultEllipsisTooltip>
                     ) : (
                       node
                     )}

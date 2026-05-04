@@ -1,11 +1,19 @@
 import ManageSearchOutlinedIcon from '@mui/icons-material/ManageSearchOutlined'
 import { Box, Stack, Typography } from '@mui/material'
+import { GridColDef } from '@mui/x-data-grid'
+import { useMemo } from 'react'
 
-import EventDetailSectionHeader from './EventDetailSectionHeader'
-import { EventImpactDirectionCompact, EventImpactDotsCell } from './EventIndexImpactDirectionCell'
-import KpiCard from '../KpiCard'
+import type { EventDetailImpactKpiItem, EventDetailImpactTableRow } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
-import type { EventDetailImpactKpiItem, EventDetailImpactTableRow } from './types'
+import KpiCard from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
+import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
+import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
+import {
+  EventImpactDirectionCompact,
+  EventImpactDotsCell,
+} from '@/pages/mi/scenarioWorkbench/components/event/EventIndexImpactDirectionCell'
+import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
+import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
 interface EventDetailImpactAnalysisSectionProps {
   tableRows: EventDetailImpactTableRow[]
@@ -13,97 +21,94 @@ interface EventDetailImpactAnalysisSectionProps {
   narrative: string
 }
 
-/**
- * Figma node 2128:31396 — 영향도 분석
- * 좌 600px: 표(gray.5 패딩 12) + KPI 2열 / 우측 flex: 분석 텍스트(gray.5, px24 py20, radius 8)
- */
-const EventDetailImpactAnalysisSection = ({ tableRows, kpiItems, narrative }: EventDetailImpactAnalysisSectionProps) => (
-  <Stack width="100%" borderBottom="1px solid" borderColor="contentBorder.Normal" py={5} gap={1.5} id="event-detail-section-impact">
-    <EventDetailSectionHeader
-      icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
-      title="영향도 분석"
-      tooltipTitle="이벤트가 주요 가격 지표에 미치는 영향을 요약합니다."
-    />
-    <Stack direction="row" gap={1.5} alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
-      <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap={1.5} minWidth={0}>
-        <Box bgcolor="gray.5" borderRadius="10px" p={1.5} overflow="hidden">
-          <Stack
-            component="div"
-            direction="row"
-            alignItems="center"
-            minHeight={36}
-            borderBottom="0.5px solid"
-            borderColor="contentBorder.Active"
-          >
-            <Box flex={1} px={1.5} py={1}>
-              <Typography fontSize={14} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
-                대상
-              </Typography>
+const EventDetailImpactAnalysisSection = ({ tableRows, kpiItems, narrative }: EventDetailImpactAnalysisSectionProps) => {
+  const columns: GridColDef<EventDetailImpactTableRow>[] = useMemo(
+    () => [
+      {
+        field: 'target',
+        headerName: '대상',
+        flex: 1,
+        minWidth: 120,
+        sortable: false,
+        renderCell: (p) => (
+          <ScenarioWorkbenchEventDetailTableBodyText
+            value={String(p.value ?? '')}
+            component="span"
+            sx={{ fontSize: 16, fontWeight: 600, color: 'contentText.Black' }}
+          />
+        ),
+      },
+      {
+        field: 'marketImpact',
+        headerName: '시장영향',
+        width: 120,
+        align: 'center',
+        sortable: false,
+        renderCell: (p) => <EventImpactDotsCell level={p.row.marketImpact} />,
+      },
+      {
+        field: 'direction',
+        headerName: '가격방향',
+        width: 120,
+        align: 'center',
+        sortable: false,
+        renderCell: (p) => <EventImpactDirectionCompact direction={p.row.direction} />,
+      },
+    ],
+    [],
+  )
+
+  return (
+    <Stack width="100%" gap="12px">
+      <EventDetailSectionHeader
+        icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+        title="영향도 분석"
+        tooltipTitle="이벤트가 주요 가격 지표에 미치는 영향을 요약합니다."
+      />
+      <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
+        <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
+          <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
+            <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+              <ScenarioWorkbenchTableHeader<EventDetailImpactTableRow> columns={columns} />
+              <ScenarioWorkbenchDataList<EventDetailImpactTableRow>
+                rowId="id"
+                columns={columns}
+                rows={tableRows}
+                rowHeight={48}
+                noRowMessage="표시할 데이터가 없습니다."
+                hideLastRowBorder
+              />
             </Box>
-            <Box width={120} px={1.5} py={1} textAlign="center">
-              <Typography fontSize={14} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
-                시장영향
-              </Typography>
+          </Box>
+          <Stack direction="row" gap="12px" width="100%">
+            <Box flex={1} minWidth={0} sx={{ minHeight: 120 }}>
+              <KpiCard title={kpiItems[0].title} content={kpiItems[0].content} description={kpiItems[0].description ?? ''} />
             </Box>
-            <Box width={120} px={1.5} py={1} textAlign="center">
-              <Typography fontSize={14} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
-                가격방향
-              </Typography>
+            <Box flex={1} minWidth={0} sx={{ minHeight: 120 }}>
+              <KpiCard title={kpiItems[1].title} content={kpiItems[1].content} description={kpiItems[1].description ?? '\u00a0'} />
             </Box>
           </Stack>
-          {tableRows.map((row) => (
-            <Stack
-              key={row.id}
-              direction="row"
-              alignItems="center"
-              minHeight={48}
-              borderBottom="1px solid"
-              borderColor="contentBorder.Normal"
-              sx={{ '&:last-of-type': { borderBottom: 'none' } }}
-            >
-              <Box flex={1} px={1.5} py={1.25} minWidth={0}>
-                <Typography fontSize={16} fontWeight={600} color="contentText.Black" lineHeight={1.4} noWrap title={row.target}>
-                  {row.target}
-                </Typography>
-              </Box>
-              <Box width={120} display="flex" alignItems="center" justifyContent="center" px={1.5} py={1.25}>
-                <EventImpactDotsCell level={row.marketImpact} />
-              </Box>
-              <Box width={120} px={1.5} py={1.25}>
-                <EventImpactDirectionCompact direction={row.direction} />
-              </Box>
-            </Stack>
-          ))}
-        </Box>
-        <Stack direction="row" gap={1.5} width="100%">
-          <Box flex={1} minWidth={0} sx={{ minHeight: 120 }}>
-            <KpiCard title={kpiItems[0].title} content={kpiItems[0].content} description={kpiItems[0].description ?? ''} />
-          </Box>
-          <Box flex={1} minWidth={0} sx={{ minHeight: 120 }}>
-            <KpiCard title={kpiItems[1].title} content={kpiItems[1].content} description={kpiItems[1].description ?? '\u00a0'} />
-          </Box>
         </Stack>
+        <Box
+          flex={1}
+          minWidth={{ xs: '100%', md: 280 }}
+          bgcolor="gray.5"
+          borderRadius="8px"
+          p="20px"
+          display="flex"
+          flexDirection="column"
+          gap="12px"
+        >
+          <Typography fontSize={14} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
+            영향도 분석
+          </Typography>
+          <Typography fontSize={16} fontWeight={500} color="contentText.Black" lineHeight={1.6}>
+            {narrative}
+          </Typography>
+        </Box>
       </Stack>
-      <Box
-        flex={1}
-        minWidth={{ xs: '100%', md: 280 }}
-        bgcolor="gray.5"
-        borderRadius="8px"
-        px={3}
-        py={2.5}
-        display="flex"
-        flexDirection="column"
-        gap={1.25}
-      >
-        <Typography fontSize={14} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
-          영향도 분석
-        </Typography>
-        <Typography fontSize={16} fontWeight={500} color="contentText.Black" lineHeight={1.6}>
-          {narrative}
-        </Typography>
-      </Box>
     </Stack>
-  </Stack>
-)
+  )
+}
 
 export default EventDetailImpactAnalysisSection

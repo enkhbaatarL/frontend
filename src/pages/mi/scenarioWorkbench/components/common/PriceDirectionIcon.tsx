@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 
-import { PriceDirection } from './scenario/types'
+import { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
 
 export interface PriceDirectionIconProps {
   direction: PriceDirection

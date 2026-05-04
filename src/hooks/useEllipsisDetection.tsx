@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-export default function useEllipsisDetection() {
+export default function useEllipsisDetection(observedKey?: unknown) {
   const ref = useRef<HTMLElement>(null)
   const [isEllipsis, setIsEllipsis] = useState(false)
   const checkOverflow = () => {
@@ -23,7 +23,7 @@ export default function useEllipsisDetection() {
     return () => {
       resizeObserver.disconnect()
     }
-  }, [])
+  }, [observedKey])
 
   return { isEllipsis, ref }
 }

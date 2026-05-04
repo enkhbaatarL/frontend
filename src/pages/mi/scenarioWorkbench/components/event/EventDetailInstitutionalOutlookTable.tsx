@@ -1,15 +1,18 @@
-import TungstenRoundedIcon from '@mui/icons-material/TungstenRounded'
-import { Box, Stack } from '@mui/material'
+import DomainOutlinedIcon from '@mui/icons-material/DomainOutlined'
+import { Stack } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState } from 'react'
 
-import EventDetailSectionHeader from './EventDetailSectionHeader'
+import type { EventDetailOutlookRow } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
-import type { EventDetailOutlookRow } from './types'
-
-import MIPagination from '@/components/common/pagination/MIPagination'
-import MITable from '@/components/common/table/MITable'
-import MITableCell from '@/components/common/table/MITableCell'
+import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import {
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
+} from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
+import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
+import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
+import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { IPaginationResponse } from '@/types/api'
 
 interface EventDetailInstitutionalOutlookTableProps {
@@ -20,7 +23,6 @@ interface EventDetailInstitutionalOutlookTableProps {
   loading?: boolean
 }
 
-/** Figma — 기관 전망 */
 const EventDetailInstitutionalOutlookTable = ({
   rows,
   serverPagination,
@@ -77,47 +79,40 @@ const EventDetailInstitutionalOutlookTable = ({
 
   const columns: GridColDef<EventDetailOutlookRow>[] = useMemo(
     () => [
-      {
-        field: 'dateLabel',
-        headerName: '일자',
-        width: 160,
-        align: 'center',
-        renderCell: (p) => <MITableCell value={p.value} color="contentText.Normal" />,
-      },
-      {
-        field: 'institution',
-        headerName: '기관',
-        width: 200,
-        align: 'left',
-        renderCell: (p) => <MITableCell value={p.value} />,
-      },
-      {
-        field: 'summary',
-        headerName: '전망 요약',
-        flex: 1,
-        minWidth: 280,
-        align: 'left',
-        renderCell: (p) => <MITableCell value={p.value} tooltipContent={p.value} />,
-      },
+      { field: 'dateLabel', headerName: '일자', width: 160, align: 'left' },
+      { field: 'institution', headerName: '기관', width: 200, align: 'left' },
+      { field: 'summary', headerName: '전망 요약', flex: 1, minWidth: 240, align: 'left' },
     ],
     [],
   )
 
   return (
-    <Stack width="100%" py={7.5} gap={3} id="event-detail-section-outlook">
+    <Stack width="100%" gap={6}>
       <EventDetailSectionHeader
-        icon={<TungstenRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+        icon={<DomainOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="기관 전망"
         tooltipTitle="기관별 시장 전망 요약입니다."
       />
-      <Stack gap={1} sx={{ width: '100%', maxWidth: 1380 }}>
-        <Box height={480} sx={{ '& .MuiDataGrid-root': { height: '100%' } }}>
-          <MITable<EventDetailOutlookRow> rowId="id" columns={columns} rows={paginatedRows} loading={loading} disableHover />
-        </Box>
+      <Stack>
+        <ScenarioWorkbenchTableHeader<EventDetailOutlookRow>
+          columns={columns}
+          headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+          headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
+        />
+        <ScenarioWorkbenchDataList<EventDetailOutlookRow>
+          rowId="id"
+          columns={columns}
+          rows={paginatedRows}
+          loading={loading}
+          rowHeight={42}
+          cellPreset="miCanvasEvent"
+          noRowMessage="기관 전망 데이터가 없습니다."
+        />
         {paginationData && (
-          <MIPagination<EventDetailOutlookRow>
+          <MIPaginationSecondary<EventDetailOutlookRow>
             data={paginationData}
             size={isServerMode ? serverPagination.size : pagination.size}
+            sizeList={[10, 15, 20, 50, 100]}
             onPageChange={(page) => {
               if (isServerMode) onServerPageChange?.(page)
               else setPagination((p) => ({ ...p, page }))

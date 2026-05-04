@@ -1,29 +1,29 @@
 import { Box, Stack } from '@mui/material'
 
-import type { EventMarketDirection, EventMarketImpactLevel } from './types'
+import type { EventMarketDirection, EventMarketImpactLevel } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
-/** Figma MI/ Events/ Table/ Row/Direction — 상승 삼각형(SVG) */
+/** 상승 삼각형(SVG) */
 const SvgDirectionUp = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
     <path d="M7 2.5L12.5 11H1.5L7 2.5Z" fill="#37B24D" />
   </svg>
 )
 
-/** Figma MI/ Events/ Table/ Row/Direction — 하락 삼각형(SVG) */
+/** 하락 삼각형(SVG) */
 const SvgDirectionDown = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
     <path d="M7 11.5L1.5 3H12.5L7 11.5Z" fill="#FA5252" />
   </svg>
 )
 
-/** Figma MI/ Events/ Table/ Row/Direction — 보합(가로 막대) */
+/** 보합(가로 막대) */
 const SvgDirectionFlat = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
     <rect x="2" y="6.5" width="10" height="1.5" rx="0.75" fill="#ADB5BD" />
   </svg>
 )
 
-/** 단일 지수(JKM/TTF/HH)용 영향도 점 3개 + 방향 아이콘 (Figma MI/ Events/ Table/ Row) */
+/** 단일 지수(JKM/TTF/HH)용 영향도 점 3개 + 방향 아이콘 */
 interface EventIndexImpactDirectionCellProps {
   level: EventMarketImpactLevel
   direction: EventMarketDirection
@@ -66,7 +66,7 @@ const ImpactDot = ({ filled, emptyBorderMuted }: { filled: boolean; emptyBorderM
   />
 )
 
-/** 점 행: 채워진 개수에 따라 점 색상 팔레트 적용 (Figma 2994:53856) */
+/** 점 행: 채워진 개수에 따라 점 색상 팔레트 적용 */
 const ImpactDotsRow = ({ level }: { level: EventMarketImpactLevel }) => {
   const n = filledDotCount(level)
   const emptyBorderMuted = n === 0
@@ -85,7 +85,7 @@ const ImpactDotsRow = ({ level }: { level: EventMarketImpactLevel }) => {
   )
 }
 
-/** 가격 방향에 따른 Figma SVG 아이콘 */
+/** 가격 방향 SVG 아이콘 */
 const DirectionGlyph = ({ direction }: { direction: EventMarketDirection }) => {
   if (direction === '상승') return <SvgDirectionUp />
   if (direction === '하락') return <SvgDirectionDown />
@@ -97,7 +97,7 @@ export interface EventImpactDotsCellProps {
   level: EventMarketImpactLevel
 }
 
-/** 시장영향 3-dot 표현 (Figma MI/ Canvas/ Event/ Impact Analysis) */
+/** 시장영향 3-dot 표현 */
 export const EventImpactDotsCell = ({ level }: EventImpactDotsCellProps) => (
   <Stack direction="row" alignItems="center" justifyContent="center" width="100%" height={22}>
     <ImpactDotsRow level={level} />
@@ -118,7 +118,7 @@ export const EventImpactDirectionCompact = ({ direction }: EventImpactDirectionC
 
 /** JKM·TTF·HH 셀: 점 3개 + 방향 */
 const EventIndexImpactDirectionCell = ({ level, direction }: EventIndexImpactDirectionCellProps) => (
-  <Stack direction="row" alignItems="center" justifyContent="center" gap={0.75} width="100%">
+  <Stack direction="row" alignItems="center" justifyContent="center" gap={1.5} width="100%">
     <ImpactDotsRow level={level} />
     <Box display="flex" alignItems="center" justifyContent="center" width={14} height={14}>
       <DirectionGlyph direction={direction} />

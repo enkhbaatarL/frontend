@@ -1,29 +1,36 @@
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-import EventClassificationTag from '../components/event/EventClassificationTag'
-import EventIndexImpactDirectionCell from '../components/event/EventIndexImpactDirectionCell'
-import EventsClassificationFilter from '../components/event/EventsClassificationFilter'
-import { buildWorkbenchEventDatePresets, mapWorkbenchDateRangeToApiParams } from '../components/event/scenarioWorkbenchEventsDateRange'
 
 import type {
   EventMarketDirection,
   EventMarketImpactLevel,
-  EventsClassificationFilterValue,
   ScenarioWorkbenchEventRow,
-} from '../components/event/types'
+} from '@/pages/mi/scenarioWorkbench/components/event/types'
+import type { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
 
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
+import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
 import MIFilterMenu, { FilterValues } from '@/components/common/menu/MIFilterMenu'
-import MISelectMenu from '@/components/common/menu/MISelectMenu'
-import MIPagination from '@/components/common/pagination/MIPagination'
-import MITable from '@/components/common/table/MITable'
-import MITableCell from '@/components/common/table/MITableCell'
+import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
+import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
+import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
+import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
+import {
+  buildWorkbenchEventDatePresets,
+  mapWorkbenchDateRangeToApiParams,
+} from '@/pages/mi/scenarioWorkbench/components/event/scenarioWorkbenchEventsDateRange'
+import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
+import ScenarioWorkbenchTableHeader, {
+  SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
+} from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
+import { useScenarioWorkbenchHeaderCollapsed } from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchHeaderCollapseContext'
 import scenarioWorkbenchEventService, {
   SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO,
   type IGetScenarioWorkbenchEventsParams,
@@ -36,9 +43,17 @@ import scenarioWorkbenchEventService, {
 } from '@/service/mi/scenarioWorkbench/event'
 import { IPaginationResponse } from '@/types/api'
 
-type SortOrder = 'latest' | 'oldest'
+type SortLabel = (typeof SORT_OPTIONS)[number]
 /** 카테고리 필터 값: Lv1 다중 선택 */
 type CategoryFilterValue = ScenarioWorkbenchEventCategoryLv1[]
+
+const TYPE_FILTER_OPTIONS = [
+  { value: 'all', label: '전체' },
+  { value: 'new', label: '신규' },
+  { value: 'updated', label: '갱신' },
+] as const
+
+const SORT_OPTIONS = ['최신순', '오래된순'] as const
 
 const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpactLevel> = {
   HIGH: 3,
@@ -52,6 +67,12 @@ const PRICE_TO_UI: Record<ScenarioWorkbenchPriceDirection, EventMarketDirection>
   DOWN: '하락',
   FLAT: '보합',
   NONE: '보합',
+}
+
+const eventDirectionToPriceDirection = (d: EventMarketDirection): PriceDirection => {
+  if (d === '상승') return 'up'
+  if (d === '하락') return 'down'
+  return 'flat'
 }
 
 /** API eventStatus → 구분 칩 문구 */
@@ -110,10 +131,28 @@ const defaultEventsDateRange = (): DateRange => {
   return { startDate: t.subtract(1, 'month'), endDate: t }
 }
 
+const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
+const STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX = 2
+
+/** 스크롤 콘텐츠 상단 `scrollTop + (sentinel.top - scrollport.top)` */
+const measureStickyFlowTopFromScrollContentTop = (scrollEl: HTMLElement, sentinelEl: HTMLElement): number => {
+  const s = scrollEl.getBoundingClientRect()
+  const e = sentinelEl.getBoundingClientRect()
+  return scrollEl.scrollTop + (e.top - s.top)
+}
+
 const EventsTabPanel = () => {
   const navigate = useNavigate()
-  const [classificationFilter, setClassificationFilter] = useState<EventsClassificationFilterValue>('all')
-  const [sortOrder, setSortOrder] = useState<SortOrder>('latest')
+  const isWorkbenchHeaderCollapsed = useScenarioWorkbenchHeaderCollapsed()
+
+  const stickyShadowSentinelRef = useRef<HTMLDivElement | null>(null)
+  const panelLayoutRef = useRef<HTMLDivElement | null>(null)
+  const stickyShadowShowMinScrollTopRef = useRef(0)
+
+  const [stickyScrollShadowOpacity, setStickyScrollShadowOpacity] = useState(0)
+
+  const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('all')
+  const [sort, setSort] = useState<SortLabel>('최신순')
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultEventsDateRange())
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>([])
   const [keyword, setKeyword] = useState('')
@@ -121,7 +160,7 @@ const EventsTabPanel = () => {
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
 
   useEffect(() => {
-    const scrollEl = document.getElementById('main-scroll-wrapper')
+    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
     if (scrollEl) scrollEl.scrollTop = 0
   }, [])
 
@@ -142,9 +181,9 @@ const EventsTabPanel = () => {
 
   const listRequest = useMemo((): IGetScenarioWorkbenchEventsParams => {
     let eventStatus: ScenarioWorkbenchEventStatus[] | undefined
-    if (classificationFilter === '신규') {
+    if (typeFilter === 'new') {
       eventStatus = ['NEW']
-    } else if (classificationFilter === '갱신') {
+    } else if (typeFilter === 'updated') {
       eventStatus = ['UPDATED']
     }
 
@@ -160,14 +199,14 @@ const EventsTabPanel = () => {
     return {
       page: pagination.page,
       size: pagination.size,
-      sort: sortOrder === 'latest' ? 'LATEST' : 'OLDEST',
+      sort: sort === '최신순' ? 'LATEST' : 'OLDEST',
       period: dateSlice.period,
       ...(dateSlice.period === 'CUSTOM' ? { startDate: dateSlice.startDate, endDate: dateSlice.endDate } : {}),
       keyword: trimmedKeyword || undefined,
       eventStatus,
       eventCategoryLv1,
     }
-  }, [appliedDateRange, categoryFilter, classificationFilter, committedKeyword, pagination.page, pagination.size, sortOrder])
+  }, [appliedDateRange, categoryFilter, committedKeyword, pagination.page, pagination.size, sort, typeFilter])
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['scenarioWorkbenchEvents', listRequest],
@@ -187,7 +226,7 @@ const EventsTabPanel = () => {
   }, [data?.events, pagination.page])
 
   const paginationData: IPaginationResponse<ScenarioWorkbenchEventRow> | undefined = useMemo(() => {
-    if (!data?.events || data.events.totalElements === 0) return undefined
+    if (!data?.events) return undefined
     return {
       ...data.events,
       detail: tableRows,
@@ -201,25 +240,19 @@ const EventsTabPanel = () => {
         headerName: '구분',
         width: 88,
         align: 'center',
-        renderCell: (params) => (
-          <MITableCell>
-            <EventClassificationTag classification={params.row.classification} />
-          </MITableCell>
-        ),
+        renderCell: (params) => <ClassificationTag classification={params.row.classification} />,
       },
       {
         field: 'occurredAtLabel',
         headerName: '발생/갱신일시',
         width: 130,
         align: 'center',
-        renderCell: (params) => <MITableCell value={params.value} color="contentText.Subtext" />,
       },
       {
         field: 'category',
         headerName: '카테고리',
         width: 160,
         align: 'left',
-        renderCell: (params) => <MITableCell value={params.value} />,
       },
       {
         field: 'eventName',
@@ -227,7 +260,6 @@ const EventsTabPanel = () => {
         flex: 1,
         minWidth: 240,
         align: 'left',
-        renderCell: (params) => <MITableCell value={params.value} tooltipContent={params.value} />,
       },
       {
         field: 'jkmImpact',
@@ -235,9 +267,7 @@ const EventsTabPanel = () => {
         width: 100,
         align: 'center',
         renderCell: (params) => (
-          <MITableCell>
-            <EventIndexImpactDirectionCell level={params.row.jkmImpact} direction={params.row.jkmDirection} />
-          </MITableCell>
+          <ImpactDotsCell level={params.row.jkmImpact} direction={eventDirectionToPriceDirection(params.row.jkmDirection)} />
         ),
       },
       {
@@ -246,9 +276,7 @@ const EventsTabPanel = () => {
         width: 100,
         align: 'center',
         renderCell: (params) => (
-          <MITableCell>
-            <EventIndexImpactDirectionCell level={params.row.ttfImpact} direction={params.row.ttfDirection} />
-          </MITableCell>
+          <ImpactDotsCell level={params.row.ttfImpact} direction={eventDirectionToPriceDirection(params.row.ttfDirection)} />
         ),
       },
       {
@@ -257,39 +285,26 @@ const EventsTabPanel = () => {
         width: 100,
         align: 'center',
         renderCell: (params) => (
-          <MITableCell>
-            <EventIndexImpactDirectionCell level={params.row.hhImpact} direction={params.row.hhDirection} />
-          </MITableCell>
+          <ImpactDotsCell level={params.row.hhImpact} direction={eventDirectionToPriceDirection(params.row.hhDirection)} />
         ),
       },
     ],
     [],
   )
 
-  const sortItems = useMemo(
-    () => [
-      { label: '최신순', value: 'latest' as const },
-      { label: '오래된순', value: 'oldest' as const },
-    ],
-    [],
-  )
-
   /** 카테고리 다중 선택 필터 항목 */
   const categoryFilterItems = useMemo(
-    () => [
-      ...(Object.keys(SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO) as ScenarioWorkbenchEventCategoryLv1[]).map((key) => ({
+    () =>
+      (Object.keys(SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO) as ScenarioWorkbenchEventCategoryLv1[]).map((key) => ({
         label: SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[key],
         value: key,
       })),
-    ],
     [],
   )
 
-  /** 워크벤치 Events용 MIDateRangePickerMenu 한글 프리셋 (공용 컴포넌트는 datePresets만 받음) */
   const workbenchEventDatePresets = useMemo(() => buildWorkbenchEventDatePresets(), [])
 
-  /** Figma 2994:58459에 가깝게 — 공용 MIMenu는 placement/sx/paperProps로만 조정 가능 */
-  const eventsDateRangeMenuLayoutProps = useMemo(
+  const dateRangeMenuLayoutProps = useMemo(
     () => ({
       placement: 'bottom-start' as const,
       paperProps: {
@@ -314,12 +329,10 @@ const EventsTabPanel = () => {
     [],
   )
 
-  /** 필터/정렬 변경 시 목록 페이지를 1페이지로 초기화 */
   const resetPage = useCallback(() => {
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
-  /** 카테고리 필터 적용 값을 상태와 페이지에 반영 */
   const handleCategoryFilterApply = useCallback(
     (filterValues: FilterValues) => {
       setCategoryFilter((filterValues.category ?? []) as ScenarioWorkbenchEventCategoryLv1[])
@@ -336,111 +349,179 @@ const EventsTabPanel = () => {
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
+  const handleTypeFilterChange = useCallback((v: string) => {
+    if (v === 'all' || v === 'new' || v === 'updated') {
+      setTypeFilter(v)
+      setPagination((p) => ({ ...p, page: 1 }))
+    }
+  }, [])
+
+  const handleSortChange = useCallback((label: SortLabel) => {
+    setSort(label)
+    setPagination((p) => ({ ...p, page: 1 }))
+  }, [])
+
+  const updateStickyShadowScrollThreshold = useCallback(() => {
+    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
+    const sentinel = stickyShadowSentinelRef.current
+    if (!scrollEl || !sentinel) return
+    const flowTopD = measureStickyFlowTopFromScrollContentTop(scrollEl, sentinel)
+    const stickyTop = SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX
+    const minScroll = Math.max(0, flowTopD - stickyTop + STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX)
+    stickyShadowShowMinScrollTopRef.current = minScroll
+    setStickyScrollShadowOpacity(scrollEl.scrollTop >= minScroll ? 1 : 0)
+  }, [])
+
+  useLayoutEffect(() => {
+    updateStickyShadowScrollThreshold()
+    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
+    const panel = panelLayoutRef.current
+    if (!scrollEl || !panel) return undefined
+    const ro = new ResizeObserver(() => {
+      updateStickyShadowScrollThreshold()
+    })
+    ro.observe(panel)
+    window.addEventListener('resize', updateStickyShadowScrollThreshold)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', updateStickyShadowScrollThreshold)
+    }
+  }, [updateStickyShadowScrollThreshold, isWorkbenchHeaderCollapsed])
+
+  useEffect(() => {
+    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
+    if (!scrollEl) return undefined
+    const onScroll = () => {
+      const y = scrollEl.scrollTop
+      setStickyScrollShadowOpacity(y >= stickyShadowShowMinScrollTopRef.current ? 1 : 0)
+    }
+    scrollEl.addEventListener('scroll', onScroll, { passive: true })
+    return () => scrollEl.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const handleRowClick = useCallback(
+    (params: { row: ScenarioWorkbenchEventRow }) =>
+      navigate(`/mi/scenario-workbench/events/${params.row.id}`, {
+        state: { eventName: params.row.eventName },
+      }),
+    [navigate],
+  )
+
+  const handlePageSizeChange = useCallback((s: number) => {
+    setPagination({ size: s, page: 1 })
+  }, [])
+
+  const handlePageChange = useCallback((page: number) => {
+    setPagination((p) => ({ ...p, page }))
+  }, [])
+
+  const emptyMessage = isError ? '목록을 불러오지 못했습니다.' : '이벤트가 없습니다.'
+
   return (
-    <Stack gap={2} sx={{ px: 3, py: 2 }}>
-      <Box bgcolor="common.white" sx={{ userSelect: 'none' }}>
-        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} pt={20} color="contentText.Black">
+    <Box ref={panelLayoutRef} width="100%">
+      <Box ref={stickyShadowSentinelRef} aria-hidden sx={{ height: 0, width: '100%', overflow: 'hidden', pointerEvents: 'none' }} />
+      <Box
+        sx={{
+          position: 'sticky',
+          top: SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
+          zIndex: 160,
+          bgcolor: 'commonColor.White',
+          pb: 0,
+          overflow: 'visible',
+          boxShadow: stickyScrollShadowOpacity ? WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
+          transition: 'box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" px={3} color="contentText.Black">
           Events
         </Typography>
-      </Box>
 
-      <Box position="relative">
-        <Stack gap={2} py={2}>
-          <Stack gap={1.5}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5}>
-              <Stack direction="row" alignItems="center" flexWrap="wrap" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
-                <EventsClassificationFilter
-                  value={classificationFilter}
-                  onChange={(v) => {
-                    setClassificationFilter(v)
-                    resetPage()
-                  }}
-                />
-                <MIFilterMenu
-                  filterGroups={[
-                    [
-                      {
-                        key: 'category',
-                        title: '카테고리',
-                        filters: categoryFilterItems,
-                        width: 175,
-                      },
-                    ],
-                  ]}
-                  initialValues={{ category: categoryFilter }}
-                  appliedFiltersCount={categoryFilter.length}
-                  onApply={handleCategoryFilterApply}
-                  showSaveOption={false}
-                  label="카테고리"
-                  sx={{ minWidth: 106 }}
-                />
-                <MIDateRangePickerMenu
-                  dateRange={appliedDateRange}
-                  onApply={handleDateRangeApply}
-                  showPreset
-                  datePresets={workbenchEventDatePresets}
-                  {...eventsDateRangeMenuLayoutProps}
-                />
-                <MISelectMenu
-                  variant="outlined"
-                  sx={{ minWidth: 112 }}
-                  items={sortItems}
-                  selected={sortOrder}
-                  onSelected={(v: SortOrder) => {
-                    setSortOrder(v)
-                    resetPage()
-                  }}
-                />
-                <Box sx={{ flex: 1, minWidth: 8 }} />
-              </Stack>
-              <Stack direction="row" gap="12px" sx={{ flexShrink: 0 }}>
-                <MISearchInput
-                  storageKey="scenario-workbench-events"
-                  value={keyword}
-                  placeholder="이벤트명으로 검색"
-                  onChange={handleSearchChange}
-                  onSearch={handleSearch}
-                  onClear={handleSearchClear}
-                  width={246}
-                />
-              </Stack>
-            </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} sx={{ px: 3 }}>
+          <Stack direction="row" alignItems="center" flexWrap="wrap" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
+            <MISlidingSegmented
+              options={TYPE_FILTER_OPTIONS}
+              value={typeFilter}
+              onChange={handleTypeFilterChange}
+              sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
+            />
+
+            <MIFilterMenu
+              filterGroups={[
+                [
+                  {
+                    key: 'category',
+                    title: '카테고리',
+                    filters: categoryFilterItems,
+                    width: 175,
+                  },
+                ],
+              ]}
+              initialValues={{ category: categoryFilter }}
+              appliedFiltersCount={categoryFilter.length}
+              onApply={handleCategoryFilterApply}
+              showSaveOption={false}
+              label="카테고리"
+              sx={{ minWidth: 106 }}
+            />
+
+            <MIDateRangePickerMenu
+              dateRange={appliedDateRange}
+              onApply={handleDateRangeApply}
+              showPreset
+              datePresets={workbenchEventDatePresets}
+              {...dateRangeMenuLayoutProps}
+            />
+
+            <MIDropdownMenu
+              variant="outlined"
+              buttonHoverBgColor="gray.20"
+              label={
+                <Stack direction="row" alignItems="center" gap={1}>
+                  <Typography variant="body2M14" color="contentText.Black">
+                    {sort}
+                  </Typography>
+                  <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
+                </Stack>
+              }
+              items={SORT_OPTIONS.map((label) => ({ label, action: () => handleSortChange(label) }))}
+            />
           </Stack>
 
-          <Stack gap={1.5}>
-            <Box
-              sx={{
-                width: '100%',
-                height: 640,
-                '& .MuiDataGrid-root': { height: '100%' },
-              }}
-            >
-              <MITable<ScenarioWorkbenchEventRow>
-                rowId="id"
-                columns={columns}
-                rows={tableRows}
-                loading={isLoading}
-                noRowMessage={isError ? '목록을 불러오지 못했습니다.' : undefined}
-                disableHover={false}
-                onRowClick={(params) => {
-                  navigate(`/mi/scenario-workbench/events/${params.row.id}`, {
-                    state: { eventName: params.row.eventName },
-                  })
-                }}
-              />
-            </Box>
-            {paginationData && (
-              <MIPagination<ScenarioWorkbenchEventRow>
-                data={paginationData}
-                size={pagination.size}
-                onPageChange={(page) => setPagination((p) => ({ ...p, page }))}
-                onSizeChange={(size) => setPagination({ size, page: 1 })}
-              />
-            )}
+          <Stack direction="row" alignItems="center" gap={3} sx={{ flexShrink: 0 }}>
+            <MISearchInput
+              storageKey="scenario-workbench-events"
+              value={keyword}
+              onChange={handleSearchChange}
+              placeholder="이벤트명으로 검색"
+              onSearch={handleSearch}
+              onClear={handleSearchClear}
+              width={246}
+            />
           </Stack>
         </Stack>
+
+        <ScenarioWorkbenchTableHeader<ScenarioWorkbenchEventRow> columns={columns} sx={{ mt: 2 }} />
       </Box>
-    </Stack>
+
+      <ScenarioWorkbenchDataList<ScenarioWorkbenchEventRow>
+        rowId="id"
+        columns={columns}
+        rows={tableRows}
+        loading={isLoading}
+        skeletonRowCount={pagination.size}
+        rowHeight={42}
+        noRowMessage={emptyMessage}
+        onRowClick={handleRowClick}
+      />
+
+      <MIPaginationSecondary
+        data={paginationData}
+        size={pagination.size}
+        sizeList={[20, 50, 100]}
+        onSizeChange={handlePageSizeChange}
+        onPageChange={handlePageChange}
+      />
+    </Box>
   )
 }
 

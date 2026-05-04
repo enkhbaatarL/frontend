@@ -1,8 +1,8 @@
 import { Box, Stack } from '@mui/material'
 
-import PriceDirectionIcon from './PriceDirectionIcon'
+import type { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
 
-import type { PriceDirection } from './scenario/types'
+import PriceDirectionIcon from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
 
 export interface ImpactDotsCellProps {
   level: number
@@ -65,7 +65,7 @@ const ImpactDotsRow = ({ level, size }: { level: number; size: number }) => {
 const COMPACT_DOT_SIZE_WITH_DIRECTION = 8
 const COMPACT_DIRECTION_ICON_SIZE = 12
 
-/** 시장 영향 3-dot 표현 (Figma MI/ Events/ Table/ Row/Market Impact) */
+/** 시장 영향 3-dot 표현 */
 const ImpactDotsCell = ({ level, size = 10, direction }: ImpactDotsCellProps) => {
   const withDirection = direction !== undefined
   const dotSize = withDirection ? COMPACT_DOT_SIZE_WITH_DIRECTION : size
