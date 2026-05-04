@@ -6,17 +6,21 @@ import SignalCellularAlt1BarIcon from '@mui/icons-material/SignalCellularAlt1Bar
 import SignalCellularAlt2BarIcon from '@mui/icons-material/SignalCellularAlt2Bar'
 import { Box, Stack, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { PriceDirection, PriceImpactLevel, ScenarioMethod } from '../components/scenario/types'
+import ScenarioWorkbenchDataList from '../components/table/ScenarioWorkbenchDataList'
+import ScenarioWorkbenchTableHeader, {
+  SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
+} from '../components/table/ScenarioWorkbenchTableHeader'
+import { useScenarioWorkbenchHeaderCollapsed } from '../ScenarioWorkbenchHeaderCollapseContext'
 
 import MIChip from '@/components/common/chip/MIChip'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
-import MITable from '@/components/common/table/MITable'
 import { IPaginationResponse } from '@/types/api'
 
 // ── 로컬 셀 컴포넌트 ──────────────────────────────────────────────────────────
@@ -325,10 +329,27 @@ const SORT_OPTIONS = ['최신순', '가격 영향도 높은 순', '발생 가능
 
 const PERIOD_OPTIONS = ['1개월', '3개월', '6개월', '12개월', '전체 기간'] as const
 
+const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
+/** sticky 처리 후 스크롤 표시 offset */
+const STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX = 2
+
+/** 스크롤 콘텐츠 상단 `scrollTop + (sentinel.top - scrollport.top)` */
+const measureStickyFlowTopFromScrollContentTop = (scrollEl: HTMLElement, sentinelEl: HTMLElement): number => {
+  const s = scrollEl.getBoundingClientRect()
+  const e = sentinelEl.getBoundingClientRect()
+  return scrollEl.scrollTop + (e.top - s.top)
+}
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
 const ScenariosTabPanel = () => {
   const navigate = useNavigate()
+  const isWorkbenchHeaderCollapsed = useScenarioWorkbenchHeaderCollapsed()
+
+  const stickyShadowSentinelRef = useRef<HTMLDivElement | null>(null)
+  const panelLayoutRef = useRef<HTMLDivElement | null>(null)
+  const stickyShadowShowMinScrollTopRef = useRef(0)
+
+  const [stickyScrollShadowOpacity, setStickyScrollShadowOpacity] = useState(0)
 
   const [typeFilter, setTypeFilter] = useState('전체')
   const [sort, setSort] = useState('최신순')
@@ -400,6 +421,44 @@ const ScenariosTabPanel = () => {
   }
   const handleRowClick = (_params: { row: ScenarioRow }) => navigate(`/mi/scenario-workbench/scenarios/${_params.row.id}`)
 
+  const updateStickyShadowScrollThreshold = useCallback(() => {
+    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
+    const sentinel = stickyShadowSentinelRef.current
+    if (!scrollEl || !sentinel) return
+    const flowTopD = measureStickyFlowTopFromScrollContentTop(scrollEl, sentinel)
+    const stickyTop = SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX
+    const minScroll = Math.max(0, flowTopD - stickyTop + STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX)
+    stickyShadowShowMinScrollTopRef.current = minScroll
+    setStickyScrollShadowOpacity(scrollEl.scrollTop >= minScroll ? 1 : 0)
+  }, [])
+
+  useLayoutEffect(() => {
+    updateStickyShadowScrollThreshold()
+    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
+    const panel = panelLayoutRef.current
+    if (!scrollEl || !panel) return undefined
+    const ro = new ResizeObserver(() => {
+      updateStickyShadowScrollThreshold()
+    })
+    ro.observe(panel)
+    window.addEventListener('resize', updateStickyShadowScrollThreshold)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', updateStickyShadowScrollThreshold)
+    }
+  }, [updateStickyShadowScrollThreshold, isWorkbenchHeaderCollapsed])
+
+  useEffect(() => {
+    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
+    if (!scrollEl) return undefined
+    const onScroll = () => {
+      const y = scrollEl.scrollTop
+      setStickyScrollShadowOpacity(y >= stickyShadowShowMinScrollTopRef.current ? 1 : 0)
+    }
+    scrollEl.addEventListener('scroll', onScroll, { passive: true })
+    return () => scrollEl.removeEventListener('scroll', onScroll)
+  }, [])
+
   const columns: GridColDef<ScenarioRow>[] = [
     {
       field: 'method',
@@ -462,99 +521,108 @@ const ScenariosTabPanel = () => {
   ]
 
   return (
-    <Box width="100%">
-      <Typography fontSize={26} fontWeight={700} lineHeight={1.4} pt="18px" pb="6px" color="contentText.Black">
-        Scenarios
-      </Typography>
-
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mt={3}>
-        <Stack direction="row" gap={3} alignItems="center">
-          <MISlidingSegmented
-            options={TYPE_FILTER_OPTIONS}
-            value={typeFilter}
-            onChange={handleTypeFilterChange}
-            sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
-          />
-
-          <MIDropdownMenu
-            variant="outlined"
-            buttonHoverBgColor="gray.20"
-            label={
-              <Stack direction="row" alignItems="center" gap={1}>
-                <Typography variant="body2M14" color="contentText.Black">
-                  {sort}
-                </Typography>
-                <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
-              </Stack>
-            }
-            items={SORT_OPTIONS.map((label) => ({ label, action: () => handleSortChange(label) }))}
-          />
-
-          <MIDropdownMenu
-            variant="outlined"
-            buttonHoverBgColor="gray.20"
-            label={
-              <Stack direction="row" alignItems="center" gap={1}>
-                <Typography variant="body2M14" color="contentText.Black">
-                  {period}
-                </Typography>
-                <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
-              </Stack>
-            }
-            items={PERIOD_OPTIONS.map((label) => ({ label, action: () => handlePeriodChange(label) }))}
-          />
-        </Stack>
-
-        <Stack direction="row" alignItems="center" gap={3}>
-          <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
-            <Switch size="small" checked={showActiveOnly} onChange={handleToggleActiveOnly} />
-            <Typography variant="body2M14" color="contentText.Black">
-              활성 시나리오만 보기
-            </Typography>
-          </Stack>
-
-          <MISearchInput
-            storageKey="scenario-workbench-search"
-            value={searchInput}
-            onChange={setSearchInput}
-            placeholder="시나리오명으로 검색"
-            onSearch={handleSearch}
-            onClear={handleSearchClear}
-            width={246}
-          />
-        </Stack>
-      </Stack>
-
+    <Box ref={panelLayoutRef} width="100%">
+      <Box ref={stickyShadowSentinelRef} aria-hidden sx={{ height: 0, width: '100%', overflow: 'hidden', pointerEvents: 'none' }} />
       <Box
-        mt={2}
         sx={(theme) => ({
-          '& .MuiDataGrid-columnHeaders': {
-            marginBottom: theme.spacing(1),
-          },
-          '& .MuiDataGrid-columnHeader': {
-            border: 'none !important',
-            borderBottom: `0.5px solid ${theme.palette.gray[60]} !important`,
-            backgroundColor: `${theme.palette.commonColor.White} !important`,
-
-            '& .MuiTypography-root': {
-              ...theme.typography.body2SB14,
-              color: theme.palette.gray[70],
-            },
-          },
-          '& .MuiTypography-tableBody2': {
-            ...theme.typography.body1M16,
-            padding: 0,
-          },
-          '& .MuiDataGrid-row': {
-            borderRadius: '10px',
-            '&:hover': {
-              backgroundColor: theme.palette.gray[10],
-            },
+          position: 'sticky',
+          top: SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
+          zIndex: 160,
+          bgcolor: theme.palette.commonColor.White,
+          pb: 0,
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: '100%',
+            height: '12px',
+            background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0))',
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%)',
+            WebkitMaskSize: '100% 100%',
+            WebkitMaskRepeat: 'no-repeat',
+            maskImage: 'linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%)',
+            maskSize: '100% 100%',
+            maskRepeat: 'no-repeat',
+            opacity: stickyScrollShadowOpacity,
+            transition: 'none',
+            pointerEvents: 'none',
+            zIndex: 2,
           },
         })}
       >
-        <MITable columns={columns} rows={paginationData.detail} rowId="id" rowHeight={42} hideFooter onRowClick={handleRowClick} />
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} pt="18px" pb="6px" color="contentText.Black">
+          Scenarios
+        </Typography>
+
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mt={3}>
+          <Stack direction="row" gap={3} alignItems="center">
+            <MISlidingSegmented
+              options={TYPE_FILTER_OPTIONS}
+              value={typeFilter}
+              onChange={handleTypeFilterChange}
+              sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
+            />
+
+            <MIDropdownMenu
+              variant="outlined"
+              buttonHoverBgColor="gray.20"
+              label={
+                <Stack direction="row" alignItems="center" gap={1}>
+                  <Typography variant="body2M14" color="contentText.Black">
+                    {sort}
+                  </Typography>
+                  <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
+                </Stack>
+              }
+              items={SORT_OPTIONS.map((label) => ({ label, action: () => handleSortChange(label) }))}
+            />
+
+            <MIDropdownMenu
+              variant="outlined"
+              buttonHoverBgColor="gray.20"
+              label={
+                <Stack direction="row" alignItems="center" gap={1}>
+                  <Typography variant="body2M14" color="contentText.Black">
+                    {period}
+                  </Typography>
+                  <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
+                </Stack>
+              }
+              items={PERIOD_OPTIONS.map((label) => ({ label, action: () => handlePeriodChange(label) }))}
+            />
+          </Stack>
+
+          <Stack direction="row" alignItems="center" gap={3}>
+            <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
+              <Switch size="small" checked={showActiveOnly} onChange={handleToggleActiveOnly} />
+              <Typography variant="body2M14" color="contentText.Black">
+                활성 시나리오만 보기
+              </Typography>
+            </Stack>
+
+            <MISearchInput
+              storageKey="scenario-workbench-search"
+              value={searchInput}
+              onChange={setSearchInput}
+              placeholder="시나리오명으로 검색"
+              onSearch={handleSearch}
+              onClear={handleSearchClear}
+              width={246}
+            />
+          </Stack>
+        </Stack>
+
+        <ScenarioWorkbenchTableHeader<ScenarioRow> columns={columns} sx={{ mt: 2, mb: 0 }} />
       </Box>
+
+      <ScenarioWorkbenchDataList<ScenarioRow>
+        rowId="id"
+        columns={columns}
+        rows={paginationData.detail}
+        rowHeight={42}
+        onRowClick={handleRowClick}
+      />
 
       <MIPaginationSecondary
         data={paginationData}

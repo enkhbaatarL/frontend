@@ -3,6 +3,7 @@ import { debounce, type DebouncedFunc } from 'lodash-es'
 import { createElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import ScenarioWorkbenchTab from './components/ScenarioWorkbenchTab'
+import { ScenarioWorkbenchHeaderCollapseProvider } from './ScenarioWorkbenchHeaderCollapseContext'
 import {
   getScenarioWorkbenchTabIndex,
   resolveScenarioWorkbenchTabFromPathname,
@@ -192,66 +193,68 @@ const ScenarioWorkbenchPage = () => {
   }, [])
 
   return (
-    <Stack maxWidth="1380px" margin="auto" pt="20px" position="relative" sx={{ userSelect: 'none' }}>
-      <Box ref={stickyHeaderRef} position="sticky" top={isScrolled ? '-14px' : 0} left="0" bgcolor="commonColor.White" zIndex={200}>
-        <Typography
-          variant="titleLarge"
-          position="absolute"
-          top="12px"
-          left="24px"
-          fontSize="38px"
-          sx={{
-            transform: `translateY(${isScrolled ? -6 : 0}px)`,
-            opacity: isScrolled ? 0 : 1,
-            transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
-            transitionDelay: isScrolled ? '0s' : '0.2s',
-          }}
-        >
-          MI Scenario Workbench
-        </Typography>
-        <Box mt="96px">
-          <ScenarioWorkbenchTab tabItems={scenarioWorkbenchTabs} tabBarOnly value={selectedTab} onChange={handleTabChange} />
+    <ScenarioWorkbenchHeaderCollapseProvider value={isScrolled}>
+      <Stack maxWidth="1380px" margin="auto" pt="20px" position="relative" sx={{ userSelect: 'none' }}>
+        <Box ref={stickyHeaderRef} position="sticky" top={isScrolled ? '-14px' : 0} left="0" bgcolor="commonColor.White" zIndex={200}>
+          <Typography
+            variant="titleLarge"
+            position="absolute"
+            top="12px"
+            left="24px"
+            fontSize="38px"
+            sx={{
+              transform: `translateY(${isScrolled ? -6 : 0}px)`,
+              opacity: isScrolled ? 0 : 1,
+              transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+              transitionDelay: isScrolled ? '0s' : '0.2s',
+            }}
+          >
+            MI Scenario Workbench
+          </Typography>
+          <Box mt="96px">
+            <ScenarioWorkbenchTab tabItems={scenarioWorkbenchTabs} tabBarOnly value={selectedTab} onChange={handleTabChange} />
+          </Box>
         </Box>
-      </Box>
-      <Box ref={contentWrapperRef} position="relative">
-        {scenarioWorkbenchTabs.map((tab, index) => {
-          const isSelected = selectedTab === index
-          return (
-            <Box
-              key={tab.label}
-              role="tabpanel"
-              id={`scenario-workbench-tabpanel-${index}`}
-              aria-labelledby={`scenario-workbench-tab-${index}`}
-              aria-hidden={!isSelected}
-              sx={{
-                ...(isSelected && {
-                  position: 'relative',
-                  opacity: 1,
-                  animation: 'scenarioWorkbenchFadeIn 0.15s ease-out',
-                  '@keyframes scenarioWorkbenchFadeIn': {
-                    from: { opacity: 0 },
-                    to: { opacity: 1 },
-                  },
-                }),
-                ...(!isSelected && {
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: 0,
-                  overflow: 'hidden',
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                  zIndex: -1,
-                }),
-              }}
-            >
-              {tab.content}
-            </Box>
-          )
-        })}
-      </Box>
-    </Stack>
+        <Box ref={contentWrapperRef} position="relative">
+          {scenarioWorkbenchTabs.map((tab, index) => {
+            const isSelected = selectedTab === index
+            return (
+              <Box
+                key={tab.label}
+                role="tabpanel"
+                id={`scenario-workbench-tabpanel-${index}`}
+                aria-labelledby={`scenario-workbench-tab-${index}`}
+                aria-hidden={!isSelected}
+                sx={{
+                  ...(isSelected && {
+                    position: 'relative',
+                    opacity: 1,
+                    animation: 'scenarioWorkbenchFadeIn 0.15s ease-out',
+                    '@keyframes scenarioWorkbenchFadeIn': {
+                      from: { opacity: 0 },
+                      to: { opacity: 1 },
+                    },
+                  }),
+                  ...(!isSelected && {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: 0,
+                    overflow: 'hidden',
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                    zIndex: -1,
+                  }),
+                }}
+              >
+                {tab.content}
+              </Box>
+            )
+          })}
+        </Box>
+      </Stack>
+    </ScenarioWorkbenchHeaderCollapseProvider>
   )
 }
 

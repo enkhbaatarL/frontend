@@ -349,7 +349,7 @@ const ScenarioWorkbenchDetailHeader = ({
               right: 0,
               top: '100%',
               height: '12px',
-              background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0))',
+              background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0))',
               WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%)',
               WebkitMaskSize: '100% 100%',
               WebkitMaskRepeat: 'no-repeat',
