@@ -1,22 +1,35 @@
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
-import RemoveIcon from '@mui/icons-material/Remove'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 
+import ImpactDotsCell from '../ImpactDotsCell'
+import PriceDirectionIcon from '../PriceDirectionIcon'
+import ProbabilityGaugeCell from '../ProbabilityGaugeCell'
 import { RelatedEvent, RelatedScenario } from './types'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
 import MITable from '@/components/common/table/MITable'
 
+const DetailIconButton = () => (
+  <MIBaseButton
+    variant="outlined"
+    prefix={<OpenInNewIcon sx={{ fontSize: 20, color: 'contentIcon.Enabled' }} />}
+    sx={{
+      width: '36px',
+      height: '34px',
+    }}
+  />
+)
+
 const eventColumns: GridColDef<RelatedEvent>[] = [
   {
     field: 'name',
     headerName: '이벤트명',
     flex: 1,
-    minWidth: 380,
+    minWidth: 240,
     renderCell: (params: GridRenderCellParams<RelatedEvent>) => (
-      <Stack gap="4px">
+      <Stack gap="4px" sx={{ py: '4px' }}>
         <Typography variant="body2M14" sx={{ color: 'contentText.Normal' }}>
           {params.row.name}
         </Typography>
@@ -37,118 +50,108 @@ const eventColumns: GridColDef<RelatedEvent>[] = [
   {
     field: 'marketImpact',
     headerName: '시장 영향도',
-    flex: 1,
-    width: 56,
+    width: 88,
     align: 'center',
-    renderCell: (params: GridRenderCellParams<RelatedEvent>) => (
-      <Typography variant="body2SB14" sx={{ color: params.row.marketImpactColor }}>
-        {params.value as string}
-      </Typography>
-    ),
+    headerAlign: 'center',
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<RelatedEvent>) => <ImpactDotsCell level={params.row.marketImpact} />,
   },
   {
     field: 'direction',
     headerName: '시장 방향',
-    flex: 1,
-    width: 56,
+    width: 76,
     align: 'center',
+    headerAlign: 'center',
+    sortable: false,
     renderCell: (params: GridRenderCellParams<RelatedEvent>) => (
-      <Stack direction="row" alignItems="center" gap="2px">
-        {params.row.direction === 'up' ? (
-          <ArrowUpwardIcon sx={{ fontSize: '14px', color: 'increase.main' }} />
-        ) : (
-          <RemoveIcon sx={{ fontSize: '18px', color: 'contentText.Disabled' }} />
-        )}
-        <Typography variant="body2SB14" sx={{ color: params.row.direction === 'up' ? 'increase.main' : 'contentText.Disabled' }}>
-          {params.row.directionLabel}
-        </Typography>
+      <Stack alignItems="center" justifyContent="center" width="100%" height="100%">
+        <PriceDirectionIcon direction={params.row.direction} size={14} />
       </Stack>
     ),
   },
   {
     field: 'id',
     headerName: '상세',
-    flex: 1,
-    width: 36,
+    width: 80,
     align: 'center',
+    headerAlign: 'center',
     sortable: false,
-    renderCell: () => (
-      <MIBaseButton variant="outlined" sx={{ width: '41px', height: '36px', padding: '8px' }}>
-        상세
-      </MIBaseButton>
-    ),
+    renderCell: () => <DetailIconButton />,
   },
 ]
+
+const scenarioChip = (type: 'BC' | 'NOISE') => (
+  <MIChip
+    label={type}
+    sx={{
+      padding: '2px 6px',
+      borderRadius: '4px',
+      backgroundColor: type === 'BC' ? 'mari.Primary' : 'gray.20',
+      color: type === 'BC' ? 'commonColor.White' : 'contentText.Normal',
+    }}
+    disableHover
+  />
+)
 
 const scenarioColumns: GridColDef<RelatedScenario>[] = [
   {
     field: 'name',
     headerName: '시나리오명',
     flex: 1,
-    minWidth: 330,
+    minWidth: 200,
     renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
       <Stack direction="row" alignItems="center" gap="8px">
-        {params.row.isCurrent && (
-          <MIChip
-            label="현재"
-            disableHover
-            sx={{ height: '21px', padding: '2px 6px', backgroundColor: 'gray.80', color: 'commonColor.White', borderRadius: '6px' }}
-          />
-        )}
-        <Typography variant="body2SB14" sx={{ color: 'contentText.Normal' }}>
+        <Typography variant="body2M14" sx={{ color: 'contentText.Normal' }}>
           {params.row.name}
         </Typography>
+        {params.row.isCurrent && params.row.type && scenarioChip(params.row.type)}
       </Stack>
     ),
   },
   {
-    field: 'marketImpact',
-    headerName: '시장영향',
-    flex: 1,
-    width: 70,
+    field: 'jkm',
+    headerName: 'JKM',
+    width: 80,
     align: 'center',
-    renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-      <Typography variant="body2SB14" sx={{ color: params.row.marketImpactColor }}>
-        {params.value as string}
-      </Typography>
-    ),
+    headerAlign: 'center',
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<RelatedScenario>) => <ImpactDotsCell level={params.row.jkm} />,
   },
   {
-    field: 'priceImpact',
-    headerName: '가격영향',
-    flex: 1,
-    width: 70,
+    field: 'ttf',
+    headerName: 'TTF',
+    width: 80,
     align: 'center',
-    renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-      <Typography variant="body2SB14" sx={{ color: params.row.priceImpactColor }}>
-        {params.value as string}
-      </Typography>
-    ),
+    headerAlign: 'center',
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<RelatedScenario>) => <ImpactDotsCell level={params.row.ttf} />,
   },
   {
-    field: 'initialProbability',
-    headerName: '초기가능성',
-    flex: 1,
-    width: 70,
+    field: 'hh',
+    headerName: 'HH',
+    width: 80,
     align: 'center',
-    renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-      <Typography variant="body2SB14" sx={{ color: 'contentText.Normal' }}>
-        {params.value as string}
-      </Typography>
-    ),
+    headerAlign: 'center',
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<RelatedScenario>) => <ImpactDotsCell level={params.row.hh} />,
+  },
+  {
+    field: 'probability',
+    headerName: '가능성',
+    width: 80,
+    align: 'center',
+    headerAlign: 'center',
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<RelatedScenario>) => <ProbabilityGaugeCell level={params.row.probability} />,
   },
   {
     field: 'id',
     headerName: '상세',
-    flex: 1,
-    width: 60,
+    width: 80,
     align: 'center',
+    headerAlign: 'center',
     sortable: false,
-    renderCell: () => (
-      <MIBaseButton variant="outlined" sx={{ width: '41px', height: '36px', padding: '8px' }}>
-        상세
-      </MIBaseButton>
-    ),
+    renderCell: () => <DetailIconButton />,
   },
 ]
 
@@ -158,8 +161,7 @@ const tableStyle = {
     marginBottom: '4px',
   },
   '& .MuiDataGrid-columnHeader': {
-    border: 'none !important',
-    borderBottom: '0.5px solid gray.60 !important',
+    borderBottom: '0.5px solid contentBorder.Active !important',
     padding: '0 !important',
 
     '& .MuiTypography-root': {
@@ -204,7 +206,7 @@ const RelatedEventsAndScenariosSection = ({ events, scenarios }: RelatedEventsAn
         </Typography>
 
         <Box sx={tableStyle}>
-          <MITable columns={eventColumns} rows={events} rowId="id" rowHeight={50} hideFooter />
+          <MITable columns={eventColumns} rows={events} rowId="id" rowHeight={50} hideFooter disableRowSelectionOnClick />
         </Box>
       </Box>
 
@@ -219,7 +221,7 @@ const RelatedEventsAndScenariosSection = ({ events, scenarios }: RelatedEventsAn
           </Typography>
         </Stack>
         <Box sx={tableStyle}>
-          <MITable columns={scenarioColumns} rows={scenarios} rowId="id" rowHeight={50} hideFooter />
+          <MITable columns={scenarioColumns} rows={scenarios} rowId="id" rowHeight={50} hideFooter disableRowSelectionOnClick />
         </Box>
       </Box>
     </Stack>

@@ -1,22 +1,39 @@
-export type ScenarioMethod = 'AI' | 'User'
-export type PriceDirection = 'Up' | 'Down' | 'Neutral'
-export type PriceImpactLevel = '높음' | '중간' | '낮음' | '없음'
+export type PriceDirection = 'up' | 'flat' | 'down' | 'none'
 
-export interface PriceStep {
+export type ScenarioImpactTarget = 'JKM' | 'TTF' | 'HH'
+
+export interface ScenarioImpactRow {
+  target: ScenarioImpactTarget
+  /** 표 첫 컬럼 라벨 (e.g., 'Henry Hub') */
   label: string
+  marketImpact: number
+  direction: PriceDirection
+  /** 가격 단계 칩 시퀀스 (예: ['$21~23', '$19~20', '$19']) */
+  priceFlow: string[]
+}
+
+export interface ScenarioForecastCard {
+  target: ScenarioImpactTarget
+  /** 카드 제목 (e.g., 'JKM 영향 전망') */
+  title: string
+  body: string
+  /** 카드 하단 요약 한 줄 */
+  summary: string
+}
+
+export interface ScenarioChartSeries {
+  target: ScenarioImpactTarget
+  values: (number | null)[]
 }
 
 export interface ScenarioSummaryChart {
   months: string[]
-  weeklyValues: number[]
+  series: ScenarioChartSeries[]
 }
 
 export interface ScenarioSummaryData {
-  priceFlowTitle: string
-  priceSteps: PriceStep[]
-  flowDescription: string
-  forecastTitle: string
-  forecastBody: string
+  impactRows: ScenarioImpactRow[]
+  forecasts: ScenarioForecastCard[]
   chartUnit: string
   chart: ScenarioSummaryChart
 }
@@ -35,33 +52,30 @@ export interface SignpostItem {
   id: number
   coreEvent: string
   currentStatus: string
-  marketImpact: string
+  marketImpactSummary: string
   observationPoint: string
   source: string
 }
-
-export type RelatedEventDirection = 'up' | 'neutral'
 
 export interface RelatedEvent {
   id: number
   name: string
   date: string
   category: string
-  marketImpact: string
-  marketImpactColor: string
-  direction: RelatedEventDirection
-  directionLabel: string
+  marketImpact: number
+  direction: PriceDirection
 }
 
 export interface RelatedScenario {
   id: number
   name: string
+  /** 현재 시나리오 강조 (BC 배지 노출) */
   isCurrent: boolean
-  marketImpact: string
-  marketImpactColor: string
-  priceImpact: string
-  priceImpactColor: string
-  initialProbability: string
+  type?: 'BC' | 'NOISE'
+  jkm: number
+  ttf: number
+  hh: number
+  probability: number
 }
 
 export interface ScenarioDetail {

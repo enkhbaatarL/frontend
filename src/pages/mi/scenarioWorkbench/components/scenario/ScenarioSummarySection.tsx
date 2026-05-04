@@ -1,29 +1,127 @@
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import EastIcon from '@mui/icons-material/East'
 import { Box, Stack, Typography } from '@mui/material'
-import { useTheme } from '@mui/material/styles'
-import { CategoryScale, Chart as ChartJS, Filler, LinearScale, LineElement, PointElement, Plugin, Title, Tooltip } from 'chart.js'
+import { Palette, useTheme } from '@mui/material/styles'
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
+import { CategoryScale, Chart as ChartJS, Filler, Legend, LinearScale, LineElement, PointElement, Plugin, Title, Tooltip } from 'chart.js'
 import { useMemo } from 'react'
 import { Line } from 'react-chartjs-2'
 
-import { ScenarioSummaryData } from './types'
+import ImpactDotsCell from '../ImpactDotsCell'
+import PriceDirectionIcon from '../PriceDirectionIcon'
+import { ScenarioForecastCard, ScenarioImpactRow, ScenarioImpactTarget, ScenarioSummaryData } from './types'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler)
+import MITable from '@/components/common/table/MITable'
 
-// 양 끝에 dummy slot 을 둬서 첫/마지막 데이터 포인트가 축 경계에서 한 칸 떨어지게 함
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend)
+
 const LEADING_PAD = 4
 const TRAILING_PAD = 2
 const X_AXIS_OVERSHOOT = 100
 const Y_AXIS_OVERSHOOT = 12
 
-interface PriceStepChipProps {
-  label: string
+const SERIES_COLOR_TOKENS: Record<ScenarioImpactTarget, keyof Palette['chart']> = {
+  JKM: 'blue1',
+  TTF: 'teal2',
+  HH: 'amber3',
 }
 
-const PriceStepChip = ({ label }: PriceStepChipProps) => (
-  <Box sx={{ bgcolor: 'commonColor.White', borderRadius: '10px', px: '8px', py: '4px' }}>
-    <Typography variant="titleBox" sx={{ color: 'gray.80', letterSpacing: '-0.2px' }}>
-      {label}
-    </Typography>
+const SERIES_LABEL: Record<ScenarioImpactTarget, string> = {
+  JKM: 'JKM',
+  TTF: 'TTF',
+  HH: 'HH',
+}
+
+const PriceFlowChain = ({ steps }: { steps: string[] }) => (
+  <Stack direction="row" alignItems="center" gap="4px" justifyContent="center">
+    {steps.map((step, i) => (
+      <Stack key={`${step}-${i}`} direction="row" alignItems="center" gap="4px">
+        <Box sx={{ bgcolor: 'commonColor.White', borderRadius: '8px', px: '8px', py: '4px' }}>
+          <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'contentText.Black', lineHeight: 1.4 }}>{step}</Typography>
+        </Box>
+        {i < steps.length - 1 && <EastIcon sx={{ fontSize: 14, color: 'contentText.Normal' }} />}
+      </Stack>
+    ))}
+  </Stack>
+)
+
+const impactColumns: GridColDef<ScenarioImpactRow>[] = [
+  {
+    field: 'label',
+    headerName: '대상',
+    flex: 1,
+    minWidth: 100,
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<ScenarioImpactRow>) => (
+      <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'contentText.Black', lineHeight: 1.4 }}>{params.row.label}</Typography>
+    ),
+  },
+  {
+    field: 'marketImpact',
+    headerName: '시장영향',
+    width: 90,
+    align: 'center',
+    headerAlign: 'center',
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<ScenarioImpactRow>) => <ImpactDotsCell level={params.row.marketImpact as 0 | 1 | 2 | 3} />,
+  },
+  {
+    field: 'direction',
+    headerName: '가격방향',
+    width: 90,
+    align: 'center',
+    headerAlign: 'center',
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<ScenarioImpactRow>) => (
+      <Stack alignItems="center" justifyContent="center" width="100%" height="100%">
+        <PriceDirectionIcon direction={params.row.direction} />
+      </Stack>
+    ),
+  },
+  {
+    field: 'priceFlow',
+    headerName: '가격 흐름',
+    width: 232,
+    align: 'center',
+    headerAlign: 'center',
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<ScenarioImpactRow>) => <PriceFlowChain steps={params.row.priceFlow} />,
+  },
+]
+
+const impactTableStyle = {
+  bgcolor: 'gray.5',
+  borderRadius: '10px',
+  p: '12px',
+  '& .MuiDataGrid-columnHeader': {
+    padding: '8px 12px',
+    border: 'none !important',
+    borderBottom: '0.5px solid !important',
+    borderBottomColor: 'contentBorder.Active !important',
+  },
+  '& .MuiDataGrid-cell': {
+    padding: '10px 12px',
+    borderBottom: '1px solid contentBorder.Normal',
+  },
+  '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell': {
+    borderBottom: 'none',
+  },
+}
+
+const ImpactTable = ({ rows }: { rows: ScenarioImpactRow[] }) => (
+  <Box sx={impactTableStyle}>
+    <MITable columns={impactColumns} rows={rows} rowId="target" rowHeight={48} hideFooter disableRowSelectionOnClick disableHover />
+  </Box>
+)
+
+const ForecastCardItem = ({ card }: { card: ScenarioForecastCard }) => (
+  <Box sx={{ bgcolor: 'gray.5', borderRadius: '10px', p: '20px' }}>
+    <Stack gap="6px">
+      <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'contentText.Normal', lineHeight: 1.4 }}>{card.title}</Typography>
+      <Stack gap="2px">
+        <Typography sx={{ fontSize: 16, fontWeight: 500, color: 'contentText.Black', lineHeight: 1.6 }}>{card.body}</Typography>
+        <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'contentText.Normal', lineHeight: 1.4 }}>{card.summary}</Typography>
+      </Stack>
+    </Stack>
   </Box>
 )
 
@@ -33,25 +131,29 @@ interface ScenarioSummarySectionProps {
 
 const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
   const theme = useTheme()
-  const { priceFlowTitle, priceSteps, flowDescription, forecastTitle, forecastBody, chartUnit, chart } = data
+  const { impactRows, forecasts, chartUnit, chart } = data
 
   const weeksPerMonth = useMemo(() => {
     if (chart.months.length === 0) return 0
-    return Math.floor(chart.weeklyValues.length / chart.months.length)
-  }, [chart.months.length, chart.weeklyValues.length])
+    const firstSeries = chart.series[0]
+    if (!firstSeries) return 0
+    return Math.floor(firstSeries.values.length / chart.months.length)
+  }, [chart.months.length, chart.series])
 
-  const { chartLabels, chartValues, realLabels } = useMemo(() => {
+  const { chartLabels, paddedSeries, realLabels } = useMemo(() => {
     const real = chart.months.flatMap((m) => {
       const slots: string[] = [m]
       for (let i = 1; i < weeksPerMonth; i += 1) slots.push('')
       return slots
     })
     const labels = [...Array(LEADING_PAD).fill(''), ...real, ...Array(TRAILING_PAD).fill('')]
-    const values: (number | null)[] = [...Array(LEADING_PAD).fill(null), ...chart.weeklyValues, ...Array(TRAILING_PAD).fill(null)]
-    return { chartLabels: labels, chartValues: values, realLabels: real }
-  }, [chart.months, chart.weeklyValues, weeksPerMonth])
+    const padded = chart.series.map((s) => ({
+      target: s.target,
+      values: [...Array(LEADING_PAD).fill(null), ...s.values, ...Array(TRAILING_PAD).fill(null)] as (number | null)[],
+    }))
+    return { chartLabels: labels, paddedSeries: padded, realLabels: real }
+  }, [chart.months, chart.series, weeksPerMonth])
 
-  // 점선 그리드 + 돌출된 축 실선을 직접 그리는 plugin
   const chartDecorPlugin: Plugin<'line'> = useMemo(
     () => ({
       id: 'scenarioSummaryChartDecor',
@@ -78,8 +180,11 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
           ctx.stroke()
         })
 
-        chart.months.forEach((_, i) => {
-          const x = Math.round(xScale.getPixelForValue(i * weeksPerMonth + LEADING_PAD)) + 0.5
+        // 월 경계선 대신 주 단위 보조선을 그려 점선을 더 촘촘하게 표시
+        realLabels.forEach((_, i) => {
+          if (i % 2 !== 0) return
+
+          const x = Math.round(xScale.getPixelForValue(i + LEADING_PAD)) + 0.5
           if (Math.abs(x - left) < 1) return
           ctx.beginPath()
           ctx.moveTo(x, top)
@@ -107,25 +212,24 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
         ctx.restore()
       },
     }),
-    [chart.months, weeksPerMonth, theme],
+    [realLabels, theme],
   )
 
   const chartData = useMemo(
     () => ({
       labels: chartLabels,
-      datasets: [
-        {
-          data: chartValues,
-          borderColor: theme.palette.primary.main,
-          backgroundColor: 'transparent',
-          fill: false,
-          tension: 0,
-          pointRadius: 0,
-          borderWidth: 1.5,
-        },
-      ],
+      datasets: paddedSeries.map((s) => ({
+        label: SERIES_LABEL[s.target],
+        data: s.values,
+        borderColor: theme.palette.chart[SERIES_COLOR_TOKENS[s.target]],
+        backgroundColor: theme.palette.chart[SERIES_COLOR_TOKENS[s.target]],
+        fill: false,
+        tension: 0,
+        pointRadius: 0,
+        borderWidth: 1.5,
+      })),
     }),
-    [chartLabels, chartValues, theme.palette.primary.main],
+    [chartLabels, paddedSeries, theme],
   )
 
   const chartOptions = useMemo(
@@ -134,29 +238,35 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
       maintainAspectRatio: false,
       animation: { duration: 0 },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'bottom' as const,
+          align: 'start' as const,
+          labels: {
+            boxWidth: 16,
+            boxHeight: 2,
+            // 범례 항목 간 가로 간격 유지
+            padding: 40,
+            font: { size: 13 },
+            color: theme.palette.contentText.Normal,
+            usePointStyle: false,
+          },
+        },
         tooltip: {
           mode: 'index' as const,
           intersect: false,
-          callbacks: {
-            title: () => '',
-          },
+          callbacks: { title: () => '' },
         },
         title: {
           display: true,
           text: chartUnit,
           align: 'start' as const,
           color: theme.palette.contentText.Normal,
-          font: {
-            size: 14,
-            weight: 500,
-          },
+          font: { size: 14, weight: 500 },
           padding: { top: 0, bottom: 40 },
         },
       },
-      layout: {
-        padding: 0,
-      },
+      layout: { padding: 0 },
       scales: {
         x: {
           offset: false,
@@ -167,7 +277,7 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
             autoSkip: false,
             maxRotation: 0,
             minRotation: 0,
-            padding: 8,
+            padding: 4,
             callback(this: unknown, _value: number | string, index: number) {
               const adjusted = index - LEADING_PAD
               if (adjusted < 0 || adjusted >= realLabels.length) return ''
@@ -178,7 +288,7 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
         },
         y: {
           min: -2,
-          max: 45,
+          max: 55,
           grid: { display: false, drawOnChartArea: false, drawTicks: false },
           ticks: {
             stepSize: 5,
@@ -188,63 +298,39 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
             callback: (value: number | string) => {
               const n = Number(value)
               if (n <= 0) return ''
-              return n.toFixed(1)
+              return String(n)
             },
           },
           border: { display: false },
         },
       },
     }),
-    [chart.months, chartUnit, realLabels.length, theme.palette.contentText.Normal, weeksPerMonth],
+    [chart.months, chartUnit, realLabels.length, theme, weeksPerMonth],
   )
 
   return (
-    <Stack direction="row" gap="38px" px="12px" py="12px" alignItems="flex-start">
-      <Stack flex="0 0 50%" minWidth={0} gap="38px" py="30px" sx={{ borderTop: 1, borderColor: 'primary.main' }}>
-        <Stack gap="10px">
-          <Typography variant="body1SB16" sx={{ color: 'contentText.Normal' }}>
-            {priceFlowTitle}
-          </Typography>
-
-          <Stack>
-            <Stack
-              direction="row"
-              alignItems="center"
-              gap="4px"
-              mb="10px"
-              flexWrap="wrap"
-              sx={{ bgcolor: 'gray.10', borderRadius: '10px', p: '8px', width: 'fit-content' }}
-            >
-              {priceSteps.map((step, index) => (
-                <Stack key={`${step.label}-${index}`} direction="row" alignItems="center" gap="4px">
-                  <PriceStepChip label={step.label} />
-                  {index < priceSteps.length - 1 && <ArrowForwardIcon sx={{ fontSize: '20px', color: 'contentText.Normal' }} />}
-                </Stack>
-              ))}
-            </Stack>
-
-            <Typography variant="body2M14" sx={{ color: 'contentText.Normal', lineHeight: 1.6 }}>
-              {flowDescription}
-            </Typography>
-          </Stack>
-        </Stack>
-
-        <Stack gap="10px">
-          <Typography variant="body1SB16" sx={{ color: 'contentText.Normal' }}>
-            {forecastTitle}
-          </Typography>
-          <Typography variant="subtext0" sx={{ color: 'contentText.Black', fontWeight: 500 }}>
-            {forecastBody}
-          </Typography>
-        </Stack>
+    <Stack
+      direction="row"
+      gap="38px"
+      px="12px"
+      py="12px"
+      alignItems="flex-start"
+      sx={{
+        borderBottom: '1px solid',
+        borderColor: 'contentBorder.Normal',
+      }}
+    >
+      <Stack flex="1" minWidth={0} gap="12px">
+        <ImpactTable rows={impactRows} />
+        {forecasts.map((card) => (
+          <ForecastCardItem key={card.target} card={card} />
+        ))}
       </Stack>
 
-      <Box flex="1" minWidth={0} pt="24px" sx={{ borderTop: 1, borderColor: 'primary.main' }}>
-        <Stack py="12px">
-          <Box height="390px">
-            <Line data={chartData} options={chartOptions} plugins={[chartDecorPlugin]} />
-          </Box>
-        </Stack>
+      <Box flex="1" minWidth={0} pt="24px">
+        <Box height="590px">
+          <Line data={chartData} options={chartOptions} plugins={[chartDecorPlugin]} />
+        </Box>
       </Box>
     </Stack>
   )
