@@ -77,21 +77,29 @@ const ScenarioWorkbenchPage = () => {
 
     if (switchingTabs) {
       expandHeaderDuringSnapRef.current = false
+      programmaticScrollActiveRef.current = true
 
-      if (isScrolledRef.current) {
-        const target = getFirstContentSnapScrollTop(scrollEl, contentWrapperRef.current, stickyHeaderRef.current)
-        if (target !== null) {
-          const maxTop = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight)
-          const next = Math.min(Math.max(0, target), maxTop)
-          scrollEl.scrollTo({ top: next, behavior: 'instant' })
-        }
-      } else {
-        scrollEl.scrollTo({ top: 0, behavior: 'instant' })
-      }
+      const maxTop = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight)
+      const firstContentTop = isScrolledRef.current
+        ? getFirstContentSnapScrollTop(scrollEl, contentWrapperRef.current, stickyHeaderRef.current)
+        : null
+
+      // firstContentTop까지 스크롤 불가 시 0으로 강제 스냅한
+      const nextTop = firstContentTop !== null && firstContentTop <= maxTop ? Math.min(Math.max(0, firstContentTop), maxTop) : 0
+
+      scrollEl.scrollTo({ top: nextTop, behavior: 'instant' })
 
       const top = scrollEl.scrollTop
       lastScrollTopRef.current = top
       scrollSnapBaselineRef.current = top
+
+      if (top <= KEEP_MAIN_EPSILON_SCROLLED) {
+        setIsScrolled(false)
+      } else {
+        setIsScrolled(true)
+      }
+
+      programmaticScrollActiveRef.current = false
     }
 
     prevTabRef.current = selectedTab
