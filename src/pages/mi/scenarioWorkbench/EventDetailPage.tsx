@@ -13,10 +13,9 @@ import type {
   EventDetailImpactTableRow,
   EventDetailMiRecordRow,
   EventDetailOutlookRow,
-  EventMarketDirection,
   EventMarketImpactLevel,
 } from '@/pages/mi/scenarioWorkbench/components/event/types'
-import type { RelatedEvent, RelatedScenario } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+import type { PriceDirection, RelatedEvent, RelatedScenario } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
 
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import RelatedEventsAndScenariosSection from '@/pages/mi/scenarioWorkbench/components/common/RelatedEventsAndScenariosSection'
@@ -213,11 +212,11 @@ const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpact
   NONE: 0,
 }
 
-const PRICE_TO_UI: Record<ScenarioWorkbenchPriceDirection, EventMarketDirection> = {
-  UP: '상승',
-  DOWN: '하락',
-  FLAT: '보합',
-  NONE: '보합',
+const PRICE_TO_UI: Record<ScenarioWorkbenchPriceDirection, PriceDirection> = {
+  UP: 'up',
+  DOWN: 'down',
+  FLAT: 'flat',
+  NONE: 'none',
 }
 
 /** 시나리오 워크벤치 이벤트 상세 */
@@ -304,7 +303,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
       id: `${prefix}-impact-${i}`,
       target: row.indexName,
       marketImpact: IMPACT_LEVEL_TO_UI[row.impactLevel] ?? 0,
-      direction: PRICE_TO_UI[row.priceDirection] ?? '보합',
+      direction: PRICE_TO_UI[row.priceDirection] ?? 'none',
     }))
   }, [detail?.eventId, detail?.impactAnalysis?.indexImpacts, eventId])
 
@@ -357,7 +356,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
         category: '공급',
         driver: '가스 생산 capa/가동률',
         strengthLevel: 3,
-        strengthDirection: '상승',
+        strengthDirection: 'up',
         rationale: 'Ras Laffan 등 중동 공급 차질 리스크 반영',
       },
       {
@@ -365,7 +364,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
         category: '공급',
         driver: 'Liquefaction/Spot',
         strengthLevel: 2,
-        strengthDirection: '상승',
+        strengthDirection: 'up',
         rationale: '현물 cargo 경쟁 심화 가능',
       },
       {
@@ -373,7 +372,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
         category: '수요',
         driver: '발전/산업 수요',
         strengthLevel: 1,
-        strengthDirection: '보합',
+        strengthDirection: 'flat',
         rationale: '단기 수요는 계절·정책 영향이 더 큼',
       },
       {
@@ -381,7 +380,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
         category: '물류',
         driver: '항로/보험료',
         strengthLevel: 2,
-        strengthDirection: '상승',
+        strengthDirection: 'up',
         rationale: '호르무즈 리스크로 비용·리드타임 증가',
       },
       {
@@ -389,7 +388,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
         category: '정책',
         driver: '전략비축/긴급조치',
         strengthLevel: 0,
-        strengthDirection: '보합',
+        strengthDirection: 'flat',
         rationale: '현재 시점에 즉각 조치 시그널 제한적',
       },
     ]

@@ -10,9 +10,9 @@ export const EVENT_DETAIL_IMPACT_NARRATIVE =
   '호르무즈 해협을 통과하는 글로벌 LNG 물동량 약 20%(연간 약 8,700만톤)가 지정학적 충격에 직접 노출된 상태이며, 특히 연간 8,200만톤 규모의 카타르 Ras Laffan 수출 인프라가 이란과 근접한 위치로 인해 물리적 타격 또는 운영 차질 리스크에 포함됩니다. 이는 단일 이벤트 기준으로 글로벌 LNG 공급의 유의미한 비중이 동시적으로 risk exposure에 편입되는 구조로, 실제 생산 차질이 발생하지 않더라도 물류 지연, 보험료 상승, 우회 운송 등으로 단기 공급 가용성이 감소하는 효과를 유발합니다. 수요 측면에서는 일본, 중국, 인도 등 주요 아시아 수입국이 카타르 의존도를 14~30% 수준으로 유지하고 있어, 공급 불확실성 확대 시 현물 시장에서의 물량 확보 경쟁이 가격에 빠르게 전이되는 구조입니다. 과거 Abqaiq(+$2, 단기) 및 러-우 전쟁(+$15, 수개월) 사례에서 확인된 바와 같이, 핵심 에너지 인프라 또는 chokepoint 리스크는 물리적 손상 여부와 무관하게 risk premium을 즉각적으로 반영시키며, 이번 이벤트는 노출 규모와 공급 집중도를 고려할 때 단기적으로 JKM 기준 +$5~15 수준의 가격 상승 압력을 정당화하는 수준으로 판단됩니다.'
 
 export const EVENT_DETAIL_IMPACT_TABLE_ROWS: EventDetailImpactTableRow[] = [
-  { id: 'imp-1', target: 'JKM', marketImpact: 3, direction: '상승' },
-  { id: 'imp-2', target: 'TTF', marketImpact: 2, direction: '보합' },
-  { id: 'imp-3', target: 'Henry Hub', marketImpact: 3, direction: '하락' },
+  { id: 'imp-1', target: 'JKM', marketImpact: 3, direction: 'up' },
+  { id: 'imp-2', target: 'TTF', marketImpact: 2, direction: 'flat' },
+  { id: 'imp-3', target: 'Henry Hub', marketImpact: 3, direction: 'down' },
 ]
 
 export const EVENT_DETAIL_AI_SUMMARY_BULLETS: string[] = [

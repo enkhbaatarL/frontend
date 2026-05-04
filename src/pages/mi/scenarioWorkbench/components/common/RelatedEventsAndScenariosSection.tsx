@@ -128,8 +128,12 @@ const getRelatedScenarioColumns = (onDetailClick?: (row: RelatedScenario) => voi
     minWidth: 192,
     renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
       <Stack direction="row" alignItems="center" gap="8px" sx={{ minWidth: 0, width: '100%' }}>
-        <ScenarioWorkbenchEventDetailTableBodyText value={params.row.name} tooltipWhenTruncated sx={{ flex: 1, minWidth: 0 }} />
-        {params.row.isCurrent && params.row.type && scenarioTypeChip(params.row.type)}
+        <ScenarioWorkbenchEventDetailTableBodyText
+          value={params.row.name}
+          tooltipWhenTruncated
+          sx={{ flex: '0 1 auto', width: 'auto', minWidth: 0 }}
+        />
+        {params.row.isCurrent && params.row.type && <Box sx={{ flex: '0 0 auto' }}>{scenarioTypeChip(params.row.type)}</Box>}
       </Stack>
     ),
   },

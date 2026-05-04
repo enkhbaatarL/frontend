@@ -1,3 +1,5 @@
+import type { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+
 export type EventClassification = '신규' | '갱신' | '종료'
 
 export type EventMarketImpactLevel = 0 | 1 | 2 | 3
@@ -30,7 +32,7 @@ export interface EventDetailImpactTableRow {
   id: string
   target: string
   marketImpact: EventMarketImpactLevel
-  direction: EventMarketDirection
+  direction: PriceDirection
 }
 
 /** 이벤트 상세 — KPI 카드 (카테고리·출처 등) */

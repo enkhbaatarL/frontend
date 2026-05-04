@@ -5,13 +5,11 @@ import { useMemo } from 'react'
 
 import type { EventDetailImpactKpiItem, EventDetailImpactTableRow } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
+import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import KpiCard from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
+import PriceDirectionIcon from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
 import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
-import {
-  EventImpactDirectionCompact,
-  EventImpactDotsCell,
-} from '@/pages/mi/scenarioWorkbench/components/event/EventIndexImpactDirectionCell'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
@@ -44,7 +42,7 @@ const EventDetailImpactAnalysisSection = ({ tableRows, kpiItems, narrative }: Ev
         width: 120,
         align: 'center',
         sortable: false,
-        renderCell: (p) => <EventImpactDotsCell level={p.row.marketImpact} />,
+        renderCell: (p) => <ImpactDotsCell level={p.row.marketImpact} />,
       },
       {
         field: 'direction',
@@ -52,7 +50,11 @@ const EventDetailImpactAnalysisSection = ({ tableRows, kpiItems, narrative }: Ev
         width: 120,
         align: 'center',
         sortable: false,
-        renderCell: (p) => <EventImpactDirectionCompact direction={p.row.direction} />,
+        renderCell: (p) => (
+          <Box display="flex" alignItems="center" justifyContent="center" width="100%" height={40}>
+            <PriceDirectionIcon direction={p.row.direction} size={14} />
+          </Box>
+        ),
       },
     ],
     [],

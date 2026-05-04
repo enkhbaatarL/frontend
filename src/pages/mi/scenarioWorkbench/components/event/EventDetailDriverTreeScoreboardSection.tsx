@@ -3,13 +3,14 @@ import { Box, Stack } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useMemo } from 'react'
 
-import type { EventMarketDirection, EventMarketImpactLevel } from '@/pages/mi/scenarioWorkbench/components/event/types'
+import type { EventMarketImpactLevel } from '@/pages/mi/scenarioWorkbench/components/event/types'
+import type { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
 
+import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import ScenarioWorkbenchEventDetailTableBodyText, {
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
-import EventIndexImpactDirectionCell from '@/pages/mi/scenarioWorkbench/components/event/EventIndexImpactDirectionCell'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
@@ -19,7 +20,7 @@ export interface EventDetailDriverTreeRow {
   category: string
   driver: string
   strengthLevel: EventMarketImpactLevel
-  strengthDirection: EventMarketDirection
+  strengthDirection: PriceDirection
   rationale: string
 }
 
@@ -57,7 +58,7 @@ const EventDetailDriverTreeScoreboardSection = ({ rows }: EventDetailDriverTreeS
         sortable: false,
         renderCell: (params: GridRenderCellParams<EventDetailDriverTreeRow>) => (
           <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <EventIndexImpactDirectionCell level={params.row.strengthLevel} direction={params.row.strengthDirection} />
+            <ImpactDotsCell level={params.row.strengthLevel} direction={params.row.strengthDirection} />
           </Box>
         ),
       },
