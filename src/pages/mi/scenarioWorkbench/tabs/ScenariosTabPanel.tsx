@@ -9,6 +9,7 @@ import ScenarioWorkbenchTypeBadge from '../components/CreateTypeBadge'
 import { buildWorkbenchEventDatePresets } from '../components/event/scenarioWorkbenchEventsDateRange'
 import ImpactDotsCell from '../components/ImpactDotsCell'
 import ProbabilityGaugeCell from '../components/ProbabilityGaugeCell'
+import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '../components/ScenarioWorkbenchDetailHeader'
 import ScenarioWorkbenchDataList from '../components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader, {
   SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
@@ -542,32 +543,16 @@ const ScenariosTabPanel = () => {
     <Box ref={panelLayoutRef} width="100%">
       <Box ref={stickyShadowSentinelRef} aria-hidden sx={{ height: 0, width: '100%', overflow: 'hidden', pointerEvents: 'none' }} />
       <Box
-        sx={(theme) => ({
+        sx={{
           position: 'sticky',
           top: SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
           zIndex: 160,
-          bgcolor: theme.palette.commonColor.White,
+          bgcolor: 'commonColor.White',
           pb: 0,
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: '100%',
-            height: '12px',
-            background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0))',
-            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%)',
-            WebkitMaskSize: '100% 100%',
-            WebkitMaskRepeat: 'no-repeat',
-            maskImage: 'linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%)',
-            maskSize: '100% 100%',
-            maskRepeat: 'no-repeat',
-            opacity: stickyScrollShadowOpacity,
-            transition: 'none',
-            pointerEvents: 'none',
-            zIndex: 2,
-          },
-        })}
+          overflow: 'visible',
+          boxShadow: stickyScrollShadowOpacity ? WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
+          transition: 'box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
       >
         <Typography fontSize={26} fontWeight={700} lineHeight={1.4} pt="18px" pb="6px" px={3} color="contentText.Black">
           Scenarios
@@ -624,7 +609,7 @@ const ScenariosTabPanel = () => {
           </Stack>
         </Stack>
 
-        <ScenarioWorkbenchTableHeader<ScenarioRow> columns={columns} sx={{ mt: 2, mb: 0, px: 3 }} />
+        <ScenarioWorkbenchTableHeader<ScenarioRow> columns={columns} sx={{ mt: 2, mb: 0 }} />
       </Box>
 
       <ScenarioWorkbenchDataList<ScenarioRow>

@@ -27,7 +27,13 @@
       "desc": "AI市場インサイト・ブリーフィング"
     },
     "forecast": {
-      "desc": "AI予測シミュレーション"
+      "desc": "AI予測シミュレーションケース"
+    },
+    "scenarioWorkbench": {
+      "desc": "シナリオ設計および入力パラメータ管理"
+    },
+    "fundamentalModel": {
+      "desc": "需給モデルの実行と結果分析"
     },
     "signalMap": {
       "desc": "主要要因の相関分析"
@@ -50,6 +56,9 @@
     "parallelCoordinates": {
       "desc": "主要要因の因果分析"
     }
+  },
+  "miFundamentalModel": {
+    "title": "MI Fundamental Model"
   },
   "dashboard": {
     "toolbar": {

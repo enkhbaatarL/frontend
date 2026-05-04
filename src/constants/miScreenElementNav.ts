@@ -2,10 +2,12 @@ import { ComponentType } from 'react'
 
 import DashboardIcon from '@/components/common/icons/gnb/DashboardIcon'
 import ForecastIcon from '@/components/common/icons/gnb/ForecastIcon'
+import FundamentalModelIcon from '@/components/common/icons/gnb/FundamentalModelIcon'
 import MetricsIcon from '@/components/common/icons/gnb/MetricsIcon'
 import NewsIcon from '@/components/common/icons/gnb/NewsIcon'
 import ParallelIcon from '@/components/common/icons/gnb/ParallelIcon'
 import ReportIcon from '@/components/common/icons/gnb/ReportIcon'
+import ScenarioWorkbenchIcon from '@/components/common/icons/gnb/ScenarioWorkbenchIcon'
 import SignalIcon from '@/components/common/icons/gnb/SignalIcon'
 
 export interface MiMenuItemDef {
@@ -55,8 +57,16 @@ export const MI_MENU_ITEM_REGISTRY = {
     IconComponent: SignalIcon,
   },
   SCENARIO_WORKBENCH: {
-    label: 'Scenario Workbench',
+    label: 'MI Scenario Workbench',
     path: 'scenario-workbench',
+    desc: 'miMenuItem.scenarioWorkbench.desc',
+    IconComponent: ScenarioWorkbenchIcon,
+  },
+  FUNDAMENTAL_MODEL: {
+    label: 'MI Fundamental Model',
+    path: 'fundamental-model',
+    desc: 'miMenuItem.fundamentalModel.desc',
+    IconComponent: FundamentalModelIcon,
   },
   PARALLEL_COORDINATES: {
     label: 'Parallel Coordinates',

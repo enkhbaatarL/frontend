@@ -18,12 +18,12 @@ const STICKY_HEIGHT_MEASURE_EPS_PX = 2
 const MAIN_HEADER_TOP_COLLAPSED_PX = 70
 const MAIN_HEADER_TOP_EXPANDED_PX = 106
 
-const TAB_SHADOW_OPACITY_CSS_VAR = '--mi-workbench-detail-tab-shadow-opacity'
-
 export const WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX = {
   expanded: WORKBENCH_DETAIL_STICKY_HEIGHT_INITIAL_EXPANDED_PX,
   collapsed: WORKBENCH_DETAIL_STICKY_HEIGHT_INITIAL_EXPANDED_PX - WORKBENCH_DETAIL_NAV_ROW_PX,
 }
+
+export const WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED = '0 8px 16px -10px rgba(0, 0, 0, 0.1)'
 
 export interface WorkbenchDetailHeaderSection {
   id: string
@@ -213,7 +213,6 @@ const ScenarioWorkbenchDetailHeader = ({
     const scrollEl = document.getElementById(scrollContainerId)
     if (scrollEl) {
       scrollEl.scrollTop = 0
-      scrollEl.style.setProperty(TAB_SHADOW_OPACITY_CSS_VAR, '0')
     }
   }, [scrollContainerId])
 
@@ -227,7 +226,6 @@ const ScenarioWorkbenchDetailHeader = ({
         mainScrollCollapsedRef.current = next
         setIsMainScrolled(next)
       }
-      scrollEl.style.setProperty(TAB_SHADOW_OPACITY_CSS_VAR, y > 0 ? '1' : '0')
       applyScrollSpyActiveSection()
     }
     onScroll()
@@ -331,6 +329,9 @@ const ScenarioWorkbenchDetailHeader = ({
             position: 'relative',
             mt: '4px',
             bgcolor: 'commonColor.White',
+            overflow: 'visible',
+            boxShadow: isMainScrolled ? WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
+            transition: `box-shadow ${WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS}ms ${WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING}`,
             '&::before': {
               content: '""',
               position: 'absolute',
@@ -341,26 +342,6 @@ const ScenarioWorkbenchDetailHeader = ({
               bgcolor: '#DEE2E6',
               pointerEvents: 'none',
               zIndex: 1,
-            },
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: '100%',
-              height: '12px',
-              background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0))',
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%)',
-              WebkitMaskSize: '100% 100%',
-              WebkitMaskRepeat: 'no-repeat',
-              maskImage: 'linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%)',
-              maskSize: '100% 100%',
-              maskRepeat: 'no-repeat',
-              opacity: `var(${TAB_SHADOW_OPACITY_CSS_VAR}, 0)`,
-              /** 0↔1이 220ms 보간되면 스크롤 동기화 시 한 박자 번쩍임처럼 보임 */
-              transition: 'none',
-              pointerEvents: 'none',
-              zIndex: 2,
             },
           }}
         >

@@ -27,7 +27,13 @@
       "desc": "AI 시장 인사이트 브리핑"
     },
     "forecast": {
-      "desc": "AI 예측 시뮬레이션"
+      "desc": "AI prediction simulation cases"
+    },
+    "scenarioWorkbench": {
+      "desc": "Scenario design and input parameter management"
+    },
+    "fundamentalModel": {
+      "desc": "Supply and demand model execution and results analysis"
     },
     "signalMap": {
       "desc": "주요 요인 상관관계 분석"
@@ -50,6 +56,9 @@
     "parallelCoordinates": {
       "desc": "주요 요인 인과관계 분석"
     }
+  },
+  "miFundamentalModel": {
+    "title": "MI Fundamental Model"
   },
   "dashboard": {
     "toolbar": {

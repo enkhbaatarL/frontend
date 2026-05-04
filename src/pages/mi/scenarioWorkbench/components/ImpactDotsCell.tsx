@@ -1,8 +1,13 @@
 import { Box, Stack } from '@mui/material'
 
+import PriceDirectionIcon from './PriceDirectionIcon'
+
+import type { PriceDirection } from './scenario/types'
+
 export interface ImpactDotsCellProps {
   level: number
   size?: number
+  direction?: PriceDirection
 }
 
 const filledDotCount = (level: number): number => {
@@ -57,11 +62,41 @@ const ImpactDotsRow = ({ level, size }: { level: number; size: number }) => {
   )
 }
 
+const COMPACT_DOT_SIZE_WITH_DIRECTION = 8
+const COMPACT_DIRECTION_ICON_SIZE = 12
+
 /** 시장 영향 3-dot 표현 (Figma MI/ Events/ Table/ Row/Market Impact) */
-const ImpactDotsCell = ({ level, size = 10 }: ImpactDotsCellProps) => (
-  <Stack direction="row" alignItems="center" justifyContent="center" width="100%" height={22}>
-    <ImpactDotsRow level={level} size={size} />
-  </Stack>
-)
+const ImpactDotsCell = ({ level, size = 10, direction }: ImpactDotsCellProps) => {
+  const withDirection = direction !== undefined
+  const dotSize = withDirection ? COMPACT_DOT_SIZE_WITH_DIRECTION : size
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="center"
+      sx={{
+        width: withDirection ? 'fit-content' : '100%',
+        maxWidth: '100%',
+        alignSelf: 'center',
+        height: 22,
+        gap: withDirection ? '4px' : 0,
+      }}
+    >
+      <ImpactDotsRow level={level} size={dotSize} />
+      {withDirection && (
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          width={COMPACT_DIRECTION_ICON_SIZE}
+          height={COMPACT_DIRECTION_ICON_SIZE}
+          flexShrink={0}
+        >
+          <PriceDirectionIcon direction={direction} size={COMPACT_DIRECTION_ICON_SIZE} />
+        </Box>
+      )}
+    </Stack>
+  )
+}
 
 export default ImpactDotsCell

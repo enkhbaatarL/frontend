@@ -2,8 +2,8 @@ import { Box, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 
 import { SignpostItem } from './types'
-
-import MITable from '@/components/common/table/MITable'
+import ScenarioWorkbenchDataList from '../table/ScenarioWorkbenchDataList'
+import ScenarioWorkbenchTableHeader from '../table/ScenarioWorkbenchTableHeader'
 
 const textCell = (value: string) => (
   <Typography
@@ -62,53 +62,14 @@ interface SignpostMonitoringSectionProps {
 }
 
 const SignpostMonitoringSection = ({ rows }: SignpostMonitoringSectionProps) => (
-  <Box
-    sx={{
-      position: 'relative',
-      paddingY: '24px',
-      '& .MuiDataGrid-columnHeaders': {
-        marginBottom: '4px',
-      },
-      '& .MuiDataGrid-columnHeader': {
-        border: 'none !important',
-        borderBottom: '0.5px solid gray.60 !important',
-        backgroundColor: 'white !important',
-
-        '& .MuiTypography-root': {
-          fontSize: 14,
-          fontWeight: 600,
-          color: 'contentText.Normal',
-        },
-      },
-      '& .MuiDataGrid-cell': {
-        padding: '10px 12px !important',
-      },
-      '& .MuiDataGrid-row': {
-        borderRadius: '10px',
-        '&:hover': {
-          backgroundColor: 'gray.10',
-        },
-      },
-    }}
-  >
-    <MITable
+  <Box sx={{ position: 'relative', paddingY: '24px' }}>
+    <ScenarioWorkbenchTableHeader<SignpostItem> columns={columns} sx={{ mb: 0 }} />
+    <ScenarioWorkbenchDataList<SignpostItem>
+      rowId="id"
       columns={columns}
       rows={rows}
-      rowId="id"
-      hideFooter
-      getRowHeight={() => 'auto'}
+      rowHeight={42}
       noRowMessage="데이터를 수집 중입니다."
-      disableRowSelectionOnClick
-    />
-    <Box
-      sx={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: '100px',
-        pointerEvents: 'none',
-      }}
     />
   </Box>
 )

@@ -18,7 +18,7 @@ const ProbabilityGaugeCell = ({ level }: { level: number }) => {
               height: 14,
               borderRadius: '100px',
               bgcolor: filled ? color : theme.palette.commonColor.White,
-              border: filled ? 'none' : `1px solid ${color}`,
+              boxShadow: filled ? 'none' : `inset 0 0 0 1px ${color}`,
             }}
           />
         )

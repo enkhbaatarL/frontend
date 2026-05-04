@@ -9,8 +9,8 @@ import { Line } from 'react-chartjs-2'
 import ImpactDotsCell from '../ImpactDotsCell'
 import PriceDirectionIcon from '../PriceDirectionIcon'
 import { ScenarioForecastCard, ScenarioImpactRow, ScenarioImpactTarget, ScenarioSummaryData } from './types'
-
-import MITable from '@/components/common/table/MITable'
+import ScenarioWorkbenchDataList from '../table/ScenarioWorkbenchDataList'
+import ScenarioWorkbenchTableHeader from '../table/ScenarioWorkbenchTableHeader'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend)
 
@@ -88,28 +88,10 @@ const impactColumns: GridColDef<ScenarioImpactRow>[] = [
   },
 ]
 
-const impactTableStyle = {
-  bgcolor: 'gray.5',
-  borderRadius: '10px',
-  p: '12px',
-  '& .MuiDataGrid-columnHeader': {
-    padding: '8px 12px',
-    border: 'none !important',
-    borderBottom: '0.5px solid !important',
-    borderBottomColor: 'contentBorder.Active !important',
-  },
-  '& .MuiDataGrid-cell': {
-    padding: '10px 12px',
-    borderBottom: '1px solid contentBorder.Normal',
-  },
-  '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell': {
-    borderBottom: 'none',
-  },
-}
-
 const ImpactTable = ({ rows }: { rows: ScenarioImpactRow[] }) => (
-  <Box sx={impactTableStyle}>
-    <MITable columns={impactColumns} rows={rows} rowId="target" rowHeight={48} hideFooter disableRowSelectionOnClick disableHover />
+  <Box sx={{ bgcolor: 'gray.5', borderRadius: '10px', p: '12px' }}>
+    <ScenarioWorkbenchTableHeader<ScenarioImpactRow> columns={impactColumns} sx={{ mb: 0 }} />
+    <ScenarioWorkbenchDataList<ScenarioImpactRow> rowId="target" columns={impactColumns} rows={rows} rowHeight={48} hideLastRowBorder />
   </Box>
 )
 

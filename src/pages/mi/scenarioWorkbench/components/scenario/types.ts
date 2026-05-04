@@ -62,8 +62,12 @@ export interface RelatedEvent {
   name: string
   date: string
   category: string
-  marketImpact: number
-  direction: PriceDirection
+  jkm: number
+  ttf: number
+  hh: number
+  jkmDirection: PriceDirection
+  ttfDirection: PriceDirection
+  hhDirection: PriceDirection
 }
 
 export interface RelatedScenario {

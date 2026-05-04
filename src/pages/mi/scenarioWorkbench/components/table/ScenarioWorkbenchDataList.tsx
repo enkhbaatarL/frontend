@@ -1,6 +1,6 @@
 import { Box, Skeleton, Stack, Typography, type SxProps, type Theme } from '@mui/material'
 import { type GridColDef, type GridRowModel } from '@mui/x-data-grid'
-import { isValidElement, type ReactNode } from 'react'
+import { isValidElement, useMemo, type ReactNode } from 'react'
 
 export interface ScenarioWorkbenchDataListProps<T extends GridRowModel>
   extends Partial<{
@@ -11,6 +11,7 @@ export interface ScenarioWorkbenchDataListProps<T extends GridRowModel>
     getRowClassName: (params: { row: T }) => string
     onRowClick: (params: { row: T }) => void
     sx: SxProps<Theme>
+    hideLastRowBorder: boolean // 마지막 행 하단 구분선 미표시
   }> {
   rowId: keyof T
   columns: GridColDef<T>[]
@@ -34,9 +35,25 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
   onRowClick,
   rowHeight,
   getRowClassName,
+  hideLastRowBorder,
   sx,
 }: ScenarioWorkbenchDataListProps<T>) => {
   const effectiveRowHeight = rowHeight ?? 42
+  const gridTemplateColumns = useMemo(
+    () =>
+      columns
+        .map((col) => {
+          if (col.width !== undefined && col.width !== null) {
+            return typeof col.width === 'number' ? `${col.width}px` : String(col.width)
+          }
+          const flex = col.flex ?? 1
+          const min = col.minWidth ?? 0
+          return `minmax(${min}px, ${flex}fr)`
+        })
+        .join(' '),
+    [columns],
+  )
+
   const rowKey = (row: T) => {
     const value = row[rowId]
     return typeof value === 'string' || typeof value === 'number' ? value : String(value)
@@ -48,9 +65,28 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
   let body: ReactNode
   if (loading) {
     body = (
-      <Stack gap={1}>
+      <Stack gap={0}>
         {Array.from({ length: 8 }).map((_, idx) => (
-          <Skeleton key={idx} variant="rounded" height={effectiveRowHeight} />
+          <Box
+            key={idx}
+            sx={(theme) => {
+              const isLastSkeletonRow = idx === 7
+              const showBorder = !isLastSkeletonRow || !hideLastRowBorder
+              return {
+                display: 'grid',
+                gridTemplateColumns,
+                alignItems: 'center',
+                height: effectiveRowHeight,
+                borderBottom: showBorder ? `1px solid ${theme.palette.contentBorder?.Normal ?? theme.palette.gray[40]}` : 'none',
+              }
+            }}
+          >
+            {columns.map((col) => (
+              <Box key={col.field} sx={{ px: '12px', minWidth: 0, boxSizing: 'border-box' }}>
+                <Skeleton variant="rounded" height={Math.min(28, effectiveRowHeight - 8)} />
+              </Box>
+            ))}
+          </Box>
         ))}
       </Stack>
     )
@@ -74,25 +110,30 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
     )
   } else {
     body = (
-      <Stack gap={0}>
+      <Stack gap={0} sx={{ width: '100%', minWidth: 0, maxWidth: '100%' }}>
         {rows.map((row, idx) => {
           const currentKey = rowKey(row)
 
           return (
-            <Stack
+            <Box
               key={currentKey}
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
               onClick={onRowClick ? () => onRowClick({ row }) : undefined}
               className={getRowClassName?.({ row })}
               sx={(theme) => ({
+                display: 'grid',
+                gridTemplateColumns,
+                alignItems: 'center',
                 height: effectiveRowHeight,
                 width: '100%',
+                minWidth: 0,
+                maxWidth: '100%',
                 position: 'relative',
-                bgcolor: theme.palette.commonColor?.White ?? theme.palette.common.white,
+                bgcolor: 'transparent',
                 cursor: onRowClick ? 'pointer' : 'default',
-                borderBottom: idx < rows.length - 1 ? `1px solid ${theme.palette.contentBorder?.Normal ?? theme.palette.gray[40]}` : 'none',
+                borderBottom:
+                  idx < rows.length - 1 || !hideLastRowBorder
+                    ? `1px solid ${theme.palette.contentBorder?.Normal ?? theme.palette.gray[40]}`
+                    : 'none',
                 transition: 'background-color 120ms ease',
                 ...(disableHover
                   ? {}
@@ -131,11 +172,10 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: cellJustifyContent(col.align),
-                      px: 1,
+                      px: '12px',
                       overflow: 'hidden',
-                      ...(col.width
-                        ? { flex: '0 0 auto', width: `${col.width}px` }
-                        : { flex: `${col.flex ?? 1} 1 0`, minWidth: col.minWidth ? `${col.minWidth}px` : 0 }),
+                      minWidth: 0,
+                      boxSizing: 'border-box',
                     }}
                   >
                     {typeof node === 'string' || typeof node === 'number' ? (
@@ -148,7 +188,7 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
                   </Box>
                 )
               })}
-            </Stack>
+            </Box>
           )
         })}
       </Stack>
@@ -160,6 +200,8 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
       sx={[
         {
           width: '100%',
+          minWidth: 0,
+          maxWidth: '100%',
         },
         ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
       ]}
