@@ -91,10 +91,14 @@ const MAP_DIRECTION = {
   bullish: 'UP',
   bearish: 'DOWN',
   negligible: 'FLAT',
-}
+} as const
 
 /** API 방향 값이 MAP_DIRECTION 키인지 판별 */
 const isApiDirectionKey = (v: unknown): v is keyof typeof MAP_DIRECTION => typeof v === 'string' && v in MAP_DIRECTION
+
+/** 값이 ScenarioWorkbenchDirection인지 판별 */
+const isScenarioWorkbenchDirection = (v: unknown): v is ScenarioWorkbenchDirection =>
+  v === 'UP' || v === 'DOWN' || v === 'FLAT' || v === 'NONE'
 
 /** 단일 지수 요약을 UI 레벨·방향으로 변환 */
 const mapImpactToUi = (
@@ -102,9 +106,11 @@ const mapImpactToUi = (
 ): { level: EventMarketImpactLevel; direction: EventMarketDirection } => {
   if (!row) return { level: 0, direction: '보합' }
 
-  const priceDirection = isApiDirectionKey(row.direction)
-    ? MAP_DIRECTION[row.direction]
-    : (row.direction as unknown as ScenarioWorkbenchDirection)
+  const priceDirection: ScenarioWorkbenchDirection = (() => {
+    if (isApiDirectionKey(row.direction)) return MAP_DIRECTION[row.direction]
+    const upper = String(row.direction ?? 'NONE').toUpperCase()
+    return isScenarioWorkbenchDirection(upper) ? upper : 'NONE'
+  })()
   return {
     level: IMPACT_LEVEL_TO_UI[row.impactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
     direction: PRICE_TO_UI[priceDirection] ?? '보합',

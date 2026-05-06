@@ -58,86 +58,6 @@ interface ScenarioWorkbenchEventDetailLocationState {
   eventName?: string
 }
 
-const EVENT_DETAIL_RELATED_EVENTS_MOCK: RelatedEvent[] = [
-  {
-    id: 1,
-    name: '미국/이스라엘 이란 공습 개시 (Operation Epic Fury)',
-    date: '00-00 00:00',
-    category: 'category',
-    jkm: 3,
-    ttf: 2,
-    hh: 1,
-    jkmDirection: 'up',
-    ttfDirection: 'flat',
-    hhDirection: 'down',
-  },
-  {
-    id: 2,
-    name: '호르무즈 해협 통행 제한 발표',
-    date: '03-10 18:00',
-    category: 'geopolitics',
-    jkm: 2,
-    ttf: 2,
-    hh: 1,
-    jkmDirection: 'up',
-    ttfDirection: 'up',
-    hhDirection: 'flat',
-  },
-]
-
-const EVENT_DETAIL_RELATED_SCENARIOS_MOCK: RelatedScenario[] = [
-  {
-    id: 1,
-    name: '1~2주 내 협상 완료 상황 해소',
-    isCurrent: false,
-    type: undefined,
-    jkm: 1,
-    ttf: 3,
-    hh: 2,
-    probability: 1,
-  },
-  {
-    id: 2,
-    name: '수주 내 호르무즈 정상화',
-    isCurrent: false,
-    type: undefined,
-    jkm: 2,
-    ttf: 1,
-    hh: 3,
-    probability: 2,
-  },
-  {
-    id: 3,
-    name: '호르무즈 봉쇄 3개월+ 유지',
-    isCurrent: true,
-    type: 'BC',
-    jkm: 3,
-    ttf: 2,
-    hh: 1,
-    probability: 3,
-  },
-  {
-    id: 4,
-    name: '걸프 LNG 인프라 타격, 복구',
-    isCurrent: false,
-    type: undefined,
-    jkm: 3,
-    ttf: 3,
-    hh: 3,
-    probability: 4,
-  },
-  {
-    id: 5,
-    name: '걸프 LNG 인프라 타격, 미복구',
-    isCurrent: false,
-    type: undefined,
-    jkm: 3,
-    ttf: 3,
-    hh: 3,
-    probability: 5,
-  },
-]
-
 const SECTION_SCROLL_IDS: Record<EventDetailTabKey, string> = {
   impact: 'event-detail-section-impact',
   ai: 'event-detail-section-ai',
@@ -229,6 +149,16 @@ const MAP_DIRECTION = {
 /** API 방향 값이 MAP_DIRECTION 키인지 판별 */
 const isApiDirectionKey = (v: unknown): v is keyof typeof MAP_DIRECTION => typeof v === 'string' && v in MAP_DIRECTION
 
+/** Related 이벤트/시나리오에서 인덱스 영향 요약을 UI용 점수로 변환 */
+const toUiImpactLevel = (level: unknown): EventMarketImpactLevel =>
+  IMPACT_LEVEL_TO_UI[String(level ?? '').toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0
+
+/** Related 이벤트/시나리오에서 확률(0~1)을 게이지 레벨(1~5)로 변환 */
+const toProbabilityGaugeLevel = (probability?: number): number => {
+  if (probability === undefined || probability === null || Number.isNaN(probability)) return 0
+  return Math.max(1, Math.min(5, Math.round(probability * 5)))
+}
+
 /** 시나리오 워크벤치 이벤트 상세 */
 const ScenarioWorkbenchEventDetailPage = () => {
   const { eventId } = useParams()
@@ -276,10 +206,10 @@ const ScenarioWorkbenchEventDetailPage = () => {
   const title = useMemo(() => {
     const fromState = state?.eventName?.trim()
     if (fromState) return fromState
-    const fromApi = detail?.title?.trim()
+    const fromApi = detail?.eventName?.trim() || detail?.title?.trim()
     if (fromApi) return fromApi
     return eventId ? `이벤트 ${eventId}` : '이벤트'
-  }, [detail?.title, eventId, state?.eventName])
+  }, [detail?.eventName, detail?.title, eventId, state?.eventName])
 
   const { generatedAtLabel, updatedAtLabel } = useMemo(() => {
     const created = detail?.createdAt ? dayjs(detail.createdAt) : null
@@ -296,9 +226,11 @@ const ScenarioWorkbenchEventDetailPage = () => {
     if (!ia) {
       return [{ ...a }, { ...b }]
     }
-    const lv1 = ia.categoryLv1
-    const categoryContent = lv1 ? (SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[lv1] ?? lv1) : a.content
-    const categoryDesc = ia.categoryLv2 ? ia.categoryLv2.replaceAll('_', ' ') : a.description
+    const lv1 = ia.eventCategoryLv1 ?? ia.categoryLv1
+    const lv1Key = lv1 ? (String(lv1).toUpperCase() as keyof typeof SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO) : undefined
+    const categoryContent = lv1Key ? (SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[lv1Key] ?? lv1) : a.content
+    const categoryDesc =
+      (ia.eventCategoryLv2 ?? ia.categoryLv2) ? (ia.eventCategoryLv2 ?? ia.categoryLv2)!.replaceAll('_', ' ') : a.description
     const sourcesContent = ia.sources?.filter(Boolean).length ? ia.sources!.filter(Boolean).join(', ') : b.content
     return [
       { ...a, content: categoryContent, description: categoryDesc },
@@ -337,7 +269,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
   }, [detail?.aiInsights?.detailedAnalysis, detailLoading])
 
   const fundamentalMetricRows = useMemo((): EventDetailFundamentalMetricRow[] => {
-    const metrics = detail?.fundamentalDeepdive?.metrics ?? []
+    const metrics = detail?.fundamentalDeepdive && 'metrics' in detail.fundamentalDeepdive ? (detail.fundamentalDeepdive.metrics ?? []) : []
     const prefix = detail?.eventId ?? eventId ?? 'evt'
     return metrics.map((m, i) => ({
       id: `${prefix}-fm-${i}`,
@@ -346,10 +278,11 @@ const ScenarioWorkbenchEventDetailPage = () => {
       criteria: m.interpretation,
       source: m.source,
     }))
-  }, [detail?.eventId, detail?.fundamentalDeepdive?.metrics, eventId])
+  }, [detail?.eventId, detail?.fundamentalDeepdive, eventId])
 
   const fundamentalIndicatorRows = useMemo((): EventDetailFundamentalIndicatorRow[] => {
-    const indicators = detail?.fundamentalDeepdive?.indicators ?? []
+    const indicators =
+      detail?.fundamentalDeepdive && 'indicators' in detail.fundamentalDeepdive ? (detail.fundamentalDeepdive.indicators ?? []) : []
     const prefix = detail?.eventId ?? eventId ?? 'evt'
     return indicators.map((m, i) => ({
       id: `${prefix}-fi-${i}`,
@@ -358,7 +291,60 @@ const ScenarioWorkbenchEventDetailPage = () => {
       implication: m.implication,
       source: m.source,
     }))
-  }, [detail?.eventId, detail?.fundamentalDeepdive?.indicators, eventId])
+  }, [detail?.eventId, detail?.fundamentalDeepdive, eventId])
+
+  /** 관련 이벤트/시나리오 테이블 행 데이터 (API: relatedEventScenario) */
+  const { relatedEvents, relatedScenarios } = useMemo((): { relatedEvents: RelatedEvent[]; relatedScenarios: RelatedScenario[] } => {
+    const related = detail?.relatedEventScenario
+    const relatedEvent = related?.event
+    const relatedEventIndexImpacts = relatedEvent?.indexImpacts ?? []
+
+    const byIndex = <T extends { indexName: string }>(list: T[], indexName: string): T | undefined =>
+      list.find((x) => String(x.indexName).toUpperCase() === indexName.toUpperCase())
+
+    const mapDirectionToUi = (direction?: unknown): PriceDirection => {
+      if (direction === undefined || direction === null) return 'none'
+      if (isApiDirectionKey(direction)) {
+        return PRICE_TO_UI[MAP_DIRECTION[direction] as ScenarioWorkbenchDirection] ?? 'none'
+      }
+      return PRICE_TO_UI[String(direction).toUpperCase() as ScenarioWorkbenchDirection] ?? 'none'
+    }
+
+    const eventRows: RelatedEvent[] = relatedEvent
+      ? [
+        {
+          id: relatedEvent.eventId,
+          name: relatedEvent.eventName,
+          date: dayjs(relatedEvent.updatedAt ?? relatedEvent.createdAt).isValid()
+            ? dayjs(relatedEvent.updatedAt ?? relatedEvent.createdAt).format('MM-DD HH:mm')
+            : '-',
+          category: relatedEvent.eventCategoryLv1Label ?? relatedEvent.eventCategoryLv1 ?? '-',
+          jkm: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'JKM')?.impactLevel),
+          ttf: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'TTF')?.impactLevel),
+          hh: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'HH')?.impactLevel),
+          jkmDirection: mapDirectionToUi(byIndex(relatedEventIndexImpacts, 'JKM')?.direction),
+          ttfDirection: mapDirectionToUi(byIndex(relatedEventIndexImpacts, 'TTF')?.direction),
+          hhDirection: mapDirectionToUi(byIndex(relatedEventIndexImpacts, 'HH')?.direction),
+        },
+      ]
+      : []
+
+    const scenarioRows: RelatedScenario[] = (related?.scenarios ?? []).map((s) => {
+      const impacts = s.indexImpacts ?? []
+      return {
+        id: s.scenarioId,
+        name: s.scenarioName,
+        isCurrent: !!s.baseCase,
+        type: s.baseCase ? 'BC' : undefined,
+        jkm: toUiImpactLevel(byIndex(impacts, 'JKM')?.impactLevel),
+        ttf: toUiImpactLevel(byIndex(impacts, 'TTF')?.impactLevel),
+        hh: toUiImpactLevel(byIndex(impacts, 'HH')?.impactLevel),
+        probability: toProbabilityGaugeLevel(s.probability),
+      }
+    })
+
+    return { relatedEvents: eventRows, relatedScenarios: scenarioRows }
+  }, [detail?.relatedEventScenario])
 
   /** Driver Tree Scoreboard — API 연동 전까지 퍼블리싱용 목 데이터 */
   const driverTreeRows = useMemo((): EventDetailDriverTreeRow[] => {
@@ -538,8 +524,8 @@ const ScenarioWorkbenchEventDetailPage = () => {
             <InfoOutlinedIcon sx={{ fontSize: 16, color: 'contentText.Normal' }} />
           </Stack>
           <RelatedEventsAndScenariosSection
-            events={EVENT_DETAIL_RELATED_EVENTS_MOCK}
-            scenarios={EVENT_DETAIL_RELATED_SCENARIOS_MOCK}
+            events={relatedEvents}
+            scenarios={relatedScenarios}
             onEventRowClick={(row) =>
               navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/events/${encodeURIComponent(String(row.id))}`, {
                 state: { eventName: row.name },
