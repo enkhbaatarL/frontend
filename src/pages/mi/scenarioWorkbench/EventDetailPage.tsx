@@ -34,8 +34,8 @@ import EventDetailMiRecordsTable from '@/pages/mi/scenarioWorkbench/components/e
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
 import scenarioWorkbenchEventService, {
   SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO,
+  type ScenarioWorkbenchDirection,
   type ScenarioWorkbenchImpactLevel,
-  type ScenarioWorkbenchPriceDirection,
 } from '@/service/mi/scenarioWorkbench/event'
 import { IPaginationResponse } from '@/types/api'
 
@@ -212,7 +212,7 @@ const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpact
   NONE: 0,
 }
 
-const PRICE_TO_UI: Record<ScenarioWorkbenchPriceDirection, PriceDirection> = {
+const PRICE_TO_UI: Record<ScenarioWorkbenchDirection, PriceDirection> = {
   UP: 'up',
   DOWN: 'down',
   FLAT: 'flat',
@@ -303,7 +303,7 @@ const ScenarioWorkbenchEventDetailPage = () => {
       id: `${prefix}-impact-${i}`,
       target: row.indexName,
       marketImpact: IMPACT_LEVEL_TO_UI[row.impactLevel] ?? 0,
-      direction: PRICE_TO_UI[row.priceDirection] ?? 'none',
+      direction: PRICE_TO_UI[row.direction] ?? 'none',
     }))
   }, [detail?.eventId, detail?.impactAnalysis?.indexImpacts, eventId])
 

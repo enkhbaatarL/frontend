@@ -45,19 +45,21 @@ export const SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO: Record<ScenarioWorkbenchE
 /** Swagger: ImpactIndexSummaryRes */
 export type ScenarioWorkbenchImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'
 
-export type ScenarioWorkbenchPriceDirection = 'UP' | 'FLAT' | 'DOWN' | 'NONE'
+export type ScenarioWorkbenchDirection = 'UP' | 'FLAT' | 'DOWN' | 'NONE'
 
 export interface IScenarioWorkbenchImpactIndexSummary {
   indexName: string
   impactLevel: ScenarioWorkbenchImpactLevel
-  priceDirection: ScenarioWorkbenchPriceDirection
+  direction: ScenarioWorkbenchDirection
 }
 
 /** 이벤트 목록 한 줄 (indexImpacts는 JKM·TTF·HH 등 지수별 요약) */
 export interface IScenarioWorkbenchEventListItem {
   eventId: string
-  title: string
-  eventStatus: ScenarioWorkbenchEventStatus
+  // 260506: title -> eventName
+  eventName: string
+  // 260506: eventStatus -> status
+  status: ScenarioWorkbenchEventStatus
   eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1
   occurredAt: string
   updatedAt: string
