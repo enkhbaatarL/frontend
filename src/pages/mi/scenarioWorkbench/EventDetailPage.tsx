@@ -219,6 +219,16 @@ const PRICE_TO_UI: Record<ScenarioWorkbenchDirection, PriceDirection> = {
   NONE: 'none',
 }
 
+// 260506 API 변경: indexImpacts.direction이 bearish/bullish/negligible로 내려올 수 있음
+const MAP_DIRECTION = {
+  bullish: 'UP',
+  bearish: 'DOWN',
+  negligible: 'FLAT',
+} as const
+
+/** API 방향 값이 MAP_DIRECTION 키인지 판별 */
+const isApiDirectionKey = (v: unknown): v is keyof typeof MAP_DIRECTION => typeof v === 'string' && v in MAP_DIRECTION
+
 /** 시나리오 워크벤치 이벤트 상세 */
 const ScenarioWorkbenchEventDetailPage = () => {
   const { eventId } = useParams()
@@ -302,8 +312,11 @@ const ScenarioWorkbenchEventDetailPage = () => {
     return list.map((row, i) => ({
       id: `${prefix}-impact-${i}`,
       target: row.indexName,
-      marketImpact: IMPACT_LEVEL_TO_UI[row.impactLevel] ?? 0,
-      direction: PRICE_TO_UI[row.direction] ?? 'none',
+      marketImpact: IMPACT_LEVEL_TO_UI[row.impactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
+      direction:
+        PRICE_TO_UI[
+          isApiDirectionKey(row.direction) ? MAP_DIRECTION[row.direction] : (row.direction?.toUpperCase() as ScenarioWorkbenchDirection)
+        ] ?? 'none',
     }))
   }, [detail?.eventId, detail?.impactAnalysis?.indexImpacts, eventId])
 
