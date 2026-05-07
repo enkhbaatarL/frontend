@@ -11,8 +11,22 @@ import {
   cloneElement,
   forwardRef,
   useImperativeHandle,
+  createContext,
+  useContext,
 } from 'react'
 import ReactDOM from 'react-dom'
+
+interface MIMorphingPopupContextValue {
+  /** 팝업 콘텐츠가 실제로 스크롤되는 컨테이너 엘리먼트. 팝업 외부에서는 null */
+  scrollContainer: HTMLDivElement | null
+  /** 팝업 내부에서 닫기를 트리거 */
+  close: () => void
+}
+
+const MIMorphingPopupContext = createContext<MIMorphingPopupContextValue | null>(null)
+
+/** 모핑 팝업 콘텐츠 내부에서만 의미가 있는 컨텍스트 — 외부에서는 null 반환 */
+export const useMIMorphingPopupContext = () => useContext(MIMorphingPopupContext)
 
 const VERTICAL_MARGIN = 60
 const HORIZONTAL_MARGIN = 96
@@ -91,7 +105,14 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
     const triggerRef = useRef<HTMLDivElement>(null)
     const measureRef = useRef<HTMLDivElement>(null)
 
-    const scrollWrapperRef = useRef<HTMLDivElement>(null)
+    const scrollWrapperRef = useRef<HTMLDivElement | null>(null)
+    const popupContainerRef = useRef<HTMLDivElement | null>(null)
+    /** 팝업 박스(실제 스크롤되는 컨테이너)를 콘텐츠 자식이 구독할 수 있도록 state로 노출 */
+    const [scrollContainerEl, setScrollContainerEl] = useState<HTMLDivElement | null>(null)
+    const setPopupContainerRef = useCallback((el: HTMLDivElement | null) => {
+      popupContainerRef.current = el
+      setScrollContainerEl(el)
+    }, [])
     const contentWrapperRef = useRef<HTMLDivElement>(null)
     const animTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -109,9 +130,11 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       measureRef.current.style.width = `${endWidth}px`
       const measuredHeight = measureRef.current.offsetHeight + 68 // 헤더 높이 68px 추가
 
-      // 상단 여백 + 하단 여백 = VERTICAL_MARGIN * 2
-      const isTall = measuredHeight + VERTICAL_MARGIN * 2 > windowHeight
-      const endTop = Math.max(VERTICAL_MARGIN, (windowHeight - measuredHeight) / 2)
+      // 팝업은 뷰포트를 넘지 않도록 캡 — 초과분은 팝업 내부에서 스크롤
+      const maxPopupHeight = Math.max(0, windowHeight - VERTICAL_MARGIN * 2)
+      const isTall = measuredHeight > maxPopupHeight
+      const endHeight = isTall ? maxPopupHeight : measuredHeight
+      const endTop = isTall ? VERTICAL_MARGIN : (windowHeight - measuredHeight) / 2
 
       // 왼쪽 여백 계산 (중앙 정렬)
       const endLeft = (windowWidth - endWidth) / 2
@@ -122,7 +145,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
           top: endTop,
           left: endLeft,
           width: endWidth,
-          height: measuredHeight,
+          height: endHeight,
         },
         isTall,
       }
@@ -139,8 +162,8 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       setIsClosing(true)
       setIsExpanded(false)
 
-      if (scrollWrapperRef.current) {
-        scrollWrapperRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+      if (popupContainerRef.current) {
+        popupContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
       }
 
       // 축소 애니메이션 완료 후 페이드아웃 시작
@@ -262,27 +285,6 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
           rafId = null
           const newCoords = calculateCoords()
           if (!newCoords) return
-
-          // 현재 표시 중인 컨텐츠 높이 반영: 리사이즈로 계산된 높이보다 크면 그 높이를 유지
-          const contentEl = contentWrapperRef.current
-          if (contentEl) {
-            const actualContentHeight = contentEl.offsetHeight + 68
-            if (actualContentHeight > newCoords.end.height) {
-              const windowHeight = window.innerHeight
-              const isTall = actualContentHeight + VERTICAL_MARGIN * 2 > windowHeight
-              const endTop = Math.max(VERTICAL_MARGIN, (windowHeight - actualContentHeight) / 2)
-              setCoords({
-                ...newCoords,
-                end: {
-                  ...newCoords.end,
-                  height: actualContentHeight,
-                  top: endTop,
-                },
-                isTall,
-              })
-              return
-            }
-          }
           setCoords(newCoords)
         })
       }
@@ -315,13 +317,15 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         setCoords((prev) => {
           if (!prev) return null
           const windowHeight = window.innerHeight
-          const isTall = measuredHeight + VERTICAL_MARGIN * 2 > windowHeight
-          const endTop = Math.max(VERTICAL_MARGIN, (windowHeight - measuredHeight) / 2)
+          const maxPopupHeight = Math.max(0, windowHeight - VERTICAL_MARGIN * 2)
+          const isTall = measuredHeight > maxPopupHeight
+          const endHeight = isTall ? maxPopupHeight : measuredHeight
+          const endTop = isTall ? VERTICAL_MARGIN : (windowHeight - measuredHeight) / 2
           return {
             ...prev,
             end: {
               ...prev.end,
-              height: measuredHeight,
+              height: endHeight,
               top: endTop,
             },
             isTall,
@@ -440,29 +444,14 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                 bottom={0}
                 zIndex={1300}
                 sx={{
-                  overflowY: coords.isTall && isExpanded ? 'auto' : 'hidden',
-                  scrollBehavior: 'smooth',
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#ADB5BD transparent',
-                  '&::-webkit-scrollbar': {
-                    width: '4px',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    backgroundColor: 'transparent',
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    backgroundColor: '#ADB5BD', // 딤드 배경 위에서 잘 보이도록 중간 톤 회색
-                    borderRadius: '10px',
-                  },
-                  '&::-webkit-scrollbar-thumb:hover': {
-                    backgroundColor: '#ADB5BD',
-                  },
+                  overflow: 'hidden',
                 }}
                 onClick={(e) => {
                   if (e.target === e.currentTarget) handleClose()
                 }}
               >
                 <Box
+                  ref={setPopupContainerRef}
                   position="absolute"
                   top={containerStyle.top}
                   left={containerStyle.left}
@@ -480,16 +469,34 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                       : isAnimDone && !isClosing
                         ? `top ${DURATION} ${TRANSITION_CURVE}, height ${DURATION} ${TRANSITION_CURVE}` // 옵저버로 높이/위치 변경 시 애니메이션
                         : `all ${DURATION} ${TRANSITION_CURVE}`,
-                    overflow: 'hidden',
+                    // 모프 종료 후 팝업 내부에서 콘텐츠 스크롤 — 외부 dim은 스크롤되지 않음
+                    overflowY: isAnimDone && !isClosing && coords.isTall ? 'auto' : 'hidden',
+                    overflowX: 'hidden',
                     boxShadow: isExpanded ? 24 : 0,
                     opacity: isFadingOut ? 0 : 1,
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#ADB5BD transparent',
+                    '&::-webkit-scrollbar': {
+                      width: '4px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      backgroundColor: 'transparent',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: '#ADB5BD',
+                      borderRadius: '10px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                      backgroundColor: '#ADB5BD',
+                    },
                     ...popupProps?.sx,
                   }}
                   // 팝업 내부 클릭 시 닫기 이벤트 전파 방지
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Box
-                    height={coords.end.height}
+                    height={isAnimDone && !isClosing ? 'auto' : coords.end.height}
+                    minHeight={coords.end.height}
                     position="relative"
                     sx={{
                       transition: isAnimDone && !isClosing ? `height ${DURATION} ${TRANSITION_CURVE}` : 'none',
@@ -525,8 +532,13 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                         justifyContent="space-between"
                         gap="24px"
                         boxSizing="border-box"
+                        bgcolor="commonColor.White"
                         sx={{
                           userSelect: 'none',
+                          // 팝업 내부 스크롤 시 타이틀 바가 상단에 고정되도록 sticky
+                          position: 'sticky',
+                          top: 0,
+                          zIndex: 3,
                         }}
                       >
                         <Typography fontSize="20px" fontWeight="500" color="contentText.Black">
@@ -543,16 +555,13 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                         />
                       </Stack>
                       <Box ref={contentWrapperRef} width={coords.end.width}>
-                        {content}
+                        <MIMorphingPopupContext.Provider value={{ scrollContainer: scrollContainerEl, close: handleClose }}>
+                          {content}
+                        </MIMorphingPopupContext.Provider>
                       </Box>
                     </Stack>
                   </Box>
                 </Box>
-
-                {/* 하단 여백 Spacer */}
-                {coords.isTall && isExpanded && (
-                  <Box position="absolute" top={coords.end.top + coords.end.height} left={0} width="100%" height={`${VERTICAL_MARGIN}px`} />
-                )}
               </Box>
             </>,
             document.body,

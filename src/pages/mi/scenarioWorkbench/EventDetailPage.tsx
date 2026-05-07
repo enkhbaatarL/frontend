@@ -17,6 +17,7 @@ import type {
 } from '@/pages/mi/scenarioWorkbench/components/event/types'
 import type { PriceDirection, RelatedEvent, RelatedScenario } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
 
+import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopup'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import RelatedEventsAndScenariosSection from '@/pages/mi/scenarioWorkbench/components/common/RelatedEventsAndScenariosSection'
 import ScenarioWorkbenchDetailHeader, {
@@ -56,6 +57,12 @@ const EVENT_DETAIL_TABS: { key: EventDetailTabKey; label: string }[] = [
 /** 이벤트 상세에서 라우트 state로 넘어오는 값 타입 */
 interface ScenarioWorkbenchEventDetailLocationState {
   eventName?: string
+}
+
+interface ScenarioWorkbenchEventDetailPageProps {
+  eventId?: string
+  /** 임베디드(모핑 팝업 등) 모드: 페이지 sticky header 등록을 건너뛰고 본문 내부에 헤더를 렌더 */
+  embedded?: boolean
 }
 
 const EVENT_DETAIL_RELATED_EVENTS_MOCK: RelatedEvent[] = [
@@ -220,8 +227,9 @@ const PRICE_TO_UI: Record<ScenarioWorkbenchPriceDirection, PriceDirection> = {
 }
 
 /** 시나리오 워크벤치 이벤트 상세 */
-const ScenarioWorkbenchEventDetailPage = () => {
-  const { eventId } = useParams()
+const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = false }: ScenarioWorkbenchEventDetailPageProps = {}) => {
+  const params = useParams()
+  const eventId = eventIdProp ?? params.eventId
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as ScenarioWorkbenchEventDetailLocationState | null
@@ -229,11 +237,14 @@ const ScenarioWorkbenchEventDetailPage = () => {
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
   const { setStickyHeader } = useStickyHeader()
+  const popupContext = useMIMorphingPopupContext()
+  const popupScrollContainer = embedded ? (popupContext?.scrollContainer ?? null) : null
 
   useEffect(() => {
+    if (embedded) return
     const scrollEl = document.getElementById('main-scroll-wrapper')
     if (scrollEl) scrollEl.scrollTop = 0
-  }, [])
+  }, [embedded])
 
   const {
     data: detail,
@@ -433,56 +444,84 @@ const ScenarioWorkbenchEventDetailPage = () => {
     }
   }, [outlookRows, outlooksData])
 
+  const headerTitleSlot = useMemo(
+    () => (
+      <Stack direction="row" alignItems="flex-end" justifyContent="space-between" width="100%">
+        <Stack flex={1} minWidth={0} gap="10px" alignItems="flex-start" pt="20px">
+          <Typography variant="body1B16" color="contentText.Black">
+            Event
+          </Typography>
+          <Typography
+            variant="titleLarge"
+            fontSize="26px"
+            fontWeight={600}
+            display="block"
+            sx={{ lineHeight: 1.4, wordBreak: 'break-word' }}
+          >
+            {title}
+          </Typography>
+          <Stack direction="row" alignItems="center" gap="8px" flexWrap="wrap">
+            <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
+              생성일시 {generatedAtLabel}
+            </Typography>
+            <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
+              |
+            </Typography>
+            <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
+              업데이트 {updatedAtLabel}
+            </Typography>
+          </Stack>
+        </Stack>
+      </Stack>
+    ),
+    [generatedAtLabel, title, updatedAtLabel],
+  )
+
   useLayoutEffect(() => {
+    if (embedded) return
     publishEventDetailHeaderContent({
       backLabel: 'Events',
       onBack: () => navigate(getScenarioWorkbenchTabPath('events')),
-      titleSlot: (
-        <Stack direction="row" alignItems="flex-end" justifyContent="space-between" width="100%">
-          <Stack flex={1} minWidth={0} gap="10px" alignItems="flex-start" pt="20px">
-            <Typography variant="body1B16" color="contentText.Black">
-              Event
-            </Typography>
-            <Typography
-              variant="titleLarge"
-              fontSize="26px"
-              fontWeight={600}
-              display="block"
-              sx={{ lineHeight: 1.4, wordBreak: 'break-word' }}
-            >
-              {title}
-            </Typography>
-            <Stack direction="row" alignItems="center" gap="8px" flexWrap="wrap">
-              <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
-                생성일시 {generatedAtLabel}
-              </Typography>
-              <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
-                |
-              </Typography>
-              <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
-                업데이트 {updatedAtLabel}
-              </Typography>
-            </Stack>
-          </Stack>
-        </Stack>
-      ),
+      titleSlot: headerTitleSlot,
     })
-  }, [generatedAtLabel, navigate, title, updatedAtLabel])
+  }, [embedded, headerTitleSlot, navigate])
 
   useLayoutEffect(() => {
+    if (embedded) return undefined
     setStickyHeader(<EventDetailHeaderView />, {
       pinMariPosition: true,
       stickyHeightsPx: WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
     })
+
     return () => {
       setStickyHeader(null)
       eventDetailHeaderContent = null
     }
-  }, [setStickyHeader])
+  }, [embedded, setStickyHeader])
 
   return (
-    <Stack maxWidth="1380px" margin="auto" px="12px" pt="20px" position="relative" sx={{ userSelect: 'none', overflowX: 'hidden' }}>
-      <Stack py="24px" gap="12px">
+    <Stack
+      maxWidth={embedded ? undefined : '1380px'}
+      margin={embedded ? undefined : 'auto'}
+      px={embedded ? 0 : '12px'}
+      pt={embedded ? 0 : '20px'}
+      position="relative"
+      sx={{
+        userSelect: 'none',
+        overflowX: embedded ? 'visible' : 'hidden',
+      }}
+    >
+      {embedded && (
+        <ScenarioWorkbenchDetailHeader
+          sections={EVENT_DETAIL_HEADER_SECTIONS}
+          backLabel="Events"
+          onBack={() => popupContext?.close()}
+          titleSlot={headerTitleSlot}
+          scrollContainer={popupScrollContainer}
+          hideBackButton
+        />
+      )}
+      <Stack py="24px" gap="12px" px={embedded ? '12px' : 0}>
         {detailError && (
           <Typography px={2} py={1} color="error.main" variant="body2">
             이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
