@@ -45,19 +45,23 @@ export const SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO: Record<ScenarioWorkbenchE
 /** Swagger: ImpactIndexSummaryRes */
 export type ScenarioWorkbenchImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'
 
-export type ScenarioWorkbenchPriceDirection = 'UP' | 'FLAT' | 'DOWN' | 'NONE'
+export type ScenarioWorkbenchDirection = 'UP' | 'FLAT' | 'DOWN' | 'NONE'
 
 export interface IScenarioWorkbenchImpactIndexSummary {
   indexName: string
-  impactLevel: ScenarioWorkbenchImpactLevel
-  priceDirection: ScenarioWorkbenchPriceDirection
+  /** Swagger는 low/medium/high(소문자) */
+  impactLevel: ScenarioWorkbenchImpactLevel | string
+  /** 260506: 상세 API에서 bullish/bearish/negligible(소문자)로 내려오는 케이스 대응 */
+  direction: ScenarioWorkbenchDirection | 'bullish' | 'bearish' | 'negligible' | string
 }
 
 /** 이벤트 목록 한 줄 (indexImpacts는 JKM·TTF·HH 등 지수별 요약) */
 export interface IScenarioWorkbenchEventListItem {
   eventId: string
-  title: string
-  eventStatus: ScenarioWorkbenchEventStatus
+  // 260506: title -> eventName
+  eventName: string
+  // 260506: eventStatus -> status
+  status: ScenarioWorkbenchEventStatus
   eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1
   occurredAt: string
   updatedAt: string
@@ -101,7 +105,13 @@ export interface IGetScenarioWorkbenchEventsParams {
 export interface IScenarioWorkbenchEventImpactAnalysis {
   indexImpacts: IScenarioWorkbenchImpactIndexSummary[]
   analysisText: string
+  /** 260506: categoryLv1 -> eventCategoryLv1 */
+  eventCategoryLv1?: ScenarioWorkbenchEventCategoryLv1
+  /** 260506: categoryLv2 -> eventCategoryLv2 */
+  eventCategoryLv2?: string
+  /** 하위호환: 구 응답 필드 */
   categoryLv1?: ScenarioWorkbenchEventCategoryLv1
+  /** 하위호환: 구 응답 필드 */
   categoryLv2?: string
   sources?: string[]
 }
@@ -110,6 +120,51 @@ export interface IScenarioWorkbenchEventImpactAnalysis {
 export interface IScenarioWorkbenchEventAiInsights {
   keySummaries: string[]
   detailedAnalysis: string
+}
+
+/** Swagger: RelatedEventScenarioEventRes */
+export interface IScenarioWorkbenchRelatedEventScenarioEvent {
+  eventId: number
+  eventName: string
+  createdAt: string
+  updatedAt: string
+  eventCategoryLv1?: string
+  eventCategoryLv1Label?: string
+  indexImpacts?: Array<{
+    indexName: string
+    impactLevel: string
+    impactLevelLabel?: string
+    direction?: string
+    directionLabel?: string
+  }>
+}
+
+/** Swagger: RelatedEventScenarioScenarioRes */
+export interface IScenarioWorkbenchRelatedEventScenarioScenario {
+  scenarioId: number
+  scenarioName: string
+  baseCase: boolean
+  probability?: number
+  indexImpacts?: Array<{
+    indexName: string
+    impactLevel: string
+    impactLevelLabel?: string
+  }>
+}
+
+/** Swagger: RelatedEventScenarioRes */
+export interface IScenarioWorkbenchRelatedEventScenario {
+  event?: IScenarioWorkbenchRelatedEventScenarioEvent
+  scenarios?: IScenarioWorkbenchRelatedEventScenarioScenario[]
+}
+
+/** Swagger: FundamentalDeepdiveRes */
+export interface IScenarioWorkbenchEventFundamentalDeepdive {
+  /** 260506: 테이블 미준비 상태로 null/빈값 가능 */
+  metrics?: IScenarioWorkbenchFundamentalMetric[]
+  indicators?: IScenarioWorkbenchFundamentalIndicator[]
+  /** 260506: 임시 items 배열로 내려오는 케이스 */
+  items?: string[]
 }
 
 /** Swagger: FundamentalMetricRes */
@@ -136,14 +191,22 @@ export interface IScenarioWorkbenchEventFundamental {
 
 /** Swagger: EventDetailRes */
 export interface IScenarioWorkbenchEventDetailRes {
-  eventId: string
-  title: string
-  eventStatus: ScenarioWorkbenchEventStatus
+  eventId: string | number
+  /** 260506: title -> eventName */
+  eventName?: string
+  /** 하위호환: 구 응답 필드 */
+  title?: string
+  /** 260506: eventStatus -> status */
+  status?: ScenarioWorkbenchEventStatus
+  /** 하위호환: 구 응답 필드 */
+  eventStatus?: ScenarioWorkbenchEventStatus
+  statusLabel?: string
   createdAt: string
   updatedAt: string
   impactAnalysis?: IScenarioWorkbenchEventImpactAnalysis
   aiInsights?: IScenarioWorkbenchEventAiInsights
-  fundamentalDeepdive?: IScenarioWorkbenchEventFundamental
+  fundamentalDeepdive?: IScenarioWorkbenchEventFundamentalDeepdive | IScenarioWorkbenchEventFundamental
+  relatedEventScenario?: IScenarioWorkbenchRelatedEventScenario
 }
 
 /** Swagger: EventRelatedRecordRes */

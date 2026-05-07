@@ -38,8 +38,8 @@ import scenarioWorkbenchEventService, {
   type IScenarioWorkbenchImpactIndexSummary,
   type ScenarioWorkbenchEventCategoryLv1,
   type ScenarioWorkbenchEventStatus,
+  type ScenarioWorkbenchDirection,
   type ScenarioWorkbenchImpactLevel,
-  type ScenarioWorkbenchPriceDirection,
 } from '@/service/mi/scenarioWorkbench/event'
 import { IPaginationResponse } from '@/types/api'
 
@@ -62,7 +62,7 @@ const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpact
   NONE: 0,
 }
 
-const PRICE_TO_UI: Record<ScenarioWorkbenchPriceDirection, EventMarketDirection> = {
+const PRICE_TO_UI: Record<ScenarioWorkbenchDirection, EventMarketDirection> = {
   UP: '상승',
   DOWN: '하락',
   FLAT: '보합',
@@ -86,14 +86,32 @@ const eventStatusToClassification = (status: ScenarioWorkbenchEventStatus) => {
 const findIndexImpact = (impacts: IScenarioWorkbenchImpactIndexSummary[], code: string) =>
   impacts.find((x) => (x.indexName ?? '').toUpperCase() === code)
 
+/** API status(대/소문자 혼재)를 ScenarioWorkbenchEventStatus로 정규화 */
+const normalizeEventStatus = (v: unknown): ScenarioWorkbenchEventStatus => {
+  const upper = String(v ?? 'CLOSED').toUpperCase()
+  if (upper === 'NEW' || upper === 'UPDATED' || upper === 'CLOSED') return upper
+  return 'CLOSED'
+}
+
+/** API direction(bullish/bearish/negligible 별칭 + 대/소문자 혼재)을 ScenarioWorkbenchDirection으로 정규화 */
+const normalizeDirection = (v: unknown): ScenarioWorkbenchDirection => {
+  const lower = String(v ?? '').toLowerCase()
+  if (lower === 'up' || lower === 'bullish') return 'UP'
+  if (lower === 'down' || lower === 'bearish') return 'DOWN'
+  if (lower === 'flat' || lower === 'negligible') return 'FLAT'
+  return 'NONE'
+}
+
 /** 단일 지수 요약을 UI 레벨·방향으로 변환 */
 const mapImpactToUi = (
   row: IScenarioWorkbenchImpactIndexSummary | undefined,
 ): { level: EventMarketImpactLevel; direction: EventMarketDirection } => {
   if (!row) return { level: 0, direction: '보합' }
+
+  const priceDirection = normalizeDirection(row.direction)
   return {
-    level: IMPACT_LEVEL_TO_UI[row.impactLevel] ?? 0,
-    direction: PRICE_TO_UI[row.priceDirection] ?? '보합',
+    level: IMPACT_LEVEL_TO_UI[row.impactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
+    direction: PRICE_TO_UI[priceDirection] ?? '보합',
   }
 }
 
@@ -104,31 +122,32 @@ const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventLis
   const ttf = mapImpactToUi(findIndexImpact(impacts, 'TTF'))
   const hh = mapImpactToUi(findIndexImpact(impacts, 'HH'))
 
+  const normalizedStatus = normalizeEventStatus(item.status as unknown)
   const occurredAt = item.occurredAt ? dayjs(item.occurredAt) : null
   const updatedAt = item.updatedAt ? dayjs(item.updatedAt) : null
   const displayTime = occurredAt?.isValid() ? occurredAt : updatedAt
   const occurredAtLabel = displayTime?.isValid() ? displayTime.format('MM-DD HH:mm') : '-'
-
+  const eventCategoryLv1 = item.eventCategoryLv1.toUpperCase() as ScenarioWorkbenchEventCategoryLv1
   return {
     id: item.eventId,
-    classification: eventStatusToClassification(item.eventStatus),
+    classification: eventStatusToClassification(normalizedStatus),
     occurredAtLabel,
-    category: SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[item.eventCategoryLv1] ?? item.eventCategoryLv1,
-    eventName: item.title,
+    category: SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[eventCategoryLv1] ?? item.eventCategoryLv1,
+    eventName: item.eventName,
     jkmImpact: jkm.level,
     jkmDirection: jkm.direction,
     ttfImpact: ttf.level,
     ttfDirection: ttf.direction,
     hhImpact: hh.level,
     hhDirection: hh.direction,
-    isActive: item.eventStatus !== 'CLOSED',
+    isActive: normalizedStatus !== 'CLOSED',
   }
 }
 
-/** 기본 조회 구간: 1개월(오늘 기준) */
+/** 기본 조회 구간: 6개월(오늘 기준) */
 const defaultEventsDateRange = (): DateRange => {
   const t = dayjs().startOf('day')
-  return { startDate: t.subtract(1, 'month'), endDate: t }
+  return { startDate: t.subtract(6, 'month'), endDate: t }
 }
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
@@ -194,7 +213,7 @@ const EventsTabPanel = () => {
     const dateSlice =
       appliedDateRange.startDate && appliedDateRange.endDate
         ? mapWorkbenchDateRangeToApiParams(appliedDateRange.startDate, appliedDateRange.endDate)
-        : { period: 'ONE_MONTH' as const }
+        : { period: 'SIX_MONTHS' as const }
 
     return {
       page: pagination.page,
