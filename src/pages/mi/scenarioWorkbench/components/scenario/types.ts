@@ -57,6 +57,18 @@ export interface SignpostItem {
   source: string
 }
 
+export type SignpostDefinitionDirection = 'up' | 'down' | 'flat'
+export type SignpostDefinitionImpactStrength = 'strong' | 'medium' | 'weak'
+
+export interface SignpostDefinition {
+  id: number
+  category: string
+  label: string
+  direction: SignpostDefinitionDirection
+  impactStrength: SignpostDefinitionImpactStrength
+  rationale: string
+}
+
 export interface RelatedEvent {
   id: number
   name: string
@@ -87,6 +99,7 @@ export interface ScenarioDetail {
   tags: string[]
   summary: ScenarioSummaryData
   keyPredictions: KeyPrediction[]
+  signpostDefinitions: SignpostDefinition[]
   signposts: SignpostItem[]
   relatedEvents: RelatedEvent[]
   relatedScenarios: RelatedScenario[]

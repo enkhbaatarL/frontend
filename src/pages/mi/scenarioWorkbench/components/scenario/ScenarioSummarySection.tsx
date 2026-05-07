@@ -6,6 +6,7 @@ import { CategoryScale, Chart as ChartJS, Filler, Legend, LinearScale, LineEleme
 import { useMemo } from 'react'
 import { Line } from 'react-chartjs-2'
 
+import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import PriceDirectionIcon from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
 import {
@@ -103,22 +104,47 @@ const ImpactTable = ({ rows }: { rows: ScenarioImpactRow[] }) => (
 const ForecastCardItem = ({ card }: { card: ScenarioForecastCard }) => (
   <Box sx={{ bgcolor: 'gray.5', borderRadius: '10px', p: '20px' }}>
     <Stack gap="6px">
-      <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'contentText.Normal', lineHeight: 1.4 }}>{card.title}</Typography>
       <Stack gap="2px">
-        <Typography sx={{ fontSize: 16, fontWeight: 500, color: 'contentText.Black', lineHeight: 1.6 }}>{card.body}</Typography>
-        <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'contentText.Normal', lineHeight: 1.4 }}>{card.summary}</Typography>
+        <Typography variant="body1M16" sx={{ color: 'contentText.Black' }}>
+          {card.body}
+        </Typography>
       </Stack>
     </Stack>
   </Box>
 )
 
+const ScenarioSummaryEmpty = () => (
+  <Box
+    sx={{
+      bgcolor: 'gray.5',
+      height: 387,
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  >
+    <Stack alignItems="center" gap="10px">
+      <ErrorOutlineIcon />
+      <Typography variant="body3SB12" sx={{ color: 'gray.60' }}>
+        MI 수급 모델 실행 후 차트가 생성됩니다.
+      </Typography>
+    </Stack>
+  </Box>
+)
+
 interface ScenarioSummarySectionProps {
-  data: ScenarioSummaryData
+  summary: ScenarioSummaryData
 }
 
-const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
+const ScenarioSummarySection = ({ summary }: ScenarioSummarySectionProps) => {
   const theme = useTheme()
-  const { impactRows, forecasts, chartUnit, chart } = data
+  const { impactRows, forecasts, chartUnit, chart } = summary ?? {
+    impactRows: [],
+    forecasts: [],
+    chartUnit: '',
+    chart: { months: [], series: [] },
+  }
 
   const weeksPerMonth = useMemo(() => {
     if (chart.months.length === 0) return 0
@@ -250,7 +276,7 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
           align: 'start' as const,
           color: theme.palette.contentText.Normal,
           font: { size: 14, weight: 500 },
-          padding: { top: 0, bottom: 40 },
+          padding: { top: 12, bottom: 40 },
         },
       },
       layout: { padding: 0 },
@@ -314,10 +340,14 @@ const ScenarioSummarySection = ({ data }: ScenarioSummarySectionProps) => {
         ))}
       </Stack>
 
-      <Box flex="1" minWidth={0} pt="24px">
-        <Box height="590px">
-          <Line data={chartData} options={chartOptions} plugins={[chartDecorPlugin]} />
-        </Box>
+      <Box flex="1" minWidth={0}>
+        {summary.chart.series.length > 0 ? (
+          <Box height="590px">
+            <Line data={chartData} options={chartOptions} plugins={[chartDecorPlugin]} />
+          </Box>
+        ) : (
+          <ScenarioSummaryEmpty />
+        )}
       </Box>
     </Stack>
   )

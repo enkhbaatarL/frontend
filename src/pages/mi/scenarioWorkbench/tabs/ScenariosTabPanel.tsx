@@ -1,5 +1,4 @@
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import { Box, Stack, Switch, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -9,7 +8,7 @@ import type { CreateType } from '@/service/mi/scenarioWorkbench'
 
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
-import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import { ScenarioWorkbenchTypeBadge } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
@@ -271,7 +270,10 @@ const TYPE_FILTER_OPTIONS = [
   { value: 'updated', label: '갱신' },
 ] as const
 
-const SORT_OPTIONS = ['최신순', '가격 영향도 높은 순', '발생 가능성 높은 순'] as const
+const SORT_OPTIONS = [
+  { value: 'newest', label: '최신순' },
+  { value: 'oldest', label: '오래된순' },
+] as const
 
 /** 기본 조회 구간: 6개월 (디자인 캡처와 정렬) */
 const defaultScenariosDateRange = (): DateRange => {
@@ -301,9 +303,8 @@ const ScenariosTabPanel = () => {
   const [stickyScrollShadowOpacity, setStickyScrollShadowOpacity] = useState(0)
 
   const [typeFilter, setTypeFilter] = useState('all')
-  const [sort, setSort] = useState('최신순')
+  const [sort, setSort] = useState('newest')
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultScenariosDateRange())
-  const [showActiveOnly, setShowActiveOnly] = useState(true)
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
@@ -328,11 +329,6 @@ const ScenariosTabPanel = () => {
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
-  const handleToggleActiveOnly = useCallback(() => {
-    setShowActiveOnly((prev) => !prev)
-    setPagination((p) => ({ ...p, page: 1 }))
-  }, [])
-
   const filteredRows = useMemo(() => {
     let rows = DUMMY_SCENARIOS
 
@@ -342,17 +338,13 @@ const ScenariosTabPanel = () => {
       rows = rows.filter((r) => r.type === 'updated')
     }
 
-    if (showActiveOnly) {
-      rows = rows.filter((r) => r.isActive)
-    }
-
     const trimmed = committedKeyword.trim().toLowerCase()
     if (trimmed) {
       rows = rows.filter((r) => r.name.toLowerCase().includes(trimmed))
     }
 
     return rows
-  }, [typeFilter, committedKeyword, showActiveOnly])
+  }, [typeFilter, committedKeyword])
 
   const pagedRows = useMemo(
     () => filteredRows.slice((pagination.page - 1) * pagination.size, pagination.page * pagination.size),
@@ -417,8 +409,8 @@ const ScenariosTabPanel = () => {
     return () => scrollEl.removeEventListener('scroll', onScroll)
   }, [])
 
-  const handleSortChange = useCallback((v: string) => {
-    setSort(v)
+  const handleSortChange = useCallback((value: string) => {
+    setSort(value)
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
@@ -491,31 +483,6 @@ const ScenariosTabPanel = () => {
 
   const workbenchEventDatePresets = useMemo(() => buildWorkbenchEventDatePresets(), [])
 
-  const dateRangeMenuLayoutProps = useMemo(
-    () => ({
-      placement: 'bottom-start' as const,
-      paperProps: {
-        elevation: 0,
-        sx: {
-          borderRadius: '10px',
-          boxShadow: '0px 0px 2px rgba(0,0,0,0.1)',
-          border: '1px solid',
-          borderColor: 'contentBorder.Normal',
-          overflow: 'hidden',
-          mt: 0.5,
-        },
-      },
-      sx: {
-        py: 1,
-        px: 1.5,
-        borderRadius: '10px',
-        minHeight: 40,
-        '& .MuiButton-root': { minHeight: 40, borderRadius: '10px' },
-      },
-    }),
-    [],
-  )
-
   return (
     <Box ref={panelLayoutRef} width="100%">
       <Box ref={stickyShadowSentinelRef} aria-hidden sx={{ height: 0, width: '100%', overflow: 'hidden', pointerEvents: 'none' }} />
@@ -531,62 +498,51 @@ const ScenariosTabPanel = () => {
           transition: 'box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" px={3} color="contentText.Black">
-          Scenarios
-        </Typography>
-
-        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} sx={{ px: 3 }}>
-          <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" sx={{ minWidth: 0, flex: 1 }}>
-            <MISlidingSegmented
-              options={TYPE_FILTER_OPTIONS}
-              value={typeFilter}
-              onChange={handleTypeFilterChange}
-              sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
-            />
-
-            <MIDropdownMenu
-              variant="outlined"
-              buttonHoverBgColor="gray.20"
-              label={
-                <Stack direction="row" alignItems="center" gap={1}>
-                  <Typography variant="body2M14" color="contentText.Black">
-                    {sort}
-                  </Typography>
-                  <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
-                </Stack>
-              }
-              items={SORT_OPTIONS.map((label) => ({ label, action: () => handleSortChange(label) }))}
-            />
-            <MIDateRangePickerMenu
-              dateRange={appliedDateRange}
-              onApply={handleDateRangeApply}
-              showPreset
-              datePresets={workbenchEventDatePresets}
-              {...dateRangeMenuLayoutProps}
-            />
+        <Stack direction="column" gap="12px">
+          <Stack py="6px">
+            <Typography variant="heading2" fontSize={26} gap={1.5} sx={{ px: 3 }}>
+              Scenarios
+            </Typography>
           </Stack>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap">
+            <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" sx={{ minWidth: 0, flex: 1 }}>
+              <MISlidingSegmented
+                options={TYPE_FILTER_OPTIONS}
+                value={typeFilter}
+                onChange={handleTypeFilterChange}
+                sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
+              />
 
-          <Stack direction="row" alignItems="center" gap={3} sx={{ flexShrink: 0 }}>
-            <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
-              <Switch size="small" checked={showActiveOnly} onChange={handleToggleActiveOnly} />
-              <Typography variant="body2M14" color="contentText.Black">
-                활성 시나리오만 보기
-              </Typography>
+              <MIDateRangePickerMenu
+                dateRange={appliedDateRange}
+                onApply={handleDateRangeApply}
+                showPreset
+                datePresets={workbenchEventDatePresets}
+              />
+
+              <MISelectMenu
+                variant="outlined"
+                buttonHoverBgColor="gray.20"
+                selected={sort}
+                onSelected={(value: string) => handleSortChange(value)}
+                items={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
+              />
             </Stack>
 
-            <MISearchInput
-              storageKey="scenario-workbench-scenarios"
-              value={keyword}
-              onChange={handleSearchChange}
-              placeholder="시나리오명으로 검색"
-              onSearch={handleSearch}
-              onClear={handleSearchClear}
-              width={246}
-            />
+            <Stack direction="row" alignItems="center" sx={{ flexShrink: 0 }}>
+              <MISearchInput
+                storageKey="scenario-workbench-scenarios"
+                value={keyword}
+                onChange={handleSearchChange}
+                placeholder="시나리오명으로 검색"
+                onSearch={handleSearch}
+                onClear={handleSearchClear}
+                width={246}
+              />
+            </Stack>
           </Stack>
         </Stack>
-
-        <ScenarioWorkbenchTableHeader<ScenarioRow> columns={columns} sx={{ mt: 2 }} />
+        <ScenarioWorkbenchTableHeader<ScenarioRow> columns={columns} sx={{ mt: '8px', mb: '8px' }} />
       </Box>
 
       <ScenarioWorkbenchDataList<ScenarioRow>

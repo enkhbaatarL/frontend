@@ -1,4 +1,4 @@
-import { EventNote, MonitorHeart, Summarize, Timeline } from '@mui/icons-material'
+import { EventNote, MonitorHeart, Notes, Summarize, Timeline } from '@mui/icons-material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import TokenIcon from '@mui/icons-material/Token'
 import { Stack, Typography } from '@mui/material'
@@ -15,9 +15,10 @@ import ScenarioWorkbenchDetailHeader, {
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
 import ScenarioKeyPredictionsSection from '@/pages/mi/scenarioWorkbench/components/scenario/ScenarioKeyPredictionsSection'
 import ScenarioSummarySection from '@/pages/mi/scenarioWorkbench/components/scenario/ScenarioSummarySection'
+import SignpostDefinitionSection from '@/pages/mi/scenarioWorkbench/components/scenario/SignpostDefinitionSection'
 import SignpostMonitoringSection from '@/pages/mi/scenarioWorkbench/components/scenario/SignpostMonitoringSection'
-import { ScenarioDetail } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
-import { getScenarioWorkbenchTabPath } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
+import { RelatedEvent, RelatedScenario, ScenarioDetail } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
 
 const SCENARIO_DETAIL_MOCK: ScenarioDetail = {
   name: '호르무즈 봉쇄 3개월+ 유지',
@@ -92,6 +93,52 @@ const SCENARIO_DETAIL_MOCK: ScenarioDetail = {
     { title: 'Text Label', value: 'Value', direction: 'up', description: 'Supporting text' },
     { title: 'Text Label', value: 'Value', direction: 'up', description: 'Supporting text' },
     { title: 'Text Label', value: 'Value', direction: 'up', description: 'Supporting text', hidden: true },
+  ],
+  signpostDefinitions: [
+    {
+      id: 1,
+      category: 'Observation',
+      label: '일본 JERA, 여름 피크 대비 추가 LNG 카고 10선 긴급 조달 발표',
+      direction: 'up',
+      impactStrength: 'strong',
+      rationale:
+        '대규모 긴급 조달은 실제 수급 긴장이 현실화되었음을 보여주는 결정적 신호로, 시나리오의 LNG 수요 급증(6-12Mt)이 진행 중임을 직접 증명합니다.',
+    },
+    {
+      id: 2,
+      category: 'Observation',
+      label: '중국 CNOOC, 광둥성 LNG 터미널 가동률 95% 돌파',
+      direction: 'up',
+      impactStrength: 'strong',
+      rationale:
+        '터미널 가동률 95%는 물리적 한계에 근접한 수준으로, 아시아 최대 수요처의 LNG 수급 긴장이 실제로 심화되었음을 확증합니다.로 심화되었음을 확증합니다.한계에 근접한 수준으로, 아시아 최대 수요처의 LNG 수급 긴장이 실제로 심화되었음을 확증합니다.로 심화되었음을 확증합니다.',
+    },
+    {
+      id: 3,
+      category: 'Observation',
+      label: '유럽 TTF 선물가격 $18/MMBtu 돌파',
+      direction: 'up',
+      impactStrength: 'medium',
+      rationale:
+        '가격 급등은 수급 긴장의 명확한 신호이나, 시나리오가 예상하는 장기간 지속성과 유럽-아시아 경쟁 격화까지는 추가 확인이 필요합니다.',
+    },
+    {
+      id: 4,
+      category: 'Observation',
+      label: '카타르 에너지, 아시아향 장기계약 프리미엄 15% 인상 통보',
+      direction: 'up',
+      impactStrength: 'medium',
+      rationale:
+        '장기계약 프리미엄 인상은 구조적 수급 불균형을 반영하며, 시나리오가 예측한 장기 계약 프리미엄 상승이 실현되었음을 직접 보여줍니다.',
+    },
+    {
+      id: 5,
+      category: 'Observation',
+      label: '싱가포르 EMA, 8월 전력 예비율 15% 이하 경고',
+      direction: 'up',
+      impactStrength: 'weak',
+      rationale: '전력 예비율 경고는 냉방 수요 증가의 간접적 신호이나, 실제 가스발전 증가와 LNG 수요 연결까지는 추가 데이터가 필요합니다.',
+    },
   ],
   signposts: [
     {
@@ -218,7 +265,8 @@ type ScenarioDetailSection = WorkbenchDetailHeaderSection & {
 const SCENARIO_DETAIL_SECTIONS: ScenarioDetailSection[] = [
   { id: 'scenario-detail-section-summary', label: '시나리오 요약', Icon: Summarize },
   { id: 'scenario-detail-section-key-predictions', label: '시나리오 주요 가정', Icon: Timeline },
-  { id: 'scenario-detail-section-signpost', label: 'Signpost 모니터링', Icon: MonitorHeart },
+  { id: 'scenario-detail-section-signpost-definition', label: 'Signpost 정의', Icon: Notes },
+  { id: 'scenario-detail-section-signpost', label: 'Signpost 모니터링 현황', Icon: MonitorHeart },
   { id: 'scenario-detail-section-related', label: '관련 이벤트 및 시나리오', Icon: EventNote },
 ]
 
@@ -283,6 +331,15 @@ const ScenarioDetailPage = () => {
   const { setStickyHeader } = useStickyHeader()
   const data = SCENARIO_DETAIL_MOCK
 
+  const handleEventDetailClick = (row: RelatedEvent) => {
+    navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/events/${encodeURIComponent(String(row.id))}`, {
+      state: { eventName: row.name },
+    })
+  }
+  const handleScenarioDetailClick = (row: RelatedScenario) => {
+    navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/scenarios/${encodeURIComponent(String(row.id))}`)
+  }
+
   useLayoutEffect(() => {
     publishScenarioDetailHeaderContent({
       backLabel: 'Scenarios',
@@ -345,19 +402,28 @@ const ScenarioDetailPage = () => {
       <Stack py="24px" gap="12px">
         <Stack id={SCENARIO_DETAIL_SECTIONS[0].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[0].id} />
-          <ScenarioSummarySection data={data.summary} />
+          <ScenarioSummarySection summary={data.summary} />
         </Stack>
         <Stack id={SCENARIO_DETAIL_SECTIONS[1].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[1].id} />
-          <ScenarioKeyPredictionsSection predictions={data.keyPredictions} />
+          <ScenarioKeyPredictionsSection keyPredictions={data.keyPredictions ?? []} />
         </Stack>
         <Stack id={SCENARIO_DETAIL_SECTIONS[2].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[2].id} />
-          <SignpostMonitoringSection rows={data.signposts} />
+          <SignpostDefinitionSection definitions={data.signpostDefinitions ?? []} />
         </Stack>
-        <Stack id={SCENARIO_DETAIL_SECTIONS[3].id} gap="12px">
+        <Stack id={SCENARIO_DETAIL_SECTIONS[3].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[3].id} />
-          <RelatedEventsAndScenariosSection events={data.relatedEvents} scenarios={data.relatedScenarios} />
+          <SignpostMonitoringSection signposts={data.signposts ?? []} />
+        </Stack>
+        <Stack id={SCENARIO_DETAIL_SECTIONS[4].id} gap="12px">
+          <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[4].id} />
+          <RelatedEventsAndScenariosSection
+            events={data.relatedEvents ?? []}
+            scenarios={data.relatedScenarios ?? []}
+            onEventRowClick={handleEventDetailClick}
+            onScenarioRowClick={handleScenarioDetailClick}
+          />
         </Stack>
       </Stack>
     </Stack>
