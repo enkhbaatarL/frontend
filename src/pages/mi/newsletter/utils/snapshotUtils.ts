@@ -337,6 +337,60 @@ export const reorderSections = (snapshot: INewsletterIssueSnapshotData, sectionI
   return { ...snapshot, sections: newSections }
 }
 
+const getContiguousOrderBase = (targetBlocks: INewsletterSnapshotBlock[], allBlocks: INewsletterSnapshotBlock[]): number => {
+  const targetOrders = targetBlocks.map((b) => b.order).filter((n) => Number.isFinite(n))
+  if (targetOrders.length > 0) return Math.min(...targetOrders)
+
+  const allOrders = allBlocks.map((b) => b.order).filter((n) => Number.isFinite(n))
+  if (allOrders.length > 0) return Math.max(...allOrders) + 1
+  return 0
+}
+
+const buildNewsCardBlockFromItem = (
+  item: IRelatedNewsEventItem,
+  order: number,
+  prev?: INewsletterSnapshotBlock,
+): INewsletterSnapshotBlock => {
+  const prevFields = getBlockFields<Record<string, unknown>>(prev) ?? {}
+  const softRemoved = item.removed === true
+  const nextVisibility = item.visibility !== undefined ? item.visibility : !softRemoved
+  const nextShowInChart =
+    item.showInChart ?? (typeof prevFields.showInChart === 'boolean' ? prevFields.showInChart : prev?.plotOnChart) ?? false
+  const nextBlock: INewsletterSnapshotBlock = {
+    ...(prev ?? {}),
+    id: prev?.id ?? `blk-NEWS_ITEM-${item.newsId}`,
+    type: 'NEWS_CARD',
+    title: item.title || prev?.title || '뉴스 카드',
+    format: prev?.format ?? 'GENERAL',
+    order,
+    visibility: nextVisibility,
+    plotOnChart: nextShowInChart,
+    fields: {
+      ...prevFields,
+      newsId: item.newsId,
+      title: item.title ?? '',
+      content: item.content ?? [],
+      timestamp: item.timestamp ?? null,
+      createdDate: item.createdDate ?? '',
+      createTime: item.createTime ?? '',
+      source: item.source ?? null,
+      originalUrl: item.originalLink ?? null,
+      showInChart: nextShowInChart,
+      trend: item.trend ?? 'NONE',
+    },
+    state: { ...(prev?.state ?? {}), removed: softRemoved },
+  }
+
+  const fieldDefs = item.fieldDefs ?? prev?.fieldDefs
+  if (fieldDefs !== undefined) {
+    nextBlock.fieldDefs = fieldDefs
+  } else {
+    delete nextBlock.fieldDefs
+  }
+
+  return nextBlock
+}
+
 export const updateNewsFlowItems = (
   snapshot: INewsletterIssueSnapshotData,
   items: IRelatedNewsEventItem[],
@@ -344,8 +398,8 @@ export const updateNewsFlowItems = (
   const section = findPrimaryRelatedNewsSection(snapshot)
   if (!section) return snapshot
 
-  const otherBlocks = (section.blocks ?? []).filter((b) => b.type !== 'NEWS_CARD')
-  const existingNewsBlocks = (section.blocks ?? []).filter((b) => b.type === 'NEWS_CARD')
+  const sectionBlocks = section.blocks ?? []
+  const existingNewsBlocks = sectionBlocks.filter((b) => b.type === 'NEWS_CARD')
   const existingByNewsId = new Map<string, INewsletterSnapshotBlock>()
   for (const b of existingNewsBlocks) {
     const f = getBlockFields<{ newsId?: string }>(b)
@@ -353,42 +407,36 @@ export const updateNewsFlowItems = (
     if (id) existingByNewsId.set(id, b)
   }
 
-  const newNewsBlocks: INewsletterSnapshotBlock[] = items.map((item, i) => {
-    const prev = existingByNewsId.get(item.newsId)
-    const softRemoved = item.removed === true
-    const nextVisibility = item.visibility !== undefined ? item.visibility : !softRemoved
-    return {
-      id: prev?.id ?? `blk-NEWS_ITEM-${item.newsId}`,
-      type: 'NEWS_CARD' as const,
-      title: item.title || '뉴스 카드',
-      format: 'GENERAL',
-      order: i,
-      visibility: nextVisibility,
-      fieldDefs: item.fieldDefs ?? prev?.fieldDefs,
-      fields: {
-        newsId: item.newsId,
-        title: item.title,
-        content: item.content ?? [],
-        timestamp: item.timestamp,
-        createdDate: item.createdDate,
-        createTime: item.createTime ?? '',
-        source: item.source ?? null,
-        originalUrl: item.originalLink ?? null,
-        showInChart: item.showInChart ?? false,
-        trend: item.trend ?? 'NONE',
-      },
-      state: { removed: softRemoved },
-      // INewsletterSnapshotBlock 매칭
-      plotOnChart: false,
+  const orderBase = getContiguousOrderBase(existingNewsBlocks, sectionBlocks)
+  const desiredOrderByNewsId = new Map(items.map((item, i) => [item.newsId, orderBase + i]))
+  const itemByNewsId = new Map(items.map((item) => [item.newsId, item]))
+  const existingBlockIds = new Set(sectionBlocks.map((b) => b.id))
+  const appendedBlocks: INewsletterSnapshotBlock[] = []
+
+  const newBlocks = sectionBlocks.map((block) => {
+    if (block.type !== 'NEWS_CARD') return block
+    const fields = getBlockFields<{ newsId?: string }>(block)
+    const newsId = fields?.newsId
+    const item = newsId ? itemByNewsId.get(newsId) : undefined
+    if (!item) {
+      if (block.state?.removed === true) return block
+      return { ...block, visibility: false, state: { ...(block.state ?? {}), removed: true } }
     }
+    return buildNewsCardBlockFromItem(item, desiredOrderByNewsId.get(item.newsId) ?? block.order, block)
   })
 
-  const newBlocks = [...otherBlocks, ...newNewsBlocks].map((b, i) => ({ ...b, order: i }))
+  for (const item of items) {
+    const prev = existingByNewsId.get(item.newsId)
+    if (prev && existingBlockIds.has(prev.id)) continue
+    appendedBlocks.push(buildNewsCardBlockFromItem(item, desiredOrderByNewsId.get(item.newsId) ?? orderBase + appendedBlocks.length, prev))
+  }
+
+  const nextBlocks = appendedBlocks.length > 0 ? [...newBlocks, ...appendedBlocks] : newBlocks
   const sectionIdx = snapshot.sections.findIndex((s) => s.id === section.id || (s.id ?? '').includes(section.id))
   if (sectionIdx < 0) return snapshot
 
   const newSections = [...snapshot.sections]
-  newSections[sectionIdx] = { ...section, blocks: newBlocks }
+  newSections[sectionIdx] = { ...section, blocks: nextBlocks }
   return { ...snapshot, sections: newSections }
 }
 
@@ -447,14 +495,11 @@ export const sortNewsFlowNewsCardsByTimeForSave = (snapshot: INewsletterIssueSna
   const section = findPrimaryRelatedNewsSection(snapshot)
   if (!section?.blocks?.length) return snapshot
 
-  const blocks = [...section.blocks]
-  const chartBlocks = blocks.filter((b) => b.type === 'CHART')
-  const otherBlocks = blocks.filter((b) => b.type !== 'CHART' && b.type !== 'NEWS_CARD')
+  const blocks = section.blocks
   const newsBlocks = blocks.filter((b) => b.type === 'NEWS_CARD')
 
   if (newsBlocks.length === 0) {
-    const merged = [...chartBlocks, ...otherBlocks].map((b, i) => ({ ...b, order: i }))
-    return replaceSectionBlocksInSnapshot(snapshot, section, merged)
+    return snapshot
   }
 
   const activeNews = newsBlocks.filter((b) => b.state?.removed !== true)
@@ -462,23 +507,22 @@ export const sortNewsFlowNewsCardsByTimeForSave = (snapshot: INewsletterIssueSna
   const sortedActive = [...activeNews].sort((a, b) => {
     const ca = getBlockFields<Record<string, unknown>>(a) ?? {}
     const cb = getBlockFields<Record<string, unknown>>(b) ?? {}
-    return newsFieldsToSortTimeMs(ca) - newsFieldsToSortTimeMs(cb)
+    return newsFieldsToSortTimeMs(ca) - newsFieldsToSortTimeMs(cb) || (a.order ?? 0) - (b.order ?? 0)
   })
   const newNewsBlocks = [...sortedActive, ...removedNews]
+  const orderBase = getContiguousOrderBase(newsBlocks, blocks)
+  const desiredOrderByBlockId = new Map(newNewsBlocks.map((b, i) => [b.id, orderBase + i]))
 
-  const merged: INewsletterSnapshotBlock[] = []
-  let order = 0
-  for (const b of chartBlocks) {
-    merged.push({ ...b, order: order++ })
-  }
-  for (const b of otherBlocks) {
-    merged.push({ ...b, order: order++ })
-  }
-  for (const b of newNewsBlocks) {
-    merged.push({ ...b, order: order++ })
-  }
+  let anyOrderChanged = false
+  const nextBlocks = blocks.map((b) => {
+    if (b.type !== 'NEWS_CARD') return b
+    const nextOrder = desiredOrderByBlockId.get(b.id)
+    if (nextOrder === undefined || b.order === nextOrder) return b
+    anyOrderChanged = true
+    return { ...b, order: nextOrder }
+  })
 
-  return replaceSectionBlocksInSnapshot(snapshot, section, merged)
+  return anyOrderChanged ? replaceSectionBlocksInSnapshot(snapshot, section, nextBlocks) : snapshot
 }
 
 export const getOrderedReferenceSections = (snapshot: INewsletterIssueSnapshotData | null): INewsletterSnapshotSection[] => {
@@ -486,13 +530,16 @@ export const getOrderedReferenceSections = (snapshot: INewsletterIssueSnapshotDa
   return snapshot.sections.filter((s) => isReferenceSnapshotSection(s)).sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
 }
 
-/** Reference 섹션에서 본문 블록만 (CHART / TABLE / IMAGE / REFERENCE_CONTENT TEXT) */
+/** Reference 섹션에서 본문 블록만 (CHART / TABLE / IMAGE / TEXT 본문) */
 export const getReferenceContentBlocks = (section: INewsletterSnapshotSection): INewsletterSnapshotBlock[] =>
   (section.blocks ?? [])
-    .filter(
-      (b) =>
-        b.type === 'CHART' || b.type === 'TABLE' || b.type === 'IMAGE' || (b.type === 'TEXT' && (b.id ?? '').includes('REFERENCE_CONTENT')),
-    )
+    .filter((b) => {
+      if (b.type === 'CHART' || b.type === 'TABLE' || b.type === 'IMAGE') return true
+      if (b.type !== 'TEXT') return false
+      // 클라 생성: blk-REFERENCE_CONTENT-* — 리비전/서버 패치 텍스트 블록은 id 규약이 다를 수 있음
+      if (isReferenceSnapshotSection(section)) return true
+      return (b.id ?? '').includes('REFERENCE_CONTENT')
+    })
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
 export const isReferenceSectionRemoved = (section: INewsletterSnapshotSection): boolean => section.removed === true
@@ -572,7 +619,18 @@ export const replaceReferenceSectionContentBlocks = (
   newContentBlocks: INewsletterSnapshotBlock[],
 ): INewsletterSnapshotSection => ({
   ...section,
-  blocks: newContentBlocks.map((b, i) => ({ ...b, order: i + 1 })),
+  blocks: (() => {
+    const existingBlocks = section.blocks ?? []
+    const existingIds = new Set(existingBlocks.map((b) => b.id))
+    const nextContentById = new Map(newContentBlocks.map((b, i) => [b.id, { ...b, order: i + 1 }]))
+    const nextBlocks = existingBlocks.map((block) => nextContentById.get(block.id) ?? block)
+    for (const block of newContentBlocks) {
+      if (!existingIds.has(block.id)) {
+        nextBlocks.push(nextContentById.get(block.id) ?? block)
+      }
+    }
+    return nextBlocks
+  })(),
 })
 
 /**
@@ -605,17 +663,16 @@ export const mergeReferenceSectionsIntoSnapshot = (
     newRefCount === 0
       ? nonRefSections
       : nonRefSections.map((s) => {
-          if ((s.order ?? 999) > maxExistingRefOrder) {
-            return { ...s, order: (s.order ?? 999) + newRefCount }
-          }
-          return s
-        })
+        if ((s.order ?? 999) > maxExistingRefOrder) {
+          return { ...s, order: (s.order ?? 999) + newRefCount }
+        }
+        return s
+      })
 
   let nextNewOrder = maxExistingRefOrder + 1
 
-  const newRefSections: INewsletterSnapshotSection[] = refSections.map((sec, idx) => {
+  const normalizeReferenceSectionForMerge = (sec: INewsletterSnapshotSection, idx: number): INewsletterSnapshotSection => {
     const existingSection = snapshot.sections.find((s) => s.id === sec.id)
-    const normalizedBlocks = (sec.blocks ?? []).map((b, i) => ({ ...b, order: i + 1 }))
     const rawC = normSectionCode(sec.code)
     const code = rawC.startsWith('REFERENCE') && /^REFERENCE\d*$/i.test(rawC) ? sec.code : `REFERENCE${idx + 1}`
     const order = existingRefOrderMap.has(sec.id) ? existingRefOrderMap.get(sec.id)! : nextNewOrder++
@@ -631,11 +688,30 @@ export const mergeReferenceSectionsIntoSnapshot = (
       target: existingSection?.target ?? sec.target ?? '2020',
       fields: { ...(sec.fields ?? {}) },
       fieldDefs: existingSection?.fieldDefs ?? sec.fieldDefs,
-      blocks: normalizedBlocks,
+      blocks: sec.blocks ?? [],
     }
+  }
+
+  const newRefSections = refSections.map(normalizeReferenceSectionForMerge)
+  const refById = new Map(newRefSections.map((s) => [s.id, s]))
+  const appendedRefIds = new Set(newlyAddedRefs.map((s) => s.id))
+
+  const nextSections = snapshot.sections.map((section) => {
+    const refSection = refById.get(section.id)
+    if (refSection) return refSection
+    if (!isReferenceSnapshotSection(section)) {
+      return adjustedNonRefSections.find((s) => s.id === section.id) ?? section
+    }
+    return section
   })
 
-  return { ...snapshot, sections: [...adjustedNonRefSections, ...newRefSections] }
+  for (const section of newRefSections) {
+    if (appendedRefIds.has(section.id)) {
+      nextSections.push(section)
+    }
+  }
+
+  return { ...snapshot, sections: nextSections }
 }
 
 export const fullInsertIndexForVisibleBlockTarget = (
@@ -774,18 +850,25 @@ export const computeDirectOrderChangeSectionIds = (
   const prevIds = getSectionsInOrder(previous).map((s) => s.id)
   const currIds = getSectionsInOrder(current).map((s) => s.id)
   if (prevIds.length === 0 || currIds.length === 0) return []
-  if (prevIds.join('\0') === currIds.join('\0')) return []
+
+  const prevSet = new Set(prevIds)
+  const currSet = new Set(currIds)
+  const prevCommonIds = prevIds.filter((id) => currSet.has(id))
+  const currCommonIds = currIds.filter((id) => prevSet.has(id))
+
+  // 추가/삭제만으로 주변 섹션이 한 칸씩 밀린 경우는 순서 변경으로 보지 않습니다.
+  if (prevCommonIds.join('\0') === currCommonIds.join('\0')) return []
 
   const prevIdx = new Map<string, number>()
-  prevIds.forEach((id, i) => {
+  prevCommonIds.forEach((id, i) => {
     prevIdx.set(id, i)
   })
   const currIdx = new Map<string, number>()
-  currIds.forEach((id, i) => {
+  currCommonIds.forEach((id, i) => {
     currIdx.set(id, i)
   })
 
-  const candidates = [...new Set([...prevIds, ...currIds])].filter((id) => prevIdx.has(id) && currIdx.has(id))
+  const candidates = prevCommonIds.filter((id) => currIdx.has(id))
   if (candidates.length === 0) return []
 
   const disp = new Map<string, number>()
@@ -984,6 +1067,27 @@ export const getSummaryProps = (
   return { summary: String(f.summaryText ?? '') }
 }
 
+/**
+ * 뉴스 카드 `fields` 본문 → `IRelatedNewsEventItem.content` 형식.
+ * 편집기·저장은 `content: string[]`를 쓰고, 리비전 JSON Patch 등에서는 `text` 또는 문자열 `content`만 올 수 있음.
+ */
+const newsCardBodyLinesFromBlockFields = (fields: Record<string, unknown>): string[] => {
+  const content = fields.content
+  if (Array.isArray(content)) {
+    return content.map((line) => String(line ?? ''))
+  }
+  if (typeof content === 'string' && content.trim() !== '') {
+    const parts = content.split(/\n\n+/).filter(Boolean)
+    return parts.length > 0 ? parts : [content]
+  }
+  const text = fields.text
+  if (typeof text === 'string' && text.trim() !== '') {
+    const parts = text.split(/\n\n+/).filter(Boolean)
+    return parts.length > 0 ? parts : [text]
+  }
+  return []
+}
+
 export const getNewsFlowProps = (
   snapshot: INewsletterIssueSnapshotData | null,
   /** 지정 시 해당 섹션만. 생략 시 첫 `SECTION` / `NEWS_FLOW` / `SIG_NEWS` */
@@ -1023,32 +1127,21 @@ export const getNewsFlowProps = (
 
   const newsEventItems: IRelatedNewsEventItem[] = newsCardBlocks
     .map((blk) => {
-      const c = getBlockFields<{
-        newsId: string
-        title?: string
-        content?: string[]
-        timestamp?: number
-        createdDate?: string
-        createTime?: string
-        source?: string | null
-        originalUrl?: string | null
-        showInChart?: boolean
-        trend?: string
-      }>(blk)
-      if (!c || typeof c.newsId !== 'string') return null
+      const fields = getBlockFields<Record<string, unknown>>(blk) ?? {}
+      if (typeof fields.newsId !== 'string') return null
       const softRemoved = blk.state?.removed === true
       const nextVisibility = blk.visibility
       return {
-        newsId: c.newsId,
-        title: c.title ?? '',
-        content: Array.isArray(c.content) ? c.content : [],
-        timestamp: c.timestamp,
-        createdDate: c.createdDate ?? '',
-        createTime: c.createTime ?? '',
-        source: c.source ?? '',
-        originalLink: c.originalUrl ?? undefined,
-        showInChart: c.showInChart ?? false,
-        trend: (c.trend ?? '') as IRelatedNewsEventItem['trend'],
+        newsId: fields.newsId,
+        title: fields.title !== undefined && fields.title !== null ? String(fields.title) : '',
+        content: newsCardBodyLinesFromBlockFields(fields),
+        timestamp: typeof fields.timestamp === 'number' ? fields.timestamp : undefined,
+        createdDate: fields.createdDate !== undefined && fields.createdDate !== null ? String(fields.createdDate) : '',
+        createTime: fields.createTime !== undefined && fields.createTime !== null ? String(fields.createTime) : '',
+        source: fields.source !== undefined && fields.source !== null ? String(fields.source) : '',
+        originalLink: typeof fields.originalUrl === 'string' ? fields.originalUrl : undefined,
+        showInChart: typeof fields.showInChart === 'boolean' ? fields.showInChart : (blk.plotOnChart ?? false),
+        trend: String(fields.trend ?? '') as IRelatedNewsEventItem['trend'],
         removed: softRemoved,
         visibility: nextVisibility,
         fieldDefs: blk.fieldDefs,

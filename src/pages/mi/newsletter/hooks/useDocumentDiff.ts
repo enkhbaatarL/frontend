@@ -1,9 +1,12 @@
-import { applyPatch } from 'fast-json-patch'
 import { cloneDeep, isEqual } from 'lodash-es'
 import { useMemo } from 'react'
 
-import type { INewsletterIssueSnapshotData, IJsonPatchOpRes, IRevisionChangeDetailResponse } from '@/service/mi/newsletter'
-import type { Operation } from 'fast-json-patch'
+import type {
+  INewsletterIssueSnapshotData,
+  INewsletterSnapshotBlock,
+  IRelatedNewsEventItem,
+  IRevisionChangeDetailResponse,
+} from '@/service/mi/newsletter'
 
 import {
   chartBoxPositionsEqual,
@@ -20,11 +23,18 @@ import {
   parseNewsletterIssueSnapshotData,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
 import { textDiffToHtml } from '@/pages/mi/newsletter/utils/textDiffToHtml'
+import { applyNewsletterSnapshotPatch } from '@/service/mi/newsletter'
 import { titleOilPricePlainSummaryForDiff } from '@/utils/titleOilPriceDisplay'
 
 export type ReferenceBlockChangeKind = 'added' | 'modified' | 'deleted'
 
 export type ReferenceBlockDiff = {
+  kind: ReferenceBlockChangeKind
+  titleDiffHtml?: string
+  contentDiffHtml?: string
+}
+
+export type RelatedNewsDiff = {
   kind: ReferenceBlockChangeKind
   titleDiffHtml?: string
   contentDiffHtml?: string
@@ -48,6 +58,8 @@ export type DiffOverrides = {
   referenceDescriptions?: string[]
   relatedNewsTitles?: string[]
   relatedNewsContents?: string[]
+  /** 뉴스 id → diff 정보. 표시 여부/라벨은 이 값 기준으로 net diff만 반영 */
+  relatedNewsItemChanges?: Record<string, RelatedNewsDiff>
   /** 순서만 바뀐(또는 순서+내용) 섹션 — UI에서 `변경됨` 표시용. 직접 이동한 섹션 id만 담음 */
   sectionOrderChangedSectionIds?: string[]
   /** 레퍼런스/사용자 추가 섹션의 블록별 diff. 배열 인덱스는 orderedReferenceSections 기준 */
@@ -60,16 +72,13 @@ export type UseDocumentDiffResult = {
   diffOverrides: DiffOverrides
 }
 
-const toOperations = (deltas: IJsonPatchOpRes[]): Operation[] =>
-  deltas.map((d) => {
-    const op = d.op as Operation['op']
-    const base: Record<string, unknown> = { op, path: d.path }
-    if (d.value !== undefined) base.value = typeof d.value === 'object' && d.value !== null ? cloneDeep(d.value) : d.value
-    if (d.from !== undefined) base.from = d.from
-    return base as unknown as Operation
-  })
-
 export type ComparisonTarget = 'previous' | 'initial'
+
+const isRenderedReferenceBlock = (block: INewsletterSnapshotBlock | undefined): boolean =>
+  !!block && block.visibility && !isReferenceBlockRemoved(block)
+
+const isRenderedNewsFlowItem = (item: IRelatedNewsEventItem | undefined): boolean =>
+  !!item && item.removed !== true && item.visibility !== false
 
 /**
  * 리비전 델타로 이전/현재 스냅샷과 diff HTML을 만듭니다.
@@ -100,45 +109,41 @@ export const useDocumentDiff = (
     const histories = revisionDetail.histories ?? []
 
     const parsedBase = parseNewsletterIssueSnapshotData(base) ?? base
+    const originalParsed = originalPublishedBaseline
+      ? (parseNewsletterIssueSnapshotData(originalPublishedBaseline) ?? originalPublishedBaseline)
+      : null
 
     if (selectedVersionSeq === null) {
-      return { previousData: null, currentData: parsedBase, diffOverrides: {} }
-    }
-
-    if (histories.length === 0) {
-      return { previousData: null, currentData: parsedBase, diffOverrides: {} }
+      return { previousData: null, currentData: originalParsed ?? parsedBase, diffOverrides: {} }
     }
 
     const selectedIndex = histories.findIndex((h) => Number(h.seq) === Number(selectedVersionSeq))
+    const selectedIsBaseSnapshot = Number(revisionDetail.baseSnapshot.seq) === Number(selectedVersionSeq)
 
-    if (selectedIndex < 0) {
+    if (!selectedIsBaseSnapshot && selectedIndex < 0) {
       console.warn('[useDocumentDiff] 선택 seq가 histories에 없음 — base 스냅샷만 표시합니다.', {
         selectedVersionSeq,
+        baseSnapshotSeq: revisionDetail.baseSnapshot.seq,
+        fromSeq: revisionDetail.fromSeq,
+        toSeq: revisionDetail.toSeq,
         historySeqs: histories.map((h) => h.seq),
       })
       return { previousData: null, currentData: parsedBase, diffOverrides: {} }
     }
 
-    const deltasToPrevious = comparisonTarget === 'initial' ? [] : histories.slice(0, selectedIndex).flatMap((h) => h.deltas ?? [])
-    const deltasToCurrent = histories.slice(0, selectedIndex + 1).flatMap((h) => h.deltas ?? [])
+    const deltasToPrevious =
+      comparisonTarget === 'initial' || selectedIsBaseSnapshot ? [] : histories.slice(0, selectedIndex).flatMap((h) => h.deltas ?? [])
+    const deltasToCurrent = selectedIsBaseSnapshot ? [] : histories.slice(0, selectedIndex + 1).flatMap((h) => h.deltas ?? [])
 
-    const baseForPatch = cloneDeep(base) as object
-    const originalParsed =
-      comparisonTarget === 'initial' && originalPublishedBaseline
-        ? (parseNewsletterIssueSnapshotData(originalPublishedBaseline) ?? originalPublishedBaseline)
-        : null
-    const originalForPatch = originalParsed ? (cloneDeep(originalParsed) as object) : null
-
-    let previousObj: object = originalForPatch ?? cloneDeep(baseForPatch)
-    let currentObj: object = cloneDeep(baseForPatch)
+    let previousData: INewsletterIssueSnapshotData | null =
+      comparisonTarget === 'initial' && originalParsed ? cloneDeep(originalParsed) : cloneDeep(parsedBase)
+    let currentData: INewsletterIssueSnapshotData | null = cloneDeep(parsedBase)
 
     try {
       if (deltasToPrevious.length > 0) {
-        const prevResult = applyPatch(previousObj, toOperations(deltasToPrevious), true)
-        previousObj = (prevResult.newDocument ?? prevResult) as object
+        previousData = applyNewsletterSnapshotPatch(parsedBase, deltasToPrevious)
       }
-      const currResult = applyPatch(currentObj, toOperations(deltasToCurrent), true)
-      currentObj = (currResult.newDocument ?? currResult) as object
+      currentData = applyNewsletterSnapshotPatch(parsedBase, deltasToCurrent)
     } catch (err) {
       const opTypes = [...new Set(deltasToCurrent.map((d) => d.op))]
       console.error('[useDocumentDiff] applyPatch 실패:', err, {
@@ -152,10 +157,7 @@ export const useDocumentDiff = (
       return empty()
     }
 
-    const previousData = parseNewsletterIssueSnapshotData(previousObj) ?? (previousObj as INewsletterIssueSnapshotData)
-    const currentData = parseNewsletterIssueSnapshotData(currentObj) ?? (currentObj as INewsletterIssueSnapshotData)
-
-    if (comparisonTarget === 'initial' && !originalForPatch) {
+    if (comparisonTarget === 'initial' && !originalParsed) {
       console.warn('[useDocumentDiff] comparisonTarget=initial 인데 originalPublishedBaseline 없음')
     }
 
@@ -254,8 +256,8 @@ export const useDocumentDiff = (
 
         for (const cb of currBlocks) {
           const pb = prevBlockMap.get(cb.id)
-          const currRemoved = isReferenceBlockRemoved(cb)
-          const prevRemoved = pb ? isReferenceBlockRemoved(pb) : false
+          const currActive = isRenderedReferenceBlock(cb)
+          const prevActive = isRenderedReferenceBlock(pb)
 
           const prevFields = (pb?.fields ?? {}) as Record<string, unknown>
           const currFields = (cb.fields ?? {}) as Record<string, unknown>
@@ -264,22 +266,11 @@ export const useDocumentDiff = (
           const prevContent = String(prevFields.content ?? '')
           const currContent = String(currFields.content ?? '')
 
-          if (!pb) {
-            if (!currRemoved) {
-              changes[cb.id] = {
-                kind: 'added',
-                titleDiffHtml: currBlockTitle ? textDiffToHtml('', currBlockTitle) : undefined,
-                contentDiffHtml: currContent ? textDiffToHtml('', currContent) : undefined,
-              }
-            }
+          if (!prevActive && !currActive) {
             continue
           }
 
-          if (currRemoved && !prevRemoved) {
-            changes[cb.id] = { kind: 'deleted' }
-            continue
-          }
-          if (!currRemoved && prevRemoved) {
+          if (!prevActive && currActive) {
             changes[cb.id] = {
               kind: 'added',
               titleDiffHtml: currBlockTitle ? textDiffToHtml('', currBlockTitle) : undefined,
@@ -287,7 +278,11 @@ export const useDocumentDiff = (
             }
             continue
           }
-          if (currRemoved) continue
+
+          if (prevActive && !currActive) {
+            changes[cb.id] = { kind: 'deleted' }
+            continue
+          }
 
           const titleChanged = prevBlockTitle !== currBlockTitle
           const contentChanged = prevContent !== currContent
@@ -314,26 +309,55 @@ export const useDocumentDiff = (
       const prevItemByNewsId = new Map(prevItems.map((it) => [it.newsId, it]))
       const titles: string[] = []
       const contents: string[] = []
+      const itemChanges: Record<string, RelatedNewsDiff> = {}
       currItems.forEach((item) => {
         const pItem = prevItemByNewsId.get(item.newsId)
-        const prevItemT = pItem?.title ?? ''
-        const currItemT = item?.title ?? ''
-        if (prevItemT === currItemT) {
+        const prevActive = isRenderedNewsFlowItem(pItem)
+        const currActive = isRenderedNewsFlowItem(item)
+
+        if (!prevActive && !currActive) {
           titles.push('')
-        } else {
-          titles.push(textDiffToHtml(prevItemT, currItemT))
+          contents.push('')
+          return
         }
 
-        const prevC = (pItem?.content ?? []).join('\n')
-        const currC = (item?.content ?? []).join('\n')
-        if (prevC === currC) {
+        if (prevActive && !currActive) {
+          itemChanges[item.newsId] = { kind: 'deleted' }
+          titles.push('')
           contents.push('')
-        } else {
-          contents.push(textDiffToHtml(prevC, currC))
+          return
+        }
+
+        const prevItemT = prevActive ? (pItem?.title ?? '') : ''
+        const currItemT = currActive ? (item.title ?? '') : ''
+        const prevC = prevActive ? (pItem?.content ?? []).join('\n') : ''
+        const currC = currActive ? (item.content ?? []).join('\n') : ''
+
+        const titleDiffHtml = prevItemT === currItemT ? undefined : textDiffToHtml(prevItemT, currItemT)
+        const contentDiffHtml = prevC === currC ? undefined : textDiffToHtml(prevC, currC)
+        titles.push(titleDiffHtml ?? '')
+        contents.push(contentDiffHtml ?? '')
+
+        if (!prevActive && currActive) {
+          itemChanges[item.newsId] = {
+            kind: 'added',
+            titleDiffHtml,
+            contentDiffHtml,
+          }
+          return
+        }
+
+        if (titleDiffHtml || contentDiffHtml) {
+          itemChanges[item.newsId] = {
+            kind: 'modified',
+            titleDiffHtml,
+            contentDiffHtml,
+          }
         }
       })
       if (titles.some(Boolean)) diffOverrides.relatedNewsTitles = titles
       if (contents.some(Boolean)) diffOverrides.relatedNewsContents = contents
+      if (Object.keys(itemChanges).length > 0) diffOverrides.relatedNewsItemChanges = itemChanges
     }
 
     const sectionOrderChangedSectionIds = computeDirectOrderChangeSectionIds(previousData, currentData)
