@@ -498,51 +498,49 @@ const ScenariosTabPanel = () => {
           transition: 'box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        <Stack direction="column" gap="12px">
-          <Stack py="6px">
-            <Typography variant="heading2" fontSize={26} gap={1.5} sx={{ px: 3 }}>
-              Scenarios
-            </Typography>
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" px={3} color="contentText.Black">
+          Scenarios
+        </Typography>
+
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} sx={{ px: 3 }}>
+          <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" sx={{ minWidth: 0, flex: 1 }}>
+            <MISlidingSegmented
+              options={TYPE_FILTER_OPTIONS}
+              value={typeFilter}
+              onChange={handleTypeFilterChange}
+              sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
+            />
+
+            <MIDateRangePickerMenu
+              dateRange={appliedDateRange}
+              onApply={handleDateRangeApply}
+              showPreset
+              datePresets={workbenchEventDatePresets}
+            />
+
+            <MISelectMenu
+              variant="outlined"
+              buttonHoverBgColor="gray.20"
+              selected={sort}
+              onSelected={(value: string) => handleSortChange(value)}
+              items={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
+            />
           </Stack>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap">
-            <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" sx={{ minWidth: 0, flex: 1 }}>
-              <MISlidingSegmented
-                options={TYPE_FILTER_OPTIONS}
-                value={typeFilter}
-                onChange={handleTypeFilterChange}
-                sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
-              />
 
-              <MIDateRangePickerMenu
-                dateRange={appliedDateRange}
-                onApply={handleDateRangeApply}
-                showPreset
-                datePresets={workbenchEventDatePresets}
-              />
-
-              <MISelectMenu
-                variant="outlined"
-                buttonHoverBgColor="gray.20"
-                selected={sort}
-                onSelected={(value: string) => handleSortChange(value)}
-                items={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
-              />
-            </Stack>
-
-            <Stack direction="row" alignItems="center" sx={{ flexShrink: 0 }}>
-              <MISearchInput
-                storageKey="scenario-workbench-scenarios"
-                value={keyword}
-                onChange={handleSearchChange}
-                placeholder="시나리오명으로 검색"
-                onSearch={handleSearch}
-                onClear={handleSearchClear}
-                width={246}
-              />
-            </Stack>
+          <Stack direction="row" alignItems="center" gap={3} sx={{ flexShrink: 0 }}>
+            <MISearchInput
+              storageKey="scenario-workbench-scenarios"
+              value={keyword}
+              onChange={handleSearchChange}
+              placeholder="시나리오명으로 검색"
+              onSearch={handleSearch}
+              onClear={handleSearchClear}
+              width={246}
+            />
           </Stack>
         </Stack>
-        <ScenarioWorkbenchTableHeader<ScenarioRow> columns={columns} sx={{ mt: '8px', mb: '8px' }} />
+
+        <ScenarioWorkbenchTableHeader<ScenarioRow> columns={columns} sx={{ mt: 2 }} />
       </Box>
 
       <ScenarioWorkbenchDataList<ScenarioRow>
