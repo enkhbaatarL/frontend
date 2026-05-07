@@ -29,11 +29,14 @@ export interface WorkbenchDetailHeaderSection {
 
 interface ScenarioWorkbenchDetailHeaderProps {
   backLabel: string
-  onBack: () => void
+  onBack?: () => void
   titleSlot: ReactNode
   rightAction?: ReactNode
   sections: WorkbenchDetailHeaderSection[]
   scrollContainerId?: string
+  /** 임베디드(모핑 팝업) 모드: 페이지 전역 스크롤 컨테이너 대신 이 엘리먼트를 사용 */
+  scrollContainer?: HTMLElement | null
+  hideBackButton?: boolean
 }
 
 const ScenarioWorkbenchDetailHeader = ({
@@ -43,8 +46,16 @@ const ScenarioWorkbenchDetailHeader = ({
   rightAction,
   sections,
   scrollContainerId = 'main-scroll-wrapper',
+  scrollContainer,
+  hideBackButton = false,
 }: ScenarioWorkbenchDetailHeaderProps) => {
   const { patchStickyHeaderOptions } = useStickyHeader()
+  const isEmbedded = scrollContainer !== undefined
+
+  const getScrollEl = useCallback(() => {
+    if (isEmbedded) return scrollContainer ?? null
+    return document.getElementById(scrollContainerId)
+  }, [isEmbedded, scrollContainer, scrollContainerId])
 
   const [activeSection, setActiveSection] = useState(0)
   const [isMainScrolled, setIsMainScrolled] = useState(false)
@@ -62,7 +73,17 @@ const ScenarioWorkbenchDetailHeader = ({
   const sectionsRef = useRef(sections)
   sectionsRef.current = sections
 
-  const getSectionElements = useCallback(() => sectionsRef.current.map((s) => document.getElementById(s.id)), [])
+  const getSectionElements = useCallback(() => {
+    const scrollEl = getScrollEl()
+    // 임베디드 모드인데 컨테이너가 아직 준비되지 않았으면 빈 결과를 반환 (페이지 전역 DOM으로 폴백 금지)
+    if (isEmbedded && !scrollEl) return sectionsRef.current.map(() => null)
+    const root: ParentNode = scrollEl ?? document
+    return sectionsRef.current.map((s) => {
+      // ID에는 CSS 선택자 특수문자가 포함될 수 있어 안전한 속성 선택자로 조회
+      const escaped = (s.id ?? '').replaceAll('"', '\\"')
+      return root.querySelector(`[id="${escaped}"]`) as HTMLElement | null
+    })
+  }, [getScrollEl, isEmbedded])
 
   const syncMainHeaderCollapseState = useCallback((scrollEl: HTMLElement) => {
     const next = scrollEl.scrollTop > 0
@@ -97,18 +118,21 @@ const ScenarioWorkbenchDetailHeader = ({
       const sticky = scrollEl.querySelector('[data-sticky-header]')
       if (sticky) return sticky.getBoundingClientRect().bottom
 
-      const collapsed = scrollEl.scrollTop > 0
       const containerRect = scrollEl.getBoundingClientRect()
+      // 임베디드(팝업): 페이지 전역 헤더가 없으므로 컨테이너 상단을 정렬 기준으로 사용
+      if (isEmbedded) return containerRect.top
+
+      const collapsed = scrollEl.scrollTop > 0
       const stickyHeight = collapsed ? stickyHeightsPx.collapsed : stickyHeightsPx.expanded
       const headerTop = collapsed ? MAIN_HEADER_TOP_COLLAPSED_PX : MAIN_HEADER_TOP_EXPANDED_PX
       return containerRect.top + headerTop + stickyHeight
     },
-    [stickyHeightsPx.collapsed, stickyHeightsPx.expanded],
+    [isEmbedded, stickyHeightsPx.collapsed, stickyHeightsPx.expanded],
   )
 
   const applyScrollSpyActiveSection = useCallback(() => {
     if (suppressScrollSpyForTabScrollRef.current) return
-    const scrollEl = document.getElementById(scrollContainerId)
+    const scrollEl = getScrollEl()
     if (!scrollEl) return
 
     const stickyLine = getStickySectionAlignY(scrollEl)
@@ -126,13 +150,13 @@ const ScenarioWorkbenchDetailHeader = ({
       next = lastIdx
     }
     setActiveSection((prev) => (prev === next ? prev : next))
-  }, [getSectionElements, getStickySectionAlignY, scrollContainerId])
+  }, [getScrollEl, getSectionElements, getStickySectionAlignY])
 
   const scrollSectionIntoView = useCallback(
     (index: number) => {
       const els = getSectionElements()
       const el = els[index]
-      const scrollEl = document.getElementById(scrollContainerId)
+      const scrollEl = getScrollEl()
       if (!el || !scrollEl) return
 
       const computeScrollTopToAlignSection = () => {
@@ -186,7 +210,7 @@ const ScenarioWorkbenchDetailHeader = ({
       fallbackTimer.id = globalThis.setTimeout(settleOnce, 4000)
       scrollEl.scrollTo({ top: scrollTarget, behavior: 'smooth' })
     },
-    [applyScrollSpyActiveSection, getSectionElements, getStickySectionAlignY, scrollContainerId, syncMainHeaderCollapseState],
+    [applyScrollSpyActiveSection, getScrollEl, getSectionElements, getStickySectionAlignY, syncMainHeaderCollapseState],
   )
 
   const handleTabChange = useCallback(
@@ -207,14 +231,14 @@ const ScenarioWorkbenchDetailHeader = ({
   )
 
   useEffect(() => {
-    const scrollEl = document.getElementById(scrollContainerId)
+    const scrollEl = getScrollEl()
     if (scrollEl) {
       scrollEl.scrollTop = 0
     }
-  }, [scrollContainerId])
+  }, [getScrollEl])
 
   useEffect(() => {
-    const scrollEl = document.getElementById(scrollContainerId)
+    const scrollEl = getScrollEl()
     if (!scrollEl) return undefined
     const onScroll = () => {
       const y = scrollEl.scrollTop
@@ -228,7 +252,7 @@ const ScenarioWorkbenchDetailHeader = ({
     onScroll()
     scrollEl.addEventListener('scroll', onScroll, { passive: true })
     return () => scrollEl.removeEventListener('scroll', onScroll)
-  }, [applyScrollSpyActiveSection, scrollContainerId])
+  }, [applyScrollSpyActiveSection, getScrollEl])
 
   useEffect(() => {
     applyScrollSpyActiveSection()
@@ -278,41 +302,60 @@ const ScenarioWorkbenchDetailHeader = ({
   }, [isMainScrolled, syncStickyHeightsFromMeasuredEl])
 
   useLayoutEffect(() => {
+    if (isEmbedded) return
     patchStickyHeaderOptions({ stickyHeightsPx })
-  }, [patchStickyHeaderOptions, stickyHeightsPx])
+  }, [isEmbedded, patchStickyHeaderOptions, stickyHeightsPx])
 
   return (
-    <Box ref={rootRef} maxWidth="1380px" margin="auto" px="12px" width="100%" sx={{ userSelect: 'none' }}>
+    <Box
+      ref={rootRef}
+      {...(isEmbedded && { 'data-sticky-header': true })}
+      maxWidth="1380px"
+      margin="auto"
+      px="12px"
+      width="100%"
+      sx={{
+        userSelect: 'none',
+        ...(isEmbedded && {
+          position: 'sticky',
+          top: '68px',
+          zIndex: 2,
+          bgcolor: 'commonColor.White',
+        }),
+      }}
+    >
       <Stack bgcolor="commonColor.White">
-        <Collapse
-          in={!isMainScrolled}
-          appear={false}
-          timeout={{
-            appear: WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS,
-            enter: WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS,
-            exit: WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS,
-          }}
-          easing={{ enter: WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING, exit: WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING }}
-          sx={{
-            transition: `height ${WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS}ms ${WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING}`,
-          }}
-        >
-          <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" py="8px">
-            <Box flex={1} minWidth={0} display="flex" alignItems="flex-end" minHeight="36px">
-              <MIBaseButton
-                variant="outlined"
-                prefix={<KeyboardBackspaceIcon sx={{ fontSize: 20 }} />}
-                onClick={onBack}
-                enableHoverBackground
-                sx={{
-                  height: '36px',
-                }}
-              >
-                {backLabel}
-              </MIBaseButton>
-            </Box>
-          </Stack>
-        </Collapse>
+        {!hideBackButton && (
+          <Collapse
+            in={!isMainScrolled}
+            appear={false}
+            timeout={{
+              appear: WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS,
+              enter: WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS,
+              exit: WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS,
+            }}
+            easing={{ enter: WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING, exit: WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING }}
+            sx={{
+              transition: `height ${WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS}ms ${WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING}`,
+            }}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" py="8px">
+              <Box flex={1} minWidth={0} display="flex" alignItems="flex-end" minHeight="36px">
+                <MIBaseButton
+                  variant="outlined"
+                  prefix={<KeyboardBackspaceIcon sx={{ fontSize: 20 }} />}
+                  onClick={onBack}
+                  enableHoverBackground
+                  sx={{
+                    height: '36px',
+                  }}
+                >
+                  {backLabel}
+                </MIBaseButton>
+              </Box>
+            </Stack>
+          </Collapse>
+        )}
 
         {titleSlot}
 
