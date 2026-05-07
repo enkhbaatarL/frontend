@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify'
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
 
 import type { ReferenceBlockDiff } from '@/pages/mi/newsletter/hooks/useDocumentDiff'
-import type { INewsletterIssueSnapshotData, INewsletterSnapshotSection } from '@/service/mi/newsletter'
+import type { INewsletterSnapshotSection } from '@/service/mi/newsletter'
 
 import ReferenceChart from '@/pages/mi/newsletter/components/chart/ReferenceChart'
 import ItemTitle from '@/pages/mi/newsletter/components/emailTemplate/ItemTitle'
@@ -14,7 +14,6 @@ import {
   getReferenceContentBlocks,
   isReferenceBlockRemoved,
   tableViewFromBlock,
-  wasReferenceContentBlockRemovedInSnapshot,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
 import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled, outlookMsoFontSize } from '@/utils/email'
 
@@ -30,8 +29,6 @@ interface ReferenceProps {
   descriptionDiffHtml?: string
   /** true면 `state.removed` 참고 블록도 렌더(리비전 Diff 등) */
   showRemovedBlocks?: boolean
-  /** 비교 스냅샷 — 직전에도 삭제된 블록은 숨김 */
-  diffComparisonSnapshot?: INewsletterIssueSnapshotData | null
   /** 블록 id → diff 정보 (kind + diff HTML) */
   blockChanges?: Record<string, ReferenceBlockDiff>
 }
@@ -47,19 +44,15 @@ const Reference = ({
   titleDiffHtml,
   descriptionDiffHtml,
   showRemovedBlocks = false,
-  diffComparisonSnapshot = null,
   blockChanges,
 }: ReferenceProps) => {
-  // 편집기 눈 아이콘 숨김(`visibility=false`)은 view/미리보기/이메일에서 항상 제외합니다.
-  const allBlocks = getReferenceContentBlocks(section).filter((b) => b.visibility)
-  const withRemoved = showRemovedBlocks ? allBlocks : allBlocks.filter((b) => !isReferenceBlockRemoved(b))
-  const displayBlocks =
-    showRemovedBlocks && diffComparisonSnapshot
-      ? withRemoved.filter((b) => {
-        if (!isReferenceBlockRemoved(b)) return true
-        return !wasReferenceContentBlockRemovedInSnapshot(diffComparisonSnapshot, section.id, b.id)
-      })
-      : withRemoved
+  // 일반 렌더는 현재 보이는 블록만, 변경이력은 net diff상 삭제된 블록까지 표시합니다.
+  const allBlocks = getReferenceContentBlocks(section)
+  const displayBlocks = allBlocks.filter((block) => {
+    const isActive = block.visibility && !isReferenceBlockRemoved(block)
+    if (isActive) return true
+    return showRemovedBlocks && blockChanges?.[block.id]?.kind === 'deleted'
+  })
   let chartIndex = 0
   const sf = section.fields ?? {}
   const title = String(sf.title ?? '')
@@ -75,16 +68,16 @@ const Reference = ({
         </tr>
 
         {displayBlocks.map((block) => {
-          const blockRemoved = isReferenceBlockRemoved(block)
           const blockDiff = blockChanges?.[block.id]
           const blockChangeKind = blockDiff?.kind
-          const removedNonTextStyle: CSSProperties | undefined = blockRemoved ? { opacity: 0.72 } : undefined
-          const addedBlockBg = !blockRemoved && blockChangeKind === 'added' ? '#e6f7ee' : undefined
+          const blockDeleted = blockChangeKind === 'deleted' || isReferenceBlockRemoved(block)
+          const removedNonTextStyle: CSSProperties | undefined = blockDeleted ? { opacity: 0.72 } : undefined
+          const addedBlockBg = !blockDeleted && blockChangeKind === 'added' ? '#e6f7ee' : undefined
 
           if (block.type === 'CHART') {
             let localIdx = 0
             let chartImage: string | undefined
-            if (!blockRemoved) {
+            if (!blockDeleted) {
               localIdx = chartIndex
               chartIndex += 1
               chartImage = chartImages[localIdx]
@@ -118,8 +111,8 @@ const Reference = ({
                   <td
                     style={{ padding: 0, position: 'relative', ...removedNonTextStyle, ...({ msoPaddingAlt: '0 0 0 0' } as CSSProperties) }}
                   >
-                    {blockRemoved && <ChangedLabel labelKind="deleted" top="12px" />}
-                    {!blockRemoved && blockChangeKind && <ChangedLabel labelKind={blockChangeKind} top="12px" />}
+                    {blockDeleted && <ChangedLabel labelKind="deleted" top="12px" />}
+                    {!blockDeleted && blockChangeKind && <ChangedLabel labelKind={blockChangeKind} top="12px" />}
                     <table
                       cellPadding={0}
                       cellSpacing={0}
@@ -197,8 +190,8 @@ const Reference = ({
               <Fragment key={block.id}>
                 <tr>
                   <td style={{ paddingLeft: '16px', position: 'relative', backgroundColor: addedBlockBg, ...removedNonTextStyle }}>
-                    {blockRemoved && <ChangedLabel labelKind="deleted" top="12px" />}
-                    {!blockRemoved && blockChangeKind && <ChangedLabel labelKind={blockChangeKind} top="12px" />}
+                    {blockDeleted && <ChangedLabel labelKind="deleted" top="12px" />}
+                    {!blockDeleted && blockChangeKind && <ChangedLabel labelKind={blockChangeKind} top="12px" />}
                     <ReferenceTable tableData={tableViewFromBlock(block)} width="760" />
                   </td>
                 </tr>
@@ -247,7 +240,7 @@ const Reference = ({
             const imageTitle = String(block.title ?? '').trim()
             const imageTitleHtml = blockDiff?.titleDiffHtml
             const imageCaptionHtml = blockDiff?.contentDiffHtml
-            if (!src && !blockRemoved && !blockChangeKind) return null
+            if (!src && !blockDeleted && !blockChangeKind) return null
             return (
               <tr key={block.id}>
                 <td
@@ -258,8 +251,8 @@ const Reference = ({
                     ...removedNonTextStyle,
                   }}
                 >
-                  {blockRemoved && <ChangedLabel labelKind="deleted" top="12px" />}
-                  {!blockRemoved && blockChangeKind && <ChangedLabel labelKind={blockChangeKind} top="12px" />}
+                  {blockDeleted && <ChangedLabel labelKind="deleted" top="12px" />}
+                  {!blockDeleted && blockChangeKind && <ChangedLabel labelKind={blockChangeKind} top="12px" />}
                   <table
                     cellPadding={0}
                     cellSpacing={0}
@@ -328,17 +321,17 @@ const Reference = ({
               </tr>
             )
           }
-          if (block.type === 'TEXT' && (block.id ?? '').includes('REFERENCE_CONTENT')) {
+          if (block.type === 'TEXT') {
             const bf = getBlockFields<{ content?: string; title?: string }>(block)
             const text = String(bf?.content ?? '')
             const textTitle = String(bf?.title ?? block.title ?? '').trim()
             const hasContent = text.trim().length > 0
-            if (!hasContent && !textTitle && !blockRemoved && !blockChangeKind) return null
-            if (!hasContent && !textTitle && (blockRemoved || blockChangeKind)) {
+            if (!hasContent && !textTitle && !blockDeleted && !blockChangeKind) return null
+            if (!hasContent && !textTitle && (blockDeleted || blockChangeKind)) {
               return (
                 <tr key={block.id}>
                   <td style={{ position: 'relative', paddingBottom: '24px' }}>
-                    <ChangedLabel labelKind={blockRemoved ? 'deleted' : blockChangeKind!} top="5px" />
+                    <ChangedLabel labelKind={blockDeleted ? 'deleted' : blockChangeKind!} top="5px" />
                   </td>
                 </tr>
               )
@@ -359,8 +352,8 @@ const Reference = ({
                 msoLineHeightAlt: msoLineHeightAltScaled(28, 20, 13.5),
                 msoLineHeightRule: 'exactly',
               } as CSSProperties),
-              opacity: blockRemoved ? 0.72 : undefined,
-              textDecoration: blockRemoved ? 'line-through' : undefined,
+              opacity: blockDeleted ? 0.72 : undefined,
+              textDecoration: blockDeleted ? 'line-through' : undefined,
             }
             const contentCellStyle: CSSProperties = {
               paddingBottom: '24px',
@@ -375,11 +368,11 @@ const Reference = ({
                 msoLineHeightAlt: msoLineHeightAltScaled(27, 18, 12),
                 msoLineHeightRule: 'exactly',
               } as CSSProperties),
-              opacity: blockRemoved ? 0.72 : undefined,
-              textDecoration: blockRemoved ? 'line-through' : undefined,
+              opacity: blockDeleted ? 0.72 : undefined,
+              textDecoration: blockDeleted ? 'line-through' : undefined,
             }
 
-            const blockLabel = blockRemoved ? 'deleted' : blockChangeKind
+            const blockLabel = blockDeleted ? 'deleted' : blockChangeKind
             const titleHtml = blockDiff?.titleDiffHtml
             const contentHtml = blockDiff?.contentDiffHtml
             return (

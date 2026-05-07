@@ -10,6 +10,18 @@ import type { INewsletterIssueSnapshotData } from '@/service/mi/newsletter'
 
 type JsonObject = Record<string, unknown>
 
+const normalizeJsonValue = (value: unknown): unknown => {
+  if (value === undefined) return null
+  if (Array.isArray(value)) return value.map(normalizeJsonValue)
+  if (value !== null && typeof value === 'object') {
+    const obj = value as JsonObject
+    for (const key of Object.keys(obj)) {
+      obj[key] = normalizeJsonValue(obj[key])
+    }
+  }
+  return value
+}
+
 const isBlankString = (v: unknown): boolean => v === null || v === undefined || (typeof v === 'string' && v.trim() === '')
 
 const resolveSectionCode = (section: JsonObject): string | null => {
@@ -148,11 +160,12 @@ const canonicalizeSection = (section: JsonObject): void => {
 export const canonicalizeSnapshotLikeServer = (snapshot: INewsletterIssueSnapshotData): INewsletterIssueSnapshotData => {
   const root = cloneDeep(snapshot) as unknown as JsonObject
   const sections = root.sections
-  if (!Array.isArray(sections)) return root as unknown as INewsletterIssueSnapshotData
-  for (const sec of sections) {
-    if (sec !== null && typeof sec === 'object' && !Array.isArray(sec)) {
-      canonicalizeSection(sec as JsonObject)
+  if (Array.isArray(sections)) {
+    for (const sec of sections) {
+      if (sec !== null && typeof sec === 'object' && !Array.isArray(sec)) {
+        canonicalizeSection(sec as JsonObject)
+      }
     }
   }
-  return root as unknown as INewsletterIssueSnapshotData
+  return normalizeJsonValue(root) as unknown as INewsletterIssueSnapshotData
 }

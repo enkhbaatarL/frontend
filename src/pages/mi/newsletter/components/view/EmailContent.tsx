@@ -28,7 +28,6 @@ import {
   getTitleProps,
   newsletterSectionToEmailTemplateKind,
   newsFlowSectionHasChartBlock,
-  wasNewsFlowItemRemovedInSnapshot,
 } from '@/pages/mi/newsletter/utils/snapshotUtils'
 
 const sectionOrderReordered = (diffOverrides: DiffOverrides | undefined, sectionId: string): boolean =>
@@ -47,8 +46,6 @@ export type EmailContentProps = {
   diffOverrides?: DiffOverrides
   /** true면 소프트 삭제 항목도 렌더: 뉴스 카드 `removed` + 사용자/참고 섹션 블록 `state.removed`(리비전 Diff 전용) */
   includeRemovedNewsFlowItems?: boolean
-  /** 직전(또는 최초) 비교 스냅샷 — 있으면 그때도 이미 삭제된 항목은 숨김 */
-  diffComparisonSnapshot?: INewsletterIssueSnapshotData | null
 }
 
 /**
@@ -69,7 +66,6 @@ export const EmailContentTemplate = ({
   oilPriceRowImage,
   diffOverrides,
   includeRemovedNewsFlowItems = false,
-  diffComparisonSnapshot = null,
 }: EmailContentProps) => {
   const orderedReferenceSections = getOrderedReferenceSections(snapshot)
   const orderedSections = getSectionsInOrder(snapshot)
@@ -188,7 +184,6 @@ export const EmailContentTemplate = ({
               titleDiffHtml={diffOverrides?.referenceTitles?.[refIndex]}
               descriptionDiffHtml={diffOverrides?.referenceDescriptions?.[refIndex]}
               showRemovedBlocks={includeRemovedNewsFlowItems}
-              diffComparisonSnapshot={diffComparisonSnapshot}
               blockChanges={diffOverrides?.referenceBlockChanges?.[refIndex]}
             />
           </td>
@@ -229,7 +224,6 @@ export const EmailContentTemplate = ({
               titleDiffHtml={diffOverrides?.referenceTitles?.[refIndex]}
               descriptionDiffHtml={diffOverrides?.referenceDescriptions?.[refIndex]}
               showRemovedBlocks={includeRemovedNewsFlowItems}
-              diffComparisonSnapshot={diffComparisonSnapshot}
               blockChanges={diffOverrides?.referenceBlockChanges?.[refIndex]}
             />
           </td>
@@ -274,14 +268,14 @@ export const EmailContentTemplate = ({
             const newsFlowListItems = includeRemovedNewsFlowItems
               ? newsFlowProps.newsEventItems
               : filterVisibleNewsFlowItems(newsFlowProps.newsEventItems.filter((i) => i.visibility !== false))
-            const newsFlowRows =
-              includeRemovedNewsFlowItems && diffComparisonSnapshot
-                ? newsFlowListItems
-                  .map((item, index) => ({ item, index }))
-                  .filter(
-                    ({ item }) => !item.removed || !wasNewsFlowItemRemovedInSnapshot(diffComparisonSnapshot, section.id, item.newsId),
-                  )
-                : newsFlowListItems.map((item, index) => ({ item, index }))
+            const newsFlowRows = includeRemovedNewsFlowItems
+              ? newsFlowListItems
+                .map((item, index) => ({ item, index }))
+                .filter(({ item }) => {
+                  if (item.removed !== true && item.visibility !== false) return true
+                  return diffOverrides?.relatedNewsItemChanges?.[item.newsId]?.kind === 'deleted'
+                })
+              : newsFlowListItems.map((item, index) => ({ item, index }))
             const showFlowChartRow = type === 'SECTION' || (type === 'NEWS_FLOW' && newsFlowSectionHasChartBlock(section))
             const sectionFlowDomId = type === 'SIG_NEWS' ? `section-sigNews-${section.id}` : `section-newsFlow-${section.id}`
             return (
@@ -355,9 +349,13 @@ export const EmailContentTemplate = ({
                           </tr>
                         )}
                         {newsFlowRows.map(({ item, index: origIndex }) => {
-                          const isRemoved = item.removed === true
+                          const itemChange = diffOverrides?.relatedNewsItemChanges?.[item.newsId]
+                          const isRemoved = itemChange?.kind === 'deleted'
                           const hasRelatedNewsDiff =
-                            !!diffOverrides?.relatedNewsTitles?.[origIndex] || !!diffOverrides?.relatedNewsContents?.[origIndex]
+                            !!itemChange?.titleDiffHtml ||
+                            !!itemChange?.contentDiffHtml ||
+                            !!diffOverrides?.relatedNewsTitles?.[origIndex] ||
+                            !!diffOverrides?.relatedNewsContents?.[origIndex]
                           return (
                             <tr key={item.newsId}>
                               <td
@@ -367,7 +365,14 @@ export const EmailContentTemplate = ({
                                 }}
                               >
                                 {isRemoved && <ChangedLabel labelKind="deleted" top="22px" />}
-                                {!isRemoved && hasRelatedNewsDiff && (
+                                {!isRemoved && itemChange && (
+                                  <ChangedLabel
+                                    labelKind={itemChange.kind}
+                                    diffHtmls={[itemChange.titleDiffHtml, itemChange.contentDiffHtml]}
+                                    top="22px"
+                                  />
+                                )}
+                                {!isRemoved && !itemChange && hasRelatedNewsDiff && (
                                   <ChangedLabel
                                     diffHtmls={[
                                       diffOverrides?.relatedNewsTitles?.[origIndex],
@@ -378,8 +383,8 @@ export const EmailContentTemplate = ({
                                 )}
                                 <RelatedNews
                                   item={item}
-                                  titleDiffHtml={diffOverrides?.relatedNewsTitles?.[origIndex]}
-                                  contentDiffHtml={diffOverrides?.relatedNewsContents?.[origIndex]}
+                                  titleDiffHtml={itemChange?.titleDiffHtml ?? diffOverrides?.relatedNewsTitles?.[origIndex]}
+                                  contentDiffHtml={itemChange?.contentDiffHtml ?? diffOverrides?.relatedNewsContents?.[origIndex]}
                                   visualRemoved={isRemoved}
                                 />
                               </td>
@@ -413,7 +418,6 @@ const EmailContent = forwardRef<HTMLDivElement, EmailContentProps>(
       oilPriceRowImage,
       diffOverrides,
       includeRemovedNewsFlowItems,
-      diffComparisonSnapshot,
     },
     ref,
   ) => (
@@ -429,7 +433,6 @@ const EmailContent = forwardRef<HTMLDivElement, EmailContentProps>(
         oilPriceRowImage={oilPriceRowImage}
         diffOverrides={diffOverrides}
         includeRemovedNewsFlowItems={includeRemovedNewsFlowItems}
-        diffComparisonSnapshot={diffComparisonSnapshot}
       />
     </div>
   ),

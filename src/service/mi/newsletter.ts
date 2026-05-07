@@ -270,6 +270,183 @@ const toOperations = (deltas: IJsonPatchOpRes[]): Operation[] =>
     return base as unknown as Operation
   })
 
+const decodeJsonPointerToken = (token: string): string => token.replaceAll('~1', '/').replaceAll('~0', '~')
+
+const hasJsonPointerPath = (document: unknown, path: string): boolean => {
+  if (path === '' || path === '/') return true
+  if (!path.startsWith('/')) return false
+
+  const tokens = path.slice(1).split('/').map(decodeJsonPointerToken)
+  let current = document
+
+  for (const token of tokens) {
+    if (Array.isArray(current)) {
+      const index = Number(token)
+      if (!Number.isInteger(index) || index < 0 || index >= current.length) return false
+      current = current[index]
+      continue
+    }
+
+    if (current !== null && typeof current === 'object') {
+      const obj = current as Record<string, unknown>
+      if (!Object.hasOwn(obj, token)) return false
+      current = obj[token]
+      continue
+    }
+
+    return false
+  }
+
+  return true
+}
+
+const getJsonPointerParentPath = (path: string): string => {
+  const lastSlashIndex = path.lastIndexOf('/')
+  return lastSlashIndex <= 0 ? '' : path.slice(0, lastSlashIndex)
+}
+
+const getJsonPointerLastToken = (path: string): string => {
+  const lastSlashIndex = path.lastIndexOf('/')
+  return lastSlashIndex < 0 ? path : decodeJsonPointerToken(path.slice(lastSlashIndex + 1))
+}
+
+const NEWS_CARD_OPTIONAL_MISSING_REMOVE_FIELDS = new Set(['plotOnChart', 'timestamp'])
+
+const getJsonPointerValue = (document: unknown, path: string): { found: boolean; value: unknown } => {
+  if (path === '' || path === '/') return { found: true, value: document }
+  if (!path.startsWith('/')) return { found: false, value: undefined }
+
+  const tokens = path.slice(1).split('/').map(decodeJsonPointerToken)
+  let current = document
+
+  for (const token of tokens) {
+    if (Array.isArray(current)) {
+      const index = Number(token)
+      if (!Number.isInteger(index) || index < 0 || index >= current.length) return { found: false, value: undefined }
+      current = current[index]
+      continue
+    }
+
+    if (current !== null && typeof current === 'object') {
+      const obj = current as Record<string, unknown>
+      if (!Object.hasOwn(obj, token)) return { found: false, value: undefined }
+      current = obj[token]
+      continue
+    }
+
+    return { found: false, value: undefined }
+  }
+
+  return { found: true, value: current }
+}
+
+const getContentArrayParentPathFromItemPatchPath = (path: string): string | null => {
+  const match = RegExp(/^(\/sections\/\d+\/blocks\/\d+\/fields\/content)\/\d+$/).exec(path)
+  return match?.[1] ?? null
+}
+
+const coalesceContentArrayItemDeltas = (
+  deltas: IJsonPatchOpRes[],
+  baseSnapshot: INewsletterIssueSnapshotData,
+  currentSnapshot: INewsletterIssueSnapshotData,
+): IJsonPatchOpRes[] => {
+  const contentParentPaths = new Set<string>()
+  for (const delta of deltas) {
+    const parentPath = getContentArrayParentPathFromItemPatchPath(delta.path)
+    if (parentPath) contentParentPaths.add(parentPath)
+  }
+
+  if (contentParentPaths.size === 0) return deltas
+
+  const contentReplacements = new Map<string, IJsonPatchOpRes>()
+  const nextDeltas: IJsonPatchOpRes[] = []
+
+  for (const delta of deltas) {
+    const childParentPath = getContentArrayParentPathFromItemPatchPath(delta.path)
+    const isDirectParentPatch = contentParentPaths.has(delta.path)
+    if (!childParentPath && !isDirectParentPatch) {
+      nextDeltas.push(delta)
+      continue
+    }
+
+    const parentPath = childParentPath ?? delta.path
+    if (contentReplacements.has(parentPath)) continue
+
+    const currentValue = getJsonPointerValue(currentSnapshot, parentPath)
+    if (currentValue.found) {
+      contentReplacements.set(parentPath, {
+        op: hasJsonPointerPath(baseSnapshot, parentPath) ? 'replace' : 'add',
+        path: parentPath,
+        value: cloneDeep(currentValue.value),
+      })
+    } else if (hasJsonPointerPath(baseSnapshot, parentPath)) {
+      contentReplacements.set(parentPath, { op: 'remove', path: parentPath })
+    }
+  }
+
+  return [...nextDeltas, ...contentReplacements.values()]
+}
+
+const getBlockPathFromPatchPath = (path: string): string | null => {
+  const match = RegExp(/^(.*\/blocks\/\d+)(?:\/|$)/).exec(path)
+  return match?.[1] ?? null
+}
+
+const isNewsletterSnapshotBlock = (value: unknown): value is { type?: unknown } =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+
+const isMissingPlotOnChartRemove = (document: unknown, operation: Operation): boolean =>
+  operation.op === 'remove' &&
+  operation.path.endsWith('/plotOnChart') &&
+  hasJsonPointerPath(document, getJsonPointerParentPath(operation.path)) &&
+  !hasJsonPointerPath(document, operation.path)
+
+const isMissingNewsContentItemRemove = (document: unknown, operation: Operation): boolean => {
+  if (operation.op !== 'remove' || !/\/fields\/content\/\d+$/.test(operation.path)) return false
+
+  const parent = getJsonPointerValue(document, getJsonPointerParentPath(operation.path))
+  if (!parent.found || !Array.isArray(parent.value)) return false
+
+  const index = Number(getJsonPointerLastToken(operation.path))
+  return Number.isInteger(index) && index >= parent.value.length
+}
+
+const isMissingNewsCardOptionalFieldRemove = (document: unknown, operation: Operation): boolean => {
+  if (operation.op !== 'remove') return false
+  const fieldName = getJsonPointerLastToken(operation.path)
+  if (!NEWS_CARD_OPTIONAL_MISSING_REMOVE_FIELDS.has(fieldName)) return false
+
+  const parent = getJsonPointerValue(document, getJsonPointerParentPath(operation.path))
+  if (!parent.found || parent.value === null || typeof parent.value !== 'object' || Array.isArray(parent.value)) return false
+  if (Object.hasOwn(parent.value as Record<string, unknown>, fieldName)) return false
+
+  const blockPath = getBlockPathFromPatchPath(operation.path)
+  const block = blockPath ? getJsonPointerValue(document, blockPath) : { found: false, value: undefined }
+  return block.found && isNewsletterSnapshotBlock(block.value) && block.value.type === 'NEWS_CARD'
+}
+
+export const applyNewsletterSnapshotPatch = (
+  base: INewsletterIssueSnapshotData,
+  deltas: IJsonPatchOpRes[],
+): INewsletterIssueSnapshotData => {
+  let current: unknown = cloneDeep(base)
+  const operations = toOperations(deltas)
+
+  for (const operation of operations) {
+    if (
+      isMissingPlotOnChartRemove(current, operation) ||
+      isMissingNewsContentItemRemove(current, operation) ||
+      isMissingNewsCardOptionalFieldRemove(current, operation)
+    ) {
+      continue
+    }
+    const result = applyPatch(current as object, [operation], true)
+    current = result.newDocument ?? result
+  }
+
+  return current as INewsletterIssueSnapshotData
+}
+
 /**
  * 발행호 상세 응답에서 "최신 스냅샷"을 계산합니다.
  * - `snapshot.data`: 서버가 저장한 기준 스냅샷(풀 스냅샷일 수도 있고 아닐 수도 있음)
@@ -286,9 +463,7 @@ export const getIssueDetailEffectiveSnapshotData = (
   if (!deltas || deltas.length === 0) return base
 
   try {
-    const baseForPatch = cloneDeep(base) as object
-    const result = applyPatch(baseForPatch, toOperations(deltas), true)
-    return (result.newDocument ?? result) as INewsletterIssueSnapshotData
+    return applyNewsletterSnapshotPatch(base, deltas)
   } catch (err) {
     console.warn('[newsletter] getIssueDetailEffectiveSnapshotData applyPatch 실패 — base snapshot을 사용합니다.', err)
     return base
@@ -430,13 +605,18 @@ const buildRevisionSaveBody = (params: {
   const baseNorm = canonicalizeSnapshotLikeServer(baseSnapshot)
   const currentNorm = canonicalizeSnapshotLikeServer(currentState)
 
-  const deltas = compare(cloneDeep(baseNorm) as object, cloneDeep(currentNorm) as object) as IJsonPatchOpRes[]
+  const rawDeltas = compare(cloneDeep(baseNorm) as object, cloneDeep(currentNorm) as object) as IJsonPatchOpRes[]
+  const deltas = coalesceContentArrayItemDeltas(rawDeltas, baseNorm, currentNorm)
 
   const body: ISaveRevisionRequest = {
     ...(revisionNo !== undefined && revisionNo !== null ? { revisionNo } : {}),
     deltas: deltas.map(({ op, path, value }) => {
       const patch: IJsonPatchOpRes = { op, path }
-      if (value !== undefined) patch.value = value
+      if (value !== undefined) {
+        patch.value = value
+      } else if (op !== 'remove') {
+        patch.value = null
+      }
       return patch
     }),
   }

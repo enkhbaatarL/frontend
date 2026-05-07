@@ -2,16 +2,11 @@ import DOMPurify from 'dompurify'
 import { Fragment, type CSSProperties } from 'react'
 
 import type { ReferenceBlockDiff } from '@/pages/mi/newsletter/hooks/useDocumentDiff'
-import type { INewsletterIssueSnapshotData, INewsletterSnapshotSection } from '@/service/mi/newsletter'
+import type { INewsletterSnapshotSection } from '@/service/mi/newsletter'
 
 import ItemTitle from '@/pages/mi/newsletter/components/emailTemplate/ItemTitle'
 import ChangedLabel from '@/pages/mi/newsletter/components/view/ChangedLabel'
-import {
-  getBlockFields,
-  getReferenceContentBlocks,
-  isReferenceBlockRemoved,
-  wasReferenceContentBlockRemovedInSnapshot,
-} from '@/pages/mi/newsletter/utils/snapshotUtils'
+import { getBlockFields, getReferenceContentBlocks, isReferenceBlockRemoved } from '@/pages/mi/newsletter/utils/snapshotUtils'
 import { EMAIL_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled, outlookMsoFontSize } from '@/utils/email'
 
 interface UserCustomProps {
@@ -19,27 +14,16 @@ interface UserCustomProps {
   titleDiffHtml?: string
   descriptionDiffHtml?: string
   showRemovedBlocks?: boolean
-  diffComparisonSnapshot?: INewsletterIssueSnapshotData | null
   blockChanges?: Record<string, ReferenceBlockDiff>
 }
 
-const UserCustom = ({
-  section,
-  titleDiffHtml,
-  descriptionDiffHtml,
-  showRemovedBlocks = false,
-  diffComparisonSnapshot = null,
-  blockChanges,
-}: UserCustomProps) => {
-  const allBlocks = getReferenceContentBlocks(section).filter((b) => b.visibility && b.type === 'TEXT')
-  const withRemoved = showRemovedBlocks ? allBlocks : allBlocks.filter((b) => !isReferenceBlockRemoved(b))
-  const displayBlocks =
-    showRemovedBlocks && diffComparisonSnapshot
-      ? withRemoved.filter((b) => {
-        if (!isReferenceBlockRemoved(b)) return true
-        return !wasReferenceContentBlockRemovedInSnapshot(diffComparisonSnapshot, section.id, b.id)
-      })
-      : withRemoved
+const UserCustom = ({ section, titleDiffHtml, descriptionDiffHtml, showRemovedBlocks = false, blockChanges }: UserCustomProps) => {
+  const allBlocks = getReferenceContentBlocks(section).filter((b) => b.type === 'TEXT')
+  const displayBlocks = allBlocks.filter((block) => {
+    const isActive = block.visibility && !isReferenceBlockRemoved(block)
+    if (isActive) return true
+    return showRemovedBlocks && blockChanges?.[block.id]?.kind === 'deleted'
+  })
   const sf = section.fields ?? {}
   const title = String(sf.title ?? '')
   const description = String(sf.description ?? '')
@@ -54,19 +38,19 @@ const UserCustom = ({
         </tr>
 
         {displayBlocks.map((block) => {
-          const blockRemoved = isReferenceBlockRemoved(block)
           const blockDiff = blockChanges?.[block.id]
           const blockChangeKind = blockDiff?.kind
+          const blockDeleted = blockChangeKind === 'deleted' || isReferenceBlockRemoved(block)
           const bf = getBlockFields<{ content?: string; title?: string }>(block)
           const text = String(bf?.content ?? '')
           const textTitle = String(bf?.title ?? block.title ?? '').trim()
           const hasContent = text.trim().length > 0
-          if (!hasContent && !textTitle && !blockRemoved && !blockChangeKind) return null
-          if (!hasContent && !textTitle && (blockRemoved || blockChangeKind)) {
+          if (!hasContent && !textTitle && !blockDeleted && !blockChangeKind) return null
+          if (!hasContent && !textTitle && (blockDeleted || blockChangeKind)) {
             return (
               <tr key={block.id}>
                 <td style={{ position: 'relative', paddingBottom: '24px' }}>
-                  <ChangedLabel labelKind={blockRemoved ? 'deleted' : blockChangeKind!} top="5px" />
+                  <ChangedLabel labelKind={blockDeleted ? 'deleted' : blockChangeKind!} top="5px" />
                 </td>
               </tr>
             )
@@ -87,8 +71,8 @@ const UserCustom = ({
               msoLineHeightAlt: msoLineHeightAltScaled(28, 20, 13.5),
               msoLineHeightRule: 'exactly',
             } as CSSProperties),
-            opacity: blockRemoved ? 0.72 : undefined,
-            textDecoration: blockRemoved ? 'line-through' : undefined,
+            opacity: blockDeleted ? 0.72 : undefined,
+            textDecoration: blockDeleted ? 'line-through' : undefined,
           }
           const contentCellStyle: CSSProperties = {
             paddingBottom: '24px',
@@ -103,11 +87,11 @@ const UserCustom = ({
               msoLineHeightAlt: msoLineHeightAltScaled(27, 18, 10),
               msoLineHeightRule: 'exactly',
             } as CSSProperties),
-            opacity: blockRemoved ? 0.72 : undefined,
-            textDecoration: blockRemoved ? 'line-through' : undefined,
+            opacity: blockDeleted ? 0.72 : undefined,
+            textDecoration: blockDeleted ? 'line-through' : undefined,
           }
 
-          const blockLabel = blockRemoved ? 'deleted' : blockChangeKind
+          const blockLabel = blockDeleted ? 'deleted' : blockChangeKind
           const titleHtml = blockDiff?.titleDiffHtml
           const contentHtml = blockDiff?.contentDiffHtml
           return (

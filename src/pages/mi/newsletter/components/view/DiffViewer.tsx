@@ -47,7 +47,6 @@ const DiffViewer = ({
   newsletterId,
   issueNo,
   revisionId,
-  revisionVersions = [],
   selectedVersionId,
   comparisonTarget = 'previous',
   isScrolled = false,
@@ -68,18 +67,12 @@ const DiffViewer = ({
 
   const selectedSeq = selectedVersionId === 'initial' ? null : Number.parseInt(selectedVersionId, 10)
 
-  /** 설계: seq 요청 시 baseSnapshot + histories[1..seq] 반환.
-   * 최신 seq 한 번만 요청 → 1~seq 전체 윈도우 확보 → 버전 전환 시 캐시에서 파생 */
-  const requestSeq = revisionVersions.length > 0 ? Math.max(...revisionVersions.map((v) => Number.parseInt(v.id, 10) || 0)) : 1
+  /** 선택한 seq 기준으로 조회해야 checkpoint base가 있는 이력에서도 해당 시점을 정확히 복원할 수 있습니다. */
+  const requestSeq = selectedSeq && !Number.isNaN(selectedSeq) ? selectedSeq : 0
 
   const { data: revisionDetail, isLoading } = useRevisionChangeDetail(requestSeq, newsletterId, issueNo, revisionId)
 
-  const { currentData, previousData, diffOverrides } = useDocumentDiff(
-    revisionDetail,
-    selectedSeq,
-    comparisonTarget,
-    originalPublishedBaseline,
-  )
+  const { currentData, diffOverrides } = useDocumentDiff(revisionDetail, selectedSeq, comparisonTarget, originalPublishedBaseline)
 
   const displaySnapshot = useMemo(
     () => currentData ?? originalPublishedBaseline ?? fallbackSnapshot ?? null,
@@ -192,7 +185,6 @@ const DiffViewer = ({
         tempHideCover
         diffOverrides={Object.keys(diffOverrides).length > 0 ? diffOverrides : undefined}
         includeRemovedNewsFlowItems
-        diffComparisonSnapshot={previousData}
       />
     </>
   )
