@@ -225,10 +225,12 @@ const MIDatePickerMenu = ({
           ...(menuProps.sx as Record<string, unknown>),
         }}
       >
-        <Stack width="332px" height="410px" padding="12px" gap="12px" boxSizing="border-box">
+        <Stack width="332px" minHeight="410px" padding="12px" gap="12px" boxSizing="border-box">
           <Stack
-            height="100%"
+            flex={1}
+            minHeight={0}
             sx={{
+              overflowY: 'auto',
               '& .rdp-button_next': {
                 width: 'auto',
                 height: 'auto !important',
@@ -345,7 +347,7 @@ const MIDatePickerMenu = ({
             />
           </Stack>
 
-          <Stack direction="row" justifyContent="flex-end" gap="10px">
+          <Stack direction="row" justifyContent="flex-end" gap="10px" flexShrink={0}>
             <MIButton type="outlined" onClick={handleCancel}>
               취소
             </MIButton>
