@@ -642,7 +642,7 @@ const DesignTabPanel = () => {
   }, [])
 
   const handleCategoryFilterApply = useCallback((values: FilterValues) => {
-    setCategoryFilter((values.category ?? []) as string[])
+    setCategoryFilter(values.category ?? [])
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
@@ -779,8 +779,7 @@ const DesignTabPanel = () => {
     const sentinel = stickyShadowSentinelRef.current
     if (!scrollEl || !sentinel) return
     const flowTopD = measureStickyFlowTopFromScrollContentTop(scrollEl, sentinel)
-    const stickyTop = SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX
-    const minScroll = Math.max(0, flowTopD - stickyTop + STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX)
+    const minScroll = Math.max(0, flowTopD - SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX + STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX)
     stickyShadowShowMinScrollTopRef.current = minScroll
     setStickyScrollShadowOpacity(scrollEl.scrollTop >= minScroll ? 1 : 0)
   }, [])
@@ -827,79 +826,75 @@ const DesignTabPanel = () => {
           transition: 'box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        <Stack direction="column" gap="12px">
-          <Stack py="6px">
-            <Typography variant="heading2" fontSize={26}>
-              Design
-            </Typography>
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" px={3} color="contentText.Black">
+          Design
+        </Typography>
+
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} sx={{ px: 3 }}>
+          <Stack direction="row" gap="12px" alignItems="center" flexWrap="wrap" sx={{ minWidth: 0, flex: 1 }}>
+            <MISlidingSegmented
+              options={TYPE_FILTER_OPTIONS}
+              value={typeFilter}
+              onChange={handleTypeFilterChange}
+              sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
+            />
+
+            <MIFilterMenu
+              filterGroups={[
+                [
+                  {
+                    key: 'category',
+                    title: '',
+                    filters: categoryFilterItems,
+                    width: 175,
+                  },
+                ],
+              ]}
+              initialValues={{ category: categoryFilter }}
+              appliedFiltersCount={categoryFilter.length}
+              onApply={handleCategoryFilterApply}
+              showSaveOption={false}
+              label="카테고리"
+              sx={{ minWidth: 106 }}
+            />
+
+            <MIDateRangePickerMenu
+              dateRange={appliedDateRange}
+              onApply={handleDateRangeApply}
+              showPreset
+              datePresets={workbenchEventDatePresets}
+            />
+
+            <MISelectMenu
+              variant="outlined"
+              buttonHoverBgColor="gray.20"
+              selected={sort}
+              onSelected={(value: string) => handleSortChange(value)}
+              items={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
+            />
           </Stack>
 
-          {/* 툴바 */}
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Stack direction="row" gap="12px" alignItems="center" flexWrap="wrap">
-              <MISlidingSegmented
-                options={TYPE_FILTER_OPTIONS}
-                value={typeFilter}
-                onChange={handleTypeFilterChange}
-                sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
-              />
-
-              <MIFilterMenu
-                filterGroups={[
-                  [
-                    {
-                      key: 'category',
-                      title: '',
-                      filters: categoryFilterItems,
-                      width: 175,
-                    },
-                  ],
-                ]}
-                initialValues={{ category: categoryFilter }}
-                appliedFiltersCount={categoryFilter.length}
-                onApply={handleCategoryFilterApply}
-                showSaveOption={false}
-                label="카테고리"
-                sx={{ minWidth: 106 }}
-              />
-
-              <MIDateRangePickerMenu
-                dateRange={appliedDateRange}
-                onApply={handleDateRangeApply}
-                showPreset
-                datePresets={workbenchEventDatePresets}
-              />
-
-              <MISelectMenu
-                variant="outlined"
-                buttonHoverBgColor="gray.20"
-                selected={sort}
-                onSelected={(value: string) => handleSortChange(value)}
-                items={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
-              />
+          <Stack direction="row" alignItems="center" gap={3} sx={{ flexShrink: 0 }}>
+            <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
+              <Switch size="small" checked={hideCompleted} onChange={handleToggleHideCompleted} />
+              <Typography variant="body2M14" color="contentText.Black">
+                완료 항목 숨기기
+              </Typography>
             </Stack>
 
-            <Stack direction="row" alignItems="center" gap="12px" sx={{ flexShrink: 0 }}>
-              <Stack direction="row" alignItems="center" gap="4px">
-                <Switch size="small" checked={hideCompleted} onChange={handleToggleHideCompleted} />
-                <Typography variant="body2M14" color="contentText.Normal" sx={{ lineHeight: 1 }}>
-                  완료 항목 숨기기
-                </Typography>
-              </Stack>
-
-              <MISearchInput
-                storageKey="design-tab-event-search"
-                value={searchInput}
-                onChange={setSearchInput}
-                placeholder="이벤트명으로 검색"
-                onSearch={handleSearch}
-                onClear={handleSearchClear}
-                width={246}
-              />
-            </Stack>
+            <MISearchInput
+              storageKey="design-tab-event-search"
+              value={searchInput}
+              onChange={setSearchInput}
+              placeholder="이벤트명으로 검색"
+              onSearch={handleSearch}
+              onClear={handleSearchClear}
+              width={246}
+            />
           </Stack>
         </Stack>
-        <ScenarioWorkbenchTableHeader<DesignRow> columns={columns} sx={{ mt: '8px', mb: '8px' }} />
+
+        <ScenarioWorkbenchTableHeader<DesignRow> columns={columns} sx={{ mt: 2 }} />
       </Box>
 
       <ScenarioWorkbenchDataList<DesignRow>

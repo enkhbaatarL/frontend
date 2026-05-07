@@ -366,8 +366,7 @@ const EventsTabPanel = () => {
     const sentinel = stickyShadowSentinelRef.current
     if (!scrollEl || !sentinel) return
     const flowTopD = measureStickyFlowTopFromScrollContentTop(scrollEl, sentinel)
-    const stickyTop = SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX
-    const minScroll = Math.max(0, flowTopD - stickyTop + STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX)
+    const minScroll = Math.max(0, flowTopD - SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX + STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX)
     stickyShadowShowMinScrollTopRef.current = minScroll
     setStickyScrollShadowOpacity(scrollEl.scrollTop >= minScroll ? 1 : 0)
   }, [])
@@ -437,7 +436,7 @@ const EventsTabPanel = () => {
         </Typography>
 
         <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} sx={{ px: 3 }}>
-          <Stack direction="row" alignItems="center" flexWrap="wrap" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
+          <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" sx={{ minWidth: 0, flex: 1 }}>
             <MISlidingSegmented
               options={TYPE_FILTER_OPTIONS}
               value={typeFilter}
