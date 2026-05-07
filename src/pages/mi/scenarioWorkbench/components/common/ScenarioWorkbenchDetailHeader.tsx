@@ -36,6 +36,7 @@ interface ScenarioWorkbenchDetailHeaderProps {
   scrollContainerId?: string
   /** 임베디드(모핑 팝업) 모드: 페이지 전역 스크롤 컨테이너 대신 이 엘리먼트를 사용 */
   scrollContainer?: HTMLElement | null
+  embeddedStickyTop?: number | string
   hideBackButton?: boolean
 }
 
@@ -47,6 +48,7 @@ const ScenarioWorkbenchDetailHeader = ({
   sections,
   scrollContainerId = 'main-scroll-wrapper',
   scrollContainer,
+  embeddedStickyTop = '68px',
   hideBackButton = false,
 }: ScenarioWorkbenchDetailHeaderProps) => {
   const { patchStickyHeaderOptions } = useStickyHeader()
@@ -318,7 +320,7 @@ const ScenarioWorkbenchDetailHeader = ({
         userSelect: 'none',
         ...(isEmbedded && {
           position: 'sticky',
-          top: '68px',
+          top: embeddedStickyTop,
           zIndex: 2,
           bgcolor: 'commonColor.White',
         }),

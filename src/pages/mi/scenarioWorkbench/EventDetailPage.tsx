@@ -7,8 +7,8 @@ import { useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNod
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import type {
-  EventDetailFundamentalIndicatorRow,
-  EventDetailFundamentalMetricRow,
+  // EventDetailFundamentalIndicatorRow,
+  // EventDetailFundamentalMetricRow,
   EventDetailImpactKpiItem,
   EventDetailImpactTableRow,
   EventDetailMiRecordRow,
@@ -17,7 +17,7 @@ import type {
 } from '@/pages/mi/scenarioWorkbench/components/event/types'
 import type { PriceDirection, RelatedEvent, RelatedScenario } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
 
-import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopup'
+import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import RelatedEventsAndScenariosSection from '@/pages/mi/scenarioWorkbench/components/common/RelatedEventsAndScenariosSection'
 import ScenarioWorkbenchDetailHeader, {
@@ -28,7 +28,7 @@ import EventDetailAiInsightsSection from '@/pages/mi/scenarioWorkbench/component
 import EventDetailDriverTreeScoreboardSection, {
   type EventDetailDriverTreeRow,
 } from '@/pages/mi/scenarioWorkbench/components/event/EventDetailDriverTreeScoreboardSection'
-import EventDetailFundamentalSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailFundamentalSection'
+// import EventDetailFundamentalSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailFundamentalSection'
 import EventDetailImpactAnalysisSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailImpactAnalysisSection'
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailMiRecordsTable'
@@ -41,7 +41,7 @@ import scenarioWorkbenchEventService, {
 import { IPaginationResponse } from '@/types/api'
 
 /** 이벤트 상세 탭 키 */
-export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'fundamental' | 'driverTree' | 'related'
+export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | /* 'fundamental' |*/ 'driverTree' | 'related'
 
 /** 이벤트 상세 탭 라벨 정의 */
 const EVENT_DETAIL_TABS: { key: EventDetailTabKey; label: string }[] = [
@@ -49,7 +49,7 @@ const EVENT_DETAIL_TABS: { key: EventDetailTabKey; label: string }[] = [
   { key: 'ai', label: 'AI Insights' },
   { key: 'records', label: 'MI Records' },
   { key: 'outlook', label: '기관 전망' },
-  { key: 'fundamental', label: 'Fundamental Deep-dive' },
+  // { key: 'fundamental', label: 'Fundamental Deep-dive' }, // 미확정으로 인한 임시 비활성화 26.05.07
   { key: 'driverTree', label: 'Driver Tree Scoreboard' },
   { key: 'related', label: '관련 이벤트 및 시나리오' },
 ]
@@ -150,7 +150,7 @@ const SECTION_SCROLL_IDS: Record<EventDetailTabKey, string> = {
   ai: 'event-detail-section-ai',
   records: 'event-detail-section-records',
   outlook: 'event-detail-section-outlook',
-  fundamental: 'event-detail-section-fundamental',
+  // fundamental: 'event-detail-section-fundamental', // 미확정으로 인한 임시 비활성화 26.05.07
   driverTree: 'event-detail-section-driver-tree',
   related: 'event-detail-section-related',
 }
@@ -334,29 +334,29 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     return '상세 분석 데이터가 없습니다.'
   }, [detail?.aiInsights?.detailedAnalysis, detailLoading])
 
-  const fundamentalMetricRows = useMemo((): EventDetailFundamentalMetricRow[] => {
-    const metrics = detail?.fundamentalDeepdive?.metrics ?? []
-    const prefix = detail?.eventId ?? eventId ?? 'evt'
-    return metrics.map((m, i) => ({
-      id: `${prefix}-fm-${i}`,
-      item: m.metricName,
-      currentValue: m.currentValue,
-      criteria: m.interpretation,
-      source: m.source,
-    }))
-  }, [detail?.eventId, detail?.fundamentalDeepdive?.metrics, eventId])
-
-  const fundamentalIndicatorRows = useMemo((): EventDetailFundamentalIndicatorRow[] => {
-    const indicators = detail?.fundamentalDeepdive?.indicators ?? []
-    const prefix = detail?.eventId ?? eventId ?? 'evt'
-    return indicators.map((m, i) => ({
-      id: `${prefix}-fi-${i}`,
-      indicator: m.indicatorName,
-      currentValue: m.currentValue,
-      implication: m.implication,
-      source: m.source,
-    }))
-  }, [detail?.eventId, detail?.fundamentalDeepdive?.indicators, eventId])
+  // const fundamentalMetricRows = useMemo((): EventDetailFundamentalMetricRow[] => {
+  //   const metrics = detail?.fundamentalDeepdive?.metrics ?? []
+  //   const prefix = detail?.eventId ?? eventId ?? 'evt'
+  //   return metrics.map((m, i) => ({
+  //     id: `${prefix}-fm-${i}`,
+  //     item: m.metricName,
+  //     currentValue: m.currentValue,
+  //     criteria: m.interpretation,
+  //     source: m.source,
+  //   }))
+  // }, [detail?.eventId, detail?.fundamentalDeepdive?.metrics, eventId])
+  //
+  // const fundamentalIndicatorRows = useMemo((): EventDetailFundamentalIndicatorRow[] => {
+  //   const indicators = detail?.fundamentalDeepdive?.indicators ?? []
+  //   const prefix = detail?.eventId ?? eventId ?? 'evt'
+  //   return indicators.map((m, i) => ({
+  //     id: `${prefix}-fi-${i}`,
+  //     indicator: m.indicatorName,
+  //     currentValue: m.currentValue,
+  //     implication: m.implication,
+  //     source: m.source,
+  //   }))
+  // }, [detail?.eventId, detail?.fundamentalDeepdive?.indicators, eventId])
 
   /** Driver Tree Scoreboard — API 연동 전까지 퍼블리싱용 목 데이터 */
   const driverTreeRows = useMemo((): EventDetailDriverTreeRow[] => {
@@ -518,6 +518,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           onBack={() => popupContext?.close()}
           titleSlot={headerTitleSlot}
           scrollContainer={popupScrollContainer}
+          embeddedStickyTop={0}
           hideBackButton
         />
       )}
@@ -551,9 +552,9 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             loading={outlooksLoading}
           />
         </Stack>
-        <Stack id={SECTION_SCROLL_IDS.fundamental} gap="12px" py="30px">
+        {/* <Stack id={SECTION_SCROLL_IDS.fundamental} gap="12px" py="30px">
           <EventDetailFundamentalSection metricRows={fundamentalMetricRows} indicatorRows={fundamentalIndicatorRows} />
-        </Stack>
+        </Stack> */}
         <Stack id={SECTION_SCROLL_IDS.driverTree} gap="12px" py="30px">
           <EventDetailDriverTreeScoreboardSection rows={driverTreeRows} />
         </Stack>

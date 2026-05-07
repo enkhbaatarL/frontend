@@ -151,6 +151,7 @@ const DetailIconButton = ({ row }: { row: DesignRow }) => {
           </Stack>
         ) : null,
         showSkeleton: false,
+        useInternalScroll: true,
       }}
     >
       <Box width="36px" height="34px" borderRadius="10px" sx={{ display: 'inline-flex' }}>

@@ -49,13 +49,23 @@ const LoginPage = () => {
     [setUser, setToken],
   )
 
-  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handlePasswordChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value
     setPassword(inputValue)
 
-    if (inputValue === 'mitest1234' || inputValue === 'ㅡㅑㅅㄷㄴㅅ1234') {
+    if (['mitest1234', 'ㅡㅑㅅㄷㄴㅅ1234'].includes(inputValue)) {
       localStorage.setItem('mi-dev-authenticated', 'true')
       setTempAuthFilter(true)
+
+      return
+    }
+
+    if (['skgas', '낳ㅁㄴ'].includes(inputValue)) {
+      const token = devTokens.user.find(({ label }) => label === 'SK Gas')?.value
+      if (!token) return
+
+      await setUserInfo(token)
+      navigate('/mi')
     }
   }
 
