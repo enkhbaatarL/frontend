@@ -45,16 +45,16 @@ const columns: GridColDef<SignpostItem>[] = [
 ]
 
 interface SignpostMonitoringSectionProps {
-  rows: SignpostItem[]
+  signposts: SignpostItem[]
 }
 
-const SignpostMonitoringSection = ({ rows }: SignpostMonitoringSectionProps) => (
+const SignpostMonitoringSection = ({ signposts }: SignpostMonitoringSectionProps) => (
   <Box sx={{ position: 'relative', paddingY: '24px' }}>
     <ScenarioWorkbenchTableHeader<SignpostItem> columns={columns} />
     <ScenarioWorkbenchDataList<SignpostItem>
       rowId="id"
       columns={columns}
-      rows={rows}
+      rows={signposts}
       rowHeight={42}
       cellPreset="miCanvasEvent"
       noRowMessage="데이터를 수집 중입니다."

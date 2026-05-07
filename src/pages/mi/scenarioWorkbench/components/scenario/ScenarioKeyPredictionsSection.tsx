@@ -31,10 +31,10 @@ const renderContent = (prediction: KeyPrediction): string | ReactNode => {
 }
 
 interface ScenarioKeyPredictionsSectionProps {
-  predictions: KeyPrediction[]
+  keyPredictions: KeyPrediction[]
 }
 
-const ScenarioKeyPredictionsSection = ({ predictions }: ScenarioKeyPredictionsSectionProps) => (
+const ScenarioKeyPredictionsSection = ({ keyPredictions }: ScenarioKeyPredictionsSectionProps) => (
   <Box
     sx={{
       display: 'grid',
@@ -42,7 +42,7 @@ const ScenarioKeyPredictionsSection = ({ predictions }: ScenarioKeyPredictionsSe
       gap: '12px',
     }}
   >
-    {predictions.map((prediction, index) => (
+    {keyPredictions.map((prediction, index) => (
       <Box key={index} sx={{ opacity: prediction.hidden ? 0 : 1 }}>
         <KpiCard title={prediction.title} content={renderContent(prediction)} description={prediction.description ?? ''} />
       </Box>

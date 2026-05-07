@@ -45,13 +45,13 @@ const getRelatedEventColumns = (onDetailClick?: (row: RelatedEvent) => void): Gr
       <Stack gap="4px" sx={{ py: '4px', minWidth: 0, width: '100%' }}>
         <ScenarioWorkbenchEventDetailTableBodyText value={params.row.name} tooltipWhenTruncated sx={{ minWidth: 0 }} />
         <Stack direction="row" alignItems="center" gap="8px">
-          <Typography variant="body3M12" sx={{ color: 'contentText.Subtext', lineHeight: 1.4 }}>
+          <Typography variant="body3M12" sx={{ color: 'contentText.Subtext' }}>
             {params.row.date}
           </Typography>
-          <Typography variant="body3M12" sx={{ color: 'contentText.Subtext', lineHeight: 1.4 }}>
+          <Typography variant="body3M12" sx={{ color: 'contentText.Subtext' }}>
             |
           </Typography>
-          <Typography variant="body3M12" sx={{ color: 'contentText.Subtext', lineHeight: 1.4 }}>
+          <Typography variant="body3M12" sx={{ color: 'contentText.Subtext' }}>
             {params.row.category}
           </Typography>
         </Stack>

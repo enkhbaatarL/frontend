@@ -5,7 +5,7 @@ export default function useEllipsisDetection(observedKey?: unknown) {
   const [isEllipsis, setIsEllipsis] = useState(false)
   const checkOverflow = () => {
     if (ref.current) {
-      setIsEllipsis(ref.current.scrollWidth > ref.current.clientWidth)
+      setIsEllipsis(ref.current.scrollWidth > ref.current.clientWidth || ref.current.scrollHeight > ref.current.clientHeight)
     }
   }
 
