@@ -243,6 +243,7 @@ const AnchorNavigation = ({
                 options={COMPARISON_OPTIONS}
                 value={revisionSection.comparisonTarget}
                 onChange={(v) => revisionSection.onComparisonTargetChange(v as 'previous' | 'initial')}
+                fullWidth
               />
               <Typography variant="body3" color="contentText.Subtext">
                 {comparisonInfoText}

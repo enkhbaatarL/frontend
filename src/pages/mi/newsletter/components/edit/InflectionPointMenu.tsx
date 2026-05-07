@@ -99,6 +99,7 @@ const InflectionPointMenu = ({ showInChart, trend, onShowInChartChange, onTrendC
             value={trend === 'UP' || trend === 'NONE' || trend === 'DOWN' ? trend : 'NONE'}
             onChange={(v) => onTrendChange(v as 'UP' | 'NONE' | 'DOWN')}
             disabled={disabled || !showInChart}
+            fullWidth
             bgcolor={showInChart ? 'gray.20' : 'contentBG.Disabled'}
           />
         </Stack>

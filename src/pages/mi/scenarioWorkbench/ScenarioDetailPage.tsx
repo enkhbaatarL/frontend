@@ -1,7 +1,7 @@
 import { EventNote, MonitorHeart, Notes, Summarize, Timeline } from '@mui/icons-material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import TokenIcon from '@mui/icons-material/Token'
-import { Stack, Typography } from '@mui/material'
+import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { type ReactNode, useLayoutEffect, useMemo, useSyncExternalStore } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -105,6 +105,47 @@ const ScenarioDetailPage = () => {
   const scenarioName = useMemo(() => data?.scenarioName ?? '', [data?.scenarioName])
   const tags = useMemo(() => data?.tags ?? [], [data?.tags])
 
+  const scenarioHeaderTitleSlot = useMemo(
+    () => (
+      <Stack direction="row" alignItems="flex-end" justifyContent="space-between" width="100%">
+        <Stack flex={1} minWidth={0} gap="10px" alignItems="flex-start" pt="20px">
+          <Typography variant="body1B16" color="contentText.Black">
+            Scenario
+          </Typography>
+          {isLoading ? (
+            <>
+              <Skeleton variant="rounded" width="min(560px, 90%)" height={36} sx={{ borderRadius: '6px' }} />
+              <Stack direction="row" gap="8px" flexWrap="wrap">
+                <Skeleton variant="rounded" width={72} height={28} sx={{ borderRadius: '100px' }} />
+                <Skeleton variant="rounded" width={88} height={28} sx={{ borderRadius: '100px' }} />
+              </Stack>
+            </>
+          ) : (
+            <>
+              <Typography variant="titleLarge" fontSize="26px" fontWeight={600} display="block" sx={{ lineHeight: 1.4 }}>
+                {scenarioName}
+              </Typography>
+              {tags.length > 0 && (
+                <Stack direction="row" gap="8px" flexWrap="wrap">
+                  {tags.map((tag) => (
+                    <MIChip
+                      key={tag}
+                      label={tag}
+                      fontType="body2M14"
+                      sx={{ height: '28px', padding: '4px 8px', backgroundColor: '#E9ECEF', color: '#212529', borderRadius: '100px' }}
+                      disableHover
+                    />
+                  ))}
+                </Stack>
+              )}
+            </>
+          )}
+        </Stack>
+      </Stack>
+    ),
+    [isLoading, scenarioName, tags],
+  )
+
   const handleEventDetailClick = (row: IRelatedEvent) => {
     navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/events/${encodeURIComponent(String(row.eventId))}`, {
       state: { eventName: row.eventName },
@@ -118,31 +159,7 @@ const ScenarioDetailPage = () => {
     publishScenarioDetailHeaderContent({
       backLabel: 'Scenarios',
       onBack: () => navigate(getScenarioWorkbenchTabPath('scenarios')),
-      titleSlot: (
-        <Stack direction="row" alignItems="flex-end" justifyContent="space-between" width="100%">
-          <Stack flex={1} minWidth={0} gap="10px" alignItems="flex-start" pt="20px">
-            <Typography variant="body1B16" color="contentText.Black">
-              Scenario
-            </Typography>
-            <Typography variant="titleLarge" fontSize="26px" fontWeight={600} display="block" sx={{ lineHeight: 1.4 }}>
-              {scenarioName}
-            </Typography>
-            {tags.length > 0 && (
-              <Stack direction="row" gap="8px" flexWrap="wrap">
-                {tags.map((tag) => (
-                  <MIChip
-                    key={tag}
-                    label={tag}
-                    fontType="body2M14"
-                    sx={{ height: '28px', padding: '4px 8px', backgroundColor: '#E9ECEF', color: '#212529', borderRadius: '100px' }}
-                    disableHover
-                  />
-                ))}
-              </Stack>
-            )}
-          </Stack>
-        </Stack>
-      ),
+      titleSlot: scenarioHeaderTitleSlot,
       rightAction: (
         <MIBaseButton
           variant="contained"
@@ -158,7 +175,7 @@ const ScenarioDetailPage = () => {
         </MIBaseButton>
       ),
     })
-  }, [scenarioName, tags, navigate])
+  }, [scenarioHeaderTitleSlot, navigate])
 
   useLayoutEffect(() => {
     setStickyHeader(<ScenarioDetailHeaderView />, {

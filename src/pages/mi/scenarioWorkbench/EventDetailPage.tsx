@@ -1,6 +1,6 @@
 import { EventNote } from '@mui/icons-material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import { Stack, Typography } from '@mui/material'
+import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode, useEffect } from 'react'
@@ -415,36 +415,45 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     () => (
       <Stack direction="row" alignItems="flex-end" justifyContent="space-between" width="100%">
         <Stack flex={1} minWidth={0} gap="10px" alignItems="flex-start" pt="20px">
-          <Stack direction="row" alignItems="center" gap="10px" flexWrap="wrap">
+          <Stack direction="row" alignItems="center" gap="10px" flexWrap="wrap" sx={{ minHeight: '28px' }}>
             <Typography variant="body1B16" color="contentText.Black">
               Event
             </Typography>
-            {detail?.signalType === 'noise' ? <ClassificationTag classification="소음" /> : null}
+            {!detailLoading && detail?.signalType === 'noise' ? <ClassificationTag classification="소음" /> : null}
           </Stack>
-          <Typography
-            variant="titleLarge"
-            fontSize="26px"
-            fontWeight={600}
-            display="block"
-            sx={{ lineHeight: 1.4, wordBreak: 'break-word' }}
-          >
-            {title}
-          </Typography>
-          <Stack direction="row" alignItems="center" gap="8px" flexWrap="wrap">
-            <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
-              생성일시 {generatedAtLabel}
-            </Typography>
-            <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
-              |
-            </Typography>
-            <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
-              업데이트 {updatedAtLabel}
-            </Typography>
-          </Stack>
+          {detailLoading ? (
+            <>
+              <Skeleton variant="rounded" width="min(560px, 90%)" height={36} sx={{ borderRadius: '6px' }} />
+              <Skeleton variant="rounded" width={320} height={18} sx={{ borderRadius: '4px' }} />
+            </>
+          ) : (
+            <>
+              <Typography
+                variant="titleLarge"
+                fontSize="26px"
+                fontWeight={600}
+                display="block"
+                sx={{ lineHeight: 1.4, wordBreak: 'break-word' }}
+              >
+                {title}
+              </Typography>
+              <Stack direction="row" alignItems="center" gap="8px" flexWrap="wrap">
+                <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
+                  생성일시 {generatedAtLabel}
+                </Typography>
+                <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
+                  |
+                </Typography>
+                <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
+                  업데이트 {updatedAtLabel}
+                </Typography>
+              </Stack>
+            </>
+          )}
         </Stack>
       </Stack>
     ),
-    [detail?.signalType, generatedAtLabel, title, updatedAtLabel],
+    [detail?.signalType, detailLoading, generatedAtLabel, title, updatedAtLabel],
   )
 
   useLayoutEffect(() => {

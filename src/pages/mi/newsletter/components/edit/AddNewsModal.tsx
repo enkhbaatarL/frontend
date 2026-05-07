@@ -201,6 +201,7 @@ const AddNewsModal = ({ open, onClose, onAdd, showChartMapping = true, fieldDefs
                   value={trend}
                   onChange={(v) => setTrend(v as 'UP' | 'NONE' | 'DOWN')}
                   disabled={!showInChart}
+                  fullWidth
                   width={180}
                 />
               </Stack>
