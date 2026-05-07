@@ -146,15 +146,14 @@ const PRICE_TO_UI: Record<ScenarioWorkbenchDirection, PriceDirection> = {
   NONE: 'none',
 }
 
-// 260506 API 변경: indexImpacts.direction이 bearish/bullish/negligible로 내려올 수 있음
-const MAP_DIRECTION = {
-  bullish: 'UP',
-  bearish: 'DOWN',
-  negligible: 'FLAT',
-} as const
-
-/** API 방향 값이 MAP_DIRECTION 키인지 판별 */
-const isApiDirectionKey = (v: unknown): v is keyof typeof MAP_DIRECTION => typeof v === 'string' && v in MAP_DIRECTION
+/** API direction(bullish/bearish/negligible 별칭 + 대/소문자 혼재)을 ScenarioWorkbenchDirection으로 정규화 */
+const normalizeDirection = (v: unknown): ScenarioWorkbenchDirection => {
+  const lower = String(v ?? '').toLowerCase()
+  if (lower === 'up' || lower === 'bullish') return 'UP'
+  if (lower === 'down' || lower === 'bearish') return 'DOWN'
+  if (lower === 'flat' || lower === 'negligible') return 'FLAT'
+  return 'NONE'
+}
 
 /** Related 이벤트/시나리오에서 인덱스 영향 요약을 UI용 점수로 변환 */
 const toUiImpactLevel = (level: unknown): EventMarketImpactLevel =>
@@ -256,10 +255,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
       id: `${prefix}-impact-${i}`,
       target: row.indexName,
       marketImpact: IMPACT_LEVEL_TO_UI[row.impactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
-      direction:
-        PRICE_TO_UI[
-          isApiDirectionKey(row.direction) ? MAP_DIRECTION[row.direction] : (row.direction?.toUpperCase() as ScenarioWorkbenchDirection)
-        ] ?? 'none',
+      direction: PRICE_TO_UI[normalizeDirection(row.direction)] ?? 'none',
     }))
   }, [detail?.eventId, detail?.impactAnalysis?.indexImpacts, eventId])
 
@@ -313,13 +309,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     const byIndex = <T extends { indexName: string }>(list: T[], indexName: string): T | undefined =>
       list.find((x) => String(x.indexName).toUpperCase() === indexName.toUpperCase())
 
-    const mapDirectionToUi = (direction?: unknown): PriceDirection => {
-      if (direction === undefined || direction === null) return 'none'
-      if (isApiDirectionKey(direction)) {
-        return PRICE_TO_UI[MAP_DIRECTION[direction] as ScenarioWorkbenchDirection] ?? 'none'
-      }
-      return PRICE_TO_UI[String(direction).toUpperCase() as ScenarioWorkbenchDirection] ?? 'none'
-    }
+    const mapDirectionToUi = (direction?: unknown): PriceDirection => PRICE_TO_UI[normalizeDirection(direction)] ?? 'none'
 
     const eventRows: RelatedEvent[] = relatedEvent
       ? [

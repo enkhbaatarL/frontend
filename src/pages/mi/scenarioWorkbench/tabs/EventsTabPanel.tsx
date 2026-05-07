@@ -86,19 +86,21 @@ const eventStatusToClassification = (status: ScenarioWorkbenchEventStatus) => {
 const findIndexImpact = (impacts: IScenarioWorkbenchImpactIndexSummary[], code: string) =>
   impacts.find((x) => (x.indexName ?? '').toUpperCase() === code)
 
-// 250506 API 변경
-const MAP_DIRECTION = {
-  bullish: 'UP',
-  bearish: 'DOWN',
-  negligible: 'FLAT',
-} as const
+/** API status(대/소문자 혼재)를 ScenarioWorkbenchEventStatus로 정규화 */
+const normalizeEventStatus = (v: unknown): ScenarioWorkbenchEventStatus => {
+  const upper = String(v ?? 'CLOSED').toUpperCase()
+  if (upper === 'NEW' || upper === 'UPDATED' || upper === 'CLOSED') return upper
+  return 'CLOSED'
+}
 
-/** API 방향 값이 MAP_DIRECTION 키인지 판별 */
-const isApiDirectionKey = (v: unknown): v is keyof typeof MAP_DIRECTION => typeof v === 'string' && v in MAP_DIRECTION
-
-/** 값이 ScenarioWorkbenchDirection인지 판별 */
-const isScenarioWorkbenchDirection = (v: unknown): v is ScenarioWorkbenchDirection =>
-  v === 'UP' || v === 'DOWN' || v === 'FLAT' || v === 'NONE'
+/** API direction(bullish/bearish/negligible 별칭 + 대/소문자 혼재)을 ScenarioWorkbenchDirection으로 정규화 */
+const normalizeDirection = (v: unknown): ScenarioWorkbenchDirection => {
+  const lower = String(v ?? '').toLowerCase()
+  if (lower === 'up' || lower === 'bullish') return 'UP'
+  if (lower === 'down' || lower === 'bearish') return 'DOWN'
+  if (lower === 'flat' || lower === 'negligible') return 'FLAT'
+  return 'NONE'
+}
 
 /** 단일 지수 요약을 UI 레벨·방향으로 변환 */
 const mapImpactToUi = (
@@ -106,11 +108,7 @@ const mapImpactToUi = (
 ): { level: EventMarketImpactLevel; direction: EventMarketDirection } => {
   if (!row) return { level: 0, direction: '보합' }
 
-  const priceDirection: ScenarioWorkbenchDirection = (() => {
-    if (isApiDirectionKey(row.direction)) return MAP_DIRECTION[row.direction]
-    const upper = String(row.direction ?? 'NONE').toUpperCase()
-    return isScenarioWorkbenchDirection(upper) ? upper : 'NONE'
-  })()
+  const priceDirection = normalizeDirection(row.direction)
   return {
     level: IMPACT_LEVEL_TO_UI[row.impactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
     direction: PRICE_TO_UI[priceDirection] ?? '보합',
@@ -124,6 +122,7 @@ const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventLis
   const ttf = mapImpactToUi(findIndexImpact(impacts, 'TTF'))
   const hh = mapImpactToUi(findIndexImpact(impacts, 'HH'))
 
+  const normalizedStatus = normalizeEventStatus(item.status as unknown)
   const occurredAt = item.occurredAt ? dayjs(item.occurredAt) : null
   const updatedAt = item.updatedAt ? dayjs(item.updatedAt) : null
   const displayTime = occurredAt?.isValid() ? occurredAt : updatedAt
@@ -131,7 +130,7 @@ const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventLis
   const eventCategoryLv1 = item.eventCategoryLv1.toUpperCase() as ScenarioWorkbenchEventCategoryLv1
   return {
     id: item.eventId,
-    classification: eventStatusToClassification(item.status),
+    classification: eventStatusToClassification(normalizedStatus),
     occurredAtLabel,
     category: SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[eventCategoryLv1] ?? item.eventCategoryLv1,
     eventName: item.eventName,
@@ -141,14 +140,14 @@ const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventLis
     ttfDirection: ttf.direction,
     hhImpact: hh.level,
     hhDirection: hh.direction,
-    isActive: item.status !== 'CLOSED',
+    isActive: normalizedStatus !== 'CLOSED',
   }
 }
 
-/** 기본 조회 구간: 1개월(오늘 기준) */
+/** 기본 조회 구간: 6개월(오늘 기준) */
 const defaultEventsDateRange = (): DateRange => {
   const t = dayjs().startOf('day')
-  return { startDate: t.subtract(1, 'month'), endDate: t }
+  return { startDate: t.subtract(6, 'month'), endDate: t }
 }
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
@@ -214,7 +213,7 @@ const EventsTabPanel = () => {
     const dateSlice =
       appliedDateRange.startDate && appliedDateRange.endDate
         ? mapWorkbenchDateRangeToApiParams(appliedDateRange.startDate, appliedDateRange.endDate)
-        : { period: 'ONE_MONTH' as const }
+        : { period: 'SIX_MONTHS' as const }
 
     return {
       page: pagination.page,
