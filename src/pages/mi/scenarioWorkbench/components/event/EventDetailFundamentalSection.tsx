@@ -28,6 +28,7 @@ interface EventDetailFundamentalItemRow {
 }
 
 /** Fundamental Deep-dive — 항목 1열 리스트(퍼블리싱) */
+/** Fundamental Deep-dive — 항목 리스트 섹션 */
 const EventDetailFundamentalSection = ({ metricRows, indicatorRows }: EventDetailFundamentalSectionProps) => {
   /** API 연동 전 기본 항목 목록 */
   const fallbackItems = ['EU 총 저장 용량', 'EU 평균 재고율', '독일 재고율', '이탈리아 재고율', '4월 초 예상 재고율']
@@ -87,6 +88,12 @@ const EventDetailFundamentalSection = ({ metricRows, indicatorRows }: EventDetai
           rowHeight={44}
           cellPreset="miCanvasEvent"
           noRowMessage="표시할 데이터가 없습니다."
+          getRowClassName={() => 'mi-eventDetailFundamental-noRowUnderline'}
+          sx={{
+            '& .mi-eventDetailFundamental-noRowUnderline': {
+              borderBottom: 'none !important',
+            },
+          }}
         />
       </Stack>
     </Stack>
