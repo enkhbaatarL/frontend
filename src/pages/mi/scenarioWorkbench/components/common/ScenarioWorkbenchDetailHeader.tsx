@@ -69,6 +69,7 @@ const ScenarioWorkbenchDetailHeader = ({
   const mainScrollCollapsedRef = useRef(false)
   const suppressScrollSpyForTabScrollRef = useRef(false)
   const programmaticScrollGenerationRef = useRef(0)
+  const tabScrollPinnedSectionRef = useRef<{ scrollTop: number | null } | null>(null)
   const stickyRoIgnoreUntilRef = useRef(0)
   const prevIsMainScrolledForStickyRef = useRef<boolean | null>(null)
 
@@ -134,25 +135,41 @@ const ScenarioWorkbenchDetailHeader = ({
 
   const applyScrollSpyActiveSection = useCallback(() => {
     if (suppressScrollSpyForTabScrollRef.current) return
+    if (tabScrollPinnedSectionRef.current) return
     const scrollEl = getScrollEl()
     if (!scrollEl) return
 
     const stickyLine = getStickySectionAlignY(scrollEl)
+    const scrollRect = scrollEl.getBoundingClientRect()
+    const visibleBottom = scrollRect.bottom
     const els = getSectionElements()
-    const lastIdx = els.length - 1
-    const lastEl = lastIdx >= 0 ? els[lastIdx] : null
-    const nearDocEnd = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight <= 32
 
-    let next = 0
+    let next = activeSection
+    let bestVisibleTop = Number.POSITIVE_INFINITY
+    let closestUpcomingTop = Number.POSITIVE_INFINITY
+
     els.forEach((el, i) => {
       if (!el) return
-      if (el.getBoundingClientRect().top <= stickyLine + 0.75) next = i
+      const rect = el.getBoundingClientRect()
+      const visibleTop = Math.max(rect.top, stickyLine)
+      const visibleHeight = Math.min(rect.bottom, visibleBottom) - visibleTop
+
+      if (visibleHeight > 0) {
+        if (visibleTop < bestVisibleTop) {
+          bestVisibleTop = visibleTop
+          next = i
+        }
+        return
+      }
+
+      const distanceFromStickyLine = rect.top - stickyLine
+      if (bestVisibleTop === Number.POSITIVE_INFINITY && distanceFromStickyLine >= 0 && distanceFromStickyLine < closestUpcomingTop) {
+        closestUpcomingTop = distanceFromStickyLine
+        next = i
+      }
     })
-    if (lastEl && nearDocEnd && lastEl.getBoundingClientRect().top > stickyLine + 0.75) {
-      next = lastIdx
-    }
     setActiveSection((prev) => (prev === next ? prev : next))
-  }, [getScrollEl, getSectionElements, getStickySectionAlignY])
+  }, [activeSection, getScrollEl, getSectionElements, getStickySectionAlignY])
 
   const scrollSectionIntoView = useCallback(
     (index: number) => {
@@ -160,6 +177,8 @@ const ScenarioWorkbenchDetailHeader = ({
       const el = els[index]
       const scrollEl = getScrollEl()
       if (!el || !scrollEl) return
+
+      tabScrollPinnedSectionRef.current = { scrollTop: null }
 
       const computeScrollTopToAlignSection = () => {
         if (index === 0) {
@@ -175,9 +194,10 @@ const ScenarioWorkbenchDetailHeader = ({
 
       if (Math.abs(scrollTarget - beforeTop) < 8) {
         syncMainHeaderCollapseState(scrollEl)
+        tabScrollPinnedSectionRef.current = { scrollTop: scrollEl.scrollTop }
+        setActiveSection(index)
         requestAnimationFrame(() => {
           scrollEl.dispatchEvent(new Event('scroll', { bubbles: true }))
-          applyScrollSpyActiveSection()
         })
         return
       }
@@ -191,8 +211,8 @@ const ScenarioWorkbenchDetailHeader = ({
           scrollEl.scrollTop = computeScrollTopToAlignSection()
           syncMainHeaderCollapseState(scrollEl)
           suppressScrollSpyForTabScrollRef.current = false
+          tabScrollPinnedSectionRef.current = { scrollTop: scrollEl.scrollTop }
           setActiveSection(index)
-          requestAnimationFrame(() => applyScrollSpyActiveSection())
         }
       }
 
@@ -212,7 +232,7 @@ const ScenarioWorkbenchDetailHeader = ({
       fallbackTimer.id = globalThis.setTimeout(settleOnce, 4000)
       scrollEl.scrollTo({ top: scrollTarget, behavior: 'smooth' })
     },
-    [applyScrollSpyActiveSection, getScrollEl, getSectionElements, getStickySectionAlignY, syncMainHeaderCollapseState],
+    [getScrollEl, getSectionElements, getStickySectionAlignY, syncMainHeaderCollapseState],
   )
 
   const handleTabChange = useCallback(
@@ -244,6 +264,10 @@ const ScenarioWorkbenchDetailHeader = ({
     if (!scrollEl) return undefined
     const onScroll = () => {
       const y = scrollEl.scrollTop
+      const pinnedSection = tabScrollPinnedSectionRef.current
+      if (pinnedSection && pinnedSection.scrollTop !== null && Math.abs(y - pinnedSection.scrollTop) > 2) {
+        tabScrollPinnedSectionRef.current = null
+      }
       const next = y > 0
       if (next !== mainScrollCollapsedRef.current) {
         mainScrollCollapsedRef.current = next
