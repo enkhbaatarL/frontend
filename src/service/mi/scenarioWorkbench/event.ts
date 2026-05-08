@@ -49,8 +49,8 @@ export type ScenarioWorkbenchDirection = 'UP' | 'FLAT' | 'DOWN' | 'NONE'
 
 export interface IScenarioWorkbenchImpactIndexSummary {
   indexName: string
-  /** Swagger는 low/medium/high(소문자) */
-  impactLevel: ScenarioWorkbenchImpactLevel | string
+  /** Swagger는 low/medium/high(소문자) 260508: impactLevel -> marketImpactLevel */
+  marketImpactLevel: ScenarioWorkbenchImpactLevel | string
   /** 260506: 상세 API에서 bullish/bearish/negligible(소문자)로 내려오는 케이스 대응 */
   direction: ScenarioWorkbenchDirection | 'bullish' | 'bearish' | 'negligible' | string
 }
@@ -132,8 +132,8 @@ export interface IScenarioWorkbenchRelatedEventScenarioEvent {
   eventCategoryLv1Label?: string
   indexImpacts?: Array<{
     indexName: string
-    impactLevel: string
-    impactLevelLabel?: string
+    marketImpactLevel: string
+    marketImpactLevelLabel?: string
     direction?: string
     directionLabel?: string
   }>
@@ -147,8 +147,8 @@ export interface IScenarioWorkbenchRelatedEventScenarioScenario {
   probability?: number
   indexImpacts?: Array<{
     indexName: string
-    impactLevel: string
-    impactLevelLabel?: string
+    marketImpactLevel: string
+    marketImpactLevelLabel?: string
   }>
 }
 

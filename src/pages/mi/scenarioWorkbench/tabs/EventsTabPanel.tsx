@@ -110,7 +110,7 @@ const mapImpactToUi = (
 
   const priceDirection = normalizeDirection(row.direction)
   return {
-    level: IMPACT_LEVEL_TO_UI[row.impactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
+    level: IMPACT_LEVEL_TO_UI[row.marketImpactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
     direction: PRICE_TO_UI[priceDirection] ?? '보합',
   }
 }

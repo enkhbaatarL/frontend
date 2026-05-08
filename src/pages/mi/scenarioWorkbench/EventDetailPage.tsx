@@ -254,7 +254,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     return list.map((row, i) => ({
       id: `${prefix}-impact-${i}`,
       target: row.indexName,
-      marketImpact: IMPACT_LEVEL_TO_UI[row.impactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
+      marketImpact: IMPACT_LEVEL_TO_UI[row.marketImpactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
       direction: PRICE_TO_UI[normalizeDirection(row.direction)] ?? 'none',
     }))
   }, [detail?.eventId, detail?.impactAnalysis?.indexImpacts, eventId])
@@ -320,9 +320,9 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             ? dayjs(relatedEvent.updatedAt ?? relatedEvent.createdAt).format('MM-DD HH:mm')
             : '-',
           category: relatedEvent.eventCategoryLv1Label ?? relatedEvent.eventCategoryLv1 ?? '-',
-          jkm: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'JKM')?.impactLevel),
-          ttf: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'TTF')?.impactLevel),
-          hh: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'HH')?.impactLevel),
+          jkm: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'JKM')?.marketImpactLevel),
+          ttf: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'TTF')?.marketImpactLevel),
+          hh: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'HH')?.marketImpactLevel),
           jkmDirection: mapDirectionToUi(byIndex(relatedEventIndexImpacts, 'JKM')?.direction),
           ttfDirection: mapDirectionToUi(byIndex(relatedEventIndexImpacts, 'TTF')?.direction),
           hhDirection: mapDirectionToUi(byIndex(relatedEventIndexImpacts, 'HH')?.direction),
@@ -337,9 +337,9 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
         name: s.scenarioName,
         isCurrent: !!s.baseCase,
         type: s.baseCase ? 'BC' : undefined,
-        jkm: toUiImpactLevel(byIndex(impacts, 'JKM')?.impactLevel),
-        ttf: toUiImpactLevel(byIndex(impacts, 'TTF')?.impactLevel),
-        hh: toUiImpactLevel(byIndex(impacts, 'HH')?.impactLevel),
+        jkm: toUiImpactLevel(byIndex(impacts, 'JKM')?.marketImpactLevel),
+        ttf: toUiImpactLevel(byIndex(impacts, 'TTF')?.marketImpactLevel),
+        hh: toUiImpactLevel(byIndex(impacts, 'HH')?.marketImpactLevel),
         probability: toProbabilityGaugeLevel(s.probability),
       }
     })
