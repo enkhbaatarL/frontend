@@ -98,12 +98,8 @@ const EventDetailDriverTreeScoreboardSection = ({ rows }: EventDetailDriverTreeS
           cellPreset="miCanvasEvent"
           noRowMessage="표시할 데이터가 없습니다."
           disableHover
-          getRowClassName={() => 'mi-eventDetailDriverTree-noRowUnderline'}
-          sx={{
-            '& .mi-eventDetailDriverTree-noRowUnderline': {
-              borderBottom: 'none !important',
-            },
-          }}
+          hideInnerRowBorder
+          hideLastRowBorder
         />
       </Stack>
     </Stack>

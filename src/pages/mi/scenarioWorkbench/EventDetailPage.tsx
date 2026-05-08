@@ -544,7 +544,12 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
         {/* <Stack id={SECTION_SCROLL_IDS.fundamental} gap="12px" py="30px">
           <EventDetailFundamentalSection metricRows={fundamentalMetricRows} indicatorRows={fundamentalIndicatorRows} />
         </Stack> */}
-        <Stack id={SECTION_SCROLL_IDS.driverTree} gap="12px" py="30px">
+        <Stack
+          id={SECTION_SCROLL_IDS.driverTree}
+          gap="12px"
+          py="30px"
+          sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}
+        >
           <EventDetailDriverTreeScoreboardSection rows={driverTreeRows} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related} gap="12px" py="30px">

@@ -88,12 +88,8 @@ const EventDetailFundamentalSection = ({ metricRows, indicatorRows }: EventDetai
           rowHeight={44}
           cellPreset="miCanvasEvent"
           noRowMessage="표시할 데이터가 없습니다."
-          getRowClassName={() => 'mi-eventDetailFundamental-noRowUnderline'}
-          sx={{
-            '& .mi-eventDetailFundamental-noRowUnderline': {
-              borderBottom: 'none !important',
-            },
-          }}
+          hideInnerRowBorder
+          hideLastRowBorder
         />
       </Stack>
     </Stack>
