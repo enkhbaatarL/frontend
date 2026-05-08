@@ -2,8 +2,9 @@ import { EventNote, MonitorHeart, Notes, Summarize, Timeline } from '@mui/icons-
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import TokenIcon from '@mui/icons-material/Token'
 import { Stack, Typography } from '@mui/material'
-import { type ReactNode, useLayoutEffect, useSyncExternalStore } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { type ReactNode, useLayoutEffect, useMemo, useSyncExternalStore } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
@@ -17,246 +18,8 @@ import ScenarioKeyPredictionsSection from '@/pages/mi/scenarioWorkbench/componen
 import ScenarioSummarySection from '@/pages/mi/scenarioWorkbench/components/scenario/ScenarioSummarySection'
 import SignpostDefinitionSection from '@/pages/mi/scenarioWorkbench/components/scenario/SignpostDefinitionSection'
 import SignpostMonitoringSection from '@/pages/mi/scenarioWorkbench/components/scenario/SignpostMonitoringSection'
-import { RelatedEvent, RelatedScenario, ScenarioDetail } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
-
-const SCENARIO_DETAIL_MOCK: ScenarioDetail = {
-  name: '호르무즈 봉쇄 3개월+ 유지',
-  tags: ['장기봉쇄', '수요파괴'],
-  summary: {
-    impactRows: [
-      { target: 'JKM', label: 'JKM', marketImpact: 3, direction: 'up', priceFlow: ['$21~23', '$19~20', '$19'] },
-      { target: 'TTF', label: 'TTF', marketImpact: 2, direction: 'flat', priceFlow: ['$21~23', '$19~20', '$19'] },
-      { target: 'HH', label: 'Henry Hub', marketImpact: 1, direction: 'down', priceFlow: ['$21~23', '$19~20', '$19'] },
-    ],
-    forecasts: [
-      {
-        target: 'JKM',
-        title: 'JKM 영향 전망',
-        body: '3월 11일 호르무즈 해협이 완전히 봉쇄된 이후 이 상황이 3개월 이상 지속될 경우, 4~6월에는 공급 충격으로 인해 JKM 가격이 $21~23 수준까지 상승할 것으로 예상됩니다. 이후 7~9월에는 인도와 동남아를 중심으로 $20 이상 가격에 대한 수요 저항이 발생하면서 수요 파괴가 나타나고, 동시에 미국의 증산 영향이 더해져 가격은 $19~20 수준으로 하향 안정화될 가능성이 있습니다. 4분기에는 겨울철 계절적 수요가 반영되며 $18.5~19.5 수준에서 반등이 예상되며, 전체 시나리오에서 가장 중요한 변수는 호르무즈 봉쇄 해소 시점입니다.',
-        summary: '4~6월 $21~23 (공급 충격) → 7~9월 $19~20 (수요 파괴+증산) → 4Q $18.5~19.5 (겨울 반등)',
-      },
-      {
-        target: 'TTF',
-        title: 'TTF 영향 전망',
-        body: '3월 11일 호르무즈 해협이 완전히 봉쇄된 이후 이 상황이 3개월 이상 지속될 경우, 4~6월에는 공급 충격으로 인해 JKM 가격이 $21~23 수준까지 상승할 것으로 예상됩니다. 이후 7~9월에는 인도와 동남아를 중심으로 $20 이상 가격에 대한 수요 저항이 발생하면서 수요 파괴가 나타나고, 동시에 미국의 증산 영향이 더해져 가격은 $19~20 수준으로 하향 안정화될 가능성이 있습니다. 4분기에는 겨울철 계절적 수요가 반영되며 $18.5~19.5 수준에서 반등이 예상되며, 전체 시나리오에서 가장 중요한 변수는 호르무즈 봉쇄 해소 시점입니다.',
-        summary: '4~6월 $21~23 (공급 충격) → 7~9월 $19~20 (수요 파괴+증산) → 4Q $18.5~19.5 (겨울 반등)',
-      },
-      {
-        target: 'HH',
-        title: 'Henry Hub 영향 전망',
-        body: '3월 11일 호르무즈 해협이 완전히 봉쇄된 이후 이 상황이 3개월 이상 지속될 경우, 4~6월에는 공급 충격으로 인해 JKM 가격이 $21~23 수준까지 상승할 것으로 예상됩니다. 이후 7~9월에는 인도와 동남아를 중심으로 $20 이상 가격에 대한 수요 저항이 발생하면서 수요 파괴가 나타나고, 동시에 미국의 증산 영향이 더해져 가격은 $19~20 수준으로 하향 안정화될 가능성이 있습니다. 4분기에는 겨울철 계절적 수요가 반영되며 $18.5~19.5 수준에서 반등이 예상되며, 전체 시나리오에서 가장 중요한 변수는 호르무즈 봉쇄 해소 시점입니다.',
-        summary: '4~6월 $21~23 (공급 충격) → 7~9월 $19~20 (수요 파괴+증산) → 4Q $18.5~19.5 (겨울 반등)',
-      },
-    ],
-    chartUnit: 'Unit: USD/MMBtu',
-    chart: {
-      months: ['2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'],
-      series: [
-        {
-          target: 'JKM',
-          values: [
-            16, 15.5, 15, 14.6, 14.2, 13.8, 13.5, 13.2, 13, 12.8, 12.5, 12.3, 12.1, 12, 11.8, 11.7, 11.5, 11.3, 11.1, 10.9, 10.7, 10.5,
-            10.3, 10.1, 9.9, 9.7, 9.5, 9.3, 9.2, 9.1, 9, 8.9, 8.8, 8.7, 8.6, 8.5, 8.5, 8.5, 8.5, 8.5, 8.6, 8.7, 8.8, 8.9, 9, 9.1, 9.2, 9.3,
-            9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 11, 11, 10.9, 10.8, 10.7, 10.6, 10.5,
-            10.4, 10.3, 10.2, 10.1, 10, 9.9, 9.8, 9.7, 9.6, 9.5, 9.4, 9.3, 9.2, 9.1, 9, 8.9, 8.8, 8.7, 8.6, 8.5, 8.5, 8.5, 8.5, 8.5, 8.5,
-          ],
-        },
-        {
-          target: 'TTF',
-          values: [
-            14, 13.8, 13.6, 13.4, 13.2, 13, 12.8, 12.6, 12.4, 12.2, 12, 11.8, 11.6, 11.4, 11.2, 11, 10.8, 10.6, 10.4, 10.2, 10, 9.8, 9.6,
-            9.4, 9.2, 9, 8.8, 8.6, 8.5, 8.4, 8.3, 8.2, 8.1, 8, 7.9, 7.8, 7.8, 7.8, 7.8, 7.8, 7.9, 8, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8,
-            8.9, 9, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10, 10.1, 10.2, 10.3, 10.3, 10.2, 10.1, 10, 9.9, 9.8, 9.7, 9.6, 9.5, 9.4,
-            9.3, 9.2, 9.1, 9, 8.9, 8.8, 8.7, 8.6, 8.5, 8.4, 8.3, 8.2, 8.1, 8, 7.9, 7.8, 7.8, 7.8, 7.8, 7.8,
-          ],
-        },
-        {
-          target: 'HH',
-          values: [
-            5, 5.2, 5.4, 5.6, 5.8, 6, 6.2, 6.4, 6.6, 6.8, 7, 7.2, 7.4, 7.6, 7.8, 8, 8.2, 8.4, 8.6, 8.8, 9, 9.5, 10, 10.5, 11, 11.5, 12,
-            12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5, 17, 17.5, 18, 18.5, 19, 19.5, 20, 20.5, 21, 21.5, 22, 22, 21.5, 21, 20.5, 20,
-            19.5, 19, 18.5, 18, 17.5, 17, 16.5, 16, 15.5, 15, 14.5, 14, 13.5, 13, 12.8, 12.6, 12.4, 12.2, 12, 11.8, 11.6, 11.4, 11.2, 11,
-            10.8, 10.6, 10.4, 10.2, 10, 9.8, 9.6, 9.4, 9.2, 9, 8.8, 8.6, 8.4, 8.2, 8, 7.8, 7.6, 7.4, 7.2, 7,
-          ],
-        },
-      ],
-    },
-  },
-  keyPredictions: [
-    { title: '갈등 기간', value: '6개월 이상' },
-    { title: '피해 수준', value: '대규모 인프라 파괴' },
-    { title: '복구 전망', value: '3~5년 예상', description: '완전 복구 기준 text' },
-    { title: 'LNG 수출 영향', value: '20 MTPA+ (25%+)', direction: 'down' },
-    { title: 'Text Label', value: 'Value', direction: 'up', description: 'Supporting text' },
-    { title: 'Text Label', value: 'Value', direction: 'up', description: 'Supporting text' },
-    { title: 'Text Label', value: 'Value', direction: 'up', description: 'Supporting text' },
-    { title: 'Text Label', value: 'Value', direction: 'up', description: 'Supporting text' },
-    { title: 'Text Label', value: 'Value', direction: 'up', description: 'Supporting text', hidden: true },
-  ],
-  signpostDefinitions: [
-    {
-      id: 1,
-      category: 'Observation',
-      label: '일본 JERA, 여름 피크 대비 추가 LNG 카고 10선 긴급 조달 발표',
-      direction: 'up',
-      impactStrength: 'strong',
-      rationale:
-        '대규모 긴급 조달은 실제 수급 긴장이 현실화되었음을 보여주는 결정적 신호로, 시나리오의 LNG 수요 급증(6-12Mt)이 진행 중임을 직접 증명합니다.',
-    },
-    {
-      id: 2,
-      category: 'Observation',
-      label: '중국 CNOOC, 광둥성 LNG 터미널 가동률 95% 돌파',
-      direction: 'up',
-      impactStrength: 'strong',
-      rationale:
-        '터미널 가동률 95%는 물리적 한계에 근접한 수준으로, 아시아 최대 수요처의 LNG 수급 긴장이 실제로 심화되었음을 확증합니다.로 심화되었음을 확증합니다.한계에 근접한 수준으로, 아시아 최대 수요처의 LNG 수급 긴장이 실제로 심화되었음을 확증합니다.로 심화되었음을 확증합니다.',
-    },
-    {
-      id: 3,
-      category: 'Observation',
-      label: '유럽 TTF 선물가격 $18/MMBtu 돌파',
-      direction: 'up',
-      impactStrength: 'medium',
-      rationale:
-        '가격 급등은 수급 긴장의 명확한 신호이나, 시나리오가 예상하는 장기간 지속성과 유럽-아시아 경쟁 격화까지는 추가 확인이 필요합니다.',
-    },
-    {
-      id: 4,
-      category: 'Observation',
-      label: '카타르 에너지, 아시아향 장기계약 프리미엄 15% 인상 통보',
-      direction: 'up',
-      impactStrength: 'medium',
-      rationale:
-        '장기계약 프리미엄 인상은 구조적 수급 불균형을 반영하며, 시나리오가 예측한 장기 계약 프리미엄 상승이 실현되었음을 직접 보여줍니다.',
-    },
-    {
-      id: 5,
-      category: 'Observation',
-      label: '싱가포르 EMA, 8월 전력 예비율 15% 이하 경고',
-      direction: 'up',
-      impactStrength: 'weak',
-      rationale: '전력 예비율 경고는 냉방 수요 증가의 간접적 신호이나, 실제 가스발전 증가와 LNG 수요 연결까지는 추가 데이터가 필요합니다.',
-    },
-  ],
-  signposts: [
-    {
-      id: 1,
-      coreEvent: '3/11 호르무즈 완전 봉쇄 및 150+ 선박 대기',
-      currentStatus: '물리적 통행 차단 지속',
-      marketImpactSummary: 'LNG 및 원유 공급 블록 현실화 → 가격 상승 압력 지속',
-      observationPoint: '대기 선박 증가 여부 / 실제 운송 재개 여부',
-      source: 'MarineTraffic, Reuters',
-    },
-    {
-      id: 2,
-      coreEvent: '3/11 호르무즈 완전 봉쇄 및 150+ 선박 대기',
-      currentStatus: '물리적 통행 차단 지속',
-      marketImpactSummary: 'LNG 및 원유 공급 블록 현실화 → 가격 상승 압력 지속',
-      observationPoint: '대기 선박 증가 여부 / 실제 운송 재개 여부',
-      source: 'MarineTraffic, Reuters',
-    },
-    {
-      id: 3,
-      coreEvent: '3/11 호르무즈 완전 봉쇄 및 150+ 선박 대기',
-      currentStatus: '물리적 통행 차단 지속',
-      marketImpactSummary: 'LNG 및 원유 공급 블록 현실화 → 가격 상승',
-      observationPoint: '대기 선박 증가 여부 / 실제 운송 재개 여부',
-      source: 'MarineTraffic, Reuters',
-    },
-    {
-      id: 4,
-      coreEvent: '3/11 호르무즈 완전 봉쇄 및 150+ 선박 대기',
-      currentStatus: '물리적 통행 차단 지속',
-      marketImpactSummary: 'LNG 및 원유 공급 블록 현실화 → 가격 상승',
-      observationPoint: '대기 선박 증가 여부 / 실제 운송 재개 여부',
-      source: 'MarineTraffic, Reuters',
-    },
-    {
-      id: 5,
-      coreEvent: '3/11 호르무즈 완전 봉쇄 및 150+ 선박 대기',
-      currentStatus: '물리적 통행 차단 지속',
-      marketImpactSummary: 'LNG 및 원유 공급 블록 현실화 → 가격 상승',
-      observationPoint: '대기 선박 증가 여부 / 실제 운송 재개 여부',
-      source: 'MarineTraffic, Reuters',
-    },
-    {
-      id: 6,
-      coreEvent: '3/11 호르무즈 완전 봉쇄 및 150+ 선박 대기',
-      currentStatus: '물리적 통행 차단 지속',
-      marketImpactSummary: 'LNG 및 원유 공급 블록 현실화 → 가격 상승',
-      observationPoint: '대기 선박 증가 여부 / 실제 운송 재개 여부',
-      source: 'MarineTraffic, Reuters',
-    },
-  ],
-  relatedEvents: [
-    {
-      id: 1,
-      name: '미국/이스라엘 이란 공습 개시 (Operation Epic Fury)',
-      date: '00-00 00:00',
-      category: 'category',
-      jkm: 3,
-      ttf: 2,
-      hh: 1,
-      jkmDirection: 'up',
-      ttfDirection: 'flat',
-      hhDirection: 'down',
-    },
-  ],
-  relatedScenarios: [
-    {
-      id: 1,
-      name: '1~2주 내 협상 완료 상황 해소',
-      isCurrent: false,
-      type: undefined,
-      jkm: 1,
-      ttf: 3,
-      hh: 2,
-      probability: 1,
-    },
-    {
-      id: 2,
-      name: '수주 내 호르무즈 정상화',
-      isCurrent: false,
-      type: undefined,
-      jkm: 2,
-      ttf: 1,
-      hh: 3,
-      probability: 2,
-    },
-    {
-      id: 3,
-      name: '호르무즈 봉쇄 3개월+ 유지',
-      isCurrent: true,
-      type: 'BC',
-      jkm: 3,
-      ttf: 2,
-      hh: 1,
-      probability: 3,
-    },
-    {
-      id: 4,
-      name: '걸프 LNG 인프라 타격, 복구',
-      isCurrent: false,
-      type: undefined,
-      jkm: 3,
-      ttf: 3,
-      hh: 3,
-      probability: 4,
-    },
-    {
-      id: 5,
-      name: '걸프 LNG 인프라 타격, 미복구',
-      isCurrent: false,
-      type: undefined,
-      jkm: 3,
-      ttf: 3,
-      hh: 3,
-      probability: 5,
-    },
-  ],
-}
+import scenarioWorkbenchScenarioService, { IRelatedEvent, IRelatedScenario } from '@/service/mi/scenarioWorkbench/scenario'
 
 type ScenarioDetailSection = WorkbenchDetailHeaderSection & {
   Icon: typeof Summarize
@@ -329,15 +92,26 @@ const ScenarioDetailHeaderView = () => {
 const ScenarioDetailPage = () => {
   const navigate = useNavigate()
   const { setStickyHeader } = useStickyHeader()
-  const data = SCENARIO_DETAIL_MOCK
+  const { scenarioId } = useParams<{ scenarioId: string }>()
 
-  const handleEventDetailClick = (row: RelatedEvent) => {
-    navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/events/${encodeURIComponent(String(row.id))}`, {
-      state: { eventName: row.name },
+  const { data, isLoading } = useQuery({
+    queryKey: ['scenarioWorkbenchScenarioDetail', scenarioId],
+    queryFn: () => scenarioWorkbenchScenarioService.getScenarioDetail(scenarioId ?? ''),
+    enabled: Boolean(scenarioId),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  const scenarioName = useMemo(() => data?.scenarioName ?? '', [data?.scenarioName])
+  const tags = useMemo(() => data?.tags ?? [], [data?.tags])
+
+  const handleEventDetailClick = (row: IRelatedEvent) => {
+    navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/events/${encodeURIComponent(String(row.eventId))}`, {
+      state: { eventName: row.eventName },
     })
   }
-  const handleScenarioDetailClick = (row: RelatedScenario) => {
-    navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/scenarios/${encodeURIComponent(String(row.id))}`)
+  const handleScenarioDetailClick = (row: IRelatedScenario) => {
+    navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)
   }
 
   useLayoutEffect(() => {
@@ -351,11 +125,11 @@ const ScenarioDetailPage = () => {
               Scenario
             </Typography>
             <Typography variant="titleLarge" fontSize="26px" fontWeight={600} display="block" sx={{ lineHeight: 1.4 }}>
-              {data.name}
+              {scenarioName}
             </Typography>
-            {data.tags.length > 0 && (
+            {tags.length > 0 && (
               <Stack direction="row" gap="8px" flexWrap="wrap">
-                {data.tags.map((tag) => (
+                {tags.map((tag) => (
                   <MIChip
                     key={tag}
                     label={tag}
@@ -384,7 +158,7 @@ const ScenarioDetailPage = () => {
         </MIBaseButton>
       ),
     })
-  }, [data.name, data.tags, navigate])
+  }, [scenarioName, tags, navigate])
 
   useLayoutEffect(() => {
     setStickyHeader(<ScenarioDetailHeaderView />, {
@@ -397,32 +171,36 @@ const ScenarioDetailPage = () => {
     }
   }, [setStickyHeader])
 
+  const relatedEvents: IRelatedEvent[] = data?.relatedEventScenario?.event ? [data.relatedEventScenario.event] : []
+  const relatedScenarios: IRelatedScenario[] = data?.relatedEventScenario?.scenarios ?? []
+
   return (
     <Stack maxWidth="1380px" margin="auto" px="12px" pt="12px" position="relative" sx={{ userSelect: 'none', overflowX: 'hidden' }}>
       <Stack py="24px" gap="12px">
         <Stack id={SCENARIO_DETAIL_SECTIONS[0].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[0].id} />
-          <ScenarioSummarySection summary={data.summary} />
+          <ScenarioSummarySection summary={data?.summary} loading={isLoading} />
         </Stack>
         <Stack id={SCENARIO_DETAIL_SECTIONS[1].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[1].id} />
-          <ScenarioKeyPredictionsSection keyPredictions={data.keyPredictions ?? []} />
+          <ScenarioKeyPredictionsSection assumptions={data?.assumptions ?? []} loading={isLoading} />
         </Stack>
         <Stack id={SCENARIO_DETAIL_SECTIONS[2].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[2].id} />
-          <SignpostDefinitionSection definitions={data.signpostDefinitions ?? []} />
+          <SignpostDefinitionSection definitions={data?.signpostDefinitions ?? []} loading={isLoading} />
         </Stack>
         <Stack id={SCENARIO_DETAIL_SECTIONS[3].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[3].id} />
-          <SignpostMonitoringSection signposts={data.signposts ?? []} />
+          <SignpostMonitoringSection signposts={data?.signposts ?? []} loading={isLoading} />
         </Stack>
         <Stack id={SCENARIO_DETAIL_SECTIONS[4].id} gap="12px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[4].id} />
           <RelatedEventsAndScenariosSection
-            events={data.relatedEvents ?? []}
-            scenarios={data.relatedScenarios ?? []}
+            events={relatedEvents}
+            scenarios={relatedScenarios}
             onEventRowClick={handleEventDetailClick}
             onScenarioRowClick={handleScenarioDetailClick}
+            loading={isLoading}
           />
         </Stack>
       </Stack>

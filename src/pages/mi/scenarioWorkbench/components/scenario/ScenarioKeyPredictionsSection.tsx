@@ -1,40 +1,16 @@
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
-import { Box, Stack, Typography } from '@mui/material'
-import { ReactNode } from 'react'
+import { Box, Skeleton } from '@mui/material'
 
 import KpiCard from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
-import { KeyPrediction, KeyPredictionDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
-
-interface DirectionalValueProps {
-  direction: Exclude<KeyPredictionDirection, 'none'>
-  value: string
-}
-
-const DirectionalValue = ({ direction, value }: DirectionalValueProps) => {
-  const toneColor = direction === 'up' ? 'increase.main' : 'decrease.main'
-  const Icon = direction === 'up' ? ArrowUpwardIcon : ArrowDownwardIcon
-  return (
-    <Stack direction="row" alignItems="center" gap={direction === 'up' ? '2px' : '4px'}>
-      <Icon sx={{ fontSize: '30px', color: toneColor }} />
-      <Typography variant="titleBox" sx={{ color: toneColor, lineHeight: 1.4 }}>
-        {value}
-      </Typography>
-    </Stack>
-  )
-}
-
-const renderContent = (prediction: KeyPrediction): string | ReactNode => {
-  const direction = prediction.direction ?? 'none'
-  if (direction === 'none') return prediction.value
-  return <DirectionalValue direction={direction} value={prediction.value} />
-}
+import { IScenarioAssumption } from '@/service/mi/scenarioWorkbench/scenario'
 
 interface ScenarioKeyPredictionsSectionProps {
-  keyPredictions: KeyPrediction[]
+  assumptions: IScenarioAssumption[]
+  loading?: boolean
 }
 
-const ScenarioKeyPredictionsSection = ({ keyPredictions }: ScenarioKeyPredictionsSectionProps) => (
+const SKELETON_KPI_COUNT = 3
+
+const ScenarioKeyPredictionsSection = ({ assumptions, loading = false }: ScenarioKeyPredictionsSectionProps) => (
   <Box
     sx={{
       display: 'grid',
@@ -42,11 +18,17 @@ const ScenarioKeyPredictionsSection = ({ keyPredictions }: ScenarioKeyPrediction
       gap: '12px',
     }}
   >
-    {keyPredictions.map((prediction, index) => (
-      <Box key={index} sx={{ opacity: prediction.hidden ? 0 : 1 }}>
-        <KpiCard title={prediction.title} content={renderContent(prediction)} description={prediction.description ?? ''} />
-      </Box>
-    ))}
+    {loading
+      ? Array.from({ length: SKELETON_KPI_COUNT }).map((_, index) => (
+        <Box key={`skeleton-${index}`}>
+          <Skeleton variant="rounded" height={120} sx={{ borderRadius: '10px' }} />
+        </Box>
+      ))
+      : assumptions.map((a, index) => (
+        <Box key={index}>
+          <KpiCard title={a.label} content={a.value} description="" />
+        </Box>
+      ))}
   </Box>
 )
 

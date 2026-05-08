@@ -3,8 +3,7 @@ import { Box, Stack } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useMemo } from 'react'
 
-import type { EventMarketImpactLevel } from '@/pages/mi/scenarioWorkbench/components/event/types'
-import type { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+import type { MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
 
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import ScenarioWorkbenchEventDetailTableBodyText, {
@@ -19,8 +18,8 @@ export interface EventDetailDriverTreeRow {
   id: string
   category: string
   driver: string
-  strengthLevel: EventMarketImpactLevel
-  strengthDirection: PriceDirection
+  strengthLevel: MarketImpactLevel
+  strengthDirection?: MarketDirection
   rationale: string
 }
 

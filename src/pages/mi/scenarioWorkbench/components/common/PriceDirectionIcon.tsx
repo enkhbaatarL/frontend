@@ -1,10 +1,10 @@
 import { Box } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 
-import { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+import { MarketDirection } from '@/service/mi/scenarioWorkbench/common'
 
 export interface PriceDirectionIconProps {
-  direction: PriceDirection
+  direction?: MarketDirection
   size?: number
 }
 
@@ -14,11 +14,11 @@ const TRIANGLE_PATH =
 const PriceDirectionIcon = ({ direction, size = 14 }: PriceDirectionIconProps) => {
   const theme = useTheme()
 
-  if (direction === 'none') {
+  if (!direction) {
     return <Box sx={{ width: size, height: size }} aria-hidden />
   }
 
-  if (direction === 'flat') {
+  if (direction === MarketDirection.NEGLIGIBLE) {
     return (
       <svg width={size} height={size} viewBox="0 0 14 14" aria-hidden>
         <rect x="2" y="6.5" width="10" height="1.5" rx="0.75" fill={theme.palette.gray[50]} />
@@ -26,7 +26,7 @@ const PriceDirectionIcon = ({ direction, size = 14 }: PriceDirectionIconProps) =
     )
   }
 
-  const isUp = direction === 'up'
+  const isUp = direction === MarketDirection.BULLISH
   const color = isUp ? theme.palette.increase.main : theme.palette.decrease.main
   return (
     <svg width={size} height={size} viewBox="0 0 13 12" fill="none" aria-hidden style={isUp ? undefined : { transform: 'rotate(180deg)' }}>

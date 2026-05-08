@@ -5,8 +5,7 @@ import { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 
-import type { EventClassification, EventMarketDirection, EventMarketImpactLevel } from '@/pages/mi/scenarioWorkbench/components/event/types'
-import type { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+import type { EventClassification } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -21,15 +20,16 @@ import MISpinner from '@/components/common/spinner/MISpinner'
 import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
+import { buildWorkbenchDatePresets } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
 import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
 import CreatedScenariosSection, { type CreatedScenarioRow } from '@/pages/mi/scenarioWorkbench/components/design/CreatedScenariosSection'
-import { buildWorkbenchEventDatePresets } from '@/pages/mi/scenarioWorkbench/components/event/scenarioWorkbenchEventsDateRange'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader, {
   SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
 } from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import ScenarioWorkbenchEventDetailPage from '@/pages/mi/scenarioWorkbench/EventDetailPage'
 import { useScenarioWorkbenchHeaderCollapsed } from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchHeaderCollapseContext'
+import { MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
 import { IPaginationResponse } from '@/types/api'
 
 /** 이벤트 행에 대한 생성된 시나리오 더미 데이터 (API 연동 전 임시) */
@@ -39,20 +39,20 @@ const buildCreatedScenariosForEvent = (_row: DesignRow): CreatedScenarioRow[] =>
     name: '1~2주 내 협상 완료 상황 해소',
     date: '03-01 10:21',
     tags: ['외교협상', '단기해소'],
-    jkm: 3,
-    ttf: 3,
-    hh: 1,
-    probability: 2,
+    jkm: MarketImpactLevel.HIGH,
+    ttf: MarketImpactLevel.HIGH,
+    hh: MarketImpactLevel.LOW,
+    probability: 0.4,
   },
   {
     id: 2,
     name: '수주 내 호르무즈 정상화',
     date: '03-01 10:21',
     tags: ['호르무즈', '수급정상화'],
-    jkm: 3,
-    ttf: 1,
-    hh: 1,
-    probability: 4,
+    jkm: MarketImpactLevel.HIGH,
+    ttf: MarketImpactLevel.LOW,
+    hh: MarketImpactLevel.LOW,
+    probability: 0.8,
   },
   {
     id: 3,
@@ -61,30 +61,30 @@ const buildCreatedScenariosForEvent = (_row: DesignRow): CreatedScenarioRow[] =>
     tags: ['장기봉쇄', '공급충격'],
     isCurrent: true,
     type: 'BC',
-    jkm: 3,
-    ttf: 3,
-    hh: 3,
-    probability: 4,
+    jkm: MarketImpactLevel.HIGH,
+    ttf: MarketImpactLevel.HIGH,
+    hh: MarketImpactLevel.HIGH,
+    probability: 0.8,
   },
   {
     id: 4,
     name: '걸프 LNG 인프라 타격, 복구',
     date: '03-01 10:21',
     tags: ['인프라피해', '복구가능'],
-    jkm: 3,
-    ttf: 3,
-    hh: 1,
-    probability: 3,
+    jkm: MarketImpactLevel.HIGH,
+    ttf: MarketImpactLevel.HIGH,
+    hh: MarketImpactLevel.LOW,
+    probability: 0.6,
   },
   {
     id: 5,
     name: '걸프 LNG 인프라 타격, 미복구',
     date: '03-01 10:21',
     tags: ['인프라피해', '구조적부족'],
-    jkm: 3,
-    ttf: 3,
-    hh: 3,
-    probability: 2,
+    jkm: MarketImpactLevel.HIGH,
+    ttf: MarketImpactLevel.HIGH,
+    hh: MarketImpactLevel.HIGH,
+    probability: 0.4,
   },
 ]
 
@@ -97,19 +97,13 @@ interface DesignRow {
   occurredAtLabel: string
   category: string
   eventName: string
-  jkmImpact: EventMarketImpactLevel
-  jkmDirection: EventMarketDirection
-  ttfImpact: EventMarketImpactLevel
-  ttfDirection: EventMarketDirection
-  hhImpact: EventMarketImpactLevel
-  hhDirection: EventMarketDirection
+  jkmImpact: MarketImpactLevel
+  jkmDirection: MarketDirection
+  ttfImpact: MarketImpactLevel
+  ttfDirection: MarketDirection
+  hhImpact: MarketImpactLevel
+  hhDirection: MarketDirection
   scenarioStatus: ScenarioStatus
-}
-
-const eventDirectionToPriceDirection = (d: EventMarketDirection): PriceDirection => {
-  if (d === '상승') return 'up'
-  if (d === '하락') return 'down'
-  return 'flat'
 }
 
 // ── 셀 컴포넌트 ───────────────────────────────────────────────────────────────
@@ -290,12 +284,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-28 15:35',
     category: '지정학적 리스크',
     eventName: '미국/이스라엘 이란 공습 개시 (Operation Epic Fury)',
-    jkmImpact: 3,
-    jkmDirection: '상승',
-    ttfImpact: 3,
-    ttfDirection: '상승',
-    hhImpact: 3,
-    hhDirection: '상승',
+    jkmImpact: MarketImpactLevel.HIGH,
+    jkmDirection: MarketDirection.BULLISH,
+    ttfImpact: MarketImpactLevel.HIGH,
+    ttfDirection: MarketDirection.BULLISH,
+    hhImpact: MarketImpactLevel.HIGH,
+    hhDirection: MarketDirection.BULLISH,
     scenarioStatus: 'created',
   },
   {
@@ -304,12 +298,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-28 09:00',
     category: '지정학적 리스크',
     eventName: '호르무즈 해협 군사적 긴장 고조',
-    jkmImpact: 3,
-    jkmDirection: '상승',
-    ttfImpact: 2,
-    ttfDirection: '상승',
-    hhImpact: 1,
-    hhDirection: '보합',
+    jkmImpact: MarketImpactLevel.HIGH,
+    jkmDirection: MarketDirection.BULLISH,
+    ttfImpact: MarketImpactLevel.MEDIUM,
+    ttfDirection: MarketDirection.BULLISH,
+    hhImpact: MarketImpactLevel.LOW,
+    hhDirection: MarketDirection.NEGLIGIBLE,
     scenarioStatus: 'generating',
   },
   {
@@ -318,12 +312,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-27 14:30',
     category: '수급밸런스',
     eventName: '카타르 LNG 증산 발표',
-    jkmImpact: 2,
-    jkmDirection: '하락',
-    ttfImpact: 2,
-    ttfDirection: '하락',
-    hhImpact: 1,
-    hhDirection: '하락',
+    jkmImpact: MarketImpactLevel.MEDIUM,
+    jkmDirection: MarketDirection.BEARISH,
+    ttfImpact: MarketImpactLevel.MEDIUM,
+    ttfDirection: MarketDirection.BEARISH,
+    hhImpact: MarketImpactLevel.LOW,
+    hhDirection: MarketDirection.BEARISH,
     scenarioStatus: 'generating',
   },
   {
@@ -332,12 +326,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-27 09:15',
     category: '수급밸런스',
     eventName: '아시아 LNG 수요 급등',
-    jkmImpact: 3,
-    jkmDirection: '상승',
-    ttfImpact: 2,
-    ttfDirection: '상승',
-    hhImpact: 1,
-    hhDirection: '보합',
+    jkmImpact: MarketImpactLevel.HIGH,
+    jkmDirection: MarketDirection.BULLISH,
+    ttfImpact: MarketImpactLevel.MEDIUM,
+    ttfDirection: MarketDirection.BULLISH,
+    hhImpact: MarketImpactLevel.LOW,
+    hhDirection: MarketDirection.NEGLIGIBLE,
     scenarioStatus: 'idle',
   },
   {
@@ -346,12 +340,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-26 16:45',
     category: '수급밸런스',
     eventName: '러시아 가스 공급 재개',
-    jkmImpact: 2,
-    jkmDirection: '하락',
-    ttfImpact: 3,
-    ttfDirection: '하락',
-    hhImpact: 1,
-    hhDirection: '보합',
+    jkmImpact: MarketImpactLevel.MEDIUM,
+    jkmDirection: MarketDirection.BEARISH,
+    ttfImpact: MarketImpactLevel.HIGH,
+    ttfDirection: MarketDirection.BEARISH,
+    hhImpact: MarketImpactLevel.LOW,
+    hhDirection: MarketDirection.NEGLIGIBLE,
     scenarioStatus: 'idle',
   },
   {
@@ -360,12 +354,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-26 11:00',
     category: '에너지 믹스 전환',
     eventName: '유럽 에너지 정책 변화',
-    jkmImpact: 1,
-    jkmDirection: '보합',
-    ttfImpact: 2,
-    ttfDirection: '보합',
-    hhImpact: 1,
-    hhDirection: '보합',
+    jkmImpact: MarketImpactLevel.LOW,
+    jkmDirection: MarketDirection.NEGLIGIBLE,
+    ttfImpact: MarketImpactLevel.MEDIUM,
+    ttfDirection: MarketDirection.NEGLIGIBLE,
+    hhImpact: MarketImpactLevel.LOW,
+    hhDirection: MarketDirection.NEGLIGIBLE,
     scenarioStatus: 'idle',
   },
   {
@@ -374,12 +368,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-25 09:00',
     category: '수급밸런스',
     eventName: '사우디 감산 연장 발표',
-    jkmImpact: 3,
-    jkmDirection: '상승',
-    ttfImpact: 3,
-    ttfDirection: '상승',
-    hhImpact: 2,
-    hhDirection: '상승',
+    jkmImpact: MarketImpactLevel.HIGH,
+    jkmDirection: MarketDirection.BULLISH,
+    ttfImpact: MarketImpactLevel.HIGH,
+    ttfDirection: MarketDirection.BULLISH,
+    hhImpact: MarketImpactLevel.MEDIUM,
+    hhDirection: MarketDirection.BULLISH,
     scenarioStatus: 'created',
   },
   {
@@ -388,12 +382,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-24 14:10',
     category: '수급밸런스',
     eventName: '중국 산업 활동 둔화',
-    jkmImpact: 2,
-    jkmDirection: '하락',
-    ttfImpact: 2,
-    ttfDirection: '하락',
-    hhImpact: 1,
-    hhDirection: '보합',
+    jkmImpact: MarketImpactLevel.MEDIUM,
+    jkmDirection: MarketDirection.BEARISH,
+    ttfImpact: MarketImpactLevel.MEDIUM,
+    ttfDirection: MarketDirection.BEARISH,
+    hhImpact: MarketImpactLevel.LOW,
+    hhDirection: MarketDirection.NEGLIGIBLE,
     scenarioStatus: 'idle',
   },
   {
@@ -402,12 +396,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-24 10:30',
     category: '수급밸런스',
     eventName: '미 연준 금리 동결 결정',
-    jkmImpact: 1,
-    jkmDirection: '보합',
-    ttfImpact: 1,
-    ttfDirection: '보합',
-    hhImpact: 0,
-    hhDirection: '보합',
+    jkmImpact: MarketImpactLevel.LOW,
+    jkmDirection: MarketDirection.NEGLIGIBLE,
+    ttfImpact: MarketImpactLevel.LOW,
+    ttfDirection: MarketDirection.NEGLIGIBLE,
+    hhImpact: MarketImpactLevel.LOW,
+    hhDirection: MarketDirection.NEGLIGIBLE,
     scenarioStatus: 'idle',
   },
   {
@@ -416,12 +410,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-23 16:00',
     category: '인프라/설비',
     eventName: '걸프 LNG 인프라 점검 완료',
-    jkmImpact: 2,
-    jkmDirection: '하락',
-    ttfImpact: 2,
-    ttfDirection: '하락',
-    hhImpact: 1,
-    hhDirection: '하락',
+    jkmImpact: MarketImpactLevel.MEDIUM,
+    jkmDirection: MarketDirection.BEARISH,
+    ttfImpact: MarketImpactLevel.MEDIUM,
+    ttfDirection: MarketDirection.BEARISH,
+    hhImpact: MarketImpactLevel.LOW,
+    hhDirection: MarketDirection.BEARISH,
     scenarioStatus: 'idle',
   },
   {
@@ -430,110 +424,12 @@ const DUMMY_EVENTS: DesignRow[] = [
     occurredAtLabel: '02-23 09:45',
     category: '기상/기후',
     eventName: '일본 동절기 난방 수요 증가',
-    jkmImpact: 1,
-    jkmDirection: '상승',
-    ttfImpact: 1,
-    ttfDirection: '보합',
-    hhImpact: 0,
-    hhDirection: '보합',
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 12,
-    classification: '신규',
-    occurredAtLabel: '02-22 13:25',
-    category: '인프라/설비',
-    eventName: '동유럽 가스관 보안 강화',
-    jkmImpact: 2,
-    jkmDirection: '상승',
-    ttfImpact: 3,
-    ttfDirection: '상승',
-    hhImpact: 1,
-    hhDirection: '보합',
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 13,
-    classification: '갱신',
-    occurredAtLabel: '02-22 08:00',
-    category: '인프라/설비',
-    eventName: '미국 셰일 가스 생산 안정화',
-    jkmImpact: 3,
-    jkmDirection: '하락',
-    ttfImpact: 2,
-    ttfDirection: '하락',
-    hhImpact: 3,
-    hhDirection: '하락',
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 14,
-    classification: '신규',
-    occurredAtLabel: '02-21 17:30',
-    category: '수급밸런스',
-    eventName: '글로벌 에너지 가격 지수 발표',
-    jkmImpact: 1,
-    jkmDirection: '보합',
-    ttfImpact: 1,
-    ttfDirection: '보합',
-    hhImpact: 1,
-    hhDirection: '보합',
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 15,
-    classification: '신규',
-    occurredAtLabel: '02-21 11:15',
-    category: '수급밸런스',
-    eventName: '한국 발전용 LNG 입찰 결과',
-    jkmImpact: 2,
-    jkmDirection: '상승',
-    ttfImpact: 1,
-    ttfDirection: '보합',
-    hhImpact: 1,
-    hhDirection: '보합',
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 16,
-    classification: '갱신',
-    occurredAtLabel: '02-20 15:00',
-    category: '물류/해운',
-    eventName: '호주 LNG 수출 터미널 정비',
-    jkmImpact: 2,
-    jkmDirection: '상승',
-    ttfImpact: 2,
-    ttfDirection: '상승',
-    hhImpact: 1,
-    hhDirection: '보합',
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 17,
-    classification: '신규',
-    occurredAtLabel: '02-19 16:50',
-    category: '지정학적 리스크',
-    eventName: '중동 외교 회담 진행',
-    jkmImpact: 1,
-    jkmDirection: '하락',
-    ttfImpact: 1,
-    ttfDirection: '하락',
-    hhImpact: 0,
-    hhDirection: '보합',
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 18,
-    classification: '신규',
-    occurredAtLabel: '02-19 10:00',
-    category: '수급밸런스',
-    eventName: 'JKM 단기 변동성 확대',
-    jkmImpact: 2,
-    jkmDirection: '상승',
-    ttfImpact: 1,
-    ttfDirection: '보합',
-    hhImpact: 1,
-    hhDirection: '보합',
+    jkmImpact: MarketImpactLevel.LOW,
+    jkmDirection: MarketDirection.BULLISH,
+    ttfImpact: MarketImpactLevel.LOW,
+    ttfDirection: MarketDirection.NEGLIGIBLE,
+    hhImpact: MarketImpactLevel.LOW,
+    hhDirection: MarketDirection.NEGLIGIBLE,
     scenarioStatus: 'idle',
   },
 ]
@@ -712,9 +608,7 @@ const DesignTabPanel = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => (
-          <ImpactDotsCell level={params.row.jkmImpact} direction={eventDirectionToPriceDirection(params.row.jkmDirection)} />
-        ),
+        renderCell: (params) => <ImpactDotsCell level={params.row.jkmImpact} direction={params.row.jkmDirection} />,
       },
       {
         field: 'ttfImpact',
@@ -723,9 +617,7 @@ const DesignTabPanel = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => (
-          <ImpactDotsCell level={params.row.ttfImpact} direction={eventDirectionToPriceDirection(params.row.ttfDirection)} />
-        ),
+        renderCell: (params) => <ImpactDotsCell level={params.row.ttfImpact} direction={params.row.ttfDirection} />,
       },
       {
         field: 'hhImpact',
@@ -734,9 +626,7 @@ const DesignTabPanel = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => (
-          <ImpactDotsCell level={params.row.hhImpact} direction={eventDirectionToPriceDirection(params.row.hhDirection)} />
-        ),
+        renderCell: (params) => <ImpactDotsCell level={params.row.hhImpact} direction={params.row.hhDirection} />,
       },
       {
         field: 'detail',
@@ -772,7 +662,7 @@ const DesignTabPanel = () => {
 
   const categoryFilterItems = useMemo(() => CATEGORY_OPTIONS.map((c) => ({ label: c, value: c })), [])
 
-  const workbenchEventDatePresets = useMemo(() => buildWorkbenchEventDatePresets(), [])
+  const workbenchDatePresets = useMemo(() => buildWorkbenchDatePresets(), [])
 
   const updateStickyShadowScrollThreshold = useCallback(() => {
     const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
@@ -862,7 +752,7 @@ const DesignTabPanel = () => {
               dateRange={appliedDateRange}
               onApply={handleDateRangeApply}
               showPreset
-              datePresets={workbenchEventDatePresets}
+              datePresets={workbenchDatePresets}
             />
 
             <MISelectMenu

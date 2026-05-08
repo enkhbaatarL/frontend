@@ -42,7 +42,11 @@ const EventDetailImpactAnalysisSection = ({ tableRows, kpiItems, narrative }: Ev
         width: 120,
         align: 'center',
         sortable: false,
-        renderCell: (p) => <ImpactDotsCell level={p.row.marketImpact} />,
+        renderCell: (p) => (
+          <>
+            <ImpactDotsCell level={p.row.marketImpact} />
+          </>
+        ),
       },
       {
         field: 'direction',

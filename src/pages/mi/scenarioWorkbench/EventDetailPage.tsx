@@ -13,9 +13,8 @@ import type {
   EventDetailImpactTableRow,
   EventDetailMiRecordRow,
   EventDetailOutlookRow,
-  EventMarketImpactLevel,
 } from '@/pages/mi/scenarioWorkbench/components/event/types'
-import type { PriceDirection, RelatedEvent, RelatedScenario } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+import type { IRelatedEvent, IRelatedScenario } from '@/service/mi/scenarioWorkbench/scenario'
 
 import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
@@ -33,11 +32,8 @@ import EventDetailImpactAnalysisSection from '@/pages/mi/scenarioWorkbench/compo
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailMiRecordsTable'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
-import scenarioWorkbenchEventService, {
-  SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO,
-  type ScenarioWorkbenchDirection,
-  type ScenarioWorkbenchImpactLevel,
-} from '@/service/mi/scenarioWorkbench/event'
+import { EventCategoryLv1, MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
+import scenarioWorkbenchEventService, { SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/event'
 import { IPaginationResponse } from '@/types/api'
 
 /** 이벤트 상세 탭 키 */
@@ -132,39 +128,6 @@ const DEFAULT_IMPACT_KPI_PAIR: [EventDetailImpactKpiItem, EventDetailImpactKpiIt
   { title: '출처', content: 'Reuters, Platts', description: '\u00a0' },
 ]
 
-const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpactLevel> = {
-  HIGH: 3,
-  MEDIUM: 2,
-  LOW: 1,
-  NONE: 0,
-}
-
-const PRICE_TO_UI: Record<ScenarioWorkbenchDirection, PriceDirection> = {
-  UP: 'up',
-  DOWN: 'down',
-  FLAT: 'flat',
-  NONE: 'none',
-}
-
-/** API direction(bullish/bearish/negligible 별칭 + 대/소문자 혼재)을 ScenarioWorkbenchDirection으로 정규화 */
-const normalizeDirection = (v: unknown): ScenarioWorkbenchDirection => {
-  const lower = String(v ?? '').toLowerCase()
-  if (lower === 'up' || lower === 'bullish') return 'UP'
-  if (lower === 'down' || lower === 'bearish') return 'DOWN'
-  if (lower === 'flat' || lower === 'negligible') return 'FLAT'
-  return 'NONE'
-}
-
-/** Related 이벤트/시나리오에서 인덱스 영향 요약을 UI용 점수로 변환 */
-const toUiImpactLevel = (level: unknown): EventMarketImpactLevel =>
-  IMPACT_LEVEL_TO_UI[String(level ?? '').toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0
-
-/** Related 이벤트/시나리오에서 확률(0~1)을 게이지 레벨(1~5)로 변환 */
-const toProbabilityGaugeLevel = (probability?: number): number => {
-  if (probability === undefined || probability === null || Number.isNaN(probability)) return 0
-  return Math.max(1, Math.min(5, Math.round(probability * 5)))
-}
-
 /** 시나리오 워크벤치 이벤트 상세 */
 const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = false }: ScenarioWorkbenchEventDetailPageProps = {}) => {
   const params = useParams()
@@ -254,8 +217,8 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     return list.map((row, i) => ({
       id: `${prefix}-impact-${i}`,
       target: row.indexName,
-      marketImpact: IMPACT_LEVEL_TO_UI[row.impactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
-      direction: PRICE_TO_UI[normalizeDirection(row.direction)] ?? 'none',
+      marketImpact: row.marketImpactLevel,
+      direction: row.direction,
     }))
   }, [detail?.eventId, detail?.impactAnalysis?.indexImpacts, eventId])
 
@@ -301,46 +264,39 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
   // }, [detail?.eventId, detail?.fundamentalDeepdive, eventId])
 
   /** 관련 이벤트/시나리오 테이블 행 데이터 (API: relatedEventScenario) */
-  const { relatedEvents, relatedScenarios } = useMemo((): { relatedEvents: RelatedEvent[]; relatedScenarios: RelatedScenario[] } => {
+  const { relatedEvents, relatedScenarios } = useMemo((): { relatedEvents: IRelatedEvent[]; relatedScenarios: IRelatedScenario[] } => {
     const related = detail?.relatedEventScenario
     const relatedEvent = related?.event
     const relatedEventIndexImpacts = relatedEvent?.indexImpacts ?? []
 
-    const byIndex = <T extends { indexName: string }>(list: T[], indexName: string): T | undefined =>
-      list.find((x) => String(x.indexName).toUpperCase() === indexName.toUpperCase())
-
-    const mapDirectionToUi = (direction?: unknown): PriceDirection => PRICE_TO_UI[normalizeDirection(direction)] ?? 'none'
-
-    const eventRows: RelatedEvent[] = relatedEvent
+    const eventRows: IRelatedEvent[] = relatedEvent
       ? [
         {
-          id: relatedEvent.eventId,
-          name: relatedEvent.eventName,
-          date: dayjs(relatedEvent.updatedAt ?? relatedEvent.createdAt).isValid()
-            ? dayjs(relatedEvent.updatedAt ?? relatedEvent.createdAt).format('MM-DD HH:mm')
-            : '-',
-          category: relatedEvent.eventCategoryLv1Label ?? relatedEvent.eventCategoryLv1 ?? '-',
-          jkm: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'JKM')?.impactLevel),
-          ttf: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'TTF')?.impactLevel),
-          hh: toUiImpactLevel(byIndex(relatedEventIndexImpacts, 'HH')?.impactLevel),
-          jkmDirection: mapDirectionToUi(byIndex(relatedEventIndexImpacts, 'JKM')?.direction),
-          ttfDirection: mapDirectionToUi(byIndex(relatedEventIndexImpacts, 'TTF')?.direction),
-          hhDirection: mapDirectionToUi(byIndex(relatedEventIndexImpacts, 'HH')?.direction),
+          eventId: relatedEvent.eventId,
+          eventName: relatedEvent.eventName,
+          createdAt: relatedEvent.createdAt,
+          updatedAt: relatedEvent.updatedAt,
+          eventCategoryLv1: relatedEvent.eventCategoryLv1 as EventCategoryLv1,
+          indexImpacts: relatedEventIndexImpacts.map((i) => ({
+            indexName: i.indexName,
+            marketImpactLevel: i.marketImpactLevel as MarketImpactLevel,
+            direction: i.direction as MarketDirection,
+          })),
         },
       ]
       : []
 
-    const scenarioRows: RelatedScenario[] = (related?.scenarios ?? []).map((s) => {
+    const scenarioRows: IRelatedScenario[] = (related?.scenarios ?? []).map((s) => {
       const impacts = s.indexImpacts ?? []
       return {
-        id: s.scenarioId,
-        name: s.scenarioName,
-        isCurrent: !!s.baseCase,
-        type: s.baseCase ? 'BC' : undefined,
-        jkm: toUiImpactLevel(byIndex(impacts, 'JKM')?.impactLevel),
-        ttf: toUiImpactLevel(byIndex(impacts, 'TTF')?.impactLevel),
-        hh: toUiImpactLevel(byIndex(impacts, 'HH')?.impactLevel),
-        probability: toProbabilityGaugeLevel(s.probability),
+        scenarioId: s.scenarioId,
+        scenarioName: s.scenarioName,
+        baseCase: s.baseCase,
+        probability: s.probability ?? 0,
+        indexImpacts: impacts.map((i) => ({
+          indexName: i.indexName,
+          marketImpactLevel: i.marketImpactLevel as MarketImpactLevel,
+        })),
       }
     })
 
@@ -355,40 +311,40 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
         id: `${prefix}-dt-1`,
         category: '공급',
         driver: '가스 생산 capa/가동률',
-        strengthLevel: 3,
-        strengthDirection: 'up',
+        strengthLevel: MarketImpactLevel.EXTREME,
+        strengthDirection: MarketDirection.BULLISH,
         rationale: 'Ras Laffan 등 중동 공급 차질 리스크 반영',
       },
       {
         id: `${prefix}-dt-2`,
         category: '공급',
         driver: 'Liquefaction/Spot',
-        strengthLevel: 2,
-        strengthDirection: 'up',
+        strengthLevel: MarketImpactLevel.HIGH,
+        strengthDirection: MarketDirection.BULLISH,
         rationale: '현물 cargo 경쟁 심화 가능',
       },
       {
         id: `${prefix}-dt-3`,
         category: '수요',
         driver: '발전/산업 수요',
-        strengthLevel: 1,
-        strengthDirection: 'flat',
+        strengthLevel: MarketImpactLevel.MEDIUM,
+        strengthDirection: MarketDirection.NEGLIGIBLE,
         rationale: '단기 수요는 계절·정책 영향이 더 큼',
       },
       {
         id: `${prefix}-dt-4`,
         category: '물류',
         driver: '항로/보험료',
-        strengthLevel: 2,
-        strengthDirection: 'up',
+        strengthLevel: MarketImpactLevel.HIGH,
+        strengthDirection: MarketDirection.BULLISH,
         rationale: '호르무즈 리스크로 비용·리드타임 증가',
       },
       {
         id: `${prefix}-dt-5`,
         category: '정책',
         driver: '전략비축/긴급조치',
-        strengthLevel: 0,
-        strengthDirection: 'flat',
+        strengthLevel: MarketImpactLevel.LOW,
+        strengthDirection: MarketDirection.NEGLIGIBLE,
         rationale: '현재 시점에 즉각 조치 시그널 제한적',
       },
     ]
@@ -557,11 +513,13 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             events={relatedEvents}
             scenarios={relatedScenarios}
             onEventRowClick={(row) =>
-              navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/events/${encodeURIComponent(String(row.id))}`, {
-                state: { eventName: row.name },
+              navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/events/${encodeURIComponent(String(row.eventId))}`, {
+                state: { eventName: row.eventName },
               })
             }
-            onScenarioRowClick={(row) => navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/scenarios/${encodeURIComponent(String(row.id))}`)}
+            onScenarioRowClick={(row) =>
+              navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)
+            }
           />
         </Stack>
       </Stack>

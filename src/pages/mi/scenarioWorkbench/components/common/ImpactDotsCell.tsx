@@ -1,21 +1,23 @@
 import { Box, Stack } from '@mui/material'
 
-import type { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
-
 import PriceDirectionIcon from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
+import { MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
 
 export interface ImpactDotsCellProps {
-  level: number
+  level: MarketImpactLevel | undefined
   size?: number
-  direction?: PriceDirection
+  direction?: MarketDirection
 }
 
-const filledDotCount = (level: number): number => {
-  if (level <= 0) return 0
-  if (level === 1) return 1
-  if (level === 2) return 2
-  return 3
+// MarketImpactLevel → 채워질 dot 개수: LOW=0, MEDIUM=1, HIGH=2, EXTREME=3
+const LEVEL_TO_DOTS: Record<MarketImpactLevel, number> = {
+  [MarketImpactLevel.LOW]: 0,
+  [MarketImpactLevel.MEDIUM]: 1,
+  [MarketImpactLevel.HIGH]: 2,
+  [MarketImpactLevel.EXTREME]: 3,
 }
+
+const filledDotCount = (level: MarketImpactLevel | undefined): number => (level ? (LEVEL_TO_DOTS[level] ?? 0) : 0)
 
 const filledColorForLevel = (filledCount: number, index: number): string | undefined => {
   const filled = index < filledCount
@@ -44,14 +46,13 @@ const ImpactDot = ({ filled, emptyBorderMuted, size }: { filled: boolean; emptyB
   />
 )
 
-const ImpactDotsRow = ({ level, size }: { level: number; size: number }) => {
-  const n = filledDotCount(level)
-  const emptyBorderMuted = n === 0
+const ImpactDotsRow = ({ filledCount, size }: { filledCount: number; size: number }) => {
+  const emptyBorderMuted = filledCount === 0
   return (
     <Stack direction="row" alignItems="center" justifyContent="center" gap="2px" height={22}>
       {[0, 1, 2].map((i) => {
-        const filled = i < n
-        const fillCol = filled ? filledColorForLevel(n, i) : undefined
+        const filled = i < filledCount
+        const fillCol = filled ? filledColorForLevel(filledCount, i) : undefined
         return (
           <Box key={i} sx={{ color: fillCol ?? 'transparent', lineHeight: 0, display: 'flex' }}>
             <ImpactDot filled={filled} emptyBorderMuted={emptyBorderMuted} size={size} />
@@ -69,6 +70,7 @@ const COMPACT_DIRECTION_ICON_SIZE = 12
 const ImpactDotsCell = ({ level, size = 10, direction }: ImpactDotsCellProps) => {
   const withDirection = direction !== undefined
   const dotSize = withDirection ? COMPACT_DOT_SIZE_WITH_DIRECTION : size
+  const filledCount = filledDotCount(level)
   return (
     <Stack
       direction="row"
@@ -82,7 +84,7 @@ const ImpactDotsCell = ({ level, size = 10, direction }: ImpactDotsCellProps) =>
         gap: withDirection ? '4px' : 0,
       }}
     >
-      <ImpactDotsRow level={level} size={dotSize} />
+      <ImpactDotsRow filledCount={filledCount} size={dotSize} />
       {withDirection && (
         <Box
           display="flex"
