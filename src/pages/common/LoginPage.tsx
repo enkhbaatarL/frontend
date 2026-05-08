@@ -7,6 +7,7 @@ import Flex from '@/components/common/display/Flex'
 import MIInput from '@/components/common/input/MIInput'
 import devTokens from '@/constants/devTokens'
 import useEnvironment from '@/hooks/useEnvironment'
+import { NEWSLETTER_LOCAL_DRAFT_KEY_PREFIX, NEWSLETTER_LOCAL_DRAFT_TTL_MS } from '@/pages/mi/newsletter/hooks/useNewsletterLocalDraft'
 import authService from '@/service/common/auth'
 import useAuthStore from '@/store/useAuthStore'
 
@@ -82,7 +83,11 @@ const LoginPage = () => {
           if (item) {
             const parsed = JSON.parse(item)
             // expiresAt이 있고 만료되었으면 삭제
-            if (parsed.expiresAt && parsed.expiresAt < now) {
+            const savedAtMs = typeof parsed.savedAt === 'string' ? Date.parse(parsed.savedAt) : Number.NaN
+            const isExpired =
+              (typeof parsed.expiresAt === 'number' && parsed.expiresAt < now) ||
+              (Number.isFinite(savedAtMs) && savedAtMs + NEWSLETTER_LOCAL_DRAFT_TTL_MS < now)
+            if (isExpired) {
               localStorage.removeItem(key)
             }
           }
@@ -99,6 +104,7 @@ const LoginPage = () => {
     clearAuth()
 
     // 만료된 로컬스토리지 항목 삭제 (임시: Newsletter 관련 로컬스토리지 삭제)
+    removeExpiredLocalStorageItems(NEWSLETTER_LOCAL_DRAFT_KEY_PREFIX)
     removeExpiredLocalStorageItems('newsletter_issue_draft')
   }, [clearAuth, removeExpiredLocalStorageItems])
 

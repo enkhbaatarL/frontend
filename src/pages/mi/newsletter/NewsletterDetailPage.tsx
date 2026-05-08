@@ -72,10 +72,16 @@ import useChartEditStore from '@/store/useChartEditStore'
 import { convertBase64ImagesToCid, prepareNewsletterEmailHtml } from '@/utils/email'
 
 type PendingLeaveAction = { type: 'route' } | { type: 'endEdit' }
+type EditBaseline = {
+  snapshot: INewsletterIssueSnapshotData
+  revisionNo: number | null
+  deltaCount: number | null
+}
 
 const NewsletterDetailPage = () => {
   const [mode, setMode] = useState<NewsletterDetailPageMode>(NewsletterDetailPageMode.VIEW)
   const [snapshot, setSnapshot] = useState<INewsletterIssueSnapshotData | null>(null)
+  const [editBaseline, setEditBaseline] = useState<EditBaseline | null>(null)
   const [isDownloadingImage, setIsDownloadingImage] = useState(false)
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
@@ -137,6 +143,10 @@ const NewsletterDetailPage = () => {
     enabled: !!newsletterId,
   })
 
+  useEffect(() => {
+    setEditBaseline(null)
+  }, [newsletterId, issueNo])
+
   const { mutate: mutateSubscribe, isPending: isSubscribeMutating } = useMutation({
     mutationFn: async (vars: { nextSubscribed: boolean; newsletterName: string }) => {
       if (!newsletterId) throw new Error('newsletterId missing')
@@ -178,9 +188,13 @@ const NewsletterDetailPage = () => {
 
   /** 서버 스냅샷 복사 — 최종저장 diff 기준(base) */
   const baseSnapshot = useMemo(() => (issueDetailSnapshot ? cloneDeep(issueDetailSnapshot) : null), [issueDetailSnapshot])
+  const saveBaseSnapshot = mode === NewsletterDetailPageMode.EDIT && editBaseline ? editBaseline.snapshot : baseSnapshot
+  const saveRevisionNo =
+    mode === NewsletterDetailPageMode.EDIT && editBaseline ? editBaseline.revisionNo : (issueDetailData?.snapshot?.revisionNo ?? null)
+  const saveDeltaCount = mode === NewsletterDetailPageMode.EDIT && editBaseline ? editBaseline.deltaCount : issueDetailData?.deltaCount
 
   /** 편집 중 로컬 초안(저장 전 포함). 저장 diff·미리보기·편집 UI는 항상 이 값 사용 */
-  const effectiveSnapshot = snapshot ?? baseSnapshot
+  const effectiveSnapshot = snapshot ?? (mode === NewsletterDetailPageMode.EDIT && editBaseline ? editBaseline.snapshot : baseSnapshot)
 
   /**
    * 뷰 모드 표시 전용 — GET 상세(`baseSnapshot`)만 반영.
@@ -317,10 +331,10 @@ const NewsletterDetailPage = () => {
   const { saveFinalRevision, saveDraftRevision, isSaving, isSavingDraft, hasUnsavedChanges } = useSaveNewsletterRevision({
     newsletterId,
     issueNo,
-    baseSnapshot,
+    baseSnapshot: saveBaseSnapshot,
     currentState: effectiveSnapshot,
-    revisionNo: issueDetailData?.snapshot?.revisionNo,
-    deltaCount: issueDetailData?.deltaCount,
+    revisionNo: saveRevisionNo,
+    deltaCount: saveDeltaCount,
   })
 
   const { getLocalDraft, clearLocalDraft } = useNewsletterLocalDraft({
@@ -328,6 +342,8 @@ const NewsletterDetailPage = () => {
     issueNo,
     isEditMode: mode === NewsletterDetailPageMode.EDIT,
     currentSnapshot: effectiveSnapshot,
+    baseSnapshot: saveBaseSnapshot,
+    baseRevisionNo: saveRevisionNo,
     hasUnsavedChanges,
     useLiveChartLayoutForPersist: mode === NewsletterDetailPageMode.EDIT,
   })
@@ -378,7 +394,8 @@ const NewsletterDetailPage = () => {
   /**
    * 편집용 로컬 `snapshot`을 서버 발행호 상세(`issueDetailData`)와 맞춥니다.
    * - 뷰/개정/캡처 등: 상세 쿼리가 바뀌면 서버 기준으로 로컬을 맞춤(저장 후 리패치 포함).
-   * - 편집 모드: 초안을 유지 — 백그라운드 리패치로 편집 중 내용이 통째로 날아가지 않게 함. 편집 진입 시 동기화는 `handleEnterEditMode`만 담당.
+   * - 편집 모드: 초안과 진입 시점 baseline을 유지 — 백그라운드 리패치로 revisionNo만 최신화되는 상태를 막음.
+   *   편집 진입 시 동기화는 `handleEnterEditMode`만 담당.
    */
   useLayoutEffect(() => {
     if (!newsletterId || !issueNo) {
@@ -423,11 +440,23 @@ const NewsletterDetailPage = () => {
       detail ??= queryClient.getQueryData<INewsletterIssueDetail>(['newsletterIssueDetail', newsletterId, issueNo])
 
       if (detail && String(detail.newsletterId) === String(newsletterId) && String(detail.issueNo) === String(issueNo)) {
+        const detailBaseSnapshot = getIssueDetailEffectiveSnapshotData(detail)
+        const detailRevisionNo = detail.snapshot?.revisionNo ?? null
+        if (detailBaseSnapshot) {
+          setEditBaseline({
+            snapshot: cloneDeep(detailBaseSnapshot),
+            revisionNo: detailRevisionNo,
+            deltaCount: detail.deltaCount ?? null,
+          })
+        } else {
+          setEditBaseline(null)
+        }
+
         let snap: INewsletterIssueSnapshotData | null = null
 
         // 1. 로컬스토리지에 자동 저장된 내용 우선 확인
-        const localDraft = getLocalDraft()
-        if (localDraft) {
+        const localDraftResult = getLocalDraft({ baseSnapshot: detailBaseSnapshot, baseRevisionNo: detailRevisionNo })
+        if (localDraftResult.status === 'found') {
           setIsEnteringEditMode(false)
           const useLocal = await new Promise<boolean>((resolve) => {
             draftLoadChoiceResolveRef.current = resolve
@@ -437,12 +466,18 @@ const NewsletterDetailPage = () => {
           draftLoadChoiceResolveRef.current = null
 
           if (useLocal) {
-            snap = cloneDeep(localDraft)
+            snap = cloneDeep(localDraftResult.draft.snapshot)
             clearLocalDraft()
             showSnackbar('자동 저장된 편집 내용을 불러왔습니다.', { variant: 'success' })
           } else {
             clearLocalDraft()
           }
+        } else if (localDraftResult.status === 'stale' || localDraftResult.status === 'expired' || localDraftResult.status === 'invalid') {
+          clearLocalDraft()
+          showSnackbar('최신 저장 상태와 맞지 않는 자동 저장본은 불러오지 않았습니다.', {
+            variant: 'warning',
+            body: '서버의 최신 내용으로 편집을 시작합니다.',
+          })
         }
 
         // 2. 로컬 드래프트를 불러오지 않았으면 서버 임시저장본 확인
@@ -459,25 +494,29 @@ const NewsletterDetailPage = () => {
             setIsEnteringEditMode(true)
             try {
               const draft = await newsletterService.getRevisionDraft(Number(newsletterId), issueNo)
-              if (draft?.content && Array.isArray(draft.content.sections)) {
+              if (draft?.content && Array.isArray(draft.content.sections) && draft.revisionNo === detailRevisionNo) {
                 snap = cloneDeep(draft.content)
                 showSnackbar('임시저장된 편집 내용을 불러왔습니다.', { variant: 'success' })
+              } else if (draft?.content && Array.isArray(draft.content.sections)) {
+                snap = detailBaseSnapshot
+                showSnackbar('최신 저장 상태와 맞지 않는 임시저장본은 불러오지 않았습니다.', {
+                  variant: 'warning',
+                  body: '서버의 최신 내용으로 편집을 시작합니다.',
+                })
               } else {
-                snap = getIssueDetailEffectiveSnapshotData(detail)
+                snap = detailBaseSnapshot
               }
             } catch {
-              snap = getIssueDetailEffectiveSnapshotData(detail)
+              snap = detailBaseSnapshot
             } finally {
               setIsEnteringEditMode(false)
             }
           } else {
-            snap = getIssueDetailEffectiveSnapshotData(detail)
+            snap = detailBaseSnapshot
           }
         }
 
-        if (!snap) {
-          snap = getIssueDetailEffectiveSnapshotData(detail)
-        }
+        snap ??= detailBaseSnapshot
 
         if (snap) {
           setSnapshot(cloneDeep(snap))
@@ -534,13 +573,14 @@ const NewsletterDetailPage = () => {
   }, [mode, revisionVersions, selectedVersionId])
 
   const handleReset = useCallback(() => {
-    const snap = getIssueDetailEffectiveSnapshotData(issueDetailData)
+    const snap =
+      mode === NewsletterDetailPageMode.EDIT && editBaseline ? editBaseline.snapshot : getIssueDetailEffectiveSnapshotData(issueDetailData)
     if (snap) {
       setSnapshot(cloneDeep(snap))
       resetImages()
       resetChartSettings()
     }
-  }, [issueDetailData, resetImages, resetChartSettings])
+  }, [editBaseline, issueDetailData, mode, resetImages, resetChartSettings])
 
   const handleRelatedNewsChange = useCallback((items: IRelatedNewsEventItem[]) => {
     setSnapshot((prev) => (prev ? updateNewsFlowItems(prev, items) : prev))
@@ -715,6 +755,7 @@ const NewsletterDetailPage = () => {
     if (success) {
       clearLocalDraft()
       setIsChartModalOpen(false)
+      setEditBaseline(null)
       setMode(NewsletterDetailPageMode.VIEW)
     }
   }, [saveFinalRevision, clearLocalDraft])
@@ -725,6 +766,7 @@ const NewsletterDetailPage = () => {
     } else {
       clearLocalDraft()
       setIsChartModalOpen(false)
+      setEditBaseline(null)
       setMode(NewsletterDetailPageMode.VIEW)
     }
   }, [needsLeaveConfirm, clearLocalDraft])
@@ -735,6 +777,7 @@ const NewsletterDetailPage = () => {
       const { success } = await saveDraftRevision()
       if (!success) return
       clearLocalDraft()
+      setEditBaseline(null)
       const b = blockerRef.current
       if (b.state === 'blocked') {
         b.proceed?.()
@@ -750,6 +793,7 @@ const NewsletterDetailPage = () => {
 
   const handleLeaveEditDiscard = useCallback(() => {
     clearLocalDraft()
+    setEditBaseline(null)
     const b = blockerRef.current
     if (b.state === 'blocked') {
       b.proceed?.()
