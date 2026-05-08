@@ -1,14 +1,14 @@
 import type { EventClassification } from '@/pages/mi/scenarioWorkbench/components/event/types'
-import type { CreateType } from '@/service/mi/scenarioWorkbench'
 
 import MIChip from '@/components/common/chip/MIChip'
+import { ScenarioWorkbenchStatus } from '@/service/mi/scenarioWorkbench/common'
 
 export interface ScenarioWorkbenchTypeBadgeProps {
-  type: CreateType
+  type: ScenarioWorkbenchStatus.NEW | ScenarioWorkbenchStatus.UPDATED
 }
 
 export const ScenarioWorkbenchTypeBadge = ({ type }: ScenarioWorkbenchTypeBadgeProps) => {
-  const isNew = type === 'new'
+  const isNew = type === ScenarioWorkbenchStatus.NEW
   return (
     <MIChip
       type="filled"
@@ -35,10 +35,10 @@ interface ClassificationTagProps {
 
 const ClassificationTag = ({ classification }: ClassificationTagProps) => {
   if (classification === '신규') {
-    return <ScenarioWorkbenchTypeBadge type="new" />
+    return <ScenarioWorkbenchTypeBadge type={ScenarioWorkbenchStatus.NEW} />
   }
   if (classification === '갱신') {
-    return <ScenarioWorkbenchTypeBadge type="updated" />
+    return <ScenarioWorkbenchTypeBadge type={ScenarioWorkbenchStatus.UPDATED} />
   }
   return (
     <MIChip

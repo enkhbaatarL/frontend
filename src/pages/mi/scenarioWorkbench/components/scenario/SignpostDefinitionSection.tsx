@@ -1,29 +1,17 @@
 import { Box } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 
-import type {
-  SignpostDefinition,
-  SignpostDefinitionDirection,
-  SignpostDefinitionImpactStrength,
-} from '@/pages/mi/scenarioWorkbench/components/scenario/types'
-
+import { marketDirectionToLabel, signpostStrengthToLabel } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
 import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
+import { IScenarioSignpostDefinition } from '@/service/mi/scenarioWorkbench/scenario'
 
-const SIGNPOST_DIRECTION_LABEL: Record<SignpostDefinitionDirection, string> = {
-  up: '상승',
-  down: '하락',
-  flat: '보합',
+interface SignpostDefinitionRow extends IScenarioSignpostDefinition {
+  id: number
 }
 
-const SIGNPOST_IMPACT_STRENGTH_LABEL: Record<SignpostDefinitionImpactStrength, string> = {
-  strong: '강함',
-  medium: '보통',
-  weak: '약함',
-}
-
-const columns: GridColDef<SignpostDefinition>[] = [
+const columns: GridColDef<SignpostDefinitionRow>[] = [
   {
     field: 'category',
     headerName: '분류',
@@ -41,19 +29,17 @@ const columns: GridColDef<SignpostDefinition>[] = [
     field: 'direction',
     headerName: '방향',
     width: 100,
-    renderCell: (params) => {
-      const v = params.value as SignpostDefinitionDirection | undefined
-      return <ScenarioWorkbenchEventDetailTableBodyText value={v ? SIGNPOST_DIRECTION_LABEL[v] : ''} tooltipWhenTruncated />
-    },
+    renderCell: (params) => (
+      <ScenarioWorkbenchEventDetailTableBodyText value={marketDirectionToLabel(params.row.direction)} tooltipWhenTruncated />
+    ),
   },
   {
-    field: 'impactStrength',
+    field: 'impactLevel',
     headerName: '영향도',
     width: 100,
-    renderCell: (params) => {
-      const v = params.value as SignpostDefinitionImpactStrength | undefined
-      return <ScenarioWorkbenchEventDetailTableBodyText value={v ? SIGNPOST_IMPACT_STRENGTH_LABEL[v] : ''} tooltipWhenTruncated />
-    },
+    renderCell: (params) => (
+      <ScenarioWorkbenchEventDetailTableBodyText value={signpostStrengthToLabel(params.row.signpostImpactLevel)} tooltipWhenTruncated />
+    ),
   },
   {
     field: 'rationale',
@@ -77,21 +63,27 @@ const columns: GridColDef<SignpostDefinition>[] = [
 ]
 
 interface SignpostDefinitionSectionProps {
-  definitions: SignpostDefinition[]
+  definitions: IScenarioSignpostDefinition[]
+  loading?: boolean
 }
 
-const SignpostDefinitionSection = ({ definitions }: SignpostDefinitionSectionProps) => (
-  <Box sx={{ position: 'relative', paddingY: '24px' }}>
-    <ScenarioWorkbenchTableHeader<SignpostDefinition> columns={columns} />
-    <ScenarioWorkbenchDataList<SignpostDefinition>
-      rowId="id"
-      columns={columns}
-      rows={definitions}
-      rowHeight={60}
-      cellPreset="miCanvasEvent"
-      noRowMessage="데이터를 수집 중입니다."
-    />
-  </Box>
-)
+const SignpostDefinitionSection = ({ definitions, loading = false }: SignpostDefinitionSectionProps) => {
+  const rows: SignpostDefinitionRow[] = definitions.map((d, idx) => ({ ...d, id: idx }))
+  return (
+    <Box sx={{ position: 'relative', paddingY: '24px' }}>
+      <ScenarioWorkbenchTableHeader<SignpostDefinitionRow> columns={columns} />
+      <ScenarioWorkbenchDataList<SignpostDefinitionRow>
+        rowId="id"
+        columns={columns}
+        rows={rows}
+        rowHeight={60}
+        cellPreset="miCanvasEvent"
+        loading={loading}
+        skeletonRowCount={4}
+        noRowMessage="데이터를 수집 중입니다."
+      />
+    </Box>
+  )
+}
 
 export default SignpostDefinitionSection

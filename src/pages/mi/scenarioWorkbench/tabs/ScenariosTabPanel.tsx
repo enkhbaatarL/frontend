@@ -1,10 +1,9 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
+import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-import type { CreateType } from '@/service/mi/scenarioWorkbench'
 
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
@@ -14,278 +13,75 @@ import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmen
 import { ScenarioWorkbenchTypeBadge } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import ProbabilityGaugeCell from '@/pages/mi/scenarioWorkbench/components/common/ProbabilityGaugeCell'
+import {
+  buildWorkbenchDatePresets,
+  mapWorkbenchDateRangeToApiParams,
+} from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
 import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
-import { buildWorkbenchEventDatePresets } from '@/pages/mi/scenarioWorkbench/components/event/scenarioWorkbenchEventsDateRange'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader, {
   SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
 } from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { useScenarioWorkbenchHeaderCollapsed } from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchHeaderCollapseContext'
+import { MarketImpactLevel, ListPeriod, ListSort, ScenarioWorkbenchStatus } from '@/service/mi/scenarioWorkbench/common'
+import scenarioWorkbenchScenarioService, {
+  type IGetScenariosParams,
+  type IScenarioImpact,
+  type IScenarioListItem,
+} from '@/service/mi/scenarioWorkbench/scenario'
 import { IPaginationResponse } from '@/types/api'
 
-export interface ScenarioRow {
-  id: number
-  type: CreateType
-  /** 'MM-DD HH:mm' 형식 (placeholder '00-00 00:00' 허용) */
-  createdAt: string
-  name: string
-  jkmImpact: number
-  ttfImpact: number
-  hhImpact: number
-  probability: number
-  /** 활성 시나리오만 보기 토글용 */
-  isActive: boolean
-}
-
-// ── 더미 데이터 ───────────────────────────────────────────────────────────────
-
-const DUMMY_SCENARIOS: ScenarioRow[] = [
-  {
-    id: 1,
-    type: 'new',
-    createdAt: '00-00 00:00',
-    name: '시나리오명',
-    jkmImpact: 3,
-    ttfImpact: 3,
-    hhImpact: 2,
-    probability: 5,
-    isActive: true,
-  },
-  {
-    id: 2,
-    type: 'new',
-    createdAt: '03-01 05:32',
-    name: '걸프 LNG 인프라 타격, 미복구',
-    jkmImpact: 3,
-    ttfImpact: 2,
-    hhImpact: 1,
-    probability: 4,
-    isActive: true,
-  },
-  {
-    id: 3,
-    type: 'new',
-    createdAt: '02-28 12:54',
-    name: '호르무즈 봉쇄 3개월+ 유지',
-    jkmImpact: 3,
-    ttfImpact: 3,
-    hhImpact: 2,
-    probability: 3,
-    isActive: true,
-  },
-  {
-    id: 4,
-    type: 'updated',
-    createdAt: '00-00 00:00',
-    name: '시나리오명 4',
-    jkmImpact: 1,
-    ttfImpact: 1,
-    hhImpact: 0,
-    probability: 2,
-    isActive: true,
-  },
-  {
-    id: 5,
-    type: 'new',
-    createdAt: '00-00 00:00',
-    name: '시나리오명 5',
-    jkmImpact: 2,
-    ttfImpact: 1,
-    hhImpact: 1,
-    probability: 1,
-    isActive: false,
-  },
-  {
-    id: 6,
-    type: 'new',
-    createdAt: '00-00 00:00',
-    name: '시나리오명',
-    jkmImpact: 3,
-    ttfImpact: 2,
-    hhImpact: 2,
-    probability: 4,
-    isActive: true,
-  },
-  {
-    id: 7,
-    type: 'new',
-    createdAt: '00-00 00:00',
-    name: '시나리오명',
-    jkmImpact: 3,
-    ttfImpact: 3,
-    hhImpact: 3,
-    probability: 5,
-    isActive: true,
-  },
-  {
-    id: 8,
-    type: 'new',
-    createdAt: '02-25 09:10',
-    name: '사우디 감산 발표',
-    jkmImpact: 2,
-    ttfImpact: 3,
-    hhImpact: 2,
-    probability: 4,
-    isActive: true,
-  },
-  {
-    id: 9,
-    type: 'updated',
-    createdAt: '01-15 09:22',
-    name: '유럽 가스 수요 급감',
-    jkmImpact: 2,
-    ttfImpact: 3,
-    hhImpact: 1,
-    probability: 3,
-    isActive: true,
-  },
-  {
-    id: 10,
-    type: 'new',
-    createdAt: '01-20 14:00',
-    name: '중동 지정학적 안정화',
-    jkmImpact: 1,
-    ttfImpact: 1,
-    hhImpact: 0,
-    probability: 2,
-    isActive: true,
-  },
-  {
-    id: 11,
-    type: 'new',
-    createdAt: '00-00 00:00',
-    name: '시나리오명',
-    jkmImpact: 3,
-    ttfImpact: 3,
-    hhImpact: 3,
-    probability: 5,
-    isActive: true,
-  },
-  {
-    id: 12,
-    type: 'new',
-    createdAt: '00-00 00:00',
-    name: '시나리오명',
-    jkmImpact: 0,
-    ttfImpact: 0,
-    hhImpact: 0,
-    probability: 1,
-    isActive: false,
-  },
-  {
-    id: 13,
-    type: 'new',
-    createdAt: '00-00 00:00',
-    name: '시나리오명',
-    jkmImpact: 2,
-    ttfImpact: 2,
-    hhImpact: 2,
-    probability: 3,
-    isActive: true,
-  },
-  {
-    id: 14,
-    type: 'updated',
-    createdAt: '02-10 11:30',
-    name: '러시아 가스 공급 재개',
-    jkmImpact: 2,
-    ttfImpact: 3,
-    hhImpact: 1,
-    probability: 3,
-    isActive: true,
-  },
-  {
-    id: 15,
-    type: 'new',
-    createdAt: '02-14 08:00',
-    name: '카타르 LNG 증산 계획',
-    jkmImpact: 2,
-    ttfImpact: 2,
-    hhImpact: 1,
-    probability: 4,
-    isActive: true,
-  },
-  {
-    id: 16,
-    type: 'new',
-    createdAt: '00-00 00:00',
-    name: '시나리오명',
-    jkmImpact: 3,
-    ttfImpact: 2,
-    hhImpact: 2,
-    probability: 5,
-    isActive: true,
-  },
-  {
-    id: 17,
-    type: 'new',
-    createdAt: '00-00 00:00',
-    name: '시나리오명',
-    jkmImpact: 1,
-    ttfImpact: 1,
-    hhImpact: 1,
-    probability: 2,
-    isActive: true,
-  },
-  {
-    id: 18,
-    type: 'updated',
-    createdAt: '00-00 00:00',
-    name: '시나리오명',
-    jkmImpact: 0,
-    ttfImpact: 0,
-    hhImpact: 0,
-    probability: 1,
-    isActive: false,
-  },
-  {
-    id: 19,
-    type: 'new',
-    createdAt: '03-05 16:45',
-    name: '아시아 LNG 수요 급등',
-    jkmImpact: 3,
-    ttfImpact: 2,
-    hhImpact: 2,
-    probability: 4,
-    isActive: true,
-  },
-  {
-    id: 20,
-    type: 'new',
-    createdAt: '03-10 07:15',
-    name: 'JKM 단기 급락 시나리오',
-    jkmImpact: 2,
-    ttfImpact: 1,
-    hhImpact: 1,
-    probability: 2,
-    isActive: true,
-  },
-]
-
-// ── 툴바 옵션 상수 ────────────────────────────────────────────────────────────
-
 const TYPE_FILTER_OPTIONS = [
-  { value: 'all', label: '전체' },
-  { value: 'new', label: '신규' },
-  { value: 'updated', label: '갱신' },
+  { value: ScenarioWorkbenchStatus.ALL, label: '전체' },
+  { value: ScenarioWorkbenchStatus.NEW, label: '신규' },
+  { value: ScenarioWorkbenchStatus.UPDATED, label: '갱신' },
 ] as const
 
 const SORT_OPTIONS = [
-  { value: 'newest', label: '최신순' },
-  { value: 'oldest', label: '오래된순' },
+  { value: ListSort.LATEST, label: '최신순' },
+  { value: ListSort.OLDEST, label: '오래된순' },
 ] as const
 
-/** 기본 조회 구간: 6개월 (디자인 캡처와 정렬) */
+export interface ScenarioRow {
+  id: number
+  type: ScenarioWorkbenchStatus.NEW | ScenarioWorkbenchStatus.UPDATED
+  createdAt: string
+  name: string
+  jkmImpact: MarketImpactLevel
+  ttfImpact: MarketImpactLevel
+  hhImpact: MarketImpactLevel
+  probability: number
+}
+
+const findImpactLevel = (impacts: IScenarioImpact[], indexName: string): MarketImpactLevel =>
+  impacts.find((i) => (i.indexName ?? '').toUpperCase() === indexName)?.marketImpactLevel ?? MarketImpactLevel.LOW
+
+const mapScenarioListItemToRow = (item: IScenarioListItem): ScenarioRow => {
+  const isUpdated = item.status === ScenarioWorkbenchStatus.UPDATED
+  const dateIso = isUpdated ? item.updatedAt : item.createdAt
+  const dateLabel = dateIso && dayjs(dateIso).isValid() ? dayjs(dateIso).format('MM-DD HH:mm') : '-'
+  const impacts = item.indexImpacts ?? []
+
+  return {
+    id: item.scenarioId,
+    type: isUpdated ? ScenarioWorkbenchStatus.UPDATED : ScenarioWorkbenchStatus.NEW,
+    createdAt: dateLabel,
+    name: item.scenarioName,
+    jkmImpact: findImpactLevel(impacts, 'JKM'),
+    ttfImpact: findImpactLevel(impacts, 'TTF'),
+    hhImpact: findImpactLevel(impacts, 'HH'),
+    probability: item.probability,
+  }
+}
+
 const defaultScenariosDateRange = (): DateRange => {
   const t = dayjs().startOf('day')
   return { startDate: t.subtract(6, 'month'), endDate: t }
 }
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
-/** sticky 처리 후 스크롤 표시 offset */
 const STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX = 2
 
-/** 스크롤 콘텐츠 상단 `scrollTop + (sentinel.top - scrollport.top)` */
 const measureStickyFlowTopFromScrollContentTop = (scrollEl: HTMLElement, sentinelEl: HTMLElement): number => {
   const s = scrollEl.getBoundingClientRect()
   const e = sentinelEl.getBoundingClientRect()
@@ -302,8 +98,8 @@ const ScenariosTabPanel = () => {
 
   const [stickyScrollShadowOpacity, setStickyScrollShadowOpacity] = useState(0)
 
-  const [typeFilter, setTypeFilter] = useState('all')
-  const [sort, setSort] = useState('newest')
+  const [typeFilter, setTypeFilter] = useState<ScenarioWorkbenchStatus>(ScenarioWorkbenchStatus.ALL)
+  const [sort, setSort] = useState<ListSort>(ListSort.LATEST)
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultScenariosDateRange())
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
@@ -329,46 +125,52 @@ const ScenariosTabPanel = () => {
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
-  const filteredRows = useMemo(() => {
-    let rows = DUMMY_SCENARIOS
+  const listRequest = useMemo((): IGetScenariosParams => {
+    const dateSlice =
+      appliedDateRange.startDate && appliedDateRange.endDate
+        ? mapWorkbenchDateRangeToApiParams(appliedDateRange.startDate, appliedDateRange.endDate)
+        : { period: ListPeriod.SIX_MONTHS }
 
-    if (typeFilter === 'new') {
-      rows = rows.filter((r) => r.type === 'new')
-    } else if (typeFilter === 'updated') {
-      rows = rows.filter((r) => r.type === 'updated')
+    const trimmedKeyword = committedKeyword.trim()
+
+    return {
+      page: pagination.page,
+      size: pagination.size,
+      sort,
+      period: dateSlice.period,
+      ...(dateSlice.period === ListPeriod.CUSTOM ? { startDate: dateSlice.startDate, endDate: dateSlice.endDate } : {}),
+      keyword: trimmedKeyword || undefined,
+      scenarioStatus: typeFilter,
     }
+  }, [appliedDateRange, committedKeyword, pagination.page, pagination.size, sort, typeFilter])
 
-    const trimmed = committedKeyword.trim().toLowerCase()
-    if (trimmed) {
-      rows = rows.filter((r) => r.name.toLowerCase().includes(trimmed))
+  const { data, isLoading } = useQuery({
+    queryKey: ['scenarioWorkbenchScenarios', listRequest],
+    queryFn: () => scenarioWorkbenchScenarioService.getScenarios(listRequest),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  const tableRows = useMemo(() => (data?.scenarios?.detail ?? []).map(mapScenarioListItemToRow), [data?.scenarios?.detail])
+
+  useEffect(() => {
+    if (!data?.scenarios) return
+    const tp = data.scenarios.totalPages
+    if (tp > 0 && pagination.page > tp) {
+      setPagination((p) => ({ ...p, page: tp }))
     }
+  }, [data?.scenarios, pagination.page])
 
-    return rows
-  }, [typeFilter, committedKeyword])
-
-  const pagedRows = useMemo(
-    () => filteredRows.slice((pagination.page - 1) * pagination.size, pagination.page * pagination.size),
-    [filteredRows, pagination.page, pagination.size],
-  )
-
-  const totalElements = filteredRows.length
-  const totalPages = Math.max(1, Math.ceil(totalElements / pagination.size))
-
-  const paginationData: IPaginationResponse<ScenarioRow> = {
-    totalPages,
-    totalElements,
-    currentPage: pagination.page,
-    numberOfElements: pagedRows.length,
-    size: pagination.size,
-    isFirst: pagination.page === 1,
-    isLast: pagination.page === totalPages,
-    hasPrevious: pagination.page > 1,
-    hasNext: pagination.page < totalPages,
-    detail: pagedRows,
-  }
+  const paginationData: IPaginationResponse<ScenarioRow> | undefined = useMemo(() => {
+    if (!data?.scenarios) return undefined
+    return {
+      ...data.scenarios,
+      detail: tableRows,
+    }
+  }, [data?.scenarios, tableRows])
 
   const handleTypeFilterChange = useCallback((v: string) => {
-    setTypeFilter(v)
+    setTypeFilter(v as ScenarioWorkbenchStatus)
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
@@ -410,7 +212,7 @@ const ScenariosTabPanel = () => {
   }, [])
 
   const handleSortChange = useCallback((value: string) => {
-    setSort(value)
+    setSort(value as ListSort)
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
@@ -475,13 +277,13 @@ const ScenariosTabPanel = () => {
         headerName: '가능성',
         width: 120,
         align: 'center',
-        renderCell: (params) => <ProbabilityGaugeCell level={params.row.probability} />,
+        renderCell: (params) => <ProbabilityGaugeCell probability={params.row.probability} />,
       },
     ],
     [],
   )
 
-  const workbenchEventDatePresets = useMemo(() => buildWorkbenchEventDatePresets(), [])
+  const workbenchDatePresets = useMemo(() => buildWorkbenchDatePresets(), [])
 
   return (
     <Box ref={panelLayoutRef} width="100%">
@@ -515,7 +317,7 @@ const ScenariosTabPanel = () => {
               dateRange={appliedDateRange}
               onApply={handleDateRangeApply}
               showPreset
-              datePresets={workbenchEventDatePresets}
+              datePresets={workbenchDatePresets}
             />
 
             <MISelectMenu
@@ -546,20 +348,23 @@ const ScenariosTabPanel = () => {
       <ScenarioWorkbenchDataList<ScenarioRow>
         rowId="id"
         columns={columns}
-        rows={paginationData.detail}
+        rows={paginationData?.detail ?? []}
+        loading={isLoading}
         skeletonRowCount={pagination.size}
         rowHeight={42}
         noRowMessage="시나리오를 생성해 주세요."
         onRowClick={handleRowClick}
       />
 
-      <MIPaginationSecondary
-        data={paginationData}
-        size={pagination.size}
-        sizeList={[20, 50, 100]}
-        onSizeChange={handlePageSizeChange}
-        onPageChange={handlePageChange}
-      />
+      {paginationData && (
+        <MIPaginationSecondary
+          data={paginationData}
+          size={pagination.size}
+          sizeList={[20, 50, 100]}
+          onSizeChange={handlePageSizeChange}
+          onPageChange={handlePageChange}
+        />
+      )}
     </Box>
   )
 }

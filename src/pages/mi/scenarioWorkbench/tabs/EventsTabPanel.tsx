@@ -6,12 +6,7 @@ import dayjs from 'dayjs'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import type {
-  EventMarketDirection,
-  EventMarketImpactLevel,
-  ScenarioWorkbenchEventRow,
-} from '@/pages/mi/scenarioWorkbench/components/event/types'
-import type { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+import type { ScenarioWorkbenchEventRow } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
@@ -21,16 +16,18 @@ import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSe
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
-import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
 import {
-  buildWorkbenchEventDatePresets,
+  buildWorkbenchDatePresets,
   mapWorkbenchDateRangeToApiParams,
-} from '@/pages/mi/scenarioWorkbench/components/event/scenarioWorkbenchEventsDateRange'
+} from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
+import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader, {
   SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
 } from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { useScenarioWorkbenchHeaderCollapsed } from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchHeaderCollapseContext'
+import { ListPeriod, MarketDirection } from '@/service/mi/scenarioWorkbench/common'
+import { MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchEventService, {
   SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO,
   type IGetScenarioWorkbenchEventsParams,
@@ -38,8 +35,6 @@ import scenarioWorkbenchEventService, {
   type IScenarioWorkbenchImpactIndexSummary,
   type ScenarioWorkbenchEventCategoryLv1,
   type ScenarioWorkbenchEventStatus,
-  type ScenarioWorkbenchDirection,
-  type ScenarioWorkbenchImpactLevel,
 } from '@/service/mi/scenarioWorkbench/event'
 import { IPaginationResponse } from '@/types/api'
 
@@ -55,26 +50,6 @@ const TYPE_FILTER_OPTIONS = [
 
 const SORT_OPTIONS = ['최신순', '오래된순'] as const
 
-const IMPACT_LEVEL_TO_UI: Record<ScenarioWorkbenchImpactLevel, EventMarketImpactLevel> = {
-  HIGH: 3,
-  MEDIUM: 2,
-  LOW: 1,
-  NONE: 0,
-}
-
-const PRICE_TO_UI: Record<ScenarioWorkbenchDirection, EventMarketDirection> = {
-  UP: '상승',
-  DOWN: '하락',
-  FLAT: '보합',
-  NONE: '보합',
-}
-
-const eventDirectionToPriceDirection = (d: EventMarketDirection): PriceDirection => {
-  if (d === '상승') return 'up'
-  if (d === '하락') return 'down'
-  return 'flat'
-}
-
 /** API eventStatus → 구분 칩 문구 */
 const eventStatusToClassification = (status: ScenarioWorkbenchEventStatus) => {
   if (status === 'NEW') return '신규' as const
@@ -84,7 +59,10 @@ const eventStatusToClassification = (status: ScenarioWorkbenchEventStatus) => {
 
 /** indexImpacts에서 지수명으로 항목 조회 (대소문자 무시) */
 const findIndexImpact = (impacts: IScenarioWorkbenchImpactIndexSummary[], code: string) =>
-  impacts.find((x) => (x.indexName ?? '').toUpperCase() === code)
+  impacts.find((x) => (x.indexName ?? '').toUpperCase() === code) ?? {
+    marketImpactLevel: MarketImpactLevel.LOW,
+    direction: MarketDirection.NEGLIGIBLE,
+  }
 
 /** API status(대/소문자 혼재)를 ScenarioWorkbenchEventStatus로 정규화 */
 const normalizeEventStatus = (v: unknown): ScenarioWorkbenchEventStatus => {
@@ -93,34 +71,12 @@ const normalizeEventStatus = (v: unknown): ScenarioWorkbenchEventStatus => {
   return 'CLOSED'
 }
 
-/** API direction(bullish/bearish/negligible 별칭 + 대/소문자 혼재)을 ScenarioWorkbenchDirection으로 정규화 */
-const normalizeDirection = (v: unknown): ScenarioWorkbenchDirection => {
-  const lower = String(v ?? '').toLowerCase()
-  if (lower === 'up' || lower === 'bullish') return 'UP'
-  if (lower === 'down' || lower === 'bearish') return 'DOWN'
-  if (lower === 'flat' || lower === 'negligible') return 'FLAT'
-  return 'NONE'
-}
-
-/** 단일 지수 요약을 UI 레벨·방향으로 변환 */
-const mapImpactToUi = (
-  row: IScenarioWorkbenchImpactIndexSummary | undefined,
-): { level: EventMarketImpactLevel; direction: EventMarketDirection } => {
-  if (!row) return { level: 0, direction: '보합' }
-
-  const priceDirection = normalizeDirection(row.direction)
-  return {
-    level: IMPACT_LEVEL_TO_UI[row.marketImpactLevel?.toUpperCase() as ScenarioWorkbenchImpactLevel] ?? 0,
-    direction: PRICE_TO_UI[priceDirection] ?? '보합',
-  }
-}
-
 /** API 목록 항목 → DataGrid 행 (JKM·TTF·HH 분리) */
 const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventListItem): ScenarioWorkbenchEventRow => {
   const impacts = item.indexImpacts ?? []
-  const jkm = mapImpactToUi(findIndexImpact(impacts, 'JKM'))
-  const ttf = mapImpactToUi(findIndexImpact(impacts, 'TTF'))
-  const hh = mapImpactToUi(findIndexImpact(impacts, 'HH'))
+  const jkm = findIndexImpact(impacts, 'JKM')
+  const ttf = findIndexImpact(impacts, 'TTF')
+  const hh = findIndexImpact(impacts, 'HH')
 
   const normalizedStatus = normalizeEventStatus(item.status as unknown)
   const occurredAt = item.occurredAt ? dayjs(item.occurredAt) : null
@@ -134,11 +90,11 @@ const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventLis
     occurredAtLabel,
     category: SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[eventCategoryLv1] ?? item.eventCategoryLv1,
     eventName: item.eventName,
-    jkmImpact: jkm.level,
+    jkmImpact: jkm.marketImpactLevel,
     jkmDirection: jkm.direction,
-    ttfImpact: ttf.level,
+    ttfImpact: ttf.marketImpactLevel,
     ttfDirection: ttf.direction,
-    hhImpact: hh.level,
+    hhImpact: hh.marketImpactLevel,
     hhDirection: hh.direction,
     isActive: normalizedStatus !== 'CLOSED',
   }
@@ -213,14 +169,14 @@ const EventsTabPanel = () => {
     const dateSlice =
       appliedDateRange.startDate && appliedDateRange.endDate
         ? mapWorkbenchDateRangeToApiParams(appliedDateRange.startDate, appliedDateRange.endDate)
-        : { period: 'SIX_MONTHS' as const }
+        : { period: ListPeriod.SIX_MONTHS }
 
     return {
       page: pagination.page,
       size: pagination.size,
       sort: sort === '최신순' ? 'LATEST' : 'OLDEST',
       period: dateSlice.period,
-      ...(dateSlice.period === 'CUSTOM' ? { startDate: dateSlice.startDate, endDate: dateSlice.endDate } : {}),
+      ...(dateSlice.period === ListPeriod.CUSTOM ? { startDate: dateSlice.startDate, endDate: dateSlice.endDate } : {}),
       keyword: trimmedKeyword || undefined,
       eventStatus,
       eventCategoryLv1,
@@ -285,27 +241,21 @@ const EventsTabPanel = () => {
         headerName: 'JKM',
         width: 100,
         align: 'center',
-        renderCell: (params) => (
-          <ImpactDotsCell level={params.row.jkmImpact} direction={eventDirectionToPriceDirection(params.row.jkmDirection)} />
-        ),
+        renderCell: (params) => <ImpactDotsCell level={params.row.jkmImpact} direction={params.row.jkmDirection} />,
       },
       {
         field: 'ttfImpact',
         headerName: 'TTF',
         width: 100,
         align: 'center',
-        renderCell: (params) => (
-          <ImpactDotsCell level={params.row.ttfImpact} direction={eventDirectionToPriceDirection(params.row.ttfDirection)} />
-        ),
+        renderCell: (params) => <ImpactDotsCell level={params.row.ttfImpact} direction={params.row.ttfDirection} />,
       },
       {
         field: 'hhImpact',
         headerName: 'HH',
         width: 100,
         align: 'center',
-        renderCell: (params) => (
-          <ImpactDotsCell level={params.row.hhImpact} direction={eventDirectionToPriceDirection(params.row.hhDirection)} />
-        ),
+        renderCell: (params) => <ImpactDotsCell level={params.row.hhImpact} direction={params.row.hhDirection} />,
       },
     ],
     [],
@@ -321,7 +271,7 @@ const EventsTabPanel = () => {
     [],
   )
 
-  const workbenchEventDatePresets = useMemo(() => buildWorkbenchEventDatePresets(), [])
+  const workbenchDatePresets = useMemo(() => buildWorkbenchDatePresets(), [])
 
   const dateRangeMenuLayoutProps = useMemo(
     () => ({
@@ -486,7 +436,7 @@ const EventsTabPanel = () => {
               dateRange={appliedDateRange}
               onApply={handleDateRangeApply}
               showPreset
-              datePresets={workbenchEventDatePresets}
+              datePresets={workbenchDatePresets}
               {...dateRangeMenuLayoutProps}
             />
 

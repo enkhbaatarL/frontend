@@ -1,17 +1,9 @@
 import { AxiosResponse } from 'axios'
 
+import { ListPeriod, MarketDirection, MarketImpactLevel } from './common'
+
 import api from '@/lib/axios'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
-
-/** Swagger: EventAppliedFilterRes.period */
-export type ScenarioWorkbenchEventPeriod =
-  | 'RECENT_7_DAYS'
-  | 'ONE_MONTH'
-  | 'THREE_MONTHS'
-  | 'SIX_MONTHS'
-  | 'TWELVE_MONTHS'
-  | 'ALL'
-  | 'CUSTOM'
 
 /** Swagger: EventAppliedFilterRes.sort */
 export type ScenarioWorkbenchEventSort = 'LATEST' | 'OLDEST'
@@ -42,17 +34,12 @@ export const SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO: Record<ScenarioWorkbenchE
   MARKET_TRADING_STRUCTURE: '시장/거래 구조',
 }
 
-/** Swagger: ImpactIndexSummaryRes */
-export type ScenarioWorkbenchImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'
-
-export type ScenarioWorkbenchDirection = 'UP' | 'FLAT' | 'DOWN' | 'NONE'
-
 export interface IScenarioWorkbenchImpactIndexSummary {
   indexName: string
-  /** Swagger는 low/medium/high(소문자) 260508: impactLevel -> marketImpactLevel */
-  marketImpactLevel: ScenarioWorkbenchImpactLevel | string
+  /** Swagger는 low/medium/high(소문자) */
+  marketImpactLevel: MarketImpactLevel
   /** 260506: 상세 API에서 bullish/bearish/negligible(소문자)로 내려오는 케이스 대응 */
-  direction: ScenarioWorkbenchDirection | 'bullish' | 'bearish' | 'negligible' | string
+  direction: MarketDirection
 }
 
 /** 이벤트 목록 한 줄 (indexImpacts는 JKM·TTF·HH 등 지수별 요약) */
@@ -76,7 +63,7 @@ export interface IScenarioWorkbenchEventSummaryNotice {
 export interface IScenarioWorkbenchEventAppliedFilter {
   eventStatus?: ScenarioWorkbenchEventStatus[]
   eventCategoryLv1?: ScenarioWorkbenchEventCategoryLv1[]
-  period?: ScenarioWorkbenchEventPeriod
+  period?: ListPeriod
   startDate?: string
   endDate?: string
   sort?: ScenarioWorkbenchEventSort
@@ -95,7 +82,7 @@ export interface IGetScenarioWorkbenchEventsParams {
   sort?: ScenarioWorkbenchEventSort
   eventStatus?: ScenarioWorkbenchEventStatus[]
   eventCategoryLv1?: ScenarioWorkbenchEventCategoryLv1[]
-  period?: ScenarioWorkbenchEventPeriod
+  period?: ListPeriod
   startDate?: string
   endDate?: string
   keyword?: string

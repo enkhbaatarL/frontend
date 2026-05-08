@@ -1,10 +1,6 @@
-import type { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
+import type { MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
 
 export type EventClassification = '신규' | '갱신' | '종료'
-
-export type EventMarketImpactLevel = 0 | 1 | 2 | 3
-
-export type EventMarketDirection = '상승' | '하락' | '보합'
 
 export interface ScenarioWorkbenchEventRow {
   id: string
@@ -13,14 +9,14 @@ export interface ScenarioWorkbenchEventRow {
   category: string
   eventName: string
   /** JKM 지수별 영향도·가격 방향 (목록 JKM 열) */
-  jkmImpact: EventMarketImpactLevel
-  jkmDirection: EventMarketDirection
+  jkmImpact: MarketImpactLevel
+  jkmDirection: MarketDirection
   /** TTF 지수별 영향도·가격 방향 (목록 TTF 열) */
-  ttfImpact: EventMarketImpactLevel
-  ttfDirection: EventMarketDirection
+  ttfImpact: MarketImpactLevel
+  ttfDirection: MarketDirection
   /** HH 지수별 영향도·가격 방향 (목록 HH 열) */
-  hhImpact: EventMarketImpactLevel
-  hhDirection: EventMarketDirection
+  hhImpact: MarketImpactLevel
+  hhDirection: MarketDirection
   /** 이벤트 활성 여부 (워크벤치 목·필터 UI용) */
   isActive: boolean
 }
@@ -31,8 +27,8 @@ export type EventsClassificationFilterValue = 'all' | EventClassification
 export interface EventDetailImpactTableRow {
   id: string
   target: string
-  marketImpact: EventMarketImpactLevel
-  direction: PriceDirection
+  marketImpact: MarketImpactLevel
+  direction?: MarketDirection
 }
 
 /** 이벤트 상세 — KPI 카드 (카테고리·출처 등) */
