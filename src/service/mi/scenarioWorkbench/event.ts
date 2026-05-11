@@ -11,6 +11,9 @@ export type ScenarioWorkbenchEventSort = 'LATEST' | 'OLDEST'
 /** Swagger: EventListItemRes.eventStatus */
 export type ScenarioWorkbenchEventStatus = 'NEW' | 'UPDATED' | 'CLOSED'
 
+/** Swagger: EventListItemRes.signalType */
+export type ScenarioWorkbenchEventSignalType = 'signal' | 'noise'
+
 /** Swagger: EventListItemRes.eventCategoryLv1 */
 export type ScenarioWorkbenchEventCategoryLv1 =
   | 'GEOPOLITICAL_RISK'
@@ -49,6 +52,8 @@ export interface IScenarioWorkbenchEventListItem {
   eventName: string
   // 260506: eventStatus -> status
   status: ScenarioWorkbenchEventStatus
+  /** Swagger: signal/noise */
+  signalType: ScenarioWorkbenchEventSignalType
   eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1
   occurredAt: string
   updatedAt: string
@@ -188,6 +193,8 @@ export interface IScenarioWorkbenchEventDetailRes {
   /** 하위호환: 구 응답 필드 */
   eventStatus?: ScenarioWorkbenchEventStatus
   statusLabel?: string
+  /** 260511: signal/noise */
+  signalType: ScenarioWorkbenchEventSignalType
   createdAt: string
   updatedAt: string
   impactAnalysis?: IScenarioWorkbenchEventImpactAnalysis

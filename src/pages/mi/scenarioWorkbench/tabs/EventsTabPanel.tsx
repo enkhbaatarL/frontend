@@ -79,6 +79,7 @@ const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventLis
   const hh = findIndexImpact(impacts, 'HH')
 
   const normalizedStatus = normalizeEventStatus(item.status as unknown)
+  const signalType = item.signalType
   const occurredAt = item.occurredAt ? dayjs(item.occurredAt) : null
   const updatedAt = item.updatedAt ? dayjs(item.updatedAt) : null
   const displayTime = occurredAt?.isValid() ? occurredAt : updatedAt
@@ -86,7 +87,7 @@ const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventLis
   const eventCategoryLv1 = item.eventCategoryLv1.toUpperCase() as ScenarioWorkbenchEventCategoryLv1
   return {
     id: item.eventId,
-    classification: eventStatusToClassification(normalizedStatus),
+    classification: signalType === 'noise' ? '소음' : eventStatusToClassification(normalizedStatus),
     occurredAtLabel,
     category: SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[eventCategoryLv1] ?? item.eventCategoryLv1,
     eventName: item.eventName,
