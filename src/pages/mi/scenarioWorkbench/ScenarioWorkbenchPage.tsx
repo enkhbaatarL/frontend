@@ -2,6 +2,7 @@ import { Box, Stack, Typography } from '@mui/material'
 import { debounce, type DebouncedFunc } from 'lodash-es'
 import { createElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
+import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
 import ScenarioWorkbenchTab from '@/pages/mi/scenarioWorkbench/components/ScenarioWorkbenchTab'
 import { ScenarioWorkbenchHeaderCollapseProvider } from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchHeaderCollapseContext'
 import {
@@ -9,6 +10,7 @@ import {
   resolveScenarioWorkbenchTabFromPathname,
   SCENARIO_WORKBENCH_TAB_INFO,
 } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
+import { WorkbenchStickyLayoutProvider } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchStickyLayout'
 
 const STICKY_TOP_WHEN_SCROLLED = -14
 const SCROLL_JUMP_IGNORE_EXPAND_AT_ZERO_PX = 96
@@ -33,9 +35,11 @@ const getFirstContentSnapScrollTop = (
 const ScenarioWorkbenchPage = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [selectedTab, setSelectedTab] = useState(() => getCurrentTabIndexFromLocation())
+  const [stickySlotEl, setStickySlotEl] = useState<HTMLDivElement | null>(null)
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const contentWrapperRef = useRef<HTMLDivElement | null>(null)
   const isScrolledRef = useRef(false)
+  const activeTabKey = SCENARIO_WORKBENCH_TAB_INFO[selectedTab]?.key ?? null
   /** 상단으로 smooth 스냅 중에는 scrollTop > 0이어도 헤더/탭을 펼친 상태로 유지 */
   const expandHeaderDuringSnapRef = useRef(false)
   const lastScrollTopRef = useRef(0)
@@ -202,66 +206,81 @@ const ScenarioWorkbenchPage = () => {
 
   return (
     <ScenarioWorkbenchHeaderCollapseProvider value={isScrolled}>
-      <Stack maxWidth="1380px" margin="auto" pt="20px" position="relative" sx={{ userSelect: 'none' }}>
-        <Box ref={stickyHeaderRef} position="sticky" top={isScrolled ? '-14px' : 0} left="0" bgcolor="commonColor.White" zIndex={200}>
-          <Typography
-            variant="titleLarge"
-            position="absolute"
-            top="12px"
-            left="24px"
-            fontSize="38px"
+      <WorkbenchStickyLayoutProvider slotEl={stickySlotEl} activeTabKey={activeTabKey}>
+        <Stack maxWidth="1380px" margin="auto" pt="20px" position="relative" sx={{ userSelect: 'none' }}>
+          <Box
+            ref={stickyHeaderRef}
+            position="sticky"
+            top={isScrolled ? '-14px' : 0}
+            left="0"
+            bgcolor="commonColor.White"
+            zIndex={200}
             sx={{
-              transform: `translateY(${isScrolled ? -6 : 0}px)`,
-              opacity: isScrolled ? 0 : 1,
-              transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
-              transitionDelay: isScrolled ? '0s' : '0.2s',
+              boxShadow: isScrolled ? WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
+              transition: 'box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
-            MI Scenario Workbench
-          </Typography>
-          <Box mt="96px">
-            <ScenarioWorkbenchTab tabItems={scenarioWorkbenchTabs} tabBarOnly value={selectedTab} onChange={handleTabChange} />
+            <Typography
+              variant="titleLarge"
+              position="absolute"
+              top="12px"
+              left="24px"
+              fontSize="38px"
+              sx={{
+                transform: `translateY(${isScrolled ? -6 : 0}px)`,
+                opacity: isScrolled ? 0 : 1,
+                transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+                transitionDelay: isScrolled ? '0s' : '0.2s',
+              }}
+            >
+              MI Scenario Workbench
+            </Typography>
+            <Box mt="96px">
+              <ScenarioWorkbenchTab tabItems={scenarioWorkbenchTabs} tabBarOnly value={selectedTab} onChange={handleTabChange} />
+            </Box>
+            {/* 활성 탭의 패널 타이틀·필터·테이블 헤더가 portal로 주입되는 슬롯 */}
+            <Box ref={setStickySlotEl} />
           </Box>
-        </Box>
-        <Box ref={contentWrapperRef} position="relative">
-          {scenarioWorkbenchTabs.map((tab, index) => {
-            const isSelected = selectedTab === index
-            return (
-              <Box
-                key={tab.label}
-                role="tabpanel"
-                id={`scenario-workbench-tabpanel-${index}`}
-                aria-labelledby={`scenario-workbench-tab-${index}`}
-                aria-hidden={!isSelected}
-                sx={{
-                  ...(isSelected && {
-                    position: 'relative',
-                    opacity: 1,
-                    animation: 'scenarioWorkbenchFadeIn 0.15s ease-out',
-                    '@keyframes scenarioWorkbenchFadeIn': {
-                      from: { opacity: 0 },
-                      to: { opacity: 1 },
-                    },
-                  }),
-                  ...(!isSelected && {
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: 0,
-                    overflow: 'hidden',
-                    visibility: 'hidden',
-                    pointerEvents: 'none',
-                    zIndex: -1,
-                  }),
-                }}
-              >
-                {tab.content}
-              </Box>
-            )
-          })}
-        </Box>
-      </Stack>
+          <Box ref={contentWrapperRef} position="relative">
+            {scenarioWorkbenchTabs.map((tab, index) => {
+              const isSelected = selectedTab === index
+              return (
+                <Box
+                  key={tab.label}
+                  role="tabpanel"
+                  id={`scenario-workbench-tabpanel-${index}`}
+                  aria-labelledby={`scenario-workbench-tab-${index}`}
+                  aria-hidden={!isSelected}
+                  sx={{
+                    ...(isSelected && {
+                      position: 'relative',
+                      opacity: 1,
+                      animation: 'scenarioWorkbenchFadeIn 0.15s ease-out',
+                      '@keyframes scenarioWorkbenchFadeIn': {
+                        from: { opacity: 0 },
+                        to: { opacity: 1 },
+                      },
+                    }),
+                    ...(!isSelected && {
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: 0,
+                      overflow: 'hidden',
+                      visibility: 'hidden',
+                      pointerEvents: 'none',
+                      zIndex: -1,
+                    }),
+                  }}
+                >
+                  {tab.content}
+                </Box>
+              )
+            })}
+          </Box>
+        </Stack>
+      </WorkbenchStickyLayoutProvider>
     </ScenarioWorkbenchHeaderCollapseProvider>
   )
 }

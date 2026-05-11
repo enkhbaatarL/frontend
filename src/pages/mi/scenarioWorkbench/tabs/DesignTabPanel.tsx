@@ -3,7 +3,7 @@ import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser'
 import { Box, Stack, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 
 import type { EventClassification, EventMarketDirection, EventMarketImpactLevel } from '@/pages/mi/scenarioWorkbench/components/event/types'
 import type { PriceDirection } from '@/pages/mi/scenarioWorkbench/components/scenario/types'
@@ -21,15 +21,12 @@ import MISpinner from '@/components/common/spinner/MISpinner'
 import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
-import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
 import CreatedScenariosSection, { type CreatedScenarioRow } from '@/pages/mi/scenarioWorkbench/components/design/CreatedScenariosSection'
 import { buildWorkbenchEventDatePresets } from '@/pages/mi/scenarioWorkbench/components/event/scenarioWorkbenchEventsDateRange'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader, {
-  SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
-} from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
+import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import ScenarioWorkbenchEventDetailPage from '@/pages/mi/scenarioWorkbench/EventDetailPage'
-import { useScenarioWorkbenchHeaderCollapsed } from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchHeaderCollapseContext'
+import { WorkbenchStickySlot } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchStickyLayout'
 import { IPaginationResponse } from '@/types/api'
 
 /** 이벤트 행에 대한 생성된 시나리오 더미 데이터 (API 연동 전 임시) */
@@ -558,24 +555,9 @@ const defaultDesignDateRange = (): DateRange => {
   return { startDate: t.subtract(6, 'month'), endDate: t }
 }
 
-const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
-const STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX = 2
-
-const measureStickyFlowTopFromScrollContentTop = (scrollEl: HTMLElement, sentinelEl: HTMLElement): number => {
-  const s = scrollEl.getBoundingClientRect()
-  const e = sentinelEl.getBoundingClientRect()
-  return scrollEl.scrollTop + (e.top - s.top)
-}
-
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
 const DesignTabPanel = () => {
-  const isWorkbenchHeaderCollapsed = useScenarioWorkbenchHeaderCollapsed()
-  const stickyShadowSentinelRef = useRef<HTMLDivElement | null>(null)
-  const panelLayoutRef = useRef<HTMLDivElement | null>(null)
-  const stickyShadowShowMinScrollTopRef = useRef(0)
-  const [stickyScrollShadowOpacity, setStickyScrollShadowOpacity] = useState(0)
-
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [sort, setSort] = useState<string>('newest')
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultDesignDateRange())
@@ -774,58 +756,9 @@ const DesignTabPanel = () => {
 
   const workbenchEventDatePresets = useMemo(() => buildWorkbenchEventDatePresets(), [])
 
-  const updateStickyShadowScrollThreshold = useCallback(() => {
-    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
-    const sentinel = stickyShadowSentinelRef.current
-    if (!scrollEl || !sentinel) return
-    const flowTopD = measureStickyFlowTopFromScrollContentTop(scrollEl, sentinel)
-    const minScroll = Math.max(0, flowTopD - SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX + STICKY_SHADOW_AFTER_STICKY_ENGAGE_OFFSET_PX)
-    stickyShadowShowMinScrollTopRef.current = minScroll
-    setStickyScrollShadowOpacity(scrollEl.scrollTop >= minScroll ? 1 : 0)
-  }, [])
-
-  useLayoutEffect(() => {
-    updateStickyShadowScrollThreshold()
-    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
-    const panel = panelLayoutRef.current
-    if (!scrollEl || !panel) return undefined
-    const ro = new ResizeObserver(() => {
-      updateStickyShadowScrollThreshold()
-    })
-    ro.observe(panel)
-    window.addEventListener('resize', updateStickyShadowScrollThreshold)
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', updateStickyShadowScrollThreshold)
-    }
-  }, [updateStickyShadowScrollThreshold, isWorkbenchHeaderCollapsed])
-
-  useEffect(() => {
-    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
-    if (!scrollEl) return undefined
-    const onScroll = () => {
-      const y = scrollEl.scrollTop
-      setStickyScrollShadowOpacity(y >= stickyShadowShowMinScrollTopRef.current ? 1 : 0)
-    }
-    scrollEl.addEventListener('scroll', onScroll, { passive: true })
-    return () => scrollEl.removeEventListener('scroll', onScroll)
-  }, [])
-
   return (
-    <Box ref={panelLayoutRef} width="100%">
-      <Box ref={stickyShadowSentinelRef} aria-hidden sx={{ height: 0, width: '100%', overflow: 'hidden', pointerEvents: 'none' }} />
-      <Box
-        sx={{
-          position: 'sticky',
-          top: SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
-          zIndex: 160,
-          bgcolor: 'commonColor.White',
-          pb: 0,
-          overflow: 'visible',
-          boxShadow: stickyScrollShadowOpacity ? WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
-          transition: 'box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1)',
-        }}
-      >
+    <Box width="100%">
+      <WorkbenchStickySlot tabKey="design">
         <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" px={3} color="contentText.Black">
           Design
         </Typography>
@@ -895,7 +828,7 @@ const DesignTabPanel = () => {
         </Stack>
 
         <ScenarioWorkbenchTableHeader<DesignRow> columns={columns} sx={{ mt: 2 }} />
-      </Box>
+      </WorkbenchStickySlot>
 
       <ScenarioWorkbenchDataList<DesignRow>
         rowId="id"
