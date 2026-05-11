@@ -128,6 +128,27 @@ const DEFAULT_IMPACT_KPI_PAIR: [EventDetailImpactKpiItem, EventDetailImpactKpiIt
   { title: '출처', content: 'Reuters, Platts', description: '\u00a0' },
 ]
 
+const normalizeMarketImpactLevel = (value: unknown): MarketImpactLevel => {
+  const lower = String(value ?? '').toLowerCase()
+  if (lower === MarketImpactLevel.EXTREME) return MarketImpactLevel.EXTREME
+  if (lower === MarketImpactLevel.HIGH) return MarketImpactLevel.HIGH
+  if (lower === MarketImpactLevel.MEDIUM) return MarketImpactLevel.MEDIUM
+  return MarketImpactLevel.LOW
+}
+
+const normalizeMarketDirection = (value: unknown): MarketDirection => {
+  const lower = String(value ?? '').toLowerCase()
+  if (lower === MarketDirection.BULLISH || lower === 'up') return MarketDirection.BULLISH
+  if (lower === MarketDirection.BEARISH || lower === 'down') return MarketDirection.BEARISH
+  return MarketDirection.NEGLIGIBLE
+}
+
+const normalizeEventCategoryLv1 = (value: unknown): EventCategoryLv1 => {
+  const raw = String(value ?? '')
+  const lower = raw.toLowerCase()
+  return ((Object.values(EventCategoryLv1) as string[]).includes(lower) ? lower : raw) as EventCategoryLv1
+}
+
 /** 시나리오 워크벤치 이벤트 상세 */
 const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = false }: ScenarioWorkbenchEventDetailPageProps = {}) => {
   const params = useParams()
@@ -217,8 +238,8 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     return list.map((row, i) => ({
       id: `${prefix}-impact-${i}`,
       target: row.indexName,
-      marketImpact: row.marketImpactLevel,
-      direction: row.direction,
+      marketImpact: normalizeMarketImpactLevel(row.marketImpactLevel),
+      direction: normalizeMarketDirection(row.direction),
     }))
   }, [detail?.eventId, detail?.impactAnalysis?.indexImpacts, eventId])
 
@@ -276,11 +297,11 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           eventName: relatedEvent.eventName,
           createdAt: relatedEvent.createdAt,
           updatedAt: relatedEvent.updatedAt,
-          eventCategoryLv1: relatedEvent.eventCategoryLv1 as EventCategoryLv1,
+          eventCategoryLv1: normalizeEventCategoryLv1(relatedEvent.eventCategoryLv1),
           indexImpacts: relatedEventIndexImpacts.map((i) => ({
             indexName: i.indexName,
-            marketImpactLevel: i.marketImpactLevel as MarketImpactLevel,
-            direction: i.direction as MarketDirection,
+            marketImpactLevel: normalizeMarketImpactLevel(i.marketImpactLevel),
+            direction: normalizeMarketDirection(i.direction),
           })),
         },
       ]
@@ -295,7 +316,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
         probability: s.probability ?? 0,
         indexImpacts: impacts.map((i) => ({
           indexName: i.indexName,
-          marketImpactLevel: i.marketImpactLevel as MarketImpactLevel,
+          marketImpactLevel: normalizeMarketImpactLevel(i.marketImpactLevel),
         })),
       }
     })
@@ -500,7 +521,12 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
         {/* <Stack id={SECTION_SCROLL_IDS.fundamental} gap="12px" py="30px">
           <EventDetailFundamentalSection metricRows={fundamentalMetricRows} indicatorRows={fundamentalIndicatorRows} />
         </Stack> */}
-        <Stack id={SECTION_SCROLL_IDS.driverTree} gap="12px" py="30px">
+        <Stack
+          id={SECTION_SCROLL_IDS.driverTree}
+          gap="12px"
+          py="30px"
+          sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}
+        >
           <EventDetailDriverTreeScoreboardSection rows={driverTreeRows} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related} gap="12px" py="30px">

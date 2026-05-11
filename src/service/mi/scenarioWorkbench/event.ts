@@ -36,10 +36,10 @@ export const SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO: Record<ScenarioWorkbenchE
 
 export interface IScenarioWorkbenchImpactIndexSummary {
   indexName: string
-  /** Swagger는 low/medium/high(소문자) */
-  marketImpactLevel: MarketImpactLevel
+  /** Swagger는 low/medium/high(소문자) 260508: impactLevel -> marketImpactLevel */
+  marketImpactLevel: MarketImpactLevel | string
   /** 260506: 상세 API에서 bullish/bearish/negligible(소문자)로 내려오는 케이스 대응 */
-  direction: MarketDirection
+  direction: MarketDirection | string
 }
 
 /** 이벤트 목록 한 줄 (indexImpacts는 JKM·TTF·HH 등 지수별 요약) */

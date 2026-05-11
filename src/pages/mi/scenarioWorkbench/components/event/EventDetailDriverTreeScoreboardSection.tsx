@@ -96,6 +96,9 @@ const EventDetailDriverTreeScoreboardSection = ({ rows }: EventDetailDriverTreeS
           rowHeight={44}
           cellPreset="miCanvasEvent"
           noRowMessage="표시할 데이터가 없습니다."
+          disableHover
+          hideInnerRowBorder
+          hideLastRowBorder
         />
       </Stack>
     </Stack>

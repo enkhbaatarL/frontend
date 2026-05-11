@@ -47,6 +47,21 @@ const TYPE_FILTER_OPTIONS = [
 
 const SORT_OPTIONS = ['최신순', '오래된순'] as const
 
+const normalizeMarketImpactLevel = (value: unknown): MarketImpactLevel => {
+  const lower = String(value ?? '').toLowerCase()
+  if (lower === MarketImpactLevel.EXTREME) return MarketImpactLevel.EXTREME
+  if (lower === MarketImpactLevel.HIGH) return MarketImpactLevel.HIGH
+  if (lower === MarketImpactLevel.MEDIUM) return MarketImpactLevel.MEDIUM
+  return MarketImpactLevel.LOW
+}
+
+const normalizeMarketDirection = (value: unknown): MarketDirection => {
+  const lower = String(value ?? '').toLowerCase()
+  if (lower === MarketDirection.BULLISH || lower === 'up') return MarketDirection.BULLISH
+  if (lower === MarketDirection.BEARISH || lower === 'down') return MarketDirection.BEARISH
+  return MarketDirection.NEGLIGIBLE
+}
+
 /** API eventStatus → 구분 칩 문구 */
 const eventStatusToClassification = (status: ScenarioWorkbenchEventStatus) => {
   if (status === 'NEW') return '신규' as const
@@ -55,11 +70,13 @@ const eventStatusToClassification = (status: ScenarioWorkbenchEventStatus) => {
 }
 
 /** indexImpacts에서 지수명으로 항목 조회 (대소문자 무시) */
-const findIndexImpact = (impacts: IScenarioWorkbenchImpactIndexSummary[], code: string) =>
-  impacts.find((x) => (x.indexName ?? '').toUpperCase() === code) ?? {
-    marketImpactLevel: MarketImpactLevel.LOW,
-    direction: MarketDirection.NEGLIGIBLE,
+const findIndexImpact = (impacts: IScenarioWorkbenchImpactIndexSummary[], code: string) => {
+  const impact = impacts.find((x) => (x.indexName ?? '').toUpperCase() === code)
+  return {
+    marketImpactLevel: normalizeMarketImpactLevel(impact?.marketImpactLevel),
+    direction: normalizeMarketDirection(impact?.direction),
   }
+}
 
 /** API status(대/소문자 혼재)를 ScenarioWorkbenchEventStatus로 정규화 */
 const normalizeEventStatus = (v: unknown): ScenarioWorkbenchEventStatus => {

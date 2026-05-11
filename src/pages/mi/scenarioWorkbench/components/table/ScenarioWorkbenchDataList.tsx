@@ -23,6 +23,7 @@ export interface ScenarioWorkbenchDataListProps<T extends GridRowModel>
     onRowClick: (params: { row: T }) => void
     sx: SxProps<Theme>
     hideLastRowBorder: boolean // 마지막 행 하단 구분선 미표시
+    hideInnerRowBorder: boolean // 행 사이 구분선 미표시(마지막 행 하단 구분선은 유지)
     primitiveCellTypographyVariant: TypographyProps['variant']
     cellPreset: ScenarioWorkbenchDataListCellPreset
   }> {
@@ -80,6 +81,7 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
   rowHeight,
   getRowClassName,
   hideLastRowBorder,
+  hideInnerRowBorder,
   primitiveCellTypographyVariant,
   cellPreset,
   sx,
@@ -132,7 +134,9 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
             key={idx}
             sx={(theme) => {
               const isLastSkeletonRow = idx === skeletonRows - 1
-              const showBorder = !isLastSkeletonRow || !hideLastRowBorder
+              const showBorder =
+                // hideInnerRowBorder: 마지막 행 하단 구분선은 유지(단, hideLastRowBorder면 마지막도 숨김)
+                (hideInnerRowBorder ? isLastSkeletonRow : true) && (!isLastSkeletonRow || !hideLastRowBorder)
               return {
                 display: 'grid',
                 gridTemplateColumns,
@@ -191,8 +195,11 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
                 position: 'relative',
                 bgcolor: 'transparent',
                 cursor: onRowClick ? 'pointer' : 'default',
-                borderBottom:
-                  idx < rows.length - 1 || !hideLastRowBorder
+                borderBottom: hideInnerRowBorder
+                  ? idx === rows.length - 1 && !hideLastRowBorder
+                    ? `1px solid ${theme.palette.contentBorder?.Normal ?? theme.palette.mari[40]}`
+                    : 'none'
+                  : idx < rows.length - 1 || !hideLastRowBorder
                     ? `1px solid ${theme.palette.contentBorder?.Normal ?? theme.palette.gray[40]}`
                     : 'none',
                 transition: 'background-color 120ms ease',
