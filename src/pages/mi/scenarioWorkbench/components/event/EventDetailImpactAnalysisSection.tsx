@@ -1,3 +1,4 @@
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import ManageSearchOutlinedIcon from '@mui/icons-material/ManageSearchOutlined'
 import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
@@ -13,13 +14,43 @@ import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/ev
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
+/** 영향도 분석 섹션 props */
 interface EventDetailImpactAnalysisSectionProps {
   tableRows: EventDetailImpactTableRow[]
   kpiItems: [EventDetailImpactKpiItem, EventDetailImpactKpiItem]
   narrative: string
+  isNoiseEvent?: boolean
 }
 
-const EventDetailImpactAnalysisSection = ({ tableRows, kpiItems, narrative }: EventDetailImpactAnalysisSectionProps) => {
+/** 소음 전용 — 아이콘 + 해당 없음 */
+const EventDetailImpactAnalysisNoiseEmptyPanel = () => (
+  <Box
+    display="flex"
+    flexDirection="column"
+    alignItems="center"
+    justifyContent="center"
+    gap="10px"
+    width="100%"
+    minHeight={{ xs: 280, sm: 340, md: 387 }}
+    sx={{
+      borderBottom: '1px solid',
+      borderColor: 'gray.30',
+    }}
+  >
+    <ErrorOutlineOutlinedIcon sx={{ fontSize: 24, color: 'gray.60' }} aria-hidden />
+    <Typography variant="body3SB12" color="gray.60" lineHeight={1.4}>
+      해당 없음
+    </Typography>
+  </Box>
+)
+
+/** 이벤트 상세 — 영향도 분석(표 + KPI + 서술) */
+const EventDetailImpactAnalysisSection = ({
+  tableRows,
+  kpiItems,
+  narrative,
+  isNoiseEvent = false,
+}: EventDetailImpactAnalysisSectionProps) => {
   const columns: GridColDef<EventDetailImpactTableRow>[] = useMemo(
     () => [
       {
@@ -63,6 +94,23 @@ const EventDetailImpactAnalysisSection = ({ tableRows, kpiItems, narrative }: Ev
     ],
     [],
   )
+
+  /** 소음이면 전체 섹션을 소음 화면으로 고정 */
+
+  if (isNoiseEvent) {
+    return (
+      <Stack width="100%" gap="12px">
+        <EventDetailSectionHeader
+          icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+          title="영향도 분석"
+          tooltipTitle="이벤트가 주요 가격 지표에 미치는 영향을 요약합니다."
+        />
+        <Box bgcolor="gray.5" borderRadius="10px" overflow="hidden" width="100%">
+          <EventDetailImpactAnalysisNoiseEmptyPanel />
+        </Box>
+      </Stack>
+    )
+  }
 
   return (
     <Stack width="100%" gap="12px">

@@ -18,6 +18,7 @@ import type { IRelatedEvent, IRelatedScenario } from '@/service/mi/scenarioWorkb
 
 import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
+import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import RelatedEventsAndScenariosSection from '@/pages/mi/scenarioWorkbench/components/common/RelatedEventsAndScenariosSection'
 import ScenarioWorkbenchDetailHeader, {
   WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
@@ -414,9 +415,12 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     () => (
       <Stack direction="row" alignItems="flex-end" justifyContent="space-between" width="100%">
         <Stack flex={1} minWidth={0} gap="10px" alignItems="flex-start" pt="20px">
-          <Typography variant="body1B16" color="contentText.Black">
-            Event
-          </Typography>
+          <Stack direction="row" alignItems="center" gap="10px" flexWrap="wrap">
+            <Typography variant="body1B16" color="contentText.Black">
+              Event
+            </Typography>
+            {detail?.signalType === 'noise' ? <ClassificationTag classification="소음" /> : null}
+          </Stack>
           <Typography
             variant="titleLarge"
             fontSize="26px"
@@ -440,7 +444,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
         </Stack>
       </Stack>
     ),
-    [generatedAtLabel, title, updatedAtLabel],
+    [detail?.signalType, generatedAtLabel, title, updatedAtLabel],
   )
 
   useLayoutEffect(() => {
@@ -495,7 +499,12 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           </Typography>
         )}
         <Stack id={SECTION_SCROLL_IDS.impact} gap="12px" py="20px" sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}>
-          <EventDetailImpactAnalysisSection tableRows={impactTableRows} kpiItems={impactKpiPair} narrative={impactNarrative} />
+          <EventDetailImpactAnalysisSection
+            tableRows={impactTableRows}
+            kpiItems={impactKpiPair}
+            narrative={impactNarrative}
+            isNoiseEvent={detail?.signalType === 'noise'}
+          />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.ai} gap="12px" py="30px">
           <EventDetailAiInsightsSection bullets={aiBullets} detailParagraph={aiDetailParagraph} />

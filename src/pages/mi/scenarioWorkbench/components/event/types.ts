@@ -1,6 +1,7 @@
 import type { MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
 
-export type EventClassification = '신규' | '갱신' | '종료'
+/** 이벤트 목록/상세에서 노출되는 분류 태그 */
+export type EventClassification = '신규' | '갱신' | '종료' | '소음'
 
 export interface ScenarioWorkbenchEventRow {
   id: string
