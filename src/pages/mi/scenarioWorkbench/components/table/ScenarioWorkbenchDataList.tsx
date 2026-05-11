@@ -240,7 +240,10 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
                   value.length > 0 &&
                   // 신규/갱신/종료 칩(이벤트), 신규/갱신 칩(시나리오)은 줄이기/툴팁 대상이 아님
                   col.field !== 'classification' &&
-                  col.field !== 'type'
+                  col.field !== 'type' &&
+                  col.field !== 'jkmImpact' &&
+                  col.field !== 'ttfImpact' &&
+                  col.field !== 'hhImpact'
 
                 return (
                   <Box
