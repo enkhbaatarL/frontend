@@ -89,6 +89,7 @@ const DimmedOverlay = ({ isClosing, isExpanded, isFadingOut }: DimmedOverlayProp
 interface PopupProps extends Omit<BoxProps, 'title' | 'content'> {
   title: ReactNode
   content: ReactNode
+  hideHeaderLine?: boolean
   hideCloseButton?: boolean
   showSkeleton?: boolean
   minWidth?: number
@@ -114,6 +115,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       popup: {
         title,
         content,
+        hideHeaderLine,
         hideCloseButton,
         showSkeleton = true,
         minWidth = 1200,
@@ -622,8 +624,8 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                         direction="row"
                         height={`${POPUP_HEADER_HEIGHT}px`}
                         padding="20px 24px"
-                        borderBottom="1px solid"
-                        borderColor="contentBorder.Normal"
+                        borderBottom={hideHeaderLine ? 'none' : '1px solid'}
+                        borderColor={hideHeaderLine ? undefined : 'contentBorder.Normal'}
                         alignItems="center"
                         justifyContent="space-between"
                         gap="24px"

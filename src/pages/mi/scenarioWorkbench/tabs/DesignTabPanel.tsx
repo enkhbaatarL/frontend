@@ -8,7 +8,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, typ
 import type { EventClassification } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
-import MIConfirm from '@/components/common/confirm/MIConfirm'
 import LoadingIcon from '@/components/common/icons/LoadingIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
@@ -141,7 +140,6 @@ const DetailIconButton = ({ row }: { row: DesignRow }) => {
             <ScenarioWorkbenchEventDetailPage eventId={eventIdString} embedded />
           </Stack>
         ) : null,
-        showSkeleton: false,
         useInternalScroll: true,
       }}
     >
@@ -240,35 +238,34 @@ const GeneratingScenarioButton = () => (
   />
 )
 
-/** 시나리오 생성 완료 — 클릭 시 일반 팝업으로 생성된 시나리오 목록 노출 */
+/** 시나리오 생성 완료 — 클릭 시 MIMorphingPopup(내부 스크롤)으로 생성된 시나리오 목록 노출 */
 const CompletedScenarioPopupButton = ({ row }: { row: DesignRow }) => {
-  const [open, setOpen] = useState(false)
+  const popupRef = useRef<MIMorphingPopupRef>(null)
   const scenarios = useMemo(() => buildCreatedScenariosForEvent(row), [row])
 
-  const handleClose = () => setOpen(false)
-
   return (
-    <>
-      <ScenarioActionButton
-        icon={<OpenInBrowserIcon sx={{ fontSize: 20, color: 'mari.Primary' }} />}
-        label="완료"
-        textColor="mari.Primary"
-        ariaLabel="생성된 시나리오 보기"
-        onClick={() => setOpen(true)}
-      />
-      <MIConfirm
-        open={open}
-        title="생성된 시나리오"
-        handleClose={handleClose}
-        hideFooter
-        width={1024}
-        titleSx={{ fontWeight: 600, fontSize: 20 }}
-        paperSx={{ maxWidth: '1024px', maxHeight: 'min(800px, 90vh)' }}
-        contentSx={{ padding: 0, '&:last-of-type': { paddingBottom: 0 } }}
-      >
-        <CreatedScenariosSection scenarios={scenarios} />
-      </MIConfirm>
-    </>
+    <MIMorphingPopup
+      ref={popupRef}
+      display="inline-flex"
+      popup={{
+        title: '생성된 시나리오',
+        content: <CreatedScenariosSection scenarios={scenarios} />,
+        useInternalScroll: true,
+        hideHeaderLine: true,
+        minWidth: 1024,
+        maxWidth: 1024,
+      }}
+    >
+      <Box borderRadius="10px" sx={{ display: 'inline-flex' }}>
+        <ScenarioActionButton
+          icon={<OpenInBrowserIcon sx={{ fontSize: 20, color: 'mari.Primary' }} />}
+          label="완료"
+          textColor="mari.Primary"
+          ariaLabel="생성된 시나리오 보기"
+          onClick={() => popupRef.current?.open()}
+        />
+      </Box>
+    </MIMorphingPopup>
   )
 }
 
