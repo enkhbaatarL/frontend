@@ -478,7 +478,12 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           </Typography>
         )}
         <Stack id={SECTION_SCROLL_IDS.impact} gap="12px" py="20px" sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}>
-          <EventDetailImpactAnalysisSection tableRows={impactTableRows} kpiItems={impactKpiPair} narrative={impactNarrative} />
+          <EventDetailImpactAnalysisSection
+            tableRows={impactTableRows}
+            kpiItems={impactKpiPair}
+            narrative={impactNarrative}
+            isNoiseEvent={detail?.signalType === 'noise'}
+          />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.ai} gap="12px" py="30px">
           <EventDetailAiInsightsSection bullets={aiBullets} detailParagraph={aiDetailParagraph} />
