@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom'
 
 import { SCENARIO_WORKBENCH_BASE_PATH } from '../../scenarioWorkbenchRoutes'
 
+import type { MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
+
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
@@ -21,9 +23,9 @@ export interface CreatedScenarioRow {
   tags: string[]
   isCurrent?: boolean
   type?: 'BC' | 'NOISE'
-  jkm: number
-  ttf: number
-  hh: number
+  jkm: MarketImpactLevel
+  ttf: MarketImpactLevel
+  hh: MarketImpactLevel
   probability: number
 }
 
@@ -153,7 +155,7 @@ const CreatedScenariosSection = ({ scenarios }: CreatedScenariosSectionProps) =>
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => <ProbabilityGaugeCell level={params.row.probability} />,
+        renderCell: (params) => <ProbabilityGaugeCell probability={params.row.probability} />,
       },
       {
         field: 'detail',
