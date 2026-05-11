@@ -1,0 +1,547 @@
+import { Box } from '@mui/material'
+import {
+  CategoryScale,
+  Chart as ChartJS,
+  ChartDataset,
+  ChartOptions,
+  Filler,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  Plugin,
+  Point,
+  PointElement,
+  Title,
+  Tooltip,
+} from 'chart.js'
+import dayjs from 'dayjs'
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { Chart } from 'react-chartjs-2'
+
+import ScenarioSummaryChartTooltip, {
+  ScenarioSummaryTooltipContent,
+} from '@/pages/mi/scenarioWorkbench/components/common/ScenarioSummaryChartTooltip'
+import ScenarioSummaryCrosshairLine, {
+  ScenarioSummaryCrosshairLineHandle,
+} from '@/pages/mi/scenarioWorkbench/components/common/ScenarioSummaryCrosshairLine'
+import { ChartData } from '@/types/dataDetailChart'
+import { disableContextMenu } from '@/utils/mouse'
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, LineController, Title, Tooltip, Filler, Legend)
+
+type ScenarioSummaryChartData = ChartData & {
+  dataType?: string
+  resultDates?: string[]
+  startDates?: string[]
+}
+
+interface ScenarioSummaryChartGraphProps {
+  charts: ScenarioSummaryChartData[]
+  height: string | number
+  targetLabel?: string
+  chartVisibilityMap?: Map<string, boolean>
+  hoveredChartKey?: string | null
+  chartColorMap?: Map<string, string>
+  spanGaps?: boolean
+}
+
+type DatasetMeta = {
+  chipColor?: string
+  goodsDataSourceNo?: number
+  goodsDataSourceName?: string
+  isDashed?: boolean
+  toFixed?: number
+  visibilityKey?: string
+  timestamps?: string[]
+  resultDates?: string[]
+  startDates?: string[]
+}
+
+type ScenarioLineDataset = ChartDataset<'line', Point[]> & {
+  metadata?: DatasetMeta
+}
+
+const applyOpacity = (color: string, alpha: number): string => {
+  if (color.startsWith('#')) {
+    const hex = color.slice(1)
+    const r = Number.parseInt(hex.slice(0, 2), 16)
+    const g = Number.parseInt(hex.slice(2, 4), 16)
+    const b = Number.parseInt(hex.slice(4, 6), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
+  if (color.startsWith('rgba')) {
+    return color.replaceAll(/[\d.]+\)$/g, `${alpha})`)
+  }
+  return color
+}
+
+const getCurrentLineX = (timestamps: string[], xScale: { getPixelForValue: (value: number) => number }): number | null => {
+  if (timestamps.length === 0) return null
+
+  const today = dayjs().startOf('day')
+  const dateList = timestamps.map((timestamp) => dayjs(timestamp))
+  const first = dateList[0]
+  const last = dateList[dateList.length - 1]
+  if (!first.isValid() || !last.isValid() || today.isBefore(first, 'day') || today.isAfter(last, 'day')) return null
+
+  const exactIndex = dateList.findIndex((date) => date.isSame(today, 'day'))
+  if (exactIndex >= 0) return xScale.getPixelForValue(exactIndex)
+
+  const nextIndex = dateList.findIndex((date) => date.isAfter(today, 'day'))
+  if (nextIndex <= 0) return null
+
+  const prev = dateList[nextIndex - 1]
+  const next = dateList[nextIndex]
+  const total = next.diff(prev, 'millisecond')
+  if (total <= 0) return xScale.getPixelForValue(nextIndex)
+
+  const ratio = today.diff(prev, 'millisecond') / total
+  return xScale.getPixelForValue(nextIndex - 1 + ratio)
+}
+
+const TODAY_MARKER_WIDTH = 10
+const TODAY_MARKER_HEIGHT = 7
+
+const buildScenarioSummaryPlugin = (timestamps: string[], resultDates: string[]): Plugin<'line'> => ({
+  id: 'scenarioSummaryChartChrome',
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea, scales } = chart
+    const xScale = scales.x
+    if (!chartArea || !xScale) return
+
+    const { left, right, top, bottom } = chartArea
+
+    ctx.save()
+    ctx.strokeStyle = '#DEE2E6'
+    ctx.lineWidth = 1
+    ctx.setLineDash([1, 2])
+
+    for (let index = 0; index < timestamps.length; index += 1) {
+      const x = Math.round(xScale.getPixelForValue(index)) + 0.5
+      if (x < left || x > right) continue
+      ctx.beginPath()
+      ctx.moveTo(x, top)
+      ctx.lineTo(x, bottom)
+      ctx.stroke()
+    }
+
+    ctx.restore()
+  },
+  afterDraw(chart) {
+    const { ctx, chartArea, scales } = chart
+    const xScale = scales.x
+    if (!chartArea || !xScale) return
+
+    const { left, right, top, bottom } = chartArea
+
+    ctx.save()
+    ctx.strokeStyle = '#212529'
+    ctx.lineWidth = 1
+    ctx.setLineDash([])
+
+    ctx.beginPath()
+    ctx.moveTo(left + 0.5, top)
+    ctx.lineTo(left + 0.5, bottom)
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.moveTo(left, bottom + 0.5)
+    ctx.lineTo(right, bottom + 0.5)
+    ctx.stroke()
+    ctx.restore()
+
+    ctx.save()
+    ctx.font = '14px Pretendard, sans-serif'
+    ctx.fillStyle = '#495057'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+
+    const seenYears = new Set<string>()
+    timestamps.forEach((timestamp, index) => {
+      const year = resultDates[index] || dayjs(timestamp).format('YYYY')
+      if (!year || seenYears.has(year)) return
+      seenYears.add(year)
+
+      const x = xScale.getPixelForValue(index)
+      if (x < left || x > right) return
+      ctx.fillText(year, x, bottom + 8)
+    })
+    ctx.restore()
+
+    const currentX = getCurrentLineX(timestamps, xScale)
+    if (currentX === null || currentX < left || currentX > right) return
+
+    ctx.save()
+    ctx.strokeStyle = '#868E96'
+    ctx.fillStyle = '#868E96'
+    ctx.lineWidth = 1
+    ctx.setLineDash([])
+    ctx.beginPath()
+    ctx.moveTo(Math.round(currentX) + 0.5, top)
+    ctx.lineTo(Math.round(currentX) + 0.5, bottom)
+    ctx.stroke()
+
+    const markerX = Math.round(currentX) + 0.5
+    const markerTipY = top - 3
+    const markerBaseY = top - TODAY_MARKER_HEIGHT - 3
+
+    ctx.beginPath()
+    ctx.moveTo(markerX - TODAY_MARKER_WIDTH / 2, markerBaseY)
+    ctx.lineTo(markerX + TODAY_MARKER_WIDTH / 2, markerBaseY)
+    ctx.lineTo(markerX, markerTipY)
+    ctx.closePath()
+    ctx.fill()
+    ctx.restore()
+  },
+})
+
+const getAxisBase = (charts: ScenarioSummaryChartData[]) => {
+  let best = charts[0]
+  let bestLen = 0
+
+  charts.forEach((chart) => {
+    const series = chart.series?.find((s) => s.seriesId === 'main') || chart.series?.[0]
+    const valuesLen = series?.values?.length ?? 0
+    const tsLen = chart.timestamps?.length ?? 0
+    const len = Math.max(valuesLen, tsLen)
+    if (len > bestLen) {
+      bestLen = len
+      best = chart
+    }
+  })
+
+  return best
+}
+
+const getDataMaxPrecision = (charts: ScenarioSummaryChartData[]) => {
+  let maxPrecision = 0
+
+  charts.forEach((chart) => {
+    chart.series?.forEach((series) => {
+      series.values.forEach((value) => {
+        if (value === null || value === undefined) return
+        const dotIndex = String(value).indexOf('.')
+        if (dotIndex !== -1) maxPrecision = Math.max(maxPrecision, String(value).length - dotIndex - 1)
+      })
+    })
+  })
+
+  return maxPrecision
+}
+
+const getYAxisMax = (charts: ScenarioSummaryChartData[]) => {
+  const maxValue = charts.reduce((max, chart) => {
+    const series = chart.series?.find((s) => s.seriesId === 'main') || chart.series?.[0]
+    const seriesMax = series?.values.reduce<number>((innerMax, value) => Math.max(innerMax, value ?? 0), 0) ?? 0
+    return Math.max(max, seriesMax)
+  }, 0)
+
+  return Math.max(50, Math.ceil(maxValue / 5) * 5)
+}
+
+const getViewportTooltipPosition = (chartTooltip: { x: number; y: number }, canvasRect: DOMRect, tooltipHeight: number) => ({
+  left: canvasRect.left + chartTooltip.x + 30,
+  top: canvasRect.top + chartTooltip.y - tooltipHeight / 2,
+})
+
+const ScenarioSummaryChartGraph = ({
+  charts,
+  height,
+  targetLabel,
+  chartVisibilityMap,
+  hoveredChartKey,
+  chartColorMap,
+  spanGaps = true,
+}: ScenarioSummaryChartGraphProps) => {
+  const chartRef = useRef<ChartJS<'line'> | null>(null)
+  const crosshairRef = useRef<ScenarioSummaryCrosshairLineHandle | null>(null)
+  const tooltipRef = useRef<HTMLDivElement | null>(null)
+  const animationFrameRef = useRef<number | null>(null)
+  const lastMousePositionRef = useRef<{ x: number; y: number } | null>(null)
+
+  const [tooltip, setTooltip] = useState({
+    visible: false,
+    top: 0,
+    left: 0,
+    content: {} as Record<string, ScenarioSummaryTooltipContent>,
+  })
+  const [isTooltipPositionCalculated, setIsTooltipPositionCalculated] = useState(false)
+  const [isCrosshairVisible, setIsCrosshairVisible] = useState(false)
+
+  const dataPointCount = useMemo(() => {
+    let maxCount = 0
+    charts.forEach((chart) => {
+      const mainSeries = chart.series?.find((s) => s.seriesId === 'main') || chart.series?.[0]
+      if (mainSeries?.values) maxCount = Math.max(maxCount, mainSeries.values.length)
+    })
+    return maxCount
+  }, [charts])
+
+  const axisBase = useMemo(() => getAxisBase(charts), [charts])
+  const axisTimestamps = useMemo(() => axisBase?.timestamps || [], [axisBase])
+  const axisResultDates = useMemo(() => axisBase?.resultDates || [], [axisBase])
+  const yAxisMax = useMemo(() => getYAxisMax(charts), [charts])
+  const dataMaxPrecision = useMemo(() => getDataMaxPrecision(charts), [charts])
+
+  const datasets = useMemo<ScenarioLineDataset[]>(
+    () =>
+      charts.map((chart, index) => {
+        const mainSeries = chart.series?.find((s) => s.seriesId === 'main') || chart.series?.[0]
+        const displayName = chart.goodsDataSourceName ?? ''
+        const visibilityKey = `${displayName}_${chart.dataType ?? ''}`
+        const isVisible = chartVisibilityMap?.get(visibilityKey) !== false
+        const color = chartColorMap?.get(displayName) ?? '#2F62A3'
+        const isHovered = hoveredChartKey === visibilityKey
+        const hasHover = hoveredChartKey !== null && hoveredChartKey !== undefined
+        const opacity = !isVisible ? 0 : hasHover && !isHovered ? 0.2 : 1
+
+        return {
+          label: displayName,
+          data: Array.from({ length: dataPointCount }, (_, pointIndex) => ({
+            x: pointIndex,
+            y: mainSeries?.values[pointIndex] ?? null,
+          })),
+          type: 'line',
+          hidden: !isVisible,
+          borderColor: applyOpacity(color, opacity),
+          backgroundColor: color,
+          borderWidth: isHovered ? 2 : 1,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          fill: false,
+          tension: 0,
+          spanGaps,
+          yAxisID: 'y',
+          order: index,
+          metadata: {
+            chipColor: color,
+            goodsDataSourceNo: chart.goodsDataSourceNo,
+            goodsDataSourceName: displayName,
+            isDashed: false,
+            toFixed: dataMaxPrecision > 0 ? dataMaxPrecision : undefined,
+            visibilityKey,
+            timestamps: chart.timestamps,
+            resultDates: chart.resultDates,
+            startDates: chart.startDates,
+          },
+        }
+      }),
+    [chartColorMap, chartVisibilityMap, charts, dataMaxPrecision, dataPointCount, hoveredChartKey, spanGaps],
+  )
+
+  const scenarioPlugin = useMemo(() => buildScenarioSummaryPlugin(axisTimestamps, axisResultDates), [axisResultDates, axisTimestamps])
+
+  const chartOptions = useMemo(
+    () =>
+      ({
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 0 },
+        parsing: false,
+        layout: {
+          padding: { top: 28, right: 24, bottom: 28, left: 0 },
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            display: false,
+            min: dataPointCount > 0 ? -1 : 0,
+            max: dataPointCount > 0 ? dataPointCount : undefined,
+            grid: { display: false },
+            border: { display: false },
+            ticks: { display: false },
+          },
+          y: {
+            min: 0,
+            max: yAxisMax,
+            grid: {
+              display: true,
+              color: '#DEE2E6',
+              borderDash: [1, 2],
+              drawTicks: false,
+            },
+            border: { display: false },
+            ticks: {
+              stepSize: 5,
+              padding: 18,
+              color: '#495057',
+              font: {
+                size: 14,
+                family: 'Pretendard, sans-serif',
+                weight: 'normal',
+              },
+              callback(value: string | number) {
+                return String(value)
+              },
+            },
+          },
+        },
+        plugins: {
+          tooltip: {
+            enabled: false,
+          },
+          legend: {
+            display: false,
+          },
+          gridAndAxes: {
+            timestamps: axisTimestamps,
+            resultDates: axisResultDates,
+            dataPointCount,
+          },
+        },
+      }) as unknown as ChartOptions<'line'>,
+    [axisResultDates, axisTimestamps, dataPointCount, yAxisMax],
+  )
+
+  const externalTooltipHandler = useCallback((context: { tooltip: { x: number; y: number; content: Record<string, unknown> } | null }) => {
+    const { tooltip: chartTooltip } = context
+
+    if (!chartTooltip) {
+      setTooltip((prev) => ({ ...prev, visible: false }))
+      setIsTooltipPositionCalculated(false)
+      return
+    }
+
+    const tooltipElement = tooltipRef.current
+    const canvasRect = chartRef.current?.canvas.getBoundingClientRect()
+    if (!canvasRect) return
+
+    if (!tooltipElement || tooltipElement.offsetWidth === 0 || tooltipElement.offsetHeight === 0) {
+      setTooltip({
+        visible: true,
+        top: -9999,
+        left: -9999,
+        content: chartTooltip.content as Record<string, ScenarioSummaryTooltipContent>,
+      })
+      setIsTooltipPositionCalculated(false)
+
+      requestAnimationFrame(() => {
+        const element = tooltipRef.current
+        if (!element) return
+
+        const rect = element.getBoundingClientRect()
+        const tooltipHeight = rect.height
+        const currentCanvasRect = chartRef.current?.canvas.getBoundingClientRect()
+        if (!currentCanvasRect) return
+
+        const nextPosition = getViewportTooltipPosition(chartTooltip, currentCanvasRect, tooltipHeight)
+
+        setTooltip({
+          visible: true,
+          top: nextPosition.top,
+          left: nextPosition.left,
+          content: chartTooltip.content as Record<string, ScenarioSummaryTooltipContent>,
+        })
+        setIsTooltipPositionCalculated(true)
+      })
+      return
+    }
+
+    const rect = tooltipElement.getBoundingClientRect()
+    const nextPosition = getViewportTooltipPosition(chartTooltip, canvasRect, rect.height)
+
+    setTooltip({
+      visible: true,
+      top: nextPosition.top,
+      left: nextPosition.left,
+      content: chartTooltip.content as Record<string, ScenarioSummaryTooltipContent>,
+    })
+    setIsTooltipPositionCalculated(true)
+  }, [])
+
+  const updateCrosshairPositionFromMousePos = useCallback(
+    (mousePos: { x: number; y: number }) => {
+      const chart = chartRef.current
+      if (!chart?.canvas) return
+
+      const { left, right, top, bottom } = chart.chartArea
+      const isInsideChartArea = mousePos.x >= left && mousePos.x <= right && mousePos.y >= top && mousePos.y <= bottom
+
+      setIsCrosshairVisible(isInsideChartArea)
+
+      if (!isInsideChartArea) {
+        crosshairRef.current?.handleMouseOut()
+        return
+      }
+
+      const xScaleValue = chart.scales.x.getValueForPixel(mousePos.x)
+      if (xScaleValue === undefined) return
+
+      const xScaleIndex = Math.round(xScaleValue)
+      const clampedIndex = Math.max(0, Math.min(xScaleIndex, dataPointCount - 1))
+      const snappedPixelX = chart.scales.x.getPixelForValue(clampedIndex) ?? mousePos.x
+      crosshairRef.current?.updateCrosshairPosition(snappedPixelX, mousePos.y, clampedIndex)
+    },
+    [dataPointCount],
+  )
+
+  useEffect(
+    () => () => {
+      if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current)
+    },
+    [],
+  )
+
+  return (
+    <Box
+      height={height}
+      width="100%"
+      maxWidth="100%"
+      sx={{
+        position: 'relative',
+        boxSizing: 'border-box',
+        cursor: isCrosshairVisible ? 'crosshair' : 'default',
+      }}
+      onContextMenu={disableContextMenu}
+      onMouseMove={(event) => {
+        event.stopPropagation()
+        const rect = chartRef.current?.canvas.getBoundingClientRect()
+        if (!rect) return
+
+        lastMousePositionRef.current = {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top,
+        }
+
+        animationFrameRef.current ??= requestAnimationFrame(() => {
+          animationFrameRef.current = null
+          const mousePos = lastMousePositionRef.current
+          if (!mousePos) return
+          updateCrosshairPositionFromMousePos(mousePos)
+        })
+      }}
+      onMouseLeave={() => {
+        if (animationFrameRef.current !== null) {
+          cancelAnimationFrame(animationFrameRef.current)
+          animationFrameRef.current = null
+        }
+        lastMousePositionRef.current = null
+        setIsCrosshairVisible(false)
+        crosshairRef.current?.handleMouseOut()
+      }}
+    >
+      <Box
+        height="100%"
+        sx={{
+          position: 'relative',
+        }}
+      >
+        <Chart ref={chartRef} type="line" data={{ datasets }} options={chartOptions} plugins={[scenarioPlugin]} />
+      </Box>
+      <ScenarioSummaryCrosshairLine
+        ref={crosshairRef}
+        chartRef={chartRef as unknown as RefObject<ChartJS | null>}
+        onTooltipChange={externalTooltipHandler}
+      />
+      <ScenarioSummaryChartTooltip
+        ref={tooltipRef}
+        {...tooltip}
+        visibility={tooltip.visible && !isTooltipPositionCalculated && tooltip.left === -9999 ? 'hidden' : 'visible'}
+        targetLabel={targetLabel}
+      />
+    </Box>
+  )
+}
+
+export default ScenarioSummaryChartGraph
