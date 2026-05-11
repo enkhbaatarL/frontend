@@ -298,7 +298,7 @@ const DUMMY_EVENTS: DesignRow[] = [
     ttfDirection: MarketDirection.BULLISH,
     hhImpact: MarketImpactLevel.LOW,
     hhDirection: MarketDirection.NEGLIGIBLE,
-    scenarioStatus: 'generating',
+    scenarioStatus: 'idle',
   },
   {
     id: 3,
@@ -312,7 +312,7 @@ const DUMMY_EVENTS: DesignRow[] = [
     ttfDirection: MarketDirection.BEARISH,
     hhImpact: MarketImpactLevel.LOW,
     hhDirection: MarketDirection.BEARISH,
-    scenarioStatus: 'generating',
+    scenarioStatus: 'idle',
   },
   {
     id: 4,
@@ -450,6 +450,8 @@ const defaultDesignDateRange = (): DateRange => {
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
+const DEMO_SCENARIO_CONFIRM_MESSAGE = '시연용 데모입니다. 실제 시나리오 생성 API는 호출되지 않습니다. 계속하시겠습니까?'
+
 const DesignTabPanel = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [sort, setSort] = useState<string>('newest')
@@ -460,8 +462,42 @@ const DesignTabPanel = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
 
+  const [scenarioStatusById, setScenarioStatusById] = useState<Record<number, ScenarioStatus>>(
+    () => Object.fromEntries(DUMMY_EVENTS.map((r) => [r.id, r.scenarioStatus])) as Record<number, ScenarioStatus>,
+  )
+
+  const scenarioDemoTimeoutsRef = useRef<Map<number, ReturnType<typeof globalThis.setTimeout>>>(new Map())
+
+  useEffect(
+    () => () => {
+      scenarioDemoTimeoutsRef.current.forEach((handle) => globalThis.clearTimeout(handle))
+      scenarioDemoTimeoutsRef.current.clear()
+    },
+    [],
+  )
+
+  const handleDemoScenarioCreate = useCallback((rowId: number) => {
+    if (!window.confirm(DEMO_SCENARIO_CONFIRM_MESSAGE)) return
+
+    setScenarioStatusById((prev) => ({ ...prev, [rowId]: 'generating' }))
+
+    const existing = scenarioDemoTimeoutsRef.current.get(rowId)
+    if (existing !== undefined) globalThis.clearTimeout(existing)
+
+    const tid = globalThis.setTimeout(() => {
+      setScenarioStatusById((prev) => ({ ...prev, [rowId]: 'created' }))
+      scenarioDemoTimeoutsRef.current.delete(rowId)
+    }, 3000)
+    scenarioDemoTimeoutsRef.current.set(rowId, tid)
+  }, [])
+
+  const rowsWithScenarioStatus = useMemo(
+    () => DUMMY_EVENTS.map((r) => ({ ...r, scenarioStatus: scenarioStatusById[r.id] ?? r.scenarioStatus })),
+    [scenarioStatusById],
+  )
+
   const filteredRows = useMemo(() => {
-    let rows = DUMMY_EVENTS
+    let rows = rowsWithScenarioStatus
 
     if (typeFilter === '신규') rows = rows.filter((r) => r.classification === '신규')
     else if (typeFilter === '갱신') rows = rows.filter((r) => r.classification === '갱신')
@@ -476,7 +512,7 @@ const DesignTabPanel = () => {
     }
 
     return rows
-  }, [typeFilter, categoryFilter, hideCompleted, searchQuery])
+  }, [typeFilter, categoryFilter, hideCompleted, searchQuery, rowsWithScenarioStatus])
 
   const pagedRows = useMemo(
     () => filteredRows.slice((pagination.page - 1) * pagination.size, pagination.page * pagination.size),
@@ -631,12 +667,12 @@ const DesignTabPanel = () => {
               return <GeneratingScenarioButton />
             case 'idle':
             default:
-              return <CreateScenarioButton />
+              return <CreateScenarioButton onClick={() => handleDemoScenarioCreate(params.row.id)} />
           }
         },
       },
     ],
-    [],
+    [handleDemoScenarioCreate],
   )
 
   const categoryFilterItems = useMemo(() => CATEGORY_OPTIONS.map((c) => ({ label: c, value: c })), [])
