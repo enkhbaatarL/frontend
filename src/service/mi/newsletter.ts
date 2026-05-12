@@ -514,6 +514,18 @@ export class SaveRevisionConcurrencyError extends Error {
   }
 }
 
+/** 저장 기준 revisionNo가 서버 최신 버전과 맞지 않는 경우 */
+export class SaveRevisionVersionConflictError extends Error {
+  constructor(
+    message: string,
+    public readonly responseData?: Record<string, unknown>,
+  ) {
+    super(message)
+    this.name = 'SaveRevisionVersionConflictError'
+    Object.setPrototypeOf(this, SaveRevisionVersionConflictError.prototype)
+  }
+}
+
 /** 최종저장 시 검증 실패(400) */
 export class SaveRevisionValidationError extends Error {
   constructor(
@@ -628,10 +640,20 @@ const buildRevisionSaveBody = (params: {
   return body
 }
 
+const isRevisionVersionConflictResponse = (data: unknown): data is Record<string, unknown> => {
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) return false
+  const { code, message } = data as { code?: unknown; message?: unknown }
+  return code === 'REVISION_VERSION_CONFLICT' || (typeof message === 'string' && message.includes('REVISION_VERSION_CONFLICT'))
+}
+
 const mapRevisionSaveAxiosError = (err: unknown): never => {
   if (err instanceof AxiosError) {
     const status = err.response?.status
+    const responseData = err.response?.data as Record<string, unknown> | undefined
     const code = (err.response?.data as { code?: string })?.code
+    if (isRevisionVersionConflictResponse(responseData)) {
+      throw new SaveRevisionVersionConflictError('최신 버전과 맞지 않는 임시저장본입니다.', responseData)
+    }
     if (status === 409) {
       throw new SaveRevisionConcurrencyError('다른 사용자가 수정한 내용과 충돌했습니다. 페이지를 새로고침 후 다시 시도해 주세요.')
     }

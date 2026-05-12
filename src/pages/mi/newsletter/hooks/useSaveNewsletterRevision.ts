@@ -15,7 +15,9 @@ import newsletterService, {
   SaveRevisionConcurrencyError,
   SaveRevisionNetworkError,
   SaveRevisionValidationError,
+  SaveRevisionVersionConflictError,
   type INewsletterIssueSnapshotData,
+  type ISaveRevisionResponse,
 } from '@/service/mi/newsletter'
 import useChartEditStore from '@/store/useChartEditStore'
 import { canonicalizeSnapshotLikeServer } from '@/utils/newsletterSnapshotCanonicalize'
@@ -30,6 +32,11 @@ export interface UseSaveNewsletterRevisionParams {
   /** 상세 `deltaCount` — 임계치 초과 시에만 최종저장에 `snapshotPayload` 포함 */
   deltaCount?: number | null
 }
+
+type SaveNewsletterRevisionFailureReason = 'revision-version-conflict'
+type SaveNewsletterRevisionResult =
+  | { success: true; revision: ISaveRevisionResponse }
+  | { success: false; reason?: SaveNewsletterRevisionFailureReason }
 
 /**
  * 뉴스레터 최종저장(Delta 기반 리비전 저장) 훅.
@@ -64,7 +71,7 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
 
   const hasUnsavedChanges = hasNonLayoutUnsavedChanges || hasLayoutUnsavedChanges
 
-  const saveFinalRevision = useCallback(async (): Promise<{ success: boolean }> => {
+  const saveFinalRevision = useCallback(async (): Promise<SaveNewsletterRevisionResult> => {
     if (!newsletterId || !issueNo || !baseSnapshot || !currentState) {
       showSnackbar('저장할 데이터가 없습니다.', { variant: 'error' })
       return { success: false }
@@ -76,7 +83,7 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
 
     setIsSaving(true)
     try {
-      await newsletterService.saveFinalRevision({
+      const revision = await newsletterService.saveFinalRevision({
         baseSnapshot,
         currentState: stateToSave,
         newsletterId,
@@ -103,9 +110,15 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
         queryKey: ['revisionChangeDetail', newsletterId, issueNo],
       })
 
-      return { success: true }
+      return { success: true, revision }
     } catch (err) {
-      if (err instanceof SaveRevisionConcurrencyError) {
+      if (err instanceof SaveRevisionVersionConflictError) {
+        showSnackbar('최신 버전과 맞지 않아 저장할 수 없습니다.', {
+          variant: 'warning',
+          body: '최신 내용을 다시 불러온 뒤 편집을 이어가 주세요.',
+        })
+        return { success: false, reason: 'revision-version-conflict' }
+      } else if (err instanceof SaveRevisionConcurrencyError) {
         showSnackbar(err.message, { variant: 'error', body: '페이지를 새로고침한 뒤 다시 시도해 주세요.' })
       } else if (err instanceof SaveRevisionValidationError) {
         const msg = (err.responseData?.message as string) || err.message
@@ -122,7 +135,7 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
     }
   }, [newsletterId, issueNo, baseSnapshot, currentState, revisionNo, deltaCount, showSnackbar, queryClient])
 
-  const saveDraftRevision = useCallback(async (): Promise<{ success: boolean }> => {
+  const saveDraftRevision = useCallback(async (): Promise<SaveNewsletterRevisionResult> => {
     if (!newsletterId || !issueNo || !baseSnapshot || !currentState) {
       showSnackbar('임시저장할 데이터가 없습니다.', { variant: 'error' })
       return { success: false }
@@ -133,7 +146,7 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
 
     setIsSavingDraft(true)
     try {
-      await newsletterService.saveDraftRevision({
+      const revision = await newsletterService.saveDraftRevision({
         baseSnapshot,
         currentState: stateToSave,
         newsletterId,
@@ -148,9 +161,15 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
         type: 'active',
       })
 
-      return { success: true }
+      return { success: true, revision }
     } catch (err) {
-      if (err instanceof SaveRevisionConcurrencyError) {
+      if (err instanceof SaveRevisionVersionConflictError) {
+        showSnackbar('임시저장본이 최신 버전과 맞지 않아 저장할 수 없습니다.', {
+          variant: 'warning',
+          body: '최신 뉴스레터 내용을 다시 불러옵니다.',
+        })
+        return { success: false, reason: 'revision-version-conflict' }
+      } else if (err instanceof SaveRevisionConcurrencyError) {
         showSnackbar(err.message, { variant: 'error', body: '페이지를 새로고침한 뒤 다시 시도해 주세요.' })
       } else if (err instanceof SaveRevisionValidationError) {
         const msg = (err.responseData?.message as string) || err.message

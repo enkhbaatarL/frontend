@@ -453,6 +453,7 @@ const NewsletterDetailPage = () => {
         }
 
         let snap: INewsletterIssueSnapshotData | null = null
+        let skipServerDraftLoad = false
 
         // 1. 로컬스토리지에 자동 저장된 내용 우선 확인
         const localDraftResult = getLocalDraft({ baseSnapshot: detailBaseSnapshot, baseRevisionNo: detailRevisionNo })
@@ -471,6 +472,7 @@ const NewsletterDetailPage = () => {
             showSnackbar('자동 저장된 편집 내용을 불러왔습니다.', { variant: 'success' })
           } else {
             clearLocalDraft()
+            skipServerDraftLoad = true
           }
         } else if (localDraftResult.status === 'stale' || localDraftResult.status === 'expired' || localDraftResult.status === 'invalid') {
           clearLocalDraft()
@@ -481,7 +483,7 @@ const NewsletterDetailPage = () => {
         }
 
         // 2. 로컬 드래프트를 불러오지 않았으면 서버 임시저장본 확인
-        if (!snap && detail.revision?.hasDraft) {
+        if (!snap && !skipServerDraftLoad && detail.revision?.hasDraft) {
           setIsEnteringEditMode(false)
           const useDraft = await new Promise<boolean>((resolve) => {
             draftLoadChoiceResolveRef.current = resolve
@@ -742,23 +744,75 @@ const NewsletterDetailPage = () => {
     setIsChartModalOpen(false)
   }, [])
 
+  const reloadLatestSnapshotForEdit = useCallback(async (): Promise<boolean> => {
+    if (!newsletterId || !issueNo) return false
+
+    let detail: INewsletterIssueDetail | undefined
+    try {
+      const result = await refetchIssueDetail()
+      detail = result.data ?? undefined
+    } catch {
+      detail = undefined
+    }
+    detail ??= queryClient.getQueryData<INewsletterIssueDetail>(['newsletterIssueDetail', newsletterId, issueNo])
+
+    if (!detail || String(detail.newsletterId) !== String(newsletterId) || String(detail.issueNo) !== String(issueNo)) {
+      return false
+    }
+
+    const latestSnapshot = getIssueDetailEffectiveSnapshotData(detail)
+    if (!latestSnapshot) return false
+
+    setEditBaseline({
+      snapshot: cloneDeep(latestSnapshot),
+      revisionNo: detail.snapshot?.revisionNo ?? null,
+      deltaCount: detail.deltaCount ?? null,
+    })
+    setSnapshot(cloneDeep(latestSnapshot))
+    resetImages()
+    resetChartSettings()
+
+    const savedPositions = getChartBoxPositions(latestSnapshot)
+    if (Object.keys(savedPositions).length > 0) {
+      setStoreBoxPositions(savedPositions)
+    }
+
+    return true
+  }, [newsletterId, issueNo, refetchIssueDetail, queryClient, resetImages, resetChartSettings, setStoreBoxPositions])
+
+  const handleRevisionVersionConflict = useCallback(async () => {
+    clearLocalDraft()
+    setIsDraftSavedWithoutNewEdits(false)
+    await reloadLatestSnapshotForEdit()
+  }, [clearLocalDraft, reloadLatestSnapshotForEdit])
+
+  const updateEditBaselineRevisionNo = useCallback((revisionNo: number | null | undefined) => {
+    if (typeof revisionNo !== 'number' || !Number.isFinite(revisionNo)) return
+    setEditBaseline((prev) => (prev ? { ...prev, revisionNo } : prev))
+  }, [])
+
   const handleSaveDraft = useCallback(async () => {
-    const { success } = await saveDraftRevision()
-    if (success) {
+    const result = await saveDraftRevision()
+    if (result.success) {
+      updateEditBaselineRevisionNo(result.revision.revisionNo)
       clearLocalDraft()
       setIsDraftSavedWithoutNewEdits(true)
+    } else if (result.reason === 'revision-version-conflict') {
+      await handleRevisionVersionConflict()
     }
-  }, [saveDraftRevision, clearLocalDraft])
+  }, [saveDraftRevision, updateEditBaselineRevisionNo, clearLocalDraft, handleRevisionVersionConflict])
 
   const handleSave = useCallback(async () => {
-    const { success } = await saveFinalRevision()
-    if (success) {
+    const result = await saveFinalRevision()
+    if (result.success) {
       clearLocalDraft()
       setIsChartModalOpen(false)
       setEditBaseline(null)
       setMode(NewsletterDetailPageMode.VIEW)
+    } else if (result.reason === 'revision-version-conflict') {
+      await handleRevisionVersionConflict()
     }
-  }, [saveFinalRevision, clearLocalDraft])
+  }, [saveFinalRevision, clearLocalDraft, handleRevisionVersionConflict])
 
   const handleEndEdit = useCallback(() => {
     if (needsLeaveConfirm) {
@@ -774,8 +828,18 @@ const NewsletterDetailPage = () => {
   const handleLeaveEditSaveDraft = useCallback(async () => {
     setIsSavingOnLeave(true)
     try {
-      const { success } = await saveDraftRevision()
-      if (!success) return
+      const result = await saveDraftRevision()
+      if (!result.success) {
+        if (result.reason === 'revision-version-conflict') {
+          await handleRevisionVersionConflict()
+          const b = blockerRef.current
+          if (b.state === 'blocked') {
+            b.reset?.()
+          }
+          setPendingLeaveAction(null)
+        }
+        return
+      }
       clearLocalDraft()
       setEditBaseline(null)
       const b = blockerRef.current
@@ -789,7 +853,7 @@ const NewsletterDetailPage = () => {
     } finally {
       setIsSavingOnLeave(false)
     }
-  }, [saveDraftRevision, clearLocalDraft])
+  }, [saveDraftRevision, handleRevisionVersionConflict, clearLocalDraft])
 
   const handleLeaveEditDiscard = useCallback(() => {
     clearLocalDraft()
