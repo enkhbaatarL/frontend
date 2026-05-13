@@ -19,7 +19,7 @@ const TooltipSx: SxProps<Theme> = (theme) => ({
   px: '10px',
   py: '8px',
   borderRadius: '6px',
-  maxWidth: 'none',
+  maxWidth: 400,
   fontSize: 12,
   lineHeight: 1.4,
   fontWeight: 400,

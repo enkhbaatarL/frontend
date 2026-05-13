@@ -634,6 +634,7 @@ const DesignTabPanel = () => {
               {badge}
               <ScenarioWorkbenchEventDetailTableBodyText
                 value={row.eventName}
+                variant="body1M16"
                 tooltipWhenTruncated
                 sx={{ minWidth: 0, flex: '1 1 auto' }}
               />

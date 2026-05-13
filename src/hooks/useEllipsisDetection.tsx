@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 
+const ELLIPSIS_OVERFLOW_TOLERANCE_PX = 1
+
 export default function useEllipsisDetection(observedKey?: unknown) {
   const ref = useRef<HTMLElement>(null)
   const [isEllipsis, setIsEllipsis] = useState(false)
   const checkOverflow = () => {
     if (ref.current) {
-      setIsEllipsis(ref.current.scrollWidth > ref.current.clientWidth || ref.current.scrollHeight > ref.current.clientHeight)
+      const widthOverflow = ref.current.scrollWidth - ref.current.clientWidth > ELLIPSIS_OVERFLOW_TOLERANCE_PX
+      const heightOverflow = ref.current.scrollHeight - ref.current.clientHeight > ELLIPSIS_OVERFLOW_TOLERANCE_PX
+      setIsEllipsis(widthOverflow || heightOverflow)
     }
   }
 
