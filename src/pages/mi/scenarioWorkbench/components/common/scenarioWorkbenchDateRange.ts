@@ -2,10 +2,10 @@ import dayjs, { Dayjs } from 'dayjs'
 
 import type { DatePresetOption, DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
 
-/** 기본 조회 구간: 오늘 기준 6개월 */
+/** 기본 조회 구간: 오늘 기준 1개월 */
 export const defaultWorkbenchDateRange = (): DateRange => {
   const t = dayjs().startOf('day')
-  return { startDate: t.subtract(6, 'month'), endDate: t }
+  return { startDate: t.subtract(1, 'month'), endDate: t }
 }
 
 /** 시나리오 워크벤치 날짜 프리셋 */
