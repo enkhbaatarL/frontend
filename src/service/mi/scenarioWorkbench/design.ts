@@ -34,6 +34,8 @@ export interface IDesignEventItem {
   scenarioGenStatusLabel?: string
   requestId?: number | null
   scenarioGenStartedAt?: string | null
+  scenarioRecommended?: boolean
+  recommendationReason?: string | null
 }
 
 export interface IDesignAppliedFilter {
@@ -44,6 +46,7 @@ export interface IDesignAppliedFilter {
   sort?: ListSort
   keyword?: string
   hideCompleted?: boolean
+  hideNonRecommended?: boolean
 }
 
 export interface IDesignEventListRes {
@@ -61,6 +64,7 @@ export interface IGetDesignEventsParams {
   sort?: ListSort
   keyword?: string
   hideCompleted?: boolean
+  hideNonRecommended?: boolean
 }
 
 export interface IScenarioGenAcceptRes {
@@ -118,6 +122,7 @@ const scenarioWorkbenchDesignService = {
         eventStatus: params.eventStatus,
         eventCategoryLv1: params.eventCategoryLv1,
         hideCompleted: params.hideCompleted,
+        hideNonRecommended: params.hideNonRecommended,
       },
       paramsSerializer: (p) => serializeScenarioWorkbenchDesignParams(p as Record<string, unknown>),
     })

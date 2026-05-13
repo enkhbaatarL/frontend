@@ -63,6 +63,8 @@ export const ScenarioWorkbenchNoiseSignalBadge = ({ label }: { label: string }) 
 
 export const ScenarioWorkbenchBaseCaseChip = () => <WorkbenchTableRowBadge bordered={false} label="BC" />
 
+export const ScenarioWorkbenchRecommendedBadge = () => <WorkbenchTableRowBadge bordered={false} label="추천" />
+
 interface ClassificationTagProps {
   status: WorkbenchClassificationTone
   label: string

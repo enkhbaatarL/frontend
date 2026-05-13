@@ -16,7 +16,7 @@ import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmen
 import MISpinner from '@/components/common/spinner/MISpinner'
 import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import useSnackbar from '@/hooks/useSnackbar'
-import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
+import ClassificationTag, { ScenarioWorkbenchRecommendedBadge } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import {
   findIndexImpact,
@@ -30,6 +30,7 @@ import {
   buildWorkbenchDatePresets,
   defaultWorkbenchDateRange,
 } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
+import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
 import CreatedScenariosSection from '@/pages/mi/scenarioWorkbench/components/design/CreatedScenariosSection'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
@@ -305,7 +306,7 @@ const DesignTabPanel = () => {
   const [sort, setSort] = useState<ListSort>(ListSort.LATEST)
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultWorkbenchDateRange())
   const [categoryFilter, setCategoryFilter] = useState<EventCategoryLv1[]>([])
-  const [hideCompleted, setHideCompleted] = useState(false)
+  const [hideNonRecommended, setHideNonRecommended] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
@@ -326,9 +327,9 @@ const DesignTabPanel = () => {
       keyword: trimmedKeyword || undefined,
       eventStatus: typeFilter === ScenarioWorkbenchStatus.ALL ? undefined : typeFilter,
       eventCategoryLv1: categoryFilter.length > 0 ? categoryFilter : undefined,
-      hideCompleted,
+      hideNonRecommended,
     }
-  }, [appliedDateRange, categoryFilter, hideCompleted, pagination.page, pagination.size, searchQuery, sort, typeFilter])
+  }, [appliedDateRange, categoryFilter, hideNonRecommended, pagination.page, pagination.size, searchQuery, sort, typeFilter])
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['scenarioWorkbenchDesignEvents', listRequest],
@@ -542,8 +543,8 @@ const DesignTabPanel = () => {
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
-  const handleToggleHideCompleted = useCallback(() => {
-    setHideCompleted((prev) => !prev)
+  const handleToggleHideNonRecommended = useCallback(() => {
+    setHideNonRecommended((prev) => !prev)
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
@@ -608,6 +609,37 @@ const DesignTabPanel = () => {
         minWidth: 360,
         align: 'left',
         headerAlign: 'left',
+        renderCell: (params) => {
+          const row = params.row
+          const reason = row.recommendationReason?.trim()
+          const badgeWrapSx = { flex: '0 0 auto' as const, display: 'inline-flex' as const, lineHeight: 0 }
+
+          const badge =
+            row.scenarioRecommended === true ? (
+              reason ? (
+                <WorkbenchFollowCursorTooltip title={reason}>
+                  <Box component="span" sx={badgeWrapSx}>
+                    <ScenarioWorkbenchRecommendedBadge />
+                  </Box>
+                </WorkbenchFollowCursorTooltip>
+              ) : (
+                <Box sx={badgeWrapSx}>
+                  <ScenarioWorkbenchRecommendedBadge />
+                </Box>
+              )
+            ) : null
+
+          return (
+            <Stack direction="row" alignItems="center" gap="6px" sx={{ minWidth: 0, width: '100%' }}>
+              {badge}
+              <ScenarioWorkbenchEventDetailTableBodyText
+                value={row.eventName}
+                tooltipWhenTruncated
+                sx={{ minWidth: 0, flex: '1 1 auto' }}
+              />
+            </Stack>
+          )
+        },
       },
       {
         field: 'jkm',
@@ -759,9 +791,9 @@ const DesignTabPanel = () => {
 
           <Stack direction="row" alignItems="center" gap={3} sx={{ flexShrink: 0 }}>
             <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
-              <Switch size="small" checked={hideCompleted} onChange={handleToggleHideCompleted} />
+              <Switch size="small" checked={hideNonRecommended} onChange={handleToggleHideNonRecommended} />
               <Typography variant="body2M14" color="contentText.Black">
-                완료 항목 숨기기
+                추천 항목만 보기
               </Typography>
             </Stack>
 
