@@ -1,3 +1,4 @@
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import { Box, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -165,23 +166,25 @@ const ScenarioSummaryChart = ({
   const targetSegmentOptions = useMemo(() => tabLabels.map((label) => ({ value: label, label })), [tabLabels])
 
   return (
-    <Stack width="100%" minWidth={0} gap="8px" py="12px">
-      <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
-        <Typography variant="body2SB14" color="contentText.Normal" sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
-          {chartUnit}
-        </Typography>
+    <Stack width="100%" minWidth={0} gap="8px">
+      {hasChartData && (
+        <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
+          <Typography variant="body2SB14" color="contentText.Normal" sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
+            {chartUnit}
+          </Typography>
 
-        {useGroup && targetSegmentOptions.length > 0 && (
-          <MISlidingSegmented
-            options={targetSegmentOptions}
-            value={selectedTarget}
-            onChange={setSelectedTarget}
-            sx={{ flexShrink: 0, '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
-          />
-        )}
-      </Stack>
+          {useGroup && targetSegmentOptions.length > 0 && (
+            <MISlidingSegmented
+              options={targetSegmentOptions}
+              value={selectedTarget}
+              onChange={setSelectedTarget}
+              sx={{ flexShrink: 0, '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
+            />
+          )}
+        </Stack>
+      )}
 
-      <Box bgcolor="commonColor.White" borderRadius="10px" width="100%" height={CHART_HEIGHT}>
+      <Box bgcolor={hasChartData ? 'commonColor.White' : 'gray.5'} borderRadius="10px" width="100%" height={CHART_HEIGHT}>
         {hasChartData ? (
           <ScenarioSummaryChartGraph
             height={CHART_HEIGHT}
@@ -193,8 +196,9 @@ const ScenarioSummaryChart = ({
             spanGaps
           />
         ) : (
-          <Stack height="100%" alignItems="center" justifyContent="center" sx={{ userSelect: 'none' }}>
-            <Typography variant="body2SB14" color="gray.50">
+          <Stack height="100%" alignItems="center" justifyContent="center" gap="10px" sx={{ userSelect: 'none' }}>
+            <ErrorOutlineOutlinedIcon sx={{ fontSize: 24, color: 'gray.60' }} aria-hidden />
+            <Typography variant="body3SB12" color="gray.60" lineHeight={1.4}>
               {emptyMessage}
             </Typography>
           </Stack>

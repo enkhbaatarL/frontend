@@ -230,14 +230,56 @@ const getDataMaxPrecision = (charts: ScenarioSummaryChartData[]) => {
   return maxPrecision
 }
 
-const getYAxisMax = (charts: ScenarioSummaryChartData[]) => {
-  const maxValue = charts.reduce((max, chart) => {
-    const series = chart.series?.find((s) => s.seriesId === 'main') || chart.series?.[0]
-    const seriesMax = series?.values.reduce<number>((innerMax, value) => Math.max(innerMax, value ?? 0), 0) ?? 0
-    return Math.max(max, seriesMax)
-  }, 0)
+const Y_AXIS_RANGE_PADDING_RATIO = 0.08
+const Y_AXIS_SINGLE_VALUE_PAD = 2.5
 
-  return Math.max(50, Math.ceil(maxValue / 5) * 5)
+const snapYDown = (n: number) => Math.floor(n / 5) * 5
+const snapYUp = (n: number) => Math.ceil(n / 5) * 5
+
+const getYAxisBounds = (charts: ScenarioSummaryChartData[]) => {
+  let dataMin = Number.POSITIVE_INFINITY
+  let dataMax = Number.NEGATIVE_INFINITY
+
+  charts.forEach((chart) => {
+    chart.series?.forEach((series) => {
+      series.values.forEach((value) => {
+        if (value === null || value === undefined) return
+        dataMin = Math.min(dataMin, value)
+        dataMax = Math.max(dataMax, value)
+      })
+    })
+  })
+
+  if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
+    return { min: 0, max: 50 }
+  }
+
+  const range = dataMax - dataMin
+  const pad = range > 0 ? range * Y_AXIS_RANGE_PADDING_RATIO : Math.max(Math.abs(dataMax) * 0.05, Y_AXIS_SINGLE_VALUE_PAD)
+
+  let min = dataMin - pad
+  let max = dataMax + pad
+
+  if (dataMin >= 0) {
+    min = Math.max(0, min)
+  }
+
+  min = snapYDown(min)
+  max = snapYUp(max)
+
+  if (dataMin >= 0 && min < 0) {
+    min = 0
+  }
+
+  if (min >= max) {
+    max = min + 5
+  }
+
+  if (dataMin >= 0) {
+    max = Math.max(max, 50)
+  }
+
+  return { min, max }
 }
 
 const getViewportTooltipPosition = (chartTooltip: { x: number; y: number }, canvasRect: DOMRect, tooltipHeight: number) => ({
@@ -281,7 +323,7 @@ const ScenarioSummaryChartGraph = ({
   const axisBase = useMemo(() => getAxisBase(charts), [charts])
   const axisTimestamps = useMemo(() => axisBase?.timestamps || [], [axisBase])
   const axisResultDates = useMemo(() => axisBase?.resultDates || [], [axisBase])
-  const yAxisMax = useMemo(() => getYAxisMax(charts), [charts])
+  const yAxisBounds = useMemo(() => getYAxisBounds(charts), [charts])
   const dataMaxPrecision = useMemo(() => getDataMaxPrecision(charts), [charts])
 
   const datasets = useMemo<ScenarioLineDataset[]>(
@@ -353,8 +395,8 @@ const ScenarioSummaryChartGraph = ({
             ticks: { display: false },
           },
           y: {
-            min: 0,
-            max: yAxisMax,
+            min: yAxisBounds.min,
+            max: yAxisBounds.max,
             grid: {
               display: true,
               color: '#DEE2E6',
@@ -391,7 +433,7 @@ const ScenarioSummaryChartGraph = ({
           },
         },
       }) as unknown as ChartOptions<'line'>,
-    [axisResultDates, axisTimestamps, dataPointCount, yAxisMax],
+    [axisResultDates, axisTimestamps, dataPointCount, yAxisBounds.max, yAxisBounds.min],
   )
 
   const externalTooltipHandler = useCallback((context: { tooltip: { x: number; y: number; content: Record<string, unknown> } | null }) => {

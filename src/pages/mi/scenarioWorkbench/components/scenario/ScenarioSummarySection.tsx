@@ -89,8 +89,11 @@ interface ScenarioSummarySectionProps {
   loading?: boolean
 }
 
+const hasForecastCardContent = (outlook: IScenarioIndexOutlook) => Boolean(outlook.trendText?.trim())
+
 const ScenarioSummarySection = ({ summary, loading = false }: ScenarioSummarySectionProps) => {
   const indexOutlooks = summary?.indexOutlooks ?? []
+  const outlooksWithForecastCopy = indexOutlooks.filter(hasForecastCardContent)
   const priceForecast = summary?.priceForecast ?? { currency: '', unit: '', dates: [], series: [] }
   const [tableHoverIndexName, setTableHoverIndexName] = useState<string | null>(null)
 
@@ -133,7 +136,7 @@ const ScenarioSummarySection = ({ summary, loading = false }: ScenarioSummarySec
     >
       <Stack flex="1" minWidth={0} gap="12px">
         <ImpactTable rows={indexOutlooks} onRowHoverIndexName={setTableHoverIndexName} />
-        {indexOutlooks.map((outlook) => (
+        {outlooksWithForecastCopy.map((outlook) => (
           <ForecastCardItem key={outlook.indexName} outlook={outlook} />
         ))}
       </Stack>
