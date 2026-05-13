@@ -147,11 +147,15 @@ export interface IScenarioWorkbenchEventDetailRes {
   relatedEventScenario?: IScenarioWorkbenchRelatedEventScenario
 }
 
+/** 이벤트 MI Records(getEventRecords) 페이지의 단일 row — EventRelatedRecordRes 스키마 정합 */
 export interface IScenarioWorkbenchEventRelatedRecord {
   publishedAt: string
+  /** Record 유형 (예: NEWS) */
+  recordType?: string
   title: string
   summary: string
-  source: string
+  goodsNo?: number
+  fileName?: string
 }
 
 export interface IScenarioWorkbenchEventInstitutionOutlook {

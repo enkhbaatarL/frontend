@@ -18,6 +18,14 @@ import { IPaginationResponse } from '@/types/api'
 
 const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
 
+/** API `recordType` 값을 MI Records 테이블 종류 컬럼 한글 라벨로 변환 */
+const formatMiRecordTypeLabel = (recordType?: string): string => {
+  if (!recordType?.trim()) return '-'
+  if (recordType === 'NEWS') return '뉴스'
+  return recordType
+}
+
+/** MI Records 섹션 테이블 props */
 interface EventDetailMiRecordsTableProps {
   rows: IScenarioWorkbenchEventRelatedRecord[]
   serverPagination?: IPaginationResponse<IScenarioWorkbenchEventRelatedRecord>
@@ -89,7 +97,13 @@ const EventDetailMiRecordsTable = ({
         align: 'left',
         renderCell: (params) => formatWorkbenchDateTime(params.row.publishedAt, 'YYYY-MM-DD HH:mm'),
       },
-      { field: 'source', headerName: '종류', width: 100, align: 'left' },
+      {
+        field: 'recordType',
+        headerName: '종류',
+        width: 100,
+        align: 'left',
+        renderCell: (params) => formatMiRecordTypeLabel(params.row.recordType),
+      },
       { field: 'title', headerName: '타이틀', width: 300, align: 'left' },
       { field: 'summary', headerName: '요약', flex: 1, minWidth: 240, align: 'left' },
     ],
