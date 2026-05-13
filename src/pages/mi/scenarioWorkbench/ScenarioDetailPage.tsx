@@ -192,7 +192,7 @@ const ScenarioDetailPage = () => {
   const relatedScenarios: IRelatedScenario[] = data?.relatedEventScenario?.scenarios ?? []
 
   return (
-    <Stack maxWidth="1380px" margin="auto" px="12px" pt="12px" position="relative" sx={{ userSelect: 'none', overflowX: 'hidden' }}>
+    <Stack maxWidth="1380px" margin="auto" px="12px" pt="12px" position="relative" sx={{ overflowX: 'hidden' }}>
       <Stack py="24px" gap="12px">
         <Stack id={SCENARIO_DETAIL_SECTIONS[0].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[0].id} />

@@ -1,4 +1,4 @@
-import { Box, Skeleton, Stack, Tooltip, Typography, type SxProps, type Theme, type TypographyProps } from '@mui/material'
+import { Box, Skeleton, Stack, Typography, type SxProps, type Theme, type TypographyProps } from '@mui/material'
 import { type GridColDef, type GridRowModel } from '@mui/x-data-grid'
 import { isValidElement, useMemo, type ReactNode } from 'react'
 
@@ -9,6 +9,7 @@ import ScenarioWorkbenchEventDetailTableBodyText, {
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
+import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
 
 export type ScenarioWorkbenchDataListCellPreset = 'default' | 'miCanvasEvent'
 
@@ -19,15 +20,18 @@ export interface ScenarioWorkbenchDataListProps<T extends GridRowModel>
     noRowMessage: string
     disableHover: boolean
     rowHeight: number
+    getRowKey: (row: T, index: number) => string | number
     getRowClassName: (params: { row: T }) => string
     onRowClick: (params: { row: T }) => void
+    onRowMouseEnter: (params: { row: T }) => void
+    onRowMouseLeave: () => void
     sx: SxProps<Theme>
     hideLastRowBorder: boolean // 마지막 행 하단 구분선 미표시
     hideInnerRowBorder: boolean // 행 사이 구분선 미표시(마지막 행 하단 구분선은 유지)
     primitiveCellTypographyVariant: TypographyProps['variant']
     cellPreset: ScenarioWorkbenchDataListCellPreset
   }> {
-  rowId: keyof T
+  rowId?: keyof T
   columns: GridColDef<T>[]
   rows?: T[]
 }
@@ -50,8 +54,8 @@ const DefaultEllipsisTooltip = ({
 }) => {
   const { ref, isEllipsis } = useEllipsisDetection(value)
 
-  return (
-    <Tooltip disableHoverListener={!isEllipsis} title={value} placement="top" followCursor>
+  if (!isEllipsis) {
+    return (
       <Box
         ref={ref}
         sx={{
@@ -65,7 +69,25 @@ const DefaultEllipsisTooltip = ({
       >
         {children}
       </Box>
-    </Tooltip>
+    )
+  }
+
+  return (
+    <WorkbenchFollowCursorTooltip title={value}>
+      <Box
+        ref={ref}
+        sx={{
+          width: '100%',
+          minWidth: 0,
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+          textAlign,
+        }}
+      >
+        {children}
+      </Box>
+    </WorkbenchFollowCursorTooltip>
   )
 }
 
@@ -78,7 +100,10 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
   noRowMessage,
   disableHover,
   onRowClick,
+  onRowMouseEnter,
+  onRowMouseLeave,
   rowHeight,
+  getRowKey,
   getRowClassName,
   hideLastRowBorder,
   hideInnerRowBorder,
@@ -117,8 +142,8 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
     [columns],
   )
 
-  const rowKey = (row: T) => {
-    const value = row[rowId]
+  const rowKey = (row: T, index: number) => {
+    const value = getRowKey ? getRowKey(row, index) : rowId ? row[rowId] : index
     return typeof value === 'string' || typeof value === 'number' ? value : String(value)
   }
 
@@ -177,12 +202,14 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
     body = (
       <Stack gap={0} sx={{ width: '100%', minWidth: 0, maxWidth: '100%' }}>
         {rows.map((row, idx) => {
-          const currentKey = rowKey(row)
+          const currentKey = rowKey(row, idx)
 
           return (
             <Box
               key={currentKey}
               onClick={onRowClick ? () => onRowClick({ row }) : undefined}
+              onMouseEnter={onRowMouseEnter ? () => onRowMouseEnter({ row }) : undefined}
+              onMouseLeave={onRowMouseLeave}
               className={getRowClassName?.({ row })}
               sx={(theme) => ({
                 display: 'grid',
@@ -236,10 +263,11 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
                 const textAlign: 'left' | 'center' | 'right' = col.align === 'right' ? 'right' : col.align === 'center' ? 'center' : 'left'
 
                 const shouldWrapEllipsisTooltip =
+                  !col.renderCell &&
                   typeof value === 'string' &&
                   value.length > 0 &&
-                  // 신규/갱신/종료 칩(이벤트), 신규/갱신 칩(시나리오)은 줄이기/툴팁 대상이 아님
-                  col.field !== 'classification' &&
+                  // 상태 칩은 ellipsis 대상이 아님
+                  col.field !== 'status' &&
                   col.field !== 'type' &&
                   col.field !== 'jkmImpact' &&
                   col.field !== 'ttfImpact' &&

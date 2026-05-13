@@ -1,41 +1,29 @@
 import { EventNote } from '@mui/icons-material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import { Skeleton, Stack, Typography } from '@mui/material'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode, useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
-import type {
-  // EventDetailFundamentalIndicatorRow,
-  // EventDetailFundamentalMetricRow,
-  EventDetailImpactKpiItem,
-  EventDetailImpactTableRow,
-  EventDetailMiRecordRow,
-  EventDetailOutlookRow,
-} from '@/pages/mi/scenarioWorkbench/components/event/types'
-import type { IRelatedEvent, IRelatedScenario } from '@/service/mi/scenarioWorkbench/scenario'
+import type { KpiCardProps } from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
 
 import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
-import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
+import { ScenarioWorkbenchNoiseSignalBadge } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import RelatedEventsAndScenariosSection from '@/pages/mi/scenarioWorkbench/components/common/RelatedEventsAndScenariosSection'
+import { scenarioWorkbenchIsEventNoiseSignal } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchClassificationChip'
 import ScenarioWorkbenchDetailHeader, {
   WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   type WorkbenchDetailHeaderSection,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
 import EventDetailAiInsightsSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailAiInsightsSection'
-import EventDetailDriverTreeScoreboardSection, {
-  type EventDetailDriverTreeRow,
-} from '@/pages/mi/scenarioWorkbench/components/event/EventDetailDriverTreeScoreboardSection'
-// import EventDetailFundamentalSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailFundamentalSection'
+import EventDetailDriverTreeScoreboardSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailDriverTreeScoreboardSection'
 import EventDetailImpactAnalysisSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailImpactAnalysisSection'
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailMiRecordsTable'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
-import { EventCategoryLv1, MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchEventService, { SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/event'
-import { IPaginationResponse } from '@/types/api'
 
 /** 이벤트 상세 탭 키 */
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | /* 'fundamental' |*/ 'driverTree' | 'related'
@@ -124,31 +112,10 @@ const EventDetailHeaderView = () => {
   )
 }
 
-const DEFAULT_IMPACT_KPI_PAIR: [EventDetailImpactKpiItem, EventDetailImpactKpiItem] = [
-  { title: '카테고리', content: '수급 밸런스', description: '재고 / 저장 수준' },
-  { title: '출처', content: 'Reuters, Platts', description: '\u00a0' },
+const DEFAULT_IMPACT_KPI_PAIR: [KpiCardProps, KpiCardProps] = [
+  { title: '카테고리', content: '-', description: '\u00a0' },
+  { title: '출처', content: '-', description: '\u00a0' },
 ]
-
-const normalizeMarketImpactLevel = (value: unknown): MarketImpactLevel => {
-  const lower = String(value ?? '').toLowerCase()
-  if (lower === MarketImpactLevel.EXTREME) return MarketImpactLevel.EXTREME
-  if (lower === MarketImpactLevel.HIGH) return MarketImpactLevel.HIGH
-  if (lower === MarketImpactLevel.MEDIUM) return MarketImpactLevel.MEDIUM
-  return MarketImpactLevel.LOW
-}
-
-const normalizeMarketDirection = (value: unknown): MarketDirection => {
-  const lower = String(value ?? '').toLowerCase()
-  if (lower === MarketDirection.BULLISH || lower === 'up') return MarketDirection.BULLISH
-  if (lower === MarketDirection.BEARISH || lower === 'down') return MarketDirection.BEARISH
-  return MarketDirection.NEGLIGIBLE
-}
-
-const normalizeEventCategoryLv1 = (value: unknown): EventCategoryLv1 => {
-  const raw = String(value ?? '')
-  const lower = raw.toLowerCase()
-  return ((Object.values(EventCategoryLv1) as string[]).includes(lower) ? lower : raw) as EventCategoryLv1
-}
 
 /** 시나리오 워크벤치 이벤트 상세 */
 const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = false }: ScenarioWorkbenchEventDetailPageProps = {}) => {
@@ -201,10 +168,10 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
   const title = useMemo(() => {
     const fromState = state?.eventName?.trim()
     if (fromState) return fromState
-    const fromApi = detail?.eventName?.trim() || detail?.title?.trim()
+    const fromApi = detail?.eventName?.trim()
     if (fromApi) return fromApi
     return eventId ? `이벤트 ${eventId}` : '이벤트'
-  }, [detail?.eventName, detail?.title, eventId, state?.eventName])
+  }, [detail?.eventName, eventId, state?.eventName])
 
   const { generatedAtLabel, updatedAtLabel } = useMemo(() => {
     const created = detail?.createdAt ? dayjs(detail.createdAt) : null
@@ -215,17 +182,16 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     }
   }, [detail?.createdAt, detail?.updatedAt])
 
-  const impactKpiPair = useMemo((): [EventDetailImpactKpiItem, EventDetailImpactKpiItem] => {
+  const impactKpiPair = useMemo((): [KpiCardProps, KpiCardProps] => {
     const ia = detail?.impactAnalysis
     const [a, b] = DEFAULT_IMPACT_KPI_PAIR
     if (!ia) {
       return [{ ...a }, { ...b }]
     }
-    const lv1 = ia.eventCategoryLv1 ?? ia.categoryLv1
+    const lv1 = ia.eventCategoryLv1
     const lv1Key = lv1 ? (String(lv1).toUpperCase() as keyof typeof SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO) : undefined
     const categoryContent = lv1Key ? (SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[lv1Key] ?? lv1) : a.content
-    const categoryDesc =
-      (ia.eventCategoryLv2 ?? ia.categoryLv2) ? (ia.eventCategoryLv2 ?? ia.categoryLv2)!.replaceAll('_', ' ') : a.description
+    const categoryDesc = ia.eventCategoryLv2?.replaceAll('_', ' ') ?? a.description
     const sourcesContent = ia.sources?.filter(Boolean).length ? ia.sources!.filter(Boolean).join(', ') : b.content
     return [
       { ...a, content: categoryContent, description: categoryDesc },
@@ -233,16 +199,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     ]
   }, [detail?.impactAnalysis])
 
-  const impactTableRows = useMemo((): EventDetailImpactTableRow[] => {
-    const list = detail?.impactAnalysis?.indexImpacts ?? []
-    const prefix = detail?.eventId ?? eventId ?? 'evt'
-    return list.map((row, i) => ({
-      id: `${prefix}-impact-${i}`,
-      target: row.indexName,
-      marketImpact: normalizeMarketImpactLevel(row.marketImpactLevel),
-      direction: normalizeMarketDirection(row.direction),
-    }))
-  }, [detail?.eventId, detail?.impactAnalysis?.indexImpacts, eventId])
+  const impactTableRows = detail?.impactAnalysis?.indexImpacts ?? []
 
   const impactNarrative = detail?.impactAnalysis?.analysisText?.trim() ?? ''
 
@@ -260,166 +217,25 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     return '상세 분석 데이터가 없습니다.'
   }, [detail?.aiInsights?.detailedAnalysis, detailLoading])
 
-  // const fundamentalMetricRows = useMemo((): EventDetailFundamentalMetricRow[] => {
-  //   const metrics = detail?.fundamentalDeepdive && 'metrics' in detail.fundamentalDeepdive ? (detail.fundamentalDeepdive.metrics ?? []) : []
-  //   const prefix = detail?.eventId ?? eventId ?? 'evt'
-  //   return metrics.map((m, i) => ({
-  //     id: `${prefix}-fm-${i}`,
-  //     item: m.metricName,
-  //     currentValue: m.currentValue,
-  //     criteria: m.interpretation,
-  //     source: m.source,
-  //   }))
-  // }, [detail?.eventId, detail?.fundamentalDeepdive, eventId])
-  //
-  // const fundamentalIndicatorRows = useMemo((): EventDetailFundamentalIndicatorRow[] => {
-  //   const indicators =
-  //     detail?.fundamentalDeepdive && 'indicators' in detail.fundamentalDeepdive ? (detail.fundamentalDeepdive.indicators ?? []) : []
-  //   const prefix = detail?.eventId ?? eventId ?? 'evt'
-  //   return indicators.map((m, i) => ({
-  //     id: `${prefix}-fi-${i}`,
-  //     indicator: m.indicatorName,
-  //     currentValue: m.currentValue,
-  //     implication: m.implication,
-  //     source: m.source,
-  //   }))
-  // }, [detail?.eventId, detail?.fundamentalDeepdive, eventId])
+  const relatedEvents = detail?.relatedEventScenario?.event ? [detail.relatedEventScenario.event] : []
+  const relatedScenarios = detail?.relatedEventScenario?.scenarios ?? []
 
-  /** 관련 이벤트/시나리오 테이블 행 데이터 (API: relatedEventScenario) */
-  const { relatedEvents, relatedScenarios } = useMemo((): { relatedEvents: IRelatedEvent[]; relatedScenarios: IRelatedScenario[] } => {
-    const related = detail?.relatedEventScenario
-    const relatedEvent = related?.event
-    const relatedEventIndexImpacts = relatedEvent?.indexImpacts ?? []
-
-    const eventRows: IRelatedEvent[] = relatedEvent
-      ? [
-        {
-          eventId: relatedEvent.eventId,
-          eventName: relatedEvent.eventName,
-          createdAt: relatedEvent.createdAt,
-          updatedAt: relatedEvent.updatedAt,
-          eventCategoryLv1: normalizeEventCategoryLv1(relatedEvent.eventCategoryLv1),
-          indexImpacts: relatedEventIndexImpacts.map((i) => ({
-            indexName: i.indexName,
-            marketImpactLevel: normalizeMarketImpactLevel(i.marketImpactLevel),
-            direction: normalizeMarketDirection(i.direction),
-          })),
-        },
-      ]
-      : []
-
-    const scenarioRows: IRelatedScenario[] = (related?.scenarios ?? []).map((s) => {
-      const impacts = s.indexImpacts ?? []
-      return {
-        scenarioId: s.scenarioId,
-        scenarioName: s.scenarioName,
-        baseCase: s.baseCase,
-        probability: s.probability ?? 0,
-        indexImpacts: impacts.map((i) => ({
-          indexName: i.indexName,
-          marketImpactLevel: normalizeMarketImpactLevel(i.marketImpactLevel),
-        })),
-      }
-    })
-
-    return { relatedEvents: eventRows, relatedScenarios: scenarioRows }
-  }, [detail?.relatedEventScenario])
-
-  /** Driver Tree Scoreboard — API 연동 전까지 퍼블리싱용 목 데이터 */
-  const driverTreeRows = useMemo((): EventDetailDriverTreeRow[] => {
-    const prefix = detail?.eventId ?? eventId ?? 'evt'
-    return [
-      {
-        id: `${prefix}-dt-1`,
-        category: '공급',
-        driver: '가스 생산 capa/가동률',
-        strengthLevel: MarketImpactLevel.EXTREME,
-        strengthDirection: MarketDirection.BULLISH,
-        rationale: 'Ras Laffan 등 중동 공급 차질 리스크 반영',
-      },
-      {
-        id: `${prefix}-dt-2`,
-        category: '공급',
-        driver: 'Liquefaction/Spot',
-        strengthLevel: MarketImpactLevel.HIGH,
-        strengthDirection: MarketDirection.BULLISH,
-        rationale: '현물 cargo 경쟁 심화 가능',
-      },
-      {
-        id: `${prefix}-dt-3`,
-        category: '수요',
-        driver: '발전/산업 수요',
-        strengthLevel: MarketImpactLevel.MEDIUM,
-        strengthDirection: MarketDirection.NEGLIGIBLE,
-        rationale: '단기 수요는 계절·정책 영향이 더 큼',
-      },
-      {
-        id: `${prefix}-dt-4`,
-        category: '물류',
-        driver: '항로/보험료',
-        strengthLevel: MarketImpactLevel.HIGH,
-        strengthDirection: MarketDirection.BULLISH,
-        rationale: '호르무즈 리스크로 비용·리드타임 증가',
-      },
-      {
-        id: `${prefix}-dt-5`,
-        category: '정책',
-        driver: '전략비축/긴급조치',
-        strengthLevel: MarketImpactLevel.LOW,
-        strengthDirection: MarketDirection.NEGLIGIBLE,
-        rationale: '현재 시점에 즉각 조치 시그널 제한적',
-      },
-    ]
-  }, [detail?.eventId, eventId])
-
-  const recordRows = useMemo((): EventDetailMiRecordRow[] => {
-    const list = recordsData?.detail ?? []
-    const page = recordsData?.currentPage ?? 1
-    return list.map((r, i) => ({
-      id: `${eventId ?? 'evt'}-rec-${page}-${i}-${r.publishedAt}`,
-      atLabel: dayjs(r.publishedAt).isValid() ? dayjs(r.publishedAt).format('YYYY-MM-DD HH:mm') : '-',
-      kind: r.source?.trim() ? r.source : 'MI',
-      title: r.title,
-      summary: r.summary,
-    }))
-  }, [eventId, recordsData?.currentPage, recordsData?.detail])
-
-  const recordsServerPagination = useMemo((): IPaginationResponse<EventDetailMiRecordRow> | undefined => {
-    if (!recordsData) return undefined
-    return {
-      ...recordsData,
-      detail: recordRows,
-    }
-  }, [recordRows, recordsData])
-
-  const outlookRows = useMemo((): EventDetailOutlookRow[] => {
-    const list = outlooksData?.detail ?? []
-    const page = outlooksData?.currentPage ?? 1
-    return list.map((r, i) => ({
-      id: `${eventId ?? 'evt'}-out-${page}-${i}-${r.publishedAt}`,
-      dateLabel: dayjs(r.publishedAt).isValid() ? dayjs(r.publishedAt).format('YYYY-MM-DD HH:mm') : '-',
-      institution: r.institutionName,
-      summary: r.outlookSummary,
-    }))
-  }, [eventId, outlooksData?.currentPage, outlooksData?.detail])
-
-  const outlooksServerPagination = useMemo((): IPaginationResponse<EventDetailOutlookRow> | undefined => {
-    if (!outlooksData) return undefined
-    return {
-      ...outlooksData,
-      detail: outlookRows,
-    }
-  }, [outlookRows, outlooksData])
+  const recordRows = recordsData?.detail ?? []
+  const outlookRows = outlooksData?.detail ?? []
 
   const headerTitleSlot = useMemo(
     () => (
       <Stack direction="row" alignItems="flex-end" justifyContent="space-between" width="100%">
         <Stack flex={1} minWidth={0} gap="10px" alignItems="flex-start" pt="20px">
-          <Stack direction="row" alignItems="center" gap="10px" flexWrap="wrap" sx={{ minHeight: '28px' }}>
+          <Stack direction="row" alignItems="center" gap="10px" flexWrap="wrap">
             <Typography variant="body1B16" color="contentText.Black">
               Event
             </Typography>
-            {!detailLoading && detail?.signalType === 'noise' ? <ClassificationTag classification="소음" /> : null}
+            {!detailLoading && scenarioWorkbenchIsEventNoiseSignal(detail?.signalType) ? (
+              <Box component="span" sx={{ display: 'inline-flex', lineHeight: 0, verticalAlign: 'middle' }}>
+                <ScenarioWorkbenchNoiseSignalBadge label={detail?.signalTypeLabel?.trim() ?? ''} />
+              </Box>
+            ) : null}
           </Stack>
           {detailLoading ? (
             <>
@@ -453,7 +269,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
         </Stack>
       </Stack>
     ),
-    [detail?.signalType, detailLoading, generatedAtLabel, title, updatedAtLabel],
+    [detail?.signalType, detail?.signalTypeLabel, detailLoading, generatedAtLabel, title, updatedAtLabel],
   )
 
   useLayoutEffect(() => {
@@ -486,7 +302,6 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
       pt={embedded ? 0 : '20px'}
       position="relative"
       sx={{
-        userSelect: 'none',
         overflowX: embedded ? 'visible' : 'hidden',
       }}
     >
@@ -512,7 +327,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             tableRows={impactTableRows}
             kpiItems={impactKpiPair}
             narrative={impactNarrative}
-            isNoiseEvent={detail?.signalType === 'noise'}
+            isNoiseEvent={scenarioWorkbenchIsEventNoiseSignal(detail?.signalType)}
           />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.ai} gap="12px" py="30px">
@@ -521,7 +336,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
         <Stack id={SECTION_SCROLL_IDS.records} gap="12px" py="30px">
           <EventDetailMiRecordsTable
             rows={recordRows}
-            serverPagination={recordsServerPagination}
+            serverPagination={recordsData}
             onServerPageChange={(page) => setRecordsPagination((p) => ({ ...p, page }))}
             onServerSizeChange={(size) => setRecordsPagination({ size, page: 1 })}
             loading={recordsLoading}
@@ -530,22 +345,19 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
         <Stack id={SECTION_SCROLL_IDS.outlook} gap="12px" py="30px">
           <EventDetailInstitutionalOutlookTable
             rows={outlookRows}
-            serverPagination={outlooksServerPagination}
+            serverPagination={outlooksData}
             onServerPageChange={(page) => setOutlooksPagination((p) => ({ ...p, page }))}
             onServerSizeChange={(size) => setOutlooksPagination({ size, page: 1 })}
             loading={outlooksLoading}
           />
         </Stack>
-        {/* <Stack id={SECTION_SCROLL_IDS.fundamental} gap="12px" py="30px">
-          <EventDetailFundamentalSection metricRows={fundamentalMetricRows} indicatorRows={fundamentalIndicatorRows} />
-        </Stack> */}
         <Stack
           id={SECTION_SCROLL_IDS.driverTree}
           gap="12px"
           py="30px"
           sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}
         >
-          <EventDetailDriverTreeScoreboardSection rows={driverTreeRows} />
+          <EventDetailDriverTreeScoreboardSection rows={[]} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related} gap="12px" py="30px">
           <Stack direction="row" alignItems="center" gap="8px">

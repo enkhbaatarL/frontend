@@ -3,9 +3,10 @@ import { Stack } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState } from 'react'
 
-import type { EventDetailOutlookRow } from '@/pages/mi/scenarioWorkbench/components/event/types'
+import type { IScenarioWorkbenchEventInstitutionOutlook } from '@/service/mi/scenarioWorkbench/event'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import { formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
 import {
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
@@ -15,9 +16,11 @@ import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/t
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { IPaginationResponse } from '@/types/api'
 
+const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
+
 interface EventDetailInstitutionalOutlookTableProps {
-  rows: EventDetailOutlookRow[]
-  serverPagination?: IPaginationResponse<EventDetailOutlookRow>
+  rows: IScenarioWorkbenchEventInstitutionOutlook[]
+  serverPagination?: IPaginationResponse<IScenarioWorkbenchEventInstitutionOutlook>
   onServerPageChange?: (page: number) => void
   onServerSizeChange?: (size: number) => void
   loading?: boolean
@@ -56,7 +59,7 @@ const EventDetailInstitutionalOutlookTable = ({
     return rows.slice(start, start + pagination.size)
   }, [isServerMode, pagination.page, pagination.size, rows, totalPages])
 
-  const paginationData: IPaginationResponse<EventDetailOutlookRow> | undefined = useMemo(() => {
+  const paginationData: IPaginationResponse<IScenarioWorkbenchEventInstitutionOutlook> | undefined = useMemo(() => {
     if (isServerMode) {
       if (serverPagination.totalElements === 0) return undefined
       return serverPagination
@@ -77,11 +80,17 @@ const EventDetailInstitutionalOutlookTable = ({
     }
   }, [isServerMode, paginatedRows, pagination.size, rows.length, safePage, serverPagination, totalPages])
 
-  const columns: GridColDef<EventDetailOutlookRow>[] = useMemo(
+  const columns: GridColDef<IScenarioWorkbenchEventInstitutionOutlook>[] = useMemo(
     () => [
-      { field: 'dateLabel', headerName: '일자', width: 160, align: 'left' },
-      { field: 'institution', headerName: '기관', width: 200, align: 'left' },
-      { field: 'summary', headerName: '전망 요약', flex: 1, minWidth: 240, align: 'left' },
+      {
+        field: 'publishedAt',
+        headerName: '일자',
+        width: 160,
+        align: 'left',
+        renderCell: (params) => formatWorkbenchDateTime(params.row.publishedAt, 'YYYY-MM-DD HH:mm'),
+      },
+      { field: 'institutionName', headerName: '기관', width: 200, align: 'left' },
+      { field: 'outlookSummary', headerName: '전망 요약', flex: 1, minWidth: 240, align: 'left' },
     ],
     [],
   )
@@ -94,13 +103,13 @@ const EventDetailInstitutionalOutlookTable = ({
         tooltipTitle="기관별 시장 전망 요약입니다."
       />
       <Stack>
-        <ScenarioWorkbenchTableHeader<EventDetailOutlookRow>
+        <ScenarioWorkbenchTableHeader<IScenarioWorkbenchEventInstitutionOutlook>
           columns={columns}
           headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
           headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
         />
-        <ScenarioWorkbenchDataList<EventDetailOutlookRow>
-          rowId="id"
+        <ScenarioWorkbenchDataList<IScenarioWorkbenchEventInstitutionOutlook>
+          getRowKey={(row, index) => `${row.publishedAt}-${row.institutionName}-${index}`}
           columns={columns}
           rows={paginatedRows}
           loading={loading}
@@ -108,11 +117,11 @@ const EventDetailInstitutionalOutlookTable = ({
           cellPreset="miCanvasEvent"
           noRowMessage="기관 전망 데이터가 없습니다."
         />
-        {paginationData && (
-          <MIPaginationSecondary<EventDetailOutlookRow>
+        {paginationData && paginationData.totalElements >= PAGE_SIZE_LIST[0] && (
+          <MIPaginationSecondary<IScenarioWorkbenchEventInstitutionOutlook>
             data={paginationData}
             size={isServerMode ? serverPagination.size : pagination.size}
-            sizeList={[10, 15, 20, 50, 100]}
+            sizeList={[...PAGE_SIZE_LIST]}
             onPageChange={(page) => {
               if (isServerMode) onServerPageChange?.(page)
               else setPagination((p) => ({ ...p, page }))

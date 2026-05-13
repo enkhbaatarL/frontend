@@ -191,7 +191,7 @@ const MIRoutes: RouteObject = {
     {
       path: 'scenario-workbench',
       children: [
-        { index: true, element: <Navigate to="overview" replace /> },
+        { index: true, element: <Navigate to={SCENARIO_WORKBENCH_TAB_INFO[0].segment} replace /> },
         {
           element: <ScenarioWorkbenchPage />,
           children: SCENARIO_WORKBENCH_TAB_INFO.map((tab) => ({ path: tab.segment })),

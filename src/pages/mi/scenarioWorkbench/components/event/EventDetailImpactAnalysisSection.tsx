@@ -4,7 +4,8 @@ import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useMemo } from 'react'
 
-import type { EventDetailImpactKpiItem, EventDetailImpactTableRow } from '@/pages/mi/scenarioWorkbench/components/event/types'
+import type { KpiCardProps } from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
+import type { IScenarioWorkbenchImpactIndexSummary } from '@/service/mi/scenarioWorkbench/event'
 
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import KpiCard from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
@@ -16,8 +17,8 @@ import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/component
 
 /** 영향도 분석 섹션 props */
 interface EventDetailImpactAnalysisSectionProps {
-  tableRows: EventDetailImpactTableRow[]
-  kpiItems: [EventDetailImpactKpiItem, EventDetailImpactKpiItem]
+  tableRows: IScenarioWorkbenchImpactIndexSummary[]
+  kpiItems: [KpiCardProps, KpiCardProps]
   narrative: string
   isNoiseEvent?: boolean
 }
@@ -51,10 +52,10 @@ const EventDetailImpactAnalysisSection = ({
   narrative,
   isNoiseEvent = false,
 }: EventDetailImpactAnalysisSectionProps) => {
-  const columns: GridColDef<EventDetailImpactTableRow>[] = useMemo(
+  const columns: GridColDef<IScenarioWorkbenchImpactIndexSummary>[] = useMemo(
     () => [
       {
-        field: 'target',
+        field: 'indexName',
         headerName: '대상',
         flex: 1,
         minWidth: 120,
@@ -68,14 +69,14 @@ const EventDetailImpactAnalysisSection = ({
         ),
       },
       {
-        field: 'marketImpact',
+        field: 'marketImpactLevel',
         headerName: '시장영향',
         width: 120,
         align: 'center',
         sortable: false,
         renderCell: (p) => (
           <>
-            <ImpactDotsCell level={p.row.marketImpact} />
+            <ImpactDotsCell level={p.row.marketImpactLevel} />
           </>
         ),
       },
@@ -123,9 +124,9 @@ const EventDetailImpactAnalysisSection = ({
         <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
           <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
             <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-              <ScenarioWorkbenchTableHeader<EventDetailImpactTableRow> columns={columns} />
-              <ScenarioWorkbenchDataList<EventDetailImpactTableRow>
-                rowId="id"
+              <ScenarioWorkbenchTableHeader<IScenarioWorkbenchImpactIndexSummary> columns={columns} />
+              <ScenarioWorkbenchDataList<IScenarioWorkbenchImpactIndexSummary>
+                rowId="indexName"
                 columns={columns}
                 rows={tableRows}
                 rowHeight={48}
@@ -146,12 +147,15 @@ const EventDetailImpactAnalysisSection = ({
         <Box
           flex={1}
           minWidth={{ xs: '100%', md: 280 }}
-          bgcolor="gray.5"
           borderRadius="8px"
           p="20px"
           display="flex"
           flexDirection="column"
           gap="12px"
+          sx={{
+            bgcolor: 'gray.5',
+            '&:hover': { bgcolor: 'contentBG.Hover' },
+          }}
         >
           <Typography fontSize={14} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
             영향도 분석

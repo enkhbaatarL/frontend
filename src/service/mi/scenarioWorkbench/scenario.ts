@@ -5,7 +5,6 @@ import {
   EventCategoryLv1,
   MarketDirection,
   MarketImpactLevel,
-  ListPeriod,
   ListSort,
   SignpostImpactLevel,
   ScenarioWorkbenchStatus,
@@ -21,6 +20,7 @@ export interface IScenarioListItem {
   scenarioId: number
   scenarioName: string
   status: ScenarioWorkbenchStatus
+  statusLabel?: string
   createdAt: string
   updatedAt: string
   indexImpacts: IScenarioImpact[]
@@ -29,7 +29,6 @@ export interface IScenarioListItem {
 
 export interface IScenarioAppliedFilter {
   scenarioStatus: ScenarioWorkbenchStatus
-  period: ListPeriod
   startDate?: string
   endDate?: string
   sort: ListSort
@@ -45,7 +44,6 @@ export interface IGetScenariosParams {
   page?: number
   size?: number
   scenarioStatus?: ScenarioWorkbenchStatus
-  period?: ListPeriod
   startDate?: string
   endDate?: string
   sort?: ListSort
@@ -158,7 +156,6 @@ const scenarioWorkbenchScenarioService = {
         page: params.page ?? 1,
         size: params.size ?? 20,
         scenarioStatus: params.scenarioStatus,
-        period: params.period,
         startDate: params.startDate,
         endDate: params.endDate,
         sort: params.sort,

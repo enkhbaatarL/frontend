@@ -1,41 +1,35 @@
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
-import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import type { ScenarioWorkbenchEventRow } from '@/pages/mi/scenarioWorkbench/components/event/types'
-
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
-import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
 import MIFilterMenu, { FilterValues } from '@/components/common/menu/MIFilterMenu'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
+import { findIndexImpact, formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
+import { classificationPropsFromScenarioWorkbenchEventRow } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchClassificationChip'
 import {
   buildWorkbenchDatePresets,
-  mapWorkbenchDateRangeToApiParams,
+  defaultWorkbenchDateRange,
 } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { WorkbenchStickySlot } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchStickyLayout'
-import { ListPeriod, MarketDirection } from '@/service/mi/scenarioWorkbench/common'
-import { MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchEventService, {
   SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO,
   type IGetScenarioWorkbenchEventsParams,
   type IScenarioWorkbenchEventListItem,
-  type IScenarioWorkbenchImpactIndexSummary,
   type ScenarioWorkbenchEventCategoryLv1,
+  type ScenarioWorkbenchEventSort,
   type ScenarioWorkbenchEventStatus,
 } from '@/service/mi/scenarioWorkbench/event'
-import { IPaginationResponse } from '@/types/api'
 
-type SortLabel = (typeof SORT_OPTIONS)[number]
 /** 카테고리 필터 값: Lv1 다중 선택 */
 type CategoryFilterValue = ScenarioWorkbenchEventCategoryLv1[]
 
@@ -45,80 +39,14 @@ const TYPE_FILTER_OPTIONS = [
   { value: 'updated', label: '갱신' },
 ] as const
 
-const SORT_OPTIONS = ['최신순', '오래된순'] as const
+const SORT_OPTIONS = [
+  { value: 'LATEST', label: '최신순' },
+  { value: 'OLDEST', label: '오래된순' },
+] as const satisfies ReadonlyArray<{ value: ScenarioWorkbenchEventSort; label: string }>
 
-const normalizeMarketImpactLevel = (value: unknown): MarketImpactLevel => {
-  const lower = String(value ?? '').toLowerCase()
-  if (lower === MarketImpactLevel.EXTREME) return MarketImpactLevel.EXTREME
-  if (lower === MarketImpactLevel.HIGH) return MarketImpactLevel.HIGH
-  if (lower === MarketImpactLevel.MEDIUM) return MarketImpactLevel.MEDIUM
-  return MarketImpactLevel.LOW
-}
-
-const normalizeMarketDirection = (value: unknown): MarketDirection => {
-  const lower = String(value ?? '').toLowerCase()
-  if (lower === MarketDirection.BULLISH || lower === 'up') return MarketDirection.BULLISH
-  if (lower === MarketDirection.BEARISH || lower === 'down') return MarketDirection.BEARISH
-  return MarketDirection.NEGLIGIBLE
-}
-
-/** API eventStatus → 구분 칩 문구 */
-const eventStatusToClassification = (status: ScenarioWorkbenchEventStatus) => {
-  if (status === 'NEW') return '신규' as const
-  if (status === 'UPDATED') return '갱신' as const
-  return '종료' as const
-}
-
-/** indexImpacts에서 지수명으로 항목 조회 (대소문자 무시) */
-const findIndexImpact = (impacts: IScenarioWorkbenchImpactIndexSummary[], code: string) => {
-  const impact = impacts.find((x) => (x.indexName ?? '').toUpperCase() === code)
-  return {
-    marketImpactLevel: normalizeMarketImpactLevel(impact?.marketImpactLevel),
-    direction: normalizeMarketDirection(impact?.direction),
-  }
-}
-
-/** API status(대/소문자 혼재)를 ScenarioWorkbenchEventStatus로 정규화 */
-const normalizeEventStatus = (v: unknown): ScenarioWorkbenchEventStatus => {
-  const upper = String(v ?? 'CLOSED').toUpperCase()
-  if (upper === 'NEW' || upper === 'UPDATED' || upper === 'CLOSED') return upper
-  return 'CLOSED'
-}
-
-/** API 목록 항목 → DataGrid 행 (JKM·TTF·HH 분리) */
-const mapScenarioWorkbenchEventListItemToRow = (item: IScenarioWorkbenchEventListItem): ScenarioWorkbenchEventRow => {
-  const impacts = item.indexImpacts ?? []
-  const jkm = findIndexImpact(impacts, 'JKM')
-  const ttf = findIndexImpact(impacts, 'TTF')
-  const hh = findIndexImpact(impacts, 'HH')
-
-  const normalizedStatus = normalizeEventStatus(item.status as unknown)
-  const signalType = item.signalType
-  const occurredAt = item.occurredAt ? dayjs(item.occurredAt) : null
-  const updatedAt = item.updatedAt ? dayjs(item.updatedAt) : null
-  const displayTime = occurredAt?.isValid() ? occurredAt : updatedAt
-  const occurredAtLabel = displayTime?.isValid() ? displayTime.format('MM-DD HH:mm') : '-'
-  const eventCategoryLv1 = item.eventCategoryLv1.toUpperCase() as ScenarioWorkbenchEventCategoryLv1
-  return {
-    id: item.eventId,
-    classification: signalType === 'noise' ? '소음' : eventStatusToClassification(normalizedStatus),
-    occurredAtLabel,
-    category: SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[eventCategoryLv1] ?? item.eventCategoryLv1,
-    eventName: item.eventName,
-    jkmImpact: jkm.marketImpactLevel,
-    jkmDirection: jkm.direction,
-    ttfImpact: ttf.marketImpactLevel,
-    ttfDirection: ttf.direction,
-    hhImpact: hh.marketImpactLevel,
-    hhDirection: hh.direction,
-    isActive: normalizedStatus !== 'CLOSED',
-  }
-}
-
-/** 기본 조회 구간: 6개월(오늘 기준) */
-const defaultEventsDateRange = (): DateRange => {
-  const t = dayjs().startOf('day')
-  return { startDate: t.subtract(6, 'month'), endDate: t }
+const formatEventListTime = (item: IScenarioWorkbenchEventListItem) => {
+  const occurredAtLabel = formatWorkbenchDateTime(item.occurredAt)
+  return occurredAtLabel === '-' ? formatWorkbenchDateTime(item.updatedAt) : occurredAtLabel
 }
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
@@ -127,8 +55,8 @@ const EventsTabPanel = () => {
   const navigate = useNavigate()
 
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('all')
-  const [sort, setSort] = useState<SortLabel>('최신순')
-  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultEventsDateRange())
+  const [sort, setSort] = useState<ScenarioWorkbenchEventSort>('LATEST')
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultWorkbenchDateRange())
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>([])
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
@@ -157,26 +85,23 @@ const EventsTabPanel = () => {
   const listRequest = useMemo((): IGetScenarioWorkbenchEventsParams => {
     let eventStatus: ScenarioWorkbenchEventStatus[] | undefined
     if (typeFilter === 'new') {
-      eventStatus = ['NEW']
+      eventStatus = ['new']
     } else if (typeFilter === 'updated') {
-      eventStatus = ['UPDATED']
+      eventStatus = ['updated']
     }
 
     const eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1[] | undefined = categoryFilter.length > 0 ? categoryFilter : undefined
 
     const trimmedKeyword = committedKeyword.trim()
 
-    const dateSlice =
-      appliedDateRange.startDate && appliedDateRange.endDate
-        ? mapWorkbenchDateRangeToApiParams(appliedDateRange.startDate, appliedDateRange.endDate)
-        : { period: ListPeriod.SIX_MONTHS }
+    const resolvedRange = appliedDateRange.startDate && appliedDateRange.endDate ? appliedDateRange : defaultWorkbenchDateRange()
 
     return {
       page: pagination.page,
       size: pagination.size,
-      sort: sort === '최신순' ? 'LATEST' : 'OLDEST',
-      period: dateSlice.period,
-      ...(dateSlice.period === ListPeriod.CUSTOM ? { startDate: dateSlice.startDate, endDate: dateSlice.endDate } : {}),
+      sort,
+      startDate: resolvedRange.startDate!.startOf('day').format('YYYY-MM-DD'),
+      endDate: resolvedRange.endDate!.endOf('day').format('YYYY-MM-DD'),
       keyword: trimmedKeyword || undefined,
       eventStatus,
       eventCategoryLv1,
@@ -190,8 +115,6 @@ const EventsTabPanel = () => {
     gcTime: 0,
   })
 
-  const tableRows = useMemo(() => (data?.events?.detail ?? []).map(mapScenarioWorkbenchEventListItemToRow), [data?.events?.detail])
-
   useEffect(() => {
     if (!data?.events) return
     const tp = data.events.totalPages
@@ -200,34 +123,30 @@ const EventsTabPanel = () => {
     }
   }, [data?.events, pagination.page])
 
-  const paginationData: IPaginationResponse<ScenarioWorkbenchEventRow> | undefined = useMemo(() => {
-    if (!data?.events) return undefined
-    return {
-      ...data.events,
-      detail: tableRows,
-    }
-  }, [data?.events, tableRows])
+  const tableRows = data?.events?.detail ?? []
 
-  const columns: GridColDef<ScenarioWorkbenchEventRow>[] = useMemo(
+  const columns: GridColDef<IScenarioWorkbenchEventListItem>[] = useMemo(
     () => [
       {
-        field: 'classification',
+        field: 'status',
         headerName: '구분',
         width: 88,
         align: 'center',
-        renderCell: (params) => <ClassificationTag classification={params.row.classification} />,
+        renderCell: (params) => <ClassificationTag {...classificationPropsFromScenarioWorkbenchEventRow(params.row)} />,
       },
       {
-        field: 'occurredAtLabel',
+        field: 'occurredAt',
         headerName: '발생/갱신일시',
         width: 130,
         align: 'center',
+        renderCell: (params) => formatEventListTime(params.row),
       },
       {
-        field: 'category',
+        field: 'eventCategoryLv1',
         headerName: '카테고리',
         width: 160,
         align: 'left',
+        renderCell: (params) => SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[params.row.eventCategoryLv1],
       },
       {
         field: 'eventName',
@@ -237,25 +156,34 @@ const EventsTabPanel = () => {
         align: 'left',
       },
       {
-        field: 'jkmImpact',
+        field: 'jkm',
         headerName: 'JKM',
         width: 100,
         align: 'center',
-        renderCell: (params) => <ImpactDotsCell level={params.row.jkmImpact} direction={params.row.jkmDirection} />,
+        renderCell: (params) => {
+          const impact = findIndexImpact(params.row.indexImpacts, 'JKM')
+          return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
+        },
       },
       {
-        field: 'ttfImpact',
+        field: 'ttf',
         headerName: 'TTF',
         width: 100,
         align: 'center',
-        renderCell: (params) => <ImpactDotsCell level={params.row.ttfImpact} direction={params.row.ttfDirection} />,
+        renderCell: (params) => {
+          const impact = findIndexImpact(params.row.indexImpacts, 'TTF')
+          return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
+        },
       },
       {
-        field: 'hhImpact',
+        field: 'hh',
         headerName: 'HH',
         width: 100,
         align: 'center',
-        renderCell: (params) => <ImpactDotsCell level={params.row.hhImpact} direction={params.row.hhDirection} />,
+        renderCell: (params) => {
+          const impact = findIndexImpact(params.row.indexImpacts, 'HH')
+          return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
+        },
       },
     ],
     [],
@@ -325,14 +253,14 @@ const EventsTabPanel = () => {
     }
   }, [])
 
-  const handleSortChange = useCallback((label: SortLabel) => {
-    setSort(label)
+  const handleSortChange = useCallback((value: ScenarioWorkbenchEventSort) => {
+    setSort(value)
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
   const handleRowClick = useCallback(
-    (params: { row: ScenarioWorkbenchEventRow }) =>
-      navigate(`/mi/scenario-workbench/events/${params.row.id}`, {
+    (params: { row: IScenarioWorkbenchEventListItem }) =>
+      navigate(`/mi/scenario-workbench/events/${params.row.eventId}`, {
         state: { eventName: params.row.eventName },
       }),
     [navigate],
@@ -391,18 +319,12 @@ const EventsTabPanel = () => {
               {...dateRangeMenuLayoutProps}
             />
 
-            <MIDropdownMenu
+            <MISelectMenu<ScenarioWorkbenchEventSort>
               variant="outlined"
               buttonHoverBgColor="gray.20"
-              label={
-                <Stack direction="row" alignItems="center" gap={1}>
-                  <Typography variant="body2M14" color="contentText.Black">
-                    {sort}
-                  </Typography>
-                  <KeyboardArrowDownIcon sx={{ fontSize: 20, color: 'contentText.Black' }} />
-                </Stack>
-              }
-              items={SORT_OPTIONS.map((label) => ({ label, action: () => handleSortChange(label) }))}
+              selected={sort}
+              onSelected={handleSortChange}
+              items={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
             />
           </Stack>
 
@@ -419,11 +341,11 @@ const EventsTabPanel = () => {
           </Stack>
         </Stack>
 
-        <ScenarioWorkbenchTableHeader<ScenarioWorkbenchEventRow> columns={columns} sx={{ mt: 2 }} />
+        <ScenarioWorkbenchTableHeader<IScenarioWorkbenchEventListItem> columns={columns} sx={{ mt: 2 }} />
       </WorkbenchStickySlot>
 
-      <ScenarioWorkbenchDataList<ScenarioWorkbenchEventRow>
-        rowId="id"
+      <ScenarioWorkbenchDataList<IScenarioWorkbenchEventListItem>
+        rowId="eventId"
         columns={columns}
         rows={tableRows}
         loading={isLoading}
@@ -434,7 +356,7 @@ const EventsTabPanel = () => {
       />
 
       <MIPaginationSecondary
-        data={paginationData}
+        data={data?.events}
         size={pagination.size}
         sizeList={[20, 50, 100]}
         onSizeChange={handlePageSizeChange}

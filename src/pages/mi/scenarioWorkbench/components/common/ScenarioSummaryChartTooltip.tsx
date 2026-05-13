@@ -59,7 +59,7 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
         <Stack
           direction="row"
           alignItems="center"
-          justifyContent="space-between"
+          justifyContent={targetLabel ? 'space-between' : 'flex-start'}
           sx={{
             width: '100%',
             boxSizing: 'border-box',
@@ -80,19 +80,21 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
           >
             {items[0]?.date || '-'}
           </Typography>
-          <Typography
-            variant="body3SB12"
-            color="inherit"
-            sx={{
-              fontVariantNumeric: 'lining-nums tabular-nums',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              ml: '8px',
-            }}
-          >
-            {targetLabel || '-'}
-          </Typography>
+          {targetLabel ? (
+            <Typography
+              variant="body3SB12"
+              color="inherit"
+              sx={{
+                fontVariantNumeric: 'lining-nums tabular-nums',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                ml: '8px',
+              }}
+            >
+              {targetLabel}
+            </Typography>
+          ) : null}
         </Stack>
 
         <Stack width="100%" boxSizing="border-box" gap="4px" px="12px" py="6px">

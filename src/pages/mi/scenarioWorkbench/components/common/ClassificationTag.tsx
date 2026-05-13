@@ -1,73 +1,73 @@
-import type { EventClassification } from '@/pages/mi/scenarioWorkbench/components/event/types'
+import { Box, Typography } from '@mui/material'
 
-import MIChip from '@/components/common/chip/MIChip'
-import { ScenarioWorkbenchStatus } from '@/service/mi/scenarioWorkbench/common'
+import type { WorkbenchClassificationTone } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchClassificationChip'
 
-/** 신규,갱신,소음 뱃지 variant (종료는 별도 스타일) */
-export type ScenarioWorkbenchClassificationBadgeVariant = ScenarioWorkbenchStatus.NEW | ScenarioWorkbenchStatus.UPDATED | 'noise'
-
-/** 신규,갱신,소음 칩 공통 레이아웃 스타일 */
-const SCENARIO_WORKBENCH_TYPE_BADGE_BASE_SX = {
-  height: '28px',
-  borderRadius: '8px',
-  padding: '4px 8px',
-  boxSizing: 'border-box',
-  border: 'none',
-  '& .MuiChip-label': { padding: 0 },
-} as const
-
-export interface ScenarioWorkbenchTypeBadgeProps {
-  type: ScenarioWorkbenchClassificationBadgeVariant
+const PALETTE_BY_STATUS: Record<WorkbenchClassificationTone, { bgcolor: string; color: string }> = {
+  noise: { bgcolor: 'gray.20', color: 'contentText.Normal' },
+  new: { bgcolor: 'contentBG.PrimaryFade', color: 'mari.Primary' },
+  updated: { bgcolor: '#F7EFDF', color: '#EB670F' },
+  closed: { bgcolor: 'contentBG.Disabled', color: 'contentText.Subtext' },
 }
 
-/** 시나리오 워크벤치 이벤트 타입 뱃지 (신규,갱신,소음) */
-export const ScenarioWorkbenchTypeBadge = ({ type }: ScenarioWorkbenchTypeBadgeProps) => {
-  const isNoise = type === 'noise'
-  const isNew = type === ScenarioWorkbenchStatus.NEW
-  const label = isNoise ? '소음' : isNew ? '신규' : '갱신'
+const WorkbenchStatusChip = ({ status, label }: { status: WorkbenchClassificationTone; label: string }) => {
+  const palette = PALETTE_BY_STATUS[status]
+
   return (
-    <MIChip
-      type="filled"
-      fontType="body2SB14"
-      disableHover
-      label={label}
-      sx={{
-        ...SCENARIO_WORKBENCH_TYPE_BADGE_BASE_SX,
-        backgroundColor: isNoise ? 'gray.20' : isNew ? 'contentBG.PrimaryFade' : '#F7EFDF',
-        color: isNoise ? 'contentText.Subtext' : isNew ? 'mari.Primary' : '#EB670F',
-      }}
-    />
+    <Box
+      component="span"
+      display="inline-flex"
+      alignItems="center"
+      justifyContent="center"
+      height={28}
+      px="8px"
+      py="4px"
+      borderRadius="8px"
+      boxSizing="border-box"
+      bgcolor={palette.bgcolor}
+      color={palette.color}
+    >
+      <Typography component="span" variant="body2SB14" color="inherit" noWrap>
+        {label}
+      </Typography>
+    </Box>
   )
 }
+
+const WorkbenchTableRowBadge = ({ bordered, label }: { bordered: boolean; label: string }) => (
+  <Box
+    component="span"
+    display="inline-flex"
+    alignItems="center"
+    justifyContent="center"
+    height="19px"
+    px="6px"
+    borderRadius="4px"
+    boxSizing="border-box"
+    lineHeight={0}
+    sx={{ verticalAlign: 'middle' }}
+    bgcolor={bordered ? 'gray.20' : 'mari.Primary'}
+    color={bordered ? 'contentText.Normal' : 'commonColor.White'}
+    {...(bordered ? { border: '1px solid', borderColor: 'contentBorder.Normal' } : {})}
+  >
+    <Typography component="span" color="inherit" fontSize="11px" fontWeight={600} noWrap>
+      {label}
+    </Typography>
+  </Box>
+)
+
+export const ScenarioWorkbenchNoiseSignalBadge = ({ label }: { label: string }) => {
+  const text = label.trim()
+  if (!text) return null
+  return <WorkbenchTableRowBadge bordered label={text} />
+}
+
+export const ScenarioWorkbenchBaseCaseChip = () => <WorkbenchTableRowBadge bordered={false} label="BC" />
 
 interface ClassificationTagProps {
-  classification: EventClassification
+  status: WorkbenchClassificationTone
+  label: string
 }
 
-/** 이벤트 분류(신규,갱신,종료,소음) 칩 */
-const ClassificationTag = ({ classification }: ClassificationTagProps) => {
-  if (classification === '소음') {
-    return <ScenarioWorkbenchTypeBadge type="noise" />
-  }
-  if (classification === '신규') {
-    return <ScenarioWorkbenchTypeBadge type={ScenarioWorkbenchStatus.NEW} />
-  }
-  if (classification === '갱신') {
-    return <ScenarioWorkbenchTypeBadge type={ScenarioWorkbenchStatus.UPDATED} />
-  }
-  return (
-    <MIChip
-      type="filled"
-      fontType="body2SB14"
-      disableHover
-      label="종료"
-      sx={{
-        ...SCENARIO_WORKBENCH_TYPE_BADGE_BASE_SX,
-        backgroundColor: 'contentBG.Disabled',
-        color: 'contentText.Subtext',
-      }}
-    />
-  )
-}
+const ClassificationTag = ({ status, label }: ClassificationTagProps) => <WorkbenchStatusChip status={status} label={label} />
 
 export default ClassificationTag

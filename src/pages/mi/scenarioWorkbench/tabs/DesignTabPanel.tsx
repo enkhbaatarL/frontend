@@ -1,11 +1,9 @@
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser'
-import { Box, Stack, Switch, Typography } from '@mui/material'
+import { Box, Stack, Switch, Typography, type SxProps, type Theme } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
-import dayjs from 'dayjs'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
-
-import type { EventClassification } from '@/pages/mi/scenarioWorkbench/components/event/types'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import LoadingIcon from '@/components/common/icons/LoadingIcon'
@@ -19,94 +17,45 @@ import MISpinner from '@/components/common/spinner/MISpinner'
 import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
-import { buildWorkbenchDatePresets } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
-import CreatedScenariosSection, { type CreatedScenarioRow } from '@/pages/mi/scenarioWorkbench/components/design/CreatedScenariosSection'
+import {
+  findIndexImpact,
+  formatWorkbenchDateTime,
+  formatWorkbenchDateTimeYmdHm,
+  WORKBENCH_LIST_SORT_OPTIONS,
+  WORKBENCH_STATUS_FILTER_OPTIONS,
+} from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
+import { classificationPropsFromDesignEventRow } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchClassificationChip'
+import {
+  buildWorkbenchDatePresets,
+  defaultWorkbenchDateRange,
+} from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
+import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
+import CreatedScenariosSection from '@/pages/mi/scenarioWorkbench/components/design/CreatedScenariosSection'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import ScenarioWorkbenchEventDetailPage from '@/pages/mi/scenarioWorkbench/EventDetailPage'
 import { WorkbenchStickySlot } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchStickyLayout'
-import { MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
-import { IPaginationResponse } from '@/types/api'
+import { EVENT_CATEGORY_LV1_KO, EventCategoryLv1, ListSort, ScenarioWorkbenchStatus } from '@/service/mi/scenarioWorkbench/common'
+import scenarioWorkbenchDesignService, {
+  type IDesignEventItem,
+  type IDesignEventListRes,
+  type IGetDesignEventsParams,
+  type ScenarioGenStatus,
+} from '@/service/mi/scenarioWorkbench/design'
 
-/** 이벤트 행에 대한 생성된 시나리오 더미 데이터 (API 연동 전 임시) */
-const buildCreatedScenariosForEvent = (_row: DesignRow): CreatedScenarioRow[] => [
-  {
-    id: 1,
-    name: '1~2주 내 협상 완료 상황 해소',
-    date: '03-01 10:21',
-    tags: ['외교협상', '단기해소'],
-    jkm: MarketImpactLevel.HIGH,
-    ttf: MarketImpactLevel.HIGH,
-    hh: MarketImpactLevel.LOW,
-    probability: 0.4,
-  },
-  {
-    id: 2,
-    name: '수주 내 호르무즈 정상화',
-    date: '03-01 10:21',
-    tags: ['호르무즈', '수급정상화'],
-    jkm: MarketImpactLevel.HIGH,
-    ttf: MarketImpactLevel.LOW,
-    hh: MarketImpactLevel.LOW,
-    probability: 0.8,
-  },
-  {
-    id: 3,
-    name: '호르무즈 봉쇄 3개월+ 유지',
-    date: '03-01 10:21',
-    tags: ['장기봉쇄', '공급충격'],
-    isCurrent: true,
-    type: 'BC',
-    jkm: MarketImpactLevel.HIGH,
-    ttf: MarketImpactLevel.HIGH,
-    hh: MarketImpactLevel.HIGH,
-    probability: 0.8,
-  },
-  {
-    id: 4,
-    name: '걸프 LNG 인프라 타격, 복구',
-    date: '03-01 10:21',
-    tags: ['인프라피해', '복구가능'],
-    jkm: MarketImpactLevel.HIGH,
-    ttf: MarketImpactLevel.HIGH,
-    hh: MarketImpactLevel.LOW,
-    probability: 0.6,
-  },
-  {
-    id: 5,
-    name: '걸프 LNG 인프라 타격, 미복구',
-    date: '03-01 10:21',
-    tags: ['인프라피해', '구조적부족'],
-    jkm: MarketImpactLevel.HIGH,
-    ttf: MarketImpactLevel.HIGH,
-    hh: MarketImpactLevel.HIGH,
-    probability: 0.4,
-  },
-]
-
-// ── 타입 ──────────────────────────────────────────────────────────────────────
-type ScenarioStatus = 'idle' | 'generating' | 'created'
-
-interface DesignRow {
-  id: number
-  classification: EventClassification
-  occurredAtLabel: string
-  category: string
-  eventName: string
-  jkmImpact: MarketImpactLevel
-  jkmDirection: MarketDirection
-  ttfImpact: MarketImpactLevel
-  ttfDirection: MarketDirection
-  hhImpact: MarketImpactLevel
-  hhDirection: MarketDirection
-  scenarioStatus: ScenarioStatus
+const normalizeRequestId = (value: unknown): number | undefined => {
+  const id = Number(value)
+  return Number.isFinite(id) && id > 0 ? id : undefined
 }
+
+const formatDesignEventTime = (item: IDesignEventItem) =>
+  formatWorkbenchDateTime(item.status === ScenarioWorkbenchStatus.UPDATED ? item.updatedAt : item.createdAt)
 
 // ── 셀 컴포넌트 ───────────────────────────────────────────────────────────────
 
-const DetailIconButton = ({ row }: { row: DesignRow }) => {
+const DetailIconButton = ({ row }: { row: IDesignEventItem }) => {
   const popupRef = useRef<MIMorphingPopupRef>(null)
-  const eventIdString = String(row.id)
+  const eventIdString = String(row.eventId)
   /** 콘텐츠 lazy mount: 팝업이 열린 적이 있을 때만 EventDetailPage를 마운트 (API 호출 방지) */
   const [hasMounted, setHasMounted] = useState(false)
   /** mount 완료 후 1회 popup.open()을 자동 호출하기 위한 플래그 */
@@ -182,38 +131,48 @@ interface ScenarioActionButtonProps {
   ariaLabel?: string
   disabled?: boolean
   onClick?: (e: MouseEvent) => void
+  sx?: SxProps<Theme>
 }
 
-const ScenarioActionButton = ({ icon, label, textColor, ariaLabel, disabled = false, onClick }: ScenarioActionButtonProps) => (
-  <MIBaseButton
-    variant="outlined"
-    enableHoverBackground={!disabled}
-    disabled={disabled}
-    aria-label={ariaLabel}
-    onClick={(e) => {
-      e.stopPropagation()
-      onClick?.(e)
-    }}
-    sx={{
-      ...SCENARIO_ACTION_BUTTON_SX,
-      ...(disabled && {
-        '&.Mui-disabled': {
-          backgroundColor: 'commonColor.White',
-          borderColor: 'contentBorder.Normal',
-        },
-      }),
-    }}
-  >
-    <Stack direction="row" alignItems="center" gap="4px">
-      {icon}
-      <Typography variant="body2SB14" sx={{ color: textColor }}>
-        {label}
-      </Typography>
-    </Stack>
-  </MIBaseButton>
-)
+const ScenarioActionButton = ({ icon, label, textColor, ariaLabel, disabled = false, onClick, sx }: ScenarioActionButtonProps) => {
+  const extraSx = sx && typeof sx === 'object' && !Array.isArray(sx) ? (sx as Record<string, unknown>) : {}
+  const disabledSxFromExtra =
+    extraSx['&.Mui-disabled'] && typeof extraSx['&.Mui-disabled'] === 'object' ? (extraSx['&.Mui-disabled'] as Record<string, unknown>) : {}
+  const { '&.Mui-disabled': _disabledSlot, ...restSx } = extraSx
 
-/** 시나리오 생성 전 — 클릭 시 시나리오 생성 (현재는 더미) */
+  return (
+    <MIBaseButton
+      variant="outlined"
+      enableHoverBackground={!disabled}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick?.(e)
+      }}
+      sx={{
+        ...SCENARIO_ACTION_BUTTON_SX,
+        ...(disabled && {
+          '&.Mui-disabled': {
+            backgroundColor: 'commonColor.White',
+            borderColor: 'contentBorder.Normal',
+            ...disabledSxFromExtra,
+          },
+        }),
+        ...restSx,
+      }}
+    >
+      <Stack direction="row" alignItems="center" gap="4px">
+        {icon}
+        <Typography variant="body2SB14" sx={{ color: textColor }}>
+          {label}
+        </Typography>
+      </Stack>
+    </MIBaseButton>
+  )
+}
+
+/** 시나리오 생성 전 — 클릭 시 시나리오 생성 요청 */
 const CreateScenarioButton = ({ onClick }: { onClick?: (e: MouseEvent) => void }) => (
   <ScenarioActionButton
     icon={<AutoAwesomeIcon sx={{ fontSize: 20, color: 'contentIcon.Black' }} />}
@@ -223,25 +182,83 @@ const CreateScenarioButton = ({ onClick }: { onClick?: (e: MouseEvent) => void }
   />
 )
 
-/** 시나리오 생성 중 — 진행 표시, 비활성화 */
-const GeneratingScenarioButton = () => (
-  <ScenarioActionButton
-    icon={
-      <MISpinner size={20} speed={0.55}>
-        <LoadingIcon style={{ width: 20, height: 20 }} />
-      </MISpinner>
-    }
-    label="생성중"
-    textColor="contentText.Subtext"
-    ariaLabel="시나리오 생성 중"
-    disabled
-  />
-)
+/** 시나리오 생성 중 — 진행 표시, 비활성화 + 생성 시작 시각 툴팁 */
+const GeneratingScenarioButton = ({ startedAt }: { startedAt?: string | null }) => {
+  const tooltipTitle = `생성 시작 시간: ${formatWorkbenchDateTimeYmdHm(startedAt ?? undefined)}`
+  return (
+    <WorkbenchFollowCursorTooltip title={tooltipTitle}>
+      <span style={{ display: 'inline-flex', cursor: 'default' }}>
+        <ScenarioActionButton
+          icon={
+            <MISpinner size={20} speed={0.55}>
+              <LoadingIcon style={{ width: 20, height: 20 }} />
+            </MISpinner>
+          }
+          label="생성중"
+          textColor="contentText.Subtext"
+          ariaLabel="시나리오 생성 중"
+          disabled
+          sx={{ '&.Mui-disabled': { cursor: 'default' } }}
+        />
+      </span>
+    </WorkbenchFollowCursorTooltip>
+  )
+}
+
+interface GeneratedScenariosPopupContentProps {
+  requestId?: number
+  shouldFetch: boolean
+}
+
+const GeneratedScenariosPopupContent = ({ requestId, shouldFetch }: GeneratedScenariosPopupContentProps) => {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['scenarioWorkbenchDesignGeneratedScenarios', requestId],
+    queryFn: () => scenarioWorkbenchDesignService.getGeneratedScenarios(requestId ?? 0),
+    enabled: shouldFetch && requestId !== undefined,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  if (requestId === undefined) {
+    return (
+      <Box sx={{ px: '24px', pb: '70px' }}>
+        <Typography variant="body2M14" color="contentText.Subtext">
+          생성 요청 ID가 없어 시나리오를 조회할 수 없습니다.
+        </Typography>
+      </Box>
+    )
+  }
+
+  if (!shouldFetch || isLoading) {
+    return (
+      <Stack alignItems="center" justifyContent="center" gap={1.5} sx={{ px: '24px', pb: '70px', minHeight: 180 }}>
+        <MISpinner size={24} speed={0.55}>
+          <LoadingIcon style={{ width: 24, height: 24 }} />
+        </MISpinner>
+        <Typography variant="body2M14" color="contentText.Subtext">
+          생성된 시나리오를 불러오는 중입니다.
+        </Typography>
+      </Stack>
+    )
+  }
+
+  if (isError) {
+    return (
+      <Box sx={{ px: '24px', pb: '70px' }}>
+        <Typography variant="body2M14" color="contentText.Subtext">
+          생성된 시나리오를 불러오지 못했습니다.
+        </Typography>
+      </Box>
+    )
+  }
+
+  return <CreatedScenariosSection scenarios={data ?? []} />
+}
 
 /** 시나리오 생성 완료 — 클릭 시 MIMorphingPopup(내부 스크롤)으로 생성된 시나리오 목록 노출 */
-const CompletedScenarioPopupButton = ({ row }: { row: DesignRow }) => {
+const CompletedScenarioPopupButton = ({ row }: { row: IDesignEventItem }) => {
   const popupRef = useRef<MIMorphingPopupRef>(null)
-  const scenarios = useMemo(() => buildCreatedScenariosForEvent(row), [row])
+  const [hasOpened, setHasOpened] = useState(false)
 
   return (
     <MIMorphingPopup
@@ -249,11 +266,12 @@ const CompletedScenarioPopupButton = ({ row }: { row: DesignRow }) => {
       display="inline-flex"
       popup={{
         title: '생성된 시나리오',
-        content: <CreatedScenariosSection scenarios={scenarios} />,
+        content: <GeneratedScenariosPopupContent requestId={normalizeRequestId(row.requestId)} shouldFetch={hasOpened} />,
         useInternalScroll: true,
         hideHeaderLine: true,
         minWidth: 1024,
         maxWidth: 1024,
+        onOpen: () => setHasOpened(true),
       }}
     >
       <Box borderRadius="10px" sx={{ display: 'inline-flex' }}>
@@ -269,282 +287,223 @@ const CompletedScenarioPopupButton = ({ row }: { row: DesignRow }) => {
   )
 }
 
-// ── 더미 데이터 ───────────────────────────────────────────────────────────────
-
-const DUMMY_EVENTS: DesignRow[] = [
-  {
-    id: 1,
-    classification: '갱신',
-    occurredAtLabel: '02-28 15:35',
-    category: '지정학적 리스크',
-    eventName: '미국/이스라엘 이란 공습 개시 (Operation Epic Fury)',
-    jkmImpact: MarketImpactLevel.HIGH,
-    jkmDirection: MarketDirection.BULLISH,
-    ttfImpact: MarketImpactLevel.HIGH,
-    ttfDirection: MarketDirection.BULLISH,
-    hhImpact: MarketImpactLevel.HIGH,
-    hhDirection: MarketDirection.BULLISH,
-    scenarioStatus: 'created',
-  },
-  {
-    id: 2,
-    classification: '신규',
-    occurredAtLabel: '02-28 09:00',
-    category: '지정학적 리스크',
-    eventName: '호르무즈 해협 군사적 긴장 고조',
-    jkmImpact: MarketImpactLevel.HIGH,
-    jkmDirection: MarketDirection.BULLISH,
-    ttfImpact: MarketImpactLevel.MEDIUM,
-    ttfDirection: MarketDirection.BULLISH,
-    hhImpact: MarketImpactLevel.LOW,
-    hhDirection: MarketDirection.NEGLIGIBLE,
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 3,
-    classification: '신규',
-    occurredAtLabel: '02-27 14:30',
-    category: '수급밸런스',
-    eventName: '카타르 LNG 증산 발표',
-    jkmImpact: MarketImpactLevel.MEDIUM,
-    jkmDirection: MarketDirection.BEARISH,
-    ttfImpact: MarketImpactLevel.MEDIUM,
-    ttfDirection: MarketDirection.BEARISH,
-    hhImpact: MarketImpactLevel.LOW,
-    hhDirection: MarketDirection.BEARISH,
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 4,
-    classification: '신규',
-    occurredAtLabel: '02-27 09:15',
-    category: '수급밸런스',
-    eventName: '아시아 LNG 수요 급등',
-    jkmImpact: MarketImpactLevel.HIGH,
-    jkmDirection: MarketDirection.BULLISH,
-    ttfImpact: MarketImpactLevel.MEDIUM,
-    ttfDirection: MarketDirection.BULLISH,
-    hhImpact: MarketImpactLevel.LOW,
-    hhDirection: MarketDirection.NEGLIGIBLE,
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 5,
-    classification: '갱신',
-    occurredAtLabel: '02-26 16:45',
-    category: '수급밸런스',
-    eventName: '러시아 가스 공급 재개',
-    jkmImpact: MarketImpactLevel.MEDIUM,
-    jkmDirection: MarketDirection.BEARISH,
-    ttfImpact: MarketImpactLevel.HIGH,
-    ttfDirection: MarketDirection.BEARISH,
-    hhImpact: MarketImpactLevel.LOW,
-    hhDirection: MarketDirection.NEGLIGIBLE,
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 6,
-    classification: '신규',
-    occurredAtLabel: '02-26 11:00',
-    category: '에너지 믹스 전환',
-    eventName: '유럽 에너지 정책 변화',
-    jkmImpact: MarketImpactLevel.LOW,
-    jkmDirection: MarketDirection.NEGLIGIBLE,
-    ttfImpact: MarketImpactLevel.MEDIUM,
-    ttfDirection: MarketDirection.NEGLIGIBLE,
-    hhImpact: MarketImpactLevel.LOW,
-    hhDirection: MarketDirection.NEGLIGIBLE,
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 7,
-    classification: '갱신',
-    occurredAtLabel: '02-25 09:00',
-    category: '수급밸런스',
-    eventName: '사우디 감산 연장 발표',
-    jkmImpact: MarketImpactLevel.HIGH,
-    jkmDirection: MarketDirection.BULLISH,
-    ttfImpact: MarketImpactLevel.HIGH,
-    ttfDirection: MarketDirection.BULLISH,
-    hhImpact: MarketImpactLevel.MEDIUM,
-    hhDirection: MarketDirection.BULLISH,
-    scenarioStatus: 'created',
-  },
-  {
-    id: 8,
-    classification: '신규',
-    occurredAtLabel: '02-24 14:10',
-    category: '수급밸런스',
-    eventName: '중국 산업 활동 둔화',
-    jkmImpact: MarketImpactLevel.MEDIUM,
-    jkmDirection: MarketDirection.BEARISH,
-    ttfImpact: MarketImpactLevel.MEDIUM,
-    ttfDirection: MarketDirection.BEARISH,
-    hhImpact: MarketImpactLevel.LOW,
-    hhDirection: MarketDirection.NEGLIGIBLE,
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 9,
-    classification: '신규',
-    occurredAtLabel: '02-24 10:30',
-    category: '수급밸런스',
-    eventName: '미 연준 금리 동결 결정',
-    jkmImpact: MarketImpactLevel.LOW,
-    jkmDirection: MarketDirection.NEGLIGIBLE,
-    ttfImpact: MarketImpactLevel.LOW,
-    ttfDirection: MarketDirection.NEGLIGIBLE,
-    hhImpact: MarketImpactLevel.LOW,
-    hhDirection: MarketDirection.NEGLIGIBLE,
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 10,
-    classification: '갱신',
-    occurredAtLabel: '02-23 16:00',
-    category: '인프라/설비',
-    eventName: '걸프 LNG 인프라 점검 완료',
-    jkmImpact: MarketImpactLevel.MEDIUM,
-    jkmDirection: MarketDirection.BEARISH,
-    ttfImpact: MarketImpactLevel.MEDIUM,
-    ttfDirection: MarketDirection.BEARISH,
-    hhImpact: MarketImpactLevel.LOW,
-    hhDirection: MarketDirection.BEARISH,
-    scenarioStatus: 'idle',
-  },
-  {
-    id: 11,
-    classification: '신규',
-    occurredAtLabel: '02-23 09:45',
-    category: '기상/기후',
-    eventName: '일본 동절기 난방 수요 증가',
-    jkmImpact: MarketImpactLevel.LOW,
-    jkmDirection: MarketDirection.BULLISH,
-    ttfImpact: MarketImpactLevel.LOW,
-    ttfDirection: MarketDirection.NEGLIGIBLE,
-    hhImpact: MarketImpactLevel.LOW,
-    hhDirection: MarketDirection.NEGLIGIBLE,
-    scenarioStatus: 'idle',
-  },
-]
-
-// ── 툴바 옵션 상수 ────────────────────────────────────────────────────────────
-
-const TYPE_FILTER_OPTIONS = [
-  { value: 'all', label: '전체' },
-  { value: '신규', label: '신규' },
-  { value: '갱신', label: '갱신' },
-] as const
-
-const SORT_OPTIONS = [
-  { value: 'newest', label: '최신순' },
-  { value: 'oldest', label: '오래된순' },
-] as const
-
-const CATEGORY_OPTIONS = ['지정학적 리스크', '기상/기후', '인프라/설비', '수급밸런스', '물류/해운', '에너지 믹스 전환'] as const
-
-const defaultDesignDateRange = (): DateRange => {
-  const t = dayjs().startOf('day')
-  return { startDate: t.subtract(6, 'month'), endDate: t }
-}
-
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
-const DEMO_SCENARIO_CONFIRM_MESSAGE = '시연용 데모입니다. 실제 시나리오 생성 API는 호출되지 않습니다. 계속하시겠습니까?'
-
 const DesignTabPanel = () => {
-  const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [sort, setSort] = useState<string>('newest')
-  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultDesignDateRange())
-  const [categoryFilter, setCategoryFilter] = useState<string[]>([])
+  const queryClient = useQueryClient()
+
+  const [typeFilter, setTypeFilter] = useState<ScenarioWorkbenchStatus>(ScenarioWorkbenchStatus.ALL)
+  const [sort, setSort] = useState<ListSort>(ListSort.LATEST)
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultWorkbenchDateRange())
+  const [categoryFilter, setCategoryFilter] = useState<EventCategoryLv1[]>([])
   const [hideCompleted, setHideCompleted] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
+  const [pendingGenerateEventIds, setPendingGenerateEventIds] = useState<Set<number>>(() => new Set())
+  /** 생성 직후 응답 전·응답에 시각이 없을 때 툴팁 보조 */
+  const [designGenStartedAtFallback, setDesignGenStartedAtFallback] = useState<Partial<Record<number, string>>>({})
 
-  const [scenarioStatusById, setScenarioStatusById] = useState<Record<number, ScenarioStatus>>(
-    () => Object.fromEntries(DUMMY_EVENTS.map((r) => [r.id, r.scenarioStatus])) as Record<number, ScenarioStatus>,
-  )
+  const listRequest = useMemo((): IGetDesignEventsParams => {
+    const resolvedRange = appliedDateRange.startDate && appliedDateRange.endDate ? appliedDateRange : defaultWorkbenchDateRange()
+    const trimmedKeyword = searchQuery.trim()
 
-  const scenarioDemoTimeoutsRef = useRef<Map<number, ReturnType<typeof globalThis.setTimeout>>>(new Map())
-
-  useEffect(
-    () => () => {
-      scenarioDemoTimeoutsRef.current.forEach((handle) => globalThis.clearTimeout(handle))
-      scenarioDemoTimeoutsRef.current.clear()
-    },
-    [],
-  )
-
-  const handleDemoScenarioCreate = useCallback((rowId: number) => {
-    if (!window.confirm(DEMO_SCENARIO_CONFIRM_MESSAGE)) return
-
-    setScenarioStatusById((prev) => ({ ...prev, [rowId]: 'generating' }))
-
-    const existing = scenarioDemoTimeoutsRef.current.get(rowId)
-    if (existing !== undefined) globalThis.clearTimeout(existing)
-
-    const tid = globalThis.setTimeout(() => {
-      setScenarioStatusById((prev) => ({ ...prev, [rowId]: 'created' }))
-      scenarioDemoTimeoutsRef.current.delete(rowId)
-    }, 3000)
-    scenarioDemoTimeoutsRef.current.set(rowId, tid)
-  }, [])
-
-  const rowsWithScenarioStatus = useMemo(
-    () => DUMMY_EVENTS.map((r) => ({ ...r, scenarioStatus: scenarioStatusById[r.id] ?? r.scenarioStatus })),
-    [scenarioStatusById],
-  )
-
-  const filteredRows = useMemo(() => {
-    let rows = rowsWithScenarioStatus
-
-    if (typeFilter === '신규') rows = rows.filter((r) => r.classification === '신규')
-    else if (typeFilter === '갱신') rows = rows.filter((r) => r.classification === '갱신')
-
-    if (categoryFilter.length > 0) rows = rows.filter((r) => categoryFilter.includes(r.category))
-
-    if (hideCompleted) rows = rows.filter((r) => r.scenarioStatus !== 'created')
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      rows = rows.filter((r) => r.eventName.toLowerCase().includes(q))
+    return {
+      page: pagination.page,
+      size: pagination.size,
+      sort,
+      startDate: resolvedRange.startDate!.startOf('day').format('YYYY-MM-DD'),
+      endDate: resolvedRange.endDate!.endOf('day').format('YYYY-MM-DD'),
+      keyword: trimmedKeyword || undefined,
+      eventStatus: typeFilter === ScenarioWorkbenchStatus.ALL ? undefined : typeFilter,
+      eventCategoryLv1: categoryFilter.length > 0 ? categoryFilter : undefined,
+      hideCompleted,
     }
+  }, [appliedDateRange, categoryFilter, hideCompleted, pagination.page, pagination.size, searchQuery, sort, typeFilter])
 
-    return rows
-  }, [typeFilter, categoryFilter, hideCompleted, searchQuery, rowsWithScenarioStatus])
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['scenarioWorkbenchDesignEvents', listRequest],
+    queryFn: () => scenarioWorkbenchDesignService.getEvents(listRequest),
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
 
-  const pagedRows = useMemo(
-    () => filteredRows.slice((pagination.page - 1) * pagination.size, pagination.page * pagination.size),
-    [filteredRows, pagination.page, pagination.size],
+  const updateDesignEventCache = useCallback(
+    (
+      eventId: number,
+      patch: Partial<Pick<IDesignEventItem, 'scenarioGenStatus' | 'scenarioGenStatusLabel' | 'requestId' | 'scenarioGenStartedAt'>>,
+    ) => {
+      queryClient.setQueriesData<IDesignEventListRes>({ queryKey: ['scenarioWorkbenchDesignEvents'] }, (old) => {
+        if (!old?.events?.detail) return old
+
+        return {
+          ...old,
+          events: {
+            ...old.events,
+            detail: old.events.detail.map((item) => (Number(item.eventId) === eventId ? { ...item, ...patch } : item)),
+          },
+        }
+      })
+    },
+    [queryClient],
   )
 
-  const totalElements = filteredRows.length
-  const totalPages = Math.max(1, Math.ceil(totalElements / pagination.size))
+  const { mutate: generateScenarios } = useMutation({
+    mutationFn: (eventId: number) => scenarioWorkbenchDesignService.generateScenarios([eventId]),
+    onMutate: (eventId) => {
+      const startedAt = new Date().toISOString()
+      setDesignGenStartedAtFallback((prev) => ({ ...prev, [eventId]: startedAt }))
+      setPendingGenerateEventIds((prev) => {
+        const next = new Set(prev)
+        next.add(eventId)
+        return next
+      })
+      updateDesignEventCache(eventId, {
+        scenarioGenStatus: 'processing',
+        scenarioGenStartedAt: startedAt,
+      })
+    },
+    onSuccess: (accepted, eventId) => {
+      if (accepted.scenarioGenStartedAt) {
+        setDesignGenStartedAtFallback((prev) => ({ ...prev, [eventId]: accepted.scenarioGenStartedAt! }))
+      }
+      updateDesignEventCache(eventId, {
+        scenarioGenStatus: accepted.status,
+        scenarioGenStatusLabel: accepted.statusLabel,
+        requestId: normalizeRequestId(accepted.requestId),
+        ...(accepted.scenarioGenStartedAt ? { scenarioGenStartedAt: accepted.scenarioGenStartedAt } : {}),
+      })
+      void queryClient.invalidateQueries({ queryKey: ['scenarioWorkbenchDesignEvents'] })
+    },
+    onError: (_error, eventId) => {
+      setDesignGenStartedAtFallback((prev) => {
+        const next = { ...prev }
+        delete next[eventId]
+        return next
+      })
+      updateDesignEventCache(eventId, {
+        scenarioGenStatus: 'ready',
+        scenarioGenStatusLabel: undefined,
+        requestId: undefined,
+        scenarioGenStartedAt: undefined,
+      })
+    },
+    onSettled: (_data, _error, eventId) => {
+      setPendingGenerateEventIds((prev) => {
+        const next = new Set(prev)
+        next.delete(eventId)
+        return next
+      })
+    },
+  })
 
-  const paginationData: IPaginationResponse<DesignRow> = {
-    totalPages,
-    totalElements,
-    currentPage: pagination.page,
-    numberOfElements: pagedRows.length,
-    size: pagination.size,
-    isFirst: pagination.page === 1,
-    isLast: pagination.page === totalPages,
-    hasPrevious: pagination.page > 1,
-    hasNext: pagination.page < totalPages,
-    detail: pagedRows,
-  }
+  const tableRows = useMemo(() => data?.events?.detail ?? [], [data?.events?.detail])
+
+  const isDesignRowScenarioGenerating = useCallback(
+    (row: IDesignEventItem) =>
+      (pendingGenerateEventIds.has(row.eventId) && row.scenarioGenStatus === 'ready') || row.scenarioGenStatus === 'processing',
+    [pendingGenerateEventIds],
+  )
+
+  useEffect(() => {
+    setDesignGenStartedAtFallback((prev) => {
+      const next = { ...prev }
+      let changed = false
+      for (const id of Object.keys(next)) {
+        const eventId = Number(id)
+        const row = tableRows.find((r) => r.eventId === eventId)
+        if (row && !isDesignRowScenarioGenerating(row)) {
+          delete next[eventId]
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [tableRows, isDesignRowScenarioGenerating])
+
+  useEffect(() => {
+    if (!data?.events) return
+    const totalPages = data.events.totalPages
+    if (totalPages > 0 && pagination.page > totalPages) {
+      setPagination((p) => ({ ...p, page: totalPages }))
+    }
+  }, [data?.events, pagination.page])
+
+  const processingRequestIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (data?.events?.detail ?? [])
+            .map((row) => (row.scenarioGenStatus === 'processing' ? normalizeRequestId(row.requestId) : undefined))
+            .filter((requestId): requestId is number => requestId !== undefined),
+        ),
+      ).sort((a, b) => a - b),
+    [data?.events?.detail],
+  )
+
+  const processingRequestIdsKey = processingRequestIds.join(',')
+
+  const { data: generateStatuses } = useQuery({
+    queryKey: ['scenarioWorkbenchDesignGenerateStatuses', processingRequestIdsKey],
+    queryFn: () => scenarioWorkbenchDesignService.getGenerateStatuses(processingRequestIds),
+    enabled: processingRequestIds.length > 0,
+    refetchInterval: processingRequestIds.length > 0 ? 3000 : false,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  useEffect(() => {
+    if (!generateStatuses?.length) return
+
+    const statusByEventId = new Map(generateStatuses.map((status) => [Number(status.eventId), status]))
+
+    queryClient.setQueriesData<IDesignEventListRes>({ queryKey: ['scenarioWorkbenchDesignEvents'] }, (old) => {
+      if (!old?.events?.detail) return old
+
+      return {
+        ...old,
+        events: {
+          ...old.events,
+          detail: old.events.detail.map((item) => {
+            const nextStatus = statusByEventId.get(Number(item.eventId))
+            if (!nextStatus) return item
+
+            return {
+              ...item,
+              scenarioGenStatus: nextStatus.status,
+              scenarioGenStatusLabel: nextStatus.statusLabel ?? item.scenarioGenStatusLabel,
+              requestId: normalizeRequestId(nextStatus.requestId) ?? normalizeRequestId(item.requestId),
+            }
+          }),
+        },
+      }
+    })
+
+    if (generateStatuses.some((status) => status.status === 'completed')) {
+      void queryClient.invalidateQueries({ queryKey: ['scenarioWorkbenchDesignEvents'] })
+      generateStatuses.forEach((status) => {
+        const completedRequestId = normalizeRequestId(status.requestId)
+        if (status.status === 'completed' && completedRequestId !== undefined) {
+          void queryClient.invalidateQueries({ queryKey: ['scenarioWorkbenchDesignGeneratedScenarios', completedRequestId] })
+        }
+      })
+    }
+  }, [generateStatuses, queryClient])
 
   // ── 핸들러 ──────────────────────────────────────────────────────────────────
 
   const handleTypeFilterChange = useCallback((v: string) => {
-    setTypeFilter(v)
-    setPagination((p) => ({ ...p, page: 1 }))
+    if (v === ScenarioWorkbenchStatus.ALL || v === ScenarioWorkbenchStatus.NEW || v === ScenarioWorkbenchStatus.UPDATED) {
+      setTypeFilter(v)
+      setPagination((p) => ({ ...p, page: 1 }))
+    }
   }, [])
 
   const handleSortChange = useCallback((value: string) => {
-    setSort(value)
-    setPagination((p) => ({ ...p, page: 1 }))
+    if (value === ListSort.LATEST || value === ListSort.OLDEST) {
+      setSort(value)
+      setPagination((p) => ({ ...p, page: 1 }))
+    }
   }, [])
 
   const handleDateRangeApply = useCallback((dates: DateRange) => {
@@ -553,7 +512,7 @@ const DesignTabPanel = () => {
   }, [])
 
   const handleCategoryFilterApply = useCallback((values: FilterValues) => {
-    setCategoryFilter(values.category ?? [])
+    setCategoryFilter((values.category ?? []) as EventCategoryLv1[])
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
@@ -581,28 +540,36 @@ const DesignTabPanel = () => {
     setPagination((p) => ({ ...p, page }))
   }, [])
 
+  const handleScenarioCreate = useCallback(
+    (rowId: number) => {
+      generateScenarios(rowId)
+    },
+    [generateScenarios],
+  )
+
   // ── 컬럼 정의 ───────────────────────────────────────────────────────────────
 
-  const columns: GridColDef<DesignRow>[] = useMemo(
+  const columns: GridColDef<IDesignEventItem>[] = useMemo(
     () => [
       {
-        field: 'classification',
+        field: 'status',
         headerName: '구분',
         width: 70,
         align: 'center',
         headerAlign: 'left',
         sortable: false,
-        renderCell: (params) => <ClassificationTag classification={params.row.classification} />,
+        renderCell: (params) => <ClassificationTag {...classificationPropsFromDesignEventRow(params.row)} />,
       },
       {
-        field: 'occurredAtLabel',
+        field: 'createdAt',
         headerName: '발생/갱신일시',
         width: 130,
         align: 'left',
         headerAlign: 'left',
+        renderCell: (params) => formatDesignEventTime(params.row),
       },
       {
-        field: 'category',
+        field: 'eventCategoryLv1Label',
         headerName: '카테고리',
         width: 160,
         align: 'left',
@@ -617,31 +584,40 @@ const DesignTabPanel = () => {
         headerAlign: 'left',
       },
       {
-        field: 'jkmImpact',
+        field: 'jkm',
         headerName: 'JKM',
         width: 100,
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => <ImpactDotsCell level={params.row.jkmImpact} direction={params.row.jkmDirection} />,
+        renderCell: (params) => {
+          const impact = findIndexImpact(params.row.indexImpacts, 'JKM')
+          return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
+        },
       },
       {
-        field: 'ttfImpact',
+        field: 'ttf',
         headerName: 'TTF',
         width: 100,
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => <ImpactDotsCell level={params.row.ttfImpact} direction={params.row.ttfDirection} />,
+        renderCell: (params) => {
+          const impact = findIndexImpact(params.row.indexImpacts, 'TTF')
+          return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
+        },
       },
       {
-        field: 'hhImpact',
+        field: 'hh',
         headerName: 'HH',
         width: 100,
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => <ImpactDotsCell level={params.row.hhImpact} direction={params.row.hhDirection} />,
+        renderCell: (params) => {
+          const impact = findIndexImpact(params.row.indexImpacts, 'HH')
+          return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
+        },
       },
       {
         field: 'detail',
@@ -653,31 +629,42 @@ const DesignTabPanel = () => {
         renderCell: (params) => <DetailIconButton row={params.row} />,
       },
       {
-        field: 'scenarioStatus',
+        field: 'scenarioGenStatus',
         headerName: '시나리오',
         width: 110,
         align: 'center',
         headerAlign: 'center',
         sortable: false,
         renderCell: (params) => {
-          switch (params.row.scenarioStatus) {
-            case 'created':
+          const scenarioGenStatus =
+            pendingGenerateEventIds.has(params.row.eventId) && params.row.scenarioGenStatus === 'ready'
+              ? ('processing' as ScenarioGenStatus)
+              : params.row.scenarioGenStatus
+
+          switch (scenarioGenStatus) {
+            case 'completed':
               return <CompletedScenarioPopupButton row={params.row} />
-            case 'generating':
-              return <GeneratingScenarioButton />
-            case 'idle':
+            case 'processing':
+              return (
+                <GeneratingScenarioButton startedAt={params.row.scenarioGenStartedAt ?? designGenStartedAtFallback[params.row.eventId]} />
+              )
+            case 'ready':
             default:
-              return <CreateScenarioButton onClick={() => handleDemoScenarioCreate(params.row.id)} />
+              return <CreateScenarioButton onClick={() => handleScenarioCreate(params.row.eventId)} />
           }
         },
       },
     ],
-    [handleDemoScenarioCreate],
+    [designGenStartedAtFallback, handleScenarioCreate, pendingGenerateEventIds],
   )
 
-  const categoryFilterItems = useMemo(() => CATEGORY_OPTIONS.map((c) => ({ label: c, value: c })), [])
+  const categoryFilterItems = useMemo(
+    () => Object.values(EventCategoryLv1).map((value) => ({ label: EVENT_CATEGORY_LV1_KO[value], value })),
+    [],
+  )
 
   const workbenchDatePresets = useMemo(() => buildWorkbenchDatePresets(), [])
+  const emptyMessage = isError ? '목록을 불러오지 못했습니다.' : '이벤트가 없습니다.'
 
   return (
     <Box width="100%">
@@ -689,7 +676,7 @@ const DesignTabPanel = () => {
         <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} sx={{ px: 3 }}>
           <Stack direction="row" gap="12px" alignItems="center" flexWrap="wrap" sx={{ minWidth: 0, flex: 1 }}>
             <MISlidingSegmented
-              options={TYPE_FILTER_OPTIONS}
+              options={WORKBENCH_STATUS_FILTER_OPTIONS}
               value={typeFilter}
               onChange={handleTypeFilterChange}
               sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
@@ -726,7 +713,7 @@ const DesignTabPanel = () => {
               buttonHoverBgColor="gray.20"
               selected={sort}
               onSelected={(value: string) => handleSortChange(value)}
-              items={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
+              items={WORKBENCH_LIST_SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
             />
           </Stack>
 
@@ -750,19 +737,21 @@ const DesignTabPanel = () => {
           </Stack>
         </Stack>
 
-        <ScenarioWorkbenchTableHeader<DesignRow> columns={columns} sx={{ mt: 2 }} />
+        <ScenarioWorkbenchTableHeader<IDesignEventItem> columns={columns} sx={{ mt: 2 }} />
       </WorkbenchStickySlot>
 
-      <ScenarioWorkbenchDataList<DesignRow>
-        rowId="id"
+      <ScenarioWorkbenchDataList<IDesignEventItem>
+        rowId="eventId"
         columns={columns}
-        rows={pagedRows}
+        rows={tableRows}
+        loading={isLoading}
+        skeletonRowCount={pagination.size}
         rowHeight={42}
-        noRowMessage="이벤트가 없습니다."
+        noRowMessage={emptyMessage}
       />
 
       <MIPaginationSecondary
-        data={paginationData}
+        data={data?.events}
         size={pagination.size}
         sizeList={[10, 20, 50, 100]}
         onSizeChange={handlePageSizeChange}

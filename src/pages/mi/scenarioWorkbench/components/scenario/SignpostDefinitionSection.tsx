@@ -7,11 +7,7 @@ import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/t
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { IScenarioSignpostDefinition } from '@/service/mi/scenarioWorkbench/scenario'
 
-interface SignpostDefinitionRow extends IScenarioSignpostDefinition {
-  id: number
-}
-
-const columns: GridColDef<SignpostDefinitionRow>[] = [
+const columns: GridColDef<IScenarioSignpostDefinition>[] = [
   {
     field: 'category',
     headerName: '분류',
@@ -67,23 +63,20 @@ interface SignpostDefinitionSectionProps {
   loading?: boolean
 }
 
-const SignpostDefinitionSection = ({ definitions, loading = false }: SignpostDefinitionSectionProps) => {
-  const rows: SignpostDefinitionRow[] = definitions.map((d, idx) => ({ ...d, id: idx }))
-  return (
-    <Box sx={{ position: 'relative', paddingY: '24px' }}>
-      <ScenarioWorkbenchTableHeader<SignpostDefinitionRow> columns={columns} />
-      <ScenarioWorkbenchDataList<SignpostDefinitionRow>
-        rowId="id"
-        columns={columns}
-        rows={rows}
-        rowHeight={60}
-        cellPreset="miCanvasEvent"
-        loading={loading}
-        skeletonRowCount={4}
-        noRowMessage="데이터를 수집 중입니다."
-      />
-    </Box>
-  )
-}
+const SignpostDefinitionSection = ({ definitions, loading = false }: SignpostDefinitionSectionProps) => (
+  <Box sx={{ position: 'relative', paddingY: '24px' }}>
+    <ScenarioWorkbenchTableHeader<IScenarioSignpostDefinition> columns={columns} />
+    <ScenarioWorkbenchDataList<IScenarioSignpostDefinition>
+      getRowKey={(row, index) => `${row.category}-${row.label}-${index}`}
+      columns={columns}
+      rows={definitions}
+      rowHeight={60}
+      cellPreset="miCanvasEvent"
+      loading={loading}
+      skeletonRowCount={4}
+      noRowMessage="데이터를 수집 중입니다."
+    />
+  </Box>
+)
 
 export default SignpostDefinitionSection

@@ -6,7 +6,7 @@ const ThemeTooltip: Components<Omit<Theme, 'components'>>['MuiTooltip'] = {
       backgroundColor: '#202D44',
       padding: '8px 10px',
       fontSize: '12px',
-      borderRadius: '8px',
+      borderRadius: '6px',
     },
     arrow: {
       color: '#202D44',

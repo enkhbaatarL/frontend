@@ -40,7 +40,11 @@ const EventDetailAiInsightsSection = ({ bullets, detailParagraph }: EventDetailA
       borderRadius="10px"
       p="20px"
       sx={{
-        background: 'linear-gradient(102.40734deg, rgb(240, 250, 255) 24.329%, rgb(243, 244, 255) 70.711%)',
+        backgroundImage: 'linear-gradient(102.40734deg, rgb(240, 250, 255) 24.329%, rgb(243, 244, 255) 70.711%)',
+        transition: 'filter 0.15s ease-in-out',
+        '&:hover': {
+          filter: 'brightness(0.98)',
+        },
       }}
     >
       <Stack gap={0}>

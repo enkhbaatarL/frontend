@@ -341,7 +341,6 @@ const ScenarioWorkbenchDetailHeader = ({
       px="12px"
       width="100%"
       sx={{
-        userSelect: 'none',
         ...(isEmbedded && {
           position: 'sticky',
           top: embeddedStickyTop,

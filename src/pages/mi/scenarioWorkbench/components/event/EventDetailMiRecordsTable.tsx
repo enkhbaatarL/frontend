@@ -3,9 +3,10 @@ import { Stack } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState } from 'react'
 
-import type { EventDetailMiRecordRow } from '@/pages/mi/scenarioWorkbench/components/event/types'
+import type { IScenarioWorkbenchEventRelatedRecord } from '@/service/mi/scenarioWorkbench/event'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import { formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
 import {
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
@@ -15,10 +16,11 @@ import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/t
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { IPaginationResponse } from '@/types/api'
 
+const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
+
 interface EventDetailMiRecordsTableProps {
-  rows: EventDetailMiRecordRow[]
-  /** 서버 페이징 API 연동 시: 응답 페이지 메타 + 콜백 (없으면 기존 클라이언트 slice 모드) */
-  serverPagination?: IPaginationResponse<EventDetailMiRecordRow>
+  rows: IScenarioWorkbenchEventRelatedRecord[]
+  serverPagination?: IPaginationResponse<IScenarioWorkbenchEventRelatedRecord>
   onServerPageChange?: (page: number) => void
   onServerSizeChange?: (size: number) => void
   loading?: boolean
@@ -57,7 +59,7 @@ const EventDetailMiRecordsTable = ({
     return rows.slice(start, start + pagination.size)
   }, [isServerMode, pagination.page, pagination.size, rows, totalPages])
 
-  const paginationData: IPaginationResponse<EventDetailMiRecordRow> | undefined = useMemo(() => {
+  const paginationData: IPaginationResponse<IScenarioWorkbenchEventRelatedRecord> | undefined = useMemo(() => {
     if (isServerMode) {
       if (serverPagination.totalElements === 0) return undefined
       return serverPagination
@@ -78,10 +80,16 @@ const EventDetailMiRecordsTable = ({
     }
   }, [isServerMode, paginatedRows, pagination.size, rows.length, safePage, serverPagination, totalPages])
 
-  const columns: GridColDef<EventDetailMiRecordRow>[] = useMemo(
+  const columns: GridColDef<IScenarioWorkbenchEventRelatedRecord>[] = useMemo(
     () => [
-      { field: 'atLabel', headerName: '일시', width: 160, align: 'left' },
-      { field: 'kind', headerName: '종류', width: 100, align: 'left' },
+      {
+        field: 'publishedAt',
+        headerName: '일시',
+        width: 160,
+        align: 'left',
+        renderCell: (params) => formatWorkbenchDateTime(params.row.publishedAt, 'YYYY-MM-DD HH:mm'),
+      },
+      { field: 'source', headerName: '종류', width: 100, align: 'left' },
       { field: 'title', headerName: '타이틀', width: 300, align: 'left' },
       { field: 'summary', headerName: '요약', flex: 1, minWidth: 240, align: 'left' },
     ],
@@ -96,13 +104,13 @@ const EventDetailMiRecordsTable = ({
         tooltipTitle="이벤트와 연관된 MI 기록입니다."
       />
       <Stack>
-        <ScenarioWorkbenchTableHeader<EventDetailMiRecordRow>
+        <ScenarioWorkbenchTableHeader<IScenarioWorkbenchEventRelatedRecord>
           columns={columns}
           headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
           headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
         />
-        <ScenarioWorkbenchDataList<EventDetailMiRecordRow>
-          rowId="id"
+        <ScenarioWorkbenchDataList<IScenarioWorkbenchEventRelatedRecord>
+          getRowKey={(row, index) => `${row.publishedAt}-${row.title}-${index}`}
           columns={columns}
           rows={paginatedRows}
           loading={loading}
@@ -110,11 +118,11 @@ const EventDetailMiRecordsTable = ({
           cellPreset="miCanvasEvent"
           noRowMessage="MI 기록이 없습니다."
         />
-        {paginationData && (
-          <MIPaginationSecondary<EventDetailMiRecordRow>
+        {paginationData && paginationData.totalElements >= PAGE_SIZE_LIST[0] && (
+          <MIPaginationSecondary<IScenarioWorkbenchEventRelatedRecord>
             data={paginationData}
             size={isServerMode ? serverPagination.size : pagination.size}
-            sizeList={[10, 15, 20, 50, 100]}
+            sizeList={[...PAGE_SIZE_LIST]}
             onPageChange={(page) => {
               if (isServerMode) onServerPageChange?.(page)
               else setPagination((p) => ({ ...p, page }))

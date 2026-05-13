@@ -1,8 +1,9 @@
-import { Tooltip, Typography, type TypographyProps } from '@mui/material'
+import { Typography, type TypographyProps } from '@mui/material'
 
 import type { ReactNode } from 'react'
 
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
+import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
 
 export const SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX = 12
 export const SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY = 8
@@ -64,11 +65,9 @@ const ScenarioWorkbenchEventDetailTableBodyText = ({
 
   if (!tooltipWhenTruncated) return typography
 
-  return (
-    <Tooltip disableHoverListener={!isEllipsis} title={label} placement="top" followCursor>
-      {typography}
-    </Tooltip>
-  )
+  if (!isEllipsis) return typography
+
+  return <WorkbenchFollowCursorTooltip title={label}>{typography}</WorkbenchFollowCursorTooltip>
 }
 
 export default ScenarioWorkbenchEventDetailTableBodyText

@@ -53,20 +53,37 @@ const buildChartUnit = (priceForecast: IScenarioPriceForecast): string => {
   return 'Unit: -'
 }
 
-const buildTabLabels = (priceForecast: IScenarioPriceForecast): string[] => {
-  const seriesNames = new Set(priceForecast.series.map((series) => series.indexName.toUpperCase()))
-  const matchedDefaults = DEFAULT_TARGETS.filter((target) => seriesNames.has(target))
-  if (matchedDefaults.length > 0) return matchedDefaults
-  return priceForecast.series.slice(0, 3).map((series) => series.indexName)
-}
+const pickBenchmarkSeriesInOrder = (series: IScenarioPriceForecast['series']) =>
+  DEFAULT_TARGETS.map((target) => series.find((s) => s.indexName.toUpperCase() === target)).filter(
+    (s): s is NonNullable<(typeof series)[number]> => s !== null,
+  )
 
 interface ScenarioSummaryChartProps {
   priceForecast: IScenarioPriceForecast
+  useGroup?: boolean // true: JKM/TTF/HH 그룹핑, false: 전체 표시
+  linkedHighlightIndexName?: string | null
   emptyMessage?: string
 }
 
-const ScenarioSummaryChart = ({ priceForecast, emptyMessage = 'MI 수급 모델 실행 후 차트가 생성됩니다.' }: ScenarioSummaryChartProps) => {
-  const tabLabels = useMemo(() => buildTabLabels(priceForecast), [priceForecast])
+const ScenarioSummaryChart = ({
+  priceForecast,
+  useGroup = false,
+  linkedHighlightIndexName = null,
+  emptyMessage = 'MI 수급 모델 실행 후 차트가 생성됩니다.',
+}: ScenarioSummaryChartProps) => {
+  const displaySeries = useMemo(
+    () => (useGroup ? pickBenchmarkSeriesInOrder(priceForecast.series) : priceForecast.series),
+    [priceForecast.series, useGroup],
+  )
+
+  const tabLabels = useMemo(() => {
+    if (!useGroup) return []
+    if (displaySeries.length > 0) return displaySeries.map((s) => s.indexName)
+    const seriesNames = new Set(priceForecast.series.map((series) => series.indexName.toUpperCase()))
+    const matchedDefaults = DEFAULT_TARGETS.filter((target) => seriesNames.has(target))
+    if (matchedDefaults.length > 0) return matchedDefaults
+    return priceForecast.series.slice(0, 3).map((series) => series.indexName)
+  }, [displaySeries, priceForecast.series, useGroup])
   const [selectedTarget, setSelectedTarget] = useState<string>(tabLabels[0] ?? '')
   const [chartVisibilityMap, setChartVisibilityMap] = useState<Map<string, boolean>>(new Map())
   const [hoveredChartKey, setHoveredChartKey] = useState<string | null>(null)
@@ -82,12 +99,9 @@ const ScenarioSummaryChart = ({ priceForecast, emptyMessage = 'MI 수급 모델 
   useEffect(() => {
     setChartVisibilityMap(new Map())
     setHoveredChartKey(null)
-  }, [priceForecast.series])
+  }, [priceForecast.series, useGroup])
 
-  const maxValueCount = useMemo(
-    () => priceForecast.series.reduce((max, series) => Math.max(max, series.values.length), 0),
-    [priceForecast.series],
-  )
+  const maxValueCount = useMemo(() => displaySeries.reduce((max, series) => Math.max(max, series.values.length), 0), [displaySeries])
 
   const timestamps = useMemo(() => buildTimestamps(priceForecast.dates, maxValueCount), [priceForecast.dates, maxValueCount])
 
@@ -95,7 +109,7 @@ const ScenarioSummaryChart = ({ priceForecast, emptyMessage = 'MI 수급 모델 
 
   const charts = useMemo<ScenarioSummaryForecastChartData[]>(
     () =>
-      priceForecast.series.map((series, index) => ({
+      displaySeries.map((series, index) => ({
         goodsDataSourceName: series.indexName,
         goodsDataSourceNo: index + 1,
         chartType: ChartType.LINE,
@@ -115,16 +129,26 @@ const ScenarioSummaryChart = ({ priceForecast, emptyMessage = 'MI 수급 모델 
         goodsDataName: series.indexName,
         dataType: 'FORECAST',
       })),
-    [priceForecast.series, priceForecast.unit, resultDates, timestamps],
+    [displaySeries, priceForecast.unit, resultDates, timestamps],
   )
 
   const chartColorMap = useMemo(() => {
     const colorMap = new Map<string, string>()
-    priceForecast.series.forEach((series, index) => {
+    displaySeries.forEach((series, index) => {
       colorMap.set(series.indexName, SCENARIO_CHART_COLORS[index % SCENARIO_CHART_COLORS.length])
     })
     return colorMap
-  }, [priceForecast.series])
+  }, [displaySeries])
+
+  const resolvedLinkedHighlightKey = useMemo(() => {
+    const raw = linkedHighlightIndexName?.trim()
+    if (!raw) return null
+    const needle = raw.toUpperCase()
+    const match = charts.find((c) => (c.goodsDataSourceName ?? '').toUpperCase() === needle)
+    return match ? `${match.goodsDataSourceName}_FORECAST` : null
+  }, [charts, linkedHighlightIndexName])
+
+  const effectiveHoveredChartKey = hoveredChartKey ?? resolvedLinkedHighlightKey
 
   const handleLegendToggle = useCallback((label: string) => {
     const key = `${label}_FORECAST`
@@ -147,7 +171,7 @@ const ScenarioSummaryChart = ({ priceForecast, emptyMessage = 'MI 수급 모델 
           {chartUnit}
         </Typography>
 
-        {targetSegmentOptions.length > 0 && (
+        {useGroup && targetSegmentOptions.length > 0 && (
           <MISlidingSegmented
             options={targetSegmentOptions}
             value={selectedTarget}
@@ -162,9 +186,9 @@ const ScenarioSummaryChart = ({ priceForecast, emptyMessage = 'MI 수급 모델 
           <ScenarioSummaryChartGraph
             height={CHART_HEIGHT}
             charts={charts}
-            targetLabel={selectedTarget}
+            targetLabel={useGroup ? selectedTarget : undefined}
             chartVisibilityMap={chartVisibilityMap}
-            hoveredChartKey={hoveredChartKey}
+            hoveredChartKey={effectiveHoveredChartKey}
             chartColorMap={chartColorMap}
             spanGaps
           />

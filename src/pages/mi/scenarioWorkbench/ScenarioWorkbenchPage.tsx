@@ -241,7 +241,7 @@ const ScenarioWorkbenchPage = () => {
             {/* 활성 탭의 패널 타이틀·필터·테이블 헤더가 portal로 주입되는 슬롯 */}
             <Box ref={setStickySlotEl} />
           </Box>
-          <Box ref={contentWrapperRef} position="relative">
+          <Box ref={contentWrapperRef} position="relative" sx={{ userSelect: 'text' }}>
             {scenarioWorkbenchTabs.map((tab, index) => {
               const isSelected = selectedTab === index
               return (

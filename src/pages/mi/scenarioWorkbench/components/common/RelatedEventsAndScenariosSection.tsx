@@ -1,32 +1,43 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Box, Stack, Typography } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
-import dayjs from 'dayjs'
 import { useMemo, type MouseEvent } from 'react'
 
+import type { MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
+
 import MIBaseButton from '@/components/common/button/MIBaseButton'
-import MIChip from '@/components/common/chip/MIChip'
+import { ScenarioWorkbenchBaseCaseChip } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import ProbabilityGaugeCell from '@/pages/mi/scenarioWorkbench/components/common/ProbabilityGaugeCell'
+import { findIndexImpact, formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
 import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
-import { EventCategoryLv1 } from '@/service/mi/scenarioWorkbench/common'
-import { IRelatedEvent, IRelatedScenario } from '@/service/mi/scenarioWorkbench/scenario'
 
-const EVENT_CATEGORY_LABEL: Record<EventCategoryLv1, string> = {
-  [EventCategoryLv1.GEOPOLITICAL_RISK]: '지정학적 리스크',
-  [EventCategoryLv1.WEATHER_CLIMATE]: '기상/기후',
-  [EventCategoryLv1.INFRASTRUCTURE_FACILITY]: '인프라/설비',
-  [EventCategoryLv1.SUPPLY_DEMAND_BALANCE]: '수급밸런스',
-  [EventCategoryLv1.LOGISTICS_SHIPPING]: '물류/해운',
-  [EventCategoryLv1.ENERGY_MIX_TRANSITION]: '에너지 믹스 전환',
-  [EventCategoryLv1.MACROECONOMY_POLICY]: '거시경제/정책',
-  [EventCategoryLv1.MARKET_TRADING_STRUCTURE]: '시장/거래 구조',
+interface RelatedEventLike {
+  eventId: number
+  eventName: string
+  createdAt: string
+  updatedAt: string
+  eventCategoryLv1?: string
+  eventCategoryLv1Label?: string
+  indexImpacts?: {
+    indexName: string
+    marketImpactLevel: MarketImpactLevel
+    direction?: MarketDirection
+  }[]
 }
 
-const findIndexImpact = <T extends { indexName: string }>(impacts: T[], indexName: string): T | undefined =>
-  impacts.find((i) => (i.indexName ?? '').toUpperCase() === indexName)
+interface RelatedScenarioLike {
+  scenarioId: number
+  scenarioName: string
+  baseCase: boolean
+  probability: number
+  indexImpacts?: {
+    indexName: string
+    marketImpactLevel: MarketImpactLevel
+  }[]
+}
 
 const DetailIconButton = ({ onClick, disabled }: { onClick?: (e: MouseEvent) => void; disabled?: boolean }) => (
   <MIBaseButton
@@ -51,16 +62,16 @@ const DetailIconButton = ({ onClick, disabled }: { onClick?: (e: MouseEvent) => 
   </MIBaseButton>
 )
 
-const getRelatedEventColumns = (onDetailClick?: (row: IRelatedEvent) => void): GridColDef<IRelatedEvent>[] => [
+const getRelatedEventColumns = <T extends RelatedEventLike>(onDetailClick?: (row: T) => void): GridColDef<T>[] => [
   {
     field: 'eventName',
     headerName: '이벤트명',
     flex: 1,
     minWidth: 192,
-    renderCell: (params: GridRenderCellParams<IRelatedEvent>) => {
+    renderCell: (params: GridRenderCellParams<T>) => {
       const dateIso = params.row.updatedAt || params.row.createdAt
-      const dateLabel = dateIso && dayjs(dateIso).isValid() ? dayjs(dateIso).format('MM-DD HH:mm') : '-'
-      const categoryLabel = EVENT_CATEGORY_LABEL[params.row.eventCategoryLv1] ?? params.row.eventCategoryLv1
+      const dateLabel = formatWorkbenchDateTime(dateIso)
+      const categoryLabel = params.row.eventCategoryLv1Label ?? params.row.eventCategoryLv1
       return (
         <Stack gap="4px" sx={{ py: '4px', minWidth: 0, width: '100%' }}>
           <ScenarioWorkbenchEventDetailTableBodyText value={params.row.eventName} tooltipWhenTruncated sx={{ minWidth: 0 }} />
@@ -86,7 +97,7 @@ const getRelatedEventColumns = (onDetailClick?: (row: IRelatedEvent) => void): G
     align: 'center',
     headerAlign: 'center',
     sortable: false,
-    renderCell: (params: GridRenderCellParams<IRelatedEvent>) => {
+    renderCell: (params: GridRenderCellParams<T>) => {
       const impact = findIndexImpact(params.row.indexImpacts, 'JKM')
       return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
     },
@@ -98,7 +109,7 @@ const getRelatedEventColumns = (onDetailClick?: (row: IRelatedEvent) => void): G
     align: 'center',
     headerAlign: 'center',
     sortable: false,
-    renderCell: (params: GridRenderCellParams<IRelatedEvent>) => {
+    renderCell: (params: GridRenderCellParams<T>) => {
       const impact = findIndexImpact(params.row.indexImpacts, 'TTF')
       return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
     },
@@ -110,7 +121,7 @@ const getRelatedEventColumns = (onDetailClick?: (row: IRelatedEvent) => void): G
     align: 'center',
     headerAlign: 'center',
     sortable: false,
-    renderCell: (params: GridRenderCellParams<IRelatedEvent>) => {
+    renderCell: (params: GridRenderCellParams<T>) => {
       const impact = findIndexImpact(params.row.indexImpacts, 'HH')
       return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
     },
@@ -122,7 +133,7 @@ const getRelatedEventColumns = (onDetailClick?: (row: IRelatedEvent) => void): G
     align: 'center',
     headerAlign: 'center',
     sortable: false,
-    renderCell: (params: GridRenderCellParams<IRelatedEvent>) => (
+    renderCell: (params: GridRenderCellParams<T>) => (
       <DetailIconButton
         disabled={!onDetailClick}
         onClick={() => {
@@ -133,33 +144,24 @@ const getRelatedEventColumns = (onDetailClick?: (row: IRelatedEvent) => void): G
   },
 ]
 
-const baseCaseChip = () => (
-  <MIChip
-    label="BC"
-    sx={{
-      padding: '2px 6px',
-      borderRadius: '4px',
-      backgroundColor: 'mari.Primary',
-      color: 'commonColor.White',
-    }}
-    disableHover
-  />
-)
-
-const getRelatedScenarioColumns = (onDetailClick?: (row: IRelatedScenario) => void): GridColDef<IRelatedScenario>[] => [
+const getRelatedScenarioColumns = <T extends RelatedScenarioLike>(onDetailClick?: (row: T) => void): GridColDef<T>[] => [
   {
     field: 'scenarioName',
     headerName: '시나리오명',
     flex: 1,
     minWidth: 192,
-    renderCell: (params: GridRenderCellParams<IRelatedScenario>) => (
+    renderCell: (params: GridRenderCellParams<T>) => (
       <Stack direction="row" alignItems="center" gap="8px" sx={{ minWidth: 0, width: '100%' }}>
         <ScenarioWorkbenchEventDetailTableBodyText
           value={params.row.scenarioName}
           tooltipWhenTruncated
           sx={{ flex: '0 1 auto', width: 'auto', minWidth: 0 }}
         />
-        {params.row.baseCase && <Box sx={{ flex: '0 0 auto' }}>{baseCaseChip()}</Box>}
+        {params.row.baseCase && (
+          <Box sx={{ flex: '0 0 auto', display: 'inline-flex', lineHeight: 0, verticalAlign: 'middle' }}>
+            <ScenarioWorkbenchBaseCaseChip />
+          </Box>
+        )}
       </Stack>
     ),
   },
@@ -170,7 +172,7 @@ const getRelatedScenarioColumns = (onDetailClick?: (row: IRelatedScenario) => vo
     align: 'center',
     headerAlign: 'center',
     sortable: false,
-    renderCell: (params: GridRenderCellParams<IRelatedScenario>) => (
+    renderCell: (params: GridRenderCellParams<T>) => (
       <ImpactDotsCell level={findIndexImpact(params.row.indexImpacts, 'JKM')?.marketImpactLevel} />
     ),
   },
@@ -181,7 +183,7 @@ const getRelatedScenarioColumns = (onDetailClick?: (row: IRelatedScenario) => vo
     align: 'center',
     headerAlign: 'center',
     sortable: false,
-    renderCell: (params: GridRenderCellParams<IRelatedScenario>) => (
+    renderCell: (params: GridRenderCellParams<T>) => (
       <ImpactDotsCell level={findIndexImpact(params.row.indexImpacts, 'TTF')?.marketImpactLevel} />
     ),
   },
@@ -192,7 +194,7 @@ const getRelatedScenarioColumns = (onDetailClick?: (row: IRelatedScenario) => vo
     align: 'center',
     headerAlign: 'center',
     sortable: false,
-    renderCell: (params: GridRenderCellParams<IRelatedScenario>) => (
+    renderCell: (params: GridRenderCellParams<T>) => (
       <ImpactDotsCell level={findIndexImpact(params.row.indexImpacts, 'HH')?.marketImpactLevel} />
     ),
   },
@@ -203,7 +205,7 @@ const getRelatedScenarioColumns = (onDetailClick?: (row: IRelatedScenario) => vo
     align: 'center',
     headerAlign: 'center',
     sortable: false,
-    renderCell: (params: GridRenderCellParams<IRelatedScenario>) => <ProbabilityGaugeCell probability={params.row.probability} />,
+    renderCell: (params: GridRenderCellParams<T>) => <ProbabilityGaugeCell probability={params.row.probability} />,
   },
   {
     field: 'scenarioId',
@@ -212,7 +214,7 @@ const getRelatedScenarioColumns = (onDetailClick?: (row: IRelatedScenario) => vo
     align: 'center',
     headerAlign: 'center',
     sortable: false,
-    renderCell: (params: GridRenderCellParams<IRelatedScenario>) => (
+    renderCell: (params: GridRenderCellParams<T>) => (
       <DetailIconButton
         disabled={!onDetailClick}
         onClick={() => {
@@ -223,23 +225,23 @@ const getRelatedScenarioColumns = (onDetailClick?: (row: IRelatedScenario) => vo
   },
 ]
 
-export interface RelatedEventsAndScenariosSectionProps {
-  events: IRelatedEvent[]
-  scenarios: IRelatedScenario[]
-  onEventRowClick?: (row: IRelatedEvent) => void
-  onScenarioRowClick?: (row: IRelatedScenario) => void
+export interface RelatedEventsAndScenariosSectionProps<TEvent extends RelatedEventLike, TScenario extends RelatedScenarioLike> {
+  events: TEvent[]
+  scenarios: TScenario[]
+  onEventRowClick?: (row: TEvent) => void
+  onScenarioRowClick?: (row: TScenario) => void
   loading?: boolean
 }
 
-const RelatedEventsAndScenariosSection = ({
+const RelatedEventsAndScenariosSection = <TEvent extends RelatedEventLike, TScenario extends RelatedScenarioLike>({
   events,
   scenarios,
   onEventRowClick,
   onScenarioRowClick,
   loading = false,
-}: RelatedEventsAndScenariosSectionProps) => {
-  const relatedEventColumns = useMemo(() => getRelatedEventColumns(onEventRowClick), [onEventRowClick])
-  const relatedScenarioColumns = useMemo(() => getRelatedScenarioColumns(onScenarioRowClick), [onScenarioRowClick])
+}: RelatedEventsAndScenariosSectionProps<TEvent, TScenario>) => {
+  const relatedEventColumns = useMemo(() => getRelatedEventColumns<TEvent>(onEventRowClick), [onEventRowClick])
+  const relatedScenarioColumns = useMemo(() => getRelatedScenarioColumns<TScenario>(onScenarioRowClick), [onScenarioRowClick])
 
   return (
     <Box sx={{ bgcolor: 'gray.5', p: '24px', borderRadius: '10px' }}>
@@ -253,8 +255,8 @@ const RelatedEventsAndScenariosSection = ({
           </Typography>
 
           <Box sx={{ px: '12px', minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-            <ScenarioWorkbenchTableHeader<IRelatedEvent> columns={relatedEventColumns} />
-            <ScenarioWorkbenchDataList<IRelatedEvent>
+            <ScenarioWorkbenchTableHeader<TEvent> columns={relatedEventColumns} />
+            <ScenarioWorkbenchDataList<TEvent>
               rowId="eventId"
               columns={relatedEventColumns}
               rows={events}
@@ -276,8 +278,8 @@ const RelatedEventsAndScenariosSection = ({
             </Typography>
           </Stack>
           <Box sx={{ px: '12px', minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-            <ScenarioWorkbenchTableHeader<IRelatedScenario> columns={relatedScenarioColumns} />
-            <ScenarioWorkbenchDataList<IRelatedScenario>
+            <ScenarioWorkbenchTableHeader<TScenario> columns={relatedScenarioColumns} />
+            <ScenarioWorkbenchDataList<TScenario>
               rowId="scenarioId"
               columns={relatedScenarioColumns}
               rows={scenarios}

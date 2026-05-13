@@ -1,20 +1,16 @@
 import { AxiosResponse } from 'axios'
 
-import { ListPeriod, MarketDirection, MarketImpactLevel } from './common'
+import { MarketDirection, MarketImpactLevel } from './common'
 
 import api from '@/lib/axios'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
-/** Swagger: EventAppliedFilterRes.sort */
 export type ScenarioWorkbenchEventSort = 'LATEST' | 'OLDEST'
 
-/** Swagger: EventListItemRes.eventStatus */
-export type ScenarioWorkbenchEventStatus = 'NEW' | 'UPDATED' | 'CLOSED'
+export type ScenarioWorkbenchEventStatus = 'new' | 'updated' | 'closed'
 
-/** Swagger: EventListItemRes.signalType */
 export type ScenarioWorkbenchEventSignalType = 'signal' | 'noise'
 
-/** Swagger: EventListItemRes.eventCategoryLv1 */
 export type ScenarioWorkbenchEventCategoryLv1 =
   | 'GEOPOLITICAL_RISK'
   | 'WEATHER_CLIMATE'
@@ -39,21 +35,17 @@ export const SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO: Record<ScenarioWorkbenchE
 
 export interface IScenarioWorkbenchImpactIndexSummary {
   indexName: string
-  /** Swagger는 low/medium/high(소문자) 260508: impactLevel -> marketImpactLevel */
-  marketImpactLevel: MarketImpactLevel | string
-  /** 260506: 상세 API에서 bullish/bearish/negligible(소문자)로 내려오는 케이스 대응 */
-  direction: MarketDirection | string
+  marketImpactLevel: MarketImpactLevel
+  direction: MarketDirection
 }
 
-/** 이벤트 목록 한 줄 (indexImpacts는 JKM·TTF·HH 등 지수별 요약) */
 export interface IScenarioWorkbenchEventListItem {
   eventId: string
-  // 260506: title -> eventName
   eventName: string
-  // 260506: eventStatus -> status
   status: ScenarioWorkbenchEventStatus
-  /** Swagger: signal/noise */
+  statusLabel?: string
   signalType: ScenarioWorkbenchEventSignalType
+  signalTypeLabel?: string
   eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1
   occurredAt: string
   updatedAt: string
@@ -68,7 +60,6 @@ export interface IScenarioWorkbenchEventSummaryNotice {
 export interface IScenarioWorkbenchEventAppliedFilter {
   eventStatus?: ScenarioWorkbenchEventStatus[]
   eventCategoryLv1?: ScenarioWorkbenchEventCategoryLv1[]
-  period?: ListPeriod
   startDate?: string
   endDate?: string
   sort?: ScenarioWorkbenchEventSort
@@ -87,79 +78,62 @@ export interface IGetScenarioWorkbenchEventsParams {
   sort?: ScenarioWorkbenchEventSort
   eventStatus?: ScenarioWorkbenchEventStatus[]
   eventCategoryLv1?: ScenarioWorkbenchEventCategoryLv1[]
-  period?: ListPeriod
   startDate?: string
   endDate?: string
   keyword?: string
 }
 
-/** Swagger: EventImpactAnalysisRes */
 export interface IScenarioWorkbenchEventImpactAnalysis {
   indexImpacts: IScenarioWorkbenchImpactIndexSummary[]
   analysisText: string
-  /** 260506: categoryLv1 -> eventCategoryLv1 */
   eventCategoryLv1?: ScenarioWorkbenchEventCategoryLv1
-  /** 260506: categoryLv2 -> eventCategoryLv2 */
   eventCategoryLv2?: string
-  /** 하위호환: 구 응답 필드 */
-  categoryLv1?: ScenarioWorkbenchEventCategoryLv1
-  /** 하위호환: 구 응답 필드 */
-  categoryLv2?: string
   sources?: string[]
 }
 
-/** Swagger: EventAiInsightsRes */
 export interface IScenarioWorkbenchEventAiInsights {
   keySummaries: string[]
   detailedAnalysis: string
 }
 
-/** Swagger: RelatedEventScenarioEventRes */
 export interface IScenarioWorkbenchRelatedEventScenarioEvent {
   eventId: number
   eventName: string
   createdAt: string
   updatedAt: string
-  eventCategoryLv1?: string
+  eventCategoryLv1?: ScenarioWorkbenchEventCategoryLv1
   eventCategoryLv1Label?: string
   indexImpacts?: Array<{
     indexName: string
-    marketImpactLevel: string
+    marketImpactLevel: MarketImpactLevel
     marketImpactLevelLabel?: string
-    direction?: string
+    direction?: MarketDirection
     directionLabel?: string
   }>
 }
 
-/** Swagger: RelatedEventScenarioScenarioRes */
 export interface IScenarioWorkbenchRelatedEventScenarioScenario {
   scenarioId: number
   scenarioName: string
   baseCase: boolean
-  probability?: number
+  probability: number
   indexImpacts?: Array<{
     indexName: string
-    marketImpactLevel: string
+    marketImpactLevel: MarketImpactLevel
     marketImpactLevelLabel?: string
   }>
 }
 
-/** Swagger: RelatedEventScenarioRes */
 export interface IScenarioWorkbenchRelatedEventScenario {
   event?: IScenarioWorkbenchRelatedEventScenarioEvent
   scenarios?: IScenarioWorkbenchRelatedEventScenarioScenario[]
 }
 
-/** Swagger: FundamentalDeepdiveRes */
 export interface IScenarioWorkbenchEventFundamentalDeepdive {
-  /** 260506: 테이블 미준비 상태로 null/빈값 가능 */
   metrics?: IScenarioWorkbenchFundamentalMetric[]
   indicators?: IScenarioWorkbenchFundamentalIndicator[]
-  /** 260506: 임시 items 배열로 내려오는 케이스 */
-  items?: string[]
 }
 
-/** Swagger: FundamentalMetricRes */
 export interface IScenarioWorkbenchFundamentalMetric {
   metricName: string
   currentValue: string
@@ -167,7 +141,6 @@ export interface IScenarioWorkbenchFundamentalMetric {
   source: string
 }
 
-/** Swagger: FundamentalIndicatorRes */
 export interface IScenarioWorkbenchFundamentalIndicator {
   indicatorName: string
   currentValue: string
@@ -175,26 +148,18 @@ export interface IScenarioWorkbenchFundamentalIndicator {
   source: string
 }
 
-/** Swagger: EventFundamentalRes */
 export interface IScenarioWorkbenchEventFundamental {
   metrics: IScenarioWorkbenchFundamentalMetric[]
   indicators: IScenarioWorkbenchFundamentalIndicator[]
 }
 
-/** Swagger: EventDetailRes */
 export interface IScenarioWorkbenchEventDetailRes {
   eventId: string | number
-  /** 260506: title -> eventName */
-  eventName?: string
-  /** 하위호환: 구 응답 필드 */
-  title?: string
-  /** 260506: eventStatus -> status */
+  eventName: string
   status?: ScenarioWorkbenchEventStatus
-  /** 하위호환: 구 응답 필드 */
-  eventStatus?: ScenarioWorkbenchEventStatus
   statusLabel?: string
-  /** 260511: signal/noise */
   signalType: ScenarioWorkbenchEventSignalType
+  signalTypeLabel?: string
   createdAt: string
   updatedAt: string
   impactAnalysis?: IScenarioWorkbenchEventImpactAnalysis
@@ -203,7 +168,6 @@ export interface IScenarioWorkbenchEventDetailRes {
   relatedEventScenario?: IScenarioWorkbenchRelatedEventScenario
 }
 
-/** Swagger: EventRelatedRecordRes */
 export interface IScenarioWorkbenchEventRelatedRecord {
   publishedAt: string
   title: string
@@ -211,7 +175,6 @@ export interface IScenarioWorkbenchEventRelatedRecord {
   source: string
 }
 
-/** Swagger: EventInstitutionOutlookRes */
 export interface IScenarioWorkbenchEventInstitutionOutlook {
   publishedAt: string
   institutionName: string
@@ -250,7 +213,6 @@ const scenarioWorkbenchEventService = {
         page: params.page ?? 1,
         size: params.size ?? 20,
         sort: params.sort,
-        period: params.period,
         startDate: params.startDate,
         endDate: params.endDate,
         keyword: params.keyword,
