@@ -327,11 +327,12 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             tableRows={impactTableRows}
             kpiItems={impactKpiPair}
             narrative={impactNarrative}
+            loading={detailLoading}
             isNoiseEvent={scenarioWorkbenchIsEventNoiseSignal(detail?.signalType)}
           />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.ai} gap="12px" py="30px">
-          <EventDetailAiInsightsSection bullets={aiBullets} detailParagraph={aiDetailParagraph} />
+          <EventDetailAiInsightsSection bullets={aiBullets} detailParagraph={aiDetailParagraph} loading={detailLoading} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.records} gap="12px" py="30px">
           <EventDetailMiRecordsTable
@@ -357,7 +358,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           py="30px"
           sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}
         >
-          <EventDetailDriverTreeScoreboardSection rows={[]} />
+          <EventDetailDriverTreeScoreboardSection rows={[]} loading={detailLoading} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related} gap="12px" py="30px">
           <Stack direction="row" alignItems="center" gap="8px">
@@ -376,6 +377,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             onScenarioRowClick={(row) =>
               navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)
             }
+            loading={detailLoading}
           />
         </Stack>
       </Stack>

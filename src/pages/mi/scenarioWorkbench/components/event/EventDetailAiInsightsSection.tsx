@@ -1,11 +1,12 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
 
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
 
 interface EventDetailAiInsightsSectionProps {
   bullets: string[]
   detailParagraph: string
+  loading?: boolean
 }
 
 const subsectionTitleSx = {
@@ -22,70 +23,100 @@ const bodySx = {
   lineHeight: 1.4,
 } as const
 
-const EventDetailAiInsightsSection = ({ bullets, detailParagraph }: EventDetailAiInsightsSectionProps) => (
-  <Stack
-    width="100%"
-    gap="12px"
-    sx={{
-      borderBottom: '1px solid #DEE2E6',
-      pb: '20px',
-    }}
-  >
-    <EventDetailSectionHeader
-      icon={<AutoAwesomeRoundedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
-      title="AI Insights"
-      tooltipTitle=""
-    />
-    <Box
-      borderRadius="10px"
-      p="20px"
+const gradientBoxSx = {
+  borderRadius: '10px',
+  p: '20px',
+  backgroundImage: 'linear-gradient(102.40734deg, rgb(240, 250, 255) 24.329%, rgb(243, 244, 255) 70.711%)',
+  transition: 'filter 0.15s ease-in-out',
+  '&:hover': {
+    filter: 'brightness(0.98)',
+  },
+} as const
+
+const EventDetailAiInsightsSection = ({ bullets, detailParagraph, loading = false }: EventDetailAiInsightsSectionProps) =>
+  loading ? (
+    <Stack
+      width="100%"
+      gap="12px"
       sx={{
-        backgroundImage: 'linear-gradient(102.40734deg, rgb(240, 250, 255) 24.329%, rgb(243, 244, 255) 70.711%)',
-        transition: 'filter 0.15s ease-in-out',
-        '&:hover': {
-          filter: 'brightness(0.98)',
-        },
+        borderBottom: '1px solid #DEE2E6',
+        pb: '20px',
       }}
     >
-      <Stack gap={0}>
-        <Stack gap="6px" p="12px">
-          <Stack py="4px" direction="row" alignItems="center">
-            <Typography sx={subsectionTitleSx}>핵심요약</Typography>
+      <EventDetailSectionHeader
+        icon={<AutoAwesomeRoundedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
+        title="AI Insights"
+        tooltipTitle=""
+      />
+      <Box sx={gradientBoxSx}>
+        <Stack gap={0}>
+          <Stack gap="10px" p="12px">
+            <Skeleton variant="rounded" width={112} height={24} sx={{ borderRadius: '4px' }} />
+            {[0, 1, 2].map((idx) => (
+              <Skeleton key={idx} variant="rounded" height={20} width={idx === 2 ? '72%' : '100%'} sx={{ borderRadius: '4px' }} />
+            ))}
           </Stack>
-          <Box
-            component="ul"
-            sx={{
-              m: 0,
-              pl: '24px',
-              listStyleType: 'disc',
-              listStylePosition: 'outside',
-              '& > li': {
-                display: 'list-item',
+          <Stack gap="10px" p="12px">
+            <Skeleton variant="rounded" width={96} height={24} sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" height={120} sx={{ borderRadius: '8px' }} />
+          </Stack>
+        </Stack>
+      </Box>
+    </Stack>
+  ) : (
+    <Stack
+      width="100%"
+      gap="12px"
+      sx={{
+        borderBottom: '1px solid #DEE2E6',
+        pb: '20px',
+      }}
+    >
+      <EventDetailSectionHeader
+        icon={<AutoAwesomeRoundedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
+        title="AI Insights"
+        tooltipTitle=""
+      />
+      <Box sx={gradientBoxSx}>
+        <Stack gap={0}>
+          <Stack gap="6px" p="12px">
+            <Stack py="4px" direction="row" alignItems="center">
+              <Typography sx={subsectionTitleSx}>핵심요약</Typography>
+            </Stack>
+            <Box
+              component="ul"
+              sx={{
+                m: 0,
+                pl: '24px',
                 listStyleType: 'disc',
                 listStylePosition: 'outside',
-                m: 0,
-                pl: 0,
-                ...bodySx,
-                '&::marker': { color: 'contentText.Black', fontSize: 'calc(1em * 2 / 3)' },
-              },
-            }}
-          >
-            {bullets.map((b, i) => (
-              <Box component="li" key={i}>
-                {b}
-              </Box>
-            ))}
-          </Box>
-        </Stack>
-        <Stack gap="6px" p="12px">
-          <Stack py="4px" direction="row" alignItems="center">
-            <Typography sx={subsectionTitleSx}>상세분석</Typography>
+                '& > li': {
+                  display: 'list-item',
+                  listStyleType: 'disc',
+                  listStylePosition: 'outside',
+                  m: 0,
+                  pl: 0,
+                  ...bodySx,
+                  '&::marker': { color: 'contentText.Black', fontSize: 'calc(1em * 2 / 3)' },
+                },
+              }}
+            >
+              {bullets.map((b, i) => (
+                <Box component="li" key={i}>
+                  {b}
+                </Box>
+              ))}
+            </Box>
           </Stack>
-          <Typography sx={bodySx}>{detailParagraph}</Typography>
+          <Stack gap="6px" p="12px">
+            <Stack py="4px" direction="row" alignItems="center">
+              <Typography sx={subsectionTitleSx}>상세분석</Typography>
+            </Stack>
+            <Typography sx={bodySx}>{detailParagraph}</Typography>
+          </Stack>
         </Stack>
-      </Stack>
-    </Box>
-  </Stack>
-)
+      </Box>
+    </Stack>
+  )
 
 export default EventDetailAiInsightsSection

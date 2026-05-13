@@ -25,10 +25,11 @@ export interface EventDetailDriverTreeRow {
 
 interface EventDetailDriverTreeScoreboardSectionProps {
   rows: EventDetailDriverTreeRow[]
+  loading?: boolean
 }
 
 /** Driver Tree Scoreboard 섹션 */
-const EventDetailDriverTreeScoreboardSection = ({ rows }: EventDetailDriverTreeScoreboardSectionProps) => {
+const EventDetailDriverTreeScoreboardSection = ({ rows, loading = false }: EventDetailDriverTreeScoreboardSectionProps) => {
   const columns: GridColDef<EventDetailDriverTreeRow>[] = useMemo(
     () => [
       {
@@ -95,6 +96,8 @@ const EventDetailDriverTreeScoreboardSection = ({ rows }: EventDetailDriverTreeS
           rows={rows}
           rowHeight={44}
           cellPreset="miCanvasEvent"
+          loading={loading}
+          skeletonRowCount={5}
           noRowMessage="표시할 데이터가 없습니다."
           disableHover
           hideInnerRowBorder

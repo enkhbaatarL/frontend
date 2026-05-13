@@ -1,6 +1,6 @@
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import ManageSearchOutlinedIcon from '@mui/icons-material/ManageSearchOutlined'
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useMemo } from 'react'
 
@@ -21,6 +21,7 @@ interface EventDetailImpactAnalysisSectionProps {
   kpiItems: [KpiCardProps, KpiCardProps]
   narrative: string
   isNoiseEvent?: boolean
+  loading?: boolean
 }
 
 /** 소음 전용 — 아이콘 + 해당 없음 */
@@ -51,6 +52,7 @@ const EventDetailImpactAnalysisSection = ({
   kpiItems,
   narrative,
   isNoiseEvent = false,
+  loading = false,
 }: EventDetailImpactAnalysisSectionProps) => {
   const columns: GridColDef<IScenarioWorkbenchImpactIndexSummary>[] = useMemo(
     () => [
@@ -96,8 +98,48 @@ const EventDetailImpactAnalysisSection = ({
     [],
   )
 
-  /** 소음이면 전체 섹션을 소음 화면으로 고정 */
+  if (loading) {
+    return (
+      <Stack width="100%" gap="12px">
+        <EventDetailSectionHeader
+          icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+          title="영향도 분석"
+          tooltipTitle=""
+        />
+        <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
+          <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
+            <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
+              <Skeleton variant="rounded" height={40} sx={{ borderRadius: '6px', mb: '8px' }} />
+              {[0, 1, 2].map((idx) => (
+                <Skeleton key={idx} variant="rounded" height={48} sx={{ borderRadius: '4px', mt: idx === 0 ? 0 : '8px' }} />
+              ))}
+            </Box>
+            <Stack direction="row" gap="12px" width="100%">
+              <Skeleton variant="rounded" sx={{ flex: 1, minHeight: 120 }} />
+              <Skeleton variant="rounded" sx={{ flex: 1, minHeight: 120 }} />
+            </Stack>
+          </Stack>
+          <Box
+            flex={1}
+            minWidth={{ xs: '100%', md: 280 }}
+            borderRadius="8px"
+            p="20px"
+            display="flex"
+            flexDirection="column"
+            gap="12px"
+            sx={{ bgcolor: 'gray.5' }}
+          >
+            <Skeleton variant="rounded" width="40%" height={22} sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" height={16} sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" height={16} sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" width="85%" height={16} sx={{ borderRadius: '4px' }} />
+          </Box>
+        </Stack>
+      </Stack>
+    )
+  }
 
+  /** 소음이면 전체 섹션을 소음 화면으로 고정 */
   if (isNoiseEvent) {
     return (
       <Stack width="100%" gap="12px">

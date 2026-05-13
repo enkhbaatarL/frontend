@@ -15,6 +15,7 @@ import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSe
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import MISpinner from '@/components/common/spinner/MISpinner'
 import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
+import useSnackbar from '@/hooks/useSnackbar'
 import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import {
@@ -46,6 +47,14 @@ import scenarioWorkbenchDesignService, {
 const normalizeRequestId = (value: unknown): number | undefined => {
   const id = Number(value)
   return Number.isFinite(id) && id > 0 ? id : undefined
+}
+
+const scenarioGenCompletionToastKey = (status: { requestId?: number | null; eventId: number }) => {
+  const rid = normalizeRequestId(status.requestId)
+  if (rid !== undefined) {
+    return `r:${rid}`
+  }
+  return `e:${status.eventId}`
 }
 
 const formatDesignEventTime = (item: IDesignEventItem) =>
@@ -184,7 +193,8 @@ const CreateScenarioButton = ({ onClick }: { onClick?: (e: MouseEvent) => void }
 
 /** 시나리오 생성 중 — 진행 표시, 비활성화 + 생성 시작 시각 툴팁 */
 const GeneratingScenarioButton = ({ startedAt }: { startedAt?: string | null }) => {
-  const tooltipTitle = `생성 시작 시간: ${formatWorkbenchDateTimeYmdHm(startedAt ?? undefined)}`
+  /// 시연 후 문구 제거 필요
+  const tooltipTitle = `(시연 데이터) 생성 시작 시간: ${formatWorkbenchDateTimeYmdHm(startedAt ?? undefined)}`
   return (
     <WorkbenchFollowCursorTooltip title={tooltipTitle}>
       <span style={{ display: 'inline-flex', cursor: 'default' }}>
@@ -291,6 +301,8 @@ const CompletedScenarioPopupButton = ({ row }: { row: IDesignEventItem }) => {
 
 const DesignTabPanel = () => {
   const queryClient = useQueryClient()
+  const { showSnackbar } = useSnackbar()
+  const scenarioGenCompletedToastKeysRef = useRef<Set<string>>(new Set())
 
   const [typeFilter, setTypeFilter] = useState<ScenarioWorkbenchStatus>(ScenarioWorkbenchStatus.ALL)
   const [sort, setSort] = useState<ListSort>(ListSort.LATEST)
@@ -455,6 +467,23 @@ const DesignTabPanel = () => {
   useEffect(() => {
     if (!generateStatuses?.length) return
 
+    const newlyCompletedForToast: string[] = []
+    for (const status of generateStatuses) {
+      if (status.status !== 'completed') continue
+      const key = scenarioGenCompletionToastKey(status)
+      if (scenarioGenCompletedToastKeysRef.current.has(key)) continue
+      scenarioGenCompletedToastKeysRef.current.add(key)
+      newlyCompletedForToast.push(key)
+    }
+    if (newlyCompletedForToast.length > 0) {
+      showSnackbar(
+        newlyCompletedForToast.length === 1
+          ? '시나리오 생성이 완료되었습니다.'
+          : `${newlyCompletedForToast.length}건의 시나리오 생성이 완료되었습니다.`,
+        { variant: 'success' },
+      )
+    }
+
     const statusByEventId = new Map(generateStatuses.map((status) => [Number(status.eventId), status]))
 
     queryClient.setQueriesData<IDesignEventListRes>({ queryKey: ['scenarioWorkbenchDesignEvents'] }, (old) => {
@@ -488,7 +517,7 @@ const DesignTabPanel = () => {
         }
       })
     }
-  }, [generateStatuses, queryClient])
+  }, [generateStatuses, queryClient, showSnackbar])
 
   // ── 핸들러 ──────────────────────────────────────────────────────────────────
 
@@ -669,9 +698,20 @@ const DesignTabPanel = () => {
   return (
     <Box width="100%">
       <WorkbenchStickySlot tabKey="design">
-        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" px={3} color="contentText.Black">
-          Design
-        </Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" px={3} color="contentText.Black">
+            Design
+          </Typography>
+
+          <Stack px="16px" py="8px" gap="2px">
+            <Typography variant="body2M14" color="contentText.Normal">
+              • 이벤트의 생성 버튼을 실행하면 발생 가능한 시나리오 3~5개가 생성됩니다.
+            </Typography>
+            <Typography variant="body2M14" color="contentText.Normal">
+              • 시나리오 생성에는 약 5-10분이 소요됩니다.
+            </Typography>
+          </Stack>
+        </Stack>
 
         <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} sx={{ px: 3 }}>
           <Stack direction="row" gap="12px" alignItems="center" flexWrap="wrap" sx={{ minWidth: 0, flex: 1 }}>
