@@ -6,6 +6,7 @@ import FundamentalModelIcon from '@/components/common/icons/gnb/FundamentalModel
 import MetricsIcon from '@/components/common/icons/gnb/MetricsIcon'
 import NewsIcon from '@/components/common/icons/gnb/NewsIcon'
 import ParallelIcon from '@/components/common/icons/gnb/ParallelIcon'
+import PositionPlayIcon from '@/components/common/icons/gnb/PositionPlayIcon'
 import ReportIcon from '@/components/common/icons/gnb/ReportIcon'
 import ScenarioWorkbenchIcon from '@/components/common/icons/gnb/ScenarioWorkbenchIcon'
 import SignalIcon from '@/components/common/icons/gnb/SignalIcon'
@@ -74,7 +75,11 @@ export const MI_MENU_ITEM_REGISTRY = {
     desc: 'miMenuItem.parallelCoordinates.desc',
     IconComponent: ParallelIcon,
   },
-  POSITION_PLAY: { label: 'Position Play', path: 'position-play' },
+  POSITION_PLAY: {
+    label: 'Position Play',
+    path: 'position-play',
+    IconComponent: PositionPlayIcon,
+  },
   MARKET_METRICS: {
     label: 'Market Metrics',
     path: 'market-data',
