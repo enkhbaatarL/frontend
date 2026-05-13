@@ -101,7 +101,7 @@ const EventDetailMiRecordsTable = ({
       <EventDetailSectionHeader
         icon={<TungstenRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="MI Records"
-        tooltipTitle="이벤트와 연관된 MI 기록입니다."
+        tooltipTitle=""
       />
       <Stack>
         <ScenarioWorkbenchTableHeader<IScenarioWorkbenchEventRelatedRecord>

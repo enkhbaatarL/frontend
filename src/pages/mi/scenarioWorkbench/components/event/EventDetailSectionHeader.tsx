@@ -22,7 +22,7 @@ const EventDetailSectionHeader = ({ icon, title, tooltipTitle }: EventDetailSect
       <Typography color="contentText.Black" fontSize={20} fontWeight={600} lineHeight={1.4}>
         {title}
       </Typography>
-      {tooltipTitle ? <InfoTooltip title={tooltipTitle} /> : null}
+      {tooltipTitle !== undefined ? <InfoTooltip title={tooltipTitle} /> : null}
     </Stack>
     <Stack width={36} height={36} flexShrink={0} />
   </Stack>

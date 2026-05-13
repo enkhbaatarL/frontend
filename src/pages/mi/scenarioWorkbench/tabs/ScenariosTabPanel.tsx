@@ -10,10 +10,10 @@ import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
-import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
+// import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import ProbabilityGaugeCell from '@/pages/mi/scenarioWorkbench/components/common/ProbabilityGaugeCell'
 import {
-  findIndexImpact,
+  // findIndexImpact,
   formatWorkbenchDateTime,
   WORKBENCH_LIST_SORT_OPTIONS,
   WORKBENCH_STATUS_FILTER_OPTIONS,
@@ -143,6 +143,7 @@ const ScenariosTabPanel = () => {
         minWidth: 360,
         align: 'left',
       },
+      /* /// 임시: JKM / TTF / HH 컬럼 숨김
       {
         field: 'jkm',
         headerName: 'JKM',
@@ -164,6 +165,7 @@ const ScenariosTabPanel = () => {
         align: 'center',
         renderCell: (params) => <ImpactDotsCell level={findIndexImpact(params.row.indexImpacts, 'HH')?.marketImpactLevel} />,
       },
+      */
       {
         field: 'probability',
         headerName: '가능성',

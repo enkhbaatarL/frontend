@@ -104,7 +104,7 @@ const EventDetailImpactAnalysisSection = ({
         <EventDetailSectionHeader
           icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
           title="영향도 분석"
-          tooltipTitle="이벤트가 주요 가격 지표에 미치는 영향을 요약합니다."
+          tooltipTitle=""
         />
         <Box bgcolor="gray.5" borderRadius="10px" overflow="hidden" width="100%">
           <EventDetailImpactAnalysisNoiseEmptyPanel />
@@ -118,7 +118,7 @@ const EventDetailImpactAnalysisSection = ({
       <EventDetailSectionHeader
         icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="영향도 분석"
-        tooltipTitle="이벤트가 주요 가격 지표에 미치는 영향을 요약합니다."
+        tooltipTitle=""
       />
       <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
         <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>

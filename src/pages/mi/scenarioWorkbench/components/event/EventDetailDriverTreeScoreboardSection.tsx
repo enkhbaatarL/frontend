@@ -81,7 +81,7 @@ const EventDetailDriverTreeScoreboardSection = ({ rows }: EventDetailDriverTreeS
       <EventDetailSectionHeader
         icon={<AccountTreeRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="Driver Tree Scoreboard"
-        tooltipTitle="이벤트의 주요 드라이버를 분류별로 정리합니다."
+        tooltipTitle=""
       />
       <Stack>
         <ScenarioWorkbenchTableHeader<EventDetailDriverTreeRow>

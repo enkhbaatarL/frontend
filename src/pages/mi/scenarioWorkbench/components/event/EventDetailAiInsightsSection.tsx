@@ -34,7 +34,7 @@ const EventDetailAiInsightsSection = ({ bullets, detailParagraph }: EventDetailA
     <EventDetailSectionHeader
       icon={<AutoAwesomeRoundedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
       title="AI Insights"
-      tooltipTitle="AI가 생성한 이벤트 인사이트입니다."
+      tooltipTitle=""
     />
     <Box
       borderRadius="10px"

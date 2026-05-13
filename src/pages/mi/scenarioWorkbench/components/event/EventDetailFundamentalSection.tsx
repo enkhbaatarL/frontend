@@ -56,7 +56,7 @@ const EventDetailFundamentalSection = ({ metrics, indicators }: EventDetailFunda
       <EventDetailSectionHeader
         icon={<ContentPasteSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="Fundamental Deep-dive"
-        tooltipTitle="펀더멘털 지표와 해석입니다."
+        tooltipTitle=""
       />
       <Stack>
         <ScenarioWorkbenchTableHeader<EventDetailFundamentalItem>

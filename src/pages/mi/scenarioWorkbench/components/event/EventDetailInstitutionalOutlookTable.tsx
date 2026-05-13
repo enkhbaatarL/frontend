@@ -100,7 +100,7 @@ const EventDetailInstitutionalOutlookTable = ({
       <EventDetailSectionHeader
         icon={<DomainOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="기관 전망"
-        tooltipTitle="기관별 시장 전망 요약입니다."
+        tooltipTitle=""
       />
       <Stack>
         <ScenarioWorkbenchTableHeader<IScenarioWorkbenchEventInstitutionOutlook>

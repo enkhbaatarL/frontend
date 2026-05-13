@@ -1,5 +1,4 @@
 import { EventNote } from '@mui/icons-material'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -10,6 +9,7 @@ import type { KpiCardProps } from '@/pages/mi/scenarioWorkbench/components/commo
 
 import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
+import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
 import { ScenarioWorkbenchNoiseSignalBadge } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import RelatedEventsAndScenariosSection from '@/pages/mi/scenarioWorkbench/components/common/RelatedEventsAndScenariosSection'
 import { scenarioWorkbenchIsEventNoiseSignal } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchClassificationChip'
@@ -363,7 +363,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           <Stack direction="row" alignItems="center" gap="8px">
             <EventNote sx={{ fontSize: 30, color: 'contentText.Black' }} />
             <Typography sx={{ fontSize: 20, fontWeight: 600, color: 'contentText.Black' }}>관련 이벤트 및 시나리오</Typography>
-            <InfoOutlinedIcon sx={{ fontSize: 16, color: 'contentText.Normal' }} />
+            <InfoTooltip title="" iconSize={16} iconColor="contentText.Normal" />
           </Stack>
           <RelatedEventsAndScenariosSection
             events={relatedEvents}

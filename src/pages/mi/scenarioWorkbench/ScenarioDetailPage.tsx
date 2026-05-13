@@ -1,5 +1,4 @@
 import { EventNote, MonitorHeart, Notes, Summarize, Timeline } from '@mui/icons-material'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import TokenIcon from '@mui/icons-material/Token'
 import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
@@ -9,6 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
+import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
 import RelatedEventsAndScenariosSection from '@/pages/mi/scenarioWorkbench/components/common/RelatedEventsAndScenariosSection'
 import ScenarioWorkbenchDetailHeader, {
   WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
@@ -42,7 +42,7 @@ const SectionHeading = ({ sectionId }: { sectionId: WorkbenchDetailHeaderSection
     <Stack direction="row" alignItems="center" gap="8px">
       <Icon sx={{ fontSize: 30, color: 'contentText.Black' }} />
       <Typography sx={{ fontSize: 20, fontWeight: 600, color: 'contentText.Black' }}>{section.label}</Typography>
-      <InfoOutlinedIcon sx={{ fontSize: 16, color: 'contentText.Normal' }} />
+      <InfoTooltip title="" iconSize={16} iconColor="contentText.Normal" />
     </Stack>
   )
 }
