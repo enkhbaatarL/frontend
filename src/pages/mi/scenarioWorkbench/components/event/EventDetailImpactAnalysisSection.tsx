@@ -35,7 +35,6 @@ const EventDetailImpactAnalysisNoiseEmptyPanel = () => (
     width="100%"
     minHeight={{ xs: 280, sm: 340, md: 387 }}
     sx={{
-      borderBottom: '1px solid',
       borderColor: 'gray.30',
     }}
   >

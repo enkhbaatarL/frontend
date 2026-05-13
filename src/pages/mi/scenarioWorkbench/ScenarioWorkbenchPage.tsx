@@ -217,6 +217,7 @@ const ScenarioWorkbenchPage = () => {
             zIndex={200}
             sx={{
               boxShadow: isScrolled ? WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
+              clipPath: 'inset(0 0 -20px 0)',
               transition: 'box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >

@@ -395,6 +395,7 @@ const ScenarioWorkbenchDetailHeader = ({
             bgcolor: 'commonColor.White',
             overflow: 'visible',
             boxShadow: isMainScrolled ? WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
+            clipPath: 'inset(0 0 -20px 0)',
             transition: `box-shadow ${WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS}ms ${WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING}`,
             '&::before': {
               content: '""',

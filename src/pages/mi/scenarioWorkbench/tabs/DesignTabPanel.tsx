@@ -101,24 +101,21 @@ const DetailIconButton = ({ row }: { row: IDesignEventItem }) => {
         useInternalScroll: true,
       }}
     >
-      <Box width="36px" height="34px" borderRadius="10px" sx={{ display: 'inline-flex' }}>
-        <MIBaseButton
-          variant="outlined"
-          enableHoverBackground
-          aria-label="이벤트 상세"
-          onClick={handleClick}
-          sx={{
-            minWidth: '0px',
-            width: '36px',
-            height: '34px',
-            padding: '7px 8px',
-            borderRadius: '10px',
-            backgroundColor: 'commonColor.White',
-          }}
-        >
-          <OpenInBrowserIcon sx={{ fontSize: 20, color: 'contentIcon.Black' }} />
-        </MIBaseButton>
-      </Box>
+      <MIBaseButton
+        variant="outlined"
+        enableHoverBackground
+        aria-label="이벤트 상세"
+        onClick={handleClick}
+        sx={{
+          minWidth: '0px',
+          height: '34px',
+          padding: '6px',
+          borderRadius: '10px',
+          backgroundColor: 'commonColor.White',
+        }}
+      >
+        <OpenInBrowserIcon sx={{ fontSize: 20, color: 'contentIcon.Black' }} />
+      </MIBaseButton>
     </MIMorphingPopup>
   )
 }
