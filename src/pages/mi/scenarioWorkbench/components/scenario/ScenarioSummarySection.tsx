@@ -7,6 +7,7 @@ import { PriceDirectionIconWithTooltip } from '@/pages/mi/scenarioWorkbench/comp
 import ScenarioSummaryChart from '@/pages/mi/scenarioWorkbench/components/common/ScenarioSummaryChart'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
+import { probabilityToLikelihoodLabel } from '@/pages/mi/scenarioWorkbench/utils/probabilityFormatting'
 import { IScenarioIndexOutlook, IScenarioSummary } from '@/service/mi/scenarioWorkbench/scenario'
 
 const buildImpactColumns: GridColDef<IScenarioIndexOutlook>[] = [
@@ -53,7 +54,7 @@ const ImpactTable = ({
   rows: IScenarioIndexOutlook[]
   onRowHoverIndexName?: (indexName: string | null) => void
 }) => (
-  <Box sx={{ bgcolor: 'gray.5', borderRadius: '10px', p: '12px' }}>
+  <Box bgcolor="gray.5" borderRadius="10px" p="12px">
     <ScenarioWorkbenchTableHeader<IScenarioIndexOutlook> columns={buildImpactColumns} />
     <ScenarioWorkbenchDataList<IScenarioIndexOutlook>
       rowId="indexName"
@@ -68,16 +69,9 @@ const ImpactTable = ({
 )
 
 const ForecastCardItem = ({ outlook }: { outlook: IScenarioIndexOutlook }) => (
-  <Box
-    sx={{
-      bgcolor: 'gray.5',
-      borderRadius: '10px',
-      p: '20px',
-      '&:hover': { bgcolor: 'contentBG.Hover' },
-    }}
-  >
+  <Box bgcolor="gray.5" borderRadius="10px" p="20px" sx={{ '&:hover': { bgcolor: 'contentBG.Hover' } }}>
     <Stack gap="6px">
-      <Typography variant="body1M16" sx={{ color: 'contentText.Black' }}>
+      <Typography variant="body1M16" color="contentText.Black">
         {outlook.trendText}
       </Typography>
     </Stack>
@@ -86,12 +80,42 @@ const ForecastCardItem = ({ outlook }: { outlook: IScenarioIndexOutlook }) => (
 
 interface ScenarioSummarySectionProps {
   summary?: IScenarioSummary
+  probability?: number
   loading?: boolean
 }
 
 const hasForecastCardContent = (outlook: IScenarioIndexOutlook) => Boolean(outlook.trendText?.trim())
 
-const ScenarioSummarySection = ({ summary, loading = false }: ScenarioSummarySectionProps) => {
+const LikelihoodKpiCard = ({ probability }: { probability?: number }) => {
+  const hasValue = probability !== undefined && probability !== null && typeof probability === 'number' && Number.isFinite(probability)
+  const mainLabel = hasValue ? probabilityToLikelihoodLabel(probability!) : '—'
+
+  return (
+    <Box
+      bgcolor="gray.5"
+      borderRadius="10px"
+      p="20px"
+      width="200px"
+      flexShrink={0}
+      alignSelf="stretch"
+      boxSizing="border-box"
+      sx={{ '&:hover': { bgcolor: 'contentBG.Hover' } }}
+    >
+      <Stack gap="6px" alignItems="flex-start">
+        <Typography variant="body2SB14" color="contentText.Normal">
+          발생 가능성
+        </Typography>
+        <Stack gap="2px" alignItems="flex-start">
+          <Typography fontSize="20px" fontWeight={700} lineHeight={1.4} color="contentText.Black">
+            {mainLabel}
+          </Typography>
+        </Stack>
+      </Stack>
+    </Box>
+  )
+}
+
+const ScenarioSummarySection = ({ summary, probability, loading = false }: ScenarioSummarySectionProps) => {
   const indexOutlooks = summary?.indexOutlooks ?? []
   const outlooksWithForecastCopy = indexOutlooks.filter(hasForecastCardContent)
   const priceForecast = summary?.priceForecast ?? { currency: '', unit: '', dates: [], series: [] }
@@ -105,13 +129,14 @@ const ScenarioSummarySection = ({ summary, loading = false }: ScenarioSummarySec
         px="12px"
         py="12px"
         alignItems="flex-start"
-        sx={{
-          borderBottom: '1px solid',
-          borderColor: 'contentBorder.Normal',
-        }}
+        borderBottom="1px solid"
+        borderColor="contentBorder.Normal"
       >
         <Stack flex="1" minWidth={0} gap="12px">
-          <Skeleton variant="rounded" height={240} sx={{ borderRadius: '10px' }} />
+          <Stack direction="row" gap="12px" alignItems="stretch">
+            <Skeleton variant="rounded" width={200} height={240} sx={{ borderRadius: '10px', flexShrink: 0 }} />
+            <Skeleton variant="rounded" height={240} sx={{ borderRadius: '10px', flex: 1, minWidth: 0 }} />
+          </Stack>
           <Skeleton variant="rounded" height={80} sx={{ borderRadius: '10px' }} />
           <Skeleton variant="rounded" height={80} sx={{ borderRadius: '10px' }} />
         </Stack>
@@ -129,13 +154,16 @@ const ScenarioSummarySection = ({ summary, loading = false }: ScenarioSummarySec
       px="12px"
       py="12px"
       alignItems="flex-start"
-      sx={{
-        borderBottom: '1px solid',
-        borderColor: 'contentBorder.Normal',
-      }}
+      borderBottom="1px solid"
+      borderColor="contentBorder.Normal"
     >
       <Stack flex="1" minWidth={0} gap="12px">
-        <ImpactTable rows={indexOutlooks} onRowHoverIndexName={setTableHoverIndexName} />
+        <Stack direction="row" gap="12px" alignItems="stretch">
+          <LikelihoodKpiCard probability={probability} />
+          <Box flex={1} minWidth={0}>
+            <ImpactTable rows={indexOutlooks} onRowHoverIndexName={setTableHoverIndexName} />
+          </Box>
+        </Stack>
         {outlooksWithForecastCopy.map((outlook) => (
           <ForecastCardItem key={outlook.indexName} outlook={outlook} />
         ))}

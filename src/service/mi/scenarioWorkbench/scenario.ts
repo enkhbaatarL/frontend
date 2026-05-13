@@ -137,6 +137,7 @@ export interface IScenarioDetailRes {
   tags: string[]
   createdAt: string
   updatedAt: string
+  probability?: number
   summary: IScenarioSummary
   assumptions: IScenarioAssumption[]
   signpostDefinitions: IScenarioSignpostDefinition[]

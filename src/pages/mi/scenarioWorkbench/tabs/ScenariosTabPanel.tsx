@@ -8,17 +8,17 @@ import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
-import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
-import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
+// import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
+// import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 // import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import ProbabilityGaugeCell from '@/pages/mi/scenarioWorkbench/components/common/ProbabilityGaugeCell'
 import {
   // findIndexImpact,
   formatWorkbenchDateTime,
   WORKBENCH_LIST_SORT_OPTIONS,
-  WORKBENCH_STATUS_FILTER_OPTIONS,
+  // WORKBENCH_STATUS_FILTER_OPTIONS,
 } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
-import { classificationPropsFromScenarioListRow } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchClassificationChip'
+// import { classificationPropsFromScenarioListRow } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchClassificationChip'
 import {
   buildWorkbenchDatePresets,
   defaultWorkbenchDateRange,
@@ -37,7 +37,7 @@ const formatScenarioTime = (item: IScenarioListItem) => {
 const ScenariosTabPanel = () => {
   const navigate = useNavigate()
 
-  const [typeFilter, setTypeFilter] = useState<ScenarioWorkbenchStatus>(ScenarioWorkbenchStatus.ALL)
+  const [typeFilter] = useState<ScenarioWorkbenchStatus>(ScenarioWorkbenchStatus.ALL)
   const [sort, setSort] = useState<ListSort>(ListSort.LATEST)
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultWorkbenchDateRange())
   const [keyword, setKeyword] = useState('')
@@ -97,10 +97,10 @@ const ScenariosTabPanel = () => {
     }
   }, [data?.scenarios, pagination.page])
 
-  const handleTypeFilterChange = useCallback((v: string) => {
-    setTypeFilter(v as ScenarioWorkbenchStatus)
-    setPagination((p) => ({ ...p, page: 1 }))
-  }, [])
+  // const handleTypeFilterChange = useCallback((v: string) => {
+  //   setTypeFilter(v as ScenarioWorkbenchStatus)
+  //   setPagination((p) => ({ ...p, page: 1 }))
+  // }, [])
 
   const handleSortChange = useCallback((value: string) => {
     setSort(value as ListSort)
@@ -122,6 +122,7 @@ const ScenariosTabPanel = () => {
 
   const columns: GridColDef<IScenarioListItem>[] = useMemo(
     () => [
+      /* /// 임시: 생성타입 컬럼 숨김
       {
         field: 'status',
         headerName: '생성타입',
@@ -129,9 +130,10 @@ const ScenariosTabPanel = () => {
         align: 'center',
         renderCell: (params) => <ClassificationTag {...classificationPropsFromScenarioListRow(params.row)} />,
       },
+      */
       {
         field: 'createdAt',
-        headerName: '생성/갱신일시',
+        headerName: '생성일시', // 생성/갱신일시
         width: 130,
         align: 'center',
         renderCell: (params) => formatScenarioTime(params.row),
@@ -186,14 +188,16 @@ const ScenariosTabPanel = () => {
           Scenarios
         </Typography>
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} sx={{ px: 3 }}>
-          <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" sx={{ minWidth: 0, flex: 1 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} px={3}>
+          <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" minWidth={0} flex={1}>
+            {/* 임시: 상태 필터 세그먼트 숨김
             <MISlidingSegmented
               options={WORKBENCH_STATUS_FILTER_OPTIONS}
               value={typeFilter}
               onChange={handleTypeFilterChange}
               sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
             />
+            */}
 
             <MIDateRangePickerMenu
               dateRange={appliedDateRange}
@@ -213,7 +217,7 @@ const ScenariosTabPanel = () => {
             />
           </Stack>
 
-          <Stack direction="row" alignItems="center" gap={3} sx={{ flexShrink: 0 }}>
+          <Stack direction="row" alignItems="center" gap={3} flexShrink={0}>
             <MISearchInput
               storageKey="scenario-workbench-scenarios"
               value={keyword}
@@ -226,7 +230,9 @@ const ScenariosTabPanel = () => {
           </Stack>
         </Stack>
 
-        <ScenarioWorkbenchTableHeader<IScenarioListItem> columns={columns} sx={{ mt: 2 }} />
+        <Box mt={2}>
+          <ScenarioWorkbenchTableHeader<IScenarioListItem> columns={columns} />
+        </Box>
       </WorkbenchStickySlot>
 
       <ScenarioWorkbenchDataList<IScenarioListItem>

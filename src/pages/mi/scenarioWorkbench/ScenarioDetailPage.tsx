@@ -42,7 +42,9 @@ const SectionHeading = ({ sectionId }: { sectionId: WorkbenchDetailHeaderSection
   return (
     <Stack direction="row" alignItems="center" gap="8px">
       <Icon sx={{ fontSize: 30, color: 'contentText.Black' }} />
-      <Typography sx={{ fontSize: 20, fontWeight: 600, color: 'contentText.Black' }}>{section.label}</Typography>
+      <Typography fontSize={20} fontWeight={600} color="contentText.Black">
+        {section.label}
+      </Typography>
       <InfoTooltip title="" iconSize={16} iconColor="contentText.Normal" />
     </Stack>
   )
@@ -128,7 +130,7 @@ const ScenarioDetailPage = () => {
             </>
           ) : (
             <>
-              <Typography variant="titleLarge" fontSize="26px" fontWeight={600} display="block" sx={{ lineHeight: 1.4 }}>
+              <Typography variant="titleLarge" fontSize="26px" fontWeight={600} display="block" lineHeight={1.4}>
                 {scenarioName}
               </Typography>
               {tags.length > 0 && (
@@ -224,7 +226,7 @@ const ScenarioDetailPage = () => {
       <Stack py="24px" gap="12px">
         <Stack id={SCENARIO_DETAIL_SECTIONS[0].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[0].id} />
-          <ScenarioSummarySection summary={data?.summary} loading={isLoading} />
+          <ScenarioSummarySection summary={data?.summary} probability={data?.probability} loading={isLoading} />
         </Stack>
         <Stack id={SCENARIO_DETAIL_SECTIONS[1].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[1].id} />
