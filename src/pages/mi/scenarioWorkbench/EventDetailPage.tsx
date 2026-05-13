@@ -23,6 +23,7 @@ import EventDetailImpactAnalysisSection from '@/pages/mi/scenarioWorkbench/compo
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailMiRecordsTable'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
+import { scrollScenarioWorkbenchLayoutToTop } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchScroll'
 import { EventCategoryLv1, EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchEventService from '@/service/mi/scenarioWorkbench/event'
 
@@ -43,6 +44,7 @@ const EVENT_DETAIL_TABS: { key: EventDetailTabKey; label: string }[] = [
 /** 이벤트 상세에서 라우트 state로 넘어오는 값 타입 */
 interface ScenarioWorkbenchEventDetailLocationState {
   eventName?: string
+  scenarioWorkbenchSelfEntityBump?: number
 }
 
 interface ScenarioWorkbenchEventDetailPageProps {
@@ -142,6 +144,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     data: detail,
     isLoading: detailLoading,
     isError: detailError,
+    refetch: refetchEventDetail,
   } = useQuery({
     queryKey: ['scenarioWorkbenchEventDetail', eventId],
     queryFn: () => scenarioWorkbenchEventService.getEventDetail(eventId!),
@@ -150,7 +153,11 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     gcTime: 0,
   })
 
-  const { data: recordsData, isLoading: recordsLoading } = useQuery({
+  const {
+    data: recordsData,
+    isLoading: recordsLoading,
+    refetch: refetchEventRecords,
+  } = useQuery({
     queryKey: ['scenarioWorkbenchEventRecords', eventId, recordsPagination.page, recordsPagination.size],
     queryFn: () => scenarioWorkbenchEventService.getEventRecords(eventId!, recordsPagination),
     enabled: !!eventId,
@@ -158,13 +165,35 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     gcTime: 0,
   })
 
-  const { data: outlooksData, isLoading: outlooksLoading } = useQuery({
+  const {
+    data: outlooksData,
+    isLoading: outlooksLoading,
+    refetch: refetchEventOutlooks,
+  } = useQuery({
     queryKey: ['scenarioWorkbenchEventOutlooks', eventId, outlooksPagination.page, outlooksPagination.size],
     queryFn: () => scenarioWorkbenchEventService.getEventOutlooks(eventId!, outlooksPagination),
     enabled: !!eventId,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
+
+  const refetchCurrentEventPageData = () => {
+    void Promise.all([refetchEventDetail(), refetchEventRecords(), refetchEventOutlooks()])
+  }
+
+  const pushSameEventDetailHistoryAndRefetch = () => {
+    if (!embedded) {
+      navigate(
+        { pathname: location.pathname, search: location.search, hash: location.hash },
+        {
+          replace: false,
+          state: { ...(state ?? {}), scenarioWorkbenchSelfEntityBump: Date.now() },
+        },
+      )
+    }
+    refetchCurrentEventPageData()
+    scrollScenarioWorkbenchLayoutToTop(embedded ? popupScrollContainer : undefined)
+  }
 
   const title = useMemo(() => {
     const fromState = state?.eventName?.trim()
@@ -369,11 +398,15 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           <RelatedEventsAndScenariosSection
             events={relatedEvents}
             scenarios={relatedScenarios}
-            onEventRowClick={(row) =>
+            onEventRowClick={(row) => {
+              if (eventId && String(row.eventId) === String(eventId)) {
+                pushSameEventDetailHistoryAndRefetch()
+                return
+              }
               navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/events/${encodeURIComponent(String(row.eventId))}`, {
                 state: { eventName: row.eventName },
               })
-            }
+            }}
             onScenarioRowClick={(row) =>
               navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)
             }

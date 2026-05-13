@@ -3,7 +3,7 @@ import TokenIcon from '@mui/icons-material/Token'
 import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { type ReactNode, useLayoutEffect, useMemo, useSyncExternalStore } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
@@ -19,6 +19,7 @@ import ScenarioSummarySection from '@/pages/mi/scenarioWorkbench/components/scen
 import SignpostDefinitionSection from '@/pages/mi/scenarioWorkbench/components/scenario/SignpostDefinitionSection'
 import SignpostMonitoringSection from '@/pages/mi/scenarioWorkbench/components/scenario/SignpostMonitoringSection'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
+import { scrollScenarioWorkbenchLayoutToTop } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchScroll'
 import scenarioWorkbenchScenarioService, { IRelatedEvent, IRelatedScenario } from '@/service/mi/scenarioWorkbench/scenario'
 
 type ScenarioDetailSection = WorkbenchDetailHeaderSection & {
@@ -91,10 +92,15 @@ const ScenarioDetailHeaderView = () => {
 
 const ScenarioDetailPage = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { setStickyHeader } = useStickyHeader()
   const { scenarioId } = useParams<{ scenarioId: string }>()
 
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    refetch: refetchScenarioDetail,
+  } = useQuery({
     queryKey: ['scenarioWorkbenchScenarioDetail', scenarioId],
     queryFn: () => scenarioWorkbenchScenarioService.getScenarioDetail(scenarioId ?? ''),
     enabled: Boolean(scenarioId),
@@ -132,7 +138,14 @@ const ScenarioDetailPage = () => {
                       key={tag}
                       label={tag}
                       fontType="body2M14"
-                      sx={{ height: '28px', padding: '4px 8px', backgroundColor: '#E9ECEF', color: '#212529', borderRadius: '100px' }}
+                      sx={{
+                        height: '28px',
+                        padding: '4px 8px',
+                        backgroundColor: '#E9ECEF',
+                        color: '#212529',
+                        borderRadius: '100px',
+                        border: 'none',
+                      }}
                       disableHover
                     />
                   ))}
@@ -152,6 +165,21 @@ const ScenarioDetailPage = () => {
     })
   }
   const handleScenarioDetailClick = (row: IRelatedScenario) => {
+    if (scenarioId && String(row.scenarioId) === String(scenarioId)) {
+      navigate(
+        { pathname: location.pathname, search: location.search, hash: location.hash },
+        {
+          replace: false,
+          state: {
+            ...(typeof location.state === 'object' && location.state !== null ? (location.state as Record<string, unknown>) : {}),
+            scenarioWorkbenchSelfEntityBump: Date.now(),
+          },
+        },
+      )
+      void refetchScenarioDetail()
+      scrollScenarioWorkbenchLayoutToTop()
+      return
+    }
     navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)
   }
 
