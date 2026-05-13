@@ -200,6 +200,7 @@ const ScenariosTabPanel = () => {
               onApply={handleDateRangeApply}
               showPreset
               datePresets={workbenchDatePresets}
+              closeOnScroll
             />
 
             <MISelectMenu
@@ -208,6 +209,7 @@ const ScenariosTabPanel = () => {
               selected={sort}
               onSelected={(value: string) => handleSortChange(value)}
               items={WORKBENCH_LIST_SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
+              closeOnScroll
             />
           </Stack>
 

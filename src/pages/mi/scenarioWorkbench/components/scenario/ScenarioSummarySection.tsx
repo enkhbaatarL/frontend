@@ -3,7 +3,7 @@ import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useState } from 'react'
 
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
-import PriceDirectionIcon from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
+import { PriceDirectionIconWithTooltip } from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
 import ScenarioSummaryChart from '@/pages/mi/scenarioWorkbench/components/common/ScenarioSummaryChart'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
@@ -40,7 +40,7 @@ const buildImpactColumns: GridColDef<IScenarioIndexOutlook>[] = [
     sortable: false,
     renderCell: (params: GridRenderCellParams<IScenarioIndexOutlook>) => (
       <Stack alignItems="center" justifyContent="center" width="100%" height="100%">
-        <PriceDirectionIcon direction={params.row.direction} />
+        <PriceDirectionIconWithTooltip direction={params.row.direction} />
       </Stack>
     ),
   },

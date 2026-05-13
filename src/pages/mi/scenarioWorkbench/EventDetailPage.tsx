@@ -23,7 +23,8 @@ import EventDetailImpactAnalysisSection from '@/pages/mi/scenarioWorkbench/compo
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailMiRecordsTable'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
-import scenarioWorkbenchEventService, { SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/event'
+import { EventCategoryLv1, EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/common'
+import scenarioWorkbenchEventService from '@/service/mi/scenarioWorkbench/event'
 
 /** 이벤트 상세 탭 키 */
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | /* 'fundamental' |*/ 'driverTree' | 'related'
@@ -189,8 +190,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
       return [{ ...a }, { ...b }]
     }
     const lv1 = ia.eventCategoryLv1
-    const lv1Key = lv1 ? (String(lv1).toUpperCase() as keyof typeof SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO) : undefined
-    const categoryContent = lv1Key ? (SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[lv1Key] ?? lv1) : a.content
+    const categoryContent = lv1 ? (EVENT_CATEGORY_LV1_KO[lv1 as EventCategoryLv1] ?? lv1) : a.content
     const categoryDesc = ia.eventCategoryLv2?.replaceAll('_', ' ') ?? a.description
     const sourcesContent = ia.sources?.filter(Boolean).length ? ia.sources!.filter(Boolean).join(', ') : b.content
     return [

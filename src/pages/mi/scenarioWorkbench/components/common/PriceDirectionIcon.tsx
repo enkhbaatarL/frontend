@@ -1,6 +1,8 @@
-import { Box } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 
+import { marketDirectionToLabel } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
+import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
 import { MarketDirection } from '@/service/mi/scenarioWorkbench/common'
 
 export interface PriceDirectionIconProps {
@@ -32,6 +34,31 @@ const PriceDirectionIcon = ({ direction, size = 14 }: PriceDirectionIconProps) =
     <svg width={size} height={size} viewBox="0 0 13 12" fill="none" aria-hidden style={isUp ? undefined : { transform: 'rotate(180deg)' }}>
       <path fillRule="evenodd" clipRule="evenodd" d={TRIANGLE_PATH} fill={color} />
     </svg>
+  )
+}
+
+const priceDirectionTooltipTitleSx = {
+  m: 0,
+  fontSize: 12,
+  lineHeight: 1.4,
+  color: 'common.white',
+}
+
+/** 가격 방향 아이콘 + 시장영향 셀과 동일한 커서 추적 툴팁 */
+export const PriceDirectionIconWithTooltip = ({ direction, size = 14 }: PriceDirectionIconProps) => {
+  const label = direction !== undefined ? marketDirectionToLabel(direction) : '-'
+  return (
+    <WorkbenchFollowCursorTooltip
+      title={
+        <Typography component="p" sx={priceDirectionTooltipTitleSx}>
+          가격 방향: {label}
+        </Typography>
+      }
+    >
+      <Stack alignItems="center" justifyContent="center" sx={{ width: '100%', height: '100%', minHeight: size }}>
+        <PriceDirectionIcon direction={direction} size={size} />
+      </Stack>
+    </WorkbenchFollowCursorTooltip>
   )
 }
 

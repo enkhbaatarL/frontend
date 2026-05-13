@@ -699,6 +699,7 @@ const DesignTabPanel = () => {
               showSaveOption={false}
               label="카테고리"
               sx={{ minWidth: 106 }}
+              closeOnScroll
             />
 
             <MIDateRangePickerMenu
@@ -706,6 +707,7 @@ const DesignTabPanel = () => {
               onApply={handleDateRangeApply}
               showPreset
               datePresets={workbenchDatePresets}
+              closeOnScroll
             />
 
             <MISelectMenu
@@ -714,6 +716,7 @@ const DesignTabPanel = () => {
               selected={sort}
               onSelected={(value: string) => handleSortChange(value)}
               items={WORKBENCH_LIST_SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
+              closeOnScroll
             />
           </Stack>
 

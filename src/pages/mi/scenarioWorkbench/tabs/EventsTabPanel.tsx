@@ -21,17 +21,16 @@ import {
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { WorkbenchStickySlot } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchStickyLayout'
+import { EventCategoryLv1, EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchEventService, {
-  SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO,
   type IGetScenarioWorkbenchEventsParams,
   type IScenarioWorkbenchEventListItem,
-  type ScenarioWorkbenchEventCategoryLv1,
   type ScenarioWorkbenchEventSort,
   type ScenarioWorkbenchEventStatus,
 } from '@/service/mi/scenarioWorkbench/event'
 
 /** 카테고리 필터 값: Lv1 다중 선택 */
-type CategoryFilterValue = ScenarioWorkbenchEventCategoryLv1[]
+type CategoryFilterValue = EventCategoryLv1[]
 
 const TYPE_FILTER_OPTIONS = [
   { value: 'all', label: '전체' },
@@ -90,7 +89,7 @@ const EventsTabPanel = () => {
       eventStatus = ['updated']
     }
 
-    const eventCategoryLv1: ScenarioWorkbenchEventCategoryLv1[] | undefined = categoryFilter.length > 0 ? categoryFilter : undefined
+    const eventCategoryLv1: EventCategoryLv1[] | undefined = categoryFilter.length > 0 ? categoryFilter : undefined
 
     const trimmedKeyword = committedKeyword.trim()
 
@@ -146,7 +145,14 @@ const EventsTabPanel = () => {
         headerName: '카테고리',
         width: 160,
         align: 'left',
-        renderCell: (params) => SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[params.row.eventCategoryLv1],
+        renderCell: (params) => {
+          const row = params.row
+          const fromApiLabel = row.eventCategoryLv1Label?.trim()
+          if (fromApiLabel) return fromApiLabel
+          const code = row.eventCategoryLv1
+          if (code === undefined || code === null) return '-'
+          return EVENT_CATEGORY_LV1_KO[code as EventCategoryLv1] ?? String(code)
+        },
       },
       {
         field: 'eventName',
@@ -192,8 +198,8 @@ const EventsTabPanel = () => {
   /** 카테고리 다중 선택 필터 항목 */
   const categoryFilterItems = useMemo(
     () =>
-      (Object.keys(SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO) as ScenarioWorkbenchEventCategoryLv1[]).map((key) => ({
-        label: SCENARIO_WORKBENCH_EVENT_CATEGORY_LV1_KO[key],
+      (Object.keys(EVENT_CATEGORY_LV1_KO) as EventCategoryLv1[]).map((key) => ({
+        label: EVENT_CATEGORY_LV1_KO[key],
         value: key,
       })),
     [],
@@ -232,7 +238,7 @@ const EventsTabPanel = () => {
 
   const handleCategoryFilterApply = useCallback(
     (filterValues: FilterValues) => {
-      setCategoryFilter((filterValues.category ?? []) as ScenarioWorkbenchEventCategoryLv1[])
+      setCategoryFilter((filterValues.category ?? []) as EventCategoryLv1[])
       resetPage()
     },
     [resetPage],
@@ -309,6 +315,7 @@ const EventsTabPanel = () => {
               showSaveOption={false}
               label="카테고리"
               sx={{ minWidth: 106 }}
+              closeOnScroll
             />
 
             <MIDateRangePickerMenu
@@ -316,6 +323,7 @@ const EventsTabPanel = () => {
               onApply={handleDateRangeApply}
               showPreset
               datePresets={workbenchDatePresets}
+              closeOnScroll
               {...dateRangeMenuLayoutProps}
             />
 
@@ -325,6 +333,7 @@ const EventsTabPanel = () => {
               selected={sort}
               onSelected={handleSortChange}
               items={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
+              closeOnScroll
             />
           </Stack>
 

@@ -29,7 +29,20 @@ const KpiCard = ({ title, content, description }: KpiCardProps) => (
       ) : (
         content
       )}
-      <Typography color="contentText.Normal" fontSize="12px" fontWeight={500} lineHeight="1.4" noWrap title={description}>
+      <Typography
+        color="contentText.Normal"
+        fontSize="12px"
+        fontWeight={500}
+        lineHeight="1.4"
+        title={description}
+        sx={{
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitBoxOrient: 'vertical',
+          WebkitLineClamp: 2,
+          wordBreak: 'break-word',
+        }}
+      >
         {description}
       </Typography>
     </Stack>

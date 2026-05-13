@@ -9,7 +9,7 @@ import type { IScenarioWorkbenchImpactIndexSummary } from '@/service/mi/scenario
 
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import KpiCard from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
-import PriceDirectionIcon from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
+import { PriceDirectionIconWithTooltip } from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
 import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
@@ -88,7 +88,7 @@ const EventDetailImpactAnalysisSection = ({
         sortable: false,
         renderCell: (p) => (
           <Box display="flex" alignItems="center" justifyContent="center" width="100%" height={40}>
-            <PriceDirectionIcon direction={p.row.direction} size={14} />
+            <PriceDirectionIconWithTooltip direction={p.row.direction} size={14} />
           </Box>
         ),
       },
