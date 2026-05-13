@@ -1,9 +1,8 @@
 import AccountTreeRoundedIcon from '@mui/icons-material/AccountTreeRounded'
 import { Box, Stack } from '@mui/material'
-import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
-import { useMemo } from 'react'
+import { GridColDef } from '@mui/x-data-grid'
 
-import type { MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
+import type { IScenarioWorkbenchEventDriverTreeScoreboardItem } from '@/service/mi/scenarioWorkbench/event'
 
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import ScenarioWorkbenchEventDetailTableBodyText, {
@@ -13,99 +12,92 @@ import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/ev
 import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
 import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
-/** Driver Tree Scoreboard 표 행 */
-export interface EventDetailDriverTreeRow {
-  id: string
-  category: string
-  driver: string
-  strengthLevel: MarketImpactLevel
-  strengthDirection?: MarketDirection
-  rationale: string
-}
+const columns: GridColDef<IScenarioWorkbenchEventDriverTreeScoreboardItem>[] = [
+  {
+    field: 'lv1Label',
+    headerName: '분류',
+    width: 140,
+    align: 'left',
+    sortable: false,
+    renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.row.lv1Label ?? '')} tooltipWhenTruncated />,
+  },
+  {
+    field: 'lv2Label',
+    headerName: 'Driver',
+    flex: 1,
+    minWidth: 160,
+    align: 'left',
+    sortable: false,
+    renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.row.lv2Label ?? '')} tooltipWhenTruncated />,
+  },
+  {
+    field: 'lv3Label',
+    headerName: 'Sub Driver',
+    flex: 1,
+    minWidth: 160,
+    align: 'left',
+    sortable: false,
+    renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.row.lv3Label ?? '')} tooltipWhenTruncated />,
+  },
+  {
+    field: 'marketImpactLevel',
+    headerName: '강도',
+    width: 80,
+    align: 'center',
+    sortable: false,
+    renderCell: (params) => (
+      <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <ImpactDotsCell level={params.row.marketImpactLevel} direction={params.row.direction} />
+      </Box>
+    ),
+  },
+  {
+    field: 'reason',
+    headerName: '근거',
+    flex: 2,
+    minWidth: 240,
+    align: 'left',
+    sortable: false,
+    renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.row.reason ?? '')} tooltipWhenTruncated />,
+  },
+]
 
 interface EventDetailDriverTreeScoreboardSectionProps {
-  rows: EventDetailDriverTreeRow[]
+  driverTreeScoreboard?: IScenarioWorkbenchEventDriverTreeScoreboardItem[]
   loading?: boolean
 }
 
-/** Driver Tree Scoreboard 섹션 */
-const EventDetailDriverTreeScoreboardSection = ({ rows, loading = false }: EventDetailDriverTreeScoreboardSectionProps) => {
-  const columns: GridColDef<EventDetailDriverTreeRow>[] = useMemo(
-    () => [
-      {
-        field: 'category',
-        headerName: '분류',
-        width: 100,
-        align: 'left',
-        sortable: false,
-      },
-      {
-        field: 'driver',
-        headerName: 'Driver',
-        flex: 1,
-        minWidth: 160,
-        align: 'left',
-        sortable: false,
-        renderCell: (params: GridRenderCellParams<EventDetailDriverTreeRow>) => (
-          <ScenarioWorkbenchEventDetailTableBodyText value={params.value as string} tooltipWhenTruncated />
-        ),
-      },
-      {
-        field: 'strengthLevel',
-        headerName: '강도',
-        width: 80,
-        align: 'center',
-        sortable: false,
-        renderCell: (params: GridRenderCellParams<EventDetailDriverTreeRow>) => (
-          <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ImpactDotsCell level={params.row.strengthLevel} direction={params.row.strengthDirection} />
-          </Box>
-        ),
-      },
-      {
-        field: 'rationale',
-        headerName: '근거',
-        flex: 1,
-        minWidth: 200,
-        align: 'left',
-        sortable: false,
-        renderCell: (params: GridRenderCellParams<EventDetailDriverTreeRow>) => (
-          <ScenarioWorkbenchEventDetailTableBodyText value={params.value as string} tooltipWhenTruncated />
-        ),
-      },
-    ],
-    [],
-  )
-
-  return (
-    <Stack width="100%" gap={6}>
-      <EventDetailSectionHeader
-        icon={<AccountTreeRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
-        title="Driver Tree Scoreboard"
-        tooltipTitle=""
+const EventDetailDriverTreeScoreboardSection = ({
+  driverTreeScoreboard = [],
+  loading = false,
+}: EventDetailDriverTreeScoreboardSectionProps) => (
+  <Stack width="100%" gap="12px">
+    <EventDetailSectionHeader
+      icon={<AccountTreeRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+      title="Driver Tree Scoreboard"
+      tooltipTitle=""
+    />
+    <Stack>
+      <ScenarioWorkbenchTableHeader<IScenarioWorkbenchEventDriverTreeScoreboardItem>
+        columns={columns}
+        headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+        headerLabelColor="contentText.Black"
       />
-      <Stack>
-        <ScenarioWorkbenchTableHeader<EventDetailDriverTreeRow>
-          columns={columns}
-          headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
-          headerLabelColor="contentText.Black"
-        />
-        <ScenarioWorkbenchDataList<EventDetailDriverTreeRow>
-          rowId="id"
-          columns={columns}
-          rows={rows}
-          rowHeight={44}
-          cellPreset="miCanvasEvent"
-          loading={loading}
-          skeletonRowCount={5}
-          noRowMessage="표시할 데이터가 없습니다."
-          disableHover
-          hideInnerRowBorder
-          hideLastRowBorder
-        />
-      </Stack>
+      <ScenarioWorkbenchDataList<IScenarioWorkbenchEventDriverTreeScoreboardItem>
+        getRowKey={(_row, index) => `driver-tree-${index}`}
+        columns={columns}
+        rows={driverTreeScoreboard}
+        rowHeight={44}
+        cellPreset="miCanvasEvent"
+        loading={loading}
+        skeletonRowCount={5}
+        noRowMessage="표시할 데이터가 없습니다."
+        disableHover
+        hideInnerRowBorder
+        hideLastRowBorder
+      />
     </Stack>
-  )
-}
+  </Stack>
+)
 
 export default EventDetailDriverTreeScoreboardSection

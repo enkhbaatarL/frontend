@@ -75,6 +75,20 @@ export interface IScenarioWorkbenchEventAiInsights {
   detailedAnalysis: string
 }
 
+export interface IScenarioWorkbenchEventDriverTreeScoreboardItem {
+  lv1Id?: string | number | null
+  lv1Label?: string | null
+  lv2Id?: string | number | null
+  lv2Label?: string | null
+  lv3Id?: string | number | null
+  lv3Label?: string | null
+  marketImpactLevel: MarketImpactLevel
+  marketImpactLevelLabel?: string
+  direction?: MarketDirection
+  directionLabel?: string
+  reason?: string | null
+}
+
 export interface IScenarioWorkbenchRelatedEventScenarioEvent {
   eventId: number
   eventName: string
@@ -143,6 +157,7 @@ export interface IScenarioWorkbenchEventDetailRes {
   updatedAt: string
   impactAnalysis?: IScenarioWorkbenchEventImpactAnalysis
   aiInsights?: IScenarioWorkbenchEventAiInsights
+  driverTreeScoreboard?: IScenarioWorkbenchEventDriverTreeScoreboardItem[]
   fundamentalDeepdive?: IScenarioWorkbenchEventFundamentalDeepdive | IScenarioWorkbenchEventFundamental
   relatedEventScenario?: IScenarioWorkbenchRelatedEventScenario
 }

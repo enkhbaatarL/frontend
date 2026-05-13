@@ -387,7 +387,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           py="30px"
           sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}
         >
-          <EventDetailDriverTreeScoreboardSection rows={[]} loading={detailLoading} />
+          <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} loading={detailLoading} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related} gap="12px" py="30px">
           <Stack direction="row" alignItems="center" gap="8px">
