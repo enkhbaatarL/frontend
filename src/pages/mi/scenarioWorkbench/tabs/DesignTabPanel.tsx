@@ -61,15 +61,8 @@ const scenarioGenCompletionToastKey = (status: { requestId?: number | null; even
 const formatDesignEventTime = (item: IDesignEventItem) =>
   formatWorkbenchDateTime(item.status === ScenarioWorkbenchStatus.UPDATED ? item.updatedAt : item.createdAt)
 
-// ── 셀 컴포넌트 ───────────────────────────────────────────────────────────────
-
-const DetailIconButton = ({
-  row,
-  registerDetailTriggerRef,
-}: {
-  row: IDesignEventItem
-  registerDetailTriggerRef?: (eventId: number, el: HTMLButtonElement | null) => void
-}) => {
+/** 이벤트 상세 MIMorphingPopup: 트리거마다 별도 인스턴스(모핑 기준 rect 분리) */
+const useDesignEventDetailMorphingPopupState = (row: IDesignEventItem) => {
   const popupRef = useRef<MIMorphingPopupRef>(null)
   const eventIdString = String(row.eventId)
   /** 콘텐츠 lazy mount: 팝업이 열린 적이 있을 때만 EventDetailPage를 마운트 (API 호출 방지) */
@@ -84,36 +77,47 @@ const DetailIconButton = ({
     }
   }, [hasMounted, pendingOpen])
 
-  const handleClick = (e: MouseEvent) => {
-    e.stopPropagation()
-    if (hasMounted) {
-      popupRef.current?.open()
-      return
-    }
-    setHasMounted(true)
-    setPendingOpen(true)
-  }
+  const requestOpen = useCallback(
+    (e: MouseEvent) => {
+      e.stopPropagation()
+      if (hasMounted) {
+        popupRef.current?.open()
+        return
+      }
+      setHasMounted(true)
+      setPendingOpen(true)
+    },
+    [hasMounted],
+  )
+
+  const popup = useMemo(
+    () => ({
+      title: '이벤트 상세',
+      content: hasMounted ? (
+        <Stack px="12px">
+          <ScenarioWorkbenchEventDetailPage eventId={eventIdString} embedded />
+        </Stack>
+      ) : null,
+      useInternalScroll: true,
+    }),
+    [hasMounted, eventIdString],
+  )
+
+  return { popupRef, requestOpen, popup }
+}
+
+// ── 셀 컴포넌트 ───────────────────────────────────────────────────────────────
+
+const DetailIconButton = ({ row }: { row: IDesignEventItem }) => {
+  const { popupRef, requestOpen, popup } = useDesignEventDetailMorphingPopupState(row)
 
   return (
-    <MIMorphingPopup
-      ref={popupRef}
-      display="inline-flex"
-      popup={{
-        title: '이벤트 상세',
-        content: hasMounted ? (
-          <Stack px="12px">
-            <ScenarioWorkbenchEventDetailPage eventId={eventIdString} embedded />
-          </Stack>
-        ) : null,
-        useInternalScroll: true,
-      }}
-    >
+    <MIMorphingPopup ref={popupRef} display="inline-flex" popup={popup}>
       <MIBaseButton
-        ref={(el) => registerDetailTriggerRef?.(row.eventId, el)}
         variant="outlined"
         enableHoverBackground
         aria-label="이벤트 상세"
-        onClick={handleClick}
+        onClick={requestOpen}
         sx={{
           minWidth: '0px',
           height: '34px',
@@ -125,6 +129,44 @@ const DetailIconButton = ({
         <OpenInBrowserIcon sx={{ fontSize: 20, color: 'contentIcon.Black' }} />
       </MIBaseButton>
     </MIMorphingPopup>
+  )
+}
+
+const DesignEventNameMorphingCell = ({ row }: { row: IDesignEventItem }) => {
+  const { popupRef, requestOpen, popup } = useDesignEventDetailMorphingPopupState(row)
+  const reason = row.recommendationReason?.trim()
+  const badgeWrapSx = { flex: '0 0 auto' as const, display: 'inline-flex' as const, lineHeight: 0 }
+
+  const badge =
+    row.scenarioRecommended === true ? (
+      reason ? (
+        <WorkbenchFollowCursorTooltip title={reason}>
+          <Box component="span" sx={badgeWrapSx}>
+            <ScenarioWorkbenchRecommendedBadge />
+          </Box>
+        </WorkbenchFollowCursorTooltip>
+      ) : (
+        <Box sx={badgeWrapSx}>
+          <ScenarioWorkbenchRecommendedBadge />
+        </Box>
+      )
+    ) : null
+
+  return (
+    <Stack direction="row" alignItems="center" gap="6px" sx={{ minWidth: 0, width: '100%' }}>
+      {badge}
+      <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center' }}>
+        <MIMorphingPopup ref={popupRef} display="inline-flex" sx={{ maxWidth: '100%', minWidth: 0 }} popup={popup}>
+          <ScenarioWorkbenchEventDetailTableBodyText
+            value={row.eventName}
+            variant="body1M16"
+            tooltipWhenTruncated
+            sx={{ width: 'auto', maxWidth: '100%', minWidth: 0 }}
+            onClick={requestOpen}
+          />
+        </MIMorphingPopup>
+      </Box>
+    </Stack>
   )
 }
 
@@ -320,18 +362,6 @@ const DesignTabPanel = () => {
   const [pendingGenerateEventIds, setPendingGenerateEventIds] = useState<Set<number>>(() => new Set())
   /** 생성 직후 응답 전·응답에 시각이 없을 때 툴팁 보조 */
   const [designGenStartedAtFallback, setDesignGenStartedAtFallback] = useState<Partial<Record<number, string>>>({})
-
-  const designEventDetailTriggerRefs = useRef<Map<number, HTMLButtonElement>>(new Map())
-
-  const registerDesignEventDetailTriggerRef = useCallback((eventId: number, el: HTMLButtonElement | null) => {
-    const m = designEventDetailTriggerRefs.current
-    if (el) m.set(eventId, el)
-    else m.delete(eventId)
-  }, [])
-
-  const openDesignEventDetailViaTriggerButton = useCallback((eventId: number) => {
-    designEventDetailTriggerRefs.current.get(eventId)?.click()
-  }, [])
 
   const listRequest = useMemo((): IGetDesignEventsParams => {
     const resolvedRange = appliedDateRange.startDate && appliedDateRange.endDate ? appliedDateRange : defaultWorkbenchDateRange()
@@ -628,42 +658,7 @@ const DesignTabPanel = () => {
         minWidth: 360,
         align: 'left',
         headerAlign: 'left',
-        renderCell: (params) => {
-          const row = params.row
-          const reason = row.recommendationReason?.trim()
-          const badgeWrapSx = { flex: '0 0 auto' as const, display: 'inline-flex' as const, lineHeight: 0 }
-
-          const badge =
-            row.scenarioRecommended === true ? (
-              reason ? (
-                <WorkbenchFollowCursorTooltip title={reason}>
-                  <Box component="span" sx={badgeWrapSx}>
-                    <ScenarioWorkbenchRecommendedBadge />
-                  </Box>
-                </WorkbenchFollowCursorTooltip>
-              ) : (
-                <Box sx={badgeWrapSx}>
-                  <ScenarioWorkbenchRecommendedBadge />
-                </Box>
-              )
-            ) : null
-
-          return (
-            <Stack direction="row" alignItems="center" gap="6px" sx={{ minWidth: 0, width: '100%' }}>
-              {badge}
-              <ScenarioWorkbenchEventDetailTableBodyText
-                value={row.eventName}
-                variant="body1M16"
-                tooltipWhenTruncated
-                sx={{ minWidth: 0, flex: '1 1 auto' }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  openDesignEventDetailViaTriggerButton(row.eventId)
-                }}
-              />
-            </Stack>
-          )
-        },
+        renderCell: (params) => <DesignEventNameMorphingCell row={params.row} />,
       },
       {
         field: 'jkm',
@@ -708,7 +703,7 @@ const DesignTabPanel = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => <DetailIconButton row={params.row} registerDetailTriggerRef={registerDesignEventDetailTriggerRef} />,
+        renderCell: (params) => <DetailIconButton row={params.row} />,
       },
       {
         field: 'scenarioGenStatus',
@@ -737,13 +732,7 @@ const DesignTabPanel = () => {
         },
       },
     ],
-    [
-      designGenStartedAtFallback,
-      handleScenarioCreate,
-      openDesignEventDetailViaTriggerButton,
-      pendingGenerateEventIds,
-      registerDesignEventDetailTriggerRef,
-    ],
+    [designGenStartedAtFallback, handleScenarioCreate, pendingGenerateEventIds],
   )
 
   const categoryFilterItems = useMemo(
