@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { useTheme } from '@mui/material/styles'
+import { alpha, useTheme } from '@mui/material/styles'
 
 import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
 import { FILLED_BARS_TO_LABEL, probabilityToFilledBars } from '@/pages/mi/scenarioWorkbench/utils/probabilityFormatting'
@@ -16,6 +16,7 @@ const ProbabilityGaugeCell = ({ probability }: { probability: number }) => {
   const theme = useTheme()
   const filledBars = probabilityToFilledBars(probability)
   const color = theme.palette.chart[PURPLE_SCALE[Math.max(filledBars - 1, 0)]]
+  const emptyBarBorderColor = alpha(color, 1 / 3)
   return (
     <WorkbenchFollowCursorTooltip title={<ProbabilityGaugeTooltipContent filledBars={filledBars} />}>
       <Stack direction="row" alignItems="center" justifyContent="center" gap="2px" width="100%" height={22}>
@@ -24,11 +25,11 @@ const ProbabilityGaugeCell = ({ probability }: { probability: number }) => {
           return (
             <Box
               key={i}
-              width={6} /// 원래 4px이었음 (시연용 수정)
+              width={6}
               height={14}
               borderRadius="100px"
               bgcolor={filled ? color : theme.palette.commonColor.White}
-              boxShadow={filled ? 'none' : `inset 0 0 0 1px ${color}`}
+              boxShadow={filled ? 'none' : `inset 0 0 0 1px ${emptyBarBorderColor}`}
             />
           )
         })}

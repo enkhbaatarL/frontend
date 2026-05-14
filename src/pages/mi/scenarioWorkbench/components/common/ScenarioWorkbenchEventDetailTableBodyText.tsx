@@ -1,6 +1,6 @@
 import { Typography, type TypographyProps } from '@mui/material'
 
-import type { ReactNode } from 'react'
+import type { MouseEventHandler, ReactNode } from 'react'
 
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
@@ -24,6 +24,7 @@ export interface ScenarioWorkbenchEventDetailTableBodyTextProps extends Omit<Typ
   value: string
   tooltipWhenTruncated?: boolean
   tooltipTitle?: ReactNode
+  onClick?: MouseEventHandler<HTMLElement>
 }
 
 const ScenarioWorkbenchEventDetailTableBodyText = ({
@@ -33,6 +34,7 @@ const ScenarioWorkbenchEventDetailTableBodyText = ({
   variant = SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
   color = 'contentText.Normal',
   sx,
+  onClick,
   ...typographyProps
 }: ScenarioWorkbenchEventDetailTableBodyTextProps) => {
   const { ref, isEllipsis } = useEllipsisDetection(value)
@@ -44,6 +46,19 @@ const ScenarioWorkbenchEventDetailTableBodyText = ({
       lineHeight: SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
       ...ellipsisTypographySx,
     },
+    ...(onClick
+      ? [
+        {
+          cursor: 'pointer',
+          textDecoration: 'none',
+          '&:hover': {
+            textDecoration: 'underline',
+            textDecorationStyle: 'dotted',
+            textUnderlineOffset: '3px',
+          },
+        },
+      ]
+      : []),
     ...(sx ? (Array.isArray(sx) ? sx : [sx]) : []),
   ]
 
@@ -58,6 +73,7 @@ const ScenarioWorkbenchEventDetailTableBodyText = ({
       color={color}
       title={tooltipWhenTruncated ? undefined : value}
       sx={mergedSx}
+      onClick={onClick}
     >
       {value}
     </Typography>

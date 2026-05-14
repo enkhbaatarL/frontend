@@ -201,7 +201,7 @@ const ScenarioDetailPage = () => {
             zIndex: 3,
           }}
         >
-          모델 시뮬레이션
+          MI 수급 모델 실행
         </MIBaseButton>
       ),
     })

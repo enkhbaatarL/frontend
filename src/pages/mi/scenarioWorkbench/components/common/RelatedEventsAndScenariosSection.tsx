@@ -74,7 +74,19 @@ const getRelatedEventColumns = <T extends RelatedEventLike>(onDetailClick?: (row
       const categoryLabel = params.row.eventCategoryLv1Label ?? params.row.eventCategoryLv1
       return (
         <Stack gap="4px" sx={{ py: '4px', minWidth: 0, width: '100%' }}>
-          <ScenarioWorkbenchEventDetailTableBodyText value={params.row.eventName} tooltipWhenTruncated sx={{ minWidth: 0 }} />
+          <ScenarioWorkbenchEventDetailTableBodyText
+            value={params.row.eventName}
+            tooltipWhenTruncated
+            sx={{ minWidth: 0 }}
+            onClick={
+              onDetailClick
+                ? (e) => {
+                  e.stopPropagation()
+                  onDetailClick(params.row)
+                }
+                : undefined
+            }
+          />
           <Stack direction="row" alignItems="center" gap="8px">
             <Typography variant="body3M12" sx={{ color: 'contentText.Subtext' }}>
               {dateLabel}
@@ -156,6 +168,14 @@ const getRelatedScenarioColumns = <T extends RelatedScenarioLike>(onDetailClick?
           value={params.row.scenarioName}
           tooltipWhenTruncated
           sx={{ flex: '0 1 auto', width: 'auto', minWidth: 0 }}
+          onClick={
+            onDetailClick
+              ? (e) => {
+                e.stopPropagation()
+                onDetailClick(params.row)
+              }
+              : undefined
+          }
         />
         {params.row.baseCase && (
           <Box sx={{ flex: '0 0 auto', display: 'inline-flex', lineHeight: 0, verticalAlign: 'middle' }}>

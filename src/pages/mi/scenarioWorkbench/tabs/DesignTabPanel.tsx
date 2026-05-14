@@ -63,7 +63,13 @@ const formatDesignEventTime = (item: IDesignEventItem) =>
 
 // ── 셀 컴포넌트 ───────────────────────────────────────────────────────────────
 
-const DetailIconButton = ({ row }: { row: IDesignEventItem }) => {
+const DetailIconButton = ({
+  row,
+  registerDetailTriggerRef,
+}: {
+  row: IDesignEventItem
+  registerDetailTriggerRef?: (eventId: number, el: HTMLButtonElement | null) => void
+}) => {
   const popupRef = useRef<MIMorphingPopupRef>(null)
   const eventIdString = String(row.eventId)
   /** 콘텐츠 lazy mount: 팝업이 열린 적이 있을 때만 EventDetailPage를 마운트 (API 호출 방지) */
@@ -103,6 +109,7 @@ const DetailIconButton = ({ row }: { row: IDesignEventItem }) => {
       }}
     >
       <MIBaseButton
+        ref={(el) => registerDetailTriggerRef?.(row.eventId, el)}
         variant="outlined"
         enableHoverBackground
         aria-label="이벤트 상세"
@@ -313,6 +320,18 @@ const DesignTabPanel = () => {
   const [pendingGenerateEventIds, setPendingGenerateEventIds] = useState<Set<number>>(() => new Set())
   /** 생성 직후 응답 전·응답에 시각이 없을 때 툴팁 보조 */
   const [designGenStartedAtFallback, setDesignGenStartedAtFallback] = useState<Partial<Record<number, string>>>({})
+
+  const designEventDetailTriggerRefs = useRef<Map<number, HTMLButtonElement>>(new Map())
+
+  const registerDesignEventDetailTriggerRef = useCallback((eventId: number, el: HTMLButtonElement | null) => {
+    const m = designEventDetailTriggerRefs.current
+    if (el) m.set(eventId, el)
+    else m.delete(eventId)
+  }, [])
+
+  const openDesignEventDetailViaTriggerButton = useCallback((eventId: number) => {
+    designEventDetailTriggerRefs.current.get(eventId)?.click()
+  }, [])
 
   const listRequest = useMemo((): IGetDesignEventsParams => {
     const resolvedRange = appliedDateRange.startDate && appliedDateRange.endDate ? appliedDateRange : defaultWorkbenchDateRange()
@@ -637,6 +656,10 @@ const DesignTabPanel = () => {
                 variant="body1M16"
                 tooltipWhenTruncated
                 sx={{ minWidth: 0, flex: '1 1 auto' }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  openDesignEventDetailViaTriggerButton(row.eventId)
+                }}
               />
             </Stack>
           )
@@ -685,7 +708,7 @@ const DesignTabPanel = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => <DetailIconButton row={params.row} />,
+        renderCell: (params) => <DetailIconButton row={params.row} registerDetailTriggerRef={registerDesignEventDetailTriggerRef} />,
       },
       {
         field: 'scenarioGenStatus',
@@ -714,7 +737,13 @@ const DesignTabPanel = () => {
         },
       },
     ],
-    [designGenStartedAtFallback, handleScenarioCreate, pendingGenerateEventIds],
+    [
+      designGenStartedAtFallback,
+      handleScenarioCreate,
+      openDesignEventDetailViaTriggerButton,
+      pendingGenerateEventIds,
+      registerDesignEventDetailTriggerRef,
+    ],
   )
 
   const categoryFilterItems = useMemo(
@@ -735,7 +764,7 @@ const DesignTabPanel = () => {
 
           <Stack px="16px" py="8px" gap="2px">
             <Typography variant="body2M14" color="contentText.Normal">
-              • 이벤트의 생성 버튼을 실행하면 발생 가능한 시나리오 3~5개가 생성됩니다.
+              • 이벤트의 생성 버튼을 실행하면 발생 가능한 시나리오 4~6개가 생성됩니다.
             </Typography>
             <Typography variant="body2M14" color="contentText.Normal">
               • 시나리오 생성에는 약 5-10분이 소요됩니다.

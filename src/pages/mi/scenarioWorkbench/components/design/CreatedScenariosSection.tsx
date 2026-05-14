@@ -71,6 +71,10 @@ const CreatedScenariosSection = ({ scenarios }: CreatedScenariosSectionProps) =>
                 variant="body1M16"
                 tooltipWhenTruncated
                 sx={{ flex: '0 1 auto', width: 'auto', minWidth: 0 }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onScenarioDetailClick?.(params.row)
+                }}
               />
               {params.row.baseCase && (
                 <Box sx={{ flex: '0 0 auto', display: 'inline-flex', lineHeight: 0, verticalAlign: 'middle' }}>

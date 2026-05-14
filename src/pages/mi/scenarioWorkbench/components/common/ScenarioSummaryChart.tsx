@@ -184,7 +184,20 @@ const ScenarioSummaryChart = ({
         </Stack>
       )}
 
-      <Box bgcolor={hasChartData ? 'commonColor.White' : 'gray.5'} borderRadius="10px" width="100%" height={CHART_HEIGHT}>
+      <Box
+        borderRadius="10px"
+        width="100%"
+        height={CHART_HEIGHT}
+        sx={{
+          bgcolor: hasChartData ? 'commonColor.White' : 'gray.5',
+          transition: 'background-color 0.2s ease-in-out',
+          ...(!hasChartData && {
+            '&:hover': {
+              bgcolor: 'contentBG.Hover',
+            },
+          }),
+        }}
+      >
         {hasChartData ? (
           <ScenarioSummaryChartGraph
             height={CHART_HEIGHT}
