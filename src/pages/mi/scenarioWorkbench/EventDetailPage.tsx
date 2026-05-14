@@ -32,12 +32,12 @@ export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | /* 'fu
 
 /** 이벤트 상세 탭 라벨 정의 */
 const EVENT_DETAIL_TABS: { key: EventDetailTabKey; label: string }[] = [
-  { key: 'impact', label: '영향도 분석' },
   { key: 'ai', label: 'AI Insights' },
-  { key: 'records', label: 'MI Records' },
-  { key: 'outlook', label: '기관 전망' },
+  { key: 'impact', label: '영향도 분석' },
   // { key: 'fundamental', label: 'Fundamental Deep-dive' }, // 미확정으로 인한 임시 비활성화 26.05.07
   { key: 'driverTree', label: 'Driver Tree Scoreboard' },
+  { key: 'outlook', label: '기관 전망' },
+  { key: 'records', label: 'MI Records' },
   { key: 'related', label: '관련 이벤트 및 시나리오' },
 ]
 
@@ -351,6 +351,9 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
           </Typography>
         )}
+        <Stack id={SECTION_SCROLL_IDS.ai} gap="12px" py="30px">
+          <EventDetailAiInsightsSection bullets={aiBullets} detailParagraph={aiDetailParagraph} loading={detailLoading} />
+        </Stack>
         <Stack id={SECTION_SCROLL_IDS.impact} gap="12px" py="20px" sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}>
           <EventDetailImpactAnalysisSection
             tableRows={impactTableRows}
@@ -360,17 +363,13 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             isNoiseEvent={scenarioWorkbenchIsEventNoiseSignal(detail?.signalType)}
           />
         </Stack>
-        <Stack id={SECTION_SCROLL_IDS.ai} gap="12px" py="30px">
-          <EventDetailAiInsightsSection bullets={aiBullets} detailParagraph={aiDetailParagraph} loading={detailLoading} />
-        </Stack>
-        <Stack id={SECTION_SCROLL_IDS.records} gap="12px" py="30px">
-          <EventDetailMiRecordsTable
-            rows={recordRows}
-            serverPagination={recordsData}
-            onServerPageChange={(page) => setRecordsPagination((p) => ({ ...p, page }))}
-            onServerSizeChange={(size) => setRecordsPagination({ size, page: 1 })}
-            loading={recordsLoading}
-          />
+        <Stack
+          id={SECTION_SCROLL_IDS.driverTree}
+          gap="12px"
+          py="30px"
+          sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}
+        >
+          <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} loading={detailLoading} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.outlook} gap="12px" py="30px">
           <EventDetailInstitutionalOutlookTable
@@ -381,13 +380,14 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             loading={outlooksLoading}
           />
         </Stack>
-        <Stack
-          id={SECTION_SCROLL_IDS.driverTree}
-          gap="12px"
-          py="30px"
-          sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}
-        >
-          <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} loading={detailLoading} />
+        <Stack id={SECTION_SCROLL_IDS.records} gap="12px" py="30px">
+          <EventDetailMiRecordsTable
+            rows={recordRows}
+            serverPagination={recordsData}
+            onServerPageChange={(page) => setRecordsPagination((p) => ({ ...p, page }))}
+            onServerSizeChange={(size) => setRecordsPagination({ size, page: 1 })}
+            loading={recordsLoading}
+          />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related} gap="12px" py="30px">
           <Stack direction="row" alignItems="center" gap="8px">

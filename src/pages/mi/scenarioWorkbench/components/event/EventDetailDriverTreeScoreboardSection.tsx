@@ -41,7 +41,7 @@ const columns: GridColDef<IScenarioWorkbenchEventDriverTreeScoreboardItem>[] = [
   },
   {
     field: 'marketImpactLevel',
-    headerName: 'JKM 강도',
+    headerName: '강도',
     width: 100,
     align: 'center',
     sortable: false,
