@@ -22,6 +22,25 @@ export interface IAccessCompanyInfo {
   floating?: IMenuNode[]
 }
 
+// DELETE: API에서 FUNDAMENTAL_MODEL 제공 시 삭제
+const FUNDAMENTAL_MODEL_MENU_ITEM: IMenuNode = {
+  screenElementCd: 'FUNDAMENTAL_MODEL',
+  typeCd: 'MENU_ITEM',
+  children: [],
+}
+
+// DELETE: API에서 FUNDAMENTAL_MODEL 제공 시 삭제
+/** `AI_FORECAST`에 `FUNDAMENTAL_MODEL` ITEM 없으면 끝에 한 줄 붙임 */
+const patchMenusEnsureFundamentalModel = (menus: IMenuNode[] | undefined): IMenuNode[] | undefined => {
+  if (!menus?.length) return menus
+  return menus.map((top) => {
+    if (top.typeCd !== 'MENU_TOP' || top.screenElementCd !== 'AI_FORECAST') return top
+    const ch = top.children ?? []
+    if (ch.some((c) => c.typeCd === 'MENU_ITEM' && c.screenElementCd === 'FUNDAMENTAL_MODEL')) return top
+    return { ...top, children: [...ch, FUNDAMENTAL_MODEL_MENU_ITEM] }
+  })
+}
+
 const companiesService = {
   async getAllCompanies(): Promise<IAccessCompanyInfo[]> {
     const response: AxiosResponse<ICommonResponse<IAccessCompanyInfo[]>> = await api.get('mi/company-management/companies/all')
@@ -33,7 +52,10 @@ const companiesService = {
       `mi/company-management/companies/${companyNo}/detail`,
     )
 
-    return response.data.data
+    const data = response.data.data
+    // DELETE: API에서 FUNDAMENTAL_MODEL 제공 시 삭제
+    // return response.data.data
+    return { ...data, menus: patchMenusEnsureFundamentalModel(data.menus) }
   },
 }
 
