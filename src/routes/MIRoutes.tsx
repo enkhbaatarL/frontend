@@ -13,6 +13,7 @@ import EconomicCalendarPage from '@/pages/mi/economicCalendar/EconomicCalendarPa
 import ForecastPage from '@/pages/mi/forecast/ForecastPage'
 import NewForecastPage from '@/pages/mi/forecast/NewForecastPage'
 import FundamentalModelPage from '@/pages/mi/fundamentalModel/FundamentalModelPage'
+import { FUNDAMENTAL_MODEL_DEFAULT_RUN_ID } from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
 import QaPage from '@/pages/mi/helpCenter/QaPage'
 import InsightsPage from '@/pages/mi/insights/InsightsPage'
 import MarketDataPage from '@/pages/mi/marketData/MarketDataPage'
@@ -186,7 +187,10 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'fundamental-model',
-      element: <FundamentalModelPage />,
+      children: [
+        { index: true, element: <Navigate to={FUNDAMENTAL_MODEL_DEFAULT_RUN_ID} replace /> },
+        { path: ':runId', element: <FundamentalModelPage /> },
+      ],
     },
     {
       path: 'scenario-workbench',
