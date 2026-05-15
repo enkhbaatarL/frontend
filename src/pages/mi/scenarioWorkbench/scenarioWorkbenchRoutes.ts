@@ -1,12 +1,11 @@
 export const SCENARIO_WORKBENCH_BASE_PATH = '/mi/scenario-workbench'
 import DesignTabPanel from '@/pages/mi/scenarioWorkbench/tabs/DesignTabPanel'
 import EventsTabPanel from '@/pages/mi/scenarioWorkbench/tabs/EventsTabPanel'
-/// 시연용 Overview 비노출 — 복구 시 아래 import·항목 주석 해제하면 기본 진입도 다시 Overview(첫 탭)가 됨
-// import OverviewTabPanel from '@/pages/mi/scenarioWorkbench/tabs/OverviewTabPanel'
+import OverviewTabPanel from '@/pages/mi/scenarioWorkbench/tabs/OverviewTabPanel'
 import ScenariosTabPanel from '@/pages/mi/scenarioWorkbench/tabs/ScenariosTabPanel'
 
 export const SCENARIO_WORKBENCH_TAB_INFO = [
-  // { key: 'overview', label: 'Overview', segment: 'overview', path: `${SCENARIO_WORKBENCH_BASE_PATH}/overview`, content: OverviewTabPanel },
+  { key: 'overview', label: 'Overview', segment: 'overview', path: `${SCENARIO_WORKBENCH_BASE_PATH}/overview`, content: OverviewTabPanel },
   { key: 'events', label: 'Events', segment: 'events', path: `${SCENARIO_WORKBENCH_BASE_PATH}/events`, content: EventsTabPanel },
   {
     key: 'scenarios',

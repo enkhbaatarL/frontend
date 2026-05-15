@@ -2,9 +2,13 @@ import { Box, Typography, type SxProps, type Theme, type TypographyProps } from 
 import { type GridColDef, type GridRowModel } from '@mui/x-data-grid'
 import { useMemo } from 'react'
 
+import { scenarioWorkbenchColumnsToGridTemplate } from '@/pages/mi/scenarioWorkbench/components/table/scenarioWorkbenchGridColTemplate'
+
 export const SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX = 138
 
 const toCssLength = (value: number | string) => (typeof value === 'number' ? `${value}px` : value)
+
+const toSxArray = (value?: SxProps<Theme>) => (Array.isArray(value) ? value : value ? [value] : [])
 
 export interface ScenarioWorkbenchTableHeaderProps<T extends GridRowModel> {
   columns: GridColDef<T>[]
@@ -14,6 +18,7 @@ export interface ScenarioWorkbenchTableHeaderProps<T extends GridRowModel> {
   headerCellPx?: number | string
   headerCellPy?: number | string
   headerLabelColor?: TypographyProps['color']
+  getHeaderCellSx?: (col: GridColDef<T>) => SxProps<Theme> | undefined
 }
 
 const ScenarioWorkbenchTableHeader = <T extends GridRowModel>({
@@ -24,24 +29,12 @@ const ScenarioWorkbenchTableHeader = <T extends GridRowModel>({
   headerCellPx,
   headerCellPy,
   headerLabelColor,
+  getHeaderCellSx,
 }: ScenarioWorkbenchTableHeaderProps<T>) => {
   const px = toCssLength(headerCellPx ?? '12px')
   const pyDefined = headerCellPy !== undefined && headerCellPy !== null
   const py = pyDefined ? toCssLength(headerCellPy) : undefined
-  const gridTemplateColumns = useMemo(
-    () =>
-      columns
-        .map((col) => {
-          if (col.width !== undefined && col.width !== null) {
-            return typeof col.width === 'number' ? `${col.width}px` : String(col.width)
-          }
-          const flex = col.flex ?? 1
-          const min = col.minWidth ?? 0
-          return `minmax(${min}px, ${flex}fr)`
-        })
-        .join(' '),
-    [columns],
-  )
+  const gridTemplateColumns = useMemo(() => scenarioWorkbenchColumnsToGridTemplate(columns), [columns])
 
   return (
     <Box
@@ -53,6 +46,8 @@ const ScenarioWorkbenchTableHeader = <T extends GridRowModel>({
           width: '100%',
           minWidth: 0,
           maxWidth: '100%',
+          boxSizing: 'border-box',
+          overflowX: 'hidden',
           ...(pyDefined ? { minHeight: 36, height: 'auto' } : { height: 36 }),
           borderBottom: `0.5px solid ${theme.palette.gray[60]}`,
           bgcolor: 'transparent',
@@ -72,16 +67,19 @@ const ScenarioWorkbenchTableHeader = <T extends GridRowModel>({
       {columns.map((col) => (
         <Box
           key={col.field}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: col.align === 'center' ? 'center' : col.align === 'right' ? 'flex-end' : 'flex-start',
-            px,
-            ...(py !== undefined ? { py } : {}),
-            overflow: 'hidden',
-            minWidth: 0,
-            boxSizing: 'border-box',
-          }}
+          sx={[
+            {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: col.align === 'center' ? 'center' : col.align === 'right' ? 'flex-end' : 'flex-start',
+              px,
+              ...(py !== undefined ? { py } : {}),
+              overflow: 'hidden',
+              minWidth: 0,
+              boxSizing: 'border-box',
+            },
+            ...toSxArray(getHeaderCellSx?.(col)),
+          ]}
         >
           <Typography variant="body2SB14" color={headerLabelColor ?? 'gray.70'} noWrap>
             {col.headerName ?? ''}

@@ -29,10 +29,16 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
       disableRipple,
       isLoading = false,
       disabled,
-      ...props
+      sx,
+      ...restProps
     },
     ref,
   ) => {
+    const {
+      borderRadius: _omitBorderRadius,
+      borderColor: _omitBorderColor,
+      ...forwardProps
+    } = restProps as typeof restProps & { borderRadius?: unknown; borderColor?: unknown }
     const getBorderColor = () => {
       if (variant !== 'outlined') return undefined
       return open ? 'contentBorder.Active' : 'contentBorder.Normal'
@@ -57,31 +63,33 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
         aria-expanded={open ? 'true' : undefined}
         aria-haspopup="true"
         aria-busy={isLoading}
-        {...props}
-        sx={{
-          padding: `8px ${suffix ? '8px' : '12px'} 8px ${prefix ? '8px' : '12px'}`,
-          height: '40px',
-          justifyContent: 'space-between',
-          textTransform: 'none',
-          backgroundColor: variant === 'outlined' && open ? 'contentBG.Active' : undefined,
-          transition: 'background-color 0.15s ease-in-out, border-color 0.4s ease-in-out',
-          '&:disabled': {
-            backgroundColor: (disabled || isLoading) && variant === 'text' ? 'transparent' : undefined,
-            borderColor: (disabled || isLoading) && variant === 'outlined' ? 'contentBorder.Disabled' : undefined,
-          },
-          borderColor,
-          borderWidth: '1px',
-          borderRadius: '10px',
-          '&:hover:not(:disabled)': {
-            backgroundColor: buttonHoverBgColor ?? hoverBackgroundColor,
+        {...forwardProps}
+        sx={[
+          {
+            padding: `8px ${suffix ? '8px' : '12px'} 8px ${prefix ? '8px' : '12px'}`,
+            height: '40px',
+            justifyContent: 'space-between',
+            textTransform: 'none',
+            backgroundColor: variant === 'outlined' && open ? 'contentBG.Active' : undefined,
+            transition: 'background-color 0.15s ease-in-out, border-color 0.4s ease-in-out',
+            '&:disabled': {
+              backgroundColor: (disabled || isLoading) && variant === 'text' ? 'transparent' : undefined,
+              borderColor: (disabled || isLoading) && variant === 'outlined' ? 'contentBorder.Disabled' : undefined,
+            },
             borderColor,
             borderWidth: '1px',
+            borderRadius: '10px',
+            '&:hover:not(:disabled)': {
+              backgroundColor: buttonHoverBgColor ?? hoverBackgroundColor,
+              borderColor,
+              borderWidth: '1px',
+            },
+            '& .MuiButton-endIcon': {
+              marginRight: '2px',
+            },
           },
-          '& .MuiButton-endIcon': {
-            marginRight: '2px',
-          },
-          ...props.sx,
-        }}
+          ...(sx === undefined ? [] : Array.isArray(sx) ? sx : [sx]),
+        ]}
       >
         <Box component="span" position="relative" display="inline-flex" alignItems="center" justifyContent="space-between" width="100%">
           <Box component="span" visibility={isLoading ? 'hidden' : 'visible'} display="inline-flex" alignItems="center" width="100%">

@@ -92,9 +92,7 @@ const EventDetailDriverTreeScoreboardSection = ({
         loading={loading}
         skeletonRowCount={5}
         noRowMessage="표시할 데이터가 없습니다."
-        disableHover
         hideInnerRowBorder
-        hideLastRowBorder
       />
     </Stack>
   </Stack>

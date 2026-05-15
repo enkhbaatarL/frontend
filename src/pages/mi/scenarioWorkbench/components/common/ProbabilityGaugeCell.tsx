@@ -12,7 +12,12 @@ const ProbabilityGaugeTooltipContent = ({ filledBars }: { filledBars: 1 | 2 | 3 
   </Typography>
 )
 
-const ProbabilityGaugeCell = ({ probability }: { probability: number }) => {
+interface ProbabilityGaugeCellProps {
+  probability: number
+  barWidth?: number
+}
+
+const ProbabilityGaugeCell = ({ probability, barWidth = 6 }: ProbabilityGaugeCellProps) => {
   const theme = useTheme()
   const filledBars = probabilityToFilledBars(probability)
   const color = theme.palette.chart[PURPLE_SCALE[Math.max(filledBars - 1, 0)]]
@@ -25,7 +30,7 @@ const ProbabilityGaugeCell = ({ probability }: { probability: number }) => {
           return (
             <Box
               key={i}
-              width={6}
+              width={barWidth}
               height={14}
               borderRadius="100px"
               bgcolor={filled ? color : theme.palette.commonColor.White}

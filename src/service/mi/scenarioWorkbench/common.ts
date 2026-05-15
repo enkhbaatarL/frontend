@@ -42,6 +42,7 @@ export enum MarketImpactLevel {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
+  EXTREME = 'extreme',
 }
 
 export const MARKET_IMPACT_LEVEL_KO: Record<MarketImpactLevel, string> = {
@@ -49,6 +50,7 @@ export const MARKET_IMPACT_LEVEL_KO: Record<MarketImpactLevel, string> = {
   [MarketImpactLevel.LOW]: '낮음',
   [MarketImpactLevel.MEDIUM]: '중간',
   [MarketImpactLevel.HIGH]: '높음',
+  [MarketImpactLevel.EXTREME]: '높음',
 }
 
 export enum SignpostImpactLevel {

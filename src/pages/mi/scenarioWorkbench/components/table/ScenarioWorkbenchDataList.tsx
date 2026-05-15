@@ -1,7 +1,9 @@
-import { Box, Skeleton, Stack, Typography, type SxProps, type Theme, type TypographyProps } from '@mui/material'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import { Box, Skeleton, Stack, type SxProps, type Theme, Typography, type TypographyProps } from '@mui/material'
 import { type GridColDef, type GridRowModel } from '@mui/x-data-grid'
-import { isValidElement, useMemo, type ReactNode } from 'react'
+import { isValidElement, type ReactNode, useMemo, useState } from 'react'
 
+import MIBaseButton from '@/components/common/button/MIBaseButton'
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import ScenarioWorkbenchEventDetailTableBodyText, {
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY,
@@ -10,13 +12,19 @@ import ScenarioWorkbenchEventDetailTableBodyText, {
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
+import { scenarioWorkbenchColumnsToGridTemplate } from '@/pages/mi/scenarioWorkbench/components/table/scenarioWorkbenchGridColTemplate'
 
+export const SCENARIO_WORKBENCH_DATA_LIST_FIRST_ROW_TOP_INSET_DEFAULT_PX = 4
+
+const DETAIL_SHORTCUT_HOVER_MS = 220
+const DETAIL_SHORTCUT_HOVER_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 export type ScenarioWorkbenchDataListCellPreset = 'default' | 'miCanvasEvent'
 
 export interface ScenarioWorkbenchDataListProps<T extends GridRowModel>
   extends Partial<{
     loading: boolean
     skeletonRowCount: number
+    showCellSkeleton: (col: GridColDef<T>) => boolean
     noRowMessage: string
     disableHover: boolean
     rowHeight: number
@@ -26,10 +34,16 @@ export interface ScenarioWorkbenchDataListProps<T extends GridRowModel>
     onRowMouseEnter: (params: { row: T }) => void
     onRowMouseLeave: () => void
     sx: SxProps<Theme>
-    hideLastRowBorder: boolean // 마지막 행 하단 구분선 미표시
-    hideInnerRowBorder: boolean // 행 사이 구분선 미표시(마지막 행 하단 구분선은 유지)
+    rowSx: SxProps<Theme>
+    rowGap: number | string
+    getCellSx: (params: { field: string; row?: T }) => SxProps<Theme>
+    hideLastRowBorder: boolean
+    hideInnerRowBorder: boolean
     primitiveCellTypographyVariant: TypographyProps['variant']
     cellPreset: ScenarioWorkbenchDataListCellPreset
+    detailShortcutColumnField?: string
+    onDetailShortcutClick?: (params: { row: T }) => void
+    disableFirstRowTopInset?: boolean
   }> {
   rowId?: keyof T
   columns: GridColDef<T>[]
@@ -42,6 +56,13 @@ const renderCellContentToNode = (content: unknown): ReactNode => {
   if (typeof content === 'string' || typeof content === 'number') return content
   return String(content)
 }
+
+const toSxArray = (sx?: SxProps<Theme>) => (Array.isArray(sx) ? sx : sx ? [sx] : [])
+
+const SKELETON_ROW_MIN_HEIGHT_WHEN_ROW_HEIGHT_AUTO_PX = 48
+const ROW_HOVER_BORDER_RADIUS = '10px'
+
+const defaultShowCellSkeleton = <T extends GridRowModel>(col: GridColDef<T>) => String(col.headerName ?? '').trim() !== ''
 
 const DefaultEllipsisTooltip = ({
   value,
@@ -97,6 +118,7 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
   rows,
   loading,
   skeletonRowCount,
+  showCellSkeleton,
   noRowMessage,
   disableHover,
   onRowClick,
@@ -109,7 +131,13 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
   hideInnerRowBorder,
   primitiveCellTypographyVariant,
   cellPreset,
+  rowSx,
+  rowGap,
+  getCellSx,
   sx,
+  detailShortcutColumnField,
+  onDetailShortcutClick,
+  disableFirstRowTopInset,
 }: ScenarioWorkbenchDataListProps<T>) => {
   const preset = cellPreset ?? 'default'
   const isMiCanvas = preset === 'miCanvasEvent'
@@ -125,55 +153,63 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
     boxSizing: 'border-box' as const,
   }
 
-  const effectiveRowHeight = rowHeight ?? 42
+  const hasFixedRowHeight = typeof rowHeight === 'number'
   const skeletonRows = Math.max(1, skeletonRowCount ?? 8)
-  const gridTemplateColumns = useMemo(
-    () =>
-      columns
-        .map((col) => {
-          if (col.width !== undefined && col.width !== null) {
-            return typeof col.width === 'number' ? `${col.width}px` : String(col.width)
-          }
-          const flex = col.flex ?? 1
-          const min = col.minWidth ?? 0
-          return `minmax(${min}px, ${flex}fr)`
-        })
-        .join(' '),
-    [columns],
-  )
+  const resolveShowCellSkeleton = showCellSkeleton ?? defaultShowCellSkeleton
+  const rowSxArray = toSxArray(rowSx)
+  const [hoveredRowKey, setHoveredRowKey] = useState<string | number | null>(null)
+  const gridTemplateColumns = useMemo(() => scenarioWorkbenchColumnsToGridTemplate(columns), [columns])
 
-  const rowKey = (row: T, index: number) => {
-    const value = getRowKey ? getRowKey(row, index) : rowId ? row[rowId] : index
-    return typeof value === 'string' || typeof value === 'number' ? value : String(value)
-  }
+  const rowKey = (row: T, index: number) => (getRowKey ? getRowKey(row, index) : rowId ? row[rowId] : index)
 
   const cellJustifyContent = (align?: GridColDef['align']) =>
     align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start'
 
+  const firstRowTopInsetPx = disableFirstRowTopInset ? 0 : SCENARIO_WORKBENCH_DATA_LIST_FIRST_ROW_TOP_INSET_DEFAULT_PX
+
   let body: ReactNode
   if (loading) {
     body = (
-      <Stack gap={0}>
+      <Stack gap={rowGap ?? 0}>
         {Array.from({ length: skeletonRows }).map((_, idx) => (
           <Box
             key={idx}
-            sx={(theme) => {
-              const isLastSkeletonRow = idx === skeletonRows - 1
-              const showBorder =
-                // hideInnerRowBorder: 마지막 행 하단 구분선은 유지(단, hideLastRowBorder면 마지막도 숨김)
-                (hideInnerRowBorder ? isLastSkeletonRow : true) && (!isLastSkeletonRow || !hideLastRowBorder)
-              return {
-                display: 'grid',
-                gridTemplateColumns,
-                alignItems: 'center',
-                height: effectiveRowHeight,
-                borderBottom: showBorder ? `1px solid ${theme.palette.contentBorder?.Normal ?? theme.palette.gray[40]}` : 'none',
-              }
-            }}
+            sx={[
+              (theme) => {
+                const isLastSkeletonRow = idx === skeletonRows - 1
+                const showBorder = (hideInnerRowBorder ? isLastSkeletonRow : true) && (!isLastSkeletonRow || !hideLastRowBorder)
+                return {
+                  display: 'grid',
+                  gridTemplateColumns,
+                  alignItems: hasFixedRowHeight ? 'center' : 'stretch',
+                  ...(hasFixedRowHeight ? { height: rowHeight } : { minHeight: SKELETON_ROW_MIN_HEIGHT_WHEN_ROW_HEIGHT_AUTO_PX }),
+                  borderBottom: showBorder ? `1px solid ${theme.palette.contentBorder?.Normal ?? theme.palette.gray[40]}` : 'none',
+                }
+              },
+              ...rowSxArray,
+            ]}
           >
             {columns.map((col) => (
-              <Box key={col.field} sx={cellBoxSx}>
-                <Skeleton variant="rounded" height={Math.min(28, effectiveRowHeight - 8)} />
+              <Box
+                key={col.field}
+                sx={[
+                  {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: cellJustifyContent(col.align),
+                    ...cellBoxSx,
+                  },
+                  ...toSxArray(getCellSx?.({ field: col.field })),
+                ]}
+              >
+                {resolveShowCellSkeleton(col) ? (
+                  <Skeleton
+                    variant="rounded"
+                    width="100%"
+                    height={hasFixedRowHeight ? Math.min(28, rowHeight - 8) : 28}
+                    sx={{ maxWidth: '100%' }}
+                  />
+                ) : null}
               </Box>
             ))}
           </Box>
@@ -200,48 +236,124 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
     )
   } else {
     body = (
-      <Stack gap={0} sx={{ width: '100%', minWidth: 0, maxWidth: '100%' }}>
+      <Stack gap={rowGap ?? 0} sx={{ width: '100%', minWidth: 0, maxWidth: '100%', overflowX: 'hidden' }}>
         {rows.map((row, idx) => {
           const currentKey = rowKey(row, idx)
+          const nextKey = idx < rows.length - 1 ? rowKey(rows[idx + 1], idx + 1) : null
+          const isRowHovered = !disableHover && hoveredRowKey === currentKey
+          const isBeforeHoveredRow = !disableHover && nextKey !== null && hoveredRowKey === nextKey
 
           return (
             <Box
               key={currentKey}
               onClick={onRowClick ? () => onRowClick({ row }) : undefined}
-              onMouseEnter={onRowMouseEnter ? () => onRowMouseEnter({ row }) : undefined}
-              onMouseLeave={onRowMouseLeave}
+              onMouseEnter={() => {
+                if (!disableHover) {
+                  setHoveredRowKey(currentKey)
+                }
+                onRowMouseEnter?.({ row })
+              }}
+              onMouseLeave={() => {
+                setHoveredRowKey(null)
+                onRowMouseLeave?.()
+              }}
               className={getRowClassName?.({ row })}
-              sx={(theme) => ({
-                display: 'grid',
-                gridTemplateColumns,
-                alignItems: 'center',
-                height: effectiveRowHeight,
-                width: '100%',
-                minWidth: 0,
-                maxWidth: '100%',
-                position: 'relative',
-                bgcolor: 'transparent',
-                cursor: onRowClick ? 'pointer' : 'default',
-                borderBottom: hideInnerRowBorder
-                  ? idx === rows.length - 1 && !hideLastRowBorder
-                    ? `1px solid ${theme.palette.contentBorder?.Normal ?? theme.palette.mari[40]}`
-                    : 'none'
-                  : idx < rows.length - 1 || !hideLastRowBorder
-                    ? `1px solid ${theme.palette.contentBorder?.Normal ?? theme.palette.gray[40]}`
-                    : 'none',
-                transition: 'background-color 120ms ease',
-                ...(disableHover
-                  ? {}
-                  : {
-                    '&:hover': {
-                      backgroundColor: theme.palette.gray[10],
-                      borderRadius: 0,
-                    },
-                  }),
-              })}
+              sx={[
+                (theme) => {
+                  const showDivider = hideInnerRowBorder
+                    ? idx === rows.length - 1 && !hideLastRowBorder
+                    : idx < rows.length - 1 || !hideLastRowBorder
+                  const dividerColor = hideInnerRowBorder
+                    ? (theme.palette.contentBorder?.Normal ?? theme.palette.mari[40])
+                    : (theme.palette.contentBorder?.Normal ?? theme.palette.gray[40])
+                  const rowHoverBgColor = theme.palette.gray[10]
+                  const hideDividerForHover = showDivider && (isRowHovered || isBeforeHoveredRow)
+
+                  return {
+                    display: 'grid',
+                    gridTemplateColumns,
+                    alignItems: hasFixedRowHeight ? 'center' : 'stretch',
+                    ...(hasFixedRowHeight ? { height: rowHeight } : {}),
+                    width: '100%',
+                    minWidth: 0,
+                    maxWidth: '100%',
+                    position: 'relative',
+                    zIndex: isRowHovered ? 1 : 0,
+                    bgcolor: 'transparent',
+                    cursor: onRowClick ? 'pointer' : 'default',
+                    borderBottom: showDivider ? `1px solid ${hideDividerForHover ? 'transparent' : dividerColor}` : 'none',
+                    borderRadius: isRowHovered ? ROW_HOVER_BORDER_RADIUS : 0,
+                    transition: 'background-color 120ms ease, border-color 120ms ease, border-radius 120ms ease',
+                    ...(disableHover
+                      ? {}
+                      : {
+                        '&:hover': {
+                          backgroundColor: rowHoverBgColor,
+                          borderRadius: ROW_HOVER_BORDER_RADIUS,
+                        },
+                      }),
+                  }
+                },
+                ...rowSxArray,
+              ]}
             >
               {columns.map((col) => {
                 const value = (row as Record<string, unknown>)[col.field]
+                const showDetailShortcutCell =
+                  detailShortcutColumnField !== undefined && onDetailShortcutClick !== undefined && col.field === detailShortcutColumnField
+
+                if (showDetailShortcutCell) {
+                  return (
+                    <Box
+                      key={col.field}
+                      sx={[
+                        {
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: cellJustifyContent(col.align),
+                          ...cellBoxSx,
+                        },
+                        ...toSxArray(getCellSx?.({ field: col.field, row })),
+                      ]}
+                    >
+                      <Box
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '100%',
+                          opacity: isRowHovered ? 1 : 0,
+                          transition: `opacity ${DETAIL_SHORTCUT_HOVER_MS}ms ${DETAIL_SHORTCUT_HOVER_EASE}`,
+                          pointerEvents: isRowHovered ? 'auto' : 'none',
+                          '@media (prefers-reduced-motion: reduce)': {
+                            transition: 'none',
+                          },
+                        }}
+                      >
+                        <MIBaseButton
+                          variant="outlined"
+                          enableHoverBackground
+                          aria-label="상세 보기"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDetailShortcutClick({ row })
+                          }}
+                          sx={{
+                            width: '22px',
+                            minWidth: '0px',
+                            height: '22px',
+                            padding: '3px',
+                            borderRadius: '4px',
+                            backgroundColor: 'commonColor.White',
+                          }}
+                        >
+                          <OpenInNewIcon sx={{ fontSize: 14, color: 'contentIcon.Enabled' }} />
+                        </MIBaseButton>
+                      </Box>
+                    </Box>
+                  )
+                }
+
                 const content = col.renderCell
                   ? col.renderCell({
                     value,
@@ -266,7 +378,6 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
                   !col.renderCell &&
                   typeof value === 'string' &&
                   value.length > 0 &&
-                  // 상태 칩은 ellipsis 대상이 아님
                   col.field !== 'status' &&
                   col.field !== 'type' &&
                   col.field !== 'jkmImpact' &&
@@ -276,12 +387,15 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
                 return (
                   <Box
                     key={col.field}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: cellJustifyContent(col.align),
-                      ...cellBoxSx,
-                    }}
+                    sx={[
+                      {
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: cellJustifyContent(col.align),
+                        ...cellBoxSx,
+                      },
+                      ...toSxArray(getCellSx?.({ field: col.field, row })),
+                    ]}
                   >
                     {typeof node === 'string' || typeof node === 'number' ? (
                       <ScenarioWorkbenchEventDetailTableBodyText
@@ -322,6 +436,8 @@ const ScenarioWorkbenchDataList = <T extends GridRowModel>({
           width: '100%',
           minWidth: 0,
           maxWidth: '100%',
+          overflowX: 'hidden',
+          ...(firstRowTopInsetPx > 0 ? { pt: `${firstRowTopInsetPx}px` } : {}),
         },
         ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
       ]}

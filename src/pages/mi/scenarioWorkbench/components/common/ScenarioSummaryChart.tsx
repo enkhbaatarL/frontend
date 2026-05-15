@@ -1,31 +1,35 @@
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import { Box, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { IScenarioPriceForecast } from '@/service/mi/scenarioWorkbench/scenario'
 import type { ChartData } from '@/types/dataDetailChart'
 
-import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
+import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import ScenarioSummaryChartGraph from '@/pages/mi/scenarioWorkbench/components/common/ScenarioSummaryChartGraph'
+import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
+import { buildDistinctSeriesColors } from '@/pages/mi/scenarioWorkbench/components/common/workbenchSeriesColors'
 import { ChartType } from '@/types/dataDetailChart'
 
 const CHART_HEIGHT = 480
-const DEFAULT_TARGETS = ['JKM', 'TTF', 'HH']
 const SCENARIO_CHART_COLORS = ['#185FA5', '#0F8A72', '#E09A3A', '#C4407A', '#A32D2D', '#2B8EA6', '#7B52B8', '#B8960C', '#3D7D3F', '#6B6A65']
+
+export const scenarioForecastVisibilityKey = (scenarioId: number): string => `scenario:${scenarioId}_FORECAST`
 
 type ScenarioSummaryForecastChartData = ChartData & {
   dataType: 'FORECAST'
   resultDates: string[]
   startDates: string[]
+  visibilityKey?: string
 }
 
 const normalizeMonthDate = (dateLabel: string, fallbackMonthIndex: number): dayjs.Dayjs => {
   const value = dateLabel.trim()
-  const compactMatch = value.match(/^(\d{4})(\d{2})$/)
+  const compactMatch = new RegExp(/^(\d{4})(\d{2})$/).exec(value)
   if (compactMatch) return dayjs(`${compactMatch[1]}-${compactMatch[2]}-01`)
 
-  const separatedMatch = value.match(/^(\d{4})[./-](\d{1,2})/)
+  const separatedMatch = new RegExp(/^(\d{4})[./-](\d{1,2})/).exec(value)
   if (separatedMatch) return dayjs(`${separatedMatch[1]}-${separatedMatch[2].padStart(2, '0')}-01`)
 
   const parsed = dayjs(value)
@@ -54,55 +58,70 @@ const buildChartUnit = (priceForecast: IScenarioPriceForecast): string => {
   return 'Unit: -'
 }
 
-const pickBenchmarkSeriesInOrder = (series: IScenarioPriceForecast['series']) =>
-  DEFAULT_TARGETS.map((target) => series.find((s) => s.indexName.toUpperCase() === target)).filter(
-    (s): s is NonNullable<(typeof series)[number]> => s !== null,
+type LegendEllipsisLabelProps = {
+  label: string
+  isShow: boolean
+  isHighlighted: boolean
+  legendDimmed: boolean
+}
+
+const LegendEllipsisLabel = ({ label, isShow, isHighlighted, legendDimmed }: LegendEllipsisLabelProps) => {
+  const { ref, isEllipsis } = useEllipsisDetection(label)
+
+  const typography = (
+    <Typography
+      ref={ref}
+      className="legend-label"
+      variant={isHighlighted ? 'body3SB12' : 'body3M12'}
+      sx={{
+        color: !isShow ? 'contentText.Disabled' : legendDimmed ? 'contentText.Subtext' : 'commonColor.Black',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        minWidth: 0,
+        flex: '1 1 0%',
+        transition: 'color 0.15s ease-in-out',
+      }}
+    >
+      {label}
+    </Typography>
   )
+
+  if (!isEllipsis) return typography
+  return <WorkbenchFollowCursorTooltip title={label}>{typography}</WorkbenchFollowCursorTooltip>
+}
 
 interface ScenarioSummaryChartProps {
   priceForecast: IScenarioPriceForecast
-  useGroup?: boolean // true: JKM/TTF/HH 그룹핑, false: 전체 표시
+  suppressChartHeader?: boolean
+  headerEnd?: ReactNode
   linkedHighlightIndexName?: string | null
+  linkedHighlightVisibilityKey?: string | null
+  chartColorMap?: Map<string, string>
   emptyMessage?: string
 }
 
 const ScenarioSummaryChart = ({
   priceForecast,
-  useGroup = false,
+  suppressChartHeader = false,
+  headerEnd,
   linkedHighlightIndexName = null,
+  linkedHighlightVisibilityKey = null,
+  chartColorMap: chartColorMapProp,
   emptyMessage = 'MI 수급 모델 실행 후 차트가 생성됩니다.',
 }: ScenarioSummaryChartProps) => {
-  const displaySeries = useMemo(
-    () => (useGroup ? pickBenchmarkSeriesInOrder(priceForecast.series) : priceForecast.series),
-    [priceForecast.series, useGroup],
-  )
-
-  const tabLabels = useMemo(() => {
-    if (!useGroup) return []
-    if (displaySeries.length > 0) return displaySeries.map((s) => s.indexName)
-    const seriesNames = new Set(priceForecast.series.map((series) => series.indexName.toUpperCase()))
-    const matchedDefaults = DEFAULT_TARGETS.filter((target) => seriesNames.has(target))
-    if (matchedDefaults.length > 0) return matchedDefaults
-    return priceForecast.series.slice(0, 3).map((series) => series.indexName)
-  }, [displaySeries, priceForecast.series, useGroup])
-  const [selectedTarget, setSelectedTarget] = useState<string>(tabLabels[0] ?? '')
   const [chartVisibilityMap, setChartVisibilityMap] = useState<Map<string, boolean>>(new Map())
   const [hoveredChartKey, setHoveredChartKey] = useState<string | null>(null)
 
   useEffect(() => {
-    if (tabLabels.length === 0) {
-      setSelectedTarget('')
-      return
-    }
-    setSelectedTarget((prev) => (tabLabels.includes(prev) ? prev : tabLabels[0]))
-  }, [tabLabels])
-
-  useEffect(() => {
     setChartVisibilityMap(new Map())
     setHoveredChartKey(null)
-  }, [priceForecast.series, useGroup])
+  }, [priceForecast.series])
 
-  const maxValueCount = useMemo(() => displaySeries.reduce((max, series) => Math.max(max, series.values.length), 0), [displaySeries])
+  const maxValueCount = useMemo(
+    () => priceForecast.series.reduce((max, series) => Math.max(max, series.values.length), 0),
+    [priceForecast.series],
+  )
 
   const timestamps = useMemo(() => buildTimestamps(priceForecast.dates, maxValueCount), [priceForecast.dates, maxValueCount])
 
@@ -110,52 +129,63 @@ const ScenarioSummaryChart = ({
 
   const charts = useMemo<ScenarioSummaryForecastChartData[]>(
     () =>
-      displaySeries.map((series, index) => ({
-        goodsDataSourceName: series.indexName,
-        goodsDataSourceNo: index + 1,
-        chartType: ChartType.LINE,
-        timestamps,
-        resultDates,
-        startDates: timestamps.map((timestamp) => dayjs(timestamp).format('YYYYMMDD')),
-        series: [
-          {
-            seriesId: 'main',
-            label: series.indexName,
-            renderAs: 'MAIN',
-            values: series.values,
-            isVisible: true,
-          },
-        ],
-        unitCd: priceForecast.unit,
-        goodsDataName: series.indexName,
-        dataType: 'FORECAST',
-      })),
-    [displaySeries, priceForecast.unit, resultDates, timestamps],
+      priceForecast.series.map((series, index) => {
+        const visibilityKey =
+          typeof series.scenarioId === 'number' ? scenarioForecastVisibilityKey(series.scenarioId) : `${series.indexName}_FORECAST`
+        return {
+          goodsDataSourceName: series.indexName,
+          goodsDataSourceNo: index + 1,
+          chartType: ChartType.LINE,
+          timestamps,
+          resultDates,
+          startDates: timestamps.map((timestamp) => dayjs(timestamp).format('YYYYMMDD')),
+          visibilityKey,
+          series: [
+            {
+              seriesId: 'main',
+              label: series.indexName,
+              renderAs: 'MAIN',
+              values: series.values,
+              isVisible: true,
+            },
+          ],
+          unitCd: priceForecast.unit,
+          goodsDataName: series.indexName,
+          dataType: 'FORECAST',
+        }
+      }),
+    [priceForecast.series, priceForecast.unit, resultDates, timestamps],
   )
 
+  const legendSwatchFallbackColors = useMemo(() => buildDistinctSeriesColors(SCENARIO_CHART_COLORS, charts.length), [charts.length])
+
   const chartColorMap = useMemo(() => {
+    if (chartColorMapProp) return chartColorMapProp
+    const distinct = buildDistinctSeriesColors(SCENARIO_CHART_COLORS, priceForecast.series.length)
     const colorMap = new Map<string, string>()
-    displaySeries.forEach((series, index) => {
-      colorMap.set(series.indexName, SCENARIO_CHART_COLORS[index % SCENARIO_CHART_COLORS.length])
+    priceForecast.series.forEach((series, index) => {
+      colorMap.set(series.indexName, distinct[index] ?? SCENARIO_CHART_COLORS[0])
     })
     return colorMap
-  }, [displaySeries])
+  }, [chartColorMapProp, priceForecast.series])
 
   const resolvedLinkedHighlightKey = useMemo(() => {
+    const direct = linkedHighlightVisibilityKey?.trim()
+    if (direct) return direct
     const raw = linkedHighlightIndexName?.trim()
     if (!raw) return null
     const needle = raw.toUpperCase()
     const match = charts.find((c) => (c.goodsDataSourceName ?? '').toUpperCase() === needle)
-    return match ? `${match.goodsDataSourceName}_FORECAST` : null
-  }, [charts, linkedHighlightIndexName])
+    if (!match) return null
+    return match.visibilityKey ?? `${match.goodsDataSourceName}_FORECAST`
+  }, [charts, linkedHighlightIndexName, linkedHighlightVisibilityKey])
 
-  const effectiveHoveredChartKey = hoveredChartKey ?? resolvedLinkedHighlightKey
+  const highlightVisibilityKey = hoveredChartKey ?? resolvedLinkedHighlightKey
 
-  const handleLegendToggle = useCallback((label: string) => {
-    const key = `${label}_FORECAST`
+  const handleLegendToggle = useCallback((visibilityKey: string) => {
     setChartVisibilityMap((prev) => {
       const next = new Map(prev)
-      next.set(key, prev.get(key) === false)
+      next.set(visibilityKey, prev.get(visibilityKey) === false)
       return next
     })
   }, [])
@@ -163,24 +193,15 @@ const ScenarioSummaryChart = ({
   const chartUnit = useMemo(() => buildChartUnit(priceForecast), [priceForecast])
   const hasChartData = charts.length > 0 && maxValueCount > 0
 
-  const targetSegmentOptions = useMemo(() => tabLabels.map((label) => ({ value: label, label })), [tabLabels])
-
   return (
     <Stack width="100%" minWidth={0} gap="8px">
-      {hasChartData && (
+      {hasChartData && !suppressChartHeader && (
         <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
           <Typography variant="body2SB14" color="contentText.Normal" sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
             {chartUnit}
           </Typography>
 
-          {useGroup && targetSegmentOptions.length > 0 && (
-            <MISlidingSegmented
-              options={targetSegmentOptions}
-              value={selectedTarget}
-              onChange={setSelectedTarget}
-              sx={{ flexShrink: 0, '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
-            />
-          )}
+          {headerEnd ? <Box sx={{ flexShrink: 0 }}>{headerEnd}</Box> : null}
         </Stack>
       )}
 
@@ -202,9 +223,8 @@ const ScenarioSummaryChart = ({
           <ScenarioSummaryChartGraph
             height={CHART_HEIGHT}
             charts={charts}
-            targetLabel={useGroup ? selectedTarget : undefined}
             chartVisibilityMap={chartVisibilityMap}
-            hoveredChartKey={effectiveHoveredChartKey}
+            hoveredChartKey={highlightVisibilityKey}
             chartColorMap={chartColorMap}
             spanGaps
           />
@@ -225,16 +245,22 @@ const ScenarioSummaryChart = ({
             gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
             gap: '0 8px',
             width: '100%',
+            boxSizing: 'border-box',
+            pl: '24px',
+            pr: '12px',
           }}
         >
           {charts.map((chart, index) => {
-            const visibilityKey = `${chart.goodsDataSourceName}_FORECAST`
+            const visibilityKey = chart.visibilityKey ?? `${chart.goodsDataSourceName}_FORECAST`
             const isShow = chartVisibilityMap.get(visibilityKey) !== false
-            const color = chartColorMap.get(chart.goodsDataSourceName) ?? SCENARIO_CHART_COLORS[index % SCENARIO_CHART_COLORS.length]
+            const color = chartColorMap.get(chart.goodsDataSourceName) ?? legendSwatchFallbackColors[index] ?? SCENARIO_CHART_COLORS[0]
+            const isHighlighted = highlightVisibilityKey === visibilityKey
+            const hasActiveHighlight = highlightVisibilityKey !== null && highlightVisibilityKey !== undefined
+            const legendDimmed = hasActiveHighlight && isShow && !isHighlighted
 
             return (
               <Stack
-                key={chart.goodsDataSourceName}
+                key={visibilityKey}
                 direction="row"
                 alignItems="center"
                 gap="8px"
@@ -243,35 +269,41 @@ const ScenarioSummaryChart = ({
                 py="4px"
                 onMouseEnter={() => setHoveredChartKey(isShow ? visibilityKey : null)}
                 onMouseLeave={() => setHoveredChartKey(null)}
-                onClick={() => handleLegendToggle(chart.goodsDataSourceName)}
+                onClick={() => handleLegendToggle(visibilityKey)}
                 sx={{
                   cursor: 'pointer',
-                  opacity: isShow ? 1 : 0.35,
-                  transition: 'opacity 0.2s ease-in-out',
+                  borderRadius: '8px',
+                  boxSizing: 'border-box',
+                  transition: 'background-color 0.15s ease, opacity 0.2s ease-in-out',
+                  opacity: !isShow ? 0.35 : legendDimmed ? 0.45 : 1,
+                  ...(isShow && {
+                    ...(isHighlighted ? { bgcolor: 'gray.10' } : {}),
+                    '&:hover': {
+                      bgcolor: 'gray.10',
+                      '& .legend-label': {
+                        color: 'contentText.Normal',
+                      },
+                    },
+                  }),
                 }}
               >
                 <Box
                   sx={{
                     width: 18,
-                    height: 4,
+                    height: isHighlighted ? 5 : 4,
                     borderRadius: '100px',
                     bgcolor: color,
                     flexShrink: 0,
+                    opacity: legendDimmed ? 0.5 : 1,
+                    transition: 'height 0.15s ease-in-out, opacity 0.2s ease-in-out',
                   }}
                 />
-                <Typography
-                  variant="body3M12"
-                  sx={{
-                    color: isShow ? 'commonColor.Black' : 'contentText.Disabled',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    minWidth: 0,
-                    transition: 'color 0.2s ease-in-out',
-                  }}
-                >
-                  {chart.goodsDataSourceName}
-                </Typography>
+                <LegendEllipsisLabel
+                  label={chart.goodsDataSourceName}
+                  isShow={isShow}
+                  isHighlighted={isHighlighted}
+                  legendDimmed={legendDimmed}
+                />
               </Stack>
             )
           })}
