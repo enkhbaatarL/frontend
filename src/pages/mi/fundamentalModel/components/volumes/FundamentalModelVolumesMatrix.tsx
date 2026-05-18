@@ -22,7 +22,7 @@ interface FundamentalModelVolumesMatrixSkeletonProps {
   compact?: boolean
 }
 
-/** 표 로딩 시 Figma와 유사한 격자 스켈레톤 */
+/** 표 로딩 시 격자 스켈레톤 */
 const FundamentalModelVolumesMatrixSkeleton = ({ monthCount, rowCount, compact = false }: FundamentalModelVolumesMatrixSkeletonProps) => (
   <Box
     sx={{

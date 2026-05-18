@@ -45,6 +45,10 @@ const buildExtendedRows = (): FundamentalModelMetricRow[] => {
 
 const SUMMARY_ONLY_ROWS: FundamentalModelMetricRow[] = BASE_SUMMARY_ROWS
 
+/** 메모 2줄 초과·더보기 팝업 검증용 긴 설명(최대 500자) */
+const MOCK_MEMO_LONG =
+  '500자 이서샤오, 아네 스맨저호로 말엔패이가, 틶사우아의 아안엔에 처사를 탄개엉. 치으쳬깄까지 게라사르산이 섬힝기넌은 몌아댓랄 한차시알힝단 일짰도죠웅에서 담러타맘다 오라고 가몬모곤 마튼이나. 앝하딘자갬다 아아라 가라악다 칸속거다 렝겜어 렸앙에 뇨만악이. 애기다 갸치쵼사 둥딩트기체와 라마속은, 명갈인겐 소루안다 뜌크로 고자 우소몊승다. 트창일 뇨희로골음 탕바뇽통다 디아도 놈고는 후나자. 서간오넙닌게 살읙아도 긋도에오조에 에록친은 닙바젠앤히지 타히눌 으내 투히슬에 실겡룹한에 쾔만찰보가. 안심셀라뵤 차홀녀 컬더냐, 고후어서 시앤올이는 잔디라 오마눌너는 이이걸을. 샚탈게를 무리궉즈미각 칸안리내다 가학린앙곤오다 귾오아퇬의 벤싀깉울 걸즈개사는 채라는 셔힝은 키셔은을. 헉강과 이서샤오, 아네 스맨저호로 말엔패이가, 틶사우아의 아안엔에 처사를 탄개엉. 치으쳬깄까지 게라사르산이 섬힝기넌은 몌아댓랄 한차시알힝단 일짰도죠웅에서 담러타맘다 오라고 가몬모곤 마튼이나. 앝하딘자갬다 아아라 가라악다 칸속거다'
+
 /** 목 실행 목록(이전 run-* 순서·내용 유지, id만 URL용 `1`…`7`) */
 const MOCK_RUNS: FundamentalModelRunListItem[] = [
   {
@@ -66,10 +70,12 @@ const MOCK_RUNS: FundamentalModelRunListItem[] = [
   {
     id: '3',
     status: 'done',
-    title: '시뮬레이션 케이스 3',
+    title:
+      '제목이 길어지는 경우 말줄임 표시 제목이 길어지는 경우 말줄임 표시 제목이 길어지는 경우 말줄임 표시 제목이 길어지는 경우 말줄임 표시 제목이 길어지는 경우 말줄임 표시',
     createdAtLabel: 'MM-DD 00:00',
     updatedAtLabel: 'MM-DD 00:00',
-    managerName: '홍길동',
+    managerName:
+      '작성자명이 길어지는 경우 말줄임 표시 작성자명이 길어지는 경우 말줄임 표시 작성자명이 길어지는 경우 말줄임 표시 작성자명이 길어지는 경우 말줄임 표시 작성자명이 길어지는 경우 말줄임 표시',
   },
   {
     id: '4',
@@ -108,17 +114,24 @@ const MOCK_RUNS: FundamentalModelRunListItem[] = [
 /** 목 실행 -> 상세 DTO */
 const buildDetail = (run: FundamentalModelRunListItem): FundamentalModelDetail => ({
   ...run,
-  subtitle: '테스트 실험 -> 미국-이란 종전 (4월 종전 케이스)',
+  subtitle: run.id === '2' ? MOCK_MEMO_LONG : '테스트 실험 -> 미국-이란 종전 (4월 종전 케이스)',
   scenarioYearLabel: '2023',
   monthLabels: FUNDAMENTAL_MODEL_MONTH_LABELS,
   summaryRows: SUMMARY_ONLY_ROWS,
   detailRows: buildExtendedRows(),
-  attachmentNames: [
-    '복호화_복호화_(SC1) Demand Model_input .xlsm',
-    '복호화_복호화_(SC1) Supply Model_input .xlsm',
-    '복호화_복호화_(SC1) Trade Model_input .xlsm',
-  ],
-  durationLabel: '09:15:45 - 13초 소요',
+  attachmentNames:
+    run.id === '2'
+      ? [
+        '복호화_복호화_(SC1) Demand Model_input .xlsm',
+        '복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input .xlsm',
+        '복호화_복호화_(SC1) Trade Model_input .xlsm',
+      ]
+      : [
+        '복호화_복호화_(SC1) Demand Model_input .xlsm',
+        '복호화_복호화_(SC1) Supply Model_input .xlsm',
+        '복호화_복호화_(SC1) Trade Model_input .xlsm',
+      ],
+  durationLabel: '09:15:45 · 13초 소요',
 })
 
 /** 목록 API를 흉내 낸 비동기 호출 */

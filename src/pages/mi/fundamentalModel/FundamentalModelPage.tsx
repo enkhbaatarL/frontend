@@ -7,8 +7,8 @@ import type { FundamentalModelDetail, FundamentalModelRunListItem } from '@/page
 
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import FundamentalModelTab from '@/pages/mi/fundamentalModel/components/common/FundamentalModelTab'
-import FundamentalModelDetailHeader from '@/pages/mi/fundamentalModel/components/FundamentalModelDetailHeader'
 import FundamentalModelRunList from '@/pages/mi/fundamentalModel/components/FundamentalModelRunList'
+import FundamentalModelDetailHeader from '@/pages/mi/fundamentalModel/components/header/FundamentalModelDetailHeader'
 import PriceTabPanel from '@/pages/mi/fundamentalModel/components/price/PriceTabPanel'
 import VolumesTabPanel from '@/pages/mi/fundamentalModel/components/volumes/VolumesTabPanel'
 import {
@@ -90,12 +90,12 @@ const FundamentalModelPage = () => {
   )
 
   const rightBody = !runsReady ? (
-    <Box sx={{ flex: 1, minHeight: 520 }} />
+    <Box sx={{ flex: 1, minHeight: 900 }} />
   ) : !activeRunId ? (
     <Box
       sx={{
         flex: 1,
-        minHeight: 520,
+        minHeight: 900,
         bgcolor: 'gray.5',
         borderRadius: '8px',
         display: 'flex',
