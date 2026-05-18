@@ -9,7 +9,7 @@ import FundamentalModelTab from '@/pages/mi/fundamentalModel/components/common/F
 import FundamentalModelDetailHeader from '@/pages/mi/fundamentalModel/components/FundamentalModelDetailHeader'
 import FundamentalModelRunList from '@/pages/mi/fundamentalModel/components/FundamentalModelRunList'
 import PriceTabPanel from '@/pages/mi/fundamentalModel/components/price/PriceTabPanel'
-import VolumesTabPanel from '@/pages/mi/fundamentalModel/components/volume/VolumesTabPanel'
+import VolumesTabPanel from '@/pages/mi/fundamentalModel/components/volumes/VolumesTabPanel'
 import {
   fetchFundamentalModelDetail,
   fetchFundamentalModelRuns,

@@ -2,8 +2,8 @@ import { Stack } from '@mui/material'
 
 import type { FundamentalModelMetricRow } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 
-import FundamentalModelSegmentToolbar from '@/pages/mi/fundamentalModel/components/volume/FundamentalModelSegmentToolbar'
-import FundamentalModelVolumesMatrix from '@/pages/mi/fundamentalModel/components/volume/FundamentalModelVolumesMatrix'
+import FundamentalModelSegmentToolbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSegmentToolbar'
+import FundamentalModelVolumesMatrix from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelVolumesMatrix'
 
 /** Volumes 탭에 필요한 표 데이터 */
 export interface VolumesTabPanelProps {
