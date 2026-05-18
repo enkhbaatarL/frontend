@@ -84,7 +84,7 @@ const getNonOverlappingTop = (container: HTMLElement, desiredTop: number, height
 const isVisibleDataset = (chart: ChartJS, datasetIndex: number) => {
   const dataset = chart.data.datasets[datasetIndex]
   const meta = chart.getDatasetMeta(datasetIndex)
-  return (dataset as { hidden?: boolean }).hidden !== true && meta.hidden !== true
+  return !(dataset as { hidden?: boolean }).hidden && meta.hidden !== true
 }
 
 const findPoint = (data: unknown, xScaleIndex: number): ChartPoint | undefined => {
@@ -340,6 +340,7 @@ const ScenarioSummaryCrosshairLine = forwardRef<ScenarioSummaryCrosshairLineHand
                 toFixed?: number
                 goodsDataSourceNo?: number
                 startDates?: string[]
+                visibilityKey?: string
               }
             }
           ).metadata
@@ -353,6 +354,7 @@ const ScenarioSummaryCrosshairLine = forwardRef<ScenarioSummaryCrosshairLineHand
             toFixed: datasetMetadata?.toFixed,
             isForecast: datasetMetadata?.isDashed ?? false,
             goodsDataSourceNo: datasetMetadata?.goodsDataSourceNo,
+            visibilityKey: datasetMetadata?.visibilityKey,
           }
         })
 

@@ -11,15 +11,16 @@ export interface ImpactDotsCellProps {
   direction?: MarketDirection
 }
 
-// MarketImpactLevel → 채워질 dot 개수: NONE=0, LOW=1, MEDIUM=2, HIGH=3
+// MarketImpactLevel → 채워질 dot 개수
 const LEVEL_TO_DOTS: Record<MarketImpactLevel, number> = {
   [MarketImpactLevel.NONE]: 0,
   [MarketImpactLevel.LOW]: 1,
   [MarketImpactLevel.MEDIUM]: 2,
   [MarketImpactLevel.HIGH]: 3,
+  [MarketImpactLevel.EXTREME]: 3,
 }
 
-const filledDotCount = (level: MarketImpactLevel | undefined): number => (level !== undefined ? (LEVEL_TO_DOTS[level] ?? 0) : 0)
+const filledDotCount = (level: MarketImpactLevel | undefined): number => (level === undefined ? 0 : (LEVEL_TO_DOTS[level] ?? 0))
 
 const filledColorForLevel = (filledCount: number, index: number): string | undefined => {
   const filled = index < filledCount
@@ -76,7 +77,7 @@ const tooltipTitleTypographySx = {
 }
 
 const ImpactHoverTooltipContent = ({ level, direction }: { level: MarketImpactLevel | undefined; direction?: MarketDirection }) => {
-  const impactLabel = level !== undefined ? MARKET_IMPACT_LEVEL_KO[level] : '-'
+  const impactLabel = level === undefined ? '-' : MARKET_IMPACT_LEVEL_KO[level]
   return (
     <Stack gap={0}>
       <Typography component="p" sx={tooltipTitleTypographySx}>
@@ -92,9 +93,9 @@ const ImpactHoverTooltipContent = ({ level, direction }: { level: MarketImpactLe
 }
 
 /** 시장 영향 3-dot 표현 */
-const ImpactDotsCell = ({ level, size = 10, direction }: ImpactDotsCellProps) => {
+const ImpactDotsCell = ({ level, size, direction }: ImpactDotsCellProps) => {
   const withDirection = direction !== undefined
-  const dotSize = withDirection ? COMPACT_DOT_SIZE_WITH_DIRECTION : size
+  const dotSize = size ?? (withDirection ? COMPACT_DOT_SIZE_WITH_DIRECTION : 10)
   const filledCount = filledDotCount(level)
   return (
     <WorkbenchFollowCursorTooltip title={<ImpactHoverTooltipContent level={level} direction={direction} />}>

@@ -10,6 +10,7 @@ interface ScenarioWorkbenchTabProps extends Omit<TabsProps, 'onChange' | 'value'
   tabItems: TabItem[]
   tabProps?: TabProps
   tabBarOnly?: boolean
+  endAdornment?: ReactNode
   value?: number
   onChange?: (index: number) => void
 }
@@ -30,6 +31,7 @@ const ScenarioWorkbenchTab = ({
   tabItems,
   tabProps,
   tabBarOnly,
+  endAdornment,
   value: controlledValue,
   onChange: onChangeProp,
   ...props
@@ -63,33 +65,41 @@ const ScenarioWorkbenchTab = ({
           },
         }}
       >
-        <Tabs
-          value={selectedTab}
-          onChange={handleChange}
-          sx={{
-            position: 'relative',
-            zIndex: 1,
-            '.MuiTabs-indicator': {
-              backgroundColor: 'mari.Primary',
-            },
-
-            '& .MuiTab-root': {
-              fontWeight: 600,
-              fontSize: '18px',
-              color: 'content.textNormal',
-              padding: '12px 20px 22px 20px',
-              textTransform: 'none',
-              '&.Mui-selected': {
-                color: 'mari.Primary',
+        <Box position="relative" zIndex={1} display="flex" alignItems="stretch" justifyContent="space-between">
+          <Tabs
+            value={selectedTab}
+            onChange={handleChange}
+            sx={{
+              position: 'relative',
+              flex: '1 1 auto',
+              minWidth: 0,
+              '.MuiTabs-indicator': {
+                backgroundColor: 'mari.Primary',
               },
-            },
-          }}
-          {...props}
-        >
-          {tabItems.map((tab, index) => (
-            <Tab key={tab.label} label={tab.label} disableRipple {...a11yProps(index)} {...tabProps} />
-          ))}
-        </Tabs>
+
+              '& .MuiTab-root': {
+                fontWeight: 600,
+                fontSize: '18px',
+                color: 'content.textNormal',
+                padding: '12px 20px 22px 20px',
+                textTransform: 'none',
+                '&.Mui-selected': {
+                  color: 'mari.Primary',
+                },
+              },
+            }}
+            {...props}
+          >
+            {tabItems.map((tab, index) => (
+              <Tab key={tab.label} label={tab.label} disableRipple {...a11yProps(index)} {...tabProps} />
+            ))}
+          </Tabs>
+          {endAdornment && (
+            <Box display="flex" alignItems="center" justifyContent="flex-end" flexShrink={0} minHeight="62px">
+              {endAdornment}
+            </Box>
+          )}
+        </Box>
       </Box>
 
       {tabBarOnly ? null : (

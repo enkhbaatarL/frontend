@@ -17,6 +17,7 @@ export interface MIPaginationSecondaryProps<T> {
   onPageChange?: (value: number) => void
   disabled?: boolean
   paddingTop?: string | number
+  hideSizeSelector?: boolean
 }
 
 type PaginationNavIcon = typeof FirstPageRoundedIcon
@@ -37,6 +38,7 @@ const MIPaginationSecondary = <T,>({
   onPageChange,
   disabled,
   paddingTop = '20px',
+  hideSizeSelector,
 }: MIPaginationSecondaryProps<T>) => {
   const page = data?.currentPage ?? 1
   const count = data?.totalPages ?? 0
@@ -96,22 +98,24 @@ const MIPaginationSecondary = <T,>({
 
   return data ? (
     <Box display="flex" alignItems="center" justifyContent="flex-end" gap="20px" pt={paddingTop} width="100%">
-      <Box display="flex" alignItems="center" gap="10px">
-        <Typography variant="body2M14" color="contentText.Normal" whiteSpace="nowrap">
-          페이지당 행 수
-        </Typography>
-        {size ? (
-          <MISelectMenu<number>
-            variant="outlined"
-            selected={size}
-            onSelected={(next: number) => onSizeChange?.(next)}
-            items={sizeItems}
-            placement="bottom-start"
-            disablePortal={false}
-            sx={{ height: 36 }}
-          />
-        ) : null}
-      </Box>
+      {!hideSizeSelector && (
+        <Box display="flex" alignItems="center" gap="10px">
+          <Typography variant="body2M14" color="contentText.Normal" whiteSpace="nowrap">
+            페이지당 행 수
+          </Typography>
+          {size ? (
+            <MISelectMenu<number>
+              variant="outlined"
+              selected={size}
+              onSelected={(next: number) => onSizeChange?.(next)}
+              items={sizeItems}
+              placement="bottom-start"
+              disablePortal={false}
+              sx={{ height: 36 }}
+            />
+          ) : null}
+        </Box>
+      )}
 
       <Typography variant="body2M14" color="contentText.Black" whiteSpace="nowrap" sx={{ letterSpacing: '0.7px' }}>
         {paginationRange}

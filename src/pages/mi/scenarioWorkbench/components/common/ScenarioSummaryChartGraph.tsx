@@ -34,6 +34,7 @@ type ScenarioSummaryChartData = ChartData & {
   dataType?: string
   resultDates?: string[]
   startDates?: string[]
+  visibilityKey?: string
 }
 
 interface ScenarioSummaryChartGraphProps {
@@ -82,8 +83,8 @@ const getCurrentLineX = (timestamps: string[], xScale: { getPixelForValue: (valu
   const today = dayjs().startOf('day')
   const dateList = timestamps.map((timestamp) => dayjs(timestamp))
   const first = dateList[0]
-  const last = dateList[dateList.length - 1]
-  if (!first.isValid() || !last.isValid() || today.isBefore(first, 'day') || today.isAfter(last, 'day')) return null
+  const last = dateList.at(-1)
+  if (!first.isValid() || !last?.isValid() || today.isBefore(first, 'day') || today.isAfter(last, 'day')) return null
 
   const exactIndex = dateList.findIndex((date) => date.isSame(today, 'day'))
   if (exactIndex >= 0) return xScale.getPixelForValue(exactIndex)
@@ -103,6 +104,77 @@ const getCurrentLineX = (timestamps: string[], xScale: { getPixelForValue: (valu
 const TODAY_MARKER_WIDTH = 10
 const TODAY_MARKER_HEIGHT = 7
 
+const INTRO_LINE_REVEAL_MS = 1000
+
+type ProgressiveLineAnimCtx = {
+  type?: string
+  index: number
+  xStarted?: boolean
+  yStarted?: boolean
+}
+
+const buildProgressiveLineIntroAnimation = (pointCount: number, yAxisMin: number, onComplete: () => void) => {
+  const n = Math.max(1, pointCount)
+  const totalDuration = INTRO_LINE_REVEAL_MS
+  const segmentDuration = Math.max(4, totalDuration / n)
+  const segmentDelay = (ctx: { index: number }) => (ctx.index / n) * totalDuration
+  const previousY = (ctx: { index: number; datasetIndex: number; chart: ChartJS }) => {
+    const yScale = ctx.chart.scales.y
+    const baselineY = typeof yScale?.getPixelForValue === 'function' ? yScale.getPixelForValue(yAxisMin) : NaN
+    if (ctx.index === 0) return baselineY
+
+    const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex)
+    const prevPoint = meta?.data?.[ctx.index - 1] as { getProps?: (keys: string[], final?: boolean) => { y?: number } } | undefined
+
+    if (prevPoint && typeof prevPoint.getProps === 'function') {
+      try {
+        const y = prevPoint.getProps(['y'], true)?.y
+        if (typeof y === 'number' && Number.isFinite(y)) return y
+      } catch {
+        void 0
+      }
+    }
+    return baselineY
+  }
+
+  let completeNotified = false
+  return {
+    x: {
+      type: 'number',
+      easing: 'linear',
+      duration: segmentDuration,
+      from: NaN,
+      delay(ctx: ProgressiveLineAnimCtx) {
+        if (ctx.type !== 'data' || ctx.xStarted) {
+          return 0
+        }
+        ctx.xStarted = true
+        return segmentDelay(ctx)
+      },
+    },
+    y: {
+      type: 'number',
+      easing: 'linear',
+      duration: segmentDuration,
+      from: previousY,
+      delay(ctx: ProgressiveLineAnimCtx) {
+        if (ctx.type !== 'data' || ctx.yStarted) {
+          return 0
+        }
+        ctx.yStarted = true
+        return segmentDelay(ctx)
+      },
+    },
+    onComplete: () => {
+      if (completeNotified) return
+      completeNotified = true
+      onComplete()
+    },
+  } as unknown as NonNullable<ChartOptions<'line'>['animation']>
+}
+
+const VERTICAL_GRID_MAX_LINES = 96
+
 const buildScenarioSummaryPlugin = (timestamps: string[], resultDates: string[]): Plugin<'line'> => ({
   id: 'scenarioSummaryChartChrome',
   beforeDatasetsDraw(chart) {
@@ -117,7 +189,10 @@ const buildScenarioSummaryPlugin = (timestamps: string[], resultDates: string[])
     ctx.lineWidth = 1
     ctx.setLineDash([1, 2])
 
-    for (let index = 0; index < timestamps.length; index += 1) {
+    const len = timestamps.length
+    const stride = len > VERTICAL_GRID_MAX_LINES ? Math.max(1, Math.ceil(len / VERTICAL_GRID_MAX_LINES)) : 1
+
+    for (let index = 0; index < len; index += stride) {
       const x = Math.round(xScale.getPixelForValue(index)) + 0.5
       if (x < left || x > right) continue
       ctx.beginPath()
@@ -232,11 +307,22 @@ const getDataMaxPrecision = (charts: ScenarioSummaryChartData[]) => {
 
 const Y_AXIS_RANGE_PADDING_RATIO = 0.08
 const Y_AXIS_SINGLE_VALUE_PAD = 2.5
+const Y_AXIS_TICK_TARGET = 9
 
-const snapYDown = (n: number) => Math.floor(n / 5) * 5
-const snapYUp = (n: number) => Math.ceil(n / 5) * 5
+const niceTickStep = (rawStep: number): number => {
+  if (!Number.isFinite(rawStep) || rawStep <= 0) return 1
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep))
+  const normalized = rawStep / magnitude
+  let factor = 10
+  if (normalized <= 1) factor = 1
+  else if (normalized <= 2) factor = 2
+  else if (normalized <= 5) factor = 5
+  return factor * magnitude
+}
 
-const getYAxisBounds = (charts: ScenarioSummaryChartData[]) => {
+type YAxisScale = { min: number; max: number; tickStep: number }
+
+const getYAxisScale = (charts: ScenarioSummaryChartData[]): YAxisScale => {
   let dataMin = Number.POSITIVE_INFINITY
   let dataMax = Number.NEGATIVE_INFINITY
 
@@ -251,40 +337,46 @@ const getYAxisBounds = (charts: ScenarioSummaryChartData[]) => {
   })
 
   if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
-    return { min: 0, max: 50 }
+    const tickStep = niceTickStep(5 / Math.max(1, Y_AXIS_TICK_TARGET - 1))
+    return { min: 0, max: tickStep * Math.max(8, Y_AXIS_TICK_TARGET - 1), tickStep }
   }
 
   const range = dataMax - dataMin
   const pad = range > 0 ? range * Y_AXIS_RANGE_PADDING_RATIO : Math.max(Math.abs(dataMax) * 0.05, Y_AXIS_SINGLE_VALUE_PAD)
 
-  let min = dataMin - pad
-  let max = dataMax + pad
+  let paddedMin = dataMin - pad
+  const paddedMax = dataMax + pad
 
   if (dataMin >= 0) {
-    min = Math.max(0, min)
+    paddedMin = Math.max(0, paddedMin)
   }
 
-  min = snapYDown(min)
-  max = snapYUp(max)
+  const span = paddedMax - paddedMin
+  const rawStep = span / Math.max(1, Y_AXIS_TICK_TARGET - 1)
+  const tickStep = niceTickStep(rawStep)
+
+  const alignFloor = (v: number, step: number) => Math.floor(v / step + Number.EPSILON) * step
+  const alignCeil = (v: number, step: number) => Math.ceil(v / step - Number.EPSILON) * step
+
+  let min = alignFloor(paddedMin, tickStep)
+  let max = alignCeil(paddedMax, tickStep)
 
   if (dataMin >= 0 && min < 0) {
     min = 0
   }
 
   if (min >= max) {
-    max = min + 5
+    max = min + tickStep * Math.max(8, Y_AXIS_TICK_TARGET - 1)
   }
 
-  if (dataMin >= 0) {
-    max = Math.max(max, 50)
-  }
-
-  return { min, max }
+  return { min, max, tickStep }
 }
+
+const TOOLTIP_ANCHOR_Y_RATIO = 0.45 // 위에서 45% 위치
 
 const getViewportTooltipPosition = (chartTooltip: { x: number; y: number }, canvasRect: DOMRect, tooltipHeight: number) => ({
   left: canvasRect.left + chartTooltip.x + 30,
-  top: canvasRect.top + chartTooltip.y - tooltipHeight / 2,
+  top: canvasRect.top + chartTooltip.y - tooltipHeight * TOOLTIP_ANCHOR_Y_RATIO,
 })
 
 const ScenarioSummaryChartGraph = ({
@@ -310,6 +402,11 @@ const ScenarioSummaryChartGraph = ({
   })
   const [isTooltipPositionCalculated, setIsTooltipPositionCalculated] = useState(false)
   const [isCrosshairVisible, setIsCrosshairVisible] = useState(false)
+  const [introAnimationDone, setIntroAnimationDone] = useState(false)
+
+  const handleIntroAnimationComplete = useCallback(() => {
+    setIntroAnimationDone(true)
+  }, [])
 
   const dataPointCount = useMemo(() => {
     let maxCount = 0
@@ -323,7 +420,7 @@ const ScenarioSummaryChartGraph = ({
   const axisBase = useMemo(() => getAxisBase(charts), [charts])
   const axisTimestamps = useMemo(() => axisBase?.timestamps || [], [axisBase])
   const axisResultDates = useMemo(() => axisBase?.resultDates || [], [axisBase])
-  const yAxisBounds = useMemo(() => getYAxisBounds(charts), [charts])
+  const yAxisScale = useMemo(() => getYAxisScale(charts), [charts])
   const dataMaxPrecision = useMemo(() => getDataMaxPrecision(charts), [charts])
 
   const datasets = useMemo<ScenarioLineDataset[]>(
@@ -331,7 +428,7 @@ const ScenarioSummaryChartGraph = ({
       charts.map((chart, index) => {
         const mainSeries = chart.series?.find((s) => s.seriesId === 'main') || chart.series?.[0]
         const displayName = chart.goodsDataSourceName ?? ''
-        const visibilityKey = `${displayName}_${chart.dataType ?? ''}`
+        const visibilityKey = chart.visibilityKey ?? `${displayName}_${chart.dataType ?? ''}`
         const isVisible = chartVisibilityMap?.get(visibilityKey) !== false
         const color = chartColorMap?.get(displayName) ?? '#2F62A3'
         const isHovered = hoveredChartKey === visibilityKey
@@ -374,67 +471,89 @@ const ScenarioSummaryChartGraph = ({
 
   const scenarioPlugin = useMemo(() => buildScenarioSummaryPlugin(axisTimestamps, axisResultDates), [axisResultDates, axisTimestamps])
 
-  const chartOptions = useMemo(
-    () =>
-      ({
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 0 },
-        parsing: false,
-        layout: {
-          padding: { top: 28, right: 24, bottom: 28, left: 0 },
-        },
-        scales: {
-          x: {
-            type: 'linear',
-            display: false,
-            min: dataPointCount > 0 ? -1 : 0,
-            max: dataPointCount > 0 ? dataPointCount : undefined,
-            grid: { display: false },
-            border: { display: false },
-            ticks: { display: false },
+  const chartOptions = useMemo(() => {
+    const introOnlyAnimations =
+      !introAnimationDone && dataPointCount > 0
+        ? {
+          animations: {
+            colors: { duration: 0 },
+            numbers: { type: 'number' as const, properties: ['x', 'y'] },
           },
-          y: {
-            min: yAxisBounds.min,
-            max: yAxisBounds.max,
-            grid: {
-              display: true,
-              color: '#DEE2E6',
-              borderDash: [1, 2],
-              drawTicks: false,
+        }
+        : {}
+
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      devicePixelRatio: typeof window !== 'undefined' ? Math.min(window.devicePixelRatio ?? 1, 2) : 1,
+      animation:
+        introAnimationDone || dataPointCount <= 0
+          ? { duration: 0 }
+          : buildProgressiveLineIntroAnimation(dataPointCount, yAxisScale.min, handleIntroAnimationComplete),
+      ...introOnlyAnimations,
+      parsing: false,
+      layout: {
+        padding: { top: 28, right: 24, bottom: 28, left: 0 },
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          display: false,
+          min: dataPointCount > 0 ? -1 : 0,
+          max: dataPointCount > 0 ? dataPointCount : undefined,
+          grid: { display: false },
+          border: { display: false },
+          ticks: { display: false },
+        },
+        y: {
+          min: yAxisScale.min,
+          max: yAxisScale.max,
+          grid: {
+            display: true,
+            color: '#DEE2E6',
+            borderDash: [1, 2],
+            drawTicks: false,
+          },
+          border: { display: false },
+          ticks: {
+            stepSize: yAxisScale.tickStep,
+            padding: 18,
+            color: '#495057',
+            font: {
+              size: 14,
+              family: 'Pretendard, sans-serif',
+              weight: 'normal',
             },
-            border: { display: false },
-            ticks: {
-              stepSize: 5,
-              padding: 18,
-              color: '#495057',
-              font: {
-                size: 14,
-                family: 'Pretendard, sans-serif',
-                weight: 'normal',
-              },
-              callback(value: string | number) {
-                return String(value)
-              },
+            callback(value: string | number) {
+              return String(value)
             },
           },
         },
-        plugins: {
-          tooltip: {
-            enabled: false,
-          },
-          legend: {
-            display: false,
-          },
-          gridAndAxes: {
-            timestamps: axisTimestamps,
-            resultDates: axisResultDates,
-            dataPointCount,
-          },
+      },
+      plugins: {
+        tooltip: {
+          enabled: false,
         },
-      }) as unknown as ChartOptions<'line'>,
-    [axisResultDates, axisTimestamps, dataPointCount, yAxisBounds.max, yAxisBounds.min],
-  )
+        legend: {
+          display: false,
+        },
+        gridAndAxes: {
+          timestamps: axisTimestamps,
+          resultDates: axisResultDates,
+          dataPointCount,
+        },
+      },
+    } as unknown as ChartOptions<'line'>
+  }, [
+    axisResultDates,
+    axisTimestamps,
+    dataPointCount,
+    handleIntroAnimationComplete,
+    introAnimationDone,
+    yAxisScale.max,
+    yAxisScale.min,
+    yAxisScale.tickStep,
+  ])
 
   const externalTooltipHandler = useCallback((context: { tooltip: { x: number; y: number; content: Record<string, unknown> } | null }) => {
     const { tooltip: chartTooltip } = context
@@ -581,6 +700,7 @@ const ScenarioSummaryChartGraph = ({
         {...tooltip}
         visibility={tooltip.visible && !isTooltipPositionCalculated && tooltip.left === -9999 ? 'hidden' : 'visible'}
         targetLabel={targetLabel}
+        highlightVisibilityKey={hoveredChartKey}
       />
     </Box>
   )

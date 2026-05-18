@@ -4,6 +4,7 @@ import { createElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef
 
 import { WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
 import ScenarioWorkbenchTab from '@/pages/mi/scenarioWorkbench/components/ScenarioWorkbenchTab'
+import ScenarioWorkbenchUserFeedback from '@/pages/mi/scenarioWorkbench/components/ScenarioWorkbenchUserFeedback'
 import { ScenarioWorkbenchHeaderCollapseProvider } from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchHeaderCollapseContext'
 import {
   getScenarioWorkbenchTabIndex,
@@ -40,6 +41,7 @@ const ScenarioWorkbenchPage = () => {
   const contentWrapperRef = useRef<HTMLDivElement | null>(null)
   const isScrolledRef = useRef(false)
   const activeTabKey = SCENARIO_WORKBENCH_TAB_INFO[selectedTab]?.key ?? null
+  const activeTabLabel = SCENARIO_WORKBENCH_TAB_INFO[selectedTab]?.label ?? SCENARIO_WORKBENCH_TAB_INFO[0].label
   /** 상단으로 smooth 스냅 중에는 scrollTop > 0이어도 헤더/탭을 펼친 상태로 유지 */
   const expandHeaderDuringSnapRef = useRef(false)
   const lastScrollTopRef = useRef(0)
@@ -237,7 +239,13 @@ const ScenarioWorkbenchPage = () => {
               MI Scenario Workbench
             </Typography>
             <Box mt="96px">
-              <ScenarioWorkbenchTab tabItems={scenarioWorkbenchTabs} tabBarOnly value={selectedTab} onChange={handleTabChange} />
+              <ScenarioWorkbenchTab
+                tabItems={scenarioWorkbenchTabs}
+                tabBarOnly
+                value={selectedTab}
+                onChange={handleTabChange}
+                endAdornment={<ScenarioWorkbenchUserFeedback pageName="MI Scenario Workbench" sectionName={activeTabLabel} />}
+              />
             </Box>
             {/* 활성 탭의 패널 타이틀·필터·테이블 헤더가 portal로 주입되는 슬롯 */}
             <Box ref={setStickySlotEl} />

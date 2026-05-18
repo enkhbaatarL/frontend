@@ -67,6 +67,7 @@ export interface IScenarioIndexOutlook {
 export interface IScenarioPriceSeries {
   indexName: string
   values: number[]
+  scenarioId?: number
 }
 
 export interface IScenarioPriceForecast {

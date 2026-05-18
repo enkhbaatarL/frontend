@@ -24,13 +24,11 @@ import EventDetailInstitutionalOutlookTable from '@/pages/mi/scenarioWorkbench/c
 import EventDetailMiRecordsTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailMiRecordsTable'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
 import { scrollScenarioWorkbenchLayoutToTop } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchScroll'
-import { EventCategoryLv1, EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/common'
+import { EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchEventService from '@/service/mi/scenarioWorkbench/event'
 
-/** 이벤트 상세 탭 키 */
-export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | /* 'fundamental' |*/ 'driverTree' | 'related'
+export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'driverTree' | 'related'
 
-/** 이벤트 상세 탭 라벨 정의 */
 const EVENT_DETAIL_TABS: { key: EventDetailTabKey; label: string }[] = [
   { key: 'ai', label: 'AI Insights' },
   { key: 'impact', label: '영향도 분석' },
@@ -41,7 +39,6 @@ const EVENT_DETAIL_TABS: { key: EventDetailTabKey; label: string }[] = [
   { key: 'related', label: '관련 이벤트 및 시나리오' },
 ]
 
-/** 이벤트 상세에서 라우트 state로 넘어오는 값 타입 */
 interface ScenarioWorkbenchEventDetailLocationState {
   eventName?: string
   scenarioWorkbenchSelfEntityBump?: number
@@ -49,7 +46,6 @@ interface ScenarioWorkbenchEventDetailLocationState {
 
 interface ScenarioWorkbenchEventDetailPageProps {
   eventId?: string
-  /** 임베디드(모핑 팝업 등) 모드: 페이지 sticky header 등록을 건너뛰고 본문 내부에 헤더를 렌더 */
   embedded?: boolean
 }
 
@@ -58,18 +54,15 @@ const SECTION_SCROLL_IDS: Record<EventDetailTabKey, string> = {
   ai: 'event-detail-section-ai',
   records: 'event-detail-section-records',
   outlook: 'event-detail-section-outlook',
-  // fundamental: 'event-detail-section-fundamental', // 미확정으로 인한 임시 비활성화 26.05.07
   driverTree: 'event-detail-section-driver-tree',
   related: 'event-detail-section-related',
 }
 
-/** 시나리오 워크벤치 상세 헤더의 섹션 탭 정의 */
 const EVENT_DETAIL_HEADER_SECTIONS: WorkbenchDetailHeaderSection[] = EVENT_DETAIL_TABS.map((tab) => ({
   id: SECTION_SCROLL_IDS[tab.key],
   label: tab.label,
 }))
 
-/** 이벤트 상세 헤더에 필요한 동적 콘텐츠 */
 interface EventDetailHeaderContent {
   backLabel: string
   onBack: () => void
@@ -80,22 +73,18 @@ interface EventDetailHeaderContent {
 let eventDetailHeaderContent: EventDetailHeaderContent | null = null
 const eventDetailHeaderListeners = new Set<() => void>()
 
-/** 외부 스토어 구독 등록 (헤더 콘텐츠 변경 시 리렌더 트리거) */
 const subscribeEventDetailHeaderContent = (listener: () => void) => {
   eventDetailHeaderListeners.add(listener)
   return () => eventDetailHeaderListeners.delete(listener)
 }
 
-/** 외부 스토어 스냅샷 읽기 (동기 렌더링에 사용) */
 const getEventDetailHeaderContentSnapshot = () => eventDetailHeaderContent
 
-/** 외부 스토어 게시 (헤더 콘텐츠 변경 전파) */
 const publishEventDetailHeaderContent = (next: EventDetailHeaderContent) => {
   eventDetailHeaderContent = next
   eventDetailHeaderListeners.forEach((l) => l())
 }
 
-/** `ScenarioWorkbenchDetailHeader` 래퍼 — 외부 스토어 기반으로 titleSlot을 갱신 */
 const EventDetailHeaderView = () => {
   const content = useSyncExternalStore(
     subscribeEventDetailHeaderContent,
@@ -120,7 +109,6 @@ const DEFAULT_IMPACT_KPI_PAIR: [KpiCardProps, KpiCardProps] = [
   { title: '출처', content: '-', description: '\u00a0' },
 ]
 
-/** 시나리오 워크벤치 이벤트 상세 */
 const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = false }: ScenarioWorkbenchEventDetailPageProps = {}) => {
   const params = useParams()
   const eventId = eventIdProp ?? params.eventId
@@ -219,9 +207,9 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
       return [{ ...a }, { ...b }]
     }
     const lv1 = ia.eventCategoryLv1
-    const categoryContent = lv1 ? (EVENT_CATEGORY_LV1_KO[lv1 as EventCategoryLv1] ?? lv1) : a.content
+    const categoryContent = lv1 ? (EVENT_CATEGORY_LV1_KO[lv1] ?? lv1) : a.content
     const categoryDesc = ia.eventCategoryLv2?.replaceAll('_', ' ') ?? a.description
-    const sourcesContent = ia.sources?.filter(Boolean).length ? ia.sources!.filter(Boolean).join(', ') : b.content
+    const sourcesContent = ia.sources?.filter(Boolean).length ? ia.sources.filter(Boolean).join(', ') : b.content
     return [
       { ...a, content: categoryContent, description: categoryDesc },
       { ...b, content: sourcesContent },
@@ -363,12 +351,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             isNoiseEvent={scenarioWorkbenchIsEventNoiseSignal(detail?.signalType)}
           />
         </Stack>
-        <Stack
-          id={SECTION_SCROLL_IDS.driverTree}
-          gap="12px"
-          py="30px"
-          sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}
-        >
+        <Stack id={SECTION_SCROLL_IDS.driverTree} gap="12px" py="30px">
           <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} loading={detailLoading} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.outlook} gap="12px" py="30px">
