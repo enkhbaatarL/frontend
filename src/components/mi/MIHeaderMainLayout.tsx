@@ -20,6 +20,7 @@ import MIHeaderProfile from '@/components/mi/MIHeaderProfile'
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
 import useEnvironment from '@/hooks/useEnvironment.ts'
 import { buildMiGnbFromCompanyMenus, type MiGnbTopMenu } from '@/lib/miGnbMenuNav'
+import { FUNDAMENTAL_MODEL_BASE_PATH } from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
 import { UserRole } from '@/service/admin/members'
 import useAuthStore from '@/store/useAuthStore'
 import { languageList } from '@/utils/font'
@@ -105,11 +106,15 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
     [location.pathname],
   )
 
+  /** Fundamental Model GNB 진입 시 항상 미선택 base URL로 이동 */
   const runNavigate = (path: string) => {
+    const isFundamentalModelEntry = path === FUNDAMENTAL_MODEL_BASE_PATH
+    const doNavigate = () => navigate(path, isFundamentalModelEntry ? { replace: true } : undefined)
+
     if (onMoveTab) {
-      onMoveTab(() => navigate(path))
+      onMoveTab(doNavigate)
     } else {
-      navigate(path)
+      doNavigate()
     }
   }
 

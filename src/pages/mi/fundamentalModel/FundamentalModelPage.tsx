@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import type { FundamentalModelDetail, FundamentalModelRunListItem } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 
+import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import FundamentalModelTab from '@/pages/mi/fundamentalModel/components/common/FundamentalModelTab'
 import FundamentalModelDetailHeader from '@/pages/mi/fundamentalModel/components/FundamentalModelDetailHeader'
 import FundamentalModelRunList from '@/pages/mi/fundamentalModel/components/FundamentalModelRunList'
@@ -16,7 +17,7 @@ import {
   FUNDAMENTAL_MODEL_MONTH_LABELS,
 } from '@/pages/mi/fundamentalModel/fundamentalModelMockApi'
 import {
-  FUNDAMENTAL_MODEL_DEFAULT_RUN_ID,
+  FUNDAMENTAL_MODEL_BASE_PATH,
   FUNDAMENTAL_MODEL_VIEW_TABS,
   getFundamentalModelRunPath,
   type FundamentalModelViewTabKey,
@@ -24,9 +25,9 @@ import {
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
 
-/** MI 수급 모델 — URL은 `/mi/fundamental-model/:runId`, Volumes/Price 탭은 클라이언트 state(실행 변경 시 Volumes로 리셋, Price 패널은 탭 선택 시에만 마운트) */
+/** MI 수급 모델 — 미선택 `/mi/fundamental-model`, 선택 시 `/mi/fundamental-model/:runId` */
 const FundamentalModelPage = () => {
-  const { runId: runIdParam = '' } = useParams<{ runId: string }>()
+  const { runId: runIdParam } = useParams<{ runId?: string }>()
   const navigate = useNavigate()
   const [viewTab, setViewTab] = useState<FundamentalModelViewTabKey>('volumes')
 
@@ -38,17 +39,12 @@ const FundamentalModelPage = () => {
 
   const runsReady = !listLoading && runs.length > 0
   const isValidRunId = runsReady && Boolean(runIdParam) && runs.some((r) => r.id === runIdParam)
-  const activeRunId = isValidRunId ? runIdParam : ''
+  const activeRunId = isValidRunId ? runIdParam! : ''
 
   useEffect(() => {
-    if (!runsReady) return
-    if (!runIdParam) {
-      const fallback = runs.find((r) => r.id === FUNDAMENTAL_MODEL_DEFAULT_RUN_ID)?.id ?? runs[0].id
-      navigate(getFundamentalModelRunPath(fallback), { replace: true })
-      return
-    }
+    if (!runsReady || !runIdParam) return
     if (!runs.some((r) => r.id === runIdParam)) {
-      navigate(getFundamentalModelRunPath(FUNDAMENTAL_MODEL_DEFAULT_RUN_ID), { replace: true })
+      navigate(FUNDAMENTAL_MODEL_BASE_PATH, { replace: true })
     }
   }, [runsReady, runIdParam, runs, navigate])
 
@@ -93,77 +89,77 @@ const FundamentalModelPage = () => {
     [navigate],
   )
 
-  const rightBody =
-    !runsReady || !activeRunId ? (
-      <Box sx={{ flex: 1, minHeight: 400 }} />
-    ) : !detail && !detailLoading ? (
-      <Box
-        sx={{
-          flex: 1,
-          minHeight: 400,
-          border: '1px dashed',
-          borderColor: 'gray.30',
-          borderRadius: '10px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'commonColor.White',
-        }}
-      >
-        <Typography variant="body2R14" color="gray.60">
-          좌측에서 시뮬레이션 실행을 선택해 주세요.
+  const rightBody = !runsReady ? (
+    <Box sx={{ flex: 1, minHeight: 520 }} />
+  ) : !activeRunId ? (
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: 520,
+        bgcolor: 'gray.5',
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Stack alignItems="center" gap="10px">
+        <ErrorOutlineIcon />
+        <Typography variant="body3SB12" color="gray.60" textAlign="center">
+          시뮬레이션 케이스를 선택해주세요.
         </Typography>
-      </Box>
-    ) : (
-      <Stack sx={{ flex: 1, minWidth: 0, gap: '16px', userSelect: 'text' }}>
-        <FundamentalModelDetailHeader detail={detail ?? null} loading={detailLoading} />
-
-        <Box sx={{ mt: '-4px' }}>
-          <FundamentalModelTab tabItems={tabBarItems} tabBarOnly value={selectedTabIndex} onChange={handleTabChange} />
-        </Box>
-
-        <Box position="relative" sx={{ flex: 1, minWidth: 0 }}>
-          {viewTab === 'volumes' ? (
-            <Box
-              role="tabpanel"
-              id="fundamental-model-tabpanel-0"
-              aria-labelledby="fundamental-model-tab-0"
-              sx={{
-                position: 'relative',
-                animation: 'fundamentalModelPageFadeIn 0.15s ease-out',
-                '@keyframes fundamentalModelPageFadeIn': {
-                  from: { opacity: 0 },
-                  to: { opacity: 1 },
-                },
-              }}
-            >
-              <VolumesTabPanel
-                monthLabels={monthLabels}
-                summaryRows={detail?.summaryRows ?? []}
-                detailRows={detail?.detailRows ?? []}
-                detailLoading={detailLoading}
-              />
-            </Box>
-          ) : (
-            <Box
-              role="tabpanel"
-              id="fundamental-model-tabpanel-1"
-              aria-labelledby="fundamental-model-tab-1"
-              sx={{
-                position: 'relative',
-                animation: 'fundamentalModelPageFadeIn 0.15s ease-out',
-                '@keyframes fundamentalModelPageFadeIn': {
-                  from: { opacity: 0 },
-                  to: { opacity: 1 },
-                },
-              }}
-            >
-              <PriceTabPanel />
-            </Box>
-          )}
-        </Box>
       </Stack>
-    )
+    </Box>
+  ) : (
+    <Stack sx={{ flex: 1, minWidth: 0, gap: '16px', userSelect: 'text' }}>
+      <FundamentalModelDetailHeader detail={detail ?? null} loading={detailLoading} />
+
+      <Box sx={{ mt: '-4px' }}>
+        <FundamentalModelTab tabItems={tabBarItems} tabBarOnly value={selectedTabIndex} onChange={handleTabChange} />
+      </Box>
+
+      <Box position="relative" sx={{ flex: 1, minWidth: 0 }}>
+        {viewTab === 'volumes' ? (
+          <Box
+            role="tabpanel"
+            id="fundamental-model-tabpanel-0"
+            aria-labelledby="fundamental-model-tab-0"
+            sx={{
+              position: 'relative',
+              animation: 'fundamentalModelPageFadeIn 0.15s ease-out',
+              '@keyframes fundamentalModelPageFadeIn': {
+                from: { opacity: 0 },
+                to: { opacity: 1 },
+              },
+            }}
+          >
+            <VolumesTabPanel
+              monthLabels={monthLabels}
+              summaryRows={detail?.summaryRows ?? []}
+              detailRows={detail?.detailRows ?? []}
+              detailLoading={detailLoading}
+            />
+          </Box>
+        ) : (
+          <Box
+            role="tabpanel"
+            id="fundamental-model-tabpanel-1"
+            aria-labelledby="fundamental-model-tab-1"
+            sx={{
+              position: 'relative',
+              animation: 'fundamentalModelPageFadeIn 0.15s ease-out',
+              '@keyframes fundamentalModelPageFadeIn': {
+                from: { opacity: 0 },
+                to: { opacity: 1 },
+              },
+            }}
+          >
+            <PriceTabPanel />
+          </Box>
+        )}
+      </Box>
+    </Stack>
+  )
 
   return (
     <Stack maxWidth="1380px" margin="auto" pt="20px" px={{ xs: 2, md: 3 }} pb="40px" gap={2} sx={{ userSelect: 'none' }}>
@@ -172,7 +168,7 @@ const FundamentalModelPage = () => {
       </Typography>
 
       <Stack direction={{ xs: 'column', lg: 'row' }} alignItems="stretch" gap="30px" sx={{ userSelect: 'text' }}>
-        <FundamentalModelRunList runs={runs} selectedId={activeRunId || runIdParam} onSelect={handleSelectRun} loading={listLoading} />
+        <FundamentalModelRunList runs={runs} selectedId={activeRunId} onSelect={handleSelectRun} loading={listLoading} />
         {rightBody}
       </Stack>
     </Stack>
