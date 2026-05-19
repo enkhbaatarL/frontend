@@ -57,9 +57,6 @@
       "desc": "主要要因の因果分析"
     }
   },
-  "miFundamentalModel": {
-    "title": "MI Fundamental Model"
-  },
   "dashboard": {
     "toolbar": {
       "description": "さまざまなウィジェットを自由に配置・構成できます。",

@@ -57,9 +57,6 @@
       "desc": "주요 요인 인과관계 분석"
     }
   },
-  "miFundamentalModel": {
-    "title": "MI Fundamental Model"
-  },
   "dashboard": {
     "toolbar": {
       "description": "다양한 위젯을 자유롭게 배치하고 구성할 수 있습니다.",

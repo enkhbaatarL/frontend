@@ -22,6 +22,21 @@ export const WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX = {
 
 export const WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED = '0 8px 16px -10px rgba(0, 0, 0, 0.1)'
 
+export const WORKBENCH_EDGE_SHADOW_TRANSITION_MS = WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS
+export const WORKBENCH_EDGE_SHADOW_TRANSITION_EASING = WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING
+export const WORKBENCH_SCROLL_EDGE_SHADOW_TOP = WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED
+export const WORKBENCH_SCROLL_EDGE_SHADOW_BOTTOM = '0 -8px 16px -10px rgba(0, 0, 0, 0.1)'
+export const WORKBENCH_SCROLL_EDGE_CLIP_PATH_TOP = 'inset(0 0 -20px 0)'
+export const WORKBENCH_SCROLL_EDGE_CLIP_PATH_BOTTOM = 'inset(-20px 0 0 0)'
+
+export const WORKBENCH_SCROLL_EDGE_FADE_HEIGHT_PX = 20
+
+const WORKBENCH_SCROLL_EDGE_FADE_RGB = '233, 236, 239'
+export const WORKBENCH_SCROLL_EDGE_FADE_TOP_BG = `linear-gradient(to bottom, rgba(${WORKBENCH_SCROLL_EDGE_FADE_RGB}, 0.78) 0%, rgba(${WORKBENCH_SCROLL_EDGE_FADE_RGB}, 0) 80%)`
+export const WORKBENCH_SCROLL_EDGE_FADE_BOTTOM_BG = `linear-gradient(to top, rgba(${WORKBENCH_SCROLL_EDGE_FADE_RGB}, 0.78) 0%, rgba(${WORKBENCH_SCROLL_EDGE_FADE_RGB}, 0) 80%)`
+
+export const WORKBENCH_SCROLL_EDGE_HORIZONTAL_MASK_IMAGE = 'linear-gradient(to right, transparent 0%, #000 7%, #000 93%, transparent 100%)'
+
 export interface WorkbenchDetailHeaderSection {
   id: string
   label: string
@@ -395,8 +410,8 @@ const ScenarioWorkbenchDetailHeader = ({
             bgcolor: 'commonColor.White',
             overflow: 'visible',
             boxShadow: isMainScrolled ? WORKBENCH_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
-            clipPath: 'inset(0 0 -20px 0)',
-            transition: `box-shadow ${WORKBENCH_DETAIL_LAYOUT_TRANSITION_MS}ms ${WORKBENCH_DETAIL_LAYOUT_TRANSITION_EASING}`,
+            clipPath: WORKBENCH_SCROLL_EDGE_CLIP_PATH_TOP,
+            transition: `box-shadow ${WORKBENCH_EDGE_SHADOW_TRANSITION_MS}ms ${WORKBENCH_EDGE_SHADOW_TRANSITION_EASING}`,
             '&::before': {
               content: '""',
               position: 'absolute',
