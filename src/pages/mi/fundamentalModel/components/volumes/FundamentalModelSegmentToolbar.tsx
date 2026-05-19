@@ -8,13 +8,14 @@ import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISe
 
 export interface FundamentalModelSegmentToolbarProps {
   loading?: boolean
+  scope: FundamentalModelScopeKey
+  onScopeChange: (scope: FundamentalModelScopeKey) => void
 }
 
 const SCOPE_VALUES: FundamentalModelScopeKey[] = ['global', 'lng', 'trade']
 
 /** Volume 탭 상단 Global/LNG/Trade 및 Filters - 주기 툴바 */
-const FundamentalModelSegmentToolbar = ({ loading = false }: FundamentalModelSegmentToolbarProps) => {
-  const [scope, setScope] = useState<FundamentalModelScopeKey>('global')
+const FundamentalModelSegmentToolbar = ({ loading = false, scope, onScopeChange }: FundamentalModelSegmentToolbarProps) => {
   const [period, setPeriod] = useState('monthly')
 
   const periodItems: SelectMenuItem<string>[] = useMemo(
@@ -30,11 +31,11 @@ const FundamentalModelSegmentToolbar = ({ loading = false }: FundamentalModelSeg
       <Stack direction="row" alignItems="center" gap="8px" sx={{ opacity: loading ? 0.5 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
         {SCOPE_VALUES.map((key) => {
           const selected = scope === key
-          const scopeLabel = key === 'global' ? '글로벌' : key === 'lng' ? 'LNG' : '거래'
+          const scopeLabel = key === 'global' ? 'Global' : key === 'lng' ? 'LNG' : 'Trade'
           return (
             <Button
               key={key}
-              onClick={() => setScope(key)}
+              onClick={() => onScopeChange(key)}
               variant="outlined"
               disableElevation
               sx={{

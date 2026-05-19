@@ -18,8 +18,10 @@ export interface FundamentalModelDetail extends FundamentalModelRunListItem {
   monthLabels: string[]
   /** 상단 요약 Volumes 표(짧은 블록) */
   summaryRows: FundamentalModelMetricRow[]
-  /** 하단 스크롤 가능한 상세 표 */
+  /** 하단 스크롤 가능한 상세 표(LNG/Trade) */
   detailRows: FundamentalModelMetricRow[]
+  /** Global 세부 표 */
+  globalVolumes: FundamentalModelGlobalVolumesData
   attachmentNames: string[]
   durationLabel: string
 }
@@ -34,3 +36,27 @@ export interface FundamentalModelMetricRow {
 
 /** 상단 세그먼트(Global/LNG/Trade) 값 */
 export type FundamentalModelScopeKey = 'global' | 'lng' | 'trade'
+
+/** Global 본문 표 행 종류 */
+export type FundamentalModelGlobalRowKind = 'region' | 'country' | 'total'
+
+/** Global 본문 표 한 행 */
+export interface FundamentalModelGlobalVolumeRow {
+  id: string
+  label: string
+  kind: FundamentalModelGlobalRowKind
+  values: (string | null)[]
+}
+
+/** Global 본문 표 섹션(Demand, Production 등) */
+export interface FundamentalModelGlobalVolumeSection {
+  id: string
+  label: string
+  rows: FundamentalModelGlobalVolumeRow[]
+}
+
+/** Global 본문 표 데이터 */
+export interface FundamentalModelGlobalVolumesData {
+  monthLabels: string[]
+  sections: FundamentalModelGlobalVolumeSection[]
+}

@@ -137,6 +137,7 @@ const FundamentalModelPage = () => {
               monthLabels={monthLabels}
               summaryRows={detail?.summaryRows ?? []}
               detailRows={detail?.detailRows ?? []}
+              globalVolumes={detail?.globalVolumes ?? { monthLabels: [], sections: [] }}
               detailLoading={detailLoading}
             />
           </Box>

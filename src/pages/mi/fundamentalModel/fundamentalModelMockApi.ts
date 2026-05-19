@@ -1,5 +1,8 @@
 import type {
   FundamentalModelDetail,
+  FundamentalModelGlobalVolumeRow,
+  FundamentalModelGlobalVolumesData,
+  FundamentalModelGlobalVolumeSection,
   FundamentalModelMetricRow,
   FundamentalModelRunListItem,
 } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
@@ -10,26 +13,105 @@ const delay = (ms: number) =>
     setTimeout(resolve, ms)
   })
 
-const MONTH_LABELS_FULL = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
+const MONTH_LABELS_FULL = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'] as const
+
+/** Global 본문 표 월 헤더(26-01 ~ 27-03) */
+const GLOBAL_MONTH_LABELS = [
+  '26-01',
+  '26-02',
+  '26-03',
+  '26-04',
+  '26-05',
+  '26-06',
+  '26-07',
+  '26-08',
+  '26-09',
+  '26-10',
+  '26-11',
+  '26-12',
+  '27-01',
+  '27-02',
+  '27-03',
+] as const
 
 /** 표 - 스켈레톤에서 공통으로 쓰는 월 헤더 라벨 */
 export const FUNDAMENTAL_MODEL_MONTH_LABELS: string[] = [...MONTH_LABELS_FULL]
+
+const formatMockValue = (base: number, sectionIdx: number, rowIdx: number, colIdx: number) => {
+  const raw = base + sectionIdx * 3.1 + rowIdx * 0.7 + colIdx * 0.05
+  return raw.toFixed(1)
+}
+
+/** Global 섹션별 국가 행 목록 생성 */
+const buildGlobalSectionRows = (sectionIdx: number, thirdCountryLabel: string): FundamentalModelGlobalVolumeRow[] => {
+  const monthCount = GLOBAL_MONTH_LABELS.length
+  const labels: { label: string; kind: FundamentalModelGlobalVolumeRow['kind'] }[] = [
+    { label: 'Asia', kind: 'region' },
+    { label: 'China', kind: 'country' },
+    { label: 'Japan', kind: 'country' },
+    { label: 'India', kind: 'country' },
+    { label: 'Europe', kind: 'region' },
+    { label: 'Germany', kind: 'country' },
+    { label: thirdCountryLabel, kind: 'country' },
+    { label: 'Italy', kind: 'country' },
+    { label: 'Total', kind: 'total' },
+  ]
+
+  return labels.map((item, rowIdx) => ({
+    id: `global-s${sectionIdx}-r${rowIdx}`,
+    label: item.label,
+    kind: item.kind,
+    values: Array.from({ length: monthCount }, (_, colIdx) => {
+      if (item.kind === 'total') {
+        if (sectionIdx === 0) return '344.8'
+        if (sectionIdx === 1) return '107.8'
+        if (sectionIdx === 4) return '109.3'
+        return formatMockValue(80, sectionIdx, rowIdx, colIdx)
+      }
+      if (item.kind === 'region') return colIdx === 1 ? '24.1' : '0.3'
+      if (item.label === 'China' && colIdx === 1) return '15.1'
+      return formatMockValue(0.3, sectionIdx, rowIdx, colIdx)
+    }),
+  }))
+}
+
+const GLOBAL_SECTION_DEFS: { id: string; label: string; thirdCountryLabel: string }[] = [
+  { id: 'demand', label: 'Demand', thirdCountryLabel: 'Other Middle East' },
+  { id: 'production', label: 'Production', thirdCountryLabel: 'United Kingdom' },
+  { id: 'lng-imports', label: 'LNG Imports', thirdCountryLabel: 'Other Middle East' },
+  { id: 'lng-exports', label: 'LNG Exports', thirdCountryLabel: 'United Kingdom' },
+  { id: 'pipeline-exports', label: 'Pipeline Exports', thirdCountryLabel: 'United Kingdom' },
+]
+
+const buildGlobalVolumes = (): FundamentalModelGlobalVolumesData => {
+  const sections: FundamentalModelGlobalVolumeSection[] = GLOBAL_SECTION_DEFS.map((def, sectionIdx) => ({
+    id: def.id,
+    label: def.label,
+    rows: buildGlobalSectionRows(sectionIdx, def.thirdCountryLabel),
+  }))
+  return {
+    monthLabels: [...GLOBAL_MONTH_LABELS],
+    sections,
+  }
+}
+
+const buildSummaryYearValues = () => MONTH_LABELS_FULL.map((_, i) => (i < 12 ? '2026' : '2027'))
 
 const BASE_SUMMARY_ROWS: FundamentalModelMetricRow[] = [
   {
     id: 'year',
     label: '2023',
-    values: Array.from({ length: MONTH_LABELS_FULL.length }, () => '2026'),
+    values: buildSummaryYearValues(),
   },
   {
     id: 'unite',
     label: 'Unite',
-    values: ['1', '2', '3', '4', '5', '6', '7', null, null, null, null, null],
+    values: MONTH_LABELS_FULL.map((_, i) => String(i + 1)),
   },
   {
     id: 'mtpa',
     label: 'mtpa',
-    values: MONTH_LABELS_FULL.map((_, i) => `2026-${i + 1}`),
+    values: MONTH_LABELS_FULL.map((_, i) => (i < 12 ? `2026-${i + 1}` : `2027-${i - 11}`)),
   },
 ]
 
@@ -119,6 +201,7 @@ const buildDetail = (run: FundamentalModelRunListItem): FundamentalModelDetail =
   monthLabels: FUNDAMENTAL_MODEL_MONTH_LABELS,
   summaryRows: SUMMARY_ONLY_ROWS,
   detailRows: buildExtendedRows(),
+  globalVolumes: buildGlobalVolumes(),
   attachmentNames:
     run.id === '2'
       ? [
