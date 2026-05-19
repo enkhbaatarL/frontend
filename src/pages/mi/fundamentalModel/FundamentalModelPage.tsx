@@ -154,7 +154,11 @@ const FundamentalModelPage = () => {
               },
             }}
           >
-            <PriceTabPanel />
+            <PriceTabPanel
+              annualPriceRows={detail?.annualPriceRows ?? []}
+              monthlyPriceRows={detail?.monthlyPriceRows ?? []}
+              detailLoading={detailLoading}
+            />
           </Box>
         )}
       </Box>

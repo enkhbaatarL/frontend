@@ -1,6 +1,8 @@
 import type {
+  FundamentalModelAnnualPriceRow,
   FundamentalModelDetail,
   FundamentalModelMetricRow,
+  FundamentalModelMonthlyPriceRow,
   FundamentalModelRunListItem,
 } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 
@@ -44,6 +46,64 @@ const buildExtendedRows = (): FundamentalModelMetricRow[] => {
 }
 
 const SUMMARY_ONLY_ROWS: FundamentalModelMetricRow[] = BASE_SUMMARY_ROWS
+
+const PRICE_REGIONS = ['East Asia Spot', 'TTF', 'HH'] as const
+const PRICE_YEARS = ['2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'] as const
+
+const getEastAsiaAnnualPrice = (year: string): string => {
+  if (year === '2023') return '15.71'
+  if (year === '2024') return '14.59'
+  if (year === '2025') return '14.81'
+  return '9.95'
+}
+
+const getEastAsiaMonthlyPrice = (year: string, month: number): { base: string; adjusted: string } => {
+  if (year === '2023') {
+    if (month === 10) return { base: '13.71', adjusted: '13.71' }
+    if (month === 11) return { base: '14.10', adjusted: '14.30' }
+    if (month === 12) return { base: '14.81', adjusted: '14.91' }
+  }
+  if (year === '2024' && month <= 9) return { base: '0.00', adjusted: '8.30' }
+  return { base: '9.95', adjusted: '9.95' }
+}
+
+const buildAnnualPriceRows = (): FundamentalModelAnnualPriceRow[] =>
+  PRICE_REGIONS.flatMap((region) =>
+    PRICE_YEARS.map((year) => {
+      const price = region === 'East Asia Spot' ? getEastAsiaAnnualPrice(year) : '9.95'
+      return {
+        id: `annual-${region}-${year}`,
+        year,
+        priceRegion: region,
+        baseCasePrice: price,
+        userAdjustedPrice: price,
+      }
+    }),
+  )
+
+const buildMonthlyPriceRows = (): FundamentalModelMonthlyPriceRow[] => {
+  let seq = 0
+  return PRICE_REGIONS.flatMap((region) =>
+    PRICE_YEARS.flatMap((year) =>
+      Array.from({ length: 12 }, (_, monthIdx) => {
+        const month = String(monthIdx + 1)
+        const prices = region === 'East Asia Spot' ? getEastAsiaMonthlyPrice(year, monthIdx + 1) : { base: '9.95', adjusted: '9.95' }
+        seq += 1
+        return {
+          id: `monthly-${seq}`,
+          year,
+          month,
+          priceRegion: region,
+          baseCasePrice: prices.base,
+          userAdjustedPrice: prices.adjusted,
+        }
+      }),
+    ),
+  )
+}
+
+const ANNUAL_PRICE_ROWS = buildAnnualPriceRows()
+const MONTHLY_PRICE_ROWS = buildMonthlyPriceRows()
 
 /** 메모 2줄 초과·더보기 팝업 검증용 긴 설명(최대 500자) */
 const MOCK_MEMO_LONG =
@@ -119,6 +179,8 @@ const buildDetail = (run: FundamentalModelRunListItem): FundamentalModelDetail =
   monthLabels: FUNDAMENTAL_MODEL_MONTH_LABELS,
   summaryRows: SUMMARY_ONLY_ROWS,
   detailRows: buildExtendedRows(),
+  annualPriceRows: ANNUAL_PRICE_ROWS,
+  monthlyPriceRows: MONTHLY_PRICE_ROWS,
   attachmentNames:
     run.id === '2'
       ? [
