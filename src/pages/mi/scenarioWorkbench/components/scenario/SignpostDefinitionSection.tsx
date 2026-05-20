@@ -1,10 +1,15 @@
 import { Box } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { marketDirectionToLabel, signpostStrengthToLabel } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
-import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
+import ScenarioWorkbenchEventDetailTableBodyText, {
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX,
+} from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import { IScenarioSignpostDefinition } from '@/service/mi/scenarioWorkbench/scenario'
 
 const columns: GridColDef<IScenarioSignpostDefinition>[] = [
@@ -65,13 +70,16 @@ interface SignpostDefinitionSectionProps {
 
 const SignpostDefinitionSection = ({ definitions, loading = false }: SignpostDefinitionSectionProps) => (
   <Box sx={{ position: 'relative', paddingY: '24px' }}>
-    <ScenarioWorkbenchTableHeader<IScenarioSignpostDefinition> columns={columns} />
-    <ScenarioWorkbenchDataList<IScenarioSignpostDefinition>
+    <MIDataTableHeader<IScenarioSignpostDefinition> columns={columns} />
+    <MIDataTableBody<IScenarioSignpostDefinition>
       getRowKey={(row, index) => `${row.category}-${row.label}-${index}`}
       columns={columns}
       rows={definitions}
       rowHeight={60}
-      cellPreset="miCanvasEvent"
+      primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+      primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+      cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
+      cellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}
       loading={loading}
       skeletonRowCount={4}
       noRowMessage="데이터를 수집 중입니다."

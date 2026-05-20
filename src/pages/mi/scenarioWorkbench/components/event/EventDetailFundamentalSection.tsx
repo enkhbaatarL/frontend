@@ -5,12 +5,16 @@ import { useMemo } from 'react'
 
 import type { IScenarioWorkbenchFundamentalIndicator, IScenarioWorkbenchFundamentalMetric } from '@/service/mi/scenarioWorkbench/event'
 
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import ScenarioWorkbenchEventDetailTableBodyText, {
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX,
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
 /** Fundamental Deep-dive 섹션 Props */
 interface EventDetailFundamentalSectionProps {
@@ -59,17 +63,20 @@ const EventDetailFundamentalSection = ({ metrics, indicators }: EventDetailFunda
         tooltipTitle=""
       />
       <Stack>
-        <ScenarioWorkbenchTableHeader<EventDetailFundamentalItem>
+        <MIDataTableHeader<EventDetailFundamentalItem>
           columns={columns}
           headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
           headerLabelColor="contentText.Black"
         />
-        <ScenarioWorkbenchDataList<EventDetailFundamentalItem>
+        <MIDataTableBody<EventDetailFundamentalItem>
           getRowKey={(row) => ('metricName' in row ? row.metricName : row.indicatorName)}
           columns={columns}
           rows={rows}
           rowHeight={44}
-          cellPreset="miCanvasEvent"
+          primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+          primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+          cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
+          cellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}
           noRowMessage="표시할 데이터가 없습니다."
           hideInnerRowBorder
           hideLastRowBorder

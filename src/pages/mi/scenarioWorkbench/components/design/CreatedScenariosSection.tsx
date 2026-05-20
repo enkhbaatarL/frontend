@@ -9,13 +9,13 @@ import { SCENARIO_WORKBENCH_BASE_PATH } from '../../scenarioWorkbenchRoutes'
 import type { IGeneratedScenarioRes } from '@/service/mi/scenarioWorkbench/design'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { ScenarioWorkbenchBaseCaseChip } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import ProbabilityGaugeCell from '@/pages/mi/scenarioWorkbench/components/common/ProbabilityGaugeCell'
 import { findIndexImpact, formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
 import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
 interface CreatedScenariosSectionProps {
   scenarios: IGeneratedScenarioRes[]
@@ -151,8 +151,8 @@ const CreatedScenariosSection = ({ scenarios }: CreatedScenariosSectionProps) =>
 
   return (
     <Box sx={{ px: '24px', pb: '70px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
-      <ScenarioWorkbenchTableHeader<IGeneratedScenarioRes> columns={columns} headerCellPx="12px" headerCellPy="8px" />
-      <ScenarioWorkbenchDataList<IGeneratedScenarioRes>
+      <MIDataTableHeader<IGeneratedScenarioRes> columns={columns} headerCellPx="12px" headerCellPy="8px" />
+      <MIDataTableBody<IGeneratedScenarioRes>
         rowId="scenarioId"
         columns={columns}
         rows={scenarios}

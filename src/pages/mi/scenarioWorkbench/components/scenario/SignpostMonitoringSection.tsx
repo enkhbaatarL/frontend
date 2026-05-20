@@ -1,9 +1,14 @@
 import { Box } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 
-import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
+import ScenarioWorkbenchEventDetailTableBodyText, {
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX,
+} from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import { IScenarioSignpost } from '@/service/mi/scenarioWorkbench/scenario'
 
 const columns: GridColDef<IScenarioSignpost>[] = [
@@ -53,13 +58,16 @@ interface SignpostMonitoringSectionProps {
 
 const SignpostMonitoringSection = ({ signposts, loading = false }: SignpostMonitoringSectionProps) => (
   <Box sx={{ position: 'relative', paddingY: '24px' }}>
-    <ScenarioWorkbenchTableHeader<IScenarioSignpost> columns={columns} />
-    <ScenarioWorkbenchDataList<IScenarioSignpost>
+    <MIDataTableHeader<IScenarioSignpost> columns={columns} />
+    <MIDataTableBody<IScenarioSignpost>
       getRowKey={(row, index) => `${row.keyEvent}-${index}`}
       columns={columns}
       rows={signposts}
       rowHeight={42}
-      cellPreset="miCanvasEvent"
+      primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+      primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+      cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
+      cellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}
       loading={loading}
       skeletonRowCount={4}
       noRowMessage="데이터를 수집 중입니다."

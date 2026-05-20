@@ -2,8 +2,8 @@ import { Box, type SxProps, type Theme } from '@mui/material'
 import { type GridColDef, type GridRowModel } from '@mui/x-data-grid'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 
 export const PRICE_TABLE_MAX_HEIGHT = 864
 const PRICE_TABLE_HEADER_HEIGHT = 52
@@ -46,7 +46,7 @@ const FundamentalModelPriceTable = <T extends GridRowModel>({
         minWidth: 0,
       }}
     >
-      <ScenarioWorkbenchTableHeader<T>
+      <MIDataTableHeader<T>
         columns={columns}
         headerCellPx="12px"
         headerCellPy="8px"
@@ -76,14 +76,14 @@ const FundamentalModelPriceTable = <T extends GridRowModel>({
         }}
         styScroll={{ borderRadius: '1000px' }}
       >
-        <ScenarioWorkbenchDataList<T>
+        <MIDataTableBody<T>
           rowId={rowId}
           columns={columns}
           rows={rows}
           loading={loading}
           rowHeight={PRICE_TABLE_ROW_HEIGHT}
           disableHover
-          disableFirstRowTopInset
+          topPaddingPx={0}
           getCellSx={getCellSx ? wrapFullHeightCellSx(getCellSx) : undefined}
           rowSx={{ alignItems: 'stretch' }}
         />

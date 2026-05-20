@@ -11,6 +11,7 @@ import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import {
   ScenarioWorkbenchBaseCaseChip,
   ScenarioWorkbenchNoiseSignalBadge,
@@ -34,9 +35,6 @@ import { buildDistinctSeriesColors } from '@/pages/mi/scenarioWorkbench/componen
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
 import { OverviewEventFirstAccordionList } from '@/pages/mi/scenarioWorkbench/components/overview/OverviewEventFirstAccordion'
 import { OverviewScenarioFirstAccordionList } from '@/pages/mi/scenarioWorkbench/components/overview/OverviewScenarioFirstAccordion'
-import ScenarioWorkbenchTableHeader, {
-  SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX,
-} from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { EventCategoryLv1, EVENT_CATEGORY_LV1_KO, ListSort, MarketDirection } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchOverviewService, {
   type IOverviewEventItem,
@@ -46,6 +44,7 @@ import scenarioWorkbenchOverviewService, {
 } from '@/service/mi/scenarioWorkbench/overview'
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
+const OVERVIEW_STICKY_INSET_TOP_PX = 138
 
 const VIEW_MODE_OPTIONS = [
   { value: 'event' as const, label: 'Event First' },
@@ -171,7 +170,7 @@ const OverviewScenarioLegendCell = ({ color }: { color: string }) => (
 
 const OverviewTabPanel = ({ enableExpandedRowSticky = false }: OverviewTabPanelProps) => {
   const navigate = useNavigate()
-  const overviewStickyInsetTopPx = SCENARIO_WORKBENCH_TABLE_HEADER_STICKY_TOP_PX
+  const overviewStickyInsetTopPx = OVERVIEW_STICKY_INSET_TOP_PX
 
   const disableOverviewStickyBand = useMediaQuery(`(max-height: ${OVERVIEW_STICKY_DISABLE_MAX_VIEWPORT_HEIGHT_PX}px)`)
   const isOverviewDesktopLayout = useMediaQuery('(min-width: 900px)')
@@ -1016,11 +1015,9 @@ const OverviewTabPanel = ({ enableExpandedRowSticky = false }: OverviewTabPanelP
                     </Stack>
                   </Stack>
 
-                  {viewMode === 'event' && (
-                    <ScenarioWorkbenchTableHeader<IOverviewEventItem> columns={eventColumns} sx={overviewTableHeaderSx} />
-                  )}
+                  {viewMode === 'event' && <MIDataTableHeader<IOverviewEventItem> columns={eventColumns} sx={overviewTableHeaderSx} />}
                   {viewMode === 'scenario' && (
-                    <ScenarioWorkbenchTableHeader<IOverviewScenarioItem> columns={scenarioColumns} sx={overviewTableHeaderSx} />
+                    <MIDataTableHeader<IOverviewScenarioItem> columns={scenarioColumns} sx={overviewTableHeaderSx} />
                   )}
                 </Stack>
               </Box>

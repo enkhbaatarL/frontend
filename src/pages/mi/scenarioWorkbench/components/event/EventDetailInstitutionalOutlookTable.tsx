@@ -6,14 +6,18 @@ import { useEffect, useMemo, useState } from 'react'
 import type { IScenarioWorkbenchEventInstitutionOutlook } from '@/service/mi/scenarioWorkbench/event'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
 import {
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX,
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { IPaginationResponse } from '@/types/api'
 
 const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
@@ -103,18 +107,21 @@ const EventDetailInstitutionalOutlookTable = ({
         tooltipTitle=""
       />
       <Stack>
-        <ScenarioWorkbenchTableHeader<IScenarioWorkbenchEventInstitutionOutlook>
+        <MIDataTableHeader<IScenarioWorkbenchEventInstitutionOutlook>
           columns={columns}
           headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
           headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
         />
-        <ScenarioWorkbenchDataList<IScenarioWorkbenchEventInstitutionOutlook>
+        <MIDataTableBody<IScenarioWorkbenchEventInstitutionOutlook>
           getRowKey={(row, index) => `${row.publishedAt}-${row.institutionName}-${index}`}
           columns={columns}
           rows={paginatedRows}
           loading={loading}
           rowHeight={42}
-          cellPreset="miCanvasEvent"
+          primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+          primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+          cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
+          cellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}
           noRowMessage="기관 전망 데이터가 없습니다."
         />
         {paginationData && paginationData.totalElements >= PAGE_SIZE_LIST[0] && (
