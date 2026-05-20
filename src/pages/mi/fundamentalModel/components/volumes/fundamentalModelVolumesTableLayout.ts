@@ -9,6 +9,13 @@ export const FM_VOLUME_TABLE_MIN_W = 960
 export const FM_VOLUME_TABLE_HEADER_H = 36
 export const FM_VOLUME_TABLE_BODY_H = 40
 
+/** Global 본문 표 최대 높이(Table 900px) */
+export const FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT = 900
+/** 하단 가로 스크롤 트랙 높이 */
+export const FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H = 12
+export const FM_VOLUME_GLOBAL_TABLE_BODY_MAX_HEIGHT =
+  FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT - FM_VOLUME_TABLE_HEADER_H - FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H
+
 /** Global 본문 표 - 섹션/국가 고정열 너비 */
 export const FM_VOLUME_GLOBAL_SECTION_COL_W = 100
 export const FM_VOLUME_GLOBAL_COUNTRY_COL_W = 160
@@ -16,6 +23,15 @@ export const FM_VOLUME_GLOBAL_FROZEN_W = FM_VOLUME_GLOBAL_SECTION_COL_W + FM_VOL
 
 /** 월 컬럼 너비 */
 export const FM_VOLUME_MONTH_COL_W = 90
+
+export const fmVolumeMonthColumnsWidth = (monthCount: number) => monthCount * FM_VOLUME_MONTH_COL_W
+
+/** 가로 스크롤바 숨김(하단 트랙만 표시할 때) */
+export const fmVolumeHiddenHorizontalScrollbarSx: SystemStyleObject<Theme> = {
+  scrollbarWidth: 'none',
+  msOverflowStyle: 'none',
+  '&::-webkit-scrollbar': { display: 'none' },
+}
 
 /** 요약 표 라벨열 너비 */
 export const FM_VOLUME_SUMMARY_LABEL_COL_W = 260
