@@ -138,6 +138,7 @@ const FundamentalModelPage = () => {
               summaryRows={detail?.summaryRows ?? []}
               detailRows={detail?.detailRows ?? []}
               globalVolumes={detail?.globalVolumes ?? { monthLabels: [], sections: [] }}
+              lngVolumes={detail?.lngVolumes ?? { monthLabels: [], sections: [] }}
               detailLoading={detailLoading}
             />
           </Box>

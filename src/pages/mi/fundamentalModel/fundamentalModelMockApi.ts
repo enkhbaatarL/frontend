@@ -97,6 +97,23 @@ const buildGlobalVolumes = (): FundamentalModelGlobalVolumesData => {
   }
 }
 
+const LNG_SECTION_DEFS: { id: string; label: string; thirdCountryLabel: string }[] = [
+  { id: 'lng-imports', label: 'LNG Imports', thirdCountryLabel: 'Other Middle East' },
+  { id: 'lng-exports', label: 'LNG Exports', thirdCountryLabel: 'United Kingdom' },
+]
+
+const buildLngVolumes = (): FundamentalModelGlobalVolumesData => {
+  const sections: FundamentalModelGlobalVolumeSection[] = LNG_SECTION_DEFS.map((def, sectionIdx) => ({
+    id: def.id,
+    label: def.label,
+    rows: buildGlobalSectionRows(sectionIdx, def.thirdCountryLabel),
+  }))
+  return {
+    monthLabels: [...GLOBAL_MONTH_LABELS],
+    sections,
+  }
+}
+
 const buildSummaryYearValues = () => MONTH_LABELS_FULL.map((_, i) => (i < 12 ? '2026' : '2027'))
 
 const BASE_SUMMARY_ROWS: FundamentalModelMetricRow[] = [
@@ -264,6 +281,7 @@ const buildDetail = (run: FundamentalModelRunListItem): FundamentalModelDetail =
   annualPriceRows: ANNUAL_PRICE_ROWS,
   monthlyPriceRows: MONTHLY_PRICE_ROWS,
   globalVolumes: buildGlobalVolumes(),
+  lngVolumes: buildLngVolumes(),
   attachmentNames:
     run.id === '2'
       ? [

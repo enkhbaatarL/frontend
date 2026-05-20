@@ -24,6 +24,8 @@ export interface FundamentalModelDetail extends FundamentalModelRunListItem {
   monthlyPriceRows: FundamentalModelMonthlyPriceRow[]
   /** Global 세부 표 */
   globalVolumes: FundamentalModelGlobalVolumesData
+  /** LNG 세부 표 */
+  lngVolumes: FundamentalModelLngVolumesData
   attachmentNames: string[]
   durationLabel: string
 }
@@ -79,3 +81,6 @@ export interface FundamentalModelGlobalVolumesData {
   monthLabels: string[]
   sections: FundamentalModelGlobalVolumeSection[]
 }
+
+/** LNG 본문 표 데이터(Global과 동일 구조) */
+export type FundamentalModelLngVolumesData = FundamentalModelGlobalVolumesData
