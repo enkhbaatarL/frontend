@@ -82,6 +82,7 @@ interface ScenarioSummarySectionProps {
   summary?: IScenarioSummary
   probability?: number
   loading?: boolean
+  modelExecutionGenerating?: boolean
 }
 
 const hasForecastCardContent = (outlook: IScenarioIndexOutlook) => Boolean(outlook.trendText?.trim())
@@ -115,7 +116,12 @@ const LikelihoodKpiCard = ({ probability }: { probability?: number }) => {
   )
 }
 
-const ScenarioSummarySection = ({ summary, probability, loading = false }: ScenarioSummarySectionProps) => {
+const ScenarioSummarySection = ({
+  summary,
+  probability,
+  loading = false,
+  modelExecutionGenerating = false,
+}: ScenarioSummarySectionProps) => {
   const indexOutlooks = summary?.indexOutlooks ?? []
   const outlooksWithForecastCopy = indexOutlooks.filter(hasForecastCardContent)
   const priceForecast = summary?.priceForecast ?? { currency: '', unit: '', dates: [], series: [] }
@@ -170,7 +176,11 @@ const ScenarioSummarySection = ({ summary, probability, loading = false }: Scena
       </Stack>
 
       <Box flex="1" minWidth={0}>
-        <ScenarioSummaryChart priceForecast={priceForecast} linkedHighlightIndexName={tableHoverIndexName} />
+        <ScenarioSummaryChart
+          priceForecast={priceForecast}
+          linkedHighlightIndexName={tableHoverIndexName}
+          modelExecutionGenerating={modelExecutionGenerating}
+        />
       </Box>
     </Stack>
   )

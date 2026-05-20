@@ -10,10 +10,16 @@ import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import ScenarioSummaryChartGraph from '@/pages/mi/scenarioWorkbench/components/common/ScenarioSummaryChartGraph'
 import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
 import { buildDistinctSeriesColors } from '@/pages/mi/scenarioWorkbench/components/common/workbenchSeriesColors'
+import ScenarioModelExecutionGeneratingState from '@/pages/mi/scenarioWorkbench/components/scenario/ScenarioModelExecutionGeneratingState'
 import { ChartType } from '@/types/dataDetailChart'
 
 const CHART_HEIGHT = 480
 const SCENARIO_CHART_COLORS = ['#185FA5', '#0F8A72', '#E09A3A', '#C4407A', '#A32D2D', '#2B8EA6', '#7B52B8', '#B8960C', '#3D7D3F', '#6B6A65']
+const EMPTY_CHART_HOVER_SX = {
+  '&:hover': {
+    bgcolor: 'contentBG.Hover',
+  },
+} as const
 
 export const scenarioForecastVisibilityKey = (scenarioId: number): string => `scenario:${scenarioId}_FORECAST`
 
@@ -99,6 +105,7 @@ interface ScenarioSummaryChartProps {
   linkedHighlightVisibilityKey?: string | null
   chartColorMap?: Map<string, string>
   emptyMessage?: string
+  modelExecutionGenerating?: boolean
 }
 
 const ScenarioSummaryChart = ({
@@ -109,6 +116,7 @@ const ScenarioSummaryChart = ({
   linkedHighlightVisibilityKey = null,
   chartColorMap: chartColorMapProp,
   emptyMessage = 'MI 수급 모델 실행 후 차트가 생성됩니다.',
+  modelExecutionGenerating = false,
 }: ScenarioSummaryChartProps) => {
   const [chartVisibilityMap, setChartVisibilityMap] = useState<Map<string, boolean>>(new Map())
   const [hoveredChartKey, setHoveredChartKey] = useState<string | null>(null)
@@ -192,10 +200,12 @@ const ScenarioSummaryChart = ({
 
   const chartUnit = useMemo(() => buildChartUnit(priceForecast), [priceForecast])
   const hasChartData = charts.length > 0 && maxValueCount > 0
+  const showGeneratingState = modelExecutionGenerating
+  const emptyChartHoverSx = !hasChartData && !showGeneratingState ? EMPTY_CHART_HOVER_SX : {}
 
   return (
     <Stack width="100%" minWidth={0} gap="8px">
-      {hasChartData && !suppressChartHeader && (
+      {hasChartData && !showGeneratingState && !suppressChartHeader && (
         <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
           <Typography variant="body2SB14" color="contentText.Normal" sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
             {chartUnit}
@@ -209,17 +219,17 @@ const ScenarioSummaryChart = ({
         borderRadius="10px"
         width="100%"
         height={CHART_HEIGHT}
-        sx={{
-          bgcolor: hasChartData ? 'commonColor.White' : 'gray.5',
-          transition: 'background-color 0.2s ease-in-out',
-          ...(!hasChartData && {
-            '&:hover': {
-              bgcolor: 'contentBG.Hover',
-            },
-          }),
-        }}
+        sx={[
+          {
+            bgcolor: hasChartData && !showGeneratingState ? 'commonColor.White' : 'gray.5',
+            transition: 'background-color 0.2s ease-in-out',
+          },
+          emptyChartHoverSx,
+        ]}
       >
-        {hasChartData ? (
+        {showGeneratingState ? (
+          <ScenarioModelExecutionGeneratingState />
+        ) : hasChartData ? (
           <ScenarioSummaryChartGraph
             height={CHART_HEIGHT}
             charts={charts}
@@ -238,7 +248,7 @@ const ScenarioSummaryChart = ({
         )}
       </Box>
 
-      {hasChartData && (
+      {hasChartData && !showGeneratingState && (
         <Box
           sx={{
             display: 'grid',

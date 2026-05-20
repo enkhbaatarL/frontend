@@ -131,6 +131,62 @@ export interface IRelatedEventScenario {
   scenarios: IRelatedScenario[]
 }
 
+export type ModelExecutionStatus = 'queued' | 'running' | 'succeeded' | 'failed'
+
+export interface IModelExecutionParameterTableRow {
+  rowId: string
+  target: string
+  values: Record<string, number>
+}
+
+export interface IModelExecutionParameterTable {
+  tableId: string
+  tableLabel: string
+  timeAxisType?: string
+  timePeriods: string[]
+  rows: IModelExecutionParameterTableRow[]
+}
+
+export interface IModelExecutionParameterRes {
+  scenarioId: number
+  title: string
+  tables: IModelExecutionParameterTable[]
+}
+
+export interface IModelExecutionTableRowReq {
+  rowId: string
+  values: Record<string, number>
+}
+
+export interface IModelExecutionTableReq {
+  tableId: string
+  rows: IModelExecutionTableRowReq[]
+}
+
+export interface IModelExecutionSubmitReq {
+  tables: IModelExecutionTableReq[]
+}
+
+export interface IModelExecutionAcceptRes {
+  executionId: string
+  scenarioId: number
+  externalRunId?: string
+  status: ModelExecutionStatus
+  requestedAt?: string
+  statusEndpoint?: string
+}
+
+export interface IModelExecutionStatusRes {
+  executionId: string
+  scenarioId: number
+  externalRunId?: string
+  status: ModelExecutionStatus
+  requestedAt?: string
+  startedAt?: string
+  finishedAt?: string
+  errorMessage?: string
+}
+
 export interface IScenarioDetailRes {
   scenarioId: number
   scenarioName: string
@@ -176,6 +232,28 @@ const scenarioWorkbenchScenarioService = {
   async getScenarioDetail(scenarioId: string | number): Promise<IScenarioDetailRes> {
     const response: AxiosResponse<ICommonResponse<IScenarioDetailRes>> = await api.get(
       `mi/scenario-workbench/scenarios/${encodeURIComponent(String(scenarioId))}`,
+    )
+    return response.data.data
+  },
+
+  async getModelExecutionParameters(scenarioId: string | number): Promise<IModelExecutionParameterRes> {
+    const response: AxiosResponse<ICommonResponse<IModelExecutionParameterRes>> = await api.get(
+      `mi/scenario-workbench/scenarios/${encodeURIComponent(String(scenarioId))}/model-execution-parameters`,
+    )
+    return response.data.data
+  },
+
+  async submitModelExecution(scenarioId: string | number, payload: IModelExecutionSubmitReq): Promise<IModelExecutionAcceptRes> {
+    const response: AxiosResponse<ICommonResponse<IModelExecutionAcceptRes>> = await api.post(
+      `mi/scenario-workbench/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions`,
+      payload,
+    )
+    return response.data.data
+  },
+
+  async getModelExecutionStatus(scenarioId: string | number, executionId: string): Promise<IModelExecutionStatusRes> {
+    const response: AxiosResponse<ICommonResponse<IModelExecutionStatusRes>> = await api.get(
+      `mi/scenario-workbench/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions/${encodeURIComponent(executionId)}`,
     )
     return response.data.data
   },

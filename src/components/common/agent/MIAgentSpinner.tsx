@@ -1,9 +1,11 @@
-import { Box, styled } from '@mui/material'
+import { Box, styled, type SxProps, type Theme } from '@mui/material'
 
 import MiAgentSpinnerIcon from '@/components/common/icons/MiAgentSpinnerIcon'
 
 interface MIAgentSpinnerProps {
   size?: number
+  tone?: 'mari' | 'gray'
+  sx?: SxProps<Theme>
 }
 
 const Spinner = styled(Box)<{ size: number }>(({ size }) => ({
@@ -23,9 +25,9 @@ const Spinner = styled(Box)<{ size: number }>(({ size }) => ({
   },
 }))
 
-const MIAgentSpinner = ({ size = 32 }: MIAgentSpinnerProps) => (
-  <Spinner size={size}>
-    <MiAgentSpinnerIcon />
+const MIAgentSpinner = ({ size = 32, tone = 'mari', sx }: MIAgentSpinnerProps) => (
+  <Spinner size={size} sx={sx}>
+    <MiAgentSpinnerIcon tone={tone} />
   </Spinner>
 )
 

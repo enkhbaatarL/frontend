@@ -5,6 +5,7 @@ export interface MIMorphingPopupContextValue {
   scrollContainer: HTMLDivElement | null
   /** 팝업 내부에서 닫기를 트리거 */
   close: () => void
+  isMorphComplete: boolean
 }
 
 export const MIMorphingPopupContext = createContext<MIMorphingPopupContextValue | null>(null)
