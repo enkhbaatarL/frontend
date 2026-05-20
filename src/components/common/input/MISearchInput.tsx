@@ -11,7 +11,7 @@ interface Props {
   placeholder?: string
   onSearch: (value: string) => void
   onClear: () => void
-  width?: number
+  width?: number | string
   height?: number
 }
 
