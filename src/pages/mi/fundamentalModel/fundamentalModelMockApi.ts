@@ -7,6 +7,10 @@ import type {
   FundamentalModelMetricRow,
   FundamentalModelMonthlyPriceRow,
   FundamentalModelRunListItem,
+  FundamentalModelTradeFromColumn,
+  FundamentalModelTradeRowKind,
+  FundamentalModelTradeVolumeRow,
+  FundamentalModelTradeVolumesData,
 } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 
 /** 지연(ms)으로 로딩 - 스켈레톤 UX를 검증하기 위한 헬퍼 */
@@ -111,6 +115,102 @@ const buildLngVolumes = (): FundamentalModelGlobalVolumesData => {
   return {
     monthLabels: [...GLOBAL_MONTH_LABELS],
     sections,
+  }
+}
+
+const TRADE_PRODUCT_OPTIONS = [
+  { id: 'lng', label: 'LNG' },
+  { id: 'png', label: 'PNG' },
+] as const
+
+const TRADE_YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => {
+  const year = String(2026 + i)
+  return { id: year, label: year }
+})
+
+const TRADE_COUNTRY_DEFS: { label: string; kind: FundamentalModelTradeRowKind }[] = [
+  { label: 'Africa', kind: 'region' },
+  { label: 'Algeria', kind: 'country' },
+  { label: 'Angola', kind: 'country' },
+  { label: 'Egypt', kind: 'country' },
+  { label: 'America N', kind: 'region' },
+  { label: 'America S', kind: 'region' },
+  { label: 'Asia', kind: 'region' },
+  { label: 'Azerbaijan', kind: 'country' },
+  { label: 'Bangladesh', kind: 'country' },
+  { label: 'Brunei', kind: 'country' },
+  { label: 'Australia', kind: 'region' },
+  { label: 'Europe', kind: 'region' },
+  { label: 'Austria', kind: 'country' },
+  { label: 'Belarus', kind: 'country' },
+  { label: 'Belgium', kind: 'country' },
+  { label: 'Bulgaria', kind: 'country' },
+  { label: 'Middle East', kind: 'region' },
+]
+
+const TRADE_TOTAL_BY_COL = [
+  '120.6',
+  '100.7',
+  '7.5',
+  '5.3',
+  '28.8',
+  '28.8',
+  '5.3',
+  '5.3',
+  '5.3',
+  '5.3',
+  '5.3',
+  '24.1',
+  '24.1',
+  '5.3',
+  '5.3',
+  '5.3',
+  '5.3',
+] as const
+
+const buildTradeCellValue = (
+  toLabel: string,
+  toKind: FundamentalModelTradeRowKind,
+  fromLabel: string,
+  fromKind: FundamentalModelTradeRowKind,
+  colIdx: number,
+): string => {
+  if (toKind === 'total') return TRADE_TOTAL_BY_COL[colIdx] ?? '100.7'
+  if (toKind === 'region' || fromKind === 'region') return '-'
+  if (toLabel === fromLabel) return '9.8'
+  return '0.5'
+}
+
+const buildTradeVolumes = (): FundamentalModelTradeVolumesData => {
+  const fromColumns: FundamentalModelTradeFromColumn[] = TRADE_COUNTRY_DEFS.map((def, idx) => ({
+    id: `trade-from-${idx}`,
+    label: def.label,
+    kind: def.kind,
+  }))
+
+  const toCountryRows: FundamentalModelTradeVolumeRow[] = [
+    ...TRADE_COUNTRY_DEFS.map((def, rowIdx) => ({
+      id: `trade-to-${rowIdx}`,
+      label: def.label,
+      kind: def.kind,
+      values: fromColumns.map((col, colIdx) => buildTradeCellValue(def.label, def.kind, col.label, col.kind, colIdx)),
+    })),
+    {
+      id: 'trade-to-total',
+      label: 'Total',
+      kind: 'total' as const,
+      values: fromColumns.map((col, colIdx) => buildTradeCellValue('Total', 'total', col.label, col.kind, colIdx)),
+    },
+  ]
+
+  return {
+    productOptions: [...TRADE_PRODUCT_OPTIONS],
+    yearOptions: TRADE_YEAR_OPTIONS,
+    selectedProductId: 'lng',
+    selectedYearId: '2026',
+    unitLabel: 'mtpa',
+    fromColumns,
+    toRows: toCountryRows,
   }
 }
 
@@ -282,6 +382,7 @@ const buildDetail = (run: FundamentalModelRunListItem): FundamentalModelDetail =
   monthlyPriceRows: MONTHLY_PRICE_ROWS,
   globalVolumes: buildGlobalVolumes(),
   lngVolumes: buildLngVolumes(),
+  tradeVolumes: buildTradeVolumes(),
   attachmentNames:
     run.id === '2'
       ? [

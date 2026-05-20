@@ -33,6 +33,23 @@ export const fmVolumeHiddenHorizontalScrollbarSx: SystemStyleObject<Theme> = {
   '&::-webkit-scrollbar': { display: 'none' },
 }
 
+/** Trade 표 To country 고정열 너비 */
+export const FM_VOLUME_TRADE_TO_COL_W = 160
+export const FM_VOLUME_TRADE_FROM_COL_MIN_W = 90
+/** Trade 표 헤더 2단(From country 배너 + 열 라벨) */
+export const FM_VOLUME_TRADE_TABLE_HEADER_H = FM_VOLUME_TABLE_HEADER_H + FM_VOLUME_TABLE_BODY_H
+export const FM_VOLUME_TRADE_TABLE_BODY_MAX_HEIGHT =
+  FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT - FM_VOLUME_TRADE_TABLE_HEADER_H - FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H
+
+/** Trade From 열 너비(디자인 스펙, API와 분리) */
+export const FM_VOLUME_TRADE_FROM_COL_WIDTHS = [80, 80, 80, 80, 92, 90, 80, 90, 98, 80, 82, 80, 80, 80, 80, 100, 110] as const
+
+export const fmVolumeTradeFromColumnWidth = (columnIndex: number): number =>
+  FM_VOLUME_TRADE_FROM_COL_WIDTHS[columnIndex] ?? FM_VOLUME_TRADE_FROM_COL_MIN_W
+
+export const fmVolumeTradeColumnsWidth = (columnCount: number): number =>
+  Array.from({ length: columnCount }, (_, i) => fmVolumeTradeFromColumnWidth(i)).reduce((sum, w) => sum + w, 0)
+
 /** 요약 표 라벨열 너비 */
 export const FM_VOLUME_SUMMARY_LABEL_COL_W = 260
 
@@ -72,6 +89,13 @@ export const fmVolumeTableTotalRowCellSx: SystemStyleObject<Theme> = {
 
 /** Global 표 본문 셀 border/배경(Total 직전 행 이중선 방지 포함) */
 export const fmVolumeGlobalBodyCellSx = (isTotal: boolean, nextIsTotal: boolean): SystemStyleObject<Theme> => ({
+  bgcolor: isTotal ? 'gray.5' : 'commonColor.White',
+  ...(nextIsTotal ? { borderBottom: 'none' } : {}),
+  ...(isTotal ? fmVolumeTableTotalRowCellSx : {}),
+})
+
+/** Trade 표 본문 셀(Total 행 포함) */
+export const fmVolumeTradeBodyCellSx = (isTotal: boolean, nextIsTotal: boolean): SystemStyleObject<Theme> => ({
   bgcolor: isTotal ? 'gray.5' : 'commonColor.White',
   ...(nextIsTotal ? { borderBottom: 'none' } : {}),
   ...(isTotal ? fmVolumeTableTotalRowCellSx : {}),

@@ -26,6 +26,8 @@ export interface FundamentalModelDetail extends FundamentalModelRunListItem {
   globalVolumes: FundamentalModelGlobalVolumesData
   /** LNG 세부 표 */
   lngVolumes: FundamentalModelLngVolumesData
+  /** Trade 본문 표 */
+  tradeVolumes: FundamentalModelTradeVolumesData
   attachmentNames: string[]
   durationLabel: string
 }
@@ -84,3 +86,38 @@ export interface FundamentalModelGlobalVolumesData {
 
 /** LNG 본문 표 데이터(Global과 동일 구조) */
 export type FundamentalModelLngVolumesData = FundamentalModelGlobalVolumesData
+
+/** Trade 표 행/열 종류 */
+export type FundamentalModelTradeRowKind = 'region' | 'country' | 'total'
+
+/** Trade 필터 옵션(가스 유형, 연도) */
+export interface FundamentalModelTradeFilterOption {
+  id: string
+  label: string
+}
+
+/** Trade From country 컬럼 */
+export interface FundamentalModelTradeFromColumn {
+  id: string
+  label: string
+  kind: FundamentalModelTradeRowKind
+}
+
+/** Trade To country 행 */
+export interface FundamentalModelTradeVolumeRow {
+  id: string
+  label: string
+  kind: FundamentalModelTradeRowKind
+  values: (string | null)[]
+}
+
+/** Trade 본문 표 데이터 */
+export interface FundamentalModelTradeVolumesData {
+  productOptions: FundamentalModelTradeFilterOption[]
+  yearOptions: FundamentalModelTradeFilterOption[]
+  selectedProductId: string
+  selectedYearId: string
+  unitLabel: string
+  fromColumns: FundamentalModelTradeFromColumn[]
+  toRows: FundamentalModelTradeVolumeRow[]
+}
