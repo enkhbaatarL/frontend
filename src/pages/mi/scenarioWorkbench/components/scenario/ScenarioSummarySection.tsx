@@ -2,11 +2,11 @@ import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useState } from 'react'
 
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import { PriceDirectionIconWithTooltip } from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
 import ScenarioSummaryChart from '@/pages/mi/scenarioWorkbench/components/common/ScenarioSummaryChart'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { probabilityToLikelihoodLabel } from '@/pages/mi/scenarioWorkbench/utils/probabilityFormatting'
 import { IScenarioIndexOutlook, IScenarioSummary } from '@/service/mi/scenarioWorkbench/scenario'
 
@@ -55,8 +55,8 @@ const ImpactTable = ({
   onRowHoverIndexName?: (indexName: string | null) => void
 }) => (
   <Box bgcolor="gray.5" borderRadius="10px" p="12px">
-    <ScenarioWorkbenchTableHeader<IScenarioIndexOutlook> columns={buildImpactColumns} />
-    <ScenarioWorkbenchDataList<IScenarioIndexOutlook>
+    <MIDataTableHeader<IScenarioIndexOutlook> columns={buildImpactColumns} />
+    <MIDataTableBody<IScenarioIndexOutlook>
       rowId="indexName"
       columns={buildImpactColumns}
       rows={rows}
@@ -82,6 +82,7 @@ interface ScenarioSummarySectionProps {
   summary?: IScenarioSummary
   probability?: number
   loading?: boolean
+  modelExecutionGenerating?: boolean
 }
 
 const hasForecastCardContent = (outlook: IScenarioIndexOutlook) => Boolean(outlook.trendText?.trim())
@@ -115,7 +116,12 @@ const LikelihoodKpiCard = ({ probability }: { probability?: number }) => {
   )
 }
 
-const ScenarioSummarySection = ({ summary, probability, loading = false }: ScenarioSummarySectionProps) => {
+const ScenarioSummarySection = ({
+  summary,
+  probability,
+  loading = false,
+  modelExecutionGenerating = false,
+}: ScenarioSummarySectionProps) => {
   const indexOutlooks = summary?.indexOutlooks ?? []
   const outlooksWithForecastCopy = indexOutlooks.filter(hasForecastCardContent)
   const priceForecast = summary?.priceForecast ?? { currency: '', unit: '', dates: [], series: [] }
@@ -170,7 +176,11 @@ const ScenarioSummarySection = ({ summary, probability, loading = false }: Scena
       </Stack>
 
       <Box flex="1" minWidth={0}>
-        <ScenarioSummaryChart priceForecast={priceForecast} linkedHighlightIndexName={tableHoverIndexName} />
+        <ScenarioSummaryChart
+          priceForecast={priceForecast}
+          linkedHighlightIndexName={tableHoverIndexName}
+          modelExecutionGenerating={modelExecutionGenerating}
+        />
       </Box>
     </Stack>
   )

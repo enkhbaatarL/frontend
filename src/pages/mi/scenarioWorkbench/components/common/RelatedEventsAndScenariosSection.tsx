@@ -6,13 +6,13 @@ import { useMemo, type MouseEvent } from 'react'
 import type { MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { ScenarioWorkbenchBaseCaseChip } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import ProbabilityGaugeCell from '@/pages/mi/scenarioWorkbench/components/common/ProbabilityGaugeCell'
 import { findIndexImpact, formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
 import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
 interface RelatedEventLike {
   eventId: number
@@ -275,8 +275,8 @@ const RelatedEventsAndScenariosSection = <TEvent extends RelatedEventLike, TScen
           </Typography>
 
           <Box sx={{ px: '12px', minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-            <ScenarioWorkbenchTableHeader<TEvent> columns={relatedEventColumns} />
-            <ScenarioWorkbenchDataList<TEvent>
+            <MIDataTableHeader<TEvent> columns={relatedEventColumns} />
+            <MIDataTableBody<TEvent>
               rowId="eventId"
               columns={relatedEventColumns}
               rows={events}
@@ -298,8 +298,8 @@ const RelatedEventsAndScenariosSection = <TEvent extends RelatedEventLike, TScen
             </Typography>
           </Stack>
           <Box sx={{ px: '12px', minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-            <ScenarioWorkbenchTableHeader<TScenario> columns={relatedScenarioColumns} />
-            <ScenarioWorkbenchDataList<TScenario>
+            <MIDataTableHeader<TScenario> columns={relatedScenarioColumns} />
+            <MIDataTableBody<TScenario>
               rowId="scenarioId"
               columns={relatedScenarioColumns}
               rows={scenarios}

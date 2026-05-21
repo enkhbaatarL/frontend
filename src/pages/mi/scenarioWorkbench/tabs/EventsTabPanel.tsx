@@ -10,6 +10,8 @@ import MIFilterMenu, { FilterValues } from '@/components/common/menu/MIFilterMen
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import { findIndexImpact, formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
@@ -18,8 +20,6 @@ import {
   buildWorkbenchDatePresets,
   defaultWorkbenchDateRange,
 } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { WorkbenchStickySlot } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchStickyLayout'
 import { EventCategoryLv1, EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchEventService, {
@@ -350,10 +350,10 @@ const EventsTabPanel = () => {
           </Stack>
         </Stack>
 
-        <ScenarioWorkbenchTableHeader<IScenarioWorkbenchEventListItem> columns={columns} sx={{ mt: 2 }} />
+        <MIDataTableHeader<IScenarioWorkbenchEventListItem> columns={columns} sx={{ mt: 2 }} />
       </WorkbenchStickySlot>
 
-      <ScenarioWorkbenchDataList<IScenarioWorkbenchEventListItem>
+      <MIDataTableBody<IScenarioWorkbenchEventListItem>
         rowId="eventId"
         columns={columns}
         rows={tableRows}

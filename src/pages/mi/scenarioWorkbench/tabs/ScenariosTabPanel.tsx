@@ -11,6 +11,8 @@ import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSe
 // import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 // import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 // import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import ProbabilityGaugeCell from '@/pages/mi/scenarioWorkbench/components/common/ProbabilityGaugeCell'
 import {
   // findIndexImpact,
@@ -23,8 +25,6 @@ import {
   buildWorkbenchDatePresets,
   defaultWorkbenchDateRange,
 } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import { WorkbenchStickySlot } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchStickyLayout'
 import { ListSort, ScenarioWorkbenchStatus } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchScenarioService, { type IGetScenariosParams, type IScenarioListItem } from '@/service/mi/scenarioWorkbench/scenario'
@@ -231,11 +231,11 @@ const ScenariosTabPanel = () => {
         </Stack>
 
         <Box mt={2}>
-          <ScenarioWorkbenchTableHeader<IScenarioListItem> columns={columns} />
+          <MIDataTableHeader<IScenarioListItem> columns={columns} />
         </Box>
       </WorkbenchStickySlot>
 
-      <ScenarioWorkbenchDataList<IScenarioListItem>
+      <MIDataTableBody<IScenarioListItem>
         rowId="scenarioId"
         columns={columns}
         rows={tableRows}

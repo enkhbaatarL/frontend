@@ -2,14 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { SxProps, Theme } from '@mui/material'
 
-import { scenarioWorkbenchColumnsToGridTemplate } from '@/pages/mi/scenarioWorkbench/components/table/scenarioWorkbenchGridColTemplate'
+import { dataTableColumnsToGridTemplate } from '@/components/common/table/dataTableGridColTemplate'
 
 export const OVERVIEW_ACCORDION_ACTION_COLUMN_WIDTH_PX = 36
 export const OVERVIEW_ACCORDION_LIST_LOADING_ROW_HEIGHT_PX = 42
 
 export const toSxArray = (sx?: SxProps<Theme>) => (Array.isArray(sx) ? sx : sx ? [sx] : [])
 
-export const overviewColumnsToGridTemplate = scenarioWorkbenchColumnsToGridTemplate
+export const overviewColumnsToGridTemplate = dataTableColumnsToGridTemplate
 
 export const formatOverviewScenarioTags = (tags: string[] | undefined): string => {
   if (!tags?.length) return ''

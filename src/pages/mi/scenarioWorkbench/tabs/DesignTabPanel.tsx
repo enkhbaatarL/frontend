@@ -14,6 +14,8 @@ import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import MISpinner from '@/components/common/spinner/MISpinner'
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import useSnackbar from '@/hooks/useSnackbar'
 import ClassificationTag, { ScenarioWorkbenchRecommendedBadge } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
@@ -33,8 +35,6 @@ import {
 import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import WorkbenchFollowCursorTooltip from '@/pages/mi/scenarioWorkbench/components/common/WorkbenchFollowCursorTooltip'
 import CreatedScenariosSection from '@/pages/mi/scenarioWorkbench/components/design/CreatedScenariosSection'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 import ScenarioWorkbenchEventDetailPage from '@/pages/mi/scenarioWorkbench/EventDetailPage'
 import { WorkbenchStickySlot } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchStickyLayout'
 import { EVENT_CATEGORY_LV1_KO, EventCategoryLv1, ListSort, ScenarioWorkbenchStatus } from '@/service/mi/scenarioWorkbench/common'
@@ -828,10 +828,10 @@ const DesignTabPanel = () => {
           </Stack>
         </Stack>
 
-        <ScenarioWorkbenchTableHeader<IDesignEventItem> columns={columns} sx={{ mt: 2 }} />
+        <MIDataTableHeader<IDesignEventItem> columns={columns} sx={{ mt: 2 }} />
       </WorkbenchStickySlot>
 
-      <ScenarioWorkbenchDataList<IDesignEventItem>
+      <MIDataTableBody<IDesignEventItem>
         rowId="eventId"
         columns={columns}
         rows={tableRows}

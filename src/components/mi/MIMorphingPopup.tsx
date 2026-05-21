@@ -89,6 +89,7 @@ const DimmedOverlay = ({ isClosing, isExpanded, isFadingOut }: DimmedOverlayProp
 interface PopupProps extends Omit<BoxProps, 'title' | 'content'> {
   title: ReactNode
   content: ReactNode
+  measureContent?: ReactNode
   hideHeaderLine?: boolean
   hideCloseButton?: boolean
   showSkeleton?: boolean
@@ -115,6 +116,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       popup: {
         title,
         content,
+        measureContent,
         hideHeaderLine,
         hideCloseButton,
         showSkeleton = true,
@@ -133,6 +135,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
     const [isClosing, setIsClosing] = useState(false)
     const [isExpanded, setIsExpanded] = useState(false)
     const [isAnimDone, setIsAnimDone] = useState(false)
+    const [isMorphComplete, setIsMorphComplete] = useState(false)
     const [isFadingOut, setIsFadingOut] = useState(false)
 
     type CoordsType = {
@@ -226,6 +229,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         setCoords(null)
         setIsClosing(false)
         setIsFadingOut(false)
+        setIsMorphComplete(false)
         onClose?.()
       }, DURATION_MS + FADEOUT_DURATION_MS)
     }, [onClose, useInternalScroll])
@@ -239,6 +243,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       setIsClosing(false)
       setIsExpanded(false)
       setIsAnimDone(false)
+      setIsMorphComplete(false)
       setIsFadingOut(false)
       onOpen?.()
 
@@ -249,6 +254,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
 
         animTimerRef.current = setTimeout(() => {
           setIsAnimDone(true)
+          setIsMorphComplete(true)
           animTimerRef.current = null
         }, DURATION_MS)
       })
@@ -267,8 +273,9 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       () => ({
         scrollContainer: scrollContainerEl,
         close: handleClose,
+        isMorphComplete,
       }),
-      [handleClose, scrollContainerEl],
+      [handleClose, isMorphComplete, scrollContainerEl],
     )
 
     // children에서 border 관련 스타일 추출 및 제거
@@ -493,7 +500,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
             bgcolor: 'commonColor.White',
           }}
         >
-          {content}
+          {measureContent ?? content}
         </Box>
 
         <Box

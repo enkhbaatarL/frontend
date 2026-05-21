@@ -26,14 +26,17 @@ import {
 
 import type { IOverviewEventBrief, IOverviewScenarioItem } from '@/service/mi/scenarioWorkbench/overview'
 
+import MIDataTableBody, { MI_DATA_TABLE_BODY_TOP_PADDING_DEFAULT_PX } from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { ScenarioWorkbenchBaseCaseChip } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import { findIndexImpact, formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
-import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
-import ScenarioWorkbenchDataList, {
-  SCENARIO_WORKBENCH_DATA_LIST_FIRST_ROW_TOP_INSET_DEFAULT_PX,
-} from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
+import ScenarioWorkbenchEventDetailTableBodyText, {
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
+  SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX,
+} from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import { EventCategoryLv1, MarketDirection } from '@/service/mi/scenarioWorkbench/common'
 
 const OVERVIEW_DETAIL_ACTION_FIELD = '__overviewAccordionAction'
@@ -205,7 +208,7 @@ export const OverviewScenarioEventsTable = ({ scenario, categoryLabelTyped, deta
         overflowX: 'hidden',
       }}
     >
-      <ScenarioWorkbenchTableHeader<IOverviewEventBrief>
+      <MIDataTableHeader<IOverviewEventBrief>
         columns={eventColumns}
         sx={OVERVIEW_DETAIL_HEADER_SX}
         headerLabelColor="contentText.Normal"
@@ -229,7 +232,7 @@ export const OverviewScenarioEventsTable = ({ scenario, categoryLabelTyped, deta
             </Typography>
           </Box>
         ) : (
-          <ScenarioWorkbenchDataList<IOverviewEventBrief>
+          <MIDataTableBody<IOverviewEventBrief>
             rowId="eventId"
             columns={eventColumns}
             rows={events}
@@ -237,7 +240,10 @@ export const OverviewScenarioEventsTable = ({ scenario, categoryLabelTyped, deta
             hideLastRowBorder
             rowSx={OVERVIEW_DETAIL_ROW_SX}
             getCellSx={eventDetailCellSx}
-            cellPreset="miCanvasEvent"
+            primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+            primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+            cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
+            cellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}
             detailShortcutColumnField={OVERVIEW_DETAIL_ACTION_FIELD}
             onDetailShortcutClick={({ row: r }) => goEventDetail(r.eventId)}
           />
@@ -443,7 +449,7 @@ export const OverviewScenarioFirstAccordionList = ({
 
   if (loading) {
     return (
-      <ScenarioWorkbenchDataList<IOverviewScenarioItem>
+      <MIDataTableBody<IOverviewScenarioItem>
         columns={columns}
         rows={[]}
         loading
@@ -451,7 +457,10 @@ export const OverviewScenarioFirstAccordionList = ({
         rowHeight={OVERVIEW_ACCORDION_LIST_LOADING_ROW_HEIGHT_PX}
         rowSx={rowSx}
         getCellSx={getCellSx}
-        cellPreset="miCanvasEvent"
+        primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+        primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+        cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
+        cellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}
         sx={sx}
       />
     )
@@ -469,7 +478,7 @@ export const OverviewScenarioFirstAccordionList = ({
           width: '100%',
           minWidth: 0,
           maxWidth: '100%',
-          pt: `${SCENARIO_WORKBENCH_DATA_LIST_FIRST_ROW_TOP_INSET_DEFAULT_PX}px`,
+          pt: `${MI_DATA_TABLE_BODY_TOP_PADDING_DEFAULT_PX}px`,
         },
         ...toSxArray(sx),
       ]}

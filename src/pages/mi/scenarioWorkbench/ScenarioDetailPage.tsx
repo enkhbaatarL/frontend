@@ -1,13 +1,15 @@
 import { EventNote, MonitorHeart, Notes, Summarize, Timeline } from '@mui/icons-material'
 import TokenIcon from '@mui/icons-material/Token'
-import { Skeleton, Stack, Typography } from '@mui/material'
-import { useQuery } from '@tanstack/react-query'
-import { type ReactNode, useLayoutEffect, useMemo, useSyncExternalStore } from 'react'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
+import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
+import useSnackbar from '@/hooks/useSnackbar'
 import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
 import RelatedEventsAndScenariosSection from '@/pages/mi/scenarioWorkbench/components/common/RelatedEventsAndScenariosSection'
 import ScenarioWorkbenchDetailHeader, {
@@ -15,12 +17,19 @@ import ScenarioWorkbenchDetailHeader, {
   type WorkbenchDetailHeaderSection,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
 import ScenarioKeyPredictionsSection from '@/pages/mi/scenarioWorkbench/components/scenario/ScenarioKeyPredictionsSection'
+import ScenarioModelExecutionPopupContent from '@/pages/mi/scenarioWorkbench/components/scenario/ScenarioModelExecutionPopupContent'
 import ScenarioSummarySection from '@/pages/mi/scenarioWorkbench/components/scenario/ScenarioSummarySection'
 import SignpostDefinitionSection from '@/pages/mi/scenarioWorkbench/components/scenario/SignpostDefinitionSection'
 import SignpostMonitoringSection from '@/pages/mi/scenarioWorkbench/components/scenario/SignpostMonitoringSection'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
 import { scrollScenarioWorkbenchLayoutToTop } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchScroll'
-import scenarioWorkbenchScenarioService, { IRelatedEvent, IRelatedScenario } from '@/service/mi/scenarioWorkbench/scenario'
+import scenarioWorkbenchScenarioService, {
+  type IModelExecutionAcceptRes,
+  type IModelExecutionStatusRes,
+  type IModelExecutionSubmitReq,
+  IRelatedEvent,
+  IRelatedScenario,
+} from '@/service/mi/scenarioWorkbench/scenario'
 
 type ScenarioDetailSection = WorkbenchDetailHeaderSection & {
   Icon: typeof Summarize
@@ -72,6 +81,13 @@ const publishScenarioDetailHeaderContent = (next: ScenarioDetailHeaderContent) =
   scenarioDetailHeaderListeners.forEach((l) => l())
 }
 
+const normalizeModelExecutionStatus = (status?: string | null) => status?.toLowerCase()
+
+const isModelExecutionGeneratingStatus = (status?: string | null) => {
+  const normalized = normalizeModelExecutionStatus(status)
+  return normalized === 'queued' || normalized === 'running'
+}
+
 /** `setStickyHeader` 한 번만 호출하고 콘텐츠 변경 시 이 컴포넌트만 리렌더 — 스크롤·스파이 시 본문 패딩 흔들림 방지 */
 const ScenarioDetailHeaderView = () => {
   const content = useSyncExternalStore(
@@ -95,8 +111,14 @@ const ScenarioDetailHeaderView = () => {
 const ScenarioDetailPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const queryClient = useQueryClient()
   const { setStickyHeader } = useStickyHeader()
+  const { showSnackbar } = useSnackbar()
   const { scenarioId } = useParams<{ scenarioId: string }>()
+  const modelExecutionPopupRef = useRef<MIMorphingPopupRef>(null)
+  const handledModelExecutionIdsRef = useRef<Set<string>>(new Set())
+  const [hasOpenedModelExecutionPopup, setHasOpenedModelExecutionPopup] = useState(false)
+  const [modelExecution, setModelExecution] = useState<IModelExecutionAcceptRes | IModelExecutionStatusRes | null>(null)
 
   const {
     data,
@@ -110,8 +132,70 @@ const ScenarioDetailPage = () => {
     gcTime: 0,
   })
 
+  const { mutateAsync: submitModelExecution, isPending: isSubmitModelExecutionPending } = useMutation({
+    mutationFn: ({ targetScenarioId, payload }: { targetScenarioId: string; payload: IModelExecutionSubmitReq }) =>
+      scenarioWorkbenchScenarioService.submitModelExecution(targetScenarioId, payload),
+    onError: () => {
+      showSnackbar('MI 수급모델 실행 요청에 실패했습니다.', { variant: 'error' })
+    },
+  })
+
+  const activeModelExecutionId = modelExecution?.executionId
+  const shouldPollModelExecution = Boolean(scenarioId && activeModelExecutionId) && isModelExecutionGeneratingStatus(modelExecution?.status)
+
+  const { data: modelExecutionStatus } = useQuery({
+    queryKey: ['scenarioWorkbenchScenarioModelExecutionStatus', scenarioId, activeModelExecutionId],
+    queryFn: () => scenarioWorkbenchScenarioService.getModelExecutionStatus(scenarioId ?? '', activeModelExecutionId ?? ''),
+    enabled: shouldPollModelExecution,
+    refetchInterval: shouldPollModelExecution ? 3000 : false,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  useEffect(() => {
+    if (!modelExecutionStatus) return
+
+    setModelExecution(modelExecutionStatus)
+
+    const normalized = normalizeModelExecutionStatus(modelExecutionStatus.status)
+    if (normalized !== 'succeeded' && normalized !== 'failed') return
+
+    const executionId = modelExecutionStatus.executionId
+    if (handledModelExecutionIdsRef.current.has(executionId)) return
+    handledModelExecutionIdsRef.current.add(executionId)
+
+    if (normalized === 'succeeded') {
+      showSnackbar('MI 수급모델 결과 생성이 완료되었습니다.', { variant: 'success' })
+      void refetchScenarioDetail()
+      void queryClient.invalidateQueries({ queryKey: ['scenarioWorkbenchScenarioDetail', scenarioId] })
+      return
+    }
+
+    showSnackbar(modelExecutionStatus.errorMessage || 'MI 수급모델 결과 생성에 실패했습니다.', { variant: 'error' })
+    void refetchScenarioDetail()
+  }, [modelExecutionStatus, queryClient, refetchScenarioDetail, scenarioId, showSnackbar])
+
+  useEffect(() => {
+    setModelExecution(null)
+    handledModelExecutionIdsRef.current.clear()
+    setHasOpenedModelExecutionPopup(false)
+  }, [scenarioId])
+
+  const handleSubmitModelExecution = useCallback(
+    async (payload: IModelExecutionSubmitReq) => {
+      if (!scenarioId) return
+
+      const accepted = await submitModelExecution({ targetScenarioId: scenarioId, payload })
+      setModelExecution(accepted)
+      void refetchScenarioDetail()
+      modelExecutionPopupRef.current?.close()
+    },
+    [refetchScenarioDetail, scenarioId, submitModelExecution],
+  )
+
   const scenarioName = useMemo(() => data?.scenarioName ?? '', [data?.scenarioName])
   const tags = useMemo(() => data?.tags ?? [], [data?.tags])
+  const isModelExecutionGenerating = isSubmitModelExecutionPending || isModelExecutionGeneratingStatus(modelExecution?.status)
 
   const scenarioHeaderTitleSlot = useMemo(
     () => (
@@ -191,21 +275,45 @@ const ScenarioDetailPage = () => {
       onBack: () => navigate(getScenarioWorkbenchTabPath('scenarios')),
       titleSlot: scenarioHeaderTitleSlot,
       rightAction: (
-        <MIBaseButton
-          variant="contained"
-          prefix={<TokenIcon sx={{ fontSize: 20 }} />}
-          disableRipple
-          sx={{
-            height: '36px',
-            position: 'relative',
-            zIndex: 3,
+        <MIMorphingPopup
+          ref={modelExecutionPopupRef}
+          display="inline-flex"
+          popup={{
+            title: 'Scenario',
+            content: (
+              <ScenarioModelExecutionPopupContent
+                scenarioId={scenarioId}
+                shouldFetch={hasOpenedModelExecutionPopup}
+                disabled={isModelExecutionGenerating}
+                onSubmit={handleSubmitModelExecution}
+              />
+            ),
+            useInternalScroll: true,
+            hideHeaderLine: true,
+            minWidth: 1280,
+            maxWidth: 1280,
+            measureContent: <Box height={788} />,
+            onOpen: () => setHasOpenedModelExecutionPopup(true),
           }}
         >
-          MI 수급 모델 실행
-        </MIBaseButton>
+          <MIBaseButton
+            variant="contained"
+            prefix={<TokenIcon sx={{ fontSize: 20 }} />}
+            disabled={isModelExecutionGenerating}
+            disableRipple
+            onClick={() => modelExecutionPopupRef.current?.open()}
+            sx={{
+              height: '36px',
+              position: 'relative',
+              zIndex: 3,
+            }}
+          >
+            MI 수급 모델 실행
+          </MIBaseButton>
+        </MIMorphingPopup>
       ),
     })
-  }, [scenarioHeaderTitleSlot, navigate])
+  }, [handleSubmitModelExecution, hasOpenedModelExecutionPopup, isModelExecutionGenerating, navigate, scenarioHeaderTitleSlot, scenarioId])
 
   useLayoutEffect(() => {
     setStickyHeader(<ScenarioDetailHeaderView />, {
@@ -226,7 +334,12 @@ const ScenarioDetailPage = () => {
       <Stack py="24px" gap="12px">
         <Stack id={SCENARIO_DETAIL_SECTIONS[0].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[0].id} />
-          <ScenarioSummarySection summary={data?.summary} probability={data?.probability} loading={isLoading} />
+          <ScenarioSummarySection
+            summary={data?.summary}
+            probability={data?.probability}
+            loading={isLoading}
+            modelExecutionGenerating={isModelExecutionGenerating}
+          />
         </Stack>
         <Stack id={SCENARIO_DETAIL_SECTIONS[1].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_DETAIL_SECTIONS[1].id} />

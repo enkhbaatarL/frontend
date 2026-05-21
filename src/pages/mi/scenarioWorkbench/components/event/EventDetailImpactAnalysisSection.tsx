@@ -7,13 +7,13 @@ import { useMemo } from 'react'
 import type { KpiCardProps } from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
 import type { IScenarioWorkbenchImpactIndexSummary } from '@/service/mi/scenarioWorkbench/event'
 
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import KpiCard from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
 import { PriceDirectionIconWithTooltip } from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
 import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
-import ScenarioWorkbenchDataList from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchDataList'
-import ScenarioWorkbenchTableHeader from '@/pages/mi/scenarioWorkbench/components/table/ScenarioWorkbenchTableHeader'
 
 /** 영향도 분석 섹션 props */
 interface EventDetailImpactAnalysisSectionProps {
@@ -165,8 +165,8 @@ const EventDetailImpactAnalysisSection = ({
         <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
           <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
             <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-              <ScenarioWorkbenchTableHeader<IScenarioWorkbenchImpactIndexSummary> columns={columns} />
-              <ScenarioWorkbenchDataList<IScenarioWorkbenchImpactIndexSummary>
+              <MIDataTableHeader<IScenarioWorkbenchImpactIndexSummary> columns={columns} />
+              <MIDataTableBody<IScenarioWorkbenchImpactIndexSummary>
                 rowId="indexName"
                 columns={columns}
                 rows={tableRows}
