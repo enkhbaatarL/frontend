@@ -1,5 +1,5 @@
 import { Stack } from '@mui/material'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import type {
   FundamentalModelGlobalVolumesData,
@@ -12,6 +12,13 @@ import type {
 import FundamentalModelSectionVolumesTable from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSectionVolumesTable'
 import FundamentalModelSegmentToolbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSegmentToolbar'
 import FundamentalModelTradeVolumesTable from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelTradeVolumesTable'
+import {
+  applyVolumeFilters,
+  createDefaultVolumeFilters,
+  FM_VOLUME_FILTERS_STORAGE_KEY,
+  readSavedVolumeFilters,
+  type FundamentalModelVolumeFilters,
+} from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumeFilters'
 import FundamentalModelVolumesMatrix from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelVolumesMatrix'
 
 /** Volumes 탭에 필요한 표 데이터 */
@@ -40,12 +47,41 @@ const SECTION_VOLUMES_SKELETON_ROW_COUNT: Record<'global' | 'lng', number> = {
 /** Volumes 탭 본문(툴바·매트릭스 — 레이아웃은 FundamentalModelPage) */
 const VolumesTabPanel = ({ monthLabels, summaryRows, globalVolumes, lngVolumes, tradeVolumes, detailLoading }: VolumesTabPanelProps) => {
   const [scope, setScope] = useState<FundamentalModelScopeKey>('global')
+  const [period, setPeriod] = useState('monthly')
+  const savedFilters = readSavedVolumeFilters()
+  const [volumeFilters, setVolumeFilters] = useState<FundamentalModelVolumeFilters>(() => savedFilters ?? createDefaultVolumeFilters())
+  const [saveFiltersOn, setSaveFiltersOn] = useState(Boolean(savedFilters))
 
-  const sectionVolumesData = scope === 'global' ? globalVolumes : scope === 'lng' ? lngVolumes : null
+  const handleApplyVolumeFilters = (filters: FundamentalModelVolumeFilters, save?: boolean) => {
+    setVolumeFilters(filters)
+    if (save) {
+      localStorage.setItem(FM_VOLUME_FILTERS_STORAGE_KEY, JSON.stringify(filters))
+      setSaveFiltersOn(true)
+      return
+    }
+    localStorage.removeItem(FM_VOLUME_FILTERS_STORAGE_KEY)
+    setSaveFiltersOn(false)
+  }
+
+  const filteredGlobalVolumes = useMemo(() => applyVolumeFilters(globalVolumes, volumeFilters), [globalVolumes, volumeFilters])
+
+  const filteredLngVolumes = useMemo(() => applyVolumeFilters(lngVolumes, volumeFilters), [lngVolumes, volumeFilters])
+
+  const sectionVolumesData: FundamentalModelGlobalVolumesData | null =
+    scope === 'global' ? filteredGlobalVolumes : scope === 'lng' ? filteredLngVolumes : null
 
   return (
     <Stack sx={{ gap: '16px' }}>
-      <FundamentalModelSegmentToolbar loading={detailLoading} scope={scope} onScopeChange={setScope} />
+      <FundamentalModelSegmentToolbar
+        loading={detailLoading}
+        scope={scope}
+        onScopeChange={setScope}
+        volumeFilters={volumeFilters}
+        onApplyVolumeFilters={handleApplyVolumeFilters}
+        initialSaveFilters={saveFiltersOn}
+        period={period}
+        onPeriodChange={setPeriod}
+      />
 
       {scope === 'trade' ? (
         <FundamentalModelTradeVolumesTable data={tradeVolumes} loading={detailLoading} />
