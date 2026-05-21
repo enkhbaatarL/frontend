@@ -291,7 +291,9 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
           {
             position: 'relative',
             maxHeight: height ?? maxHeight,
-            ...(height !== undefined ? { height, minHeight: 0 } : {}),
+            overflow: 'hidden',
+            padding: `${offsetTop}px 0 ${offsetBottom}px 0`,
+            ...(height === undefined ? {} : { height, minHeight: 0 }),
           },
           ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
         ]}
@@ -302,7 +304,6 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
             height: '100%',
             overflow: 'hidden',
             boxSizing: 'border-box',
-            padding: `${offsetTop}px 0 ${offsetBottom}px 0`,
             ...(showScrollbarOnHover
               ? {
                 '& .scroll-wrapper-thumb, & .scroll-wrapper-track': {
@@ -310,14 +311,14 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                   transition: 'opacity 150ms ease',
                   pointerEvents: isDragging ? 'auto' : 'none',
                 },
-                ...(!isDragging
-                  ? {
+                ...(isDragging
+                  ? {}
+                  : {
                     '&:hover .scroll-wrapper-thumb, &:hover .scroll-wrapper-track': {
                       opacity: 1,
                       pointerEvents: 'auto',
                     },
-                  }
-                  : {}),
+                  }),
               }
               : {}),
           }}
@@ -331,7 +332,14 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
               else if (ref) ref.current = node
             }}
             sx={{
-              ...(height !== undefined ? { height: '100%', maxHeight: '100%', minHeight: 0, boxSizing: 'border-box' } : { maxHeight }),
+              ...(height === undefined
+                ? { maxHeight }
+                : {
+                  height: '100%',
+                  maxHeight: '100%',
+                  minHeight: 0,
+                  boxSizing: 'border-box',
+                }),
               overflowY: 'auto',
               overflowX: 'hidden',
               overscrollBehavior: 'none',
