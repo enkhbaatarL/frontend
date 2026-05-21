@@ -137,6 +137,19 @@ const FundamentalModelPage = () => {
               monthLabels={monthLabels}
               summaryRows={detail?.summaryRows ?? []}
               detailRows={detail?.detailRows ?? []}
+              globalVolumes={detail?.globalVolumes ?? { monthLabels: [], sections: [] }}
+              lngVolumes={detail?.lngVolumes ?? { monthLabels: [], sections: [] }}
+              tradeVolumes={
+                detail?.tradeVolumes ?? {
+                  productOptions: [],
+                  yearOptions: [],
+                  selectedProductId: '',
+                  selectedYearId: '',
+                  unitLabel: 'mtpa',
+                  fromColumns: [],
+                  toRows: [],
+                }
+              }
               detailLoading={detailLoading}
             />
           </Box>

@@ -96,8 +96,6 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
         flexShrink: 0,
         bgcolor: 'commonColor.White',
         borderRadius: '10px',
-        border: '1px solid',
-        borderColor: 'gray.30',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -149,7 +147,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
         </Button>
       </Stack>
 
-      <Stack direction="row" alignItems="center" gap="8px" px="20px" py="8px" flexShrink={0}>
+      <Stack direction="row" alignItems="center" gap="8px" px="20px" py="8px" flexShrink={0} width="100%" boxSizing="border-box">
         <MISelectMenu
           variant="outlined"
           selected={managerKey}
@@ -167,7 +165,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
             fontSize: 14,
           }}
         />
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ flex: 1, minWidth: 0, width: 0 }}>
           <MISearchInput
             storageKey="mi-fundamental-model-list"
             value={keyword}
@@ -181,6 +179,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
               setCommittedKeyword('')
             }}
             height={40}
+            width="100%"
           />
         </Box>
       </Stack>
@@ -239,6 +238,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
                     cursor: 'pointer',
                     border: '1px solid',
                     borderColor: selected ? 'mari.Primary' : 'transparent',
+
                     bgcolor: selected ? 'gray.5' : 'commonColor.White',
                     outline: 'none',
                     display: 'flex',
