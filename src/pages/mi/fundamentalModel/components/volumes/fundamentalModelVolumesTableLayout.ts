@@ -4,6 +4,8 @@ import type { SystemStyleObject } from '@mui/system'
 
 /** Volumes Table 컴포넌트 최소 너비 */
 export const FM_VOLUME_TABLE_MIN_W = 960
+/** Volumes Table 기본 타겟 너비 */
+export const FM_VOLUME_TABLE_BASE_W = 1000
 
 /** Volumes 표 공통 레이아웃 토큰 */
 export const FM_VOLUME_TABLE_HEADER_H = 36
@@ -24,7 +26,13 @@ export const FM_VOLUME_GLOBAL_FROZEN_W = FM_VOLUME_GLOBAL_SECTION_COL_W + FM_VOL
 /** 월 컬럼 너비 */
 export const FM_VOLUME_MONTH_COL_W = 90
 
-export const fmVolumeMonthColumnsWidth = (monthCount: number) => monthCount * FM_VOLUME_MONTH_COL_W
+export const fmVolumeMonthColumnsWidth = (monthCount: number, columnWidth = FM_VOLUME_MONTH_COL_W) => monthCount * columnWidth
+
+export const fmVolumeResolvedMonthColumnWidth = (monthCount: number, frozenWidth: number, tableWidth = FM_VOLUME_TABLE_BASE_W): number => {
+  if (monthCount <= 0) return FM_VOLUME_MONTH_COL_W
+  const stretchWidth = Math.floor((tableWidth - frozenWidth) / monthCount)
+  return Math.max(FM_VOLUME_MONTH_COL_W, stretchWidth)
+}
 
 /** 가로 스크롤바 숨김(하단 트랙만 표시할 때) */
 export const fmVolumeHiddenHorizontalScrollbarSx: SystemStyleObject<Theme> = {

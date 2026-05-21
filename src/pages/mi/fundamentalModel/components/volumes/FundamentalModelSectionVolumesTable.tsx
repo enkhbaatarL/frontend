@@ -16,13 +16,13 @@ import {
   FM_VOLUME_GLOBAL_TABLE_BODY_MAX_HEIGHT,
   FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H,
   FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT,
-  FM_VOLUME_MONTH_COL_W,
   FM_VOLUME_TABLE_BODY_H,
   FM_VOLUME_TABLE_BORDER,
   FM_VOLUME_TABLE_HEADER_H,
   fmVolumeGlobalBodyCellSx,
   fmVolumeHiddenHorizontalScrollbarSx,
   fmVolumeMonthColumnsWidth,
+  fmVolumeResolvedMonthColumnWidth,
   fmVolumeTableBodyCellSx,
   fmVolumeTableFrameSx,
   fmVolumeTableHeaderCellSx,
@@ -37,9 +37,6 @@ export interface FundamentalModelSectionVolumesTableProps {
   skeletonRowCount?: number
 }
 
-const SECTION_LABEL_ROW_COUNT = 8
-const SECTION_LABEL_BLOCK_H = SECTION_LABEL_ROW_COUNT * FM_VOLUME_TABLE_BODY_H
-
 const rowTypography = (kind: FundamentalModelGlobalRowKind) => {
   if (kind === 'country') return { variant: 'body2R14' as const }
   return { variant: 'body2SB14' as const }
@@ -50,8 +47,24 @@ interface FlatRow {
   row: FundamentalModelGlobalVolumeRow
 }
 
+interface SectionLabelLayout {
+  labelRows: number
+  totalRows: number
+}
+
 const flattenSections = (data: FundamentalModelGlobalVolumesData): FlatRow[] =>
   data.sections.flatMap((section) => section.rows.map((row) => ({ sectionId: section.id, row })))
+
+const getSectionLabelLayout = (rows: FundamentalModelGlobalVolumeRow[]): SectionLabelLayout => {
+  if (rows.length === 0) return { labelRows: 0, totalRows: 0 }
+
+  const firstTotalIndex = rows.findIndex((row) => row.kind === 'total')
+  if (firstTotalIndex < 0) return { labelRows: rows.length, totalRows: 0 }
+
+  const labelRows = firstTotalIndex === 0 ? 1 : firstTotalIndex
+  const totalRows = Math.max(rows.length - labelRows, 0)
+  return { labelRows, totalRows }
+}
 
 const volumeBodyScrollWrapperProps = {
   maxHeight: FM_VOLUME_GLOBAL_TABLE_BODY_MAX_HEIGHT,
@@ -69,7 +82,15 @@ const volumeBodyScrollWrapperProps = {
   styScroll: { borderRadius: '1000px' },
 } as const
 
-const SectionVolumesTableSkeleton = ({ monthCount, rowCount }: { monthCount: number; rowCount: number }) => (
+const SectionVolumesTableSkeleton = ({
+  monthCount,
+  rowCount,
+  monthColWidth,
+}: {
+  monthCount: number
+  rowCount: number
+  monthColWidth: number
+}) => (
   <Box
     sx={mergeVolumeTableSx(fmVolumeTableFrameSx, {
       maxHeight: FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT,
@@ -87,7 +108,7 @@ const SectionVolumesTableSkeleton = ({ monthCount, rowCount }: { monthCount: num
         </Stack>
         <Stack direction="row" gap={0.5} flex={1}>
           {Array.from({ length: Math.min(monthCount, 6) }).map((_, c) => (
-            <Stack key={`sk-m-${c}`} sx={{ width: FM_VOLUME_MONTH_COL_W, gap: 0.5 }}>
+            <Stack key={`sk-m-${c}`} sx={{ width: monthColWidth, gap: 0.5 }}>
               {Array.from({ length: rowCount }).map((__, r) => (
                 <Skeleton key={`sk-${c}-${r}`} variant="rounded" height={36} />
               ))}
@@ -108,7 +129,8 @@ const FundamentalModelSectionVolumesTable = memo(
   ({ data, loading = false, skeletonRowCount = 45 }: FundamentalModelSectionVolumesTableProps) => {
     const flatRows = useMemo(() => flattenSections(data), [data])
     const rowCount = flatRows.length
-    const monthScrollWidth = fmVolumeMonthColumnsWidth(data.monthLabels.length)
+    const monthColWidth = fmVolumeResolvedMonthColumnWidth(data.monthLabels.length, FM_VOLUME_GLOBAL_FROZEN_W)
+    const monthScrollWidth = fmVolumeMonthColumnsWidth(data.monthLabels.length, monthColWidth)
 
     const headerMonthScrollRef = useRef<HTMLDivElement>(null)
     const bodyMonthScrollRef = useRef<HTMLDivElement>(null)
@@ -131,7 +153,13 @@ const FundamentalModelSectionVolumesTable = memo(
     }, [])
 
     if (loading) {
-      return <SectionVolumesTableSkeleton monthCount={data.monthLabels.length} rowCount={rowCount || skeletonRowCount} />
+      return (
+        <SectionVolumesTableSkeleton
+          monthCount={data.monthLabels.length}
+          rowCount={rowCount || skeletonRowCount}
+          monthColWidth={monthColWidth}
+        />
+      )
     }
 
     const headerFrozen = (
@@ -152,7 +180,7 @@ const FundamentalModelSectionVolumesTable = memo(
     const headerMonthColumns = (
       <Stack direction="row" alignItems="flex-start">
         {data.monthLabels.map((month) => (
-          <Stack key={month} sx={{ width: FM_VOLUME_MONTH_COL_W, flexShrink: 0 }}>
+          <Stack key={month} sx={{ width: monthColWidth, flexShrink: 0 }}>
             <Box sx={[fmVolumeTableHeaderCellSx, { justifyContent: 'flex-end' }]}>
               <Typography variant="tableHeaderSemibold" color="gray.60" noWrap sx={{ lineHeight: 1.4 }}>
                 {month}
@@ -166,27 +194,43 @@ const FundamentalModelSectionVolumesTable = memo(
     const bodyFrozenColumns = (
       <Stack direction="row" alignItems="flex-start" sx={{ flexShrink: 0 }}>
         <Stack sx={{ width: FM_VOLUME_GLOBAL_SECTION_COL_W, flexShrink: 0 }}>
-          {data.sections.map((section) => (
-            <Box key={section.id}>
-              <Box
-                sx={{
-                  height: SECTION_LABEL_BLOCK_H,
-                  px: '12px',
-                  py: '10px',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  bgcolor: 'commonColor.White',
-                  borderBottom: FM_VOLUME_TABLE_BORDER,
-                  boxSizing: 'border-box',
-                }}
-              >
-                <Typography variant="body2SB14" color="gray.90" sx={{ whiteSpace: 'pre-wrap' }}>
-                  {section.label}
-                </Typography>
+          {data.sections.map((section) => {
+            const layout = getSectionLabelLayout(section.rows)
+            return (
+              <Box key={section.id}>
+                {layout.labelRows > 0 && (
+                  <Box
+                    sx={{
+                      height: layout.labelRows * FM_VOLUME_TABLE_BODY_H,
+                      px: '12px',
+                      py: '10px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      bgcolor: 'commonColor.White',
+                      borderBottom: layout.totalRows > 0 ? 'none' : FM_VOLUME_TABLE_BORDER,
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <Typography variant="body2SB14" color="gray.90" sx={{ whiteSpace: 'pre-wrap' }}>
+                      {section.label}
+                    </Typography>
+                  </Box>
+                )}
+                {Array.from({ length: layout.totalRows }).map((_, idx) => (
+                  <Box
+                    key={`${section.id}-total-${idx}`}
+                    sx={{
+                      height: FM_VOLUME_TABLE_BODY_H,
+                      bgcolor: 'gray.5',
+                      borderTop: FM_VOLUME_TABLE_BORDER,
+                      borderBottom: idx === layout.totalRows - 1 ? FM_VOLUME_TABLE_BORDER : 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                ))}
               </Box>
-              <Box sx={{ height: FM_VOLUME_TABLE_BODY_H, bgcolor: 'gray.5', borderTop: FM_VOLUME_TABLE_BORDER }} />
-            </Box>
-          ))}
+            )
+          })}
         </Stack>
 
         <Stack sx={{ width: FM_VOLUME_GLOBAL_COUNTRY_COL_W, flexShrink: 0, borderRight: FM_VOLUME_TABLE_BORDER, overflow: 'clip' }}>
@@ -208,7 +252,7 @@ const FundamentalModelSectionVolumesTable = memo(
     const bodyMonthColumns = (
       <Stack direction="row" alignItems="flex-start">
         {data.monthLabels.map((month, colIdx) => (
-          <Stack key={month} sx={{ width: FM_VOLUME_MONTH_COL_W, flexShrink: 0 }}>
+          <Stack key={month} sx={{ width: monthColWidth, flexShrink: 0 }}>
             {flatRows.map(({ row, sectionId }, rowIdx) => {
               const nextIsTotal = flatRows[rowIdx + 1]?.row.kind === 'total'
               const isTotal = row.kind === 'total'
