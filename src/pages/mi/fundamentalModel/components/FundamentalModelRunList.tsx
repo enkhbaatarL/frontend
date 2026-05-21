@@ -32,6 +32,14 @@ export interface FundamentalModelRunListProps {
   loading?: boolean
 }
 
+/** 목록 검색 기준 */
+type RunListSearchField = 'managerName' | 'title'
+
+const SEARCH_FIELD_ITEMS: SelectMenuItem<RunListSearchField>[] = [
+  { value: 'managerName', label: '담당자명' },
+  { value: 'title', label: '제목' },
+]
+
 /** 목록 건수 배지 라벨 */
 const formatRunCountLabel = (count: number) => {
   if (count > 9999) return '9,999+'
@@ -82,11 +90,11 @@ const TruncatedLabel = ({ text, variant = 'body1SB16', color = 'gray.90', sx }: 
   )
 }
 
-/** 좌측 시뮬레이션 목록(검색 - 담당자 필터 - 카드 리스트) */
+/** 좌측 시뮬레이션 목록(검색 기준 선택 - 검색 - 카드 리스트) */
 const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }: FundamentalModelRunListProps) => {
   const uploadPopupRef = useRef<MIMorphingPopupRef>(null)
   const { showSnackbar } = useSnackbar()
-  const [managerKey, setManagerKey] = useState<string>('all')
+  const [searchField, setSearchField] = useState<RunListSearchField>('managerName')
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
   const [uploadTitle, setUploadTitle] = useState('')
@@ -161,20 +169,14 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
     uploadPopupRef.current?.close()
   }, [showSnackbar, uploadFiles, uploadTitle])
 
-  const managerItems: SelectMenuItem<string>[] = useMemo(() => {
-    const names = Array.from(new Set(runs.map((r) => r.managerName))).sort()
-    const items: SelectMenuItem<string>[] = [{ value: 'all', label: '담당자 전체' }, ...names.map((name) => ({ value: name, label: name }))]
-    return items
-  }, [runs])
-
   const filteredRuns = useMemo(() => {
     const q = committedKeyword.trim().toLowerCase()
+    if (!q) return runs
     return runs.filter((run) => {
-      if (managerKey !== 'all' && run.managerName !== managerKey) return false
-      if (!q) return true
-      return run.title.toLowerCase().includes(q) || run.managerName.toLowerCase().includes(q)
+      const target = searchField === 'title' ? run.title : run.managerName
+      return target.toLowerCase().includes(q)
     })
-  }, [committedKeyword, managerKey, runs])
+  }, [committedKeyword, runs, searchField])
 
   const uploadPopupContent = (
     <FundamentalModelFileUploadPopupContent
@@ -261,15 +263,13 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
       <Stack direction="row" alignItems="center" gap="8px" px="20px" py="8px" flexShrink={0} width="100%" boxSizing="border-box">
         <MISelectMenu
           variant="outlined"
-          selected={managerKey}
-          onSelected={(v: string) => setManagerKey(v)}
-          items={managerItems}
-          placeholder="담당자명"
+          selected={searchField}
+          onSelected={(v: RunListSearchField) => setSearchField(v)}
+          items={SEARCH_FIELD_ITEMS}
           sx={{
             flexShrink: 0,
             height: 40,
             borderRadius: '10px',
-            borderColor: 'content.borderEnabled',
             color: 'content.textNormal',
             textTransform: 'none',
             fontWeight: 600,
