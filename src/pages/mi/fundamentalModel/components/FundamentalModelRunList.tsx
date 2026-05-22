@@ -5,7 +5,7 @@ import type { FundamentalModelRunListItem, FundamentalModelRunStatus } from '@/p
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import AddIcon from '@/components/common/icons/AddIcon'
-import MISearchInput from '@/components/common/input/MISearchInput'
+import AsyncAutocomplete from '@/components/common/input/AsyncAutocomplete'
 import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISelectMenu'
 import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -277,11 +277,11 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
           }}
         />
         <Box sx={{ flex: 1, minWidth: 0, width: 0 }}>
-          <MISearchInput
-            storageKey="mi-fundamental-model-list"
+          <AsyncAutocomplete
             value={keyword}
-            onChange={setKeyword}
-            placeholder="Search"
+            onInputChange={(_event, newValue) => {
+              setKeyword(newValue)
+            }}
             onSearch={(v) => {
               setCommittedKeyword(v)
             }}
@@ -289,6 +289,10 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
               setKeyword('')
               setCommittedKeyword('')
             }}
+            showSearchIcon={true}
+            showOptionsOnFocus={false}
+            disableCache={true}
+            textFieldProps={{ placeholder: 'Search' }}
             height={40}
             width="100%"
           />

@@ -189,10 +189,6 @@ const MIRoutes: RouteObject = {
       element: <FundamentalModelPage />,
     },
     {
-      path: 'fundamental-model/:runId',
-      element: <FundamentalModelPage />,
-    },
-    {
       path: 'scenario-workbench',
       children: [
         { index: true, element: <Navigate to={SCENARIO_WORKBENCH_TAB_INFO[0].segment} replace /> },

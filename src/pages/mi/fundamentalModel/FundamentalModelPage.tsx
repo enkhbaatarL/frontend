@@ -1,7 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
 
 import type { FundamentalModelDetail, FundamentalModelRunListItem } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 
@@ -16,19 +15,13 @@ import {
   fetchFundamentalModelRuns,
   FUNDAMENTAL_MODEL_MONTH_LABELS,
 } from '@/pages/mi/fundamentalModel/fundamentalModelMockApi'
-import {
-  FUNDAMENTAL_MODEL_BASE_PATH,
-  FUNDAMENTAL_MODEL_VIEW_TABS,
-  getFundamentalModelRunPath,
-  type FundamentalModelViewTabKey,
-} from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
+import { FUNDAMENTAL_MODEL_VIEW_TABS, type FundamentalModelViewTabKey } from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
 
-/** MI 수급 모델 — 미선택 `/mi/fundamental-model`, 선택 시 `/mi/fundamental-model/:runId` */
+/** MI 수급 모델 — URL 고정 `/mi/fundamental-model`, 선택은 클라이언트 state */
 const FundamentalModelPage = () => {
-  const { runId: runIdParam } = useParams<{ runId?: string }>()
-  const navigate = useNavigate()
+  const [selectedRunId, setSelectedRunId] = useState('')
   const [viewTab, setViewTab] = useState<FundamentalModelViewTabKey>('volumes')
 
   const { data: runs = [], isLoading: listLoading } = useQuery<FundamentalModelRunListItem[]>({
@@ -38,15 +31,19 @@ const FundamentalModelPage = () => {
   })
 
   const runsReady = !listLoading && runs.length > 0
-  const isValidRunId = runsReady && Boolean(runIdParam) && runs.some((r) => r.id === runIdParam)
-  const activeRunId = isValidRunId ? runIdParam! : ''
+
+  const activeRunId = useMemo(() => {
+    if (!selectedRunId) return ''
+    if (!runsReady) return selectedRunId
+    return runs.some((r) => r.id === selectedRunId) ? selectedRunId : ''
+  }, [selectedRunId, runsReady, runs])
 
   useEffect(() => {
-    if (!runsReady || !runIdParam) return
-    if (!runs.some((r) => r.id === runIdParam)) {
-      navigate(FUNDAMENTAL_MODEL_BASE_PATH, { replace: true })
+    if (!runsReady || !selectedRunId) return
+    if (!runs.some((r) => r.id === selectedRunId)) {
+      setSelectedRunId('')
     }
-  }, [runsReady, runIdParam, runs, navigate])
+  }, [runsReady, runs, selectedRunId])
 
   useEffect(() => {
     setViewTab('volumes')
@@ -82,12 +79,9 @@ const FundamentalModelPage = () => {
     [],
   )
 
-  const handleSelectRun = useCallback(
-    (id: string) => {
-      navigate(getFundamentalModelRunPath(id))
-    },
-    [navigate],
-  )
+  const handleSelectRun = useCallback((id: string) => {
+    setSelectedRunId(id)
+  }, [])
 
   const rightBody = !runsReady ? (
     <Box sx={{ flex: 1, minHeight: 900 }} />
