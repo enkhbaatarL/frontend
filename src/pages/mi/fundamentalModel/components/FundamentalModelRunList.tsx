@@ -48,6 +48,9 @@ const formatRunCountLabel = (count: number) => {
 
 /** 상태 배지 스타일 */
 const statusVisual = (status: FundamentalModelRunStatus) => {
+  if (status === 'pending') {
+    return { bg: 'gray.20', color: 'gray.70', label: 'PENDING' }
+  }
   if (status === 'in_progress') {
     return { bg: 'contentBG.PrimaryFade', color: 'mari.Primary', label: 'IN PROGRESS' }
   }

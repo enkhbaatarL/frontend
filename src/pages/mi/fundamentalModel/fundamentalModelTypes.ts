@@ -1,5 +1,5 @@
 /** 수급 모델 시뮬레이션 실행 상태 */
-export type FundamentalModelRunStatus = 'in_progress' | 'done' | 'error'
+export type FundamentalModelRunStatus = 'pending' | 'in_progress' | 'done' | 'error'
 
 /** 좌측 목록 한 행 */
 export interface FundamentalModelRunListItem {

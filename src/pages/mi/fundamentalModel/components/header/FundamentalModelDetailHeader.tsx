@@ -74,6 +74,9 @@ const AttachmentList = ({ fileNames }: AttachmentListProps) => {
 
 /** 상세 상단 상태 칩 색상 */
 const headerStatusSx = (status: FundamentalModelRunStatus) => {
+  if (status === 'pending') {
+    return { bg: 'gray.20', color: 'gray.70', label: 'PENDING' }
+  }
   if (status === 'in_progress') {
     return { bg: 'contentBG.PrimaryFade', color: 'mari.Primary', label: 'IN PROGRESS' }
   }
@@ -245,6 +248,8 @@ const FundamentalModelDetailHeader = ({
   }
 
   const st = headerStatusSx(detail.status)
+  // 실행 완료 전(대기/실행중/실패)에는 Export 와 더보기 메뉴를 비활성화 -- Figma 시안 기준
+  const headerActionsDisabled = detail.status !== 'done'
 
   return (
     <>
@@ -280,6 +285,7 @@ const FundamentalModelDetailHeader = ({
               label="Export"
               variant="contained"
               placement="bottom-end"
+              disabled={headerActionsDisabled}
               items={[
                 { label: '대시보드 (아웃풋) 엑셀', action: () => onExportDashboardExcel?.() },
                 { label: '중간파일 zip', action: () => onExportIntermediateZip?.() },
@@ -316,6 +322,7 @@ const FundamentalModelDetailHeader = ({
                 label={<MoreVertIcon />}
                 variant="outlined"
                 placement="bottom-end"
+                disabled={headerActionsDisabled}
                 items={[
                   { label: '수정', action: openEditPopup },
                   { label: '삭제', action: openDeleteConfirm },
