@@ -6,6 +6,7 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIButton from '@/components/common/button/MIButton'
 import CancelIcon from '@/components/common/icons/CancelIcon'
 import InfoIconSm from '@/components/common/icons/InfoIconSm'
+import WarningIconRed from '@/components/common/icons/WarningIconRed'
 import MIFileUploadDropzone from '@/components/mi/MIFileUploadDropzone'
 import {
   FUNDAMENTAL_UPLOAD_ACCEPT,
@@ -16,6 +17,7 @@ import {
   FUNDAMENTAL_UPLOAD_TITLE_MAX_LENGTH,
   UPLOAD_FILE_REQUIRED_BODY,
   UPLOAD_FILE_REQUIRED_TITLE,
+  hasRequiredFundamentalModelFiles,
 } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
 
 interface FundamentalModelFileUploadPopupContentProps {
@@ -37,12 +39,16 @@ const characterCountFormatter = new Intl.NumberFormat('en-US')
 const formatCharacterCount = (value: string, maxLength: number) =>
   `${characterCountFormatter.format(value.length)} / ${characterCountFormatter.format(maxLength)}`
 
-const UploadGuideNotice = () => (
+interface UploadGuideNoticeProps {
+  hasError: boolean
+}
+
+const UploadGuideNotice = ({ hasError }: UploadGuideNoticeProps) => (
   <Stack
     sx={{
       width: '100%',
       borderRadius: '8px',
-      bgcolor: 'gray.5',
+      bgcolor: hasError ? 'rgba(240, 62, 62, 0.1)' : 'gray.5',
       px: '16px',
       py: '10px',
       boxSizing: 'border-box',
@@ -50,7 +56,7 @@ const UploadGuideNotice = () => (
     }}
   >
     <Stack direction="row" alignItems="flex-start" gap="8px" sx={{ width: '100%', minWidth: 0 }}>
-      <InfoIconSm width={18} height={18} />
+      {hasError ? <WarningIconRed width={18} height={18} /> : <InfoIconSm width={18} height={18} />}
       <Typography fontSize="13px" fontWeight={600} lineHeight={1.4} color="contentText.Black" sx={{ minWidth: 0 }}>
         {UPLOAD_FILE_REQUIRED_TITLE}
       </Typography>
@@ -215,14 +221,16 @@ const FundamentalModelFileUploadPopupContent = ({
   onSubmit,
   onCancel,
 }: FundamentalModelFileUploadPopupContentProps) => {
+  const isFileValidationPassed = hasRequiredFundamentalModelFiles(files)
+  const showFileValidationError = files.length >= FUNDAMENTAL_UPLOAD_MAX_FILES && !isFileValidationPassed
   const uploadDisabled = files.length >= FUNDAMENTAL_UPLOAD_MAX_FILES
-  const submitDisabled = files.length === 0 || showTitleValidationError
+  const submitDisabled = !isFileValidationPassed || showTitleValidationError
 
   return (
     <Stack sx={{ width: '100%' }}>
       <Stack gap="20px" sx={{ width: '100%' }}>
         <Box px="20px">
-          <UploadGuideNotice />
+          <UploadGuideNotice hasError={showFileValidationError} />
         </Box>
 
         <Stack gap="20px" px="20px">

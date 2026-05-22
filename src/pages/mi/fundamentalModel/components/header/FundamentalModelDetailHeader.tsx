@@ -1,9 +1,10 @@
-import { Box, Button, Divider, IconButton, Menu, MenuItem, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
+import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
 
 import type { FundamentalModelDetail, FundamentalModelRunStatus } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 
 import MoreVertIcon from '@/components/common/icons/MoreVertIcon'
+import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
 import FundamentalModelMemoSection from '@/pages/mi/fundamentalModel/components/header/FundamentalModelMemoSection'
 
 /** 본 페이지 우측 상세 헤더 props */
@@ -15,108 +16,10 @@ export interface FundamentalModelDetailHeaderProps {
   onEdit?: () => void
   /** 삭제 메뉴 */
   onDelete?: () => void
-}
-
-interface HeaderMoreMenuProps {
-  /** 수정 선택 */
-  onEdit?: () => void
-  /** 삭제 선택 */
-  onDelete?: () => void
-}
-
-/** 헤더 세로 더보기(수정/삭제) 메뉴 */
-const HeaderMoreMenu = ({ onEdit, onDelete }: HeaderMoreMenuProps) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
-
-  const handleClose = () => {
-    setAnchorEl(null)
-  }
-
-  const handleEdit = () => {
-    onEdit?.()
-    handleClose()
-  }
-
-  const handleDelete = () => {
-    onDelete?.()
-    handleClose()
-  }
-
-  return (
-    <>
-      <IconButton
-        aria-label="추가 메뉴"
-        onClick={(e) => setAnchorEl(e.currentTarget)}
-        sx={{
-          width: 36,
-          height: 36,
-          p: '8px',
-          border: '1px solid',
-          borderColor: 'content.borderEnabled',
-          borderRadius: '10px',
-          color: 'content.iconActive',
-          bgcolor: 'commonColor.White',
-        }}
-      >
-        <MoreVertIcon />
-      </IconButton>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{
-          paper: {
-            sx: {
-              width: 120,
-              borderRadius: '4px',
-              border: '1px solid',
-              borderColor: 'gray.30',
-              boxShadow: '0px 0px 8px 0px rgba(0, 0, 0, 0.1)',
-              mt: '4px',
-            },
-          },
-          list: {
-            sx: { py: '8px' },
-          },
-        }}
-      >
-        <MenuItem
-          onClick={handleEdit}
-          sx={{
-            minHeight: 36,
-            py: '8px',
-            px: '12px',
-            fontSize: 14,
-            fontWeight: 500,
-            lineHeight: 1.4,
-            color: 'content.textNormal',
-            '&:hover': { bgcolor: 'gray.5' },
-          }}
-        >
-          수정
-        </MenuItem>
-        <MenuItem
-          onClick={handleDelete}
-          sx={{
-            minHeight: 36,
-            py: '8px',
-            px: '12px',
-            fontSize: 14,
-            fontWeight: 400,
-            lineHeight: 1.4,
-            color: 'content.textNormal',
-            '&:hover': { bgcolor: 'gray.5' },
-          }}
-        >
-          삭제
-        </MenuItem>
-      </Menu>
-    </>
-  )
+  /** 대시보드(아웃풋) 엑셀보내기 */
+  onExportDashboardExcel?: () => void
+  /** 중간파일 zip보내기 */
+  onExportIntermediateZip?: () => void
 }
 
 interface AttachmentListProps {
@@ -221,7 +124,14 @@ const HeaderTitle = ({ title }: HeaderTitleProps) => {
 }
 
 /** 우측 상세 헤더(상태|제목|메모|첨부) */
-const FundamentalModelDetailHeader = ({ detail, loading = false, onEdit, onDelete }: FundamentalModelDetailHeaderProps) => {
+const FundamentalModelDetailHeader = ({
+  detail,
+  loading = false,
+  onEdit,
+  onDelete,
+  onExportDashboardExcel,
+  onExportIntermediateZip,
+}: FundamentalModelDetailHeaderProps) => {
   if (loading || !detail) {
     return (
       <Box
@@ -283,26 +193,41 @@ const FundamentalModelDetailHeader = ({ detail, loading = false, onEdit, onDelet
       <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap="4px" sx={{ mb: '4px' }}>
         <HeaderTitle title={detail.title} />
         <Stack direction="row" alignItems="center" gap="4px" flexShrink={0}>
-          <Button
+          <MIDropdownMenu
+            label="Export"
             variant="contained"
-            disableElevation
+            placement="bottom-end"
+            items={[
+              { label: '대시보드 (아웃풋) 엑셀', action: () => onExportDashboardExcel?.() },
+              { label: '중간파일 zip', action: () => onExportIntermediateZip?.() },
+            ]}
             sx={{
-              bgcolor: 'content.iconActive',
-              color: 'commonColor.White',
-              textTransform: 'none',
-              borderRadius: '10px',
-              px: '8px',
-              py: '8px',
-              minHeight: 36,
-              fontWeight: 600,
-              fontSize: 14,
-              lineHeight: 1.4,
-              '&:hover': { bgcolor: '#25324a' },
+              height: '36px',
             }}
-          >
-            Export
-          </Button>
-          <HeaderMoreMenu onEdit={onEdit} onDelete={onDelete} />
+            paperProps={{
+              sx: {
+                minWidth: '180px',
+              },
+            }}
+          />
+          <MIDropdownMenu
+            label={<MoreVertIcon />}
+            variant="outlined"
+            placement="bottom-end"
+            items={[
+              { label: '수정', action: () => onEdit?.() },
+              { label: '삭제', action: () => onDelete?.() },
+            ]}
+            sx={{
+              height: '36px',
+              padding: '8px',
+            }}
+            paperProps={{
+              sx: {
+                minWidth: '120px',
+              },
+            }}
+          />
         </Stack>
       </Stack>
 
