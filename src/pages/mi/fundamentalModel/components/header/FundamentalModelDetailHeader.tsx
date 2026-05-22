@@ -1,10 +1,13 @@
 import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { FundamentalModelDetail, FundamentalModelRunStatus } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 
 import MoreVertIcon from '@/components/common/icons/MoreVertIcon'
 import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
+import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
+import { FUNDAMENTAL_UPLOAD_POPUP_WIDTH } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
+import FundamentalModelCaseEditPopupContent from '@/pages/mi/fundamentalModel/components/header/FundamentalModelCaseEditPopupContent'
 import FundamentalModelMemoSection from '@/pages/mi/fundamentalModel/components/header/FundamentalModelMemoSection'
 
 /** 본 페이지 우측 상세 헤더 props */
@@ -132,6 +135,53 @@ const FundamentalModelDetailHeader = ({
   onExportDashboardExcel,
   onExportIntermediateZip,
 }: FundamentalModelDetailHeaderProps) => {
+  const editPopupRef = useRef<MIMorphingPopupRef>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [showTitleDuplicateError, setShowTitleDuplicateError] = useState(false)
+
+  const openEditPopup = useCallback(() => {
+    if (!detail) return
+    setEditTitle(detail.title)
+    setEditDescription(detail.subtitle)
+    setShowTitleDuplicateError(false)
+    editPopupRef.current?.open()
+  }, [detail])
+
+  const closeEditPopup = useCallback(() => {
+    editPopupRef.current?.close()
+  }, [])
+
+  const handleEditTitleChange = useCallback((value: string) => {
+    setEditTitle(value)
+    setShowTitleDuplicateError(false)
+  }, [])
+
+  const handleEditSubmit = useCallback(() => {
+    if (!detail) return
+    if (editTitle.trim() === detail.title.trim()) {
+      setShowTitleDuplicateError(true)
+      return
+    }
+
+    setShowTitleDuplicateError(false)
+    // TODO: API 연동 후 수정 성공 시 리스트/상세 데이터 동기화 처리 필요.
+    onEdit?.()
+    editPopupRef.current?.close()
+  }, [detail, editTitle, onEdit])
+
+  const editPopupContent = (
+    <FundamentalModelCaseEditPopupContent
+      titleValue={editTitle}
+      descriptionValue={editDescription}
+      showTitleDuplicateError={showTitleDuplicateError}
+      onTitleChange={handleEditTitleChange}
+      onDescriptionChange={setEditDescription}
+      onSubmit={handleEditSubmit}
+      onCancel={closeEditPopup}
+    />
+  )
+
   if (loading || !detail) {
     return (
       <Box
@@ -210,24 +260,44 @@ const FundamentalModelDetailHeader = ({
               },
             }}
           />
-          <MIDropdownMenu
-            label={<MoreVertIcon />}
-            variant="outlined"
-            placement="bottom-end"
-            items={[
-              { label: '수정', action: () => onEdit?.() },
-              { label: '삭제', action: () => onDelete?.() },
-            ]}
-            sx={{
-              height: '36px',
-              padding: '8px',
+          <MIMorphingPopup
+            ref={editPopupRef}
+            display="inline-flex"
+            popup={{
+              title: (
+                <Box component="span" sx={{ typography: 'body1B16', color: 'contentText.Normal' }}>
+                  시뮬레이션 케이스 수정
+                </Box>
+              ),
+              content: editPopupContent,
+              measureContent: editPopupContent,
+              hideHeaderLine: true,
+              showSkeleton: false,
+              minWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
+              maxWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
+              borderRadius: '12px',
+              onClose: () => setShowTitleDuplicateError(false),
             }}
-            paperProps={{
-              sx: {
-                minWidth: '120px',
-              },
-            }}
-          />
+          >
+            <MIDropdownMenu
+              label={<MoreVertIcon />}
+              variant="outlined"
+              placement="bottom-end"
+              items={[
+                { label: '수정', action: openEditPopup },
+                { label: '삭제', action: () => onDelete?.() },
+              ]}
+              sx={{
+                height: '36px',
+                padding: '8px',
+              }}
+              paperProps={{
+                sx: {
+                  minWidth: '120px',
+                },
+              }}
+            />
+          </MIMorphingPopup>
         </Stack>
       </Stack>
 
