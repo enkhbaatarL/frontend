@@ -139,7 +139,7 @@ const MIMenu = ({
   const popperModifiers = useMemo(() => {
     const modifiers: Array<Record<string, unknown>> = []
 
-    const { top = variant === 'outlined' ? 6 : 2, left = 0, right = 0, bottom = variant === 'outlined' ? 6 : 2 } = menuPositionOffset
+    const { top = 6, left = 0, right = 0, bottom = 6 } = menuPositionOffset
 
     let skidding = 0
     let distance = 0
@@ -171,7 +171,7 @@ const MIMenu = ({
     })
 
     return modifiers
-  }, [menuPositionOffset, placement, variant])
+  }, [menuPositionOffset, placement])
 
   return (
     <Box position="relative">
