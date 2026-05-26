@@ -205,7 +205,7 @@ const MIRoutes: RouteObject = {
       ],
     },
     {
-      path: 'position-play',
+      path: 'position-play/*',
       element: <PositionPlayRemotePage />,
     },
     {

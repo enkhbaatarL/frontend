@@ -228,7 +228,7 @@ const MILayout = () => {
     if (location.pathname === '/mi/forecast' && currentCompanyNo === 2013) {
       return '#F2F5F7'
     }
-    return undefined
+    return '#FFFFFF'
   }, [location.pathname, showTicker, currentCompanyNo])
 
   return (
