@@ -1,4 +1,5 @@
 import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { FundamentalModelRunListItem, FundamentalModelRunStatus } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
@@ -21,6 +22,12 @@ import {
   isFundamentalUploadExcelFile,
   isSameFundamentalUploadFile,
 } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
+import { formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
+import fundamentalModelCaseService, {
+  type FundamentalModelCaseStatus,
+  type FundamentalModelCaseSearchType,
+  type IFundamentalModelCaseListItem,
+} from '@/service/mi/fundamentalModel/case'
 
 /** left list container 고정 높이 */
 const LIST_PANEL_HEIGHT = 900
@@ -40,10 +47,19 @@ const SEARCH_FIELD_ITEMS: SelectMenuItem<RunListSearchField>[] = [
   { value: 'title', label: '제목' },
 ]
 
+const toCaseSearchType = (field: RunListSearchField): FundamentalModelCaseSearchType => (field === 'title' ? 'TITLE' : 'ASSIGNEE_NAME')
+
 /** 목록 건수 배지 라벨 */
 const formatRunCountLabel = (count: number) => {
   if (count > 9999) return '9,999+'
   return String(count)
+}
+
+const mapCaseStatusToRunStatus = (status: FundamentalModelCaseStatus): FundamentalModelRunStatus => {
+  if (status === 'PENDING') return 'pending'
+  if (status === 'RUNNING') return 'in_progress'
+  if (status === 'FAILED') return 'error'
+  return 'done'
 }
 
 /** 상태 배지 스타일 */
@@ -172,14 +188,40 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
     uploadPopupRef.current?.close()
   }, [showSnackbar, uploadFiles, uploadTitle])
 
-  const filteredRuns = useMemo(() => {
-    const q = committedKeyword.trim().toLowerCase()
-    if (!q) return runs
-    return runs.filter((run) => {
-      const target = searchField === 'title' ? run.title : run.managerName
-      return target.toLowerCase().includes(q)
-    })
-  }, [committedKeyword, runs, searchField])
+  const listRequest = useMemo(() => {
+    const trimmedKeyword = committedKeyword.trim()
+    if (!trimmedKeyword) return {}
+    return {
+      searchType: toCaseSearchType(searchField),
+      keyword: trimmedKeyword,
+    }
+  }, [committedKeyword, searchField])
+
+  const { data: caseList, isLoading: listLoading } = useQuery({
+    queryKey: ['fundamentalModel', 'cases', listRequest],
+    queryFn: () => fundamentalModelCaseService.listCases(listRequest),
+    refetchOnWindowFocus: false,
+  })
+
+  /**
+   * 우측 상세는 현재 mock id(1..n)에 의존하므로,
+   * 좌측은 API 데이터를 표시하되 클릭 시에는 기존 mock id를 유지합니다.
+   */
+  const displayRuns = useMemo<FundamentalModelRunListItem[]>(() => {
+    const apiCases = caseList?.cases ?? []
+    const limit = runs.length > 0 ? Math.min(runs.length, apiCases.length) : apiCases.length
+
+    return apiCases.slice(0, limit).map((item: IFundamentalModelCaseListItem, idx: number) => ({
+      id: String(idx + 1),
+      status: mapCaseStatusToRunStatus(item.status),
+      title: item.title,
+      createdAtLabel: formatWorkbenchDateTime(item.createdAt),
+      updatedAtLabel: formatWorkbenchDateTime(item.updatedAt),
+      managerName: item.assigneeName,
+    }))
+  }, [caseList?.cases, runs.length])
+
+  const totalCount = caseList?.totalCount ?? displayRuns.length
 
   const uploadPopupContent = (
     <FundamentalModelFileUploadPopupContent
@@ -227,7 +269,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
             }}
           >
             <Typography variant="body2SB14" color="gray.90">
-              {loading ? '—' : formatRunCountLabel(runs.length)}
+              {loading || listLoading ? '—' : formatRunCountLabel(totalCount)}
             </Typography>
           </Box>
         </Stack>
@@ -323,7 +365,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
             '&::-webkit-scrollbar-thumb': { bgcolor: 'gray.40', borderRadius: '1000px' },
           }}
         >
-          {loading &&
+          {(loading || listLoading) &&
             Array.from({ length: 5 }).map((_, i) => (
               <Box key={`sk-card-${i}`} sx={{ px: '12px', py: '16px', borderRadius: '10px' }}>
                 <Skeleton width={88} height={22} sx={{ borderRadius: '4px', mb: 1 }} />
@@ -334,7 +376,8 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
             ))}
 
           {!loading &&
-            filteredRuns.map((run) => {
+            !listLoading &&
+            displayRuns.map((run) => {
               const selected = run.id === selectedId
               const sv = statusVisual(run.status)
               return (
