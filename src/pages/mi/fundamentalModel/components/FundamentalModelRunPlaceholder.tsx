@@ -17,7 +17,7 @@ export interface FundamentalModelRunPlaceholderProps {
   onRetry?: () => void
 }
 
-/** Figma 시안의 대기/실행중/실패 자리표시자 컨테이너 공통 sx */
+/** 대기/실행중/실패 자리표시자 컨테이너 공통 sx */
 const containerSx = {
   flex: 1,
   width: '100%',

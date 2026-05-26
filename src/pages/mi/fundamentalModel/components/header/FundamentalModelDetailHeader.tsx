@@ -1,7 +1,7 @@
 import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type { FundamentalModelDetail, FundamentalModelRunStatus } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type { IFundamentalModelCaseDetail } from '@/service/mi/fundamentalModel/case'
 
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MoreVertIcon from '@/components/common/icons/MoreVertIcon'
@@ -11,15 +11,22 @@ import useSnackbar from '@/hooks/useSnackbar'
 import { FUNDAMENTAL_UPLOAD_POPUP_WIDTH } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
 import FundamentalModelCaseEditPopupContent from '@/pages/mi/fundamentalModel/components/header/FundamentalModelCaseEditPopupContent'
 import FundamentalModelMemoSection from '@/pages/mi/fundamentalModel/components/header/FundamentalModelMemoSection'
+import { caseStatusVisual, formatCaseLatestRunDuration } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
+import { formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
+
+export interface FundamentalModelCaseEditPayload {
+  title: string
+  description: string
+}
 
 /** 본 페이지 우측 상세 헤더 props */
 export interface FundamentalModelDetailHeaderProps {
-  detail: FundamentalModelDetail | null
+  detail: IFundamentalModelCaseDetail | null
   /** 상세 로딩 */
   loading?: boolean
-  /** 수정 메뉴 */
-  onEdit?: () => void
-  /** 삭제 메뉴 */
+  /** 수정 저장 (PATCH case) */
+  onEdit?: (payload: FundamentalModelCaseEditPayload) => boolean | void | Promise<boolean | void>
+  /** 삭제 확인 (DELETE case) */
   onDelete?: () => boolean | void | Promise<boolean | void>
   /** 대시보드(아웃풋) 엑셀보내기 */
   onExportDashboardExcel?: () => void
@@ -72,20 +79,6 @@ const AttachmentList = ({ fileNames }: AttachmentListProps) => {
   )
 }
 
-/** 상세 상단 상태 칩 색상 */
-const headerStatusSx = (status: FundamentalModelRunStatus) => {
-  if (status === 'pending') {
-    return { bg: 'gray.20', color: 'gray.70', label: 'PENDING' }
-  }
-  if (status === 'in_progress') {
-    return { bg: 'contentBG.PrimaryFade', color: 'mari.Primary', label: 'IN PROGRESS' }
-  }
-  if (status === 'error') {
-    return { bg: 'rgba(214, 51, 108, 0.1)', color: '#D6336C', label: 'ERROR' }
-  }
-  return { bg: 'rgba(42, 141, 62, 0.1)', color: '#2A8D3E', label: 'DONE' }
-}
-
 interface HeaderTitleProps {
   title: string
 }
@@ -131,7 +124,7 @@ const HeaderTitle = ({ title }: HeaderTitleProps) => {
   )
 }
 
-/** 삭제 확인 다이얼로그 너비 (Figma 450px) */
+/** 삭제 확인 다이얼로그 너비 (450px) */
 const FUNDAMENTAL_DELETE_CONFIRM_WIDTH = 450
 
 /** 우측 상세 헤더(상태|제목|메모|첨부) */
@@ -153,7 +146,7 @@ const FundamentalModelDetailHeader = ({
   const openEditPopup = useCallback(() => {
     if (!detail) return
     setEditTitle(detail.title)
-    setEditDescription(detail.subtitle)
+    setEditDescription(detail.description ?? '')
     setShowTitleDuplicateError(false)
     editPopupRef.current?.open()
   }, [detail])
@@ -176,18 +169,33 @@ const FundamentalModelDetailHeader = ({
     setShowTitleDuplicateError(false)
   }, [])
 
-  const handleEditSubmit = useCallback(() => {
+  const handleEditSubmit = useCallback(async () => {
     if (!detail) return
-    if (editTitle.trim() === detail.title.trim()) {
+
+    const trimmedTitle = editTitle.trim()
+    const trimmedDescription = editDescription.trim()
+    const titleUnchanged = trimmedTitle === detail.title.trim()
+    const descriptionUnchanged = trimmedDescription === (detail.description ?? '').trim()
+
+    if (!trimmedTitle || (titleUnchanged && descriptionUnchanged)) {
       setShowTitleDuplicateError(true)
       return
     }
 
     setShowTitleDuplicateError(false)
-    // TODO: API 연동 후 수정 성공 시 리스트/상세 데이터 동기화 처리 필요.
-    onEdit?.()
-    editPopupRef.current?.close()
-  }, [detail, editTitle, onEdit])
+
+    try {
+      const editResult = await onEdit?.({
+        title: trimmedTitle,
+        description: trimmedDescription,
+      })
+      if (editResult === false) return
+
+      editPopupRef.current?.close()
+    } catch {
+      showSnackbar('수정 실패되었습니다.', { variant: 'error' })
+    }
+  }, [detail, editDescription, editTitle, onEdit, showSnackbar])
 
   const editPopupContent = (
     <FundamentalModelCaseEditPopupContent
@@ -212,7 +220,7 @@ const FundamentalModelDetailHeader = ({
 
       showSnackbar('삭제 완료되었습니다.', { variant: 'success' })
       setDeleteConfirmOpen(false)
-    } catch (_error) {
+    } catch {
       showSnackbar('삭제 실패되었습니다.', { variant: 'error' })
     }
   }, [detail, onDelete, showSnackbar])
@@ -247,9 +255,13 @@ const FundamentalModelDetailHeader = ({
     )
   }
 
-  const st = headerStatusSx(detail.status)
-  // 실행 완료 전(대기/실행중/실패)에는 Export 와 더보기 메뉴를 비활성화 -- Figma 시안 기준
-  const headerActionsDisabled = detail.status !== 'done'
+  const st = caseStatusVisual(detail.status)
+  // 실행 완료 전(대기/실행중/실패)에는 Export 와 더보기 메뉴를 비활성화
+  const headerActionsDisabled = detail.status !== 'COMPLETED'
+
+  const attachmentNames = detail.files?.map((file) => file.originalFileName) ?? []
+  const createdAtLabel = formatWorkbenchDateTime(detail.createdAt)
+  const durationLabel = formatCaseLatestRunDuration(detail.latestRun)
 
   return (
     <>
@@ -341,23 +353,23 @@ const FundamentalModelDetailHeader = ({
           </Stack>
         </Stack>
 
-        <FundamentalModelMemoSection text={detail.subtitle} />
+        <FundamentalModelMemoSection text={detail.description ?? ''} />
 
         <Stack direction="row" alignItems="center" gap="8px" flexWrap="wrap" sx={{ color: 'content.textNormal' }}>
           <Typography variant="body2R14" color="content.textNormal" noWrap>
-            {detail.managerName}
+            {detail.assigneeName}
           </Typography>
           <Divider orientation="vertical" flexItem sx={{ borderColor: 'gray.40', height: 10, alignSelf: 'center' }} />
           <Typography variant="body2R14" color="content.textNormal" noWrap>
-            {detail.createdAtLabel}
+            {createdAtLabel}
           </Typography>
           <Divider orientation="vertical" flexItem sx={{ borderColor: 'gray.40', height: 10, alignSelf: 'center' }} />
           <Typography variant="body2R14" color="content.textNormal" noWrap>
-            {detail.durationLabel}
+            {durationLabel}
           </Typography>
         </Stack>
 
-        <AttachmentList fileNames={detail.attachmentNames} />
+        <AttachmentList fileNames={attachmentNames} />
       </Box>
 
       <MIConfirm

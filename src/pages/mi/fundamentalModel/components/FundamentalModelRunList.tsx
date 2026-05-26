@@ -2,8 +2,6 @@ import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/materia
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import type { FundamentalModelRunListItem, FundamentalModelRunStatus } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
-
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import AddIcon from '@/components/common/icons/AddIcon'
 import AsyncAutocomplete from '@/components/common/input/AsyncAutocomplete'
@@ -22,9 +20,9 @@ import {
   isFundamentalUploadExcelFile,
   isSameFundamentalUploadFile,
 } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
+import { caseStatusVisual } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
 import { formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
 import fundamentalModelCaseService, {
-  type FundamentalModelCaseStatus,
   type FundamentalModelCaseSearchType,
   type IFundamentalModelCaseListItem,
 } from '@/service/mi/fundamentalModel/case'
@@ -33,10 +31,8 @@ import fundamentalModelCaseService, {
 const LIST_PANEL_HEIGHT = 900
 
 export interface FundamentalModelRunListProps {
-  runs: FundamentalModelRunListItem[]
   selectedId: string
   onSelect: (id: string) => void
-  loading?: boolean
 }
 
 /** 목록 검색 기준 */
@@ -53,27 +49,6 @@ const toCaseSearchType = (field: RunListSearchField): FundamentalModelCaseSearch
 const formatRunCountLabel = (count: number) => {
   if (count > 9999) return '9,999+'
   return String(count)
-}
-
-const mapCaseStatusToRunStatus = (status: FundamentalModelCaseStatus): FundamentalModelRunStatus => {
-  if (status === 'PENDING') return 'pending'
-  if (status === 'RUNNING') return 'in_progress'
-  if (status === 'FAILED') return 'error'
-  return 'done'
-}
-
-/** 상태 배지 스타일 */
-const statusVisual = (status: FundamentalModelRunStatus) => {
-  if (status === 'pending') {
-    return { bg: 'gray.20', color: 'gray.70', label: 'PENDING' }
-  }
-  if (status === 'in_progress') {
-    return { bg: 'contentBG.PrimaryFade', color: 'mari.Primary', label: 'IN PROGRESS' }
-  }
-  if (status === 'error') {
-    return { bg: 'rgba(214, 51, 108, 0.1)', color: '#D6336C', label: 'ERROR' }
-  }
-  return { bg: 'rgba(42, 141, 62, 0.1)', color: '#2A8D3E', label: 'DONE' }
 }
 
 interface TruncatedLabelProps {
@@ -110,7 +85,7 @@ const TruncatedLabel = ({ text, variant = 'body1SB16', color = 'gray.90', sx }: 
 }
 
 /** 좌측 시뮬레이션 목록(검색 기준 선택 - 검색 - 카드 리스트) */
-const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }: FundamentalModelRunListProps) => {
+const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunListProps) => {
   const uploadPopupRef = useRef<MIMorphingPopupRef>(null)
   const { showSnackbar } = useSnackbar()
   const [searchField, setSearchField] = useState<RunListSearchField>('managerName')
@@ -203,25 +178,8 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
     refetchOnWindowFocus: false,
   })
 
-  /**
-   * 우측 상세는 현재 mock id(1..n)에 의존하므로,
-   * 좌측은 API 데이터를 표시하되 클릭 시에는 기존 mock id를 유지합니다.
-   */
-  const displayRuns = useMemo<FundamentalModelRunListItem[]>(() => {
-    const apiCases = caseList?.cases ?? []
-    const limit = runs.length > 0 ? Math.min(runs.length, apiCases.length) : apiCases.length
-
-    return apiCases.slice(0, limit).map((item: IFundamentalModelCaseListItem, idx: number) => ({
-      id: String(idx + 1),
-      status: mapCaseStatusToRunStatus(item.status),
-      title: item.title,
-      createdAtLabel: formatWorkbenchDateTime(item.createdAt),
-      updatedAtLabel: formatWorkbenchDateTime(item.updatedAt),
-      managerName: item.assigneeName,
-    }))
-  }, [caseList?.cases, runs.length])
-
-  const totalCount = caseList?.totalCount ?? displayRuns.length
+  const cases = caseList?.cases ?? []
+  const totalCount = caseList?.totalCount ?? cases.length
 
   const uploadPopupContent = (
     <FundamentalModelFileUploadPopupContent
@@ -269,7 +227,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
             }}
           >
             <Typography variant="body2SB14" color="gray.90">
-              {loading || listLoading ? '—' : formatRunCountLabel(totalCount)}
+              {listLoading ? '—' : formatRunCountLabel(totalCount)}
             </Typography>
           </Box>
         </Stack>
@@ -365,7 +323,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
             '&::-webkit-scrollbar-thumb': { bgcolor: 'gray.40', borderRadius: '1000px' },
           }}
         >
-          {(loading || listLoading) &&
+          {listLoading &&
             Array.from({ length: 5 }).map((_, i) => (
               <Box key={`sk-card-${i}`} sx={{ px: '12px', py: '16px', borderRadius: '10px' }}>
                 <Skeleton width={88} height={22} sx={{ borderRadius: '4px', mb: 1 }} />
@@ -375,21 +333,24 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
               </Box>
             ))}
 
-          {!loading &&
-            !listLoading &&
-            displayRuns.map((run) => {
-              const selected = run.id === selectedId
-              const sv = statusVisual(run.status)
+          {!listLoading &&
+            cases.map((item: IFundamentalModelCaseListItem) => {
+              const caseId = String(item.caseId)
+              const selected = caseId === selectedId
+              const sv = caseStatusVisual(item.status)
+              const createdAtLabel = formatWorkbenchDateTime(item.createdAt)
+              const updatedAtLabel = formatWorkbenchDateTime(item.updatedAt)
+
               return (
                 <Box
-                  key={run.id}
+                  key={caseId}
                   role="button"
                   tabIndex={0}
-                  onClick={() => onSelect(run.id)}
+                  onClick={() => onSelect(caseId)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      onSelect(run.id)
+                      onSelect(caseId)
                     }
                   }}
                   sx={{
@@ -433,11 +394,11 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
                     </Typography>
                   </Box>
 
-                  <TruncatedLabel text={run.title} />
+                  <TruncatedLabel text={item.title} />
 
                   <Stack direction="row" alignItems="center" gap="8px" sx={{ minWidth: 0 }}>
                     <Typography variant="body3R12" color="content.textNormal" noWrap>
-                      {run.createdAtLabel}
+                      {createdAtLabel}
                     </Typography>
                     <Divider orientation="vertical" flexItem sx={{ borderColor: 'gray.40', height: 10, alignSelf: 'center' }} />
                     <Stack direction="row" alignItems="center" gap="4px" sx={{ minWidth: 0 }}>
@@ -445,7 +406,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
                         업데이트
                       </Typography>
                       <Typography variant="body3R12" color="content.textNormal" noWrap>
-                        {run.updatedAtLabel}
+                        {updatedAtLabel}
                       </Typography>
                     </Stack>
                   </Stack>
@@ -455,7 +416,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
                       담당자
                     </Typography>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <TruncatedLabel text={run.managerName} variant="body3R12" color="content.textNormal" />
+                      <TruncatedLabel text={item.assigneeName} variant="body3R12" color="content.textNormal" />
                     </Box>
                   </Stack>
                 </Box>

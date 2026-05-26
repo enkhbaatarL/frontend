@@ -1,65 +1,48 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import type { FundamentalModelDetail, FundamentalModelRunListItem } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
-
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
+import useSnackbar from '@/hooks/useSnackbar'
 import FundamentalModelTab from '@/pages/mi/fundamentalModel/components/common/FundamentalModelTab'
 import FundamentalModelRunList from '@/pages/mi/fundamentalModel/components/FundamentalModelRunList'
 import FundamentalModelRunPlaceholder from '@/pages/mi/fundamentalModel/components/FundamentalModelRunPlaceholder'
 import FundamentalModelDetailHeader from '@/pages/mi/fundamentalModel/components/header/FundamentalModelDetailHeader'
 import PriceTabPanel from '@/pages/mi/fundamentalModel/components/price/PriceTabPanel'
 import VolumesTabPanel from '@/pages/mi/fundamentalModel/components/volumes/VolumesTabPanel'
-import {
-  fetchFundamentalModelDetail,
-  fetchFundamentalModelRuns,
-  FUNDAMENTAL_MODEL_MONTH_LABELS,
-} from '@/pages/mi/fundamentalModel/fundamentalModelMockApi'
+import { FUNDAMENTAL_MODEL_MONTH_LABELS, fetchFundamentalModelDetail } from '@/pages/mi/fundamentalModel/fundamentalModelMockApi'
 import { FUNDAMENTAL_MODEL_VIEW_TABS, type FundamentalModelViewTabKey } from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
 import {
   runStatusToPlaceholderMode,
   useFundamentalModelRunExecution,
 } from '@/pages/mi/fundamentalModel/hooks/useFundamentalModelRunExecution'
+import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
 
+// #TODO: volume API 연동되면 지우기
+/** COMPLETED 케이스 Volumes/Price mock 보강용 고정 id (result API 대체) */
+const TAB_PANEL_MOCK_RUN_ID = '2'
+
 /** MI 수급 모델 — URL 고정 `/mi/fundamental-model`, 선택은 클라이언트 state */
 const FundamentalModelPage = () => {
-  const [selectedRunId, setSelectedRunId] = useState('')
+  const queryClient = useQueryClient()
+  const { showSnackbar } = useSnackbar()
+  const [selectedCaseId, setSelectedCaseId] = useState('')
   const [viewTab, setViewTab] = useState<FundamentalModelViewTabKey>('volumes')
 
-  const { data: runs = [], isLoading: listLoading } = useQuery<FundamentalModelRunListItem[]>({
-    queryKey: ['fundamentalModel', 'runs'],
-    queryFn: fetchFundamentalModelRuns,
-    refetchOnWindowFocus: false,
-  })
+  const activeCaseId = selectedCaseId
 
-  const runsReady = !listLoading && runs.length > 0
-
-  const activeRunId = useMemo(() => {
-    if (!selectedRunId) return ''
-    if (!runsReady) return selectedRunId
-    return runs.some((r) => r.id === selectedRunId) ? selectedRunId : ''
-  }, [selectedRunId, runsReady, runs])
-
-  const { handleRun, handleRetry, applyStatusOverrideToDetail, applyStatusOverrideToRuns } = useFundamentalModelRunExecution(activeRunId)
-
-  useEffect(() => {
-    if (!runsReady || !selectedRunId) return
-    if (!runs.some((r) => r.id === selectedRunId)) {
-      setSelectedRunId('')
-    }
-  }, [runsReady, runs, selectedRunId])
+  const { handleRun, handleRetry, applyStatusOverrideToCaseDetail } = useFundamentalModelRunExecution(activeCaseId)
 
   useEffect(() => {
     setViewTab('volumes')
-  }, [activeRunId])
+  }, [activeCaseId])
 
   useEffect(() => {
     const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
     if (scrollEl) scrollEl.scrollTop = 0
-  }, [activeRunId])
+  }, [activeCaseId])
 
   const selectedTabIndex = FUNDAMENTAL_MODEL_VIEW_TABS.findIndex((t) => t.key === viewTab)
 
@@ -68,14 +51,29 @@ const FundamentalModelPage = () => {
     if (next) setViewTab(next.key)
   }, [])
 
-  const { data: detail, isLoading: detailLoading } = useQuery<FundamentalModelDetail | null>({
-    queryKey: ['fundamentalModel', 'detail', activeRunId],
-    queryFn: () => fetchFundamentalModelDetail(activeRunId),
-    enabled: Boolean(activeRunId),
+  const parsedCaseId = Number(activeCaseId)
+
+  const {
+    data: caseDetail,
+    isLoading: detailLoading,
+    isError: detailError,
+  } = useQuery({
+    queryKey: ['fundamentalModel', 'caseDetail', activeCaseId],
+    queryFn: () => fundamentalModelCaseService.getCaseDetail(parsedCaseId),
+    enabled: Number.isFinite(parsedCaseId) && parsedCaseId > 0,
     refetchOnWindowFocus: false,
   })
 
-  const monthLabels = detail?.monthLabels ?? FUNDAMENTAL_MODEL_MONTH_LABELS
+  const effectiveCaseDetail = useMemo(() => applyStatusOverrideToCaseDetail(caseDetail), [caseDetail, applyStatusOverrideToCaseDetail])
+
+  const { data: tabPanelMock } = useQuery({
+    queryKey: ['fundamentalModel', 'tabPanelMock', TAB_PANEL_MOCK_RUN_ID],
+    queryFn: () => fetchFundamentalModelDetail(TAB_PANEL_MOCK_RUN_ID),
+    enabled: effectiveCaseDetail?.status === 'COMPLETED',
+    refetchOnWindowFocus: false,
+  })
+
+  const monthLabels = tabPanelMock?.monthLabels ?? FUNDAMENTAL_MODEL_MONTH_LABELS
 
   const tabBarItems = useMemo(
     () =>
@@ -86,19 +84,54 @@ const FundamentalModelPage = () => {
     [],
   )
 
-  const handleSelectRun = useCallback((id: string) => {
-    setSelectedRunId(id)
+  const handleSelectCase = useCallback((id: string) => {
+    setSelectedCaseId(id)
   }, [])
 
-  const effectiveDetail = useMemo(() => applyStatusOverrideToDetail(detail), [detail, applyStatusOverrideToDetail])
+  const invalidateCaseQueries = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'cases'] })
+    if (activeCaseId) {
+      void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'caseDetail', activeCaseId] })
+    }
+  }, [activeCaseId, queryClient])
 
-  const effectiveRuns = useMemo(() => applyStatusOverrideToRuns(runs), [runs, applyStatusOverrideToRuns])
+  const handleUpdateCase = useCallback(
+    async (payload: { title: string; description: string }) => {
+      if (!Number.isFinite(parsedCaseId) || parsedCaseId <= 0) return false
 
-  const placeholderMode = useMemo(() => runStatusToPlaceholderMode(effectiveDetail?.status), [effectiveDetail?.status])
+      try {
+        await fundamentalModelCaseService.updateCase(parsedCaseId, {
+          title: payload.title,
+          description: payload.description,
+        })
+        invalidateCaseQueries()
+        showSnackbar('수정 완료되었습니다.', { variant: 'success' })
+        return true
+      } catch {
+        showSnackbar('수정 실패되었습니다.', { variant: 'error' })
+        return false
+      }
+    },
+    [invalidateCaseQueries, parsedCaseId, showSnackbar],
+  )
 
-  const rightBody = !runsReady ? (
-    <Box sx={{ flex: 1, minHeight: 900 }} />
-  ) : !activeRunId ? (
+  const handleDeleteCase = useCallback(async () => {
+    if (!Number.isFinite(parsedCaseId) || parsedCaseId <= 0) return false
+
+    try {
+      await fundamentalModelCaseService.deleteCase(parsedCaseId)
+      setSelectedCaseId('')
+      void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'cases'] })
+      void queryClient.removeQueries({ queryKey: ['fundamentalModel', 'caseDetail', activeCaseId] })
+      return true
+    } catch {
+      return false
+    }
+  }, [activeCaseId, parsedCaseId, queryClient])
+
+  const placeholderMode = useMemo(() => runStatusToPlaceholderMode(effectiveCaseDetail?.status), [effectiveCaseDetail?.status])
+
+  const rightBody = !activeCaseId ? (
     <Box
       sx={{
         flex: 1,
@@ -117,9 +150,33 @@ const FundamentalModelPage = () => {
         </Typography>
       </Stack>
     </Box>
+  ) : detailError ? (
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: 900,
+        bgcolor: 'gray.5',
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Stack alignItems="center" gap="10px">
+        <ErrorOutlineIcon />
+        <Typography variant="body3SB12" color="gray.60" textAlign="center">
+          케이스 상세를 불러오지 못했습니다.
+        </Typography>
+      </Stack>
+    </Box>
   ) : (
     <Stack sx={{ flex: 1, minWidth: 0, gap: '16px', userSelect: 'text' }}>
-      <FundamentalModelDetailHeader detail={effectiveDetail} loading={detailLoading} />
+      <FundamentalModelDetailHeader
+        detail={effectiveCaseDetail ?? null}
+        loading={detailLoading}
+        onEdit={handleUpdateCase}
+        onDelete={handleDeleteCase}
+      />
 
       <Box sx={{ mt: '-4px' }}>
         <FundamentalModelTab tabItems={tabBarItems} tabBarOnly value={selectedTabIndex} onChange={handleTabChange} />
@@ -153,12 +210,12 @@ const FundamentalModelPage = () => {
           >
             <VolumesTabPanel
               monthLabels={monthLabels}
-              summaryRows={detail?.summaryRows ?? []}
-              detailRows={detail?.detailRows ?? []}
-              globalVolumes={detail?.globalVolumes ?? { monthLabels: [], sections: [] }}
-              lngVolumes={detail?.lngVolumes ?? { monthLabels: [], sections: [] }}
+              summaryRows={tabPanelMock?.summaryRows ?? []}
+              detailRows={tabPanelMock?.detailRows ?? []}
+              globalVolumes={tabPanelMock?.globalVolumes ?? { monthLabels: [], sections: [] }}
+              lngVolumes={tabPanelMock?.lngVolumes ?? { monthLabels: [], sections: [] }}
               tradeVolumes={
-                detail?.tradeVolumes ?? {
+                tabPanelMock?.tradeVolumes ?? {
                   productOptions: [],
                   yearOptions: [],
                   selectedProductId: '',
@@ -186,8 +243,8 @@ const FundamentalModelPage = () => {
             }}
           >
             <PriceTabPanel
-              annualPriceRows={detail?.annualPriceRows ?? []}
-              monthlyPriceRows={detail?.monthlyPriceRows ?? []}
+              annualPriceRows={tabPanelMock?.annualPriceRows ?? []}
+              monthlyPriceRows={tabPanelMock?.monthlyPriceRows ?? []}
               detailLoading={detailLoading}
             />
           </Box>
@@ -203,7 +260,7 @@ const FundamentalModelPage = () => {
       </Typography>
 
       <Stack direction={{ xs: 'column', lg: 'row' }} alignItems="stretch" gap="30px" sx={{ userSelect: 'text' }}>
-        <FundamentalModelRunList runs={effectiveRuns} selectedId={activeRunId} onSelect={handleSelectRun} loading={listLoading} />
+        <FundamentalModelRunList selectedId={activeCaseId} onSelect={handleSelectCase} />
         {rightBody}
       </Stack>
     </Stack>

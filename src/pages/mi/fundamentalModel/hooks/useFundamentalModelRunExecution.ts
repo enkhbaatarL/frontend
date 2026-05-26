@@ -1,31 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type { FundamentalModelRunPlaceholderMode } from '@/pages/mi/fundamentalModel/components/FundamentalModelRunPlaceholder'
-import type {
-  FundamentalModelDetail,
-  FundamentalModelRunListItem,
-  FundamentalModelRunStatus,
-} from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type { FundamentalModelCaseStatus, IFundamentalModelCaseDetail } from '@/service/mi/fundamentalModel/case'
 
 import useSnackbar from '@/hooks/useSnackbar'
+import { caseStatusToPlaceholderMode } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
 
 /** 모의 실행 시 진행시간 (ms) -- API 미존재로 3초 임시 진행 */
 const MOCK_RUN_DURATION_MS = 3000
 
-/** 실행 상태 -> 본문 자리표시자 모드 (done 이면 null) */
-export const runStatusToPlaceholderMode = (status: FundamentalModelRunStatus | undefined): FundamentalModelRunPlaceholderMode | null => {
-  if (status === 'pending') return 'pending'
-  if (status === 'in_progress') return 'running'
-  if (status === 'error') return 'error'
-  return null
-}
+/** 실행 상태 -> 본문 자리표시자 모드 (COMPLETED 이면 null) */
+export const runStatusToPlaceholderMode = caseStatusToPlaceholderMode
 
 /**
  * 수급 모델 실행 상태 오버라이드 및 모의 실행 흐름.
- * 헤더/좌측 리스트/본문 Placeholder 가 동일한 상태를 공유합니다.
+ * 헤더/본문 Placeholder 가 동일한 Case API status 를 공유합니다.
  */
-export const useFundamentalModelRunExecution = (activeRunId: string) => {
-  const [runStatusOverride, setRunStatusOverride] = useState<Record<string, FundamentalModelRunStatus>>({})
+export const useFundamentalModelRunExecution = (activeCaseId: string) => {
+  const [runStatusOverride, setRunStatusOverride] = useState<Record<string, FundamentalModelCaseStatus>>({})
   const runTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
   const { showSnackbar } = useSnackbar()
 
@@ -36,22 +27,22 @@ export const useFundamentalModelRunExecution = (activeRunId: string) => {
     }
   }, [])
 
-  /** 모의 실행 시작 -- 지정 시간 후 outcome 에 맞춰 done/error 로 전환 */
+  /** 모의 실행 시작 -- 지정 시간 후 outcome 에 맞춰 COMPLETED/FAILED 로 전환 */
   const startMockRun = useCallback(
-    (runId: string, outcome: 'success' | 'failure') => {
-      if (!runId) return
-      const existing = runTimers.current[runId]
+    (caseId: string, outcome: 'success' | 'failure') => {
+      if (!caseId) return
+      const existing = runTimers.current[caseId]
       if (existing) clearTimeout(existing)
 
-      setRunStatusOverride((prev) => ({ ...prev, [runId]: 'in_progress' }))
+      setRunStatusOverride((prev) => ({ ...prev, [caseId]: 'RUNNING' }))
 
-      runTimers.current[runId] = setTimeout(() => {
-        delete runTimers.current[runId]
+      runTimers.current[caseId] = setTimeout(() => {
+        delete runTimers.current[caseId]
         if (outcome === 'success') {
-          setRunStatusOverride((prev) => ({ ...prev, [runId]: 'done' }))
+          setRunStatusOverride((prev) => ({ ...prev, [caseId]: 'COMPLETED' }))
           showSnackbar('실행 완료되었습니다.', { variant: 'success' })
         } else {
-          setRunStatusOverride((prev) => ({ ...prev, [runId]: 'error' }))
+          setRunStatusOverride((prev) => ({ ...prev, [caseId]: 'FAILED' }))
           showSnackbar('실행 실패했습니다.', { variant: 'error' })
         }
       }, MOCK_RUN_DURATION_MS)
@@ -61,41 +52,25 @@ export const useFundamentalModelRunExecution = (activeRunId: string) => {
 
   // 첫 실행은 실패 화면으로, 재실행은 성공 화면으로 (API 미존재 모의 흐름)
   const handleRun = useCallback(() => {
-    startMockRun(activeRunId, 'failure')
-  }, [activeRunId, startMockRun])
+    startMockRun(activeCaseId, 'failure')
+  }, [activeCaseId, startMockRun])
 
   const handleRetry = useCallback(() => {
-    startMockRun(activeRunId, 'success')
-  }, [activeRunId, startMockRun])
+    startMockRun(activeCaseId, 'success')
+  }, [activeCaseId, startMockRun])
 
-  const applyStatusOverride = useCallback(
-    <T extends { id: string; status: FundamentalModelRunStatus }>(item: T): T => {
-      const override = runStatusOverride[item.id]
-      return override ? { ...item, status: override } : item
+  const applyStatusOverrideToCaseDetail = useCallback(
+    (detail: IFundamentalModelCaseDetail | null | undefined): IFundamentalModelCaseDetail | null => {
+      if (!detail) return null
+      const override = runStatusOverride[String(detail.caseId)]
+      return override ? { ...detail, status: override } : detail
     },
     [runStatusOverride],
-  )
-
-  const applyStatusOverrideToDetail = useCallback(
-    (detail: FundamentalModelDetail | null | undefined): FundamentalModelDetail | null => {
-      if (!detail) return null
-      return applyStatusOverride(detail)
-    },
-    [applyStatusOverride],
-  )
-
-  const applyStatusOverrideToRuns = useCallback(
-    (runs: FundamentalModelRunListItem[]): FundamentalModelRunListItem[] => {
-      if (!runs.length) return runs
-      return runs.map((run) => applyStatusOverride(run))
-    },
-    [applyStatusOverride],
   )
 
   return {
     handleRun,
     handleRetry,
-    applyStatusOverrideToDetail,
-    applyStatusOverrideToRuns,
+    applyStatusOverrideToCaseDetail,
   }
 }
