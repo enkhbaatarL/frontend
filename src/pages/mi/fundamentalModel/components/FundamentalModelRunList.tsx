@@ -30,6 +30,9 @@ import fundamentalModelCaseService, {
 /** left list container 고정 높이 */
 const LIST_PANEL_HEIGHT = 900
 
+/** 목록에 RUNNING 케이스가 있을 때 배지 갱신 주기 (ms) */
+const LIST_POLL_INTERVAL_MS = 5000
+
 export interface FundamentalModelRunListProps {
   selectedId: string
   onSelect: (id: string) => void
@@ -176,10 +179,19 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
     queryKey: ['fundamentalModel', 'cases', listRequest],
     queryFn: () => fundamentalModelCaseService.listCases(listRequest),
     refetchOnWindowFocus: false,
+    refetchInterval: (query) => {
+      const items = query.state.data?.cases ?? []
+      return items.some((item) => item.status === 'RUNNING') ? LIST_POLL_INTERVAL_MS : false
+    },
   })
 
   const cases = caseList?.cases ?? []
   const totalCount = caseList?.totalCount ?? cases.length
+
+  useEffect(() => {
+    if (listLoading || cases.length === 0 || selectedId) return
+    onSelect(String(cases[0].caseId))
+  }, [cases, listLoading, onSelect, selectedId])
 
   const uploadPopupContent = (
     <FundamentalModelFileUploadPopupContent
