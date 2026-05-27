@@ -17,6 +17,7 @@ const sharedDeps = {
   'react-dom': { singleton: true, requiredVersion: '^19.0.0' },
   'react-router': { singleton: true, requiredVersion: '^7.0.0' },
   'react-router-dom': { singleton: true, requiredVersion: '^7.0.0' },
+  '@xyflow/react': { singleton: true, requiredVersion: '12.10.2' },
 }
 
 export default defineConfig(({ mode }) => {
