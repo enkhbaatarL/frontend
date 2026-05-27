@@ -248,34 +248,95 @@ const SUMMARY_ONLY_ROWS: FundamentalModelMetricRow[] = BASE_SUMMARY_ROWS
 
 const PRICE_REGIONS = ['East Asia Spot', 'TTF', 'HH'] as const
 const PRICE_YEARS = ['2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'] as const
+type PriceRegion = (typeof PRICE_REGIONS)[number]
 
-const getEastAsiaAnnualPrice = (year: string): string => {
-  if (year === '2023') return '15.71'
-  if (year === '2024') return '14.59'
-  if (year === '2025') return '14.81'
-  return '9.95'
+interface PricePoint {
+  year: string
+  month: number
+  base: number
+  adjusted: number
 }
 
-const getEastAsiaMonthlyPrice = (year: string, month: number): { base: string; adjusted: string } => {
-  if (year === '2023') {
-    if (month === 10) return { base: '13.71', adjusted: '13.71' }
-    if (month === 11) return { base: '14.10', adjusted: '14.30' }
-    if (month === 12) return { base: '14.81', adjusted: '14.91' }
+const PRICE_REGION_PRICE_POINTS = {
+  'East Asia Spot': [
+    { year: '2023', month: 1, base: 14.68, adjusted: 14.76 },
+    { year: '2023', month: 10, base: 14.52, adjusted: 14.63 },
+    { year: '2024', month: 7, base: 14.18, adjusted: 14.37 },
+    { year: '2025', month: 6, base: 13.52, adjusted: 13.84 },
+    { year: '2026', month: 4, base: 12.86, adjusted: 13.33 },
+    { year: '2027', month: 3, base: 12.05, adjusted: 12.71 },
+    { year: '2028', month: 2, base: 11.42, adjusted: 12.24 },
+    { year: '2029', month: 4, base: 10.88, adjusted: 11.86 },
+    { year: '2030', month: 12, base: 10.46, adjusted: 11.54 },
+  ],
+  TTF: [
+    { year: '2023', month: 1, base: 10.22, adjusted: 10.28 },
+    { year: '2023', month: 11, base: 10.04, adjusted: 10.12 },
+    { year: '2024', month: 9, base: 9.84, adjusted: 10.0 },
+    { year: '2025', month: 7, base: 9.52, adjusted: 9.76 },
+    { year: '2026', month: 6, base: 9.24, adjusted: 9.57 },
+    { year: '2027', month: 7, base: 9.03, adjusted: 9.46 },
+    { year: '2028', month: 8, base: 8.83, adjusted: 9.36 },
+    { year: '2030', month: 12, base: 8.62, adjusted: 9.2 },
+  ],
+  HH: [
+    { year: '2023', month: 1, base: 3.12, adjusted: 3.16 },
+    { year: '2023', month: 12, base: 3.18, adjusted: 3.23 },
+    { year: '2024', month: 10, base: 3.28, adjusted: 3.36 },
+    { year: '2025', month: 10, base: 3.43, adjusted: 3.55 },
+    { year: '2026', month: 10, base: 3.61, adjusted: 3.78 },
+    { year: '2027', month: 11, base: 3.83, adjusted: 4.06 },
+    { year: '2028', month: 12, base: 4.03, adjusted: 4.34 },
+    { year: '2030', month: 12, base: 4.22, adjusted: 4.6 },
+  ],
+} satisfies Record<PriceRegion, PricePoint[]>
+
+const formatMockPrice = (price: number): string => Math.max(0, price).toFixed(2)
+
+const getPriceMonthIndex = (year: string, month: number): number => (Number(year) - Number(PRICE_YEARS[0])) * 12 + month - 1
+
+const interpolatePrice = (start: PricePoint, end: PricePoint, monthIndex: number, field: 'base' | 'adjusted'): number => {
+  const startIndex = getPriceMonthIndex(start.year, start.month)
+  const endIndex = getPriceMonthIndex(end.year, end.month)
+  const span = Math.max(1, endIndex - startIndex)
+  const progress = Math.min(Math.max((monthIndex - startIndex) / span, 0), 1)
+  return start[field] + (end[field] - start[field]) * progress
+}
+
+const getMonthlyPrice = (region: PriceRegion, year: string, month: number): { base: string; adjusted: string } => {
+  const pricePoints = PRICE_REGION_PRICE_POINTS[region]
+  const monthIndex = getPriceMonthIndex(year, month)
+  const nextPointIndex = pricePoints.findIndex((point) => getPriceMonthIndex(point.year, point.month) >= monthIndex)
+  const endPoint = pricePoints[nextPointIndex] ?? pricePoints.at(-1)!
+  const startPoint = nextPointIndex <= 0 ? pricePoints[0] : pricePoints[nextPointIndex - 1]
+
+  return {
+    base: formatMockPrice(interpolatePrice(startPoint, endPoint, monthIndex, 'base')),
+    adjusted: formatMockPrice(interpolatePrice(startPoint, endPoint, monthIndex, 'adjusted')),
   }
-  if (year === '2024' && month <= 9) return { base: '0.00', adjusted: '8.30' }
-  return { base: '9.95', adjusted: '9.95' }
+}
+
+const getAnnualPrice = (region: PriceRegion, year: string): { base: string; adjusted: string } => {
+  const monthlyPrices = Array.from({ length: 12 }, (_, monthIdx) => getMonthlyPrice(region, year, monthIdx + 1))
+  const baseAverage = monthlyPrices.reduce((sum, price) => sum + Number(price.base), 0) / monthlyPrices.length
+  const adjustedAverage = monthlyPrices.reduce((sum, price) => sum + Number(price.adjusted), 0) / monthlyPrices.length
+
+  return {
+    base: formatMockPrice(baseAverage),
+    adjusted: formatMockPrice(adjustedAverage),
+  }
 }
 
 const buildAnnualPriceRows = (): FundamentalModelAnnualPriceRow[] =>
   PRICE_REGIONS.flatMap((region) =>
     PRICE_YEARS.map((year) => {
-      const price = region === 'East Asia Spot' ? getEastAsiaAnnualPrice(year) : '9.95'
+      const prices = getAnnualPrice(region, year)
       return {
         id: `annual-${region}-${year}`,
         year,
         priceRegion: region,
-        baseCasePrice: price,
-        userAdjustedPrice: price,
+        baseCasePrice: prices.base,
+        userAdjustedPrice: prices.adjusted,
       }
     }),
   )
@@ -286,7 +347,7 @@ const buildMonthlyPriceRows = (): FundamentalModelMonthlyPriceRow[] => {
     PRICE_YEARS.flatMap((year) =>
       Array.from({ length: 12 }, (_, monthIdx) => {
         const month = String(monthIdx + 1)
-        const prices = region === 'East Asia Spot' ? getEastAsiaMonthlyPrice(year, monthIdx + 1) : { base: '9.95', adjusted: '9.95' }
+        const prices = getMonthlyPrice(region, year, monthIdx + 1)
         seq += 1
         return {
           id: `monthly-${seq}`,

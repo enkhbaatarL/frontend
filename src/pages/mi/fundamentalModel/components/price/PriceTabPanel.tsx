@@ -34,7 +34,7 @@ const PriceTableSection = ({ title, children, sx }: PriceTableSectionProps) => (
 
 const PriceTabPanel = ({ annualPriceRows, monthlyPriceRows, detailLoading }: PriceTabPanelProps) => (
   <Stack gap="20px" sx={{ userSelect: 'text' }}>
-    <FundamentalModelPriceChartSection />
+    <FundamentalModelPriceChartSection monthlyPriceRows={monthlyPriceRows} />
 
     <Stack direction={{ xs: 'column', md: 'row' }} alignItems="flex-start" gap="20px" sx={{ minWidth: 0 }}>
       <Box sx={{ flex: { md: '0 0 462px' }, width: { xs: '100%', md: '462px' }, maxWidth: '100%' }}>

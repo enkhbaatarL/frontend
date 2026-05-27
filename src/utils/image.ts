@@ -54,6 +54,7 @@ interface ImageConversionOptions {
     height?: number
   }
   padding?: number
+  captureScale?: number
 }
 
 /**
@@ -66,9 +67,11 @@ export const convertElementToImageCanvas = async ({
   remove = [],
   imageSize = {},
   padding = 0,
+  captureScale = 1,
 }: ImageConversionOptions): Promise<HTMLCanvasElement> => {
   const targetElement = target
   const originalRect = targetElement.getBoundingClientRect()
+  const scaleRatio = Math.max(1, captureScale)
 
   // DOM 복제 및 스타일 설정
   const clonedElement = targetElement.cloneNode(true) as HTMLElement
@@ -116,7 +119,7 @@ export const convertElementToImageCanvas = async ({
   // html2canvas로 DOM을 캔버스로 변환
   const canvas = await html2canvas(clonedElement, {
     backgroundColor: '#FFFFFF',
-    scale: 1,
+    scale: scaleRatio,
     allowTaint: false,
     logging: false,
     useCORS: true,
@@ -147,8 +150,11 @@ export const convertElementToImageCanvas = async ({
     contentHeight = imageSize.height!
   }
 
-  const totalWidth = contentWidth + padding * 2
-  const totalHeight = contentHeight + padding * 2
+  const outputContentWidth = Math.round(contentWidth)
+  const outputContentHeight = Math.round(contentHeight)
+  const outputPadding = Math.round(padding)
+  const totalWidth = outputContentWidth + outputPadding * 2
+  const totalHeight = outputContentHeight + outputPadding * 2
 
   // 최종 캔버스 생성
   const resizedCanvas = document.createElement('canvas')
@@ -166,8 +172,8 @@ export const convertElementToImageCanvas = async ({
   }
 
   const finalTempCanvas = document.createElement('canvas')
-  finalTempCanvas.width = contentWidth
-  finalTempCanvas.height = contentHeight
+  finalTempCanvas.width = outputContentWidth
+  finalTempCanvas.height = outputContentHeight
 
   // Pica를 사용한 고품질 리사이징
   await pica.resize(canvas, finalTempCanvas, {
@@ -178,7 +184,7 @@ export const convertElementToImageCanvas = async ({
 
   if (ctx) {
     if (finalTempCanvas && finalTempCanvas.width > 0 && finalTempCanvas.height > 0) {
-      ctx.drawImage(finalTempCanvas, padding, padding)
+      ctx.drawImage(finalTempCanvas, outputPadding, outputPadding)
     }
   }
 

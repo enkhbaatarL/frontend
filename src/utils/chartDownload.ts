@@ -9,6 +9,7 @@ interface ChartDownloadOptions {
     height?: number
   }
   padding?: number
+  captureScale?: number
 }
 
 /**
@@ -37,7 +38,14 @@ export const canvasToBlob = (canvas: HTMLCanvasElement, format: string = 'image/
  * HTML 요소를 이미지로 변환하고 다운로드하는 함수
  * @param options 다운로드 옵션
  */
-export const downloadChart = async ({ filename = 'chart.png', target, remove = [], imageSize = {}, padding = 0 }: ChartDownloadOptions) => {
+export const downloadChart = async ({
+  filename = 'chart.png',
+  target,
+  remove = [],
+  imageSize = {},
+  padding = 0,
+  captureScale = 1,
+}: ChartDownloadOptions) => {
   try {
     const finalFilename = filename.endsWith('.png') ? filename : `${filename}.png`
 
@@ -46,6 +54,7 @@ export const downloadChart = async ({ filename = 'chart.png', target, remove = [
       remove,
       imageSize,
       padding,
+      captureScale,
     })
 
     const link = document.createElement('a')
