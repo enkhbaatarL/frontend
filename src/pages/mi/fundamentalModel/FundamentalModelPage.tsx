@@ -32,8 +32,7 @@ const FundamentalModelPage = () => {
   const [viewTab, setViewTab] = useState<FundamentalModelViewTabKey>('volumes')
 
   const activeCaseId = selectedCaseId
-
-  const { handleRun, handleRetry, applyStatusOverrideToCaseDetail } = useFundamentalModelRunExecution(activeCaseId)
+  const parsedCaseId = Number(activeCaseId)
 
   useEffect(() => {
     setViewTab('volumes')
@@ -51,12 +50,11 @@ const FundamentalModelPage = () => {
     if (next) setViewTab(next.key)
   }, [])
 
-  const parsedCaseId = Number(activeCaseId)
-
   const {
     data: caseDetail,
     isLoading: detailLoading,
     isError: detailError,
+    refetch: refetchCaseDetail,
   } = useQuery({
     queryKey: ['fundamentalModel', 'caseDetail', activeCaseId],
     queryFn: () => fundamentalModelCaseService.getCaseDetail(parsedCaseId),
@@ -64,12 +62,18 @@ const FundamentalModelPage = () => {
     refetchOnWindowFocus: false,
   })
 
-  const effectiveCaseDetail = useMemo(() => applyStatusOverrideToCaseDetail(caseDetail), [caseDetail, applyStatusOverrideToCaseDetail])
+  const handleRunSettled = useCallback(() => {
+    void refetchCaseDetail()
+  }, [refetchCaseDetail])
+
+  const { handleRun, handleRetry, isRunPending } = useFundamentalModelRunExecution(activeCaseId, caseDetail?.status, {
+    onRunSettled: handleRunSettled,
+  })
 
   const { data: tabPanelMock } = useQuery({
     queryKey: ['fundamentalModel', 'tabPanelMock', TAB_PANEL_MOCK_RUN_ID],
     queryFn: () => fetchFundamentalModelDetail(TAB_PANEL_MOCK_RUN_ID),
-    enabled: effectiveCaseDetail?.status === 'COMPLETED',
+    enabled: caseDetail?.status === 'COMPLETED',
     refetchOnWindowFocus: false,
   })
 
@@ -129,7 +133,7 @@ const FundamentalModelPage = () => {
     }
   }, [activeCaseId, parsedCaseId, queryClient])
 
-  const placeholderMode = useMemo(() => runStatusToPlaceholderMode(effectiveCaseDetail?.status), [effectiveCaseDetail?.status])
+  const placeholderMode = useMemo(() => runStatusToPlaceholderMode(caseDetail?.status), [caseDetail?.status])
 
   const rightBody = !activeCaseId ? (
     <Box
@@ -172,7 +176,7 @@ const FundamentalModelPage = () => {
   ) : (
     <Stack sx={{ flex: 1, minWidth: 0, gap: '16px', userSelect: 'text' }}>
       <FundamentalModelDetailHeader
-        detail={effectiveCaseDetail ?? null}
+        detail={caseDetail ?? null}
         loading={detailLoading}
         onEdit={handleUpdateCase}
         onDelete={handleDeleteCase}
@@ -193,7 +197,7 @@ const FundamentalModelPage = () => {
         }}
       >
         {placeholderMode ? (
-          <FundamentalModelRunPlaceholder mode={placeholderMode} onRun={handleRun} onRetry={handleRetry} />
+          <FundamentalModelRunPlaceholder mode={placeholderMode} onRun={handleRun} onRetry={handleRetry} runActionDisabled={isRunPending} />
         ) : viewTab === 'volumes' ? (
           <Box
             role="tabpanel"

@@ -15,6 +15,8 @@ export interface FundamentalModelRunPlaceholderProps {
   onRun?: () => void
   /** 실패 상태 - 재실행 버튼 클릭 */
   onRetry?: () => void
+  /** 실행 요청 접수 중 */
+  runActionDisabled?: boolean
 }
 
 /** 대기/실행중/실패 자리표시자 컨테이너 공통 sx */
@@ -40,7 +42,7 @@ const contentStackSx = {
 } as const
 
 /** 본 페이지 우측 본문 자리표시자 (대기 - 실행중 - 실패) */
-const FundamentalModelRunPlaceholder = ({ mode, onRun, onRetry }: FundamentalModelRunPlaceholderProps) => {
+const FundamentalModelRunPlaceholder = ({ mode, onRun, onRetry, runActionDisabled = false }: FundamentalModelRunPlaceholderProps) => {
   if (mode === 'running') {
     return (
       <Box sx={containerSx}>
@@ -82,7 +84,7 @@ const FundamentalModelRunPlaceholder = ({ mode, onRun, onRetry }: FundamentalMod
               {'실행에 실패했습니다.\n잠시 후 다시 시도하시거나 재실행 버튼을 눌러주세요.'}
             </Typography>
           </Stack>
-          <MIBaseButton variant="contained" onClick={onRetry} sx={{ py: '10px', px: '16px' }}>
+          <MIBaseButton variant="contained" disabled={runActionDisabled} onClick={onRetry} sx={{ py: '10px', px: '16px' }}>
             재실행
           </MIBaseButton>
         </Stack>
@@ -103,7 +105,7 @@ const FundamentalModelRunPlaceholder = ({ mode, onRun, onRetry }: FundamentalMod
             실행 버튼을 눌러 시작하세요.
           </Typography>
         </Stack>
-        <MIBaseButton variant="contained" onClick={onRun} sx={{ py: '10px', px: '16px' }}>
+        <MIBaseButton variant="contained" disabled={runActionDisabled} onClick={onRun} sx={{ py: '10px', px: '16px' }}>
           실행
         </MIBaseButton>
       </Stack>

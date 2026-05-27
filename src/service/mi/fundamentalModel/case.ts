@@ -66,6 +66,30 @@ export interface IFundamentalModelCaseUpdateReq {
   description?: string
 }
 
+export interface IFundamentalModelRunReq {
+  requestedByClientId?: string
+}
+
+/** runCase 응답 — FundamentalModelRunAcceptRes */
+export interface IFundamentalModelRunAcceptRes {
+  caseId: number
+  runId: string
+  status: FundamentalModelRunStatus
+  requestedAt?: string
+  startedAt?: string
+  statusEndpoint?: string
+}
+
+/** getCaseStatus 응답 — FundamentalModelCaseStatusRes */
+export interface IFundamentalModelCaseStatusRes {
+  caseId: number
+  title: string
+  status: FundamentalModelCaseStatus
+  latestRun: IFundamentalModelCaseLatestRun | null
+  createdAt: string
+  updatedAt: string
+}
+
 const fundamentalModelCaseService = {
   async listCases(params?: IGetFundamentalModelCasesParams): Promise<IFundamentalModelCaseListRes> {
     const trimmedKeyword = params?.keyword?.trim()
@@ -81,6 +105,21 @@ const fundamentalModelCaseService = {
 
   async getCaseDetail(caseId: number): Promise<IFundamentalModelCaseDetail> {
     const response: AxiosResponse<ICommonResponse<IFundamentalModelCaseDetail>> = await api.get(`mi/fundamental-model/cases/${caseId}`)
+    return response.data.data
+  },
+
+  async getCaseStatus(caseId: number): Promise<IFundamentalModelCaseStatusRes> {
+    const response: AxiosResponse<ICommonResponse<IFundamentalModelCaseStatusRes>> = await api.get(
+      `mi/fundamental-model/cases/${caseId}/status`,
+    )
+    return response.data.data
+  },
+
+  async runCase(caseId: number, body?: IFundamentalModelRunReq): Promise<IFundamentalModelRunAcceptRes> {
+    const response: AxiosResponse<ICommonResponse<IFundamentalModelRunAcceptRes>> = await api.post(
+      `mi/fundamental-model/cases/${caseId}/runs`,
+      body ?? {},
+    )
     return response.data.data
   },
 
