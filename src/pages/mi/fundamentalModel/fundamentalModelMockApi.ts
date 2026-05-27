@@ -312,7 +312,7 @@ const MOCK_MEMO_LONG =
 const MOCK_RUNS: FundamentalModelRunListItem[] = [
   {
     id: '1',
-    status: 'in_progress',
+    status: 'pending',
     title: '시뮬레이션 케이스 5',
     createdAtLabel: 'MM-DD 00:00',
     updatedAtLabel: 'MM-DD 00:00',
@@ -362,7 +362,7 @@ const MOCK_RUNS: FundamentalModelRunListItem[] = [
   },
   {
     id: '7',
-    status: 'in_progress',
+    status: 'pending',
     title: 'Price 구간 위아래 10으로 했을때',
     createdAtLabel: 'MM-DD 00:00',
     updatedAtLabel: 'MM-DD 00:00',

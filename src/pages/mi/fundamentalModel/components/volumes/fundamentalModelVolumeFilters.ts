@@ -32,7 +32,7 @@ export interface FundamentalModelVolumeFilters {
   regions: string[]
 }
 
-/** Figma default - Type/Regions 전체 선택 */
+/** default - Type/Regions 전체 선택 */
 export const createDefaultVolumeFilters = (): FundamentalModelVolumeFilters => ({
   types: [...FM_VOLUME_DEFAULT_TYPE_IDS],
   regions: [...FM_VOLUME_DEFAULT_REGION_IDS],

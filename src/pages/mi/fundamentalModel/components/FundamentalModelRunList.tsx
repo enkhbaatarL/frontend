@@ -1,11 +1,10 @@
 import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-
-import type { FundamentalModelRunListItem, FundamentalModelRunStatus } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import AddIcon from '@/components/common/icons/AddIcon'
-import MISearchInput from '@/components/common/input/MISearchInput'
+import AsyncAutocomplete from '@/components/common/input/AsyncAutocomplete'
 import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISelectMenu'
 import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -21,15 +20,19 @@ import {
   isFundamentalUploadExcelFile,
   isSameFundamentalUploadFile,
 } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
+import { caseStatusVisual } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
+import { formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
+import fundamentalModelCaseService, {
+  type FundamentalModelCaseSearchType,
+  type IFundamentalModelCaseListItem,
+} from '@/service/mi/fundamentalModel/case'
 
 /** left list container 고정 높이 */
 const LIST_PANEL_HEIGHT = 900
 
 export interface FundamentalModelRunListProps {
-  runs: FundamentalModelRunListItem[]
   selectedId: string
   onSelect: (id: string) => void
-  loading?: boolean
 }
 
 /** 목록 검색 기준 */
@@ -40,21 +43,12 @@ const SEARCH_FIELD_ITEMS: SelectMenuItem<RunListSearchField>[] = [
   { value: 'title', label: '제목' },
 ]
 
+const toCaseSearchType = (field: RunListSearchField): FundamentalModelCaseSearchType => (field === 'title' ? 'TITLE' : 'ASSIGNEE_NAME')
+
 /** 목록 건수 배지 라벨 */
 const formatRunCountLabel = (count: number) => {
   if (count > 9999) return '9,999+'
   return String(count)
-}
-
-/** 상태 배지 스타일 */
-const statusVisual = (status: FundamentalModelRunStatus) => {
-  if (status === 'in_progress') {
-    return { bg: 'contentBG.PrimaryFade', color: 'mari.Primary', label: 'IN PROGRESS' }
-  }
-  if (status === 'error') {
-    return { bg: 'rgba(214, 51, 108, 0.1)', color: '#D6336C', label: 'ERROR' }
-  }
-  return { bg: 'rgba(42, 141, 62, 0.1)', color: '#2A8D3E', label: 'DONE' }
 }
 
 interface TruncatedLabelProps {
@@ -91,7 +85,7 @@ const TruncatedLabel = ({ text, variant = 'body1SB16', color = 'gray.90', sx }: 
 }
 
 /** 좌측 시뮬레이션 목록(검색 기준 선택 - 검색 - 카드 리스트) */
-const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }: FundamentalModelRunListProps) => {
+const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunListProps) => {
   const uploadPopupRef = useRef<MIMorphingPopupRef>(null)
   const { showSnackbar } = useSnackbar()
   const [searchField, setSearchField] = useState<RunListSearchField>('managerName')
@@ -169,14 +163,23 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
     uploadPopupRef.current?.close()
   }, [showSnackbar, uploadFiles, uploadTitle])
 
-  const filteredRuns = useMemo(() => {
-    const q = committedKeyword.trim().toLowerCase()
-    if (!q) return runs
-    return runs.filter((run) => {
-      const target = searchField === 'title' ? run.title : run.managerName
-      return target.toLowerCase().includes(q)
-    })
-  }, [committedKeyword, runs, searchField])
+  const listRequest = useMemo(() => {
+    const trimmedKeyword = committedKeyword.trim()
+    if (!trimmedKeyword) return {}
+    return {
+      searchType: toCaseSearchType(searchField),
+      keyword: trimmedKeyword,
+    }
+  }, [committedKeyword, searchField])
+
+  const { data: caseList, isLoading: listLoading } = useQuery({
+    queryKey: ['fundamentalModel', 'cases', listRequest],
+    queryFn: () => fundamentalModelCaseService.listCases(listRequest),
+    refetchOnWindowFocus: false,
+  })
+
+  const cases = caseList?.cases ?? []
+  const totalCount = caseList?.totalCount ?? cases.length
 
   const uploadPopupContent = (
     <FundamentalModelFileUploadPopupContent
@@ -224,7 +227,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
             }}
           >
             <Typography variant="body2SB14" color="gray.90">
-              {loading ? '—' : formatRunCountLabel(runs.length)}
+              {listLoading ? '—' : formatRunCountLabel(totalCount)}
             </Typography>
           </Box>
         </Stack>
@@ -277,11 +280,11 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
           }}
         />
         <Box sx={{ flex: 1, minWidth: 0, width: 0 }}>
-          <MISearchInput
-            storageKey="mi-fundamental-model-list"
+          <AsyncAutocomplete
             value={keyword}
-            onChange={setKeyword}
-            placeholder="Search"
+            onInputChange={(_event, newValue) => {
+              setKeyword(newValue)
+            }}
             onSearch={(v) => {
               setCommittedKeyword(v)
             }}
@@ -289,6 +292,10 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
               setKeyword('')
               setCommittedKeyword('')
             }}
+            showSearchIcon={true}
+            showOptionsOnFocus={false}
+            disableCache={true}
+            textFieldProps={{ placeholder: 'Search' }}
             height={40}
             width="100%"
           />
@@ -316,7 +323,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
             '&::-webkit-scrollbar-thumb': { bgcolor: 'gray.40', borderRadius: '1000px' },
           }}
         >
-          {loading &&
+          {listLoading &&
             Array.from({ length: 5 }).map((_, i) => (
               <Box key={`sk-card-${i}`} sx={{ px: '12px', py: '16px', borderRadius: '10px' }}>
                 <Skeleton width={88} height={22} sx={{ borderRadius: '4px', mb: 1 }} />
@@ -326,20 +333,24 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
               </Box>
             ))}
 
-          {!loading &&
-            filteredRuns.map((run) => {
-              const selected = run.id === selectedId
-              const sv = statusVisual(run.status)
+          {!listLoading &&
+            cases.map((item: IFundamentalModelCaseListItem) => {
+              const caseId = String(item.caseId)
+              const selected = caseId === selectedId
+              const sv = caseStatusVisual(item.status)
+              const createdAtLabel = formatWorkbenchDateTime(item.createdAt)
+              const updatedAtLabel = formatWorkbenchDateTime(item.updatedAt)
+
               return (
                 <Box
-                  key={run.id}
+                  key={caseId}
                   role="button"
                   tabIndex={0}
-                  onClick={() => onSelect(run.id)}
+                  onClick={() => onSelect(caseId)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      onSelect(run.id)
+                      onSelect(caseId)
                     }
                   }}
                   sx={{
@@ -383,11 +394,11 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
                     </Typography>
                   </Box>
 
-                  <TruncatedLabel text={run.title} />
+                  <TruncatedLabel text={item.title} />
 
                   <Stack direction="row" alignItems="center" gap="8px" sx={{ minWidth: 0 }}>
                     <Typography variant="body3R12" color="content.textNormal" noWrap>
-                      {run.createdAtLabel}
+                      {createdAtLabel}
                     </Typography>
                     <Divider orientation="vertical" flexItem sx={{ borderColor: 'gray.40', height: 10, alignSelf: 'center' }} />
                     <Stack direction="row" alignItems="center" gap="4px" sx={{ minWidth: 0 }}>
@@ -395,7 +406,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
                         업데이트
                       </Typography>
                       <Typography variant="body3R12" color="content.textNormal" noWrap>
-                        {run.updatedAtLabel}
+                        {updatedAtLabel}
                       </Typography>
                     </Stack>
                   </Stack>
@@ -405,7 +416,7 @@ const FundamentalModelRunList = ({ runs, selectedId, onSelect, loading = false }
                       담당자
                     </Typography>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <TruncatedLabel text={run.managerName} variant="body3R12" color="content.textNormal" />
+                      <TruncatedLabel text={item.assigneeName} variant="body3R12" color="content.textNormal" />
                     </Box>
                   </Stack>
                 </Box>
