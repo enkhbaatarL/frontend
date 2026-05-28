@@ -1,20 +1,19 @@
 import { Box, Stack, Typography } from '@mui/material'
+import { type ReactNode, useMemo } from 'react'
 
-import type { FundamentalModelAnnualPriceRow, FundamentalModelMonthlyPriceRow } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
-import type { ReactNode } from 'react'
+import type { IFundamentalModelPriceRes } from '@/service/mi/fundamentalModel/case'
 
 import FundamentalModelPriceChartSection from '@/pages/mi/fundamentalModel/components/price/FundamentalModelPriceChartSection'
 import FundamentalModelPriceTable from '@/pages/mi/fundamentalModel/components/price/FundamentalModelPriceTable'
 import {
-  ANNUAL_PRICE_TABLE_COLUMNS,
-  MONTHLY_PRICE_HIGHLIGHTED_FIELDS,
-  MONTHLY_PRICE_TABLE_COLUMNS,
+  buildPricePeriodTableColumns,
+  buildPricePeriodTableRows,
+  isPriceValueField,
 } from '@/pages/mi/fundamentalModel/components/price/priceTabPanelColumns'
 
 export interface PriceTabPanelProps {
-  annualPriceRows: FundamentalModelAnnualPriceRow[]
-  monthlyPriceRows: FundamentalModelMonthlyPriceRow[]
-  detailLoading: boolean
+  price: IFundamentalModelPriceRes | null
+  loading: boolean
 }
 
 interface PriceTableSectionProps {
@@ -32,29 +31,42 @@ const PriceTableSection = ({ title, children, sx }: PriceTableSectionProps) => (
   </Stack>
 )
 
-const PriceTabPanel = ({ annualPriceRows, monthlyPriceRows, detailLoading }: PriceTabPanelProps) => (
-  <Stack gap="20px" sx={{ userSelect: 'text' }}>
-    <FundamentalModelPriceChartSection monthlyPriceRows={monthlyPriceRows} />
+const PriceTabPanel = ({ price, loading }: PriceTabPanelProps) => {
+  const annualColumns = useMemo(() => buildPricePeriodTableColumns(price?.annualTable, false), [price?.annualTable])
+  const annualRows = useMemo(() => buildPricePeriodTableRows(price?.annualTable, false), [price?.annualTable])
+  const monthlyColumns = useMemo(() => buildPricePeriodTableColumns(price?.monthlyTable, true), [price?.monthlyTable])
+  const monthlyRows = useMemo(() => buildPricePeriodTableRows(price?.monthlyTable, true), [price?.monthlyTable])
+  const priceRegions = useMemo(() => {
+    const chartRegions = price?.chart?.seriesSets?.map((seriesSet) => seriesSet.priceRegion).filter(Boolean) ?? []
+    if (chartRegions.length > 0) return chartRegions
 
-    <Stack direction={{ xs: 'column', md: 'row' }} alignItems="flex-start" gap="20px" sx={{ minWidth: 0 }}>
-      <Box sx={{ flex: { md: '0 0 462px' }, width: { xs: '100%', md: '462px' }, maxWidth: '100%' }}>
-        <PriceTableSection title="Annual price output (USD/mmbtu, Real 2023)">
-          <FundamentalModelPriceTable columns={ANNUAL_PRICE_TABLE_COLUMNS} rows={annualPriceRows} loading={detailLoading} />
-        </PriceTableSection>
-      </Box>
+    return Array.from(new Set(price?.monthlyTable?.rows?.map((row) => row.priceRegion).filter(Boolean) ?? []))
+  }, [price?.chart?.seriesSets, price?.monthlyTable?.rows])
 
-      <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
-        <PriceTableSection title="Monthly price output (USD/mmbtu, Real 2023)">
-          <FundamentalModelPriceTable
-            columns={MONTHLY_PRICE_TABLE_COLUMNS}
-            rows={monthlyPriceRows}
-            loading={detailLoading}
-            getCellSx={({ field }) => (MONTHLY_PRICE_HIGHLIGHTED_FIELDS.has(field) ? { bgcolor: 'commonColor.Primarylight1' } : undefined)}
-          />
-        </PriceTableSection>
-      </Box>
+  return (
+    <Stack gap="20px" sx={{ userSelect: 'text' }}>
+      <FundamentalModelPriceChartSection priceChart={price?.chart ?? null} priceRegions={priceRegions} />
+
+      <Stack direction={{ xs: 'column', md: 'row' }} alignItems="flex-start" gap="20px" sx={{ minWidth: 0 }}>
+        <Box sx={{ flex: { md: '0 0 462px' }, width: { xs: '100%', md: '462px' }, maxWidth: '100%' }}>
+          <PriceTableSection title="Annual price output (USD/mmbtu, Real 2023)">
+            <FundamentalModelPriceTable columns={annualColumns} rows={annualRows} loading={loading} />
+          </PriceTableSection>
+        </Box>
+
+        <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
+          <PriceTableSection title="Monthly price output (USD/mmbtu, Real 2023)">
+            <FundamentalModelPriceTable
+              columns={monthlyColumns}
+              rows={monthlyRows}
+              loading={loading}
+              getCellSx={({ field }) => (isPriceValueField(field) ? { bgcolor: 'commonColor.Primarylight1' } : undefined)}
+            />
+          </PriceTableSection>
+        </Box>
+      </Stack>
     </Stack>
-  </Stack>
-)
+  )
+}
 
 export default PriceTabPanel

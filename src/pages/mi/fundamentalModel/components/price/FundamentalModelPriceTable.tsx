@@ -15,6 +15,7 @@ export interface FundamentalModelPriceTableProps<T extends GridRowModel> {
   rows: T[]
   loading?: boolean
   rowId?: keyof T
+  getRowKey?: (row: T, index: number) => string | number
   getCellSx?: (params: { field: string; row?: T }) => SxProps<Theme> | undefined
 }
 
@@ -35,6 +36,7 @@ const FundamentalModelPriceTable = <T extends GridRowModel>({
   rows,
   loading = false,
   rowId = 'id' as keyof T,
+  getRowKey,
   getCellSx,
 }: FundamentalModelPriceTableProps<T>) => (
     <Box
@@ -81,6 +83,7 @@ const FundamentalModelPriceTable = <T extends GridRowModel>({
           columns={columns}
           rows={rows}
           loading={loading}
+          getRowKey={getRowKey}
           rowHeight={PRICE_TABLE_ROW_HEIGHT}
           disableHover
           topPaddingPx={0}

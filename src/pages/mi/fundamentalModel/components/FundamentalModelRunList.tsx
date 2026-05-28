@@ -228,14 +228,14 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
           </Typography>
           <Box
             sx={{
-              minWidth: 32,
               height: 26,
               px: '8px',
               borderRadius: '100px',
               bgcolor: 'gray.30',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
+              width: 'fit-content',
             }}
           >
             <Typography variant="body2SB14" color="gray.90">

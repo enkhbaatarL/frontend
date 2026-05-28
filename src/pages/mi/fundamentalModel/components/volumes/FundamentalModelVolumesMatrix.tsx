@@ -1,14 +1,14 @@
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 
-import type { FundamentalModelMetricRow } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type { FundamentalModelVolumesGranularity, IFundamentalModelVolumesColumn } from '@/service/mi/fundamentalModel/case'
 
 import MIFrozenColumnScrollLayout from '@/pages/mi/fundamentalModel/components/common/MIFrozenColumnScrollLayout'
 import {
   FM_VOLUME_SUMMARY_LABEL_COL_W,
   FM_VOLUME_TABLE_BODY_H,
-  FM_VOLUME_TABLE_HEADER_H,
   FM_VOLUME_TABLE_BORDER,
+  FM_VOLUME_TABLE_HEADER_H,
   fmVolumeResolvedMonthColumnWidth,
   fmVolumeTableBodyCellSx,
   fmVolumeTableFrameSx,
@@ -17,11 +17,28 @@ import {
 } from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumesTableLayout'
 
 export interface FundamentalModelVolumesMatrixProps {
-  monthLabels: string[]
-  rows: FundamentalModelMetricRow[]
+  /** 시간축 컬럼(getVolumes columns) */
+  columns: IFundamentalModelVolumesColumn[]
+  /** API granularity - YEARLY 일 때 unite 행을 연도값으로 표시 */
+  granularity: FundamentalModelVolumesGranularity
   loading?: boolean
-  /** true면 상단 요약 블록(Volumes Table summary=on) */
+  /** true 면 상단 요약 블록(Volumes Table summary=on) */
   compact?: boolean
+}
+
+/** 요약 매트릭스 행 — id 별 라벨/타이포 분기 */
+type SummaryRowId = 'year' | 'unite' | 'mtpa'
+
+interface SummaryRow {
+  id: SummaryRowId
+  label: string
+  values: string[]
+}
+
+const SUMMARY_ROW_LABEL: Record<SummaryRowId, string> = {
+  year: '',
+  unite: 'Unite',
+  mtpa: 'mtpa',
 }
 
 /** 스켈레톤용 props */
@@ -61,9 +78,25 @@ const FundamentalModelVolumesMatrixSkeleton = ({
   </Box>
 )
 
-/** Volumes 요약/상세 표 — summary=on 시 라벨열 고정 + columns group 스크롤 */
+/** API columns -> 요약 매트릭스 3행(year/unite/mtpa) */
+const buildSummaryRows = (columns: IFundamentalModelVolumesColumn[], granularity: FundamentalModelVolumesGranularity): SummaryRow[] => {
+  const yearValues = columns.map((column) => String(column.year))
+  const monthValues = columns.map((column) => (column.month === null ? '' : String(column.month)))
+  const periodValues = columns.map((column) => column.periodLabel)
+
+  return [
+    { id: 'year', label: SUMMARY_ROW_LABEL.year, values: yearValues },
+    { id: 'unite', label: SUMMARY_ROW_LABEL.unite, values: granularity === 'YEARLY' ? yearValues : monthValues },
+    { id: 'mtpa', label: SUMMARY_ROW_LABEL.mtpa, values: periodValues },
+  ]
+}
+
+/** Volumes 요약 매트릭스 — getVolumes columns/granularity 직결 */
 const FundamentalModelVolumesMatrix = memo(
-  ({ monthLabels, rows, loading = false, compact = false }: FundamentalModelVolumesMatrixProps) => {
+  ({ columns, granularity, loading = false, compact = false }: FundamentalModelVolumesMatrixProps) => {
+    const summaryRows = useMemo(() => buildSummaryRows(columns, granularity), [columns, granularity])
+    const monthLabels = useMemo(() => columns.map((column) => column.periodLabel), [columns])
+
     const labelColWidth = compact ? FM_VOLUME_SUMMARY_LABEL_COL_W : 220
     const monthColWidth = fmVolumeResolvedMonthColumnWidth(monthLabels.length, labelColWidth)
 
@@ -71,7 +104,7 @@ const FundamentalModelVolumesMatrix = memo(
       return (
         <FundamentalModelVolumesMatrixSkeleton
           monthCount={monthLabels.length}
-          rowCount={rows.length || 6}
+          rowCount={summaryRows.length || 3}
           compact={compact}
           monthColWidth={monthColWidth}
         />
@@ -88,7 +121,7 @@ const FundamentalModelVolumesMatrix = memo(
         }}
       >
         <Box sx={fmVolumeTableHeaderCellSx} />
-        {rows.map((row) => (
+        {summaryRows.map((row) => (
           <Box key={row.id} sx={fmVolumeTableBodyCellSx}>
             <Typography variant="body2SB14" color="gray.90" noWrap sx={{ width: '100%', lineHeight: 1.4 }}>
               {row.label}
@@ -107,18 +140,18 @@ const FundamentalModelVolumesMatrix = memo(
                 {month}
               </Typography>
             </Box>
-            {rows.map((row) => {
-              const cell = row.values[colIdx]
+            {summaryRows.map((row) => {
+              const cell = row.values[colIdx] ?? ''
               const isYearRow = row.id === 'year'
               return (
-                <Box key={`${row.id}-${month}`} sx={[fmVolumeTableBodyCellSx, { justifyContent: 'flex-end' }]}>
+                <Box key={`${row.id}-${colIdx}`} sx={[fmVolumeTableBodyCellSx, { justifyContent: 'flex-end' }]}>
                   <Typography
                     variant={isYearRow ? 'body2SB14' : 'body2R14'}
                     color="gray.90"
                     noWrap
                     sx={{ width: '100%', textAlign: 'right', lineHeight: 1.4 }}
                   >
-                    {cell ?? ''}
+                    {cell}
                   </Typography>
                 </Box>
               )
@@ -127,14 +160,6 @@ const FundamentalModelVolumesMatrix = memo(
         ))}
       </Stack>
     )
-
-    if (compact) {
-      return (
-        <Box sx={fmVolumeTableFrameSx}>
-          <MIFrozenColumnScrollLayout frozen={labelColumn} scrollable={monthColumns} />
-        </Box>
-      )
-    }
 
     return (
       <Box sx={fmVolumeTableFrameSx}>
