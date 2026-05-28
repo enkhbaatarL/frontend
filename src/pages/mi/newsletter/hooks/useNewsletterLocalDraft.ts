@@ -3,8 +3,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import type { INewsletterIssueSnapshotData } from '@/service/mi/newsletter'
 
-import { updateChartBoxPositions } from '@/pages/mi/newsletter/utils/snapshotUtils'
-import useChartEditStore from '@/store/useChartEditStore'
+import { chartBoxPositionsEqual, getChartBoxPositions, updateChartBoxPositions } from '@/pages/mi/newsletter/utils/snapshotUtils'
+import { getLatestChartBoxPositions } from '@/store/useChartEditStore'
 import { canonicalizeSnapshotLikeServer } from '@/utils/newsletterSnapshotCanonicalize'
 
 export const NEWSLETTER_LOCAL_DRAFT_KEY_PREFIX = 'newsletter-local-draft'
@@ -175,6 +175,8 @@ export const useNewsletterLocalDraft = ({
 }: UseNewsletterLocalDraftParams) => {
   const snapshotRef = useRef(currentSnapshot)
   snapshotRef.current = currentSnapshot
+  const baseSnapshotRef = useRef(baseSnapshot)
+  baseSnapshotRef.current = baseSnapshot
   const hasUnsavedChangesRef = useRef(hasUnsavedChanges)
   hasUnsavedChangesRef.current = hasUnsavedChanges
   const baseSnapshotFingerprint = useMemo(() => (baseSnapshot ? getNewsletterSnapshotFingerprint(baseSnapshot) : null), [baseSnapshot])
@@ -208,9 +210,14 @@ export const useNewsletterLocalDraft = ({
 
   const mergeLayoutIfNeeded = useCallback(
     (data: INewsletterIssueSnapshotData) =>
-      useLiveChartLayoutForPersist ? updateChartBoxPositions(data, useChartEditStore.getState().boxPositions) : data,
+      useLiveChartLayoutForPersist ? updateChartBoxPositions(data, getLatestChartBoxPositions()) : data,
     [useLiveChartLayoutForPersist],
   )
+
+  const hasLiveLayoutChanges = useCallback(() => {
+    if (!useLiveChartLayoutForPersist || !baseSnapshotRef.current) return false
+    return !chartBoxPositionsEqual(getChartBoxPositions(baseSnapshotRef.current), getLatestChartBoxPositions())
+  }, [useLiveChartLayoutForPersist])
 
   const debouncedSave = useMemo(
     () =>
@@ -237,13 +244,13 @@ export const useNewsletterLocalDraft = ({
     if (!isEditMode || !storageKey) return undefined
     const handleBeforeUnload = () => {
       debouncedSave.cancel()
-      if (snapshotRef.current && hasUnsavedChangesRef.current) {
+      if (snapshotRef.current && (hasUnsavedChangesRef.current || hasLiveLayoutChanges())) {
         saveToStorage(storageKey, mergeLayoutIfNeeded(snapshotRef.current))
       }
     }
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [isEditMode, storageKey, debouncedSave, saveToStorage, mergeLayoutIfNeeded])
+  }, [isEditMode, storageKey, debouncedSave, saveToStorage, mergeLayoutIfNeeded, hasLiveLayoutChanges])
 
   /** 로컬 드래프트 데이터 가져오기 */
   const getLocalDraft = useCallback(

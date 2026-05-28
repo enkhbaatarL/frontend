@@ -86,7 +86,7 @@ const EditToolbar = ({
               </Typography>
             </Stack>
           </MIBaseButton>
-          <Divider orientation="vertical" flexItem sx={{ height: '20px', borderColor: 'contentBorder.Active' }} />
+          <Divider orientation="vertical" flexItem sx={{ height: '20px', alignSelf: 'center', borderColor: 'contentBorder.Active' }} />
           <Stack direction="row" alignItems="center" gap="10px">
             <MIBaseButton
               variant="outlined"
@@ -146,7 +146,7 @@ const EditToolbar = ({
               </Typography>
             </Stack>
           </MIBaseButton>
-          <Divider orientation="vertical" flexItem sx={{ height: '20px', borderColor: 'contentBorder.Active' }} />
+          <Divider orientation="vertical" flexItem sx={{ height: '20px', alignSelf: 'center', borderColor: 'contentBorder.Active' }} />
           <Stack direction="row" alignItems="center" gap="10px">
             <MIBaseButton
               variant="outlined"

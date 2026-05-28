@@ -87,7 +87,8 @@ const NewsFlowSection = ({
   const dFlowAgg = getEffectiveFieldDef(sectionFieldDefs, 'aggregationTime')
   const visibleRelatedNews = useMemo(() => filterVisibleNewsFlowItems(relatedNews), [relatedNews])
   const chartRelatedNews = useMemo(() => visibleRelatedNews.filter((n) => n.visibility !== false), [visibleRelatedNews])
-  const { chartType, boxPositions, titleEdits, setChartType, onBoxPositionChange, resetBoxPositions, setTitleEdit } = useChartEditStore()
+  const { chartType, boxPositions, titleEdits, setChartType, setLiveBoxPosition, commitLiveBoxPositions, resetBoxPositions, setTitleEdit } =
+    useChartEditStore()
 
   const handleResetChartLayout = useCallback(() => {
     resetBoxPositions()
@@ -235,7 +236,9 @@ const NewsFlowSection = ({
                 chartType={chartType}
                 onChartTypeChange={setChartType}
                 boxPositions={boxPositions}
-                onBoxPositionChange={onBoxPositionChange}
+                onBoxPositionChange={setLiveBoxPosition}
+                onBoxPositionPreview={setLiveBoxPosition}
+                onBoxPositionCommit={commitLiveBoxPositions}
                 onBoxDragEnd={onBoxPositionDragEnd}
                 onResetBoxPositions={handleResetChartLayout}
                 titleEdits={titleEdits}
