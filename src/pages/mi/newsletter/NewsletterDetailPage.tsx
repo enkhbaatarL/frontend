@@ -68,7 +68,7 @@ import newsletterService, {
   NewsletterDetailPageMode,
 } from '@/service/mi/newsletter'
 import useAuthStore from '@/store/useAuthStore'
-import useChartEditStore from '@/store/useChartEditStore'
+import useChartEditStore, { getLatestChartBoxPositions } from '@/store/useChartEditStore'
 import { convertBase64ImagesToCid, prepareNewsletterEmailHtml } from '@/utils/email'
 
 type PendingLeaveAction = { type: 'route' } | { type: 'endEdit' }
@@ -687,7 +687,7 @@ const NewsletterDetailPage = () => {
    * 드래그 중에는 스토어만 갱신하고, 마우스를 놓은 뒤 한 번만 반영해 리렌더·델타 계산과 충돌하지 않습니다.
    */
   const flushChartBoxPositionsToSnapshot = useCallback(() => {
-    const positions = useChartEditStore.getState().boxPositions
+    const positions = getLatestChartBoxPositions()
     setSnapshot((prev) => {
       if (!prev) return prev
       return updateChartBoxPositions(prev, positions)

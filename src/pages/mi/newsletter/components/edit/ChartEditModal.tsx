@@ -50,7 +50,8 @@ const ChartEditModal = ({
     setChartType,
     boxPositions,
     titleEdits,
-    onBoxPositionChange,
+    setLiveBoxPosition,
+    commitLiveBoxPositions,
     resetBoxPositions,
     setTitleEdit,
   } = useChartEditStore()
@@ -71,12 +72,35 @@ const ChartEditModal = ({
 
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false)
   const menuTriggerRef = useRef<HTMLDivElement>(null)
+  const wasOpenRef = useRef(open)
+  const persistedOnCloseRef = useRef(false)
+
+  const persistChartEdits = useCallback(() => {
+    commitLiveBoxPositions()
+    onBoxPositionDragEnd?.()
+  }, [commitLiveBoxPositions, onBoxPositionDragEnd])
 
   const handleClose = useCallback(() => {
     if (hasUserMovedRef.current && position) savedPositionRef.current = position
     hasUserMovedRef.current = false
+    persistChartEdits()
+    persistedOnCloseRef.current = true
     onClose()
-  }, [onClose, position])
+  }, [onClose, persistChartEdits, position])
+
+  useEffect(() => {
+    if (open) {
+      wasOpenRef.current = true
+      persistedOnCloseRef.current = false
+      return
+    }
+
+    if (wasOpenRef.current && !persistedOnCloseRef.current) {
+      persistChartEdits()
+      persistedOnCloseRef.current = true
+    }
+    wasOpenRef.current = false
+  }, [open, persistChartEdits])
 
   /** 닫힘: 사용자가 드래그로 움직인 적 있으면 위치 저장 */
   useEffect(() => {
@@ -331,7 +355,9 @@ const ChartEditModal = ({
             chartType={chartType}
             onChartTypeChange={setChartType}
             boxPositions={boxPositions}
-            onBoxPositionChange={onBoxPositionChange}
+            onBoxPositionChange={setLiveBoxPosition}
+            onBoxPositionPreview={setLiveBoxPosition}
+            onBoxPositionCommit={commitLiveBoxPositions}
             onBoxDragEnd={onBoxPositionDragEnd}
             onResetBoxPositions={handleResetChartLayout}
             titleEdits={titleEdits}

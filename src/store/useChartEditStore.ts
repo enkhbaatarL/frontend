@@ -20,6 +20,10 @@ interface ChartEditState {
   setShowChartToolbar: (value: boolean) => void
   setChartType: (value: ChartType) => void
   onBoxPositionChange: (timestamp: number, position: BoxPosition) => void
+  /** React 리렌더 없이 드래그 중 최신 좌표만 갱신 */
+  setLiveBoxPosition: (timestamp: number, position: BoxPosition) => void
+  /** 드래그 종료 시 최신 좌표를 구독 상태에 반영 */
+  commitLiveBoxPositions: () => void
   /** 스냅샷에서 불러온 위치를 일괄 설정 (편집 모드 진입 시) */
   setBoxPositions: (positions: BoxPositions) => void
   resetBoxPositions: () => void
@@ -31,6 +35,27 @@ interface ChartEditState {
 /** 드래그 중 mousemove 연속 호출 시 RAF로 배치하여 무한 루프 방지 */
 let boxPositionRafId: number | null = null
 let pendingBoxPosition: { timestamp: number; position: BoxPosition } | null = null
+let latestBoxPositions: BoxPositions = {}
+
+export const getLatestChartBoxPositions = () => latestBoxPositions
+
+const mergeLatestBoxPosition = (timestamp: number, position: BoxPosition) => {
+  const currentPosition = latestBoxPositions[timestamp]
+  if (currentPosition?.x === position.x && currentPosition?.y === position.y) return
+  latestBoxPositions[timestamp] = position
+}
+
+const replaceLatestBoxPositions = (positions: BoxPositions) => {
+  latestBoxPositions = { ...positions }
+}
+
+const cancelPendingBoxPositionCommit = () => {
+  if (boxPositionRafId !== null) {
+    cancelAnimationFrame(boxPositionRafId)
+    boxPositionRafId = null
+  }
+  pendingBoxPosition = null
+}
 
 const useChartEditStore = create<ChartEditState>((set) => ({
   showVolumePanel: true,
@@ -43,16 +68,16 @@ const useChartEditStore = create<ChartEditState>((set) => ({
   setShowChartToolbar: (value) => set({ showChartToolbar: value }),
   setChartType: (value) => set({ chartType: value }),
   onBoxPositionChange: (timestamp, position) => {
+    mergeLatestBoxPosition(timestamp, position)
     pendingBoxPosition = { timestamp, position }
     if (boxPositionRafId !== null) return
 
     boxPositionRafId = requestAnimationFrame(() => {
       if (pendingBoxPosition) {
-        const { timestamp: ts, position: pos } = pendingBoxPosition
         set((state) => ({
           boxPositions: {
             ...state.boxPositions,
-            [ts]: pos,
+            ...latestBoxPositions,
           },
         }))
         pendingBoxPosition = null
@@ -60,8 +85,20 @@ const useChartEditStore = create<ChartEditState>((set) => ({
       boxPositionRafId = null
     })
   },
-  setBoxPositions: (positions) => set({ boxPositions: positions }),
-  resetBoxPositions: () => set({ boxPositions: {}, titleEdits: {} }),
+  setLiveBoxPosition: (timestamp, position) => {
+    mergeLatestBoxPosition(timestamp, position)
+  },
+  commitLiveBoxPositions: () => set({ boxPositions: { ...latestBoxPositions } }),
+  setBoxPositions: (positions) => {
+    cancelPendingBoxPositionCommit()
+    replaceLatestBoxPositions(positions)
+    set({ boxPositions: positions })
+  },
+  resetBoxPositions: () => {
+    cancelPendingBoxPositionCommit()
+    replaceLatestBoxPositions({})
+    set({ boxPositions: {}, titleEdits: {} })
+  },
   setTitleEdit: (timestamp, newTitle) => {
     set((state) => ({
       titleEdits: {
@@ -70,14 +107,17 @@ const useChartEditStore = create<ChartEditState>((set) => ({
       },
     }))
   },
-  resetChartSettings: () =>
+  resetChartSettings: () => {
+    cancelPendingBoxPositionCommit()
+    replaceLatestBoxPositions({})
     set({
       showVolumePanel: true,
       showChartToolbar: false,
       chartType: ChartType.CANDLE,
       boxPositions: {},
       titleEdits: {},
-    }),
+    })
+  },
 }))
 
 export default useChartEditStore

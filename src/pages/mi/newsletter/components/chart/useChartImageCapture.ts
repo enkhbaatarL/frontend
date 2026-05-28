@@ -14,6 +14,20 @@ export const useChartImageCapture = (hasVolume: boolean) => {
   const [base64ChartImage, setBase64ChartImage] = useState<string>('')
   const chartImageResolversRef = useRef<((image: string) => void)[]>([])
 
+  const mergeCanvasOverlay = useCallback((canvas: HTMLCanvasElement, overlayCanvas?: HTMLCanvasElement | null) => {
+    if (!overlayCanvas || !overlayCanvas.width || !overlayCanvas.height) return canvas
+
+    const mergedCanvas = document.createElement('canvas')
+    const mergedCtx = mergedCanvas.getContext('2d')
+    if (!mergedCtx) return canvas
+
+    mergedCanvas.width = canvas.width
+    mergedCanvas.height = canvas.height
+    mergedCtx.drawImage(canvas, 0, 0)
+    mergedCtx.drawImage(overlayCanvas, 0, 0, canvas.width, canvas.height)
+    return mergedCanvas
+  }, [])
+
   const saveChartCanvas = useCallback((canvas: HTMLCanvasElement, setCanvasState: (canvas: HTMLCanvasElement) => void) => {
     if (!canvas.width || !canvas.height) return
 
@@ -21,7 +35,11 @@ export const useChartImageCapture = (hasVolume: boolean) => {
     setCanvasState(tempCanvas)
   }, [])
 
-  const saveMainChartCanvas = useCallback((canvas: HTMLCanvasElement) => saveChartCanvas(canvas, setMainChartImage), [saveChartCanvas])
+  const saveMainChartCanvas = useCallback(
+    (canvas: HTMLCanvasElement, overlayCanvas?: HTMLCanvasElement | null) =>
+      saveChartCanvas(mergeCanvasOverlay(canvas, overlayCanvas), setMainChartImage),
+    [mergeCanvasOverlay, saveChartCanvas],
+  )
 
   const saveVolumeChartCanvas = useCallback((canvas: HTMLCanvasElement) => saveChartCanvas(canvas, setVolumeChartImage), [saveChartCanvas])
 

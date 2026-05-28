@@ -19,7 +19,7 @@ import newsletterService, {
   type INewsletterIssueSnapshotData,
   type ISaveRevisionResponse,
 } from '@/service/mi/newsletter'
-import useChartEditStore from '@/store/useChartEditStore'
+import useChartEditStore, { getLatestChartBoxPositions } from '@/store/useChartEditStore'
 import { canonicalizeSnapshotLikeServer } from '@/utils/newsletterSnapshotCanonicalize'
 
 export interface UseSaveNewsletterRevisionParams {
@@ -78,7 +78,7 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
     }
 
     /** mouseup 전 저장 대비: 스토어의 최신 박스 좌표를 병합 */
-    const merged = updateChartBoxPositions(currentState, useChartEditStore.getState().boxPositions)
+    const merged = updateChartBoxPositions(currentState, getLatestChartBoxPositions())
     const stateToSave = sortNewsFlowNewsCardsByTimeForSave(merged)
 
     setIsSaving(true)
@@ -141,7 +141,7 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
       return { success: false }
     }
 
-    const merged = updateChartBoxPositions(currentState, useChartEditStore.getState().boxPositions)
+    const merged = updateChartBoxPositions(currentState, getLatestChartBoxPositions())
     const stateToSave = sortNewsFlowNewsCardsByTimeForSave(merged)
 
     setIsSavingDraft(true)

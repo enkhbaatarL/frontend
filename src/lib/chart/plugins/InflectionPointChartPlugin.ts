@@ -20,7 +20,7 @@ import { IRelatedNewsEventItem } from '@/service/mi/newsletter'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-interface InflectionPointPluginOptions {
+export interface InflectionPointPluginOptions {
   timestamps?: number[]
   xAxisTicks?: number
   yAxisTicks?: number
@@ -31,6 +31,8 @@ interface InflectionPointPluginOptions {
   enableBoxDragging?: boolean
   boxPositions?: Record<number, { x: number; y: number }>
   onBoxPositionChange?: (timestamp: number, position: { x: number; y: number }) => void
+  /** 박스 드래그가 시작될 때(클릭 임계값 초과) */
+  onBoxDragStart?: () => void
   /** 박스 드래그를 놓았을 때(실제 이동이 있었을 때만) — 스냅샷 반영 등 */
   onBoxDragEnd?: () => void
   onInitialPositionsSet?: (positions: Record<number, { x: number; y: number }>) => void
@@ -49,6 +51,8 @@ interface InflectionPointPluginOptions {
   marketCloseTime?: number
   /** 기본 true. false면 상단 Y 눈금 여유/최댓값 폴백 없이 차트 영역 내만 (볼륨 차트용) */
   includeTopYAxisLabel?: boolean
+  /** 기본 true. false면 뉴스 마커만 차트 canvas에 그리고 타이틀 박스는 외부 overlay가 담당 */
+  renderNewsBoxes?: boolean
 }
 
 const calcYAxisStep = (min: number, max: number, targetTicks: number = 5): number => {
@@ -68,7 +72,7 @@ const calcYAxisStep = (min: number, max: number, targetTicks: number = 5): numbe
   return 10 * magnitude
 }
 
-interface BoxInfo {
+export interface InflectionPointNewsBoxInfo {
   x: number
   y: number
   width: number
@@ -78,6 +82,7 @@ interface BoxInfo {
   yPosition: number
   timestamp?: number
   title?: string
+  trend?: string
   titleLines?: string[]
   titleArea: {
     x: number
@@ -86,6 +91,8 @@ interface BoxInfo {
     height: number
   }
 }
+
+type BoxInfo = InflectionPointNewsBoxInfo
 
 interface DrawInfoBoxParams {
   ctx: CanvasRenderingContext2D
@@ -512,7 +519,7 @@ const drawConnectionLine = (params: DrawConnectionLineParams) => {
   ctx.stroke()
 }
 
-const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
+const buildInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   const {
     ctx,
     xPosition,
@@ -526,7 +533,7 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
     enableCollisionDetection = true,
   } = params
   const dimensions = calculateBoxDimensions(ctx, title, timestamp)
-  const { width: boxWidth, height: boxHeight, time, padding, lineHeight, titleLines } = dimensions
+  const { width: boxWidth, height: boxHeight, padding, lineHeight, titleLines } = dimensions
 
   // 박스 위치 계산 - 커스텀 위치가 있으면 우선 사용
   let boxX: number
@@ -569,6 +576,7 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
     yPosition,
     timestamp,
     title,
+    trend: params.trend,
     titleLines,
     titleArea: {
       x: titleAreaX,
@@ -583,6 +591,13 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   if (enableCollisionDetection && chartArea && existingBoxes.length > 0) {
     finalBox = adjustBoxPosition(boxInfo, existingBoxes, chartArea)
   }
+
+  return finalBox
+}
+
+export const drawInflectionNewsTitleBox = (ctx: CanvasRenderingContext2D, finalBox: BoxInfo) => {
+  const dimensions = calculateBoxDimensions(ctx, finalBox.title ?? '', finalBox.timestamp)
+  const { time, padding, lineHeight, titleLines } = dimensions
 
   // 시간
   ctx.fillStyle = '#555555'
@@ -601,9 +616,9 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
 
   // 변곡점에 따른 색상 적용
   let titleColor = '#495057' // 기본 색상
-  if (params.trend === 'DOWN') {
+  if (finalBox.trend === 'DOWN') {
     titleColor = '#2F62A3'
-  } else if (params.trend === 'UP') {
+  } else if (finalBox.trend === 'UP') {
     titleColor = '#DF4B4A'
   }
 
@@ -623,20 +638,20 @@ const drawInfoBox = (params: DrawInfoBoxParams): BoxInfo | null => {
   })
 
   // 연결선 그리기
-  if (chartArea) {
-    drawConnectionLine({
-      ctx,
-      markerX: xPosition,
-      markerY: yPosition,
-      boxX: finalBox.x,
-      boxY: finalBox.y,
-      boxWidth: finalBox.width,
-      boxHeight: finalBox.height,
-      isAbove,
-    })
-  }
+  drawConnectionLine({
+    ctx,
+    markerX: finalBox.xPosition,
+    markerY: finalBox.yPosition,
+    boxX: finalBox.x,
+    boxY: finalBox.y,
+    boxWidth: finalBox.width,
+    boxHeight: finalBox.height,
+    isAbove: finalBox.isAbove,
+  })
+}
 
-  return finalBox
+export const drawInflectionNewsTitleBoxes = (ctx: CanvasRenderingContext2D, boxes: BoxInfo[]) => {
+  boxes.forEach((box) => drawInflectionNewsTitleBox(ctx, box))
 }
 
 // 동일한 타임스탬프를 가진 뉴스들을 1ms씩 차이나게 조정하는 함수 (겹쳤을때 버그 회피)
@@ -764,20 +779,7 @@ const computeRelatedNewsMarkerXPosition = (
   return baseXPosition + offsetPixels
 }
 
-const drawNewsMarkers = (
-  ctx: CanvasRenderingContext2D,
-  chartArea: { left: number; right: number; top: number; bottom: number },
-  xScale: { getPixelForValue: (value: number) => number },
-  yScale: { getPixelForValue: (value: number) => number },
-  relatedNews: IRelatedNewsEventItem[],
-  timestamps: number[],
-  chart: ChartJS,
-  boxPositions?: Record<number, { x: number; y: number }>,
-  options?: InflectionPointPluginOptions,
-) => {
-  if (!relatedNews?.length) return
-
-  // 차트 ID 생성 - canvas ID가 없으면 설정
+const getOrCreateChartId = (chart: ChartJS): string => {
   let chartId = chart.canvas?.id
   if (!chartId) {
     chartId = `chart-${Date.now()}-${Math.random().toString(36).substring(7)}`
@@ -785,14 +787,44 @@ const drawNewsMarkers = (
       chart.canvas.id = chartId
     }
   }
+  return chartId
+}
 
+interface GetInflectionNewsBoxLayoutParams {
+  ctx: CanvasRenderingContext2D
+  chartArea: { left: number; right: number; top: number; bottom: number }
+  xScale: { getPixelForValue: (value: number) => number }
+  yScale: { getPixelForValue: (value: number) => number }
+  relatedNews: IRelatedNewsEventItem[]
+  timestamps: number[]
+  chart: ChartJS
+  boxPositions?: Record<number, { x: number; y: number }>
+  options?: InflectionPointPluginOptions
+  omitBoxPositionsFromLayoutSignature?: boolean
+}
+
+export const getInflectionNewsBoxLayout = ({
+  ctx,
+  chartArea,
+  xScale,
+  yScale,
+  relatedNews,
+  timestamps,
+  chart,
+  boxPositions,
+  options,
+  omitBoxPositionsFromLayoutSignature = false,
+}: GetInflectionNewsBoxLayoutParams): BoxInfo[] => {
+  if (!relatedNews?.length) return []
+
+  const chartId = getOrCreateChartId(chart)
   const visibleNews = adjustDuplicateTimestamps(relatedNews.filter((news) => news.showInChart)).reverse()
-  if (!visibleNews.length) return
+  if (!visibleNews.length) return []
 
   // 드래그 중 boxPositions가 매 프레임 바뀌면 시그니처가 계속 달라져 캐시·히트박스가 흔들림.
   // 드래그 중에는 시그니처에서 좌표를 빼고, 놓은 뒤 한 번만 전체 시그니처로 동기화.
   const dragStateForSig = dragStateMap.get(chartId)
-  const omitBoxPosFromLayoutSig = Boolean(options?.enableBoxDragging && dragStateForSig?.isDragging)
+  const omitBoxPosFromLayoutSig = omitBoxPositionsFromLayoutSignature || Boolean(options?.enableBoxDragging && dragStateForSig?.isDragging)
   const layoutSig = buildInflectionLayoutSignature(
     chartArea,
     visibleNews,
@@ -801,46 +833,16 @@ const drawNewsMarkers = (
     options?.titleEdits,
   )
   const prevSig = layoutSignatureByChartId.get(chartId)
-  if (prevSig !== layoutSig) {
+  if (!omitBoxPosFromLayoutSig && prevSig !== layoutSig) {
     layoutSignatureByChartId.set(chartId, layoutSig)
     initialPositionsMap.delete(chartId)
     boxInfoMap.delete(chartId)
   }
 
-  ctx.save()
-
   // 박스 정보를 저장할 배열
   const existingBoxes: BoxInfo[] = []
 
-  // 마커 그리기
-  visibleNews.forEach((news) => {
-    if (!news.timestamp) return
-
-    const originalTimestamp = news.timestamp - (news.timestamp % 1)
-    const { index: effectiveIndex, isOutOfRange } = getEffectivePlotIndex(originalTimestamp, timestamps, chart)
-
-    if (effectiveIndex === -1) return
-
-    const xPosition = computeRelatedNewsMarkerXPosition(news.timestamp, originalTimestamp, effectiveIndex, isOutOfRange, timestamps, xScale)
-
-    // 범위 밖 마커는 마지막/첫 번째 유효 데이터 위치에 표시하므로 차트 영역 체크 제외
-    if (!isOutOfRange && !isXInsideChartArea(xPosition, chartArea)) return
-
-    const firstDataset = chart.data.datasets[0]
-    if (!firstDataset?.data[effectiveIndex]) return
-
-    const dataPoint = firstDataset.data[effectiveIndex] as unknown as Record<string, unknown>
-    const yValue = extractYValue(dataPoint)
-    if (yValue === undefined) return
-
-    const yPosition = yScale.getPixelForValue(yValue)
-
-    if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
-      drawMarker(ctx, xPosition, yPosition, news.trend)
-    }
-  })
-
-  // 그 다음 정보 박스들을 그리기 (충돌 방지 적용)
+  // 정보 박스들을 그리기 위한 레이아웃 계산 (충돌 방지 적용)
   // x축 위치 순서로 정렬하여 교대 배치 적용 (0: 위, 1: 아래, 2: 위, ...)
   const sortedNews = visibleNews
     .map((news) => {
@@ -915,7 +917,7 @@ const drawNewsMarkers = (
 
         const effectiveTitle = (news.timestamp && options?.titleEdits?.[news.timestamp]) || news.title
 
-        const boxInfo = drawInfoBox({
+        const boxInfo = buildInfoBox({
           ctx,
           xPosition,
           yPosition,
@@ -956,6 +958,66 @@ const drawNewsMarkers = (
     }
   }
 
+  return existingBoxes
+}
+
+const drawNewsMarkers = (
+  ctx: CanvasRenderingContext2D,
+  chartArea: { left: number; right: number; top: number; bottom: number },
+  xScale: { getPixelForValue: (value: number) => number },
+  yScale: { getPixelForValue: (value: number) => number },
+  relatedNews: IRelatedNewsEventItem[],
+  timestamps: number[],
+  chart: ChartJS,
+  boxPositions?: Record<number, { x: number; y: number }>,
+  options?: InflectionPointPluginOptions,
+) => {
+  if (!relatedNews?.length) return
+
+  const chartId = getOrCreateChartId(chart)
+
+  const visibleNews = adjustDuplicateTimestamps(relatedNews.filter((news) => news.showInChart)).reverse()
+  if (!visibleNews.length) return
+
+  ctx.save()
+
+  // 마커 그리기
+  visibleNews.forEach((news) => {
+    if (!news.timestamp) return
+
+    const originalTimestamp = news.timestamp - (news.timestamp % 1)
+    const { index: effectiveIndex, isOutOfRange } = getEffectivePlotIndex(originalTimestamp, timestamps, chart)
+
+    if (effectiveIndex === -1) return
+
+    const xPosition = computeRelatedNewsMarkerXPosition(news.timestamp, originalTimestamp, effectiveIndex, isOutOfRange, timestamps, xScale)
+
+    // 범위 밖 마커는 마지막/첫 번째 유효 데이터 위치에 표시하므로 차트 영역 체크 제외
+    if (!isOutOfRange && !isXInsideChartArea(xPosition, chartArea)) return
+
+    const firstDataset = chart.data.datasets[0]
+    if (!firstDataset?.data[effectiveIndex]) return
+
+    const dataPoint = firstDataset.data[effectiveIndex] as unknown as Record<string, unknown>
+    const yValue = extractYValue(dataPoint)
+    if (yValue === undefined) return
+
+    const yPosition = yScale.getPixelForValue(yValue)
+
+    if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
+      drawMarker(ctx, xPosition, yPosition, news.trend)
+    }
+  })
+
+  if (options?.renderNewsBoxes === false) {
+    boxInfoMap.set(chartId, [])
+    ctx.restore()
+    return
+  }
+
+  const boxes = getInflectionNewsBoxLayout({ ctx, chartArea, xScale, yScale, relatedNews, timestamps, chart, boxPositions, options })
+  drawInflectionNewsTitleBoxes(ctx, boxes)
+
   ctx.restore()
 }
 
@@ -967,14 +1029,7 @@ const InflectionPointChartPlugin: Plugin = {
 
     const { event } = args
 
-    // 차트 ID 생성 - canvas ID가 없으면 설정
-    let chartId = chart.canvas?.id
-    if (!chartId) {
-      chartId = `chart-${Date.now()}-${Math.random().toString(36).substring(7)}`
-      if (chart.canvas) {
-        chart.canvas.id = chartId
-      }
-    }
+    const chartId = getOrCreateChartId(chart)
 
     // 드래그 상태 초기화 (필요시)
     if (!dragStateMap.has(chartId)) {
@@ -1051,6 +1106,7 @@ const InflectionPointChartPlugin: Plugin = {
         const dy = y - dragState.mouseDownPosition.y
         if (Math.hypot(dx, dy) > CLICK_THRESHOLD) {
           dragState.isDragging = true
+          pluginOptions.onBoxDragStart?.()
           if (chart.canvas) {
             chart.canvas.style.cursor = 'grabbing'
           }
