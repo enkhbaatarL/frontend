@@ -1,26 +1,44 @@
-import type { FundamentalModelGlobalVolumeRow, FundamentalModelGlobalVolumesData } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type { FundamentalModelVolumesRegion, FundamentalModelVolumesType } from '@/service/mi/fundamentalModel/case'
 
-/** Volumes Type 필터 옵션 */
+/** Volumes Type 필터 옵션 - value: UI id / api: getVolumes types enum */
 export const FM_VOLUME_TYPE_OPTIONS = [
-  { value: 'demand', label: 'Demand' },
-  { value: 'production', label: 'Production' },
-  { value: 'lng-imports', label: 'LNG Imports' },
-  { value: 'lng-exports', label: 'LNG Exports' },
-  { value: 'pipeline-imports', label: 'Pipeline Imports' },
-  { value: 'pipeline-exports', label: 'Pipeline Exports' },
-] as const
+  { value: 'demand', label: 'Demand', api: 'DEMAND' },
+  { value: 'production', label: 'Production', api: 'PRODUCTION' },
+  { value: 'lng-imports', label: 'LNG Imports', api: 'LNG_IMPORTS' },
+  { value: 'lng-exports', label: 'LNG Exports', api: 'LNG_EXPORTS' },
+  { value: 'pipeline-imports', label: 'Pipeline Imports', api: 'PIPELINE_IMPORTS' },
+  { value: 'pipeline-exports', label: 'Pipeline Exports', api: 'PIPELINE_EXPORTS' },
+] as const satisfies ReadonlyArray<{ value: string; label: string; api: FundamentalModelVolumesType }>
 
-/** Volumes Regions 필터 옵션 */
+/** Volumes Regions 필터 옵션 - value: UI id / api: getVolumes regions enum */
 export const FM_VOLUME_REGION_OPTIONS = [
-  { value: 'asia', label: 'Asia' },
-  { value: 'europe', label: 'Europe' },
-  { value: 'north-america', label: 'North America' },
-  { value: 'middle-east', label: 'Middle East' },
-  { value: 'australia', label: 'Australia' },
-  { value: 'russia', label: 'Russia' },
-  { value: 'africa', label: 'Africa' },
-  { value: 'south-america', label: 'South America' },
-] as const
+  { value: 'asia', label: 'Asia', api: 'ASIA' },
+  { value: 'europe', label: 'Europe', api: 'EUROPE' },
+  { value: 'north-america', label: 'North America', api: 'NORTH_AMERICA' },
+  { value: 'middle-east', label: 'Middle East', api: 'MIDDLE_EAST' },
+  { value: 'australia', label: 'Australia', api: 'AUSTRALIA' },
+  { value: 'russia', label: 'Russia', api: 'RUSSIA' },
+  { value: 'africa', label: 'Africa', api: 'AFRICA' },
+  { value: 'south-america', label: 'South America', api: 'SOUTH_AMERICA' },
+] as const satisfies ReadonlyArray<{ value: string; label: string; api: FundamentalModelVolumesRegion }>
+
+/** UI Type id -> API types enum (대문자) 매핑 */
+export const FM_VOLUME_TYPE_ID_TO_API: Record<string, FundamentalModelVolumesType> = Object.fromEntries(
+  FM_VOLUME_TYPE_OPTIONS.map((option) => [option.value, option.api]),
+)
+
+/** UI Region id -> API regions enum (대문자) 매핑 */
+export const FM_VOLUME_REGION_ID_TO_API: Record<string, FundamentalModelVolumesRegion> = Object.fromEntries(
+  FM_VOLUME_REGION_OPTIONS.map((option) => [option.value, option.api]),
+)
+
+/** 선택된 Type id 배열 -> API types enum 배열(매핑 미존재 항목 제외) */
+export const toApiVolumeTypes = (uiTypes: string[]): FundamentalModelVolumesType[] =>
+  uiTypes.map((id) => FM_VOLUME_TYPE_ID_TO_API[id]).filter((value): value is FundamentalModelVolumesType => Boolean(value))
+
+/** 선택된 Region id 배열 -> API regions enum 배열(매핑 미존재 항목 제외) */
+export const toApiVolumeRegions = (uiRegions: string[]): FundamentalModelVolumesRegion[] =>
+  uiRegions.map((id) => FM_VOLUME_REGION_ID_TO_API[id]).filter((value): value is FundamentalModelVolumesRegion => Boolean(value))
 
 export const FM_VOLUME_FILTERS_STORAGE_KEY = 'fundamentalModelVolumeFilters'
 
@@ -47,40 +65,6 @@ export const isAllVolumeFiltersSelected = (filters: FundamentalModelVolumeFilter
   filters.regions.length === FM_VOLUME_DEFAULT_REGION_IDS.length &&
   FM_VOLUME_DEFAULT_TYPE_IDS.every((id) => filters.types.includes(id)) &&
   FM_VOLUME_DEFAULT_REGION_IDS.every((id) => filters.regions.includes(id))
-
-/** 지역 필터 - 표 행 라벨 매칭(목 데이터 기준) */
-const REGION_ROW_LABELS: Record<string, string[]> = {
-  asia: ['Asia', 'China', 'Japan', 'India'],
-  europe: ['Europe', 'Germany', 'Italy', 'United Kingdom', 'Other Middle East'],
-  'north-america': ['North America', 'America N'],
-  'middle-east': ['Middle East'],
-  australia: ['Australia'],
-  russia: ['Russia'],
-  africa: ['Africa'],
-  'south-america': ['South America', 'America S'],
-}
-
-const rowMatchesRegion = (row: FundamentalModelGlobalVolumeRow, selectedRegionIds: string[]): boolean => {
-  if (row.kind === 'total') return true
-  return selectedRegionIds.some((regionId) => {
-    const labels = REGION_ROW_LABELS[regionId]
-    return labels?.includes(row.label)
-  })
-}
-
-/** Global/LNG 본문 표에 Type·Regions 필터 적용(선택된 항목만 표시) */
-export const applyVolumeFilters = (
-  data: FundamentalModelGlobalVolumesData,
-  filters: FundamentalModelVolumeFilters,
-): FundamentalModelGlobalVolumesData => ({
-  ...data,
-  sections: data.sections
-    .filter((section) => filters.types.includes(section.id))
-    .map((section) => ({
-      ...section,
-      rows: section.rows.filter((row) => rowMatchesRegion(row, filters.regions)),
-    })),
-})
 
 export const readSavedVolumeFilters = (): FundamentalModelVolumeFilters | null => {
   try {

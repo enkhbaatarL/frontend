@@ -10,7 +10,7 @@ import FundamentalModelRunPlaceholder from '@/pages/mi/fundamentalModel/componen
 import FundamentalModelDetailHeader from '@/pages/mi/fundamentalModel/components/header/FundamentalModelDetailHeader'
 import PriceTabPanel from '@/pages/mi/fundamentalModel/components/price/PriceTabPanel'
 import VolumesTabPanel from '@/pages/mi/fundamentalModel/components/volumes/VolumesTabPanel'
-import { FUNDAMENTAL_MODEL_MONTH_LABELS, fetchFundamentalModelDetail } from '@/pages/mi/fundamentalModel/fundamentalModelMockApi'
+import { fetchFundamentalModelDetail } from '@/pages/mi/fundamentalModel/fundamentalModelMockApi'
 import { FUNDAMENTAL_MODEL_VIEW_TABS, type FundamentalModelViewTabKey } from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
 import {
   runStatusToPlaceholderMode,
@@ -20,8 +20,8 @@ import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
 
-// #TODO: volume API 연동되면 지우기
-/** COMPLETED 케이스 Volumes/Price mock 보강용 고정 id (result API 대체) */
+// #TODO: Trade/Price API 연동되면 지우기
+/** COMPLETED 케이스 Trade/Price 표 mock 보강용 고정 id (result API 대체) */
 const TAB_PANEL_MOCK_RUN_ID = '2'
 
 /** MI 수급 모델 — URL 고정 `/mi/fundamental-model`, 선택은 클라이언트 state */
@@ -76,8 +76,6 @@ const FundamentalModelPage = () => {
     enabled: caseDetail?.status === 'COMPLETED',
     refetchOnWindowFocus: false,
   })
-
-  const monthLabels = tabPanelMock?.monthLabels ?? FUNDAMENTAL_MODEL_MONTH_LABELS
 
   const tabBarItems = useMemo(
     () =>
@@ -213,11 +211,7 @@ const FundamentalModelPage = () => {
             }}
           >
             <VolumesTabPanel
-              monthLabels={monthLabels}
-              summaryRows={tabPanelMock?.summaryRows ?? []}
-              detailRows={tabPanelMock?.detailRows ?? []}
-              globalVolumes={tabPanelMock?.globalVolumes ?? { monthLabels: [], sections: [] }}
-              lngVolumes={tabPanelMock?.lngVolumes ?? { monthLabels: [], sections: [] }}
+              caseId={Number.isFinite(parsedCaseId) && parsedCaseId > 0 ? parsedCaseId : null}
               tradeVolumes={
                 tabPanelMock?.tradeVolumes ?? {
                   productOptions: [],

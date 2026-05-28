@@ -1,10 +1,6 @@
 import type {
   FundamentalModelAnnualPriceRow,
   FundamentalModelDetail,
-  FundamentalModelGlobalVolumeRow,
-  FundamentalModelGlobalVolumesData,
-  FundamentalModelGlobalVolumeSection,
-  FundamentalModelMetricRow,
   FundamentalModelMonthlyPriceRow,
   FundamentalModelRunListItem,
   FundamentalModelTradeFromColumn,
@@ -18,105 +14,6 @@ const delay = (ms: number) =>
   new Promise<void>((resolve) => {
     setTimeout(resolve, ms)
   })
-
-const MONTH_LABELS_FULL = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'] as const
-
-/** Global 본문 표 월 헤더(26-01 ~ 27-03) */
-const GLOBAL_MONTH_LABELS = [
-  '26-01',
-  '26-02',
-  '26-03',
-  '26-04',
-  '26-05',
-  '26-06',
-  '26-07',
-  '26-08',
-  '26-09',
-  '26-10',
-  '26-11',
-  '26-12',
-  '27-01',
-  '27-02',
-  '27-03',
-] as const
-
-/** 표 - 스켈레톤에서 공통으로 쓰는 월 헤더 라벨 */
-export const FUNDAMENTAL_MODEL_MONTH_LABELS: string[] = [...MONTH_LABELS_FULL]
-
-const formatMockValue = (base: number, sectionIdx: number, rowIdx: number, colIdx: number) => {
-  const raw = base + sectionIdx * 3.1 + rowIdx * 0.7 + colIdx * 0.05
-  return raw.toFixed(1)
-}
-
-/** Global 섹션별 국가 행 목록 생성 */
-const buildGlobalSectionRows = (sectionIdx: number, thirdCountryLabel: string): FundamentalModelGlobalVolumeRow[] => {
-  const monthCount = GLOBAL_MONTH_LABELS.length
-  const labels: { label: string; kind: FundamentalModelGlobalVolumeRow['kind'] }[] = [
-    { label: 'Asia', kind: 'region' },
-    { label: 'China', kind: 'country' },
-    { label: 'Japan', kind: 'country' },
-    { label: 'India', kind: 'country' },
-    { label: 'Europe', kind: 'region' },
-    { label: 'Germany', kind: 'country' },
-    { label: thirdCountryLabel, kind: 'country' },
-    { label: 'Italy', kind: 'country' },
-    { label: 'Total', kind: 'total' },
-  ]
-
-  return labels.map((item, rowIdx) => ({
-    id: `global-s${sectionIdx}-r${rowIdx}`,
-    label: item.label,
-    kind: item.kind,
-    values: Array.from({ length: monthCount }, (_, colIdx) => {
-      if (item.kind === 'total') {
-        if (sectionIdx === 0) return '344.8'
-        if (sectionIdx === 1) return '107.8'
-        if (sectionIdx === 4) return '109.3'
-        return formatMockValue(80, sectionIdx, rowIdx, colIdx)
-      }
-      if (item.kind === 'region') return colIdx === 1 ? '24.1' : '0.3'
-      if (item.label === 'China' && colIdx === 1) return '15.1'
-      return formatMockValue(0.3, sectionIdx, rowIdx, colIdx)
-    }),
-  }))
-}
-
-const GLOBAL_SECTION_DEFS: { id: string; label: string; thirdCountryLabel: string }[] = [
-  { id: 'demand', label: 'Demand', thirdCountryLabel: 'Other Middle East' },
-  { id: 'production', label: 'Production', thirdCountryLabel: 'United Kingdom' },
-  { id: 'lng-imports', label: 'LNG Imports', thirdCountryLabel: 'Other Middle East' },
-  { id: 'lng-exports', label: 'LNG Exports', thirdCountryLabel: 'United Kingdom' },
-  { id: 'pipeline-exports', label: 'Pipeline Exports', thirdCountryLabel: 'United Kingdom' },
-]
-
-const buildGlobalVolumes = (): FundamentalModelGlobalVolumesData => {
-  const sections: FundamentalModelGlobalVolumeSection[] = GLOBAL_SECTION_DEFS.map((def, sectionIdx) => ({
-    id: def.id,
-    label: def.label,
-    rows: buildGlobalSectionRows(sectionIdx, def.thirdCountryLabel),
-  }))
-  return {
-    monthLabels: [...GLOBAL_MONTH_LABELS],
-    sections,
-  }
-}
-
-const LNG_SECTION_DEFS: { id: string; label: string; thirdCountryLabel: string }[] = [
-  { id: 'lng-imports', label: 'LNG Imports', thirdCountryLabel: 'Other Middle East' },
-  { id: 'lng-exports', label: 'LNG Exports', thirdCountryLabel: 'United Kingdom' },
-]
-
-const buildLngVolumes = (): FundamentalModelGlobalVolumesData => {
-  const sections: FundamentalModelGlobalVolumeSection[] = LNG_SECTION_DEFS.map((def, sectionIdx) => ({
-    id: def.id,
-    label: def.label,
-    rows: buildGlobalSectionRows(sectionIdx, def.thirdCountryLabel),
-  }))
-  return {
-    monthLabels: [...GLOBAL_MONTH_LABELS],
-    sections,
-  }
-}
 
 const TRADE_PRODUCT_OPTIONS = [
   { id: 'lng', label: 'LNG' },
@@ -213,38 +110,6 @@ const buildTradeVolumes = (): FundamentalModelTradeVolumesData => {
     toRows: toCountryRows,
   }
 }
-
-const buildSummaryYearValues = () => MONTH_LABELS_FULL.map((_, i) => (i < 12 ? '2026' : '2027'))
-
-const BASE_SUMMARY_ROWS: FundamentalModelMetricRow[] = [
-  {
-    id: 'year',
-    label: '2023',
-    values: buildSummaryYearValues(),
-  },
-  {
-    id: 'unite',
-    label: 'Unite',
-    values: MONTH_LABELS_FULL.map((_, i) => String(i + 1)),
-  },
-  {
-    id: 'mtpa',
-    label: 'mtpa',
-    values: MONTH_LABELS_FULL.map((_, i) => (i < 12 ? `2026-${i + 1}` : `2027-${i - 11}`)),
-  },
-]
-
-/** 상세 표용 확장 행 생성 */
-const buildExtendedRows = (): FundamentalModelMetricRow[] => {
-  const extra: FundamentalModelMetricRow[] = Array.from({ length: 12 }, (_, idx) => ({
-    id: `cat-${idx + 1}`,
-    label: `Category ${idx + 1}`,
-    values: MONTH_LABELS_FULL.map((__, col) => `${(idx + 1) * 100 + col}`),
-  }))
-  return [...BASE_SUMMARY_ROWS, ...extra]
-}
-
-const SUMMARY_ONLY_ROWS: FundamentalModelMetricRow[] = BASE_SUMMARY_ROWS
 
 const PRICE_REGIONS = ['East Asia Spot', 'TTF', 'HH'] as const
 const PRICE_YEARS = ['2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'] as const
@@ -370,18 +235,13 @@ const MOCK_RUNS: FundamentalModelRunListItem[] = [
   },
 ]
 
-/** 목 실행 -> 상세 DTO */
+/** 목 실행 -> 상세 DTO (Global/LNG Volumes는 getVolumes API 직결, mock에서 제외) */
 const buildDetail = (run: FundamentalModelRunListItem): FundamentalModelDetail => ({
   ...run,
   subtitle: run.id === '2' ? MOCK_MEMO_LONG : '테스트 실험 -> 미국-이란 종전 (4월 종전 케이스)',
   scenarioYearLabel: '2023',
-  monthLabels: FUNDAMENTAL_MODEL_MONTH_LABELS,
-  summaryRows: SUMMARY_ONLY_ROWS,
-  detailRows: buildExtendedRows(),
   annualPriceRows: ANNUAL_PRICE_ROWS,
   monthlyPriceRows: MONTHLY_PRICE_ROWS,
-  globalVolumes: buildGlobalVolumes(),
-  lngVolumes: buildLngVolumes(),
   tradeVolumes: buildTradeVolumes(),
   attachmentNames:
     run.id === '2'
@@ -404,7 +264,7 @@ export const fetchFundamentalModelRuns = async (): Promise<FundamentalModelRunLi
   return MOCK_RUNS
 }
 
-/** 상세 API를 흉내 낸 비동기 호출 */
+/** 상세 API를 흉내 낸 비동기 호출 (Trade/Price 표용 mock) */
 export const fetchFundamentalModelDetail = async (runId: string): Promise<FundamentalModelDetail | null> => {
   await delay(420)
   const run = MOCK_RUNS.find((r) => r.id === runId)
