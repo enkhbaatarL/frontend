@@ -281,12 +281,20 @@ const FundamentalModelPage = () => {
   )
 
   return (
-    <Stack maxWidth="1380px" margin="auto" pt="20px" px={{ xs: 2, md: 3 }} pb="40px" gap={2} sx={{ userSelect: 'none' }}>
-      <Typography variant="titleLarge" color="gray.90" sx={{ fontSize: { xs: '28px', md: '38px' } }}>
-        MI Fundamental Model
-      </Typography>
+    <Stack maxWidth="1380px" margin="auto" pt="20px" pb="40px" sx={{ userSelect: 'none' }}>
+      <Box height="96px" padding="12px 24px" boxSizing="border-box" flexShrink={0}>
+        <Typography variant="titleLarge" color="gray.90" fontSize="38px">
+          MI Fundamental Model
+        </Typography>
+      </Box>
 
-      <Stack direction={{ xs: 'column', lg: 'row' }} alignItems="stretch" gap="30px" sx={{ userSelect: 'text' }}>
+      <Stack
+        direction={{ xs: 'column', lg: 'row' }}
+        alignItems="stretch"
+        gap="30px"
+        px={{ xs: 2, md: 3 }}
+        sx={{ width: '100%', boxSizing: 'border-box', userSelect: 'text' }}
+      >
         <FundamentalModelRunList selectedId={activeCaseId} onSelect={handleSelectCase} />
         {rightBody}
       </Stack>
