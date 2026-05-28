@@ -1,5 +1,6 @@
 import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import axios from 'axios'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
@@ -54,6 +55,17 @@ const formatRunCountLabel = (count: number) => {
   return String(count)
 }
 
+const isUploadValidationError = (error: unknown) => {
+  if (!axios.isAxiosError(error)) return false
+
+  const status = error.response?.status
+  const responseData = error.response?.data as { code?: string; message?: string } | undefined
+  const code = responseData?.code?.toUpperCase() ?? ''
+  const message = responseData?.message ?? ''
+
+  return status === 400 || status === 422 || code.includes('VALID') || message.includes('유효성')
+}
+
 interface TruncatedLabelProps {
   text: string
   variant?: React.ComponentProps<typeof Typography>['variant']
@@ -90,6 +102,7 @@ const TruncatedLabel = ({ text, variant = 'body1SB16', color = 'gray.90', sx }: 
 /** 좌측 시뮬레이션 목록(검색 기준 선택 - 검색 - 카드 리스트) */
 const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunListProps) => {
   const uploadPopupRef = useRef<MIMorphingPopupRef>(null)
+  const queryClient = useQueryClient()
   const { showSnackbar } = useSnackbar()
   const [searchField, setSearchField] = useState<RunListSearchField>('managerName')
   const [keyword, setKeyword] = useState('')
@@ -150,7 +163,29 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
     setUploadFiles((prev) => prev.filter((file) => !isSameFundamentalUploadFile(file, targetFile)))
   }, [])
 
+  const { mutate: createCase, isPending: isCreateCasePending } = useMutation({
+    mutationFn: fundamentalModelCaseService.createCase,
+    onSuccess: (createdCase) => {
+      setKeyword('')
+      setCommittedKeyword('')
+      void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'cases'] })
+      onSelect(String(createdCase.caseId))
+      showSnackbar('파일 업로드가 완료되었습니다.', { variant: 'success' })
+      uploadPopupRef.current?.close()
+    },
+    onError: (error) => {
+      if (isUploadValidationError(error)) {
+        showSnackbar('유효성 검사에 실패했습니다.', { variant: 'error', body: '파일 내용을 확인해 주세요.' })
+        return
+      }
+
+      showSnackbar('파일 업로드가 실패했습니다.', { variant: 'error' })
+    },
+  })
+
   const handleUploadSubmit = useCallback(() => {
+    if (isCreateCasePending) return
+
     if (!uploadTitle.trim()) {
       setShowUploadTitleValidationError(true)
       return
@@ -162,9 +197,12 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
     }
 
     setShowUploadTitleValidationError(false)
-    showSnackbar('파일 업로드가 완료되었습니다.', { variant: 'success' })
-    uploadPopupRef.current?.close()
-  }, [showSnackbar, uploadFiles, uploadTitle])
+    createCase({
+      title: uploadTitle,
+      description: uploadDescription,
+      files: uploadFiles,
+    })
+  }, [createCase, isCreateCasePending, showSnackbar, uploadDescription, uploadFiles, uploadTitle])
 
   const listRequest = useMemo(() => {
     const trimmedKeyword = committedKeyword.trim()
@@ -185,7 +223,7 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
     },
   })
 
-  const cases = caseList?.cases ?? []
+  const cases = useMemo(() => caseList?.cases ?? [], [caseList?.cases])
   const totalCount = caseList?.totalCount ?? cases.length
 
   useEffect(() => {
@@ -198,6 +236,7 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
       titleValue={uploadTitle}
       descriptionValue={uploadDescription}
       files={uploadFiles}
+      isUploading={isCreateCasePending}
       showTitleValidationError={showUploadTitleValidationError}
       onTitleChange={handleUploadTitleChange}
       onDescriptionChange={setUploadDescription}
@@ -259,6 +298,7 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
             minWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
             maxWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
             borderRadius: '12px',
+            hideCloseButton: isCreateCasePending,
             onClose: resetUploadPopup,
           }}
         >

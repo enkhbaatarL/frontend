@@ -181,6 +181,9 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
   const code = error.response?.data?.code
   const statusText = error.response?.statusText ?? t('알 수 없는 오류')
   const originalConfig = error.config
+  const suppressGlobalErrorHandler = Boolean(
+    (originalConfig as (InternalAxiosRequestConfig & { suppressGlobalErrorHandler?: boolean }) | undefined)?.suppressGlobalErrorHandler,
+  )
 
   if (status && status >= 400) {
     if (code === 'AUTH-003' && originalConfig) {
@@ -209,7 +212,9 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
         navigateFn('/error/ip-verification', { state: { code, status }, replace: true })
         break
       default:
-        errorHandlerOptions?.showSnackbar?.(`Error: ${statusText}`, { variant: 'error' })
+        if (!suppressGlobalErrorHandler) {
+          errorHandlerOptions?.showSnackbar?.(`Error: ${statusText}`, { variant: 'error' })
+        }
         console.error(error)
         break
     }
