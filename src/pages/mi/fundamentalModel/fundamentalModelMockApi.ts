@@ -1,9 +1,5 @@
 import type {
   FundamentalModelDetail,
-  FundamentalModelGlobalVolumeRow,
-  FundamentalModelGlobalVolumesData,
-  FundamentalModelGlobalVolumeSection,
-  FundamentalModelMetricRow,
   FundamentalModelRunListItem,
   FundamentalModelTradeFromColumn,
   FundamentalModelTradeRowKind,
@@ -16,105 +12,6 @@ const delay = (ms: number) =>
   new Promise<void>((resolve) => {
     setTimeout(resolve, ms)
   })
-
-const MONTH_LABELS_FULL = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'] as const
-
-/** Global 본문 표 월 헤더(26-01 ~ 27-03) */
-const GLOBAL_MONTH_LABELS = [
-  '26-01',
-  '26-02',
-  '26-03',
-  '26-04',
-  '26-05',
-  '26-06',
-  '26-07',
-  '26-08',
-  '26-09',
-  '26-10',
-  '26-11',
-  '26-12',
-  '27-01',
-  '27-02',
-  '27-03',
-] as const
-
-/** 표 - 스켈레톤에서 공통으로 쓰는 월 헤더 라벨 */
-export const FUNDAMENTAL_MODEL_MONTH_LABELS: string[] = [...MONTH_LABELS_FULL]
-
-const formatMockValue = (base: number, sectionIdx: number, rowIdx: number, colIdx: number) => {
-  const raw = base + sectionIdx * 3.1 + rowIdx * 0.7 + colIdx * 0.05
-  return raw.toFixed(1)
-}
-
-/** Global 섹션별 국가 행 목록 생성 */
-const buildGlobalSectionRows = (sectionIdx: number, thirdCountryLabel: string): FundamentalModelGlobalVolumeRow[] => {
-  const monthCount = GLOBAL_MONTH_LABELS.length
-  const labels: { label: string; kind: FundamentalModelGlobalVolumeRow['kind'] }[] = [
-    { label: 'Asia', kind: 'region' },
-    { label: 'China', kind: 'country' },
-    { label: 'Japan', kind: 'country' },
-    { label: 'India', kind: 'country' },
-    { label: 'Europe', kind: 'region' },
-    { label: 'Germany', kind: 'country' },
-    { label: thirdCountryLabel, kind: 'country' },
-    { label: 'Italy', kind: 'country' },
-    { label: 'Total', kind: 'total' },
-  ]
-
-  return labels.map((item, rowIdx) => ({
-    id: `global-s${sectionIdx}-r${rowIdx}`,
-    label: item.label,
-    kind: item.kind,
-    values: Array.from({ length: monthCount }, (_, colIdx) => {
-      if (item.kind === 'total') {
-        if (sectionIdx === 0) return '344.8'
-        if (sectionIdx === 1) return '107.8'
-        if (sectionIdx === 4) return '109.3'
-        return formatMockValue(80, sectionIdx, rowIdx, colIdx)
-      }
-      if (item.kind === 'region') return colIdx === 1 ? '24.1' : '0.3'
-      if (item.label === 'China' && colIdx === 1) return '15.1'
-      return formatMockValue(0.3, sectionIdx, rowIdx, colIdx)
-    }),
-  }))
-}
-
-const GLOBAL_SECTION_DEFS: { id: string; label: string; thirdCountryLabel: string }[] = [
-  { id: 'demand', label: 'Demand', thirdCountryLabel: 'Other Middle East' },
-  { id: 'production', label: 'Production', thirdCountryLabel: 'United Kingdom' },
-  { id: 'lng-imports', label: 'LNG Imports', thirdCountryLabel: 'Other Middle East' },
-  { id: 'lng-exports', label: 'LNG Exports', thirdCountryLabel: 'United Kingdom' },
-  { id: 'pipeline-exports', label: 'Pipeline Exports', thirdCountryLabel: 'United Kingdom' },
-]
-
-const buildGlobalVolumes = (): FundamentalModelGlobalVolumesData => {
-  const sections: FundamentalModelGlobalVolumeSection[] = GLOBAL_SECTION_DEFS.map((def, sectionIdx) => ({
-    id: def.id,
-    label: def.label,
-    rows: buildGlobalSectionRows(sectionIdx, def.thirdCountryLabel),
-  }))
-  return {
-    monthLabels: [...GLOBAL_MONTH_LABELS],
-    sections,
-  }
-}
-
-const LNG_SECTION_DEFS: { id: string; label: string; thirdCountryLabel: string }[] = [
-  { id: 'lng-imports', label: 'LNG Imports', thirdCountryLabel: 'Other Middle East' },
-  { id: 'lng-exports', label: 'LNG Exports', thirdCountryLabel: 'United Kingdom' },
-]
-
-const buildLngVolumes = (): FundamentalModelGlobalVolumesData => {
-  const sections: FundamentalModelGlobalVolumeSection[] = LNG_SECTION_DEFS.map((def, sectionIdx) => ({
-    id: def.id,
-    label: def.label,
-    rows: buildGlobalSectionRows(sectionIdx, def.thirdCountryLabel),
-  }))
-  return {
-    monthLabels: [...GLOBAL_MONTH_LABELS],
-    sections,
-  }
-}
 
 const TRADE_PRODUCT_OPTIONS = [
   { id: 'lng', label: 'LNG' },
@@ -212,38 +109,6 @@ const buildTradeVolumes = (): FundamentalModelTradeVolumesData => {
   }
 }
 
-const buildSummaryYearValues = () => MONTH_LABELS_FULL.map((_, i) => (i < 12 ? '2026' : '2027'))
-
-const BASE_SUMMARY_ROWS: FundamentalModelMetricRow[] = [
-  {
-    id: 'year',
-    label: '2023',
-    values: buildSummaryYearValues(),
-  },
-  {
-    id: 'unite',
-    label: 'Unite',
-    values: MONTH_LABELS_FULL.map((_, i) => String(i + 1)),
-  },
-  {
-    id: 'mtpa',
-    label: 'mtpa',
-    values: MONTH_LABELS_FULL.map((_, i) => (i < 12 ? `2026-${i + 1}` : `2027-${i - 11}`)),
-  },
-]
-
-/** 상세 표용 확장 행 생성 */
-const buildExtendedRows = (): FundamentalModelMetricRow[] => {
-  const extra: FundamentalModelMetricRow[] = Array.from({ length: 12 }, (_, idx) => ({
-    id: `cat-${idx + 1}`,
-    label: `Category ${idx + 1}`,
-    values: MONTH_LABELS_FULL.map((__, col) => `${(idx + 1) * 100 + col}`),
-  }))
-  return [...BASE_SUMMARY_ROWS, ...extra]
-}
-
-const SUMMARY_ONLY_ROWS: FundamentalModelMetricRow[] = BASE_SUMMARY_ROWS
-
 /** 메모 2줄 초과·더보기 팝업 검증용 긴 설명(최대 500자) */
 const MOCK_MEMO_LONG =
   '500자 이서샤오, 아네 스맨저호로 말엔패이가, 틶사우아의 아안엔에 처사를 탄개엉. 치으쳬깄까지 게라사르산이 섬힝기넌은 몌아댓랄 한차시알힝단 일짰도죠웅에서 담러타맘다 오라고 가몬모곤 마튼이나. 앝하딘자갬다 아아라 가라악다 칸속거다 렝겜어 렸앙에 뇨만악이. 애기다 갸치쵼사 둥딩트기체와 라마속은, 명갈인겐 소루안다 뜌크로 고자 우소몊승다. 트창일 뇨희로골음 탕바뇽통다 디아도 놈고는 후나자. 서간오넙닌게 살읙아도 긋도에오조에 에록친은 닙바젠앤히지 타히눌 으내 투히슬에 실겡룹한에 쾔만찰보가. 안심셀라뵤 차홀녀 컬더냐, 고후어서 시앤올이는 잔디라 오마눌너는 이이걸을. 샚탈게를 무리궉즈미각 칸안리내다 가학린앙곤오다 귾오아퇬의 벤싀깉울 걸즈개사는 채라는 셔힝은 키셔은을. 헉강과 이서샤오, 아네 스맨저호로 말엔패이가, 틶사우아의 아안엔에 처사를 탄개엉. 치으쳬깄까지 게라사르산이 섬힝기넌은 몌아댓랄 한차시알힝단 일짰도죠웅에서 담러타맘다 오라고 가몬모곤 마튼이나. 앝하딘자갬다 아아라 가라악다 칸속거다'
@@ -310,29 +175,25 @@ const MOCK_RUNS: FundamentalModelRunListItem[] = [
   },
 ]
 
-/** 목 실행 -> 상세 DTO */
+const DEFAULT_ATTACHMENT_NAMES = [
+  '복호화_복호화_(SC1) Demand Model_input .xlsm',
+  '복호화_복호화_(SC1) Supply Model_input .xlsm',
+  '복호화_복호화_(SC1) Trade Model_input .xlsm',
+]
+
+const LONG_ATTACHMENT_NAMES = [
+  '복호화_복호화_(SC1) Demand Model_input .xlsm',
+  '복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input .xlsm',
+  '복호화_복호화_(SC1) Trade Model_input .xlsm',
+]
+
+/** 목 실행 -> 상세 DTO (Price/Global/LNG Volumes는 API 직결, Trade mock만 유지) */
 const buildDetail = (run: FundamentalModelRunListItem): FundamentalModelDetail => ({
   ...run,
   subtitle: run.id === '2' ? MOCK_MEMO_LONG : '테스트 실험 -> 미국-이란 종전 (4월 종전 케이스)',
   scenarioYearLabel: '2023',
-  monthLabels: FUNDAMENTAL_MODEL_MONTH_LABELS,
-  summaryRows: SUMMARY_ONLY_ROWS,
-  detailRows: buildExtendedRows(),
-  globalVolumes: buildGlobalVolumes(),
-  lngVolumes: buildLngVolumes(),
   tradeVolumes: buildTradeVolumes(),
-  attachmentNames:
-    run.id === '2'
-      ? [
-        '복호화_복호화_(SC1) Demand Model_input .xlsm',
-        '복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input복호화_복호화_(SC1) Supply Model_input .xlsm',
-        '복호화_복호화_(SC1) Trade Model_input .xlsm',
-      ]
-      : [
-        '복호화_복호화_(SC1) Demand Model_input .xlsm',
-        '복호화_복호화_(SC1) Supply Model_input .xlsm',
-        '복호화_복호화_(SC1) Trade Model_input .xlsm',
-      ],
+  attachmentNames: run.id === '2' ? LONG_ATTACHMENT_NAMES : DEFAULT_ATTACHMENT_NAMES,
   durationLabel: '09:15:45 · 13초 소요',
 })
 
@@ -342,7 +203,7 @@ export const fetchFundamentalModelRuns = async (): Promise<FundamentalModelRunLi
   return MOCK_RUNS
 }
 
-/** 상세 API를 흉내 낸 비동기 호출 */
+/** 상세 API를 흉내 낸 비동기 호출 (Trade 표용 mock) */
 export const fetchFundamentalModelDetail = async (runId: string): Promise<FundamentalModelDetail | null> => {
   await delay(420)
   const run = MOCK_RUNS.find((r) => r.id === runId)

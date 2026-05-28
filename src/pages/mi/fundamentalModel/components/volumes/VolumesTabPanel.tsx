@@ -1,41 +1,32 @@
 import { Stack } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 
-import type {
-  FundamentalModelGlobalVolumesData,
-  FundamentalModelLngVolumesData,
-  FundamentalModelMetricRow,
-  FundamentalModelScopeKey,
-  FundamentalModelTradeVolumesData,
-} from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type { FundamentalModelScopeKey, FundamentalModelTradeVolumesData } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type { FundamentalModelVolumesGranularity, FundamentalModelVolumesSegment } from '@/service/mi/fundamentalModel/case'
 
 import FundamentalModelSectionVolumesTable from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSectionVolumesTable'
 import FundamentalModelSegmentToolbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSegmentToolbar'
 import FundamentalModelTradeVolumesTable from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelTradeVolumesTable'
 import {
-  applyVolumeFilters,
   createDefaultVolumeFilters,
   FM_VOLUME_FILTERS_STORAGE_KEY,
+  isAllVolumeFiltersSelected,
   readSavedVolumeFilters,
+  toApiVolumeRegions,
+  toApiVolumeTypes,
   type FundamentalModelVolumeFilters,
 } from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumeFilters'
 import FundamentalModelVolumesMatrix from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelVolumesMatrix'
+import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
 
-/** Volumes 탭에 필요한 표 데이터 */
+/** Volumes 탭에 필요한 표 데이터 - Trade는 API 매트릭스 형태가 달라 mock 그대로 사용 */
 export interface VolumesTabPanelProps {
-  /** 월 컬럼 라벨(요약 표) */
-  monthLabels: string[]
-  /** 요약 행 */
-  summaryRows: FundamentalModelMetricRow[]
-  /** Trade 상세 행(레거시) */
-  detailRows: FundamentalModelMetricRow[]
-  /** Global 본문 표 */
-  globalVolumes: FundamentalModelGlobalVolumesData
-  /** LNG 본문 표 */
-  lngVolumes: FundamentalModelLngVolumesData
-  /** Trade 본문 표 */
+  /** getVolumes 호출 대상 case (양수일 때만 호출) */
+  caseId: number | null
+  /** Trade 본문 표 - 별도 mock(API 미정) */
   tradeVolumes: FundamentalModelTradeVolumesData
-  /** 상세·표 로딩 */
+  /** 케이스 상세 로딩 상태(헤더/탭 전환과 동기화) */
   detailLoading: boolean
 }
 
@@ -44,75 +35,16 @@ const SECTION_VOLUMES_SKELETON_ROW_COUNT: Record<'global' | 'lng', number> = {
   lng: 18,
 }
 
-const YEARLY_LABELS = ['2026', '2027', '2028', '2029', '2030'] as const
-
-const parseVolumeLabelYear = (label: string): string | null => {
-  const shortYearMatch = label.match(/^(\d{2})-\d{2}$/)
-  if (shortYearMatch) return `20${shortYearMatch[1]}`
-  const fullYearMatch = label.match(/^(\d{4})$/)
-  if (fullYearMatch) return fullYearMatch[1]
-  return null
+const SCOPE_TO_SEGMENT: Record<FundamentalModelScopeKey, FundamentalModelVolumesSegment> = {
+  global: 'GLOBAL',
+  lng: 'LNG',
+  trade: 'TRADE',
 }
 
-const aggregateNumericValues = (values: string[]): string => {
-  const numeric = values.map((v) => Number(v)).filter((v) => Number.isFinite(v))
-  if (numeric.length === 0) return values[0] ?? ''
-  const avg = numeric.reduce((sum, v) => sum + v, 0) / numeric.length
-  return avg.toFixed(1)
-}
+const periodToGranularity = (period: string): FundamentalModelVolumesGranularity => (period === 'yearly' ? 'YEARLY' : 'MONTHLY')
 
-const compressValuesByYear = (values: (string | null)[], sourceYears: string[], targetYears: readonly string[]): (string | null)[] => {
-  let fallback: string | null = null
-  return targetYears.map((year) => {
-    const indices = sourceYears.map((sourceYear, idx) => (sourceYear === year ? idx : -1)).filter((idx) => idx >= 0)
-
-    if (indices.length === 0) return fallback
-
-    const yearValues = indices.map((idx) => values[idx]).filter((value): value is string => typeof value === 'string' && value.length > 0)
-
-    if (yearValues.length === 0) return fallback
-
-    const aggregated = aggregateNumericValues(yearValues)
-    fallback = aggregated
-    return aggregated
-  })
-}
-
-const toYearlySummaryRows = (rows: FundamentalModelMetricRow[], sourceMonthLabels: string[]): FundamentalModelMetricRow[] => {
-  const yearRow = rows.find((row) => row.id === 'year')
-  const sourceYearsFromYearRow = yearRow?.values.map((v) => (typeof v === 'string' ? v : null)).filter((v): v is string => !!v) ?? []
-  const sourceYears = sourceYearsFromYearRow.length === sourceMonthLabels.length ? sourceYearsFromYearRow : sourceMonthLabels
-
-  return rows.map((row) => {
-    if (row.id === 'year') return { ...row, values: [...YEARLY_LABELS] }
-    if (row.id === 'unite') return { ...row, values: YEARLY_LABELS.map(() => 'NA') }
-    if (row.id === 'mtpa') return { ...row, values: YEARLY_LABELS.map(() => `${YEARLY_LABELS[0]}-NA`) }
-
-    return {
-      ...row,
-      values: compressValuesByYear(row.values, sourceYears, YEARLY_LABELS),
-    }
-  })
-}
-
-const toYearlyVolumesData = (data: FundamentalModelGlobalVolumesData): FundamentalModelGlobalVolumesData => {
-  const sourceYears = data.monthLabels.map((label) => parseVolumeLabelYear(label)).map((year, idx) => year ?? data.monthLabels[idx])
-
-  return {
-    ...data,
-    monthLabels: [...YEARLY_LABELS],
-    sections: data.sections.map((section) => ({
-      ...section,
-      rows: section.rows.map((row) => ({
-        ...row,
-        values: compressValuesByYear(row.values, sourceYears, YEARLY_LABELS),
-      })),
-    })),
-  }
-}
-
-/** Volumes 탭 본문(툴바·매트릭스 — 레이아웃은 FundamentalModelPage) */
-const VolumesTabPanel = ({ monthLabels, summaryRows, globalVolumes, lngVolumes, tradeVolumes, detailLoading }: VolumesTabPanelProps) => {
+/** Volumes 탭 본문(툴바 + 매트릭스 - 레이아웃은 FundamentalModelPage) */
+const VolumesTabPanel = ({ caseId, tradeVolumes, detailLoading }: VolumesTabPanelProps) => {
   const [scope, setScope] = useState<FundamentalModelScopeKey>('global')
   const [period, setPeriod] = useState('monthly')
   const savedFilters = readSavedVolumeFilters()
@@ -130,29 +62,46 @@ const VolumesTabPanel = ({ monthLabels, summaryRows, globalVolumes, lngVolumes, 
     setSaveFiltersOn(false)
   }
 
-  const filteredGlobalVolumes = useMemo(() => applyVolumeFilters(globalVolumes, volumeFilters), [globalVolumes, volumeFilters])
+  const granularity = periodToGranularity(period)
+  const segment = SCOPE_TO_SEGMENT[scope]
+  const isSectionScope = scope === 'global' || scope === 'lng'
 
-  const filteredLngVolumes = useMemo(() => applyVolumeFilters(lngVolumes, volumeFilters), [lngVolumes, volumeFilters])
-
-  const matrixMonthLabels = useMemo(() => (period === 'yearly' ? [...YEARLY_LABELS] : monthLabels), [monthLabels, period])
-
-  const matrixRows = useMemo(
-    () => (period === 'yearly' ? toYearlySummaryRows(summaryRows, monthLabels) : summaryRows),
-    [monthLabels, period, summaryRows],
+  // 전체 선택일 때는 types/regions 미전달(swagger - 미전달 시 전체)
+  const allFiltersSelected = isAllVolumeFiltersSelected(volumeFilters)
+  const apiTypes = useMemo(
+    () => (allFiltersSelected ? undefined : toApiVolumeTypes(volumeFilters.types)),
+    [allFiltersSelected, volumeFilters.types],
+  )
+  const apiRegions = useMemo(
+    () => (allFiltersSelected ? undefined : toApiVolumeRegions(volumeFilters.regions)),
+    [allFiltersSelected, volumeFilters.regions],
   )
 
-  const periodGlobalVolumes = useMemo(
-    () => (period === 'yearly' ? toYearlyVolumesData(filteredGlobalVolumes) : filteredGlobalVolumes),
-    [filteredGlobalVolumes, period],
-  )
+  const isValidCaseId = typeof caseId === 'number' && Number.isFinite(caseId) && caseId > 0
+  const enableSectionQuery = isSectionScope && isValidCaseId
 
-  const periodLngVolumes = useMemo(
-    () => (period === 'yearly' ? toYearlyVolumesData(filteredLngVolumes) : filteredLngVolumes),
-    [filteredLngVolumes, period],
-  )
+  const {
+    data: volumesRes,
+    isFetching: volumesFetching,
+    isLoading: volumesLoading,
+  } = useQuery({
+    queryKey: ['fundamentalModel', 'volumes', caseId, segment, granularity, apiTypes, apiRegions],
+    queryFn: () =>
+      fundamentalModelCaseService.getVolumes(caseId as number, {
+        segment,
+        types: apiTypes,
+        regions: apiRegions,
+        granularity,
+      }),
+    enabled: enableSectionQuery,
+    refetchOnWindowFocus: false,
+    placeholderData: (previous) => previous,
+  })
 
-  const sectionVolumesData: FundamentalModelGlobalVolumesData | null =
-    scope === 'global' ? periodGlobalVolumes : scope === 'lng' ? periodLngVolumes : null
+  const sectionLoading = detailLoading || volumesLoading || volumesFetching
+  const matrixGranularity: FundamentalModelVolumesGranularity = volumesRes?.granularity ?? granularity
+  const matrixColumns = volumesRes?.columns ?? []
+  const sectionRows = volumesRes?.rows ?? []
 
   return (
     <Stack sx={{ gap: '16px' }}>
@@ -169,16 +118,17 @@ const VolumesTabPanel = ({ monthLabels, summaryRows, globalVolumes, lngVolumes, 
 
       {scope === 'trade' ? (
         <FundamentalModelTradeVolumesTable data={tradeVolumes} loading={detailLoading} />
-      ) : sectionVolumesData ? (
+      ) : (
         <Stack gap="10px">
-          <FundamentalModelVolumesMatrix monthLabels={matrixMonthLabels} rows={matrixRows} loading={detailLoading} compact />
+          <FundamentalModelVolumesMatrix columns={matrixColumns} granularity={matrixGranularity} loading={sectionLoading} compact />
           <FundamentalModelSectionVolumesTable
-            data={sectionVolumesData}
-            loading={detailLoading}
+            columns={matrixColumns}
+            rows={sectionRows}
+            loading={sectionLoading}
             skeletonRowCount={scope === 'global' ? SECTION_VOLUMES_SKELETON_ROW_COUNT.global : SECTION_VOLUMES_SKELETON_ROW_COUNT.lng}
           />
         </Stack>
-      ) : null}
+      )}
     </Stack>
   )
 }
