@@ -6,7 +6,6 @@ import type { IFundamentalModelCaseDetail } from '@/service/mi/fundamentalModel/
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MoreVertIcon from '@/components/common/icons/MoreVertIcon'
 import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
-import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import useSnackbar from '@/hooks/useSnackbar'
 import { FUNDAMENTAL_UPLOAD_POPUP_WIDTH } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
 import FundamentalModelCaseEditPopupContent from '@/pages/mi/fundamentalModel/components/header/FundamentalModelCaseEditPopupContent'
@@ -137,7 +136,7 @@ const FundamentalModelDetailHeader = ({
   onExportIntermediateZip,
 }: FundamentalModelDetailHeaderProps) => {
   const { showSnackbar } = useSnackbar()
-  const editPopupRef = useRef<MIMorphingPopupRef>(null)
+  const [editPopupOpen, setEditPopupOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
@@ -148,11 +147,12 @@ const FundamentalModelDetailHeader = ({
     setEditTitle(detail.title)
     setEditDescription(detail.description ?? '')
     setShowTitleDuplicateError(false)
-    editPopupRef.current?.open()
+    setEditPopupOpen(true)
   }, [detail])
 
   const closeEditPopup = useCallback(() => {
-    editPopupRef.current?.close()
+    setEditPopupOpen(false)
+    setShowTitleDuplicateError(false)
   }, [])
 
   const openDeleteConfirm = useCallback(() => {
@@ -191,7 +191,7 @@ const FundamentalModelDetailHeader = ({
       })
       if (editResult === false) return
 
-      editPopupRef.current?.close()
+      setEditPopupOpen(false)
     } catch {
       showSnackbar('수정 실패되었습니다.', { variant: 'error' })
     }
@@ -311,45 +311,25 @@ const FundamentalModelDetailHeader = ({
                 },
               }}
             />
-            <MIMorphingPopup
-              ref={editPopupRef}
-              display="inline-flex"
-              popup={{
-                title: (
-                  <Box component="span" sx={{ typography: 'body1B16', color: 'contentText.Normal' }}>
-                    시뮬레이션 케이스 수정
-                  </Box>
-                ),
-                content: editPopupContent,
-                measureContent: editPopupContent,
-                hideHeaderLine: true,
-                showSkeleton: false,
-                minWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
-                maxWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
-                borderRadius: '12px',
-                onClose: () => setShowTitleDuplicateError(false),
+            <MIDropdownMenu
+              label={<MoreVertIcon />}
+              variant="outlined"
+              placement="bottom-end"
+              disabled={headerActionsDisabled}
+              items={[
+                { label: '수정', action: openEditPopup },
+                { label: '삭제', action: openDeleteConfirm },
+              ]}
+              sx={{
+                height: '36px',
+                padding: '8px',
               }}
-            >
-              <MIDropdownMenu
-                label={<MoreVertIcon />}
-                variant="outlined"
-                placement="bottom-end"
-                disabled={headerActionsDisabled}
-                items={[
-                  { label: '수정', action: openEditPopup },
-                  { label: '삭제', action: openDeleteConfirm },
-                ]}
-                sx={{
-                  height: '36px',
-                  padding: '8px',
-                }}
-                paperProps={{
-                  sx: {
-                    minWidth: '120px',
-                  },
-                }}
-              />
-            </MIMorphingPopup>
+              paperProps={{
+                sx: {
+                  minWidth: '120px',
+                },
+              }}
+            />
           </Stack>
         </Stack>
 
@@ -371,6 +351,19 @@ const FundamentalModelDetailHeader = ({
 
         <AttachmentList fileNames={attachmentNames} />
       </Box>
+
+      <MIConfirm
+        open={editPopupOpen}
+        title="시뮬레이션 케이스 수정"
+        width={FUNDAMENTAL_UPLOAD_POPUP_WIDTH}
+        handleClose={closeEditPopup}
+        hideFooter
+        paperSx={{ borderRadius: '12px' }}
+        titleSx={{ fontWeight: 700, fontSize: '16px' }}
+        contentSx={{ padding: 0 }}
+      >
+        {editPopupContent}
+      </MIConfirm>
 
       <MIConfirm
         open={deleteConfirmOpen}

@@ -21,7 +21,7 @@ import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
 
 // #TODO: volume API 연동되면 지우기
-/** COMPLETED 케이스 Volumes/Price mock 보강용 고정 id (result API 대체) */
+/** COMPLETED 케이스 Volumes mock 보강용 고정 id (result API 대체) */
 const TAB_PANEL_MOCK_RUN_ID = '2'
 
 /** MI 수급 모델 — URL 고정 `/mi/fundamental-model`, 선택은 클라이언트 state */
@@ -77,6 +77,13 @@ const FundamentalModelPage = () => {
     refetchOnWindowFocus: false,
   })
 
+  const { data: priceData, isLoading: priceLoading } = useQuery({
+    queryKey: ['fundamentalModel', 'price', activeCaseId],
+    queryFn: () => fundamentalModelCaseService.getPrice(parsedCaseId),
+    enabled: caseDetail?.status === 'COMPLETED' && Number.isFinite(parsedCaseId) && parsedCaseId > 0,
+    refetchOnWindowFocus: false,
+  })
+
   const monthLabels = tabPanelMock?.monthLabels ?? FUNDAMENTAL_MODEL_MONTH_LABELS
 
   const tabBarItems = useMemo(
@@ -96,6 +103,7 @@ const FundamentalModelPage = () => {
     void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'cases'] })
     if (activeCaseId) {
       void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'caseDetail', activeCaseId] })
+      void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'price', activeCaseId] })
     }
   }, [activeCaseId, queryClient])
 
@@ -246,11 +254,7 @@ const FundamentalModelPage = () => {
               },
             }}
           >
-            <PriceTabPanel
-              annualPriceRows={tabPanelMock?.annualPriceRows ?? []}
-              monthlyPriceRows={tabPanelMock?.monthlyPriceRows ?? []}
-              detailLoading={detailLoading}
-            />
+            <PriceTabPanel price={priceData ?? null} loading={detailLoading || priceLoading} />
           </Box>
         )}
       </Box>

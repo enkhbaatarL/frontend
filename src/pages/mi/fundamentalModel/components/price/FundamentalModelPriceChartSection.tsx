@@ -1,7 +1,7 @@
 import { Box, Stack, Typography, useTheme } from '@mui/material'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import type { FundamentalModelMonthlyPriceRow } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type { IFundamentalModelPriceChart } from '@/service/mi/fundamentalModel/case'
 import type { IScenarioPriceForecast } from '@/service/mi/scenarioWorkbench/scenario'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
@@ -11,77 +11,45 @@ import ScenarioSummaryChart from '@/pages/mi/scenarioWorkbench/components/common
 import { downloadChart } from '@/utils/chartDownload'
 
 interface FundamentalModelPriceChartSectionProps {
-  monthlyPriceRows: FundamentalModelMonthlyPriceRow[]
+  priceChart: IFundamentalModelPriceChart | null
+  priceRegions: string[]
 }
 
-const PRICE_SERIES_DEFINITIONS = [
-  { key: 'baseCasePrice', label: 'Base case price' },
-  { key: 'userAdjustedPrice', label: 'User adjusted price' },
-] satisfies { key: 'baseCasePrice' | 'userAdjustedPrice'; label: string }[]
+const toDateLabel = (point: { year: number; month: number }): string => `${point.year}-${String(point.month).padStart(2, '0')}`
 
-const DEFAULT_PRICE_REGION = 'East Asia Spot'
-const PRICE_REGION_ORDER = [DEFAULT_PRICE_REGION, 'TTF', 'HH']
-
-const toMonthKey = (row: FundamentalModelMonthlyPriceRow): string => `${row.year}-${row.month.padStart(2, '0')}`
-
-const parsePriceValue = (value: string): number => {
-  const parsed = Number(value.replaceAll(',', '').trim())
-  return Number.isFinite(parsed) ? parsed : 0
-}
-
-const getPriceRegions = (monthlyPriceRows: FundamentalModelMonthlyPriceRow[]): string[] => {
-  const existingRegions = new Set(monthlyPriceRows.map((row) => row.priceRegion))
-  const orderedRegions = PRICE_REGION_ORDER.filter((region) => existingRegions.has(region))
-  const remainingRegions = Array.from(existingRegions)
-    .filter((region) => !PRICE_REGION_ORDER.includes(region))
-    .sort()
-  return [...orderedRegions, ...remainingRegions]
-}
-
-const buildChartUnitLabel = (priceForecast: IScenarioPriceForecast): string => {
-  if (priceForecast.currency && priceForecast.unit) return `Unit: ${priceForecast.currency}/${priceForecast.unit}`
-  if (priceForecast.currency) return `Unit: ${priceForecast.currency}`
-  if (priceForecast.unit) return `Unit: ${priceForecast.unit}`
-  return 'Unit: -'
-}
-
-const buildMonthlyPriceForecast = (
-  monthlyPriceRows: FundamentalModelMonthlyPriceRow[],
-  selectedPriceRegion: string,
-): IScenarioPriceForecast => {
-  const selectedRows = monthlyPriceRows.filter((row) => row.priceRegion === selectedPriceRegion)
-  const monthKeys = Array.from(new Set(monthlyPriceRows.map(toMonthKey))).sort()
-  const rowByMonth = new Map(selectedRows.map((row) => [toMonthKey(row), row]))
+const buildPriceForecast = (priceChart: IFundamentalModelPriceChart | null, selectedPriceRegion: string): IScenarioPriceForecast => {
+  const seriesSets = priceChart?.seriesSets ?? []
+  const selectedSeriesSet = seriesSets.find((item) => item.priceRegion === selectedPriceRegion) ?? seriesSets[0]
+  const selectedSeries = selectedSeriesSet?.series ?? []
+  const basePoints = selectedSeries.find((item) => item.points?.length > 0)?.points ?? []
 
   return {
     currency: 'USD',
     unit: 'mmbtu',
-    dates: monthKeys,
-    series: PRICE_SERIES_DEFINITIONS.map(({ key, label }) => ({
-      indexName: label,
-      values: monthKeys.map((monthKey) => parsePriceValue(rowByMonth.get(monthKey)?.[key] ?? '0')),
+    dates: basePoints.map(toDateLabel),
+    series: selectedSeries.map((item) => ({
+      indexName: item.label,
+      values: item.points?.map((point) => point.value) ?? [],
     })),
   }
 }
 
 const toDownloadFilename = (priceRegion: string): string =>
-  `monthly-futures-simulation-chart-${priceRegion.toLowerCase().replaceAll(/\s+/g, '-')}.png`
+  priceRegion
+    ? `monthly-futures-simulation-chart-${priceRegion.toLowerCase().replaceAll(/\s+/g, '-')}.png`
+    : 'monthly-futures-simulation-chart.png'
 
-const FundamentalModelPriceChartSection = ({ monthlyPriceRows }: FundamentalModelPriceChartSectionProps) => {
+const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: FundamentalModelPriceChartSectionProps) => {
   const theme = useTheme()
   const chartDownloadTargetRef = useRef<HTMLDivElement>(null)
-  const priceRegions = useMemo(() => getPriceRegions(monthlyPriceRows), [monthlyPriceRows])
-  const priceRegionOptions = useMemo(() => priceRegions.map((region) => ({ value: region, label: region })), [priceRegions])
-  const [selectedPriceRegion, setSelectedPriceRegion] = useState(DEFAULT_PRICE_REGION)
   const [isDownloadingChart, setIsDownloadingChart] = useState(false)
-  const effectiveSelectedPriceRegion = priceRegions.includes(selectedPriceRegion)
-    ? selectedPriceRegion
-    : (priceRegions[0] ?? DEFAULT_PRICE_REGION)
+  const [selectedPriceRegion, setSelectedPriceRegion] = useState(priceRegions[0] ?? '')
+  const effectiveSelectedPriceRegion = priceRegions.includes(selectedPriceRegion) ? selectedPriceRegion : (priceRegions[0] ?? '')
+  const priceRegionOptions = useMemo(() => priceRegions.map((region) => ({ value: region, label: region })), [priceRegions])
   const priceForecast = useMemo(
-    () => buildMonthlyPriceForecast(monthlyPriceRows, effectiveSelectedPriceRegion),
-    [effectiveSelectedPriceRegion, monthlyPriceRows],
+    () => buildPriceForecast(priceChart, effectiveSelectedPriceRegion),
+    [effectiveSelectedPriceRegion, priceChart],
   )
-  const chartUnit = useMemo(() => buildChartUnitLabel(priceForecast), [priceForecast])
   const hasChartData = priceForecast.series.some((series) => series.values.length > 0)
 
   useEffect(() => {
@@ -132,18 +100,15 @@ const FundamentalModelPriceChartSection = ({ monthlyPriceRows }: FundamentalMode
 
       <Box sx={{ width: '100%', minWidth: 0, pt: '12px' }}>
         <Box ref={chartDownloadTargetRef} sx={{ width: '100%', minWidth: 0, bgcolor: 'commonColor.White' }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0} gap={1}>
-            <Typography variant="body2SB14" color="contentText.Normal" sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
-              {chartUnit}
-            </Typography>
-            {priceRegionOptions.length > 0 && (
-              <MISlidingSegmented options={priceRegionOptions} value={effectiveSelectedPriceRegion} onChange={setSelectedPriceRegion} />
-            )}
-          </Stack>
-
-          <Box sx={{ width: '100%', minWidth: 0 }}>
-            <ScenarioSummaryChart priceForecast={priceForecast} suppressChartHeader emptyMessage="표시할 가격 데이터가 없습니다." />
-          </Box>
+          <ScenarioSummaryChart
+            priceForecast={priceForecast}
+            emptyMessage="표시할 가격 데이터가 없습니다."
+            headerEnd={
+              priceRegionOptions.length > 0 ? (
+                <MISlidingSegmented options={priceRegionOptions} value={effectiveSelectedPriceRegion} onChange={setSelectedPriceRegion} />
+              ) : undefined
+            }
+          />
         </Box>
       </Box>
     </Stack>

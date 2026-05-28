@@ -90,6 +90,55 @@ export interface IFundamentalModelCaseStatusRes {
   updatedAt: string
 }
 
+export type FundamentalModelPriceSeriesType = 'BASE_CASE' | 'USER_ADJUSTED'
+
+export interface IFundamentalModelPriceChartPoint {
+  year: number
+  month: number
+  value: number
+}
+
+export interface IFundamentalModelPriceChartSeries {
+  seriesType: FundamentalModelPriceSeriesType
+  label: string
+  points: IFundamentalModelPriceChartPoint[]
+}
+
+export interface IFundamentalModelPriceChartSeriesSet {
+  priceRegion: string
+  series: IFundamentalModelPriceChartSeries[]
+}
+
+export interface IFundamentalModelPriceChart {
+  seriesSets: IFundamentalModelPriceChartSeriesSet[]
+}
+
+export interface IFundamentalModelPriceColumn {
+  key: string
+  label: string
+}
+
+export interface IFundamentalModelPriceRow {
+  year: number
+  month?: number | null
+  priceRegion: string
+  baseCasePrice: number | null
+  userAdjustedPrice: number | null
+  [key: string]: string | number | null | undefined
+}
+
+export interface IFundamentalModelPriceTable {
+  columns: IFundamentalModelPriceColumn[]
+  rows: IFundamentalModelPriceRow[]
+}
+
+export interface IFundamentalModelPriceRes {
+  caseId: number
+  chart: IFundamentalModelPriceChart
+  annualTable: IFundamentalModelPriceTable
+  monthlyTable: IFundamentalModelPriceTable
+}
+
 const fundamentalModelCaseService = {
   async listCases(params?: IGetFundamentalModelCasesParams): Promise<IFundamentalModelCaseListRes> {
     const trimmedKeyword = params?.keyword?.trim()
@@ -112,6 +161,11 @@ const fundamentalModelCaseService = {
     const response: AxiosResponse<ICommonResponse<IFundamentalModelCaseStatusRes>> = await api.get(
       `mi/fundamental-model/cases/${caseId}/status`,
     )
+    return response.data.data
+  },
+
+  async getPrice(caseId: number): Promise<IFundamentalModelPriceRes> {
+    const response: AxiosResponse<ICommonResponse<IFundamentalModelPriceRes>> = await api.get(`mi/fundamental-model/cases/${caseId}/price`)
     return response.data.data
   },
 
