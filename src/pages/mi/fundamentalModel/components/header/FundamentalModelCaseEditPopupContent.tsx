@@ -52,7 +52,7 @@ interface EditTitleFieldProps {
 
 const EditTitleField = ({ value, hasError, onChange }: EditTitleFieldProps) => (
   <Stack sx={{ width: '100%', minWidth: 0 }}>
-    <EditFieldLabel htmlFor="fundamental-edit-title" label="시뮬레이션 케이스 케이스명" size="lg" />
+    <EditFieldLabel htmlFor="fundamental-edit-title" label="시뮬레이션 케이스명" size="lg" />
     <Box
       id="fundamental-edit-title"
       component="input"
@@ -177,10 +177,10 @@ const FundamentalModelCaseEditPopupContent = ({
 
     <Stack direction="row" justifyContent="flex-end" gap="10px" px="20px" pt="30px" pb="20px">
       <MIButton type="outlined" size="h34" color="gray" onClick={onCancel}>
-          취소
+        취소
       </MIButton>
       <MIButton type="filled" size="h34" color="primary" onClick={onSubmit}>
-          확인
+        확인
       </MIButton>
     </Stack>
   </Stack>

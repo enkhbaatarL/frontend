@@ -61,6 +61,22 @@ export interface IFundamentalModelCaseDetail {
   updatedAt: string
 }
 
+export interface IFundamentalModelCaseCreateReq {
+  title: string
+  description?: string
+  files: File[]
+}
+
+export interface IFundamentalModelCaseCreateRes {
+  caseId: number
+  title: string
+  description?: string | null
+  status: FundamentalModelCaseStatus
+  files: IFundamentalModelCaseFile[]
+  createdAt: string
+  statusEndpoint?: string
+}
+
 export interface IFundamentalModelCaseUpdateReq {
   title?: string
   description?: string
@@ -206,6 +222,25 @@ export interface IGetFundamentalModelVolumesParams {
 }
 
 const fundamentalModelCaseService = {
+  async createCase(body: IFundamentalModelCaseCreateReq): Promise<IFundamentalModelCaseCreateRes> {
+    const formData = new FormData()
+    body.files.forEach((file) => formData.append('files', file))
+
+    const response: AxiosResponse<ICommonResponse<IFundamentalModelCaseCreateRes>> = await api.post(
+      'mi/fundamental-model/cases',
+      formData,
+      {
+        params: {
+          title: body.title.trim(),
+          description: body.description?.trim() || undefined,
+        },
+        suppressGlobalErrorHandler: true,
+        timeout: 0,
+      } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean },
+    )
+    return response.data.data
+  },
+
   async listCases(params?: IGetFundamentalModelCasesParams): Promise<IFundamentalModelCaseListRes> {
     const trimmedKeyword = params?.keyword?.trim()
     const response: AxiosResponse<ICommonResponse<IFundamentalModelCaseListRes>> = await api.get('mi/fundamental-model/cases', {

@@ -1,4 +1,4 @@
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -139,7 +139,9 @@ const FundamentalModelPage = () => {
     }
   }, [activeCaseId, parsedCaseId, queryClient])
 
-  const placeholderMode = useMemo(() => runStatusToPlaceholderMode(caseDetail?.status), [caseDetail?.status])
+  const isCaseDetailResolving = Boolean(activeCaseId) && detailLoading && !caseDetail
+  const isCompletedCase = caseDetail?.status === 'COMPLETED'
+  const placeholderMode = useMemo(() => (caseDetail ? runStatusToPlaceholderMode(caseDetail.status) : null), [caseDetail])
 
   const rightBody = !activeCaseId ? (
     <Box
@@ -202,9 +204,30 @@ const FundamentalModelPage = () => {
           flexDirection: 'column',
         }}
       >
-        {placeholderMode ? (
+        {isCaseDetailResolving ? (
+          <Box
+            sx={{
+              flex: 1,
+              width: '100%',
+              alignSelf: 'stretch',
+              minHeight: 480,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              px: '24px',
+              py: '40px',
+              boxSizing: 'border-box',
+            }}
+          >
+            <Stack alignItems="center" gap="12px" sx={{ width: '100%', maxWidth: 360 }}>
+              <Skeleton variant="circular" width={64} height={64} />
+              <Skeleton variant="rounded" width="70%" height={28} />
+              <Skeleton variant="rounded" width="52%" height={18} />
+            </Stack>
+          </Box>
+        ) : placeholderMode ? (
           <FundamentalModelRunPlaceholder mode={placeholderMode} onRun={handleRun} onRetry={handleRetry} runActionDisabled={isRunPending} />
-        ) : viewTab === 'volumes' ? (
+        ) : isCompletedCase && viewTab === 'volumes' ? (
           <Box
             role="tabpanel"
             id="fundamental-model-tabpanel-0"
@@ -219,7 +242,7 @@ const FundamentalModelPage = () => {
             }}
           >
             <VolumesTabPanel
-              caseId={Number.isFinite(parsedCaseId) && parsedCaseId > 0 ? parsedCaseId : null}
+              caseId={isCompletedCase && Number.isFinite(parsedCaseId) && parsedCaseId > 0 ? parsedCaseId : null}
               tradeVolumes={
                 tabPanelMock?.tradeVolumes ?? {
                   productOptions: [],
@@ -234,7 +257,7 @@ const FundamentalModelPage = () => {
               detailLoading={detailLoading}
             />
           </Box>
-        ) : (
+        ) : isCompletedCase ? (
           <Box
             role="tabpanel"
             id="fundamental-model-tabpanel-1"
@@ -250,6 +273,8 @@ const FundamentalModelPage = () => {
           >
             <PriceTabPanel price={priceData ?? null} loading={detailLoading || priceLoading} />
           </Box>
+        ) : (
+          <FundamentalModelRunPlaceholder mode="pending" onRun={handleRun} onRetry={handleRetry} runActionDisabled={isRunPending} />
         )}
       </Box>
     </Stack>

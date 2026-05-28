@@ -1,12 +1,11 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { type ChangeEvent } from 'react'
 
 import xlsIcon from '@/assets/icons/file/xls.svg'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
-import MIButton from '@/components/common/button/MIButton'
 import CancelIcon from '@/components/common/icons/CancelIcon'
 import InfoIconSm from '@/components/common/icons/InfoIconSm'
 import WarningIconRed from '@/components/common/icons/WarningIconRed'
+import MIMaskInput from '@/components/common/input/MIMaskInput'
 import MIFileUploadDropzone from '@/components/mi/MIFileUploadDropzone'
 import {
   FUNDAMENTAL_UPLOAD_ACCEPT,
@@ -24,6 +23,7 @@ interface FundamentalModelFileUploadPopupContentProps {
   titleValue: string
   descriptionValue: string
   files: File[]
+  isUploading?: boolean
   showTitleValidationError: boolean
   onTitleChange: (value: string) => void
   onDescriptionChange: (value: string) => void
@@ -34,10 +34,6 @@ interface FundamentalModelFileUploadPopupContentProps {
 }
 
 const getUploadFileKey = (file: File) => `${file.name}-${file.size}-${file.lastModified}`
-const characterCountFormatter = new Intl.NumberFormat('en-US')
-
-const formatCharacterCount = (value: string, maxLength: number) =>
-  `${characterCountFormatter.format(value.length)} / ${characterCountFormatter.format(maxLength)}`
 
 interface UploadGuideNoticeProps {
   hasError: boolean
@@ -67,32 +63,6 @@ const UploadGuideNotice = ({ hasError }: UploadGuideNoticeProps) => (
   </Stack>
 )
 
-interface UploadFieldLabelProps {
-  htmlFor: string
-  label: string
-  required?: boolean
-  size?: 'lg' | 'sm'
-}
-
-const UploadFieldLabel = ({ htmlFor, label, required = false, size = 'sm' }: UploadFieldLabelProps) => (
-  <Box component="label" htmlFor={htmlFor} display="inline-flex" alignItems="center" gap="2px" pb={size === 'lg' ? '4px' : '6px'}>
-    <Typography
-      component="span"
-      color="contentText.Normal"
-      sx={{
-        fontSize: size === 'lg' ? '14px' : '12px',
-        fontWeight: size === 'lg' ? 600 : 500,
-        lineHeight: size === 'lg' ? 1.4 : 1,
-      }}
-    >
-      {label}
-    </Typography>
-    {required && (
-      <Box component="span" sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'point.red1', alignSelf: 'flex-start', mt: '3px' }} />
-    )}
-  </Box>
-)
-
 interface UploadTitleFieldProps {
   value: string
   hasError: boolean
@@ -100,49 +70,17 @@ interface UploadTitleFieldProps {
 }
 
 const UploadTitleField = ({ value, hasError, onChange }: UploadTitleFieldProps) => (
-  <Stack sx={{ width: '100%', minWidth: 0 }}>
-    <UploadFieldLabel htmlFor="fundamental-upload-title" label="시뮬레이션 케이스 케이스명" required size="lg" />
-    <Box
-      id="fundamental-upload-title"
-      component="input"
-      value={value}
-      maxLength={FUNDAMENTAL_UPLOAD_TITLE_MAX_LENGTH}
-      placeholder="입력하세요"
-      aria-invalid={hasError}
-      onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.target.value)}
-      sx={{
-        width: '100%',
-        height: 36,
-        border: '1px solid',
-        borderColor: hasError ? 'point.red1' : 'contentBorder.Normal',
-        borderRadius: hasError ? '4px' : '10px',
-        bgcolor: 'commonColor.White',
-        boxSizing: 'border-box',
-        color: 'contentText.Black',
-        display: 'block',
-        fontFamily: 'inherit',
-        fontSize: '14px',
-        fontWeight: 400,
-        lineHeight: 1.4,
-        outline: 'none',
-        px: '12px',
-        py: '8px',
-        transition: 'border-color 0.15s ease',
-        '&::placeholder': {
-          color: 'contentText.Placeholder',
-          opacity: 1,
-        },
-        '&:focus': {
-          borderColor: hasError ? 'point.red1' : 'contentBorder.Active',
-        },
-      }}
-    />
-    <Box display="flex" justifyContent={hasError ? 'flex-start' : 'flex-end'} width="100%" pt="4px" minHeight="21px">
-      <Typography variant="subtext2" color={hasError ? 'point.red1' : 'contentText.Subtext'}>
-        {hasError ? '필수 입력 항목입니다.' : formatCharacterCount(value, FUNDAMENTAL_UPLOAD_TITLE_MAX_LENGTH)}
-      </Typography>
-    </Box>
-  </Stack>
+  <MIMaskInput
+    id="fundamental-upload-title"
+    label="시뮬레이션 케이스명"
+    placeholder="입력하세요"
+    value={value}
+    onUpdateValue={(nextValue) => onChange(nextValue ?? '')}
+    maxLength={FUNDAMENTAL_UPLOAD_TITLE_MAX_LENGTH}
+    required
+    error={hasError}
+    helperText={hasError ? '필수 입력 항목입니다.' : undefined}
+  />
 )
 
 interface UploadDescriptionFieldProps {
@@ -151,68 +89,23 @@ interface UploadDescriptionFieldProps {
 }
 
 const UploadDescriptionField = ({ value, onChange }: UploadDescriptionFieldProps) => (
-  <Stack sx={{ width: '100%', minWidth: 0 }}>
-    <UploadFieldLabel htmlFor="fundamental-upload-description" label="설명" />
-    <Box
-      id="fundamental-upload-description"
-      component="textarea"
-      value={value}
-      maxLength={FUNDAMENTAL_UPLOAD_DESCRIPTION_MAX_LENGTH}
-      placeholder="입력하세요"
-      onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange(event.target.value)}
-      sx={{
-        width: '100%',
-        height: 100,
-        minHeight: 100,
-        maxHeight: 100,
-        border: '1px solid',
-        borderColor: 'contentBorder.Normal',
-        borderRadius: '4px',
-        bgcolor: 'commonColor.White',
-        boxSizing: 'border-box',
-        color: 'contentText.Black',
-        display: 'block',
-        fontFamily: 'inherit',
-        fontSize: '14px',
-        fontWeight: 400,
-        lineHeight: 1.4,
-        outline: 'none',
-        overflowY: 'auto',
-        px: '12px',
-        py: '7px',
-        resize: 'none',
-        transition: 'border-color 0.15s ease',
-        '&::placeholder': {
-          color: 'contentText.Placeholder',
-          opacity: 1,
-        },
-        '&:focus': {
-          borderColor: 'contentBorder.Active',
-        },
-        '&::-webkit-scrollbar': {
-          width: '4px',
-        },
-        '&::-webkit-scrollbar-track': {
-          background: 'transparent',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          background: '#CED4DA',
-          borderRadius: '10px',
-        },
-      }}
-    />
-    <Box display="flex" justifyContent="flex-end" width="100%" pt="4px" minHeight="21px">
-      <Typography variant="subtext2" color="contentText.Subtext">
-        {formatCharacterCount(value, FUNDAMENTAL_UPLOAD_DESCRIPTION_MAX_LENGTH)}
-      </Typography>
-    </Box>
-  </Stack>
+  <MIMaskInput
+    id="fundamental-upload-description"
+    label="설명"
+    placeholder="입력하세요"
+    value={value}
+    onUpdateValue={(nextValue) => onChange(nextValue ?? '')}
+    multiline
+    rows={5}
+    maxLength={FUNDAMENTAL_UPLOAD_DESCRIPTION_MAX_LENGTH}
+  />
 )
 
 const FundamentalModelFileUploadPopupContent = ({
   titleValue,
   descriptionValue,
   files,
+  isUploading = false,
   showTitleValidationError,
   onTitleChange,
   onDescriptionChange,
@@ -223,8 +116,8 @@ const FundamentalModelFileUploadPopupContent = ({
 }: FundamentalModelFileUploadPopupContentProps) => {
   const isFileValidationPassed = hasRequiredFundamentalModelFiles(files)
   const showFileValidationError = files.length >= FUNDAMENTAL_UPLOAD_MAX_FILES && !isFileValidationPassed
-  const uploadDisabled = files.length >= FUNDAMENTAL_UPLOAD_MAX_FILES
-  const submitDisabled = !isFileValidationPassed || showTitleValidationError
+  const uploadDisabled = files.length >= FUNDAMENTAL_UPLOAD_MAX_FILES || isUploading
+  const submitDisabled = isUploading || !isFileValidationPassed || showTitleValidationError
 
   return (
     <Stack sx={{ width: '100%' }}>
@@ -243,6 +136,7 @@ const FundamentalModelFileUploadPopupContent = ({
             accept={FUNDAMENTAL_UPLOAD_ACCEPT}
             disabled={uploadDisabled}
             guideText={FUNDAMENTAL_UPLOAD_GUIDE_TEXT}
+            isUploading={isUploading}
             maxFileSizeMb={FUNDAMENTAL_UPLOAD_MAX_FILE_SIZE_MB}
             onFilesAdd={onFilesAdd}
           />
@@ -278,6 +172,7 @@ const FundamentalModelFileUploadPopupContent = ({
                   </Typography>
                   <MIBaseButton
                     onClick={() => onRemoveFile(file)}
+                    disabled={isUploading}
                     disableRipple
                     buttonHoverBgColor="transparent"
                     sx={{
@@ -296,12 +191,12 @@ const FundamentalModelFileUploadPopupContent = ({
       </Stack>
 
       <Stack direction="row" justifyContent="flex-end" gap="10px" px="20px" pt="30px" pb="20px">
-        <MIButton type="outlined" size="h34" color="gray" onClick={onCancel}>
+        <MIBaseButton variant="outlined" disabled={isUploading} onClick={onCancel} sx={{ padding: '0 16px', height: '36px' }}>
           취소
-        </MIButton>
-        <MIButton type="filled" size="h34" color="primary" disabled={submitDisabled} onClick={onSubmit}>
-          확인
-        </MIButton>
+        </MIBaseButton>
+        <MIBaseButton variant="contained" disabled={submitDisabled} onClick={onSubmit} sx={{ padding: '0 16px', height: '36px' }}>
+          {isUploading ? '업로드 중...' : '확인'}
+        </MIBaseButton>
       </Stack>
     </Stack>
   )
