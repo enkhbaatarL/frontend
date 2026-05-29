@@ -12,7 +12,7 @@ import {
   FM_VOLUME_TABLE_BODY_H,
   FM_VOLUME_TABLE_BORDER,
   FM_VOLUME_TABLE_HEADER_H,
-  FM_VOLUME_TRADE_FROM_COL_MIN_W,
+  FM_VOLUME_TRADE_FROM_COL_WIDTHS,
   FM_VOLUME_TRADE_TABLE_BODY_MAX_HEIGHT,
   FM_VOLUME_TRADE_TABLE_HEADER_H,
   FM_VOLUME_TRADE_TO_COL_W,
@@ -53,24 +53,128 @@ const tradeBodyScrollWrapperProps = {
   styScroll: { borderRadius: '1000px' },
 } as const
 
-const TradeVolumesTableSkeleton = ({ colCount, rowCount }: { colCount: number; rowCount: number }) => (
-  <Stack gap="10px">
-    <Skeleton variant="rounded" height={28} width={280} />
-    <Box sx={mergeVolumeTableSx(fmVolumeTableFrameSx, { maxHeight: FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT })}>
-      <Skeleton variant="rounded" height={FM_VOLUME_TRADE_TABLE_HEADER_H} />
-      <Box sx={{ p: '12px' }}>
-        <Stack direction="row" gap={1}>
-          <Skeleton variant="rounded" width={FM_VOLUME_TRADE_TO_COL_W} height={36 * rowCount} />
-          <Stack direction="row" gap={0.5} flex={1}>
-            {Array.from({ length: Math.min(colCount, 6) }).map((_, c) => (
-              <Skeleton key={c} variant="rounded" width={FM_VOLUME_TRADE_FROM_COL_MIN_W} height={36 * rowCount} />
-            ))}
-          </Stack>
+/** 데이터 미도착 시 사용할 기본 행/열 수(Trade 표 고정 구조 기준) */
+const TRADE_SKELETON_COL_COUNT = FM_VOLUME_TRADE_FROM_COL_WIDTHS.length
+const TRADE_SKELETON_ROW_COUNT = 18
+
+/** 올해 기준 연도 옵션(올해 포함 +9년, 총 10개) */
+const buildTradeYearOptions = (count = 10) => {
+  const startYear = new Date().getFullYear()
+  return Array.from({ length: count }, (_, i) => {
+    const year = String(startYear + i)
+    return { id: year, label: year }
+  })
+}
+
+/** 상단 툴바(LNG/연도/Unit) - 표 매트릭스와 별도로 즉시 노출할 기본값 */
+const TRADE_TOOLBAR_FALLBACK = {
+  productOptions: [
+    { id: 'lng', label: 'LNG' },
+    { id: 'png', label: 'PNG' },
+  ],
+  yearOptions: buildTradeYearOptions(),
+  selectedProductId: 'lng',
+  selectedYearId: String(new Date().getFullYear()),
+  unitLabel: 'mtpa',
+}
+
+const resolveTradeToolbarProps = (data: FundamentalModelTradeVolumesData) => ({
+  productOptions: data.productOptions.length > 0 ? data.productOptions : [...TRADE_TOOLBAR_FALLBACK.productOptions],
+  yearOptions: data.yearOptions.length > 0 ? data.yearOptions : TRADE_TOOLBAR_FALLBACK.yearOptions,
+  selectedProductId: data.selectedProductId || TRADE_TOOLBAR_FALLBACK.selectedProductId,
+  selectedYearId: data.selectedYearId || TRADE_TOOLBAR_FALLBACK.selectedYearId,
+  unitLabel: data.unitLabel || TRADE_TOOLBAR_FALLBACK.unitLabel,
+})
+
+/** 셀 안에 들어갈 회색 데이터 바 */
+const tradeSkeletonBarSx = { width: '64%', borderRadius: '4px' } as const
+
+/**
+ * Trade 표 스켈레톤: 표 프레임/헤더(To country | From country)는 그대로 유지하고
+ * 국가 라벨과 데이터 셀만 회색 바로 채워, API 호출 전에도 표가 고정되어 보이도록 한다.
+ */
+const TradeVolumesTableSkeleton = ({ colCount, rowCount }: { colCount: number; rowCount: number }) => {
+  const columns = Array.from({ length: colCount })
+  const rows = Array.from({ length: rowCount })
+
+  return (
+    <Box
+      sx={mergeVolumeTableSx(fmVolumeTableFrameSx, {
+        maxHeight: FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT,
+        display: 'flex',
+        flexDirection: 'column',
+        minWidth: 0,
+      })}
+    >
+      {/* 헤더: To country / From country 라벨은 고정, 국가 컬럼 라벨은 스켈레톤 */}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', flexShrink: 0 }}>
+        <Stack sx={{ width: FM_VOLUME_TRADE_TO_COL_W, flexShrink: 0, borderRight: FM_VOLUME_TABLE_BORDER }}>
+          <Box sx={mergeVolumeTableSx(fmVolumeTableHeaderCellSx, { height: FM_VOLUME_TABLE_HEADER_H, borderRight: 'none' })} />
+          <Box sx={mergeVolumeTableSx(fmVolumeTableHeaderCellSx, { height: FM_VOLUME_TABLE_BODY_H, borderRight: 'none' })}>
+            <Typography variant="tableHeaderSemibold" color="gray.60" noWrap sx={{ lineHeight: 1.4 }}>
+              To country
+            </Typography>
+          </Box>
         </Stack>
+
+        <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <Box sx={mergeVolumeTableSx(fmVolumeTableHeaderCellSx, { height: FM_VOLUME_TABLE_HEADER_H, width: '100%' })}>
+            <Typography variant="tableHeaderSemibold" color="gray.60" noWrap sx={{ lineHeight: 1.4 }}>
+              From country
+            </Typography>
+          </Box>
+          <Stack direction="row" alignItems="flex-start" sx={{ width: 'max-content' }}>
+            {columns.map((_, colIdx) => {
+              const colWidth = fmVolumeTradeFromColumnWidth(colIdx)
+              return (
+                <Box
+                  key={`sk-head-${colIdx}`}
+                  sx={mergeVolumeTableSx(fmVolumeTableBodyCellSx, {
+                    width: colWidth,
+                    minWidth: colWidth,
+                    flexShrink: 0,
+                    justifyContent: 'flex-end',
+                    bgcolor: 'commonColor.White',
+                  })}
+                >
+                  <Skeleton variant="rounded" height={14} sx={tradeSkeletonBarSx} />
+                </Box>
+              )
+            })}
+          </Stack>
+        </Box>
+      </Box>
+
+      {/* 본문: 고정열(To country) + 데이터 셀 모두 회색 바 */}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', minHeight: 0 }}>
+        <Stack sx={{ width: FM_VOLUME_TRADE_TO_COL_W, flexShrink: 0, borderRight: FM_VOLUME_TABLE_BORDER }}>
+          {rows.map((_, rowIdx) => (
+            <Box key={`sk-row-${rowIdx}`} sx={fmVolumeTableBodyCellSx}>
+              <Skeleton variant="rounded" height={14} sx={tradeSkeletonBarSx} />
+            </Box>
+          ))}
+        </Stack>
+
+        <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <Stack direction="row" alignItems="flex-start" sx={{ width: 'max-content' }}>
+            {columns.map((_, colIdx) => {
+              const colWidth = fmVolumeTradeFromColumnWidth(colIdx)
+              return (
+                <Stack key={`sk-bcol-${colIdx}`} sx={{ width: colWidth, minWidth: colWidth, flexShrink: 0 }}>
+                  {rows.map((__, rowIdx) => (
+                    <Box key={`sk-cell-${colIdx}-${rowIdx}`} sx={[fmVolumeTableBodyCellSx, { justifyContent: 'flex-end' }]}>
+                      <Skeleton variant="rounded" height={14} sx={tradeSkeletonBarSx} />
+                    </Box>
+                  ))}
+                </Stack>
+              )
+            })}
+          </Stack>
+        </Box>
       </Box>
     </Box>
-  </Stack>
-)
+  )
+}
 
 /** Trade From/To 국가 매트릭스 표 */
 const FundamentalModelTradeVolumesTable = memo(({ data, loading = false }: FundamentalModelTradeVolumesTableProps) => {
@@ -108,7 +212,16 @@ const FundamentalModelTradeVolumesTable = memo(({ data, loading = false }: Funda
   const hiddenMonthScrollBoxProps = useMemo(() => ({ sx: fmVolumeHiddenHorizontalScrollbarSx }), [])
 
   if (loading) {
-    return <TradeVolumesTableSkeleton colCount={fromColumns.length || 12} rowCount={toRows.length || 19} />
+    const toolbarProps = resolveTradeToolbarProps(data)
+    return (
+      <Stack gap="10px">
+        <FundamentalModelTradeSummaryToolbar {...toolbarProps} onProductChange={setSelectedProductId} onYearChange={setSelectedYearId} />
+        <TradeVolumesTableSkeleton
+          colCount={fromColumns.length || TRADE_SKELETON_COL_COUNT}
+          rowCount={toRows.length || TRADE_SKELETON_ROW_COUNT}
+        />
+      </Stack>
+    )
   }
 
   const headerFrozen = (

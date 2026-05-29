@@ -117,7 +117,7 @@ const VolumesTabPanel = ({ caseId, tradeVolumes, detailLoading }: VolumesTabPane
       />
 
       {scope === 'trade' ? (
-        <FundamentalModelTradeVolumesTable data={tradeVolumes} loading={detailLoading} />
+        <FundamentalModelTradeVolumesTable key={caseId ?? 'no-case'} data={tradeVolumes} loading={detailLoading} />
       ) : (
         <Stack gap="10px">
           <FundamentalModelVolumesMatrix columns={matrixColumns} granularity={matrixGranularity} loading={sectionLoading} compact />
