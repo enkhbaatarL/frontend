@@ -5,11 +5,7 @@ import type { IFundamentalModelPriceRes } from '@/service/mi/fundamentalModel/ca
 
 import FundamentalModelPriceChartSection from '@/pages/mi/fundamentalModel/components/price/FundamentalModelPriceChartSection'
 import FundamentalModelPriceTable from '@/pages/mi/fundamentalModel/components/price/FundamentalModelPriceTable'
-import {
-  buildPricePeriodTableColumns,
-  buildPricePeriodTableRows,
-  isPriceValueField,
-} from '@/pages/mi/fundamentalModel/components/price/priceTabPanelColumns'
+import { buildPricePeriodTableColumns, buildPricePeriodTableRows } from '@/pages/mi/fundamentalModel/components/price/priceTabPanelColumns'
 
 export interface PriceTabPanelProps {
   price: IFundamentalModelPriceRes | null
@@ -56,12 +52,7 @@ const PriceTabPanel = ({ price, loading }: PriceTabPanelProps) => {
 
         <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
           <PriceTableSection title="Monthly price output (USD/mmbtu, Real 2023)">
-            <FundamentalModelPriceTable
-              columns={monthlyColumns}
-              rows={monthlyRows}
-              loading={loading}
-              getCellSx={({ field }) => (isPriceValueField(field) ? { bgcolor: 'commonColor.Primarylight1' } : undefined)}
-            />
+            <FundamentalModelPriceTable columns={monthlyColumns} rows={monthlyRows} loading={loading} />
           </PriceTableSection>
         </Box>
       </Stack>

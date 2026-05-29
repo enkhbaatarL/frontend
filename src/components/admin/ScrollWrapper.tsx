@@ -14,6 +14,7 @@ import {
   WORKBENCH_SCROLL_EDGE_SHADOW_BOTTOM,
   WORKBENCH_SCROLL_EDGE_SHADOW_TOP,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
+import { chainBoundaryWheelScroll } from '@/utils/scrollChain'
 
 const SCROLL_EDGE_FADE_TRANSITION = `opacity ${WORKBENCH_EDGE_SHADOW_TRANSITION_MS}ms ${WORKBENCH_EDGE_SHADOW_TRANSITION_EASING}`
 
@@ -44,6 +45,8 @@ interface ScrollWrapperProps {
   thumbInsetTop?: number
   thumbInsetBottom?: number
   thumbWidth?: number
+  thumbMaxHeight?: number
+  overscrollBehavior?: CSSProperties['overscrollBehavior']
   showScrollbarOnHover?: boolean
   showScrollEdgeShadow?: boolean
   contentKey?: number | string
@@ -71,6 +74,8 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       thumbInsetTop,
       thumbInsetBottom,
       thumbWidth = DEFAULT_THUMB_WIDTH_PX,
+      thumbMaxHeight,
+      overscrollBehavior = 'none',
       showScrollbarOnHover = false,
       showScrollEdgeShadow = false,
       contentKey,
@@ -131,7 +136,8 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       }
 
       const availableHeight = clientHeight - thumbTopInset - thumbBottomInset
-      const nextThumbHeight = (clientHeight / scrollHeight) * availableHeight
+      const rawThumbHeight = (clientHeight / scrollHeight) * availableHeight
+      const nextThumbHeight = Math.min(rawThumbHeight, thumbMaxHeight ?? rawThumbHeight, availableHeight)
 
       setThumbHeight(nextThumbHeight)
 
@@ -143,7 +149,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
         const thumbTop = thumbTopInset + scrollRatio * maxThumbTop
         thumb.style.top = `${thumbTop}px`
       }
-    }, [thumbTopInset, thumbBottomInset, thumbRef, onScrollableChange])
+    }, [thumbTopInset, thumbBottomInset, thumbMaxHeight, thumbRef, onScrollableChange])
 
     const scheduleSyncThumb = useCallback(() => {
       if (syncThumbRafRef.current) cancelAnimationFrame(syncThumbRafRef.current)
@@ -187,7 +193,8 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
         const scrollHeight = container.scrollHeight
         const clientHeight = container.clientHeight
         const availableHeight = clientHeight - thumbTopInset - thumbBottomInset
-        const currentThumbHeight = (clientHeight / scrollHeight) * availableHeight
+        const rawThumbHeight = (clientHeight / scrollHeight) * availableHeight
+        const currentThumbHeight = Math.min(rawThumbHeight, thumbMaxHeight ?? rawThumbHeight, availableHeight)
         const maxScrollTop = scrollHeight - clientHeight
         const maxThumbTravel = Math.max(0, availableHeight - currentThumbHeight)
 
@@ -197,13 +204,21 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
 
         container.scrollTop = Math.max(0, Math.min(newScrollTop, maxScrollTop))
       },
-      [isDragging, startY, startScrollTop, thumbTopInset, thumbBottomInset],
+      [isDragging, startY, startScrollTop, thumbTopInset, thumbBottomInset, thumbMaxHeight],
     )
 
     // Handle mouse up to stop dragging
     const handleMouseUp = useCallback(() => {
       setIsDragging(false)
     }, [])
+
+    const handleWheel = useCallback(
+      (e: WheelEvent) => {
+        if (overscrollBehavior !== 'auto') return
+        if (chainBoundaryWheelScroll(e, containerRef.current)) syncThumb()
+      },
+      [overscrollBehavior, syncThumb],
+    )
 
     // Add event listeners for dragging
     useEffect(() => {
@@ -235,6 +250,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       scheduleSyncThumb()
 
       container.addEventListener('scroll', syncThumb)
+      container.addEventListener('wheel', handleWheel, { passive: false })
       window.addEventListener('resize', scheduleSyncThumb)
 
       const resizeObserver = new ResizeObserver(() => {
@@ -246,10 +262,11 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
 
       return () => {
         container.removeEventListener('scroll', syncThumb)
+        container.removeEventListener('wheel', handleWheel)
         window.removeEventListener('resize', scheduleSyncThumb)
         resizeObserver.disconnect()
       }
-    }, [children, syncThumb, scheduleSyncThumb, contentKey])
+    }, [children, syncThumb, scheduleSyncThumb, contentKey, handleWheel])
 
     useEffect(() => {
       const container = containerRef.current
@@ -342,7 +359,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                 }),
               overflowY: 'auto',
               overflowX: 'hidden',
-              overscrollBehavior: 'none',
+              overscrollBehavior,
               position: 'relative',
               zIndex: 1,
               paddingRight: isScrollable ? `${scrollbarGap}px` : '0',

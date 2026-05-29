@@ -52,7 +52,13 @@ const UploadGuideNotice = ({ hasError }: UploadGuideNoticeProps) => (
     }}
   >
     <Stack direction="row" alignItems="flex-start" gap="8px" sx={{ width: '100%', minWidth: 0 }}>
-      {hasError ? <WarningIconRed width={18} height={18} /> : <InfoIconSm width={18} height={18} />}
+      {hasError ? (
+        <WarningIconRed width={18} height={18} />
+      ) : (
+        <Box sx={{ color: 'mari.Primary', display: 'flex', flexShrink: 0 }}>
+          <InfoIconSm width={18} height={18} style={{ color: 'inherit' }} />
+        </Box>
+      )}
       <Typography fontSize="13px" fontWeight={600} lineHeight={1.4} color="contentText.Black" sx={{ minWidth: 0 }}>
         {UPLOAD_FILE_REQUIRED_TITLE}
       </Typography>

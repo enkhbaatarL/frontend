@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import AddIcon from '@/components/common/icons/AddIcon'
 import AsyncAutocomplete from '@/components/common/input/AsyncAutocomplete'
@@ -30,6 +31,13 @@ import fundamentalModelCaseService, {
 
 /** left list container 고정 높이 */
 const LIST_PANEL_HEIGHT = 900
+export const FUNDAMENTAL_MODEL_RUN_LIST_STICKY_TOP_PX = 72
+const LIST_PANEL_STICKY_BOTTOM_GAP = 24
+const LIST_SCROLLBAR_GAP = 12
+const LIST_SCROLL_THUMB_MAX_HEIGHT = 78
+export const FUNDAMENTAL_MODEL_RUN_LIST_PANEL_HEIGHT_CSS = `min(${LIST_PANEL_HEIGHT}px, calc(100vh - ${
+  FUNDAMENTAL_MODEL_RUN_LIST_STICKY_TOP_PX + LIST_PANEL_STICKY_BOTTOM_GAP
+}px))`
 
 /** 목록에 RUNNING 케이스가 있을 때 배지 갱신 주기 (ms) */
 const LIST_POLL_INTERVAL_MS = 5000
@@ -250,231 +258,260 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
   return (
     <Box
       sx={{
-        width: 350,
-        height: LIST_PANEL_HEIGHT,
+        width: '100%',
+        height: '100%',
+        minHeight: FUNDAMENTAL_MODEL_RUN_LIST_PANEL_HEIGHT_CSS,
         flexShrink: 0,
-        bgcolor: 'commonColor.White',
-        borderRadius: '10px',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
+        position: 'relative',
       }}
     >
-      <Stack direction="row" alignItems="center" justifyContent="space-between" px="20px" pt="20px" flexShrink={0}>
-        <Stack direction="row" alignItems="center" gap="6px">
-          <Typography variant="heading3" color="gray.90" sx={{ fontSize: '20px', fontWeight: 700, lineHeight: 1.4 }}>
-            List
-          </Typography>
-          <Box
-            sx={{
-              height: 26,
-              px: '8px',
-              borderRadius: '100px',
-              bgcolor: 'gray.30',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 'fit-content',
-            }}
-          >
-            <Typography variant="body2SB14" color="gray.90">
-              {listLoading ? '—' : formatRunCountLabel(totalCount)}
-            </Typography>
-          </Box>
-        </Stack>
-        <MIMorphingPopup
-          ref={uploadPopupRef}
-          display="inline-flex"
-          popup={{
-            title: (
-              <Box component="span" sx={{ typography: 'body1B16', color: 'contentText.Normal' }}>
-                파일 추가
-              </Box>
-            ),
-            content: uploadPopupContent,
-            measureContent: uploadPopupContent,
-            hideHeaderLine: true,
-            showSkeleton: false,
-            minWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
-            maxWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
-            borderRadius: '12px',
-            hideCloseButton: isCreateCasePending,
-            onClose: resetUploadPopup,
-          }}
-        >
-          <MIBaseButton
-            variant="contained"
-            prefix={<AddIcon />}
-            onClick={() => uploadPopupRef.current?.open()}
-            sx={{
-              height: '36px',
-            }}
-          >
-            Add File
-          </MIBaseButton>
-        </MIMorphingPopup>
-      </Stack>
-
-      <Stack direction="row" alignItems="center" gap="8px" px="20px" py="8px" flexShrink={0} width="100%" boxSizing="border-box">
-        <MISelectMenu
-          variant="outlined"
-          selected={searchField}
-          onSelected={(v: RunListSearchField) => setSearchField(v)}
-          items={SEARCH_FIELD_ITEMS}
-          sx={{
-            flexShrink: 0,
-            height: 40,
-            borderRadius: '10px',
-            color: 'content.textNormal',
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: 14,
-          }}
-        />
-        <Box sx={{ flex: 1, minWidth: 0, width: 0 }}>
-          <AsyncAutocomplete
-            value={keyword}
-            onInputChange={(_event, newValue) => {
-              setKeyword(newValue)
-            }}
-            onSearch={(v) => {
-              setCommittedKeyword(v)
-            }}
-            onClear={() => {
-              setKeyword('')
-              setCommittedKeyword('')
-            }}
-            showSearchIcon={true}
-            showOptionsOnFocus={false}
-            disableCache={true}
-            textFieldProps={{ placeholder: 'Search' }}
-            height={40}
-            width="100%"
-          />
-        </Box>
-      </Stack>
-
       <Box
         sx={{
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          px: '12px',
-          pb: '24px',
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 7,
         }}
       >
-        <Stack
+        <Box
+          data-testid="fundamental-run-list"
           sx={{
-            flex: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            gap: '4px',
-            pr: '4px',
-            '&::-webkit-scrollbar': { width: 4 },
-            '&::-webkit-scrollbar-thumb': { bgcolor: 'gray.40', borderRadius: '1000px' },
+            width: '100%',
+            height: FUNDAMENTAL_MODEL_RUN_LIST_PANEL_HEIGHT_CSS,
+            bgcolor: 'commonColor.White',
+            borderRadius: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            position: 'sticky',
+            top: FUNDAMENTAL_MODEL_RUN_LIST_STICKY_TOP_PX,
+            pointerEvents: 'auto',
           }}
         >
-          {listLoading &&
-            Array.from({ length: 5 }).map((_, i) => (
-              <Box key={`sk-card-${i}`} sx={{ px: '12px', py: '16px', borderRadius: '10px' }}>
-                <Skeleton width={88} height={22} sx={{ borderRadius: '4px', mb: 1 }} />
-                <Skeleton width="80%" height={22} sx={{ mb: 1 }} />
-                <Skeleton width="60%" height={16} sx={{ mb: 0.5 }} />
-                <Skeleton width="50%" height={16} />
+          <Stack direction="row" alignItems="center" justifyContent="space-between" px="20px" pt="20px" flexShrink={0}>
+            <Stack direction="row" alignItems="center" gap="6px">
+              <Typography variant="heading3" color="gray.90" sx={{ fontSize: '20px', fontWeight: 700, lineHeight: 1.4 }}>
+                List
+              </Typography>
+              <Box
+                sx={{
+                  height: 26,
+                  px: '8px',
+                  borderRadius: '100px',
+                  bgcolor: 'gray.30',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 'fit-content',
+                }}
+              >
+                <Typography variant="body2SB14" color="gray.90">
+                  {listLoading ? '—' : formatRunCountLabel(totalCount)}
+                </Typography>
               </Box>
-            ))}
-
-          {!listLoading &&
-            cases.map((item: IFundamentalModelCaseListItem) => {
-              const caseId = String(item.caseId)
-              const selected = caseId === selectedId
-              const sv = caseStatusVisual(item.status)
-              const createdAtLabel = formatWorkbenchDateTime(item.createdAt)
-              const updatedAtLabel = formatWorkbenchDateTime(item.updatedAt)
-
-              return (
-                <Box
-                  key={caseId}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onSelect(caseId)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      onSelect(caseId)
-                    }
-                  }}
-                  sx={{
-                    px: '12px',
-                    py: '16px',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    border: '1px solid',
-                    borderColor: selected ? 'mari.Primary' : 'transparent',
-
-                    bgcolor: selected ? 'gray.5' : 'commonColor.White',
-                    outline: 'none',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    flexShrink: 0,
-                    '&:hover': { bgcolor: 'gray.5' },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      alignSelf: 'flex-start',
-                      height: 22,
-                      px: '4px',
-                      borderRadius: '4px',
-                      bgcolor: sv.bg,
-                    }}
-                  >
-                    <Typography
-                      variant="body3SB12"
-                      sx={{
-                        color: sv.color,
-                        fontSize: 13,
-                        lineHeight: 1,
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {sv.label}
-                    </Typography>
+            </Stack>
+            <MIMorphingPopup
+              ref={uploadPopupRef}
+              display="inline-flex"
+              popup={{
+                title: (
+                  <Box component="span" sx={{ typography: 'body1B16', color: 'contentText.Normal' }}>
+                    파일 추가
                   </Box>
+                ),
+                content: uploadPopupContent,
+                measureContent: uploadPopupContent,
+                hideHeaderLine: true,
+                showSkeleton: false,
+                minWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
+                maxWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
+                borderRadius: '12px',
+                hideCloseButton: isCreateCasePending,
+                onClose: resetUploadPopup,
+              }}
+            >
+              <MIBaseButton
+                variant="contained"
+                prefix={<AddIcon />}
+                onClick={() => uploadPopupRef.current?.open()}
+                sx={{
+                  height: '36px',
+                }}
+              >
+                Add File
+              </MIBaseButton>
+            </MIMorphingPopup>
+          </Stack>
 
-                  <TruncatedLabel text={item.title} />
+          <Stack direction="row" alignItems="center" gap="8px" px="20px" py="8px" flexShrink={0} width="100%" boxSizing="border-box">
+            <MISelectMenu
+              variant="outlined"
+              selected={searchField}
+              onSelected={(v: RunListSearchField) => setSearchField(v)}
+              items={SEARCH_FIELD_ITEMS}
+              sx={{
+                flexShrink: 0,
+                height: 40,
+                borderRadius: '10px',
+                color: 'content.textNormal',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 14,
+              }}
+            />
+            <Box sx={{ flex: 1, minWidth: 0, width: 0 }}>
+              <AsyncAutocomplete
+                value={keyword}
+                onInputChange={(_event, newValue) => {
+                  setKeyword(newValue)
+                }}
+                onSearch={(v) => {
+                  setCommittedKeyword(v)
+                }}
+                onClear={() => {
+                  setKeyword('')
+                  setCommittedKeyword('')
+                }}
+                showSearchIcon={true}
+                showOptionsOnFocus={false}
+                disableCache={true}
+                textFieldProps={{ placeholder: 'Search' }}
+                height={40}
+                width="100%"
+              />
+            </Box>
+          </Stack>
 
-                  <Stack direction="row" alignItems="center" gap="8px" sx={{ minWidth: 0 }}>
-                    <Typography variant="body3R12" color="content.textNormal" noWrap>
-                      {createdAtLabel}
-                    </Typography>
-                    <Divider orientation="vertical" flexItem sx={{ borderColor: 'gray.40', height: 10, alignSelf: 'center' }} />
-                    <Stack direction="row" alignItems="center" gap="4px" sx={{ minWidth: 0 }}>
-                      <Typography variant="body3M12" color="content.textNormal" noWrap>
-                        업데이트
-                      </Typography>
-                      <Typography variant="body3R12" color="content.textNormal" noWrap>
-                        {updatedAtLabel}
-                      </Typography>
-                    </Stack>
-                  </Stack>
-
-                  <Stack direction="row" alignItems="center" gap="4px" sx={{ minWidth: 0 }}>
-                    <Typography variant="body3SB12" color="content.textNormal" flexShrink={0}>
-                      담당자
-                    </Typography>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <TruncatedLabel text={item.assigneeName} variant="body3R12" color="content.textNormal" />
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              px: '12px',
+              pb: '24px',
+            }}
+          >
+            <ScrollWrapper
+              height="100%"
+              maxHeight="100%"
+              scrollbarGap={LIST_SCROLLBAR_GAP}
+              thumbInsetTop={6}
+              thumbInsetBottom={6}
+              thumbWidth={4}
+              thumbMaxHeight={LIST_SCROLL_THUMB_MAX_HEIGHT}
+              showScrollbarOnHover
+              contentKey={listLoading ? 'loading' : cases.length}
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                width: '100%',
+              }}
+            >
+              <Stack gap="4px">
+                {listLoading &&
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <Box key={`sk-card-${i}`} sx={{ px: '12px', py: '16px', borderRadius: '10px' }}>
+                      <Skeleton width={88} height={22} sx={{ borderRadius: '4px', mb: 1 }} />
+                      <Skeleton width="80%" height={22} sx={{ mb: 1 }} />
+                      <Skeleton width="60%" height={16} sx={{ mb: 0.5 }} />
+                      <Skeleton width="50%" height={16} />
                     </Box>
-                  </Stack>
-                </Box>
-              )
-            })}
-        </Stack>
+                  ))}
+
+                {!listLoading &&
+                  cases.map((item: IFundamentalModelCaseListItem) => {
+                    const caseId = String(item.caseId)
+                    const selected = caseId === selectedId
+                    const sv = caseStatusVisual(item.status)
+                    const createdAtLabel = formatWorkbenchDateTime(item.createdAt)
+                    const updatedAtLabel = formatWorkbenchDateTime(item.updatedAt)
+
+                    return (
+                      <Box
+                        key={caseId}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onSelect(caseId)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            onSelect(caseId)
+                          }
+                        }}
+                        sx={{
+                          px: '12px',
+                          py: '16px',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          border: '1px solid',
+                          borderColor: selected ? 'mari.Primary' : 'transparent',
+
+                          bgcolor: selected ? 'gray.5' : 'commonColor.White',
+                          outline: 'none',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                          flexShrink: 0,
+                          '&:hover': { bgcolor: 'gray.5' },
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            alignSelf: 'flex-start',
+                            height: 22,
+                            px: '4px',
+                            borderRadius: '4px',
+                            bgcolor: sv.bg,
+                          }}
+                        >
+                          <Typography
+                            variant="body3SB12"
+                            sx={{
+                              color: sv.color,
+                              fontSize: 13,
+                              lineHeight: 1,
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            {sv.label}
+                          </Typography>
+                        </Box>
+
+                        <TruncatedLabel text={item.title} />
+
+                        <Stack direction="row" alignItems="center" gap="8px" sx={{ minWidth: 0 }}>
+                          <Typography variant="body3R12" color="content.textNormal" noWrap>
+                            {createdAtLabel}
+                          </Typography>
+                          <Divider orientation="vertical" flexItem sx={{ borderColor: 'gray.40', height: 10, alignSelf: 'center' }} />
+                          <Stack direction="row" alignItems="center" gap="4px" sx={{ minWidth: 0 }}>
+                            <Typography variant="body3M12" color="content.textNormal" noWrap>
+                              업데이트
+                            </Typography>
+                            <Typography variant="body3R12" color="content.textNormal" noWrap>
+                              {updatedAtLabel}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+
+                        <Stack direction="row" alignItems="center" gap="4px" sx={{ minWidth: 0 }}>
+                          <Typography variant="body3SB12" color="content.textNormal" flexShrink={0}>
+                            담당자
+                          </Typography>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <TruncatedLabel text={item.assigneeName} variant="body3R12" color="content.textNormal" />
+                          </Box>
+                        </Stack>
+                      </Box>
+                    )
+                  })}
+              </Stack>
+            </ScrollWrapper>
+          </Box>
+        </Box>
       </Box>
     </Box>
   )
