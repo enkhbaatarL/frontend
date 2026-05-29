@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import type { FundamentalModelScopeKey, FundamentalModelTradeVolumesData } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 import type { FundamentalModelVolumesGranularity, FundamentalModelVolumesSegment } from '@/service/mi/fundamentalModel/case'
 
+import FundamentalModelPageSkeleton from '@/pages/mi/fundamentalModel/components/common/FundamentalModelPageSkeleton'
 import FundamentalModelSectionVolumesTable from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSectionVolumesTable'
 import FundamentalModelSegmentToolbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSegmentToolbar'
 import FundamentalModelTradeVolumesTable from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelTradeVolumesTable'
@@ -28,11 +29,6 @@ export interface VolumesTabPanelProps {
   tradeVolumes: FundamentalModelTradeVolumesData
   /** 케이스 상세 로딩 상태(헤더/탭 전환과 동기화) */
   detailLoading: boolean
-}
-
-const SECTION_VOLUMES_SKELETON_ROW_COUNT: Record<'global' | 'lng', number> = {
-  global: 45,
-  lng: 18,
 }
 
 const SCOPE_TO_SEGMENT: Record<FundamentalModelScopeKey, FundamentalModelVolumesSegment> = {
@@ -82,8 +78,9 @@ const VolumesTabPanel = ({ caseId, tradeVolumes, detailLoading }: VolumesTabPane
 
   const {
     data: volumesRes,
-    isFetching: volumesFetching,
     isLoading: volumesLoading,
+    isFetching: volumesFetching,
+    isPending: volumesPending,
   } = useQuery({
     queryKey: ['fundamentalModel', 'volumes', caseId, segment, granularity, apiTypes, apiRegions],
     queryFn: () =>
@@ -98,10 +95,13 @@ const VolumesTabPanel = ({ caseId, tradeVolumes, detailLoading }: VolumesTabPane
     placeholderData: (previous) => previous,
   })
 
-  const sectionLoading = detailLoading || volumesLoading || volumesFetching
   const matrixGranularity: FundamentalModelVolumesGranularity = volumesRes?.granularity ?? granularity
   const matrixColumns = volumesRes?.columns ?? []
   const sectionRows = volumesRes?.rows ?? []
+  const hasSectionVolumesData = matrixColumns.length > 0
+
+  /** getVolumes 응답 전 - 빈 Matrix/Section 대신 페이지형 스켈레톤 */
+  const isSectionVolumesResolving = enableSectionQuery && !hasSectionVolumesData && (volumesPending || volumesLoading || volumesFetching)
 
   return (
     <Stack sx={{ gap: '16px' }}>
@@ -117,16 +117,13 @@ const VolumesTabPanel = ({ caseId, tradeVolumes, detailLoading }: VolumesTabPane
       />
 
       {scope === 'trade' ? (
-        <FundamentalModelTradeVolumesTable key={caseId ?? 'no-case'} data={tradeVolumes} loading={detailLoading} />
+        <FundamentalModelTradeVolumesTable key={caseId ?? 'no-case'} data={tradeVolumes} />
+      ) : isSectionVolumesResolving ? (
+        <FundamentalModelPageSkeleton />
       ) : (
         <Stack gap="10px">
-          <FundamentalModelVolumesMatrix columns={matrixColumns} granularity={matrixGranularity} loading={sectionLoading} compact />
-          <FundamentalModelSectionVolumesTable
-            columns={matrixColumns}
-            rows={sectionRows}
-            loading={sectionLoading}
-            skeletonRowCount={scope === 'global' ? SECTION_VOLUMES_SKELETON_ROW_COUNT.global : SECTION_VOLUMES_SKELETON_ROW_COUNT.lng}
-          />
+          <FundamentalModelVolumesMatrix columns={matrixColumns} granularity={matrixGranularity} compact />
+          <FundamentalModelSectionVolumesTable columns={matrixColumns} rows={sectionRows} />
         </Stack>
       )}
     </Stack>

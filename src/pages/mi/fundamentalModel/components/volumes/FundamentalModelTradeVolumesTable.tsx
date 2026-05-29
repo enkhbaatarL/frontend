@@ -54,8 +54,8 @@ const tradeBodyScrollWrapperProps = {
 } as const
 
 /** 데이터 미도착 시 사용할 기본 행/열 수(Trade 표 고정 구조 기준) */
-const TRADE_SKELETON_COL_COUNT = FM_VOLUME_TRADE_FROM_COL_WIDTHS.length
-const TRADE_SKELETON_ROW_COUNT = 18
+export const TRADE_SKELETON_COL_COUNT = FM_VOLUME_TRADE_FROM_COL_WIDTHS.length
+export const TRADE_SKELETON_ROW_COUNT = 18
 
 /** 올해 기준 연도 옵션(올해 포함 +9년, 총 10개) */
 const buildTradeYearOptions = (count = 10) => {
@@ -92,8 +92,15 @@ const tradeSkeletonBarSx = { width: '64%', borderRadius: '4px' } as const
 /**
  * Trade 표 스켈레톤: 표 프레임/헤더(To country | From country)는 그대로 유지하고
  * 국가 라벨과 데이터 셀만 회색 바로 채워, API 호출 전에도 표가 고정되어 보이도록 한다.
+ * Trade 매트릭스 API 연동 시 `loading` 분기에서 사용 예정.
  */
-const TradeVolumesTableSkeleton = ({ colCount, rowCount }: { colCount: number; rowCount: number }) => {
+export const TradeVolumesTableSkeleton = ({
+  colCount = TRADE_SKELETON_COL_COUNT,
+  rowCount = TRADE_SKELETON_ROW_COUNT,
+}: {
+  colCount?: number
+  rowCount?: number
+}) => {
   const columns = Array.from({ length: colCount })
   const rows = Array.from({ length: rowCount })
 
@@ -210,19 +217,7 @@ const FundamentalModelTradeVolumesTable = memo(({ data, loading = false }: Funda
   }, [])
 
   const hiddenMonthScrollBoxProps = useMemo(() => ({ sx: fmVolumeHiddenHorizontalScrollbarSx }), [])
-
-  if (loading) {
-    const toolbarProps = resolveTradeToolbarProps(data)
-    return (
-      <Stack gap="10px">
-        <FundamentalModelTradeSummaryToolbar {...toolbarProps} onProductChange={setSelectedProductId} onYearChange={setSelectedYearId} />
-        <TradeVolumesTableSkeleton
-          colCount={fromColumns.length || TRADE_SKELETON_COL_COUNT}
-          rowCount={toRows.length || TRADE_SKELETON_ROW_COUNT}
-        />
-      </Stack>
-    )
-  }
+  const toolbarProps = resolveTradeToolbarProps(data)
 
   const headerFrozen = (
     <Stack sx={{ width: FM_VOLUME_TRADE_TO_COL_W, flexShrink: 0, borderRight: FM_VOLUME_TABLE_BORDER }}>
@@ -334,11 +329,9 @@ const FundamentalModelTradeVolumesTable = memo(({ data, loading = false }: Funda
   return (
     <Stack gap="10px">
       <FundamentalModelTradeSummaryToolbar
-        productOptions={data.productOptions}
-        yearOptions={data.yearOptions}
+        {...toolbarProps}
         selectedProductId={selectedProductId}
         selectedYearId={selectedYearId}
-        unitLabel={data.unitLabel}
         loading={loading}
         onProductChange={setSelectedProductId}
         onYearChange={setSelectedYearId}

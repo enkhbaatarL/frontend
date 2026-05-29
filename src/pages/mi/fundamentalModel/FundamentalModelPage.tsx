@@ -1,9 +1,10 @@
-import { Box, Skeleton, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import useSnackbar from '@/hooks/useSnackbar'
+import FundamentalModelPageSkeleton from '@/pages/mi/fundamentalModel/components/common/FundamentalModelPageSkeleton'
 import FundamentalModelTab from '@/pages/mi/fundamentalModel/components/common/FundamentalModelTab'
 import FundamentalModelRunList from '@/pages/mi/fundamentalModel/components/FundamentalModelRunList'
 import FundamentalModelRunPlaceholder from '@/pages/mi/fundamentalModel/components/FundamentalModelRunPlaceholder'
@@ -205,26 +206,7 @@ const FundamentalModelPage = () => {
         }}
       >
         {isCaseDetailResolving ? (
-          <Box
-            sx={{
-              flex: 1,
-              width: '100%',
-              alignSelf: 'stretch',
-              minHeight: 480,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              px: '24px',
-              py: '40px',
-              boxSizing: 'border-box',
-            }}
-          >
-            <Stack alignItems="center" gap="12px" sx={{ width: '100%', maxWidth: 360 }}>
-              <Skeleton variant="circular" width={64} height={64} />
-              <Skeleton variant="rounded" width="70%" height={28} />
-              <Skeleton variant="rounded" width="52%" height={18} />
-            </Stack>
-          </Box>
+          <FundamentalModelPageSkeleton />
         ) : placeholderMode ? (
           <FundamentalModelRunPlaceholder mode={placeholderMode} onRun={handleRun} onRetry={handleRetry} runActionDisabled={isRunPending} />
         ) : isCompletedCase && viewTab === 'volumes' ? (
