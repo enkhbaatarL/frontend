@@ -136,7 +136,7 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, tradeVolumes, detailLoadi
       <Stack sx={{ gap: '16px' }}>
         {!toolbarSlotEl && toolbar}
         {scope === 'trade' ? (
-          <FundamentalModelTradeVolumesTable data={tradeVolumes} loading={detailLoading} />
+          <FundamentalModelTradeVolumesTable data={tradeVolumes} filters={scopedVolumeFilters} loading={detailLoading} />
         ) : (
           <Stack gap="10px">
             <Stack direction="row" alignItems="center" gap="4px" sx={{ minHeight: 28 }}>

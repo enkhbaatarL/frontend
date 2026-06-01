@@ -11,12 +11,20 @@ export const FM_VOLUME_TYPE_OPTIONS = [
   { value: 'pipeline-exports', label: 'Pipeline Exports', api: 'PIPELINE_EXPORTS' },
 ] as const satisfies ReadonlyArray<{ value: string; label: string; api: FundamentalModelVolumesType }>
 
-export type FundamentalModelVolumeTypeOption = (typeof FM_VOLUME_TYPE_OPTIONS)[number]
+export const FM_VOLUME_TRADE_TO_COUNTRY_TYPE_ID = 'to-country'
+export const FM_VOLUME_TRADE_FROM_COUNTRY_TYPE_ID = 'from-country'
+
+export const FM_VOLUME_TRADE_TYPE_OPTIONS = [
+  { value: FM_VOLUME_TRADE_TO_COUNTRY_TYPE_ID, label: 'To country' },
+  { value: FM_VOLUME_TRADE_FROM_COUNTRY_TYPE_ID, label: 'From country' },
+] as const satisfies ReadonlyArray<{ value: string; label: string }>
+
+export type FundamentalModelVolumeTypeOption = (typeof FM_VOLUME_TYPE_OPTIONS)[number] | (typeof FM_VOLUME_TRADE_TYPE_OPTIONS)[number]
 
 const FM_VOLUME_TYPE_OPTIONS_BY_SCOPE: Record<FundamentalModelScopeKey, readonly FundamentalModelVolumeTypeOption[]> = {
   global: FM_VOLUME_TYPE_OPTIONS,
   lng: FM_VOLUME_TYPE_OPTIONS.filter((option) => option.api === 'LNG_IMPORTS' || option.api === 'LNG_EXPORTS'),
-  trade: FM_VOLUME_TYPE_OPTIONS.filter((option) => option.api !== 'DEMAND' && option.api !== 'PRODUCTION'),
+  trade: FM_VOLUME_TRADE_TYPE_OPTIONS,
 }
 
 export const getVolumeTypeOptionsForScope = (scope: FundamentalModelScopeKey): readonly FundamentalModelVolumeTypeOption[] =>
@@ -80,7 +88,7 @@ export const normalizeVolumeFiltersForScope = (
   const types = filters.types.filter((id) => scopedTypeSet.has(id))
 
   return {
-    types: types.length > 0 ? types : scopedTypeIds,
+    types: types.length > 0 || filters.types.length === 0 ? types : scopedTypeIds,
     regions: filters.regions,
   }
 }

@@ -235,11 +235,6 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
   const totalCount = caseList?.totalCount ?? cases.length
 
   useEffect(() => {
-    if (listLoading || cases.length === 0 || selectedId) return
-    onSelect(String(cases[0].caseId), cases[0].status)
-  }, [cases, listLoading, onSelect, selectedId])
-
-  useEffect(() => {
     if (listLoading || !selectedId) return
     const selectedCase = cases.find((item) => String(item.caseId) === selectedId)
     if (!selectedCase) return
