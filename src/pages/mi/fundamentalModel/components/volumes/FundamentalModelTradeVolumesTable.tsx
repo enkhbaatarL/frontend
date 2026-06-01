@@ -1,12 +1,22 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import type { FundamentalModelTradeRowKind, FundamentalModelTradeVolumesData } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type {
+  FundamentalModelTradeFromColumn,
+  FundamentalModelTradeRowKind,
+  FundamentalModelTradeVolumeRow,
+  FundamentalModelTradeVolumesData,
+} from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIFrozenColumnScrollLayout from '@/pages/mi/fundamentalModel/components/common/MIFrozenColumnScrollLayout'
 import FundamentalModelHoverHorizontalScrollbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelHoverHorizontalScrollbar'
 import FundamentalModelTradeSummaryToolbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelTradeSummaryToolbar'
+import {
+  FM_VOLUME_TRADE_FROM_COUNTRY_TYPE_ID,
+  FM_VOLUME_TRADE_TO_COUNTRY_TYPE_ID,
+  type FundamentalModelVolumeFilters,
+} from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumeFilters'
 import {
   FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H,
   FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT,
@@ -37,13 +47,59 @@ import {
 
 export interface FundamentalModelTradeVolumesTableProps {
   data: FundamentalModelTradeVolumesData
+  filters: FundamentalModelVolumeFilters
   loading?: boolean
+}
+
+type TradeRegionAwareItem = Pick<FundamentalModelTradeFromColumn | FundamentalModelTradeVolumeRow, 'label' | 'kind'>
+
+interface TradeRegionAwareEntry<T extends TradeRegionAwareItem> {
+  item: T
+  index: number
+  regionId: string | null
+}
+
+const TRADE_REGION_LABEL_TO_ID: Record<string, string> = {
+  africa: 'africa',
+  asia: 'asia',
+  australia: 'australia',
+  europe: 'europe',
+  'middle east': 'middle-east',
+  russia: 'russia',
+  'america n': 'north-america',
+  'north america': 'north-america',
+  'america s': 'south-america',
+  'south america': 'south-america',
 }
 
 const rowTypography = (kind: FundamentalModelTradeRowKind) => {
   if (kind === 'country') return { variant: 'body2R14' as const }
   return { variant: 'body2SB14' as const }
 }
+
+const normalizeTradeRegionId = (label: string): string | null => TRADE_REGION_LABEL_TO_ID[label.trim().toLowerCase()] ?? null
+
+const attachTradeRegionIds = <T extends TradeRegionAwareItem>(items: T[]): TradeRegionAwareEntry<T>[] => {
+  let currentRegionId: string | null = null
+
+  return items.map((item, index) => {
+    if (item.kind === 'region') {
+      currentRegionId = normalizeTradeRegionId(item.label)
+    }
+
+    return {
+      item,
+      index,
+      regionId: item.kind === 'total' ? null : (normalizeTradeRegionId(item.label) ?? currentRegionId),
+    }
+  })
+}
+
+const filterTradeEntriesByRegion = <T extends TradeRegionAwareItem>(
+  entries: TradeRegionAwareEntry<T>[],
+  selectedRegionIds: Set<string>,
+): TradeRegionAwareEntry<T>[] =>
+    entries.filter(({ item, regionId }) => item.kind === 'total' || (regionId !== null && selectedRegionIds.has(regionId)))
 
 const parseTradeValue = (value: string | null): number | null => {
   if (typeof value !== 'string') return null
@@ -58,6 +114,31 @@ const formatTradeTotalValue = (values: (string | null)[], fromColumns: Fundament
     .filter((value): value is number => value !== null)
   if (numbers.length === 0) return '-'
   return numbers.reduce((sum, value) => sum + value, 0).toFixed(1)
+}
+
+const filterTradeVolumesByFilters = (
+  data: FundamentalModelTradeVolumesData,
+  filters: FundamentalModelVolumeFilters,
+): FundamentalModelTradeVolumesData => {
+  const selectedRegionIds = new Set(filters.regions)
+  const shouldFilterToCountries = filters.types.includes(FM_VOLUME_TRADE_TO_COUNTRY_TYPE_ID)
+  const shouldFilterFromCountries = filters.types.includes(FM_VOLUME_TRADE_FROM_COUNTRY_TYPE_ID)
+
+  const fromEntries = attachTradeRegionIds(data.fromColumns)
+  const visibleFromEntries = shouldFilterFromCountries ? filterTradeEntriesByRegion(fromEntries, selectedRegionIds) : fromEntries
+  const visibleFromIndices = visibleFromEntries.map(({ index }) => index)
+
+  const toEntries = attachTradeRegionIds(data.toRows)
+  const visibleToEntries = shouldFilterToCountries ? filterTradeEntriesByRegion(toEntries, selectedRegionIds) : toEntries
+
+  return {
+    ...data,
+    fromColumns: visibleFromEntries.map(({ item }) => item),
+    toRows: visibleToEntries.map(({ item }) => ({
+      ...item,
+      values: visibleFromIndices.map((index) => item.values[index] ?? null),
+    })),
+  }
 }
 
 const tradeBodyScrollWrapperProps = {
@@ -121,8 +202,9 @@ export const TradeVolumesTableSkeleton = () => (
 )
 
 /** Trade From/To 국가 매트릭스 표 */
-const FundamentalModelTradeVolumesTable = memo(({ data, loading = false }: FundamentalModelTradeVolumesTableProps) => {
-  const { fromColumns, toRows } = data
+const FundamentalModelTradeVolumesTable = memo(({ data, filters, loading = false }: FundamentalModelTradeVolumesTableProps) => {
+  const filteredData = useMemo(() => filterTradeVolumesByFilters(data, filters), [data, filters])
+  const { fromColumns, toRows } = filteredData
   const [selectedProductId, setSelectedProductId] = useState(data.selectedProductId)
   const [selectedYearId, setSelectedYearId] = useState(data.selectedYearId)
 
@@ -434,7 +516,7 @@ const FundamentalModelTradeVolumesTable = memo(({ data, loading = false }: Funda
             maxHeight: FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT - FM_VOLUME_TRADE_TABLE_HEADER_H,
           }}
         >
-          <ScrollWrapper ref={bodyScrollRef} {...tradeBodyScrollWrapperProps} contentKey={toRows.length}>
+          <ScrollWrapper ref={bodyScrollRef} {...tradeBodyScrollWrapperProps} contentKey={`${toRows.length}-${fromColumns.length}`}>
             <MIFrozenColumnScrollLayout
               frozen={bodyFrozen}
               scrollable={bodyScrollable}

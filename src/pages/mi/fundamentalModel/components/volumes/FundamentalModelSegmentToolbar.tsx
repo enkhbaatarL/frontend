@@ -145,21 +145,23 @@ const FundamentalModelSegmentToolbar = ({
           enableHoverBackground
           sx={{ minWidth: 105, height: 40 }}
         />
-        <MISelectMenu
-          variant="outlined"
-          selected={period}
-          onSelected={(v: string) => onPeriodChange(v)}
-          items={periodItems}
-          enableHoverBackground
-          sx={{
-            height: 40,
-            borderRadius: '10px',
-            color: 'gray.70',
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: 14,
-          }}
-        />
+        {scope !== 'trade' && (
+          <MISelectMenu
+            variant="outlined"
+            selected={period}
+            onSelected={(v: string) => onPeriodChange(v)}
+            items={periodItems}
+            enableHoverBackground
+            sx={{
+              height: 40,
+              borderRadius: '10px',
+              color: 'gray.70',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: 14,
+            }}
+          />
+        )}
       </Stack>
     </Stack>
   )
