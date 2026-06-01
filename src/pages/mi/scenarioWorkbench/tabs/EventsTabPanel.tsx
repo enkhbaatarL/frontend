@@ -6,8 +6,6 @@ import { useNavigate } from 'react-router-dom'
 
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
-import MIFilterMenu, { FilterValues } from '@/components/common/menu/MIFilterMenu'
-import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
@@ -17,9 +15,12 @@ import {
   buildWorkbenchDatePresets,
   defaultWorkbenchDateRange,
 } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
+import EventCategoryFilterMenu from '@/pages/mi/scenarioWorkbench/components/event/EventCategoryFilterMenu'
 import EventIndexSignalCell from '@/pages/mi/scenarioWorkbench/components/event/EventIndexSignalCell'
 import EventRecommendedStarCell from '@/pages/mi/scenarioWorkbench/components/event/EventRecommendedStarCell'
 import EventScenarioGenerateButton from '@/pages/mi/scenarioWorkbench/components/event/EventScenarioGenerateButton'
+import EventSortSelectMenu from '@/pages/mi/scenarioWorkbench/components/event/EventSortSelectMenu'
+import EventsTableEmptyOverlay from '@/pages/mi/scenarioWorkbench/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/scenarioWorkbench/components/event/EventStatusBadge'
 import { scenarioWorkbenchMockApi, type MockEventRow } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchEventMockApi'
 import { WorkbenchStickySlot } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchStickyLayout'
@@ -283,12 +284,20 @@ const EventsTabPanel = () => {
 
   const getEventsTableCellSx = useCallback(({ field }: { field: string }) => {
     if (field === 'occurredAt') return { px: '6px' }
+    if (field === 'jkm' || field === 'ttf' || field === 'hh' || field === 'scenario') return { px: '24px' }
     return {}
   }, [])
 
+  const getEventsTableHeaderCellSx = useCallback((col: GridColDef<MockEventRow>) => {
+    if (col.field === 'jkm' || col.field === 'ttf' || col.field === 'hh' || col.field === 'scenario') {
+      return { px: '24px' }
+    }
+    return undefined
+  }, [])
+
   const handleCategoryFilterApply = useCallback(
-    (filterValues: FilterValues) => {
-      setCategoryFilter((filterValues.category ?? []) as EventCategoryLv1[])
+    (next: EventCategoryLv1[]) => {
+      setCategoryFilter(next)
       resetPage()
     },
     [resetPage],
@@ -330,7 +339,12 @@ const EventsTabPanel = () => {
     setPagination((p) => ({ ...p, page }))
   }, [])
 
-  const emptyMessage = isError ? '목록을 불러오지 못했습니다.' : '이벤트가 없습니다.'
+  const emptyOverlay = useMemo(() => {
+    if (isError) {
+      return <EventsTableEmptyOverlay message="목록을 불러오지 못했습니다." />
+    }
+    return <EventsTableEmptyOverlay message="조건에 맞는 항목이 없습니다" />
+  }, [isError])
 
   return (
     <Box width="100%">
@@ -348,23 +362,10 @@ const EventsTabPanel = () => {
               sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
             />
 
-            <MIFilterMenu
-              filterGroups={[
-                [
-                  {
-                    key: 'category',
-                    title: '카테고리',
-                    filters: categoryFilterItems,
-                    width: 175,
-                  },
-                ],
-              ]}
-              initialValues={{ category: categoryFilter }}
-              appliedFiltersCount={categoryFilter.length}
+            <EventCategoryFilterMenu
+              filters={categoryFilterItems}
+              selected={categoryFilter}
               onApply={handleCategoryFilterApply}
-              showSaveOption={false}
-              label="카테고리"
-              sx={{ minWidth: 106 }}
               closeOnScroll
             />
 
@@ -377,20 +378,18 @@ const EventsTabPanel = () => {
               {...dateRangeMenuLayoutProps}
             />
 
-            <MISelectMenu<ScenarioWorkbenchEventSort>
-              variant="outlined"
-              buttonHoverBgColor="gray.20"
+            <EventSortSelectMenu<ScenarioWorkbenchEventSort>
               selected={sort}
               onSelected={handleSortChange}
-              items={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
+              items={SORT_OPTIONS}
               closeOnScroll
             />
           </Stack>
 
-          <Stack direction="row" alignItems="center" gap={3} sx={{ flexShrink: 0 }}>
+          <Stack direction="row" alignItems="center" gap="12px" sx={{ flexShrink: 0 }}>
             <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
               <Switch size="small" checked={hideNonRecommended} onChange={(_, checked) => setHideNonRecommended(checked)} />
-              <Typography variant="body2M14" color="contentText.Black">
+              <Typography variant="body2M14" color={hideNonRecommended ? 'contentText.Black' : 'contentText.Normal'}>
                 추천 항목만 보기
               </Typography>
             </Stack>
@@ -406,7 +405,7 @@ const EventsTabPanel = () => {
           </Stack>
         </Stack>
 
-        <MIDataTableHeader<MockEventRow> columns={columns} sx={{ mt: 2 }} />
+        <MIDataTableHeader<MockEventRow> columns={columns} getHeaderCellSx={getEventsTableHeaderCellSx} sx={{ mt: 2 }} />
       </WorkbenchStickySlot>
 
       <MIDataTableBody<MockEventRow>
@@ -416,7 +415,7 @@ const EventsTabPanel = () => {
         loading={isLoading}
         skeletonRowCount={pagination.size}
         rowHeight={48}
-        noRowMessage={emptyMessage}
+        noRowsOverlay={emptyOverlay}
         onRowClick={handleRowClick}
         getCellSx={getEventsTableCellSx}
       />

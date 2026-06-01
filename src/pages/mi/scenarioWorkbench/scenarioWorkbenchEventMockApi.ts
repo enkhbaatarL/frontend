@@ -28,6 +28,8 @@ const buildIndexImpact = (
   direction,
 })
 
+// const MOCK_ROWS: MockEventRow[] = []
+
 const MOCK_ROWS: MockEventRow[] = [
   {
     eventId: '1001',
