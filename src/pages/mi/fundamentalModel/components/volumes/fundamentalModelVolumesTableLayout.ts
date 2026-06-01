@@ -13,6 +13,8 @@ export const FM_VOLUME_TABLE_BODY_H = 40
 
 /** Global 본문 표 최대 높이(Table 900px) */
 export const FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT = 900
+/** Volumes 로딩 중 표 영역 placeholder 고정 높이 */
+export const FM_VOLUME_TABLE_SKELETON_H = 460
 /** 하단 가로 스크롤 트랙 높이 */
 export const FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H = 12
 export const FM_VOLUME_GLOBAL_TABLE_BODY_MAX_HEIGHT =

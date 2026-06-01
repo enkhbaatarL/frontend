@@ -103,6 +103,7 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
           <ScenarioSummaryChart
             priceForecast={priceForecast}
             emptyMessage="표시할 가격 데이터가 없습니다."
+            disableIntroAnimation
             headerEnd={
               priceRegionOptions.length > 0 ? (
                 <MISlidingSegmented options={priceRegionOptions} value={effectiveSelectedPriceRegion} onChange={setSelectedPriceRegion} />

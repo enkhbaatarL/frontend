@@ -44,7 +44,7 @@ const LIST_POLL_INTERVAL_MS = 5000
 
 export interface FundamentalModelRunListProps {
   selectedId: string
-  onSelect: (id: string) => void
+  onSelect: (id: string, status?: IFundamentalModelCaseListItem['status']) => void
 }
 
 /** 목록 검색 기준 */
@@ -177,7 +177,7 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
       setKeyword('')
       setCommittedKeyword('')
       void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'cases'] })
-      onSelect(String(createdCase.caseId))
+      onSelect(String(createdCase.caseId), createdCase.status)
       showSnackbar('파일 업로드가 완료되었습니다.', { variant: 'success' })
       uploadPopupRef.current?.close()
     },
@@ -236,7 +236,14 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
 
   useEffect(() => {
     if (listLoading || cases.length === 0 || selectedId) return
-    onSelect(String(cases[0].caseId))
+    onSelect(String(cases[0].caseId), cases[0].status)
+  }, [cases, listLoading, onSelect, selectedId])
+
+  useEffect(() => {
+    if (listLoading || !selectedId) return
+    const selectedCase = cases.find((item) => String(item.caseId) === selectedId)
+    if (!selectedCase) return
+    onSelect(selectedId, selectedCase.status)
   }, [cases, listLoading, onSelect, selectedId])
 
   const uploadPopupContent = (
@@ -432,11 +439,11 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
                         key={caseId}
                         role="button"
                         tabIndex={0}
-                        onClick={() => onSelect(caseId)}
+                        onClick={() => onSelect(caseId, item.status)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault()
-                            onSelect(caseId)
+                            onSelect(caseId, item.status)
                           }
                         }}
                         sx={{

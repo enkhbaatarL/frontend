@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { type ReactNode, useMemo } from 'react'
+import { memo, type ReactNode, useMemo } from 'react'
 
 import type { IFundamentalModelPriceRes } from '@/service/mi/fundamentalModel/case'
 
@@ -27,7 +27,7 @@ const PriceTableSection = ({ title, children, sx }: PriceTableSectionProps) => (
   </Stack>
 )
 
-const PriceTabPanel = ({ price, loading }: PriceTabPanelProps) => {
+const PriceTabPanel = memo(({ price, loading }: PriceTabPanelProps) => {
   const annualColumns = useMemo(() => buildPricePeriodTableColumns(price?.annualTable, false), [price?.annualTable])
   const annualRows = useMemo(() => buildPricePeriodTableRows(price?.annualTable, false), [price?.annualTable])
   const monthlyColumns = useMemo(() => buildPricePeriodTableColumns(price?.monthlyTable, true), [price?.monthlyTable])
@@ -58,6 +58,8 @@ const PriceTabPanel = ({ price, loading }: PriceTabPanelProps) => {
       </Stack>
     </Stack>
   )
-}
+})
+
+PriceTabPanel.displayName = 'PriceTabPanel'
 
 export default PriceTabPanel

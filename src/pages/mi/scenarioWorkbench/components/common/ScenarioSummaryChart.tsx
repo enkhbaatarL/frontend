@@ -106,6 +106,7 @@ interface ScenarioSummaryChartProps {
   chartColorMap?: Map<string, string>
   emptyMessage?: string
   modelExecutionGenerating?: boolean
+  disableIntroAnimation?: boolean
 }
 
 const ScenarioSummaryChart = ({
@@ -117,6 +118,7 @@ const ScenarioSummaryChart = ({
   chartColorMap: chartColorMapProp,
   emptyMessage = 'MI 수급 모델 실행 후 차트가 생성됩니다.',
   modelExecutionGenerating = false,
+  disableIntroAnimation = false,
 }: ScenarioSummaryChartProps) => {
   const [chartVisibilityMap, setChartVisibilityMap] = useState<Map<string, boolean>>(new Map())
   const [hoveredChartKey, setHoveredChartKey] = useState<string | null>(null)
@@ -237,6 +239,7 @@ const ScenarioSummaryChart = ({
             hoveredChartKey={highlightVisibilityKey}
             chartColorMap={chartColorMap}
             spanGaps
+            disableIntroAnimation={disableIntroAnimation}
           />
         ) : (
           <Stack height="100%" alignItems="center" justifyContent="center" gap="10px" sx={{ userSelect: 'none' }}>

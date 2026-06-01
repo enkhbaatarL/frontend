@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import type { FundamentalModelScopeKey, FundamentalModelTradeVolumesData } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
@@ -33,11 +33,6 @@ export interface VolumesTabPanelProps {
   detailLoading: boolean
 }
 
-const SECTION_VOLUMES_SKELETON_ROW_COUNT: Record<'global' | 'lng', number> = {
-  global: 45,
-  lng: 18,
-}
-
 const SCOPE_TO_SEGMENT: Record<FundamentalModelScopeKey, FundamentalModelVolumesSegment> = {
   global: 'GLOBAL',
   lng: 'LNG',
@@ -48,7 +43,7 @@ const periodToGranularity = (period: string): FundamentalModelVolumesGranularity
 const PLATFORM_VOLUME_UNIT_LABEL = 'mtpa'
 
 /** Volumes 탭 본문(툴바 + 매트릭스 - 레이아웃은 FundamentalModelPage) */
-const VolumesTabPanel = ({ caseId, toolbarSlotEl, tradeVolumes, detailLoading }: VolumesTabPanelProps) => {
+const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, tradeVolumes, detailLoading }: VolumesTabPanelProps) => {
   const [scope, setScope] = useState<FundamentalModelScopeKey>('global')
   const [period, setPeriod] = useState('yearly')
   const savedFilters = readSavedVolumeFilters()
@@ -152,17 +147,14 @@ const VolumesTabPanel = ({ caseId, toolbarSlotEl, tradeVolumes, detailLoading }:
                 {sectionLoading ? '-' : PLATFORM_VOLUME_UNIT_LABEL}
               </Typography>
             </Stack>
-            <FundamentalModelSectionVolumesTable
-              columns={volumeColumns}
-              rows={sectionRows}
-              loading={sectionLoading}
-              skeletonRowCount={scope === 'global' ? SECTION_VOLUMES_SKELETON_ROW_COUNT.global : SECTION_VOLUMES_SKELETON_ROW_COUNT.lng}
-            />
+            <FundamentalModelSectionVolumesTable columns={volumeColumns} rows={sectionRows} loading={sectionLoading} />
           </Stack>
         )}
       </Stack>
     </>
   )
-}
+})
+
+VolumesTabPanel.displayName = 'VolumesTabPanel'
 
 export default VolumesTabPanel

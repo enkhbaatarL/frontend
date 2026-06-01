@@ -2,6 +2,8 @@ import { Box, Stack, Typography } from '@mui/material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
+import type { FundamentalModelTradeVolumesData } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import useSnackbar from '@/hooks/useSnackbar'
 import FundamentalModelPageSkeleton from '@/pages/mi/fundamentalModel/components/common/FundamentalModelPageSkeleton'
@@ -20,7 +22,7 @@ import {
   runStatusToPlaceholderMode,
   useFundamentalModelRunExecution,
 } from '@/pages/mi/fundamentalModel/hooks/useFundamentalModelRunExecution'
-import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
+import fundamentalModelCaseService, { type FundamentalModelCaseStatus } from '@/service/mi/fundamentalModel/case'
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
 const RIGHT_STICKY_TOP_PX = 80
@@ -32,9 +34,31 @@ const RIGHT_BODY_CONTENT_GAP_PX = 16
 const TAB_STICKY_FALLBACK_HEIGHT_PX = 64
 const STICKY_GUARANTEE_PX = 1
 const RIGHT_BODY_MIN_HEIGHT_FALLBACK_CSS = `calc(${FUNDAMENTAL_MODEL_RUN_LIST_PANEL_HEIGHT_CSS} + ${STICKY_GUARANTEE_PX}px)`
+const EMPTY_TRADE_VOLUMES: FundamentalModelTradeVolumesData = {
+  productOptions: [],
+  yearOptions: [],
+  selectedProductId: '',
+  selectedYearId: '',
+  unitLabel: 'mtpa',
+  fromColumns: [],
+  toRows: [],
+}
 
 const getTabPanelAttachOffset = (tabKey: FundamentalModelViewTabKey, completed: boolean) =>
   RIGHT_BODY_CONTENT_GAP_PX - (completed && tabKey === 'volumes' ? RIGHT_STICKY_TOOLBAR_BOTTOM_PADDING_PX : 0)
+
+const getMountedTabPanelSx = (isActive: boolean) => ({
+  position: isActive ? 'relative' : 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  width: '100%',
+  minWidth: 0,
+  visibility: isActive ? 'visible' : 'hidden',
+  opacity: isActive ? 1 : 0,
+  pointerEvents: isActive ? 'auto' : 'none',
+  zIndex: isActive ? 1 : 0,
+})
 
 const isTabPinnedToScrollTop = (scrollEl: HTMLElement, tabEl: HTMLElement) => {
   const scrollRect = scrollEl.getBoundingClientRect()
@@ -51,6 +75,7 @@ const FundamentalModelPage = () => {
   const queryClient = useQueryClient()
   const { showSnackbar } = useSnackbar()
   const [selectedCaseId, setSelectedCaseId] = useState('')
+  const [selectedCaseListStatus, setSelectedCaseListStatus] = useState<FundamentalModelCaseStatus | null>(null)
   const [viewTab, setViewTab] = useState<FundamentalModelViewTabKey>('volumes')
   const leftStickyBoundaryRef = useRef<HTMLDivElement>(null)
   const tabStickyBoundaryRef = useRef<HTMLDivElement>(null)
@@ -89,26 +114,27 @@ const FundamentalModelPage = () => {
     enabled: Number.isFinite(parsedCaseId) && parsedCaseId > 0,
     refetchOnWindowFocus: false,
   })
+  const effectiveCaseStatus = caseDetail?.status ?? selectedCaseListStatus
 
   const handleRunSettled = useCallback(() => {
     void refetchCaseDetail()
   }, [refetchCaseDetail])
 
-  const { handleRun, handleRetry, isRunPending } = useFundamentalModelRunExecution(activeCaseId, caseDetail?.status, {
+  const { handleRun, handleRetry, isRunPending } = useFundamentalModelRunExecution(activeCaseId, effectiveCaseStatus ?? undefined, {
     onRunSettled: handleRunSettled,
   })
 
   const { data: tabPanelMock } = useQuery({
     queryKey: ['fundamentalModel', 'tabPanelMock', TAB_PANEL_MOCK_RUN_ID],
     queryFn: () => fetchFundamentalModelDetail(TAB_PANEL_MOCK_RUN_ID),
-    enabled: caseDetail?.status === 'COMPLETED',
+    enabled: (caseDetail?.status ?? selectedCaseListStatus) === 'COMPLETED',
     refetchOnWindowFocus: false,
   })
 
   const { data: priceData, isLoading: priceLoading } = useQuery({
     queryKey: ['fundamentalModel', 'price', activeCaseId],
     queryFn: () => fundamentalModelCaseService.getPrice(parsedCaseId),
-    enabled: caseDetail?.status === 'COMPLETED' && Number.isFinite(parsedCaseId) && parsedCaseId > 0,
+    enabled: (caseDetail?.status ?? selectedCaseListStatus) === 'COMPLETED' && Number.isFinite(parsedCaseId) && parsedCaseId > 0,
     refetchOnWindowFocus: false,
   })
 
@@ -265,8 +291,9 @@ const FundamentalModelPage = () => {
     [],
   )
 
-  const handleSelectCase = useCallback((id: string) => {
+  const handleSelectCase = useCallback((id: string, status?: FundamentalModelCaseStatus) => {
     setSelectedCaseId(id)
+    setSelectedCaseListStatus(status ?? null)
   }, [])
 
   const invalidateCaseQueries = useCallback(() => {
@@ -303,6 +330,7 @@ const FundamentalModelPage = () => {
     try {
       await fundamentalModelCaseService.deleteCase(parsedCaseId)
       setSelectedCaseId('')
+      setSelectedCaseListStatus(null)
       void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'cases'] })
       void queryClient.removeQueries({ queryKey: ['fundamentalModel', 'caseDetail', activeCaseId] })
       return true
@@ -312,9 +340,14 @@ const FundamentalModelPage = () => {
   }, [activeCaseId, parsedCaseId, queryClient])
 
   const isCaseDetailResolving = Boolean(activeCaseId) && detailLoading && !caseDetail
-  const isCompletedCase = caseDetail?.status === 'COMPLETED'
-  const placeholderMode = useMemo(() => (caseDetail ? runStatusToPlaceholderMode(caseDetail.status) : null), [caseDetail])
+  const isCompletedCase = effectiveCaseStatus === 'COMPLETED'
+  const placeholderMode = useMemo(
+    () => (effectiveCaseStatus ? runStatusToPlaceholderMode(effectiveCaseStatus) : null),
+    [effectiveCaseStatus],
+  )
   const showVolumeToolbarSlot = isCompletedCase && viewTab === 'volumes'
+  const isVolumesTabActive = viewTab === 'volumes'
+  const isPriceTabActive = viewTab === 'price'
   const rightBodyMinHeight = rightBodyMinHeightPx === null ? RIGHT_BODY_MIN_HEIGHT_FALLBACK_CSS : `${rightBodyMinHeightPx}px`
 
   const rightBody = !activeCaseId ? (
@@ -403,12 +436,17 @@ const FundamentalModelPage = () => {
               onKeyDownCapture={captureTabInteractionScrollState}
               onMouseDownCapture={captureTabInteractionScrollState}
             />
-            {showVolumeToolbarSlot && (
+            {isCompletedCase && (
               <Box
                 ref={setVolumeToolbarSlotEl}
+                aria-hidden={!showVolumeToolbarSlot}
                 sx={{
-                  pt: `${RIGHT_STICKY_GAP_PX}px`,
-                  pb: `${RIGHT_STICKY_TOOLBAR_BOTTOM_PADDING_PX}px`,
+                  height: showVolumeToolbarSlot ? 'auto' : 0,
+                  overflow: 'hidden',
+                  visibility: showVolumeToolbarSlot ? 'visible' : 'hidden',
+                  pointerEvents: showVolumeToolbarSlot ? 'auto' : 'none',
+                  pt: showVolumeToolbarSlot ? `${RIGHT_STICKY_GAP_PX}px` : 0,
+                  pb: showVolumeToolbarSlot ? `${RIGHT_STICKY_TOOLBAR_BOTTOM_PADDING_PX}px` : 0,
                 }}
               />
             )}
@@ -428,59 +466,39 @@ const FundamentalModelPage = () => {
           mt: showVolumeToolbarSlot ? `-${RIGHT_STICKY_TOOLBAR_BOTTOM_PADDING_PX}px` : 0,
         }}
       >
-        {isCaseDetailResolving ? (
+        {isCaseDetailResolving && !isCompletedCase ? (
           <FundamentalModelPageSkeleton />
         ) : placeholderMode ? (
           <FundamentalModelRunPlaceholder mode={placeholderMode} onRun={handleRun} onRetry={handleRetry} runActionDisabled={isRunPending} />
-        ) : isCompletedCase && viewTab === 'volumes' ? (
-          <Box
-            ref={tabPanelRef}
-            role="tabpanel"
-            id="fundamental-model-tabpanel-0"
-            aria-labelledby="fundamental-model-tab-0"
-            sx={{
-              position: 'relative',
-              animation: 'fundamentalModelPageFadeIn 0.15s ease-out',
-              '@keyframes fundamentalModelPageFadeIn': {
-                from: { opacity: 0 },
-                to: { opacity: 1 },
-              },
-            }}
-          >
-            <VolumesTabPanel
-              caseId={isCompletedCase && Number.isFinite(parsedCaseId) && parsedCaseId > 0 ? parsedCaseId : null}
-              toolbarSlotEl={volumeToolbarSlotEl}
-              tradeVolumes={
-                tabPanelMock?.tradeVolumes ?? {
-                  productOptions: [],
-                  yearOptions: [],
-                  selectedProductId: '',
-                  selectedYearId: '',
-                  unitLabel: 'mtpa',
-                  fromColumns: [],
-                  toRows: [],
-                }
-              }
-              detailLoading={detailLoading}
-            />
-          </Box>
         ) : isCompletedCase ? (
-          <Box
-            ref={tabPanelRef}
-            role="tabpanel"
-            id="fundamental-model-tabpanel-1"
-            aria-labelledby="fundamental-model-tab-1"
-            sx={{
-              position: 'relative',
-              animation: 'fundamentalModelPageFadeIn 0.15s ease-out',
-              '@keyframes fundamentalModelPageFadeIn': {
-                from: { opacity: 0 },
-                to: { opacity: 1 },
-              },
-            }}
-          >
-            <PriceTabPanel price={priceData ?? null} loading={detailLoading || priceLoading} />
-          </Box>
+          <>
+            <Box
+              ref={isVolumesTabActive ? tabPanelRef : undefined}
+              role="tabpanel"
+              id="fundamental-model-tabpanel-0"
+              aria-labelledby="fundamental-model-tab-0"
+              aria-hidden={!isVolumesTabActive}
+              sx={getMountedTabPanelSx(isVolumesTabActive)}
+            >
+              <VolumesTabPanel
+                caseId={Number.isFinite(parsedCaseId) && parsedCaseId > 0 ? parsedCaseId : null}
+                toolbarSlotEl={volumeToolbarSlotEl}
+                tradeVolumes={tabPanelMock?.tradeVolumes ?? EMPTY_TRADE_VOLUMES}
+                detailLoading={detailLoading}
+              />
+            </Box>
+
+            <Box
+              ref={isPriceTabActive ? tabPanelRef : undefined}
+              role="tabpanel"
+              id="fundamental-model-tabpanel-1"
+              aria-labelledby="fundamental-model-tab-1"
+              aria-hidden={!isPriceTabActive}
+              sx={getMountedTabPanelSx(isPriceTabActive)}
+            >
+              <PriceTabPanel price={priceData ?? null} loading={detailLoading || priceLoading} />
+            </Box>
+          </>
         ) : (
           <FundamentalModelRunPlaceholder mode="pending" onRun={handleRun} onRetry={handleRetry} runActionDisabled={isRunPending} />
         )}

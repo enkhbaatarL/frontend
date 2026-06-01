@@ -25,6 +25,7 @@ const containerSx = {
   width: '100%',
   alignSelf: 'stretch',
   minHeight: 480,
+  position: 'relative',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -41,6 +42,9 @@ const contentStackSx = {
   transform: 'translateX(-50%)',
   justifyContent: 'center',
   alignItems: 'center',
+  width: '100%',
+  maxWidth: 520,
+  mx: 'auto',
 } as const
 
 /** 본 페이지 우측 본문 자리표시자 (대기 - 실행중 - 실패) */
