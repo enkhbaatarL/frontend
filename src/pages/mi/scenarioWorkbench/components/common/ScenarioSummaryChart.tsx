@@ -100,7 +100,10 @@ const LegendEllipsisLabel = ({ label, isShow, isHighlighted, legendDimmed }: Leg
 interface ScenarioSummaryChartProps {
   priceForecast: IScenarioPriceForecast
   suppressChartHeader?: boolean
+  headerStart?: ReactNode
   headerEnd?: ReactNode
+  showHeaderLegend?: boolean
+  hideLegend?: boolean
   linkedHighlightIndexName?: string | null
   linkedHighlightVisibilityKey?: string | null
   chartColorMap?: Map<string, string>
@@ -112,7 +115,10 @@ interface ScenarioSummaryChartProps {
 const ScenarioSummaryChart = ({
   priceForecast,
   suppressChartHeader = false,
+  headerStart,
   headerEnd,
+  showHeaderLegend = false,
+  hideLegend = false,
   linkedHighlightIndexName = null,
   linkedHighlightVisibilityKey = null,
   chartColorMap: chartColorMapProp,
@@ -205,15 +211,81 @@ const ScenarioSummaryChart = ({
   const showGeneratingState = modelExecutionGenerating
   const emptyChartHoverSx = !hasChartData && !showGeneratingState ? EMPTY_CHART_HOVER_SX : {}
 
+  const renderLegendItem = (chart: ScenarioSummaryForecastChartData, index: number, placement: 'header' | 'bottom') => {
+    const visibilityKey = chart.visibilityKey ?? `${chart.goodsDataSourceName}_FORECAST`
+    const isShow = chartVisibilityMap.get(visibilityKey) !== false
+    const color = chartColorMap.get(chart.goodsDataSourceName) ?? legendSwatchFallbackColors[index] ?? SCENARIO_CHART_COLORS[0]
+    const isHighlighted = highlightVisibilityKey === visibilityKey
+    const hasActiveHighlight = highlightVisibilityKey !== null && highlightVisibilityKey !== undefined
+    const legendDimmed = hasActiveHighlight && isShow && !isHighlighted
+    const isHeader = placement === 'header'
+
+    return (
+      <Stack
+        key={`${placement}-${visibilityKey}`}
+        direction="row"
+        alignItems="center"
+        gap={isHeader ? '6px' : '8px'}
+        minWidth={0}
+        px={isHeader ? '4px' : '10px'}
+        py={isHeader ? '2px' : '4px'}
+        onMouseEnter={() => setHoveredChartKey(isShow ? visibilityKey : null)}
+        onMouseLeave={() => setHoveredChartKey(null)}
+        onClick={() => handleLegendToggle(visibilityKey)}
+        sx={{
+          cursor: 'pointer',
+          borderRadius: isHeader ? '4px' : '8px',
+          boxSizing: 'border-box',
+          transition: 'background-color 0.15s ease, opacity 0.2s ease-in-out',
+          opacity: !isShow ? 0.35 : legendDimmed ? 0.45 : 1,
+          ...(isShow && {
+            ...(isHighlighted ? { bgcolor: 'gray.10' } : {}),
+            '&:hover': {
+              bgcolor: 'gray.10',
+              '& .legend-label': {
+                color: 'contentText.Normal',
+              },
+            },
+          }),
+        }}
+      >
+        <Box
+          sx={{
+            width: 18,
+            height: isHighlighted ? 5 : 4,
+            borderRadius: '100px',
+            bgcolor: color,
+            flexShrink: 0,
+            opacity: legendDimmed ? 0.5 : 1,
+            transition: 'height 0.15s ease-in-out, opacity 0.2s ease-in-out',
+          }}
+        />
+        <LegendEllipsisLabel label={chart.goodsDataSourceName} isShow={isShow} isHighlighted={isHighlighted} legendDimmed={legendDimmed} />
+      </Stack>
+    )
+  }
+
   return (
     <Stack width="100%" minWidth={0} gap="8px">
       {hasChartData && !showGeneratingState && !suppressChartHeader && (
-        <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
-          <Typography variant="body2SB14" color="contentText.Normal" sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
-            {chartUnit}
-          </Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap="8px" width="100%" minWidth={0}>
+          <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
+            {headerStart ?? (
+              <Typography variant="body2SB14" color="contentText.Normal" sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
+                {chartUnit}
+              </Typography>
+            )}
+          </Box>
 
-          {headerEnd ? <Box sx={{ flexShrink: 0 }}>{headerEnd}</Box> : null}
+          {showHeaderLegend ? (
+            <Box sx={{ flex: '0 1 auto', minWidth: 0, maxWidth: '100%' }}>
+              <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="18px" flexWrap="wrap" minWidth={0}>
+                {charts.map((chart, index) => renderLegendItem(chart, index, 'header'))}
+              </Stack>
+            </Box>
+          ) : null}
+
+          {headerEnd ? <Box sx={{ flex: '0 0 auto', maxWidth: '100%' }}>{headerEnd}</Box> : null}
         </Stack>
       )}
 
@@ -251,7 +323,7 @@ const ScenarioSummaryChart = ({
         )}
       </Box>
 
-      {hasChartData && !showGeneratingState && (
+      {hasChartData && !showGeneratingState && !hideLegend && (
         <Box
           sx={{
             display: 'grid',
@@ -263,63 +335,7 @@ const ScenarioSummaryChart = ({
             pr: '12px',
           }}
         >
-          {charts.map((chart, index) => {
-            const visibilityKey = chart.visibilityKey ?? `${chart.goodsDataSourceName}_FORECAST`
-            const isShow = chartVisibilityMap.get(visibilityKey) !== false
-            const color = chartColorMap.get(chart.goodsDataSourceName) ?? legendSwatchFallbackColors[index] ?? SCENARIO_CHART_COLORS[0]
-            const isHighlighted = highlightVisibilityKey === visibilityKey
-            const hasActiveHighlight = highlightVisibilityKey !== null && highlightVisibilityKey !== undefined
-            const legendDimmed = hasActiveHighlight && isShow && !isHighlighted
-
-            return (
-              <Stack
-                key={visibilityKey}
-                direction="row"
-                alignItems="center"
-                gap="8px"
-                minWidth={0}
-                px="10px"
-                py="4px"
-                onMouseEnter={() => setHoveredChartKey(isShow ? visibilityKey : null)}
-                onMouseLeave={() => setHoveredChartKey(null)}
-                onClick={() => handleLegendToggle(visibilityKey)}
-                sx={{
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  boxSizing: 'border-box',
-                  transition: 'background-color 0.15s ease, opacity 0.2s ease-in-out',
-                  opacity: !isShow ? 0.35 : legendDimmed ? 0.45 : 1,
-                  ...(isShow && {
-                    ...(isHighlighted ? { bgcolor: 'gray.10' } : {}),
-                    '&:hover': {
-                      bgcolor: 'gray.10',
-                      '& .legend-label': {
-                        color: 'contentText.Normal',
-                      },
-                    },
-                  }),
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 18,
-                    height: isHighlighted ? 5 : 4,
-                    borderRadius: '100px',
-                    bgcolor: color,
-                    flexShrink: 0,
-                    opacity: legendDimmed ? 0.5 : 1,
-                    transition: 'height 0.15s ease-in-out, opacity 0.2s ease-in-out',
-                  }}
-                />
-                <LegendEllipsisLabel
-                  label={chart.goodsDataSourceName}
-                  isShow={isShow}
-                  isHighlighted={isHighlighted}
-                  legendDimmed={legendDimmed}
-                />
-              </Stack>
-            )
-          })}
+          {charts.map((chart, index) => renderLegendItem(chart, index, 'bottom'))}
         </Box>
       )}
     </Stack>
