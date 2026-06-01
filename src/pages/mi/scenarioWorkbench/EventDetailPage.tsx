@@ -22,6 +22,7 @@ import EventDetailDriverTreeScoreboardSection from '@/pages/mi/scenarioWorkbench
 import EventDetailImpactAnalysisSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailImpactAnalysisSection'
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailMiRecordsTable'
+import ScenarioWorkbenchUserFeedback from '@/pages/mi/scenarioWorkbench/components/ScenarioWorkbenchUserFeedback'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
 import { scrollScenarioWorkbenchLayoutToTop } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchScroll'
 import { EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/common'
@@ -62,6 +63,12 @@ const EVENT_DETAIL_HEADER_SECTIONS: WorkbenchDetailHeaderSection[] = EVENT_DETAI
   id: SECTION_SCROLL_IDS[tab.key],
   label: tab.label,
 }))
+
+const eventDetailFeedbackRightAction = (
+  <Box display="flex" alignItems="center" justifyContent="flex-end" flexShrink={0} minHeight="62px">
+    <ScenarioWorkbenchUserFeedback pageName="MI Scenario Workbench" sectionName="Events / Event Detail" />
+  </Box>
+)
 
 interface EventDetailHeaderContent {
   backLabel: string
@@ -295,6 +302,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
       backLabel: 'Events',
       onBack: () => navigate(getScenarioWorkbenchTabPath('events')),
       titleSlot: headerTitleSlot,
+      rightAction: eventDetailFeedbackRightAction,
     })
   }, [embedded, headerTitleSlot, navigate])
 
@@ -328,6 +336,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           backLabel="Events"
           onBack={() => popupContext?.close()}
           titleSlot={headerTitleSlot}
+          rightAction={eventDetailFeedbackRightAction}
           scrollContainer={popupScrollContainer}
           embeddedStickyTop={0}
           hideBackButton

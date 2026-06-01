@@ -229,8 +229,6 @@ const FundamentalModelDetailHeader = ({
     return (
       <Box
         sx={{
-          borderBottom: '1px solid',
-          borderColor: 'gray.30',
           bgcolor: 'commonColor.White',
           pt: '20px',
           pr: '10px',
@@ -267,8 +265,6 @@ const FundamentalModelDetailHeader = ({
     <>
       <Box
         sx={{
-          borderBottom: '1px solid',
-          borderColor: 'gray.30',
           bgcolor: 'commonColor.White',
           pt: '20px',
           pr: '10px',

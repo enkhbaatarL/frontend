@@ -108,7 +108,7 @@ const FundamentalModelTradeSummaryToolbar = memo(
       <Box sx={{ width: '1px', height: 12, bgcolor: 'gray.40', flexShrink: 0 }} />
       <Stack direction="row" alignItems="center" gap="4px">
         <Typography variant="body2M14" color="gray.60">
-          Unit :
+          Unit:
         </Typography>
         <Typography variant="body2M14" color="gray.70">
           {loading ? '—' : unitLabel}

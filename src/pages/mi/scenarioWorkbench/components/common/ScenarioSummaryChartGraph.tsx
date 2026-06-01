@@ -45,6 +45,7 @@ interface ScenarioSummaryChartGraphProps {
   hoveredChartKey?: string | null
   chartColorMap?: Map<string, string>
   spanGaps?: boolean
+  disableIntroAnimation?: boolean
 }
 
 type DatasetMeta = {
@@ -387,6 +388,7 @@ const ScenarioSummaryChartGraph = ({
   hoveredChartKey,
   chartColorMap,
   spanGaps = true,
+  disableIntroAnimation = false,
 }: ScenarioSummaryChartGraphProps) => {
   const chartRef = useRef<ChartJS<'line'> | null>(null)
   const crosshairRef = useRef<ScenarioSummaryCrosshairLineHandle | null>(null)
@@ -402,11 +404,17 @@ const ScenarioSummaryChartGraph = ({
   })
   const [isTooltipPositionCalculated, setIsTooltipPositionCalculated] = useState(false)
   const [isCrosshairVisible, setIsCrosshairVisible] = useState(false)
-  const [introAnimationDone, setIntroAnimationDone] = useState(false)
+  const [introAnimationDone, setIntroAnimationDone] = useState(disableIntroAnimation)
 
   const handleIntroAnimationComplete = useCallback(() => {
     setIntroAnimationDone(true)
   }, [])
+
+  useEffect(() => {
+    if (disableIntroAnimation) {
+      setIntroAnimationDone(true)
+    }
+  }, [disableIntroAnimation])
 
   const dataPointCount = useMemo(() => {
     let maxCount = 0
@@ -472,24 +480,23 @@ const ScenarioSummaryChartGraph = ({
   const scenarioPlugin = useMemo(() => buildScenarioSummaryPlugin(axisTimestamps, axisResultDates), [axisResultDates, axisTimestamps])
 
   const chartOptions = useMemo(() => {
-    const introOnlyAnimations =
-      !introAnimationDone && dataPointCount > 0
-        ? {
-          animations: {
-            colors: { duration: 0 },
-            numbers: { type: 'number' as const, properties: ['x', 'y'] },
-          },
-        }
-        : {}
+    const shouldPlayIntroAnimation = !disableIntroAnimation && !introAnimationDone && dataPointCount > 0
+    const introOnlyAnimations = shouldPlayIntroAnimation
+      ? {
+        animations: {
+          colors: { duration: 0 },
+          numbers: { type: 'number' as const, properties: ['x', 'y'] },
+        },
+      }
+      : {}
 
     return {
       responsive: true,
       maintainAspectRatio: false,
       devicePixelRatio: typeof window !== 'undefined' ? Math.min(window.devicePixelRatio ?? 1, 2) : 1,
-      animation:
-        introAnimationDone || dataPointCount <= 0
-          ? { duration: 0 }
-          : buildProgressiveLineIntroAnimation(dataPointCount, yAxisScale.min, handleIntroAnimationComplete),
+      animation: shouldPlayIntroAnimation
+        ? buildProgressiveLineIntroAnimation(dataPointCount, yAxisScale.min, handleIntroAnimationComplete)
+        : { duration: 0 },
       ...introOnlyAnimations,
       parsing: false,
       layout: {
@@ -548,6 +555,7 @@ const ScenarioSummaryChartGraph = ({
     axisResultDates,
     axisTimestamps,
     dataPointCount,
+    disableIntroAnimation,
     handleIntroAnimationComplete,
     introAnimationDone,
     yAxisScale.max,

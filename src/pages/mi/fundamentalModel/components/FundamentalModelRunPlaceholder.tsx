@@ -25,6 +25,7 @@ const containerSx = {
   width: '100%',
   alignSelf: 'stretch',
   minHeight: 480,
+  position: 'relative',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -35,10 +36,15 @@ const containerSx = {
 
 /** 본문 중앙 정렬용 내부 스택 */
 const contentStackSx = {
-  width: '100%',
-  maxWidth: '100%',
-  alignItems: 'center',
+  position: 'absolute',
+  top: '180px',
+  left: '50%',
+  transform: 'translateX(-50%)',
   justifyContent: 'center',
+  alignItems: 'center',
+  width: '100%',
+  maxWidth: 520,
+  mx: 'auto',
 } as const
 
 /** 본 페이지 우측 본문 자리표시자 (대기 - 실행중 - 실패) */

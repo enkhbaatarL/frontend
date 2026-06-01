@@ -21,6 +21,7 @@ import ScenarioModelExecutionPopupContent from '@/pages/mi/scenarioWorkbench/com
 import ScenarioSummarySection from '@/pages/mi/scenarioWorkbench/components/scenario/ScenarioSummarySection'
 import SignpostDefinitionSection from '@/pages/mi/scenarioWorkbench/components/scenario/SignpostDefinitionSection'
 import SignpostMonitoringSection from '@/pages/mi/scenarioWorkbench/components/scenario/SignpostMonitoringSection'
+import ScenarioWorkbenchUserFeedback from '@/pages/mi/scenarioWorkbench/components/ScenarioWorkbenchUserFeedback'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
 import { scrollScenarioWorkbenchLayoutToTop } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchScroll'
 import scenarioWorkbenchScenarioService, {
@@ -269,12 +270,10 @@ const ScenarioDetailPage = () => {
     navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)
   }
 
-  useLayoutEffect(() => {
-    publishScenarioDetailHeaderContent({
-      backLabel: 'Scenarios',
-      onBack: () => navigate(getScenarioWorkbenchTabPath('scenarios')),
-      titleSlot: scenarioHeaderTitleSlot,
-      rightAction: (
+  const scenarioDetailHeaderRightAction = useMemo(
+    () => (
+      <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="8px" flexShrink={0} minHeight="62px">
+        <ScenarioWorkbenchUserFeedback pageName="MI Scenario Workbench" sectionName="Scenarios / Scenario Detail" />
         <MIMorphingPopup
           ref={modelExecutionPopupRef}
           display="inline-flex"
@@ -311,9 +310,19 @@ const ScenarioDetailPage = () => {
             MI 수급 모델 실행
           </MIBaseButton>
         </MIMorphingPopup>
-      ),
+      </Stack>
+    ),
+    [handleSubmitModelExecution, hasOpenedModelExecutionPopup, isModelExecutionGenerating, scenarioId],
+  )
+
+  useLayoutEffect(() => {
+    publishScenarioDetailHeaderContent({
+      backLabel: 'Scenarios',
+      onBack: () => navigate(getScenarioWorkbenchTabPath('scenarios')),
+      titleSlot: scenarioHeaderTitleSlot,
+      rightAction: scenarioDetailHeaderRightAction,
     })
-  }, [handleSubmitModelExecution, hasOpenedModelExecutionPopup, isModelExecutionGenerating, navigate, scenarioHeaderTitleSlot, scenarioId])
+  }, [navigate, scenarioDetailHeaderRightAction, scenarioHeaderTitleSlot])
 
   useLayoutEffect(() => {
     setStickyHeader(<ScenarioDetailHeaderView />, {

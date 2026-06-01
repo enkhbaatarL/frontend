@@ -32,8 +32,8 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 42, color = 'rgb
   return (
     <>
       <style>{keyframes}</style>
-      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox={viewBox} fill="none">
-        <g clipPath="url(#clip0_loading)">
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox={viewBox} fill="none" style={{ overflow: 'visible' }}>
+        <g>
           {/* Static circle background */}
           <path
             d="M20.998 38.999C30.9392 38.999 38.998 30.9401 38.998 20.999C38.998 11.0579 30.9392 2.99902 20.998 2.99902C11.0569 2.99902 2.99805 11.0579 2.99805 20.999C2.99805 30.9401 11.0569 38.999 20.998 38.999Z"
@@ -48,11 +48,6 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 42, color = 'rgb
             style={stop ? { animation: 'none' } : spinnerStyle}
           />
         </g>
-        <defs>
-          <clipPath id="clip0_loading">
-            <rect width="42" height="42" fill="white" />
-          </clipPath>
-        </defs>
       </svg>
     </>
   )

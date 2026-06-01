@@ -8,8 +8,9 @@ import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISe
 import {
   countSelectedVolumeFilters,
   FM_VOLUME_REGION_OPTIONS,
-  FM_VOLUME_TYPE_OPTIONS,
+  getVolumeTypeOptionsForScope,
   isAllVolumeFiltersSelected,
+  normalizeVolumeFiltersForScope,
   type FundamentalModelVolumeFilters,
 } from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumeFilters'
 
@@ -26,7 +27,6 @@ export interface FundamentalModelSegmentToolbarProps {
 
 const SCOPE_VALUES: FundamentalModelScopeKey[] = ['global', 'lng', 'trade']
 
-const typeFilters = FM_VOLUME_TYPE_OPTIONS.map((o) => ({ label: o.label, value: o.value }))
 const regionFilters = FM_VOLUME_REGION_OPTIONS.map((o) => ({ label: o.label, value: o.value }))
 
 /** Volume 탭 상단 Global/LNG/Trade, Filters, 주기 툴바 */
@@ -40,8 +40,10 @@ const FundamentalModelSegmentToolbar = ({
   period,
   onPeriodChange,
 }: FundamentalModelSegmentToolbarProps) => {
-  const selectedFilterCount = useMemo(() => countSelectedVolumeFilters(volumeFilters), [volumeFilters])
-  const showFilterBadge = !isAllVolumeFiltersSelected(volumeFilters)
+  const scopedVolumeFilters = useMemo(() => normalizeVolumeFiltersForScope(volumeFilters, scope), [scope, volumeFilters])
+  const typeFilters = useMemo(() => getVolumeTypeOptionsForScope(scope).map((o) => ({ label: o.label, value: o.value })), [scope])
+  const selectedFilterCount = useMemo(() => countSelectedVolumeFilters(scopedVolumeFilters, scope), [scope, scopedVolumeFilters])
+  const showFilterBadge = !isAllVolumeFiltersSelected(scopedVolumeFilters, scope)
 
   const periodItems: SelectMenuItem<string>[] = useMemo(
     () => [
@@ -132,8 +134,8 @@ const FundamentalModelSegmentToolbar = ({
             ],
           ]}
           initialValues={{
-            types: volumeFilters.types,
-            regions: volumeFilters.regions,
+            types: scopedVolumeFilters.types,
+            regions: scopedVolumeFilters.regions,
           }}
           onApply={handleApplyFilters}
           showSaveOption

@@ -1,6 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
+import { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse } from '@/types/api'
 
 /** listCases searchType — Swagger Fundamental Model Case API */
@@ -85,6 +86,9 @@ export interface IFundamentalModelCaseUpdateReq {
 export interface IFundamentalModelRunReq {
   requestedByClientId?: string
 }
+
+export type IFundamentalModelRunCallbackReq = Record<string, unknown>
+export type IFundamentalModelRunCallbackRes = unknown
 
 /** runCase 응답 — FundamentalModelRunAcceptRes */
 export interface IFundamentalModelRunAcceptRes {
@@ -272,7 +276,15 @@ const fundamentalModelCaseService = {
 
   async runCase(caseId: number, body?: IFundamentalModelRunReq): Promise<IFundamentalModelRunAcceptRes> {
     const response: AxiosResponse<ICommonResponse<IFundamentalModelRunAcceptRes>> = await api.post(
-      `mi/fundamental-model/cases/${caseId}/runs`,
+      withCustomBaseUrl(`mi/fundamental-model/cases/${caseId}/runs`),
+      body ?? {},
+    )
+    return response.data.data
+  },
+
+  async callbackRun(runId: string, body?: IFundamentalModelRunCallbackReq): Promise<IFundamentalModelRunCallbackRes> {
+    const response: AxiosResponse<ICommonResponse<IFundamentalModelRunCallbackRes>> = await api.post(
+      withCustomBaseUrl(`mi/fundamental-model/runs/${runId}/callback`),
       body ?? {},
     )
     return response.data.data
