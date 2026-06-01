@@ -332,7 +332,6 @@ const FundamentalModelSectionVolumesTable = memo(
       </Stack>
     )
 
-    // 섹션 평탄화 - 행 인덱스 기반 nextIsTotal 판단을 위해 한 번 만들어 둠
     const flatRows: { sectionType: FundamentalModelVolumesType; row: IFundamentalModelVolumesRow }[] = []
     sections.forEach((section) => {
       section.rows.forEach((row) => flatRows.push({ sectionType: section.type, row }))

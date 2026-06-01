@@ -87,8 +87,8 @@ const VolumesTabPanel = ({ caseId, toolbarSlotEl, tradeVolumes, detailLoading }:
 
   const {
     data: volumesRes,
-    isFetching: volumesFetching,
     isLoading: volumesLoading,
+    isFetching: volumesFetching,
   } = useQuery({
     queryKey: ['fundamentalModel', 'volumes', caseId, segment, granularity, apiTypes, apiRegions],
     queryFn: () =>
