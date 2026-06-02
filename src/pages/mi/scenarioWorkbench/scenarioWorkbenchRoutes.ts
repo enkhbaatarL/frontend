@@ -1,11 +1,8 @@
 export const SCENARIO_WORKBENCH_BASE_PATH = '/mi/scenario-workbench'
-import DesignTabPanel from '@/pages/mi/scenarioWorkbench/tabs/DesignTabPanel'
 import EventsTabPanel from '@/pages/mi/scenarioWorkbench/tabs/EventsTabPanel'
-import OverviewTabPanel from '@/pages/mi/scenarioWorkbench/tabs/OverviewTabPanel'
 import ScenariosTabPanel from '@/pages/mi/scenarioWorkbench/tabs/ScenariosTabPanel'
 
 export const SCENARIO_WORKBENCH_TAB_INFO = [
-  { key: 'overview', label: 'Overview', segment: 'overview', path: `${SCENARIO_WORKBENCH_BASE_PATH}/overview`, content: OverviewTabPanel },
   { key: 'events', label: 'Events', segment: 'events', path: `${SCENARIO_WORKBENCH_BASE_PATH}/events`, content: EventsTabPanel },
   {
     key: 'scenarios',
@@ -14,12 +11,11 @@ export const SCENARIO_WORKBENCH_TAB_INFO = [
     path: `${SCENARIO_WORKBENCH_BASE_PATH}/scenarios`,
     content: ScenariosTabPanel,
   },
-  { key: 'design', label: 'Design', segment: 'design', path: `${SCENARIO_WORKBENCH_BASE_PATH}/design`, content: DesignTabPanel },
 ] as const
 
 export type ScenarioWorkbenchTabInfo = (typeof SCENARIO_WORKBENCH_TAB_INFO)[number]
 
-export type ScenarioWorkbenchTabKey = ScenarioWorkbenchTabInfo['key']
+export type ScenarioWorkbenchTabKey = 'overview' | 'events' | 'scenarios' | 'design'
 
 export const getScenarioWorkbenchTabPath = (tabKey: ScenarioWorkbenchTabKey) => {
   const tab = SCENARIO_WORKBENCH_TAB_INFO.find((item) => item.key === tabKey)
