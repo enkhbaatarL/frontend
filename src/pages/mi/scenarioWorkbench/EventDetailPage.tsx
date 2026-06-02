@@ -68,7 +68,7 @@ const EVENT_DETAIL_HEADER_SECTIONS: WorkbenchDetailHeaderSection[] = EVENT_DETAI
 }))
 
 const eventDetailHeaderTabActions = (
-  <Stack direction="row" alignItems="center" gap="12px" flexShrink={0} sx={{ minHeight: '62px', py: '13px' }}>
+  <Stack direction="row" alignItems="center" gap="12px">
     <ScenarioWorkbenchUserFeedback pageName="MI Scenario Workbench" sectionName="Events / Event Detail" />
     <MIMenu
       variant="contained"
