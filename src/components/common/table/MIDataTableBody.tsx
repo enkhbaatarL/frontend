@@ -70,6 +70,8 @@ export interface MIDataTableBodyProps<T extends GridRowModel> {
   skeletonRowCount?: number
   showCellSkeleton?: (col: GridColDef<T>) => boolean
   noRowMessage?: string
+  /** 빈 목록 커스텀 오버레이(noRowMessage 대신 사용) */
+  noRowsOverlay?: ReactNode
   disableHover?: boolean
   rowHeight?: number
   getRowKey?: (row: T, index: number) => string | number
@@ -711,6 +713,7 @@ const MIDataTableBody = <T extends GridRowModel>({
   skeletonRowCount,
   showCellSkeleton,
   noRowMessage,
+  noRowsOverlay,
   disableHover,
   onRowClick,
   onRowMouseEnter,
@@ -845,9 +848,11 @@ const MIDataTableBody = <T extends GridRowModel>({
           borderRadius: '10px',
         }}
       >
-        <Typography variant="body6" color="gray.60">
-          {noRowMessage ?? 'No results found'}
-        </Typography>
+        {noRowsOverlay ?? (
+          <Typography variant="body6" color="gray.60">
+            {noRowMessage ?? 'No results found'}
+          </Typography>
+        )}
       </Box>
     )
   } else {

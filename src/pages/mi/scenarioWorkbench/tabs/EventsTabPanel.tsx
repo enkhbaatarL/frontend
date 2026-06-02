@@ -1,4 +1,4 @@
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Stack, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -6,20 +6,23 @@ import { useNavigate } from 'react-router-dom'
 
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
-import MIFilterMenu, { FilterValues } from '@/components/common/menu/MIFilterMenu'
-import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
-import ClassificationTag from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
-import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import { findIndexImpact, formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
-import { classificationPropsFromScenarioWorkbenchEventRow } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchClassificationChip'
 import {
   buildWorkbenchDatePresets,
   defaultWorkbenchDateRange,
 } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchDateRange'
+import EventCategoryFilterMenu from '@/pages/mi/scenarioWorkbench/components/event/EventCategoryFilterMenu'
+import EventIndexSignalCell from '@/pages/mi/scenarioWorkbench/components/event/EventIndexSignalCell'
+import EventRecommendedStarCell from '@/pages/mi/scenarioWorkbench/components/event/EventRecommendedStarCell'
+import EventScenarioGenerateButton from '@/pages/mi/scenarioWorkbench/components/event/EventScenarioGenerateButton'
+import EventSortSelectMenu from '@/pages/mi/scenarioWorkbench/components/event/EventSortSelectMenu'
+import EventsTableEmptyOverlay from '@/pages/mi/scenarioWorkbench/components/event/EventsTableEmptyOverlay'
+import EventStatusBadge from '@/pages/mi/scenarioWorkbench/components/event/EventStatusBadge'
+import { scenarioWorkbenchMockApi, type MockEventRow } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchEventMockApi'
 import { WorkbenchStickySlot } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchStickyLayout'
 import { EventCategoryLv1, EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchEventService, {
@@ -60,6 +63,7 @@ const EventsTabPanel = () => {
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
+  const [hideNonRecommended, setHideNonRecommended] = useState(false)
 
   useEffect(() => {
     const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
@@ -107,9 +111,22 @@ const EventsTabPanel = () => {
     }
   }, [appliedDateRange, categoryFilter, committedKeyword, pagination.page, pagination.size, sort, typeFilter])
 
+  const useMock = true
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['scenarioWorkbenchEvents', listRequest],
-    queryFn: () => scenarioWorkbenchEventService.getEvents(listRequest),
+    queryKey: ['scenarioWorkbenchEvents', listRequest, hideNonRecommended, useMock],
+    queryFn: async () => {
+      if (useMock) {
+        const mocked = scenarioWorkbenchMockApi.getEvents(listRequest)
+        if (!hideNonRecommended) return mocked
+        const mockDetail = mocked.events.detail as MockEventRow[]
+        return {
+          ...mocked,
+          events: { ...mocked.events, detail: mockDetail.filter((r) => r.recommended === true) },
+        }
+      }
+      return scenarioWorkbenchEventService.getEvents(listRequest)
+    },
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -122,28 +139,31 @@ const EventsTabPanel = () => {
     }
   }, [data?.events, pagination.page])
 
-  const tableRows = data?.events?.detail ?? []
+  const tableRows = (data?.events?.detail ?? []) as MockEventRow[]
 
-  const columns: GridColDef<IScenarioWorkbenchEventListItem>[] = useMemo(
+  const columns: GridColDef<MockEventRow>[] = useMemo(
     () => [
       {
-        field: 'status',
-        headerName: '구분',
-        width: 88,
+        field: '__statusBadge',
+        headerName: '',
+        width: 40,
         align: 'center',
-        renderCell: (params) => <ClassificationTag {...classificationPropsFromScenarioWorkbenchEventRow(params.row)} />,
+        headerAlign: 'center',
+        sortable: false,
+        renderCell: (params) => <EventStatusBadge status={params.row.status} />,
       },
       {
         field: 'occurredAt',
-        headerName: '발생/갱신일시',
-        width: 130,
+        headerName: '일시',
+        width: 100,
         align: 'center',
-        renderCell: (params) => formatEventListTime(params.row),
+        headerAlign: 'center',
+        renderCell: (params) => <Typography variant="body2M14">{formatEventListTime(params.row)}</Typography>,
       },
       {
         field: 'eventCategoryLv1',
         headerName: '카테고리',
-        width: 160,
+        width: 140,
         align: 'left',
         renderCell: (params) => {
           const row = params.row
@@ -155,20 +175,35 @@ const EventsTabPanel = () => {
         },
       },
       {
+        field: '__recommended',
+        headerName: '',
+        width: 36,
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        renderCell: (params) => <EventRecommendedStarCell recommended={params.row.recommended} reason={params.row.recommendationReason} />,
+      },
+      {
         field: 'eventName',
         headerName: '이벤트명',
         flex: 1,
-        minWidth: 240,
+        minWidth: 360,
         align: 'left',
+        renderCell: (params) => (
+          <Typography variant="body1SB16" color="contentText.Black" noWrap>
+            {params.row.eventName}
+          </Typography>
+        ),
       },
       {
         field: 'jkm',
         headerName: 'JKM',
         width: 100,
         align: 'center',
+        headerAlign: 'center',
         renderCell: (params) => {
           const impact = findIndexImpact(params.row.indexImpacts, 'JKM')
-          return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
+          return <EventIndexSignalCell level={impact?.marketImpactLevel} direction={impact?.direction} term={params.row.termByIndex?.JKM} />
         },
       },
       {
@@ -176,9 +211,10 @@ const EventsTabPanel = () => {
         headerName: 'TTF',
         width: 100,
         align: 'center',
+        headerAlign: 'center',
         renderCell: (params) => {
           const impact = findIndexImpact(params.row.indexImpacts, 'TTF')
-          return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
+          return <EventIndexSignalCell level={impact?.marketImpactLevel} direction={impact?.direction} term={params.row.termByIndex?.TTF} />
         },
       },
       {
@@ -186,10 +222,20 @@ const EventsTabPanel = () => {
         headerName: 'HH',
         width: 100,
         align: 'center',
+        headerAlign: 'center',
         renderCell: (params) => {
           const impact = findIndexImpact(params.row.indexImpacts, 'HH')
-          return <ImpactDotsCell level={impact?.marketImpactLevel} direction={impact?.direction} />
+          return <EventIndexSignalCell level={impact?.marketImpactLevel} direction={impact?.direction} term={params.row.termByIndex?.HH} />
         },
+      },
+      {
+        field: 'scenario',
+        headerName: '시나리오',
+        width: 100,
+        align: 'center',
+        sortable: false,
+        // 시나리오 생성 액션은 API 미연동 단계, 퍼블리싱 버튼만 노출
+        renderCell: () => <EventScenarioGenerateButton />,
       },
     ],
     [],
@@ -236,9 +282,22 @@ const EventsTabPanel = () => {
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
+  const getEventsTableCellSx = useCallback(({ field }: { field: string }) => {
+    if (field === 'occurredAt') return { px: '6px' }
+    if (field === 'jkm' || field === 'ttf' || field === 'hh' || field === 'scenario') return { px: '24px' }
+    return {}
+  }, [])
+
+  const getEventsTableHeaderCellSx = useCallback((col: GridColDef<MockEventRow>) => {
+    if (col.field === 'jkm' || col.field === 'ttf' || col.field === 'hh' || col.field === 'scenario') {
+      return { px: '24px' }
+    }
+    return undefined
+  }, [])
+
   const handleCategoryFilterApply = useCallback(
-    (filterValues: FilterValues) => {
-      setCategoryFilter((filterValues.category ?? []) as EventCategoryLv1[])
+    (next: EventCategoryLv1[]) => {
+      setCategoryFilter(next)
       resetPage()
     },
     [resetPage],
@@ -265,7 +324,7 @@ const EventsTabPanel = () => {
   }, [])
 
   const handleRowClick = useCallback(
-    (params: { row: IScenarioWorkbenchEventListItem }) =>
+    (params: { row: MockEventRow }) =>
       navigate(`/mi/scenario-workbench/events/${params.row.eventId}`, {
         state: { eventName: params.row.eventName },
       }),
@@ -280,7 +339,12 @@ const EventsTabPanel = () => {
     setPagination((p) => ({ ...p, page }))
   }, [])
 
-  const emptyMessage = isError ? '목록을 불러오지 못했습니다.' : '이벤트가 없습니다.'
+  const emptyOverlay = useMemo(() => {
+    if (isError) {
+      return <EventsTableEmptyOverlay message="목록을 불러오지 못했습니다." />
+    }
+    return <EventsTableEmptyOverlay message="조건에 맞는 항목이 없습니다" />
+  }, [isError])
 
   return (
     <Box width="100%">
@@ -298,23 +362,10 @@ const EventsTabPanel = () => {
               sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
             />
 
-            <MIFilterMenu
-              filterGroups={[
-                [
-                  {
-                    key: 'category',
-                    title: '카테고리',
-                    filters: categoryFilterItems,
-                    width: 175,
-                  },
-                ],
-              ]}
-              initialValues={{ category: categoryFilter }}
-              appliedFiltersCount={categoryFilter.length}
+            <EventCategoryFilterMenu
+              filters={categoryFilterItems}
+              selected={categoryFilter}
               onApply={handleCategoryFilterApply}
-              showSaveOption={false}
-              label="카테고리"
-              sx={{ minWidth: 106 }}
               closeOnScroll
             />
 
@@ -327,17 +378,21 @@ const EventsTabPanel = () => {
               {...dateRangeMenuLayoutProps}
             />
 
-            <MISelectMenu<ScenarioWorkbenchEventSort>
-              variant="outlined"
-              buttonHoverBgColor="gray.20"
+            <EventSortSelectMenu<ScenarioWorkbenchEventSort>
               selected={sort}
               onSelected={handleSortChange}
-              items={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
+              items={SORT_OPTIONS}
               closeOnScroll
             />
           </Stack>
 
-          <Stack direction="row" alignItems="center" gap={3} sx={{ flexShrink: 0 }}>
+          <Stack direction="row" alignItems="center" gap="12px" sx={{ flexShrink: 0 }}>
+            <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
+              <Switch size="small" checked={hideNonRecommended} onChange={(_, checked) => setHideNonRecommended(checked)} />
+              <Typography variant="body2M14" color={hideNonRecommended ? 'contentText.Black' : 'contentText.Normal'}>
+                추천 항목만 보기
+              </Typography>
+            </Stack>
             <MISearchInput
               storageKey="scenario-workbench-events"
               value={keyword}
@@ -350,18 +405,19 @@ const EventsTabPanel = () => {
           </Stack>
         </Stack>
 
-        <MIDataTableHeader<IScenarioWorkbenchEventListItem> columns={columns} sx={{ mt: 2 }} />
+        <MIDataTableHeader<MockEventRow> columns={columns} getHeaderCellSx={getEventsTableHeaderCellSx} sx={{ mt: 2 }} />
       </WorkbenchStickySlot>
 
-      <MIDataTableBody<IScenarioWorkbenchEventListItem>
+      <MIDataTableBody<MockEventRow>
         rowId="eventId"
         columns={columns}
         rows={tableRows}
         loading={isLoading}
         skeletonRowCount={pagination.size}
-        rowHeight={42}
-        noRowMessage={emptyMessage}
+        rowHeight={48}
+        noRowsOverlay={emptyOverlay}
         onRowClick={handleRowClick}
+        getCellSx={getEventsTableCellSx}
       />
 
       <MIPaginationSecondary
