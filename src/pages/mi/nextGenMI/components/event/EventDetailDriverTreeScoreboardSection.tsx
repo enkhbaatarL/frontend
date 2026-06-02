@@ -224,30 +224,32 @@ const EventDetailDriverTreeScoreboardSection = ({ driverTreeScoreboard = [] }: E
                             width: SHORT_WIDTH,
                             align: 'center' as const,
                             node: (
-                              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                              <Stack direction="row" justifyContent="center">
                                 <EventIndexSignalCell
+                                  indexLabel={g.indexName}
                                   level={r.marketImpactLevel}
                                   direction={r.direction}
                                   term="short"
                                   showTermBadge={false}
                                   size={20}
                                 />
-                              </Box>
+                              </Stack>
                             ),
                           },
                           {
                             width: LONG_WIDTH,
                             align: 'center' as const,
                             node: (
-                              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                              <Stack direction="row" justifyContent="center">
                                 <EventIndexSignalCell
+                                  indexLabel={g.indexName}
                                   level={r.midLongTermImpactLevel}
                                   direction={r.midLongTermDirection}
                                   term="long"
                                   showTermBadge={false}
                                   size={20}
                                 />
-                              </Box>
+                              </Stack>
                             ),
                           },
                           { width: REASON_WIDTH, align: 'left' as const, node: String(r.reason ?? '') },

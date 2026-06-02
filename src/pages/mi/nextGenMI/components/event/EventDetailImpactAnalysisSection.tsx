@@ -75,15 +75,16 @@ const EventDetailImpactAnalysisSection = ({
         align: 'center',
         sortable: false,
         renderCell: (p) => (
-          <Box display="flex" alignItems="center" justifyContent="center" width="100%" height={40}>
+          <Stack alignItems="center" justifyContent="center" width="100%" height="40px">
             <EventIndexSignalCell
+              indexLabel={p.row.indexName}
               level={p.row.shortTermImpactLevel}
               direction={p.row.shortTermDirection}
               term="short"
               showTermBadge={false}
               size={20}
             />
-          </Box>
+          </Stack>
         ),
       },
       {
@@ -93,15 +94,16 @@ const EventDetailImpactAnalysisSection = ({
         align: 'center',
         sortable: false,
         renderCell: (p) => (
-          <Box display="flex" alignItems="center" justifyContent="center" width="100%" height={40}>
+          <Stack alignItems="center" justifyContent="center" width="100%" height="40px">
             <EventIndexSignalCell
+              indexLabel={p.row.indexName}
               level={p.row.midLongTermImpactLevel}
               direction={p.row.midLongTermDirection}
               term="long"
               showTermBadge={false}
               size={20}
             />
-          </Box>
+          </Stack>
         ),
       },
     ],

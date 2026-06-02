@@ -1,4 +1,4 @@
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Divider, Stack, Typography } from '@mui/material'
 
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import { marketDirectionToLabel } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
@@ -37,24 +37,26 @@ export interface EventIndexSignalCellProps {
   /** 기간 배지(S/L) 노출 여부 */
   showTermBadge?: boolean
   size?: number
+  /** 툴팁 상단에 표시할 지수명(JKM/TTF/HH 등) */
+  indexLabel?: string
 }
 
 /** 영향 지속 기간 배지 (S / L) */
 const IndexDurationBadge = ({ term }: { term: IndexImpactTerm }) => (
-  <Box
+  <Stack
     component="span"
+    direction="row"
     display="inline-flex"
     alignItems="center"
     justifyContent="center"
-    px="6px"
-    py="2px"
+    padding="2px 6px"
     borderRadius="8px"
     bgcolor={DURATION_BADGE_BG}
   >
     <Typography component="span" variant="body3SB12" color="contentText.Normal" lineHeight={1.4} noWrap>
       {termToBadgeText(term)}
     </Typography>
-  </Box>
+  </Stack>
 )
 
 /**
@@ -62,12 +64,12 @@ const IndexDurationBadge = ({ term }: { term: IndexImpactTerm }) => (
  * viewBox 32x32 기준으로 Figma 좌표를 그대로 반영
  */
 /** 보합 / 영향 없음: 가로 막대 3개 */
-const NeutralSignalBars = ({ level, size = 20 }: { level: MarketImpactLevel | undefined; size?: number }) => {
+const NeutralSignalBars = ({ level, size = 32 }: { level: MarketImpactLevel | undefined; size?: number }) => {
   const filled = filledBarCount(level)
   const colorFor = (index: number): string => (index < filled ? SIGNAL_BAR_NEUTRAL : SIGNAL_BAR_EMPTY)
 
   return (
-    <Box component="span" display="inline-flex" sx={{ width: size, height: size, flexShrink: 0 }}>
+    <Box component="span" display="inline-flex" width={`${size}px`} height={`${size}px`} flexShrink={0}>
       <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
         {[0, 1, 2].map((index) => (
           <rect
@@ -89,7 +91,7 @@ const NeutralSignalBars = ({ level, size = 20 }: { level: MarketImpactLevel | un
 const IndexSignalBars = ({
   level,
   direction,
-  size = 20,
+  size = 32,
 }: {
   level: MarketImpactLevel | undefined
   direction?: MarketDirection
@@ -114,7 +116,7 @@ const IndexSignalBars = ({
   const yFor = (height: number) => (isBearish ? 7 : 32 - 7 - height)
 
   return (
-    <Box component="span" display="inline-flex" sx={{ width: size, height: size, flexShrink: 0 }}>
+    <Box component="span" display="inline-flex" width={`${size}px`} height={`${size}px`} flexShrink={0}>
       <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
         {heights.map((height, index) => (
           <rect key={index} x={xs[index]} y={yFor(height)} width={6} height={height} rx={1.436} fill={colorFor(index)} />
@@ -124,46 +126,121 @@ const IndexSignalBars = ({
   )
 }
 
-const tooltipLineSx = {
-  m: 0,
-  fontSize: 12,
-  lineHeight: 1.4,
-  color: 'common.white',
+const directionValueColor = (direction?: MarketDirection) => {
+  switch (direction) {
+    case MarketDirection.BULLISH:
+      return SIGNAL_BAR_GREEN
+    case MarketDirection.BEARISH:
+      return SIGNAL_BAR_RED
+    case MarketDirection.NEGLIGIBLE:
+      return SIGNAL_BAR_NEUTRAL
+    default:
+      return 'commonColor.Black'
+  }
 }
 
+const SignalTooltipRow = ({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) => (
+  <Stack direction="row" alignItems="center" gap="8px" height="30px" padding="6px 12px" boxSizing="border-box" borderRadius="10px">
+    <Typography component="p" variant="body2M14" color="contentText.Normal" minWidth="90px" flex="1 0 0" noWrap>
+      {label}
+    </Typography>
+    <Typography component="p" variant="body2SB14" color={valueColor ?? 'commonColor.Black'} flexShrink={0} noWrap>
+      {value}
+    </Typography>
+  </Stack>
+)
+
+const SignalTooltipHeader = ({ title, term }: { title: string; term: IndexImpactTerm }) => (
+  <Stack
+    direction="row"
+    alignItems="center"
+    justifyContent="space-between"
+    height="30px"
+    padding="6px 6px 6px 12px"
+    boxSizing="border-box"
+    borderRadius="10px"
+  >
+    <Typography component="p" variant="body1SB16" color="commonColor.Black" noWrap>
+      {title}
+    </Typography>
+    <Stack
+      component="span"
+      direction="row"
+      display="inline-flex"
+      alignItems="center"
+      justifyContent="flex-end"
+      padding="4px 8px"
+      borderRadius="10px"
+      bgcolor={DURATION_BADGE_BG}
+      flexShrink={0}
+    >
+      <Typography component="span" variant="body2SB14" color="contentText.Normal" lineHeight={1.4} noWrap>
+        {termToLabel(term)}
+      </Typography>
+    </Stack>
+  </Stack>
+)
+
 const SignalTooltipContent = ({
+  indexLabel,
   level,
   direction,
   term,
 }: {
+  indexLabel?: string
   level: MarketImpactLevel | undefined
   direction?: MarketDirection
   term: IndexImpactTerm
 }) => {
   const impactLabel = level === undefined ? '-' : MARKET_IMPACT_LEVEL_KO[level]
+  const directionLabel = direction === undefined ? '-' : marketDirectionToLabel(direction)
+  const title = indexLabel || termToLabel(term)
   return (
-    <Stack gap={0}>
-      <Typography component="p" sx={tooltipLineSx}>
-        시장 영향도: {impactLabel}
-      </Typography>
-      {direction !== undefined && (
-        <Typography component="p" sx={tooltipLineSx}>
-          방향: {marketDirectionToLabel(direction)}
-        </Typography>
-      )}
-      <Typography component="p" sx={tooltipLineSx}>
-        기간: {termToLabel(term)}
-      </Typography>
+    <Stack gap="4px">
+      <SignalTooltipHeader title={title} term={term} />
+      <Divider sx={{ borderColor: 'contentBorder.Normal' }} />
+      <SignalTooltipRow label="시장 영향도" value={impactLabel} />
+      <SignalTooltipRow label="방향" value={directionLabel} valueColor={directionValueColor(direction)} />
     </Stack>
   )
 }
 
 /** Events 테이블 지수(JKM/TTF/HH) 셀: 기간 배지 + 셀룰러 신호 막대 */
-const EventIndexSignalCell = ({ level, direction, term = 'short', showTermBadge = true, size }: EventIndexSignalCellProps) => (
-  <NextGenMIFollowCursorTooltip title={<SignalTooltipContent level={level} direction={direction} term={term} />}>
-    <Stack direction="row" alignItems="center" justifyContent="center" gap="4px" width="100%" height={22}>
+const EventIndexSignalCell = ({ level, direction, term = 'short', showTermBadge = true, size, indexLabel }: EventIndexSignalCellProps) => (
+  <NextGenMIFollowCursorTooltip
+    title={<SignalTooltipContent indexLabel={indexLabel} level={level} direction={direction} term={term} />}
+    tooltipSx={{
+      width: '195px',
+      bgcolor: 'commonColor.White',
+      color: 'contentText.Black',
+      border: '1px solid',
+      borderColor: 'contentBorder.Normal',
+      borderRadius: '10px',
+      boxShadow: '0px 0px 4px 0px rgba(0, 0, 0, 0.10)',
+      overflow: 'hidden',
+      padding: '6px',
+      boxSizing: 'border-box',
+    }}
+  >
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="center"
+      gap="4px"
+      width={showTermBadge ? '80px' : `${(size ?? 32) + 12}px`}
+      height="40px"
+      borderRadius="10px"
+      padding="4px 6px"
+      boxSizing="border-box"
+      sx={{
+        transition: 'background-color 120ms ease',
+        '&:hover': {
+          bgcolor: '#F8F9FA',
+        },
+      }}
+    >
       {showTermBadge && <IndexDurationBadge term={term} />}
-      <IndexSignalBars level={level} direction={direction} size={size} />
+      <IndexSignalBars level={level} direction={direction} size={size ?? 32} />
     </Stack>
   </NextGenMIFollowCursorTooltip>
 )

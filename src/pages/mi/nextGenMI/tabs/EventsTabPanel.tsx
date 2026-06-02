@@ -200,7 +200,14 @@ const EventsTabPanel = () => {
         headerAlign: 'center',
         renderCell: (params) => {
           const impact = findIndexImpact(params.row.indexImpacts, 'JKM')
-          return <EventIndexSignalCell level={impact?.marketImpactLevel} direction={impact?.direction} term={params.row.termByIndex?.JKM} />
+          return (
+            <EventIndexSignalCell
+              indexLabel="JKM"
+              level={impact?.marketImpactLevel}
+              direction={impact?.direction}
+              term={params.row.termByIndex?.JKM}
+            />
+          )
         },
       },
       {
@@ -211,7 +218,14 @@ const EventsTabPanel = () => {
         headerAlign: 'center',
         renderCell: (params) => {
           const impact = findIndexImpact(params.row.indexImpacts, 'TTF')
-          return <EventIndexSignalCell level={impact?.marketImpactLevel} direction={impact?.direction} term={params.row.termByIndex?.TTF} />
+          return (
+            <EventIndexSignalCell
+              indexLabel="TTF"
+              level={impact?.marketImpactLevel}
+              direction={impact?.direction}
+              term={params.row.termByIndex?.TTF}
+            />
+          )
         },
       },
       {
@@ -222,7 +236,14 @@ const EventsTabPanel = () => {
         headerAlign: 'center',
         renderCell: (params) => {
           const impact = findIndexImpact(params.row.indexImpacts, 'HH')
-          return <EventIndexSignalCell level={impact?.marketImpactLevel} direction={impact?.direction} term={params.row.termByIndex?.HH} />
+          return (
+            <EventIndexSignalCell
+              indexLabel="HH"
+              level={impact?.marketImpactLevel}
+              direction={impact?.direction}
+              term={params.row.termByIndex?.HH}
+            />
+          )
         },
       },
       {
