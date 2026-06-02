@@ -70,9 +70,36 @@ export interface IScenarioWorkbenchEventImpactAnalysis {
   sources?: string[]
 }
 
+export interface IScenarioWorkbenchEventAiInsightDetailBlock {
+  title: string
+  body: string
+}
+
 export interface IScenarioWorkbenchEventAiInsights {
   keySummaries: string[]
-  detailedAnalysis: string
+  /** API 미연동 시 mock/레거시 단일 본문 */
+  detailedAnalysis?: string
+  /** 신규 상세분석 구조 (API 연동 전 mock) */
+  detailedAnalysisBlocks?: IScenarioWorkbenchEventAiInsightDetailBlock[]
+}
+
+/** 이벤트 상세 - 관련 시나리오 그룹 행 (퍼블/mock) */
+export interface IScenarioWorkbenchEventRelatedScenarioGroupRow {
+  scenarioId: number
+  scenarioName: string
+  baseCase: boolean
+  feasibility: number
+  duration: string
+  transportDisruption: string
+  supplyDisruptionIntensity: string
+  supplyRecoveryPattern: string
+  normalizationConfirmation: string
+}
+
+export interface IScenarioWorkbenchEventRelatedScenarioGroup {
+  groupId?: number
+  groupName: string
+  scenarios: IScenarioWorkbenchEventRelatedScenarioGroupRow[]
 }
 
 export interface IScenarioWorkbenchEventDriverTreeScoreboardItem {
@@ -160,6 +187,8 @@ export interface IScenarioWorkbenchEventDetailRes {
   driverTreeScoreboard?: IScenarioWorkbenchEventDriverTreeScoreboardItem[]
   fundamentalDeepdive?: IScenarioWorkbenchEventFundamentalDeepdive | IScenarioWorkbenchEventFundamental
   relatedEventScenario?: IScenarioWorkbenchRelatedEventScenario
+  /** 신규 관련 시나리오 그룹 (API 연동 전 mock) */
+  relatedScenarioGroup?: IScenarioWorkbenchEventRelatedScenarioGroup
 }
 
 /** 이벤트 MI Records(getEventRecords) 페이지의 단일 row — EventRelatedRecordRes 스키마 정합 */

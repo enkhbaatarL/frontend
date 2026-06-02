@@ -1,13 +1,21 @@
 import dayjs from 'dayjs'
 
 import type {
+  IScenarioWorkbenchEventDetailRes,
+  IScenarioWorkbenchEventInstitutionOutlook,
   IScenarioWorkbenchEventListItem,
-  IScenarioWorkbenchImpactIndexSummary,
   IScenarioWorkbenchEventListRes,
+  IScenarioWorkbenchEventRelatedRecord,
+  IScenarioWorkbenchImpactIndexSummary,
   ScenarioWorkbenchEventStatus,
 } from '@/service/mi/scenarioWorkbench/event'
 import type { IPaginationResponse } from '@/types/api'
 
+import {
+  buildMockEventDetail,
+  MOCK_EVENT_INSTITUTION_OUTLOOKS,
+  MOCK_EVENT_MI_RECORDS,
+} from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchEventDetailMockData'
 import { EventCategoryLv1, MarketDirection, MarketImpactLevel } from '@/service/mi/scenarioWorkbench/common'
 
 export type MockEventRow = IScenarioWorkbenchEventListItem & {
@@ -127,6 +135,8 @@ const toPagination = <T>(rows: T[], page: number, size: number): IPaginationResp
   }
 }
 
+const resolveMockListEventName = (eventId: string) => MOCK_ROWS.find((r) => String(r.eventId) === String(eventId))?.eventName
+
 export const scenarioWorkbenchMockApi = {
   getEvents(params: {
     page?: number
@@ -144,5 +154,20 @@ export const scenarioWorkbenchMockApi = {
       appliedFilter: {},
       events,
     }
+  },
+
+  getEventDetail(eventId: string, eventName?: string): IScenarioWorkbenchEventDetailRes {
+    return buildMockEventDetail(eventId, eventName ?? resolveMockListEventName(eventId))
+  },
+
+  getEventRecords(_eventId: string, params?: { page?: number; size?: number }): IPaginationResponse<IScenarioWorkbenchEventRelatedRecord> {
+    return toPagination(MOCK_EVENT_MI_RECORDS, params?.page ?? 1, params?.size ?? 10)
+  },
+
+  getEventOutlooks(
+    _eventId: string,
+    params?: { page?: number; size?: number },
+  ): IPaginationResponse<IScenarioWorkbenchEventInstitutionOutlook> {
+    return toPagination(MOCK_EVENT_INSTITUTION_OUTLOOKS, params?.page ?? 1, params?.size ?? 10)
   },
 }

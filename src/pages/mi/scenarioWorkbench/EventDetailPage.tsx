@@ -1,4 +1,3 @@
-import { EventNote } from '@mui/icons-material'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -9,9 +8,7 @@ import type { KpiCardProps } from '@/pages/mi/scenarioWorkbench/components/commo
 
 import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
-import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
 import { ScenarioWorkbenchNoiseSignalBadge } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
-import RelatedEventsAndScenariosSection from '@/pages/mi/scenarioWorkbench/components/common/RelatedEventsAndScenariosSection'
 import { scenarioWorkbenchIsEventNoiseSignal } from '@/pages/mi/scenarioWorkbench/components/common/scenarioWorkbenchClassificationChip'
 import ScenarioWorkbenchDetailHeader, {
   WORKBENCH_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
@@ -22,11 +19,16 @@ import EventDetailDriverTreeScoreboardSection from '@/pages/mi/scenarioWorkbench
 import EventDetailImpactAnalysisSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailImpactAnalysisSection'
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailMiRecordsTable'
+import EventDetailRelatedScenariosSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailRelatedScenariosSection'
+import EventScenarioGenerateButton from '@/pages/mi/scenarioWorkbench/components/event/EventScenarioGenerateButton'
 import ScenarioWorkbenchUserFeedback from '@/pages/mi/scenarioWorkbench/components/ScenarioWorkbenchUserFeedback'
+import { scenarioWorkbenchMockApi } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchEventMockApi'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
-import { scrollScenarioWorkbenchLayoutToTop } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchScroll'
 import { EVENT_CATEGORY_LV1_KO } from '@/service/mi/scenarioWorkbench/common'
 import scenarioWorkbenchEventService from '@/service/mi/scenarioWorkbench/event'
+
+/** 이벤트 상세 API 미연동 - mock 데이터 사용 (Events 목록과 동일) */
+const EVENT_DETAIL_USE_MOCK = true
 
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'driverTree' | 'related'
 
@@ -34,10 +36,10 @@ const EVENT_DETAIL_TABS: { key: EventDetailTabKey; label: string }[] = [
   { key: 'ai', label: 'AI Insights' },
   { key: 'impact', label: '영향도 분석' },
   // { key: 'fundamental', label: 'Fundamental Deep-dive' }, // 미확정으로 인한 임시 비활성화 26.05.07
-  { key: 'driverTree', label: 'Driver Tree Scoreboard' },
+  { key: 'driverTree', label: 'Index Driver별 영향도 분석' },
   { key: 'outlook', label: '기관 전망' },
   { key: 'records', label: 'MI Records' },
-  { key: 'related', label: '관련 이벤트 및 시나리오' },
+  { key: 'related', label: '관련 시나리오' },
 ]
 
 interface ScenarioWorkbenchEventDetailLocationState {
@@ -64,10 +66,16 @@ const EVENT_DETAIL_HEADER_SECTIONS: WorkbenchDetailHeaderSection[] = EVENT_DETAI
   label: tab.label,
 }))
 
-const eventDetailFeedbackRightAction = (
-  <Box display="flex" alignItems="center" justifyContent="flex-end" flexShrink={0} minHeight="62px">
+const eventDetailHeaderTabActions = (
+  <Stack direction="row" alignItems="center" gap="12px" flexShrink={0} sx={{ minHeight: '62px', py: '13px' }}>
     <ScenarioWorkbenchUserFeedback pageName="MI Scenario Workbench" sectionName="Events / Event Detail" />
-  </Box>
+    <EventScenarioGenerateButton
+      layout="detailHeader"
+      onClick={() => {
+        // 시나리오 생성 액션은 API 미연동 단계, 퍼블리싱 버튼만 노출
+      }}
+    />
+  </Stack>
 )
 
 interface EventDetailHeaderContent {
@@ -111,6 +119,21 @@ const EventDetailHeaderView = () => {
   )
 }
 
+const formatEventDetailTimestampLabel = (iso?: string) => {
+  if (!iso) return '-'
+  const parsed = dayjs(iso)
+  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm') : '-'
+}
+
+const eventDetailTimestampChipSx = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  px: '8px',
+  py: '4px',
+  borderRadius: '100px',
+} as const
+
 const DEFAULT_IMPACT_KPI_PAIR: [KpiCardProps, KpiCardProps] = [
   { title: '카테고리', content: '-', description: '\u00a0' },
   { title: '출처', content: '-', description: '\u00a0' },
@@ -135,77 +158,54 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     if (scrollEl) scrollEl.scrollTop = 0
   }, [embedded])
 
+  const eventNameFromState = state?.eventName?.trim()
+
   const {
     data: detail,
     isLoading: detailLoading,
     isError: detailError,
-    refetch: refetchEventDetail,
   } = useQuery({
-    queryKey: ['scenarioWorkbenchEventDetail', eventId],
-    queryFn: () => scenarioWorkbenchEventService.getEventDetail(eventId!),
+    queryKey: ['scenarioWorkbenchEventDetail', eventId, EVENT_DETAIL_USE_MOCK],
+    queryFn: () =>
+      EVENT_DETAIL_USE_MOCK
+        ? scenarioWorkbenchMockApi.getEventDetail(eventId!, eventNameFromState)
+        : scenarioWorkbenchEventService.getEventDetail(eventId!),
     enabled: !!eventId,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
 
-  const {
-    data: recordsData,
-    isLoading: recordsLoading,
-    refetch: refetchEventRecords,
-  } = useQuery({
-    queryKey: ['scenarioWorkbenchEventRecords', eventId, recordsPagination.page, recordsPagination.size],
-    queryFn: () => scenarioWorkbenchEventService.getEventRecords(eventId!, recordsPagination),
+  const { data: recordsData, isLoading: recordsLoading } = useQuery({
+    queryKey: ['scenarioWorkbenchEventRecords', eventId, recordsPagination.page, recordsPagination.size, EVENT_DETAIL_USE_MOCK],
+    queryFn: () =>
+      EVENT_DETAIL_USE_MOCK
+        ? scenarioWorkbenchMockApi.getEventRecords(eventId!, recordsPagination)
+        : scenarioWorkbenchEventService.getEventRecords(eventId!, recordsPagination),
     enabled: !!eventId,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
 
-  const {
-    data: outlooksData,
-    isLoading: outlooksLoading,
-    refetch: refetchEventOutlooks,
-  } = useQuery({
-    queryKey: ['scenarioWorkbenchEventOutlooks', eventId, outlooksPagination.page, outlooksPagination.size],
-    queryFn: () => scenarioWorkbenchEventService.getEventOutlooks(eventId!, outlooksPagination),
+  const { data: outlooksData, isLoading: outlooksLoading } = useQuery({
+    queryKey: ['scenarioWorkbenchEventOutlooks', eventId, outlooksPagination.page, outlooksPagination.size, EVENT_DETAIL_USE_MOCK],
+    queryFn: () =>
+      EVENT_DETAIL_USE_MOCK
+        ? scenarioWorkbenchMockApi.getEventOutlooks(eventId!, outlooksPagination)
+        : scenarioWorkbenchEventService.getEventOutlooks(eventId!, outlooksPagination),
     enabled: !!eventId,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
-
-  const refetchCurrentEventPageData = () => {
-    void Promise.all([refetchEventDetail(), refetchEventRecords(), refetchEventOutlooks()])
-  }
-
-  const pushSameEventDetailHistoryAndRefetch = () => {
-    if (!embedded) {
-      navigate(
-        { pathname: location.pathname, search: location.search, hash: location.hash },
-        {
-          replace: false,
-          state: { ...(state ?? {}), scenarioWorkbenchSelfEntityBump: Date.now() },
-        },
-      )
-    }
-    refetchCurrentEventPageData()
-    scrollScenarioWorkbenchLayoutToTop(embedded ? popupScrollContainer : undefined)
-  }
 
   const title = useMemo(() => {
-    const fromState = state?.eventName?.trim()
-    if (fromState) return fromState
+    if (eventNameFromState) return eventNameFromState
     const fromApi = detail?.eventName?.trim()
     if (fromApi) return fromApi
     return eventId ? `이벤트 ${eventId}` : '이벤트'
-  }, [detail?.eventName, eventId, state?.eventName])
+  }, [detail?.eventName, eventId, eventNameFromState])
 
-  const { generatedAtLabel, updatedAtLabel } = useMemo(() => {
-    const created = detail?.createdAt ? dayjs(detail.createdAt) : null
-    const updated = detail?.updatedAt ? dayjs(detail.updatedAt) : null
-    return {
-      generatedAtLabel: created?.isValid() ? created.format('YYYY-MM-DD HH:mm') : '-',
-      updatedAtLabel: updated?.isValid() ? updated.format('YYYY-MM-DD HH:mm') : '-',
-    }
-  }, [detail?.createdAt, detail?.updatedAt])
+  const generatedAtLabel = formatEventDetailTimestampLabel(detail?.createdAt)
+  const updatedAtLabel = formatEventDetailTimestampLabel(detail?.updatedAt)
 
   const impactKpiPair = useMemo((): [KpiCardProps, KpiCardProps] => {
     const ia = detail?.impactAnalysis
@@ -224,7 +224,6 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
   }, [detail?.impactAnalysis])
 
   const impactTableRows = detail?.impactAnalysis?.indexImpacts ?? []
-
   const impactNarrative = detail?.impactAnalysis?.analysisText?.trim() ?? ''
 
   const aiBullets = useMemo(() => {
@@ -234,15 +233,14 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
     return ['요약 데이터가 없습니다.']
   }, [detail?.aiInsights?.keySummaries, detailLoading])
 
-  const aiDetailParagraph = useMemo(() => {
-    const text = detail?.aiInsights?.detailedAnalysis?.trim()
-    if (text) return text
-    if (detailLoading) return ''
-    return '상세 분석 데이터가 없습니다.'
-  }, [detail?.aiInsights?.detailedAnalysis, detailLoading])
-
-  const relatedEvents = detail?.relatedEventScenario?.event ? [detail.relatedEventScenario.event] : []
-  const relatedScenarios = detail?.relatedEventScenario?.scenarios ?? []
+  const aiDetailBlocks = useMemo(() => {
+    const blocks = detail?.aiInsights?.detailedAnalysisBlocks
+    if (blocks && blocks.length > 0) return blocks
+    const legacy = detail?.aiInsights?.detailedAnalysis?.trim()
+    if (legacy) return [{ title: '상세분석', body: legacy }]
+    if (detailLoading) return []
+    return [{ title: '상세분석', body: '상세 분석 데이터가 없습니다.' }]
+  }, [detail?.aiInsights?.detailedAnalysis, detail?.aiInsights?.detailedAnalysisBlocks, detailLoading])
 
   const recordRows = recordsData?.detail ?? []
   const outlookRows = outlooksData?.detail ?? []
@@ -264,7 +262,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           {detailLoading ? (
             <>
               <Skeleton variant="rounded" width="min(560px, 90%)" height={36} sx={{ borderRadius: '6px' }} />
-              <Skeleton variant="rounded" width={320} height={18} sx={{ borderRadius: '4px' }} />
+              <Skeleton variant="rounded" width={320} height={28} sx={{ borderRadius: '100px' }} />
             </>
           ) : (
             <>
@@ -278,15 +276,22 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
                 {title}
               </Typography>
               <Stack direction="row" alignItems="center" gap="8px" flexWrap="wrap">
-                <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
-                  생성일시 {generatedAtLabel}
-                </Typography>
-                <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
-                  |
-                </Typography>
-                <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
-                  업데이트 {updatedAtLabel}
-                </Typography>
+                <Stack direction="row" alignItems="center" gap="6px" sx={eventDetailTimestampChipSx}>
+                  <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4}>
+                    생성
+                  </Typography>
+                  <Typography variant="body2M14" color="contentText.Black" lineHeight={1.4}>
+                    {generatedAtLabel}
+                  </Typography>
+                </Stack>
+                <Stack direction="row" alignItems="center" gap="6px" sx={eventDetailTimestampChipSx}>
+                  <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4}>
+                    갱신
+                  </Typography>
+                  <Typography variant="body2M14" color="contentText.Black" lineHeight={1.4}>
+                    {updatedAtLabel}
+                  </Typography>
+                </Stack>
               </Stack>
             </>
           )}
@@ -302,7 +307,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
       backLabel: 'Events',
       onBack: () => navigate(getScenarioWorkbenchTabPath('events')),
       titleSlot: headerTitleSlot,
-      rightAction: eventDetailFeedbackRightAction,
+      rightAction: eventDetailHeaderTabActions,
     })
   }, [embedded, headerTitleSlot, navigate])
 
@@ -336,22 +341,22 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           backLabel="Events"
           onBack={() => popupContext?.close()}
           titleSlot={headerTitleSlot}
-          rightAction={eventDetailFeedbackRightAction}
+          rightAction={eventDetailHeaderTabActions}
           scrollContainer={popupScrollContainer}
           embeddedStickyTop={0}
           hideBackButton
         />
       )}
-      <Stack py="24px" gap="12px" px={embedded ? '12px' : 0}>
-        {detailError && (
+      <Stack py="24px" gap="12px" px={embedded ? '12px' : 0} sx={{ minWidth: 0, maxWidth: '100%' }}>
+        {detailError && !EVENT_DETAIL_USE_MOCK && (
           <Typography px={2} py={1} color="error.main" variant="body2">
             이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
           </Typography>
         )}
-        <Stack id={SECTION_SCROLL_IDS.ai} gap="12px" py="30px">
-          <EventDetailAiInsightsSection bullets={aiBullets} detailParagraph={aiDetailParagraph} loading={detailLoading} />
+        <Stack id={SECTION_SCROLL_IDS.ai} sx={{ minWidth: 0, maxWidth: '100%' }}>
+          <EventDetailAiInsightsSection bullets={aiBullets} detailBlocks={aiDetailBlocks} loading={detailLoading} />
         </Stack>
-        <Stack id={SECTION_SCROLL_IDS.impact} gap="12px" py="20px" sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}>
+        <Stack id={SECTION_SCROLL_IDS.impact} sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}>
           <EventDetailImpactAnalysisSection
             tableRows={impactTableRows}
             kpiItems={impactKpiPair}
@@ -360,10 +365,10 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             isNoiseEvent={scenarioWorkbenchIsEventNoiseSignal(detail?.signalType)}
           />
         </Stack>
-        <Stack id={SECTION_SCROLL_IDS.driverTree} gap="12px" py="30px">
+        <Stack id={SECTION_SCROLL_IDS.driverTree}>
           <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} loading={detailLoading} />
         </Stack>
-        <Stack id={SECTION_SCROLL_IDS.outlook} gap="12px" py="30px">
+        <Stack id={SECTION_SCROLL_IDS.outlook}>
           <EventDetailInstitutionalOutlookTable
             rows={outlookRows}
             serverPagination={outlooksData}
@@ -372,7 +377,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             loading={outlooksLoading}
           />
         </Stack>
-        <Stack id={SECTION_SCROLL_IDS.records} gap="12px" py="30px">
+        <Stack id={SECTION_SCROLL_IDS.records}>
           <EventDetailMiRecordsTable
             rows={recordRows}
             serverPagination={recordsData}
@@ -381,24 +386,9 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
             loading={recordsLoading}
           />
         </Stack>
-        <Stack id={SECTION_SCROLL_IDS.related} gap="12px" py="30px">
-          <Stack direction="row" alignItems="center" gap="8px">
-            <EventNote sx={{ fontSize: 30, color: 'contentText.Black' }} />
-            <Typography sx={{ fontSize: 20, fontWeight: 600, color: 'contentText.Black' }}>관련 이벤트 및 시나리오</Typography>
-            <InfoTooltip title="" iconSize={16} iconColor="contentText.Normal" />
-          </Stack>
-          <RelatedEventsAndScenariosSection
-            events={relatedEvents}
-            scenarios={relatedScenarios}
-            onEventRowClick={(row) => {
-              if (eventId && String(row.eventId) === String(eventId)) {
-                pushSameEventDetailHistoryAndRefetch()
-                return
-              }
-              navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/events/${encodeURIComponent(String(row.eventId))}`, {
-                state: { eventName: row.eventName },
-              })
-            }}
+        <Stack id={SECTION_SCROLL_IDS.related}>
+          <EventDetailRelatedScenariosSection
+            relatedScenarioGroup={detail?.relatedScenarioGroup}
             onScenarioRowClick={(row) =>
               navigate(`${SCENARIO_WORKBENCH_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)
             }

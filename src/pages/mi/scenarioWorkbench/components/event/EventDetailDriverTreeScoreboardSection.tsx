@@ -14,13 +14,14 @@ import ScenarioWorkbenchEventDetailTableBodyText, {
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX,
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
+import EventDetailHorizontalScrollTableShell from '@/pages/mi/scenarioWorkbench/components/event/EventDetailHorizontalScrollTableShell'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
 
 const columns: GridColDef<IScenarioWorkbenchEventDriverTreeScoreboardItem>[] = [
   {
     field: 'lv1Label',
     headerName: '분류',
-    width: 140,
+    width: 100,
     align: 'left',
     sortable: false,
     renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.row.lv1Label ?? '')} tooltipWhenTruncated />,
@@ -28,8 +29,7 @@ const columns: GridColDef<IScenarioWorkbenchEventDriverTreeScoreboardItem>[] = [
   {
     field: 'lv2Label',
     headerName: 'Driver',
-    flex: 1,
-    minWidth: 160,
+    width: 240,
     align: 'left',
     sortable: false,
     renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.row.lv2Label ?? '')} tooltipWhenTruncated />,
@@ -37,8 +37,7 @@ const columns: GridColDef<IScenarioWorkbenchEventDriverTreeScoreboardItem>[] = [
   {
     field: 'lv3Label',
     headerName: 'Sub Driver',
-    flex: 1,
-    minWidth: 160,
+    width: 260,
     align: 'left',
     sortable: false,
     renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.row.lv3Label ?? '')} tooltipWhenTruncated />,
@@ -46,7 +45,7 @@ const columns: GridColDef<IScenarioWorkbenchEventDriverTreeScoreboardItem>[] = [
   {
     field: 'marketImpactLevel',
     headerName: '강도',
-    width: 100,
+    width: 140,
     align: 'center',
     sortable: false,
     renderCell: (params) => (
@@ -58,8 +57,7 @@ const columns: GridColDef<IScenarioWorkbenchEventDriverTreeScoreboardItem>[] = [
   {
     field: 'reason',
     headerName: '근거',
-    flex: 2,
-    minWidth: 240,
+    width: 520,
     align: 'left',
     sortable: false,
     renderCell: (params) => <ScenarioWorkbenchEventDetailTableBodyText value={String(params.row.reason ?? '')} tooltipWhenTruncated />,
@@ -75,23 +73,25 @@ const EventDetailDriverTreeScoreboardSection = ({
   driverTreeScoreboard = [],
   loading = false,
 }: EventDetailDriverTreeScoreboardSectionProps) => (
-  <Stack width="100%" gap="12px">
+  <Stack width="100%" gap="12px" py="30px">
     <EventDetailSectionHeader
       icon={<AccountTreeRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
-      title="Driver Tree Scoreboard"
+      title="Index Driver별 영향도 분석"
       tooltipTitle=""
     />
-    <Stack>
+    <EventDetailHorizontalScrollTableShell>
       <MIDataTableHeader<IScenarioWorkbenchEventDriverTreeScoreboardItem>
         columns={columns}
         headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
         headerLabelColor="contentText.Black"
+        enableHorizontalScroll
+        rowHeader={{ colIndex: 0 }}
       />
       <MIDataTableBody<IScenarioWorkbenchEventDriverTreeScoreboardItem>
         getRowKey={(_row, index) => `driver-tree-${index}`}
         columns={columns}
         rows={driverTreeScoreboard}
-        rowHeight={44}
+        rowHeight={48}
         primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
         primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
         cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
@@ -100,8 +100,14 @@ const EventDetailDriverTreeScoreboardSection = ({
         skeletonRowCount={5}
         noRowMessage="표시할 데이터가 없습니다."
         hideInnerRowBorder
+        scroll={{
+          overflowX: 'auto',
+          type: 'floating',
+          showThumbOnHover: true,
+        }}
+        rowHeader={{ colIndex: 0 }}
       />
-    </Stack>
+    </EventDetailHorizontalScrollTableShell>
   </Stack>
 )
 
