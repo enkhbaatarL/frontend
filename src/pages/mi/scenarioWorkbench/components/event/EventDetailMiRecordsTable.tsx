@@ -124,12 +124,6 @@ const EventDetailMiRecordsTable = ({
       />
       <Stack gap={0}>
         <EventDetailHorizontalScrollTableShell>
-          <MIDataTableHeader<IScenarioWorkbenchEventRelatedRecord>
-            columns={columns}
-            headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
-            headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
-            enableHorizontalScroll
-          />
           <MIDataTableBody<IScenarioWorkbenchEventRelatedRecord>
             getRowKey={(row, index) => `${row.publishedAt}-${row.title}-${index}`}
             columns={columns}
@@ -145,6 +139,14 @@ const EventDetailMiRecordsTable = ({
               overflowX: 'auto',
               type: 'floating',
               showThumbOnHover: true,
+              stickyHeader: (
+                <MIDataTableHeader<IScenarioWorkbenchEventRelatedRecord>
+                  columns={columns}
+                  headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+                  headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
+                  enableHorizontalScroll
+                />
+              ),
             }}
           />
         </EventDetailHorizontalScrollTableShell>

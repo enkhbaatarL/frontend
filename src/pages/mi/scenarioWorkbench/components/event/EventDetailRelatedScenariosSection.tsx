@@ -146,7 +146,6 @@ const EventDetailRelatedScenariosSection = ({
         </Stack>
         <Box bgcolor="commonColor.White" border="1px solid" borderColor="contentBorder.Normal" borderRadius="10px" p="12px">
           <EventDetailHorizontalScrollTableShell fadeBackground="linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%)">
-            <MIDataTableHeader<RelatedScenarioRow> columns={columns} enableHorizontalScroll headerLabelColor="contentText.Normal" />
             <MIDataTableBody<RelatedScenarioRow>
               rowId="scenarioId"
               columns={columns}
@@ -158,6 +157,14 @@ const EventDetailRelatedScenariosSection = ({
                 overflowX: 'auto',
                 type: 'floating',
                 showThumbOnHover: true,
+                stickyHeader: (
+                  <MIDataTableHeader<RelatedScenarioRow>
+                    columns={columns}
+                    enableHorizontalScroll
+                    headerLabelColor="contentText.Normal"
+                    rowHeader={{ colIndex: 0 }}
+                  />
+                ),
               }}
               rowHeader={{ colIndex: 0 }}
             />

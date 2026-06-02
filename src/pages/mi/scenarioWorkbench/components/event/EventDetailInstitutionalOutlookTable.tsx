@@ -109,12 +109,6 @@ const EventDetailInstitutionalOutlookTable = ({
       />
       <Stack gap={0}>
         <EventDetailHorizontalScrollTableShell>
-          <MIDataTableHeader<IScenarioWorkbenchEventInstitutionOutlook>
-            columns={columns}
-            headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
-            headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
-            enableHorizontalScroll
-          />
           <MIDataTableBody<IScenarioWorkbenchEventInstitutionOutlook>
             getRowKey={(row, index) => `${row.publishedAt}-${row.institutionName}-${index}`}
             columns={columns}
@@ -130,6 +124,14 @@ const EventDetailInstitutionalOutlookTable = ({
               overflowX: 'auto',
               type: 'floating',
               showThumbOnHover: true,
+              stickyHeader: (
+                <MIDataTableHeader<IScenarioWorkbenchEventInstitutionOutlook>
+                  columns={columns}
+                  headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+                  headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
+                  enableHorizontalScroll
+                />
+              ),
             }}
           />
         </EventDetailHorizontalScrollTableShell>

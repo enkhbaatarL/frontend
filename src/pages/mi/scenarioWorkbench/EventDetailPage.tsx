@@ -366,7 +366,7 @@ const ScenarioWorkbenchEventDetailPage = ({ eventId: eventIdProp, embedded = fal
           />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.driverTree}>
-          <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} loading={detailLoading} />
+          <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.outlook}>
           <EventDetailInstitutionalOutlookTable

@@ -5,19 +5,18 @@ import { GridColDef } from '@mui/x-data-grid'
 import { useMemo } from 'react'
 
 import type { KpiCardProps } from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
-import type { IScenarioWorkbenchImpactIndexSummary } from '@/service/mi/scenarioWorkbench/event'
+import type { IScenarioWorkbenchEventImpactIndexRow } from '@/service/mi/scenarioWorkbench/event'
 
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
-import ImpactDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ImpactDotsCell'
 import KpiCard from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
-import { PriceDirectionIconWithTooltip } from '@/pages/mi/scenarioWorkbench/components/common/PriceDirectionIcon'
 import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
+import EventIndexSignalCell from '@/pages/mi/scenarioWorkbench/components/event/EventIndexSignalCell'
 
 /** 영향도 분석 섹션 props */
 interface EventDetailImpactAnalysisSectionProps {
-  tableRows: IScenarioWorkbenchImpactIndexSummary[]
+  tableRows: IScenarioWorkbenchEventImpactIndexRow[]
   kpiItems: [KpiCardProps, KpiCardProps]
   narrative: string
   isNoiseEvent?: boolean
@@ -53,7 +52,7 @@ const EventDetailImpactAnalysisSection = ({
   isNoiseEvent = false,
   loading = false,
 }: EventDetailImpactAnalysisSectionProps) => {
-  const columns: GridColDef<IScenarioWorkbenchImpactIndexSummary>[] = useMemo(
+  const columns: GridColDef<IScenarioWorkbenchEventImpactIndexRow>[] = useMemo(
     () => [
       {
         field: 'indexName',
@@ -70,26 +69,38 @@ const EventDetailImpactAnalysisSection = ({
         ),
       },
       {
-        field: 'marketImpactLevel',
-        headerName: '시장영향',
-        width: 120,
-        align: 'center',
-        sortable: false,
-        renderCell: (p) => (
-          <>
-            <ImpactDotsCell level={p.row.marketImpactLevel} />
-          </>
-        ),
-      },
-      {
-        field: 'direction',
-        headerName: '가격방향',
-        width: 120,
+        field: 'shortTermImpactLevel',
+        headerName: '단기 영향',
+        width: 140,
         align: 'center',
         sortable: false,
         renderCell: (p) => (
           <Box display="flex" alignItems="center" justifyContent="center" width="100%" height={40}>
-            <PriceDirectionIconWithTooltip direction={p.row.direction} size={14} />
+            <EventIndexSignalCell
+              level={p.row.shortTermImpactLevel}
+              direction={p.row.shortTermDirection}
+              term="short"
+              showTermBadge={false}
+              size={20}
+            />
+          </Box>
+        ),
+      },
+      {
+        field: 'midLongTermImpactLevel',
+        headerName: '중장기 영향',
+        width: 140,
+        align: 'center',
+        sortable: false,
+        renderCell: (p) => (
+          <Box display="flex" alignItems="center" justifyContent="center" width="100%" height={40}>
+            <EventIndexSignalCell
+              level={p.row.midLongTermImpactLevel}
+              direction={p.row.midLongTermDirection}
+              term="long"
+              showTermBadge={false}
+              size={20}
+            />
           </Box>
         ),
       },
@@ -165,8 +176,8 @@ const EventDetailImpactAnalysisSection = ({
         <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
           <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
             <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-              <MIDataTableHeader<IScenarioWorkbenchImpactIndexSummary> columns={columns} />
-              <MIDataTableBody<IScenarioWorkbenchImpactIndexSummary>
+              <MIDataTableHeader<IScenarioWorkbenchEventImpactIndexRow> columns={columns} />
+              <MIDataTableBody<IScenarioWorkbenchEventImpactIndexRow>
                 rowId="indexName"
                 columns={columns}
                 rows={tableRows}
@@ -199,7 +210,7 @@ const EventDetailImpactAnalysisSection = ({
           }}
         >
           <Typography fontSize={14} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
-            영향도 분석
+            영향도 분석 종합
           </Typography>
           <Typography fontSize={16} fontWeight={500} color="contentText.Black" lineHeight={1.6}>
             {narrative}
