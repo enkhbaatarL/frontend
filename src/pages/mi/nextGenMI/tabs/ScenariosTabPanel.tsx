@@ -181,11 +181,11 @@ const ScenariosTabPanel = () => {
   return (
     <Box width="100%">
       <NextGenMIStickySlot tabKey="scenarios">
-        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" px={3} color="contentText.Black">
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} padding="18px 24px" color="contentText.Black">
           Scenario Group List
         </Typography>
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} px={3}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} paddingX="24px">
           <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" minWidth={0} flex={1}>
             {/* 임시: 상태 필터 세그먼트 숨김
             <MISlidingSegmented
@@ -202,6 +202,12 @@ const ScenariosTabPanel = () => {
               showPreset
               datePresets={nextGenMIDatePresets}
               closeOnScroll
+              sx={{
+                height: '36px',
+                minHeight: '36px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+              }}
             />
 
             <MISelectMenu
@@ -211,6 +217,11 @@ const ScenariosTabPanel = () => {
               onSelected={(value: string) => handleSortChange(value)}
               items={NEXT_GEN_MI_LIST_SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
               closeOnScroll
+              sx={{
+                height: '36px',
+                minHeight: '36px',
+                borderRadius: '10px',
+              }}
             />
           </Stack>
 
@@ -222,7 +233,8 @@ const ScenariosTabPanel = () => {
               placeholder="시나리오명으로 검색"
               onSearch={handleSearch}
               onClear={handleSearchClear}
-              width={246}
+              width="246px"
+              height="36px"
             />
           </Stack>
         </Stack>

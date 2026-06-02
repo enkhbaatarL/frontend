@@ -5,9 +5,6 @@ import { useState } from 'react'
 import MIBaseButtonLabel from '@/components/common/label/MIBaseButtonLabel'
 import MIMenu from '@/components/common/menu/MIMenu'
 
-const MENU_MIN_WIDTH = 150
-const SELECTED_ITEM_BG = 'contentBG.PrimaryFade'
-
 export interface EventSortSelectMenuItem<T extends string> {
   value: T
   label: string
@@ -44,7 +41,11 @@ const EventSortSelectMenu = <T extends string>({ selected, onSelected, items, cl
       suffix={menuSuffix}
       enableHoverBackground
       closeOnScroll={closeOnScroll}
-      paperProps={{ sx: { minWidth: MENU_MIN_WIDTH } }}
+      paperProps={{ sx: { minWidth: '150px' } }}
+      sx={{
+        height: '36px',
+        borderRadius: '8px',
+      }}
     >
       <Stack gap="8px" padding="12px">
         {items.map((item) => {
@@ -61,9 +62,9 @@ const EventSortSelectMenu = <T extends string>({ selected, onSelected, items, cl
               sx={{
                 padding: '8px 8px 8px 6px',
                 cursor: 'pointer',
-                ...(isSelected ? { backgroundColor: SELECTED_ITEM_BG } : undefined),
+                ...(isSelected ? { backgroundColor: 'contentBG.PrimaryFade' } : undefined),
                 '&:hover': {
-                  backgroundColor: isSelected ? SELECTED_ITEM_BG : 'gray.10',
+                  backgroundColor: isSelected ? 'contentBG.PrimaryFade' : 'gray.10',
                 },
                 textWrap: 'nowrap',
               }}

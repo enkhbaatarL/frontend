@@ -177,7 +177,7 @@ const EventsTabPanel = () => {
           if (fromApiLabel) return fromApiLabel
           const code = row.eventCategoryLv1
           if (code === undefined || code === null) return '-'
-          return EVENT_CATEGORY_LV1_KO[code as EventCategoryLv1] ?? String(code)
+          return EVENT_CATEGORY_LV1_KO[code] ?? String(code)
         },
       },
       {
@@ -296,11 +296,11 @@ const EventsTabPanel = () => {
         },
       },
       sx: {
-        py: 1,
-        px: 1.5,
-        borderRadius: '10px',
-        minHeight: 40,
-        '& .MuiButton-root': { minHeight: 40, borderRadius: '10px' },
+        height: '36px',
+        padding: '8px 12px',
+        borderRadius: '8px',
+        minHeight: '36px',
+        '& .MuiButton-root': { minHeight: '36px', borderRadius: '8px' },
       },
     }),
     [],
@@ -373,17 +373,25 @@ const EventsTabPanel = () => {
   return (
     <Box width="100%">
       <NextGenMIStickySlot tabKey="events">
-        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" px={3} color="contentText.Black">
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} padding="18px 24px" color="contentText.Black">
           Event List
         </Typography>
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} sx={{ px: 3 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} paddingX="24px">
           <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" sx={{ minWidth: 0, flex: 1 }}>
             <MISlidingSegmented
               options={TYPE_FILTER_OPTIONS}
               value={typeFilter}
               onChange={handleTypeFilterChange}
-              sx={{ '& .MuiTypography-root': { whiteSpace: 'nowrap' } }}
+              sx={{
+                height: '36px',
+                '& > button': {
+                  height: '28px',
+                  padding: '4px 8px',
+                  boxSizing: 'border-box',
+                },
+                '& .MuiTypography-root': { whiteSpace: 'nowrap' },
+              }}
             />
 
             <EventCategoryFilterMenu
@@ -406,7 +414,7 @@ const EventsTabPanel = () => {
           </Stack>
 
           <Stack direction="row" alignItems="center" gap="12px" sx={{ flexShrink: 0 }}>
-            <Stack direction="row" alignItems="center" paddingY={1} gap={0.5}>
+            <Stack direction="row" alignItems="center" height="36px" paddingY={0} gap={0.5}>
               <Switch size="small" checked={hideNonRecommended} onChange={(_, checked) => setHideNonRecommended(checked)} />
               <Typography variant="body2M14" color={hideNonRecommended ? 'contentText.Black' : 'contentText.Normal'}>
                 추천 항목만 보기
@@ -419,7 +427,8 @@ const EventsTabPanel = () => {
               placeholder="이벤트명으로 검색"
               onSearch={handleSearch}
               onClear={handleSearchClear}
-              width={246}
+              width="246px"
+              height="36px"
             />
           </Stack>
         </Stack>
