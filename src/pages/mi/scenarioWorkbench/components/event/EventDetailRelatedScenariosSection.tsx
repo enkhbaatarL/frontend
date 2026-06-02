@@ -1,16 +1,15 @@
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
-import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { useMemo } from 'react'
 
 import type { IScenarioWorkbenchEventRelatedScenarioGroup } from '@/service/mi/scenarioWorkbench/event'
+import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { ScenarioWorkbenchBaseCaseChip } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
-import ProbabilityGaugeCell from '@/pages/mi/scenarioWorkbench/components/common/ProbabilityGaugeCell'
 import ScenarioWorkbenchEventDetailTableBodyText from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
-import EventDetailHorizontalScrollTableShell from '@/pages/mi/scenarioWorkbench/components/event/EventDetailHorizontalScrollTableShell'
+import ScenarioWorkbenchPossibilityDotsCell from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchPossibilityDotsCell'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
 
 type RelatedScenarioRow = IScenarioWorkbenchEventRelatedScenarioGroup['scenarios'][number]
@@ -50,7 +49,6 @@ const EventDetailRelatedScenariosSection = ({
         renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
           <ScenarioWorkbenchEventDetailTableBodyText
             value={params.row.scenarioName}
-            variant="body1M16"
             sx={{ fontWeight: 600 }}
             tooltipWhenTruncated
             onClick={
@@ -70,6 +68,9 @@ const EventDetailRelatedScenariosSection = ({
         flex: 1,
         minWidth: 120,
         sortable: false,
+        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
+          <ScenarioWorkbenchEventDetailTableBodyText value={params.row.duration} />
+        ),
       },
       {
         field: 'transportDisruption',
@@ -77,6 +78,9 @@ const EventDetailRelatedScenariosSection = ({
         flex: 1,
         minWidth: 120,
         sortable: false,
+        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
+          <ScenarioWorkbenchEventDetailTableBodyText value={params.row.transportDisruption} />
+        ),
       },
       {
         field: 'supplyDisruptionIntensity',
@@ -84,6 +88,9 @@ const EventDetailRelatedScenariosSection = ({
         flex: 1,
         minWidth: 140,
         sortable: false,
+        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
+          <ScenarioWorkbenchEventDetailTableBodyText value={params.row.supplyDisruptionIntensity} />
+        ),
       },
       {
         field: 'supplyRecoveryPattern',
@@ -91,6 +98,9 @@ const EventDetailRelatedScenariosSection = ({
         flex: 1,
         minWidth: 160,
         sortable: false,
+        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
+          <ScenarioWorkbenchEventDetailTableBodyText value={params.row.supplyRecoveryPattern} tooltipWhenTruncated />
+        ),
       },
       {
         field: 'normalizationConfirmation',
@@ -98,6 +108,9 @@ const EventDetailRelatedScenariosSection = ({
         flex: 1,
         minWidth: 160,
         sortable: false,
+        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
+          <ScenarioWorkbenchEventDetailTableBodyText value={params.row.normalizationConfirmation} tooltipWhenTruncated />
+        ),
       },
       {
         field: 'feasibility',
@@ -106,7 +119,9 @@ const EventDetailRelatedScenariosSection = ({
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => <ProbabilityGaugeCell probability={params.row.feasibility} />,
+        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
+          <ScenarioWorkbenchPossibilityDotsCell probability={params.row.feasibility} />
+        ),
       },
     ],
     [onScenarioRowClick],
@@ -145,7 +160,8 @@ const EventDetailRelatedScenariosSection = ({
           </Typography>
         </Stack>
         <Box bgcolor="commonColor.White" border="1px solid" borderColor="contentBorder.Normal" borderRadius="10px" p="12px">
-          <EventDetailHorizontalScrollTableShell fadeBackground="linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%)">
+          <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+            <MIDataTableHeader<RelatedScenarioRow> columns={columns} />
             <MIDataTableBody<RelatedScenarioRow>
               rowId="scenarioId"
               columns={columns}
@@ -153,22 +169,8 @@ const EventDetailRelatedScenariosSection = ({
               rowHeight={42}
               loading={loading}
               noRowMessage="관련 시나리오가 없습니다."
-              scroll={{
-                overflowX: 'auto',
-                type: 'floating',
-                showThumbOnHover: true,
-                stickyHeader: (
-                  <MIDataTableHeader<RelatedScenarioRow>
-                    columns={columns}
-                    enableHorizontalScroll
-                    headerLabelColor="contentText.Normal"
-                    rowHeader={{ colIndex: 0 }}
-                  />
-                ),
-              }}
-              rowHeader={{ colIndex: 0 }}
             />
-          </EventDetailHorizontalScrollTableShell>
+          </Box>
         </Box>
       </Box>
     </Stack>
