@@ -2,12 +2,13 @@ import { Box, Stack, Typography, useTheme } from '@mui/material'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { IFundamentalModelPriceChart } from '@/service/mi/fundamentalModel/case'
-import type { IScenarioPriceForecast } from '@/service/mi/scenarioWorkbench/scenario'
+import type { IScenarioPriceForecast } from '@/service/mi/nextGenMI/scenario'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
-import ScenarioSummaryChart from '@/pages/mi/scenarioWorkbench/components/common/ScenarioSummaryChart'
+import { buildDistinctSeriesColors } from '@/pages/mi/nextGenMI/components/common/nextGenMISeriesColors'
+import ScenarioSummaryChart from '@/pages/mi/nextGenMI/components/common/ScenarioSummaryChart'
 import { downloadChart } from '@/utils/chartDownload'
 
 interface FundamentalModelPriceChartSectionProps {
@@ -39,6 +40,29 @@ const toDownloadFilename = (priceRegion: string): string =>
     ? `monthly-futures-simulation-chart-${priceRegion.toLowerCase().replaceAll(/\s+/g, '-')}.png`
     : 'monthly-futures-simulation-chart.png'
 
+const PRICE_CHART_SERIES_COLORS = ['#185FA5', '#A32D2D', '#0F8A72', '#E09A3A', '#C4407A', '#2B8EA6', '#7B52B8', '#B8960C']
+
+const resolvePriceSeriesColor = (label: string, fallback: string): string => {
+  const normalized = label.trim().toLowerCase()
+
+  if (normalized.includes('base case')) return '#185FA5'
+  if (normalized.includes('user adjusted')) return '#A32D2D'
+
+  return fallback
+}
+
+const formatPriceChartUnit = (priceForecast: IScenarioPriceForecast): string => {
+  const currency = priceForecast.currency?.trim()
+  const rawUnit = priceForecast.unit?.trim()
+  const unit = rawUnit && rawUnit.toLowerCase() === 'mmbtu' ? 'MMBtu' : rawUnit
+
+  if (currency && unit) return `Unit : ${currency}/${unit}`
+  if (currency) return `Unit : ${currency}`
+  if (unit) return `Unit : ${unit}`
+
+  return 'Unit : -'
+}
+
 const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: FundamentalModelPriceChartSectionProps) => {
   const theme = useTheme()
   const chartDownloadTargetRef = useRef<HTMLDivElement>(null)
@@ -50,6 +74,17 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
     () => buildPriceForecast(priceChart, effectiveSelectedPriceRegion),
     [effectiveSelectedPriceRegion, priceChart],
   )
+  const priceChartColorMap = useMemo(() => {
+    const fallbackColors = buildDistinctSeriesColors(PRICE_CHART_SERIES_COLORS, priceForecast.series.length)
+    const colorMap = new Map<string, string>()
+
+    priceForecast.series.forEach((series, index) => {
+      colorMap.set(series.indexName, resolvePriceSeriesColor(series.indexName, fallbackColors[index] ?? PRICE_CHART_SERIES_COLORS[0]))
+    })
+
+    return colorMap
+  }, [priceForecast.series])
+  const chartUnit = useMemo(() => formatPriceChartUnit(priceForecast), [priceForecast])
   const hasChartData = priceForecast.series.some((series) => series.values.length > 0)
 
   useEffect(() => {
@@ -66,7 +101,7 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
       await downloadChart({
         filename: toDownloadFilename(effectiveSelectedPriceRegion),
         target,
-        remove: ['#scenario-summary-indicator-container', '#main-indicator-container'],
+        remove: ['#scenario-summary-indicator-container', '#main-indicator-container', '#fundamental-model-price-chart-download-button'],
         padding: 12,
         captureScale: 2,
       })
@@ -76,38 +111,54 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
   }, [effectiveSelectedPriceRegion, hasChartData, isDownloadingChart])
 
   return (
-    <Stack gap="8px">
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Typography variant="body2SB14" color="gray.90">
-          Monthly Futures Simulation Chart
-        </Typography>
-        <MIBaseButton
-          variant="outlined"
-          aria-label="Download chart"
-          onClick={handleDownloadChart}
-          isLoading={isDownloadingChart}
-          disabled={!hasChartData}
-          sx={{
-            height: '28px',
-            minWidth: '0px',
-            p: '4px',
-            borderRadius: '4px',
-          }}
-        >
-          <ChartDownloadIcon fill={theme.palette.contentIcon.Enabled} />
-        </MIBaseButton>
-      </Stack>
+    <Stack gap="12px">
+      <Typography fontWeight="600" fontSize="18px" color="gray.90">
+        Monthly Futures Simulation Chart
+      </Typography>
 
-      <Box sx={{ width: '100%', minWidth: 0, pt: '12px' }}>
+      <Box sx={{ width: '100%', minWidth: 0 }}>
         <Box ref={chartDownloadTargetRef} sx={{ width: '100%', minWidth: 0, bgcolor: 'commonColor.White' }}>
           <ScenarioSummaryChart
             priceForecast={priceForecast}
             emptyMessage="표시할 가격 데이터가 없습니다."
             disableIntroAnimation
+            hideLegend
+            chartColorMap={priceChartColorMap}
+            showHeaderLegend
+            headerStart={
+              <Typography variant="body3SB12" color="contentText.Subtext" noWrap sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
+                {chartUnit}
+              </Typography>
+            }
             headerEnd={
-              priceRegionOptions.length > 0 ? (
-                <MISlidingSegmented options={priceRegionOptions} value={effectiveSelectedPriceRegion} onChange={setSelectedPriceRegion} />
-              ) : undefined
+              <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="8px" flexWrap="wrap" maxWidth="100%">
+                {priceRegionOptions.length > 0 && (
+                  <MISlidingSegmented
+                    options={priceRegionOptions}
+                    value={effectiveSelectedPriceRegion}
+                    onChange={setSelectedPriceRegion}
+                    sx={{
+                      height: '36px',
+                    }}
+                  />
+                )}
+                <MIBaseButton
+                  id="fundamental-model-price-chart-download-button"
+                  variant="outlined"
+                  aria-label="Download chart"
+                  onClick={handleDownloadChart}
+                  isLoading={isDownloadingChart}
+                  disabled={!hasChartData}
+                  sx={{
+                    height: '36px',
+                    minWidth: '0px',
+                    p: '8px',
+                    flexShrink: 0,
+                  }}
+                >
+                  <ChartDownloadIcon fill={theme.palette.contentIcon.Enabled} />
+                </MIBaseButton>
+              </Stack>
             }
           />
         </Box>

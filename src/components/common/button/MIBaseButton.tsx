@@ -13,6 +13,7 @@ export interface MIBaseButtonProps extends Omit<ButtonProps, 'prefix' | 'suffix'
   suffix?: ReactNode
   disableRipple?: boolean
   isLoading?: boolean
+  gap?: string | number
 }
 
 const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
@@ -29,6 +30,7 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
       disableRipple,
       isLoading = false,
       disabled,
+      gap,
       sx,
       ...restProps
     },
@@ -93,7 +95,7 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
       >
         <Box component="span" position="relative" display="inline-flex" alignItems="center" justifyContent="space-between" width="100%">
           <Box component="span" visibility={isLoading ? 'hidden' : 'visible'} display="inline-flex" alignItems="center" width="100%">
-            <MIBaseButtonLabel prefix={prefix} suffix={suffix}>
+            <MIBaseButtonLabel prefix={prefix} suffix={suffix} gap={gap}>
               {children}
             </MIBaseButtonLabel>
           </Box>

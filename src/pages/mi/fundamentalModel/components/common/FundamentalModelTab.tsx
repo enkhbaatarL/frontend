@@ -28,7 +28,7 @@ const a11yProps = (index: number) => ({
   'aria-controls': `fundamental-model-tabpanel-${index}`,
 })
 
-/** MI Fundamental Model 상단 탭 바(워크벤치 ScenarioWorkbenchTab과 동일 역할) */
+/** MI Fundamental Model 상단 탭 바(워크벤치 NextGenMITab과 동일 역할) */
 const FundamentalModelTab = ({
   tabItems,
   tabProps,

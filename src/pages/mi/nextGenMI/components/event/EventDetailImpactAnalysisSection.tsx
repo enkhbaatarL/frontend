@@ -1,0 +1,226 @@
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined'
+import ManageSearchOutlinedIcon from '@mui/icons-material/ManageSearchOutlined'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
+import { GridColDef } from '@mui/x-data-grid'
+import { useMemo } from 'react'
+
+import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
+import type { INextGenMIEventImpactIndexRow } from '@/service/mi/nextGenMI/event'
+
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
+import KpiCard from '@/pages/mi/nextGenMI/components/common/KpiCard'
+import NextGenMIEventDetailTableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
+import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
+import EventIndexSignalCell from '@/pages/mi/nextGenMI/components/event/EventIndexSignalCell'
+
+/** 영향도 분석 섹션 props */
+interface EventDetailImpactAnalysisSectionProps {
+  tableRows: INextGenMIEventImpactIndexRow[]
+  kpiItems: [KpiCardProps, KpiCardProps]
+  narrative: string
+  isNoiseEvent?: boolean
+  loading?: boolean
+}
+
+/** 소음 전용 — 아이콘 + 해당 없음 */
+const EventDetailImpactAnalysisNoiseEmptyPanel = () => (
+  <Box
+    display="flex"
+    flexDirection="column"
+    alignItems="center"
+    justifyContent="center"
+    gap="10px"
+    width="100%"
+    minHeight={{ xs: 280, sm: 340, md: 387 }}
+    sx={{
+      borderColor: 'gray.30',
+    }}
+  >
+    <ErrorOutlineOutlinedIcon sx={{ fontSize: 24, color: 'gray.60' }} aria-hidden />
+    <Typography variant="body3SB12" color="gray.60" lineHeight={1.4}>
+      해당 없음
+    </Typography>
+  </Box>
+)
+
+/** 이벤트 상세 — 영향도 분석(표 + KPI + 서술) */
+const EventDetailImpactAnalysisSection = ({
+  tableRows,
+  kpiItems,
+  narrative,
+  isNoiseEvent = false,
+  loading = false,
+}: EventDetailImpactAnalysisSectionProps) => {
+  const columns: GridColDef<INextGenMIEventImpactIndexRow>[] = useMemo(
+    () => [
+      {
+        field: 'indexName',
+        headerName: '대상',
+        flex: 1,
+        minWidth: 120,
+        sortable: false,
+        renderCell: (p) => (
+          <NextGenMIEventDetailTableBodyText
+            value={String(p.value ?? '')}
+            component="span"
+            sx={{ fontSize: 16, fontWeight: 600, color: 'contentText.Black' }}
+          />
+        ),
+      },
+      {
+        field: 'shortTermImpactLevel',
+        headerName: '단기 영향',
+        width: 140,
+        align: 'center',
+        sortable: false,
+        renderCell: (p) => (
+          <Stack alignItems="center" justifyContent="center" width="100%" height="40px">
+            <EventIndexSignalCell
+              indexLabel={p.row.indexName}
+              level={p.row.shortTermImpactLevel}
+              direction={p.row.shortTermDirection}
+              term="short"
+              showTermBadge={false}
+              size={20}
+            />
+          </Stack>
+        ),
+      },
+      {
+        field: 'midLongTermImpactLevel',
+        headerName: '중장기 영향',
+        width: 140,
+        align: 'center',
+        sortable: false,
+        renderCell: (p) => (
+          <Stack alignItems="center" justifyContent="center" width="100%" height="40px">
+            <EventIndexSignalCell
+              indexLabel={p.row.indexName}
+              level={p.row.midLongTermImpactLevel}
+              direction={p.row.midLongTermDirection}
+              term="long"
+              showTermBadge={false}
+              size={20}
+            />
+          </Stack>
+        ),
+      },
+    ],
+    [],
+  )
+
+  if (loading) {
+    return (
+      <Stack width="100%" gap="12px">
+        <EventDetailSectionHeader
+          icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+          title="영향도 분석"
+          tooltipTitle=""
+        />
+        <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
+          <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
+            <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
+              <Skeleton variant="rounded" height={40} sx={{ borderRadius: '6px', mb: '8px' }} />
+              {[0, 1, 2].map((idx) => (
+                <Skeleton key={idx} variant="rounded" height={48} sx={{ borderRadius: '4px', mt: idx === 0 ? 0 : '8px' }} />
+              ))}
+            </Box>
+            <Stack direction="row" gap="12px" width="100%">
+              <Skeleton variant="rounded" sx={{ flex: 1, minHeight: 120 }} />
+              <Skeleton variant="rounded" sx={{ flex: 1, minHeight: 120 }} />
+            </Stack>
+          </Stack>
+          <Box
+            flex={1}
+            minWidth={{ xs: '100%', md: 280 }}
+            borderRadius="8px"
+            p="20px"
+            display="flex"
+            flexDirection="column"
+            gap="12px"
+            sx={{ bgcolor: 'gray.5' }}
+          >
+            <Skeleton variant="rounded" width="40%" height={22} sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" height={16} sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" height={16} sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" width="85%" height={16} sx={{ borderRadius: '4px' }} />
+          </Box>
+        </Stack>
+      </Stack>
+    )
+  }
+
+  /** 소음이면 전체 섹션을 소음 화면으로 고정 */
+  if (isNoiseEvent) {
+    return (
+      <Stack width="100%" gap="12px">
+        <EventDetailSectionHeader
+          icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+          title="영향도 분석"
+          tooltipTitle=""
+        />
+        <Box bgcolor="gray.5" borderRadius="10px" overflow="hidden" width="100%">
+          <EventDetailImpactAnalysisNoiseEmptyPanel />
+        </Box>
+      </Stack>
+    )
+  }
+
+  return (
+    <Stack width="100%" gap="12px">
+      <EventDetailSectionHeader
+        icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+        title="영향도 분석"
+        tooltipTitle=""
+      />
+      <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
+        <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
+          <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
+            <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+              <MIDataTableHeader<INextGenMIEventImpactIndexRow> columns={columns} />
+              <MIDataTableBody<INextGenMIEventImpactIndexRow>
+                rowId="indexName"
+                columns={columns}
+                rows={tableRows}
+                rowHeight={48}
+                noRowMessage="표시할 데이터가 없습니다."
+                hideLastRowBorder
+              />
+            </Box>
+          </Box>
+          <Stack direction="row" gap="12px" width="100%">
+            <Box flex={1} minWidth={0} sx={{ minHeight: 120 }}>
+              <KpiCard title={kpiItems[0].title} content={kpiItems[0].content} description={kpiItems[0].description ?? ''} />
+            </Box>
+            <Box flex={1} minWidth={0} sx={{ minHeight: 120 }}>
+              <KpiCard title={kpiItems[1].title} content={kpiItems[1].content} description={kpiItems[1].description ?? '\u00a0'} />
+            </Box>
+          </Stack>
+        </Stack>
+        <Box
+          flex={1}
+          minWidth={{ xs: '100%', md: 280 }}
+          borderRadius="8px"
+          p="20px"
+          display="flex"
+          flexDirection="column"
+          gap="12px"
+          sx={{
+            bgcolor: 'gray.5',
+            '&:hover': { bgcolor: 'contentBG.Hover' },
+          }}
+        >
+          <Typography fontSize={14} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
+            영향도 분석 종합
+          </Typography>
+          <Typography fontSize={16} fontWeight={500} color="contentText.Black" lineHeight={1.6}>
+            {narrative}
+          </Typography>
+        </Box>
+      </Stack>
+    </Stack>
+  )
+}
+
+export default EventDetailImpactAnalysisSection

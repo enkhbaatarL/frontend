@@ -11,7 +11,7 @@ import { FUNDAMENTAL_UPLOAD_POPUP_WIDTH } from '@/pages/mi/fundamentalModel/comp
 import FundamentalModelCaseEditPopupContent from '@/pages/mi/fundamentalModel/components/header/FundamentalModelCaseEditPopupContent'
 import FundamentalModelMemoSection from '@/pages/mi/fundamentalModel/components/header/FundamentalModelMemoSection'
 import { caseStatusVisual, formatCaseLatestRunDuration } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
-import { formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
+import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 
 export interface FundamentalModelCaseEditPayload {
   title: string
@@ -258,7 +258,7 @@ const FundamentalModelDetailHeader = ({
   const headerActionsDisabled = detail.status !== 'COMPLETED'
 
   const attachmentNames = detail.files?.map((file) => file.originalFileName) ?? []
-  const createdAtLabel = formatWorkbenchDateTime(detail.createdAt)
+  const createdAtLabel = formatNextGenMIDateTime(detail.createdAt)
   const durationLabel = formatCaseLatestRunDuration(detail.latestRun)
 
   return (

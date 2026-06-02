@@ -12,7 +12,7 @@ interface Props {
   onSearch: (value: string) => void
   onClear: () => void
   width?: number | string
-  height?: number
+  height?: number | string
 }
 
 const getHistory = (storageKey: string) => {
