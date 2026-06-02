@@ -11,6 +11,7 @@ import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmen
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { buildNextGenMIDatePresets, defaultNextGenMIDateRange } from '@/pages/mi/nextGenMI/components/common/nextGenMIDateRange'
+import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import { findIndexImpact, formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import EventCategoryFilterMenu from '@/pages/mi/nextGenMI/components/event/EventCategoryFilterMenu'
 import EventIndexSignalCell from '@/pages/mi/nextGenMI/components/event/EventIndexSignalCell'
@@ -138,6 +139,14 @@ const EventsTabPanel = () => {
 
   const tableRows = (data?.events?.detail ?? []) as MockEventRow[]
 
+  const handleEventNameClick = useCallback(
+    (row: MockEventRow) =>
+      navigate(`/mi/next-gen-mi/events/${row.eventId}`, {
+        state: { eventName: row.eventName },
+      }),
+    [navigate],
+  )
+
   const columns: GridColDef<MockEventRow>[] = useMemo(
     () => [
       {
@@ -186,11 +195,7 @@ const EventsTabPanel = () => {
         flex: 1,
         minWidth: 360,
         align: 'left',
-        renderCell: (params) => (
-          <Typography variant="body1SB16" color="contentText.Black" noWrap>
-            {params.row.eventName}
-          </Typography>
-        ),
+        renderCell: (params) => <NextGenMIHoverLinkCell value={params.row.eventName} onClick={() => handleEventNameClick(params.row)} />,
       },
       {
         field: 'jkm',
@@ -261,7 +266,7 @@ const EventsTabPanel = () => {
         ),
       },
     ],
-    [],
+    [handleEventNameClick],
   )
 
   /** 카테고리 다중 선택 필터 항목 */
@@ -350,14 +355,6 @@ const EventsTabPanel = () => {
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
-  const handleRowClick = useCallback(
-    (params: { row: MockEventRow }) =>
-      navigate(`/mi/next-gen-mi/events/${params.row.eventId}`, {
-        state: { eventName: params.row.eventName },
-      }),
-    [navigate],
-  )
-
   const handlePageSizeChange = useCallback((s: number) => {
     setPagination({ size: s, page: 1 })
   }, [])
@@ -438,7 +435,6 @@ const EventsTabPanel = () => {
         skeletonRowCount={pagination.size}
         rowHeight={48}
         noRowsOverlay={emptyOverlay}
-        onRowClick={handleRowClick}
         getCellSx={getEventsTableCellSx}
       />
 

@@ -43,7 +43,7 @@ const buildIndexImpact = (
 const MOCK_ROWS: MockEventRow[] = [
   {
     eventId: '1001',
-    eventName: '[카타르 LNG 차질] 설비 타격 및 12카고 취소로 TTF/JKM 강세',
+    eventName: '[카타르 LNG 차질] 설비 타격 및 12카고 취소로 TTF/JKM 강세 일립시스 테스트 일립시스 테스트 일립시스 테스트 일립시스 테스트',
     status: 'updated',
     statusLabel: '갱신',
     signalType: 'signal',
