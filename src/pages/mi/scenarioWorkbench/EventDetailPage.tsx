@@ -6,6 +6,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import type { KpiCardProps } from '@/pages/mi/scenarioWorkbench/components/common/KpiCard'
 
+import ScenarioDesignIcon from '@/components/common/icons/ScenarioDesignIcon'
+import MIMenu from '@/components/common/menu/MIMenu'
 import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import { ScenarioWorkbenchNoiseSignalBadge } from '@/pages/mi/scenarioWorkbench/components/common/ClassificationTag'
@@ -20,7 +22,6 @@ import EventDetailImpactAnalysisSection from '@/pages/mi/scenarioWorkbench/compo
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/scenarioWorkbench/components/event/EventDetailMiRecordsTable'
 import EventDetailRelatedScenariosSection from '@/pages/mi/scenarioWorkbench/components/event/EventDetailRelatedScenariosSection'
-import EventScenarioGenerateButton from '@/pages/mi/scenarioWorkbench/components/event/EventScenarioGenerateButton'
 import ScenarioWorkbenchUserFeedback from '@/pages/mi/scenarioWorkbench/components/ScenarioWorkbenchUserFeedback'
 import { scenarioWorkbenchMockApi } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchEventMockApi'
 import { getScenarioWorkbenchTabPath, SCENARIO_WORKBENCH_BASE_PATH } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
@@ -69,10 +70,15 @@ const EVENT_DETAIL_HEADER_SECTIONS: WorkbenchDetailHeaderSection[] = EVENT_DETAI
 const eventDetailHeaderTabActions = (
   <Stack direction="row" alignItems="center" gap="12px" flexShrink={0} sx={{ minHeight: '62px', py: '13px' }}>
     <ScenarioWorkbenchUserFeedback pageName="MI Scenario Workbench" sectionName="Events / Event Detail" />
-    <EventScenarioGenerateButton
-      layout="detailHeader"
+    <MIMenu
+      variant="contained"
+      label="시나리오 생성"
+      prefix={<ScenarioDesignIcon aria-hidden focusable="false" />}
       onClick={() => {
         // 시나리오 생성 액션은 API 미연동 단계, 퍼블리싱 버튼만 노출
+      }}
+      sx={{
+        height: '36px',
       }}
     />
   </Stack>
