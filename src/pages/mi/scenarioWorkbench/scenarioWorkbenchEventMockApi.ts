@@ -22,6 +22,8 @@ export type MockEventRow = IScenarioWorkbenchEventListItem & {
   /** 이벤트명 좌측 추천 별 */
   recommended?: boolean
   recommendationReason?: string
+  /** 시나리오 생성 상태: completed면 목록에서 확인 가능 상태로 노출 */
+  scenarioGenStatus?: 'completed' | 'ready'
   /** 지수 컬럼 기간(S/L) */
   termByIndex?: Partial<Record<'JKM' | 'TTF' | 'HH', 'short' | 'long'>>
 }
@@ -96,6 +98,7 @@ const MOCK_ROWS: MockEventRow[] = [
     ],
     recommended: true,
     recommendationReason: '유럽 가격 변동성이 커 단기 대응 관점에서 중요합니다.',
+    scenarioGenStatus: 'completed',
     termByIndex: { JKM: 'short', TTF: 'short', HH: 'long' },
   },
 ]

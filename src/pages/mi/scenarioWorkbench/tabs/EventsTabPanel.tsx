@@ -235,7 +235,12 @@ const EventsTabPanel = () => {
         align: 'center',
         sortable: false,
         // 시나리오 생성 액션은 API 미연동 단계, 퍼블리싱 버튼만 노출
-        renderCell: () => <EventScenarioGenerateButton />,
+        renderCell: (params) => (
+          <EventScenarioGenerateButton
+            recommended={params.row.recommended}
+            scenarioAvailable={params.row.scenarioGenStatus === 'completed'}
+          />
+        ),
       },
     ],
     [],
@@ -284,12 +289,16 @@ const EventsTabPanel = () => {
 
   const getEventsTableCellSx = useCallback(({ field }: { field: string }) => {
     if (field === 'occurredAt') return { px: '6px' }
-    if (field === 'jkm' || field === 'ttf' || field === 'hh' || field === 'scenario') return { px: '24px' }
+    if (field === 'scenario') return { px: '16px', overflow: 'visible' }
+    if (field === 'jkm' || field === 'ttf' || field === 'hh') return { px: '24px' }
     return {}
   }, [])
 
   const getEventsTableHeaderCellSx = useCallback((col: GridColDef<MockEventRow>) => {
-    if (col.field === 'jkm' || col.field === 'ttf' || col.field === 'hh' || col.field === 'scenario') {
+    if (col.field === 'scenario') {
+      return { px: '16px' }
+    }
+    if (col.field === 'jkm' || col.field === 'ttf' || col.field === 'hh') {
       return { px: '24px' }
     }
     return undefined
