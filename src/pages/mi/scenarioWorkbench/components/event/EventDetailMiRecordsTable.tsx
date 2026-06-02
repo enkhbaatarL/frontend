@@ -17,6 +17,7 @@ import {
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
+import EventDetailHorizontalScrollTableShell from '@/pages/mi/scenarioWorkbench/components/event/EventDetailHorizontalScrollTableShell'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
 import { IPaginationResponse } from '@/types/api'
 
@@ -108,37 +109,47 @@ const EventDetailMiRecordsTable = ({
         align: 'left',
         renderCell: (params) => formatMiRecordTypeLabel(params.row.recordType),
       },
-      { field: 'title', headerName: '타이틀', width: 300, align: 'left' },
-      { field: 'summary', headerName: '요약', flex: 1, minWidth: 240, align: 'left' },
+      { field: 'title', headerName: '타이틀', width: 420, align: 'left' },
+      { field: 'summary', headerName: '요약', flex: 1, minWidth: 560, align: 'left' },
     ],
     [],
   )
 
   return (
-    <Stack width="100%" gap={6}>
+    <Stack width="100%" gap={6} py="30px">
       <EventDetailSectionHeader
         icon={<TungstenRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="MI Records"
         tooltipTitle=""
       />
-      <Stack>
-        <MIDataTableHeader<IScenarioWorkbenchEventRelatedRecord>
-          columns={columns}
-          headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
-          headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
-        />
-        <MIDataTableBody<IScenarioWorkbenchEventRelatedRecord>
-          getRowKey={(row, index) => `${row.publishedAt}-${row.title}-${index}`}
-          columns={columns}
-          rows={paginatedRows}
-          loading={loading}
-          rowHeight={42}
-          primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
-          primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
-          cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
-          cellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}
-          noRowMessage="MI 기록이 없습니다."
-        />
+      <Stack gap={0}>
+        <EventDetailHorizontalScrollTableShell>
+          <MIDataTableBody<IScenarioWorkbenchEventRelatedRecord>
+            getRowKey={(row, index) => `${row.publishedAt}-${row.title}-${index}`}
+            columns={columns}
+            rows={paginatedRows}
+            loading={loading}
+            rowHeight={48}
+            primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+            primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+            cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
+            cellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}
+            noRowMessage="MI 기록이 없습니다."
+            scroll={{
+              overflowX: 'auto',
+              type: 'floating',
+              showThumbOnHover: true,
+              stickyHeader: (
+                <MIDataTableHeader<IScenarioWorkbenchEventRelatedRecord>
+                  columns={columns}
+                  headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+                  headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
+                  enableHorizontalScroll
+                />
+              ),
+            }}
+          />
+        </EventDetailHorizontalScrollTableShell>
         {paginationData && paginationData.totalElements >= PAGE_SIZE_LIST[0] && (
           <MIPaginationSecondary<IScenarioWorkbenchEventRelatedRecord>
             data={paginationData}

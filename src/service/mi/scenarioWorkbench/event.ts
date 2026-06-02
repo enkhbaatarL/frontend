@@ -63,29 +63,77 @@ export interface IGetScenarioWorkbenchEventsParams {
 }
 
 export interface IScenarioWorkbenchEventImpactAnalysis {
-  indexImpacts: IScenarioWorkbenchImpactIndexSummary[]
+  /**
+   * 이벤트 상세 화면 전용 영향 테이블 row
+   * - 목록 Events의 `indexImpacts`(IScenarioWorkbenchImpactIndexSummary[])와는 별개
+   */
+  indexImpacts: IScenarioWorkbenchEventImpactIndexRow[]
   analysisText: string
   eventCategoryLv1?: EventCategoryLv1
   eventCategoryLv2?: string
   sources?: string[]
 }
 
+/** 이벤트 상세 - 영향도 분석(대상별 단기/중장기) 테이블 row */
+export interface IScenarioWorkbenchEventImpactIndexRow {
+  indexName: string
+  /** 단기 영향 */
+  shortTermImpactLevel?: MarketImpactLevel
+  shortTermDirection?: MarketDirection
+  /** 중장기 영향 */
+  midLongTermImpactLevel?: MarketImpactLevel
+  midLongTermDirection?: MarketDirection
+}
+
+export interface IScenarioWorkbenchEventAiInsightDetailBlock {
+  title: string
+  body: string
+}
+
 export interface IScenarioWorkbenchEventAiInsights {
   keySummaries: string[]
-  detailedAnalysis: string
+  /** API 미연동 시 mock/레거시 단일 본문 */
+  detailedAnalysis?: string
+  /** 신규 상세분석 구조 (API 연동 전 mock) */
+  detailedAnalysisBlocks?: IScenarioWorkbenchEventAiInsightDetailBlock[]
+}
+
+/** 이벤트 상세 - 관련 시나리오 그룹 행 (퍼블/mock) */
+export interface IScenarioWorkbenchEventRelatedScenarioGroupRow {
+  scenarioId: number
+  scenarioName: string
+  baseCase: boolean
+  feasibility: number
+  duration: string
+  transportDisruption: string
+  supplyDisruptionIntensity: string
+  supplyRecoveryPattern: string
+  normalizationConfirmation: string
+}
+
+export interface IScenarioWorkbenchEventRelatedScenarioGroup {
+  groupId?: number
+  groupName: string
+  scenarios: IScenarioWorkbenchEventRelatedScenarioGroupRow[]
 }
 
 export interface IScenarioWorkbenchEventDriverTreeScoreboardItem {
+  /** 대상 지수 (예: JKM/TTF/HH) */
+  indexName?: string | null
   lv1Id?: string | number | null
   lv1Label?: string | null
   lv2Id?: string | number | null
   lv2Label?: string | null
   lv3Id?: string | number | null
   lv3Label?: string | null
+  /** 단기 영향(기존 필드 유지) */
   marketImpactLevel: MarketImpactLevel
   marketImpactLevelLabel?: string
   direction?: MarketDirection
   directionLabel?: string
+  /** 중장기 영향(신규) */
+  midLongTermImpactLevel?: MarketImpactLevel
+  midLongTermDirection?: MarketDirection
   reason?: string | null
 }
 
@@ -160,6 +208,8 @@ export interface IScenarioWorkbenchEventDetailRes {
   driverTreeScoreboard?: IScenarioWorkbenchEventDriverTreeScoreboardItem[]
   fundamentalDeepdive?: IScenarioWorkbenchEventFundamentalDeepdive | IScenarioWorkbenchEventFundamental
   relatedEventScenario?: IScenarioWorkbenchRelatedEventScenario
+  /** 신규 관련 시나리오 그룹 (API 연동 전 mock) */
+  relatedScenarioGroup?: IScenarioWorkbenchEventRelatedScenarioGroup
 }
 
 /** 이벤트 MI Records(getEventRecords) 페이지의 단일 row — EventRelatedRecordRes 스키마 정합 */

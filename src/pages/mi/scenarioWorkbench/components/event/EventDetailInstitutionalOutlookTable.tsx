@@ -17,6 +17,7 @@ import {
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
   SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
 } from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchEventDetailTableBodyText'
+import EventDetailHorizontalScrollTableShell from '@/pages/mi/scenarioWorkbench/components/event/EventDetailHorizontalScrollTableShell'
 import EventDetailSectionHeader from '@/pages/mi/scenarioWorkbench/components/event/EventDetailSectionHeader'
 import { IPaginationResponse } from '@/types/api'
 
@@ -94,36 +95,46 @@ const EventDetailInstitutionalOutlookTable = ({
         renderCell: (params) => formatWorkbenchDateTime(params.row.publishedAt, 'YYYY-MM-DD HH:mm'),
       },
       { field: 'institutionName', headerName: '기관', width: 200, align: 'left' },
-      { field: 'outlookSummary', headerName: '전망 요약', flex: 1, minWidth: 240, align: 'left' },
+      { field: 'outlookSummary', headerName: '전망 요약', flex: 1, minWidth: 640, align: 'left' },
     ],
     [],
   )
 
   return (
-    <Stack width="100%" gap={6}>
+    <Stack width="100%" gap={6} py="30px">
       <EventDetailSectionHeader
         icon={<DomainOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="기관 전망"
         tooltipTitle=""
       />
-      <Stack>
-        <MIDataTableHeader<IScenarioWorkbenchEventInstitutionOutlook>
-          columns={columns}
-          headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
-          headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
-        />
-        <MIDataTableBody<IScenarioWorkbenchEventInstitutionOutlook>
-          getRowKey={(row, index) => `${row.publishedAt}-${row.institutionName}-${index}`}
-          columns={columns}
-          rows={paginatedRows}
-          loading={loading}
-          rowHeight={42}
-          primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
-          primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
-          cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
-          cellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}
-          noRowMessage="기관 전망 데이터가 없습니다."
-        />
+      <Stack gap={0}>
+        <EventDetailHorizontalScrollTableShell>
+          <MIDataTableBody<IScenarioWorkbenchEventInstitutionOutlook>
+            getRowKey={(row, index) => `${row.publishedAt}-${row.institutionName}-${index}`}
+            columns={columns}
+            rows={paginatedRows}
+            loading={loading}
+            rowHeight={48}
+            primitiveCellTypographyVariant={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+            primitiveCellLineHeight={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+            cellPx={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_CELL_PX}
+            cellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_BODY_CELL_PY}
+            noRowMessage="기관 전망 데이터가 없습니다."
+            scroll={{
+              overflowX: 'auto',
+              type: 'floating',
+              showThumbOnHover: true,
+              stickyHeader: (
+                <MIDataTableHeader<IScenarioWorkbenchEventInstitutionOutlook>
+                  columns={columns}
+                  headerCellPy={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+                  headerLabelColor={SCENARIO_WORKBENCH_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
+                  enableHorizontalScroll
+                />
+              ),
+            }}
+          />
+        </EventDetailHorizontalScrollTableShell>
         {paginationData && paginationData.totalElements >= PAGE_SIZE_LIST[0] && (
           <MIPaginationSecondary<IScenarioWorkbenchEventInstitutionOutlook>
             data={paginationData}

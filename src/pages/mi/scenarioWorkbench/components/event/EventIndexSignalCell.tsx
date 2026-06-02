@@ -34,6 +34,8 @@ export interface EventIndexSignalCellProps {
   direction?: MarketDirection
   /** 영향 지속 기간. API 미연동 단계에서는 기본값(단기) 사용 */
   term?: IndexImpactTerm
+  /** 기간 배지(S/L) 노출 여부 */
+  showTermBadge?: boolean
   size?: number
 }
 
@@ -157,10 +159,10 @@ const SignalTooltipContent = ({
 }
 
 /** Events 테이블 지수(JKM/TTF/HH) 셀: 기간 배지 + 셀룰러 신호 막대 */
-const EventIndexSignalCell = ({ level, direction, term = 'short', size }: EventIndexSignalCellProps) => (
+const EventIndexSignalCell = ({ level, direction, term = 'short', showTermBadge = true, size }: EventIndexSignalCellProps) => (
   <WorkbenchFollowCursorTooltip title={<SignalTooltipContent level={level} direction={direction} term={term} />}>
     <Stack direction="row" alignItems="center" justifyContent="center" gap="4px" width="100%" height={22}>
-      <IndexDurationBadge term={term} />
+      {showTermBadge && <IndexDurationBadge term={term} />}
       <IndexSignalBars level={level} direction={direction} size={size} />
     </Stack>
   </WorkbenchFollowCursorTooltip>
