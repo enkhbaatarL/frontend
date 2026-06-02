@@ -22,6 +22,10 @@ import NewsDetailPage from '@/pages/mi/news/NewsDetailPage'
 import NewsPage from '@/pages/mi/news/NewsPage'
 import NewsletterDetailPage from '@/pages/mi/newsletter/NewsletterDetailPage'
 import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
+import EventDetailPage from '@/pages/mi/nextGenMI/EventDetailPage.tsx'
+import NextGenMIPage from '@/pages/mi/nextGenMI/NextGenMIPage'
+import { NEXT_GEN_MI_TAB_INFO } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import ScenarioDetailPage from '@/pages/mi/nextGenMI/ScenarioDetailPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
 import NotificationPage from '@/pages/mi/notification/NotificationPage'
@@ -29,10 +33,6 @@ import ParallelCoordinatesPage from '@/pages/mi/parallelCoordinates/ParallelCoor
 import PositionPlayRemotePage from '@/pages/mi/positionPlay/PositionPlayRemotePage'
 import SalesActivityLogPage from '@/pages/mi/salesActivityLog/SalesActivityLogPage'
 import SalesAnalysisPage from '@/pages/mi/salesAnalysis/SalesAnalysisPage'
-import EventDetailPage from '@/pages/mi/scenarioWorkbench/EventDetailPage.tsx'
-import ScenarioDetailPage from '@/pages/mi/scenarioWorkbench/ScenarioDetailPage'
-import ScenarioWorkbenchPage from '@/pages/mi/scenarioWorkbench/ScenarioWorkbenchPage'
-import { SCENARIO_WORKBENCH_TAB_INFO } from '@/pages/mi/scenarioWorkbench/scenarioWorkbenchRoutes'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import TopicTrackerPage from '@/pages/mi/topicTracker/TopicTrackerPage'
 import MIProvider from '@/providers/MIProvider'
@@ -189,12 +189,12 @@ const MIRoutes: RouteObject = {
       element: <FundamentalModelPage />,
     },
     {
-      path: 'scenario-workbench',
+      path: 'next-gen-mi',
       children: [
-        { index: true, element: <Navigate to={SCENARIO_WORKBENCH_TAB_INFO[0].segment} replace /> },
+        { index: true, element: <Navigate to={NEXT_GEN_MI_TAB_INFO[0].segment} replace /> },
         {
-          element: <ScenarioWorkbenchPage />,
-          children: SCENARIO_WORKBENCH_TAB_INFO.map((tab) => ({ path: tab.segment })),
+          element: <NextGenMIPage />,
+          children: NEXT_GEN_MI_TAB_INFO.map((tab) => ({ path: tab.segment })),
         },
         { path: 'events/:eventId', element: <EventDetailPage /> },
         { path: 'scenarios/:scenarioId', element: <ScenarioDetailPage /> },

@@ -29,7 +29,7 @@
     "forecast": {
       "desc": "AI prediction simulation cases"
     },
-    "scenarioWorkbench": {
+    "nextGenMI": {
       "desc": "Scenario design and input parameter management"
     },
     "fundamentalModel": {

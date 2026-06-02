@@ -5,10 +5,10 @@ import ForecastIcon from '@/components/common/icons/gnb/ForecastIcon'
 import FundamentalModelIcon from '@/components/common/icons/gnb/FundamentalModelIcon'
 import MetricsIcon from '@/components/common/icons/gnb/MetricsIcon'
 import NewsIcon from '@/components/common/icons/gnb/NewsIcon'
+import NextGenMIIcon from '@/components/common/icons/gnb/NextGenMIIcon'
 import ParallelIcon from '@/components/common/icons/gnb/ParallelIcon'
 import PositionPlayIcon from '@/components/common/icons/gnb/PositionPlayIcon'
 import ReportIcon from '@/components/common/icons/gnb/ReportIcon'
-import ScenarioWorkbenchIcon from '@/components/common/icons/gnb/ScenarioWorkbenchIcon'
 import SignalIcon from '@/components/common/icons/gnb/SignalIcon'
 
 export interface MiMenuItemDef {
@@ -59,10 +59,10 @@ export const MI_MENU_ITEM_REGISTRY = {
     IconComponent: SignalIcon,
   },
   SCENARIO_WORKBENCH: {
-    label: 'MI Scenario Workbench',
-    path: 'scenario-workbench',
-    desc: 'miMenuItem.scenarioWorkbench.desc',
-    IconComponent: ScenarioWorkbenchIcon,
+    label: 'Next-Gen MI',
+    path: 'next-gen-mi',
+    desc: 'miMenuItem.nextGenMI.desc',
+    IconComponent: NextGenMIIcon,
   },
   FUNDAMENTAL_MODEL: {
     label: 'MI Fundamental Model',

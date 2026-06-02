@@ -29,7 +29,7 @@
     "forecast": {
       "desc": "AI予測シミュレーションケース"
     },
-    "scenarioWorkbench": {
+    "nextGenMI": {
       "desc": "シナリオ設計および入力パラメータ管理"
     },
     "fundamentalModel": {

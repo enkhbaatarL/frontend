@@ -29,7 +29,7 @@
     "forecast": {
       "desc": "AI 예측 시뮬레이션 케이스"
     },
-    "scenarioWorkbench": {
+    "nextGenMI": {
       "desc": "시나리오 설계 및 인풋 파라미터 관리"
     },
     "fundamentalModel": {

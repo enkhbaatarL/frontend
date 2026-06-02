@@ -3,27 +3,27 @@ import { useRef, useEffect, useState, useCallback, ReactNode, CSSProperties, Mou
 
 import { useScrollThumbRegistry } from '@/hooks/useScrollThumbRegistry'
 import {
-  WORKBENCH_EDGE_SHADOW_TRANSITION_EASING,
-  WORKBENCH_EDGE_SHADOW_TRANSITION_MS,
-  WORKBENCH_SCROLL_EDGE_CLIP_PATH_BOTTOM,
-  WORKBENCH_SCROLL_EDGE_CLIP_PATH_TOP,
-  WORKBENCH_SCROLL_EDGE_FADE_BOTTOM_BG,
-  WORKBENCH_SCROLL_EDGE_FADE_HEIGHT_PX,
-  WORKBENCH_SCROLL_EDGE_FADE_TOP_BG,
-  WORKBENCH_SCROLL_EDGE_HORIZONTAL_MASK_IMAGE,
-  WORKBENCH_SCROLL_EDGE_SHADOW_BOTTOM,
-  WORKBENCH_SCROLL_EDGE_SHADOW_TOP,
-} from '@/pages/mi/scenarioWorkbench/components/common/ScenarioWorkbenchDetailHeader'
+  NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
+  NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS,
+  NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_BOTTOM,
+  NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_TOP,
+  NEXT_GEN_MI_SCROLL_EDGE_FADE_BOTTOM_BG,
+  NEXT_GEN_MI_SCROLL_EDGE_FADE_HEIGHT_PX,
+  NEXT_GEN_MI_SCROLL_EDGE_FADE_TOP_BG,
+  NEXT_GEN_MI_SCROLL_EDGE_HORIZONTAL_MASK_IMAGE,
+  NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
+  NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP,
+} from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import { chainBoundaryWheelScroll } from '@/utils/scrollChain'
 
-const SCROLL_EDGE_FADE_TRANSITION = `opacity ${WORKBENCH_EDGE_SHADOW_TRANSITION_MS}ms ${WORKBENCH_EDGE_SHADOW_TRANSITION_EASING}`
+const SCROLL_EDGE_FADE_TRANSITION = `opacity ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`
 
 const scrollEdgeOverlaySx = {
   pointerEvents: 'none',
   zIndex: 6,
   overflow: 'visible',
-  WebkitMaskImage: WORKBENCH_SCROLL_EDGE_HORIZONTAL_MASK_IMAGE,
-  maskImage: WORKBENCH_SCROLL_EDGE_HORIZONTAL_MASK_IMAGE,
+  WebkitMaskImage: NEXT_GEN_MI_SCROLL_EDGE_HORIZONTAL_MASK_IMAGE,
+  maskImage: NEXT_GEN_MI_SCROLL_EDGE_HORIZONTAL_MASK_IMAGE,
 } as const
 
 const SCROLL_EDGE_EPSILON_PX = 2
@@ -436,7 +436,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                 top: `${offsetTop}px`,
                 left: 0,
                 right: 0,
-                height: WORKBENCH_SCROLL_EDGE_FADE_HEIGHT_PX,
+                height: NEXT_GEN_MI_SCROLL_EDGE_FADE_HEIGHT_PX,
                 opacity: canScrollUp ? 1 : 0,
                 transition: SCROLL_EDGE_FADE_TRANSITION,
                 ...scrollEdgeOverlaySx,
@@ -446,7 +446,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                 sx={{
                   position: 'absolute',
                   inset: 0,
-                  background: WORKBENCH_SCROLL_EDGE_FADE_TOP_BG,
+                  background: NEXT_GEN_MI_SCROLL_EDGE_FADE_TOP_BG,
                   pointerEvents: 'none',
                 }}
               />
@@ -457,8 +457,8 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                   left: 0,
                   right: 0,
                   height: 1,
-                  boxShadow: WORKBENCH_SCROLL_EDGE_SHADOW_TOP,
-                  clipPath: WORKBENCH_SCROLL_EDGE_CLIP_PATH_TOP,
+                  boxShadow: NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP,
+                  clipPath: NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_TOP,
                 }}
               />
             </Box>
@@ -470,7 +470,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                 bottom: `${offsetBottom}px`,
                 left: 0,
                 right: 0,
-                height: WORKBENCH_SCROLL_EDGE_FADE_HEIGHT_PX,
+                height: NEXT_GEN_MI_SCROLL_EDGE_FADE_HEIGHT_PX,
                 opacity: canScrollDown ? 1 : 0,
                 transition: SCROLL_EDGE_FADE_TRANSITION,
                 ...scrollEdgeOverlaySx,
@@ -480,7 +480,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                 sx={{
                   position: 'absolute',
                   inset: 0,
-                  background: WORKBENCH_SCROLL_EDGE_FADE_BOTTOM_BG,
+                  background: NEXT_GEN_MI_SCROLL_EDGE_FADE_BOTTOM_BG,
                   pointerEvents: 'none',
                 }}
               />
@@ -491,8 +491,8 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                   left: 0,
                   right: 0,
                   height: 1,
-                  boxShadow: WORKBENCH_SCROLL_EDGE_SHADOW_BOTTOM,
-                  clipPath: WORKBENCH_SCROLL_EDGE_CLIP_PATH_BOTTOM,
+                  boxShadow: NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
+                  clipPath: NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_BOTTOM,
                 }}
               />
             </Box>

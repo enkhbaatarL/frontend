@@ -1,7 +1,7 @@
 import type { FundamentalModelRunPlaceholderMode } from '@/pages/mi/fundamentalModel/components/FundamentalModelRunPlaceholder'
 import type { FundamentalModelCaseStatus, IFundamentalModelCaseLatestRun } from '@/service/mi/fundamentalModel/case'
 
-import { formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
+import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 
 /** Case API status -> Placeholder 모드 (COMPLETED 이면 null) */
 export const caseStatusToPlaceholderMode = (status: FundamentalModelCaseStatus | undefined): FundamentalModelRunPlaceholderMode | null => {
@@ -29,7 +29,7 @@ export const caseStatusVisual = (status: FundamentalModelCaseStatus) => {
 export const formatCaseLatestRunDuration = (latestRun: IFundamentalModelCaseLatestRun | null | undefined): string => {
   if (!latestRun?.finishedAt) return '-'
 
-  const finishedLabel = formatWorkbenchDateTime(latestRun.finishedAt, 'HH:mm:ss')
+  const finishedLabel = formatNextGenMIDateTime(latestRun.finishedAt, 'HH:mm:ss')
   if (!latestRun.startedAt) return finishedLabel
 
   const elapsedMs = new Date(latestRun.finishedAt).getTime() - new Date(latestRun.startedAt).getTime()

@@ -23,7 +23,7 @@ import {
   isSameFundamentalUploadFile,
 } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
 import { caseStatusVisual } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
-import { formatWorkbenchDateTime } from '@/pages/mi/scenarioWorkbench/components/common/scenarioDisplay'
+import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import fundamentalModelCaseService, {
   type FundamentalModelCaseSearchType,
   type IFundamentalModelCaseListItem,
@@ -426,8 +426,8 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
                     const caseId = String(item.caseId)
                     const selected = caseId === selectedId
                     const sv = caseStatusVisual(item.status)
-                    const createdAtLabel = formatWorkbenchDateTime(item.createdAt)
-                    const updatedAtLabel = formatWorkbenchDateTime(item.updatedAt)
+                    const createdAtLabel = formatNextGenMIDateTime(item.createdAt)
+                    const updatedAtLabel = formatNextGenMIDateTime(item.updatedAt)
 
                     return (
                       <Box

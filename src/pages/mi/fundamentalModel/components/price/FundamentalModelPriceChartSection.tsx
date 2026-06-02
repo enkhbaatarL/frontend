@@ -2,13 +2,13 @@ import { Box, Stack, Typography, useTheme } from '@mui/material'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { IFundamentalModelPriceChart } from '@/service/mi/fundamentalModel/case'
-import type { IScenarioPriceForecast } from '@/service/mi/scenarioWorkbench/scenario'
+import type { IScenarioPriceForecast } from '@/service/mi/nextGenMI/scenario'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
-import ScenarioSummaryChart from '@/pages/mi/scenarioWorkbench/components/common/ScenarioSummaryChart'
-import { buildDistinctSeriesColors } from '@/pages/mi/scenarioWorkbench/components/common/workbenchSeriesColors'
+import { buildDistinctSeriesColors } from '@/pages/mi/nextGenMI/components/common/nextGenMISeriesColors'
+import ScenarioSummaryChart from '@/pages/mi/nextGenMI/components/common/ScenarioSummaryChart'
 import { downloadChart } from '@/utils/chartDownload'
 
 interface FundamentalModelPriceChartSectionProps {
