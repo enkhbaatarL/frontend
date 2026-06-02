@@ -102,7 +102,7 @@ const MIFrozenColumnScrollLayout = ({
           )}
           {...restScrollBoxProps}
         >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', width: 'max-content' }}>{scrollable}</Box>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%', minWidth: 'max-content' }}>{scrollable}</Box>
         </Box>
       </Box>
     </Box>

@@ -1,3 +1,4 @@
+import type { FundamentalModelScopeKey } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 import type { FundamentalModelVolumesRegion, FundamentalModelVolumesType } from '@/service/mi/fundamentalModel/case'
 
 /** Volumes Type 필터 옵션 - value: UI id / api: getVolumes types enum */
@@ -9,6 +10,28 @@ export const FM_VOLUME_TYPE_OPTIONS = [
   { value: 'pipeline-imports', label: 'Pipeline Imports', api: 'PIPELINE_IMPORTS' },
   { value: 'pipeline-exports', label: 'Pipeline Exports', api: 'PIPELINE_EXPORTS' },
 ] as const satisfies ReadonlyArray<{ value: string; label: string; api: FundamentalModelVolumesType }>
+
+export const FM_VOLUME_TRADE_TO_COUNTRY_TYPE_ID = 'to-country'
+export const FM_VOLUME_TRADE_FROM_COUNTRY_TYPE_ID = 'from-country'
+
+export const FM_VOLUME_TRADE_TYPE_OPTIONS = [
+  { value: FM_VOLUME_TRADE_TO_COUNTRY_TYPE_ID, label: 'To country' },
+  { value: FM_VOLUME_TRADE_FROM_COUNTRY_TYPE_ID, label: 'From country' },
+] as const satisfies ReadonlyArray<{ value: string; label: string }>
+
+export type FundamentalModelVolumeTypeOption = (typeof FM_VOLUME_TYPE_OPTIONS)[number] | (typeof FM_VOLUME_TRADE_TYPE_OPTIONS)[number]
+
+const FM_VOLUME_TYPE_OPTIONS_BY_SCOPE: Record<FundamentalModelScopeKey, readonly FundamentalModelVolumeTypeOption[]> = {
+  global: FM_VOLUME_TYPE_OPTIONS,
+  lng: FM_VOLUME_TYPE_OPTIONS.filter((option) => option.api === 'LNG_IMPORTS' || option.api === 'LNG_EXPORTS'),
+  trade: FM_VOLUME_TRADE_TYPE_OPTIONS,
+}
+
+export const getVolumeTypeOptionsForScope = (scope: FundamentalModelScopeKey): readonly FundamentalModelVolumeTypeOption[] =>
+  FM_VOLUME_TYPE_OPTIONS_BY_SCOPE[scope]
+
+export const getDefaultVolumeTypeIdsForScope = (scope: FundamentalModelScopeKey): string[] =>
+  getVolumeTypeOptionsForScope(scope).map((option) => option.value)
 
 /** Volumes Regions 필터 옵션 - value: UI id / api: getVolumes regions enum */
 export const FM_VOLUME_REGION_OPTIONS = [
@@ -56,15 +79,38 @@ export const createDefaultVolumeFilters = (): FundamentalModelVolumeFilters => (
   regions: [...FM_VOLUME_DEFAULT_REGION_IDS],
 })
 
+export const normalizeVolumeFiltersForScope = (
+  filters: FundamentalModelVolumeFilters,
+  scope: FundamentalModelScopeKey,
+): FundamentalModelVolumeFilters => {
+  const scopedTypeIds = getDefaultVolumeTypeIdsForScope(scope)
+  const scopedTypeSet = new Set(scopedTypeIds)
+  const types = filters.types.filter((id) => scopedTypeSet.has(id))
+
+  return {
+    types: types.length > 0 || filters.types.length === 0 ? types : scopedTypeIds,
+    regions: filters.regions,
+  }
+}
+
 /** Filters 배지용 - 선택된 항목 수 */
-export const countSelectedVolumeFilters = (filters: FundamentalModelVolumeFilters): number => filters.types.length + filters.regions.length
+export const countSelectedVolumeFilters = (filters: FundamentalModelVolumeFilters, scope: FundamentalModelScopeKey = 'global'): number => {
+  const normalizedFilters = normalizeVolumeFiltersForScope(filters, scope)
+  return normalizedFilters.types.length + normalizedFilters.regions.length
+}
 
 /** 전체 선택(default) 여부 - 배지 숨김 */
-export const isAllVolumeFiltersSelected = (filters: FundamentalModelVolumeFilters): boolean =>
-  filters.types.length === FM_VOLUME_DEFAULT_TYPE_IDS.length &&
-  filters.regions.length === FM_VOLUME_DEFAULT_REGION_IDS.length &&
-  FM_VOLUME_DEFAULT_TYPE_IDS.every((id) => filters.types.includes(id)) &&
-  FM_VOLUME_DEFAULT_REGION_IDS.every((id) => filters.regions.includes(id))
+export const isAllVolumeFiltersSelected = (filters: FundamentalModelVolumeFilters, scope: FundamentalModelScopeKey = 'global'): boolean => {
+  const scopedDefaultTypeIds = getDefaultVolumeTypeIdsForScope(scope)
+  const normalizedFilters = normalizeVolumeFiltersForScope(filters, scope)
+
+  return (
+    normalizedFilters.types.length === scopedDefaultTypeIds.length &&
+    filters.regions.length === FM_VOLUME_DEFAULT_REGION_IDS.length &&
+    scopedDefaultTypeIds.every((id) => normalizedFilters.types.includes(id)) &&
+    FM_VOLUME_DEFAULT_REGION_IDS.every((id) => filters.regions.includes(id))
+  )
+}
 
 export const readSavedVolumeFilters = (): FundamentalModelVolumeFilters | null => {
   try {

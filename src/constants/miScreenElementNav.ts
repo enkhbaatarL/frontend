@@ -25,6 +25,7 @@ export const MI_MENU_TOP_REGISTRY = {
   DASHBOARD: { label: 'Dashboard' },
   AI_FORECAST: { label: 'AI Forecast' },
   MARKET_DATA: { label: 'Market Data' },
+  POSITION_PLAY: { label: 'Position Play' },
 } as const satisfies Record<string, { label: string }>
 
 /** MENU_GROUP — 섹션 타이틀 */

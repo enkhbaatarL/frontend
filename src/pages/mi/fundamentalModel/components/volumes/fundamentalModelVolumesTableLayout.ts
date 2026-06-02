@@ -13,6 +13,8 @@ export const FM_VOLUME_TABLE_BODY_H = 40
 
 /** Global 본문 표 최대 높이(Table 900px) */
 export const FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT = 900
+/** Volumes 로딩 중 표 영역 placeholder 고정 높이 */
+export const FM_VOLUME_TABLE_SKELETON_H = 460
 /** 하단 가로 스크롤 트랙 높이 */
 export const FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H = 12
 export const FM_VOLUME_GLOBAL_TABLE_BODY_MAX_HEIGHT =
@@ -44,6 +46,7 @@ export const fmVolumeHiddenHorizontalScrollbarSx: SystemStyleObject<Theme> = {
 /** Trade 표 To country 고정열 너비 */
 export const FM_VOLUME_TRADE_TO_COL_W = 160
 export const FM_VOLUME_TRADE_FROM_COL_MIN_W = 90
+export const FM_VOLUME_TRADE_TOTAL_COL_W = 90
 /** Trade 표 헤더 2단(From country 배너 + 열 라벨) */
 export const FM_VOLUME_TRADE_TABLE_HEADER_H = FM_VOLUME_TABLE_HEADER_H + FM_VOLUME_TABLE_BODY_H
 export const FM_VOLUME_TRADE_TABLE_BODY_MAX_HEIGHT =
@@ -66,6 +69,11 @@ export const FM_VOLUME_TABLE_BORDER = '1px solid #DEE2E6'
 
 /** 헤더 하단 구분선(gray.40 #CED4DA) */
 export const FM_VOLUME_TABLE_HEADER_BORDER = '1px solid #CED4DA'
+export const FM_VOLUME_TABLE_HOVER_SCROLL_CLASS = 'fm-volume-table-hover-scroll'
+export const FM_VOLUME_TABLE_SCROLL_SHADOW_EPSILON_PX = 2
+export const FM_VOLUME_TABLE_COLUMN_HEADER_SHADOW = '0 8px 16px -10px rgba(0, 0, 0, 0.1)'
+export const FM_VOLUME_TABLE_ROW_HEADER_SHADOW = '8px 0 16px -10px rgba(0, 0, 0, 0.1)'
+export const FM_VOLUME_TABLE_SCROLL_SHADOW_TRANSITION = 'box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1)'
 
 export const fmVolumeTableHeaderCellSx: SystemStyleObject<Theme> = {
   height: FM_VOLUME_TABLE_HEADER_H,
@@ -88,23 +96,32 @@ export const fmVolumeTableBodyCellSx: SystemStyleObject<Theme> = {
   boxSizing: 'border-box',
 }
 
+/** 소계/합계 셀 배경 */
+export const FM_VOLUME_SUBTOTAL_CELL_BG = 'var(--common-primary-5, rgba(46, 63, 94, 0.05))'
+export const FM_VOLUME_TOTAL_CELL_BG = 'var(--common-primary-10, rgba(46, 63, 94, 0.1))'
+
 /** Total 행 상단 구분선 - 이전 행 borderBottom과 겹치지 않도록 Total에만 적용 */
 export const fmVolumeTableTotalRowCellSx: SystemStyleObject<Theme> = {
   borderTop: FM_VOLUME_TABLE_BORDER,
   borderBottom: FM_VOLUME_TABLE_BORDER,
-  bgcolor: 'gray.5',
+  bgcolor: FM_VOLUME_TOTAL_CELL_BG,
 }
 
 /** Global 표 본문 셀 border/배경(Total 직전 행 이중선 방지 포함) */
-export const fmVolumeGlobalBodyCellSx = (isTotal: boolean, nextIsTotal: boolean): SystemStyleObject<Theme> => ({
-  bgcolor: isTotal ? 'gray.5' : 'commonColor.White',
+export const fmVolumeGlobalBodyCellSx = (isTotal: boolean, nextIsTotal: boolean, isRegion = false): SystemStyleObject<Theme> => ({
+  bgcolor: isTotal ? FM_VOLUME_TOTAL_CELL_BG : isRegion ? FM_VOLUME_SUBTOTAL_CELL_BG : 'commonColor.White',
   ...(nextIsTotal ? { borderBottom: 'none' } : {}),
   ...(isTotal ? fmVolumeTableTotalRowCellSx : {}),
 })
 
 /** Trade 표 본문 셀(Total 행 포함) */
-export const fmVolumeTradeBodyCellSx = (isTotal: boolean, nextIsTotal: boolean): SystemStyleObject<Theme> => ({
-  bgcolor: isTotal ? 'gray.5' : 'commonColor.White',
+export const fmVolumeTradeBodyCellSx = (
+  isTotal: boolean,
+  nextIsTotal: boolean,
+  isRegion = false,
+  isTotalColumn = false,
+): SystemStyleObject<Theme> => ({
+  bgcolor: isTotal || isTotalColumn ? FM_VOLUME_TOTAL_CELL_BG : isRegion ? FM_VOLUME_SUBTOTAL_CELL_BG : 'commonColor.White',
   ...(nextIsTotal ? { borderBottom: 'none' } : {}),
   ...(isTotal ? fmVolumeTableTotalRowCellSx : {}),
 })
@@ -123,6 +140,39 @@ export const miThinScrollbarSx: SystemStyleObject<Theme> = {
   '&::-webkit-scrollbar-thumb': {
     bgcolor: 'gray.40',
     borderRadius: '4px',
+  },
+  '&::-webkit-scrollbar-thumb:hover': {
+    bgcolor: 'gray.50',
+  },
+}
+
+/** MI 표 가로 스크롤 영역용 얇은 hover 스크롤바 */
+export const miHoverThinScrollbarSx: SystemStyleObject<Theme> = {
+  scrollbarWidth: 'thin',
+  scrollbarColor: 'transparent transparent',
+  '&::-webkit-scrollbar': {
+    height: 4,
+  },
+  '&::-webkit-scrollbar-track': {
+    bgcolor: 'transparent',
+    borderRadius: '4px',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    bgcolor: 'transparent',
+    borderRadius: '4px',
+    transition: 'background-color 150ms ease',
+  },
+  '&:hover, &:focus-within': {
+    scrollbarColor: '#CED4DA transparent',
+    '&::-webkit-scrollbar-thumb': {
+      bgcolor: 'gray.40',
+    },
+  },
+  [`.${FM_VOLUME_TABLE_HOVER_SCROLL_CLASS}:hover &`]: {
+    scrollbarColor: '#CED4DA transparent',
+    '&::-webkit-scrollbar-thumb': {
+      bgcolor: 'gray.40',
+    },
   },
   '&::-webkit-scrollbar-thumb:hover': {
     bgcolor: 'gray.50',

@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { memo, useCallback, useMemo, useRef } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
   FundamentalModelVolumesRegion,
@@ -11,6 +11,7 @@ import type {
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIFrozenColumnScrollLayout from '@/pages/mi/fundamentalModel/components/common/MIFrozenColumnScrollLayout'
+import FundamentalModelHoverHorizontalScrollbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelHoverHorizontalScrollbar'
 import {
   FM_VOLUME_GLOBAL_COUNTRY_COL_W,
   FM_VOLUME_GLOBAL_FROZEN_W,
@@ -18,18 +19,24 @@ import {
   FM_VOLUME_GLOBAL_TABLE_BODY_MAX_HEIGHT,
   FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H,
   FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT,
+  FM_VOLUME_TABLE_SKELETON_H,
   FM_VOLUME_TABLE_BODY_H,
   FM_VOLUME_TABLE_BORDER,
+  FM_VOLUME_TABLE_COLUMN_HEADER_SHADOW,
   FM_VOLUME_TABLE_HEADER_H,
+  FM_VOLUME_TABLE_HOVER_SCROLL_CLASS,
+  FM_VOLUME_MONTH_COL_W,
+  FM_VOLUME_TABLE_ROW_HEADER_SHADOW,
+  FM_VOLUME_TABLE_SCROLL_SHADOW_EPSILON_PX,
+  FM_VOLUME_TABLE_SCROLL_SHADOW_TRANSITION,
+  FM_VOLUME_TOTAL_CELL_BG,
   fmVolumeGlobalBodyCellSx,
   fmVolumeHiddenHorizontalScrollbarSx,
   fmVolumeMonthColumnsWidth,
-  fmVolumeResolvedMonthColumnWidth,
   fmVolumeTableBodyCellSx,
   fmVolumeTableFrameSx,
   fmVolumeTableHeaderCellSx,
   mergeVolumeTableSx,
-  miThinScrollbarSx,
 } from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumesTableLayout'
 
 export interface FundamentalModelSectionVolumesTableProps {
@@ -37,6 +44,7 @@ export interface FundamentalModelSectionVolumesTableProps {
   columns: IFundamentalModelVolumesColumn[]
   /** 본문 행(getVolumes rows) - type 순서로 묶여서 응답되는 것을 가정 */
   rows: IFundamentalModelVolumesRow[]
+  loading?: boolean
 }
 
 /** type enum -> 섹션 표시용 라벨 (없으면 enum 자체를 노출) */
@@ -88,6 +96,31 @@ interface SectionLabelLayout {
   totalRows: number
 }
 
+const sortRowsWithRegionSubtotalFirst = (rows: IFundamentalModelVolumesRow[]): IFundamentalModelVolumesRow[] => {
+  const totalRows = rows.filter((row) => row.rowKind === 'TYPE_TOTAL')
+  const regionRows = new Map<FundamentalModelVolumesRegion, IFundamentalModelVolumesRow[]>()
+  const regionOrder: FundamentalModelVolumesRegion[] = []
+
+  rows.forEach((row) => {
+    if (row.rowKind === 'TYPE_TOTAL') return
+    if (!regionRows.has(row.region)) {
+      regionRows.set(row.region, [])
+      regionOrder.push(row.region)
+    }
+    regionRows.get(row.region)!.push(row)
+  })
+
+  return [
+    ...regionOrder.flatMap((region) => {
+      const rowsByRegion = regionRows.get(region) ?? []
+      const subtotalRows = rowsByRegion.filter((row) => row.rowKind === 'REGION_SUBTOTAL')
+      const detailRows = rowsByRegion.filter((row) => row.rowKind !== 'REGION_SUBTOTAL')
+      return [...subtotalRows, ...detailRows]
+    }),
+    ...totalRows,
+  ]
+}
+
 /** API rows를 type 순서대로 그룹핑(응답 순서 보존) */
 const groupRowsByType = (rows: IFundamentalModelVolumesRow[]): SectionGroup[] => {
   const map = new Map<FundamentalModelVolumesType, SectionGroup>()
@@ -100,7 +133,10 @@ const groupRowsByType = (rows: IFundamentalModelVolumesRow[]): SectionGroup[] =>
     }
     map.get(row.type)!.rows.push(row)
   }
-  return order.map((type) => map.get(type)!)
+  return order.map((type) => {
+    const section = map.get(type)!
+    return { ...section, rows: sortRowsWithRegionSubtotalFirst(section.rows) }
+  })
 }
 
 /** 섹션 좌측 라벨 영역 - TYPE_TOTAL 직전까지가 라벨 표시 영역, 이후는 음영 처리 */
@@ -129,41 +165,115 @@ const volumeBodyScrollWrapperProps = {
   styScroll: { borderRadius: '1000px' },
 } as const
 
+const SectionVolumesTableSkeleton = () => (
+  <Box
+    aria-hidden
+    sx={mergeVolumeTableSx(fmVolumeTableFrameSx, {
+      height: FM_VOLUME_TABLE_SKELETON_H,
+      maxHeight: FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT,
+      minHeight: 360,
+      bgcolor: 'gray.5',
+      border: FM_VOLUME_TABLE_BORDER,
+      borderRadius: '8px',
+      boxSizing: 'border-box',
+    })}
+  />
+)
+
 /**
  * Global/LNG 세부 표(섹션+국가 고정열, 월 가로 스크롤)
  * - 데이터: getVolumes columns/rows API 직결
  * - 세로: ScrollWrapper(maxHeight), 콘텐츠 높이만큼만 차지
  * - 가로: 본문 바로 아래 트랙(표 프레임 내부), max-height 900px 초과 시 본문만 세로 스크롤
  */
-const FundamentalModelSectionVolumesTable = memo(({ columns, rows }: FundamentalModelSectionVolumesTableProps) => {
+const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = false }: FundamentalModelSectionVolumesTableProps) => {
   const sections = useMemo(() => groupRowsByType(rows), [rows])
   const monthLabels = useMemo(() => columns.map((column) => column.periodLabel), [columns])
 
-  const monthColWidth = fmVolumeResolvedMonthColumnWidth(monthLabels.length, FM_VOLUME_GLOBAL_FROZEN_W)
-  const monthScrollWidth = fmVolumeMonthColumnsWidth(monthLabels.length, monthColWidth)
+  const monthScrollWidth = fmVolumeMonthColumnsWidth(monthLabels.length)
 
   const headerMonthScrollRef = useRef<HTMLDivElement>(null)
   const bodyMonthScrollRef = useRef<HTMLDivElement>(null)
   const footerMonthScrollRef = useRef<HTMLDivElement>(null)
+  const bodyScrollRef = useRef<HTMLDivElement>(null)
   const syncingHorizontalRef = useRef(false)
+  const [hasScrolledX, setHasScrolledX] = useState(false)
+  const [hasScrolledY, setHasScrolledY] = useState(false)
 
-  const syncHorizontalScroll = useCallback((source: 'header' | 'body' | 'footer') => {
-    if (syncingHorizontalRef.current) return
-    const headerEl = headerMonthScrollRef.current
-    const bodyEl = bodyMonthScrollRef.current
-    const footerEl = footerMonthScrollRef.current
-    if (!headerEl || !bodyEl || !footerEl) return
-
-    syncingHorizontalRef.current = true
-    const scrollLeft = source === 'footer' ? footerEl.scrollLeft : source === 'header' ? headerEl.scrollLeft : bodyEl.scrollLeft
-    headerEl.scrollLeft = scrollLeft
-    bodyEl.scrollLeft = scrollLeft
-    footerEl.scrollLeft = scrollLeft
-    syncingHorizontalRef.current = false
+  const updateHorizontalScrollShadow = useCallback((scrollLeft: number) => {
+    const next = scrollLeft > FM_VOLUME_TABLE_SCROLL_SHADOW_EPSILON_PX
+    setHasScrolledX((prev) => (prev === next ? prev : next))
   }, [])
 
+  const updateVerticalScrollShadow = useCallback(() => {
+    const next = (bodyScrollRef.current?.scrollTop ?? 0) > FM_VOLUME_TABLE_SCROLL_SHADOW_EPSILON_PX
+    setHasScrolledY((prev) => (prev === next ? prev : next))
+  }, [])
+
+  const syncHorizontalScroll = useCallback(
+    (source: 'header' | 'body' | 'footer') => {
+      if (syncingHorizontalRef.current) return
+      const headerEl = headerMonthScrollRef.current
+      const bodyEl = bodyMonthScrollRef.current
+      const footerEl = footerMonthScrollRef.current
+      if (!headerEl || !bodyEl || !footerEl) return
+
+      syncingHorizontalRef.current = true
+      const scrollLeft = source === 'footer' ? footerEl.scrollLeft : source === 'header' ? headerEl.scrollLeft : bodyEl.scrollLeft
+      headerEl.scrollLeft = scrollLeft
+      bodyEl.scrollLeft = scrollLeft
+      footerEl.scrollLeft = scrollLeft
+      updateHorizontalScrollShadow(scrollLeft)
+      syncingHorizontalRef.current = false
+    },
+    [updateHorizontalScrollShadow],
+  )
+
+  useEffect(() => {
+    const scrollEl = bodyScrollRef.current
+    updateVerticalScrollShadow()
+    if (!scrollEl) return undefined
+
+    scrollEl.addEventListener('scroll', updateVerticalScrollShadow)
+    window.addEventListener('resize', updateVerticalScrollShadow)
+
+    const resizeObserver = new ResizeObserver(updateVerticalScrollShadow)
+    resizeObserver.observe(scrollEl)
+    if (scrollEl.firstElementChild) resizeObserver.observe(scrollEl.firstElementChild)
+
+    return () => {
+      scrollEl.removeEventListener('scroll', updateVerticalScrollShadow)
+      window.removeEventListener('resize', updateVerticalScrollShadow)
+      resizeObserver.disconnect()
+    }
+  }, [loading, rows.length, updateVerticalScrollShadow])
+
+  useEffect(() => {
+    const scrollLeft =
+      footerMonthScrollRef.current?.scrollLeft ?? bodyMonthScrollRef.current?.scrollLeft ?? headerMonthScrollRef.current?.scrollLeft ?? 0
+    updateHorizontalScrollShadow(scrollLeft)
+  }, [loading, monthScrollWidth, updateHorizontalScrollShadow])
+
+  if (loading) {
+    return <SectionVolumesTableSkeleton />
+  }
+
+  const columnHeaderShadowSx = {
+    position: 'relative',
+    zIndex: hasScrolledY ? 3 : 1,
+    boxShadow: hasScrolledY ? FM_VOLUME_TABLE_COLUMN_HEADER_SHADOW : 'none',
+    transition: FM_VOLUME_TABLE_SCROLL_SHADOW_TRANSITION,
+  } as const
+
+  const rowHeaderShadowSx = {
+    position: 'relative',
+    zIndex: hasScrolledX ? 3 : 1,
+    boxShadow: hasScrolledX ? FM_VOLUME_TABLE_ROW_HEADER_SHADOW : 'none',
+    transition: FM_VOLUME_TABLE_SCROLL_SHADOW_TRANSITION,
+  } as const
+
   const headerFrozen = (
-    <Stack direction="row" sx={{ flexShrink: 0 }}>
+    <Stack direction="row" sx={[{ flexShrink: 0 }, rowHeaderShadowSx]}>
       <Box sx={{ width: FM_VOLUME_GLOBAL_SECTION_COL_W, flexShrink: 0 }}>
         <Box sx={fmVolumeTableHeaderCellSx} />
       </Box>
@@ -178,9 +288,9 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows }: Fundamental
   )
 
   const headerMonthColumns = (
-    <Stack direction="row" alignItems="flex-start">
+    <Stack direction="row" alignItems="flex-start" sx={{ width: '100%', minWidth: monthScrollWidth }}>
       {monthLabels.map((month, colIdx) => (
-        <Stack key={`${month}-${colIdx}`} sx={{ width: monthColWidth, flexShrink: 0 }}>
+        <Stack key={`${month}-${colIdx}`} sx={{ flex: `1 0 ${FM_VOLUME_MONTH_COL_W}px`, minWidth: FM_VOLUME_MONTH_COL_W }}>
           <Box sx={[fmVolumeTableHeaderCellSx, { justifyContent: 'flex-end' }]}>
             <Typography variant="tableHeaderSemibold" color="gray.60" noWrap sx={{ lineHeight: 1.4 }}>
               {month}
@@ -191,14 +301,13 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows }: Fundamental
     </Stack>
   )
 
-  // 섹션 평탄화 - 행 인덱스 기반 nextIsTotal 판단을 위해 한 번 만들어 둠
   const flatRows: { sectionType: FundamentalModelVolumesType; row: IFundamentalModelVolumesRow }[] = []
   sections.forEach((section) => {
     section.rows.forEach((row) => flatRows.push({ sectionType: section.type, row }))
   })
 
   const bodyFrozenColumns = (
-    <Stack direction="row" alignItems="flex-start" sx={{ flexShrink: 0 }}>
+    <Stack direction="row" alignItems="flex-start" sx={[{ flexShrink: 0 }, rowHeaderShadowSx]}>
       <Stack sx={{ width: FM_VOLUME_GLOBAL_SECTION_COL_W, flexShrink: 0 }}>
         {sections.map((section) => {
           const layout = getSectionLabelLayout(section.rows)
@@ -227,7 +336,7 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows }: Fundamental
                   key={`${section.type}-total-${idx}`}
                   sx={{
                     height: FM_VOLUME_TABLE_BODY_H,
-                    bgcolor: 'gray.5',
+                    bgcolor: FM_VOLUME_TOTAL_CELL_BG,
                     borderTop: FM_VOLUME_TABLE_BORDER,
                     borderBottom: idx === layout.totalRows - 1 ? FM_VOLUME_TABLE_BORDER : 'none',
                     boxSizing: 'border-box',
@@ -243,10 +352,11 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows }: Fundamental
         {flatRows.map(({ sectionType, row }, rowIdx) => {
           const nextIsTotal = flatRows[rowIdx + 1]?.row.rowKind === 'TYPE_TOTAL'
           const isTotal = row.rowKind === 'TYPE_TOTAL'
+          const isRegion = row.rowKind === 'REGION_SUBTOTAL'
           return (
             <Box
               key={`${sectionType}-${row.region}-${row.rowKind}-${row.country ?? 'NA'}-${rowIdx}`}
-              sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal)]}
+              sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal, isRegion)]}
             >
               <Typography {...rowTypography(row.rowKind)} color="gray.90" noWrap sx={{ width: '100%' }}>
                 {resolveRowLabel(row)}
@@ -259,16 +369,17 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows }: Fundamental
   )
 
   const bodyMonthColumns = (
-    <Stack direction="row" alignItems="flex-start">
+    <Stack direction="row" alignItems="flex-start" sx={{ width: '100%', minWidth: monthScrollWidth }}>
       {monthLabels.map((month, colIdx) => (
-        <Stack key={`${month}-${colIdx}`} sx={{ width: monthColWidth, flexShrink: 0 }}>
+        <Stack key={`${month}-${colIdx}`} sx={{ flex: `1 0 ${FM_VOLUME_MONTH_COL_W}px`, minWidth: FM_VOLUME_MONTH_COL_W }}>
           {flatRows.map(({ sectionType, row }, rowIdx) => {
             const nextIsTotal = flatRows[rowIdx + 1]?.row.rowKind === 'TYPE_TOTAL'
             const isTotal = row.rowKind === 'TYPE_TOTAL'
+            const isRegion = row.rowKind === 'REGION_SUBTOTAL'
             return (
               <Box
                 key={`${sectionType}-${row.region}-${row.rowKind}-${row.country ?? 'NA'}-${rowIdx}-${colIdx}`}
-                sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal), { justifyContent: 'flex-end' }]}
+                sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal, isRegion), { justifyContent: 'flex-end' }]}
               >
                 <Typography {...rowTypography(row.rowKind)} color="gray.90" noWrap sx={{ width: '100%', textAlign: 'right' }}>
                   {formatVolumeCell(row.values[colIdx])}
@@ -289,14 +400,16 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows }: Fundamental
 
   return (
     <Box
+      className={FM_VOLUME_TABLE_HOVER_SCROLL_CLASS}
       sx={mergeVolumeTableSx(fmVolumeTableFrameSx, {
         maxHeight: FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT,
         display: 'flex',
         flexDirection: 'column',
         minWidth: 0,
+        overflow: 'visible',
       })}
     >
-      <Box sx={{ flexShrink: 0 }}>
+      <Box sx={{ flexShrink: 0, ...columnHeaderShadowSx }}>
         <MIFrozenColumnScrollLayout
           frozen={headerFrozen}
           scrollable={headerMonthColumns}
@@ -316,7 +429,7 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows }: Fundamental
           maxHeight: tableBodyAreaMaxHeight,
         }}
       >
-        <ScrollWrapper {...volumeBodyScrollWrapperProps} contentKey={flatRows.length}>
+        <ScrollWrapper ref={bodyScrollRef} {...volumeBodyScrollWrapperProps} contentKey={flatRows.length}>
           <MIFrozenColumnScrollLayout
             frozen={bodyFrozenColumns}
             scrollable={bodyMonthColumns}
@@ -329,20 +442,46 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows }: Fundamental
         </ScrollWrapper>
 
         <Box
-          ref={footerMonthScrollRef}
-          onScroll={() => syncHorizontalScroll('footer')}
-          sx={mergeVolumeTableSx(
-            {
-              flexShrink: 0,
-              height: FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H,
-              marginLeft: `${FM_VOLUME_GLOBAL_FROZEN_W}px`,
-              overflowX: 'auto',
-              overflowY: 'hidden',
-            },
-            miThinScrollbarSx,
-          )}
+          sx={{
+            flexShrink: 0,
+            height: FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H,
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 2,
+            bgcolor: 'commonColor.White',
+          }}
         >
-          <Box sx={{ width: monthScrollWidth, height: 1 }} aria-hidden />
+          <Box
+            ref={footerMonthScrollRef}
+            onScroll={() => syncHorizontalScroll('footer')}
+            sx={mergeVolumeTableSx(
+              {
+                height: '100%',
+                marginLeft: `${FM_VOLUME_GLOBAL_FROZEN_W}px`,
+                overflowX: 'auto',
+                overflowY: 'hidden',
+              },
+              fmVolumeHiddenHorizontalScrollbarSx,
+            )}
+          >
+            <Box sx={{ width: monthScrollWidth, height: 1 }} aria-hidden />
+          </Box>
+          <Box
+            sx={{
+              position: 'absolute',
+              left: `${FM_VOLUME_GLOBAL_FROZEN_W}px`,
+              right: 0,
+              top: 0,
+              bottom: 0,
+            }}
+          >
+            <FundamentalModelHoverHorizontalScrollbar
+              scrollRef={footerMonthScrollRef}
+              contentWidthKey={monthScrollWidth}
+              hoverRootClassName={FM_VOLUME_TABLE_HOVER_SCROLL_CLASS}
+              onScrollLeftChange={() => syncHorizontalScroll('footer')}
+            />
+          </Box>
         </Box>
       </Box>
     </Box>
