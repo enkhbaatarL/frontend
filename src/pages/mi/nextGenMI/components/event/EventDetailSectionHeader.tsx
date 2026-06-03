@@ -58,7 +58,7 @@ const EventDetailSectionHeader = ({ icon, title, tooltipTitle, titleGradient = f
           <Typography sx={{ color: 'contentText.Black', fontSize: 20, fontWeight: 600, lineHeight: 1.4 }}>{title}</Typography>
         )}
       </Stack>
-      {tooltipTitle === undefined ? null : <InfoTooltip title={tooltipTitle} />}
+      {tooltipTitle?.trim() ? <InfoTooltip title={tooltipTitle} /> : null}
     </Stack>
     <Stack width="36px" height="36px" flexShrink={0} />
   </Stack>

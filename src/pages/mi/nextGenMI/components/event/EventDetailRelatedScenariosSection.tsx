@@ -2,39 +2,39 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useMemo } from 'react'
 
-import type { INextGenMIEventRelatedScenarioGroup } from '@/service/mi/nextGenMI/event'
+import type { RelatedEventScenario, RelatedScenario } from '@/service/mi/nextGenMI/event'
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
+import ImpactDotsCell from '@/pages/mi/nextGenMI/components/common/ImpactDotsCell'
 import NextGenMIEventDetailTableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
-import NextGenMIPossibilityDotsCell from '@/pages/mi/nextGenMI/components/common/NextGenMIPossibilityDotsCell'
+import ProbabilityGaugeCell from '@/pages/mi/nextGenMI/components/common/ProbabilityGaugeCell'
+import { findIndexImpact } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 
-type RelatedScenarioRow = INextGenMIEventRelatedScenarioGroup['scenarios'][number]
-
 interface EventDetailRelatedScenariosSectionProps {
-  relatedScenarioGroup?: INextGenMIEventRelatedScenarioGroup
-  onScenarioRowClick?: (row: RelatedScenarioRow) => void
+  relatedEventScenario?: RelatedEventScenario | null
+  onScenarioRowClick?: (row: RelatedScenario) => void
   loading?: boolean
 }
 
 const EventDetailRelatedScenariosSection = ({
-  relatedScenarioGroup,
+  relatedEventScenario,
   onScenarioRowClick,
   loading = false,
 }: EventDetailRelatedScenariosSectionProps) => {
-  const rows = relatedScenarioGroup?.scenarios ?? []
+  const rows = relatedEventScenario?.scenarios ?? []
 
-  const columns: GridColDef<RelatedScenarioRow>[] = useMemo(
+  const columns: GridColDef<RelatedScenario>[] = useMemo(
     () => [
       {
         field: 'baseCase',
         headerName: '',
         width: 40,
         sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) =>
+        renderCell: (params: GridRenderCellParams<RelatedScenario>) =>
           params.row.baseCase ? (
             <Box sx={{ display: 'inline-flex', lineHeight: 0 }}>
               <NextGenMIBaseCaseChip />
@@ -46,7 +46,7 @@ const EventDetailRelatedScenariosSection = ({
         headerName: '시나리오',
         width: 300,
         sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
+        renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
           <NextGenMIEventDetailTableBodyText
             value={params.row.scenarioName}
             sx={{ fontWeight: 600 }}
@@ -63,63 +63,46 @@ const EventDetailRelatedScenariosSection = ({
         ),
       },
       {
-        field: 'duration',
-        headerName: '기간',
-        flex: 1,
-        minWidth: 120,
+        field: 'jkm',
+        headerName: 'JKM',
+        width: 80,
+        align: 'center',
+        headerAlign: 'center',
         sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => <NextGenMIEventDetailTableBodyText value={params.row.duration} />,
-      },
-      {
-        field: 'transportDisruption',
-        headerName: '운송 차질',
-        flex: 1,
-        minWidth: 120,
-        sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
-          <NextGenMIEventDetailTableBodyText value={params.row.transportDisruption} />
+        renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
+          <ImpactDotsCell level={findIndexImpact(params.row.indexImpacts, 'JKM')?.marketImpactLevel} />
         ),
       },
       {
-        field: 'supplyDisruptionIntensity',
-        headerName: '공급 차질 강도',
-        flex: 1,
-        minWidth: 140,
+        field: 'ttf',
+        headerName: 'TTF',
+        width: 80,
+        align: 'center',
+        headerAlign: 'center',
         sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
-          <NextGenMIEventDetailTableBodyText value={params.row.supplyDisruptionIntensity} />
+        renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
+          <ImpactDotsCell level={findIndexImpact(params.row.indexImpacts, 'TTF')?.marketImpactLevel} />
         ),
       },
       {
-        field: 'supplyRecoveryPattern',
-        headerName: '공급 회복 패턴',
-        flex: 1,
-        minWidth: 160,
+        field: 'hh',
+        headerName: 'HH',
+        width: 80,
+        align: 'center',
+        headerAlign: 'center',
         sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
-          <NextGenMIEventDetailTableBodyText value={params.row.supplyRecoveryPattern} tooltipWhenTruncated />
+        renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
+          <ImpactDotsCell level={findIndexImpact(params.row.indexImpacts, 'HH')?.marketImpactLevel} />
         ),
       },
       {
-        field: 'normalizationConfirmation',
-        headerName: '정상화 확인',
-        flex: 1,
-        minWidth: 160,
-        sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
-          <NextGenMIEventDetailTableBodyText value={params.row.normalizationConfirmation} tooltipWhenTruncated />
-        ),
-      },
-      {
-        field: 'feasibility',
-        headerName: '실행가능성',
+        field: 'probability',
+        headerName: '발생가능성',
         width: 100,
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenarioRow>) => (
-          <NextGenMIPossibilityDotsCell probability={params.row.feasibility} />
-        ),
+        renderCell: (params: GridRenderCellParams<RelatedScenario>) => <ProbabilityGaugeCell probability={params.row.probability} />,
       },
     ],
     [onScenarioRowClick],
@@ -154,13 +137,13 @@ const EventDetailRelatedScenariosSection = ({
             시나리오 그룹
           </Typography>
           <Typography variant="body1B16" color="contentText.Black" px="6px" lineHeight={1.4}>
-            {relatedScenarioGroup?.groupName ?? '-'}
+            {'-'}
           </Typography>
         </Stack>
         <Box bgcolor="commonColor.White" border="1px solid" borderColor="contentBorder.Normal" borderRadius="10px" p="12px">
           <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-            <MIDataTableHeader<RelatedScenarioRow> columns={columns} />
-            <MIDataTableBody<RelatedScenarioRow>
+            <MIDataTableHeader<RelatedScenario> columns={columns} />
+            <MIDataTableBody<RelatedScenario>
               rowId="scenarioId"
               columns={columns}
               rows={rows}

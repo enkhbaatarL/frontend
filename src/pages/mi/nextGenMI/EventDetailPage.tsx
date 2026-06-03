@@ -1,4 +1,4 @@
-import { Box, Skeleton, Stack, Typography } from '@mui/material'
+import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode, useEffect } from 'react'
@@ -23,13 +23,8 @@ import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/component
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
 import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/event/EventDetailRelatedScenariosSection'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
-import { nextGenMIMockApi } from '@/pages/mi/nextGenMI/nextGenMIEventMockApi'
 import { getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
-import { EVENT_CATEGORY_LV1_KO } from '@/service/mi/nextGenMI/common'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
-
-/** 이벤트 상세 API 미연동 - mock 데이터 사용 (Events 목록과 동일) */
-const EVENT_DETAIL_USE_MOCK = true
 
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'driverTree' | 'related'
 
@@ -131,20 +126,6 @@ const formatEventDetailTimestampLabel = (iso?: string) => {
   return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm') : '-'
 }
 
-const eventDetailTimestampChipSx = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '6px',
-  px: '8px',
-  py: '4px',
-  borderRadius: '100px',
-} as const
-
-const DEFAULT_IMPACT_KPI_PAIR: [KpiCardProps, KpiCardProps] = [
-  { title: '카테고리', content: '-', description: '\u00a0' },
-  { title: '출처', content: '-', description: '\u00a0' },
-]
-
 const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: NextGenMIEventDetailPageProps = {}) => {
   const params = useParams()
   const eventId = eventIdProp ?? params.eventId
@@ -171,42 +152,33 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     isLoading: detailLoading,
     isError: detailError,
   } = useQuery({
-    queryKey: ['nextGenMIEventDetail', eventId, EVENT_DETAIL_USE_MOCK],
-    queryFn: () =>
-      EVENT_DETAIL_USE_MOCK
-        ? nextGenMIMockApi.getEventDetail(eventId!, eventNameFromState)
-        : nextGenMIEventService.getEventDetail(eventId!),
+    queryKey: ['nextGenMIEventDetail', eventId],
+    queryFn: () => nextGenMIEventService.getEventDetail(eventId!),
     enabled: !!eventId,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
 
   const { data: recordsData, isLoading: recordsLoading } = useQuery({
-    queryKey: ['nextGenMIEventRecords', eventId, recordsPagination.page, recordsPagination.size, EVENT_DETAIL_USE_MOCK],
-    queryFn: () =>
-      EVENT_DETAIL_USE_MOCK
-        ? nextGenMIMockApi.getEventRecords(eventId!, recordsPagination)
-        : nextGenMIEventService.getEventRecords(eventId!, recordsPagination),
+    queryKey: ['nextGenMIEventRecords', eventId, recordsPagination.page, recordsPagination.size],
+    queryFn: () => nextGenMIEventService.getEventRecords(eventId!, recordsPagination),
     enabled: !!eventId,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
 
   const { data: outlooksData, isLoading: outlooksLoading } = useQuery({
-    queryKey: ['nextGenMIEventOutlooks', eventId, outlooksPagination.page, outlooksPagination.size, EVENT_DETAIL_USE_MOCK],
-    queryFn: () =>
-      EVENT_DETAIL_USE_MOCK
-        ? nextGenMIMockApi.getEventOutlooks(eventId!, outlooksPagination)
-        : nextGenMIEventService.getEventOutlooks(eventId!, outlooksPagination),
+    queryKey: ['nextGenMIEventOutlooks', eventId, outlooksPagination.page, outlooksPagination.size],
+    queryFn: () => nextGenMIEventService.getEventOutlooks(eventId!, outlooksPagination),
     enabled: !!eventId,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
 
   const title = useMemo(() => {
-    if (eventNameFromState) return eventNameFromState
-    const fromApi = detail?.eventName?.trim()
+    const fromApi = detail?.eventName
     if (fromApi) return fromApi
+    if (eventNameFromState) return eventNameFromState
     return eventId ? `이벤트 ${eventId}` : '이벤트'
   }, [detail?.eventName, eventId, eventNameFromState])
 
@@ -215,22 +187,22 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
 
   const impactKpiPair = useMemo((): [KpiCardProps, KpiCardProps] => {
     const ia = detail?.impactAnalysis
-    const [a, b] = DEFAULT_IMPACT_KPI_PAIR
-    if (!ia) {
-      return [{ ...a }, { ...b }]
-    }
-    const lv1 = ia.eventCategoryLv1
-    const categoryContent = lv1 ? (EVENT_CATEGORY_LV1_KO[lv1] ?? lv1) : a.content
-    const categoryDesc = ia.eventCategoryLv2?.replaceAll('_', ' ') ?? a.description
-    const sourcesContent = ia.sources?.filter(Boolean).length ? ia.sources.filter(Boolean).join(', ') : b.content
     return [
-      { ...a, content: categoryContent, description: categoryDesc },
-      { ...b, content: sourcesContent },
+      {
+        title: '카테고리',
+        content: ia?.eventTypeLv1Label || ia?.eventTypeLv1 || '-',
+        description: ia?.eventTypeLv2Label || ia?.eventTypeLv2 || '\u00a0',
+      },
+      {
+        title: '출처',
+        content: ia?.sources?.filter(Boolean).join(', ') || '-',
+        description: '\u00a0',
+      },
     ]
   }, [detail?.impactAnalysis])
 
   const impactTableRows = detail?.impactAnalysis?.indexImpacts ?? []
-  const impactNarrative = detail?.impactAnalysis?.analysisText?.trim() ?? ''
+  const impactNarrative = detail?.impactAnalysis?.analysisText ?? ''
 
   const aiBullets = useMemo(() => {
     const list = detail?.aiInsights?.keySummaries ?? []
@@ -239,14 +211,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     return ['요약 데이터가 없습니다.']
   }, [detail?.aiInsights?.keySummaries, detailLoading])
 
-  const aiDetailBlocks = useMemo(() => {
-    const blocks = detail?.aiInsights?.detailedAnalysisBlocks
-    if (blocks && blocks.length > 0) return blocks
-    const legacy = detail?.aiInsights?.detailedAnalysis?.trim()
-    if (legacy) return [{ title: '상세분석', body: legacy }]
-    if (detailLoading) return []
-    return [{ title: '상세분석', body: '상세 분석 데이터가 없습니다.' }]
-  }, [detail?.aiInsights?.detailedAnalysis, detail?.aiInsights?.detailedAnalysisBlocks, detailLoading])
+  const aiDetailedAnalysis = detail?.aiInsights?.detailedAnalysis ?? (detailLoading ? '' : '상세 분석 데이터가 없습니다.')
 
   const recordRows = recordsData?.detail ?? []
   const outlookRows = outlooksData?.detail ?? []
@@ -264,15 +229,15 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
               Event
             </Typography>
             {!detailLoading && nextGenMIIsEventNoiseSignal(detail?.signalType) ? (
-              <Box component="span" sx={{ display: 'inline-flex', lineHeight: 0, verticalAlign: 'middle' }}>
+              <Stack component="span" display="inline-flex" lineHeight={0}>
                 <NextGenMINoiseSignalBadge label={detail?.signalTypeLabel?.trim() ?? ''} />
-              </Box>
+              </Stack>
             ) : null}
           </Stack>
           {detailLoading ? (
             <>
-              <Skeleton variant="rounded" width="min(560px, 90%)" height={36} sx={{ borderRadius: '6px' }} />
-              <Skeleton variant="rounded" width={320} height={28} sx={{ borderRadius: '100px' }} />
+              <Skeleton variant="rounded" width="min(560px, 90%)" height="36px" sx={{ borderRadius: '6px' }} />
+              <Skeleton variant="rounded" width="320px" height="28px" sx={{ borderRadius: '100px' }} />
             </>
           ) : (
             <>
@@ -286,7 +251,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
                 {title}
               </Typography>
               <Stack direction="row" alignItems="center" gap="8px" flexWrap="wrap">
-                <Stack direction="row" alignItems="center" gap="6px" sx={eventDetailTimestampChipSx}>
+                <Stack direction="row" alignItems="center" gap="6px" padding="4px 8px" borderRadius="100px">
                   <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4}>
                     생성
                   </Typography>
@@ -294,7 +259,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
                     {generatedAtLabel}
                   </Typography>
                 </Stack>
-                <Stack direction="row" alignItems="center" gap="6px" sx={eventDetailTimestampChipSx}>
+                <Stack direction="row" alignItems="center" gap="6px" padding="4px 8px" borderRadius="100px">
                   <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4}>
                     갱신
                   </Typography>
@@ -358,13 +323,13 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         />
       )}
       <Stack gap="30px" px={embedded ? '12px' : 0} sx={{ minWidth: 0, maxWidth: '100%' }}>
-        {detailError && !EVENT_DETAIL_USE_MOCK && (
-          <Typography px={2} py={1} color="error.main" variant="body2">
+        {detailError && (
+          <Typography padding="8px 16px" color="error.main" variant="body2">
             이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
           </Typography>
         )}
         <Stack id={SECTION_SCROLL_IDS.ai} sx={{ minWidth: 0, maxWidth: '100%' }}>
-          <EventDetailAiInsightsSection bullets={aiBullets} detailBlocks={aiDetailBlocks} loading={detailLoading} />
+          <EventDetailAiInsightsSection bullets={aiBullets} detailedAnalysis={aiDetailedAnalysis} loading={detailLoading} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.impact} sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}>
           <EventDetailImpactAnalysisSection
@@ -376,7 +341,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
           />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.driverTree}>
-          <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} />
+          <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} loading={detailLoading} />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.outlook}>
           <EventDetailInstitutionalOutlookTable
@@ -398,7 +363,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related}>
           <EventDetailRelatedScenariosSection
-            relatedScenarioGroup={detail?.relatedScenarioGroup}
+            relatedEventScenario={detail?.relatedEventScenario}
             onScenarioRowClick={(row) => navigate(`${NEXT_GEN_MI_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)}
             loading={detailLoading}
           />

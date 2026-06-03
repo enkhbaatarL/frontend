@@ -2,7 +2,7 @@ import DomainOutlinedIcon from '@mui/icons-material/DomainOutlined'
 import { Stack } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
-import type { INextGenMIEventInstitutionOutlook } from '@/service/mi/nextGenMI/event'
+import type { EventInstitutionOutlook } from '@/service/mi/nextGenMI/event'
 import type { IPaginationResponse } from '@/types/api'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
@@ -12,8 +12,8 @@ import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/Even
 const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
 
 interface EventDetailInstitutionalOutlookTableProps {
-  rows: INextGenMIEventInstitutionOutlook[]
-  serverPagination?: IPaginationResponse<INextGenMIEventInstitutionOutlook>
+  rows: EventInstitutionOutlook[]
+  serverPagination?: IPaginationResponse<EventInstitutionOutlook>
   onServerPageChange?: (page: number) => void
   onServerSizeChange?: (size: number) => void
   loading?: boolean
@@ -52,7 +52,7 @@ const EventDetailInstitutionalOutlookTable = ({
     return rows.slice(start, start + pagination.size)
   }, [isServerMode, pagination.page, pagination.size, rows, totalPages])
 
-  const paginationData: IPaginationResponse<INextGenMIEventInstitutionOutlook> | undefined = useMemo(() => {
+  const paginationData: IPaginationResponse<EventInstitutionOutlook> | undefined = useMemo(() => {
     if (isServerMode) {
       if (serverPagination.totalElements === 0) return undefined
       return serverPagination
@@ -73,22 +73,22 @@ const EventDetailInstitutionalOutlookTable = ({
     }
   }, [isServerMode, paginatedRows, pagination.size, rows.length, safePage, serverPagination, totalPages])
 
-  const columns = useMemo<NextGenMIStickyTableColumn<INextGenMIEventInstitutionOutlook>[]>(
+  const columns = useMemo<NextGenMIStickyTableColumn<EventInstitutionOutlook>[]>(
     () => [
       {
-        field: 'publishedAt',
+        field: 'viewDate',
         headerName: '일자',
         width: '160px',
-        renderCell: ({ row }) => row.publishedAt,
+        renderCell: ({ row }) => row.viewDate ?? '',
       },
-      { field: 'institutionName', headerName: '기관', width: '200px', renderCell: ({ row }) => row.institutionName },
+      { field: 'institutionName', headerName: '기관', width: '200px', renderCell: ({ row }) => row.institutionName ?? '' },
       {
         field: 'outlookSummary',
         headerName: '전망 요약',
         width: 'max-content',
         minWidth: '640px',
         maxWidth: 'none',
-        renderCell: ({ row }) => row.outlookSummary,
+        renderCell: ({ row }) => row.outlookSummary ?? '',
         cellSx: {
           overflow: 'visible',
           textOverflow: 'clip',
@@ -109,14 +109,15 @@ const EventDetailInstitutionalOutlookTable = ({
         <NextGenMIStickyTable
           columns={columns}
           rows={paginatedRows}
-          getRowKey={(row, index) => `${row.publishedAt}-${row.institutionName}-${index}`}
+          getRowKey={(row, index) => `${row.viewDate ?? ''}-${row.institutionName ?? ''}-${index}`}
           loading={loading}
-          noRowMessage="기관 전망 데이터가 없습니다."
+          noRowMessage="표시할 데이터가 없습니다."
+          rowHeight={!loading && paginatedRows.length === 0 ? '400px' : undefined}
           bodyFontSize="14px"
           skeletonRowCount={pagination.size}
         />
         {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
-          <MIPaginationSecondary<INextGenMIEventInstitutionOutlook>
+          <MIPaginationSecondary<EventInstitutionOutlook>
             data={paginationData}
             size={isServerMode ? serverPagination.size : pagination.size}
             sizeList={[...PAGE_SIZE_LIST]}

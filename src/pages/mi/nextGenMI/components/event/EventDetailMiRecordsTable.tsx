@@ -2,7 +2,7 @@ import TungstenRoundedIcon from '@mui/icons-material/TungstenRounded'
 import { Stack } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
-import type { INextGenMIEventRelatedRecord } from '@/service/mi/nextGenMI/event'
+import type { EventRelatedRecord } from '@/service/mi/nextGenMI/event'
 import type { IPaginationResponse } from '@/types/api'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
@@ -13,8 +13,8 @@ const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
 
 /** MI Records 섹션 테이블 props */
 interface EventDetailMiRecordsTableProps {
-  rows: INextGenMIEventRelatedRecord[]
-  serverPagination?: IPaginationResponse<INextGenMIEventRelatedRecord>
+  rows: EventRelatedRecord[]
+  serverPagination?: IPaginationResponse<EventRelatedRecord>
   onServerPageChange?: (page: number) => void
   onServerSizeChange?: (size: number) => void
   loading?: boolean
@@ -53,7 +53,7 @@ const EventDetailMiRecordsTable = ({
     return rows.slice(start, start + pagination.size)
   }, [isServerMode, pagination.page, pagination.size, rows, totalPages])
 
-  const paginationData: IPaginationResponse<INextGenMIEventRelatedRecord> | undefined = useMemo(() => {
+  const paginationData: IPaginationResponse<EventRelatedRecord> | undefined = useMemo(() => {
     if (isServerMode) {
       if (serverPagination.totalElements === 0) return undefined
       return serverPagination
@@ -74,13 +74,13 @@ const EventDetailMiRecordsTable = ({
     }
   }, [isServerMode, paginatedRows, pagination.size, rows.length, safePage, serverPagination, totalPages])
 
-  const columns = useMemo<NextGenMIStickyTableColumn<INextGenMIEventRelatedRecord>[]>(
+  const columns = useMemo<NextGenMIStickyTableColumn<EventRelatedRecord>[]>(
     () => [
       {
         field: 'publishedAt',
         headerName: '일시',
         width: '160px',
-        renderCell: ({ row }) => row.publishedAt,
+        renderCell: ({ row }) => row.publishedAt ?? '',
       },
       {
         field: 'recordType',
@@ -88,14 +88,14 @@ const EventDetailMiRecordsTable = ({
         width: '100px',
         renderCell: ({ row }) => row.recordType ?? '',
       },
-      { field: 'title', headerName: '타이틀', width: '420px', renderCell: ({ row }) => row.title },
+      { field: 'title', headerName: '타이틀', width: '420px', renderCell: ({ row }) => row.title ?? '' },
       {
         field: 'summary',
         headerName: '요약',
         width: 'max-content',
         minWidth: '560px',
         maxWidth: 'none',
-        renderCell: ({ row }) => row.summary,
+        renderCell: ({ row }) => row.summary ?? '',
         cellSx: {
           overflow: 'visible',
           textOverflow: 'clip',
@@ -116,14 +116,15 @@ const EventDetailMiRecordsTable = ({
         <NextGenMIStickyTable
           columns={columns}
           rows={paginatedRows}
-          getRowKey={(row, index) => `${row.publishedAt}-${row.title}-${index}`}
+          getRowKey={(row, index) => `${row.publishedAt ?? ''}-${row.title ?? ''}-${index}`}
           loading={loading}
-          noRowMessage="MI 기록이 없습니다."
+          noRowMessage="표시할 데이터가 없습니다."
+          rowHeight={!loading && paginatedRows.length === 0 ? '400px' : undefined}
           bodyFontSize="14px"
           skeletonRowCount={pagination.size}
         />
         {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
-          <MIPaginationSecondary<INextGenMIEventRelatedRecord>
+          <MIPaginationSecondary<EventRelatedRecord>
             data={paginationData}
             size={isServerMode ? serverPagination.size : pagination.size}
             sizeList={[...PAGE_SIZE_LIST]}
