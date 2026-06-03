@@ -134,7 +134,7 @@ const resolveRotatingGradientDiscSize = (discSize: string | undefined, maskImage
 }
 
 const resolveRotatingGradientMotionPositions = (backgroundMotion: boolean, motionPositions: readonly string[] | undefined) => {
-  if (backgroundMotion === false) return ['50% 50%']
+  if (!backgroundMotion) return ['50% 50%']
   return motionPositions ?? DEFAULT_ROTATING_GRADIENT_MOTION_POSITIONS
 }
 

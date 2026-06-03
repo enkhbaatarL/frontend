@@ -67,13 +67,13 @@ type LegendEllipsisLabelProps = {
 }
 
 const resolveLegendLabelColor = (isShow: boolean, legendDimmed: boolean) => {
-  if (isShow === false) return 'contentText.Disabled'
+  if (!isShow) return 'contentText.Disabled'
   if (legendDimmed) return 'contentText.Subtext'
   return 'commonColor.Black'
 }
 
 const resolveLegendOpacity = (isShow: boolean, legendDimmed: boolean) => {
-  if (isShow === false) return 0.35
+  if (!isShow) return 0.35
   if (legendDimmed) return 0.45
   return 1
 }
