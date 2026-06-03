@@ -1,15 +1,35 @@
 import TungstenRoundedIcon from '@mui/icons-material/TungstenRounded'
 import { Stack } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import type { EventRelatedRecord } from '@/service/mi/nextGenMI/event'
 import type { IPaginationResponse } from '@/types/api'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 
 const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
+
+const getEventRelatedRecordPath = (row: EventRelatedRecord) => {
+  if (row.recordType === 'NEWS' && row.sourceObjId !== undefined && row.sourceObjId !== null) {
+    return `/mi/market-news/${encodeURIComponent(String(row.sourceObjId))}`
+  }
+
+  if (
+    row.recordType === 'REPORT' &&
+    row.goodsNo !== undefined &&
+    row.goodsNo !== null &&
+    row.goodsDataNo !== undefined &&
+    row.goodsDataNo !== null
+  ) {
+    return `/mi/data-detail/${encodeURIComponent(String(row.goodsNo))}/${encodeURIComponent(String(row.goodsDataNo))}`
+  }
+
+  return undefined
+}
 
 /** MI Records 섹션 테이블 props */
 interface EventDetailMiRecordsTableProps {
@@ -27,9 +47,18 @@ const EventDetailMiRecordsTable = ({
   onServerSizeChange,
   loading = false,
 }: EventDetailMiRecordsTableProps) => {
+  const navigate = useNavigate()
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
 
   const isServerMode = serverPagination !== undefined
+
+  const handleTitleClick = useCallback(
+    (row: EventRelatedRecord) => {
+      const path = getEventRelatedRecordPath(row)
+      if (path) navigate(path)
+    },
+    [navigate],
+  )
 
   const totalPages = useMemo(() => {
     if (isServerMode) return Math.max(1, serverPagination.totalPages)
@@ -88,7 +117,24 @@ const EventDetailMiRecordsTable = ({
         width: '100px',
         renderCell: ({ row }) => row.recordType ?? '',
       },
-      { field: 'title', headerName: '타이틀', width: '420px', renderCell: ({ row }) => row.title ?? '' },
+      {
+        field: 'title',
+        headerName: '타이틀',
+        width: '420px',
+        renderCell: ({ row }) => {
+          const title = row.title ?? ''
+          if (!title || !getEventRelatedRecordPath(row)) return title
+
+          return (
+            <NextGenMIHoverLinkCell
+              value={title}
+              variant="body2M14"
+              ariaLabel={`${title} 상세 보기`}
+              onClick={() => handleTitleClick(row)}
+            />
+          )
+        },
+      },
       {
         field: 'summary',
         headerName: '요약',
@@ -102,7 +148,7 @@ const EventDetailMiRecordsTable = ({
         },
       },
     ],
-    [],
+    [handleTitleClick],
   )
 
   return (

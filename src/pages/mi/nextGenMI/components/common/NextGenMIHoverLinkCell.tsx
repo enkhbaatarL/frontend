@@ -63,6 +63,7 @@ const NextGenMIHoverLinkCell = ({ value, onClick, variant = 'body1SB16', ariaLab
       sx={{
         width: 0,
         opacity: 0,
+        color: 'contentText.Black',
         flexShrink: 0,
         overflow: 'hidden',
         transition: 'width 120ms ease, opacity 120ms ease',
