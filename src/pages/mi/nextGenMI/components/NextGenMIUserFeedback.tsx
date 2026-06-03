@@ -1,9 +1,9 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
-import ModeCommentIcon from '@mui/icons-material/ModeComment'
 import { Box, Stack, Typography } from '@mui/material'
 import { useCallback, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
+import UserFeedbackIcon from '@/components/common/icons/UserFeedbackIcon'
 import MIMaskInput from '@/components/common/input/MIMaskInput'
 import MIMenu from '@/components/common/menu/MIMenu'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -83,7 +83,7 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
       menuPositionOffset={{ top: 8 }}
       variant="outlined"
       aria-label="사용자 피드백"
-      label={<ModeCommentIcon sx={{ fontSize: 20, color: 'inherit' }} />}
+      label={<UserFeedbackIcon />}
       enableHoverBackground
       paperProps={{
         style: {
@@ -94,10 +94,8 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
         sx: { width: '600px', overflow: 'hidden' },
       }}
       sx={{
-        width: '36px',
-        minWidth: '36px',
         height: '36px',
-        padding: '8px',
+        padding: '11px',
         color: 'contentIcon.Enabled',
       }}
     >

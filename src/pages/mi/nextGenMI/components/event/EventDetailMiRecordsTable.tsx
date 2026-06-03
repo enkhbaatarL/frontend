@@ -1,34 +1,15 @@
 import TungstenRoundedIcon from '@mui/icons-material/TungstenRounded'
 import { Stack } from '@mui/material'
-import { GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState } from 'react'
 
 import type { INextGenMIEventRelatedRecord } from '@/service/mi/nextGenMI/event'
+import type { IPaginationResponse } from '@/types/api'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
-import MIDataTableBody from '@/components/common/table/MIDataTableBody'
-import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
-import {
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
-} from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
-import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
-import EventDetailHorizontalScrollTableShell from '@/pages/mi/nextGenMI/components/event/EventDetailHorizontalScrollTableShell'
+import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
-import { IPaginationResponse } from '@/types/api'
 
 const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
-
-/** API `recordType` 값을 MI Records 테이블 종류 컬럼 한글 라벨로 변환 */
-const formatMiRecordTypeLabel = (recordType?: string): string => {
-  if (!recordType?.trim()) return '-'
-  if (recordType === 'NEWS') return '뉴스'
-  return recordType
-}
 
 /** MI Records 섹션 테이블 props */
 interface EventDetailMiRecordsTableProps {
@@ -93,64 +74,55 @@ const EventDetailMiRecordsTable = ({
     }
   }, [isServerMode, paginatedRows, pagination.size, rows.length, safePage, serverPagination, totalPages])
 
-  const columns: GridColDef<INextGenMIEventRelatedRecord>[] = useMemo(
+  const columns = useMemo<NextGenMIStickyTableColumn<INextGenMIEventRelatedRecord>[]>(
     () => [
       {
         field: 'publishedAt',
         headerName: '일시',
-        width: 160,
-        align: 'left',
-        renderCell: (params) => formatNextGenMIDateTime(params.row.publishedAt, 'YYYY-MM-DD HH:mm'),
+        width: '160px',
+        renderCell: ({ row }) => row.publishedAt,
       },
       {
         field: 'recordType',
         headerName: '종류',
-        width: 100,
-        align: 'left',
-        renderCell: (params) => formatMiRecordTypeLabel(params.row.recordType),
+        width: '100px',
+        renderCell: ({ row }) => row.recordType ?? '',
       },
-      { field: 'title', headerName: '타이틀', width: 420, align: 'left' },
-      { field: 'summary', headerName: '요약', flex: 1, minWidth: 560, align: 'left' },
+      { field: 'title', headerName: '타이틀', width: '420px', renderCell: ({ row }) => row.title },
+      {
+        field: 'summary',
+        headerName: '요약',
+        width: 'max-content',
+        minWidth: '560px',
+        maxWidth: 'none',
+        renderCell: ({ row }) => row.summary,
+        cellSx: {
+          overflow: 'visible',
+          textOverflow: 'clip',
+        },
+      },
     ],
     [],
   )
 
   return (
-    <Stack width="100%" gap={6} py="20px">
+    <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
-        icon={<TungstenRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+        icon={<TungstenRoundedIcon sx={{ fontSize: '26px', color: 'contentText.Normal' }} />}
         title="MI Records"
         tooltipTitle=""
       />
-      <Stack gap={0}>
-        <EventDetailHorizontalScrollTableShell>
-          <MIDataTableBody<INextGenMIEventRelatedRecord>
-            getRowKey={(row, index) => `${row.publishedAt}-${row.title}-${index}`}
-            columns={columns}
-            rows={paginatedRows}
-            loading={loading}
-            rowHeight={48}
-            primitiveCellTypographyVariant={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
-            primitiveCellLineHeight={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
-            cellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
-            cellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY}
-            noRowMessage="MI 기록이 없습니다."
-            scroll={{
-              overflowX: 'auto',
-              type: 'floating',
-              showThumbOnHover: true,
-              stickyHeader: (
-                <MIDataTableHeader<INextGenMIEventRelatedRecord>
-                  columns={columns}
-                  headerCellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
-                  headerLabelColor={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
-                  enableHorizontalScroll
-                />
-              ),
-            }}
-          />
-        </EventDetailHorizontalScrollTableShell>
-        {paginationData && paginationData.totalElements >= PAGE_SIZE_LIST[0] && (
+      <Stack gap="0px">
+        <NextGenMIStickyTable
+          columns={columns}
+          rows={paginatedRows}
+          getRowKey={(row, index) => `${row.publishedAt}-${row.title}-${index}`}
+          loading={loading}
+          noRowMessage="MI 기록이 없습니다."
+          bodyFontSize="14px"
+          skeletonRowCount={pagination.size}
+        />
+        {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
           <MIPaginationSecondary<INextGenMIEventRelatedRecord>
             data={paginationData}
             size={isServerMode ? serverPagination.size : pagination.size}
