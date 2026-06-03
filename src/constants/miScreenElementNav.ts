@@ -58,7 +58,7 @@ export const MI_MENU_ITEM_REGISTRY = {
     desc: 'miMenuItem.signalMap.desc',
     IconComponent: SignalIcon,
   },
-  SCENARIO_WORKBENCH: {
+  NEXT_GEN_MI: {
     label: 'Next-Gen MI',
     path: 'next-gen-mi',
     desc: 'miMenuItem.nextGenMI.desc',
