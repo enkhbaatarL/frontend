@@ -273,7 +273,11 @@ const ScenarioDetailPage = () => {
   const scenarioDetailHeaderRightAction = useMemo(
     () => (
       <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="8px" flexShrink={0} minHeight="62px">
-        <NextGenMIUserFeedback pageName="Next-Gen MI" sectionName="Scenario Group List / Scenario Detail" />
+        <NextGenMIUserFeedback
+          pageName="Next-Gen MI"
+          sectionName="Scenario Group List / Scenario Detail"
+          targetLabel={scenarioName ? `시나리오 상세/ ${scenarioName}` : '시나리오 상세'}
+        />
         <MIMorphingPopup
           ref={modelExecutionPopupRef}
           display="inline-flex"
@@ -312,7 +316,7 @@ const ScenarioDetailPage = () => {
         </MIMorphingPopup>
       </Stack>
     ),
-    [handleSubmitModelExecution, hasOpenedModelExecutionPopup, isModelExecutionGenerating, scenarioId],
+    [handleSubmitModelExecution, hasOpenedModelExecutionPopup, isModelExecutionGenerating, scenarioId, scenarioName],
   )
 
   useLayoutEffect(() => {

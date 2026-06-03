@@ -1,173 +1,151 @@
 import { AxiosResponse } from 'axios'
 
-import { EventCategoryLv1, MarketDirection, MarketImpactLevel } from './common'
+import { MarketDirection, MarketImpactLevel } from './common'
 
 import api from '@/lib/axios'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
-export type NextGenMIEventSort = 'LATEST' | 'OLDEST'
+export type EventSort = 'latest' | 'oldest'
 
-export type NextGenMIEventStatus = 'new' | 'updated' | 'closed'
+export type EventStatus = 'all' | 'new' | 'updated'
 
-export type NextGenMIEventSignalType = 'signal' | 'noise'
+export type EventSignalType = 'signal' | 'noise'
 
-export interface INextGenMIImpactIndexSummary {
+export type EventImpactTerm = 'short' | 'mid_long'
+
+export type EventImpactMarketImpactLevel = MarketImpactLevel.LOW | MarketImpactLevel.MEDIUM | MarketImpactLevel.HIGH
+
+export interface EventTypeL1Res {
+  eventTypeL1Id: number
+  code: string
+  label: string
+}
+
+export interface EventImpactIndexRes {
   indexName: string
-  marketImpactLevel: MarketImpactLevel
-  direction: MarketDirection
+  marketImpactLevel?: EventImpactMarketImpactLevel | null
+  marketImpactLevelLabel?: string
+  direction?: MarketDirection | null
+  directionLabel?: string
+  impactTerm?: EventImpactTerm | null
+  impactTermLabel?: string
 }
 
-export interface INextGenMIEventListItem {
-  eventId: string
+export interface EventListItemRes {
+  eventId: number
   eventName: string
-  status: NextGenMIEventStatus
+  status: EventStatus
   statusLabel?: string
-  signalType: NextGenMIEventSignalType
+  signalType: EventSignalType
   signalTypeLabel?: string
-  eventCategoryLv1?: EventCategoryLv1
-  eventCategoryLv1Label?: string
-  occurredAt: string
+  eventTypeLv1?: string
+  eventTypeLv1Label?: string
   updatedAt: string
-  indexImpacts: INextGenMIImpactIndexSummary[]
+  createdAt: string
+  isScenarioSuggested?: boolean
+  scenarioSuggestReason?: string | null
+  indexImpacts: EventImpactIndexRes[]
 }
 
-export interface INextGenMIEventSummaryNotice {
-  newEventCount: number
-  updatedEventCount: number
-}
-
-export interface INextGenMIEventAppliedFilter {
-  eventStatus?: NextGenMIEventStatus[]
-  eventCategoryLv1?: EventCategoryLv1[]
+export interface EventAppliedFilterRes {
+  eventStatus?: EventStatus
+  eventTypeL1Id?: number[]
   startDate?: string
   endDate?: string
-  sort?: NextGenMIEventSort
+  sort?: EventSort
   keyword?: string
+  suggestedOnly?: boolean
 }
 
-export interface INextGenMIEventListRes {
-  summaryNotice: INextGenMIEventSummaryNotice
-  appliedFilter: INextGenMIEventAppliedFilter
-  events: IPaginationResponse<INextGenMIEventListItem>
+export interface EventListRes {
+  appliedFilter: EventAppliedFilterRes
+  events: IPaginationResponse<EventListItemRes>
 }
 
-export interface IGetNextGenMIEventsParams {
+export interface GetEventsParams {
   page?: number
   size?: number
-  sort?: NextGenMIEventSort
-  eventStatus?: NextGenMIEventStatus[]
-  eventCategoryLv1?: EventCategoryLv1[]
+  sort?: EventSort
+  eventStatus?: EventStatus
+  eventTypeL1Id?: number[]
   startDate?: string
   endDate?: string
   keyword?: string
+  suggestedOnly?: boolean
 }
 
-export interface INextGenMIEventImpactAnalysis {
-  /**
-   * 이벤트 상세 화면 전용 영향 테이블 row
-   * - 목록 Events의 `indexImpacts`(INextGenMIImpactIndexSummary[])와는 별개
-   */
-  indexImpacts: INextGenMIEventImpactIndexRow[]
-  analysisText: string
-  eventCategoryLv1?: EventCategoryLv1
-  eventCategoryLv2?: string
+export interface EventImpactIndexTerm {
+  marketImpactLevel?: EventImpactMarketImpactLevel | null
+  marketImpactLevelLabel?: string | null
+  direction?: MarketDirection | null
+  directionLabel?: string | null
+}
+
+export interface EventDetailImpactIndex {
+  indexName?: string | null
+  shortTerm?: EventImpactIndexTerm | null
+  midLongTerm?: EventImpactIndexTerm | null
+}
+
+export interface EventImpactAnalysis {
+  indexImpacts?: EventDetailImpactIndex[]
+  analysisText?: string | null
+  eventTypeLv1?: string | null
+  eventTypeLv1Label?: string | null
+  eventTypeLv2?: string | null
+  eventTypeLv2Label?: string | null
   sources?: string[]
 }
 
-/** 이벤트 상세 - 영향도 분석(대상별 단기/중장기) 테이블 row */
-export interface INextGenMIEventImpactIndexRow {
-  indexName: string
-  /** 단기 영향 */
-  shortTermImpactLevel?: MarketImpactLevel
-  shortTermDirection?: MarketDirection
-  /** 중장기 영향 */
-  midLongTermImpactLevel?: MarketImpactLevel
-  midLongTermDirection?: MarketDirection
+export interface EventAiInsights {
+  keySummaries?: string[]
+  detailedAnalysis?: string | null
 }
 
-export interface INextGenMIEventAiInsightDetailBlock {
-  title: string
-  body: string
-}
-
-export interface INextGenMIEventAiInsights {
-  keySummaries: string[]
-  /** API 미연동 시 mock/레거시 단일 본문 */
-  detailedAnalysis?: string
-  /** 신규 상세분석 구조 (API 연동 전 mock) */
-  detailedAnalysisBlocks?: INextGenMIEventAiInsightDetailBlock[]
-}
-
-/** 이벤트 상세 - 관련 시나리오 그룹 행 (퍼블/mock) */
-export interface INextGenMIEventRelatedScenarioGroupRow {
-  scenarioId: number
-  scenarioName: string
-  baseCase: boolean
-  feasibility: number
-  duration: string
-  transportDisruption: string
-  supplyDisruptionIntensity: string
-  supplyRecoveryPattern: string
-  normalizationConfirmation: string
-}
-
-export interface INextGenMIEventRelatedScenarioGroup {
-  groupId?: number
-  groupName: string
-  scenarios: INextGenMIEventRelatedScenarioGroupRow[]
-}
-
-export interface INextGenMIEventDriverTreeScoreboardItem {
-  /** 대상 지수 (예: JKM/TTF/HH) */
-  indexName?: string | null
-  lv1Id?: string | number | null
+export interface DriverTreeScoreboard {
+  lv1Id?: string | null
   lv1Label?: string | null
-  lv2Id?: string | number | null
+  lv2Id?: string | null
   lv2Label?: string | null
-  lv3Id?: string | number | null
+  lv3Id?: string | null
   lv3Label?: string | null
-  /** 단기 영향(기존 필드 유지) */
-  marketImpactLevel: MarketImpactLevel
-  marketImpactLevelLabel?: string
-  direction?: MarketDirection
-  directionLabel?: string
-  /** 중장기 영향(신규) */
-  midLongTermImpactLevel?: MarketImpactLevel
-  midLongTermDirection?: MarketDirection
+  shortTerm?: EventImpactIndexTerm | null
+  midLongTerm?: EventImpactIndexTerm | null
   reason?: string | null
 }
 
-export interface INextGenMIRelatedEventScenarioEvent {
+export interface EventDriverTreeIndex {
+  indexName?: string | null
+  drivers?: DriverTreeScoreboard[]
+}
+
+export interface RelatedEvent {
   eventId: number
   eventName: string
   createdAt: string
   updatedAt: string
-  eventCategoryLv1?: EventCategoryLv1
-  eventCategoryLv1Label?: string
-  indexImpacts?: Array<{
-    indexName: string
-    marketImpactLevel: MarketImpactLevel
-    marketImpactLevelLabel?: string
-    direction?: MarketDirection
-    directionLabel?: string
-  }>
+  eventTypeLv1?: string | null
+  eventTypeLv1Label?: string | null
+  indexImpacts?: EventImpactIndexRes[]
 }
 
-export interface INextGenMIRelatedEventScenarioScenario {
+export interface RelatedScenarioImpactIndex {
+  indexName: string
+  marketImpactLevel: EventImpactMarketImpactLevel
+  marketImpactLevelLabel?: string | null
+}
+
+export interface RelatedScenario {
   scenarioId: number
   scenarioName: string
   baseCase: boolean
+  indexImpacts?: RelatedScenarioImpactIndex[]
   probability: number
-  indexImpacts?: Array<{
-    indexName: string
-    marketImpactLevel: MarketImpactLevel
-    marketImpactLevelLabel?: string
-  }>
 }
 
-export interface INextGenMIRelatedEventScenario {
-  event?: INextGenMIRelatedEventScenarioEvent
-  scenarios?: INextGenMIRelatedEventScenarioScenario[]
+export interface RelatedEventScenario {
+  event?: RelatedEvent | null
+  scenarios?: RelatedScenario[]
 }
 
 export interface INextGenMIEventFundamentalDeepdive {
@@ -194,39 +172,36 @@ export interface INextGenMIEventFundamental {
   indicators: INextGenMIFundamentalIndicator[]
 }
 
-export interface INextGenMIEventDetailRes {
-  eventId: string | number
+export interface EventDetail {
+  eventId: number
   eventName: string
-  status?: NextGenMIEventStatus
-  statusLabel?: string
-  signalType: NextGenMIEventSignalType
-  signalTypeLabel?: string
+  status?: EventStatus
+  statusLabel?: string | null
+  signalType?: EventSignalType
+  signalTypeLabel?: string | null
   createdAt: string
   updatedAt: string
-  impactAnalysis?: INextGenMIEventImpactAnalysis
-  aiInsights?: INextGenMIEventAiInsights
-  driverTreeScoreboard?: INextGenMIEventDriverTreeScoreboardItem[]
+  aiInsights?: EventAiInsights | null
+  impactAnalysis?: EventImpactAnalysis | null
+  driverTreeScoreboard?: EventDriverTreeIndex[]
   fundamentalDeepdive?: INextGenMIEventFundamentalDeepdive | INextGenMIEventFundamental
-  relatedEventScenario?: INextGenMIRelatedEventScenario
-  /** 신규 관련 시나리오 그룹 (API 연동 전 mock) */
-  relatedScenarioGroup?: INextGenMIEventRelatedScenarioGroup
+  relatedEventScenario?: RelatedEventScenario | null
 }
 
-/** 이벤트 MI Records(getEventRecords) 페이지의 단일 row — EventRelatedRecordRes 스키마 정합 */
-export interface INextGenMIEventRelatedRecord {
-  publishedAt: string
-  /** Record 유형 (예: NEWS) */
-  recordType?: string
-  title: string
-  summary: string
-  goodsNo?: number
-  fileName?: string
+export interface EventRelatedRecord {
+  publishedAt?: string
+  recordType?: string | null
+  title?: string | null
+  summary?: string | null
+  goodsNo?: number | null
+  goodsDataNo?: number | null
+  sourceObjId?: number | null
 }
 
-export interface INextGenMIEventInstitutionOutlook {
-  publishedAt: string
-  institutionName: string
-  outlookSummary: string
+export interface EventInstitutionOutlook {
+  viewDate?: string
+  institutionName?: string | null
+  outlookSummary?: string | null
 }
 
 export interface IGetNextGenMIEventRecordsParams {
@@ -239,24 +214,40 @@ export interface IGetNextGenMIEventOutlooksParams {
   size?: number
 }
 
+type EventQueryParamValue = string | number | boolean
+
+const appendNextGenMIEventsParam = (usp: URLSearchParams, key: string, value: unknown) => {
+  if (value === undefined || value === null || value === '') return
+  if (typeof value === 'string') {
+    usp.append(key, value)
+    return
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    usp.append(key, value.toString())
+  }
+}
+
 const serializeNextGenMIEventsParams = (params: Record<string, unknown>): string => {
   const usp = new URLSearchParams()
   Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '') return
     if (Array.isArray(value)) {
-      value.forEach((v) => {
-        if (v !== undefined && v !== null && v !== '') usp.append(key, String(v))
-      })
-    } else {
-      usp.append(key, String(value))
+      value.forEach((v: EventQueryParamValue) => appendNextGenMIEventsParam(usp, key, v))
+      return
     }
+    appendNextGenMIEventsParam(usp, key, value)
   })
   return usp.toString()
 }
 
 const nextGenMIEventService = {
-  async getEvents(params: IGetNextGenMIEventsParams): Promise<INextGenMIEventListRes> {
-    const response: AxiosResponse<ICommonResponse<INextGenMIEventListRes>> = await api.get('mi/scenario-workbench/events', {
+  async getEventTypesL1(): Promise<EventTypeL1Res[]> {
+    const response: AxiosResponse<ICommonResponse<EventTypeL1Res[]>> = await api.get('mi/next-gen/events/event-types/lv1')
+
+    return response.data.data
+  },
+
+  async getEvents(params: GetEventsParams): Promise<EventListRes> {
+    const response: AxiosResponse<ICommonResponse<EventListRes>> = await api.get('mi/next-gen/events', {
       params: {
         page: params.page ?? 1,
         size: params.size ?? 20,
@@ -265,7 +256,8 @@ const nextGenMIEventService = {
         endDate: params.endDate,
         keyword: params.keyword,
         eventStatus: params.eventStatus,
-        eventCategoryLv1: params.eventCategoryLv1,
+        eventTypeL1Id: params.eventTypeL1Id,
+        suggestedOnly: params.suggestedOnly,
       },
       paramsSerializer: (p) => serializeNextGenMIEventsParams(p as Record<string, unknown>),
     })
@@ -273,20 +265,15 @@ const nextGenMIEventService = {
     return response.data.data
   },
 
-  async getEventDetail(eventId: string): Promise<INextGenMIEventDetailRes> {
-    const response: AxiosResponse<ICommonResponse<INextGenMIEventDetailRes>> = await api.get(
-      `mi/scenario-workbench/events/${encodeURIComponent(eventId)}`,
-    )
+  async getEventDetail(eventId: string): Promise<EventDetail> {
+    const response: AxiosResponse<ICommonResponse<EventDetail>> = await api.get(`mi/next-gen/events/${encodeURIComponent(eventId)}`)
 
     return response.data.data
   },
 
-  async getEventRecords(
-    eventId: string,
-    params?: IGetNextGenMIEventRecordsParams,
-  ): Promise<IPaginationResponse<INextGenMIEventRelatedRecord>> {
-    const response: AxiosResponse<ICommonResponse<IPaginationResponse<INextGenMIEventRelatedRecord>>> = await api.get(
-      `mi/scenario-workbench/events/${encodeURIComponent(eventId)}/records`,
+  async getEventRecords(eventId: string, params?: IGetNextGenMIEventRecordsParams): Promise<IPaginationResponse<EventRelatedRecord>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<EventRelatedRecord>>> = await api.get(
+      `mi/next-gen/events/${encodeURIComponent(eventId)}/records`,
       {
         params: {
           page: params?.page ?? 1,
@@ -301,9 +288,9 @@ const nextGenMIEventService = {
   async getEventOutlooks(
     eventId: string,
     params?: IGetNextGenMIEventOutlooksParams,
-  ): Promise<IPaginationResponse<INextGenMIEventInstitutionOutlook>> {
-    const response: AxiosResponse<ICommonResponse<IPaginationResponse<INextGenMIEventInstitutionOutlook>>> = await api.get(
-      `mi/scenario-workbench/events/${encodeURIComponent(eventId)}/outlooks`,
+  ): Promise<IPaginationResponse<EventInstitutionOutlook>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<EventInstitutionOutlook>>> = await api.get(
+      `mi/next-gen/events/${encodeURIComponent(eventId)}/outlooks`,
       {
         params: {
           page: params?.page ?? 1,

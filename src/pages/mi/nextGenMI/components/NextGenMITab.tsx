@@ -80,8 +80,10 @@ const NextGenMITab = ({
               '& .MuiTab-root': {
                 fontWeight: 600,
                 fontSize: '18px',
+                lineHeight: 1.4,
                 color: 'content.textNormal',
-                padding: '12px 20px 22px 20px',
+                minHeight: '62px',
+                padding: '0 20px',
                 textTransform: 'none',
                 '&.Mui-selected': {
                   color: 'mari.Primary',

@@ -1,12 +1,12 @@
 import type { IDesignEventItem } from '@/service/mi/nextGenMI/design'
-import type { INextGenMIEventListItem, NextGenMIEventSignalType, NextGenMIEventStatus } from '@/service/mi/nextGenMI/event'
+import type { EventListItemRes, EventSignalType, EventStatus } from '@/service/mi/nextGenMI/event'
 import type { IScenarioListItem } from '@/service/mi/nextGenMI/scenario'
 
 import { NextGenMIStatus } from '@/service/mi/nextGenMI/common'
 
-export type NextGenMIClassificationTone = NextGenMIEventStatus | 'noise'
+export type NextGenMIClassificationTone = EventStatus | 'closed' | 'noise'
 
-export const nextGenMIIsEventNoiseSignal = (signalType?: NextGenMIEventSignalType): boolean => signalType === 'noise'
+export const nextGenMIIsEventNoiseSignal = (signalType?: EventSignalType): boolean => signalType === 'noise'
 
 const nextGenMIListingStatusToChipStatus = (status: NextGenMIStatus): Exclude<NextGenMIClassificationTone, 'noise'> => {
   if (status === NextGenMIStatus.NEW || status === NextGenMIStatus.UPDATED) return status
@@ -14,7 +14,7 @@ const nextGenMIListingStatusToChipStatus = (status: NextGenMIStatus): Exclude<Ne
 }
 
 export const classificationPropsFromNextGenMIEventRow = (
-  row: Pick<INextGenMIEventListItem, 'status' | 'signalType'> & Partial<Pick<INextGenMIEventListItem, 'statusLabel' | 'signalTypeLabel'>>,
+  row: Pick<EventListItemRes, 'status' | 'signalType'> & Partial<Pick<EventListItemRes, 'statusLabel' | 'signalTypeLabel'>>,
 ): { status: NextGenMIClassificationTone; label: string } => {
   if (nextGenMIIsEventNoiseSignal(row.signalType)) {
     return {
@@ -30,20 +30,14 @@ export const classificationPropsFromNextGenMIEventRow = (
 
 export const classificationPropsFromDesignEventRow = (
   row: Pick<IDesignEventItem, 'status' | 'statusLabel'>,
-): { status: NextGenMIClassificationTone; label: string } => {
-  const chipStatus = nextGenMIListingStatusToChipStatus(row.status)
-  return {
-    status: chipStatus,
-    label: row.statusLabel?.trim() ?? '',
-  }
-}
+): { status: NextGenMIClassificationTone; label: string } => ({
+  status: nextGenMIListingStatusToChipStatus(row.status),
+  label: row.statusLabel?.trim() ?? '',
+})
 
 export const classificationPropsFromScenarioListRow = (
   row: Pick<IScenarioListItem, 'status' | 'statusLabel'>,
-): { status: NextGenMIClassificationTone; label: string } => {
-  const chipStatus = nextGenMIListingStatusToChipStatus(row.status)
-  return {
-    status: chipStatus,
-    label: row.statusLabel?.trim() ?? '',
-  }
-}
+): { status: NextGenMIClassificationTone; label: string } => ({
+  status: nextGenMIListingStatusToChipStatus(row.status),
+  label: row.statusLabel?.trim() ?? '',
+})

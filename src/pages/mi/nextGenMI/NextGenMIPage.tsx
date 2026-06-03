@@ -237,7 +237,7 @@ const NextGenMIPage = () => {
                 tabBarOnly
                 value={selectedTab}
                 onChange={handleTabChange}
-                endAdornment={<NextGenMIUserFeedback pageName="Next-Gen MI" sectionName={activeTabLabel} />}
+                endAdornment={<NextGenMIUserFeedback pageName="Next-Gen MI" sectionName={activeTabLabel} targetLabel={activeTabLabel} />}
               />
             </Box>
             {/* 활성 탭의 패널 타이틀·필터·테이블 헤더가 portal로 주입되는 슬롯 */}

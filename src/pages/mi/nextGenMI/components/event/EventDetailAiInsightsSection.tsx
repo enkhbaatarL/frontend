@@ -1,14 +1,16 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
+import ReactMarkdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
+import remarkGfm from 'remark-gfm'
 
-import type { INextGenMIEventAiInsightDetailBlock } from '@/service/mi/nextGenMI/event'
 import type { ReactNode } from 'react'
 
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 
 interface EventDetailAiInsightsSectionProps {
   bullets: string[]
-  detailBlocks: INextGenMIEventAiInsightDetailBlock[]
+  detailedAnalysis: string
   loading?: boolean
 }
 
@@ -40,14 +42,6 @@ const bodySx = {
   ...wrapTextSx,
 } as const
 
-const detailBlockTitleSx = {
-  fontSize: 16,
-  fontWeight: 600,
-  color: 'contentText.Black',
-  lineHeight: 1.5,
-  ...wrapTextSx,
-} as const
-
 const gradientCardBaseSx = {
   borderRadius: '10px',
   p: '24px',
@@ -56,10 +50,6 @@ const gradientCardBaseSx = {
   minWidth: 0,
   boxSizing: 'border-box',
   overflow: 'hidden',
-  transition: 'filter 0.15s ease-in-out',
-  '&:hover': {
-    filter: 'brightness(0.98)',
-  },
 } as const
 
 const summaryGradientCardSx = {
@@ -82,7 +72,7 @@ const AiInsightsSummaryCard = ({ children }: { children: ReactNode }) => <Box sx
 
 const AiInsightsDetailCard = ({ children }: { children: ReactNode }) => <Box sx={detailGradientCardSx}>{children}</Box>
 
-const EventDetailAiInsightsSection = ({ bullets, detailBlocks, loading = false }: EventDetailAiInsightsSectionProps) =>
+const EventDetailAiInsightsSection = ({ bullets, detailedAnalysis, loading = false }: EventDetailAiInsightsSectionProps) =>
   loading ? (
     <Stack width="100%" gap="12px" py="20px" sx={constrainedStackSx}>
       <EventDetailSectionHeader
@@ -159,14 +149,11 @@ const EventDetailAiInsightsSection = ({ bullets, detailBlocks, loading = false }
               <Typography sx={cardSubsectionTitleSx}>상세분석</Typography>
             </Stack>
             <Stack gap="20px" sx={constrainedStackSx}>
-              {detailBlocks.map((block) => (
-                <Stack key={block.title} gap="4px" sx={constrainedStackSx}>
-                  <Typography sx={detailBlockTitleSx}>{block.title}</Typography>
-                  <Typography component="p" sx={{ ...bodySx, m: 0, whiteSpace: 'pre-line' }}>
-                    {block.body}
-                  </Typography>
-                </Stack>
-              ))}
+              <Typography component="div" sx={{ ...bodySx, whiteSpace: 'pre-line' }}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                  {detailedAnalysis}
+                </ReactMarkdown>
+              </Typography>
             </Stack>
           </Stack>
         </AiInsightsDetailCard>

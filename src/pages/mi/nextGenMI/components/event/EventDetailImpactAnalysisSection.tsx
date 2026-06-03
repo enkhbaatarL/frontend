@@ -5,7 +5,7 @@ import { GridColDef } from '@mui/x-data-grid'
 import { useMemo } from 'react'
 
 import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
-import type { INextGenMIEventImpactIndexRow } from '@/service/mi/nextGenMI/event'
+import type { EventDetailImpactIndex } from '@/service/mi/nextGenMI/event'
 
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
@@ -16,7 +16,7 @@ import EventIndexSignalCell from '@/pages/mi/nextGenMI/components/event/EventInd
 
 /** 영향도 분석 섹션 props */
 interface EventDetailImpactAnalysisSectionProps {
-  tableRows: INextGenMIEventImpactIndexRow[]
+  tableRows: EventDetailImpactIndex[]
   kpiItems: [KpiCardProps, KpiCardProps]
   narrative: string
   isNoiseEvent?: boolean
@@ -52,7 +52,7 @@ const EventDetailImpactAnalysisSection = ({
   isNoiseEvent = false,
   loading = false,
 }: EventDetailImpactAnalysisSectionProps) => {
-  const columns: GridColDef<INextGenMIEventImpactIndexRow>[] = useMemo(
+  const columns: GridColDef<EventDetailImpactIndex>[] = useMemo(
     () => [
       {
         field: 'indexName',
@@ -69,7 +69,7 @@ const EventDetailImpactAnalysisSection = ({
         ),
       },
       {
-        field: 'shortTermImpactLevel',
+        field: 'shortTerm',
         headerName: '단기 영향',
         width: 140,
         align: 'center',
@@ -77,9 +77,11 @@ const EventDetailImpactAnalysisSection = ({
         renderCell: (p) => (
           <Stack alignItems="center" justifyContent="center" width="100%" height="40px">
             <EventIndexSignalCell
-              indexLabel={p.row.indexName}
-              level={p.row.shortTermImpactLevel}
-              direction={p.row.shortTermDirection}
+              indexLabel={p.row.indexName ?? undefined}
+              level={p.row.shortTerm?.marketImpactLevel}
+              levelLabel={p.row.shortTerm?.marketImpactLevelLabel}
+              direction={p.row.shortTerm?.direction}
+              directionLabel={p.row.shortTerm?.directionLabel}
               term="short"
               showTermBadge={false}
               size={20}
@@ -88,7 +90,7 @@ const EventDetailImpactAnalysisSection = ({
         ),
       },
       {
-        field: 'midLongTermImpactLevel',
+        field: 'midLongTerm',
         headerName: '중장기 영향',
         width: 140,
         align: 'center',
@@ -96,9 +98,11 @@ const EventDetailImpactAnalysisSection = ({
         renderCell: (p) => (
           <Stack alignItems="center" justifyContent="center" width="100%" height="40px">
             <EventIndexSignalCell
-              indexLabel={p.row.indexName}
-              level={p.row.midLongTermImpactLevel}
-              direction={p.row.midLongTermDirection}
+              indexLabel={p.row.indexName ?? undefined}
+              level={p.row.midLongTerm?.marketImpactLevel}
+              levelLabel={p.row.midLongTerm?.marketImpactLevelLabel}
+              direction={p.row.midLongTerm?.direction}
+              directionLabel={p.row.midLongTerm?.directionLabel}
               term="long"
               showTermBadge={false}
               size={20}
@@ -112,7 +116,7 @@ const EventDetailImpactAnalysisSection = ({
 
   if (loading) {
     return (
-      <Stack width="100%" gap="12px">
+      <Stack width="100%" gap="12px" py="20px">
         <EventDetailSectionHeader
           icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
           title="영향도 분석"
@@ -154,7 +158,7 @@ const EventDetailImpactAnalysisSection = ({
   /** 소음이면 전체 섹션을 소음 화면으로 고정 */
   if (isNoiseEvent) {
     return (
-      <Stack width="100%" gap="12px">
+      <Stack width="100%" gap="12px" py="20px">
         <EventDetailSectionHeader
           icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
           title="영향도 분석"
@@ -167,8 +171,10 @@ const EventDetailImpactAnalysisSection = ({
     )
   }
 
+  const hasNarrative = narrative.trim().length > 0
+
   return (
-    <Stack width="100%" gap="12px">
+    <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
         icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="영향도 분석"
@@ -178,8 +184,8 @@ const EventDetailImpactAnalysisSection = ({
         <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
           <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
             <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-              <MIDataTableHeader<INextGenMIEventImpactIndexRow> columns={columns} />
-              <MIDataTableBody<INextGenMIEventImpactIndexRow>
+              <MIDataTableHeader<EventDetailImpactIndex> columns={columns} />
+              <MIDataTableBody<EventDetailImpactIndex>
                 rowId="indexName"
                 columns={columns}
                 rows={tableRows}
@@ -206,17 +212,22 @@ const EventDetailImpactAnalysisSection = ({
           display="flex"
           flexDirection="column"
           gap="12px"
-          sx={{
-            bgcolor: 'gray.5',
-            '&:hover': { bgcolor: 'contentBG.Hover' },
-          }}
+          bgcolor="gray.5"
         >
           <Typography fontSize={14} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
             영향도 분석 종합
           </Typography>
-          <Typography fontSize={16} fontWeight={500} color="contentText.Black" lineHeight={1.6}>
-            {narrative}
-          </Typography>
+          {hasNarrative ? (
+            <Typography fontSize={16} fontWeight={500} color="contentText.Black" lineHeight={1.6}>
+              {narrative}
+            </Typography>
+          ) : (
+            <Stack flex={1} minHeight="120px" alignItems="center" justifyContent="center">
+              <Typography variant="body2M14" color="contentText.Normal">
+                표시할 데이터가 없습니다.
+              </Typography>
+            </Stack>
+          )}
         </Box>
       </Stack>
     </Stack>

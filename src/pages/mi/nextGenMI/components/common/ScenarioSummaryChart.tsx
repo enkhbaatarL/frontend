@@ -15,11 +15,6 @@ import { ChartType } from '@/types/dataDetailChart'
 
 const CHART_HEIGHT = 480
 const SCENARIO_CHART_COLORS = ['#185FA5', '#0F8A72', '#E09A3A', '#C4407A', '#A32D2D', '#2B8EA6', '#7B52B8', '#B8960C', '#3D7D3F', '#6B6A65']
-const EMPTY_CHART_HOVER_SX = {
-  '&:hover': {
-    bgcolor: 'contentBG.Hover',
-  },
-} as const
 
 export const scenarioForecastVisibilityKey = (scenarioId: number): string => `scenario:${scenarioId}_FORECAST`
 
@@ -71,6 +66,18 @@ type LegendEllipsisLabelProps = {
   legendDimmed: boolean
 }
 
+const resolveLegendLabelColor = (isShow: boolean, legendDimmed: boolean) => {
+  if (!isShow) return 'contentText.Disabled'
+  if (legendDimmed) return 'contentText.Subtext'
+  return 'commonColor.Black'
+}
+
+const resolveLegendOpacity = (isShow: boolean, legendDimmed: boolean) => {
+  if (!isShow) return 0.35
+  if (legendDimmed) return 0.45
+  return 1
+}
+
 const LegendEllipsisLabel = ({ label, isShow, isHighlighted, legendDimmed }: LegendEllipsisLabelProps) => {
   const { ref, isEllipsis } = useEllipsisDetection(label)
 
@@ -80,7 +87,7 @@ const LegendEllipsisLabel = ({ label, isShow, isHighlighted, legendDimmed }: Leg
       className="legend-label"
       variant={isHighlighted ? 'body3SB12' : 'body3M12'}
       sx={{
-        color: !isShow ? 'contentText.Disabled' : legendDimmed ? 'contentText.Subtext' : 'commonColor.Black',
+        color: resolveLegendLabelColor(isShow, legendDimmed),
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
@@ -209,7 +216,7 @@ const ScenarioSummaryChart = ({
   const chartUnit = useMemo(() => buildChartUnit(priceForecast), [priceForecast])
   const hasChartData = charts.length > 0 && maxValueCount > 0
   const showGeneratingState = modelExecutionGenerating
-  const emptyChartHoverSx = !hasChartData && !showGeneratingState ? EMPTY_CHART_HOVER_SX : {}
+  const showChart = hasChartData && showGeneratingState === false
 
   const renderLegendItem = (chart: ScenarioSummaryForecastChartData, index: number, placement: 'header' | 'bottom') => {
     const visibilityKey = chart.visibilityKey ?? `${chart.goodsDataSourceName}_FORECAST`
@@ -237,7 +244,7 @@ const ScenarioSummaryChart = ({
           borderRadius: isHeader ? '4px' : '8px',
           boxSizing: 'border-box',
           transition: 'background-color 0.15s ease, opacity 0.2s ease-in-out',
-          opacity: !isShow ? 0.35 : legendDimmed ? 0.45 : 1,
+          opacity: resolveLegendOpacity(isShow, legendDimmed),
           ...(isShow && {
             ...(isHighlighted ? { bgcolor: 'gray.10' } : {}),
             '&:hover': {
@@ -265,9 +272,36 @@ const ScenarioSummaryChart = ({
     )
   }
 
+  const renderChartBody = () => {
+    if (showGeneratingState) return <ScenarioModelExecutionGeneratingState />
+
+    if (hasChartData) {
+      return (
+        <ScenarioSummaryChartGraph
+          height={CHART_HEIGHT}
+          charts={charts}
+          chartVisibilityMap={chartVisibilityMap}
+          hoveredChartKey={highlightVisibilityKey}
+          chartColorMap={chartColorMap}
+          spanGaps
+          disableIntroAnimation={disableIntroAnimation}
+        />
+      )
+    }
+
+    return (
+      <Stack height="100%" alignItems="center" justifyContent="center" gap="10px" sx={{ userSelect: 'none' }}>
+        <ErrorOutlineOutlinedIcon sx={{ fontSize: 24, color: 'gray.60' }} aria-hidden />
+        <Typography variant="body3SB12" color="gray.60" lineHeight={1.4}>
+          {emptyMessage}
+        </Typography>
+      </Stack>
+    )
+  }
+
   return (
     <Stack width="100%" minWidth={0} gap="8px">
-      {hasChartData && !showGeneratingState && !suppressChartHeader && (
+      {showChart && !suppressChartHeader && (
         <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap="8px" width="100%" minWidth={0}>
           <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
             {headerStart ?? (
@@ -293,37 +327,15 @@ const ScenarioSummaryChart = ({
         borderRadius="10px"
         width="100%"
         height={CHART_HEIGHT}
-        sx={[
-          {
-            bgcolor: hasChartData && !showGeneratingState ? 'commonColor.White' : 'gray.5',
-            transition: 'background-color 0.2s ease-in-out',
-          },
-          emptyChartHoverSx,
-        ]}
+        sx={{
+          bgcolor: showChart ? 'commonColor.White' : 'gray.5',
+          transition: 'background-color 0.2s ease-in-out',
+        }}
       >
-        {showGeneratingState ? (
-          <ScenarioModelExecutionGeneratingState />
-        ) : hasChartData ? (
-          <ScenarioSummaryChartGraph
-            height={CHART_HEIGHT}
-            charts={charts}
-            chartVisibilityMap={chartVisibilityMap}
-            hoveredChartKey={highlightVisibilityKey}
-            chartColorMap={chartColorMap}
-            spanGaps
-            disableIntroAnimation={disableIntroAnimation}
-          />
-        ) : (
-          <Stack height="100%" alignItems="center" justifyContent="center" gap="10px" sx={{ userSelect: 'none' }}>
-            <ErrorOutlineOutlinedIcon sx={{ fontSize: 24, color: 'gray.60' }} aria-hidden />
-            <Typography variant="body3SB12" color="gray.60" lineHeight={1.4}>
-              {emptyMessage}
-            </Typography>
-          </Stack>
-        )}
+        {renderChartBody()}
       </Box>
 
-      {hasChartData && !showGeneratingState && !hideLegend && (
+      {showChart && !hideLegend && (
         <Box
           sx={{
             display: 'grid',

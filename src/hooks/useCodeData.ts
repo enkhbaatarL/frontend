@@ -2,12 +2,14 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
 import codeService, { ICode } from '@/service/common/code'
+import nextGenMIEventService, { type EventTypeL1Res } from '@/service/mi/nextGenMI/event'
 
 interface UseCodeDataReturn {
   marketCategoryCodeList: ICode[] | undefined
   regionCategoryCodeList: ICode[] | undefined
   industrySectorCodeList: ICode[] | undefined
   economicCalendarCategoryCodeList: ICode[] | undefined
+  nextGenMIEventTypeL1List: EventTypeL1Res[] | undefined
   isLoading: boolean
   error: Error | null
 }
@@ -53,8 +55,14 @@ const useCodeData = (): UseCodeDataReturn => {
     ...defaultOptions,
   })
 
+  const nextGenMIEventTypeL1Query = useQuery({
+    queryKey: ['codeData', 'nextGenMIEventTypesL1'],
+    queryFn: async () => await nextGenMIEventService.getEventTypesL1(),
+    ...defaultOptions,
+  })
+
   // 접근할 때 해당 쿼리를 활성화하는 프록시 객체
-  const proxy = useMemo(
+  return useMemo(
     () => ({
       get marketCategoryCodeList() {
         if (!marketQuery.data && !marketQuery.isLoading) {
@@ -80,17 +88,33 @@ const useCodeData = (): UseCodeDataReturn => {
         }
         return economicCalendarCategoryQuery.data
       },
+      get nextGenMIEventTypeL1List() {
+        if (!nextGenMIEventTypeL1Query.data && !nextGenMIEventTypeL1Query.isLoading) {
+          nextGenMIEventTypeL1Query.refetch().then()
+        }
+        return nextGenMIEventTypeL1Query.data
+      },
       get isLoading() {
-        return marketQuery.isLoading || regionQuery.isLoading || industryQuery.isLoading || economicCalendarCategoryQuery.isLoading
+        return (
+          marketQuery.isLoading ||
+          regionQuery.isLoading ||
+          industryQuery.isLoading ||
+          economicCalendarCategoryQuery.isLoading ||
+          nextGenMIEventTypeL1Query.isLoading
+        )
       },
       get error() {
-        return marketQuery.error || regionQuery.error || industryQuery.error || economicCalendarCategoryQuery.error
+        return (
+          marketQuery.error ||
+          regionQuery.error ||
+          industryQuery.error ||
+          economicCalendarCategoryQuery.error ||
+          nextGenMIEventTypeL1Query.error
+        )
       },
     }),
-    [marketQuery, regionQuery, industryQuery, economicCalendarCategoryQuery],
+    [marketQuery, regionQuery, industryQuery, economicCalendarCategoryQuery, nextGenMIEventTypeL1Query],
   )
-
-  return proxy
 }
 
 export default useCodeData

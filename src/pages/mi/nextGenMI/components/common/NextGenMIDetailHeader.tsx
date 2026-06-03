@@ -1,8 +1,8 @@
-import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace'
 import { Box, Collapse, Stack, Tab, Tabs } from '@mui/material'
 import { type ReactNode, type SyntheticEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
+import MoveToParentPageIcon from '@/components/common/icons/MoveToParentPageIcon'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 
 const NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS = 220
@@ -384,11 +384,16 @@ const NextGenMIDetailHeader = ({
               <Box flex={1} minWidth={0} display="flex" alignItems="flex-end" minHeight="36px">
                 <MIBaseButton
                   variant="outlined"
-                  prefix={<KeyboardBackspaceIcon sx={{ fontSize: 20 }} />}
+                  prefix={
+                    <Box component="span" display="inline-flex" color="contentIcon.Enabled">
+                      <MoveToParentPageIcon />
+                    </Box>
+                  }
                   onClick={onBack}
                   enableHoverBackground
                   sx={{
                     height: '36px',
+                    color: 'contentText.Normal',
                   }}
                 >
                   {backLabel}
