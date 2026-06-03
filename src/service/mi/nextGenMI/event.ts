@@ -256,7 +256,7 @@ const serializeNextGenMIEventsParams = (params: Record<string, unknown>): string
 
 const nextGenMIEventService = {
   async getEvents(params: IGetNextGenMIEventsParams): Promise<INextGenMIEventListRes> {
-    const response: AxiosResponse<ICommonResponse<INextGenMIEventListRes>> = await api.get('mi/scenario-workbench/events', {
+    const response: AxiosResponse<ICommonResponse<INextGenMIEventListRes>> = await api.get('mi/next-gen/events', {
       params: {
         page: params.page ?? 1,
         size: params.size ?? 20,
@@ -275,7 +275,7 @@ const nextGenMIEventService = {
 
   async getEventDetail(eventId: string): Promise<INextGenMIEventDetailRes> {
     const response: AxiosResponse<ICommonResponse<INextGenMIEventDetailRes>> = await api.get(
-      `mi/scenario-workbench/events/${encodeURIComponent(eventId)}`,
+      `mi/next-gen/events/${encodeURIComponent(eventId)}`,
     )
 
     return response.data.data
@@ -286,7 +286,7 @@ const nextGenMIEventService = {
     params?: IGetNextGenMIEventRecordsParams,
   ): Promise<IPaginationResponse<INextGenMIEventRelatedRecord>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INextGenMIEventRelatedRecord>>> = await api.get(
-      `mi/scenario-workbench/events/${encodeURIComponent(eventId)}/records`,
+      `mi/next-gen/events/${encodeURIComponent(eventId)}/records`,
       {
         params: {
           page: params?.page ?? 1,
@@ -303,7 +303,7 @@ const nextGenMIEventService = {
     params?: IGetNextGenMIEventOutlooksParams,
   ): Promise<IPaginationResponse<INextGenMIEventInstitutionOutlook>> {
     const response: AxiosResponse<ICommonResponse<IPaginationResponse<INextGenMIEventInstitutionOutlook>>> = await api.get(
-      `mi/scenario-workbench/events/${encodeURIComponent(eventId)}/outlooks`,
+      `mi/next-gen/events/${encodeURIComponent(eventId)}/outlooks`,
       {
         params: {
           page: params?.page ?? 1,

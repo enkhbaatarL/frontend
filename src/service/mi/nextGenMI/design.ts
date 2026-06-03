@@ -105,7 +105,7 @@ const normalizeRequestIds = (requestIds: Array<number | null | undefined>): numb
 
 const nextGenMIDesignService = {
   async getEvents(params: IGetDesignEventsParams): Promise<IDesignEventListRes> {
-    const response: AxiosResponse<ICommonResponse<IDesignEventListRes>> = await api.get('mi/scenario-workbench/design/events', {
+    const response: AxiosResponse<ICommonResponse<IDesignEventListRes>> = await api.get('mi/next-gen/design/events', {
       params: {
         page: params.page ?? 1,
         size: params.size ?? 20,
@@ -125,7 +125,7 @@ const nextGenMIDesignService = {
   },
 
   async generateScenarios(eventIds: number[]): Promise<IScenarioGenAcceptRes> {
-    const response: AxiosResponse<ICommonResponse<IScenarioGenAcceptRes>> = await api.post('mi/scenario-workbench/design/generate', {
+    const response: AxiosResponse<ICommonResponse<IScenarioGenAcceptRes>> = await api.post('mi/next-gen/design/generate', {
       eventIds,
     })
 
@@ -136,27 +136,24 @@ const nextGenMIDesignService = {
     const validRequestIds = normalizeRequestIds(requestIds)
     if (validRequestIds.length === 0) return []
 
-    const response: AxiosResponse<ICommonResponse<IScenarioGenStatusRes[]>> = await api.get(
-      'mi/scenario-workbench/design/generate/status',
-      {
-        params: { requestIds: validRequestIds },
-        paramsSerializer: (p) => serializeNextGenMIDesignParams(p as Record<string, unknown>),
-      },
-    )
+    const response: AxiosResponse<ICommonResponse<IScenarioGenStatusRes[]>> = await api.get('mi/next-gen/design/generate/status', {
+      params: { requestIds: validRequestIds },
+      paramsSerializer: (p) => serializeNextGenMIDesignParams(p as Record<string, unknown>),
+    })
 
     return response.data.data
   },
 
   async getGeneratedScenarios(requestId: number): Promise<IGeneratedScenarioRes[]> {
     const response: AxiosResponse<ICommonResponse<IGeneratedScenarioRes[]>> = await api.get(
-      `mi/scenario-workbench/design/generate/${encodeURIComponent(String(requestId))}/scenarios`,
+      `mi/next-gen/design/generate/${encodeURIComponent(String(requestId))}/scenarios`,
     )
 
     return response.data.data
   },
 
   async reset(): Promise<void> {
-    await api.post('mi/scenario-workbench/design/reset')
+    await api.post('mi/next-gen/design/reset')
   },
 }
 

@@ -209,7 +209,7 @@ export interface IScenarioDetailRes {
  */
 const nextGenMIScenarioService = {
   async getScenarios(params: IGetScenariosParams): Promise<IScenarioListRes> {
-    const response: AxiosResponse<ICommonResponse<IScenarioListRes>> = await api.get('mi/scenario-workbench/scenarios', {
+    const response: AxiosResponse<ICommonResponse<IScenarioListRes>> = await api.get('mi/next-gen/scenarios', {
       params: {
         page: params.page ?? 1,
         size: params.size ?? 20,
@@ -231,21 +231,21 @@ const nextGenMIScenarioService = {
    */
   async getScenarioDetail(scenarioId: string | number): Promise<IScenarioDetailRes> {
     const response: AxiosResponse<ICommonResponse<IScenarioDetailRes>> = await api.get(
-      `mi/scenario-workbench/scenarios/${encodeURIComponent(String(scenarioId))}`,
+      `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}`,
     )
     return response.data.data
   },
 
   async getModelExecutionParameters(scenarioId: string | number): Promise<IModelExecutionParameterRes> {
     const response: AxiosResponse<ICommonResponse<IModelExecutionParameterRes>> = await api.get(
-      `mi/scenario-workbench/scenarios/${encodeURIComponent(String(scenarioId))}/model-execution-parameters`,
+      `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-execution-parameters`,
     )
     return response.data.data
   },
 
   async submitModelExecution(scenarioId: string | number, payload: IModelExecutionSubmitReq): Promise<IModelExecutionAcceptRes> {
     const response: AxiosResponse<ICommonResponse<IModelExecutionAcceptRes>> = await api.post(
-      `mi/scenario-workbench/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions`,
+      `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions`,
       payload,
     )
     return response.data.data
@@ -253,7 +253,7 @@ const nextGenMIScenarioService = {
 
   async getModelExecutionStatus(scenarioId: string | number, executionId: string): Promise<IModelExecutionStatusRes> {
     const response: AxiosResponse<ICommonResponse<IModelExecutionStatusRes>> = await api.get(
-      `mi/scenario-workbench/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions/${encodeURIComponent(executionId)}`,
+      `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions/${encodeURIComponent(executionId)}`,
     )
     return response.data.data
   },

@@ -132,7 +132,7 @@ const serializeOverviewParams = (params: Record<string, unknown>): string => {
 
 const nextGenMIOverviewService = {
   async getEvents(params: IGetOverviewEventsParams): Promise<IOverviewEventListRes> {
-    const response: AxiosResponse<ICommonResponse<IOverviewEventListRes>> = await api.get('mi/scenario-workbench/overview/events', {
+    const response: AxiosResponse<ICommonResponse<IOverviewEventListRes>> = await api.get('mi/next-gen/overview/events', {
       params: {
         page: params.page ?? 1,
         size: params.size ?? 10,
@@ -146,7 +146,7 @@ const nextGenMIOverviewService = {
   },
 
   async getScenarios(params: IGetOverviewScenariosParams): Promise<IOverviewScenarioListRes> {
-    const response: AxiosResponse<ICommonResponse<IOverviewScenarioListRes>> = await api.get('mi/scenario-workbench/overview/scenarios', {
+    const response: AxiosResponse<ICommonResponse<IOverviewScenarioListRes>> = await api.get('mi/next-gen/overview/scenarios', {
       params: {
         page: params.page ?? 1,
         size: params.size ?? 10,
@@ -160,17 +160,14 @@ const nextGenMIOverviewService = {
   },
 
   async getPriceForecast(params: IGetOverviewPriceForecastParams): Promise<IOverviewPriceForecastRes> {
-    const response: AxiosResponse<ICommonResponse<IOverviewPriceForecastRes>> = await api.get(
-      'mi/scenario-workbench/overview/price-forecasts',
-      {
-        params: {
-          indexName: params.indexName,
-          eventId: params.eventId,
-          scenarioIds: params.scenarioIds,
-        },
-        paramsSerializer: (p) => serializeOverviewParams(p as Record<string, unknown>),
+    const response: AxiosResponse<ICommonResponse<IOverviewPriceForecastRes>> = await api.get('mi/next-gen/overview/price-forecasts', {
+      params: {
+        indexName: params.indexName,
+        eventId: params.eventId,
+        scenarioIds: params.scenarioIds,
       },
-    )
+      paramsSerializer: (p) => serializeOverviewParams(p as Record<string, unknown>),
+    })
     return response.data.data
   },
 }
