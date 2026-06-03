@@ -353,7 +353,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
           hideBackButton
         />
       )}
-      <Stack py="24px" gap="12px" px={embedded ? '12px' : 0} sx={{ minWidth: 0, maxWidth: '100%' }}>
+      <Stack gap="30px" px={embedded ? '12px' : 0} sx={{ minWidth: 0, maxWidth: '100%' }}>
         {detailError && !EVENT_DETAIL_USE_MOCK && (
           <Typography px={2} py={1} color="error.main" variant="body2">
             이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.

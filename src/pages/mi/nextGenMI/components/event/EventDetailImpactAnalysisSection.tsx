@@ -112,7 +112,7 @@ const EventDetailImpactAnalysisSection = ({
 
   if (loading) {
     return (
-      <Stack width="100%" gap="12px">
+      <Stack width="100%" gap="12px" py="20px">
         <EventDetailSectionHeader
           icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
           title="영향도 분석"
@@ -154,7 +154,7 @@ const EventDetailImpactAnalysisSection = ({
   /** 소음이면 전체 섹션을 소음 화면으로 고정 */
   if (isNoiseEvent) {
     return (
-      <Stack width="100%" gap="12px">
+      <Stack width="100%" gap="12px" py="20px">
         <EventDetailSectionHeader
           icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
           title="영향도 분석"
@@ -168,7 +168,7 @@ const EventDetailImpactAnalysisSection = ({
   }
 
   return (
-    <Stack width="100%" gap="12px">
+    <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
         icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="영향도 분석"

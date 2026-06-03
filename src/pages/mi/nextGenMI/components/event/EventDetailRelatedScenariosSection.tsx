@@ -127,7 +127,7 @@ const EventDetailRelatedScenariosSection = ({
 
   if (loading) {
     return (
-      <Stack width="100%" gap="12px" py="30px">
+      <Stack width="100%" gap="12px" py="20px">
         <EventDetailSectionHeader
           icon={<FormatListBulletedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
           title="관련 시나리오"
@@ -142,7 +142,7 @@ const EventDetailRelatedScenariosSection = ({
   }
 
   return (
-    <Stack width="100%" gap="12px" py="30px">
+    <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
         icon={<FormatListBulletedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
         title="관련 시나리오"

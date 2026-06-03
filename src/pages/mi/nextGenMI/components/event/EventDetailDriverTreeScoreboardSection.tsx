@@ -73,7 +73,7 @@ const EventDetailDriverTreeScoreboardSection = ({ driverTreeScoreboard = [] }: E
   }, [groups.length])
 
   return (
-    <Stack width="100%" gap="12px" py="30px">
+    <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
         icon={<AccountTreeRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="Index Driver별 영향도 분석"

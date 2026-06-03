@@ -116,7 +116,7 @@ const EventDetailMiRecordsTable = ({
   )
 
   return (
-    <Stack width="100%" gap={6} py="30px">
+    <Stack width="100%" gap={6} py="20px">
       <EventDetailSectionHeader
         icon={<TungstenRoundedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
         title="MI Records"
