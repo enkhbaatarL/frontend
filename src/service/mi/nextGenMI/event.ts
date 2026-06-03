@@ -5,36 +5,38 @@ import { EventCategoryLv1, MarketDirection, MarketImpactLevel } from './common'
 import api from '@/lib/axios'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
-export type NextGenMIEventSort = 'latest' | 'oldest'
+export type EventSort = 'latest' | 'oldest'
 
-export type NextGenMIEventStatus = 'all' | 'new' | 'updated'
+export type EventStatus = 'all' | 'new' | 'updated'
 
-export type NextGenMIEventSignalType = 'signal' | 'noise'
+export type EventSignalType = 'signal' | 'noise'
 
-export type NextGenMIEventImpactTerm = 'short' | 'mid_long'
+export type EventImpactTerm = 'short' | 'mid_long'
 
-export interface INextGenMIEventTypeL1 {
+export type EventImpactMarketImpactLevel = MarketImpactLevel.LOW | MarketImpactLevel.MEDIUM | MarketImpactLevel.HIGH
+
+export interface EventTypeL1Res {
   eventTypeL1Id: number
   code: string
   label: string
 }
 
-export interface INextGenMIImpactIndexSummary {
+export interface EventImpactIndexRes {
   indexName: string
-  marketImpactLevel?: MarketImpactLevel | null
+  marketImpactLevel?: EventImpactMarketImpactLevel | null
   marketImpactLevelLabel?: string
   direction?: MarketDirection | null
   directionLabel?: string
-  impactTerm?: NextGenMIEventImpactTerm | null
+  impactTerm?: EventImpactTerm | null
   impactTermLabel?: string
 }
 
-export interface INextGenMIEventListItem {
+export interface EventListItemRes {
   eventId: number
   eventName: string
-  status: NextGenMIEventStatus
+  status: EventStatus
   statusLabel?: string
-  signalType: NextGenMIEventSignalType
+  signalType: EventSignalType
   signalTypeLabel?: string
   eventTypeLv1?: string
   eventTypeLv1Label?: string
@@ -42,29 +44,29 @@ export interface INextGenMIEventListItem {
   createdAt: string
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
-  indexImpacts: INextGenMIImpactIndexSummary[]
+  indexImpacts: EventImpactIndexRes[]
 }
 
-export interface INextGenMIEventAppliedFilter {
-  eventStatus?: NextGenMIEventStatus
+export interface EventAppliedFilterRes {
+  eventStatus?: EventStatus
   eventTypeL1Id?: number[]
   startDate?: string
   endDate?: string
-  sort?: NextGenMIEventSort
+  sort?: EventSort
   keyword?: string
   suggestedOnly?: boolean
 }
 
-export interface INextGenMIEventListRes {
-  appliedFilter: INextGenMIEventAppliedFilter
-  events: IPaginationResponse<INextGenMIEventListItem>
+export interface EventListRes {
+  appliedFilter: EventAppliedFilterRes
+  events: IPaginationResponse<EventListItemRes>
 }
 
-export interface IGetNextGenMIEventsParams {
+export interface GetEventsParams {
   page?: number
   size?: number
-  sort?: NextGenMIEventSort
-  eventStatus?: NextGenMIEventStatus
+  sort?: EventSort
+  eventStatus?: EventStatus
   eventTypeL1Id?: number[]
   startDate?: string
   endDate?: string
@@ -75,7 +77,7 @@ export interface IGetNextGenMIEventsParams {
 export interface INextGenMIEventImpactAnalysis {
   /**
    * 이벤트 상세 화면 전용 영향 테이블 row
-   * - 목록 Events의 `indexImpacts`(INextGenMIImpactIndexSummary[])와는 별개
+   * - 목록 Events의 `indexImpacts`(EventImpactIndexRes[])와는 별개
    */
   indexImpacts: INextGenMIEventImpactIndexRow[]
   analysisText: string
@@ -106,13 +108,13 @@ export interface INextGenMIEventAiInsightDetailBlock {
 
 export interface INextGenMIEventAiInsights {
   keySummaries: string[]
-  /** API 미연동 시 mock/레거시 단일 본문 */
+  /** 레거시 단일 본문 */
   detailedAnalysis?: string
-  /** 신규 상세분석 구조 (API 연동 전 mock) */
+  /** 상세분석 블록 구조 */
   detailedAnalysisBlocks?: INextGenMIEventAiInsightDetailBlock[]
 }
 
-/** 이벤트 상세 - 관련 시나리오 그룹 행 (퍼블/mock) */
+/** 이벤트 상세 - 관련 시나리오 그룹 행 */
 export interface INextGenMIEventRelatedScenarioGroupRow {
   scenarioId: number
   scenarioName: string
@@ -211,9 +213,9 @@ export interface INextGenMIEventFundamental {
 export interface INextGenMIEventDetailRes {
   eventId: string | number
   eventName: string
-  status?: NextGenMIEventStatus
+  status?: EventStatus
   statusLabel?: string
-  signalType: NextGenMIEventSignalType
+  signalType: EventSignalType
   signalTypeLabel?: string
   createdAt: string
   updatedAt: string
@@ -222,7 +224,7 @@ export interface INextGenMIEventDetailRes {
   driverTreeScoreboard?: INextGenMIEventDriverTreeScoreboardItem[]
   fundamentalDeepdive?: INextGenMIEventFundamentalDeepdive | INextGenMIEventFundamental
   relatedEventScenario?: INextGenMIRelatedEventScenario
-  /** 신규 관련 시나리오 그룹 (API 연동 전 mock) */
+  /** 관련 시나리오 그룹 */
   relatedScenarioGroup?: INextGenMIEventRelatedScenarioGroup
 }
 
@@ -253,30 +255,40 @@ export interface IGetNextGenMIEventOutlooksParams {
   size?: number
 }
 
+type EventQueryParamValue = string | number | boolean
+
+const appendNextGenMIEventsParam = (usp: URLSearchParams, key: string, value: unknown) => {
+  if (value === undefined || value === null || value === '') return
+  if (typeof value === 'string') {
+    usp.append(key, value)
+    return
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    usp.append(key, value.toString())
+  }
+}
+
 const serializeNextGenMIEventsParams = (params: Record<string, unknown>): string => {
   const usp = new URLSearchParams()
   Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '') return
     if (Array.isArray(value)) {
-      value.forEach((v) => {
-        if (v !== undefined && v !== null && v !== '') usp.append(key, String(v))
-      })
-    } else {
-      usp.append(key, String(value))
+      value.forEach((v: EventQueryParamValue) => appendNextGenMIEventsParam(usp, key, v))
+      return
     }
+    appendNextGenMIEventsParam(usp, key, value)
   })
   return usp.toString()
 }
 
 const nextGenMIEventService = {
-  async getEventTypesL1(): Promise<INextGenMIEventTypeL1[]> {
-    const response: AxiosResponse<ICommonResponse<INextGenMIEventTypeL1[]>> = await api.get('mi/next-gen/events/event-types/lv1')
+  async getEventTypesL1(): Promise<EventTypeL1Res[]> {
+    const response: AxiosResponse<ICommonResponse<EventTypeL1Res[]>> = await api.get('mi/next-gen/events/event-types/lv1')
 
     return response.data.data
   },
 
-  async getEvents(params: IGetNextGenMIEventsParams): Promise<INextGenMIEventListRes> {
-    const response: AxiosResponse<ICommonResponse<INextGenMIEventListRes>> = await api.get('mi/next-gen/events', {
+  async getEvents(params: GetEventsParams): Promise<EventListRes> {
+    const response: AxiosResponse<ICommonResponse<EventListRes>> = await api.get('mi/next-gen/events', {
       params: {
         page: params.page ?? 1,
         size: params.size ?? 20,

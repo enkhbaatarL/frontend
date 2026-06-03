@@ -2,14 +2,14 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
 import codeService, { ICode } from '@/service/common/code'
-import nextGenMIEventService, { type INextGenMIEventTypeL1 } from '@/service/mi/nextGenMI/event'
+import nextGenMIEventService, { type EventTypeL1Res } from '@/service/mi/nextGenMI/event'
 
 interface UseCodeDataReturn {
   marketCategoryCodeList: ICode[] | undefined
   regionCategoryCodeList: ICode[] | undefined
   industrySectorCodeList: ICode[] | undefined
   economicCalendarCategoryCodeList: ICode[] | undefined
-  nextGenMIEventTypeL1List: INextGenMIEventTypeL1[] | undefined
+  nextGenMIEventTypeL1List: EventTypeL1Res[] | undefined
   isLoading: boolean
   error: Error | null
 }

@@ -22,10 +22,10 @@ import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/Event
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, {
-  type IGetNextGenMIEventsParams,
-  type INextGenMIEventListItem,
-  type NextGenMIEventSort,
-  type NextGenMIEventStatus,
+  type EventListItemRes,
+  type EventSort,
+  type EventStatus,
+  type GetEventsParams,
 } from '@/service/mi/nextGenMI/event'
 
 /** 카테고리 필터 값: Lv1 다중 선택 */
@@ -35,23 +35,18 @@ const TYPE_FILTER_OPTIONS = [
   { value: 'all', label: '전체' },
   { value: 'new', label: '신규' },
   { value: 'updated', label: '갱신' },
-] as const satisfies ReadonlyArray<{ value: NextGenMIEventStatus; label: string }>
+] as const satisfies ReadonlyArray<{ value: EventStatus; label: string }>
 
 const SORT_OPTIONS = [
   { value: 'latest', label: '최신순' },
   { value: 'oldest', label: '오래된순' },
-] as const satisfies ReadonlyArray<{ value: NextGenMIEventSort; label: string }>
-
-const formatEventListTime = (item: INextGenMIEventListItem) =>
-  formatNextGenMIDateTime(item.status === 'updated' ? item.updatedAt : item.createdAt)
-
-const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
+] as const satisfies ReadonlyArray<{ value: EventSort; label: string }>
 
 const EventsTabPanel = () => {
   const navigate = useNavigate()
 
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('all')
-  const [sort, setSort] = useState<NextGenMIEventSort>('latest')
+  const [sort, setSort] = useState<EventSort>('latest')
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultNextGenMIDateRange())
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>([])
   const [keyword, setKeyword] = useState('')
@@ -60,7 +55,7 @@ const EventsTabPanel = () => {
   const [hideNonRecommended, setHideNonRecommended] = useState(false)
 
   useEffect(() => {
-    const scrollEl = document.getElementById(MAIN_SCROLL_WRAPPER_ID)
+    const scrollEl = document.getElementById('main-scroll-wrapper')
     if (scrollEl) scrollEl.scrollTop = 0
   }, [])
 
@@ -79,16 +74,8 @@ const EventsTabPanel = () => {
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
 
-  const listRequest = useMemo((): IGetNextGenMIEventsParams => {
-    let eventStatus: NextGenMIEventStatus | undefined
-    if (typeFilter === 'new') {
-      eventStatus = 'new'
-    } else if (typeFilter === 'updated') {
-      eventStatus = 'updated'
-    }
-
+  const listRequest = useMemo((): GetEventsParams => {
     const trimmedKeyword = committedKeyword.trim()
-
     const resolvedRange = appliedDateRange.startDate && appliedDateRange.endDate ? appliedDateRange : defaultNextGenMIDateRange()
 
     return {
@@ -98,7 +85,7 @@ const EventsTabPanel = () => {
       startDate: resolvedRange.startDate!.startOf('day').format('YYYY-MM-DD'),
       endDate: resolvedRange.endDate!.endOf('day').format('YYYY-MM-DD'),
       keyword: trimmedKeyword || undefined,
-      eventStatus,
+      eventStatus: typeFilter,
       eventTypeL1Id: categoryFilter.length > 0 ? categoryFilter : undefined,
       suggestedOnly: hideNonRecommended || undefined,
     }
@@ -122,14 +109,14 @@ const EventsTabPanel = () => {
   const tableRows = data?.events?.detail ?? []
 
   const handleEventNameClick = useCallback(
-    (row: INextGenMIEventListItem) =>
+    (row: EventListItemRes) =>
       navigate(`/mi/next-gen-mi/events/${row.eventId}`, {
         state: { eventName: row.eventName },
       }),
     [navigate],
   )
 
-  const columns: GridColDef<INextGenMIEventListItem>[] = useMemo(
+  const columns: GridColDef<EventListItemRes>[] = useMemo(
     () => [
       {
         field: '__statusBadge',
@@ -138,29 +125,22 @@ const EventsTabPanel = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => <EventStatusBadge status={params.row.status} />,
+        renderCell: (params) => <EventStatusBadge status={params.row.status} statusLabel={params.row.statusLabel} />,
       },
       {
         field: 'createdAt',
         headerName: '일시',
         width: 100,
-        align: 'center',
-        headerAlign: 'center',
-        renderCell: (params) => <Typography variant="body2M14">{formatEventListTime(params.row)}</Typography>,
+        align: 'left',
+        headerAlign: 'left',
+        renderCell: (params) => <Typography variant="body2M14">{formatNextGenMIDateTime(params.row.createdAt)}</Typography>,
       },
       {
         field: 'eventTypeLv1Label',
         headerName: '카테고리',
         width: 140,
         align: 'left',
-        renderCell: (params) => {
-          const row = params.row
-          const fromApiLabel = row.eventTypeLv1Label?.trim()
-          if (fromApiLabel) return fromApiLabel
-          const code = row.eventTypeLv1
-          if (code === undefined || code === null) return '-'
-          return String(code)
-        },
+        renderCell: (params) => <Typography variant="body2M14">{params.row.eventTypeLv1Label}</Typography>,
       },
       {
         field: '__recommended',
@@ -193,8 +173,11 @@ const EventsTabPanel = () => {
             <EventIndexSignalCell
               indexLabel="JKM"
               level={impact?.marketImpactLevel}
+              levelLabel={impact?.marketImpactLevelLabel}
               direction={impact?.direction}
+              directionLabel={impact?.directionLabel}
               term={impact?.impactTerm}
+              termLabel={impact?.impactTermLabel}
             />
           )
         },
@@ -211,8 +194,11 @@ const EventsTabPanel = () => {
             <EventIndexSignalCell
               indexLabel="TTF"
               level={impact?.marketImpactLevel}
+              levelLabel={impact?.marketImpactLevelLabel}
               direction={impact?.direction}
+              directionLabel={impact?.directionLabel}
               term={impact?.impactTerm}
+              termLabel={impact?.impactTermLabel}
             />
           )
         },
@@ -229,8 +215,11 @@ const EventsTabPanel = () => {
             <EventIndexSignalCell
               indexLabel="HH"
               level={impact?.marketImpactLevel}
+              levelLabel={impact?.marketImpactLevelLabel}
               direction={impact?.direction}
+              directionLabel={impact?.directionLabel}
               term={impact?.impactTerm}
+              termLabel={impact?.impactTermLabel}
             />
           )
         },
@@ -241,7 +230,7 @@ const EventsTabPanel = () => {
         width: 100,
         align: 'center',
         sortable: false,
-        renderCell: (params) => <EventScenarioGenerateButton recommended={params.row.isScenarioSuggested} scenarioAvailable={false} />,
+        renderCell: (params) => <EventScenarioGenerateButton recommended={params.row.isScenarioSuggested} />,
       },
     ],
     [handleEventNameClick],
@@ -285,7 +274,7 @@ const EventsTabPanel = () => {
     return {}
   }, [])
 
-  const getEventsTableHeaderCellSx = useCallback((col: GridColDef<INextGenMIEventListItem>) => {
+  const getEventsTableHeaderCellSx = useCallback((col: GridColDef<EventListItemRes>) => {
     if (col.field === 'scenario') {
       return { px: '16px' }
     }
@@ -318,7 +307,7 @@ const EventsTabPanel = () => {
     }
   }, [])
 
-  const handleSortChange = useCallback((value: NextGenMIEventSort) => {
+  const handleSortChange = useCallback((value: EventSort) => {
     setSort(value)
     setPagination((p) => ({ ...p, page: 1 }))
   }, [])
@@ -341,11 +330,11 @@ const EventsTabPanel = () => {
   return (
     <Box width="100%">
       <NextGenMIStickySlot tabKey="events">
-        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} padding="18px 24px" color="contentText.Black">
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" color="contentText.Black">
           Event List
         </Typography>
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} paddingX="24px">
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5}>
           <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" sx={{ minWidth: 0, flex: 1 }}>
             <MISlidingSegmented
               options={TYPE_FILTER_OPTIONS}
@@ -373,7 +362,7 @@ const EventsTabPanel = () => {
               {...dateRangeMenuLayoutProps}
             />
 
-            <EventSortSelectMenu<NextGenMIEventSort> selected={sort} onSelected={handleSortChange} items={SORT_OPTIONS} closeOnScroll />
+            <EventSortSelectMenu<EventSort> selected={sort} onSelected={handleSortChange} items={SORT_OPTIONS} closeOnScroll />
           </Stack>
 
           <Stack direction="row" alignItems="center" gap="12px" sx={{ flexShrink: 0 }}>
@@ -396,10 +385,10 @@ const EventsTabPanel = () => {
           </Stack>
         </Stack>
 
-        <MIDataTableHeader<INextGenMIEventListItem> columns={columns} getHeaderCellSx={getEventsTableHeaderCellSx} sx={{ mt: 2 }} />
+        <MIDataTableHeader<EventListItemRes> columns={columns} getHeaderCellSx={getEventsTableHeaderCellSx} sx={{ mt: 2 }} />
       </NextGenMIStickySlot>
 
-      <MIDataTableBody<INextGenMIEventListItem>
+      <MIDataTableBody<EventListItemRes>
         rowId="eventId"
         columns={columns}
         rows={tableRows}
@@ -408,6 +397,11 @@ const EventsTabPanel = () => {
         rowHeight={48}
         noRowsOverlay={emptyOverlay}
         getCellSx={getEventsTableCellSx}
+        sx={{
+          '& > .MuiBox-root': {
+            minHeight: 400,
+          },
+        }}
       />
 
       <MIPaginationSecondary
