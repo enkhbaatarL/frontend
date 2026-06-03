@@ -4,7 +4,7 @@ import type { IScenarioListItem } from '@/service/mi/nextGenMI/scenario'
 
 import { NextGenMIStatus } from '@/service/mi/nextGenMI/common'
 
-export type NextGenMIClassificationTone = NextGenMIEventStatus | 'noise'
+export type NextGenMIClassificationTone = NextGenMIEventStatus | 'closed' | 'noise'
 
 export const nextGenMIIsEventNoiseSignal = (signalType?: NextGenMIEventSignalType): boolean => signalType === 'noise'
 

@@ -5,48 +5,57 @@ import { EventCategoryLv1, MarketDirection, MarketImpactLevel } from './common'
 import api from '@/lib/axios'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
-export type NextGenMIEventSort = 'LATEST' | 'OLDEST'
+export type NextGenMIEventSort = 'latest' | 'oldest'
 
-export type NextGenMIEventStatus = 'new' | 'updated' | 'closed'
+export type NextGenMIEventStatus = 'all' | 'new' | 'updated'
 
 export type NextGenMIEventSignalType = 'signal' | 'noise'
 
+export type NextGenMIEventImpactTerm = 'short' | 'mid_long'
+
+export interface INextGenMIEventTypeL1 {
+  eventTypeL1Id: number
+  code: string
+  label: string
+}
+
 export interface INextGenMIImpactIndexSummary {
   indexName: string
-  marketImpactLevel: MarketImpactLevel
-  direction: MarketDirection
+  marketImpactLevel?: MarketImpactLevel | null
+  marketImpactLevelLabel?: string
+  direction?: MarketDirection | null
+  directionLabel?: string
+  impactTerm?: NextGenMIEventImpactTerm | null
+  impactTermLabel?: string
 }
 
 export interface INextGenMIEventListItem {
-  eventId: string
+  eventId: number
   eventName: string
   status: NextGenMIEventStatus
   statusLabel?: string
   signalType: NextGenMIEventSignalType
   signalTypeLabel?: string
-  eventCategoryLv1?: EventCategoryLv1
-  eventCategoryLv1Label?: string
-  occurredAt: string
+  eventTypeLv1?: string
+  eventTypeLv1Label?: string
   updatedAt: string
+  createdAt: string
+  isScenarioSuggested?: boolean
+  scenarioSuggestReason?: string | null
   indexImpacts: INextGenMIImpactIndexSummary[]
 }
 
-export interface INextGenMIEventSummaryNotice {
-  newEventCount: number
-  updatedEventCount: number
-}
-
 export interface INextGenMIEventAppliedFilter {
-  eventStatus?: NextGenMIEventStatus[]
-  eventCategoryLv1?: EventCategoryLv1[]
+  eventStatus?: NextGenMIEventStatus
+  eventTypeL1Id?: number[]
   startDate?: string
   endDate?: string
   sort?: NextGenMIEventSort
   keyword?: string
+  suggestedOnly?: boolean
 }
 
 export interface INextGenMIEventListRes {
-  summaryNotice: INextGenMIEventSummaryNotice
   appliedFilter: INextGenMIEventAppliedFilter
   events: IPaginationResponse<INextGenMIEventListItem>
 }
@@ -55,11 +64,12 @@ export interface IGetNextGenMIEventsParams {
   page?: number
   size?: number
   sort?: NextGenMIEventSort
-  eventStatus?: NextGenMIEventStatus[]
-  eventCategoryLv1?: EventCategoryLv1[]
+  eventStatus?: NextGenMIEventStatus
+  eventTypeL1Id?: number[]
   startDate?: string
   endDate?: string
   keyword?: string
+  suggestedOnly?: boolean
 }
 
 export interface INextGenMIEventImpactAnalysis {
@@ -69,6 +79,10 @@ export interface INextGenMIEventImpactAnalysis {
    */
   indexImpacts: INextGenMIEventImpactIndexRow[]
   analysisText: string
+  eventTypeLv1?: string
+  eventTypeLv1Label?: string
+  eventTypeLv2?: string
+  eventTypeLv2Label?: string
   eventCategoryLv1?: EventCategoryLv1
   eventCategoryLv2?: string
   sources?: string[]
@@ -255,6 +269,12 @@ const serializeNextGenMIEventsParams = (params: Record<string, unknown>): string
 }
 
 const nextGenMIEventService = {
+  async getEventTypesL1(): Promise<INextGenMIEventTypeL1[]> {
+    const response: AxiosResponse<ICommonResponse<INextGenMIEventTypeL1[]>> = await api.get('mi/next-gen/events/event-types/lv1')
+
+    return response.data.data
+  },
+
   async getEvents(params: IGetNextGenMIEventsParams): Promise<INextGenMIEventListRes> {
     const response: AxiosResponse<ICommonResponse<INextGenMIEventListRes>> = await api.get('mi/next-gen/events', {
       params: {
@@ -265,7 +285,8 @@ const nextGenMIEventService = {
         endDate: params.endDate,
         keyword: params.keyword,
         eventStatus: params.eventStatus,
-        eventCategoryLv1: params.eventCategoryLv1,
+        eventTypeL1Id: params.eventTypeL1Id,
+        suggestedOnly: params.suggestedOnly,
       },
       paramsSerializer: (p) => serializeNextGenMIEventsParams(p as Record<string, unknown>),
     })

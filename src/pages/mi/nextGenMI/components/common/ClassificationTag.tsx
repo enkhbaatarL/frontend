@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/material'
 import type { NextGenMIClassificationTone } from '@/pages/mi/nextGenMI/components/common/nextGenMIClassificationChip'
 
 const PALETTE_BY_STATUS: Record<NextGenMIClassificationTone, { bgcolor: string; color: string }> = {
+  all: { bgcolor: 'contentBG.Disabled', color: 'contentText.Subtext' },
   noise: { bgcolor: 'gray.20', color: 'contentText.Normal' },
   new: { bgcolor: 'contentBG.PrimaryFade', color: 'mari.Primary' },
   updated: { bgcolor: '#F7EFDF', color: '#EB670F' },

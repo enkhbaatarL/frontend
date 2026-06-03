@@ -20,9 +20,7 @@ import EventScenarioGenerateButton from '@/pages/mi/nextGenMI/components/event/E
 import EventSortSelectMenu from '@/pages/mi/nextGenMI/components/event/EventSortSelectMenu'
 import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
-import { nextGenMIMockApi, type MockEventRow } from '@/pages/mi/nextGenMI/nextGenMIEventMockApi'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
-import { EventCategoryLv1, EVENT_CATEGORY_LV1_KO } from '@/service/mi/nextGenMI/common'
 import nextGenMIEventService, {
   type IGetNextGenMIEventsParams,
   type INextGenMIEventListItem,
@@ -31,23 +29,21 @@ import nextGenMIEventService, {
 } from '@/service/mi/nextGenMI/event'
 
 /** 카테고리 필터 값: Lv1 다중 선택 */
-type CategoryFilterValue = EventCategoryLv1[]
+type CategoryFilterValue = number[]
 
 const TYPE_FILTER_OPTIONS = [
   { value: 'all', label: '전체' },
   { value: 'new', label: '신규' },
   { value: 'updated', label: '갱신' },
-] as const
+] as const satisfies ReadonlyArray<{ value: NextGenMIEventStatus; label: string }>
 
 const SORT_OPTIONS = [
-  { value: 'LATEST', label: '최신순' },
-  { value: 'OLDEST', label: '오래된순' },
+  { value: 'latest', label: '최신순' },
+  { value: 'oldest', label: '오래된순' },
 ] as const satisfies ReadonlyArray<{ value: NextGenMIEventSort; label: string }>
 
-const formatEventListTime = (item: INextGenMIEventListItem) => {
-  const occurredAtLabel = formatNextGenMIDateTime(item.occurredAt)
-  return occurredAtLabel === '-' ? formatNextGenMIDateTime(item.updatedAt) : occurredAtLabel
-}
+const formatEventListTime = (item: INextGenMIEventListItem) =>
+  formatNextGenMIDateTime(item.status === 'updated' ? item.updatedAt : item.createdAt)
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
 
@@ -55,7 +51,7 @@ const EventsTabPanel = () => {
   const navigate = useNavigate()
 
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('all')
-  const [sort, setSort] = useState<NextGenMIEventSort>('LATEST')
+  const [sort, setSort] = useState<NextGenMIEventSort>('latest')
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultNextGenMIDateRange())
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>([])
   const [keyword, setKeyword] = useState('')
@@ -84,14 +80,12 @@ const EventsTabPanel = () => {
   }, [])
 
   const listRequest = useMemo((): IGetNextGenMIEventsParams => {
-    let eventStatus: NextGenMIEventStatus[] | undefined
+    let eventStatus: NextGenMIEventStatus | undefined
     if (typeFilter === 'new') {
-      eventStatus = ['new']
+      eventStatus = 'new'
     } else if (typeFilter === 'updated') {
-      eventStatus = ['updated']
+      eventStatus = 'updated'
     }
-
-    const eventCategoryLv1: EventCategoryLv1[] | undefined = categoryFilter.length > 0 ? categoryFilter : undefined
 
     const trimmedKeyword = committedKeyword.trim()
 
@@ -105,26 +99,14 @@ const EventsTabPanel = () => {
       endDate: resolvedRange.endDate!.endOf('day').format('YYYY-MM-DD'),
       keyword: trimmedKeyword || undefined,
       eventStatus,
-      eventCategoryLv1,
+      eventTypeL1Id: categoryFilter.length > 0 ? categoryFilter : undefined,
+      suggestedOnly: hideNonRecommended || undefined,
     }
-  }, [appliedDateRange, categoryFilter, committedKeyword, pagination.page, pagination.size, sort, typeFilter])
-
-  const useMock = true
+  }, [appliedDateRange, categoryFilter, committedKeyword, hideNonRecommended, pagination.page, pagination.size, sort, typeFilter])
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['nextGenMIEvents', listRequest, hideNonRecommended, useMock],
-    queryFn: async () => {
-      if (useMock) {
-        const mocked = nextGenMIMockApi.getEvents(listRequest)
-        if (!hideNonRecommended) return mocked
-        const mockDetail = mocked.events.detail as MockEventRow[]
-        return {
-          ...mocked,
-          events: { ...mocked.events, detail: mockDetail.filter((r) => r.recommended === true) },
-        }
-      }
-      return nextGenMIEventService.getEvents(listRequest)
-    },
+    queryKey: ['nextGenMIEvents', listRequest],
+    queryFn: () => nextGenMIEventService.getEvents(listRequest),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -137,17 +119,17 @@ const EventsTabPanel = () => {
     }
   }, [data?.events, pagination.page])
 
-  const tableRows = (data?.events?.detail ?? []) as MockEventRow[]
+  const tableRows = data?.events?.detail ?? []
 
   const handleEventNameClick = useCallback(
-    (row: MockEventRow) =>
+    (row: INextGenMIEventListItem) =>
       navigate(`/mi/next-gen-mi/events/${row.eventId}`, {
         state: { eventName: row.eventName },
       }),
     [navigate],
   )
 
-  const columns: GridColDef<MockEventRow>[] = useMemo(
+  const columns: GridColDef<INextGenMIEventListItem>[] = useMemo(
     () => [
       {
         field: '__statusBadge',
@@ -159,7 +141,7 @@ const EventsTabPanel = () => {
         renderCell: (params) => <EventStatusBadge status={params.row.status} />,
       },
       {
-        field: 'occurredAt',
+        field: 'createdAt',
         headerName: '일시',
         width: 100,
         align: 'center',
@@ -167,17 +149,17 @@ const EventsTabPanel = () => {
         renderCell: (params) => <Typography variant="body2M14">{formatEventListTime(params.row)}</Typography>,
       },
       {
-        field: 'eventCategoryLv1',
+        field: 'eventTypeLv1Label',
         headerName: '카테고리',
         width: 140,
         align: 'left',
         renderCell: (params) => {
           const row = params.row
-          const fromApiLabel = row.eventCategoryLv1Label?.trim()
+          const fromApiLabel = row.eventTypeLv1Label?.trim()
           if (fromApiLabel) return fromApiLabel
-          const code = row.eventCategoryLv1
+          const code = row.eventTypeLv1
           if (code === undefined || code === null) return '-'
-          return EVENT_CATEGORY_LV1_KO[code] ?? String(code)
+          return String(code)
         },
       },
       {
@@ -187,7 +169,9 @@ const EventsTabPanel = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => <EventRecommendedStarCell recommended={params.row.recommended} reason={params.row.recommendationReason} />,
+        renderCell: (params) => (
+          <EventRecommendedStarCell recommended={params.row.isScenarioSuggested} reason={params.row.scenarioSuggestReason ?? undefined} />
+        ),
       },
       {
         field: 'eventName',
@@ -210,7 +194,7 @@ const EventsTabPanel = () => {
               indexLabel="JKM"
               level={impact?.marketImpactLevel}
               direction={impact?.direction}
-              term={params.row.termByIndex?.JKM}
+              term={impact?.impactTerm}
             />
           )
         },
@@ -228,7 +212,7 @@ const EventsTabPanel = () => {
               indexLabel="TTF"
               level={impact?.marketImpactLevel}
               direction={impact?.direction}
-              term={params.row.termByIndex?.TTF}
+              term={impact?.impactTerm}
             />
           )
         },
@@ -246,7 +230,7 @@ const EventsTabPanel = () => {
               indexLabel="HH"
               level={impact?.marketImpactLevel}
               direction={impact?.direction}
-              term={params.row.termByIndex?.HH}
+              term={impact?.impactTerm}
             />
           )
         },
@@ -257,26 +241,10 @@ const EventsTabPanel = () => {
         width: 100,
         align: 'center',
         sortable: false,
-        // 시나리오 생성 액션은 API 미연동 단계, 퍼블리싱 버튼만 노출
-        renderCell: (params) => (
-          <EventScenarioGenerateButton
-            recommended={params.row.recommended}
-            scenarioAvailable={params.row.scenarioGenStatus === 'completed'}
-          />
-        ),
+        renderCell: (params) => <EventScenarioGenerateButton recommended={params.row.isScenarioSuggested} scenarioAvailable={false} />,
       },
     ],
     [handleEventNameClick],
-  )
-
-  /** 카테고리 다중 선택 필터 항목 */
-  const categoryFilterItems = useMemo(
-    () =>
-      (Object.keys(EVENT_CATEGORY_LV1_KO) as EventCategoryLv1[]).map((key) => ({
-        label: EVENT_CATEGORY_LV1_KO[key],
-        value: key,
-      })),
-    [],
   )
 
   const nextGenMIDatePresets = useMemo(() => buildNextGenMIDatePresets(), [])
@@ -311,13 +279,13 @@ const EventsTabPanel = () => {
   }, [])
 
   const getEventsTableCellSx = useCallback(({ field }: { field: string }) => {
-    if (field === 'occurredAt') return { px: '6px' }
+    if (field === 'createdAt') return { px: '6px' }
     if (field === 'scenario') return { px: '16px', overflow: 'visible' }
     if (field === 'jkm' || field === 'ttf' || field === 'hh') return { px: '24px' }
     return {}
   }, [])
 
-  const getEventsTableHeaderCellSx = useCallback((col: GridColDef<MockEventRow>) => {
+  const getEventsTableHeaderCellSx = useCallback((col: GridColDef<INextGenMIEventListItem>) => {
     if (col.field === 'scenario') {
       return { px: '16px' }
     }
@@ -328,7 +296,7 @@ const EventsTabPanel = () => {
   }, [])
 
   const handleCategoryFilterApply = useCallback(
-    (next: EventCategoryLv1[]) => {
+    (next: number[]) => {
       setCategoryFilter(next)
       resetPage()
     },
@@ -394,12 +362,7 @@ const EventsTabPanel = () => {
               }}
             />
 
-            <EventCategoryFilterMenu
-              filters={categoryFilterItems}
-              selected={categoryFilter}
-              onApply={handleCategoryFilterApply}
-              closeOnScroll
-            />
+            <EventCategoryFilterMenu selected={categoryFilter} onApply={handleCategoryFilterApply} closeOnScroll />
 
             <MIDateRangePickerMenu
               dateRange={appliedDateRange}
@@ -433,10 +396,10 @@ const EventsTabPanel = () => {
           </Stack>
         </Stack>
 
-        <MIDataTableHeader<MockEventRow> columns={columns} getHeaderCellSx={getEventsTableHeaderCellSx} sx={{ mt: 2 }} />
+        <MIDataTableHeader<INextGenMIEventListItem> columns={columns} getHeaderCellSx={getEventsTableHeaderCellSx} sx={{ mt: 2 }} />
       </NextGenMIStickySlot>
 
-      <MIDataTableBody<MockEventRow>
+      <MIDataTableBody<INextGenMIEventListItem>
         rowId="eventId"
         columns={columns}
         rows={tableRows}

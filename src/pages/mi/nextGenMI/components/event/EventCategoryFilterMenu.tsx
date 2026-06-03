@@ -6,33 +6,42 @@ import {
 } from '@mui/icons-material'
 import { Divider, Stack, Typography } from '@mui/material'
 import { isEqual } from 'lodash-es'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIMenu from '@/components/common/menu/MIMenu'
-import { EventCategoryLv1 } from '@/service/mi/nextGenMI/common'
+import useCodeData from '@/hooks/useCodeData'
 
 export interface EventCategoryFilterItem {
   label: string
-  value: EventCategoryLv1
+  value: number
 }
 
 export interface EventCategoryFilterMenuProps {
-  filters: EventCategoryFilterItem[]
-  selected: EventCategoryLv1[]
-  onApply: (selected: EventCategoryLv1[]) => void
+  selected: number[]
+  onApply: (selected: number[]) => void
   closeOnScroll?: boolean
 }
 
 /** Events 테이블 툴바 카테고리 다중 선택 필터 */
-const EventCategoryFilterMenu = ({ filters, selected, onApply, closeOnScroll }: EventCategoryFilterMenuProps) => {
+const EventCategoryFilterMenu = ({ selected, onApply, closeOnScroll }: EventCategoryFilterMenuProps) => {
+  const { nextGenMIEventTypeL1List } = useCodeData()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [draftSelected, setDraftSelected] = useState<EventCategoryLv1[]>(selected)
+  const [draftSelected, setDraftSelected] = useState<number[]>(selected)
   const prevSelectedRef = useRef(selected)
 
+  const filters = useMemo(
+    () =>
+      nextGenMIEventTypeL1List?.map(({ eventTypeL1Id, label }) => ({
+        label,
+        value: eventTypeL1Id,
+      })) ?? [],
+    [nextGenMIEventTypeL1List],
+  )
+
   useEffect(() => {
-    const prevSorted = [...prevSelectedRef.current].sort((a, b) => a.localeCompare(b))
-    const nextSorted = [...selected].sort((a, b) => a.localeCompare(b))
+    const prevSorted = [...prevSelectedRef.current].sort((a, b) => a - b)
+    const nextSorted = [...selected].sort((a, b) => a - b)
     if (!isEqual(prevSorted, nextSorted)) {
       setDraftSelected(selected)
       prevSelectedRef.current = selected
@@ -42,8 +51,8 @@ const EventCategoryFilterMenu = ({ filters, selected, onApply, closeOnScroll }: 
   const appliedCount = selected.length
   const isApplied = appliedCount > 0
   const isDraftChanged = !isEqual(
-    [...draftSelected].sort((a, b) => a.localeCompare(b)),
-    [...selected].sort((a, b) => a.localeCompare(b)),
+    [...draftSelected].sort((a, b) => a - b),
+    [...selected].sort((a, b) => a - b),
   )
 
   const handleClear = () => {
@@ -55,7 +64,7 @@ const EventCategoryFilterMenu = ({ filters, selected, onApply, closeOnScroll }: 
     setIsMenuOpen(false)
   }
 
-  const handleFilterChange = (value: EventCategoryLv1, checked: boolean) => {
+  const handleFilterChange = (value: number, checked: boolean) => {
     setDraftSelected((prev) => {
       if (!checked) {
         return prev.filter((selectedValue) => selectedValue !== value)
