@@ -67,9 +67,9 @@ const EVENT_DETAIL_HEADER_SECTIONS: NextGenMIDetailHeaderSection[] = EVENT_DETAI
   label: tab.label,
 }))
 
-const eventDetailHeaderTabActions = (
+const renderEventDetailHeaderTabActions = (targetLabel?: string) => (
   <Stack direction="row" alignItems="center" gap="12px">
-    <NextGenMIUserFeedback pageName="Next-Gen MI" sectionName="Event List / Event Detail" />
+    <NextGenMIUserFeedback pageName="Next-Gen MI" sectionName="Event List / Event Detail" targetLabel={targetLabel} />
     <MIMenu
       variant="contained"
       label="시나리오 생성"
@@ -250,6 +250,10 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
 
   const recordRows = recordsData?.detail ?? []
   const outlookRows = outlooksData?.detail ?? []
+  const eventDetailHeaderTabActions = useMemo(
+    () => renderEventDetailHeaderTabActions(title ? `이벤트 상세/ ${title}` : '이벤트 상세'),
+    [title],
+  )
 
   const headerTitleSlot = useMemo(
     () => (
@@ -315,7 +319,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
       titleSlot: headerTitleSlot,
       rightAction: eventDetailHeaderTabActions,
     })
-  }, [embedded, headerTitleSlot, navigate])
+  }, [embedded, eventDetailHeaderTabActions, headerTitleSlot, navigate])
 
   useLayoutEffect(() => {
     if (embedded) return undefined
