@@ -62,7 +62,7 @@ const useCodeData = (): UseCodeDataReturn => {
   })
 
   // 접근할 때 해당 쿼리를 활성화하는 프록시 객체
-  const proxy = useMemo(
+  return useMemo(
     () => ({
       get marketCategoryCodeList() {
         if (!marketQuery.data && !marketQuery.isLoading) {
@@ -115,8 +115,6 @@ const useCodeData = (): UseCodeDataReturn => {
     }),
     [marketQuery, regionQuery, industryQuery, economicCalendarCategoryQuery, nextGenMIEventTypeL1Query],
   )
-
-  return proxy
 }
 
 export default useCodeData
