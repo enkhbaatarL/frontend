@@ -1,6 +1,7 @@
 import { Box, Stack, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -42,6 +43,20 @@ const SORT_OPTIONS = [
   { value: 'oldest', label: '오래된순' },
 ] as const satisfies ReadonlyArray<{ value: EventSort; label: string }>
 
+const resolveEventListDateRange = (dateRange: DateRange): Required<DateRange> => {
+  if (dateRange.startDate !== undefined && dateRange.endDate !== undefined) {
+    return { startDate: dateRange.startDate, endDate: dateRange.endDate }
+  }
+
+  const fallbackRange = defaultNextGenMIDateRange()
+  if (fallbackRange.startDate !== undefined && fallbackRange.endDate !== undefined) {
+    return { startDate: fallbackRange.startDate, endDate: fallbackRange.endDate }
+  }
+
+  const today = dayjs().startOf('day')
+  return { startDate: today.subtract(1, 'month'), endDate: today }
+}
+
 const EventsTabPanel = () => {
   const navigate = useNavigate()
 
@@ -76,14 +91,14 @@ const EventsTabPanel = () => {
 
   const listRequest = useMemo((): GetEventsParams => {
     const trimmedKeyword = committedKeyword.trim()
-    const resolvedRange = appliedDateRange.startDate && appliedDateRange.endDate ? appliedDateRange : defaultNextGenMIDateRange()
+    const { startDate, endDate } = resolveEventListDateRange(appliedDateRange)
 
     return {
       page: pagination.page,
       size: pagination.size,
       sort,
-      startDate: resolvedRange.startDate!.startOf('day').format('YYYY-MM-DD'),
-      endDate: resolvedRange.endDate!.endOf('day').format('YYYY-MM-DD'),
+      startDate: startDate.startOf('day').format('YYYY-MM-DD'),
+      endDate: endDate.endOf('day').format('YYYY-MM-DD'),
       keyword: trimmedKeyword || undefined,
       eventStatus: typeFilter,
       eventTypeL1Id: categoryFilter.length > 0 ? categoryFilter : undefined,
@@ -268,11 +283,17 @@ const EventsTabPanel = () => {
   }, [])
 
   const getEventsTableCellSx = useCallback(({ field }: { field: string }) => {
+    if (field === '__statusBadge') return { px: '8px' }
     if (field === 'createdAt') return { px: '6px' }
     if (field === 'scenario') return { px: '16px', overflow: 'visible' }
     if (field === 'jkm' || field === 'ttf' || field === 'hh') return { px: '24px' }
     return {}
   }, [])
+
+  const showEventsTableCellSkeleton = useCallback(
+    (col: GridColDef<EventListItemRes>) => col.field === '__statusBadge' || String(col.headerName ?? '').trim() !== '',
+    [],
+  )
 
   const getEventsTableHeaderCellSx = useCallback((col: GridColDef<EventListItemRes>) => {
     if (col.field === 'scenario') {
@@ -394,6 +415,7 @@ const EventsTabPanel = () => {
         rows={tableRows}
         loading={isLoading}
         skeletonRowCount={pagination.size}
+        showCellSkeleton={showEventsTableCellSkeleton}
         rowHeight={48}
         noRowsOverlay={emptyOverlay}
         getCellSx={getEventsTableCellSx}

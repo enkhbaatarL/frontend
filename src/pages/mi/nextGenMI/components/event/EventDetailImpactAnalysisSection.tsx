@@ -206,10 +206,7 @@ const EventDetailImpactAnalysisSection = ({
           display="flex"
           flexDirection="column"
           gap="12px"
-          sx={{
-            bgcolor: 'gray.5',
-            '&:hover': { bgcolor: 'contentBG.Hover' },
-          }}
+          bgcolor="gray.5"
         >
           <Typography fontSize={14} fontWeight={600} color="contentText.Normal" lineHeight={1.4}>
             영향도 분석 종합

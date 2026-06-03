@@ -56,10 +56,6 @@ const gradientCardBaseSx = {
   minWidth: 0,
   boxSizing: 'border-box',
   overflow: 'hidden',
-  transition: 'filter 0.15s ease-in-out',
-  '&:hover': {
-    filter: 'brightness(0.98)',
-  },
 } as const
 
 const summaryGradientCardSx = {

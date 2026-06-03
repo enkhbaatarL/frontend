@@ -88,6 +88,7 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
       paperProps={{
         style: {
           border: '1px solid #DEE2E6',
+          borderRadius: '8px',
           boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
         },
         sx: { width: '600px', overflow: 'hidden' },
@@ -112,10 +113,8 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
               onClick={closeFeedbackMenu}
               disabled={isSubmitting}
               sx={{
-                width: '24px',
-                minWidth: '24px',
-                height: '24px',
-                padding: '2px',
+                height: '36px',
+                padding: '8px',
                 color: 'contentIcon.Enabled',
               }}
             >
@@ -193,8 +192,8 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
             multiline
             rows={12}
             maxLength={FEEDBACK_MAX_LENGTH}
-            onInput={(event) => {
-              setComment((event.target as HTMLTextAreaElement).value.slice(0, FEEDBACK_MAX_LENGTH))
+            onChange={(event) => {
+              setComment(event.target.value.slice(0, FEEDBACK_MAX_LENGTH))
             }}
             onUpdateValue={(value) => setComment((value ?? '').slice(0, FEEDBACK_MAX_LENGTH))}
           />

@@ -69,7 +69,7 @@ const ImpactTable = ({
 )
 
 const ForecastCardItem = ({ outlook }: { outlook: IScenarioIndexOutlook }) => (
-  <Box bgcolor="gray.5" borderRadius="10px" p="20px" sx={{ '&:hover': { bgcolor: 'contentBG.Hover' } }}>
+  <Box bgcolor="gray.5" borderRadius="10px" p="20px">
     <Stack gap="6px">
       <Typography variant="body1M16" color="contentText.Black">
         {outlook.trendText}
@@ -87,21 +87,18 @@ interface ScenarioSummarySectionProps {
 
 const hasForecastCardContent = (outlook: IScenarioIndexOutlook) => Boolean(outlook.trendText?.trim())
 
+const resolveLikelihoodLabel = (probability?: number) => {
+  if (typeof probability === 'number' && Number.isFinite(probability)) {
+    return probabilityToLikelihoodLabel(probability)
+  }
+  return '—'
+}
+
 const LikelihoodKpiCard = ({ probability }: { probability?: number }) => {
-  const hasValue = probability !== undefined && probability !== null && typeof probability === 'number' && Number.isFinite(probability)
-  const mainLabel = hasValue ? probabilityToLikelihoodLabel(probability!) : '—'
+  const mainLabel = resolveLikelihoodLabel(probability)
 
   return (
-    <Box
-      bgcolor="gray.5"
-      borderRadius="10px"
-      p="20px"
-      width="200px"
-      flexShrink={0}
-      alignSelf="stretch"
-      boxSizing="border-box"
-      sx={{ '&:hover': { bgcolor: 'contentBG.Hover' } }}
-    >
+    <Box bgcolor="gray.5" borderRadius="10px" p="20px" width="200px" flexShrink={0} alignSelf="stretch" boxSizing="border-box">
       <Stack gap="6px" alignItems="flex-start">
         <Typography variant="body2SB14" color="contentText.Normal">
           발생 가능성
