@@ -1,10 +1,10 @@
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import { Box } from '@mui/material'
 import { type SxProps, type Theme } from '@mui/material/styles'
 import { type MouseEvent } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
-import ScenarioDesignIcon from '@/components/common/icons/ScenarioDesignIcon'
 
 export interface EventScenarioGenerateButtonProps {
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void
@@ -80,7 +80,7 @@ const tableButtonBaseSx = {
 
 const ScenarioDesignButtonIcon = () => (
   <Box component="span" sx={tableButtonIconSx}>
-    <ScenarioDesignIcon aria-hidden focusable="false" />
+    <AutoAwesomeRoundedIcon aria-hidden focusable="false" />
   </Box>
 )
 

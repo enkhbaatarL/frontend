@@ -1,3 +1,4 @@
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -6,7 +7,6 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
 
-import ScenarioDesignIcon from '@/components/common/icons/ScenarioDesignIcon'
 import MIMenu from '@/components/common/menu/MIMenu'
 import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
@@ -68,7 +68,7 @@ const renderEventDetailHeaderTabActions = (targetLabel?: string) => (
     <MIMenu
       variant="contained"
       label="시나리오 생성"
-      prefix={<ScenarioDesignIcon aria-hidden focusable="false" />}
+      prefix={<AutoAwesomeRoundedIcon aria-hidden focusable="false" />}
       onClick={() => {
         // 시나리오 생성 액션은 API 미연동 단계, 퍼블리싱 버튼만 노출
       }}
