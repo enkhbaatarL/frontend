@@ -1,4 +1,4 @@
-import MarginRoundedIcon from '@mui/icons-material/MarginRounded'
+import MarginIcon from '@mui/icons-material/Margin'
 import { Divider, Stack } from '@mui/material'
 import { Fragment, useMemo, type ReactNode } from 'react'
 
@@ -74,10 +74,12 @@ const EventDetailDriverTreeScoreboardSection = ({
       {
         field: 'indexName',
         headerName: '대상',
-        width: '80px',
+        width: '100px',
         renderCell: ({ row }) => getIndexName(row) || '-',
         cellSx: {
+          fontSize: '16px',
           fontWeight: 600,
+          color: 'contentText.Black',
         },
       },
       {
@@ -133,7 +135,7 @@ const EventDetailDriverTreeScoreboardSection = ({
   return (
     <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
-        icon={<MarginRoundedIcon sx={{ fontSize: '26px', color: 'contentText.Normal' }} />}
+        icon={<MarginIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
         title="Index Driver별 영향도 분석"
         tooltipTitle=""
       />

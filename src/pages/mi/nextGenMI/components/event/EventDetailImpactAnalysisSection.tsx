@@ -10,7 +10,14 @@ import type { EventDetailImpactIndex } from '@/service/mi/nextGenMI/event'
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import KpiCard from '@/pages/mi/nextGenMI/components/common/KpiCard'
-import NextGenMIEventDetailTableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
+import NextGenMIEventDetailTableBodyText, {
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY,
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX,
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
+} from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 import EventIndexSignalCell from '@/pages/mi/nextGenMI/components/event/EventIndexSignalCell'
 
@@ -57,14 +64,13 @@ const EventDetailImpactAnalysisSection = ({
       {
         field: 'indexName',
         headerName: '대상',
-        flex: 1,
-        minWidth: 120,
+        width: 296,
         sortable: false,
         renderCell: (p) => (
           <NextGenMIEventDetailTableBodyText
             value={String(p.value ?? '')}
             component="span"
-            sx={{ fontSize: 16, fontWeight: 600, color: 'contentText.Black' }}
+            sx={{ fontWeight: 600, color: 'contentText.Black' }}
           />
         ),
       },
@@ -184,7 +190,12 @@ const EventDetailImpactAnalysisSection = ({
         <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
           <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
             <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-              <MIDataTableHeader<EventDetailImpactIndex> columns={columns} />
+              <MIDataTableHeader<EventDetailImpactIndex>
+                columns={columns}
+                headerCellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
+                headerCellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+                headerLabelColor={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
+              />
               <MIDataTableBody<EventDetailImpactIndex>
                 rowId="indexName"
                 columns={columns}
@@ -192,6 +203,10 @@ const EventDetailImpactAnalysisSection = ({
                 rowHeight={48}
                 noRowMessage="표시할 데이터가 없습니다."
                 hideLastRowBorder
+                primitiveCellTypographyVariant={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+                primitiveCellLineHeight={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+                cellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
+                cellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY}
               />
             </Box>
           </Box>

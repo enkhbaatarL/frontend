@@ -1,5 +1,5 @@
 import SourceIcon from '@mui/icons-material/Source'
-import { Stack } from '@mui/material'
+import { Box, Stack } from '@mui/material'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -7,6 +7,7 @@ import type { EventRelatedRecord } from '@/service/mi/nextGenMI/event'
 import type { IPaginationResponse } from '@/types/api'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import { NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING } from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
@@ -107,8 +108,8 @@ const EventDetailMiRecordsTable = ({
     () => [
       {
         field: 'publishedAt',
-        headerName: '일시',
-        width: '160px',
+        headerName: '일자',
+        width: '180px',
         renderCell: ({ row }) => row.publishedAt ?? '',
       },
       {
@@ -119,8 +120,8 @@ const EventDetailMiRecordsTable = ({
       },
       {
         field: 'title',
-        headerName: '타이틀',
-        width: '420px',
+        headerName: '제목',
+        width: '400px',
         renderCell: ({ row }) => {
           const title = row.title ?? ''
           if (!title || !getEventRelatedRecordPath(row)) return title
@@ -138,8 +139,8 @@ const EventDetailMiRecordsTable = ({
       {
         field: 'summary',
         headerName: '요약',
-        width: 'max-content',
-        minWidth: '560px',
+        width: '100%',
+        minWidth: '652px',
         maxWidth: 'none',
         renderCell: ({ row }) => row.summary ?? '',
         cellSx: {
@@ -158,7 +159,12 @@ const EventDetailMiRecordsTable = ({
         title="MI Records"
         tooltipTitle=""
       />
-      <Stack gap="0px">
+      <Box
+        bgcolor="commonColor.White"
+        borderRadius="10px"
+        padding={`${NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING}px`}
+        boxSizing="border-box"
+      >
         <NextGenMIStickyTable
           columns={columns}
           rows={paginatedRows}
@@ -166,14 +172,15 @@ const EventDetailMiRecordsTable = ({
           loading={loading}
           noRowMessage="표시할 데이터가 없습니다."
           rowHeight={!loading && paginatedRows.length === 0 ? '400px' : undefined}
-          bodyFontSize="14px"
           skeletonRowCount={pagination.size}
+          containerShell={false}
         />
         {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
           <MIPaginationSecondary<EventRelatedRecord>
             data={paginationData}
             size={isServerMode ? serverPagination.size : pagination.size}
             sizeList={[...PAGE_SIZE_LIST]}
+            paddingTop={`${NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING}px`}
             onPageChange={(page) => {
               if (isServerMode) onServerPageChange?.(page)
               else setPagination((p) => ({ ...p, page }))
@@ -184,7 +191,7 @@ const EventDetailMiRecordsTable = ({
             }}
           />
         )}
-      </Stack>
+      </Box>
     </Stack>
   )
 }
