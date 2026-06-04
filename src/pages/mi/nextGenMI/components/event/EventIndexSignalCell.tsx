@@ -89,7 +89,7 @@ const IndexDurationBadge = ({ term }: { term: IndexImpactTerm }) => (
 const NoDirectionSignalBar = ({ size = 32 }: { size?: number }) => (
   <Box component="span" display="inline-flex" width={`${size}px`} height={`${size}px`} flexShrink={0}>
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
-      <rect x={7} y={14} width={25} height={6} rx={1.436} fill={SIGNAL_BAR_EMPTY} />
+      <rect x={3.5} y={14} width={25} height={6} rx={1.436} fill={SIGNAL_BAR_EMPTY} />
     </svg>
   </Box>
 )
