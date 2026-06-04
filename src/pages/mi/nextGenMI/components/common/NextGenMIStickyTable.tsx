@@ -28,7 +28,8 @@ interface NextGenMIStickyTableProps<T> {
   columns: NextGenMIStickyTableColumn<T>[]
   rows: T[]
   getRowKey: (row: T, index: number) => string | number
-  fixedColumnIndexes?: number[]
+  fixedLeftColumnIndexes?: number[]
+  fixedRightColumnIndexes?: number[]
   leftAlignedHeaderSticky?: boolean
   loading?: boolean
   noRowMessage?: string
@@ -40,9 +41,12 @@ interface NextGenMIStickyTableProps<T> {
   bodyFontSize?: string
   bodyLineHeight?: number | string
   skeletonRowCount?: number
+  containerPadding?: string
+  containerShell?: boolean
 }
 
-const STICKY_COLUMN_EDGE_SHADOW_SX = {
+const STICKY_LEFT_COLUMN_EDGE_SHADOW_SX = {
+  '--next-gen-mi-sticky-column-shadow-opacity': 0,
   '&::after': {
     content: '""',
     position: 'absolute',
@@ -52,8 +56,30 @@ const STICKY_COLUMN_EDGE_SHADOW_SX = {
     width: '16px',
     pointerEvents: 'none',
     background: 'linear-gradient(to right, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0))',
+    opacity: 'var(--next-gen-mi-sticky-column-shadow-opacity)',
+    transition: 'opacity 180ms ease',
   },
 } as const
+
+const STICKY_RIGHT_COLUMN_EDGE_SHADOW_SX = {
+  '--next-gen-mi-sticky-column-shadow-opacity': 0,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '-16px',
+    width: '16px',
+    pointerEvents: 'none',
+    background: 'linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0))',
+    opacity: 'var(--next-gen-mi-sticky-column-shadow-opacity)',
+    transition: 'opacity 180ms ease',
+  },
+} as const
+
+const getStickyColumnShadowOpacitySx = (visible: boolean) => ({
+  '--next-gen-mi-sticky-column-shadow-opacity': visible ? 1 : 0,
+})
 
 const toSxArray = (sx?: SxProps<Theme>) => {
   if (Array.isArray(sx)) return sx
@@ -73,41 +99,89 @@ const normalizeFixedColumnIndexes = (indexes: number[] | undefined, columnCount:
     .filter((index) => Number.isInteger(index) && index >= 0 && index < columnCount)
     .sort((a, b) => a - b)
 
+const normalizeFixedRightColumnIndexes = (indexes: number[] | undefined, columnCount: number) =>
+  normalizeFixedColumnIndexes(
+    indexes?.map((index) => (index < 0 ? columnCount + index : index)),
+    columnCount,
+  )
+
 const toCssCalc = (parts: string[]) => (parts.length > 0 ? `calc(${parts.join(' + ')})` : '0px')
 
 const getColumnAlign = <T,>(column: NextGenMIStickyTableColumn<T>) => column.align ?? 'left'
 
 const getColumnStickyWidth = <T,>(column: NextGenMIStickyTableColumn<T>) => column.minWidth ?? column.width
 
+const isLastFixedLeftColumnSticky = (scrollRoot: HTMLDivElement) => {
+  const lastFixedColumn = scrollRoot.querySelector<HTMLElement>('thead [data-last-fixed-left-column="true"]')
+  if (!lastFixedColumn) return false
+
+  const stickyLeft = Number.parseFloat(globalThis.getComputedStyle(lastFixedColumn).left)
+  if (!Number.isFinite(stickyLeft)) return false
+
+  const stickyOffset = lastFixedColumn.getBoundingClientRect().left - scrollRoot.getBoundingClientRect().left - stickyLeft
+  return stickyOffset <= 1
+}
+
+const isFirstFixedRightColumnSticky = (scrollRoot: HTMLDivElement) => {
+  const firstFixedColumn = scrollRoot.querySelector<HTMLElement>('thead [data-first-fixed-right-column="true"]')
+  if (!firstFixedColumn) return false
+
+  const stickyRight = Number.parseFloat(globalThis.getComputedStyle(firstFixedColumn).right)
+  if (!Number.isFinite(stickyRight)) return false
+
+  const stickyOffset = scrollRoot.getBoundingClientRect().right - firstFixedColumn.getBoundingClientRect().right - stickyRight
+  return stickyOffset <= 1
+}
+
+const getFixedColumnWidth = (scrollRoot: HTMLDivElement, selector: string) =>
+  Array.from(scrollRoot.querySelectorAll<HTMLElement>(selector)).reduce((sum, column) => sum + column.getBoundingClientRect().width, 0)
+
 const NextGenMIStickyTable = <T,>({
   columns,
   rows,
   getRowKey,
-  fixedColumnIndexes,
+  fixedLeftColumnIndexes,
+  fixedRightColumnIndexes,
   leftAlignedHeaderSticky = false,
   loading = false,
   noRowMessage = '표시할 데이터가 없습니다.',
   maxHeight,
   rowHeight = '48px',
   headerHeight = '36px',
-  cellPadding = '12px',
+  cellPadding = '6px',
   headerFontSize = '14px',
-  bodyFontSize = '16px',
+  bodyFontSize = '14px',
   bodyLineHeight = 1.4,
   skeletonRowCount = 8,
+  containerPadding = '12px',
+  containerShell = true,
 }: NextGenMIStickyTableProps<T>) => {
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const lastScrollPositionRef = useRef({ left: 0, top: 0 })
-  const fixedColumnIndexList = useMemo(
-    () => normalizeFixedColumnIndexes(fixedColumnIndexes, columns.length),
-    [columns.length, fixedColumnIndexes],
+  const fixedLeftColumnIndexList = useMemo(
+    () => normalizeFixedColumnIndexes(fixedLeftColumnIndexes, columns.length),
+    [columns.length, fixedLeftColumnIndexes],
   )
-  const fixedColumnIndexSet = useMemo(() => new Set(fixedColumnIndexList), [fixedColumnIndexList])
-  const fixedColumnLeftMap = useMemo(() => {
+  const fixedRightColumnIndexList = useMemo(
+    () =>
+      normalizeFixedRightColumnIndexes(fixedRightColumnIndexes, columns.length).filter(
+        (columnIndex) => !fixedLeftColumnIndexList.includes(columnIndex),
+      ),
+    [columns.length, fixedLeftColumnIndexList, fixedRightColumnIndexes],
+  )
+  const fixedLeftColumnIndexSet = useMemo(() => new Set(fixedLeftColumnIndexList), [fixedLeftColumnIndexList])
+  const fixedRightColumnIndexSet = useMemo(() => new Set(fixedRightColumnIndexList), [fixedRightColumnIndexList])
+  const fixedColumnIndexSet = useMemo(
+    () => new Set([...fixedLeftColumnIndexList, ...fixedRightColumnIndexList]),
+    [fixedLeftColumnIndexList, fixedRightColumnIndexList],
+  )
+  const lastFixedLeftColumnIndex = fixedLeftColumnIndexList.at(-1)
+  const firstFixedRightColumnIndex = fixedRightColumnIndexList.at(0)
+  const fixedLeftColumnLeftMap = useMemo(() => {
     const next = new Map<number, string | number>()
     const widthParts: string[] = []
 
-    fixedColumnIndexList.forEach((columnIndex) => {
+    fixedLeftColumnIndexList.forEach((columnIndex) => {
       const column = columns.at(columnIndex)
       if (!column) return
       next.set(columnIndex, widthParts.length > 0 ? toCssCalc(widthParts) : 0)
@@ -115,17 +189,36 @@ const NextGenMIStickyTable = <T,>({
     })
 
     return next
-  }, [columns, fixedColumnIndexList])
-  const fixedColumnsWidthParts = useMemo(
+  }, [columns, fixedLeftColumnIndexList])
+  const fixedRightColumnRightMap = useMemo(() => {
+    const next = new Map<number, string | number>()
+    const widthParts: string[] = []
+
+    fixedRightColumnIndexList
+      .slice()
+      .reverse()
+      .forEach((columnIndex) => {
+        const column = columns.at(columnIndex)
+        if (!column) return
+        next.set(columnIndex, widthParts.length > 0 ? toCssCalc(widthParts) : 0)
+        widthParts.push(getColumnStickyWidth(column))
+      })
+
+    return next
+  }, [columns, fixedRightColumnIndexList])
+  const fixedLeftColumnsWidthParts = useMemo(
     () =>
-      fixedColumnIndexList.flatMap((columnIndex) => {
+      fixedLeftColumnIndexList.flatMap((columnIndex) => {
         const column = columns.at(columnIndex)
         return column ? [getColumnStickyWidth(column)] : []
       }),
-    [columns, fixedColumnIndexList],
+    [columns, fixedLeftColumnIndexList],
   )
   const leftAlignedHeaderStickyLeft =
-    fixedColumnsWidthParts.length > 0 ? `calc(${fixedColumnsWidthParts.join(' + ')} + ${cellPadding})` : cellPadding
+    fixedLeftColumnsWidthParts.length > 0 ? `calc(${fixedLeftColumnsWidthParts.join(' + ')} + ${cellPadding})` : cellPadding
+  const canInsetHorizontalScrollbar =
+    fixedLeftColumnIndexList.every((columnIndex, index) => columnIndex === index) &&
+    fixedRightColumnIndexList.every((columnIndex, index) => columnIndex === columns.length - fixedRightColumnIndexList.length + index)
 
   const [scrollState, setScrollState] = useState({
     left: false,
@@ -134,6 +227,8 @@ const NextGenMIStickyTable = <T,>({
     down: false,
     horizontal: false,
     vertical: false,
+    fixedLeftColumnShadow: false,
+    fixedRightColumnShadow: false,
     activeAxis: null as ScrollAxis,
     scrollLeft: 0,
     scrollTop: 0,
@@ -141,6 +236,8 @@ const NextGenMIStickyTable = <T,>({
     scrollHeight: 0,
     clientWidth: 0,
     clientHeight: 0,
+    fixedLeftColumnWidth: 0,
+    fixedRightColumnWidth: 0,
   })
   const [isScrollAreaHovered, setIsScrollAreaHovered] = useState(false)
   const [dragAxis, setDragAxis] = useState<ScrollAxis>(null)
@@ -156,19 +253,27 @@ const NextGenMIStickyTable = <T,>({
       const deltaLeft = Math.abs(scrollLeft - lastScrollPositionRef.current.left)
       const deltaTop = Math.abs(scrollTop - lastScrollPositionRef.current.top)
       const activeAxis = resolveActiveScrollAxis(updateAxis, deltaLeft, deltaTop)
+      const left = scrollLeft > 1
+      const right = scrollLeft < maxLeft - 1
+      const fixedLeftColumnWidth = canInsetHorizontalScrollbar ? getFixedColumnWidth(el, 'thead [data-fixed-left-column="true"]') : 0
+      const fixedRightColumnWidth = canInsetHorizontalScrollbar ? getFixedColumnWidth(el, 'thead [data-fixed-right-column="true"]') : 0
       const next = {
-        left: scrollLeft > 1,
-        right: scrollLeft < maxLeft - 1,
+        left,
+        right,
         up: scrollTop > 1,
         down: scrollTop < maxTop - 1,
         horizontal: maxLeft > 1,
         vertical: maxTop > 1,
+        fixedLeftColumnShadow: left && fixedLeftColumnIndexList.length > 0 && isLastFixedLeftColumnSticky(el),
+        fixedRightColumnShadow: right && fixedRightColumnIndexList.length > 0 && isFirstFixedRightColumnSticky(el),
         scrollLeft,
         scrollTop,
         scrollWidth,
         scrollHeight,
         clientWidth,
         clientHeight,
+        fixedLeftColumnWidth,
+        fixedRightColumnWidth,
       }
 
       lastScrollPositionRef.current = { left: scrollLeft, top: scrollTop }
@@ -182,13 +287,17 @@ const NextGenMIStickyTable = <T,>({
           prev.down === next.down &&
           prev.horizontal === next.horizontal &&
           prev.vertical === next.vertical &&
+          prev.fixedLeftColumnShadow === next.fixedLeftColumnShadow &&
+          prev.fixedRightColumnShadow === next.fixedRightColumnShadow &&
           prev.activeAxis === nextActiveAxis &&
           prev.scrollLeft === next.scrollLeft &&
           prev.scrollTop === next.scrollTop &&
           prev.scrollWidth === next.scrollWidth &&
           prev.scrollHeight === next.scrollHeight &&
           prev.clientWidth === next.clientWidth &&
-          prev.clientHeight === next.clientHeight
+          prev.clientHeight === next.clientHeight &&
+          prev.fixedLeftColumnWidth === next.fixedLeftColumnWidth &&
+          prev.fixedRightColumnWidth === next.fixedRightColumnWidth
           ? prev
           : { ...next, activeAxis: nextActiveAxis }
       })
@@ -205,7 +314,16 @@ const NextGenMIStickyTable = <T,>({
       el.removeEventListener('scroll', handleScroll)
       ro.disconnect()
     }
-  }, [columns.length, loading, rows.length])
+  }, [
+    columns.length,
+    canInsetHorizontalScrollbar,
+    fixedLeftColumnIndexList.length,
+    fixedRightColumnIndexList.length,
+    firstFixedRightColumnIndex,
+    lastFixedLeftColumnIndex,
+    loading,
+    rows.length,
+  ])
 
   const handleScrollbarPointerDown = (axis: Exclude<ScrollAxis, null>) => (event: ReactPointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current
@@ -257,17 +375,34 @@ const NextGenMIStickyTable = <T,>({
     scrollState.vertical && scrollState.scrollHeight > scrollState.clientHeight
       ? (scrollState.scrollTop / (scrollState.scrollHeight - scrollState.clientHeight)) * (100 - verticalThumbHeight)
       : 0
+  const canUseInsetHorizontalScrollbar =
+    canInsetHorizontalScrollbar &&
+    scrollState.clientWidth > scrollState.fixedLeftColumnWidth + scrollState.fixedRightColumnWidth + (scrollState.vertical ? 18 : 0) + 24
+  const horizontalScrollbarLeft =
+    canUseInsetHorizontalScrollbar && scrollState.fixedLeftColumnWidth > 0 ? `${scrollState.fixedLeftColumnWidth}px` : 0
+  const horizontalScrollbarRightWidth =
+    (canUseInsetHorizontalScrollbar ? scrollState.fixedRightColumnWidth : 0) + (scrollState.vertical ? 18 : 0)
+  const horizontalScrollbarRight = horizontalScrollbarRightWidth > 0 ? `${horizontalScrollbarRightWidth}px` : 0
 
   const renderHeaderCell = (column: NextGenMIStickyTableColumn<T>, columnIndex: number) => {
     const align = column.headerAlign ?? getColumnAlign(column)
+    const isFixedLeftColumn = fixedLeftColumnIndexSet.has(columnIndex)
+    const isFixedRightColumn = fixedRightColumnIndexSet.has(columnIndex)
     const isFixedColumn = fixedColumnIndexSet.has(columnIndex)
-    const isLastFixedColumn = fixedColumnIndexList.at(-1) === columnIndex
+    const isLastFixedLeftColumn = lastFixedLeftColumnIndex === columnIndex
+    const isFirstFixedRightColumn = firstFixedRightColumnIndex === columnIndex
+    const shouldStickyLeftAlignedHeader =
+      !isFixedColumn && leftAlignedHeaderSticky && align === 'left' && columnIndex > (lastFixedLeftColumnIndex ?? -1)
 
     return (
       <Box
         key={column.field}
         component="th"
         data-fixed-column={isFixedColumn ? 'true' : undefined}
+        data-fixed-left-column={isFixedLeftColumn ? 'true' : undefined}
+        data-last-fixed-left-column={isLastFixedLeftColumn ? 'true' : undefined}
+        data-fixed-right-column={isFixedRightColumn ? 'true' : undefined}
+        data-first-fixed-right-column={isFirstFixedRightColumn ? 'true' : undefined}
         sx={[
           {
             height: headerHeight,
@@ -275,7 +410,7 @@ const NextGenMIStickyTable = <T,>({
             textAlign: align,
             fontSize: headerFontSize,
             fontWeight: 600,
-            color: 'contentText.Black',
+            color: 'contentText.Normal',
             borderBottom: '1px solid',
             borderColor: 'contentBorder.Normal',
             whiteSpace: 'nowrap',
@@ -285,13 +420,21 @@ const NextGenMIStickyTable = <T,>({
             boxSizing: 'border-box',
             bgcolor: 'commonColor.White',
           },
-          isFixedColumn && {
+          isFixedLeftColumn && {
             position: 'sticky',
-            left: fixedColumnLeftMap.get(columnIndex),
+            left: fixedLeftColumnLeftMap.get(columnIndex),
             zIndex: 4,
           },
-          !leftAlignedHeaderSticky && isLastFixedColumn && scrollState.left && STICKY_COLUMN_EDGE_SHADOW_SX,
-          !isFixedColumn && leftAlignedHeaderSticky && align === 'left' && { clipPath: 'inset(0)' },
+          isFixedRightColumn && {
+            position: 'sticky',
+            right: fixedRightColumnRightMap.get(columnIndex),
+            zIndex: 4,
+          },
+          !leftAlignedHeaderSticky && isLastFixedLeftColumn && STICKY_LEFT_COLUMN_EDGE_SHADOW_SX,
+          !leftAlignedHeaderSticky && isLastFixedLeftColumn && getStickyColumnShadowOpacitySx(scrollState.fixedLeftColumnShadow),
+          !leftAlignedHeaderSticky && isFirstFixedRightColumn && STICKY_RIGHT_COLUMN_EDGE_SHADOW_SX,
+          !leftAlignedHeaderSticky && isFirstFixedRightColumn && getStickyColumnShadowOpacitySx(scrollState.fixedRightColumnShadow),
+          shouldStickyLeftAlignedHeader && { clipPath: 'inset(0)' },
           ...toSxArray(column.headerCellSx),
         ]}
       >
@@ -304,9 +447,7 @@ const NextGenMIStickyTable = <T,>({
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
             },
-            !isFixedColumn &&
-              leftAlignedHeaderSticky &&
-              align === 'left' && {
+            shouldStickyLeftAlignedHeader && {
               position: 'sticky',
               left: leftAlignedHeaderStickyLeft,
               width: 'fit-content',
@@ -324,21 +465,28 @@ const NextGenMIStickyTable = <T,>({
     if (column.shouldRenderCell && !column.shouldRenderCell({ row, rowIndex, column })) return null
 
     const align = getColumnAlign(column)
+    const isFixedLeftColumn = fixedLeftColumnIndexSet.has(columnIndex)
+    const isFixedRightColumn = fixedRightColumnIndexSet.has(columnIndex)
     const isFixedColumn = fixedColumnIndexSet.has(columnIndex)
-    const isLastFixedColumn = fixedColumnIndexList.at(-1) === columnIndex
+    const isLastFixedLeftColumn = lastFixedLeftColumnIndex === columnIndex
+    const isFirstFixedRightColumn = firstFixedRightColumnIndex === columnIndex
+    const rowSpan = column.getRowSpan?.({ row, rowIndex, column }) ?? 1
+    const isMergedFixedColumn = isFixedColumn && rowSpan > 1
+
     return (
       <Box
         key={column.field}
         component="td"
-        rowSpan={column.getRowSpan?.({ row, rowIndex, column }) ?? 1}
+        rowSpan={rowSpan}
         data-fixed-column={isFixedColumn ? 'true' : undefined}
+        data-merged-fixed-column={isMergedFixedColumn ? 'true' : undefined}
         sx={[
           {
             padding: `0 ${cellPadding}`,
             textAlign: align,
             fontSize: bodyFontSize,
             fontWeight: 500,
-            color: 'contentText.Black',
+            color: 'contentText.Normal',
             borderBottom: '1px solid',
             borderColor: 'contentBorder.Normal',
             verticalAlign: 'middle',
@@ -353,12 +501,20 @@ const NextGenMIStickyTable = <T,>({
             boxSizing: 'border-box',
             bgcolor: 'commonColor.White',
           },
-          isFixedColumn && {
+          isFixedLeftColumn && {
             position: 'sticky',
-            left: fixedColumnLeftMap.get(columnIndex),
+            left: fixedLeftColumnLeftMap.get(columnIndex),
             zIndex: 2,
           },
-          isLastFixedColumn && scrollState.left && STICKY_COLUMN_EDGE_SHADOW_SX,
+          isFixedRightColumn && {
+            position: 'sticky',
+            right: fixedRightColumnRightMap.get(columnIndex),
+            zIndex: 2,
+          },
+          isLastFixedLeftColumn && STICKY_LEFT_COLUMN_EDGE_SHADOW_SX,
+          isLastFixedLeftColumn && getStickyColumnShadowOpacitySx(scrollState.fixedLeftColumnShadow),
+          isFirstFixedRightColumn && STICKY_RIGHT_COLUMN_EDGE_SHADOW_SX,
+          isFirstFixedRightColumn && getStickyColumnShadowOpacitySx(scrollState.fixedRightColumnShadow),
           ...toSxArray(column.cellSx),
         ]}
       >
@@ -373,11 +529,11 @@ const NextGenMIStickyTable = <T,>({
     )
   }
 
-  return (
+  const tableContent = (
     <Box
       onMouseEnter={() => setIsScrollAreaHovered(true)}
       onMouseLeave={() => setIsScrollAreaHovered(false)}
-      sx={{ position: 'relative', width: '100%', overflow: 'hidden', bgcolor: 'commonColor.White', borderRadius: '10px' }}
+      sx={{ position: 'relative', width: '100%', overflow: 'hidden' }}
     >
       <Box
         ref={scrollRef}
@@ -419,34 +575,50 @@ const NextGenMIStickyTable = <T,>({
             {loading
               ? Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
                 <Box component="tr" key={`event-detail-sticky-table-skeleton-${rowIndex}`}>
-                  {columns.map((column, columnIndex) => (
-                    <Box
-                      key={column.field}
-                      component="td"
-                      sx={{
-                        padding: `0 ${cellPadding}`,
-                        borderBottom: '1px solid',
-                        borderColor: 'contentBorder.Normal',
-                        height: rowHeight,
-                        width: column.width,
-                        minWidth: column.minWidth ?? column.width,
-                        maxWidth: column.maxWidth ?? column.width,
-                        boxSizing: 'border-box',
-                        bgcolor: 'commonColor.White',
-                        overflow: fixedColumnIndexSet.has(columnIndex) ? 'visible' : 'hidden',
-                        ...(fixedColumnIndexSet.has(columnIndex)
-                          ? {
+                  {columns.map((column, columnIndex) => {
+                    const isFixedLeftColumn = fixedLeftColumnIndexSet.has(columnIndex)
+                    const isFixedRightColumn = fixedRightColumnIndexSet.has(columnIndex)
+                    const isFixedColumn = fixedColumnIndexSet.has(columnIndex)
+                    const isLastFixedLeftColumn = lastFixedLeftColumnIndex === columnIndex
+                    const isFirstFixedRightColumn = firstFixedRightColumnIndex === columnIndex
+
+                    return (
+                      <Box
+                        key={column.field}
+                        component="td"
+                        sx={[
+                          {
+                            padding: `0 ${cellPadding}`,
+                            borderBottom: '1px solid',
+                            borderColor: 'contentBorder.Normal',
+                            height: rowHeight,
+                            width: column.width,
+                            minWidth: column.minWidth ?? column.width,
+                            maxWidth: column.maxWidth ?? column.width,
+                            boxSizing: 'border-box',
+                            bgcolor: 'commonColor.White',
+                            overflow: isFixedColumn ? 'visible' : 'hidden',
+                          },
+                          isFixedLeftColumn && {
                             position: 'sticky',
-                            left: fixedColumnLeftMap.get(columnIndex),
+                            left: fixedLeftColumnLeftMap.get(columnIndex),
                             zIndex: 2,
-                          }
-                          : {}),
-                        ...(fixedColumnIndexList.at(-1) === columnIndex && scrollState.left ? STICKY_COLUMN_EDGE_SHADOW_SX : {}),
-                      }}
-                    >
-                      <Skeleton variant="rounded" height="18px" width={getColumnAlign(column) === 'center' ? '60%' : '80%'} />
-                    </Box>
-                  ))}
+                          },
+                          isFixedRightColumn && {
+                            position: 'sticky',
+                            right: fixedRightColumnRightMap.get(columnIndex),
+                            zIndex: 2,
+                          },
+                          isLastFixedLeftColumn && STICKY_LEFT_COLUMN_EDGE_SHADOW_SX,
+                          isLastFixedLeftColumn && getStickyColumnShadowOpacitySx(scrollState.fixedLeftColumnShadow),
+                          isFirstFixedRightColumn && STICKY_RIGHT_COLUMN_EDGE_SHADOW_SX,
+                          isFirstFixedRightColumn && getStickyColumnShadowOpacitySx(scrollState.fixedRightColumnShadow),
+                        ]}
+                      >
+                        <Skeleton variant="rounded" height="18px" width={getColumnAlign(column) === 'center' ? '60%' : '80%'} />
+                      </Box>
+                    )
+                  })}
                 </Box>
               ))
               : rows.map((row, rowIndex) => (
@@ -455,7 +627,7 @@ const NextGenMIStickyTable = <T,>({
                   key={getRowKey(row, rowIndex)}
                   sx={{
                     transition: 'background-color 120ms ease',
-                    '&:hover:not(:has([data-fixed-column="true"]:hover)) td:not([data-fixed-column="true"])': {
+                    '&:hover:not(:has([data-merged-fixed-column="true"]:hover)) td:not([data-merged-fixed-column="true"])': {
                       backgroundColor: 'gray.10',
                     },
                   }}
@@ -498,7 +670,7 @@ const NextGenMIStickyTable = <T,>({
         />
       )}
 
-      {fixedColumnIndexList.length === 0 && (
+      {fixedLeftColumnIndexList.length === 0 && (
         <Box
           aria-hidden
           sx={{
@@ -516,29 +688,31 @@ const NextGenMIStickyTable = <T,>({
         />
       )}
 
-      <Box
-        aria-hidden
-        sx={{
-          position: 'absolute',
-          top: leftAlignedHeaderSticky ? headerHeight : 0,
-          right: scrollState.vertical ? '16px' : 0,
-          bottom: scrollState.horizontal ? '18px' : 0,
-          width: '100px',
-          pointerEvents: 'none',
-          background: 'linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
-          opacity: scrollState.right ? 1 : 0,
-          transition: 'opacity 180ms ease',
-          zIndex: 5,
-        }}
-      />
+      {fixedRightColumnIndexList.length === 0 && (
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            top: leftAlignedHeaderSticky ? headerHeight : 0,
+            right: scrollState.vertical ? '16px' : 0,
+            bottom: scrollState.horizontal ? '18px' : 0,
+            width: '100px',
+            pointerEvents: 'none',
+            background: 'linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
+            opacity: scrollState.right ? 1 : 0,
+            transition: 'opacity 180ms ease',
+            zIndex: 5,
+          }}
+        />
+      )}
 
       {scrollState.horizontal && (
         <Box
           aria-hidden
           sx={{
             position: 'absolute',
-            left: 0,
-            right: scrollState.vertical ? '18px' : 0,
+            left: horizontalScrollbarLeft,
+            right: horizontalScrollbarRight,
             bottom: '4px',
             height: '10px',
             borderRadius: '10px',
@@ -599,6 +773,22 @@ const NextGenMIStickyTable = <T,>({
           />
         </Box>
       )}
+    </Box>
+  )
+
+  if (!containerShell) return tableContent
+
+  return (
+    <Box
+      sx={{
+        width: '100%',
+        bgcolor: 'commonColor.White',
+        borderRadius: '10px',
+        padding: containerPadding,
+        boxSizing: 'border-box',
+      }}
+    >
+      {tableContent}
     </Box>
   )
 }

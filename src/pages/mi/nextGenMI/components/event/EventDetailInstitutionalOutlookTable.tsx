@@ -1,11 +1,12 @@
-import DomainOutlinedIcon from '@mui/icons-material/DomainOutlined'
-import { Stack } from '@mui/material'
+import DescriptionIcon from '@mui/icons-material/Description'
+import { Box, Stack } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
 import type { EventInstitutionOutlook } from '@/service/mi/nextGenMI/event'
 import type { IPaginationResponse } from '@/types/api'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import { NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING } from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 
@@ -78,15 +79,15 @@ const EventDetailInstitutionalOutlookTable = ({
       {
         field: 'viewDate',
         headerName: '일자',
-        width: '160px',
+        width: '180px',
         renderCell: ({ row }) => row.viewDate ?? '',
       },
-      { field: 'institutionName', headerName: '기관', width: '200px', renderCell: ({ row }) => row.institutionName ?? '' },
+      { field: 'institutionName', headerName: '기관', width: '300px', renderCell: ({ row }) => row.institutionName ?? '' },
       {
         field: 'outlookSummary',
         headerName: '전망 요약',
-        width: 'max-content',
-        minWidth: '640px',
+        width: '100%',
+        minWidth: '852px',
         maxWidth: 'none',
         renderCell: ({ row }) => row.outlookSummary ?? '',
         cellSx: {
@@ -101,26 +102,34 @@ const EventDetailInstitutionalOutlookTable = ({
   return (
     <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
-        icon={<DomainOutlinedIcon sx={{ fontSize: '26px', color: 'contentText.Normal' }} />}
+        icon={<DescriptionIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
         title="기관 전망"
         tooltipTitle=""
       />
-      <Stack gap="0px">
+      <Box
+        bgcolor="commonColor.White"
+        borderRadius="10px"
+        padding={`${NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING}px`}
+        boxSizing="border-box"
+      >
         <NextGenMIStickyTable
           columns={columns}
           rows={paginatedRows}
+          fixedLeftColumnIndexes={[1]}
+          leftAlignedHeaderSticky
           getRowKey={(row, index) => `${row.viewDate ?? ''}-${row.institutionName ?? ''}-${index}`}
           loading={loading}
           noRowMessage="표시할 데이터가 없습니다."
           rowHeight={!loading && paginatedRows.length === 0 ? '400px' : undefined}
-          bodyFontSize="14px"
           skeletonRowCount={pagination.size}
+          containerShell={false}
         />
         {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
           <MIPaginationSecondary<EventInstitutionOutlook>
             data={paginationData}
             size={isServerMode ? serverPagination.size : pagination.size}
             sizeList={[...PAGE_SIZE_LIST]}
+            paddingTop={`${NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING}px`}
             onPageChange={(page) => {
               if (isServerMode) onServerPageChange?.(page)
               else setPagination((p) => ({ ...p, page }))
@@ -131,7 +140,7 @@ const EventDetailInstitutionalOutlookTable = ({
             }}
           />
         )}
-      </Stack>
+      </Box>
     </Stack>
   )
 }

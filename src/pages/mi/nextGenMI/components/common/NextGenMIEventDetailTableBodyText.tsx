@@ -5,9 +5,10 @@ import type { MouseEventHandler, ReactNode } from 'react'
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 
-export const NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX = 12
-export const NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY = 8
+export const NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX = 6
+export const NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY = 10
 export const NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY = 10
+export const NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING = 12
 
 export const NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR = 'contentText.Normal' as TypographyProps['color']
 

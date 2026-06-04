@@ -1,4 +1,4 @@
-import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import { Stack, Typography } from '@mui/material'
 
 import type { ReactNode } from 'react'
@@ -39,7 +39,7 @@ const BoxIconWrap = ({ children }: { children: ReactNode }) => (
 
 const AiInsightsTitleIcon = () => (
   <RotatingGradientClip maskImage={AI_INSIGHTS_AUTO_AWESOME_MASK_IMAGE} maskSize="30px 30px" sx={aiInsightsDiscIconSx} aria-hidden>
-    <AutoAwesomeRoundedIcon sx={{ fontSize: '30px' }} />
+    <AutoAwesomeIcon sx={{ fontSize: '30px' }} />
   </RotatingGradientClip>
 )
 

@@ -32,6 +32,12 @@ const termToLabel = (term: IndexImpactTerm): string => (isLongTerm(term) ? '중�
 
 const termToBadgeText = (term: IndexImpactTerm): string => (isLongTerm(term) ? 'L' : 'S')
 
+const isDirectionMissing = (direction?: MarketDirection | null): direction is null | undefined =>
+  direction === undefined || direction === null
+
+const isNoMarketDirection = (direction?: MarketDirection | null): boolean =>
+  isDirectionMissing(direction) || direction === MarketDirection.NEGLIGIBLE
+
 const signalBarFillColor = (direction?: MarketDirection | null): string => {
   switch (direction) {
     case MarketDirection.BULLISH:
@@ -79,30 +85,14 @@ const IndexDurationBadge = ({ term }: { term: IndexImpactTerm }) => (
  * 셀룰러 신호 막대: 영향도(채워진 막대 수) + 방향(상승 초록 하단정렬 / 하락 빨강 상단정렬)
  * viewBox 32x32 기준으로 Figma 좌표를 그대로 반영
  */
-/** 보합 / 영향 없음: 가로 막대 3개 */
-const NeutralSignalBars = ({ level, size = 32 }: { level: MarketImpactLevel | null | undefined; size?: number }) => {
-  const filled = filledBarCount(level)
-  const colorFor = (index: number): string => (index < filled ? SIGNAL_BAR_NEUTRAL : SIGNAL_BAR_EMPTY)
-
-  return (
-    <Box component="span" display="inline-flex" width={`${size}px`} height={`${size}px`} flexShrink={0}>
-      <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
-        {[0, 1, 2].map((index) => (
-          <rect
-            key={index}
-            x={8 + index * 9}
-            y={13}
-            width={6}
-            height={8}
-            rx={1.436}
-            fill={colorFor(index)}
-            transform={`rotate(90 ${11 + index * 9} 17)`}
-          />
-        ))}
-      </svg>
-    </Box>
-  )
-}
+/** 시장 방향 없음(보합 포함): 영향 강도도 없음으로 간주하여 단일 가로 막대 */
+const NoDirectionSignalBar = ({ size = 32 }: { size?: number }) => (
+  <Box component="span" display="inline-flex" width={`${size}px`} height={`${size}px`} flexShrink={0}>
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
+      <rect x={3.5} y={14} width={25} height={6} rx={1.436} fill={SIGNAL_BAR_EMPTY} />
+    </svg>
+  </Box>
+)
 
 const IndexSignalBars = ({
   level,
@@ -115,10 +105,9 @@ const IndexSignalBars = ({
 }) => {
   const filled = filledBarCount(level)
   const isBearish = direction === MarketDirection.BEARISH
-  const isNeutral = direction === MarketDirection.NEGLIGIBLE || direction === undefined || direction === null
 
-  if (isNeutral) {
-    return <NeutralSignalBars level={level} size={size} />
+  if (isNoMarketDirection(direction)) {
+    return <NoDirectionSignalBar size={size} />
   }
 
   const fillColor = signalBarFillColor(direction)
@@ -213,9 +202,13 @@ const SignalTooltipContent = ({
   term: IndexImpactTerm
   termLabel?: string | null
 }) => {
-  const impactLabel = levelLabel?.trim() || (level === undefined || level === null ? '-' : MARKET_IMPACT_LEVEL_KO[level])
+  const impactLabel = isNoMarketDirection(direction)
+    ? '-'
+    : levelLabel?.trim() || (level === undefined || level === null ? '-' : MARKET_IMPACT_LEVEL_KO[level])
   const directionValueLabel =
-    directionLabel?.trim() || (direction === undefined || direction === null ? '-' : marketDirectionToLabel(direction))
+    direction === MarketDirection.NEGLIGIBLE
+      ? marketDirectionToLabel(MarketDirection.NEGLIGIBLE)
+      : directionLabel?.trim() || (isDirectionMissing(direction) ? '-' : marketDirectionToLabel(direction))
   const title = indexLabel || termToLabel(term)
   return (
     <Stack gap="4px">
