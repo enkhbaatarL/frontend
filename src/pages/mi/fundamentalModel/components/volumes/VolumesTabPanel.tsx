@@ -3,8 +3,12 @@ import { useQuery } from '@tanstack/react-query'
 import { memo, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import type { FundamentalModelScopeKey, FundamentalModelTradeVolumesData } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
-import type { FundamentalModelVolumesGranularity, FundamentalModelVolumesSegment } from '@/service/mi/fundamentalModel/case'
+import type { FundamentalModelScopeKey } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type {
+  FundamentalModelTradeSelector,
+  FundamentalModelVolumesGranularity,
+  FundamentalModelVolumesSegment,
+} from '@/service/mi/fundamentalModel/case'
 
 import FundamentalModelSectionVolumesTable from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSectionVolumesTable'
 import FundamentalModelSegmentToolbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSegmentToolbar'
@@ -15,20 +19,19 @@ import {
   isAllVolumeFiltersSelected,
   normalizeVolumeFiltersForScope,
   readSavedVolumeFilters,
+  toApiTradeFlowTypes,
   toApiVolumeRegions,
   toApiVolumeTypes,
   type FundamentalModelVolumeFilters,
 } from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumeFilters'
 import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
 
-/** Volumes 탭에 필요한 표 데이터 - Trade는 API 매트릭스 형태가 달라 mock 그대로 사용 */
+/** Volumes 탭에 필요한 표 데이터 */
 export interface VolumesTabPanelProps {
   /** getVolumes 호출 대상 case (양수일 때만 호출) */
   caseId: number | null
   /** 페이지 탭 sticky band 내부에 toolbar를 주입할 slot */
   toolbarSlotEl?: HTMLElement | null
-  /** Trade 본문 표 - 별도 mock(API 미정) */
-  tradeVolumes: FundamentalModelTradeVolumesData
   /** 케이스 상세 로딩 상태(헤더/탭 전환과 동기화) */
   detailLoading: boolean
 }
@@ -39,13 +42,12 @@ const SCOPE_TO_SEGMENT: Record<FundamentalModelScopeKey, FundamentalModelVolumes
   trade: 'TRADE',
 }
 
-const periodToGranularity = (period: string): FundamentalModelVolumesGranularity => (period === 'yearly' ? 'YEARLY' : 'MONTHLY')
-const PLATFORM_VOLUME_UNIT_LABEL = 'mtpa'
-
 /** Volumes 탭 본문(툴바 + 매트릭스 - 레이아웃은 FundamentalModelPage) */
-const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, tradeVolumes, detailLoading }: VolumesTabPanelProps) => {
+const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, detailLoading }: VolumesTabPanelProps) => {
   const [scope, setScope] = useState<FundamentalModelScopeKey>('global')
-  const [period, setPeriod] = useState('yearly')
+  const [granularity, setGranularity] = useState<FundamentalModelVolumesGranularity>('YEARLY')
+  const [tradeSelector, setTradeSelector] = useState<FundamentalModelTradeSelector>('LNG')
+  const [tradeYear, setTradeYear] = useState(2026)
   const savedFilters = readSavedVolumeFilters()
   const [volumeFilters, setVolumeFilters] = useState<FundamentalModelVolumeFilters>(() => savedFilters ?? createDefaultVolumeFilters())
   const [saveFiltersOn, setSaveFiltersOn] = useState(Boolean(savedFilters))
@@ -61,7 +63,6 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, tradeVolumes, detailLoadi
     setSaveFiltersOn(false)
   }
 
-  const granularity = periodToGranularity(period)
   const segment = SCOPE_TO_SEGMENT[scope]
   const isSectionScope = scope === 'global' || scope === 'lng'
   const scopedVolumeFilters = useMemo(() => normalizeVolumeFiltersForScope(volumeFilters, scope), [scope, volumeFilters])
@@ -76,9 +77,21 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, tradeVolumes, detailLoadi
     () => (allFiltersSelected ? undefined : toApiVolumeRegions(scopedVolumeFilters.regions)),
     [allFiltersSelected, scopedVolumeFilters.regions],
   )
+  const apiTradeTypes = useMemo(
+    () => (allFiltersSelected ? undefined : toApiTradeFlowTypes(scopedVolumeFilters.types)),
+    [allFiltersSelected, scopedVolumeFilters.types],
+  )
 
   const isValidCaseId = typeof caseId === 'number' && Number.isFinite(caseId) && caseId > 0
   const enableSectionQuery = isSectionScope && isValidCaseId
+  const enableTradeQuery = scope === 'trade' && isValidCaseId
+
+  const { data: filterOptions } = useQuery({
+    queryKey: ['fundamentalModel', 'volumes', 'filterOptions'],
+    queryFn: fundamentalModelCaseService.getVolumesFilterOptions,
+    refetchOnWindowFocus: false,
+    staleTime: Infinity,
+  })
 
   const {
     data: volumesRes,
@@ -98,7 +111,27 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, tradeVolumes, detailLoadi
     placeholderData: (previous) => previous,
   })
 
+  const {
+    data: tradeFlows,
+    isLoading: tradeFlowsLoading,
+    isFetching: tradeFlowsFetching,
+  } = useQuery({
+    queryKey: ['fundamentalModel', 'tradeFlows', caseId, tradeSelector, tradeYear, apiTradeTypes, apiRegions],
+    queryFn: () =>
+      fundamentalModelCaseService.getTradeFlows(caseId as number, {
+        selector: tradeSelector,
+        year: tradeYear,
+        unit: 'MTPA',
+        types: apiTradeTypes,
+        regions: apiRegions,
+      }),
+    enabled: enableTradeQuery,
+    refetchOnWindowFocus: false,
+    placeholderData: (previous) => previous,
+  })
+
   const sectionLoading = detailLoading || volumesLoading || volumesFetching
+  const tradeLoading = detailLoading || tradeFlowsLoading || tradeFlowsFetching
   const volumeColumns = volumesRes?.columns ?? []
   const sectionRows = volumesRes?.rows ?? []
   const toolbar = (
@@ -109,42 +142,50 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, tradeVolumes, detailLoadi
       volumeFilters={scopedVolumeFilters}
       onApplyVolumeFilters={handleApplyVolumeFilters}
       initialSaveFilters={saveFiltersOn}
-      period={period}
-      onPeriodChange={setPeriod}
+      granularity={granularity}
+      onGranularityChange={setGranularity}
+      filterOptions={filterOptions ?? null}
     />
   )
+  const toolbarPortalContent = (
+    <Box
+      sx={{
+        animation: 'fundamentalModelPageFadeIn 0.15s ease-out',
+        '@keyframes fundamentalModelPageFadeIn': {
+          from: { opacity: 0 },
+          to: { opacity: 1 },
+        },
+      }}
+    >
+      {toolbar}
+    </Box>
+  )
+  const toolbarPortal = toolbarSlotEl ? createPortal(toolbarPortalContent, toolbarSlotEl) : null
 
   return (
     <>
-      {toolbarSlotEl
-        ? createPortal(
-          <Box
-            sx={{
-              animation: 'fundamentalModelPageFadeIn 0.15s ease-out',
-              '@keyframes fundamentalModelPageFadeIn': {
-                from: { opacity: 0 },
-                to: { opacity: 1 },
-              },
-            }}
-          >
-            {toolbar}
-          </Box>,
-          toolbarSlotEl,
-        )
-        : null}
+      {toolbarPortal}
 
       <Stack sx={{ gap: '16px' }}>
         {!toolbarSlotEl && toolbar}
         {scope === 'trade' ? (
-          <FundamentalModelTradeVolumesTable data={tradeVolumes} filters={scopedVolumeFilters} loading={detailLoading} />
+          <FundamentalModelTradeVolumesTable
+            tradeFlows={tradeFlows ?? null}
+            selector={tradeSelector}
+            year={tradeYear}
+            unit={tradeFlows?.unit ?? 'MTPA'}
+            loading={tradeLoading}
+            onSelectorChange={setTradeSelector}
+            onYearChange={setTradeYear}
+          />
         ) : (
           <Stack gap="10px">
-            <Stack direction="row" alignItems="center" gap="4px" sx={{ minHeight: 28 }}>
+            <Stack direction="row" alignItems="center" gap="4px" sx={{ minHeight: '28px' }}>
               <Typography variant="body2M14" color="gray.60">
                 Unit:
               </Typography>
               <Typography variant="body2M14" color="gray.70">
-                {sectionLoading ? '-' : PLATFORM_VOLUME_UNIT_LABEL}
+                {sectionLoading ? '-' : 'mtpa'}
               </Typography>
             </Stack>
             <FundamentalModelSectionVolumesTable columns={volumeColumns} rows={sectionRows} loading={sectionLoading} />

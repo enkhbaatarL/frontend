@@ -66,6 +66,7 @@ export const FM_VOLUME_SUMMARY_LABEL_COL_W = 260
 
 /** 본문 셀 구분선(content.border.normal #DEE2E6) */
 export const FM_VOLUME_TABLE_BORDER = '1px solid #DEE2E6'
+export const FM_VOLUME_TABLE_TOTAL_ROW_BORDER = '2px solid #DEE2E6'
 
 /** 헤더 하단 구분선(gray.40 #CED4DA) */
 export const FM_VOLUME_TABLE_HEADER_BORDER = '1px solid #CED4DA'
@@ -100,10 +101,10 @@ export const fmVolumeTableBodyCellSx: SystemStyleObject<Theme> = {
 export const FM_VOLUME_SUBTOTAL_CELL_BG = 'var(--common-primary-5, rgba(46, 63, 94, 0.05))'
 export const FM_VOLUME_TOTAL_CELL_BG = 'var(--common-primary-10, rgba(46, 63, 94, 0.1))'
 
-/** Total 행 상단 구분선 - 이전 행 borderBottom과 겹치지 않도록 Total에만 적용 */
+/** Total 행 구분선 - 이전 행 borderBottom과 겹치지 않도록 Total에만 적용 */
 export const fmVolumeTableTotalRowCellSx: SystemStyleObject<Theme> = {
   borderTop: FM_VOLUME_TABLE_BORDER,
-  borderBottom: FM_VOLUME_TABLE_BORDER,
+  borderBottom: FM_VOLUME_TABLE_TOTAL_ROW_BORDER,
   bgcolor: FM_VOLUME_TOTAL_CELL_BG,
 }
 

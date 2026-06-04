@@ -1,7 +1,7 @@
 import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type { IFundamentalModelCaseDetail } from '@/service/mi/fundamentalModel/case'
+import type { FundamentalModelCaseDetail } from '@/service/mi/fundamentalModel/case'
 
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MoreVertIcon from '@/components/common/icons/MoreVertIcon'
@@ -20,7 +20,7 @@ export interface FundamentalModelCaseEditPayload {
 
 /** 본 페이지 우측 상세 헤더 props */
 export interface FundamentalModelDetailHeaderProps {
-  detail: IFundamentalModelCaseDetail | null
+  detail: FundamentalModelCaseDetail | null
   /** 상세 로딩 */
   loading?: boolean
   /** 수정 저장 (PATCH case) */

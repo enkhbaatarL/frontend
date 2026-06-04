@@ -1,39 +1,46 @@
 import { KeyboardArrowDownRounded } from '@mui/icons-material'
-import { Box, Stack, Typography } from '@mui/material'
+import { Divider, Stack, Typography } from '@mui/material'
 import { memo, useMemo, useState } from 'react'
 
-import type { FundamentalModelTradeFilterOption } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type { FundamentalModelTradeSelector, FundamentalModelTradeUnit } from '@/service/mi/fundamentalModel/case'
 
 import MIMenuSelector from '@/components/common/input/MIMenuSelector'
 
 export interface FundamentalModelTradeSummaryToolbarProps {
-  productOptions: FundamentalModelTradeFilterOption[]
-  yearOptions: FundamentalModelTradeFilterOption[]
-  selectedProductId: string
-  selectedYearId: string
-  unitLabel: string
+  selectorOptions: Array<{ value: FundamentalModelTradeSelector; label: string }>
+  yearOptions: Array<{ value: number; label: string }>
+  selector: FundamentalModelTradeSelector
+  year: number
+  unit: FundamentalModelTradeUnit
   loading?: boolean
-  onProductChange?: (productId: string) => void
-  onYearChange?: (yearId: string) => void
+  onSelectorChange?: (selector: FundamentalModelTradeSelector) => void
+  onYearChange?: (year: number) => void
 }
 
-interface TradeSummaryDropdownProps {
+interface TradeSummaryDropdownProps<T extends string | number> {
   label: string
-  options: FundamentalModelTradeFilterOption[]
-  selectedId: string
+  options: Array<{ value: T; label: string }>
+  selected: T
   loading?: boolean
-  minWidthMenu?: number
-  onChange?: (id: string) => void
+  minWidthMenu?: string
+  onChange?: (value: T) => void
 }
 
-const TradeSummaryDropdown = ({ label, options, selectedId, loading, minWidthMenu = 120, onChange }: TradeSummaryDropdownProps) => {
+const TradeSummaryDropdown = <T extends string | number>({
+  label,
+  options,
+  selected,
+  loading,
+  minWidthMenu = '120px',
+  onChange,
+}: TradeSummaryDropdownProps<T>) => {
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const menuOptions = useMemo(() => options.map((option) => ({ value: option.id, label: option.label })), [options])
+  const menuOptions = useMemo(() => options.map((option) => ({ value: option.value, label: option.label })), [options])
 
   const selectedValue = useMemo(
-    () => ({ value: selectedId, label: options.find((o) => o.id === selectedId)?.label ?? label }),
-    [label, options, selectedId],
+    () => ({ value: selected, label: options.find((option) => option.value === selected)?.label ?? label }),
+    [label, options, selected],
   )
 
   return (
@@ -42,7 +49,7 @@ const TradeSummaryDropdown = ({ label, options, selectedId, loading, minWidthMen
       options={menuOptions}
       minWidthMenu={minWidthMenu}
       onOpen={setMenuOpen}
-      onChange={(item) => onChange?.(String(item.value))}
+      onChange={(item) => onChange?.(item.value as T)}
       sx={{
         '& .MuiPaper-root': {
           borderRadius: '4px',
@@ -60,11 +67,11 @@ const TradeSummaryDropdown = ({ label, options, selectedId, loading, minWidthMen
         }}
       >
         <Typography variant="body2SB14" color="gray.90">
-          {loading ? '—' : selectedValue.label}
+          {loading ? '-' : selectedValue.label}
         </Typography>
         <KeyboardArrowDownRounded
           sx={{
-            fontSize: 20,
+            fontSize: '20px',
             color: 'gray.70',
             transition: 'transform 150ms ease',
             transform: menuOpen ? 'rotate(180deg)' : 'none',
@@ -78,40 +85,27 @@ const TradeSummaryDropdown = ({ label, options, selectedId, loading, minWidthMen
 /** Trade 탭 상단 요약(가스 유형 / 연도 드롭다운 + Unit) */
 const FundamentalModelTradeSummaryToolbar = memo(
   ({
-    productOptions,
+    selectorOptions,
     yearOptions,
-    selectedProductId,
-    selectedYearId,
-    unitLabel,
+    selector,
+    year,
+    unit,
     loading = false,
-    onProductChange,
+    onSelectorChange,
     onYearChange,
   }: FundamentalModelTradeSummaryToolbarProps) => (
-    <Stack direction="row" alignItems="center" gap="8px" sx={{ minHeight: 28 }}>
+    <Stack direction="row" alignItems="center" gap="8px" sx={{ minHeight: '28px' }}>
       <Stack direction="row" alignItems="center" gap="8px">
-        <TradeSummaryDropdown
-          label="LNG"
-          options={productOptions}
-          selectedId={selectedProductId}
-          loading={loading}
-          onChange={onProductChange}
-        />
-        <TradeSummaryDropdown
-          label="2026"
-          options={yearOptions}
-          selectedId={selectedYearId}
-          loading={loading}
-          minWidthMenu={120}
-          onChange={onYearChange}
-        />
+        <TradeSummaryDropdown label="LNG" options={selectorOptions} selected={selector} loading={loading} onChange={onSelectorChange} />
+        <TradeSummaryDropdown label="2026" options={yearOptions} selected={year} loading={loading} onChange={onYearChange} />
       </Stack>
-      <Box sx={{ width: '1px', height: 12, bgcolor: 'gray.40', flexShrink: 0 }} />
+      <Divider orientation="vertical" flexItem sx={{ height: '12px', alignSelf: 'center', borderColor: 'gray.40' }} />
       <Stack direction="row" alignItems="center" gap="4px">
         <Typography variant="body2M14" color="gray.60">
           Unit:
         </Typography>
         <Typography variant="body2M14" color="gray.70">
-          {loading ? '—' : unitLabel}
+          {loading ? '-' : unit}
         </Typography>
       </Stack>
     </Stack>

@@ -220,7 +220,6 @@ const NextGenMIPage = () => {
               variant="titleLarge"
               position="absolute"
               top="12px"
-              left="24px"
               fontSize="38px"
               sx={{
                 transform: `translateY(${isScrolled ? -6 : 0}px)`,

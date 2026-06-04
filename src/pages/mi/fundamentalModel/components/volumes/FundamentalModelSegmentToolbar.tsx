@@ -2,6 +2,12 @@ import { Button, Stack, Typography } from '@mui/material'
 import { useMemo } from 'react'
 
 import type { FundamentalModelScopeKey } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
+import type {
+  FundamentalModelFilterOption,
+  FundamentalModelVolumesFilterOptions,
+  FundamentalModelVolumesGranularity,
+  FundamentalModelVolumesSegment,
+} from '@/service/mi/fundamentalModel/case'
 
 import MIFilterMenu, { type FilterValues } from '@/components/common/menu/MIFilterMenu'
 import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISelectMenu'
@@ -21,13 +27,18 @@ export interface FundamentalModelSegmentToolbarProps {
   volumeFilters: FundamentalModelVolumeFilters
   onApplyVolumeFilters: (filters: FundamentalModelVolumeFilters, save?: boolean) => void
   initialSaveFilters?: boolean
-  period: string
-  onPeriodChange: (period: string) => void
+  granularity: FundamentalModelVolumesGranularity
+  onGranularityChange: (granularity: FundamentalModelVolumesGranularity) => void
+  filterOptions?: FundamentalModelVolumesFilterOptions | null
 }
 
 const SCOPE_VALUES: FundamentalModelScopeKey[] = ['global', 'lng', 'trade']
 
-const regionFilters = FM_VOLUME_REGION_OPTIONS.map((o) => ({ label: o.label, value: o.value }))
+const getScopeSegment = (scope: FundamentalModelScopeKey): FundamentalModelVolumesSegment =>
+  scope === 'global' ? 'GLOBAL' : scope === 'lng' ? 'LNG' : 'TRADE'
+
+const toFilterMenuItems = (options: readonly FundamentalModelFilterOption[]) =>
+  options.map((option) => ({ label: option.label, value: option.value }))
 
 /** Volume 탭 상단 Global/LNG/Trade, Filters, 주기 툴바 */
 const FundamentalModelSegmentToolbar = ({
@@ -37,21 +48,39 @@ const FundamentalModelSegmentToolbar = ({
   volumeFilters,
   onApplyVolumeFilters,
   initialSaveFilters = false,
-  period,
-  onPeriodChange,
+  granularity,
+  onGranularityChange,
+  filterOptions,
 }: FundamentalModelSegmentToolbarProps) => {
   const scopedVolumeFilters = useMemo(() => normalizeVolumeFiltersForScope(volumeFilters, scope), [scope, volumeFilters])
-  const typeFilters = useMemo(() => getVolumeTypeOptionsForScope(scope).map((o) => ({ label: o.label, value: o.value })), [scope])
+  const segmentFilterOptions = useMemo(
+    () => filterOptions?.segments?.find((option) => option.segment === getScopeSegment(scope)),
+    [filterOptions?.segments, scope],
+  )
+  const typeFilters = useMemo(
+    () => toFilterMenuItems(segmentFilterOptions?.types?.length ? segmentFilterOptions.types : getVolumeTypeOptionsForScope(scope)),
+    [scope, segmentFilterOptions?.types],
+  )
+  const regionFilters = useMemo(
+    () => toFilterMenuItems(segmentFilterOptions?.regions?.length ? segmentFilterOptions.regions : FM_VOLUME_REGION_OPTIONS),
+    [segmentFilterOptions?.regions],
+  )
   const selectedFilterCount = useMemo(() => countSelectedVolumeFilters(scopedVolumeFilters, scope), [scope, scopedVolumeFilters])
   const showFilterBadge = !isAllVolumeFiltersSelected(scopedVolumeFilters, scope)
 
-  const periodItems: SelectMenuItem<string>[] = useMemo(
-    () => [
-      { value: 'monthly', label: 'Monthly' },
-      { value: 'yearly', label: 'Yearly' },
-    ],
-    [],
-  )
+  const granularityItems: SelectMenuItem<FundamentalModelVolumesGranularity>[] = useMemo(() => {
+    if (!segmentFilterOptions?.granularities?.length) {
+      return [
+        { value: 'MONTHLY', label: 'Monthly' },
+        { value: 'YEARLY', label: 'Yearly' },
+      ]
+    }
+
+    return segmentFilterOptions.granularities.map((option) => ({
+      value: option.value as FundamentalModelVolumesGranularity,
+      label: option.label,
+    }))
+  }, [segmentFilterOptions?.granularities])
 
   const handleApplyFilters = (filterValues: FilterValues, save?: boolean) => {
     onApplyVolumeFilters(
@@ -64,7 +93,7 @@ const FundamentalModelSegmentToolbar = ({
   }
 
   return (
-    <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2} sx={{ minHeight: 36, flexWrap: 'wrap' }}>
+    <Stack direction="row" alignItems="center" justifyContent="space-between" gap="16px" sx={{ minHeight: '36px', flexWrap: 'wrap' }}>
       <Stack direction="row" alignItems="center" gap="8px" sx={{ opacity: loading ? 0.5 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
         {SCOPE_VALUES.map((key) => {
           const selected = scope === key
@@ -78,9 +107,8 @@ const FundamentalModelSegmentToolbar = ({
               sx={{
                 textTransform: 'none',
                 borderRadius: '100px',
-                px: '13px',
-                py: '6px',
-                fontSize: 16,
+                padding: '6px 13px',
+                fontSize: '16px',
                 fontWeight: selected ? 600 : 500,
                 borderColor: selected ? 'content.borderActivePrimary' : 'gray.20',
                 color: selected ? 'content.textBlack' : 'content.textNormal',
@@ -121,7 +149,7 @@ const FundamentalModelSegmentToolbar = ({
                 key: 'types',
                 title: 'Type',
                 filters: typeFilters,
-                width: 131,
+                width: '131px',
               },
             ],
             [
@@ -129,7 +157,7 @@ const FundamentalModelSegmentToolbar = ({
                 key: 'regions',
                 title: 'Regions',
                 filters: regionFilters,
-                width: 200,
+                width: '200px',
               },
             ],
           ]}
@@ -143,22 +171,22 @@ const FundamentalModelSegmentToolbar = ({
           placement="bottom-end"
           menuPositionOffset={{ right: 0 }}
           enableHoverBackground
-          sx={{ minWidth: 105, height: 40 }}
+          sx={{ minWidth: '105px', height: '40px' }}
         />
         {scope !== 'trade' && (
           <MISelectMenu
             variant="outlined"
-            selected={period}
-            onSelected={(v: string) => onPeriodChange(v)}
-            items={periodItems}
+            selected={granularity}
+            onSelected={(v: FundamentalModelVolumesGranularity) => onGranularityChange(v)}
+            items={granularityItems}
             enableHoverBackground
             sx={{
-              height: 40,
+              height: '40px',
               borderRadius: '10px',
               color: 'gray.70',
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: 14,
+              fontSize: '14px',
             }}
           />
         )}

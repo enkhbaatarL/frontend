@@ -2,8 +2,6 @@ import { Box, Stack, Typography } from '@mui/material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
-import type { FundamentalModelTradeVolumesData } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
-
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import useSnackbar from '@/hooks/useSnackbar'
 import FundamentalModelPageSkeleton from '@/pages/mi/fundamentalModel/components/common/FundamentalModelPageSkeleton'
@@ -16,7 +14,6 @@ import FundamentalModelRunPlaceholder from '@/pages/mi/fundamentalModel/componen
 import FundamentalModelDetailHeader from '@/pages/mi/fundamentalModel/components/header/FundamentalModelDetailHeader'
 import PriceTabPanel from '@/pages/mi/fundamentalModel/components/price/PriceTabPanel'
 import VolumesTabPanel from '@/pages/mi/fundamentalModel/components/volumes/VolumesTabPanel'
-import { fetchFundamentalModelDetail } from '@/pages/mi/fundamentalModel/fundamentalModelMockApi'
 import { FUNDAMENTAL_MODEL_VIEW_TABS, type FundamentalModelViewTabKey } from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
 import {
   runStatusToPlaceholderMode,
@@ -34,15 +31,6 @@ const RIGHT_BODY_CONTENT_GAP_PX = 16
 const TAB_STICKY_FALLBACK_HEIGHT_PX = 64
 const STICKY_GUARANTEE_PX = 1
 const RIGHT_BODY_MIN_HEIGHT_FALLBACK_CSS = `calc(${FUNDAMENTAL_MODEL_RUN_LIST_PANEL_HEIGHT_CSS} + ${STICKY_GUARANTEE_PX}px)`
-const EMPTY_TRADE_VOLUMES: FundamentalModelTradeVolumesData = {
-  productOptions: [],
-  yearOptions: [],
-  selectedProductId: '',
-  selectedYearId: '',
-  unitLabel: 'mtpa',
-  fromColumns: [],
-  toRows: [],
-}
 
 const getTabPanelAttachOffset = (tabKey: FundamentalModelViewTabKey, completed: boolean) =>
   RIGHT_BODY_CONTENT_GAP_PX - (completed && tabKey === 'volumes' ? RIGHT_STICKY_TOOLBAR_BOTTOM_PADDING_PX : 0)
@@ -65,10 +53,6 @@ const isTabPinnedToScrollTop = (scrollEl: HTMLElement, tabEl: HTMLElement) => {
   const tabRect = tabEl.getBoundingClientRect()
   return tabRect.top <= scrollRect.top + RIGHT_STICKY_TOP_PX + 0.5
 }
-
-// #TODO: Trade API 연동되면 지우기
-/** COMPLETED 케이스 Trade 표 mock 보강용 고정 id (result API 대체) */
-const TAB_PANEL_MOCK_RUN_ID = '2'
 
 /** MI 수급 모델 — URL 고정 `/mi/fundamental-model`, 선택은 클라이언트 state */
 const FundamentalModelPage = () => {
@@ -122,13 +106,6 @@ const FundamentalModelPage = () => {
 
   const { handleRun, handleRetry, isRunPending } = useFundamentalModelRunExecution(activeCaseId, effectiveCaseStatus ?? undefined, {
     onRunSettled: handleRunSettled,
-  })
-
-  const { data: tabPanelMock } = useQuery({
-    queryKey: ['fundamentalModel', 'tabPanelMock', TAB_PANEL_MOCK_RUN_ID],
-    queryFn: () => fetchFundamentalModelDetail(TAB_PANEL_MOCK_RUN_ID),
-    enabled: (caseDetail?.status ?? selectedCaseListStatus) === 'COMPLETED',
-    refetchOnWindowFocus: false,
   })
 
   const { data: priceData, isLoading: priceLoading } = useQuery({
@@ -483,7 +460,6 @@ const FundamentalModelPage = () => {
               <VolumesTabPanel
                 caseId={Number.isFinite(parsedCaseId) && parsedCaseId > 0 ? parsedCaseId : null}
                 toolbarSlotEl={volumeToolbarSlotEl}
-                tradeVolumes={tabPanelMock?.tradeVolumes ?? EMPTY_TRADE_VOLUMES}
                 detailLoading={detailLoading}
               />
             </Box>
@@ -508,14 +484,13 @@ const FundamentalModelPage = () => {
 
   return (
     <Stack maxWidth="1380px" margin="auto" pt="20px" pb="16px" sx={{ userSelect: 'none' }}>
-      <Box height="96px" padding="12px 24px" boxSizing="border-box" flexShrink={0}>
+      <Box height="96px" py="12px" boxSizing="border-box" flexShrink={0}>
         <Typography variant="titleLarge" color="gray.90" fontSize="38px">
           MI Fundamental Model
         </Typography>
       </Box>
 
       <Box
-        px={{ xs: 2, md: 3 }}
         sx={{
           display: 'grid',
           gridTemplateColumns: '350px minmax(0, 1fr)',

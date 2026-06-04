@@ -4,16 +4,11 @@ import api from '@/lib/axios'
 import { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse } from '@/types/api'
 
-/** listCases searchType — Swagger Fundamental Model Case API */
 export type FundamentalModelCaseSearchType = 'TITLE' | 'ASSIGNEE_NAME'
-
-/** listCases case status — Swagger FundamentalModelCaseListItemRes */
 export type FundamentalModelCaseStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'
-
-/** latestRun status — FundamentalModelRunStatusRes */
 export type FundamentalModelRunStatus = 'RUNNING' | 'COMPLETED' | 'FAILED'
 
-export interface IFundamentalModelCaseListItem {
+export interface FundamentalModelCaseListItem {
   caseId: number
   title: string
   status: FundamentalModelCaseStatus
@@ -22,17 +17,17 @@ export interface IFundamentalModelCaseListItem {
   updatedAt: string
 }
 
-export interface IFundamentalModelCaseListRes {
+export interface FundamentalModelCaseList {
   totalCount: number
-  cases: IFundamentalModelCaseListItem[]
+  cases: FundamentalModelCaseListItem[]
 }
 
-export interface IGetFundamentalModelCasesParams {
+export interface GetFundamentalModelCasesParams {
   searchType?: FundamentalModelCaseSearchType
   keyword?: string
 }
 
-export interface IFundamentalModelCaseFile {
+export interface FundamentalModelCaseFile {
   fileIndex: number
   originalFileName: string
   contentType?: string
@@ -40,7 +35,7 @@ export interface IFundamentalModelCaseFile {
   mockFileId?: string
 }
 
-export interface IFundamentalModelCaseLatestRun {
+export interface FundamentalModelLatestRun {
   runId: string
   status: FundamentalModelRunStatus
   requestedAt?: string
@@ -50,48 +45,57 @@ export interface IFundamentalModelCaseLatestRun {
   errorMessage?: string
 }
 
-export interface IFundamentalModelCaseDetail {
+export interface FundamentalModelCaseDetail {
   caseId: number
   title: string
   description?: string | null
   status: FundamentalModelCaseStatus
   assigneeName: string
-  files: IFundamentalModelCaseFile[]
-  latestRun: IFundamentalModelCaseLatestRun | null
+  files: FundamentalModelCaseFile[]
+  latestRun: FundamentalModelLatestRun | null
   createdAt: string
   updatedAt: string
 }
 
-export interface IFundamentalModelCaseCreateReq {
+export interface FundamentalModelCaseCreateRequest {
   title: string
   description?: string
   files: File[]
 }
 
-export interface IFundamentalModelCaseCreateRes {
+export interface FundamentalModelCaseCreate {
   caseId: number
   title: string
   description?: string | null
   status: FundamentalModelCaseStatus
-  files: IFundamentalModelCaseFile[]
+  files: FundamentalModelCaseFile[]
   createdAt: string
   statusEndpoint?: string
 }
 
-export interface IFundamentalModelCaseUpdateReq {
+export interface FundamentalModelCaseUpdateRequest {
   title?: string
   description?: string
 }
 
-export interface IFundamentalModelRunReq {
+export interface FundamentalModelRunRequest {
   requestedByClientId?: string
 }
 
-export type IFundamentalModelRunCallbackReq = Record<string, unknown>
-export type IFundamentalModelRunCallbackRes = unknown
+export interface FundamentalModelRunCallbackRequest {
+  status: FundamentalModelRunStatus
+  finishedAt: string
+  failureReason?: string
+  errorMessage?: string
+}
 
-/** runCase 응답 — FundamentalModelRunAcceptRes */
-export interface IFundamentalModelRunAcceptRes {
+export interface FundamentalModelRunCallback {
+  runId: string
+  status: FundamentalModelRunStatus
+  processedAt?: string
+}
+
+export interface FundamentalModelRunAccept {
   caseId: number
   runId: string
   status: FundamentalModelRunStatus
@@ -100,45 +104,44 @@ export interface IFundamentalModelRunAcceptRes {
   statusEndpoint?: string
 }
 
-/** getCaseStatus 응답 — FundamentalModelCaseStatusRes */
-export interface IFundamentalModelCaseStatusRes {
+export interface FundamentalModelCaseStatusSnapshot {
   caseId: number
   title: string
   status: FundamentalModelCaseStatus
-  latestRun: IFundamentalModelCaseLatestRun | null
+  latestRun: FundamentalModelLatestRun | null
   createdAt: string
   updatedAt: string
 }
 
 export type FundamentalModelPriceSeriesType = 'BASE_CASE' | 'USER_ADJUSTED'
 
-export interface IFundamentalModelPriceChartPoint {
+export interface FundamentalModelPriceChartPoint {
   year: number
   month: number
   value: number
 }
 
-export interface IFundamentalModelPriceChartSeries {
+export interface FundamentalModelPriceChartSeries {
   seriesType: FundamentalModelPriceSeriesType
   label: string
-  points: IFundamentalModelPriceChartPoint[]
+  points: FundamentalModelPriceChartPoint[]
 }
 
-export interface IFundamentalModelPriceChartSeriesSet {
+export interface FundamentalModelPriceChartSeriesSet {
   priceRegion: string
-  series: IFundamentalModelPriceChartSeries[]
+  series: FundamentalModelPriceChartSeries[]
 }
 
-export interface IFundamentalModelPriceChart {
-  seriesSets: IFundamentalModelPriceChartSeriesSet[]
+export interface FundamentalModelPriceChart {
+  seriesSets: FundamentalModelPriceChartSeriesSet[]
 }
 
-export interface IFundamentalModelPriceColumn {
+export interface FundamentalModelPriceColumn {
   key: string
   label: string
 }
 
-export interface IFundamentalModelPriceRow {
+export interface FundamentalModelPriceRow {
   year: number
   month?: number | null
   priceRegion: string
@@ -147,25 +150,20 @@ export interface IFundamentalModelPriceRow {
   [key: string]: string | number | null | undefined
 }
 
-export interface IFundamentalModelPriceTable {
-  columns: IFundamentalModelPriceColumn[]
-  rows: IFundamentalModelPriceRow[]
+export interface FundamentalModelPriceTable {
+  columns: FundamentalModelPriceColumn[]
+  rows: FundamentalModelPriceRow[]
 }
 
-export interface IFundamentalModelPriceRes {
+export interface FundamentalModelPrice {
   caseId: number
-  chart: IFundamentalModelPriceChart
-  annualTable: IFundamentalModelPriceTable
-  monthlyTable: IFundamentalModelPriceTable
+  chart: FundamentalModelPriceChart
+  annualTable: FundamentalModelPriceTable
+  monthlyTable: FundamentalModelPriceTable
 }
 
-/** getVolumes segment - GLOBAL/LNG/TRADE */
 export type FundamentalModelVolumesSegment = 'GLOBAL' | 'LNG' | 'TRADE'
-
-/** getVolumes 데이터 타입(섹션 단위) */
 export type FundamentalModelVolumesType = 'DEMAND' | 'PRODUCTION' | 'LNG_IMPORTS' | 'LNG_EXPORTS' | 'PIPELINE_IMPORTS' | 'PIPELINE_EXPORTS'
-
-/** getVolumes region */
 export type FundamentalModelVolumesRegion =
   | 'ASIA'
   | 'EUROPE'
@@ -176,21 +174,37 @@ export type FundamentalModelVolumesRegion =
   | 'AFRICA'
   | 'SOUTH_AMERICA'
 
-/** getVolumes 시간 단위 */
 export type FundamentalModelVolumesGranularity = 'MONTHLY' | 'YEARLY'
-
-/** getVolumes 행 구분 - COUNTRY: 국가행, REGION_SUBTOTAL: 지역 소계, TYPE_TOTAL: 섹션 총계 */
 export type FundamentalModelVolumesRowKind = 'COUNTRY' | 'REGION_SUBTOTAL' | 'TYPE_TOTAL'
 
-/** Volumes 컬럼(시간축) - YEARLY일 때 month는 null */
-export interface IFundamentalModelVolumesColumn {
+export type FundamentalModelTradeSelector = 'LNG' | 'PNG'
+export type FundamentalModelTradeUnit = 'MTPA' | 'BCM'
+export type FundamentalModelTradeFlowsType = 'TO_COUNTRY' | 'FROM_COUNTRY'
+export type FundamentalModelTradeCountryHeaderKind = 'REGION_TOTAL' | 'COUNTRY' | 'GRAND_TOTAL'
+
+export interface FundamentalModelFilterOption {
+  value: string
+  label: string
+}
+
+export interface FundamentalModelVolumesSegmentFilterOptions {
+  segment: FundamentalModelVolumesSegment
+  types: FundamentalModelFilterOption[]
+  regions: FundamentalModelFilterOption[]
+  granularities: FundamentalModelFilterOption[]
+}
+
+export interface FundamentalModelVolumesFilterOptions {
+  segments: FundamentalModelVolumesSegmentFilterOptions[]
+}
+
+export interface FundamentalModelVolumesColumn {
   year: number
   month: number | null
   periodLabel: string
 }
 
-/** Volumes 한 행 - columns 순서와 1:1 대응되는 values */
-export interface IFundamentalModelVolumesRow {
+export interface FundamentalModelVolumesRow {
   type: FundamentalModelVolumesType
   region: FundamentalModelVolumesRegion
   country: string | null
@@ -198,56 +212,88 @@ export interface IFundamentalModelVolumesRow {
   values: number[]
 }
 
-/** Volumes 적용 필터(서버가 echo) */
-export interface IFundamentalModelVolumesAppliedFilters {
+export interface FundamentalModelVolumesAppliedFilters {
   types?: FundamentalModelVolumesType[]
   regions?: FundamentalModelVolumesRegion[]
 }
 
-/** getVolumes 응답 — FundamentalModelVolumesRes */
-export interface IFundamentalModelVolumesRes {
+export interface FundamentalModelVolumes {
   caseId: number
   segment: FundamentalModelVolumesSegment
   granularity: FundamentalModelVolumesGranularity
-  appliedFilters: IFundamentalModelVolumesAppliedFilters
-  columns: IFundamentalModelVolumesColumn[]
-  rows: IFundamentalModelVolumesRow[]
+  appliedFilters: FundamentalModelVolumesAppliedFilters
+  columns: FundamentalModelVolumesColumn[]
+  rows: FundamentalModelVolumesRow[]
 }
 
-/** getVolumes 요청 파라미터 */
-export interface IGetFundamentalModelVolumesParams {
-  segment: FundamentalModelVolumesSegment
-  /** 미전달 시 전체 */
-  types?: FundamentalModelVolumesType[]
-  /** 미전달 시 전체 */
+export interface FundamentalModelTradeFlowsAppliedFilters {
+  types?: FundamentalModelTradeFlowsType[]
   regions?: FundamentalModelVolumesRegion[]
-  /** 기본 MONTHLY */
+}
+
+export interface FundamentalModelTradeCountryHeader {
+  key: string
+  label: string
+  kind: FundamentalModelTradeCountryHeaderKind
+  region: FundamentalModelVolumesRegion | null
+  country: string | null
+}
+
+export interface FundamentalModelTradeFlowItem {
+  fromKey: string
+  toKey: string
+  fromRegion: FundamentalModelVolumesRegion | null
+  fromCountry: string | null
+  toRegion: FundamentalModelVolumesRegion | null
+  toCountry: string | null
+  value: number
+}
+
+export interface FundamentalModelTradeFlows {
+  caseId: number
+  selector: FundamentalModelTradeSelector
+  year: number
+  unit: FundamentalModelTradeUnit
+  appliedFilters: FundamentalModelTradeFlowsAppliedFilters
+  fromCountries: FundamentalModelTradeCountryHeader[]
+  toCountries: FundamentalModelTradeCountryHeader[]
+  flows: FundamentalModelTradeFlowItem[]
+}
+
+export interface GetFundamentalModelVolumesParams {
+  segment: FundamentalModelVolumesSegment
+  types?: FundamentalModelVolumesType[]
+  regions?: FundamentalModelVolumesRegion[]
   granularity?: FundamentalModelVolumesGranularity
 }
 
+export interface GetFundamentalModelTradeFlowsParams {
+  selector: FundamentalModelTradeSelector
+  year: number
+  unit?: FundamentalModelTradeUnit
+  types?: FundamentalModelTradeFlowsType[]
+  regions?: FundamentalModelVolumesRegion[]
+}
+
 const fundamentalModelCaseService = {
-  async createCase(body: IFundamentalModelCaseCreateReq): Promise<IFundamentalModelCaseCreateRes> {
+  async createCase(body: FundamentalModelCaseCreateRequest): Promise<FundamentalModelCaseCreate> {
     const formData = new FormData()
     body.files.forEach((file) => formData.append('files', file))
 
-    const response: AxiosResponse<ICommonResponse<IFundamentalModelCaseCreateRes>> = await api.post(
-      'mi/fundamental-model/cases',
-      formData,
-      {
-        params: {
-          title: body.title.trim(),
-          description: body.description?.trim() || undefined,
-        },
-        suppressGlobalErrorHandler: true,
-        timeout: 0,
-      } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean },
-    )
+    const response: AxiosResponse<ICommonResponse<FundamentalModelCaseCreate>> = await api.post('mi/fundamental-model/cases', formData, {
+      params: {
+        title: body.title.trim(),
+        description: body.description?.trim() || undefined,
+      },
+      suppressGlobalErrorHandler: true,
+      timeout: 0,
+    } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean })
     return response.data.data
   },
 
-  async listCases(params?: IGetFundamentalModelCasesParams): Promise<IFundamentalModelCaseListRes> {
+  async listCases(params?: GetFundamentalModelCasesParams): Promise<FundamentalModelCaseList> {
     const trimmedKeyword = params?.keyword?.trim()
-    const response: AxiosResponse<ICommonResponse<IFundamentalModelCaseListRes>> = await api.get('mi/fundamental-model/cases', {
+    const response: AxiosResponse<ICommonResponse<FundamentalModelCaseList>> = await api.get('mi/fundamental-model/cases', {
       params: {
         searchType: trimmedKeyword ? params?.searchType : undefined,
         keyword: trimmedKeyword || undefined,
@@ -257,41 +303,41 @@ const fundamentalModelCaseService = {
     return response.data.data
   },
 
-  async getCaseDetail(caseId: number): Promise<IFundamentalModelCaseDetail> {
-    const response: AxiosResponse<ICommonResponse<IFundamentalModelCaseDetail>> = await api.get(`mi/fundamental-model/cases/${caseId}`)
+  async getCaseDetail(caseId: number): Promise<FundamentalModelCaseDetail> {
+    const response: AxiosResponse<ICommonResponse<FundamentalModelCaseDetail>> = await api.get(`mi/fundamental-model/cases/${caseId}`)
     return response.data.data
   },
 
-  async getCaseStatus(caseId: number): Promise<IFundamentalModelCaseStatusRes> {
-    const response: AxiosResponse<ICommonResponse<IFundamentalModelCaseStatusRes>> = await api.get(
+  async getCaseStatus(caseId: number): Promise<FundamentalModelCaseStatusSnapshot> {
+    const response: AxiosResponse<ICommonResponse<FundamentalModelCaseStatusSnapshot>> = await api.get(
       `mi/fundamental-model/cases/${caseId}/status`,
     )
     return response.data.data
   },
 
-  async getPrice(caseId: number): Promise<IFundamentalModelPriceRes> {
-    const response: AxiosResponse<ICommonResponse<IFundamentalModelPriceRes>> = await api.get(`mi/fundamental-model/cases/${caseId}/price`)
+  async getPrice(caseId: number): Promise<FundamentalModelPrice> {
+    const response: AxiosResponse<ICommonResponse<FundamentalModelPrice>> = await api.get(`mi/fundamental-model/cases/${caseId}/price`)
     return response.data.data
   },
 
-  async runCase(caseId: number, body?: IFundamentalModelRunReq): Promise<IFundamentalModelRunAcceptRes> {
-    const response: AxiosResponse<ICommonResponse<IFundamentalModelRunAcceptRes>> = await api.post(
+  async runCase(caseId: number, body?: FundamentalModelRunRequest): Promise<FundamentalModelRunAccept> {
+    const response: AxiosResponse<ICommonResponse<FundamentalModelRunAccept>> = await api.post(
       withCustomBaseUrl(`mi/fundamental-model/cases/${caseId}/runs`),
       body ?? {},
     )
     return response.data.data
   },
 
-  async callbackRun(runId: string, body?: IFundamentalModelRunCallbackReq): Promise<IFundamentalModelRunCallbackRes> {
-    const response: AxiosResponse<ICommonResponse<IFundamentalModelRunCallbackRes>> = await api.post(
+  async callbackRun(runId: string, body: FundamentalModelRunCallbackRequest): Promise<FundamentalModelRunCallback> {
+    const response: AxiosResponse<ICommonResponse<FundamentalModelRunCallback>> = await api.post(
       withCustomBaseUrl(`mi/fundamental-model/runs/${runId}/callback`),
-      body ?? {},
+      body,
     )
     return response.data.data
   },
 
-  async updateCase(caseId: number, body: IFundamentalModelCaseUpdateReq): Promise<IFundamentalModelCaseDetail> {
-    const response: AxiosResponse<ICommonResponse<IFundamentalModelCaseDetail>> = await api.patch(
+  async updateCase(caseId: number, body: FundamentalModelCaseUpdateRequest): Promise<FundamentalModelCaseDetail> {
+    const response: AxiosResponse<ICommonResponse<FundamentalModelCaseDetail>> = await api.patch(
       `mi/fundamental-model/cases/${caseId}`,
       body,
     )
@@ -302,12 +348,18 @@ const fundamentalModelCaseService = {
     await api.delete(`mi/fundamental-model/cases/${caseId}`)
   },
 
-  /** COMPLETED 케이스의 Volumes 데이터 조회. types/regions는 콤마 join 으로 전달 */
-  async getVolumes(caseId: number, params: IGetFundamentalModelVolumesParams): Promise<IFundamentalModelVolumesRes> {
+  async getVolumesFilterOptions(): Promise<FundamentalModelVolumesFilterOptions> {
+    const response: AxiosResponse<ICommonResponse<FundamentalModelVolumesFilterOptions>> = await api.get(
+      'mi/fundamental-model/cases/volumes/filter-options',
+    )
+    return response.data.data
+  },
+
+  async getVolumes(caseId: number, params: GetFundamentalModelVolumesParams): Promise<FundamentalModelVolumes> {
     const types = params.types && params.types.length > 0 ? params.types.join(',') : undefined
     const regions = params.regions && params.regions.length > 0 ? params.regions.join(',') : undefined
 
-    const response: AxiosResponse<ICommonResponse<IFundamentalModelVolumesRes>> = await api.get(
+    const response: AxiosResponse<ICommonResponse<FundamentalModelVolumes>> = await api.get(
       `mi/fundamental-model/cases/${caseId}/volumes`,
       {
         params: {
@@ -315,6 +367,25 @@ const fundamentalModelCaseService = {
           types,
           regions,
           granularity: params.granularity,
+        },
+      },
+    )
+    return response.data.data
+  },
+
+  async getTradeFlows(caseId: number, params: GetFundamentalModelTradeFlowsParams): Promise<FundamentalModelTradeFlows> {
+    const types = params.types && params.types.length > 0 ? params.types.join(',') : undefined
+    const regions = params.regions && params.regions.length > 0 ? params.regions.join(',') : undefined
+
+    const response: AxiosResponse<ICommonResponse<FundamentalModelTradeFlows>> = await api.get(
+      `mi/fundamental-model/cases/${caseId}/volumes/trade`,
+      {
+        params: {
+          selector: params.selector,
+          year: params.year,
+          unit: params.unit,
+          types,
+          regions,
         },
       },
     )

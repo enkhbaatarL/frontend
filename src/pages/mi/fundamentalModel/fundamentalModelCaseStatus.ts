@@ -1,5 +1,5 @@
 import type { FundamentalModelRunPlaceholderMode } from '@/pages/mi/fundamentalModel/components/FundamentalModelRunPlaceholder'
-import type { FundamentalModelCaseStatus, IFundamentalModelCaseLatestRun } from '@/service/mi/fundamentalModel/case'
+import type { FundamentalModelCaseStatus, FundamentalModelLatestRun } from '@/service/mi/fundamentalModel/case'
 
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 
@@ -26,7 +26,7 @@ export const caseStatusVisual = (status: FundamentalModelCaseStatus) => {
 }
 
 /** latestRun 기준 실행 소요 라벨 */
-export const formatCaseLatestRunDuration = (latestRun: IFundamentalModelCaseLatestRun | null | undefined): string => {
+export const formatCaseLatestRunDuration = (latestRun: FundamentalModelLatestRun | null | undefined): string => {
   if (!latestRun?.finishedAt) return '-'
 
   const finishedLabel = formatNextGenMIDateTime(latestRun.finishedAt, 'HH:mm:ss')
