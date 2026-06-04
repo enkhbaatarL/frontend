@@ -1,5 +1,5 @@
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined'
-import ManageSearchOutlinedIcon from '@mui/icons-material/ManageSearchOutlined'
+import ManageSearchIcon from '@mui/icons-material/ManageSearch'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useMemo } from 'react'
@@ -118,7 +118,7 @@ const EventDetailImpactAnalysisSection = ({
     return (
       <Stack width="100%" gap="12px" py="20px">
         <EventDetailSectionHeader
-          icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+          icon={<ManageSearchIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
           title="영향도 분석"
           tooltipTitle=""
         />
@@ -160,7 +160,7 @@ const EventDetailImpactAnalysisSection = ({
     return (
       <Stack width="100%" gap="12px" py="20px">
         <EventDetailSectionHeader
-          icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+          icon={<ManageSearchIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
           title="영향도 분석"
           tooltipTitle=""
         />
@@ -176,7 +176,7 @@ const EventDetailImpactAnalysisSection = ({
   return (
     <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
-        icon={<ManageSearchOutlinedIcon sx={{ fontSize: 26, color: 'contentText.Normal' }} />}
+        icon={<ManageSearchIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
         title="영향도 분석"
         tooltipTitle=""
       />

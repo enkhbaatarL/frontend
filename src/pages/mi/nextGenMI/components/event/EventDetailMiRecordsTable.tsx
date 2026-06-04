@@ -1,4 +1,4 @@
-import TungstenRoundedIcon from '@mui/icons-material/TungstenRounded'
+import SourceIcon from '@mui/icons-material/Source'
 import { Stack } from '@mui/material'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -154,7 +154,7 @@ const EventDetailMiRecordsTable = ({
   return (
     <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
-        icon={<TungstenRoundedIcon sx={{ fontSize: '26px', color: 'contentText.Normal' }} />}
+        icon={<SourceIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
         title="MI Records"
         tooltipTitle=""
       />

@@ -1,4 +1,4 @@
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted'
+import ListIcon from '@mui/icons-material/List'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useMemo } from 'react'
 
@@ -112,7 +112,7 @@ const EventDetailRelatedScenariosSection = ({
     return (
       <Stack width="100%" gap="12px" py="20px">
         <EventDetailSectionHeader
-          icon={<FormatListBulletedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
+          icon={<ListIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
           title="관련 시나리오"
           tooltipTitle=""
         />
@@ -127,7 +127,7 @@ const EventDetailRelatedScenariosSection = ({
   return (
     <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
-        icon={<FormatListBulletedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
+        icon={<ListIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
         title="관련 시나리오"
         tooltipTitle=""
       />

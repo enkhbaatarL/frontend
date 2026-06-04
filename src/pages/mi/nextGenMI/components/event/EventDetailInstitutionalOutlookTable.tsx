@@ -1,4 +1,4 @@
-import DomainOutlinedIcon from '@mui/icons-material/DomainOutlined'
+import DescriptionIcon from '@mui/icons-material/Description'
 import { Stack } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -101,7 +101,7 @@ const EventDetailInstitutionalOutlookTable = ({
   return (
     <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
-        icon={<DomainOutlinedIcon sx={{ fontSize: '26px', color: 'contentText.Normal' }} />}
+        icon={<DescriptionIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
         title="기관 전망"
         tooltipTitle=""
       />
