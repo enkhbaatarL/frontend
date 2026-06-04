@@ -25,8 +25,8 @@ import {
 import { caseStatusVisual } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import fundamentalModelCaseService, {
+  type FundamentalModelCaseListItem,
   type FundamentalModelCaseSearchType,
-  type IFundamentalModelCaseListItem,
 } from '@/service/mi/fundamentalModel/case'
 
 /** left list container 고정 높이 */
@@ -44,7 +44,7 @@ const LIST_POLL_INTERVAL_MS = 5000
 
 export interface FundamentalModelRunListProps {
   selectedId: string
-  onSelect: (id: string, status?: IFundamentalModelCaseListItem['status']) => void
+  onSelect: (id: string, status?: FundamentalModelCaseListItem['status']) => void
 }
 
 /** 목록 검색 기준 */
@@ -290,7 +290,7 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
             pointerEvents: 'auto',
           }}
         >
-          <Stack direction="row" alignItems="center" justifyContent="space-between" px="20px" pt="20px" flexShrink={0}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" pl="4px" pr="12px" pt="20px" flexShrink={0}>
             <Stack direction="row" alignItems="center" gap="6px">
               <Typography variant="heading3" color="gray.90" sx={{ fontSize: '20px', fontWeight: 700, lineHeight: 1.4 }}>
                 List
@@ -345,7 +345,7 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
             </MIMorphingPopup>
           </Stack>
 
-          <Stack direction="row" alignItems="center" gap="8px" px="20px" py="8px" flexShrink={0} width="100%" boxSizing="border-box">
+          <Stack direction="row" alignItems="center" gap="8px" pr="12px" py="8px" flexShrink={0} width="100%" boxSizing="border-box">
             <MISelectMenu
               variant="outlined"
               selected={searchField}
@@ -390,7 +390,6 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
               minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
-              px: '12px',
               pb: '24px',
             }}
           >
@@ -422,7 +421,7 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
                   ))}
 
                 {!listLoading &&
-                  cases.map((item: IFundamentalModelCaseListItem) => {
+                  cases.map((item: FundamentalModelCaseListItem) => {
                     const caseId = String(item.caseId)
                     const selected = caseId === selectedId
                     const sv = caseStatusVisual(item.status)

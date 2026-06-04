@@ -1,29 +1,32 @@
 import type { FundamentalModelScopeKey } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
-import type { FundamentalModelVolumesRegion, FundamentalModelVolumesType } from '@/service/mi/fundamentalModel/case'
+import type {
+  FundamentalModelTradeFlowsType,
+  FundamentalModelVolumesRegion,
+  FundamentalModelVolumesType,
+} from '@/service/mi/fundamentalModel/case'
 
-/** Volumes Type 필터 옵션 - value: UI id / api: getVolumes types enum */
 export const FM_VOLUME_TYPE_OPTIONS = [
-  { value: 'demand', label: 'Demand', api: 'DEMAND' },
-  { value: 'production', label: 'Production', api: 'PRODUCTION' },
-  { value: 'lng-imports', label: 'LNG Imports', api: 'LNG_IMPORTS' },
-  { value: 'lng-exports', label: 'LNG Exports', api: 'LNG_EXPORTS' },
-  { value: 'pipeline-imports', label: 'Pipeline Imports', api: 'PIPELINE_IMPORTS' },
-  { value: 'pipeline-exports', label: 'Pipeline Exports', api: 'PIPELINE_EXPORTS' },
-] as const satisfies ReadonlyArray<{ value: string; label: string; api: FundamentalModelVolumesType }>
+  { value: 'DEMAND', label: 'Demand' },
+  { value: 'PRODUCTION', label: 'Production' },
+  { value: 'LNG_IMPORTS', label: 'LNG Imports' },
+  { value: 'LNG_EXPORTS', label: 'LNG Exports' },
+  { value: 'PIPELINE_IMPORTS', label: 'Pipeline Imports' },
+  { value: 'PIPELINE_EXPORTS', label: 'Pipeline Exports' },
+] as const satisfies ReadonlyArray<{ value: FundamentalModelVolumesType; label: string }>
 
-export const FM_VOLUME_TRADE_TO_COUNTRY_TYPE_ID = 'to-country'
-export const FM_VOLUME_TRADE_FROM_COUNTRY_TYPE_ID = 'from-country'
+export const FM_VOLUME_TRADE_TO_COUNTRY_TYPE_ID = 'TO_COUNTRY'
+export const FM_VOLUME_TRADE_FROM_COUNTRY_TYPE_ID = 'FROM_COUNTRY'
 
 export const FM_VOLUME_TRADE_TYPE_OPTIONS = [
   { value: FM_VOLUME_TRADE_TO_COUNTRY_TYPE_ID, label: 'To country' },
   { value: FM_VOLUME_TRADE_FROM_COUNTRY_TYPE_ID, label: 'From country' },
-] as const satisfies ReadonlyArray<{ value: string; label: string }>
+] as const satisfies ReadonlyArray<{ value: FundamentalModelTradeFlowsType; label: string }>
 
 export type FundamentalModelVolumeTypeOption = (typeof FM_VOLUME_TYPE_OPTIONS)[number] | (typeof FM_VOLUME_TRADE_TYPE_OPTIONS)[number]
 
 const FM_VOLUME_TYPE_OPTIONS_BY_SCOPE: Record<FundamentalModelScopeKey, readonly FundamentalModelVolumeTypeOption[]> = {
   global: FM_VOLUME_TYPE_OPTIONS,
-  lng: FM_VOLUME_TYPE_OPTIONS.filter((option) => option.api === 'LNG_IMPORTS' || option.api === 'LNG_EXPORTS'),
+  lng: FM_VOLUME_TYPE_OPTIONS.filter((option) => option.value === 'LNG_IMPORTS' || option.value === 'LNG_EXPORTS'),
   trade: FM_VOLUME_TRADE_TYPE_OPTIONS,
 }
 
@@ -33,35 +36,25 @@ export const getVolumeTypeOptionsForScope = (scope: FundamentalModelScopeKey): r
 export const getDefaultVolumeTypeIdsForScope = (scope: FundamentalModelScopeKey): string[] =>
   getVolumeTypeOptionsForScope(scope).map((option) => option.value)
 
-/** Volumes Regions 필터 옵션 - value: UI id / api: getVolumes regions enum */
 export const FM_VOLUME_REGION_OPTIONS = [
-  { value: 'asia', label: 'Asia', api: 'ASIA' },
-  { value: 'europe', label: 'Europe', api: 'EUROPE' },
-  { value: 'north-america', label: 'North America', api: 'NORTH_AMERICA' },
-  { value: 'middle-east', label: 'Middle East', api: 'MIDDLE_EAST' },
-  { value: 'australia', label: 'Australia', api: 'AUSTRALIA' },
-  { value: 'russia', label: 'Russia', api: 'RUSSIA' },
-  { value: 'africa', label: 'Africa', api: 'AFRICA' },
-  { value: 'south-america', label: 'South America', api: 'SOUTH_AMERICA' },
-] as const satisfies ReadonlyArray<{ value: string; label: string; api: FundamentalModelVolumesRegion }>
+  { value: 'ASIA', label: 'Asia' },
+  { value: 'EUROPE', label: 'Europe' },
+  { value: 'NORTH_AMERICA', label: 'North America' },
+  { value: 'MIDDLE_EAST', label: 'Middle East' },
+  { value: 'AUSTRALIA', label: 'Australia' },
+  { value: 'RUSSIA', label: 'Russia' },
+  { value: 'AFRICA', label: 'Africa' },
+  { value: 'SOUTH_AMERICA', label: 'South America' },
+] as const satisfies ReadonlyArray<{ value: FundamentalModelVolumesRegion; label: string }>
 
-/** UI Type id -> API types enum (대문자) 매핑 */
-export const FM_VOLUME_TYPE_ID_TO_API: Record<string, FundamentalModelVolumesType> = Object.fromEntries(
-  FM_VOLUME_TYPE_OPTIONS.map((option) => [option.value, option.api]),
-)
-
-/** UI Region id -> API regions enum (대문자) 매핑 */
-export const FM_VOLUME_REGION_ID_TO_API: Record<string, FundamentalModelVolumesRegion> = Object.fromEntries(
-  FM_VOLUME_REGION_OPTIONS.map((option) => [option.value, option.api]),
-)
-
-/** 선택된 Type id 배열 -> API types enum 배열(매핑 미존재 항목 제외) */
 export const toApiVolumeTypes = (uiTypes: string[]): FundamentalModelVolumesType[] =>
-  uiTypes.map((id) => FM_VOLUME_TYPE_ID_TO_API[id]).filter((value): value is FundamentalModelVolumesType => Boolean(value))
+  uiTypes.filter((value): value is FundamentalModelVolumesType => FM_VOLUME_TYPE_OPTIONS.some((option) => option.value === value))
 
-/** 선택된 Region id 배열 -> API regions enum 배열(매핑 미존재 항목 제외) */
 export const toApiVolumeRegions = (uiRegions: string[]): FundamentalModelVolumesRegion[] =>
-  uiRegions.map((id) => FM_VOLUME_REGION_ID_TO_API[id]).filter((value): value is FundamentalModelVolumesRegion => Boolean(value))
+  uiRegions.filter((value): value is FundamentalModelVolumesRegion => FM_VOLUME_REGION_OPTIONS.some((option) => option.value === value))
+
+export const toApiTradeFlowTypes = (uiTypes: string[]): FundamentalModelTradeFlowsType[] =>
+  uiTypes.filter((value): value is FundamentalModelTradeFlowsType => FM_VOLUME_TRADE_TYPE_OPTIONS.some((option) => option.value === value))
 
 export const FM_VOLUME_FILTERS_STORAGE_KEY = 'fundamentalModelVolumeFilters'
 
@@ -86,10 +79,12 @@ export const normalizeVolumeFiltersForScope = (
   const scopedTypeIds = getDefaultVolumeTypeIdsForScope(scope)
   const scopedTypeSet = new Set(scopedTypeIds)
   const types = filters.types.filter((id) => scopedTypeSet.has(id))
+  const regionSet = new Set<string>(FM_VOLUME_DEFAULT_REGION_IDS)
+  const regions = filters.regions.filter((id) => regionSet.has(id))
 
   return {
     types: types.length > 0 || filters.types.length === 0 ? types : scopedTypeIds,
-    regions: filters.regions,
+    regions: regions.length > 0 || filters.regions.length === 0 ? regions : [...FM_VOLUME_DEFAULT_REGION_IDS],
   }
 }
 
@@ -106,9 +101,9 @@ export const isAllVolumeFiltersSelected = (filters: FundamentalModelVolumeFilter
 
   return (
     normalizedFilters.types.length === scopedDefaultTypeIds.length &&
-    filters.regions.length === FM_VOLUME_DEFAULT_REGION_IDS.length &&
+    normalizedFilters.regions.length === FM_VOLUME_DEFAULT_REGION_IDS.length &&
     scopedDefaultTypeIds.every((id) => normalizedFilters.types.includes(id)) &&
-    FM_VOLUME_DEFAULT_REGION_IDS.every((id) => filters.regions.includes(id))
+    FM_VOLUME_DEFAULT_REGION_IDS.every((id) => normalizedFilters.regions.includes(id))
   )
 }
 

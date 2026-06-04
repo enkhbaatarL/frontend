@@ -2,11 +2,11 @@ import { Box, Stack, Typography } from '@mui/material'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
+  FundamentalModelVolumesColumn,
   FundamentalModelVolumesRegion,
+  FundamentalModelVolumesRow,
   FundamentalModelVolumesRowKind,
   FundamentalModelVolumesType,
-  IFundamentalModelVolumesColumn,
-  IFundamentalModelVolumesRow,
 } from '@/service/mi/fundamentalModel/case'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
@@ -30,6 +30,7 @@ import {
   FM_VOLUME_TABLE_SCROLL_SHADOW_EPSILON_PX,
   FM_VOLUME_TABLE_SCROLL_SHADOW_TRANSITION,
   FM_VOLUME_TOTAL_CELL_BG,
+  FM_VOLUME_TABLE_TOTAL_ROW_BORDER,
   fmVolumeGlobalBodyCellSx,
   fmVolumeHiddenHorizontalScrollbarSx,
   fmVolumeMonthColumnsWidth,
@@ -41,9 +42,9 @@ import {
 
 export interface FundamentalModelSectionVolumesTableProps {
   /** 시간축 컬럼(getVolumes columns) */
-  columns: IFundamentalModelVolumesColumn[]
+  columns: FundamentalModelVolumesColumn[]
   /** 본문 행(getVolumes rows) - type 순서로 묶여서 응답되는 것을 가정 */
-  rows: IFundamentalModelVolumesRow[]
+  rows: FundamentalModelVolumesRow[]
   loading?: boolean
 }
 
@@ -79,7 +80,7 @@ const formatVolumeCell = (value: unknown): string => {
   return value.toFixed(1)
 }
 
-const resolveRowLabel = (row: IFundamentalModelVolumesRow): string => {
+const resolveRowLabel = (row: FundamentalModelVolumesRow): string => {
   if (row.rowKind === 'TYPE_TOTAL') return 'Total'
   if (row.rowKind === 'REGION_SUBTOTAL') return VOLUME_REGION_LABEL[row.region] ?? row.region
   return row.country ?? VOLUME_REGION_LABEL[row.region] ?? ''
@@ -88,7 +89,7 @@ const resolveRowLabel = (row: IFundamentalModelVolumesRow): string => {
 interface SectionGroup {
   type: FundamentalModelVolumesType
   label: string
-  rows: IFundamentalModelVolumesRow[]
+  rows: FundamentalModelVolumesRow[]
 }
 
 interface SectionLabelLayout {
@@ -96,9 +97,9 @@ interface SectionLabelLayout {
   totalRows: number
 }
 
-const sortRowsWithRegionSubtotalFirst = (rows: IFundamentalModelVolumesRow[]): IFundamentalModelVolumesRow[] => {
+const sortRowsWithRegionSubtotalFirst = (rows: FundamentalModelVolumesRow[]): FundamentalModelVolumesRow[] => {
   const totalRows = rows.filter((row) => row.rowKind === 'TYPE_TOTAL')
-  const regionRows = new Map<FundamentalModelVolumesRegion, IFundamentalModelVolumesRow[]>()
+  const regionRows = new Map<FundamentalModelVolumesRegion, FundamentalModelVolumesRow[]>()
   const regionOrder: FundamentalModelVolumesRegion[] = []
 
   rows.forEach((row) => {
@@ -122,7 +123,7 @@ const sortRowsWithRegionSubtotalFirst = (rows: IFundamentalModelVolumesRow[]): I
 }
 
 /** API rows를 type 순서대로 그룹핑(응답 순서 보존) */
-const groupRowsByType = (rows: IFundamentalModelVolumesRow[]): SectionGroup[] => {
+const groupRowsByType = (rows: FundamentalModelVolumesRow[]): SectionGroup[] => {
   const map = new Map<FundamentalModelVolumesType, SectionGroup>()
   const order: FundamentalModelVolumesType[] = []
   for (const row of rows) {
@@ -140,7 +141,7 @@ const groupRowsByType = (rows: IFundamentalModelVolumesRow[]): SectionGroup[] =>
 }
 
 /** 섹션 좌측 라벨 영역 - TYPE_TOTAL 직전까지가 라벨 표시 영역, 이후는 음영 처리 */
-const getSectionLabelLayout = (sectionRows: IFundamentalModelVolumesRow[]): SectionLabelLayout => {
+const getSectionLabelLayout = (sectionRows: FundamentalModelVolumesRow[]): SectionLabelLayout => {
   if (sectionRows.length === 0) return { labelRows: 0, totalRows: 0 }
   const firstTotalIndex = sectionRows.findIndex((row) => row.rowKind === 'TYPE_TOTAL')
   if (firstTotalIndex < 0) return { labelRows: sectionRows.length, totalRows: 0 }
@@ -301,7 +302,7 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
     </Stack>
   )
 
-  const flatRows: { sectionType: FundamentalModelVolumesType; row: IFundamentalModelVolumesRow }[] = []
+  const flatRows: { sectionType: FundamentalModelVolumesType; row: FundamentalModelVolumesRow }[] = []
   sections.forEach((section) => {
     section.rows.forEach((row) => flatRows.push({ sectionType: section.type, row }))
   })
@@ -338,7 +339,7 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
                     height: FM_VOLUME_TABLE_BODY_H,
                     bgcolor: FM_VOLUME_TOTAL_CELL_BG,
                     borderTop: FM_VOLUME_TABLE_BORDER,
-                    borderBottom: idx === layout.totalRows - 1 ? FM_VOLUME_TABLE_BORDER : 'none',
+                    borderBottom: idx === layout.totalRows - 1 ? FM_VOLUME_TABLE_TOTAL_ROW_BORDER : 'none',
                     boxSizing: 'border-box',
                   }}
                 />

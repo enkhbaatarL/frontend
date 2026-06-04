@@ -1,14 +1,14 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { memo, type ReactNode, useMemo } from 'react'
 
-import type { IFundamentalModelPriceRes } from '@/service/mi/fundamentalModel/case'
+import type { FundamentalModelPrice } from '@/service/mi/fundamentalModel/case'
 
 import FundamentalModelPriceChartSection from '@/pages/mi/fundamentalModel/components/price/FundamentalModelPriceChartSection'
 import FundamentalModelPriceTable from '@/pages/mi/fundamentalModel/components/price/FundamentalModelPriceTable'
 import { buildPricePeriodTableColumns, buildPricePeriodTableRows } from '@/pages/mi/fundamentalModel/components/price/priceTabPanelColumns'
 
 export interface PriceTabPanelProps {
-  price: IFundamentalModelPriceRes | null
+  price: FundamentalModelPrice | null
   loading: boolean
 }
 

@@ -1,7 +1,7 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { memo, useMemo } from 'react'
 
-import type { FundamentalModelVolumesGranularity, IFundamentalModelVolumesColumn } from '@/service/mi/fundamentalModel/case'
+import type { FundamentalModelVolumesColumn, FundamentalModelVolumesGranularity } from '@/service/mi/fundamentalModel/case'
 
 import MIFrozenColumnScrollLayout from '@/pages/mi/fundamentalModel/components/common/MIFrozenColumnScrollLayout'
 import {
@@ -15,7 +15,7 @@ import {
 
 export interface FundamentalModelVolumesMatrixProps {
   /** 시간축 컬럼(getVolumes columns) */
-  columns: IFundamentalModelVolumesColumn[]
+  columns: FundamentalModelVolumesColumn[]
   /** API granularity - YEARLY 일 때 unite 행을 연도값으로 표시 */
   granularity: FundamentalModelVolumesGranularity
   /** true 면 상단 요약 블록(Volumes Table summary=on) */
@@ -38,7 +38,7 @@ const SUMMARY_ROW_LABEL: Record<SummaryRowId, string> = {
 }
 
 /** API columns -> 요약 매트릭스 3행(year/unite/mtpa) */
-const buildSummaryRows = (columns: IFundamentalModelVolumesColumn[], granularity: FundamentalModelVolumesGranularity): SummaryRow[] => {
+const buildSummaryRows = (columns: FundamentalModelVolumesColumn[], granularity: FundamentalModelVolumesGranularity): SummaryRow[] => {
   const yearValues = columns.map((column) => String(column.year))
   const monthValues = columns.map((column) => (column.month === null ? '' : String(column.month)))
   const periodValues = columns.map((column) => column.periodLabel)

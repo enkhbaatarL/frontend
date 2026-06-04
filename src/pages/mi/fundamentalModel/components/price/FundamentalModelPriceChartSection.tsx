@@ -1,7 +1,7 @@
 import { Box, Stack, Typography, useTheme } from '@mui/material'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import type { IFundamentalModelPriceChart } from '@/service/mi/fundamentalModel/case'
+import type { FundamentalModelPriceChart } from '@/service/mi/fundamentalModel/case'
 import type { IScenarioPriceForecast } from '@/service/mi/nextGenMI/scenario'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
@@ -12,13 +12,13 @@ import ScenarioSummaryChart from '@/pages/mi/nextGenMI/components/common/Scenari
 import { downloadChart } from '@/utils/chartDownload'
 
 interface FundamentalModelPriceChartSectionProps {
-  priceChart: IFundamentalModelPriceChart | null
+  priceChart: FundamentalModelPriceChart | null
   priceRegions: string[]
 }
 
 const toDateLabel = (point: { year: number; month: number }): string => `${point.year}-${String(point.month).padStart(2, '0')}`
 
-const buildPriceForecast = (priceChart: IFundamentalModelPriceChart | null, selectedPriceRegion: string): IScenarioPriceForecast => {
+const buildPriceForecast = (priceChart: FundamentalModelPriceChart | null, selectedPriceRegion: string): IScenarioPriceForecast => {
   const seriesSets = priceChart?.seriesSets ?? []
   const selectedSeriesSet = seriesSets.find((item) => item.priceRegion === selectedPriceRegion) ?? seriesSets[0]
   const selectedSeries = selectedSeriesSet?.series ?? []
