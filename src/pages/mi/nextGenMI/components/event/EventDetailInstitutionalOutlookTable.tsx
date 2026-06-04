@@ -109,6 +109,8 @@ const EventDetailInstitutionalOutlookTable = ({
         <NextGenMIStickyTable
           columns={columns}
           rows={paginatedRows}
+          fixedColumnIndexes={[1]}
+          leftAlignedHeaderSticky
           getRowKey={(row, index) => `${row.viewDate ?? ''}-${row.institutionName ?? ''}-${index}`}
           loading={loading}
           noRowMessage="표시할 데이터가 없습니다."

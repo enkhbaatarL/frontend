@@ -1,6 +1,6 @@
 import MarginRoundedIcon from '@mui/icons-material/MarginRounded'
-import { Divider, Stack } from '@mui/material'
-import { Fragment, useMemo, type ReactNode } from 'react'
+import { Stack } from '@mui/material'
+import { useMemo } from 'react'
 
 import type { DriverTreeScoreboard, EventDriverTreeIndex, EventImpactIndexTerm } from '@/service/mi/nextGenMI/event'
 
@@ -12,53 +12,36 @@ const getIndexName = (row: EventDriverTreeIndex) => String(row.indexName ?? '').
 
 const getDrivers = (row: EventDriverTreeIndex) => row.drivers ?? []
 
-const DriverListCell = ({ children }: { children: ReactNode[] }) => {
-  if (children.length === 0) return '-'
-
-  return (
-    <Stack minWidth={0}>
-      {children.map((child, index) => (
-        <Fragment key={index}>
-          {index > 0 && <Divider flexItem />}
-          <Stack minHeight="48px" justifyContent="center" minWidth={0}>
-            {child}
-          </Stack>
-        </Fragment>
-      ))}
-    </Stack>
-  )
+interface EventDriverTreeScoreboardTableRow {
+  indexName: string
+  driver?: DriverTreeScoreboard
+  indexRowSpan: number
+  isFirstIndexRow: boolean
 }
-
-const renderDriverTextList = (drivers: DriverTreeScoreboard[], getValue: (driver: DriverTreeScoreboard) => string | null | undefined) => (
-  <DriverListCell>{drivers.map((driver) => getValue(driver) || '-')}</DriverListCell>
-)
 
 const renderDriverImpactList = (
   indexName: string,
-  drivers: DriverTreeScoreboard[],
+  driver: DriverTreeScoreboard | undefined,
   getValue: (driver: DriverTreeScoreboard) => EventImpactIndexTerm | null | undefined,
   term: 'short' | 'long',
-) => (
-  <DriverListCell>
-    {drivers.map((driver, index) => {
-      const impact = getValue(driver)
-      return (
-        <Stack key={`${driver.lv1Id ?? ''}-${driver.lv2Id ?? ''}-${driver.lv3Id ?? ''}-${index}`} direction="row" justifyContent="center">
-          <EventIndexSignalCell
-            indexLabel={indexName || undefined}
-            level={impact?.marketImpactLevel}
-            levelLabel={impact?.marketImpactLevelLabel}
-            direction={impact?.direction}
-            directionLabel={impact?.directionLabel}
-            term={term}
-            showTermBadge={false}
-            size={20}
-          />
-        </Stack>
-      )
-    })}
-  </DriverListCell>
-)
+) => {
+  const impact = driver ? getValue(driver) : undefined
+
+  return (
+    <Stack direction="row" justifyContent="center">
+      <EventIndexSignalCell
+        indexLabel={indexName || undefined}
+        level={impact?.marketImpactLevel}
+        levelLabel={impact?.marketImpactLevelLabel}
+        direction={impact?.direction}
+        directionLabel={impact?.directionLabel}
+        term={term}
+        showTermBadge={false}
+        size={20}
+      />
+    </Stack>
+  )
+}
 
 interface EventDetailDriverTreeScoreboardSectionProps {
   driverTreeScoreboard?: EventDriverTreeIndex[]
@@ -69,13 +52,36 @@ const EventDetailDriverTreeScoreboardSection = ({
   driverTreeScoreboard = [],
   loading = false,
 }: EventDetailDriverTreeScoreboardSectionProps) => {
-  const columns = useMemo<NextGenMIStickyTableColumn<EventDriverTreeIndex>[]>(
+  const tableRows = useMemo<EventDriverTreeScoreboardTableRow[]>(
+    () =>
+      driverTreeScoreboard.flatMap<EventDriverTreeScoreboardTableRow>((row) => {
+        const indexName = getIndexName(row)
+        const drivers = getDrivers(row)
+        const indexRowSpan = Math.max(drivers.length, 1)
+
+        if (drivers.length === 0) {
+          return [{ indexName, driver: undefined, indexRowSpan, isFirstIndexRow: true }]
+        }
+
+        return drivers.map((driver, driverIndex) => ({
+          indexName,
+          driver,
+          indexRowSpan,
+          isFirstIndexRow: driverIndex === 0,
+        }))
+      }),
+    [driverTreeScoreboard],
+  )
+
+  const columns = useMemo<NextGenMIStickyTableColumn<EventDriverTreeScoreboardTableRow>[]>(
     () => [
       {
         field: 'indexName',
         headerName: '대상',
         width: '80px',
-        renderCell: ({ row }) => getIndexName(row) || '-',
+        renderCell: ({ row }) => row.indexName || '-',
+        shouldRenderCell: ({ row }) => row.isFirstIndexRow,
+        getRowSpan: ({ row }) => row.indexRowSpan,
         cellSx: {
           fontWeight: 600,
         },
@@ -85,42 +91,42 @@ const EventDetailDriverTreeScoreboardSection = ({
         headerName: 'Driver Lv1',
         width: '200px',
         maxWidth: '420px',
-        renderCell: ({ row }) => renderDriverTextList(getDrivers(row), (driver) => driver.lv1Label),
+        renderCell: ({ row }) => row.driver?.lv1Label || '-',
       },
       {
         field: 'lv2Label',
         headerName: 'Driver Lv2',
         width: '200px',
         maxWidth: '420px',
-        renderCell: ({ row }) => renderDriverTextList(getDrivers(row), (driver) => driver.lv2Label),
+        renderCell: ({ row }) => row.driver?.lv2Label || '-',
       },
       {
         field: 'lv3Label',
         headerName: 'Driver Lv3',
         width: '200px',
         maxWidth: '420px',
-        renderCell: ({ row }) => renderDriverTextList(getDrivers(row), (driver) => driver.lv3Label),
+        renderCell: ({ row }) => row.driver?.lv3Label || '-',
       },
       {
         field: 'shortTerm',
         headerName: '단기 영향',
         width: '140px',
         align: 'center',
-        renderCell: ({ row }) => renderDriverImpactList(getIndexName(row), getDrivers(row), (driver) => driver.shortTerm, 'short'),
+        renderCell: ({ row }) => renderDriverImpactList(row.indexName, row.driver, (driver) => driver.shortTerm, 'short'),
       },
       {
         field: 'midLongTerm',
         headerName: '중장기 영향',
         width: '140px',
         align: 'center',
-        renderCell: ({ row }) => renderDriverImpactList(getIndexName(row), getDrivers(row), (driver) => driver.midLongTerm, 'long'),
+        renderCell: ({ row }) => renderDriverImpactList(row.indexName, row.driver, (driver) => driver.midLongTerm, 'long'),
       },
       {
         field: 'reason',
         headerName: '근거',
         width: 'max-content',
         maxWidth: 'none',
-        renderCell: ({ row }) => renderDriverTextList(getDrivers(row), (driver) => driver.reason),
+        renderCell: ({ row }) => row.driver?.reason || '-',
         cellSx: {
           overflow: 'visible',
           textOverflow: 'clip',
@@ -139,13 +145,16 @@ const EventDetailDriverTreeScoreboardSection = ({
       />
       <NextGenMIStickyTable
         columns={columns}
-        rows={driverTreeScoreboard}
-        getRowKey={(row, rowIndex) => `${getIndexName(row) || 'no-index'}-${rowIndex}`}
+        rows={tableRows}
         fixedColumnIndexes={[0]}
+        leftAlignedHeaderSticky
+        getRowKey={(row, rowIndex) =>
+          `${row.indexName || 'no-index'}-${row.driver?.lv1Id ?? ''}-${row.driver?.lv2Id ?? ''}-${row.driver?.lv3Id ?? ''}-${rowIndex}`
+        }
         maxHeight="min(520px, calc(100vh - 320px))"
         loading={loading}
         noRowMessage="표시할 데이터가 없습니다."
-        rowHeight={!loading && driverTreeScoreboard.length === 0 ? '400px' : 'auto'}
+        rowHeight={!loading && tableRows.length === 0 ? '400px' : undefined}
       />
     </Stack>
   )

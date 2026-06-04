@@ -162,6 +162,8 @@ const EventDetailMiRecordsTable = ({
         <NextGenMIStickyTable
           columns={columns}
           rows={paginatedRows}
+          fixedColumnIndexes={[1, 2]}
+          leftAlignedHeaderSticky
           getRowKey={(row, index) => `${row.publishedAt ?? ''}-${row.title ?? ''}-${index}`}
           loading={loading}
           noRowMessage="표시할 데이터가 없습니다."
