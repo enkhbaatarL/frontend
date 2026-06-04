@@ -41,6 +41,8 @@ interface NextGenMIStickyTableProps<T> {
   bodyFontSize?: string
   bodyLineHeight?: number | string
   skeletonRowCount?: number
+  containerPadding?: string
+  containerShell?: boolean
 }
 
 const STICKY_LEFT_COLUMN_EDGE_SHADOW_SX = {
@@ -146,11 +148,13 @@ const NextGenMIStickyTable = <T,>({
   maxHeight,
   rowHeight = '48px',
   headerHeight = '36px',
-  cellPadding = '12px',
+  cellPadding = '6px',
   headerFontSize = '14px',
-  bodyFontSize = '16px',
+  bodyFontSize = '14px',
   bodyLineHeight = 1.4,
   skeletonRowCount = 8,
+  containerPadding = '12px',
+  containerShell = true,
 }: NextGenMIStickyTableProps<T>) => {
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const lastScrollPositionRef = useRef({ left: 0, top: 0 })
@@ -406,7 +410,7 @@ const NextGenMIStickyTable = <T,>({
             textAlign: align,
             fontSize: headerFontSize,
             fontWeight: 600,
-            color: 'contentText.Black',
+            color: 'contentText.Normal',
             borderBottom: '1px solid',
             borderColor: 'contentBorder.Normal',
             whiteSpace: 'nowrap',
@@ -482,7 +486,7 @@ const NextGenMIStickyTable = <T,>({
             textAlign: align,
             fontSize: bodyFontSize,
             fontWeight: 500,
-            color: 'contentText.Black',
+            color: 'contentText.Normal',
             borderBottom: '1px solid',
             borderColor: 'contentBorder.Normal',
             verticalAlign: 'middle',
@@ -525,11 +529,11 @@ const NextGenMIStickyTable = <T,>({
     )
   }
 
-  return (
+  const tableContent = (
     <Box
       onMouseEnter={() => setIsScrollAreaHovered(true)}
       onMouseLeave={() => setIsScrollAreaHovered(false)}
-      sx={{ position: 'relative', width: '100%', overflow: 'hidden', bgcolor: 'commonColor.White', borderRadius: '10px' }}
+      sx={{ position: 'relative', width: '100%', overflow: 'hidden' }}
     >
       <Box
         ref={scrollRef}
@@ -769,6 +773,22 @@ const NextGenMIStickyTable = <T,>({
           />
         </Box>
       )}
+    </Box>
+  )
+
+  if (!containerShell) return tableContent
+
+  return (
+    <Box
+      sx={{
+        width: '100%',
+        bgcolor: 'commonColor.White',
+        borderRadius: '10px',
+        padding: containerPadding,
+        boxSizing: 'border-box',
+      }}
+    >
+      {tableContent}
     </Box>
   )
 }

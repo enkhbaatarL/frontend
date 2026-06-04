@@ -1,4 +1,4 @@
-import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
@@ -76,7 +76,7 @@ const EventDetailAiInsightsSection = ({ bullets, detailedAnalysis, loading = fal
   loading ? (
     <Stack width="100%" gap="12px" py="20px" sx={constrainedStackSx}>
       <EventDetailSectionHeader
-        icon={<AutoAwesomeRoundedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
+        icon={<AutoAwesomeIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
         title="AI Insights"
         titleGradient
         tooltipTitle=""
@@ -99,7 +99,7 @@ const EventDetailAiInsightsSection = ({ bullets, detailedAnalysis, loading = fal
   ) : (
     <Stack width="100%" gap="12px" py="20px" sx={constrainedStackSx}>
       <EventDetailSectionHeader
-        icon={<AutoAwesomeRoundedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
+        icon={<AutoAwesomeIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
         title="AI Insights"
         titleGradient
         tooltipTitle=""

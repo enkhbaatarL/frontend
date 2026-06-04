@@ -1,4 +1,4 @@
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted'
+import ListIcon from '@mui/icons-material/List'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useMemo } from 'react'
 
@@ -9,7 +9,14 @@ import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/nextGenMI/components/common/ImpactDotsCell'
-import NextGenMIEventDetailTableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
+import NextGenMIEventDetailTableBodyText, {
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY,
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX,
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
+  NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
+} from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
 import ProbabilityGaugeCell from '@/pages/mi/nextGenMI/components/common/ProbabilityGaugeCell'
 import { findIndexImpact } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
@@ -97,7 +104,7 @@ const EventDetailRelatedScenariosSection = ({
       },
       {
         field: 'probability',
-        headerName: '발생가능성',
+        headerName: '실행가능성',
         width: 100,
         align: 'center',
         headerAlign: 'center',
@@ -112,7 +119,7 @@ const EventDetailRelatedScenariosSection = ({
     return (
       <Stack width="100%" gap="12px" py="20px">
         <EventDetailSectionHeader
-          icon={<FormatListBulletedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
+          icon={<ListIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
           title="관련 시나리오"
           tooltipTitle=""
         />
@@ -127,7 +134,7 @@ const EventDetailRelatedScenariosSection = ({
   return (
     <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
-        icon={<FormatListBulletedIcon sx={{ fontSize: 30, color: 'contentText.Normal' }} />}
+        icon={<ListIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
         title="관련 시나리오"
         tooltipTitle=""
       />
@@ -142,14 +149,23 @@ const EventDetailRelatedScenariosSection = ({
         </Stack>
         <Box bgcolor="commonColor.White" border="1px solid" borderColor="contentBorder.Normal" borderRadius="10px" p="12px">
           <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-            <MIDataTableHeader<RelatedScenario> columns={columns} />
+            <MIDataTableHeader<RelatedScenario>
+              columns={columns}
+              headerCellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
+              headerCellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+              headerLabelColor={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
+            />
             <MIDataTableBody<RelatedScenario>
               rowId="scenarioId"
               columns={columns}
               rows={rows}
-              rowHeight={42}
+              rowHeight={48}
               loading={loading}
               noRowMessage="관련 시나리오가 없습니다."
+              primitiveCellTypographyVariant={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+              primitiveCellLineHeight={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+              cellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
+              cellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY}
             />
           </Box>
         </Box>
