@@ -109,7 +109,7 @@ const EventDetailInstitutionalOutlookTable = ({
         <NextGenMIStickyTable
           columns={columns}
           rows={paginatedRows}
-          fixedColumnIndexes={[1]}
+          fixedLeftColumnIndexes={[1]}
           leftAlignedHeaderSticky
           getRowKey={(row, index) => `${row.viewDate ?? ''}-${row.institutionName ?? ''}-${index}`}
           loading={loading}

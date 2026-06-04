@@ -146,7 +146,7 @@ const EventDetailDriverTreeScoreboardSection = ({
       <NextGenMIStickyTable
         columns={columns}
         rows={tableRows}
-        fixedColumnIndexes={[0]}
+        fixedLeftColumnIndexes={[0]}
         leftAlignedHeaderSticky
         getRowKey={(row, rowIndex) =>
           `${row.indexName || 'no-index'}-${row.driver?.lv1Id ?? ''}-${row.driver?.lv2Id ?? ''}-${row.driver?.lv3Id ?? ''}-${rowIndex}`

@@ -162,7 +162,7 @@ const EventDetailMiRecordsTable = ({
         <NextGenMIStickyTable
           columns={columns}
           rows={paginatedRows}
-          fixedColumnIndexes={[1, 2]}
+          fixedLeftColumnIndexes={[2]}
           leftAlignedHeaderSticky
           getRowKey={(row, index) => `${row.publishedAt ?? ''}-${row.title ?? ''}-${index}`}
           loading={loading}
