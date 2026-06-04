@@ -29,52 +29,90 @@ const tableButtonIconSx = {
 } satisfies SxProps<Theme>
 
 const tableButtonBaseSx = {
-  width: 36,
-  minWidth: 36,
-  height: 36,
+  width: '36px',
+  minWidth: '36px',
+  height: '36px',
   boxSizing: 'border-box',
+  position: 'relative',
   p: 0,
   borderRadius: '8px',
-  backgroundColor: 'commonColor.White',
+  borderColor: 'transparent',
+  backgroundColor: 'transparent',
   justifyContent: 'center',
-  overflow: 'hidden',
-  transition: 'width 220ms cubic-bezier(0.22, 1, 0.36, 1), background 160ms ease, border-color 160ms ease, color 160ms ease',
+  overflow: 'visible',
+  transition: 'color 160ms ease',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    width: '36px',
+    height: '36px',
+    boxSizing: 'border-box',
+    border: '1px solid',
+    borderColor: 'contentBorder.Normal',
+    borderRadius: '8px',
+    backgroundColor: 'commonColor.White',
+    transform: 'translateX(-50%)',
+    transition: 'width 220ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease, border-color 160ms ease',
+  },
+  '& > span': {
+    position: 'relative',
+    zIndex: 1,
+  },
   '& > span > span': {
     boxSizing: 'border-box',
     width: '100%',
     pl: '6px',
     pr: '8px',
-    transition: 'padding-left 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+    transform: 'translateX(0)',
+    transition: 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
   },
   '& .MuiStack-root': {
     minWidth: 0,
   },
   '& .MuiTypography-root': {
-    width: 0,
+    width: 'max-content',
     minWidth: 0,
+    maxWidth: 'none',
     flexShrink: 0,
     opacity: 0,
-    transform: 'translateX(-2px)',
-    transition: 'width 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+    transform: 'translateX(-6px)',
+    transition: 'opacity 140ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+    willChange: 'opacity, transform',
   },
-  '&:is(:hover:not(:disabled), :focus-visible)': {
-    width: 61,
-    transition: 'width 360ms cubic-bezier(0.22, 1, 0.36, 1), background 160ms ease, border-color 160ms ease, color 160ms ease',
+  '&:is(:hover:not(:disabled), :focus-visible)::before': {
+    width: '67px',
   },
   '&:is(:hover:not(:disabled), :focus-visible) > span > span': {
     pl: '6px',
-    transition: 'padding-left 360ms cubic-bezier(0.22, 1, 0.36, 1)',
+    transform: 'translateX(-15.5px)',
   },
   '&:is(:hover:not(:disabled), :focus-visible) .MuiTypography-root': {
-    width: '25px',
     opacity: 1,
     transform: 'translateX(0)',
-    transition: 'width 360ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease, transform 360ms cubic-bezier(0.22, 1, 0.36, 1)',
+    transition: 'opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+  },
+  '@media (prefers-reduced-motion: reduce)': {
+    transition: 'none',
+    '&::before': {
+      transition: 'none',
+    },
+    '& > span > span': {
+      transition: 'none',
+    },
+    '& .MuiTypography-root': {
+      transition: 'none',
+    },
   },
   '&.Mui-disabled': {
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
+    color: 'contentIcon.Disabled',
+  },
+  '&.Mui-disabled::before': {
     borderColor: 'contentBorder.Disabled',
     backgroundColor: 'commonColor.White',
-    color: 'contentIcon.Disabled',
   },
 } satisfies SxProps<Theme>
 
@@ -97,21 +135,33 @@ const DesignScenarioButton = ({ disabled, onClick }: ScenarioTableButtonProps) =
     aria-label="시나리오 설계"
     onClick={onClick}
     prefix={<ScenarioDesignButtonIcon />}
-    gap="2px"
+    gap="6px"
     sx={{
       ...tableButtonBaseSx,
-      borderColor: 'contentBorder.Normal',
       color: 'contentIcon.Enabled',
+      '&::before': {
+        ...tableButtonBaseSx['&::before'],
+        borderColor: 'contentBorder.Normal',
+        backgroundColor: 'commonColor.White',
+      },
       '&:hover:not(:disabled), &:focus-visible': {
-        borderColor: 'contentIcon.ActivePrimary',
-        backgroundColor: 'contentIcon.ActivePrimary',
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
         color: 'commonColor.White',
+        '&::before': {
+          borderColor: 'contentIcon.ActivePrimary',
+          backgroundColor: 'contentIcon.ActivePrimary',
+        },
       },
       '&:active:not(:disabled)': {
-        borderColor: 'contentIcon.ActivePrimary',
-        backgroundColor: 'contentIcon.ActivePrimary',
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
         color: 'commonColor.White',
-        backgroundImage: 'linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(0deg, #2E3F5E, #2E3F5E)',
+        '&::before': {
+          borderColor: 'contentIcon.ActivePrimary',
+          backgroundColor: 'contentIcon.ActivePrimary',
+          backgroundImage: 'linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(0deg, #2E3F5E, #2E3F5E)',
+        },
       },
     }}
   >
@@ -126,21 +176,33 @@ const RecommendedScenarioButton = ({ disabled, onClick }: ScenarioTableButtonPro
     aria-label="추천 시나리오 설계"
     onClick={onClick}
     prefix={<ScenarioDesignButtonIcon />}
-    gap="2px"
+    gap="6px"
     sx={{
       ...tableButtonBaseSx,
-      borderColor: 'mari.Primary',
       color: 'mari.Primary',
-      '&:hover:not(:disabled), &:focus-visible': {
+      '&::before': {
+        ...tableButtonBaseSx['&::before'],
         borderColor: 'mari.Primary',
-        backgroundColor: 'mari.Primary',
+        backgroundColor: 'commonColor.White',
+      },
+      '&:hover:not(:disabled), &:focus-visible': {
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
         color: 'contentText.White',
+        '&::before': {
+          borderColor: 'mari.Primary',
+          backgroundColor: 'mari.Primary',
+        },
       },
       '&:active:not(:disabled)': {
-        borderColor: 'mari.Primary',
-        backgroundColor: 'mari.Primary',
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
         color: 'contentText.White',
-        backgroundImage: 'linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(0deg, #364FC7, #364FC7)',
+        '&::before': {
+          borderColor: 'mari.Primary',
+          backgroundColor: 'mari.Primary',
+          backgroundImage: 'linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(0deg, #364FC7, #364FC7)',
+        },
       },
     }}
   >
@@ -155,27 +217,40 @@ const ViewScenarioButton = ({ disabled, onClick }: ScenarioTableButtonProps) => 
     aria-label="시나리오 보기"
     onClick={onClick}
     prefix={<ScenarioViewButtonIcon />}
-    gap="2px"
+    gap="6px"
     sx={{
       ...tableButtonBaseSx,
-      borderColor: 'contentBorder.Normal',
       color: 'contentIcon.Enabled',
+      '&::before': {
+        ...tableButtonBaseSx['&::before'],
+        borderColor: 'contentBorder.Normal',
+        backgroundColor: 'commonColor.White',
+      },
       '& > span > span': {
         boxSizing: 'border-box',
         width: '100%',
         pl: '8px',
         pr: '8px',
-        transition: 'padding-left 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+        transform: 'translateX(0)',
+        transition: 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
       },
       '&:hover:not(:disabled), &:focus-visible': {
-        borderColor: 'contentBorder.Hover',
-        backgroundColor: 'gray.5',
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
         color: 'contentText.Normal',
+        '&::before': {
+          borderColor: 'contentBorder.Hover',
+          backgroundColor: 'gray.5',
+        },
       },
       '&:active:not(:disabled)': {
-        borderColor: 'contentBorder.Active',
-        backgroundColor: 'gray.5',
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
         color: 'contentText.Black',
+        '&::before': {
+          borderColor: 'contentBorder.Active',
+          backgroundColor: 'gray.5',
+        },
       },
     }}
   >
