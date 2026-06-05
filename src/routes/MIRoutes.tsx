@@ -26,6 +26,7 @@ import EventDetailPage from '@/pages/mi/nextGenMI/EventDetailPage.tsx'
 import NextGenMIPage from '@/pages/mi/nextGenMI/NextGenMIPage'
 import { NEXT_GEN_MI_TAB_INFO } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import ScenarioDetailPage from '@/pages/mi/nextGenMI/ScenarioDetailPage'
+import ScenarioGroupDetailPage from '@/pages/mi/nextGenMI/ScenarioGroupDetailPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
 import NoticesPage from '@/pages/mi/notice/NoticesPage'
 import NotificationPage from '@/pages/mi/notification/NotificationPage'
@@ -197,6 +198,7 @@ const MIRoutes: RouteObject = {
           children: NEXT_GEN_MI_TAB_INFO.map((tab) => ({ path: tab.segment })),
         },
         { path: 'events/:eventId', element: <EventDetailPage /> },
+        { path: 'scenarios/group/:scenarioGroupId', element: <ScenarioGroupDetailPage /> },
         { path: 'scenarios/:scenarioId', element: <ScenarioDetailPage /> },
       ],
     },

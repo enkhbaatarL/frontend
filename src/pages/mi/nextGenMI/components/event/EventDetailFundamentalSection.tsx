@@ -7,13 +7,13 @@ import type { INextGenMIFundamentalIndicator, INextGenMIFundamentalMetric } from
 
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
-import NextGenMIEventDetailTableBodyText, {
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
-} from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
+import NextGenMITableBodyText, {
+  NEXT_GEN_MI_TABLE_BODY_CELL_PY,
+  NEXT_GEN_MI_TABLE_BODY_LINE_HEIGHT,
+  NEXT_GEN_MI_TABLE_BODY_TEXT_VARIANT,
+  NEXT_GEN_MI_TABLE_CELL_PX,
+  NEXT_GEN_MI_TABLE_HEADER_CELL_PY,
+} from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 
 /** Fundamental Deep-dive 섹션 Props */
@@ -37,7 +37,7 @@ const EventDetailFundamentalSection = ({ metrics, indicators }: EventDetailFunda
         sortable: false,
         renderCell: (params: GridRenderCellParams<EventDetailFundamentalItem>) => {
           const value = 'metricName' in params.row ? params.row.metricName : params.row.indicatorName
-          return <NextGenMIEventDetailTableBodyText value={value} tooltipWhenTruncated sx={{ fontWeight: 500 }} />
+          return <NextGenMITableBodyText value={value} tooltipWhenTruncated sx={{ fontWeight: 500 }} />
         },
       },
     ],
@@ -65,7 +65,7 @@ const EventDetailFundamentalSection = ({ metrics, indicators }: EventDetailFunda
       <Stack>
         <MIDataTableHeader<EventDetailFundamentalItem>
           columns={columns}
-          headerCellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+          headerCellPy={NEXT_GEN_MI_TABLE_HEADER_CELL_PY}
           headerLabelColor="contentText.Black"
         />
         <MIDataTableBody<EventDetailFundamentalItem>
@@ -73,10 +73,10 @@ const EventDetailFundamentalSection = ({ metrics, indicators }: EventDetailFunda
           columns={columns}
           rows={rows}
           rowHeight={44}
-          primitiveCellTypographyVariant={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
-          primitiveCellLineHeight={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
-          cellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
-          cellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY}
+          primitiveCellTypographyVariant={NEXT_GEN_MI_TABLE_BODY_TEXT_VARIANT}
+          primitiveCellLineHeight={NEXT_GEN_MI_TABLE_BODY_LINE_HEIGHT}
+          cellPx={NEXT_GEN_MI_TABLE_CELL_PX}
+          cellPy={NEXT_GEN_MI_TABLE_BODY_CELL_PY}
           noRowMessage="표시할 데이터가 없습니다."
           hideInnerRowBorder
           hideLastRowBorder

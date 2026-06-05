@@ -31,6 +31,8 @@ interface NextGenMIStickyTableProps<T> {
   fixedLeftColumnIndexes?: number[]
   fixedRightColumnIndexes?: number[]
   leftAlignedHeaderSticky?: boolean
+  /** 헤더(thead)를 렌더하지 않음 — 컬럼 헤더를 외부(페이지 sticky 슬롯 등)에서 따로 그릴 때 사용 */
+  hideHeader?: boolean
   loading?: boolean
   noRowMessage?: string
   maxHeight?: string
@@ -143,6 +145,7 @@ const NextGenMIStickyTable = <T,>({
   fixedLeftColumnIndexes,
   fixedRightColumnIndexes,
   leftAlignedHeaderSticky = false,
+  hideHeader = false,
   loading = false,
   noRowMessage = '표시할 데이터가 없습니다.',
   maxHeight,
@@ -558,18 +561,20 @@ const NextGenMIStickyTable = <T,>({
             tableLayout: 'auto',
           }}
         >
-          <Box
-            component="thead"
-            sx={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 3,
-              bgcolor: 'commonColor.White',
-              boxShadow: scrollState.activeAxis === 'vertical' && scrollState.up ? NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP : 'none',
-            }}
-          >
-            <Box component="tr">{columns.map((column, columnIndex) => renderHeaderCell(column, columnIndex))}</Box>
-          </Box>
+          {!hideHeader && (
+            <Box
+              component="thead"
+              sx={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 3,
+                bgcolor: 'commonColor.White',
+                boxShadow: scrollState.activeAxis === 'vertical' && scrollState.up ? NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP : 'none',
+              }}
+            >
+              <Box component="tr">{columns.map((column, columnIndex) => renderHeaderCell(column, columnIndex))}</Box>
+            </Box>
+          )}
 
           <Box component="tbody">
             {loading

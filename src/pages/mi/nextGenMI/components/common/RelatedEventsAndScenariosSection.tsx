@@ -10,7 +10,7 @@ import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/nextGenMI/components/common/ImpactDotsCell'
-import NextGenMIEventDetailTableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
+import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ProbabilityGaugeCell from '@/pages/mi/nextGenMI/components/common/ProbabilityGaugeCell'
 import { findIndexImpact, formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 
@@ -74,7 +74,7 @@ const getRelatedEventColumns = <T extends RelatedEventLike>(onDetailClick?: (row
       const categoryLabel = params.row.eventCategoryLv1Label ?? params.row.eventCategoryLv1
       return (
         <Stack gap="4px" sx={{ py: '4px', minWidth: 0, width: '100%' }}>
-          <NextGenMIEventDetailTableBodyText
+          <NextGenMITableBodyText
             value={params.row.eventName}
             tooltipWhenTruncated
             sx={{ minWidth: 0 }}
@@ -164,7 +164,7 @@ const getRelatedScenarioColumns = <T extends RelatedScenarioLike>(onDetailClick?
     minWidth: 192,
     renderCell: (params: GridRenderCellParams<T>) => (
       <Stack direction="row" alignItems="center" gap="8px" sx={{ minWidth: 0, width: '100%' }}>
-        <NextGenMIEventDetailTableBodyText
+        <NextGenMITableBodyText
           value={params.row.scenarioName}
           tooltipWhenTruncated
           sx={{ flex: '0 1 auto', width: 'auto', minWidth: 0 }}
