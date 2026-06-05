@@ -1,5 +1,5 @@
 import ListIcon from '@mui/icons-material/List'
-import { Box, Skeleton, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { useMemo } from 'react'
 
 import type { RelatedEventScenario, RelatedScenario } from '@/service/mi/nextGenMI/event'
@@ -9,6 +9,7 @@ import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import ImpactDotsCell from '@/pages/mi/nextGenMI/components/common/ImpactDotsCell'
+import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailBlockSkeleton'
 import NextGenMIEventDetailTableBodyText, {
   NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY,
   NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
@@ -124,8 +125,7 @@ const EventDetailRelatedScenariosSection = ({
           tooltipTitle=""
         />
         <Box bgcolor="gray.5" borderRadius="10px" p="24px">
-          <Skeleton variant="rounded" width={200} height={20} sx={{ mb: '8px' }} />
-          <Skeleton variant="rounded" height={200} />
+          <NextGenMIEventDetailBlockSkeleton height="280px" />
         </Box>
       </Stack>
     )

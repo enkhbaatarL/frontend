@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 
 import type { DriverTreeScoreboard, EventDriverTreeIndex, EventImpactIndexTerm } from '@/service/mi/nextGenMI/event'
 
+import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailBlockSkeleton'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 import EventIndexSignalCell from '@/pages/mi/nextGenMI/components/event/EventIndexSignalCell'
@@ -138,6 +139,19 @@ const EventDetailDriverTreeScoreboardSection = ({
     [],
   )
 
+  if (loading) {
+    return (
+      <Stack width="100%" gap="12px" py="20px">
+        <EventDetailSectionHeader
+          icon={<MarginRoundedIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+          title="Index Driver별 영향도 분석"
+          tooltipTitle=""
+        />
+        <NextGenMIEventDetailBlockSkeleton height="400px" />
+      </Stack>
+    )
+  }
+
   return (
     <Stack width="100%" gap="12px" py="20px">
       <EventDetailSectionHeader
@@ -154,9 +168,8 @@ const EventDetailDriverTreeScoreboardSection = ({
           `${row.indexName || 'no-index'}-${row.driver?.lv1Id ?? ''}-${row.driver?.lv2Id ?? ''}-${row.driver?.lv3Id ?? ''}-${rowIndex}`
         }
         maxHeight="min(520px, calc(100vh - 320px))"
-        loading={loading}
         noRowMessage="표시할 데이터가 없습니다."
-        rowHeight={!loading && tableRows.length === 0 ? '400px' : undefined}
+        rowHeight={tableRows.length === 0 ? '400px' : undefined}
       />
     </Stack>
   )
