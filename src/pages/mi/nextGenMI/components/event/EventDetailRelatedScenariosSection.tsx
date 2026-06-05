@@ -166,6 +166,7 @@ const EventDetailRelatedScenariosSection = ({
               primitiveCellLineHeight={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
               cellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
               cellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY}
+              hideLastRowBorder={true}
             />
           </Box>
         </Box>

@@ -472,6 +472,7 @@ const NextGenMIStickyTable = <T,>({
     const isFirstFixedRightColumn = firstFixedRightColumnIndex === columnIndex
     const rowSpan = column.getRowSpan?.({ row, rowIndex, column }) ?? 1
     const isMergedFixedColumn = isFixedColumn && rowSpan > 1
+    const isBottomRow = rowIndex + rowSpan - 1 === rows.length - 1
 
     return (
       <Box
@@ -487,7 +488,7 @@ const NextGenMIStickyTable = <T,>({
             fontSize: bodyFontSize,
             fontWeight: 500,
             color: 'contentText.Normal',
-            borderBottom: '1px solid',
+            borderBottom: isBottomRow ? 'none' : '1px solid',
             borderColor: 'contentBorder.Normal',
             verticalAlign: 'middle',
             height: rowHeight,
@@ -573,54 +574,57 @@ const NextGenMIStickyTable = <T,>({
 
           <Box component="tbody">
             {loading
-              ? Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
-                <Box component="tr" key={`event-detail-sticky-table-skeleton-${rowIndex}`}>
-                  {columns.map((column, columnIndex) => {
-                    const isFixedLeftColumn = fixedLeftColumnIndexSet.has(columnIndex)
-                    const isFixedRightColumn = fixedRightColumnIndexSet.has(columnIndex)
-                    const isFixedColumn = fixedColumnIndexSet.has(columnIndex)
-                    const isLastFixedLeftColumn = lastFixedLeftColumnIndex === columnIndex
-                    const isFirstFixedRightColumn = firstFixedRightColumnIndex === columnIndex
+              ? Array.from({ length: skeletonRowCount }).map((_, rowIndex) => {
+                const isLastSkeletonRow = rowIndex === skeletonRowCount - 1
+                return (
+                  <Box component="tr" key={`event-detail-sticky-table-skeleton-${rowIndex}`}>
+                    {columns.map((column, columnIndex) => {
+                      const isFixedLeftColumn = fixedLeftColumnIndexSet.has(columnIndex)
+                      const isFixedRightColumn = fixedRightColumnIndexSet.has(columnIndex)
+                      const isFixedColumn = fixedColumnIndexSet.has(columnIndex)
+                      const isLastFixedLeftColumn = lastFixedLeftColumnIndex === columnIndex
+                      const isFirstFixedRightColumn = firstFixedRightColumnIndex === columnIndex
 
-                    return (
-                      <Box
-                        key={column.field}
-                        component="td"
-                        sx={[
-                          {
-                            padding: `0 ${cellPadding}`,
-                            borderBottom: '1px solid',
-                            borderColor: 'contentBorder.Normal',
-                            height: rowHeight,
-                            width: column.width,
-                            minWidth: column.minWidth ?? column.width,
-                            maxWidth: column.maxWidth ?? column.width,
-                            boxSizing: 'border-box',
-                            bgcolor: 'commonColor.White',
-                            overflow: isFixedColumn ? 'visible' : 'hidden',
-                          },
-                          isFixedLeftColumn && {
-                            position: 'sticky',
-                            left: fixedLeftColumnLeftMap.get(columnIndex),
-                            zIndex: 2,
-                          },
-                          isFixedRightColumn && {
-                            position: 'sticky',
-                            right: fixedRightColumnRightMap.get(columnIndex),
-                            zIndex: 2,
-                          },
-                          isLastFixedLeftColumn && STICKY_LEFT_COLUMN_EDGE_SHADOW_SX,
-                          isLastFixedLeftColumn && getStickyColumnShadowOpacitySx(scrollState.fixedLeftColumnShadow),
-                          isFirstFixedRightColumn && STICKY_RIGHT_COLUMN_EDGE_SHADOW_SX,
-                          isFirstFixedRightColumn && getStickyColumnShadowOpacitySx(scrollState.fixedRightColumnShadow),
-                        ]}
-                      >
-                        <Skeleton variant="rounded" height="18px" width={getColumnAlign(column) === 'center' ? '60%' : '80%'} />
-                      </Box>
-                    )
-                  })}
-                </Box>
-              ))
+                      return (
+                        <Box
+                          key={column.field}
+                          component="td"
+                          sx={[
+                            {
+                              padding: `0 ${cellPadding}`,
+                              borderBottom: isLastSkeletonRow ? 'none' : '1px solid',
+                              borderColor: 'contentBorder.Normal',
+                              height: rowHeight,
+                              width: column.width,
+                              minWidth: column.minWidth ?? column.width,
+                              maxWidth: column.maxWidth ?? column.width,
+                              boxSizing: 'border-box',
+                              bgcolor: 'commonColor.White',
+                              overflow: isFixedColumn ? 'visible' : 'hidden',
+                            },
+                            isFixedLeftColumn && {
+                              position: 'sticky',
+                              left: fixedLeftColumnLeftMap.get(columnIndex),
+                              zIndex: 2,
+                            },
+                            isFixedRightColumn && {
+                              position: 'sticky',
+                              right: fixedRightColumnRightMap.get(columnIndex),
+                              zIndex: 2,
+                            },
+                            isLastFixedLeftColumn && STICKY_LEFT_COLUMN_EDGE_SHADOW_SX,
+                            isLastFixedLeftColumn && getStickyColumnShadowOpacitySx(scrollState.fixedLeftColumnShadow),
+                            isFirstFixedRightColumn && STICKY_RIGHT_COLUMN_EDGE_SHADOW_SX,
+                            isFirstFixedRightColumn && getStickyColumnShadowOpacitySx(scrollState.fixedRightColumnShadow),
+                          ]}
+                        >
+                          <Skeleton variant="rounded" height="18px" width={getColumnAlign(column) === 'center' ? '60%' : '80%'} />
+                        </Box>
+                      )
+                    })}
+                  </Box>
+                )
+              })
               : rows.map((row, rowIndex) => (
                 <Box
                   component="tr"
@@ -640,7 +644,7 @@ const NextGenMIStickyTable = <T,>({
                 <Box
                   component="td"
                   colSpan={columns.length}
-                  sx={{ height: rowHeight, borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}
+                  sx={{ height: rowHeight, borderBottom: 'none', borderColor: 'contentBorder.Normal' }}
                 >
                   <Stack height={rowHeight} alignItems="center" justifyContent="center">
                     <Typography variant="body2M14" color="contentText.Normal">
