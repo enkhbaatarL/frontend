@@ -215,6 +215,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
 
   const recordRows = recordsData?.detail ?? []
   const outlookRows = outlooksData?.detail ?? []
+  const relatedEventScenario = detail?.relatedEventScenario
   const eventDetailHeaderTabActions = useMemo(
     () => renderEventDetailHeaderTabActions(title ? `이벤트 상세/ ${title}` : '이벤트 상세'),
     [title],
@@ -363,7 +364,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related}>
           <EventDetailRelatedScenariosSection
-            relatedEventScenario={detail?.relatedEventScenario}
+            relatedEventScenario={relatedEventScenario}
             onScenarioRowClick={(row) => navigate(`${NEXT_GEN_MI_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)}
             loading={detailLoading}
           />
