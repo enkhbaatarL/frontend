@@ -1,7 +1,10 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
+import ReactMarkdown from 'react-markdown'
 import { useNavigate, useParams } from 'react-router-dom'
+import rehypeRaw from 'rehype-raw'
+import remarkGfm from 'remark-gfm'
 
 import TagChip from '@/components/common/chip/TagChip'
 import MILine from '@/components/common/divider/MILine'
@@ -54,14 +57,9 @@ const NewsDetailPage = () => {
           gap={6}
         >
           <Grid container direction="column" flexGrow={1} gap={10}>
-            <Typography
-              color="contentText.Normal"
-              variant="subtext1"
-              lineHeight={1.6}
-              sx={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}
-            >
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
               {newsSummaryData?.story}
-            </Typography>
+            </ReactMarkdown>
             <TagChip items={newsSummaryData?.tagList?.map((value) => ({ name: value })) ?? []} disabled />
           </Grid>
           <Grid
