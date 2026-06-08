@@ -1,5 +1,4 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded'
 import ListIcon from '@mui/icons-material/List'
 import { Box, Stack, Typography } from '@mui/material'
@@ -14,6 +13,7 @@ import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailBlockSkeleton'
+import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIPossibilityDotsCell from '@/pages/mi/nextGenMI/components/common/NextGenMIPossibilityDotsCell'
 import NextGenMITableBodyText, {
   NEXT_GEN_MI_TABLE_BODY_CELL_PY,
@@ -71,36 +71,15 @@ const EventDetailRelatedScenariosSection = ({
         headerName: '시나리오',
         width: 300,
         sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-          <Stack direction="row" alignItems="center" gap="2px" sx={{ minWidth: 0, width: '100%' }}>
-            <Box sx={{ flex: '0 1 auto', minWidth: 0, maxWidth: '100%' }}>
-              <NextGenMITableBodyText
-                value={params.row.scenarioName}
-                sx={{
-                  fontWeight: 600,
-                  color: onScenarioRowClick ? 'mari.Primary' : 'contentText.Black',
-                  textDecoration: onScenarioRowClick ? 'underline' : 'none',
-                  textDecorationStyle: onScenarioRowClick ? 'dotted' : undefined,
-                  textUnderlineOffset: onScenarioRowClick ? '2px' : undefined,
-                }}
-                tooltipWhenTruncated
-                onClick={
-                  onScenarioRowClick
-                    ? (e) => {
-                      e.stopPropagation()
-                      onScenarioRowClick(params.row)
-                    }
-                    : undefined
-                }
-              />
-            </Box>
-            {onScenarioRowClick && (
-              <Box sx={{ flex: '0 0 auto', display: 'inline-flex', lineHeight: 0, color: 'mari.Primary' }}>
-                <ChevronRightRoundedIcon sx={{ fontSize: 20 }} />
-              </Box>
-            )}
-          </Stack>
-        ),
+        renderCell: (params: GridRenderCellParams<RelatedScenario>) => {
+          if (!onScenarioRowClick) {
+            return <NextGenMITableBodyText value={params.row.scenarioName} tooltipWhenTruncated />
+          }
+
+          return (
+            <NextGenMIHoverLinkCell value={params.row.scenarioName} variant="body2SB14" onClick={() => onScenarioRowClick(params.row)} />
+          )
+        },
       },
       {
         field: 'period',
@@ -221,34 +200,9 @@ const EventDetailRelatedScenariosSection = ({
               시나리오 그룹
             </Typography>
             {handleScenarioGroupClick ? (
-              <Stack
-                direction="row"
-                alignItems="center"
-                gap="2px"
-                px="6px"
-                sx={{ width: 'fit-content', maxWidth: '100%', cursor: 'pointer' }}
-                onClick={handleScenarioGroupClick}
-              >
-                <Typography
-                  variant="body1B16"
-                  color="mari.Primary"
-                  lineHeight={1.4}
-                  sx={{
-                    textDecoration: 'underline',
-                    textDecorationStyle: 'dotted',
-                    textUnderlineOffset: '2px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: '100%',
-                  }}
-                >
-                  {scenarioGroupLabel}
-                </Typography>
-                <Box sx={{ display: 'inline-flex', lineHeight: 0, color: 'mari.Primary', flex: '0 0 auto' }}>
-                  <ChevronRightRoundedIcon sx={{ fontSize: 20 }} />
-                </Box>
-              </Stack>
+              <Box px="6px" sx={{ width: 'fit-content', maxWidth: '100%' }}>
+                <NextGenMIHoverLinkCell value={scenarioGroupLabel} variant="body1B16" onClick={handleScenarioGroupClick} />
+              </Box>
             ) : (
               <Typography variant="body1B16" color="contentText.Black" px="6px" lineHeight={1.4}>
                 {'-'}
