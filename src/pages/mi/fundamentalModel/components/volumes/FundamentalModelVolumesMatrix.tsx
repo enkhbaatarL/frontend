@@ -41,7 +41,7 @@ const SUMMARY_ROW_LABEL: Record<SummaryRowId, string> = {
 const buildSummaryRows = (columns: FundamentalModelVolumesColumn[], granularity: FundamentalModelVolumesGranularity): SummaryRow[] => {
   const yearValues = columns.map((column) => String(column.year))
   const monthValues = columns.map((column) => (column.month === null ? '' : String(column.month)))
-  const periodValues = columns.map((column) => column.periodLabel)
+  const periodValues = columns.map((column) => column.label)
 
   return [
     { id: 'year', label: SUMMARY_ROW_LABEL.year, values: yearValues },
@@ -53,10 +53,9 @@ const buildSummaryRows = (columns: FundamentalModelVolumesColumn[], granularity:
 /** Volumes 요약 매트릭스 — getVolumes columns/granularity 직결 */
 const FundamentalModelVolumesMatrix = memo(({ columns, granularity, compact = false }: FundamentalModelVolumesMatrixProps) => {
   const summaryRows = useMemo(() => buildSummaryRows(columns, granularity), [columns, granularity])
-  const monthLabels = useMemo(() => columns.map((column) => column.periodLabel), [columns])
 
   const labelColWidth = compact ? FM_VOLUME_SUMMARY_LABEL_COL_W : 220
-  const monthColWidth = fmVolumeResolvedMonthColumnWidth(monthLabels.length, labelColWidth)
+  const monthColWidth = fmVolumeResolvedMonthColumnWidth(columns.length, labelColWidth)
 
   const labelColumn = (
     <Stack
@@ -80,11 +79,11 @@ const FundamentalModelVolumesMatrix = memo(({ columns, granularity, compact = fa
 
   const monthColumns = (
     <Stack direction="row" alignItems="flex-start">
-      {monthLabels.map((month, colIdx) => (
-        <Stack key={`${month}-${colIdx}`} sx={{ width: monthColWidth, flexShrink: 0 }}>
+      {columns.map((column, colIdx) => (
+        <Stack key={`${column.key}-${colIdx}`} sx={{ width: monthColWidth, flexShrink: 0 }}>
           <Box sx={[fmVolumeTableHeaderCellSx, { justifyContent: 'flex-end' }]}>
             <Typography variant="tableHeaderSemibold" color="gray.60" noWrap sx={{ lineHeight: 1.4 }}>
-              {month}
+              {column.label}
             </Typography>
           </Box>
           {summaryRows.map((row) => {
