@@ -141,6 +141,11 @@ export interface RelatedScenario {
   baseCase: boolean
   indexImpacts?: RelatedScenarioImpactIndex[]
   probability: number
+  period?: string | null
+  transportDisruption?: string | null
+  supplyDisruptionIntensity?: string | null
+  supplyRecoveryPattern?: string | null
+  normalizationCheck?: string | null
 }
 
 export interface RelatedEventScenario {

@@ -1,14 +1,19 @@
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
+import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
+import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded'
 import ListIcon from '@mui/icons-material/List'
-import { Box, Skeleton, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import type { RelatedEventScenario, RelatedScenario } from '@/service/mi/nextGenMI/event'
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 
+import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
-import ImpactDotsCell from '@/pages/mi/nextGenMI/components/common/ImpactDotsCell'
+import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailBlockSkeleton'
 import NextGenMIEventDetailTableBodyText, {
   NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY,
   NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
@@ -17,9 +22,9 @@ import NextGenMIEventDetailTableBodyText, {
   NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
   NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
-import ProbabilityGaugeCell from '@/pages/mi/nextGenMI/components/common/ProbabilityGaugeCell'
-import { findIndexImpact } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
+import NextGenMIPossibilityDotsCell from '@/pages/mi/nextGenMI/components/common/NextGenMIPossibilityDotsCell'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
+import { getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
 interface EventDetailRelatedScenariosSectionProps {
   relatedEventScenario?: RelatedEventScenario | null
@@ -32,7 +37,20 @@ const EventDetailRelatedScenariosSection = ({
   onScenarioRowClick,
   loading = false,
 }: EventDetailRelatedScenariosSectionProps) => {
+  const navigate = useNavigate()
   const rows = relatedEventScenario?.scenarios ?? []
+  const scenarioGroupLabel = relatedEventScenario?.event?.eventName?.trim() ?? ''
+
+  const hasScenarioGroupLink = scenarioGroupLabel.length > 0 && rows.length > 0
+  const handleScenarioGroupClick = hasScenarioGroupLink
+    ? () => {
+      navigate(`${NEXT_GEN_MI_BASE_PATH}/scenarios/${encodeURIComponent(String(rows[0]!.scenarioId))}`)
+    }
+    : undefined
+
+  const handleScenarioDesignClick = () => {
+    navigate(getNextGenMITabPath('scenarios'))
+  }
 
   const columns: GridColDef<RelatedScenario>[] = useMemo(
     () => [
@@ -54,52 +72,84 @@ const EventDetailRelatedScenariosSection = ({
         width: 300,
         sortable: false,
         renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-          <NextGenMIEventDetailTableBodyText
-            value={params.row.scenarioName}
-            sx={{ fontWeight: 600 }}
-            tooltipWhenTruncated
-            onClick={
-              onScenarioRowClick
-                ? (e) => {
-                  e.stopPropagation()
-                  onScenarioRowClick(params.row)
+          <Stack direction="row" alignItems="center" gap="2px" sx={{ minWidth: 0, width: '100%' }}>
+            <Box sx={{ flex: '0 1 auto', minWidth: 0, maxWidth: '100%' }}>
+              <NextGenMIEventDetailTableBodyText
+                value={params.row.scenarioName}
+                sx={{
+                  fontWeight: 600,
+                  color: onScenarioRowClick ? 'mari.Primary' : 'contentText.Black',
+                  textDecoration: onScenarioRowClick ? 'underline' : 'none',
+                  textDecorationStyle: onScenarioRowClick ? 'dotted' : undefined,
+                  textUnderlineOffset: onScenarioRowClick ? '2px' : undefined,
+                }}
+                tooltipWhenTruncated
+                onClick={
+                  onScenarioRowClick
+                    ? (e) => {
+                      e.stopPropagation()
+                      onScenarioRowClick(params.row)
+                    }
+                    : undefined
                 }
-                : undefined
-            }
-          />
+              />
+            </Box>
+            {onScenarioRowClick && (
+              <Box sx={{ flex: '0 0 auto', display: 'inline-flex', lineHeight: 0, color: 'mari.Primary' }}>
+                <ChevronRightRoundedIcon sx={{ fontSize: 20 }} />
+              </Box>
+            )}
+          </Stack>
         ),
       },
       {
-        field: 'jkm',
-        headerName: 'JKM',
-        width: 80,
-        align: 'center',
-        headerAlign: 'center',
+        field: 'period',
+        headerName: '기간',
+        flex: 1,
+        minWidth: 100,
         sortable: false,
         renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-          <ImpactDotsCell level={findIndexImpact(params.row.indexImpacts, 'JKM')?.marketImpactLevel} />
+          <NextGenMIEventDetailTableBodyText value={params.row.period ?? ''} tooltipWhenTruncated />
         ),
       },
       {
-        field: 'ttf',
-        headerName: 'TTF',
-        width: 80,
-        align: 'center',
-        headerAlign: 'center',
+        field: 'transportDisruption',
+        headerName: '운송 차질',
+        flex: 1,
+        minWidth: 100,
         sortable: false,
         renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-          <ImpactDotsCell level={findIndexImpact(params.row.indexImpacts, 'TTF')?.marketImpactLevel} />
+          <NextGenMIEventDetailTableBodyText value={params.row.transportDisruption ?? ''} tooltipWhenTruncated />
         ),
       },
       {
-        field: 'hh',
-        headerName: 'HH',
-        width: 80,
-        align: 'center',
-        headerAlign: 'center',
+        field: 'supplyDisruptionIntensity',
+        headerName: '공급 차질 강도',
+        flex: 1,
+        minWidth: 120,
         sortable: false,
         renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-          <ImpactDotsCell level={findIndexImpact(params.row.indexImpacts, 'HH')?.marketImpactLevel} />
+          <NextGenMIEventDetailTableBodyText value={params.row.supplyDisruptionIntensity ?? ''} tooltipWhenTruncated />
+        ),
+      },
+      {
+        field: 'supplyRecoveryPattern',
+        headerName: '공급 회복 패턴',
+        flex: 1,
+        minWidth: 140,
+        sortable: false,
+        renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
+          <NextGenMIEventDetailTableBodyText value={params.row.supplyRecoveryPattern ?? ''} tooltipWhenTruncated />
+        ),
+      },
+      {
+        field: 'normalizationCheck',
+        headerName: '정상화 확인',
+        flex: 1,
+        minWidth: 140,
+        sortable: false,
+        renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
+          <NextGenMIEventDetailTableBodyText value={params.row.normalizationCheck ?? ''} tooltipWhenTruncated />
         ),
       },
       {
@@ -109,7 +159,9 @@ const EventDetailRelatedScenariosSection = ({
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params: GridRenderCellParams<RelatedScenario>) => <ProbabilityGaugeCell probability={params.row.probability} />,
+        renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
+          <NextGenMIPossibilityDotsCell probability={params.row.probability} />
+        ),
       },
     ],
     [onScenarioRowClick],
@@ -124,8 +176,7 @@ const EventDetailRelatedScenariosSection = ({
           tooltipTitle=""
         />
         <Box bgcolor="gray.5" borderRadius="10px" p="24px">
-          <Skeleton variant="rounded" width={200} height={20} sx={{ mb: '8px' }} />
-          <Skeleton variant="rounded" height={200} />
+          <NextGenMIEventDetailBlockSkeleton height="280px" />
         </Box>
       </Stack>
     )
@@ -138,38 +189,97 @@ const EventDetailRelatedScenariosSection = ({
         title="관련 시나리오"
         tooltipTitle=""
       />
-      <Box bgcolor="gray.5" borderRadius="10px" p="24px">
-        <Stack gap="8px" py="6px" mb="8px">
-          <Typography variant="body2SB14" color="contentText.Normal" px="6px" lineHeight={1.4}>
-            시나리오 그룹
-          </Typography>
-          <Typography variant="body1B16" color="contentText.Black" px="6px" lineHeight={1.4}>
-            {'-'}
-          </Typography>
-        </Stack>
-        <Box bgcolor="commonColor.White" border="1px solid" borderColor="contentBorder.Normal" borderRadius="10px" p="12px">
-          <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-            <MIDataTableHeader<RelatedScenario>
-              columns={columns}
-              headerCellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
-              headerCellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
-              headerLabelColor={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
-            />
-            <MIDataTableBody<RelatedScenario>
-              rowId="scenarioId"
-              columns={columns}
-              rows={rows}
-              rowHeight={48}
-              loading={loading}
-              noRowMessage="관련 시나리오가 없습니다."
-              primitiveCellTypographyVariant={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
-              primitiveCellLineHeight={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
-              cellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
-              cellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY}
-            />
+      {rows.length === 0 ? (
+        <Box
+          position="relative"
+          height="260px"
+          bgcolor="gray.5"
+          borderRadius="10px"
+          borderBottom="1px solid"
+          borderColor="gray.30"
+          overflow="hidden"
+        >
+          <Stack position="absolute" top="50%" left="50%" alignItems="center" gap="10px" sx={{ transform: 'translate(-50%, -50%)' }}>
+            <ErrorOutlineRoundedIcon sx={{ fontSize: 24, color: 'gray.60' }} />
+            <Typography variant="body3SB12" color="gray.60" lineHeight={1.4}>
+              생성된 시나리오가 없습니다
+            </Typography>
+            <MIBaseButton
+              variant="contained"
+              prefix={<AutoAwesomeRoundedIcon sx={{ fontSize: 20 }} />}
+              onClick={handleScenarioDesignClick}
+              sx={{ height: '36px', borderRadius: '8px', padding: '6px 10px' }}
+            >
+              시나리오 설계
+            </MIBaseButton>
+          </Stack>
+        </Box>
+      ) : (
+        <Box bgcolor="gray.5" borderRadius="10px" p="24px">
+          <Stack gap="8px" py="6px" mb="8px">
+            <Typography variant="body2SB14" color="contentText.Normal" px="6px" lineHeight={1.4}>
+              시나리오 그룹
+            </Typography>
+            {handleScenarioGroupClick ? (
+              <Stack
+                direction="row"
+                alignItems="center"
+                gap="2px"
+                px="6px"
+                sx={{ width: 'fit-content', maxWidth: '100%', cursor: 'pointer' }}
+                onClick={handleScenarioGroupClick}
+              >
+                <Typography
+                  variant="body1B16"
+                  color="mari.Primary"
+                  lineHeight={1.4}
+                  sx={{
+                    textDecoration: 'underline',
+                    textDecorationStyle: 'dotted',
+                    textUnderlineOffset: '2px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '100%',
+                  }}
+                >
+                  {scenarioGroupLabel}
+                </Typography>
+                <Box sx={{ display: 'inline-flex', lineHeight: 0, color: 'mari.Primary', flex: '0 0 auto' }}>
+                  <ChevronRightRoundedIcon sx={{ fontSize: 20 }} />
+                </Box>
+              </Stack>
+            ) : (
+              <Typography variant="body1B16" color="contentText.Black" px="6px" lineHeight={1.4}>
+                {'-'}
+              </Typography>
+            )}
+          </Stack>
+          <Box bgcolor="commonColor.White" border="1px solid" borderColor="contentBorder.Normal" borderRadius="10px" p="12px">
+            <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
+              <MIDataTableHeader<RelatedScenario>
+                columns={columns}
+                headerCellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
+                headerCellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
+                headerLabelColor={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
+              />
+              <MIDataTableBody<RelatedScenario>
+                rowId="scenarioId"
+                columns={columns}
+                rows={rows}
+                rowHeight={48}
+                loading={loading}
+                noRowMessage="관련 시나리오가 없습니다."
+                primitiveCellTypographyVariant={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
+                primitiveCellLineHeight={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
+                cellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
+                cellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY}
+                hideLastRowBorder={true}
+              />
+            </Box>
           </Box>
         </Box>
-      </Box>
+      )}
     </Stack>
   )
 }
