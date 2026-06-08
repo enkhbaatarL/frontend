@@ -199,17 +199,20 @@ export interface FundamentalModelVolumesFilterOptions {
 }
 
 export interface FundamentalModelVolumesColumn {
+  key: string
+  label: string
   year: number
   month: number | null
-  periodLabel: string
 }
 
 export interface FundamentalModelVolumesRow {
   type: FundamentalModelVolumesType
+  typeLabel: string
   region: FundamentalModelVolumesRegion
   country: string | null
   rowKind: FundamentalModelVolumesRowKind
-  values: number[]
+  rowLabel: string
+  values: Record<string, number>
 }
 
 export interface FundamentalModelVolumesAppliedFilters {
@@ -221,6 +224,7 @@ export interface FundamentalModelVolumes {
   caseId: number
   segment: FundamentalModelVolumesSegment
   granularity: FundamentalModelVolumesGranularity
+  unit: 'MTPA'
   appliedFilters: FundamentalModelVolumesAppliedFilters
   columns: FundamentalModelVolumesColumn[]
   rows: FundamentalModelVolumesRow[]

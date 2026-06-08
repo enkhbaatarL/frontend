@@ -48,28 +48,6 @@ export interface FundamentalModelSectionVolumesTableProps {
   loading?: boolean
 }
 
-/** type enum -> 섹션 표시용 라벨 (없으면 enum 자체를 노출) */
-const VOLUME_TYPE_LABEL: Record<FundamentalModelVolumesType, string> = {
-  DEMAND: 'Demand',
-  PRODUCTION: 'Production',
-  LNG_IMPORTS: 'LNG Imports',
-  LNG_EXPORTS: 'LNG Exports',
-  PIPELINE_IMPORTS: 'Pipeline Imports',
-  PIPELINE_EXPORTS: 'Pipeline Exports',
-}
-
-/** region enum -> 표시 라벨(REGION_SUBTOTAL 행에서 사용) */
-const VOLUME_REGION_LABEL: Record<FundamentalModelVolumesRegion, string> = {
-  ASIA: 'Asia',
-  EUROPE: 'Europe',
-  NORTH_AMERICA: 'North America',
-  MIDDLE_EAST: 'Middle East',
-  AUSTRALIA: 'Australia',
-  RUSSIA: 'Russia',
-  AFRICA: 'Africa',
-  SOUTH_AMERICA: 'South America',
-}
-
 const rowTypography = (kind: FundamentalModelVolumesRowKind) => {
   if (kind === 'COUNTRY') return { variant: 'body2R14' as const }
   return { variant: 'body2SB14' as const }
@@ -78,12 +56,6 @@ const rowTypography = (kind: FundamentalModelVolumesRowKind) => {
 const formatVolumeCell = (value: unknown): string => {
   if (typeof value !== 'number' || !Number.isFinite(value)) return ''
   return value.toFixed(1)
-}
-
-const resolveRowLabel = (row: FundamentalModelVolumesRow): string => {
-  if (row.rowKind === 'TYPE_TOTAL') return 'Total'
-  if (row.rowKind === 'REGION_SUBTOTAL') return VOLUME_REGION_LABEL[row.region] ?? row.region
-  return row.country ?? VOLUME_REGION_LABEL[row.region] ?? ''
 }
 
 interface SectionGroup {
@@ -128,8 +100,7 @@ const groupRowsByType = (rows: FundamentalModelVolumesRow[]): SectionGroup[] => 
   const order: FundamentalModelVolumesType[] = []
   for (const row of rows) {
     if (!map.has(row.type)) {
-      const label = VOLUME_TYPE_LABEL[row.type] ?? String(row.type)
-      map.set(row.type, { type: row.type, label, rows: [] })
+      map.set(row.type, { type: row.type, label: row.typeLabel, rows: [] })
       order.push(row.type)
     }
     map.get(row.type)!.rows.push(row)
@@ -189,9 +160,8 @@ const SectionVolumesTableSkeleton = () => (
  */
 const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = false }: FundamentalModelSectionVolumesTableProps) => {
   const sections = useMemo(() => groupRowsByType(rows), [rows])
-  const monthLabels = useMemo(() => columns.map((column) => column.periodLabel), [columns])
 
-  const monthScrollWidth = fmVolumeMonthColumnsWidth(monthLabels.length)
+  const monthScrollWidth = fmVolumeMonthColumnsWidth(columns.length)
 
   const headerMonthScrollRef = useRef<HTMLDivElement>(null)
   const bodyMonthScrollRef = useRef<HTMLDivElement>(null)
@@ -290,11 +260,11 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
 
   const headerMonthColumns = (
     <Stack direction="row" alignItems="flex-start" sx={{ width: '100%', minWidth: monthScrollWidth }}>
-      {monthLabels.map((month, colIdx) => (
-        <Stack key={`${month}-${colIdx}`} sx={{ flex: `1 0 ${FM_VOLUME_MONTH_COL_W}px`, minWidth: FM_VOLUME_MONTH_COL_W }}>
+      {columns.map((column, colIdx) => (
+        <Stack key={`${column.key}-${colIdx}`} sx={{ flex: `1 0 ${FM_VOLUME_MONTH_COL_W}px`, minWidth: FM_VOLUME_MONTH_COL_W }}>
           <Box sx={[fmVolumeTableHeaderCellSx, { justifyContent: 'flex-end' }]}>
             <Typography variant="tableHeaderSemibold" color="gray.60" noWrap sx={{ lineHeight: 1.4 }}>
-              {month}
+              {column.label}
             </Typography>
           </Box>
         </Stack>
@@ -360,7 +330,7 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
               sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal, isRegion)]}
             >
               <Typography {...rowTypography(row.rowKind)} color="gray.90" noWrap sx={{ width: '100%' }}>
-                {resolveRowLabel(row)}
+                {row.rowLabel}
               </Typography>
             </Box>
           )
@@ -371,8 +341,8 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
 
   const bodyMonthColumns = (
     <Stack direction="row" alignItems="flex-start" sx={{ width: '100%', minWidth: monthScrollWidth }}>
-      {monthLabels.map((month, colIdx) => (
-        <Stack key={`${month}-${colIdx}`} sx={{ flex: `1 0 ${FM_VOLUME_MONTH_COL_W}px`, minWidth: FM_VOLUME_MONTH_COL_W }}>
+      {columns.map((column, colIdx) => (
+        <Stack key={`${column.key}-${colIdx}`} sx={{ flex: `1 0 ${FM_VOLUME_MONTH_COL_W}px`, minWidth: FM_VOLUME_MONTH_COL_W }}>
           {flatRows.map(({ sectionType, row }, rowIdx) => {
             const nextIsTotal = flatRows[rowIdx + 1]?.row.rowKind === 'TYPE_TOTAL'
             const isTotal = row.rowKind === 'TYPE_TOTAL'
@@ -383,7 +353,7 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
                 sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal, isRegion), { justifyContent: 'flex-end' }]}
               >
                 <Typography {...rowTypography(row.rowKind)} color="gray.90" noWrap sx={{ width: '100%', textAlign: 'right' }}>
-                  {formatVolumeCell(row.values[colIdx])}
+                  {formatVolumeCell(row.values[column.key])}
                 </Typography>
               </Box>
             )

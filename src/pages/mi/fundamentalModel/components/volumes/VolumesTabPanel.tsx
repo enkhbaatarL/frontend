@@ -185,7 +185,7 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, detailLoading }: VolumesT
                 Unit:
               </Typography>
               <Typography variant="body2M14" color="gray.70">
-                {sectionLoading ? '-' : 'mtpa'}
+                {sectionLoading ? '-' : (volumesRes?.unit ?? '-')}
               </Typography>
             </Stack>
             <FundamentalModelSectionVolumesTable columns={volumeColumns} rows={sectionRows} loading={sectionLoading} />
