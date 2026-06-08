@@ -1,10 +1,10 @@
-import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
 import { Box, Stack, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 
 import type { IScenarioDimensionColumn, IScenarioRow } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
+import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import { getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
@@ -64,40 +64,12 @@ const ScenarioGroupInnerTable = ({ scenarioGroupId, dimensionColumns, scenarios 
           <Stack width={BADGE_COLUMN_WIDTH} flexShrink={0} minWidth={0} alignItems="center" justifyContent="center" py="10px">
             {scenario.baseCase && <NextGenMIBaseCaseChip />}
           </Stack>
-          <Stack
-            direction="row"
-            alignItems="center"
-            gap="2px"
-            width={NAME_COLUMN_WIDTH}
-            flexShrink={0}
-            minWidth={0}
-            padding={CELL_PADDING}
-            onClick={() => navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId, scenario.scenarioId))}
-            sx={{
-              cursor: 'pointer',
-              '&:hover .grp-scenario-name': {
-                color: 'mari.Primary',
-                textDecorationLine: 'underline',
-                textDecorationStyle: 'dotted',
-                textUnderlineOffset: '3px',
-              },
-              '&:hover .grp-scenario-chevron': { opacity: 1 },
-            }}
-          >
-            <Box minWidth={0} sx={{ flex: '0 1 auto', overflow: 'hidden' }}>
-              <NextGenMITableBodyText
-                className="grp-scenario-name"
-                value={scenario.scenarioName}
-                variant="body1SB16"
-                color="contentText.Black"
-                tooltipWhenTruncated
-              />
-            </Box>
-            <ChevronRightRounded
-              className="grp-scenario-chevron"
-              sx={{ fontSize: 20, color: 'mari.Primary', flexShrink: 0, opacity: 0, transition: 'opacity 150ms ease' }}
+          <Box width={NAME_COLUMN_WIDTH} flexShrink={0} minWidth={0} padding={CELL_PADDING}>
+            <NextGenMIHoverLinkCell
+              value={scenario.scenarioName}
+              onClick={() => navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId, scenario.scenarioId))}
             />
-          </Stack>
+          </Box>
           {dimensionColumns.map((column) => {
             const dimension = scenario.dimensions.find((item) => item.key === column.key)
             return (

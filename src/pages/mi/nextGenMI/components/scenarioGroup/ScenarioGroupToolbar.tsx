@@ -49,7 +49,7 @@ const ScenarioGroupToolbar = ({
   const isGroupMode = mode === 'group'
 
   return (
-    <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5} paddingX="24px">
+    <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5}>
       <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" minWidth={0} flex={1}>
         <MISlidingSegmented
           options={MODE_OPTIONS}

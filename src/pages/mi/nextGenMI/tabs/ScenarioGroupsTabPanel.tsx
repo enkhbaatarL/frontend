@@ -43,7 +43,6 @@ const ScenarioGroupsTabPanel = () => {
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<number>>(() => new Set())
   const [expandAll, setExpandAll] = useState(false)
-  const [canScrollDown, setCanScrollDown] = useState(false)
 
   const isGroupMode = mode === 'group'
 
@@ -97,25 +96,6 @@ const ScenarioGroupsTabPanel = () => {
       setPagination((p) => ({ ...p, page: tp }))
     }
   }, [activePagination, pagination.page])
-
-  // 아래로 더 스크롤할 내용이 있을 때만 하단 페이드 노출
-  useEffect(() => {
-    const scrollEl = document.getElementById('main-scroll-wrapper')
-    if (!scrollEl) return undefined
-
-    const update = () => setCanScrollDown(scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight > 2)
-    update()
-
-    scrollEl.addEventListener('scroll', update, { passive: true })
-    const resizeObserver = new ResizeObserver(update)
-    resizeObserver.observe(scrollEl)
-    if (scrollEl.firstElementChild) resizeObserver.observe(scrollEl.firstElementChild)
-
-    return () => {
-      scrollEl.removeEventListener('scroll', update)
-      resizeObserver.disconnect()
-    }
-  }, [])
 
   const handleModeChange = useCallback(
     (nextMode: ScenarioGroupMode) => {
@@ -198,7 +178,7 @@ const ScenarioGroupsTabPanel = () => {
   return (
     <Box width="100%">
       <NextGenMIStickySlot tabKey="scenarios">
-        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} padding="18px 24px" color="contentText.Black">
+        <Typography fontSize={26} fontWeight={700} lineHeight={1.4} py="18px" color="contentText.Black">
           Scenario Group List
         </Typography>
 
@@ -217,7 +197,7 @@ const ScenarioGroupsTabPanel = () => {
           onSearchClear={handleSearchClear}
         />
 
-        <Box mt={2} paddingX="24px">
+        <Box mt={2}>
           {isGroupMode ? (
             <MIDataTableHeader
               columns={GROUP_HEADER_COLUMNS}
@@ -230,47 +210,27 @@ const ScenarioGroupsTabPanel = () => {
         </Box>
       </NextGenMIStickySlot>
 
-      <Box paddingX="24px">
-        {isGroupMode ? (
-          <ScenarioGroupAccordionList
-            groups={groups}
-            expandedGroupIds={expandedGroupIds}
-            onToggle={handleToggleGroup}
-            loading={groupQuery.isLoading}
-            skeletonRowCount={pagination.size}
-            emptyMessage="조건에 맞는 시나리오 그룹이 없습니다."
-          />
-        ) : (
-          <ScenarioIndividualTable scenarios={individualScenarios} loading={individualQuery.isLoading} skeletonRowCount={pagination.size} />
-        )}
-      </Box>
-
-      {/* 하단 페이드(투명) — 아래로 더 스크롤할 내용이 있을 때만 viewport 하단에 고정 노출 */}
-      <Box
-        aria-hidden
-        sx={{
-          position: 'sticky',
-          bottom: 0,
-          height: '56px',
-          mt: '-56px',
-          pointerEvents: 'none',
-          zIndex: 1,
-          opacity: canScrollDown ? 1 : 0,
-          transition: 'opacity 150ms ease',
-          background: 'linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
-        }}
-      />
+      {isGroupMode ? (
+        <ScenarioGroupAccordionList
+          groups={groups}
+          expandedGroupIds={expandedGroupIds}
+          onToggle={handleToggleGroup}
+          loading={groupQuery.isLoading}
+          skeletonRowCount={pagination.size}
+          emptyMessage="조건에 맞는 시나리오 그룹이 없습니다."
+        />
+      ) : (
+        <ScenarioIndividualTable scenarios={individualScenarios} loading={individualQuery.isLoading} skeletonRowCount={pagination.size} />
+      )}
 
       {activePagination && (
-        <Box paddingX="24px">
-          <MIPaginationSecondary
-            data={activePagination}
-            size={pagination.size}
-            sizeList={[20, 50, 100]}
-            onSizeChange={handlePageSizeChange}
-            onPageChange={handlePageChange}
-          />
-        </Box>
+        <MIPaginationSecondary
+          data={activePagination}
+          size={pagination.size}
+          sizeList={[20, 50, 100]}
+          onSizeChange={handlePageSizeChange}
+          onPageChange={handlePageChange}
+        />
       )}
     </Box>
   )
