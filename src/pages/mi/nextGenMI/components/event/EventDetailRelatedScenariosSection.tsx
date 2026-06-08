@@ -14,15 +14,15 @@ import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailBlockSkeleton'
-import NextGenMIEventDetailTableBodyText, {
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY,
-  NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR,
-} from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
 import NextGenMIPossibilityDotsCell from '@/pages/mi/nextGenMI/components/common/NextGenMIPossibilityDotsCell'
+import NextGenMITableBodyText, {
+  NEXT_GEN_MI_TABLE_BODY_CELL_PY,
+  NEXT_GEN_MI_TABLE_BODY_LINE_HEIGHT,
+  NEXT_GEN_MI_TABLE_BODY_TEXT_VARIANT,
+  NEXT_GEN_MI_TABLE_CELL_PX,
+  NEXT_GEN_MI_TABLE_HEADER_CELL_PY,
+  NEXT_GEN_MI_TABLE_HEADER_LABEL_COLOR,
+} from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 import { getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
@@ -74,7 +74,7 @@ const EventDetailRelatedScenariosSection = ({
         renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
           <Stack direction="row" alignItems="center" gap="2px" sx={{ minWidth: 0, width: '100%' }}>
             <Box sx={{ flex: '0 1 auto', minWidth: 0, maxWidth: '100%' }}>
-              <NextGenMIEventDetailTableBodyText
+              <NextGenMITableBodyText
                 value={params.row.scenarioName}
                 sx={{
                   fontWeight: 600,
@@ -109,7 +109,7 @@ const EventDetailRelatedScenariosSection = ({
         minWidth: 100,
         sortable: false,
         renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-          <NextGenMIEventDetailTableBodyText value={params.row.period ?? ''} tooltipWhenTruncated />
+          <NextGenMITableBodyText value={params.row.period ?? ''} tooltipWhenTruncated />
         ),
       },
       {
@@ -119,7 +119,7 @@ const EventDetailRelatedScenariosSection = ({
         minWidth: 100,
         sortable: false,
         renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-          <NextGenMIEventDetailTableBodyText value={params.row.transportDisruption ?? ''} tooltipWhenTruncated />
+          <NextGenMITableBodyText value={params.row.transportDisruption ?? ''} tooltipWhenTruncated />
         ),
       },
       {
@@ -129,7 +129,7 @@ const EventDetailRelatedScenariosSection = ({
         minWidth: 120,
         sortable: false,
         renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-          <NextGenMIEventDetailTableBodyText value={params.row.supplyDisruptionIntensity ?? ''} tooltipWhenTruncated />
+          <NextGenMITableBodyText value={params.row.supplyDisruptionIntensity ?? ''} tooltipWhenTruncated />
         ),
       },
       {
@@ -139,7 +139,7 @@ const EventDetailRelatedScenariosSection = ({
         minWidth: 140,
         sortable: false,
         renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-          <NextGenMIEventDetailTableBodyText value={params.row.supplyRecoveryPattern ?? ''} tooltipWhenTruncated />
+          <NextGenMITableBodyText value={params.row.supplyRecoveryPattern ?? ''} tooltipWhenTruncated />
         ),
       },
       {
@@ -149,7 +149,7 @@ const EventDetailRelatedScenariosSection = ({
         minWidth: 140,
         sortable: false,
         renderCell: (params: GridRenderCellParams<RelatedScenario>) => (
-          <NextGenMIEventDetailTableBodyText value={params.row.normalizationCheck ?? ''} tooltipWhenTruncated />
+          <NextGenMITableBodyText value={params.row.normalizationCheck ?? ''} tooltipWhenTruncated />
         ),
       },
       {
@@ -259,9 +259,9 @@ const EventDetailRelatedScenariosSection = ({
             <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
               <MIDataTableHeader<RelatedScenario>
                 columns={columns}
-                headerCellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
-                headerCellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_CELL_PY}
-                headerLabelColor={NEXT_GEN_MI_EVENT_DETAIL_TABLE_HEADER_LABEL_COLOR}
+                headerCellPx={NEXT_GEN_MI_TABLE_CELL_PX}
+                headerCellPy={NEXT_GEN_MI_TABLE_HEADER_CELL_PY}
+                headerLabelColor={NEXT_GEN_MI_TABLE_HEADER_LABEL_COLOR}
               />
               <MIDataTableBody<RelatedScenario>
                 rowId="scenarioId"
@@ -270,10 +270,10 @@ const EventDetailRelatedScenariosSection = ({
                 rowHeight={48}
                 loading={loading}
                 noRowMessage="관련 시나리오가 없습니다."
-                primitiveCellTypographyVariant={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_TEXT_VARIANT}
-                primitiveCellLineHeight={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
-                cellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
-                cellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY}
+                primitiveCellTypographyVariant={NEXT_GEN_MI_TABLE_BODY_TEXT_VARIANT}
+                primitiveCellLineHeight={NEXT_GEN_MI_TABLE_BODY_LINE_HEIGHT}
+                cellPx={NEXT_GEN_MI_TABLE_CELL_PX}
+                cellPy={NEXT_GEN_MI_TABLE_BODY_CELL_PY}
                 hideLastRowBorder={true}
               />
             </Box>

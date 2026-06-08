@@ -1,53 +1,12 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
-import {
-  EventCategoryLv1,
-  MarketDirection,
-  MarketImpactLevel,
-  ListSort,
-  SignpostImpactLevel,
-  NextGenMIStatus,
-} from '@/service/mi/nextGenMI/common'
-import { ICommonResponse, IPaginationResponse } from '@/types/api'
+import { EventCategoryLv1, MarketDirection, MarketImpactLevel, SignpostImpactLevel, NextGenMIStatus } from '@/service/mi/nextGenMI/common'
+import { ICommonResponse } from '@/types/api'
 
 export interface IScenarioImpact {
   indexName: string
   marketImpactLevel: MarketImpactLevel
-}
-
-export interface IScenarioListItem {
-  scenarioId: number
-  scenarioName: string
-  status: NextGenMIStatus
-  statusLabel?: string
-  createdAt: string
-  updatedAt: string
-  indexImpacts: IScenarioImpact[]
-  probability: number
-}
-
-export interface IScenarioAppliedFilter {
-  scenarioStatus: NextGenMIStatus
-  startDate?: string
-  endDate?: string
-  sort: ListSort
-  keyword?: string
-}
-
-export interface IScenarioListRes {
-  appliedFilter: IScenarioAppliedFilter
-  scenarios: IPaginationResponse<IScenarioListItem>
-}
-
-export interface IGetScenariosParams {
-  page?: number
-  size?: number
-  scenarioStatus?: NextGenMIStatus
-  startDate?: string
-  endDate?: string
-  sort?: ListSort
-  keyword?: string
 }
 
 export interface IScenarioPriceFlowStep {
@@ -202,28 +161,7 @@ export interface IScenarioDetailRes {
   relatedEventScenario: IRelatedEventScenario
 }
 
-/**
- * 시나리오 목록 조회
- * @param params - 시나리오 목록 조회 파라미터
- * @returns 시나리오 목록
- */
 const nextGenMIScenarioService = {
-  async getScenarios(params: IGetScenariosParams): Promise<IScenarioListRes> {
-    const response: AxiosResponse<ICommonResponse<IScenarioListRes>> = await api.get('mi/next-gen/scenarios', {
-      params: {
-        page: params.page ?? 1,
-        size: params.size ?? 20,
-        scenarioStatus: params.scenarioStatus,
-        startDate: params.startDate,
-        endDate: params.endDate,
-        sort: params.sort,
-        keyword: params.keyword,
-      },
-    })
-
-    return response.data.data
-  },
-
   /**
    * 시나리오 상세 조회
    * @param scenarioId - 시나리오 ID

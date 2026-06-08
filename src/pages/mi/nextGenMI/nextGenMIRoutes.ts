@@ -1,6 +1,6 @@
 export const NEXT_GEN_MI_BASE_PATH = '/mi/next-gen-mi'
 import EventsTabPanel from '@/pages/mi/nextGenMI/tabs/EventsTabPanel'
-import ScenariosTabPanel from '@/pages/mi/nextGenMI/tabs/ScenariosTabPanel'
+import ScenarioGroupsTabPanel from '@/pages/mi/nextGenMI/tabs/ScenarioGroupsTabPanel'
 
 export const NEXT_GEN_MI_TAB_INFO = [
   { key: 'events', label: 'Event List', segment: 'events', path: `${NEXT_GEN_MI_BASE_PATH}/events`, content: EventsTabPanel },
@@ -9,17 +9,23 @@ export const NEXT_GEN_MI_TAB_INFO = [
     label: 'Scenario Group List',
     segment: 'scenarios',
     path: `${NEXT_GEN_MI_BASE_PATH}/scenarios`,
-    content: ScenariosTabPanel,
+    content: ScenarioGroupsTabPanel,
   },
 ] as const
 
 export type NextGenMITabInfo = (typeof NEXT_GEN_MI_TAB_INFO)[number]
 
-export type NextGenMITabKey = 'overview' | 'events' | 'scenarios' | 'design'
+export type NextGenMITabKey = 'events' | 'scenarios'
 
 export const getNextGenMITabPath = (tabKey: NextGenMITabKey) => {
   const tab = NEXT_GEN_MI_TAB_INFO.find((item) => item.key === tabKey)
   return tab?.path ?? NEXT_GEN_MI_TAB_INFO[0].path
+}
+
+export const getNextGenMIScenarioGroupDetailPath = (scenarioGroupId: string | number, scenarioId?: string | number) => {
+  const base = `${NEXT_GEN_MI_BASE_PATH}/scenarios/group/${encodeURIComponent(String(scenarioGroupId))}`
+  if (scenarioId === undefined || scenarioId === null || scenarioId === '') return base
+  return `${base}?scenarioId=${encodeURIComponent(String(scenarioId))}`
 }
 
 export const resolveNextGenMITabFromPathname = (pathname: string): NextGenMITabKey => {

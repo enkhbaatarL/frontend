@@ -35,6 +35,7 @@ type ScenarioSummaryChartData = ChartData & {
   resultDates?: string[]
   startDates?: string[]
   visibilityKey?: string
+  isDashed?: boolean
 }
 
 interface ScenarioSummaryChartGraphProps {
@@ -442,6 +443,7 @@ const ScenarioSummaryChartGraph = ({
         const isHovered = hoveredChartKey === visibilityKey
         const hasHover = hoveredChartKey !== null && hoveredChartKey !== undefined
         const opacity = !isVisible ? 0 : hasHover && !isHovered ? 0.2 : 1
+        const isDashed = chart.isDashed === true
 
         return {
           label: displayName,
@@ -454,6 +456,7 @@ const ScenarioSummaryChartGraph = ({
           borderColor: applyOpacity(color, opacity),
           backgroundColor: color,
           borderWidth: isHovered ? 2 : 1,
+          borderDash: isDashed ? [6, 4] : [],
           pointRadius: 0,
           pointHoverRadius: 0,
           fill: false,
@@ -465,7 +468,7 @@ const ScenarioSummaryChartGraph = ({
             chipColor: color,
             goodsDataSourceNo: chart.goodsDataSourceNo,
             goodsDataSourceName: displayName,
-            isDashed: false,
+            isDashed,
             toFixed: dataMaxPrecision > 0 ? dataMaxPrecision : undefined,
             visibilityKey,
             timestamps: chart.timestamps,

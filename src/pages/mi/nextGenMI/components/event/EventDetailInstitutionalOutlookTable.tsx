@@ -7,8 +7,8 @@ import type { IPaginationResponse } from '@/types/api'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailBlockSkeleton'
-import { NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING } from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
+import { NEXT_GEN_MI_TABLE_CONTAINER_PADDING } from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 
 const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
@@ -107,12 +107,7 @@ const EventDetailInstitutionalOutlookTable = ({
         title="기관 전망"
         tooltipTitle=""
       />
-      <Box
-        bgcolor="commonColor.White"
-        borderRadius="10px"
-        padding={`${NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING}px`}
-        boxSizing="border-box"
-      >
+      <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
         {loading ? (
           <NextGenMIEventDetailBlockSkeleton height="400px" />
         ) : (
@@ -132,7 +127,7 @@ const EventDetailInstitutionalOutlookTable = ({
                 data={paginationData}
                 size={isServerMode ? serverPagination.size : pagination.size}
                 sizeList={[...PAGE_SIZE_LIST]}
-                paddingTop={`${NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING}px`}
+                paddingTop={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
                 onPageChange={(page) => {
                   if (isServerMode) onServerPageChange?.(page)
                   else setPagination((p) => ({ ...p, page }))
