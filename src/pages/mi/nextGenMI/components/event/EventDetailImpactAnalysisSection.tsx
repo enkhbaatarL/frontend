@@ -51,6 +51,13 @@ const EventDetailImpactAnalysisNoiseEmptyPanel = () => (
   </Box>
 )
 
+const impactAnalysisCellSx = ({ field }: { field: string }) => {
+  if (field === 'shortTerm' || field === 'midLongTerm') {
+    return { py: '4px' }
+  }
+  return {}
+}
+
 /** 이벤트 상세 — 영향도 분석(표 + KPI + 서술) */
 const EventDetailImpactAnalysisSection = ({
   tableRows,
@@ -81,7 +88,7 @@ const EventDetailImpactAnalysisSection = ({
         align: 'center',
         sortable: false,
         renderCell: (p) => (
-          <Stack alignItems="center" justifyContent="center" width="100%" height="40px">
+          <Stack alignItems="center" justifyContent="center" width="100%">
             <EventIndexSignalCell
               indexLabel={p.row.indexName ?? undefined}
               level={p.row.shortTerm?.marketImpactLevel}
@@ -102,7 +109,7 @@ const EventDetailImpactAnalysisSection = ({
         align: 'center',
         sortable: false,
         renderCell: (p) => (
-          <Stack alignItems="center" justifyContent="center" width="100%" height="40px">
+          <Stack alignItems="center" justifyContent="center" width="100%">
             <EventIndexSignalCell
               indexLabel={p.row.indexName ?? undefined}
               level={p.row.midLongTerm?.marketImpactLevel}
@@ -207,6 +214,7 @@ const EventDetailImpactAnalysisSection = ({
                 primitiveCellLineHeight={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_LINE_HEIGHT}
                 cellPx={NEXT_GEN_MI_EVENT_DETAIL_TABLE_CELL_PX}
                 cellPy={NEXT_GEN_MI_EVENT_DETAIL_TABLE_BODY_CELL_PY}
+                getCellSx={impactAnalysisCellSx}
               />
             </Box>
           </Box>

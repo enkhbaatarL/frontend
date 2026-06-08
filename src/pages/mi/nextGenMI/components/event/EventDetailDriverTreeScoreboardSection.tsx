@@ -153,7 +153,6 @@ const EventDetailDriverTreeScoreboardSection = ({
         getRowKey={(row, rowIndex) =>
           `${row.indexName || 'no-index'}-${row.driver?.lv1Id ?? ''}-${row.driver?.lv2Id ?? ''}-${row.driver?.lv3Id ?? ''}-${rowIndex}`
         }
-        maxHeight="min(520px, calc(100vh - 320px))"
         loading={loading}
         noRowMessage="표시할 데이터가 없습니다."
         rowHeight={!loading && tableRows.length === 0 ? '400px' : undefined}
