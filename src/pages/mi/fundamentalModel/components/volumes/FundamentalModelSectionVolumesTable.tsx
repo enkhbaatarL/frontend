@@ -329,7 +329,12 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
               key={`${sectionType}-${row.region}-${row.rowKind}-${row.country ?? 'NA'}-${rowIdx}`}
               sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal, isRegion)]}
             >
-              <Typography {...rowTypography(row.rowKind)} color="gray.90" noWrap sx={{ width: '100%' }}>
+              <Typography
+                {...rowTypography(row.rowKind)}
+                color="gray.90"
+                noWrap
+                sx={{ width: '100%', boxSizing: 'border-box', paddingLeft: row.rowKind === 'COUNTRY' ? '12px' : undefined }}
+              >
                 {row.rowLabel}
               </Typography>
             </Box>
