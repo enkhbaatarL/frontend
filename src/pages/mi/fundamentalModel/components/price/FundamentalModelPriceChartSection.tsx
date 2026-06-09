@@ -125,6 +125,7 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
             hideLegend
             chartColorMap={priceChartColorMap}
             showHeaderLegend
+            headerLegendLabelColor="gray.70"
             headerStart={
               <Typography variant="body3SB12" color="contentText.Subtext" noWrap sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
                 {chartUnit}

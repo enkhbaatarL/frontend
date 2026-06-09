@@ -1,4 +1,4 @@
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography, type TypographyProps } from '@mui/material'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
@@ -10,6 +10,8 @@ import type {
 } from '@/service/mi/fundamentalModel/case'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
+import MIFollowCursorTooltip from '@/components/common/table/MIFollowCursorTooltip'
+import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import MIFrozenColumnScrollLayout from '@/pages/mi/fundamentalModel/components/common/MIFrozenColumnScrollLayout'
 import FundamentalModelHoverHorizontalScrollbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelHoverHorizontalScrollbar'
 import FundamentalModelTradeSummaryToolbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelTradeSummaryToolbar'
@@ -53,6 +55,36 @@ export interface FundamentalModelTradeVolumesTableProps {
 const rowTypography = (kind: FundamentalModelTradeCountryHeaderKind) => {
   if (kind === 'COUNTRY') return { variant: 'body2R14' as const }
   return { variant: 'body2SB14' as const }
+}
+
+const TradeCountryHeaderLabel = ({
+  header,
+  textAlign,
+}: {
+  header: FundamentalModelTradeCountryHeader
+  textAlign?: TypographyProps['textAlign']
+}) => {
+  const { ref, isEllipsis } = useEllipsisDetection(header.label)
+
+  const typography = (
+    <Typography
+      ref={ref}
+      {...rowTypography(header.kind)}
+      color="gray.90"
+      noWrap
+      width="100%"
+      boxSizing="border-box"
+      paddingLeft={header.kind === 'COUNTRY' && textAlign !== 'right' ? '12px' : undefined}
+      paddingRight={header.kind === 'COUNTRY' && textAlign === 'right' ? '12px' : undefined}
+      textAlign={textAlign}
+    >
+      {header.label}
+    </Typography>
+  )
+
+  if (!isEllipsis) return typography
+
+  return <MIFollowCursorTooltip title={header.country ?? header.label}>{typography}</MIFollowCursorTooltip>
 }
 
 const getFlowLookupKey = (toKey: string, fromKey: string) => `${toKey}\u0000${fromKey}`
@@ -294,9 +326,7 @@ const FundamentalModelTradeVolumesTable = memo(
                   bgcolor: isTotalCol ? FM_VOLUME_TOTAL_CELL_BG : isRegionCol ? FM_VOLUME_SUBTOTAL_CELL_BG : 'commonColor.White',
                 })}
               >
-                <Typography {...rowTypography(col.kind)} color="gray.90" noWrap sx={{ width: '100%', textAlign: 'right' }}>
-                  {col.label}
-                </Typography>
+                <TradeCountryHeaderLabel header={col} textAlign="right" />
               </Box>
             )
           })}
@@ -314,9 +344,7 @@ const FundamentalModelTradeVolumesTable = memo(
           const isRegionRow = row.kind === 'REGION_TOTAL'
           return (
             <Box key={row.key} sx={[fmVolumeTableBodyCellSx, fmVolumeTradeBodyCellSx(isTotal, nextIsTotal, isRegionRow)]}>
-              <Typography {...rowTypography(row.kind)} color="gray.90" noWrap sx={{ width: '100%' }}>
-                {row.label}
-              </Typography>
+              <TradeCountryHeaderLabel header={row} />
             </Box>
           )
         })}
