@@ -1,4 +1,3 @@
-import { CheckRounded, KeyboardArrowDownRounded } from '@mui/icons-material'
 import { Box, Stack, Typography } from '@mui/material'
 import { type GridColDef } from '@mui/x-data-grid'
 import { useMemo, useState } from 'react'
@@ -6,7 +5,7 @@ import { useMemo, useState } from 'react'
 import type { IScenarioDimensionColumn, IScenarioGroupDetailRow, ScenarioJudgementStatus } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import MIConfirm from '@/components/common/confirm/MIConfirm'
-import MIMenu from '@/components/common/menu/MIMenu'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
@@ -32,20 +31,25 @@ const ScenarioJudgementSelect = ({ value, disabled = false, onSelect }: Scenario
   const [open, setOpen] = useState(false)
   const currentLabel = SCENARIO_JUDGEMENT_ITEMS.find((item) => item.value === value)?.label ?? '대기'
 
-  const handleSelect = (next: ScenarioJudgementStatus) => {
-    setOpen(false)
-    if (next !== value) onSelect(next)
-  }
-
   return (
-    <MIMenu
+    <MISelectMenu<ScenarioJudgementStatus>
       variant="outlined"
+      selected={value}
+      onSelected={(next: ScenarioJudgementStatus) => {
+        if (next !== value) onSelect(next)
+      }}
+      items={SCENARIO_JUDGEMENT_ITEMS.map(({ value: itemValue, label }) => ({ value: itemValue, label }))}
       open={open}
       onOpenChange={setOpen}
       disabled={disabled}
       placement="bottom-end"
       closeOnScroll
       paperProps={{ sx: { width: '152px' } }}
+      textLabel={
+        <Typography variant="body2M14" color="contentText.Black" noWrap>
+          {currentLabel}
+        </Typography>
+      }
       sx={{
         height: '32px',
         minWidth: '72px',
@@ -54,52 +58,9 @@ const ScenarioJudgementSelect = ({ value, disabled = false, onSelect }: Scenario
         backgroundColor: open ? 'gray.5' : 'commonColor.White',
         borderColor: open ? 'contentBorder.Active' : 'contentBorder.Normal',
         '&:hover:not(:disabled)': { backgroundColor: 'gray.5', borderColor: 'contentBorder.Active' },
+        '& .MuiSvgIcon-root': { fontSize: '20px' },
       }}
-      label={
-        <Stack direction="row" alignItems="center" gap="2px">
-          <Typography variant="body2M14" color="contentText.Black" noWrap>
-            {currentLabel}
-          </Typography>
-          <KeyboardArrowDownRounded
-            sx={{
-              fontSize: 20,
-              color: 'contentIcon.Enabled',
-              transition: 'transform 150ms ease',
-              transform: open ? 'rotate(180deg)' : 'none',
-            }}
-          />
-        </Stack>
-      }
-    >
-      <Stack gap="4px" padding="12px">
-        {SCENARIO_JUDGEMENT_ITEMS.map((item) => {
-          const isSelected = item.value === value
-          return (
-            <Stack
-              key={item.value}
-              role="button"
-              tabIndex={0}
-              direction="row"
-              alignItems="center"
-              gap="8px"
-              padding="8px 12px 8px 6px"
-              borderRadius="10px"
-              onClick={() => handleSelect(item.value)}
-              sx={{
-                cursor: 'pointer',
-                bgcolor: isSelected ? 'contentBG.PrimaryFade' : 'transparent',
-                '&:hover': { bgcolor: isSelected ? 'contentBG.PrimaryFade' : 'gray.10' },
-              }}
-            >
-              <CheckRounded sx={{ fontSize: 20, color: 'contentText.Black', opacity: isSelected ? 1 : 0 }} />
-              <Typography variant="body2M14" color={isSelected ? 'contentText.Black' : 'contentText.Normal'} noWrap>
-                {item.label}
-              </Typography>
-            </Stack>
-          )
-        })}
-      </Stack>
-    </MIMenu>
+    />
   )
 }
 

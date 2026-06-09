@@ -1,15 +1,9 @@
-import {
-  CheckBox as CheckBoxIcon,
-  CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon,
-  KeyboardArrowDownRounded,
-  KeyboardArrowUpRounded,
-} from '@mui/icons-material'
 import { Divider, Stack, Typography } from '@mui/material'
 import { isEqual } from 'lodash-es'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
-import MIMenu from '@/components/common/menu/MIMenu'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import useCodeData from '@/hooks/useCodeData'
 
 export interface EventCategoryFilterItem {
@@ -64,32 +58,31 @@ const EventCategoryFilterMenu = ({ selected, onApply, closeOnScroll }: EventCate
     setIsMenuOpen(false)
   }
 
-  const handleFilterChange = (value: number, checked: boolean) => {
-    setDraftSelected((prev) => {
-      if (!checked) {
-        return prev.filter((selectedValue) => selectedValue !== value)
-      }
-
-      if (prev.includes(value)) {
-        return prev
-      }
-
-      return [...prev, value]
-    })
-  }
-
   return (
-    <MIMenu
+    <MISelectMenu<number>
       open={isMenuOpen}
       onOpenChange={setIsMenuOpen}
       variant="outlined"
-      label={
+      multiple
+      selected={draftSelected}
+      onSelected={(next: number[]) => setDraftSelected(next)}
+      items={filters}
+      textLabel={
         <Stack component="span" direction="row" alignItems="center" gap="4px">
           <Typography component="span" variant="body2SB14" color="contentText.Black" noWrap>
             카테고리
           </Typography>
           {isApplied && (
-            <Stack component="span" alignItems="center" justifyContent="center" padding="2px 6px" borderRadius="8px" bgcolor="mari.Primary">
+            <Stack
+              component="span"
+              alignItems="center"
+              justifyContent="center"
+              padding="2px 6px"
+              borderRadius="8px"
+              minWidth="20px"
+              bgcolor="mari.Primary"
+              boxSizing="border-box"
+            >
               <Typography component="span" variant="body3SB12" color="commonColor.White" lineHeight={1.4} noWrap>
                 {appliedCount}
               </Typography>
@@ -97,94 +90,48 @@ const EventCategoryFilterMenu = ({ selected, onApply, closeOnScroll }: EventCate
           )}
         </Stack>
       }
-      suffix={
-        isMenuOpen ? (
-          <KeyboardArrowUpRounded fontSize="small" sx={{ color: 'contentIcon.Enabled' }} />
-        ) : (
-          <KeyboardArrowDownRounded fontSize="small" sx={{ color: 'contentIcon.Enabled' }} />
-        )
-      }
       enableHoverBackground
       closeOnScroll={closeOnScroll}
       menuPositionOffset={{ top: 3 }}
       paperProps={{ sx: { width: '212px' } }}
+      footer={
+        <Stack width="212px" padding="8px 12px 12px" gap="8px" boxSizing="border-box">
+          <Divider flexItem sx={{ borderColor: 'contentBorder.Normal' }} />
+
+          <Stack direction="row" justifyContent="flex-end" alignItems="center" gap="8px" padding="4px 8px">
+            <MIBaseButton
+              variant="outlined"
+              disabled={draftSelected.length === 0}
+              onClick={handleClear}
+              sx={{ height: '32px', padding: '6px 10px', borderRadius: '8px' }}
+            >
+              초기화
+            </MIBaseButton>
+            <MIBaseButton
+              variant="contained"
+              color="primary"
+              disabled={isApplied && !isDraftChanged}
+              onClick={handleApply}
+              sx={{ height: '32px', padding: '6px 10px', borderRadius: '8px' }}
+            >
+              적용
+            </MIBaseButton>
+          </Stack>
+        </Stack>
+      }
       sx={{
         height: '36px',
         minWidth: isApplied ? '119px' : '95px',
         borderRadius: '8px',
-        ...(isApplied && {
-          borderColor: 'mari.Primary',
-          bgcolor: isMenuOpen ? 'contentBG.Active' : 'commonColor.White',
-          '&:hover:not(:disabled)': {
-            borderColor: 'mari.Primary',
-          },
-        }),
+        borderColor: isApplied || isMenuOpen ? 'mari.Primary' : 'contentBorder.Normal',
+        bgcolor: isMenuOpen ? (isApplied ? 'contentBG.Active' : 'gray.5') : 'commonColor.White',
+        '& .MuiSvgIcon-root': { fontSize: '20px' },
+        '&:hover:not(:disabled)': {
+          borderColor: isApplied || isMenuOpen ? 'mari.Primary' : 'contentBorder.Hover',
+          backgroundColor: isMenuOpen ? (isApplied ? 'contentBG.Active' : 'gray.5') : 'contentBG.Hover',
+        },
       }}
-    >
-      <Stack width="212px" padding="12px" gap="8px" boxSizing="border-box">
-        <Stack gap="4px" width="100%">
-          {filters.map(({ label, value }) => {
-            const checked = draftSelected.includes(value)
-
-            return (
-              <Stack
-                key={value}
-                direction="row"
-                alignItems="center"
-                height="36px"
-                borderRadius="10px"
-                padding="8px 12px 8px 6px"
-                boxSizing="border-box"
-                width="100%"
-                bgcolor={checked ? 'contentBG.PrimaryFade' : undefined}
-                onClick={() => handleFilterChange(value, !checked)}
-                sx={{
-                  cursor: 'pointer',
-                  '&:hover': {
-                    bgcolor: checked ? 'contentBG.PrimaryFade' : 'contentBG.Hover',
-                  },
-                }}
-              >
-                <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
-                  <Stack component="span" alignItems="center" justifyContent="center" width="20px" height="20px" flexShrink={0}>
-                    {checked ? (
-                      <CheckBoxIcon sx={{ width: '20px', height: '20px', color: 'mari.Primary' }} />
-                    ) : (
-                      <CheckBoxOutlineBlankIcon sx={{ width: '20px', height: '20px', color: 'contentIcon.Disabled' }} />
-                    )}
-                  </Stack>
-                  <Typography variant="body2M14" color={checked ? 'contentText.Black' : 'contentText.Normal'} noWrap>
-                    {label}
-                  </Typography>
-                </Stack>
-              </Stack>
-            )
-          })}
-        </Stack>
-
-        <Divider flexItem sx={{ borderColor: 'contentBorder.Normal' }} />
-
-        <Stack direction="row" justifyContent="flex-end" alignItems="center" gap="8px" padding="4px 8px">
-          <MIBaseButton
-            variant="outlined"
-            disabled={draftSelected.length === 0}
-            onClick={handleClear}
-            sx={{ height: '32px', padding: '6px 10px', borderRadius: '8px' }}
-          >
-            초기화
-          </MIBaseButton>
-          <MIBaseButton
-            variant="contained"
-            color="primary"
-            disabled={isApplied && !isDraftChanged}
-            onClick={handleApply}
-            sx={{ height: '32px', padding: '6px 10px', borderRadius: '8px' }}
-          >
-            적용
-          </MIBaseButton>
-        </Stack>
-      </Stack>
-    </MIMenu>
+    />
   )
 }
 
