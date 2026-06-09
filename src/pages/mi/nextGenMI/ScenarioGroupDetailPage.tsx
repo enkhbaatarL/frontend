@@ -11,10 +11,8 @@ import NextGenMIDetailHeader, {
   NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   type NextGenMIDetailHeaderSection,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
+import ScenarioGroupInnerTable, { ScenarioJudgementConfirmDialog } from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
-import ScenarioGroupAssumptionSection, {
-  ScenarioJudgementConfirmDialog,
-} from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupAssumptionSection'
 import ScenarioGroupDetailSection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupDetailSection'
 import ScenarioGroupGraphView from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupGraphView'
 import ScenarioGroupSummarySection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupSummarySection'
@@ -247,11 +245,14 @@ const ScenarioGroupDetailPage = () => {
 
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[1].id} gap="12px" py="30px">
           <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[1].id} />
-          <ScenarioGroupAssumptionSection
+          <ScenarioGroupInnerTable<IScenarioGroupDetailRow>
             dimensionColumns={data?.dimensionColumns ?? []}
             scenarios={scenarios}
+            backgroundColor="commonColor.White"
+            showStatusColumn
             judgementPendingScenarioId={isStatusUpdating ? judgementTarget?.scenario.scenarioId : undefined}
             loading={isLoading}
+            skeletonRowCount={4}
             onJudgementChange={handleJudgementChange}
           />
         </Stack>

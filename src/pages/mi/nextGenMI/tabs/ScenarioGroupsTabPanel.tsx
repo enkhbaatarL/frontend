@@ -28,12 +28,6 @@ const GROUP_HEADER_COLUMNS: GridColDef[] = [
   { field: 'scenarioCount', headerName: '시나리오 수', width: 120, align: 'right' },
 ]
 
-const INDIVIDUAL_HEADER_COLUMNS: GridColDef[] = [
-  { field: 'scenario', headerName: '시나리오', width: 360, align: 'left' },
-  { field: 'assumptions', headerName: '주요 가정', flex: 1, align: 'left' },
-  { field: 'probability', headerName: '발생가능성', width: 80, align: 'center' },
-]
-
 const ScenarioGroupsTabPanel = () => {
   const [mode, setMode] = useState<ScenarioGroupMode>('group')
   const [sort, setSort] = useState<ListSort>(ListSort.LATEST)
@@ -197,17 +191,15 @@ const ScenarioGroupsTabPanel = () => {
           onSearchClear={handleSearchClear}
         />
 
-        <Box mt={2}>
-          {isGroupMode ? (
+        {isGroupMode && (
+          <Box mt={2}>
             <MIDataTableHeader
               columns={GROUP_HEADER_COLUMNS}
               headerCellPx={6}
               getHeaderCellSx={(col) => (col.field === 'scenarioCount' ? { px: '24px' } : undefined)}
             />
-          ) : (
-            <MIDataTableHeader columns={INDIVIDUAL_HEADER_COLUMNS} headerCellPx={6} />
-          )}
-        </Box>
+          </Box>
+        )}
       </NextGenMIStickySlot>
 
       {isGroupMode ? (
@@ -220,7 +212,9 @@ const ScenarioGroupsTabPanel = () => {
           emptyMessage="조건에 맞는 시나리오 그룹이 없습니다."
         />
       ) : (
-        <ScenarioIndividualTable scenarios={individualScenarios} loading={individualQuery.isLoading} skeletonRowCount={pagination.size} />
+        <Box mt={2}>
+          <ScenarioIndividualTable scenarios={individualScenarios} loading={individualQuery.isLoading} skeletonRowCount={pagination.size} />
+        </Box>
       )}
 
       {activePagination && (

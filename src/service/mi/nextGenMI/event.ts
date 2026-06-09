@@ -1,8 +1,9 @@
 import { AxiosResponse } from 'axios'
 
-import { MarketDirection, MarketImpactLevel } from './common'
+import type { IScenarioDimension, IScenarioDimensionColumn } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import api from '@/lib/axios'
+import { MarketDirection, MarketImpactLevel } from '@/service/mi/nextGenMI/common'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
 export type EventSort = 'latest' | 'oldest'
@@ -141,15 +142,12 @@ export interface RelatedScenario {
   baseCase: boolean
   indexImpacts?: RelatedScenarioImpactIndex[]
   probability: number
-  period?: string | null
-  transportDisruption?: string | null
-  supplyDisruptionIntensity?: string | null
-  supplyRecoveryPattern?: string | null
-  normalizationCheck?: string | null
+  dimensions?: IScenarioDimension[]
 }
 
 export interface RelatedEventScenario {
   event?: RelatedEvent | null
+  dimensionColumns?: IScenarioDimensionColumn[]
   scenarios?: RelatedScenario[]
 }
 

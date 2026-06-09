@@ -5,8 +5,8 @@ import { useNavigate } from 'react-router-dom'
 import type { IScenarioDimension, IScenarioGroupRef, IScenarioIndividualItem } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
+import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
-import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import { getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
@@ -82,11 +82,9 @@ const ScenarioIndividualTable = ({ scenarios, loading, skeletonRowCount }: Scena
         renderCell: ({ row }) => (
           <Stack gap="4px" minWidth={0}>
             <GroupRefMeta group={row.group} baseCase={row.baseCase} />
-            <NextGenMITableBodyText
+            <NextGenMIHoverLinkCell
               value={row.scenarioName}
               variant="body1SB16"
-              color="contentText.Black"
-              tooltipWhenTruncated
               onClick={() => navigate(getNextGenMIScenarioGroupDetailPath(row.group.scenarioGroupId, row.scenarioId))}
             />
           </Stack>
@@ -122,12 +120,12 @@ const ScenarioIndividualTable = ({ scenarios, loading, skeletonRowCount }: Scena
       rows={scenarios}
       getRowKey={(row) => row.scenarioId}
       fixedLeftColumnIndexes={[0]}
-      fixedRightColumnIndexes={[2]}
+      fixedRightColumnIndexes={[-1]}
+      leftAlignedHeaderSticky
       loading={loading}
       skeletonRowCount={skeletonRowCount}
       noRowMessage="조건에 맞는 시나리오가 없습니다."
       rowHeight="60px"
-      hideHeader
       containerShell={false}
     />
   )

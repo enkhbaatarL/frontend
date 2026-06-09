@@ -12,8 +12,8 @@ import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmen
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
+import ScenarioGroupInnerTable from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
 import ScenarioGroupGraphView from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupGraphView'
-import ScenarioGroupInnerTable from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupInnerTable'
 import { getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
 type ScenarioGroupViewMode = 'table' | 'graph'
@@ -170,6 +170,7 @@ const ScenarioGroupAccordionRow = ({ group, expanded, onToggle }: ScenarioGroupA
                 scenarioGroupId={group.scenarioGroupId}
                 dimensionColumns={group.dimensionColumns}
                 scenarios={group.scenarios}
+                backgroundColor="gray.5"
               />
             </Box>
           ) : (

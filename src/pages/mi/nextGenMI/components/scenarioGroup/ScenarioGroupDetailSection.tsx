@@ -90,7 +90,7 @@ interface ScenarioAssumptionCardsProps {
 const ScenarioAssumptionCards = ({ dimensions, loading = false }: ScenarioAssumptionCardsProps) => {
   if (loading) {
     return (
-      <Stack direction="row" gap="8px">
+      <Stack direction="row" gap="16px">
         {Array.from({ length: 3 }).map((_, index) => (
           <Skeleton key={`skeleton-${index}`} variant="rounded" height={77} sx={{ flex: 1, minWidth: 0, borderRadius: '10px' }} />
         ))}
@@ -115,7 +115,7 @@ const ScenarioAssumptionCards = ({ dimensions, loading = false }: ScenarioAssump
               height="77px"
               alignItems="center"
               justifyContent="center"
-              padding="8px"
+              padding="16px"
               bgcolor="gray.5"
               borderRadius="10px"
               boxSizing="border-box"
@@ -356,8 +356,8 @@ const ScenarioGroupDetailSection = ({
               {detailLoading ? (
                 <Skeleton variant="rounded" sx={{ flex: 1, borderRadius: '10px' }} />
               ) : (
-                <Stack flex={1} alignItems="flex-start" gap="4px" bgcolor="gray.5" borderRadius="10px" padding="12px 8px">
-                  <ScenarioPossibilityGauge probability={data?.probability ?? 0} />
+                <Stack flex={1} alignItems="flex-start" gap="4px" bgcolor="gray.5" borderRadius="10px" padding="20px 16px">
+                  <ScenarioPossibilityGauge probability={data?.probability ?? 0} hideBackground />
                   <Typography fontSize="15px" fontWeight={500} lineHeight={1.6} color="contentText.Black">
                     {typeof data?.probability === 'number' ? probabilityToLikelihoodLabel(data.probability / 100) : '-'}
                   </Typography>
