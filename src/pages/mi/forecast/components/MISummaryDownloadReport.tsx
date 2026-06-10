@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
-import remarkGfm from 'remark-gfm'
 
 import aiStarIcon from '@/assets/ai.svg'
 import MIButton from '@/components/common/button/MIButton.tsx'
@@ -13,6 +12,7 @@ import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon.tsx'
 import MISkeleton from '@/components/mi/MISkeleton.tsx'
 import forecastDataService, { IForecastSummary } from '@/service/mi/forecast.ts'
 import { downloadFile } from '@/utils/file.ts'
+import { markdownRemarkPlugins } from '@/utils/markdown'
 
 interface MISummaryDownloadReportProps {
   companyNo: number | undefined
@@ -43,7 +43,7 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
             {summary.explanatoryTitleContent}
           </Typography>
           <Typography variant={'body2R14'} color={'content.textNormal'} component={'div'}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+            <ReactMarkdown remarkPlugins={markdownRemarkPlugins} rehypePlugins={[rehypeRaw]}>
               {(summary.explanatorySummaryContent ?? '').replaceAll('\\n', '\n')}
             </ReactMarkdown>
           </Typography>

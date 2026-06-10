@@ -21,6 +21,8 @@ import remarkGfm from 'remark-gfm'
 import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 
+import { markdownRemarkGfmOptions } from '@/utils/markdown'
+
 export interface ParsedData {
   sources: Source[] | null
   suggestedQuestions: SuggestedQuestion[] | null
@@ -277,7 +279,7 @@ const extractCellText = (cell: TableCellNode): string => {
  */
 export const parseMarkdownTables = (text: string): ParsedTable[] => {
   try {
-    const processor = unified().use(remarkParse).use(remarkGfm)
+    const processor = unified().use(remarkParse).use(remarkGfm, markdownRemarkGfmOptions)
     const ast = processor.parse(text)
 
     const tables: ParsedTable[] = []

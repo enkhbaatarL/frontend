@@ -4,12 +4,12 @@ import dayjs from 'dayjs'
 import ReactMarkdown from 'react-markdown'
 import { useNavigate, useParams } from 'react-router-dom'
 import rehypeRaw from 'rehype-raw'
-import remarkGfm from 'remark-gfm'
 
 import TagChip from '@/components/common/chip/TagChip'
 import MILine from '@/components/common/divider/MILine'
 import MISkeleton from '@/components/mi/MISkeleton'
 import marketNewsService from '@/service/mi/marketNews'
+import { markdownRemarkPlugins } from '@/utils/markdown'
 
 const NewsDetailPage = () => {
   const pathParams = useParams()
@@ -57,7 +57,7 @@ const NewsDetailPage = () => {
           gap={6}
         >
           <Grid container direction="column" flexGrow={1} gap={10}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+            <ReactMarkdown remarkPlugins={markdownRemarkPlugins} rehypePlugins={[rehypeRaw]}>
               {newsSummaryData?.story}
             </ReactMarkdown>
             <TagChip items={newsSummaryData?.tagList?.map((value) => ({ name: value })) ?? []} disabled />

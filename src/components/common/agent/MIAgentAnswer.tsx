@@ -4,7 +4,6 @@ import { useRef, useMemo, useEffect, useState, useCallback, AnchorHTMLAttributes
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
-import remarkGfm from 'remark-gfm'
 
 import style from '@/components/common/agent/MIAgentAnswer.module.scss'
 import MIAgentLineChart from '@/components/common/agent/MIAgentLineChart'
@@ -34,6 +33,7 @@ import {
   structuredTablesToParsedTables,
   type StructuredTable,
 } from '@/utils/agentStructuredAnswer'
+import { markdownRemarkPlugins } from '@/utils/markdown'
 
 // ===================================================================
 // 애니메이션 모드 플래그
@@ -875,7 +875,7 @@ const MIAgentAnswer = ({
           <ReactMarkdown
             key={`markdown-${conversation.qnaNo}`}
             components={markdownComponents}
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={markdownRemarkPlugins}
             rehypePlugins={[rehypeRaw]}
           >
             {displayContent}
