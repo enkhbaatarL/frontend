@@ -323,6 +323,8 @@ const MISelectMenu = <T,>({
   }
 
   const hasExternalLabel = externalLabel !== undefined
+  const buttonLabelColor =
+    !hasExternalLabel && externalTextLabel === undefined ? (disabled ? 'contentText.Disabled' : 'contentText.Normal') : undefined
 
   const menuLabel = hasExternalLabel ? (
     <Stack direction="row" alignItems="stretch" flex={1} minWidth={0}>
@@ -405,6 +407,7 @@ const MISelectMenu = <T,>({
       disableRipple={disableRipple}
       buttonHoverBgColor={buttonHoverBgColor}
       disabled={disabled}
+      labelColor={buttonLabelColor}
       {...props}
       sx={{
         ...(typeof props.sx === 'object' && !Array.isArray(props.sx) ? (props.sx as Record<string, unknown>) : {}),

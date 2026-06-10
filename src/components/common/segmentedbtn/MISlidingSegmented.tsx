@@ -129,7 +129,7 @@ const MISlidingSegmented = ({
         const isSelected = value === optionValue
         const isDisabled = disabled || optionDisabled
         const widthWeight = getOptionWidthWeight(label)
-        let textColor = 'contentText.Normal'
+        let textColor = 'contentText.Subtext'
 
         if (isDisabled) textColor = 'contentText.Disabled'
         else if (isSelected) textColor = 'contentText.Black'

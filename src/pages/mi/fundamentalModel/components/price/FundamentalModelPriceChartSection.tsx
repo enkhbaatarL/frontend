@@ -6,6 +6,7 @@ import type { IScenarioPriceForecast } from '@/service/mi/nextGenMI/scenario'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import { buildDistinctSeriesColors } from '@/pages/mi/nextGenMI/components/common/nextGenMISeriesColors'
 import ScenarioSummaryChart from '@/pages/mi/nextGenMI/components/common/ScenarioSummaryChart'
@@ -133,6 +134,15 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
             }
             headerEnd={
               <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="8px" flexWrap="wrap" maxWidth="100%">
+                <MISelectMenu
+                  variant="text"
+                  selected={'MONTHLY'}
+                  onSelected={() => {}}
+                  items={[
+                    { value: 'MONTHLY', label: 'Monthly' },
+                    { value: 'YEARLY', label: 'Yearly' },
+                  ]}
+                />
                 {priceRegionOptions.length > 0 && (
                   <MISlidingSegmented
                     options={priceRegionOptions}
@@ -145,7 +155,7 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
                 )}
                 <MIBaseButton
                   id="fundamental-model-price-chart-download-button"
-                  variant="outlined"
+                  variant="text"
                   aria-label="Download chart"
                   onClick={handleDownloadChart}
                   isLoading={isDownloadingChart}
