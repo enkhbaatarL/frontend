@@ -48,6 +48,7 @@ interface ScrollWrapperProps {
   thumbMaxHeight?: number
   overscrollBehavior?: CSSProperties['overscrollBehavior']
   showScrollbarOnHover?: boolean
+  reserveScrollbarGap?: boolean
   showScrollEdgeShadow?: boolean
   contentKey?: number | string
 }
@@ -77,6 +78,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       thumbMaxHeight,
       overscrollBehavior = 'none',
       showScrollbarOnHover = false,
+      reserveScrollbarGap = false,
       showScrollEdgeShadow = false,
       contentKey,
     },
@@ -362,7 +364,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
               overscrollBehavior,
               position: 'relative',
               zIndex: 1,
-              paddingRight: isScrollable ? `${scrollbarGap}px` : '0',
+              paddingRight: isScrollable || reserveScrollbarGap ? `${scrollbarGap}px` : '0',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
             }}
