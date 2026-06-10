@@ -4,6 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
+import DocumentIcon from '@/components/common/icons/DocumentIcon'
+import LineChartIcon from '@/components/common/icons/LineChartIcon'
+import RadarIcon from '@/components/common/icons/RadarIcon'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
@@ -13,6 +16,7 @@ import NextGenMIDetailHeader, {
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import ScenarioGroupInnerTable, { ScenarioJudgementConfirmDialog } from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
+import ScenarioGroupDeleteMenu from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupDeleteMenu'
 import ScenarioGroupDetailSection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupDetailSection'
 import ScenarioGroupGraphView from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupGraphView'
 import ScenarioGroupSummarySection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupSummarySection'
@@ -23,7 +27,7 @@ import nextGenMIScenarioGroupService, {
 } from '@/service/mi/nextGenMI/scenarioGroup'
 
 type ScenarioGroupDetailSectionItem = NextGenMIDetailHeaderSection & {
-  Icon: typeof Summarize
+  icon: ReactNode
 }
 
 const JUDGEMENT_SUCCESS_MESSAGE: Record<ScenarioJudgementStatus, string> = {
@@ -33,20 +37,19 @@ const JUDGEMENT_SUCCESS_MESSAGE: Record<ScenarioJudgementStatus, string> = {
 }
 
 const SCENARIO_GROUP_DETAIL_SECTIONS: ScenarioGroupDetailSectionItem[] = [
-  { id: 'scenario-group-detail-section-summary', label: '요약', Icon: Summarize },
-  { id: 'scenario-group-detail-section-assumption', label: '가정 및 실현 가능성', Icon: Summarize },
-  { id: 'scenario-group-detail-section-price-forecast', label: '가격 전망', Icon: Summarize },
-  { id: 'scenario-group-detail-section-detail', label: '시나리오 상세', Icon: Summarize },
+  { id: 'scenario-group-detail-section-summary', label: '요약', icon: <DocumentIcon /> },
+  { id: 'scenario-group-detail-section-assumption', label: '가정 및 실현 가능성', icon: <RadarIcon /> },
+  { id: 'scenario-group-detail-section-price-forecast', label: '가격 전망', icon: <LineChartIcon width="30" height="30" /> },
+  { id: 'scenario-group-detail-section-detail', label: '시나리오 상세', icon: <Summarize sx={{ fontSize: 30 }} /> },
 ]
 
 const SectionHeading = ({ sectionId }: { sectionId: NextGenMIDetailHeaderSection['id'] }) => {
   const section = SCENARIO_GROUP_DETAIL_SECTIONS.find((item) => item.id === sectionId)
   if (!section) return null
-  const { Icon } = section
 
   return (
-    <Stack direction="row" alignItems="center" gap="8px">
-      <Icon sx={{ fontSize: 30, color: 'contentText.Black' }} />
+    <Stack direction="row" alignItems="center" gap="8px" sx={{ color: 'contentText.Black' }}>
+      {section.icon}
       <Typography fontSize={20} fontWeight={600} color="contentText.Black">
         {section.label}
       </Typography>
@@ -207,9 +210,10 @@ const ScenarioGroupDetailPage = () => {
           sectionName="Scenario Group List / Scenario Group Detail"
           targetLabel={groupName ? `시나리오 그룹 상세/ ${groupName}` : '시나리오 그룹 상세'}
         />
+        <ScenarioGroupDeleteMenu scenarioGroupId={scenarioGroupId ?? ''} />
       </Stack>
     ),
-    [groupName],
+    [groupName, scenarioGroupId],
   )
 
   const focusDetailSectionId = arrivedWithScenarioId && !isLoading && Boolean(data) ? SCENARIO_GROUP_DETAIL_SECTIONS[3].id : undefined

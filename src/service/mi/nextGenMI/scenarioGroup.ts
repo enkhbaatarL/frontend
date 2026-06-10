@@ -270,6 +270,14 @@ const nextGenMIScenarioGroupService = {
   },
 
   /**
+   * Scenario Group 삭제 (그룹 및 그룹 내 모든 시나리오 제거)
+   * @param scenarioGroupId - 시나리오 그룹 ID
+   */
+  async deleteScenarioGroup(scenarioGroupId: string | number): Promise<void> {
+    await api.delete(`mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}`)
+  },
+
+  /**
    * Scenario 판정 상태 변경 (대기 -> 실현/폐기)
    * @param scenarioGroupId - 시나리오 그룹 ID
    * @param scenarioId - 시나리오 ID
