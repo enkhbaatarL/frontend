@@ -1,7 +1,7 @@
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { NextGenMIIndexName } from '@/service/mi/nextGenMI/common'
 
@@ -69,8 +69,8 @@ const ScenarioGroupGraphView = ({ scenarioGroupId, enabled, height = 480, defaul
   const hasChart = Boolean(render && render.charts.length > 0)
 
   return (
-    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap="24px" py="12px" width="100%" minWidth={0}>
-      <Stack flex="1 1 0" minWidth={0} py="10px">
+    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap="24px" width="100%" minWidth={0}>
+      <Stack flex="1 1 0" minWidth={0}>
         <Typography variant="body2SB14" color="contentText.Normal" sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
           {unitLabel}
         </Typography>
@@ -103,7 +103,7 @@ const ScenarioGroupGraphView = ({ scenarioGroupId, enabled, height = 480, defaul
         </Box>
       </Stack>
 
-      <Stack flexShrink={0} width="348px" py="10px" gap="20px">
+      <Stack flexShrink={0} width="348px" gap="20px">
         <Stack direction="row" alignItems="center" gap="8px" width="100%">
           <MISlidingSegmented
             value={indexName}
@@ -130,4 +130,4 @@ const ScenarioGroupGraphView = ({ scenarioGroupId, enabled, height = 480, defaul
   )
 }
 
-export default ScenarioGroupGraphView
+export default memo(ScenarioGroupGraphView)

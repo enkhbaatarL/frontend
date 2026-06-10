@@ -236,16 +236,17 @@ const ScenarioGroupDetailPage = () => {
   }, [setStickyHeader])
 
   return (
-    <Stack maxWidth="1380px" margin="auto" px="12px" pt="12px" position="relative" sx={{ overflowX: 'hidden' }}>
-      <Stack py="24px" gap="30px">
-        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} gap="12px" py="30px">
+    <Stack maxWidth="1380px" margin="auto" px="12px" pt="20px" position="relative" sx={{ overflowX: 'hidden' }}>
+      <Stack gap="30px">
+        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} gap="12px" py="20px">
           <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} />
           <ScenarioGroupSummarySection baseEvent={data?.baseEvent} summary={data?.summary} loading={isLoading} />
         </Stack>
 
-        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[1].id} gap="12px" py="30px">
+        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[1].id} gap="12px" py="20px">
           <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[1].id} />
           <ScenarioGroupInnerTable<IScenarioGroupDetailRow>
+            scenarioGroupId={scenarioGroupId}
             dimensionColumns={data?.dimensionColumns ?? []}
             scenarios={scenarios}
             backgroundColor="commonColor.White"
@@ -257,12 +258,12 @@ const ScenarioGroupDetailPage = () => {
           />
         </Stack>
 
-        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} gap="12px" py="30px">
+        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} gap="12px" py="20px">
           <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} />
           <ScenarioGroupGraphView scenarioGroupId={Number(scenarioGroupId)} enabled={Boolean(scenarioGroupId)} />
         </Stack>
 
-        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} gap="12px" py="30px">
+        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} gap="12px" py="20px">
           <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} />
           <ScenarioGroupDetailSection
             scenarioGroupId={scenarioGroupId ?? ''}

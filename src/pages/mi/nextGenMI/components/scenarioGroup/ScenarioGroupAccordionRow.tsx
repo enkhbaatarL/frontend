@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import type { IScenarioGroupListItem } from '@/service/mi/nextGenMI/scenarioGroup'
+import type { SxProps, Theme } from '@mui/material'
 import type { KeyboardEvent } from 'react'
 
 import LineChartIcon from '@/components/common/icons/LineChartIcon'
@@ -41,6 +42,22 @@ const MODE_OPTIONS = [
   },
 ]
 
+const getViewPanelSx = (active: boolean): SxProps<Theme> => ({
+  position: active ? 'relative' : 'absolute',
+  ...(active ? {} : { inset: 0 }),
+  width: '100%',
+  boxSizing: 'border-box',
+  visibility: active ? 'visible' : 'hidden',
+  opacity: active ? 1 : 0,
+  pointerEvents: active ? 'auto' : 'none',
+  zIndex: active ? 1 : 0,
+  willChange: 'opacity',
+  transition: active ? 'opacity 160ms ease-out, visibility 0ms' : 'opacity 120ms ease-in, visibility 0ms 120ms',
+  '@media (prefers-reduced-motion: reduce)': {
+    transition: 'none',
+  },
+})
+
 interface ScenarioGroupAccordionRowProps {
   group: IScenarioGroupListItem
   expanded: boolean
@@ -64,6 +81,7 @@ const ScenarioGroupAccordionRow = ({ group, expanded, onToggle }: ScenarioGroupA
   const navigate = useNavigate()
   const dateLabel = formatNextGenMIDateTime(group.createdAt)
   const [viewMode, setViewMode] = useState<ScenarioGroupViewMode>('table')
+  const isTableView = viewMode === 'table'
   const toggle = () => onToggle(group.scenarioGroupId)
   const navigateToGroupDetail = () => navigate(getNextGenMIScenarioGroupDetailPath(group.scenarioGroupId))
   const handleKeyToggle = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -158,26 +176,27 @@ const ScenarioGroupAccordionRow = ({ group, expanded, onToggle }: ScenarioGroupA
       {headerContent}
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <Box bgcolor="gray.5" borderBottom="1px solid" borderColor="contentBorder.Active">
-          <Box padding="16px 20px">
-            <Typography variant="body2M14" color="contentText.Black" lineHeight={1.4}>
-              {group.summary}
-            </Typography>
-          </Box>
+          <Box position="relative" minWidth={0}>
+            <Box aria-hidden={!isTableView} sx={getViewPanelSx(isTableView)}>
+              <Box padding="16px 20px">
+                <Typography variant="body2M14" color="contentText.Black" lineHeight={1.4}>
+                  {group.summary}
+                </Typography>
+              </Box>
 
-          {viewMode === 'table' ? (
-            <Box padding="0 10px 10px">
-              <ScenarioGroupInnerTable
-                scenarioGroupId={group.scenarioGroupId}
-                dimensionColumns={group.dimensionColumns}
-                scenarios={group.scenarios}
-                backgroundColor="gray.5"
-              />
+              <Box padding="0 10px 10px">
+                <ScenarioGroupInnerTable
+                  scenarioGroupId={group.scenarioGroupId}
+                  dimensionColumns={group.dimensionColumns}
+                  scenarios={group.scenarios}
+                  backgroundColor="gray.5"
+                />
+              </Box>
             </Box>
-          ) : (
-            <Box padding="0 10px 16px">
-              <ScenarioGroupGraphView scenarioGroupId={group.scenarioGroupId} enabled={expanded && viewMode === 'graph'} />
+            <Box padding="16px 20px" aria-hidden={isTableView} sx={getViewPanelSx(!isTableView)}>
+              <ScenarioGroupGraphView scenarioGroupId={group.scenarioGroupId} enabled={expanded} />
             </Box>
-          )}
+          </Box>
         </Box>
       </Collapse>
     </Box>

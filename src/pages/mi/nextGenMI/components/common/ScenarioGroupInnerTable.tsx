@@ -1,5 +1,5 @@
 import { Stack, Typography } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import type { IScenarioDimension, IScenarioDimensionColumn, ScenarioJudgementStatus } from '@/service/mi/nextGenMI/scenarioGroup'
@@ -153,7 +153,7 @@ const getDimensionCellValue = <TRow extends ScenarioGroupInnerTableRow>(row: TRo
   return '-'
 }
 
-const ScenarioGroupInnerTable = <TRow extends ScenarioGroupInnerTableRow>({
+const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRow>({
   scenarioGroupId,
   dimensionColumns,
   scenarios,
@@ -307,5 +307,7 @@ const ScenarioGroupInnerTable = <TRow extends ScenarioGroupInnerTableRow>({
     </Stack>
   )
 }
+
+const ScenarioGroupInnerTable = memo(ScenarioGroupInnerTableComponent) as typeof ScenarioGroupInnerTableComponent
 
 export default ScenarioGroupInnerTable
