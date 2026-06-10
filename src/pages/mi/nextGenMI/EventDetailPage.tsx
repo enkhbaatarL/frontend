@@ -2,7 +2,7 @@ import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode, useEffect } from 'react'
+import { useLayoutEffect, useMemo, useState, useSyncExternalStore, useEffect, useCallback, type ReactNode } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
@@ -23,7 +23,7 @@ import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/component
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
 import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/event/EventDetailRelatedScenariosSection'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
-import { getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMITabPath, getNextGenMIScenarioDesignPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
 
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'driverTree' | 'related'
@@ -62,16 +62,14 @@ const EVENT_DETAIL_HEADER_SECTIONS: NextGenMIDetailHeaderSection[] = EVENT_DETAI
   label: tab.label,
 }))
 
-const renderEventDetailHeaderTabActions = (targetLabel?: string) => (
+const renderEventDetailHeaderTabActions = (targetLabel: string | undefined, onScenarioGenerateClick?: () => void) => (
   <Stack direction="row" alignItems="center" gap="12px">
     <NextGenMIUserFeedback pageName="Next-Gen MI" sectionName="Event List / Event Detail" targetLabel={targetLabel} />
     <MIMenu
       variant="contained"
       label="시나리오 생성"
       prefix={<AutoAwesomeRoundedIcon aria-hidden focusable="false" />}
-      onClick={() => {
-        // 시나리오 생성 액션은 API 미연동 단계, 퍼블리싱 버튼만 노출
-      }}
+      onClick={onScenarioGenerateClick}
       sx={{
         height: '36px',
       }}
@@ -216,9 +214,16 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const recordRows = recordsData?.detail ?? []
   const outlookRows = outlooksData?.detail ?? []
   const relatedEventScenario = detail?.relatedEventScenario
+  const handleScenarioDesignNavigate = useCallback(() => {
+    if (!eventId) return
+    navigate(getNextGenMIScenarioDesignPath(eventId), {
+      state: { eventName: title },
+    })
+  }, [eventId, navigate, title])
+
   const eventDetailHeaderTabActions = useMemo(
-    () => renderEventDetailHeaderTabActions(title ? `이벤트 상세/ ${title}` : '이벤트 상세'),
-    [title],
+    () => renderEventDetailHeaderTabActions(title ? `이벤트 상세/ ${title}` : '이벤트 상세', handleScenarioDesignNavigate),
+    [handleScenarioDesignNavigate, title],
   )
 
   const headerTitleSlot = useMemo(
@@ -364,6 +369,8 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related}>
           <EventDetailRelatedScenariosSection
+            eventId={eventId}
+            eventName={title}
             relatedEventScenario={relatedEventScenario}
             onScenarioRowClick={(row) => navigate(`${NEXT_GEN_MI_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)}
             loading={detailLoading}

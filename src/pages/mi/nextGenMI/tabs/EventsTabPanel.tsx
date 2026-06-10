@@ -21,6 +21,7 @@ import EventScenarioGenerateButton from '@/pages/mi/nextGenMI/components/event/E
 import EventSortSelectMenu from '@/pages/mi/nextGenMI/components/event/EventSortSelectMenu'
 import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
+import { getNextGenMIScenarioDesignPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, {
   type EventListItemRes,
@@ -128,6 +129,15 @@ const EventsTabPanel = () => {
       navigate(`/mi/next-gen-mi/events/${row.eventId}`, {
         state: { eventName: row.eventName },
       }),
+    [navigate],
+  )
+
+  const handleScenarioDesignClick = useCallback(
+    (row: EventListItemRes) => {
+      navigate(getNextGenMIScenarioDesignPath(row.eventId), {
+        state: { eventName: row.eventName },
+      })
+    },
     [navigate],
   )
 
@@ -245,10 +255,12 @@ const EventsTabPanel = () => {
         width: 100,
         align: 'center',
         sortable: false,
-        renderCell: (params) => <EventScenarioGenerateButton recommended={params.row.isScenarioSuggested} />,
+        renderCell: (params) => (
+          <EventScenarioGenerateButton recommended={params.row.isScenarioSuggested} onClick={() => handleScenarioDesignClick(params.row)} />
+        ),
       },
     ],
-    [handleEventNameClick],
+    [handleEventNameClick, handleScenarioDesignClick],
   )
 
   const nextGenMIDatePresets = useMemo(() => buildNextGenMIDatePresets(), [])

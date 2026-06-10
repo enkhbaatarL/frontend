@@ -28,6 +28,12 @@ export const getNextGenMIScenarioGroupDetailPath = (scenarioGroupId: string | nu
   return `${base}?scenarioId=${encodeURIComponent(String(scenarioId))}`
 }
 
+export const getNextGenMIEventDetailPath = (eventId: string | number) =>
+  `${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(eventId))}`
+
+export const getNextGenMIScenarioDesignPath = (eventId: string | number) =>
+  `${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(eventId))}/scenario-design`
+
 export const resolveNextGenMITabFromPathname = (pathname: string): NextGenMITabKey => {
   const defaultKey = NEXT_GEN_MI_TAB_INFO[0].key
   const normalizedPathname = pathname.replace(/\/+$/, '')

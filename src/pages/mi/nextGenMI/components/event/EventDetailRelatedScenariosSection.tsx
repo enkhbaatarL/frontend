@@ -11,15 +11,19 @@ import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/c
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import ScenarioGroupInnerTable from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
-import { getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMITabPath, getNextGenMIScenarioDesignPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
 interface EventDetailRelatedScenariosSectionProps {
+  eventId?: string
+  eventName?: string
   relatedEventScenario?: RelatedEventScenario | null
   onScenarioRowClick?: (row: RelatedScenario) => void
   loading?: boolean
 }
 
 const EventDetailRelatedScenariosSection = ({
+  eventId,
+  eventName,
   relatedEventScenario,
   onScenarioRowClick,
   loading = false,
@@ -36,6 +40,13 @@ const EventDetailRelatedScenariosSection = ({
     : undefined
 
   const handleScenarioDesignClick = () => {
+    const resolvedEventName = eventName?.trim() || relatedEventScenario?.event?.eventName?.trim() || ''
+    if (eventId) {
+      navigate(getNextGenMIScenarioDesignPath(eventId), {
+        state: resolvedEventName ? { eventName: resolvedEventName } : undefined,
+      })
+      return
+    }
     navigate(getNextGenMITabPath('scenarios'))
   }
 
