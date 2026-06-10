@@ -119,7 +119,7 @@ const ParameterValueInput = memo(({ value, disabled, invalid, label, tableId, ro
       onChange={handleChange}
       sx={{
         width: '100%',
-        height: 36,
+        height: '36px',
         boxSizing: 'border-box',
         border: '1px solid',
         borderColor: invalid ? 'error.main' : 'contentBorder.Normal',
@@ -344,7 +344,7 @@ const ScenarioModelExecutionPopupContent = ({
               direction="row"
               alignItems="center"
               justifyContent="space-between"
-              height={36}
+              height="36px"
               px="38px"
               boxSizing="border-box"
               flexShrink={0}
@@ -359,7 +359,7 @@ const ScenarioModelExecutionPopupContent = ({
                 disabled={submitDisabled}
                 onClick={handleSubmit}
                 sx={{
-                  height: 36,
+                  height: 32,
                 }}
               >
                 MI 수급모델 실행
