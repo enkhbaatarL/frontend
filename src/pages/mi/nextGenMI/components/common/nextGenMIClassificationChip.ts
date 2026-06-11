@@ -1,11 +1,11 @@
-import type { EventListItemRes, EventSignalType, EventStatus } from '@/service/mi/nextGenMI/event'
+import type { EventListItem, EventSignalType, EventStatus } from '@/service/mi/nextGenMI/event'
 
 export type NextGenMIClassificationTone = EventStatus | 'closed' | 'noise'
 
 export const nextGenMIIsEventNoiseSignal = (signalType?: EventSignalType): boolean => signalType === 'noise'
 
 export const classificationPropsFromNextGenMIEventRow = (
-  row: Pick<EventListItemRes, 'status' | 'signalType'> & Partial<Pick<EventListItemRes, 'statusLabel' | 'signalTypeLabel'>>,
+  row: Pick<EventListItem, 'status' | 'signalType'> & Partial<Pick<EventListItem, 'statusLabel' | 'signalTypeLabel'>>,
 ): { status: NextGenMIClassificationTone; label: string } => {
   if (nextGenMIIsEventNoiseSignal(row.signalType)) {
     return {

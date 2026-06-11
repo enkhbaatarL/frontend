@@ -49,6 +49,7 @@ interface NextGenMIDetailHeaderProps {
   titleSlot: ReactNode
   rightAction?: ReactNode
   sections: NextGenMIDetailHeaderSection[]
+  sectionSlot?: ReactNode
   scrollContainerId?: string
   /** 임베디드(모핑 팝업) 모드: 페이지 전역 스크롤 컨테이너 대신 이 엘리먼트를 사용 */
   scrollContainer?: HTMLElement | null
@@ -64,6 +65,7 @@ const NextGenMIDetailHeader = ({
   titleSlot,
   rightAction,
   sections,
+  sectionSlot,
   scrollContainerId = 'main-scroll-wrapper',
   scrollContainer,
   embeddedStickyTop = '68px',
@@ -445,45 +447,47 @@ const NextGenMIDetailHeader = ({
             },
           }}
         >
-          <Tabs
-            value={activeSection}
-            onChange={handleTabChange}
-            slotProps={{
-              scroller: {
-                style: { overflow: 'visible' },
-              },
-            }}
-            sx={{
-              flex: 1,
-              minWidth: 0,
-              borderBottom: 'none',
-              position: 'relative',
-              zIndex: 3,
-              overflow: 'visible',
-              '& .MuiTabs-flexContainer': { alignItems: 'flex-end' },
-              '.MuiTabs-indicator': {
-                backgroundColor: 'commonColor.Black',
-                height: '2px',
-                minHeight: '2px',
-                bottom: 0,
-                zIndex: 2,
-              },
-              '& .MuiTab-root': {
-                fontWeight: 600,
-                fontSize: '16px',
-                lineHeight: 1.4,
-                color: 'contentText.Black',
-                minHeight: 62,
-                padding: '20px',
-                textTransform: 'none',
-                '&.Mui-selected': { color: 'commonColor.Black', fontWeight: 600 },
-              },
-            }}
-          >
-            {sections.map((section, index) => (
-              <Tab key={section.id} label={section.label} disableRipple onClick={() => handleTabClick(index)} />
-            ))}
-          </Tabs>
+          {sectionSlot ?? (
+            <Tabs
+              value={activeSection}
+              onChange={handleTabChange}
+              slotProps={{
+                scroller: {
+                  style: { overflow: 'visible' },
+                },
+              }}
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                borderBottom: 'none',
+                position: 'relative',
+                zIndex: 3,
+                overflow: 'visible',
+                '& .MuiTabs-flexContainer': { alignItems: 'flex-end' },
+                '.MuiTabs-indicator': {
+                  backgroundColor: 'commonColor.Black',
+                  height: '2px',
+                  minHeight: '2px',
+                  bottom: 0,
+                  zIndex: 2,
+                },
+                '& .MuiTab-root': {
+                  fontWeight: 600,
+                  fontSize: '16px',
+                  lineHeight: 1.4,
+                  color: 'contentText.Black',
+                  minHeight: 62,
+                  padding: '20px',
+                  textTransform: 'none',
+                  '&.Mui-selected': { color: 'commonColor.Black', fontWeight: 600 },
+                },
+              }}
+            >
+              {sections.map((section, index) => (
+                <Tab key={section.id} label={section.label} disableRipple onClick={() => handleTabClick(index)} />
+              ))}
+            </Tabs>
+          )}
 
           {rightAction}
         </Stack>

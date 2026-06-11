@@ -12,6 +12,7 @@ interface EventDetailAiInsightsSectionProps {
   bullets: string[]
   detailedAnalysis: string
   loading?: boolean
+  compact?: boolean
 }
 
 const cardSubsectionTitleSx = {
@@ -72,39 +73,48 @@ const AiInsightsSummaryCard = ({ children }: { children: ReactNode }) => <Box sx
 
 const AiInsightsDetailCard = ({ children }: { children: ReactNode }) => <Box sx={detailGradientCardSx}>{children}</Box>
 
-const EventDetailAiInsightsSection = ({ bullets, detailedAnalysis, loading = false }: EventDetailAiInsightsSectionProps) =>
+const EventDetailAiInsightsSection = ({
+  bullets,
+  detailedAnalysis,
+  loading = false,
+  compact = false,
+}: EventDetailAiInsightsSectionProps) =>
   loading ? (
-    <Stack width="100%" gap="12px" py="20px" sx={constrainedStackSx}>
-      <EventDetailSectionHeader
-        icon={<AutoAwesomeIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-        title="AI Insights"
-        titleGradient
-        tooltipTitle=""
-      />
+    <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'} sx={constrainedStackSx}>
+      {!compact && (
+        <EventDetailSectionHeader
+          icon={<AutoAwesomeIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+          title="AI Insights"
+          titleGradient
+          tooltipTitle=""
+        />
+      )}
       <Stack gap="20px" sx={constrainedStackSx}>
         <AiInsightsSummaryCard>
-          <Skeleton variant="rounded" width={112} height={24} sx={{ borderRadius: '4px' }} />
+          <Skeleton variant="rounded" width="112px" height="24px" sx={{ borderRadius: '4px' }} />
           <Stack gap="6px" mt="8px" sx={constrainedStackSx}>
             {[0, 1, 2].map((idx) => (
-              <Skeleton key={idx} variant="rounded" height={20} width={idx === 2 ? '72%' : '100%'} sx={{ borderRadius: '4px' }} />
+              <Skeleton key={idx} variant="rounded" height="20px" width={idx === 2 ? '72%' : '100%'} sx={{ borderRadius: '4px' }} />
             ))}
           </Stack>
         </AiInsightsSummaryCard>
         <AiInsightsDetailCard>
-          <Skeleton variant="rounded" width={96} height={24} sx={{ borderRadius: '4px' }} />
-          <Skeleton variant="rounded" height={120} sx={{ borderRadius: '8px', mt: '8px' }} />
+          <Skeleton variant="rounded" width="96px" height="24px" sx={{ borderRadius: '4px' }} />
+          <Skeleton variant="rounded" height="120px" sx={{ borderRadius: '8px', mt: '8px' }} />
         </AiInsightsDetailCard>
       </Stack>
     </Stack>
   ) : (
-    <Stack width="100%" gap="12px" py="20px" sx={constrainedStackSx}>
-      <EventDetailSectionHeader
-        icon={<AutoAwesomeIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-        title="AI Insights"
-        titleGradient
-        tooltipTitle=""
-      />
-      <Stack gap="20px" sx={constrainedStackSx}>
+    <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'} sx={constrainedStackSx}>
+      {!compact && (
+        <EventDetailSectionHeader
+          icon={<AutoAwesomeIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+          title="AI Insights"
+          titleGradient
+          tooltipTitle=""
+        />
+      )}
+      <Stack gap="12px" sx={constrainedStackSx}>
         <AiInsightsSummaryCard>
           <Stack gap="8px" sx={constrainedStackSx}>
             <Stack py="4px" direction="row" alignItems="center">

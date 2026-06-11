@@ -2,7 +2,7 @@ import { Box, Button, ButtonProps, Stack } from '@mui/material'
 import { forwardRef, ReactNode } from 'react'
 
 import LoadingSpinner from '@/components/common/influence-factor-chart/icons/LoadingSpinIcon'
-import MIBaseButtonLabel from '@/components/common/label/MIBaseButtonLabel'
+import MIBaseButtonLabel, { type MIBaseButtonLabelProps } from '@/components/common/label/MIBaseButtonLabel'
 
 export interface MIBaseButtonProps extends Omit<ButtonProps, 'prefix' | 'suffix' | 'startIcon' | 'endIcon'> {
   variant?: 'text' | 'outlined' | 'contained'
@@ -15,6 +15,7 @@ export interface MIBaseButtonProps extends Omit<ButtonProps, 'prefix' | 'suffix'
   isLoading?: boolean
   gap?: string | number
   labelColor?: string
+  labelTextAlign?: MIBaseButtonLabelProps['textAlign']
 }
 
 const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
@@ -33,6 +34,7 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
       disabled,
       gap,
       labelColor,
+      labelTextAlign,
       sx,
       ...restProps
     },
@@ -75,7 +77,7 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
             justifyContent: 'space-between',
             textTransform: 'none',
             backgroundColor: variant === 'outlined' && open ? 'contentBG.Active' : undefined,
-            transition: 'background-color 0.15s ease-in-out, border-color 0.4s ease-in-out',
+            transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out, border-color 0.4s ease-in-out',
             '&:disabled': {
               backgroundColor: (disabled || isLoading) && variant === 'text' ? 'transparent' : undefined,
               borderColor: (disabled || isLoading) && variant === 'outlined' ? 'contentBorder.Disabled' : undefined,
@@ -91,13 +93,34 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
             '& .MuiButton-endIcon': {
               marginRight: '2px',
             },
+            '& .MuiTypography-root, & svg': {
+              transition: 'color 0.15s ease-in-out',
+            },
+            '& svg path': {
+              transition: 'fill 0.15s ease-in-out',
+            },
           },
           ...(sx === undefined ? [] : Array.isArray(sx) ? sx : [sx]),
         ]}
       >
-        <Box component="span" position="relative" display="inline-flex" alignItems="center" justifyContent="space-between" width="100%">
-          <Box component="span" visibility={isLoading ? 'hidden' : 'visible'} display="inline-flex" alignItems="center" width="100%">
-            <MIBaseButtonLabel prefix={prefix} suffix={suffix} gap={gap} color={labelColor}>
+        <Box
+          component="span"
+          position="relative"
+          display="inline-flex"
+          alignItems="center"
+          justifyContent="space-between"
+          width="100%"
+          minWidth={0}
+        >
+          <Box
+            component="span"
+            visibility={isLoading ? 'hidden' : 'visible'}
+            display="inline-flex"
+            alignItems="center"
+            width="100%"
+            minWidth={0}
+          >
+            <MIBaseButtonLabel prefix={prefix} suffix={suffix} gap={gap} color={labelColor} textAlign={labelTextAlign}>
               {children}
             </MIBaseButtonLabel>
           </Box>

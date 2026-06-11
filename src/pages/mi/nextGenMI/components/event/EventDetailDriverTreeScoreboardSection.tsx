@@ -47,11 +47,13 @@ const renderDriverImpactList = (
 interface EventDetailDriverTreeScoreboardSectionProps {
   driverTreeScoreboard?: EventDriverTreeIndex[]
   loading?: boolean
+  compact?: boolean
 }
 
 const EventDetailDriverTreeScoreboardSection = ({
   driverTreeScoreboard = [],
   loading = false,
+  compact = false,
 }: EventDetailDriverTreeScoreboardSectionProps) => {
   const tableRows = useMemo<EventDriverTreeScoreboardTableRow[]>(
     () =>
@@ -141,24 +143,28 @@ const EventDetailDriverTreeScoreboardSection = ({
 
   if (loading) {
     return (
-      <Stack width="100%" gap="12px" py="20px">
-        <EventDetailSectionHeader
-          icon={<MarginRoundedIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-          title="Index Driver별 영향도 분석"
-          tooltipTitle=""
-        />
+      <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
+        {!compact && (
+          <EventDetailSectionHeader
+            icon={<MarginRoundedIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+            title="Index Driver별 영향도 분석"
+            tooltipTitle=""
+          />
+        )}
         <NextGenMIEventDetailBlockSkeleton height="400px" />
       </Stack>
     )
   }
 
   return (
-    <Stack width="100%" gap="12px" py="20px">
-      <EventDetailSectionHeader
-        icon={<MarginRoundedIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-        title="Index Driver별 영향도 분석"
-        tooltipTitle=""
-      />
+    <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
+      {!compact && (
+        <EventDetailSectionHeader
+          icon={<MarginRoundedIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+          title="Index Driver별 영향도 분석"
+          tooltipTitle=""
+        />
+      )}
       <NextGenMIStickyTable
         columns={columns}
         rows={tableRows}

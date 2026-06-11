@@ -2,7 +2,7 @@ import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode, useEffect } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode, useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
@@ -10,6 +10,7 @@ import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCar
 import MIMenu from '@/components/common/menu/MIMenu'
 import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
+import useSnackbar from '@/hooks/useSnackbar'
 import { NextGenMINoiseSignalBadge } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import { nextGenMIIsEventNoiseSignal } from '@/pages/mi/nextGenMI/components/common/nextGenMIClassificationChip'
 import NextGenMIDetailHeader, {
@@ -23,7 +24,7 @@ import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/component
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
 import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/event/EventDetailRelatedScenariosSection'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
-import { getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
 
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'driverTree' | 'related'
@@ -62,16 +63,14 @@ const EVENT_DETAIL_HEADER_SECTIONS: NextGenMIDetailHeaderSection[] = EVENT_DETAI
   label: tab.label,
 }))
 
-const renderEventDetailHeaderTabActions = (targetLabel?: string) => (
+const renderEventDetailHeaderTabActions = (targetLabel?: string, onScenarioDesignClick?: () => void) => (
   <Stack direction="row" alignItems="center" gap="12px">
     <NextGenMIUserFeedback pageName="Next-Gen MI" sectionName="Event List / Event Detail" targetLabel={targetLabel} />
     <MIMenu
       variant="contained"
       label="시나리오 생성"
       prefix={<AutoAwesomeRoundedIcon aria-hidden focusable="false" />}
-      onClick={() => {
-        // 시나리오 생성 액션은 API 미연동 단계, 퍼블리싱 버튼만 노출
-      }}
+      onClick={onScenarioDesignClick}
       sx={{
         height: '36px',
       }}
@@ -132,6 +131,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as NextGenMIEventDetailLocationState | null
+  const { showSnackbar } = useSnackbar()
 
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
@@ -175,6 +175,11 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     gcTime: 0,
   })
 
+  useEffect(() => {
+    if (!detailError) return
+    showSnackbar('이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
+  }, [detailError, showSnackbar])
+
   const title = useMemo(() => {
     const fromApi = detail?.eventName
     if (fromApi) return fromApi
@@ -216,9 +221,16 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const recordRows = recordsData?.detail ?? []
   const outlookRows = outlooksData?.detail ?? []
   const relatedEventScenario = detail?.relatedEventScenario
+  const handleScenarioDesignClick = useCallback(() => {
+    if (!eventId) return
+    navigate(getNextGenMIEventDesignPath(eventId), {
+      state: { eventName: title },
+    })
+  }, [eventId, navigate, title])
+
   const eventDetailHeaderTabActions = useMemo(
-    () => renderEventDetailHeaderTabActions(title ? `이벤트 상세/ ${title}` : '이벤트 상세'),
-    [title],
+    () => renderEventDetailHeaderTabActions(title ? `이벤트 상세/ ${title}` : '이벤트 상세', handleScenarioDesignClick),
+    [handleScenarioDesignClick, title],
   )
 
   const headerTitleSlot = useMemo(
@@ -304,8 +316,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     <Stack
       maxWidth={embedded ? undefined : '1380px'}
       margin={embedded ? undefined : 'auto'}
-      px={embedded ? 0 : '12px'}
-      pt={embedded ? 0 : '20px'}
+      padding={embedded ? '0' : '20px 12px 0'}
       position="relative"
       sx={{
         overflowX: embedded ? 'visible' : 'hidden',
@@ -323,12 +334,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
           hideBackButton
         />
       )}
-      <Stack gap="30px" px={embedded ? '12px' : 0} sx={{ minWidth: 0, maxWidth: '100%' }}>
-        {detailError && (
-          <Typography padding="8px 16px" color="error.main" variant="body2">
-            이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
-          </Typography>
-        )}
+      <Stack gap="30px" padding={embedded ? '0 12px' : '0'} sx={{ minWidth: 0, maxWidth: '100%' }}>
         <Stack id={SECTION_SCROLL_IDS.ai} sx={{ minWidth: 0, maxWidth: '100%' }}>
           <EventDetailAiInsightsSection bullets={aiBullets} detailedAnalysis={aiDetailedAnalysis} loading={detailLoading} />
         </Stack>
@@ -364,6 +370,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related}>
           <EventDetailRelatedScenariosSection
+            eventId={eventId}
             relatedEventScenario={relatedEventScenario}
             onScenarioRowClick={(row) => {
               const scenarioGroupId = relatedEventScenario?.scenarioGroupId

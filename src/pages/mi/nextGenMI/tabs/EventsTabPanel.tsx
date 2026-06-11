@@ -21,9 +21,10 @@ import EventScenarioGenerateButton from '@/pages/mi/nextGenMI/components/event/E
 import EventSortSelectMenu from '@/pages/mi/nextGenMI/components/event/EventSortSelectMenu'
 import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
+import { getNextGenMIEventDesignPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, {
-  type EventListItemRes,
+  type EventListItem,
   type EventSort,
   type EventStatus,
   type GetEventsParams,
@@ -124,14 +125,22 @@ const EventsTabPanel = () => {
   const tableRows = data?.events?.detail ?? []
 
   const handleEventNameClick = useCallback(
-    (row: EventListItemRes) =>
+    (row: EventListItem) =>
       navigate(`/mi/next-gen-mi/events/${row.eventId}`, {
         state: { eventName: row.eventName },
       }),
     [navigate],
   )
 
-  const columns: GridColDef<EventListItemRes>[] = useMemo(
+  const handleScenarioDesignClick = useCallback(
+    (row: EventListItem) =>
+      navigate(getNextGenMIEventDesignPath(row.eventId), {
+        state: { eventName: row.eventName },
+      }),
+    [navigate],
+  )
+
+  const columns: GridColDef<EventListItem>[] = useMemo(
     () => [
       {
         field: '__statusBadge',
@@ -245,10 +254,12 @@ const EventsTabPanel = () => {
         width: 100,
         align: 'center',
         sortable: false,
-        renderCell: (params) => <EventScenarioGenerateButton recommended={params.row.isScenarioSuggested} />,
+        renderCell: (params) => (
+          <EventScenarioGenerateButton recommended={params.row.isScenarioSuggested} onClick={() => handleScenarioDesignClick(params.row)} />
+        ),
       },
     ],
-    [handleEventNameClick],
+    [handleEventNameClick, handleScenarioDesignClick],
   )
 
   const nextGenMIDatePresets = useMemo(() => buildNextGenMIDatePresets(), [])
@@ -291,11 +302,11 @@ const EventsTabPanel = () => {
   }, [])
 
   const showEventsTableCellSkeleton = useCallback(
-    (col: GridColDef<EventListItemRes>) => col.field === '__statusBadge' || String(col.headerName ?? '').trim() !== '',
+    (col: GridColDef<EventListItem>) => col.field === '__statusBadge' || String(col.headerName ?? '').trim() !== '',
     [],
   )
 
-  const getEventsTableHeaderCellSx = useCallback((col: GridColDef<EventListItemRes>) => {
+  const getEventsTableHeaderCellSx = useCallback((col: GridColDef<EventListItem>) => {
     if (col.field === 'scenario') {
       return { px: '16px' }
     }
@@ -355,7 +366,7 @@ const EventsTabPanel = () => {
           Event List
         </Typography>
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1.5}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap="12px">
           <Stack direction="row" alignItems="center" flexWrap="wrap" gap="12px" sx={{ minWidth: 0, flex: 1 }}>
             <MISlidingSegmented
               options={TYPE_FILTER_OPTIONS}
@@ -387,7 +398,7 @@ const EventsTabPanel = () => {
           </Stack>
 
           <Stack direction="row" alignItems="center" gap="12px" sx={{ flexShrink: 0 }}>
-            <Stack direction="row" alignItems="center" height="36px" paddingY={0} gap={0.5}>
+            <Stack direction="row" alignItems="center" height="36px" padding="0" gap="4px">
               <Switch size="small" checked={hideNonRecommended} onChange={(_, checked) => setHideNonRecommended(checked)} />
               <Typography variant="body2M14" color={hideNonRecommended ? 'contentText.Black' : 'contentText.Normal'}>
                 추천 항목만 보기
@@ -406,10 +417,10 @@ const EventsTabPanel = () => {
           </Stack>
         </Stack>
 
-        <MIDataTableHeader<EventListItemRes> columns={columns} getHeaderCellSx={getEventsTableHeaderCellSx} sx={{ mt: 2 }} />
+        <MIDataTableHeader<EventListItem> columns={columns} getHeaderCellSx={getEventsTableHeaderCellSx} sx={{ mt: 2 }} />
       </NextGenMIStickySlot>
 
-      <MIDataTableBody<EventListItemRes>
+      <MIDataTableBody<EventListItem>
         rowId="eventId"
         columns={columns}
         rows={tableRows}
