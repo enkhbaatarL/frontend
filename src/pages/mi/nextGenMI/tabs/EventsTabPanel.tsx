@@ -143,12 +143,12 @@ const EventsTabPanel = () => {
         renderCell: (params) => <EventStatusBadge status={params.row.status} statusLabel={params.row.statusLabel} />,
       },
       {
-        field: 'createdAt',
+        field: 'latestCreatedAt',
         headerName: '일시',
         width: 100,
         align: 'left',
         headerAlign: 'left',
-        renderCell: (params) => <Typography variant="body2M14">{formatNextGenMIDateTime(params.row.createdAt)}</Typography>,
+        renderCell: (params) => <Typography variant="body2M14">{formatNextGenMIDateTime(params.row.latestCreatedAt)}</Typography>,
       },
       {
         field: 'eventTypeLv1Label',
