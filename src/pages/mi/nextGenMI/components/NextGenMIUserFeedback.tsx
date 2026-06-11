@@ -111,7 +111,7 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
               onClick={closeFeedbackMenu}
               disabled={isSubmitting}
               sx={{
-                height: '36px',
+                height: '32px',
                 padding: '8px',
                 color: 'contentIcon.Enabled',
               }}
@@ -202,7 +202,12 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
             제출된 피드백은 담당자 확인 후 답변드릴 예정입니다
           </Typography>
           <Stack direction="row" alignItems="center" gap="10px">
-            <MIBaseButton variant="outlined" onClick={closeFeedbackMenu} disabled={isSubmitting} sx={{ height: '34px' }}>
+            <MIBaseButton
+              variant="outlined"
+              onClick={closeFeedbackMenu}
+              disabled={isSubmitting}
+              sx={{ height: '32px', padding: '6px 10px', borderRadius: '8px' }}
+            >
               취소
             </MIBaseButton>
             <MIBaseButton
@@ -211,7 +216,7 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
               onClick={() => void handleSubmit()}
               disabled={isSubmitting}
               isLoading={isSubmitting}
-              sx={{ height: '34px' }}
+              sx={{ height: '32px', padding: '6px 10px', borderRadius: '8px' }}
             >
               보내기
             </MIBaseButton>

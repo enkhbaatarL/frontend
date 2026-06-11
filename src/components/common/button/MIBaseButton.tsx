@@ -14,6 +14,7 @@ export interface MIBaseButtonProps extends Omit<ButtonProps, 'prefix' | 'suffix'
   disableRipple?: boolean
   isLoading?: boolean
   gap?: string | number
+  labelColor?: string
 }
 
 const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
@@ -31,6 +32,7 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
       isLoading = false,
       disabled,
       gap,
+      labelColor,
       sx,
       ...restProps
     },
@@ -95,7 +97,7 @@ const MIBaseButton = forwardRef<HTMLButtonElement, MIBaseButtonProps>(
       >
         <Box component="span" position="relative" display="inline-flex" alignItems="center" justifyContent="space-between" width="100%">
           <Box component="span" visibility={isLoading ? 'hidden' : 'visible'} display="inline-flex" alignItems="center" width="100%">
-            <MIBaseButtonLabel prefix={prefix} suffix={suffix} gap={gap}>
+            <MIBaseButtonLabel prefix={prefix} suffix={suffix} gap={gap} color={labelColor}>
               {children}
             </MIBaseButtonLabel>
           </Box>

@@ -17,6 +17,12 @@ const textCell = ({ value }: GridRenderCellParams<GridRowModel>) => (
   </Typography>
 )
 
+const centerTextCell = ({ value }: GridRenderCellParams<GridRowModel>) => (
+  <Typography variant="body2R14" color="gray.90" noWrap sx={{ width: '100%', minWidth: 0, textAlign: 'center' }}>
+    {value === null || value === undefined || value === '' ? '-' : String(value)}
+  </Typography>
+)
+
 const formatPriceValue = (value: unknown): string => {
   if (value === null || value === undefined || value === '') return '-'
   if (typeof value === 'number') return value.toLocaleString('en-US', { maximumFractionDigits: 2 })
@@ -56,7 +62,7 @@ const buildPriceColumn = (column: FundamentalModelPriceColumn): GridColDef<GridR
       ...priceColumnDefaults,
       field,
       headerName,
-      width: 80,
+      width: 72,
       align: 'center',
       renderCell: centerBoldCell,
     }
@@ -69,18 +75,21 @@ const buildPriceColumn = (column: FundamentalModelPriceColumn): GridColDef<GridR
       headerName,
       flex: 1.1,
       minWidth: 140,
-      align: 'left',
-      renderCell: textCell,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: centerTextCell,
     }
   }
 
   if (PRICE_VALUE_FIELD_NAMES.has(field)) {
+    const isBaseCasePrice = field === 'baseCasePrice'
+
     return {
       ...priceColumnDefaults,
       field,
       headerName,
-      flex: 1,
-      minWidth: 140,
+      flex: isBaseCasePrice ? 0.85 : 1,
+      minWidth: isBaseCasePrice ? 116 : 128,
       align: 'right',
       headerAlign: 'right',
       renderCell: priceValueCell,

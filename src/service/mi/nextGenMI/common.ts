@@ -1,3 +1,5 @@
+export type NextGenMIIndexName = 'JKM' | 'TTF' | 'HH'
+
 export enum NextGenMIStatus {
   ALL = 'all',
   NEW = 'new',

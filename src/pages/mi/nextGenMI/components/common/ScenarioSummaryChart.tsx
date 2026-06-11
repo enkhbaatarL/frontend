@@ -3,14 +3,13 @@ import { Box, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 
-import type { IScenarioPriceForecast } from '@/service/mi/nextGenMI/scenario'
-import type { ChartData } from '@/types/dataDetailChart'
+import type { ChartData, ScenarioPriceForecast } from '@/types/dataDetailChart'
 
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import { buildDistinctSeriesColors } from '@/pages/mi/nextGenMI/components/common/nextGenMISeriesColors'
+import ScenarioModelExecutionGeneratingState from '@/pages/mi/nextGenMI/components/common/ScenarioModelExecutionGeneratingState'
 import ScenarioSummaryChartGraph from '@/pages/mi/nextGenMI/components/common/ScenarioSummaryChartGraph'
-import ScenarioModelExecutionGeneratingState from '@/pages/mi/nextGenMI/components/scenario/ScenarioModelExecutionGeneratingState'
 import { ChartType } from '@/types/dataDetailChart'
 
 const CHART_HEIGHT = 480
@@ -52,7 +51,7 @@ const buildTimestamps = (dates: string[], valueCount: number): string[] => {
   })
 }
 
-const buildChartUnit = (priceForecast: IScenarioPriceForecast): string => {
+const buildChartUnit = (priceForecast: ScenarioPriceForecast): string => {
   if (priceForecast.currency && priceForecast.unit) return `Unit: ${priceForecast.currency}/${priceForecast.unit}`
   if (priceForecast.currency) return `Unit: ${priceForecast.currency}`
   if (priceForecast.unit) return `Unit: ${priceForecast.unit}`
@@ -64,12 +63,13 @@ type LegendEllipsisLabelProps = {
   isShow: boolean
   isHighlighted: boolean
   legendDimmed: boolean
+  labelColor?: string
 }
 
-const resolveLegendLabelColor = (isShow: boolean, legendDimmed: boolean) => {
+const resolveLegendLabelColor = (isShow: boolean, legendDimmed: boolean, labelColor?: string) => {
   if (!isShow) return 'contentText.Disabled'
   if (legendDimmed) return 'contentText.Subtext'
-  return 'commonColor.Black'
+  return labelColor ?? 'commonColor.Black'
 }
 
 const resolveLegendOpacity = (isShow: boolean, legendDimmed: boolean) => {
@@ -78,7 +78,7 @@ const resolveLegendOpacity = (isShow: boolean, legendDimmed: boolean) => {
   return 1
 }
 
-const LegendEllipsisLabel = ({ label, isShow, isHighlighted, legendDimmed }: LegendEllipsisLabelProps) => {
+const LegendEllipsisLabel = ({ label, isShow, isHighlighted, legendDimmed, labelColor }: LegendEllipsisLabelProps) => {
   const { ref, isEllipsis } = useEllipsisDetection(label)
 
   const typography = (
@@ -87,7 +87,7 @@ const LegendEllipsisLabel = ({ label, isShow, isHighlighted, legendDimmed }: Leg
       className="legend-label"
       variant={isHighlighted ? 'body3SB12' : 'body3M12'}
       sx={{
-        color: resolveLegendLabelColor(isShow, legendDimmed),
+        color: resolveLegendLabelColor(isShow, legendDimmed, labelColor),
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
@@ -105,7 +105,7 @@ const LegendEllipsisLabel = ({ label, isShow, isHighlighted, legendDimmed }: Leg
 }
 
 interface ScenarioSummaryChartProps {
-  priceForecast: IScenarioPriceForecast
+  priceForecast: ScenarioPriceForecast
   suppressChartHeader?: boolean
   headerStart?: ReactNode
   headerEnd?: ReactNode
@@ -114,6 +114,7 @@ interface ScenarioSummaryChartProps {
   linkedHighlightIndexName?: string | null
   linkedHighlightVisibilityKey?: string | null
   chartColorMap?: Map<string, string>
+  headerLegendLabelColor?: string
   emptyMessage?: string
   modelExecutionGenerating?: boolean
   disableIntroAnimation?: boolean
@@ -129,6 +130,7 @@ const ScenarioSummaryChart = ({
   linkedHighlightIndexName = null,
   linkedHighlightVisibilityKey = null,
   chartColorMap: chartColorMapProp,
+  headerLegendLabelColor,
   emptyMessage = 'MI 수급 모델 실행 후 차트가 생성됩니다.',
   modelExecutionGenerating = false,
   disableIntroAnimation = false,
@@ -267,7 +269,13 @@ const ScenarioSummaryChart = ({
             transition: 'height 0.15s ease-in-out, opacity 0.2s ease-in-out',
           }}
         />
-        <LegendEllipsisLabel label={chart.goodsDataSourceName} isShow={isShow} isHighlighted={isHighlighted} legendDimmed={legendDimmed} />
+        <LegendEllipsisLabel
+          label={chart.goodsDataSourceName}
+          isShow={isShow}
+          isHighlighted={isHighlighted}
+          legendDimmed={legendDimmed}
+          labelColor={isHeader ? headerLegendLabelColor : undefined}
+        />
       </Stack>
     )
   }

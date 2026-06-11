@@ -51,6 +51,7 @@ export interface FundamentalModelCaseDetail {
   description?: string | null
   status: FundamentalModelCaseStatus
   assigneeName: string
+  assigneeUserNo: number
   files: FundamentalModelCaseFile[]
   latestRun: FundamentalModelLatestRun | null
   createdAt: string

@@ -7,9 +7,10 @@ import type { EventRelatedRecord } from '@/service/mi/nextGenMI/event'
 import type { IPaginationResponse } from '@/types/api'
 
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
-import { NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING } from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailTableBodyText'
+import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailBlockSkeleton'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
+import { NEXT_GEN_MI_TABLE_CONTAINER_PADDING } from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 
 const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
@@ -159,39 +160,38 @@ const EventDetailMiRecordsTable = ({
         title="MI Records"
         tooltipTitle=""
       />
-      <Box
-        bgcolor="commonColor.White"
-        borderRadius="10px"
-        padding={`${NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING}px`}
-        boxSizing="border-box"
-      >
-        <NextGenMIStickyTable
-          columns={columns}
-          rows={paginatedRows}
-          fixedLeftColumnIndexes={[2]}
-          leftAlignedHeaderSticky
-          getRowKey={(row, index) => `${row.publishedAt ?? ''}-${row.title ?? ''}-${index}`}
-          loading={loading}
-          noRowMessage="표시할 데이터가 없습니다."
-          rowHeight={!loading && paginatedRows.length === 0 ? '400px' : undefined}
-          skeletonRowCount={pagination.size}
-          containerShell={false}
-        />
-        {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
-          <MIPaginationSecondary<EventRelatedRecord>
-            data={paginationData}
-            size={isServerMode ? serverPagination.size : pagination.size}
-            sizeList={[...PAGE_SIZE_LIST]}
-            paddingTop={`${NEXT_GEN_MI_EVENT_DETAIL_TABLE_CONTAINER_PADDING}px`}
-            onPageChange={(page) => {
-              if (isServerMode) onServerPageChange?.(page)
-              else setPagination((p) => ({ ...p, page }))
-            }}
-            onSizeChange={(size) => {
-              if (isServerMode) onServerSizeChange?.(size)
-              else setPagination({ size, page: 1 })
-            }}
-          />
+      <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
+        {loading ? (
+          <NextGenMIEventDetailBlockSkeleton height="400px" />
+        ) : (
+          <>
+            <NextGenMIStickyTable
+              columns={columns}
+              rows={paginatedRows}
+              fixedLeftColumnIndexes={[2]}
+              leftAlignedHeaderSticky
+              getRowKey={(row, index) => `${row.publishedAt ?? ''}-${row.title ?? ''}-${index}`}
+              noRowMessage="표시할 데이터가 없습니다."
+              rowHeight={paginatedRows.length === 0 ? '400px' : undefined}
+              containerShell={false}
+            />
+            {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
+              <MIPaginationSecondary<EventRelatedRecord>
+                data={paginationData}
+                size={isServerMode ? serverPagination.size : pagination.size}
+                sizeList={[...PAGE_SIZE_LIST]}
+                paddingTop={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
+                onPageChange={(page) => {
+                  if (isServerMode) onServerPageChange?.(page)
+                  else setPagination((p) => ({ ...p, page }))
+                }}
+                onSizeChange={(size) => {
+                  if (isServerMode) onServerSizeChange?.(size)
+                  else setPagination({ size, page: 1 })
+                }}
+              />
+            )}
+          </>
         )}
       </Box>
     </Stack>

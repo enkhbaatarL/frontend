@@ -1,7 +1,8 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
-import remarkGfm from 'remark-gfm'
+
+import { markdownRemarkPlugins } from '@/utils/markdown'
 
 interface Props {
   description?: string
@@ -12,7 +13,7 @@ const DescriptionComponent = ({ description, summary }: Props) => (
   <Box>
     {summary && (
       <Typography mb={9.5} component="div" lineHeight={1.6} color="gray.90" variant="body1M16" sx={{ whiteSpace: 'pre-line' }}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+        <ReactMarkdown remarkPlugins={markdownRemarkPlugins} rehypePlugins={[rehypeRaw]}>
           {summary}
         </ReactMarkdown>
       </Typography>
@@ -20,7 +21,7 @@ const DescriptionComponent = ({ description, summary }: Props) => (
     {description && (
       <Grid container direction="column" gap={2}>
         <Typography component="div" lineHeight={1.6} color="gray.70" variant="body1R16" sx={{ whiteSpace: 'pre-line' }}>
-          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+          <ReactMarkdown remarkPlugins={markdownRemarkPlugins} rehypePlugins={[rehypeRaw]}>
             {description}
           </ReactMarkdown>
         </Typography>

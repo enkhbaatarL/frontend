@@ -54,6 +54,8 @@ interface NextGenMIDetailHeaderProps {
   scrollContainer?: HTMLElement | null
   embeddedStickyTop?: number | string
   hideBackButton?: boolean
+  /** 지정된 섹션 id로 1회 스크롤(진입 시 특정 섹션 포커스). 값이 바뀔 때마다 1회 동작 */
+  pendingScrollSectionId?: string
 }
 
 const NextGenMIDetailHeader = ({
@@ -66,6 +68,7 @@ const NextGenMIDetailHeader = ({
   scrollContainer,
   embeddedStickyTop = '68px',
   hideBackButton = false,
+  pendingScrollSectionId,
 }: NextGenMIDetailHeaderProps) => {
   const { patchStickyHeaderOptions } = useStickyHeader()
   const isEmbedded = scrollContainer !== undefined
@@ -299,6 +302,17 @@ const NextGenMIDetailHeader = ({
   useEffect(() => {
     applyScrollSpyActiveSection()
   }, [applyScrollSpyActiveSection, isMainScrolled])
+
+  // 진입 시 특정 섹션 포커스 — 값이 새로 지정될 때 1회 스크롤
+  const pendingScrollHandledRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!pendingScrollSectionId) return
+    if (pendingScrollHandledRef.current === pendingScrollSectionId) return
+    const index = sectionsRef.current.findIndex((section) => section.id === pendingScrollSectionId)
+    if (index < 0) return
+    pendingScrollHandledRef.current = pendingScrollSectionId
+    scrollSectionIntoView(index)
+  }, [pendingScrollSectionId, scrollSectionIntoView])
 
   useLayoutEffect(() => {
     if (prevIsMainScrolledForStickyRef.current === null) {

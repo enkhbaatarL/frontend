@@ -1,9 +1,9 @@
 import { Box, Stack, StackProps, Typography } from '@mui/material'
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { isValidElement, MouseEvent, ReactNode, useCallback, useLayoutEffect, useRef, useState } from 'react'
 
 export interface MISlidingSegmentedOption {
   value: string
-  label: string
+  label: ReactNode
   disabled?: boolean
 }
 
@@ -15,7 +15,24 @@ export interface MISlidingSegmentedControlProps extends Omit<StackProps, 'option
   fullWidth?: boolean
 }
 
-const getOptionWidthWeight = (label: string) => Math.max(Array.from(label).length, 1)
+const getTextFromLabelNode = (label: ReactNode): string => {
+  if (typeof label === 'string' || typeof label === 'number' || typeof label === 'boolean') {
+    return String(label)
+  }
+
+  if (Array.isArray(label)) {
+    return label.map(getTextFromLabelNode).join('')
+  }
+
+  if (isValidElement(label)) {
+    const children = (label as { props: { children?: ReactNode } }).props.children
+    return getTextFromLabelNode(children)
+  }
+
+  return ''
+}
+
+const getOptionWidthWeight = (label: ReactNode) => Math.max(Array.from(getTextFromLabelNode(label)).length, 1)
 
 const MISlidingSegmented = ({
   options,
@@ -112,13 +129,14 @@ const MISlidingSegmented = ({
         const isSelected = value === optionValue
         const isDisabled = disabled || optionDisabled
         const widthWeight = getOptionWidthWeight(label)
-        let textColor = 'contentText.Normal'
+        let textColor = 'contentText.Subtext'
 
         if (isDisabled) textColor = 'contentText.Disabled'
         else if (isSelected) textColor = 'contentText.Black'
 
-        const handleSelect = () => {
+        const handleSelect = (event: MouseEvent<HTMLButtonElement>) => {
           if (isDisabled) return
+          event.stopPropagation()
           onChange(optionValue)
         }
 

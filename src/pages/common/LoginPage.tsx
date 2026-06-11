@@ -1,4 +1,4 @@
-import { Divider } from '@mui/material'
+import { Divider, Typography } from '@mui/material'
 import { ChangeEvent, useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -216,8 +216,14 @@ const LoginPage = () => {
           </MIButton>
         </Flex>
       ) : (
-        <Flex direction="row" gap={20} align="center" style={{ width: '300px' }}>
-          <MIInput fullWidth label="비밀번호" type="password" value={password} onChange={handlePasswordChange} />
+        <Flex direction="row" gap={12} align="center">
+          <MIInput width="180px" label="비밀번호" type="password" value={password} onChange={handlePasswordChange} />
+          <Typography component="span" variant="body2R14" color="gray.50">
+            |
+          </Typography>
+          <MIButton onClick={ssoLogin} width="120px">
+            SSO 로그인
+          </MIButton>
         </Flex>
       )}
     </Flex>

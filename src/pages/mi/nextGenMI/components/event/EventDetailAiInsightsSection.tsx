@@ -2,11 +2,11 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
-import remarkGfm from 'remark-gfm'
 
 import type { ReactNode } from 'react'
 
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
+import { markdownRemarkPlugins } from '@/utils/markdown'
 
 interface EventDetailAiInsightsSectionProps {
   bullets: string[]
@@ -150,7 +150,7 @@ const EventDetailAiInsightsSection = ({ bullets, detailedAnalysis, loading = fal
             </Stack>
             <Stack gap="20px" sx={constrainedStackSx}>
               <Typography component="div" sx={{ ...bodySx, whiteSpace: 'pre-line' }}>
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                <ReactMarkdown remarkPlugins={markdownRemarkPlugins} rehypePlugins={[rehypeRaw]}>
                   {detailedAnalysis}
                 </ReactMarkdown>
               </Typography>

@@ -1,8 +1,9 @@
 import { AxiosResponse } from 'axios'
 
-import { MarketDirection, MarketImpactLevel } from './common'
+import type { IScenarioDimension, IScenarioDimensionColumn, ScenarioJudgementStatus } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import api from '@/lib/axios'
+import { MarketDirection, MarketImpactLevel } from '@/service/mi/nextGenMI/common'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
 export type EventSort = 'latest' | 'oldest'
@@ -42,6 +43,7 @@ export interface EventListItemRes {
   eventTypeLv1Label?: string
   updatedAt: string
   createdAt: string
+  latestRecordFirstCreated: string
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
   indexImpacts: EventImpactIndexRes[]
@@ -119,32 +121,21 @@ export interface EventDriverTreeIndex {
   drivers?: DriverTreeScoreboard[]
 }
 
-export interface RelatedEvent {
-  eventId: number
-  eventName: string
-  createdAt: string
-  updatedAt: string
-  eventTypeLv1?: string | null
-  eventTypeLv1Label?: string | null
-  indexImpacts?: EventImpactIndexRes[]
-}
-
-export interface RelatedScenarioImpactIndex {
-  indexName: string
-  marketImpactLevel: EventImpactMarketImpactLevel
-  marketImpactLevelLabel?: string | null
-}
-
 export interface RelatedScenario {
   scenarioId: number
   scenarioName: string
   baseCase: boolean
-  indexImpacts?: RelatedScenarioImpactIndex[]
+  dimensions?: IScenarioDimension[]
   probability: number
+  adjustedProbability?: number
+  status?: ScenarioJudgementStatus
+  statusLabel?: string
 }
 
 export interface RelatedEventScenario {
-  event?: RelatedEvent | null
+  scenarioGroupId?: number
+  groupName?: string
+  dimensionColumns?: IScenarioDimensionColumn[]
   scenarios?: RelatedScenario[]
 }
 

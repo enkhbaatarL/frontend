@@ -20,6 +20,7 @@ import {
   useFundamentalModelRunExecution,
 } from '@/pages/mi/fundamentalModel/hooks/useFundamentalModelRunExecution'
 import fundamentalModelCaseService, { type FundamentalModelCaseStatus } from '@/service/mi/fundamentalModel/case'
+import useAuthStore from '@/store/useAuthStore'
 
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
 const RIGHT_STICKY_TOP_PX = 80
@@ -58,6 +59,7 @@ const isTabPinnedToScrollTop = (scrollEl: HTMLElement, tabEl: HTMLElement) => {
 const FundamentalModelPage = () => {
   const queryClient = useQueryClient()
   const { showSnackbar } = useSnackbar()
+  const userNo = useAuthStore((state) => state.user?.userNo)
   const [selectedCaseId, setSelectedCaseId] = useState('')
   const [selectedCaseListStatus, setSelectedCaseListStatus] = useState<FundamentalModelCaseStatus | null>(null)
   const [viewTab, setViewTab] = useState<FundamentalModelViewTabKey>('volumes')
@@ -281,9 +283,11 @@ const FundamentalModelPage = () => {
     }
   }, [activeCaseId, queryClient])
 
+  const isCaseAssignee = caseDetail?.assigneeUserNo === userNo
+
   const handleUpdateCase = useCallback(
     async (payload: { title: string; description: string }) => {
-      if (!Number.isFinite(parsedCaseId) || parsedCaseId <= 0) return false
+      if (!isCaseAssignee || !Number.isFinite(parsedCaseId) || parsedCaseId <= 0) return false
 
       try {
         await fundamentalModelCaseService.updateCase(parsedCaseId, {
@@ -298,11 +302,11 @@ const FundamentalModelPage = () => {
         return false
       }
     },
-    [invalidateCaseQueries, parsedCaseId, showSnackbar],
+    [invalidateCaseQueries, isCaseAssignee, parsedCaseId, showSnackbar],
   )
 
   const handleDeleteCase = useCallback(async () => {
-    if (!Number.isFinite(parsedCaseId) || parsedCaseId <= 0) return false
+    if (!isCaseAssignee || !Number.isFinite(parsedCaseId) || parsedCaseId <= 0) return false
 
     try {
       await fundamentalModelCaseService.deleteCase(parsedCaseId)
@@ -314,10 +318,12 @@ const FundamentalModelPage = () => {
     } catch {
       return false
     }
-  }, [activeCaseId, parsedCaseId, queryClient])
+  }, [activeCaseId, isCaseAssignee, parsedCaseId, queryClient])
 
   const isCaseDetailResolving = Boolean(activeCaseId) && detailLoading && !caseDetail
   const isCompletedCase = effectiveCaseStatus === 'COMPLETED'
+  const isRunActionDisabled = isRunPending || !isCaseAssignee
+  const isCaseEditDeleteDisabled = !isCaseAssignee
   const placeholderMode = useMemo(
     () => (effectiveCaseStatus ? runStatusToPlaceholderMode(effectiveCaseStatus) : null),
     [effectiveCaseStatus],
@@ -372,6 +378,7 @@ const FundamentalModelPage = () => {
         loading={detailLoading}
         onEdit={handleUpdateCase}
         onDelete={handleDeleteCase}
+        caseEditDeleteDisabled={isCaseEditDeleteDisabled}
       />
 
       <Box sx={{ position: 'relative', minWidth: 0 }}>
@@ -446,7 +453,12 @@ const FundamentalModelPage = () => {
         {isCaseDetailResolving && !isCompletedCase ? (
           <FundamentalModelPageSkeleton />
         ) : placeholderMode ? (
-          <FundamentalModelRunPlaceholder mode={placeholderMode} onRun={handleRun} onRetry={handleRetry} runActionDisabled={isRunPending} />
+          <FundamentalModelRunPlaceholder
+            mode={placeholderMode}
+            onRun={handleRun}
+            onRetry={handleRetry}
+            runActionDisabled={isRunActionDisabled}
+          />
         ) : isCompletedCase ? (
           <>
             <Box
@@ -476,7 +488,7 @@ const FundamentalModelPage = () => {
             </Box>
           </>
         ) : (
-          <FundamentalModelRunPlaceholder mode="pending" onRun={handleRun} onRetry={handleRetry} runActionDisabled={isRunPending} />
+          <FundamentalModelRunPlaceholder mode="pending" onRun={handleRun} onRetry={handleRetry} runActionDisabled={isRunActionDisabled} />
         )}
       </Box>
     </Stack>

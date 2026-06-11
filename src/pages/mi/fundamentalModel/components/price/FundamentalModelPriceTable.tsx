@@ -51,8 +51,10 @@ const FundamentalModelPriceTable = <T extends GridRowModel>({
       <MIDataTableHeader<T>
         columns={columns}
         headerCellPx="12px"
-        headerCellPy="8px"
+        headerCellPy="6px"
         headerLabelColor="gray.60"
+        headerLabelLineClamp={2}
+        tooltipWhenHeaderLabelTruncated
         sx={{
           bgcolor: 'gray.5',
           borderBottom: '1px solid',

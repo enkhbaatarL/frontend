@@ -1,4 +1,5 @@
 import CalendarTodayRoundedIcon from '@mui/icons-material/CalendarTodayRounded'
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Divider, FormControlLabel, Stack, Switch, Typography, useTheme } from '@mui/material'
@@ -20,7 +21,6 @@ import { DayPicker, UI } from 'react-day-picker'
 import 'react-day-picker/style.css'
 
 import MIButton from '@/components/common/button/MIButton'
-import CheckIcon from '@/components/common/icons/agent/CheckIcon'
 import MIMaskInput, { MIMaskInputRef } from '@/components/common/input/MIMaskInput'
 import MIMenu, { MIMenuProps } from '@/components/common/menu/MIMenu'
 import { PREDEFINED_MASKS } from '@/constants/masks'
@@ -412,19 +412,39 @@ const MIDateRangePickerMenu = ({
                         handlePresetClick(value)
                       }}
                       borderRadius="10px"
+                      height="36px"
+                      boxSizing="border-box"
                       sx={{
-                        padding: '6px 12px',
+                        padding: '8px 12px 8px 6px',
+                        backgroundColor: isSelected ? 'contentBG.PrimaryFade' : 'transparent',
                         cursor: 'pointer',
                         '&:hover': {
-                          backgroundColor: 'gray.10',
+                          backgroundColor: 'contentBG.Active',
                         },
                         textWrap: 'nowrap',
                       }}
                     >
-                      <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" gap="12px" component="div">
+                      <Stack direction="row" alignItems="center" width="100%" gap="8px" component="div">
+                        <Box
+                          component="span"
+                          display="inline-flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          width="20px"
+                          height="20px"
+                          flexShrink={0}
+                        >
+                          <CheckRoundedIcon
+                            fontSize="small"
+                            sx={{
+                              color: 'mari.Primary',
+                              opacity: isSelected ? 1 : 0,
+                            }}
+                          />
+                        </Box>
                         <Typography
                           variant="body2M14"
-                          color={isSelected ? 'gray.70' : 'gray.60'}
+                          color={isSelected ? 'contentText.Black' : 'contentText.Normal'}
                           sx={{
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -434,9 +454,6 @@ const MIDateRangePickerMenu = ({
                         >
                           {presetLabel}
                         </Typography>
-                        <Box width="20px" height="20px">
-                          {isSelected && <CheckIcon fill="gray.70" />}
-                        </Box>
                       </Stack>
                     </Box>
                   )

@@ -87,7 +87,7 @@ const FundamentalModelRunPlaceholder = ({ mode, onRun, onRetry, runActionDisable
                 width: '100%',
               }}
             >
-              {'실행에 실패했습니다.\n잠시 후 다시 시도하시거나 재실행 버튼을 눌러주세요.'}
+              {'실행에 실패했습니다. 잠시 후 다시 시도하시거나 재실행 버튼을 눌러주세요.\n실행은 파일을 업로드한 사용자만 가능합니다.'}
             </Typography>
           </Stack>
           <MIBaseButton variant="contained" disabled={runActionDisabled} onClick={onRetry} sx={{ py: '10px', px: '16px' }}>
@@ -108,7 +108,7 @@ const FundamentalModelRunPlaceholder = ({ mode, onRun, onRetry, runActionDisable
             실행 대기 중
           </Typography>
           <Typography sx={{ fontSize: 16, fontWeight: 400, lineHeight: 1.4, color: 'gray.70', textAlign: 'center' }}>
-            실행 버튼을 눌러 시작하세요.
+            실행 버튼을 눌러 시작하세요. 실행은 파일을 업로드한 사용자만 가능합니다.
           </Typography>
         </Stack>
         <MIBaseButton variant="contained" disabled={runActionDisabled} onClick={onRun} sx={{ py: '10px', px: '16px' }}>

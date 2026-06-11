@@ -4,7 +4,6 @@ import dayjs from 'dayjs'
 import { ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
-import remarkGfm from 'remark-gfm'
 
 import aiIcon from '@/assets/ai.svg'
 import crudeOilIcon from '@/assets/icons/crude-oil.png'
@@ -17,6 +16,7 @@ import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDow
 import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import forecastDataService from '@/service/mi/forecast'
 import { downloadFile } from '@/utils/file'
+import { markdownRemarkPlugins } from '@/utils/markdown'
 import { formatValue } from '@/utils/number'
 
 interface InfoLabelProps {
@@ -406,7 +406,7 @@ const ForecastReportCardReportContent = ({
         {/* explanatorySummaryContent 마크다운 표시 */}
         {processedSummaryContent && (
           <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={markdownRemarkPlugins}
             rehypePlugins={[rehypeRaw]}
             components={{
               p: ({ node, children, ...props }) => {

@@ -397,6 +397,7 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
               height="100%"
               maxHeight="100%"
               scrollbarGap={LIST_SCROLLBAR_GAP}
+              reserveScrollbarGap
               thumbInsetTop={6}
               thumbInsetBottom={6}
               thumbWidth={4}

@@ -33,6 +33,7 @@ const NextGenMIHoverLinkCell = ({ value, onClick, variant = 'body1SB16', ariaLab
       font: 'inherit',
       cursor: 'pointer',
       textAlign: 'left',
+      width: 'fit-content',
       '&:hover': {
         color: 'mari.Primary',
       },

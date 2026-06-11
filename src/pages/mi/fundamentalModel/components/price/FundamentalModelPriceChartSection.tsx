@@ -2,10 +2,11 @@ import { Box, Stack, Typography, useTheme } from '@mui/material'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { FundamentalModelPriceChart } from '@/service/mi/fundamentalModel/case'
-import type { IScenarioPriceForecast } from '@/service/mi/nextGenMI/scenario'
+import type { ScenarioPriceForecast } from '@/types/dataDetailChart'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import { buildDistinctSeriesColors } from '@/pages/mi/nextGenMI/components/common/nextGenMISeriesColors'
 import ScenarioSummaryChart from '@/pages/mi/nextGenMI/components/common/ScenarioSummaryChart'
@@ -18,7 +19,7 @@ interface FundamentalModelPriceChartSectionProps {
 
 const toDateLabel = (point: { year: number; month: number }): string => `${point.year}-${String(point.month).padStart(2, '0')}`
 
-const buildPriceForecast = (priceChart: FundamentalModelPriceChart | null, selectedPriceRegion: string): IScenarioPriceForecast => {
+const buildPriceForecast = (priceChart: FundamentalModelPriceChart | null, selectedPriceRegion: string): ScenarioPriceForecast => {
   const seriesSets = priceChart?.seriesSets ?? []
   const selectedSeriesSet = seriesSets.find((item) => item.priceRegion === selectedPriceRegion) ?? seriesSets[0]
   const selectedSeries = selectedSeriesSet?.series ?? []
@@ -51,7 +52,7 @@ const resolvePriceSeriesColor = (label: string, fallback: string): string => {
   return fallback
 }
 
-const formatPriceChartUnit = (priceForecast: IScenarioPriceForecast): string => {
+const formatPriceChartUnit = (priceForecast: ScenarioPriceForecast): string => {
   const currency = priceForecast.currency?.trim()
   const rawUnit = priceForecast.unit?.trim()
   const unit = rawUnit && rawUnit.toLowerCase() === 'mmbtu' ? 'MMBtu' : rawUnit
@@ -125,6 +126,7 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
             hideLegend
             chartColorMap={priceChartColorMap}
             showHeaderLegend
+            headerLegendLabelColor="gray.70"
             headerStart={
               <Typography variant="body3SB12" color="contentText.Subtext" noWrap sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
                 {chartUnit}
@@ -132,6 +134,15 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
             }
             headerEnd={
               <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="8px" flexWrap="wrap" maxWidth="100%">
+                <MISelectMenu
+                  variant="text"
+                  selected={'MONTHLY'}
+                  onSelected={() => {}}
+                  items={[
+                    { value: 'MONTHLY', label: 'Monthly' },
+                    { value: 'YEARLY', label: 'Yearly' },
+                  ]}
+                />
                 {priceRegionOptions.length > 0 && (
                   <MISlidingSegmented
                     options={priceRegionOptions}
@@ -144,7 +155,7 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
                 )}
                 <MIBaseButton
                   id="fundamental-model-price-chart-download-button"
-                  variant="outlined"
+                  variant="text"
                   aria-label="Download chart"
                   onClick={handleDownloadChart}
                   isLoading={isDownloadingChart}

@@ -1,4 +1,4 @@
-import { CheckRounded, KeyboardArrowDownRounded, KeyboardArrowUpRounded } from '@mui/icons-material'
+import { CheckBox, CheckBoxOutlineBlank, CheckRounded, KeyboardArrowDownRounded, KeyboardArrowUpRounded } from '@mui/icons-material'
 import { Box, Typography, Stack, Switch, ButtonProps, PaperProps, ListSubheader, Divider } from '@mui/material'
 import { ReactNode, useMemo, useState, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -194,14 +194,31 @@ const MISelectMenu = <T,>({
     }
   }, [items, multiple, placeholder, selected, t])
 
-  const renderSuffix = (isSelected: boolean, itemDisabled?: boolean): ReactNode => {
-    if (selectType === 'default' && !multiple) {
-      return (
-        <Box width="20px" height="20px">
-          {isSelected && <CheckRounded fontSize="small" sx={{ color: 'contentIcon.ActivePrimary' }} />}
-        </Box>
+  const renderSelectionIcon = (isSelected: boolean, itemDisabled?: boolean): ReactNode => {
+    if (selectType !== 'default') {
+      return undefined
+    }
+
+    if (multiple) {
+      return isSelected ? (
+        <CheckBox sx={{ width: '20px', height: '20px', color: itemDisabled ? 'contentIcon.Disabled' : 'mari.Primary' }} />
+      ) : (
+        <CheckBoxOutlineBlank sx={{ width: '20px', height: '20px', color: 'contentIcon.Disabled' }} />
       )
     }
+
+    return (
+      <CheckRounded
+        fontSize="small"
+        sx={{
+          color: itemDisabled ? 'contentIcon.Disabled' : 'mari.Primary',
+          opacity: isSelected ? 1 : 0,
+        }}
+      />
+    )
+  }
+
+  const renderSuffix = (isSelected: boolean, itemDisabled?: boolean): ReactNode => {
     if (selectType === 'switch') {
       return <Switch checked={isSelected} size="small" disabled={itemDisabled} style={{ margin: '0 4px 0 8px' }} />
     }
@@ -210,20 +227,34 @@ const MISelectMenu = <T,>({
 
   const renderMenuItem = ({ icon, label, value, disabled: itemDisabled }: SelectMenuItem<T>) => {
     const isSelected = isItemSelected(value)
-    const prefix = icon
+    const selectionIcon = renderSelectionIcon(isSelected, itemDisabled)
+    const prefix =
+      selectionIcon !== undefined ? (
+        <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
+          <Box component="span" display="inline-flex" alignItems="center" justifyContent="center" width="20px" height="20px" flexShrink={0}>
+            {selectionIcon}
+          </Box>
+          {icon}
+        </Stack>
+      ) : (
+        icon
+      )
     const suffix = renderSuffix(isSelected, itemDisabled)
-    const labelColor = isSelected ? undefined : 'contentText.Subtext'
+    const labelColor = itemDisabled ? 'contentText.Disabled' : isSelected ? 'contentText.Black' : 'contentText.Normal'
 
     return (
       <Box
         key={String(value)}
         onClick={() => (itemDisabled ? null : handleToggle(value))}
         borderRadius="10px"
+        height="36px"
+        boxSizing="border-box"
         sx={{
-          padding: `8px ${suffix ? '8px' : '12px'} 8px ${prefix ? '8px' : '12px'}`,
+          padding: `8px ${suffix ? '8px' : '12px'} 8px ${selectionIcon !== undefined ? '6px' : icon ? '8px' : '12px'}`,
+          backgroundColor: itemDisabled ? 'transparent' : isSelected ? 'contentBG.PrimaryFade' : 'transparent',
           cursor: itemDisabled ? 'default' : 'pointer',
           '&:hover': {
-            backgroundColor: itemDisabled ? 'transparent' : 'gray.10',
+            backgroundColor: itemDisabled ? 'transparent' : 'contentBG.Active',
           },
           textWrap: 'nowrap',
         }}
@@ -234,7 +265,7 @@ const MISelectMenu = <T,>({
           justifyContent="space-between"
           width="100%"
           minWidth={(props.sx as Record<string, unknown>)?.minWidth as string | number}
-          gap="12px"
+          gap="8px"
           component="div"
         >
           <MIBaseButtonLabel prefix={prefix} suffix={suffix} color={labelColor} variant="body2M14">
@@ -292,6 +323,8 @@ const MISelectMenu = <T,>({
   }
 
   const hasExternalLabel = externalLabel !== undefined
+  const buttonLabelColor =
+    !hasExternalLabel && externalTextLabel === undefined ? (disabled ? 'contentText.Disabled' : 'contentText.Normal') : undefined
 
   const menuLabel = hasExternalLabel ? (
     <Stack direction="row" alignItems="stretch" flex={1} minWidth={0}>
@@ -374,6 +407,7 @@ const MISelectMenu = <T,>({
       disableRipple={disableRipple}
       buttonHoverBgColor={buttonHoverBgColor}
       disabled={disabled}
+      labelColor={buttonLabelColor}
       {...props}
       sx={{
         ...(typeof props.sx === 'object' && !Array.isArray(props.sx) ? (props.sx as Record<string, unknown>) : {}),
@@ -406,7 +440,7 @@ const MISelectMenu = <T,>({
           padding: '0',
         }}
       >
-        <Stack gap="8px" padding={footer ? '12px 12px 0 12px' : '12px'}>
+        <Stack gap="4px" padding={footer ? '12px 12px 0 12px' : '12px'}>
           {renderMenuItems()}
         </Stack>
       </ScrollWrapper>

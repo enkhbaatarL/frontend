@@ -27,6 +27,8 @@ export interface FundamentalModelDetailHeaderProps {
   onEdit?: (payload: FundamentalModelCaseEditPayload) => boolean | void | Promise<boolean | void>
   /** 삭제 확인 (DELETE case) */
   onDelete?: () => boolean | void | Promise<boolean | void>
+  /** 담당자가 아닐 때 수정·삭제 메뉴 숨김 */
+  caseEditDeleteDisabled?: boolean
   /** 대시보드(아웃풋) 엑셀보내기 */
   onExportDashboardExcel?: () => void
   /** 중간파일 zip보내기 */
@@ -132,6 +134,7 @@ const FundamentalModelDetailHeader = ({
   loading = false,
   onEdit,
   onDelete,
+  caseEditDeleteDisabled = false,
   onExportDashboardExcel,
   onExportIntermediateZip,
 }: FundamentalModelDetailHeaderProps) => {
@@ -307,25 +310,27 @@ const FundamentalModelDetailHeader = ({
                 },
               }}
             />
-            <MIDropdownMenu
-              label={<MoreVertIcon />}
-              variant="outlined"
-              placement="bottom-end"
-              disabled={headerActionsDisabled}
-              items={[
-                { label: '수정', action: openEditPopup },
-                { label: '삭제', action: openDeleteConfirm },
-              ]}
-              sx={{
-                height: '36px',
-                padding: '8px',
-              }}
-              paperProps={{
-                sx: {
-                  minWidth: '120px',
-                },
-              }}
-            />
+            {!caseEditDeleteDisabled && (
+              <MIDropdownMenu
+                label={<MoreVertIcon />}
+                variant="outlined"
+                placement="bottom-end"
+                disabled={headerActionsDisabled}
+                items={[
+                  { label: '수정', action: openEditPopup },
+                  { label: '삭제', action: openDeleteConfirm },
+                ]}
+                sx={{
+                  height: '36px',
+                  padding: '8px',
+                }}
+                paperProps={{
+                  sx: {
+                    minWidth: '120px',
+                  },
+                }}
+              />
+            )}
           </Stack>
         </Stack>
 
