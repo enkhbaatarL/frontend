@@ -117,9 +117,9 @@ export interface IScenarioGroupDetailRes {
 /** 시나리오 상세 - Signpost 정의 */
 export interface IScenarioSignpostDefinition {
   label: string
-  direction: 'up' | 'down'
+  direction: 'sup'
   directionLabel: string
-  strength: number
+  probabilityImpact: number
   rationale: string
 }
 

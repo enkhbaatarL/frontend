@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios'
 
-import type { IScenarioDimension, IScenarioDimensionColumn } from '@/service/mi/nextGenMI/scenarioGroup'
+import type { IScenarioDimension, IScenarioDimensionColumn, ScenarioJudgementStatus } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import api from '@/lib/axios'
 import { MarketDirection, MarketImpactLevel } from '@/service/mi/nextGenMI/common'
@@ -120,33 +120,20 @@ export interface EventDriverTreeIndex {
   drivers?: DriverTreeScoreboard[]
 }
 
-export interface RelatedEvent {
-  eventId: number
-  eventName: string
-  createdAt: string
-  updatedAt: string
-  eventTypeLv1?: string | null
-  eventTypeLv1Label?: string | null
-  indexImpacts?: EventImpactIndexRes[]
-}
-
-export interface RelatedScenarioImpactIndex {
-  indexName: string
-  marketImpactLevel: EventImpactMarketImpactLevel
-  marketImpactLevelLabel?: string | null
-}
-
 export interface RelatedScenario {
   scenarioId: number
   scenarioName: string
   baseCase: boolean
-  indexImpacts?: RelatedScenarioImpactIndex[]
-  probability: number
   dimensions?: IScenarioDimension[]
+  probability: number
+  adjustedProbability?: number
+  status?: ScenarioJudgementStatus
+  statusLabel?: string
 }
 
 export interface RelatedEventScenario {
-  event?: RelatedEvent | null
+  scenarioGroupId?: number
+  groupName?: string
   dimensionColumns?: IScenarioDimensionColumn[]
   scenarios?: RelatedScenario[]
 }

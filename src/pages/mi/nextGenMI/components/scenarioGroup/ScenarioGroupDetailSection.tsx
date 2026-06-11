@@ -165,12 +165,12 @@ const SignpostDefinitionTable = ({ definitions, loading = false }: SignpostDefin
         ),
       },
       {
-        field: 'strength',
+        field: 'probabilityImpact',
         headerName: '영향도',
         width: '120px',
         align: 'center',
         headerAlign: 'center',
-        renderCell: ({ row }) => <NextGenMITableBodyText value={`${row.strength}%`} color="contentText.Black" align="center" />,
+        renderCell: ({ row }) => <NextGenMITableBodyText value={`${row.probabilityImpact}%`} color="contentText.Black" align="center" />,
       },
       {
         field: 'rationale',

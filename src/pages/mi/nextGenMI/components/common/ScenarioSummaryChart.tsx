@@ -3,14 +3,13 @@ import { Box, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 
-import type { IScenarioPriceForecast } from '@/service/mi/nextGenMI/scenario'
-import type { ChartData } from '@/types/dataDetailChart'
+import type { ChartData, ScenarioPriceForecast } from '@/types/dataDetailChart'
 
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import { buildDistinctSeriesColors } from '@/pages/mi/nextGenMI/components/common/nextGenMISeriesColors'
+import ScenarioModelExecutionGeneratingState from '@/pages/mi/nextGenMI/components/common/ScenarioModelExecutionGeneratingState'
 import ScenarioSummaryChartGraph from '@/pages/mi/nextGenMI/components/common/ScenarioSummaryChartGraph'
-import ScenarioModelExecutionGeneratingState from '@/pages/mi/nextGenMI/components/scenario/ScenarioModelExecutionGeneratingState'
 import { ChartType } from '@/types/dataDetailChart'
 
 const CHART_HEIGHT = 480
@@ -52,7 +51,7 @@ const buildTimestamps = (dates: string[], valueCount: number): string[] => {
   })
 }
 
-const buildChartUnit = (priceForecast: IScenarioPriceForecast): string => {
+const buildChartUnit = (priceForecast: ScenarioPriceForecast): string => {
   if (priceForecast.currency && priceForecast.unit) return `Unit: ${priceForecast.currency}/${priceForecast.unit}`
   if (priceForecast.currency) return `Unit: ${priceForecast.currency}`
   if (priceForecast.unit) return `Unit: ${priceForecast.unit}`
@@ -106,7 +105,7 @@ const LegendEllipsisLabel = ({ label, isShow, isHighlighted, legendDimmed, label
 }
 
 interface ScenarioSummaryChartProps {
-  priceForecast: IScenarioPriceForecast
+  priceForecast: ScenarioPriceForecast
   suppressChartHeader?: boolean
   headerStart?: ReactNode
   headerEnd?: ReactNode

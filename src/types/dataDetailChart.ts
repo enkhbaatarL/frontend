@@ -74,3 +74,16 @@ export interface DataDetailChart {
   indicators: Indicator[]
   comparisonCharts: ChartData[]
 }
+
+export interface ScenarioPriceSeries {
+  indexName: string
+  values: number[]
+  scenarioId?: number
+}
+
+export interface ScenarioPriceForecast {
+  currency: string
+  unit: string
+  dates: string[]
+  series: ScenarioPriceSeries[]
+}
