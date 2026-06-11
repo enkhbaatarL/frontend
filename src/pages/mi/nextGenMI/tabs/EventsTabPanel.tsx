@@ -10,6 +10,7 @@ import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
+import MIDataTableCellText from '@/components/common/table/MIDataTableCellText'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { buildNextGenMIDatePresets, defaultNextGenMIDateRange } from '@/pages/mi/nextGenMI/components/common/nextGenMIDateRange'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
@@ -164,7 +165,15 @@ const EventsTabPanel = () => {
         headerName: '카테고리',
         width: 140,
         align: 'left',
-        renderCell: (params) => <Typography variant="body2M14">{params.row.eventTypeLv1Label}</Typography>,
+        renderCell: (params) => (
+          <MIDataTableCellText
+            value={params.row.eventTypeLv1Label ?? ''}
+            variant="body2M14"
+            color="contentText.Black"
+            tooltipWhenTruncated
+            sx={{ width: '100%', minWidth: 0 }}
+          />
+        ),
       },
       {
         field: '__recommended',
