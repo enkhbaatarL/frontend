@@ -43,7 +43,7 @@ export interface EventListItemRes {
   eventTypeLv1Label?: string
   updatedAt: string
   createdAt: string
-  latestCreatedAt: string
+  latestRecordFirstCreated: string
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
   indexImpacts: EventImpactIndexRes[]
