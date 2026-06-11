@@ -102,7 +102,7 @@ const ScenarioIndividualTable = ({ scenarios, loading, skeletonRowCount }: Scena
       {
         field: 'probability',
         headerName: '발생가능성',
-        width: '80px',
+        width: '100px',
         align: 'center',
         renderCell: ({ row }) => (
           <Stack width="100%" alignItems="center">

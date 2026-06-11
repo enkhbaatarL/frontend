@@ -1,6 +1,6 @@
 import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 
 import type {
   IScenarioDimension,
@@ -9,72 +9,236 @@ import type {
   IScenarioSignpostMonitoring,
 } from '@/service/mi/nextGenMI/scenarioGroup'
 
+import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
+import {
+  NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
+  NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
+  NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS,
+  NEXT_GEN_MI_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED,
+} from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
+import { NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID } from '@/pages/mi/nextGenMI/nextGenMIScroll'
 import { probabilityToLikelihoodLabel } from '@/pages/mi/nextGenMI/utils/probabilityFormatting'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
+
+const SCENARIO_DETAIL_SIDEBAR_WIDTH = '300px'
+const SCENARIO_DETAIL_STICKY_GAP_PX = 20
+const SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX = 42
+const SCENARIO_DETAIL_STICKY_TOP_FALLBACK_PX = NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX.collapsed + 80
 
 interface ScenarioSelectSidebarProps {
   scenarios: IScenarioGroupDetailRow[]
   selectedScenarioId?: number
+  stickyTopPx: number
+  headingSlot?: ReactNode
   loading?: boolean
   onSelect: (scenarioId: number) => void
 }
 
-const ScenarioSelectSidebar = ({ scenarios, selectedScenarioId, loading = false, onSelect }: ScenarioSelectSidebarProps) => (
-  <Stack width="300px" flexShrink={0} gap="6px">
-    {loading
-      ? Array.from({ length: 4 }).map((_, index) => (
-        <Skeleton key={`skeleton-${index}`} variant="rounded" height={48} sx={{ borderRadius: '10px' }} />
-      ))
-      : scenarios.map((scenario) => {
-        const isSelected = scenario.scenarioId === selectedScenarioId
-        return (
-          <Stack
-            key={scenario.scenarioId}
-            role="button"
-            tabIndex={0}
-            direction="row"
-            alignItems="center"
-            gap="6px"
-            height="48px"
-            padding="10px 12px"
-            borderRadius="10px"
-            onClick={() => onSelect(scenario.scenarioId)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault()
-                onSelect(scenario.scenarioId)
-              }
-            }}
-            sx={{
-              boxSizing: 'border-box',
-              cursor: 'pointer',
-              bgcolor: isSelected ? 'contentBG.Active' : 'transparent',
-              border: '1px solid',
-              borderColor: isSelected ? 'contentBorder.Active' : 'transparent',
-              transition: 'background-color 120ms ease, border-color 120ms ease',
-              '&:hover': { bgcolor: isSelected ? 'contentBG.Active' : 'gray.10' },
-            }}
+const ScenarioSelectSidebar = ({
+  scenarios,
+  selectedScenarioId,
+  stickyTopPx,
+  headingSlot,
+  loading = false,
+  onSelect,
+}: ScenarioSelectSidebarProps) => {
+  const maxHeight = `calc(100vh - ${stickyTopPx + 24}px)`
+  const listMaxHeight = headingSlot ? `calc(${maxHeight} - ${SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX}px)` : maxHeight
+  const scenarioItems: ReactNode[] = []
+
+  if (loading) {
+    Array.from({ length: 4 }).forEach((_, index) => {
+      scenarioItems.push(<Skeleton key={`skeleton-${index}`} variant="rounded" height="48px" sx={{ borderRadius: '10px' }} />)
+    })
+  } else {
+    scenarios.forEach((scenario) => {
+      const isSelected = scenario.scenarioId === selectedScenarioId
+      scenarioItems.push(
+        <Stack
+          key={scenario.scenarioId}
+          role="button"
+          tabIndex={0}
+          direction="row"
+          alignItems="center"
+          gap="6px"
+          height="48px"
+          padding="10px 12px"
+          borderRadius="10px"
+          onClick={() => onSelect(scenario.scenarioId)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              onSelect(scenario.scenarioId)
+            }
+          }}
+          sx={{
+            boxSizing: 'border-box',
+            cursor: 'pointer',
+            bgcolor: isSelected ? 'contentBG.Active' : 'transparent',
+            border: '1px solid',
+            borderColor: isSelected ? 'contentBorder.Active' : 'transparent',
+            transition: 'background-color 120ms ease, border-color 120ms ease',
+            '&:hover': { bgcolor: isSelected ? 'contentBG.Active' : 'gray.10' },
+          }}
+        >
+          {scenario.baseCase && <NextGenMIBaseCaseChip />}
+          <Typography
+            variant={isSelected ? 'body1SB16' : 'body1M16'}
+            color={isSelected ? 'contentText.Black' : 'contentText.Normal'}
+            noWrap
+            title={scenario.scenarioName}
+            sx={{ minWidth: 0 }}
           >
-            {scenario.baseCase && <NextGenMIBaseCaseChip />}
-            <Typography
-              variant={isSelected ? 'body1SB16' : 'body1M16'}
-              color={isSelected ? 'contentText.Black' : 'contentText.Normal'}
-              noWrap
-              title={scenario.scenarioName}
-              sx={{ minWidth: 0 }}
-            >
-              {scenario.scenarioName}
-            </Typography>
-          </Stack>
-        )
-      })}
-  </Stack>
-)
+            {scenario.scenarioName}
+          </Typography>
+        </Stack>,
+      )
+    })
+  }
+
+  return (
+    <Stack
+      width={SCENARIO_DETAIL_SIDEBAR_WIDTH}
+      flexShrink={0}
+      alignSelf="flex-start"
+      gap="12px"
+      sx={{
+        position: 'sticky',
+        top: `${stickyTopPx}px`,
+        maxHeight,
+        zIndex: 6,
+      }}
+    >
+      {headingSlot}
+      <ScrollWrapper
+        maxHeight={listMaxHeight}
+        scrollbarGap={8}
+        reserveScrollbarGap
+        thumbInsetTop={4}
+        thumbInsetBottom={4}
+        thumbWidth={4}
+        thumbMaxHeight={78}
+        showScrollbarOnHover
+        overscrollBehavior="auto"
+        contentKey={loading ? 'loading' : scenarios.length}
+        sx={{ width: '100%' }}
+      >
+        <Stack gap="6px">{scenarioItems}</Stack>
+      </ScrollWrapper>
+    </Stack>
+  )
+}
+
+const useScenarioDetailStickyTop = () => {
+  const [stickyTopPx, setStickyTopPx] = useState(SCENARIO_DETAIL_STICKY_TOP_FALLBACK_PX)
+  const observedHeaderRef = useRef<HTMLElement | null>(null)
+  const resizeObserverRef = useRef<ResizeObserver | null>(null)
+
+  useLayoutEffect(() => {
+    let rafId = 0
+
+    let measure = () => {
+      rafId = 0
+    }
+
+    const scheduleMeasure = () => {
+      if (rafId !== 0) return
+      rafId = globalThis.requestAnimationFrame(measure)
+    }
+
+    const syncObservedHeader = (nextHeader: HTMLElement | null) => {
+      if (observedHeaderRef.current === nextHeader) return
+
+      if (observedHeaderRef.current) {
+        observedHeaderRef.current.removeEventListener('transitionend', scheduleMeasure)
+      }
+      resizeObserverRef.current?.disconnect()
+      observedHeaderRef.current = nextHeader
+
+      if (!nextHeader) return
+
+      resizeObserverRef.current = new ResizeObserver(scheduleMeasure)
+      resizeObserverRef.current.observe(nextHeader)
+      nextHeader.addEventListener('transitionend', scheduleMeasure)
+    }
+
+    measure = () => {
+      rafId = 0
+      const stickyHeader = document.querySelector<HTMLElement>('.main-header [data-sticky-header]')
+      syncObservedHeader(stickyHeader)
+
+      const nextTop = stickyHeader
+        ? Math.round(stickyHeader.getBoundingClientRect().bottom + SCENARIO_DETAIL_STICKY_GAP_PX)
+        : SCENARIO_DETAIL_STICKY_TOP_FALLBACK_PX
+
+      setStickyTopPx((current) => (Math.abs(current - nextTop) < 1 ? current : nextTop))
+    }
+
+    const scrollEl = document.getElementById(NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID)
+
+    measure()
+    rafId = globalThis.requestAnimationFrame(measure)
+    scrollEl?.addEventListener('scroll', scheduleMeasure, { passive: true })
+    globalThis.addEventListener('resize', scheduleMeasure)
+
+    return () => {
+      if (rafId !== 0) globalThis.cancelAnimationFrame(rafId)
+      scrollEl?.removeEventListener('scroll', scheduleMeasure)
+      globalThis.removeEventListener('resize', scheduleMeasure)
+      observedHeaderRef.current?.removeEventListener('transitionend', scheduleMeasure)
+      resizeObserverRef.current?.disconnect()
+    }
+  }, [])
+
+  return stickyTopPx
+}
+
+const useScenarioDetailStickyPinned = (stickyRef: RefObject<HTMLElement | null>, stickyTopPx: number) => {
+  const [pinned, setPinned] = useState(false)
+
+  useLayoutEffect(() => {
+    const scrollEl = document.getElementById(NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID)
+    const stickyEl = stickyRef.current
+    if (!scrollEl || !stickyEl) {
+      setPinned(false)
+      return undefined
+    }
+
+    let rafId = 0
+
+    const measure = () => {
+      rafId = 0
+      const nextPinned = stickyEl.getBoundingClientRect().top <= stickyTopPx + 0.5
+      setPinned((current) => (current === nextPinned ? current : nextPinned))
+    }
+
+    const scheduleMeasure = () => {
+      if (rafId !== 0) return
+      rafId = globalThis.requestAnimationFrame(measure)
+    }
+
+    measure()
+
+    const resizeObserver = new ResizeObserver(scheduleMeasure)
+    resizeObserver.observe(stickyEl)
+    scrollEl.addEventListener('scroll', scheduleMeasure, { passive: true })
+    globalThis.addEventListener('resize', scheduleMeasure)
+
+    return () => {
+      if (rafId !== 0) globalThis.cancelAnimationFrame(rafId)
+      resizeObserver.disconnect()
+      scrollEl.removeEventListener('scroll', scheduleMeasure)
+      globalThis.removeEventListener('resize', scheduleMeasure)
+    }
+  }, [stickyRef, stickyTopPx])
+
+  return pinned
+}
 
 interface ScenarioAssumptionCardsProps {
   dimensions: IScenarioDimension[]
@@ -215,8 +379,9 @@ const SignpostMonitoringTable = ({ monitorings, loading = false }: SignpostMonit
       {
         field: 'updatedAt',
         headerName: '업데이트 일시',
-        width: '100px',
-        headerCellSx: SIGNPOST_FIRST_HEADER_CELL_SX,
+        width: '110px',
+        // headerCellSx: SIGNPOST_FIRST_HEADER_CELL_SX,
+        align: 'center',
         renderCell: ({ row }) => (
           <NextGenMITableBodyText value={formatNextGenMIDateTime(row.updatedAt, 'YYYY-MM-DD')} color="contentText.Black" />
         ),
@@ -272,6 +437,7 @@ interface ScenarioGroupDetailSectionProps {
   scenarioGroupId: string
   scenarios: IScenarioGroupDetailRow[]
   selectedScenarioId?: number
+  headingSlot?: ReactNode
   listLoading?: boolean
   onSelectScenario: (scenarioId: number) => void
 }
@@ -286,9 +452,13 @@ const ScenarioGroupDetailSection = ({
   scenarioGroupId,
   scenarios,
   selectedScenarioId,
+  headingSlot,
   listLoading = false,
   onSelectScenario,
 }: ScenarioGroupDetailSectionProps) => {
+  const stickyTopPx = useScenarioDetailStickyTop()
+  const rightHeaderRef = useRef<HTMLDivElement>(null)
+  const rightHeaderPinned = useScenarioDetailStickyPinned(rightHeaderRef, stickyTopPx)
   const { data, isLoading } = useQuery({
     queryKey: ['nextGenMIScenarioGroupScenarioDetail', scenarioGroupId, selectedScenarioId],
     queryFn: () => nextGenMIScenarioGroupService.getScenarioDetail(scenarioGroupId, selectedScenarioId ?? ''),
@@ -300,16 +470,50 @@ const ScenarioGroupDetailSection = ({
   const detailLoading = isLoading || (Boolean(selectedScenarioId) && !data)
 
   return (
-    <Stack direction="row" gap="24px" alignItems="flex-start">
+    <Stack
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: `${SCENARIO_DETAIL_SIDEBAR_WIDTH} minmax(0, 1fr)`,
+        alignItems: 'stretch',
+        columnGap: '24px',
+      }}
+    >
       <ScenarioSelectSidebar
         scenarios={scenarios}
         selectedScenarioId={selectedScenarioId}
+        stickyTopPx={stickyTopPx}
+        headingSlot={headingSlot}
         loading={listLoading}
         onSelect={onSelectScenario}
       />
 
-      <Stack flex={1} minWidth={0} gap="24px">
-        <Stack gap="6px" width="100%" pb="40px" sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}>
+      <Stack flex={1} minWidth={0} gap="12px" pt={headingSlot ? `${SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX}px` : 0}>
+        <Stack
+          ref={rightHeaderRef}
+          gap="6px"
+          width="100%"
+          pb="24px"
+          sx={{
+            position: 'sticky',
+            top: `${stickyTopPx}px`,
+            zIndex: 7,
+            bgcolor: 'commonColor.White',
+            borderBottom: '1px solid',
+            borderColor: 'contentBorder.Normal',
+            boxShadow: rightHeaderPinned ? NEXT_GEN_MI_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
+            clipPath: `inset(-${SCENARIO_DETAIL_STICKY_GAP_PX}px 0 -20px 0)`,
+            transition: `box-shadow ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: `-${SCENARIO_DETAIL_STICKY_GAP_PX}px`,
+              height: `${SCENARIO_DETAIL_STICKY_GAP_PX}px`,
+              bgcolor: 'commonColor.White',
+            },
+          }}
+        >
           {detailLoading ? (
             <>
               <Skeleton variant="rounded" width={120} height={20} sx={{ borderRadius: '6px' }} />
@@ -348,7 +552,7 @@ const ScenarioGroupDetailSection = ({
                 <Skeleton variant="rounded" sx={{ flex: 1, borderRadius: '10px' }} />
               ) : (
                 <Stack flex={1} alignItems="flex-start" gap="4px" bgcolor="gray.5" borderRadius="10px" padding="20px 16px">
-                  <ScenarioPossibilityGauge probability={data?.probability ?? 0} hideBackground />
+                  <ScenarioPossibilityGauge probability={data?.probability ?? 0} hideBackground hideTooltip />
                   <Typography fontSize="15px" fontWeight={500} lineHeight={1.6} color="contentText.Black">
                     {typeof data?.probability === 'number' ? probabilityToLikelihoodLabel(data.probability / 100) : '-'}
                   </Typography>

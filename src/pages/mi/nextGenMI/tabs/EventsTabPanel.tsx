@@ -145,7 +145,7 @@ const EventsTabPanel = () => {
       {
         field: 'latestRecordFirstCreated',
         headerName: '일시',
-        width: 100,
+        width: 110,
         align: 'left',
         headerAlign: 'left',
         renderCell: (params) => <Typography variant="body2M14">{formatNextGenMIDateTime(params.row.latestRecordFirstCreated)}</Typography>,

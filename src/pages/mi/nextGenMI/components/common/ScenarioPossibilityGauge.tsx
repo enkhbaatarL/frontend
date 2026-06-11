@@ -6,13 +6,43 @@ import { FILLED_BARS_TO_LABEL, probabilityToFilledBars } from '@/pages/mi/nextGe
 type ScenarioPossibilityGaugeProps = {
   /** 발생 확률 (0~100 정수) */
   probability: number
-  /** 배경 hover 영역과 패딩 숨김 여부 */
   hideBackground?: boolean
+  hideTooltip?: boolean
 }
 
 /** 발생가능성 게이지 — 6x6 사각 5개 (채움/빈칸), 36px justify-between */
-const ScenarioPossibilityGauge = ({ probability, hideBackground = false }: ScenarioPossibilityGaugeProps) => {
+const ScenarioPossibilityGauge = ({ probability, hideBackground = false, hideTooltip = false }: ScenarioPossibilityGaugeProps) => {
   const filledBars = probabilityToFilledBars(probability / 100)
+
+  const gauge = (
+    <Stack
+      direction="row"
+      display="inline-flex"
+      alignItems="center"
+      justifyContent="center"
+      borderRadius="10px"
+      padding={hideBackground ? '0px' : '12px'}
+      boxSizing="border-box"
+      sx={hideBackground ? undefined : { transition: 'background-color 120ms ease', '&:hover': { bgcolor: 'gray.5' } }}
+    >
+      <Stack direction="row" alignItems="center" justifyContent="space-between" width="36px" height="6px">
+        {[0, 1, 2, 3, 4].map((index) => (
+          <Box
+            key={index}
+            width="6px"
+            height="6px"
+            borderRadius="2px"
+            // 디자인 고유색 (테마 토큰 없음): 채움 핑크 / 빈칸 연하늘
+            bgcolor={index < filledBars ? '#ef1b88' : '#bad1d7'}
+          />
+        ))}
+      </Stack>
+    </Stack>
+  )
+
+  if (hideTooltip) {
+    return gauge
+  }
 
   return (
     <NextGenMIFollowCursorTooltip
@@ -22,38 +52,7 @@ const ScenarioPossibilityGauge = ({ probability, hideBackground = false }: Scena
         </Box>
       }
     >
-      <Stack
-        direction="row"
-        display="inline-flex"
-        alignItems="center"
-        justifyContent="center"
-        borderRadius="10px"
-        padding={hideBackground ? '0px' : '12px'}
-        boxSizing="border-box"
-        sx={
-          hideBackground
-            ? undefined
-            : {
-              transition: 'background-color 120ms ease',
-              '&:hover': {
-                bgcolor: 'gray.5',
-              },
-            }
-        }
-      >
-        <Stack direction="row" alignItems="center" justifyContent="space-between" width="36px" height="6px">
-          {[0, 1, 2, 3, 4].map((index) => (
-            <Box
-              key={index}
-              width="6px"
-              height="6px"
-              borderRadius="2px"
-              // 디자인 고유색 (테마 토큰 없음): 채움 핑크 / 빈칸 연하늘
-              bgcolor={index < filledBars ? '#ef1b88' : '#bad1d7'}
-            />
-          ))}
-        </Stack>
-      </Stack>
+      {gauge}
     </NextGenMIFollowCursorTooltip>
   )
 }
