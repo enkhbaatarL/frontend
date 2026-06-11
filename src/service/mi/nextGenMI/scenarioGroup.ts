@@ -117,9 +117,9 @@ export interface IScenarioGroupDetailRes {
 /** 시나리오 상세 - Signpost 정의 */
 export interface IScenarioSignpostDefinition {
   label: string
-  direction: 'up' | 'down'
+  direction: 'sup'
   directionLabel: string
-  strength: number
+  probabilityImpact: number
   rationale: string
 }
 
@@ -267,6 +267,14 @@ const nextGenMIScenarioGroupService = {
     )
 
     return response.data.data
+  },
+
+  /**
+   * Scenario Group 삭제 (그룹 및 그룹 내 모든 시나리오 제거)
+   * @param scenarioGroupId - 시나리오 그룹 ID
+   */
+  async deleteScenarioGroup(scenarioGroupId: string | number): Promise<void> {
+    await api.delete(`mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}`)
   },
 
   /**

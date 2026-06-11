@@ -11,7 +11,7 @@ import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/c
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import ScenarioGroupInnerTable from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
-import { getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
 interface EventDetailRelatedScenariosSectionProps {
   relatedEventScenario?: RelatedEventScenario | null
@@ -26,12 +26,13 @@ const EventDetailRelatedScenariosSection = ({
 }: EventDetailRelatedScenariosSectionProps) => {
   const navigate = useNavigate()
   const rows = relatedEventScenario?.scenarios ?? []
-  const scenarioGroupLabel = relatedEventScenario?.event?.eventName?.trim() ?? ''
+  const scenarioGroupId = relatedEventScenario?.scenarioGroupId
+  const scenarioGroupLabel = relatedEventScenario?.groupName?.trim() ?? ''
 
-  const hasScenarioGroupLink = scenarioGroupLabel.length > 0 && rows.length > 0
+  const hasScenarioGroupLink = scenarioGroupLabel.length > 0 && scenarioGroupId !== undefined && scenarioGroupId !== null
   const handleScenarioGroupClick = hasScenarioGroupLink
     ? () => {
-      navigate(`${NEXT_GEN_MI_BASE_PATH}/scenarios/${encodeURIComponent(String(rows[0]!.scenarioId))}`)
+      navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId))
     }
     : undefined
 

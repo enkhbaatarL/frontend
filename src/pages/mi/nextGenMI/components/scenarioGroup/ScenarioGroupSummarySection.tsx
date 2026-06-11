@@ -2,6 +2,7 @@ import { Box, Skeleton, Stack, Typography } from '@mui/material'
 
 import type { IScenarioBaseEvent } from '@/service/mi/nextGenMI/scenarioGroup'
 
+import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 
 interface ScenarioGroupSummarySectionProps {
@@ -10,40 +11,71 @@ interface ScenarioGroupSummarySectionProps {
   loading?: boolean
 }
 
-const BaseEventCell = ({ label, value }: { label: string; value: string }) => (
-  <Stack gap="4px" minWidth={0}>
-    <Typography fontSize="13px" fontWeight={600} lineHeight={1.4} color="contentText.Normal" noWrap>
-      {label}
-    </Typography>
-    <Typography variant="body1M16" color="contentText.Black" noWrap title={value}>
-      {value}
-    </Typography>
-  </Stack>
+const BaseEventHeaderCell = ({ label, fixed = false }: { label: string; fixed?: boolean }) => (
+  <Typography
+    width={fixed ? '700px' : undefined}
+    flexShrink={fixed ? 0 : undefined}
+    flex={fixed ? undefined : 1}
+    minWidth={0}
+    fontSize="13px"
+    fontWeight={600}
+    lineHeight={1.4}
+    color="contentText.Black"
+    noWrap
+    title={label}
+    sx={{ padding: '10px 6px' }}
+  >
+    {label}
+  </Typography>
 )
 
 const ScenarioGroupSummarySection = ({ baseEvent, summary, loading = false }: ScenarioGroupSummarySectionProps) => (
   <Stack gap="24px">
-    <Stack gap="8px">
-      <Typography fontSize="15px" fontWeight={700} lineHeight={1.4} color="contentText.Black">
+    <Stack gap="10px">
+      <Typography fontSize="16px" fontWeight={700} lineHeight={1.4} color="contentText.Black">
         Base Event
       </Typography>
       {loading ? (
-        <Skeleton variant="rounded" height={72} sx={{ borderRadius: '10px' }} />
+        <Skeleton variant="rounded" height={80} sx={{ borderRadius: '10px' }} />
       ) : (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr',
-            gap: '12px',
-            bgcolor: 'gray.5',
-            borderRadius: '10px',
-            padding: '20px',
-          }}
-        >
-          <BaseEventCell label="이벤트" value={baseEvent?.eventName ?? '-'} />
-          <BaseEventCell label="이벤트 유형" value={baseEvent?.eventTypeLv1Label ?? '-'} />
-          <BaseEventCell label="업데이트 일시" value={formatNextGenMIDateTimeYmdHm(baseEvent?.updatedAt)} />
-        </Box>
+        <Stack width="100%" bgcolor="gray.5" borderRadius="10px" padding="16px">
+          <Stack
+            direction="row"
+            alignItems="center"
+            height="30px"
+            sx={{ borderBottom: '0.5px solid', borderColor: 'contentBorder.Active' }}
+          >
+            <BaseEventHeaderCell label="이벤트" fixed />
+            <BaseEventHeaderCell label="이벤트 유형" />
+            <BaseEventHeaderCell label="업데이트 일시" />
+          </Stack>
+          <Stack direction="row" alignItems="center">
+            <Box width="700px" flexShrink={0} minWidth={0} sx={{ padding: '10px 6px' }}>
+              <NextGenMITableBodyText
+                value={baseEvent?.eventName ?? '-'}
+                variant="body1SB16"
+                color="contentText.Black"
+                tooltipWhenTruncated
+              />
+            </Box>
+            <Box flex={1} minWidth={0} sx={{ padding: '10px 6px' }}>
+              <NextGenMITableBodyText
+                value={baseEvent?.eventTypeLv1Label ?? '-'}
+                variant="body2M14"
+                color="contentText.Black"
+                tooltipWhenTruncated
+              />
+            </Box>
+            <Box flex={1} minWidth={0} sx={{ padding: '10px 6px' }}>
+              <NextGenMITableBodyText
+                value={formatNextGenMIDateTimeYmdHm(baseEvent?.updatedAt)}
+                variant="body2M14"
+                color="contentText.Black"
+                tooltipWhenTruncated
+              />
+            </Box>
+          </Stack>
+        </Stack>
       )}
     </Stack>
 

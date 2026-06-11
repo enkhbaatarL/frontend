@@ -9,7 +9,7 @@ import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
-import NextGenMITableBodyText, { NEXT_GEN_MI_TABLE_CELL_PX } from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
+import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import { getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
@@ -178,7 +178,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         width: '48px',
         align: 'right',
         headerCellSx: tableCellSx,
-        cellSx: { ...tableCellSx, pr: '0px' },
+        cellSx: { ...tableCellSx },
         renderCell: ({ row }) => (
           <Stack width="100%" alignItems="center" justifyContent="center">
             {row.baseCase && <NextGenMIBaseCaseChip />}
@@ -299,9 +299,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         skeletonRowCount={skeletonRowCount}
         noRowMessage={noRowMessage}
         rowHeight="48px"
-        headerHeight="36px"
         headerFontSize="13px"
-        cellPadding={`${NEXT_GEN_MI_TABLE_CELL_PX}px`}
         containerShell={false}
       />
     </Stack>

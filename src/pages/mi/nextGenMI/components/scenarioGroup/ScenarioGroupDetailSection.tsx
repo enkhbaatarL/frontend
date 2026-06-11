@@ -1,6 +1,6 @@
-import { Box, Skeleton, Stack, Typography } from '@mui/material'
-import { type GridColDef } from '@mui/x-data-grid'
+import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 
 import type {
   IScenarioDimension,
@@ -9,15 +9,9 @@ import type {
   IScenarioSignpostMonitoring,
 } from '@/service/mi/nextGenMI/scenarioGroup'
 
-import MIDataTableBody from '@/components/common/table/MIDataTableBody'
-import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
-import NextGenMITableBodyText, {
-  NEXT_GEN_MI_TABLE_BODY_CELL_PY,
-  NEXT_GEN_MI_TABLE_BODY_LINE_HEIGHT,
-  NEXT_GEN_MI_TABLE_BODY_TEXT_VARIANT,
-  NEXT_GEN_MI_TABLE_CELL_PX,
-} from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
+import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
+import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import { probabilityToLikelihoodLabel } from '@/pages/mi/nextGenMI/utils/probabilityFormatting'
@@ -136,146 +130,143 @@ const ScenarioAssumptionCards = ({ dimensions, loading = false }: ScenarioAssump
   )
 }
 
-const signpostDefinitionColumns: GridColDef<IScenarioSignpostDefinition>[] = [
-  {
-    field: 'label',
-    headerName: 'Signpost Label',
-    width: 400,
-    renderCell: (params) => <NextGenMITableBodyText value={String(params.value ?? '')} tooltipWhenTruncated />,
-  },
-  {
-    field: 'directionLabel',
-    headerName: '방향',
-    width: 120,
-    align: 'center',
-    headerAlign: 'center',
-    renderCell: (params) => <NextGenMITableBodyText value={String(params.value ?? '-')} align="center" tooltipWhenTruncated />,
-  },
-  {
-    field: 'strength',
-    headerName: '영향도',
-    width: 120,
-    align: 'center',
-    headerAlign: 'center',
-    renderCell: (params) => <NextGenMITableBodyText value={`${params.row.strength}%`} align="center" />,
-  },
-  {
-    field: 'rationale',
-    headerName: '핵심 근거',
-    flex: 1,
-    minWidth: 376,
-    renderCell: (params) => (
-      <NextGenMITableBodyText
-        value={String(params.value ?? '')}
-        tooltipWhenTruncated
-        sx={{
-          whiteSpace: 'normal',
-          wordBreak: 'break-word',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-        }}
-      />
-    ),
-  },
-]
+const SIGNPOST_FIRST_HEADER_CELL_SX = {
+  fontSize: '14px',
+} as const
+
+const RATIONALE_WRAP_CELL_SX = {
+  whiteSpace: 'normal',
+  wordBreak: 'break-word',
+} as const
 
 interface SignpostDefinitionTableProps {
   definitions: IScenarioSignpostDefinition[]
   loading?: boolean
 }
 
-const SignpostDefinitionTable = ({ definitions, loading = false }: SignpostDefinitionTableProps) => (
-  <Box sx={{ position: 'relative' }}>
-    <MIDataTableHeader<IScenarioSignpostDefinition> columns={signpostDefinitionColumns} />
-    <MIDataTableBody<IScenarioSignpostDefinition>
-      getRowKey={(row, index) => `${row.label}-${index}`}
-      columns={signpostDefinitionColumns}
+const SignpostDefinitionTable = ({ definitions, loading = false }: SignpostDefinitionTableProps) => {
+  const columns = useMemo<NextGenMIStickyTableColumn<IScenarioSignpostDefinition>[]>(
+    () => [
+      {
+        field: 'label',
+        headerName: 'Signpost Label',
+        width: '400px',
+        headerCellSx: SIGNPOST_FIRST_HEADER_CELL_SX,
+        renderCell: ({ row }) => <NextGenMITableBodyText value={row.label} color="contentText.Black" tooltipWhenTruncated />,
+      },
+      {
+        field: 'directionLabel',
+        headerName: '방향',
+        width: '120px',
+        align: 'center',
+        headerAlign: 'center',
+        renderCell: ({ row }) => (
+          <NextGenMITableBodyText value={row.directionLabel} color="contentText.Black" align="center" tooltipWhenTruncated />
+        ),
+      },
+      {
+        field: 'probabilityImpact',
+        headerName: '영향도',
+        width: '120px',
+        align: 'center',
+        headerAlign: 'center',
+        renderCell: ({ row }) => <NextGenMITableBodyText value={`${row.probabilityImpact}%`} color="contentText.Black" align="center" />,
+      },
+      {
+        field: 'rationale',
+        headerName: '핵심 근거',
+        width: 'max-content',
+        minWidth: '376px',
+        cellSx: RATIONALE_WRAP_CELL_SX,
+        renderCell: ({ row }) => <NextGenMITableBodyText value={row.rationale} color="contentText.Black" sx={RATIONALE_WRAP_CELL_SX} />,
+      },
+    ],
+    [],
+  )
+
+  return (
+    <NextGenMIStickyTable<IScenarioSignpostDefinition>
+      columns={columns}
       rows={definitions}
-      rowHeight={60}
-      primitiveCellTypographyVariant={NEXT_GEN_MI_TABLE_BODY_TEXT_VARIANT}
-      primitiveCellLineHeight={NEXT_GEN_MI_TABLE_BODY_LINE_HEIGHT}
-      cellPx={NEXT_GEN_MI_TABLE_CELL_PX}
-      cellPy={NEXT_GEN_MI_TABLE_BODY_CELL_PY}
+      getRowKey={(row, index) => `${row.label}-${index}`}
+      headerFontSize="13px"
+      rowHeight="40px"
       loading={loading}
       skeletonRowCount={4}
       noRowMessage="데이터를 수집 중입니다."
+      containerShell={false}
     />
-  </Box>
-)
+  )
+}
 
 const formatProbabilityUpdate = (probability: number, delta: number) => {
   const sign = delta > 0 ? '+' : ''
   return `${probability}% (${sign}${delta}%)`
 }
 
-const signpostMonitoringColumns: GridColDef<IScenarioSignpostMonitoring>[] = [
-  {
-    field: 'updatedAt',
-    headerName: '업데이트 일시',
-    width: 100,
-    renderCell: (params) => <NextGenMITableBodyText value={formatNextGenMIDateTime(params.row.updatedAt, 'YYYY-MM-DD')} />,
-  },
-  {
-    field: 'eventSummary',
-    headerName: 'Signpost 이벤트 요약',
-    width: 400,
-    renderCell: (params) => <NextGenMITableBodyText value={String(params.value ?? '')} tooltipWhenTruncated />,
-  },
-  {
-    field: 'probability',
-    headerName: '시나리오 확률 업데이트',
-    width: 160,
-    align: 'center',
-    headerAlign: 'center',
-    renderCell: (params) => (
-      <NextGenMITableBodyText value={formatProbabilityUpdate(params.row.probability, params.row.probabilityDelta)} align="center" />
-    ),
-  },
-  {
-    field: 'rationale',
-    headerName: '상세 내역 (Signpost 매칭 근거)',
-    flex: 1,
-    minWidth: 356,
-    renderCell: (params) => (
-      <NextGenMITableBodyText
-        value={String(params.value ?? '')}
-        tooltipWhenTruncated
-        sx={{
-          whiteSpace: 'normal',
-          wordBreak: 'break-word',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-        }}
-      />
-    ),
-  },
-]
-
 interface SignpostMonitoringTableProps {
   monitorings: IScenarioSignpostMonitoring[]
   loading?: boolean
 }
 
-const SignpostMonitoringTable = ({ monitorings, loading = false }: SignpostMonitoringTableProps) => (
-  <Box sx={{ position: 'relative' }}>
-    <MIDataTableHeader<IScenarioSignpostMonitoring> columns={signpostMonitoringColumns} />
-    <MIDataTableBody<IScenarioSignpostMonitoring>
-      getRowKey={(row, index) => `${row.updatedAt}-${index}`}
-      columns={signpostMonitoringColumns}
+const SignpostMonitoringTable = ({ monitorings, loading = false }: SignpostMonitoringTableProps) => {
+  const columns = useMemo<NextGenMIStickyTableColumn<IScenarioSignpostMonitoring>[]>(
+    () => [
+      {
+        field: 'updatedAt',
+        headerName: '업데이트 일시',
+        width: '100px',
+        headerCellSx: SIGNPOST_FIRST_HEADER_CELL_SX,
+        renderCell: ({ row }) => (
+          <NextGenMITableBodyText value={formatNextGenMIDateTime(row.updatedAt, 'YYYY-MM-DD')} color="contentText.Black" />
+        ),
+      },
+      {
+        field: 'eventSummary',
+        headerName: 'Signpost 이벤트 요약',
+        width: '400px',
+        renderCell: ({ row }) => <NextGenMITableBodyText value={row.eventSummary} color="contentText.Black" tooltipWhenTruncated />,
+      },
+      {
+        field: 'probability',
+        headerName: '시나리오 확률 업데이트',
+        width: '160px',
+        align: 'center',
+        headerAlign: 'center',
+        renderCell: ({ row }) => (
+          <NextGenMITableBodyText
+            value={formatProbabilityUpdate(row.probability, row.probabilityDelta)}
+            color="contentText.Black"
+            align="center"
+          />
+        ),
+      },
+      {
+        field: 'rationale',
+        headerName: '상세 내역 (Signpost 매칭 근거)',
+        width: 'max-content',
+        minWidth: '356px',
+        cellSx: RATIONALE_WRAP_CELL_SX,
+        renderCell: ({ row }) => <NextGenMITableBodyText value={row.rationale} color="contentText.Black" sx={RATIONALE_WRAP_CELL_SX} />,
+      },
+    ],
+    [],
+  )
+
+  return (
+    <NextGenMIStickyTable<IScenarioSignpostMonitoring>
+      columns={columns}
       rows={monitorings}
-      rowHeight={60}
-      primitiveCellTypographyVariant={NEXT_GEN_MI_TABLE_BODY_TEXT_VARIANT}
-      primitiveCellLineHeight={NEXT_GEN_MI_TABLE_BODY_LINE_HEIGHT}
-      cellPx={NEXT_GEN_MI_TABLE_CELL_PX}
-      cellPy={NEXT_GEN_MI_TABLE_BODY_CELL_PY}
+      getRowKey={(row, index) => `${row.updatedAt}-${index}`}
+      headerFontSize="13px"
+      rowHeight="40px"
       loading={loading}
       skeletonRowCount={4}
       noRowMessage="데이터를 수집 중입니다."
+      containerShell={false}
     />
-  </Box>
-)
+  )
+}
 
 interface ScenarioGroupDetailSectionProps {
   scenarioGroupId: string
@@ -317,7 +308,7 @@ const ScenarioGroupDetailSection = ({
         onSelect={onSelectScenario}
       />
 
-      <Stack flex={1} minWidth={0}>
+      <Stack flex={1} minWidth={0} gap="24px">
         <Stack gap="6px" width="100%" pb="40px" sx={{ borderBottom: '1px solid', borderColor: 'contentBorder.Normal' }}>
           {detailLoading ? (
             <>

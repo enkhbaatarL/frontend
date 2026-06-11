@@ -38,7 +38,10 @@ type NextGenMIStickyTableProps<T> = {
   maxHeight?: string
   rowHeight?: string
   headerHeight?: string
-  cellPadding?: string
+  /** 셀 좌우 패딩 (셀 사이 간격 = cellPaddingX * 2). 외곽(첫/마지막 컬럼)에는 CELL_EDGE_INSET 만큼 추가 인셋이 붙는다 */
+  cellPaddingX?: string
+  /** 셀 상하 패딩. box-sizing: border-box + 고정 height 이므로 행 높이를 키우지 않는다 */
+  cellPaddingY?: string
   headerFontSize?: string
   bodyFontSize?: string
   bodyLineHeight?: number | string
@@ -46,6 +49,9 @@ type NextGenMIStickyTableProps<T> = {
   containerPadding?: string
   containerShell?: boolean
 }
+
+// 피그마: 행 컨테이너 px-8 + 셀 px-6 구조 → 외곽 14px(8+6) / 셀 사이 12px(6+6). 8px가 첫/마지막 컬럼에 붙는 엣지 인셋.
+const CELL_EDGE_INSET = '8px'
 
 const STICKY_COLUMN_EDGE_SHADOW_VERTICAL_MASK_IMAGE =
   'linear-gradient(to bottom, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%)'
@@ -159,8 +165,9 @@ const NextGenMIStickyTable = <T,>({
   noRowMessage = '표시할 데이터가 없습니다.',
   maxHeight,
   rowHeight = '48px',
-  headerHeight = '36px',
-  cellPadding = '14px',
+  headerHeight = '38px',
+  cellPaddingX = '6px',
+  cellPaddingY = '10px',
   headerFontSize = '14px',
   bodyFontSize = '14px',
   bodyLineHeight = 1.4,
@@ -240,8 +247,18 @@ const NextGenMIStickyTable = <T,>({
   )
   const fixedLeftColumnsWidth = fixedLeftColumnsWidthParts.length > 0 ? toCssCalc(fixedLeftColumnsWidthParts) : '0px'
   const fixedRightColumnsWidth = fixedRightColumnsWidthParts.length > 0 ? toCssCalc(fixedRightColumnsWidthParts) : '0px'
+  // 고정-좌측 컬럼이 있으면 sticky 라벨은 첫 컬럼이 아니므로 엣지 인셋이 없는 cellPaddingX 만 더한다.
+  // 고정-좌측 컬럼이 없으면 sticky 라벨이 첫 컬럼(외곽)일 수 있으므로 엣지 인셋(8px)을 포함한 14px를 적용한다.
   const leftAlignedHeaderStickyLeft =
-    fixedLeftColumnsWidthParts.length > 0 ? `calc(${fixedLeftColumnsWidthParts.join(' + ')} + ${cellPadding})` : cellPadding
+    fixedLeftColumnsWidthParts.length > 0
+      ? `calc(${fixedLeftColumnsWidthParts.join(' + ')} + ${cellPaddingX})`
+      : `calc(${cellPaddingX} + ${CELL_EDGE_INSET})`
+  const getCellPaddingSx = (columnIndex: number) => ({
+    paddingTop: cellPaddingY,
+    paddingBottom: cellPaddingY,
+    paddingLeft: columnIndex === 0 ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})` : cellPaddingX,
+    paddingRight: columnIndex === columns.length - 1 ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})` : cellPaddingX,
+  })
   const canInsetHorizontalScrollbar =
     fixedLeftColumnIndexList.every((columnIndex, index) => columnIndex === index) &&
     fixedRightColumnIndexList.every((columnIndex, index) => columnIndex === columns.length - fixedRightColumnIndexList.length + index)
@@ -450,13 +467,13 @@ const NextGenMIStickyTable = <T,>({
         sx={[
           {
             height: headerHeight,
-            padding: `0 ${cellPadding}`,
+            ...getCellPaddingSx(columnIndex),
             textAlign: align,
             fontSize: headerFontSize,
             fontWeight: 600,
             color: 'contentText.Normal',
-            borderBottom: '1px solid',
-            borderColor: 'contentBorder.Normal',
+            borderBottom: '0.5px solid',
+            borderColor: 'contentBorder.Active',
             whiteSpace: 'nowrap',
             width: column.width,
             minWidth: column.minWidth ?? column.width,
@@ -527,7 +544,7 @@ const NextGenMIStickyTable = <T,>({
         data-merged-fixed-column={isMergedFixedColumn ? 'true' : undefined}
         sx={[
           {
-            padding: `0 ${cellPadding}`,
+            ...getCellPaddingSx(columnIndex),
             textAlign: align,
             fontSize: bodyFontSize,
             fontWeight: 500,
@@ -663,7 +680,7 @@ const NextGenMIStickyTable = <T,>({
                             data-first-fixed-right-column={isFirstFixedRightColumn ? 'true' : undefined}
                             sx={[
                               {
-                                padding: `0 ${cellPadding}`,
+                                ...getCellPaddingSx(columnIndex),
                                 borderBottom: isLastSkeletonRow ? 'none' : '1px solid',
                                 borderColor: 'contentBorder.Normal',
                                 height: rowHeight,

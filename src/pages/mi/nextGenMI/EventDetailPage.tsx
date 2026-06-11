@@ -23,7 +23,7 @@ import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/component
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
 import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/event/EventDetailRelatedScenariosSection'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
-import { getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
 
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'driverTree' | 'related'
@@ -365,7 +365,11 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         <Stack id={SECTION_SCROLL_IDS.related}>
           <EventDetailRelatedScenariosSection
             relatedEventScenario={relatedEventScenario}
-            onScenarioRowClick={(row) => navigate(`${NEXT_GEN_MI_BASE_PATH}/scenarios/${encodeURIComponent(String(row.scenarioId))}`)}
+            onScenarioRowClick={(row) => {
+              const scenarioGroupId = relatedEventScenario?.scenarioGroupId
+              if (scenarioGroupId === undefined || scenarioGroupId === null) return
+              navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId, row.scenarioId))
+            }}
             loading={detailLoading}
           />
         </Stack>

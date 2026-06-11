@@ -2,7 +2,7 @@ import { Box, Stack, Typography, useTheme } from '@mui/material'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { FundamentalModelPriceChart } from '@/service/mi/fundamentalModel/case'
-import type { IScenarioPriceForecast } from '@/service/mi/nextGenMI/scenario'
+import type { ScenarioPriceForecast } from '@/types/dataDetailChart'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
@@ -19,7 +19,7 @@ interface FundamentalModelPriceChartSectionProps {
 
 const toDateLabel = (point: { year: number; month: number }): string => `${point.year}-${String(point.month).padStart(2, '0')}`
 
-const buildPriceForecast = (priceChart: FundamentalModelPriceChart | null, selectedPriceRegion: string): IScenarioPriceForecast => {
+const buildPriceForecast = (priceChart: FundamentalModelPriceChart | null, selectedPriceRegion: string): ScenarioPriceForecast => {
   const seriesSets = priceChart?.seriesSets ?? []
   const selectedSeriesSet = seriesSets.find((item) => item.priceRegion === selectedPriceRegion) ?? seriesSets[0]
   const selectedSeries = selectedSeriesSet?.series ?? []
@@ -52,7 +52,7 @@ const resolvePriceSeriesColor = (label: string, fallback: string): string => {
   return fallback
 }
 
-const formatPriceChartUnit = (priceForecast: IScenarioPriceForecast): string => {
+const formatPriceChartUnit = (priceForecast: ScenarioPriceForecast): string => {
   const currency = priceForecast.currency?.trim()
   const rawUnit = priceForecast.unit?.trim()
   const unit = rawUnit && rawUnit.toLowerCase() === 'mmbtu' ? 'MMBtu' : rawUnit
