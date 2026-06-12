@@ -1,4 +1,6 @@
-import { Box } from '@mui/material'
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
+import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded'
+import { Box, Stack } from '@mui/material'
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -15,10 +17,12 @@ import {
   Title,
   Tooltip,
 } from 'chart.js'
+import zoomPlugin from 'chartjs-plugin-zoom'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { Chart } from 'react-chartjs-2'
 
+import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ScenarioSummaryChartTooltip, {
   ScenarioSummaryTooltipContent,
 } from '@/pages/mi/nextGenMI/components/common/ScenarioSummaryChartTooltip'
@@ -28,7 +32,7 @@ import ScenarioSummaryCrosshairLine, {
 import { ChartData } from '@/types/dataDetailChart'
 import { disableContextMenu } from '@/utils/mouse'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, LineController, Title, Tooltip, Filler, Legend)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, LineController, Title, Tooltip, Filler, Legend, zoomPlugin)
 
 type ScenarioSummaryChartData = ChartData & {
   dataType?: string
@@ -47,7 +51,11 @@ interface ScenarioSummaryChartGraphProps {
   chartColorMap?: Map<string, string>
   spanGaps?: boolean
   disableIntroAnimation?: boolean
+  crosshairDateFormat?: string
+  currentMarkerGranularity?: CurrentMarkerGranularity
 }
+
+type CurrentMarkerGranularity = 'DAY' | 'MONTH' | 'YEAR'
 
 type DatasetMeta = {
   chipColor?: string
@@ -65,6 +73,11 @@ type ScenarioLineDataset = ChartDataset<'line', Point[]> & {
   metadata?: DatasetMeta
 }
 
+type ZoomableLineChart = ChartJS<'line'> & {
+  resetZoom: () => void
+  zoomScale: (scaleId: string, range: { min: number; max: number }, transition?: string) => void
+}
+
 const applyOpacity = (color: string, alpha: number): string => {
   if (color.startsWith('#')) {
     const hex = color.slice(1)
@@ -79,19 +92,31 @@ const applyOpacity = (color: string, alpha: number): string => {
   return color
 }
 
-const getCurrentLineX = (timestamps: string[], xScale: { getPixelForValue: (value: number) => number }): number | null => {
+const getCurrentLineX = (
+  timestamps: string[],
+  xScale: { getPixelForValue: (value: number) => number },
+  currentMarkerGranularity: CurrentMarkerGranularity,
+): number | null => {
   if (timestamps.length === 0) return null
 
-  const today = dayjs().startOf('day')
+  const today = dayjs()
   const dateList = timestamps.map((timestamp) => dayjs(timestamp))
   const first = dateList[0]
   const last = dateList.at(-1)
-  if (!first.isValid() || !last?.isValid() || today.isBefore(first, 'day') || today.isAfter(last, 'day')) return null
+  const unit = currentMarkerGranularity === 'YEAR' ? 'year' : currentMarkerGranularity === 'MONTH' ? 'month' : 'day'
+  if (!first.isValid() || !last?.isValid() || today.isBefore(first, unit) || today.isAfter(last, unit)) return null
 
-  const exactIndex = dateList.findIndex((date) => date.isSame(today, 'day'))
+  if (currentMarkerGranularity !== 'DAY') {
+    const periodIndex = dateList.findIndex((date) => date.isValid() && date.isSame(today, unit))
+    return periodIndex >= 0 ? xScale.getPixelForValue(periodIndex) : null
+  }
+
+  const todayStart = today.startOf('day')
+
+  const exactIndex = dateList.findIndex((date) => date.isSame(todayStart, 'day'))
   if (exactIndex >= 0) return xScale.getPixelForValue(exactIndex)
 
-  const nextIndex = dateList.findIndex((date) => date.isAfter(today, 'day'))
+  const nextIndex = dateList.findIndex((date) => date.isAfter(todayStart, 'day'))
   if (nextIndex <= 0) return null
 
   const prev = dateList[nextIndex - 1]
@@ -99,14 +124,9 @@ const getCurrentLineX = (timestamps: string[], xScale: { getPixelForValue: (valu
   const total = next.diff(prev, 'millisecond')
   if (total <= 0) return xScale.getPixelForValue(nextIndex)
 
-  const ratio = today.diff(prev, 'millisecond') / total
+  const ratio = todayStart.diff(prev, 'millisecond') / total
   return xScale.getPixelForValue(nextIndex - 1 + ratio)
 }
-
-const TODAY_MARKER_WIDTH = 10
-const TODAY_MARKER_HEIGHT = 7
-
-const INTRO_LINE_REVEAL_MS = 1000
 
 type ProgressiveLineAnimCtx = {
   type?: string
@@ -117,9 +137,8 @@ type ProgressiveLineAnimCtx = {
 
 const buildProgressiveLineIntroAnimation = (pointCount: number, yAxisMin: number, onComplete: () => void) => {
   const n = Math.max(1, pointCount)
-  const totalDuration = INTRO_LINE_REVEAL_MS
-  const segmentDuration = Math.max(4, totalDuration / n)
-  const segmentDelay = (ctx: { index: number }) => (ctx.index / n) * totalDuration
+  const segmentDuration = Math.max(4, 1000 / n)
+  const segmentDelay = (ctx: { index: number }) => (ctx.index / n) * 1000
   const previousY = (ctx: { index: number; datasetIndex: number; chart: ChartJS }) => {
     const yScale = ctx.chart.scales.y
     const baselineY = typeof yScale?.getPixelForValue === 'function' ? yScale.getPixelForValue(yAxisMin) : NaN
@@ -175,9 +194,52 @@ const buildProgressiveLineIntroAnimation = (pointCount: number, yAxisMin: number
   } as unknown as NonNullable<ChartOptions<'line'>['animation']>
 }
 
-const VERTICAL_GRID_MAX_LINES = 96
+const getXAxisLabelItems = (
+  labels: string[],
+  xScale: { min?: number; max?: number; getPixelForValue: (value: number) => number },
+  ctx: CanvasRenderingContext2D,
+  left: number,
+  right: number,
+): Array<{ index: number; label: string; x: number }> => {
+  const visibleMin = typeof xScale.min === 'number' ? xScale.min : 0
+  const visibleMax = typeof xScale.max === 'number' ? xScale.max : labels.length - 1
+  const startIndex = Math.max(0, Math.floor(visibleMin) - 1)
+  const endIndex = Math.min(labels.length - 1, Math.ceil(visibleMax) + 1)
+  const seenLabels = new Set<string>()
+  const candidates: Array<{ index: number; label: string; x: number }> = []
 
-const buildScenarioSummaryPlugin = (timestamps: string[], resultDates: string[]): Plugin<'line'> => ({
+  for (let index = startIndex; index <= endIndex; index += 1) {
+    const label = labels[index]
+    if (!label || seenLabels.has(label)) continue
+
+    const x = xScale.getPixelForValue(index)
+    if (x < left || x > right) continue
+
+    seenLabels.add(label)
+    candidates.push({ index, label, x })
+  }
+
+  if (candidates.length <= 1) return candidates
+
+  const firstIndex = candidates[0].index
+  const nextIndex = Math.min(labels.length - 1, firstIndex + 1)
+  const pixelPerIndex = Math.abs(xScale.getPixelForValue(nextIndex) - xScale.getPixelForValue(firstIndex))
+  const maxLabelWidth = candidates.reduce((max, item) => Math.max(max, ctx.measureText(item.label).width), 0)
+  const stride = Math.max(1, Math.ceil((maxLabelWidth + 16) / Math.max(1, pixelPerIndex)))
+
+  if (stride <= 1) return candidates
+
+  const anchoredItems = candidates.filter((item) => item.index % stride === 0)
+  if (anchoredItems.length > 0) return anchoredItems
+
+  return candidates.filter((_, index) => index % stride === 0)
+}
+
+const buildScenarioSummaryPlugin = (
+  timestamps: string[],
+  resultDates: string[],
+  currentMarkerGranularity: CurrentMarkerGranularity,
+): Plugin<'line'> => ({
   id: 'scenarioSummaryChartChrome',
   beforeDatasetsDraw(chart) {
     const { ctx, chartArea, scales } = chart
@@ -192,7 +254,7 @@ const buildScenarioSummaryPlugin = (timestamps: string[], resultDates: string[])
     ctx.setLineDash([1, 2])
 
     const len = timestamps.length
-    const stride = len > VERTICAL_GRID_MAX_LINES ? Math.max(1, Math.ceil(len / VERTICAL_GRID_MAX_LINES)) : 1
+    const stride = len > 96 ? Math.max(1, Math.ceil(len / 96)) : 1
 
     for (let index = 0; index < len; index += stride) {
       const x = Math.round(xScale.getPixelForValue(index)) + 0.5
@@ -234,19 +296,13 @@ const buildScenarioSummaryPlugin = (timestamps: string[], resultDates: string[])
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
 
-    const seenYears = new Set<string>()
-    timestamps.forEach((timestamp, index) => {
-      const year = resultDates[index] || dayjs(timestamp).format('YYYY')
-      if (!year || seenYears.has(year)) return
-      seenYears.add(year)
-
-      const x = xScale.getPixelForValue(index)
-      if (x < left || x > right) return
-      ctx.fillText(year, x, bottom + 8)
+    const labels = timestamps.map((timestamp, index) => resultDates[index] || dayjs(timestamp).format('YYYY'))
+    getXAxisLabelItems(labels, xScale, ctx, left, right).forEach((item) => {
+      ctx.fillText(item.label, item.x, bottom + 8)
     })
     ctx.restore()
 
-    const currentX = getCurrentLineX(timestamps, xScale)
+    const currentX = getCurrentLineX(timestamps, xScale, currentMarkerGranularity)
     if (currentX === null || currentX < left || currentX > right) return
 
     ctx.save()
@@ -261,11 +317,11 @@ const buildScenarioSummaryPlugin = (timestamps: string[], resultDates: string[])
 
     const markerX = Math.round(currentX) + 0.5
     const markerTipY = top - 3
-    const markerBaseY = top - TODAY_MARKER_HEIGHT - 3
+    const markerBaseY = top - 10
 
     ctx.beginPath()
-    ctx.moveTo(markerX - TODAY_MARKER_WIDTH / 2, markerBaseY)
-    ctx.lineTo(markerX + TODAY_MARKER_WIDTH / 2, markerBaseY)
+    ctx.moveTo(markerX - 5, markerBaseY)
+    ctx.lineTo(markerX + 5, markerBaseY)
     ctx.lineTo(markerX, markerTipY)
     ctx.closePath()
     ctx.fill()
@@ -374,11 +430,9 @@ const getYAxisScale = (charts: ScenarioSummaryChartData[]): YAxisScale => {
   return { min, max, tickStep }
 }
 
-const TOOLTIP_ANCHOR_Y_RATIO = 0.45 // 위에서 45% 위치
-
 const getViewportTooltipPosition = (chartTooltip: { x: number; y: number }, canvasRect: DOMRect, tooltipHeight: number) => ({
   left: canvasRect.left + chartTooltip.x + 30,
-  top: canvasRect.top + chartTooltip.y - tooltipHeight * TOOLTIP_ANCHOR_Y_RATIO,
+  top: canvasRect.top + chartTooltip.y - tooltipHeight * 0.45,
 })
 
 const ScenarioSummaryChartGraph = ({
@@ -390,12 +444,19 @@ const ScenarioSummaryChartGraph = ({
   chartColorMap,
   spanGaps = true,
   disableIntroAnimation = false,
+  crosshairDateFormat,
+  currentMarkerGranularity = 'DAY',
 }: ScenarioSummaryChartGraphProps) => {
   const chartRef = useRef<ChartJS<'line'> | null>(null)
   const crosshairRef = useRef<ScenarioSummaryCrosshairLineHandle | null>(null)
   const tooltipRef = useRef<HTMLDivElement | null>(null)
+  const zoomButtonStackRef = useRef<HTMLDivElement | null>(null)
   const animationFrameRef = useRef<number | null>(null)
   const lastMousePositionRef = useRef<{ x: number; y: number } | null>(null)
+  const mouseDownPositionRef = useRef<{ x: number; y: number } | null>(null)
+  const isDragConfirmedRef = useRef(false)
+  const isPanningRef = useRef(false)
+  const wasDraggingOnMouseUpRef = useRef(false)
 
   const [tooltip, setTooltip] = useState({
     visible: false,
@@ -405,7 +466,13 @@ const ScenarioSummaryChartGraph = ({
   })
   const [isTooltipPositionCalculated, setIsTooltipPositionCalculated] = useState(false)
   const [isCrosshairVisible, setIsCrosshairVisible] = useState(false)
+  const [isPanning, setIsPanning] = useState(false)
   const [introAnimationDone, setIntroAnimationDone] = useState(disableIntroAnimation)
+
+  const setPanning = useCallback((nextIsPanning: boolean) => {
+    isPanningRef.current = nextIsPanning
+    setIsPanning(nextIsPanning)
+  }, [])
 
   const handleIntroAnimationComplete = useCallback(() => {
     setIntroAnimationDone(true)
@@ -480,18 +547,57 @@ const ScenarioSummaryChartGraph = ({
     [chartColorMap, chartVisibilityMap, charts, dataMaxPrecision, dataPointCount, hoveredChartKey, spanGaps],
   )
 
-  const scenarioPlugin = useMemo(() => buildScenarioSummaryPlugin(axisTimestamps, axisResultDates), [axisResultDates, axisTimestamps])
+  const scenarioPlugin = useMemo(
+    () => buildScenarioSummaryPlugin(axisTimestamps, axisResultDates, currentMarkerGranularity),
+    [axisResultDates, axisTimestamps, currentMarkerGranularity],
+  )
+
+  const updateCrosshairPositionFromMousePos = useCallback(
+    (mousePos: { x: number; y: number }) => {
+      const chart = chartRef.current
+      if (!chart?.canvas || isPanningRef.current) return
+
+      const { left, right, top, bottom } = chart.chartArea
+      const isInsideChartArea = mousePos.x >= left && mousePos.x <= right && mousePos.y >= top && mousePos.y <= bottom
+
+      setIsCrosshairVisible(isInsideChartArea)
+
+      if (!isInsideChartArea) {
+        crosshairRef.current?.handleMouseOut()
+        return
+      }
+
+      const xScaleValue = chart.scales.x.getValueForPixel(mousePos.x)
+      if (xScaleValue === undefined) return
+
+      const xScaleIndex = Math.round(xScaleValue)
+      const clampedIndex = Math.max(0, Math.min(xScaleIndex, dataPointCount - 1))
+      const snappedPixelX = chart.scales.x.getPixelForValue(clampedIndex) ?? mousePos.x
+      crosshairRef.current?.updateCrosshairPosition(snappedPixelX, mousePos.y, clampedIndex)
+    },
+    [dataPointCount],
+  )
+
+  const updateCrosshairAfterScaleChange = useCallback(() => {
+    requestAnimationFrame(() => {
+      const mousePos = lastMousePositionRef.current
+      if (!mousePos) return
+      updateCrosshairPositionFromMousePos(mousePos)
+    })
+  }, [updateCrosshairPositionFromMousePos])
 
   const chartOptions = useMemo(() => {
     const shouldPlayIntroAnimation = !disableIntroAnimation && !introAnimationDone && dataPointCount > 0
-    const introOnlyAnimations = shouldPlayIntroAnimation
-      ? {
+    let introOnlyAnimations = {}
+
+    if (shouldPlayIntroAnimation) {
+      introOnlyAnimations = {
         animations: {
           colors: { duration: 0 },
           numbers: { type: 'number' as const, properties: ['x', 'y'] },
         },
       }
-      : {}
+    }
 
     return {
       responsive: true,
@@ -547,6 +653,41 @@ const ScenarioSummaryChartGraph = ({
         legend: {
           display: false,
         },
+        zoom: {
+          pan: {
+            enabled: true,
+            mode: 'x',
+            modifierKey: null,
+            threshold: 10,
+            onPan: () => {
+              if (!isDragConfirmedRef.current) return false
+              updateCrosshairAfterScaleChange()
+              return true
+            },
+          },
+          zoom: {
+            wheel: {
+              enabled: true,
+              modifierKey: 'ctrl',
+            },
+            pinch: {
+              enabled: true,
+            },
+            mode: 'x',
+            onZoom: updateCrosshairAfterScaleChange,
+          },
+          limits: {
+            x: {
+              min: dataPointCount > 0 ? -1 : 0,
+              max: dataPointCount > 0 ? dataPointCount : undefined,
+              minRange: 2,
+            },
+            y: {
+              min: yAxisScale.min,
+              max: yAxisScale.max,
+            },
+          },
+        },
         gridAndAxes: {
           timestamps: axisTimestamps,
           resultDates: axisResultDates,
@@ -561,6 +702,7 @@ const ScenarioSummaryChartGraph = ({
     disableIntroAnimation,
     handleIntroAnimationComplete,
     introAnimationDone,
+    updateCrosshairAfterScaleChange,
     yAxisScale.max,
     yAxisScale.min,
     yAxisScale.tickStep,
@@ -622,31 +764,88 @@ const ScenarioSummaryChartGraph = ({
     setIsTooltipPositionCalculated(true)
   }, [])
 
-  const updateCrosshairPositionFromMousePos = useCallback(
-    (mousePos: { x: number; y: number }) => {
-      const chart = chartRef.current
-      if (!chart?.canvas) return
+  const hideCrosshair = useCallback(() => {
+    setIsCrosshairVisible(false)
+    crosshairRef.current?.handleMouseOut()
+    setTooltip((prev) => ({ ...prev, visible: false }))
+    lastMousePositionRef.current = null
+    mouseDownPositionRef.current = null
+  }, [])
 
-      const { left, right, top, bottom } = chart.chartArea
-      const isInsideChartArea = mousePos.x >= left && mousePos.x <= right && mousePos.y >= top && mousePos.y <= bottom
+  const handleZoomIn = useCallback(() => {
+    const chart = chartRef.current as ZoomableLineChart | null
+    if (!chart || dataPointCount <= 0) return
 
-      setIsCrosshairVisible(isInsideChartArea)
+    const xScale = chart.scales.x
+    if (!xScale) return
 
-      if (!isInsideChartArea) {
-        crosshairRef.current?.handleMouseOut()
-        return
+    const currentMin = xScale.min ?? 0
+    const currentMax = xScale.max ?? dataPointCount
+    const currentRange = currentMax - currentMin
+    const center = (currentMin + currentMax) / 2
+    const minRange = Math.min(2, Math.max(1, dataPointCount))
+    const constrainedRange = Math.max(currentRange * 0.6, minRange)
+
+    let newMin = center - constrainedRange / 2
+    let newMax = center + constrainedRange / 2
+    const fullMin = 0
+    const fullMax = dataPointCount > 0 ? dataPointCount - 1 : 0
+
+    if (newMin < fullMin) {
+      newMax += fullMin - newMin
+      newMin = fullMin
+    }
+    if (newMax > fullMax) {
+      newMin -= newMax - fullMax
+      newMax = fullMax
+    }
+
+    chart.zoomScale('x', { min: Math.max(fullMin, newMin), max: Math.min(fullMax, newMax) })
+    setPanning(false)
+    hideCrosshair()
+  }, [dataPointCount, hideCrosshair, setPanning])
+
+  const handleZoomOut = useCallback(() => {
+    const chart = chartRef.current as ZoomableLineChart | null
+    if (!chart || dataPointCount <= 0) return
+
+    const xScale = chart.scales.x
+    if (!xScale) return
+
+    const fullMin = -1
+    const fullMax = dataPointCount
+    const currentMin = xScale.min ?? fullMin
+    const currentMax = xScale.max ?? fullMax
+    const currentRange = currentMax - currentMin
+    const center = (currentMin + currentMax) / 2
+    const newRange = currentRange / 0.6
+
+    if (newRange >= fullMax - fullMin) {
+      chart.zoomScale('x', { min: fullMin, max: fullMax })
+    } else {
+      let newMin = center - newRange / 2
+      let newMax = center + newRange / 2
+
+      if (newMin < fullMin) {
+        newMax += fullMin - newMin
+        newMin = fullMin
+      }
+      if (newMax > fullMax) {
+        newMin -= newMax - fullMax
+        newMax = fullMax
       }
 
-      const xScaleValue = chart.scales.x.getValueForPixel(mousePos.x)
-      if (xScaleValue === undefined) return
+      chart.zoomScale('x', { min: Math.max(fullMin, newMin), max: Math.min(fullMax, newMax) })
+    }
 
-      const xScaleIndex = Math.round(xScaleValue)
-      const clampedIndex = Math.max(0, Math.min(xScaleIndex, dataPointCount - 1))
-      const snappedPixelX = chart.scales.x.getPixelForValue(clampedIndex) ?? mousePos.x
-      crosshairRef.current?.updateCrosshairPosition(snappedPixelX, mousePos.y, clampedIndex)
-    },
-    [dataPointCount],
-  )
+    setPanning(false)
+    hideCrosshair()
+  }, [dataPointCount, hideCrosshair, setPanning])
+
+  useEffect(() => {
+    const chart = chartRef.current as ZoomableLineChart | null
+    chart?.resetZoom()
+  }, [dataPointCount, axisTimestamps, axisResultDates])
 
   useEffect(
     () => () => {
@@ -663,17 +862,93 @@ const ScenarioSummaryChartGraph = ({
       sx={{
         position: 'relative',
         boxSizing: 'border-box',
-        cursor: isCrosshairVisible ? 'crosshair' : 'default',
+        cursor: isPanning ? 'grabbing' : isCrosshairVisible ? 'crosshair' : 'grab',
       }}
       onContextMenu={disableContextMenu}
+      onMouseDown={(event) => {
+        if (event.button !== 0 || event.ctrlKey || event.metaKey) return
+
+        const rect = chartRef.current?.canvas.getBoundingClientRect()
+        if (!rect) return
+
+        mouseDownPositionRef.current = {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top,
+        }
+        isDragConfirmedRef.current = false
+        wasDraggingOnMouseUpRef.current = false
+      }}
+      onMouseUp={(event) => {
+        wasDraggingOnMouseUpRef.current = isPanning || isDragConfirmedRef.current
+        setPanning(false)
+
+        if (!wasDraggingOnMouseUpRef.current) {
+          const rect = chartRef.current?.canvas.getBoundingClientRect()
+          if (rect) {
+            const mousePos = {
+              x: event.clientX - rect.left,
+              y: event.clientY - rect.top,
+            }
+            lastMousePositionRef.current = mousePos
+            updateCrosshairPositionFromMousePos(mousePos)
+          }
+        }
+
+        mouseDownPositionRef.current = null
+        isDragConfirmedRef.current = false
+      }}
       onMouseMove={(event) => {
         event.stopPropagation()
         const rect = chartRef.current?.canvas.getBoundingClientRect()
         if (!rect) return
 
+        const zoomButtonRect = zoomButtonStackRef.current?.getBoundingClientRect()
+        if (zoomButtonRect) {
+          const isInsideZoomButton =
+            event.clientX >= zoomButtonRect.left &&
+            event.clientX <= zoomButtonRect.right &&
+            event.clientY >= zoomButtonRect.top &&
+            event.clientY <= zoomButtonRect.bottom
+
+          if (isInsideZoomButton) {
+            setIsCrosshairVisible(false)
+            crosshairRef.current?.handleMouseOut()
+            setTooltip((prev) => ({ ...prev, visible: false }))
+            return
+          }
+        }
+
         lastMousePositionRef.current = {
           x: event.clientX - rect.left,
           y: event.clientY - rect.top,
+        }
+
+        if (event.buttons === 0 && (mouseDownPositionRef.current !== null || isDragConfirmedRef.current)) {
+          mouseDownPositionRef.current = null
+          isDragConfirmedRef.current = false
+          setPanning(false)
+        }
+
+        if (mouseDownPositionRef.current && !isPanning) {
+          const distance = Math.sqrt(
+            (lastMousePositionRef.current.x - mouseDownPositionRef.current.x) ** 2 +
+              (lastMousePositionRef.current.y - mouseDownPositionRef.current.y) ** 2,
+          )
+
+          if (distance > 10) {
+            isDragConfirmedRef.current = true
+            setPanning(true)
+            setIsCrosshairVisible(false)
+            crosshairRef.current?.handleMouseOut()
+            setTooltip((prev) => ({ ...prev, visible: false }))
+            return
+          }
+        }
+
+        if (isPanningRef.current) {
+          setIsCrosshairVisible(false)
+          setTooltip((prev) => ({ ...prev, visible: false }))
+          return
         }
 
         animationFrameRef.current ??= requestAnimationFrame(() => {
@@ -683,12 +958,35 @@ const ScenarioSummaryChartGraph = ({
           updateCrosshairPositionFromMousePos(mousePos)
         })
       }}
+      onWheel={(event) => {
+        if (!event.ctrlKey) return
+
+        event.preventDefault()
+        event.stopPropagation()
+        chartRef.current?.canvas.dispatchEvent(
+          new WheelEvent(event.type, {
+            deltaMode: event.deltaMode,
+            deltaX: event.deltaX,
+            deltaY: event.deltaY,
+            deltaZ: event.deltaZ,
+            clientX: event.clientX,
+            clientY: event.clientY,
+            ctrlKey: event.ctrlKey,
+            bubbles: false,
+            cancelable: true,
+            view: window,
+          }),
+        )
+      }}
       onMouseLeave={() => {
         if (animationFrameRef.current !== null) {
           cancelAnimationFrame(animationFrameRef.current)
           animationFrameRef.current = null
         }
         lastMousePositionRef.current = null
+        mouseDownPositionRef.current = null
+        isDragConfirmedRef.current = false
+        setPanning(false)
         setIsCrosshairVisible(false)
         crosshairRef.current?.handleMouseOut()
       }}
@@ -701,10 +999,71 @@ const ScenarioSummaryChartGraph = ({
       >
         <Chart ref={chartRef} type="line" data={{ datasets }} options={chartOptions} plugins={[scenarioPlugin]} />
       </Box>
+      <Stack
+        ref={zoomButtonStackRef}
+        direction="row"
+        onMouseDown={(event) => event.stopPropagation()}
+        onMouseUp={(event) => event.stopPropagation()}
+        sx={{
+          position: 'absolute',
+          left: '50%',
+          bottom: '47px',
+          transform: 'translateX(-50%)',
+          pointerEvents: 'auto',
+          zIndex: 13,
+        }}
+      >
+        <MIBaseButton
+          aria-label="Zoom out"
+          variant="text"
+          onClick={handleZoomOut}
+          enableHoverBackground
+          sx={{
+            width: '36px',
+            minWidth: '36px',
+            height: '36px',
+            padding: '8px',
+            borderTopLeftRadius: '10px',
+            borderBottomLeftRadius: '10px',
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0,
+            border: '1px solid',
+            borderColor: 'contentBorder.Normal',
+            backgroundColor: 'commonColor.White',
+            justifyContent: 'center',
+          }}
+        >
+          <RemoveRoundedIcon sx={{ color: 'gray.70', fontSize: '18px' }} />
+        </MIBaseButton>
+        <MIBaseButton
+          aria-label="Zoom in"
+          variant="text"
+          onClick={handleZoomIn}
+          enableHoverBackground
+          sx={{
+            width: '36px',
+            minWidth: '36px',
+            height: '36px',
+            marginLeft: '-1px',
+            padding: '8px',
+            borderTopLeftRadius: 0,
+            borderBottomLeftRadius: 0,
+            borderTopRightRadius: '10px',
+            borderBottomRightRadius: '10px',
+            border: '1px solid',
+            borderColor: 'contentBorder.Normal',
+            backgroundColor: 'commonColor.White',
+            justifyContent: 'center',
+          }}
+        >
+          <AddRoundedIcon sx={{ color: 'gray.70', fontSize: '18px' }} />
+        </MIBaseButton>
+      </Stack>
       <ScenarioSummaryCrosshairLine
         ref={crosshairRef}
         chartRef={chartRef as unknown as RefObject<ChartJS | null>}
         onTooltipChange={externalTooltipHandler}
+        dateDisplayFormat={crosshairDateFormat}
       />
       <ScenarioSummaryChartTooltip
         ref={tooltipRef}

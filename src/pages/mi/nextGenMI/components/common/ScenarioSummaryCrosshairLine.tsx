@@ -19,6 +19,7 @@ const VALUE_INDICATOR_BOX_MIN_WIDTH = 48
 interface ScenarioSummaryCrosshairLineProps {
   chartRef: RefObject<ChartJS | null>
   onTooltipChange: (context: { tooltip: { x: number; y: number; content: Record<string, ScenarioSummaryTooltipContent> } | null }) => void
+  dateDisplayFormat?: string
 }
 
 export interface ScenarioSummaryCrosshairLineHandle {
@@ -103,9 +104,11 @@ const getPointValue = (point?: ChartPoint): number | null => {
 }
 
 const ScenarioSummaryCrosshairLine = forwardRef<ScenarioSummaryCrosshairLineHandle, ScenarioSummaryCrosshairLineProps>(
-  ({ chartRef, onTooltipChange }, ref) => {
+  ({ chartRef, onTooltipChange, dateDisplayFormat = 'YYYY-MM-DD' }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const lastMousePositionRef = useRef<{ x: number; y: number } | null>(null)
+    const dateDisplayFormatRef = useRef(dateDisplayFormat)
+    dateDisplayFormatRef.current = dateDisplayFormat
 
     const updateValueAndDateIndicators = useCallback((chart: ChartJS, xScaleIndex: number, mousePos: { x: number; y: number }) => {
       const chartArea = chart.chartArea
@@ -135,15 +138,15 @@ const ScenarioSummaryCrosshairLine = forwardRef<ScenarioSummaryCrosshairLineHand
       dateBox.style.alignItems = 'center'
       dateBox.style.justifyContent = 'center'
       dateBox.style.width = `${DATE_INDICATOR_BOX_WIDTH}px`
-      dateBox.style.height = `${INDICATOR_BOX_HEIGHT}px`
-      dateBox.style.padding = '2px 8px'
+      dateBox.style.height = '26px'
+      dateBox.style.padding = '3px 8px'
       dateBox.style.fontSize = '14px'
       dateBox.style.fontWeight = '400'
       dateBox.style.fontFamily = 'Pretendard'
       dateBox.style.lineHeight = '20px'
       dateBox.style.whiteSpace = 'nowrap'
       dateBox.style.boxSizing = 'border-box'
-      dateBox.textContent = timestamp ? dayjs(timestamp).format('YY/MM/DD') : `Index: ${roundedIndex}`
+      dateBox.textContent = timestamp ? dayjs(timestamp).format(dateDisplayFormatRef.current) : `Index: ${roundedIndex}`
       mainIndicatorContainer.appendChild(dateBox)
 
       const dateBoxWidth = dateBox.offsetWidth
@@ -250,7 +253,7 @@ const ScenarioSummaryCrosshairLine = forwardRef<ScenarioSummaryCrosshairLineHand
         const roundedIndex = Math.round(xScaleIndex)
         const timestamp = timestamps[roundedIndex]
         const formattedDate = timestamp
-          ? dayjs(timestamp).format('YYYY-MM-DD')
+          ? dayjs(timestamp).format(dateDisplayFormatRef.current)
           : pluginResultDates[roundedIndex] || `Index: ${roundedIndex}`
         const startDate = startDates[roundedIndex] || undefined
 

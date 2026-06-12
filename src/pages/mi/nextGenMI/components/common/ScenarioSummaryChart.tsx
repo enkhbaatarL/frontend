@@ -26,6 +26,9 @@ type ScenarioSummaryForecastChartData = ChartData & {
 
 const normalizeMonthDate = (dateLabel: string, fallbackMonthIndex: number): dayjs.Dayjs => {
   const value = dateLabel.trim()
+  const yearMatch = new RegExp(/^(\d{4})$/).exec(value)
+  if (yearMatch) return dayjs(`${yearMatch[1]}-01-01`)
+
   const compactMatch = new RegExp(/^(\d{4})(\d{2})$/).exec(value)
   if (compactMatch) return dayjs(`${compactMatch[1]}-${compactMatch[2]}-01`)
 
@@ -40,6 +43,10 @@ const normalizeMonthDate = (dateLabel: string, fallbackMonthIndex: number): dayj
 
 const buildTimestamps = (dates: string[], valueCount: number): string[] => {
   if (valueCount === 0) return []
+
+  if (dates.length === valueCount) {
+    return dates.map((dateLabel, index) => normalizeMonthDate(dateLabel, index).format('YYYY-MM-DDTHH:mm:ss'))
+  }
 
   const weeksPerMonth = dates.length > 0 ? Math.max(1, Math.floor(valueCount / dates.length)) : 1
 
@@ -115,6 +122,9 @@ interface ScenarioSummaryChartProps {
   linkedHighlightVisibilityKey?: string | null
   chartColorMap?: Map<string, string>
   headerLegendLabelColor?: string
+  crosshairDateFormat?: string
+  xAxisLabelFormat?: string
+  currentMarkerGranularity?: 'DAY' | 'MONTH' | 'YEAR'
   emptyMessage?: string
   modelExecutionGenerating?: boolean
   disableIntroAnimation?: boolean
@@ -131,6 +141,9 @@ const ScenarioSummaryChart = ({
   linkedHighlightVisibilityKey = null,
   chartColorMap: chartColorMapProp,
   headerLegendLabelColor,
+  crosshairDateFormat,
+  xAxisLabelFormat = 'YYYY',
+  currentMarkerGranularity,
   emptyMessage = 'MI 수급 모델 실행 후 차트가 생성됩니다.',
   modelExecutionGenerating = false,
   disableIntroAnimation = false,
@@ -150,7 +163,14 @@ const ScenarioSummaryChart = ({
 
   const timestamps = useMemo(() => buildTimestamps(priceForecast.dates, maxValueCount), [priceForecast.dates, maxValueCount])
 
-  const resultDates = useMemo(() => timestamps.map((timestamp) => dayjs(timestamp).format('YYYY')), [timestamps])
+  const resultDates = useMemo(
+    () => timestamps.map((timestamp) => dayjs(timestamp).format(xAxisLabelFormat)),
+    [timestamps, xAxisLabelFormat],
+  )
+  const chartKey = useMemo(
+    () => `${currentMarkerGranularity ?? 'DAY'}-${xAxisLabelFormat}-${priceForecast.dates.join('|')}-${maxValueCount}`,
+    [currentMarkerGranularity, maxValueCount, priceForecast.dates, xAxisLabelFormat],
+  )
 
   const charts = useMemo<ScenarioSummaryForecastChartData[]>(
     () =>
@@ -236,8 +256,7 @@ const ScenarioSummaryChart = ({
         alignItems="center"
         gap={isHeader ? '6px' : '8px'}
         minWidth={0}
-        px={isHeader ? '4px' : '10px'}
-        py={isHeader ? '2px' : '4px'}
+        padding={isHeader ? '2px 4px' : '4px 10px'}
         onMouseEnter={() => setHoveredChartKey(isShow ? visibilityKey : null)}
         onMouseLeave={() => setHoveredChartKey(null)}
         onClick={() => handleLegendToggle(visibilityKey)}
@@ -259,9 +278,9 @@ const ScenarioSummaryChart = ({
         }}
       >
         <Box
+          width="18px"
+          height={isHighlighted ? '5px' : '4px'}
           sx={{
-            width: 18,
-            height: isHighlighted ? 5 : 4,
             borderRadius: '100px',
             bgcolor: color,
             flexShrink: 0,
@@ -286,6 +305,7 @@ const ScenarioSummaryChart = ({
     if (hasChartData) {
       return (
         <ScenarioSummaryChartGraph
+          key={chartKey}
           height={CHART_HEIGHT}
           charts={charts}
           chartVisibilityMap={chartVisibilityMap}
@@ -293,13 +313,15 @@ const ScenarioSummaryChart = ({
           chartColorMap={chartColorMap}
           spanGaps
           disableIntroAnimation={disableIntroAnimation}
+          crosshairDateFormat={crosshairDateFormat}
+          currentMarkerGranularity={currentMarkerGranularity}
         />
       )
     }
 
     return (
       <Stack height="100%" alignItems="center" justifyContent="center" gap="10px" sx={{ userSelect: 'none' }}>
-        <ErrorOutlineOutlinedIcon sx={{ fontSize: 24, color: 'gray.60' }} aria-hidden />
+        <ErrorOutlineOutlinedIcon sx={{ fontSize: '24px', color: 'gray.60' }} aria-hidden />
         <Typography variant="body3SB12" color="gray.60" lineHeight={1.4}>
           {emptyMessage}
         </Typography>
@@ -311,23 +333,27 @@ const ScenarioSummaryChart = ({
     <Stack width="100%" minWidth={0} gap="8px">
       {showChart && !suppressChartHeader && (
         <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap="8px" width="100%" minWidth={0}>
-          <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-            {headerStart ?? (
-              <Typography variant="body2SB14" color="contentText.Normal" sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
-                {chartUnit}
-              </Typography>
-            )}
-          </Box>
+          <Stack direction="row" alignItems="center" gap="18px" flex="1 1 auto" flexWrap="wrap" minWidth={0}>
+            <Stack flex="0 0 auto" minWidth={0}>
+              {headerStart ?? (
+                <Typography variant="body2SB14" color="contentText.Normal" sx={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
+                  {chartUnit}
+                </Typography>
+              )}
+            </Stack>
 
-          {showHeaderLegend ? (
-            <Box sx={{ flex: '0 1 auto', minWidth: 0, maxWidth: '100%' }}>
-              <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="18px" flexWrap="wrap" minWidth={0}>
+            {showHeaderLegend ? (
+              <Stack direction="row" alignItems="center" gap="18px" flexWrap="wrap" minWidth={0}>
                 {charts.map((chart, index) => renderLegendItem(chart, index, 'header'))}
               </Stack>
-            </Box>
-          ) : null}
+            ) : null}
+          </Stack>
 
-          {headerEnd ? <Box sx={{ flex: '0 0 auto', maxWidth: '100%' }}>{headerEnd}</Box> : null}
+          {headerEnd ? (
+            <Stack flex="0 0 auto" maxWidth="100%" marginLeft="auto">
+              {headerEnd}
+            </Stack>
+          ) : null}
         </Stack>
       )}
 
@@ -351,8 +377,7 @@ const ScenarioSummaryChart = ({
             gap: '0 8px',
             width: '100%',
             boxSizing: 'border-box',
-            pl: '24px',
-            pr: '12px',
+            padding: '0 12px 0 24px',
           }}
         >
           {charts.map((chart, index) => renderLegendItem(chart, index, 'bottom'))}
