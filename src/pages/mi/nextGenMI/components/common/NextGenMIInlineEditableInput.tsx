@@ -114,8 +114,11 @@ const NextGenMIInlineEditableInput = ({
   const resolvedPrefix = modePrefix?.[resolvedMode] ?? prefix
   const nextSaveValue = trimOnSave ? draftValue.trim() : draftValue
   const resolvedSaveDisabled = saveDisabled ?? (!isModeControlled && nextSaveValue.trim().length === 0)
-  const hasRightContent = Boolean(suffix) || (resolvedMode === 'input' && showSaveButton) || (resolvedMode === 'display' && showEditButton)
-  const resolvedPadding = padding ?? `8px ${hasRightContent ? '4px' : '12px'} 8px ${resolvedPrefix ? '8px' : '12px'}`
+  const resolvedPadding =
+    padding ??
+    `8px ${
+      (resolvedMode === 'input' && showSaveButton) || (resolvedMode === 'display' && showEditButton) ? '4px' : suffix ? '8px' : '12px'
+    } 8px ${resolvedPrefix ? '8px' : '12px'}`
 
   useEffect(() => {
     if (isModeControlled) return

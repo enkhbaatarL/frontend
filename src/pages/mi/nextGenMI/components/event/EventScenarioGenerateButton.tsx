@@ -19,8 +19,8 @@ type ScenarioTableButtonProps = {
 }
 
 const tableButtonIconSx = {
-  width: 20,
-  height: 20,
+  width: '20px',
+  height: '20px',
   flexShrink: 0,
   display: 'inline-flex',
   alignItems: 'center',
@@ -34,7 +34,7 @@ const tableButtonBaseSx = {
   height: '36px',
   boxSizing: 'border-box',
   position: 'relative',
-  p: 0,
+  padding: 0,
   borderRadius: '8px',
   borderColor: 'transparent',
   backgroundColor: 'transparent',
@@ -53,8 +53,9 @@ const tableButtonBaseSx = {
     borderColor: 'contentBorder.Normal',
     borderRadius: '8px',
     backgroundColor: 'commonColor.White',
-    transform: 'translateX(-50%)',
-    transition: 'width 220ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease, border-color 160ms ease',
+    transform: 'translateX(-50%) scaleX(1)',
+    transformOrigin: 'center',
+    transition: 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease, border-color 160ms ease',
   },
   '& > span': {
     position: 'relative',
@@ -63,8 +64,7 @@ const tableButtonBaseSx = {
   '& > span > span': {
     boxSizing: 'border-box',
     width: '100%',
-    pl: '6px',
-    pr: '8px',
+    padding: '0 8px 0 6px',
     transform: 'translateX(0)',
     transition: 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
   },
@@ -79,13 +79,12 @@ const tableButtonBaseSx = {
     opacity: 0,
     transform: 'translateX(-6px)',
     transition: 'opacity 140ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-    willChange: 'opacity, transform',
   },
   '&:is(:hover:not(:disabled), :focus-visible)::before': {
-    width: '67px',
+    borderRadius: '4.3px / 8px',
+    transform: 'translateX(-50%) scaleX(1.8612)',
   },
   '&:is(:hover:not(:disabled), :focus-visible) > span > span': {
-    pl: '6px',
     transform: 'translateX(-15.5px)',
   },
   '&:is(:hover:not(:disabled), :focus-visible) .MuiTypography-root': {
@@ -124,7 +123,7 @@ const ScenarioDesignButtonIcon = () => (
 
 const ScenarioViewButtonIcon = () => (
   <Box component="span" sx={tableButtonIconSx}>
-    <ChevronRightRoundedIcon aria-hidden focusable="false" sx={{ width: '100%', height: '100%', fontSize: 20 }} />
+    <ChevronRightRoundedIcon aria-hidden focusable="false" sx={{ width: '100%', height: '100%', fontSize: '20px' }} />
   </Box>
 )
 
@@ -229,8 +228,7 @@ const ViewScenarioButton = ({ disabled, onClick }: ScenarioTableButtonProps) => 
       '& > span > span': {
         boxSizing: 'border-box',
         width: '100%',
-        pl: '8px',
-        pr: '8px',
+        padding: '0 8px',
         transform: 'translateX(0)',
         transition: 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
       },

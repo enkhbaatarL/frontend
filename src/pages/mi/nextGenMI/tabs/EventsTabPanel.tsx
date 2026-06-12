@@ -436,6 +436,7 @@ const EventsTabPanel = () => {
         loading={isLoading}
         skeletonRowCount={pagination.size}
         showCellSkeleton={showEventsTableCellSkeleton}
+        disableHoverState
         rowHeight={48}
         noRowsOverlay={emptyOverlay}
         getCellSx={getEventsTableCellSx}

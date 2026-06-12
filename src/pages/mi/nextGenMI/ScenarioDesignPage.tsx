@@ -1,12 +1,15 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded'
 import DriveFileRenameOutlineRoundedIcon from '@mui/icons-material/DriveFileRenameOutlineRounded'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import StarRoundedIcon from '@mui/icons-material/StarRounded'
-import { Collapse, Divider, Skeleton, Stack, Typography } from '@mui/material'
+import { Collapse, Dialog, DialogActions, DialogContent, Divider, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -17,7 +20,10 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
 import ArrowDown from '@/components/common/icons/ArrowDown'
 import KeyboardArrowUpIcon from '@/components/common/icons/KeyboardArrowUpIcon'
+import MIInputErrorIcon from '@/components/common/input/MIInputErrorIcon'
+import MIMenu from '@/components/common/menu/MIMenu'
 import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISelectMenu'
+import MIFollowCursorTooltip from '@/components/common/table/MIFollowCursorTooltip'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import { nextGenMIIsEventNoiseSignal } from '@/pages/mi/nextGenMI/components/common/nextGenMIClassificationChip'
@@ -38,7 +44,17 @@ import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUser
 import { getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
 
-type ScenarioDesignColumnKey = 'period' | 'transportDisruption' | 'supplyIntensity' | 'supplyRecovery' | 'branchItem'
+type ScenarioDesignColumnKey =
+  | 'period'
+  | 'transportDisruption'
+  | 'supplyIntensity'
+  | 'supplyRecovery'
+  | 'branchItem'
+  | 'demandAlternativeSupply'
+  | 'demandPowerMixAdjustment'
+  | 'tradeRestriction'
+  | 'generatedBranchItemA'
+  | 'generatedBranchItemB'
 
 const SCENARIO_DESIGN_BASE_EVENT_TABS = [
   { key: 'ai', label: 'AI Insights' },
@@ -49,6 +65,7 @@ const SCENARIO_DESIGN_BASE_EVENT_TABS = [
 ] as const
 
 type ScenarioDesignBaseEventTabKey = (typeof SCENARIO_DESIGN_BASE_EVENT_TABS)[number]['key']
+type ScenarioDesignConfirmType = 'reset' | 'cancel' | 'review' | 'deleteRow'
 
 interface ScenarioDesignLocationState {
   eventName?: string
@@ -63,6 +80,11 @@ interface ScenarioDesignRow {
   supplyIntensity: string
   supplyRecovery: string
   branchItem: string
+  demandAlternativeSupply: string
+  demandPowerMixAdjustment: string
+  tradeRestriction: string
+  generatedBranchItemA: string
+  generatedBranchItemB: string
 }
 
 const SCENARIO_DESIGN_COLUMNS: Array<{ key: ScenarioDesignColumnKey; label: string; width: string }> = [
@@ -71,6 +93,20 @@ const SCENARIO_DESIGN_COLUMNS: Array<{ key: ScenarioDesignColumnKey; label: stri
   { key: 'supplyIntensity', label: '공급 차질 - 강도', width: '200px' },
   { key: 'supplyRecovery', label: '공급 차질 - 완화/회복...', width: '200px' },
   { key: 'branchItem', label: '분기항목', width: '200px' },
+  { key: 'demandAlternativeSupply', label: '수요측 대응 - 타 공급원 경유 LNG 확보', width: '200px' },
+  { key: 'demandPowerMixAdjustment', label: '수요측 대응 - PowerMix 조정 LNG 수요 감소', width: '200px' },
+  { key: 'tradeRestriction', label: '거래 제한 (계약 취소 등)', width: '200px' },
+  { key: 'generatedBranchItemA', label: '분기항목명', width: '200px' },
+  { key: 'generatedBranchItemB', label: '분기항목명', width: '200px' },
+]
+
+const SCENARIO_DESIGN_MAX_ROW_COUNT = 15
+const SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS: ScenarioDesignColumnKey[] = [
+  'demandAlternativeSupply',
+  'demandPowerMixAdjustment',
+  'tradeRestriction',
+  'generatedBranchItemA',
+  'generatedBranchItemB',
 ]
 
 const isScenarioDesignRequiredColumn = (key: ScenarioDesignColumnKey) => key === 'period' || key === 'transportDisruption'
@@ -126,6 +162,14 @@ const branchItems: SelectMenuItem<string>[] = [
   { value: 'quarterBase', label: '분기기준값 분기기준값 분기기준값' },
 ]
 
+const createScenarioDesignGeneratedBranchDefaults = () => ({
+  demandAlternativeSupply: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+  demandPowerMixAdjustment: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+  tradeRestriction: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+  generatedBranchItemA: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+  generatedBranchItemB: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+})
+
 const SCENARIO_DESIGN_INITIAL_ROWS: ScenarioDesignRow[] = [
   {
     id: 1,
@@ -135,6 +179,7 @@ const SCENARIO_DESIGN_INITIAL_ROWS: ScenarioDesignRow[] = [
     supplyIntensity: 'none',
     supplyRecovery: 'immediate',
     branchItem: 'quarter',
+    ...createScenarioDesignGeneratedBranchDefaults(),
   },
   {
     id: 2,
@@ -145,6 +190,7 @@ const SCENARIO_DESIGN_INITIAL_ROWS: ScenarioDesignRow[] = [
     supplyIntensity: 'medium',
     supplyRecovery: 'delayed',
     branchItem: 'quarter',
+    ...createScenarioDesignGeneratedBranchDefaults(),
   },
   {
     id: 3,
@@ -154,6 +200,7 @@ const SCENARIO_DESIGN_INITIAL_ROWS: ScenarioDesignRow[] = [
     supplyIntensity: 'medium',
     supplyRecovery: 'delayed',
     branchItem: 'quarter',
+    ...createScenarioDesignGeneratedBranchDefaults(),
   },
   {
     id: 4,
@@ -163,6 +210,7 @@ const SCENARIO_DESIGN_INITIAL_ROWS: ScenarioDesignRow[] = [
     supplyIntensity: 'high',
     supplyRecovery: 'extended',
     branchItem: 'quarterBase',
+    ...createScenarioDesignGeneratedBranchDefaults(),
   },
   {
     id: 5,
@@ -172,6 +220,7 @@ const SCENARIO_DESIGN_INITIAL_ROWS: ScenarioDesignRow[] = [
     supplyIntensity: 'medium',
     supplyRecovery: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label,
     branchItem: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label,
+    ...createScenarioDesignGeneratedBranchDefaults(),
   },
   {
     id: 6,
@@ -181,6 +230,7 @@ const SCENARIO_DESIGN_INITIAL_ROWS: ScenarioDesignRow[] = [
     supplyIntensity: 'medium',
     supplyRecovery: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label,
     branchItem: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label,
+    ...createScenarioDesignGeneratedBranchDefaults(),
   },
 ]
 
@@ -189,7 +239,7 @@ const createInitialScenarioDesignRows = (): ScenarioDesignRow[] => SCENARIO_DESI
 const getScenarioDesignColumnItems = (key: ScenarioDesignColumnKey) => {
   if (key === 'period') return periodItems
   if (key === 'supplyRecovery') return recoveryItems
-  if (key === 'branchItem') return branchItems
+  if (key === 'branchItem' || SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS.includes(key)) return branchItems
   return impactLevelItems
 }
 
@@ -669,6 +719,136 @@ const ScenarioDesignBaseEventTabButton = ({ active, label, onClick }: { active: 
   </MIBaseButton>
 )
 
+const getScenarioDesignConfirmContent = (
+  type: ScenarioDesignConfirmType,
+): { title: string; confirmLabel: string; confirmBgColor: string } => {
+  if (type === 'reset') {
+    return {
+      title: '모든 수정 항목을 기본값으로 초기화하시겠습니까?',
+      confirmLabel: '초기화',
+      confirmBgColor: 'contentIcon.Error',
+    }
+  }
+
+  if (type === 'cancel') {
+    return {
+      title: '시나리오 설계를 취소하시겠습니까?',
+      confirmLabel: '확인',
+      confirmBgColor: 'contentIcon.ActivePrimary',
+    }
+  }
+
+  if (type === 'deleteRow') {
+    return {
+      title: '시나리오를 삭제하시겠습니까?',
+      confirmLabel: '삭제',
+      confirmBgColor: 'contentIcon.Error',
+    }
+  }
+
+  return {
+    title: '변경사항을 검토하시겠습니까?',
+    confirmLabel: '검토',
+    confirmBgColor: 'contentIcon.ActivePrimary',
+  }
+}
+
+const ScenarioDesignConfirmDialog = ({
+  type,
+  onClose,
+  onConfirm,
+}: {
+  type: ScenarioDesignConfirmType | null
+  onClose: () => void
+  onConfirm: (type: ScenarioDesignConfirmType) => void
+}) => {
+  if (!type) return null
+
+  const content = getScenarioDesignConfirmContent(type)
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      slotProps={{
+        paper: {
+          sx: {
+            width: '450px',
+            maxWidth: 'calc(100vw - 48px)',
+            border: '1px solid',
+            borderColor: 'contentBorder.Normal',
+            borderRadius: '12px',
+            boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
+            margin: 0,
+            overflow: 'hidden',
+          },
+        },
+      }}
+    >
+      <DialogContent
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '20px 20px 30px',
+          '&:last-of-type': {
+            paddingBottom: '30px',
+          },
+        }}
+      >
+        <Stack direction="row" alignItems="center" width="100%" minWidth={0}>
+          <Typography variant="body1" fontSize="16px" fontWeight={700} color="contentText.Normal" lineHeight={1.4} flex={1} noWrap>
+            {content.title}
+          </Typography>
+          <MIBaseButton
+            aria-label="닫기"
+            variant="text"
+            onClick={onClose}
+            sx={{
+              height: '32px',
+              padding: '6px',
+            }}
+          >
+            <CloseRoundedIcon sx={{ fontSize: '20px', color: 'contentIcon.Enabled' }} />
+          </MIBaseButton>
+        </Stack>
+      </DialogContent>
+      <DialogActions
+        disableSpacing
+        sx={{
+          padding: '30px 20px 20px',
+          gap: '10px',
+        }}
+      >
+        <MIBaseButton
+          variant="outlined"
+          onClick={onClose}
+          sx={{
+            height: '34px',
+            borderRadius: '6px',
+          }}
+        >
+          취소
+        </MIBaseButton>
+        <MIBaseButton
+          variant="contained"
+          onClick={() => onConfirm(type)}
+          labelColor="contentText.White"
+          sx={{
+            height: '34px',
+            borderRadius: '6px',
+            backgroundColor: content.confirmBgColor,
+            '&:hover:not(:disabled)': {
+              backgroundColor: content.confirmBgColor,
+            },
+          }}
+        >
+          {content.confirmLabel}
+        </MIBaseButton>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
 const ScenarioDesignPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -678,11 +858,17 @@ const ScenarioDesignPage = () => {
   const state = location.state as ScenarioDesignLocationState | null
   const [rows, setRows] = useState<ScenarioDesignRow[]>(() => createInitialScenarioDesignRows())
   const [reviewed, setReviewed] = useState(false)
-  const [hiddenScenarioDesignColumnKeys, setHiddenScenarioDesignColumnKeys] = useState<ScenarioDesignColumnKey[]>([])
+  const [hiddenScenarioDesignColumnKeys, setHiddenScenarioDesignColumnKeys] = useState<ScenarioDesignColumnKey[]>(() => [
+    ...SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS,
+  ])
+  const [addCriteriaMenuOpen, setAddCriteriaMenuOpen] = useState(false)
+  const [selectedAddCriteriaColumnKeys, setSelectedAddCriteriaColumnKeys] = useState<ScenarioDesignColumnKey[]>([])
   const [baseEventExpanded, setBaseEventExpanded] = useState(false)
   const [selectedBaseEventTab, setSelectedBaseEventTab] = useState<ScenarioDesignBaseEventTabKey>('ai')
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
+  const [confirmType, setConfirmType] = useState<ScenarioDesignConfirmType | null>(null)
+  const [deleteRowId, setDeleteRowId] = useState<number | null>(null)
 
   const { data: detail, isLoading } = useQuery({
     queryKey: ['nextGenMIScenarioDesignEvent', id],
@@ -760,12 +946,34 @@ const ScenarioDesignPage = () => {
     () => SCENARIO_DESIGN_COLUMNS.filter((column) => hiddenScenarioDesignColumnKeys.includes(column.key)),
     [hiddenScenarioDesignColumnKeys],
   )
+  const scenarioNameErrorMessages = useMemo(() => {
+    const scenarioNameSet = new Set<string>()
+    const errorMessages = new Map<number, string>()
+
+    rows.forEach((row) => {
+      const scenarioName = row.scenarioName.trim()
+      if (!scenarioName) {
+        errorMessages.set(row.id, '시나리오명을 입력해 주세요.')
+        return
+      }
+
+      if (scenarioNameSet.has(scenarioName)) {
+        errorMessages.set(row.id, '중복된 시나리오명은 사용할 수 없습니다.')
+        return
+      }
+
+      scenarioNameSet.add(scenarioName)
+    })
+
+    return errorMessages
+  }, [rows])
   const canCompleteScenarioDesignReview = useMemo(
     () =>
+      scenarioNameErrorMessages.size === 0 &&
       rows.every((row) =>
         visibleScenarioDesignColumns.every((column) => row[column.key] !== SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value),
       ),
-    [rows, visibleScenarioDesignColumns],
+    [rows, scenarioNameErrorMessages, visibleScenarioDesignColumns],
   )
 
   const handleRowValueChange = useCallback((rowId: number, key: keyof ScenarioDesignRow, value: string) => {
@@ -774,18 +982,23 @@ const ScenarioDesignPage = () => {
   }, [])
 
   const handleAddRow = useCallback(() => {
-    setRows((currentRows) => [
-      ...currentRows,
-      {
-        id: Math.max(0, ...currentRows.map((row) => row.id)) + 1,
-        scenarioName: '시나리오명',
-        period: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-        transportDisruption: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-        supplyIntensity: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-        supplyRecovery: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-        branchItem: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-      },
-    ])
+    setRows((currentRows) => {
+      if (currentRows.length >= SCENARIO_DESIGN_MAX_ROW_COUNT) return currentRows
+
+      return [
+        ...currentRows,
+        {
+          id: Math.max(0, ...currentRows.map((row) => row.id)) + 1,
+          scenarioName: '',
+          period: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+          transportDisruption: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+          supplyIntensity: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+          supplyRecovery: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+          branchItem: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+          ...createScenarioDesignGeneratedBranchDefaults(),
+        },
+      ]
+    })
     setReviewed(false)
   }, [])
 
@@ -795,32 +1008,92 @@ const ScenarioDesignPage = () => {
     setReviewed(false)
   }, [])
 
-  const handleAddCriteria = useCallback(() => {
-    const nextColumnKey = hiddenScenarioDesignColumns[0]?.key
-    if (!nextColumnKey) {
-      showSnackbar('추가 가능한 분기 기준이 없습니다.', { variant: 'info' })
-      return
-    }
+  const handleAddCriteriaMenuClose = useCallback(() => {
+    setAddCriteriaMenuOpen(false)
+    setSelectedAddCriteriaColumnKeys([])
+  }, [])
 
-    setHiddenScenarioDesignColumnKeys((currentKeys) => currentKeys.filter((key) => key !== nextColumnKey))
+  const handleAddCriteriaMenuOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        handleAddCriteriaMenuClose()
+        return
+      }
+
+      if (hiddenScenarioDesignColumns.length === 0) {
+        showSnackbar('추가 가능한 분기 기준이 없습니다.', { variant: 'info' })
+        return
+      }
+
+      setSelectedAddCriteriaColumnKeys([])
+      setAddCriteriaMenuOpen(true)
+    },
+    [handleAddCriteriaMenuClose, hiddenScenarioDesignColumns.length, showSnackbar],
+  )
+
+  const handleToggleAddCriteriaColumn = useCallback((key: ScenarioDesignColumnKey) => {
+    setSelectedAddCriteriaColumnKeys((currentKeys) =>
+      currentKeys.includes(key) ? currentKeys.filter((currentKey) => currentKey !== key) : [...currentKeys, key],
+    )
+  }, [])
+
+  const handleAddSelectedCriteria = useCallback(() => {
+    if (selectedAddCriteriaColumnKeys.length === 0) return
+
+    setHiddenScenarioDesignColumnKeys((currentKeys) => currentKeys.filter((key) => !selectedAddCriteriaColumnKeys.includes(key)))
+    setAddCriteriaMenuOpen(false)
+    setSelectedAddCriteriaColumnKeys([])
     setReviewed(false)
-  }, [hiddenScenarioDesignColumns, showSnackbar])
+  }, [selectedAddCriteriaColumnKeys])
 
   const handleDeleteRow = useCallback((rowId: number) => {
     setRows((currentRows) => (currentRows.length <= 1 ? currentRows : currentRows.filter((row) => row.id !== rowId)))
     setReviewed(false)
   }, [])
 
-  const handleReset = useCallback(() => {
-    setRows(createInitialScenarioDesignRows())
-    setHiddenScenarioDesignColumnKeys([])
-    setReviewed(false)
+  const handleConfirmClose = useCallback(() => {
+    setConfirmType(null)
+    setDeleteRowId(null)
   }, [])
 
-  const handleReview = useCallback(() => {
-    setReviewed(true)
-    showSnackbar('변경사항 검토가 완료되었습니다.', { variant: 'success' })
-  }, [showSnackbar])
+  const handleConfirm = useCallback(
+    (type: ScenarioDesignConfirmType) => {
+      setConfirmType(null)
+
+      if (type === 'reset') {
+        setRows(createInitialScenarioDesignRows())
+        setHiddenScenarioDesignColumnKeys([...SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS])
+        setAddCriteriaMenuOpen(false)
+        setSelectedAddCriteriaColumnKeys([])
+        setReviewed(false)
+        showSnackbar('모든 항목이 기본값으로 초기화되었습니다.', { variant: 'success' })
+        return
+      }
+
+      if (type === 'cancel') {
+        navigate(eventDetailPath, { state: { eventName: eventTitle } })
+        return
+      }
+
+      if (type === 'deleteRow') {
+        if (deleteRowId !== null) {
+          handleDeleteRow(deleteRowId)
+          showSnackbar('시나리오가 삭제되었습니다.', { variant: 'success' })
+        }
+        setDeleteRowId(null)
+        return
+      }
+
+      setReviewed(true)
+      if (scenarioNameErrorMessages.size > 0) {
+        showSnackbar('시나리오명을 확인해 주세요.', { variant: 'error' })
+        return
+      }
+
+      showSnackbar('변경사항 검토가 완료되었습니다.', { variant: 'success' })
+    },
+    [deleteRowId, eventDetailPath, eventTitle, handleDeleteRow, navigate, scenarioNameErrorMessages, showSnackbar],
+  )
 
   const handleComplete = useCallback(() => {
     if (!reviewed || !canCompleteScenarioDesignReview) return
@@ -880,54 +1153,80 @@ const ScenarioDesignPage = () => {
           padding: '0 8px',
           overflow: 'visible',
         },
-        renderCell: ({ row }) => (
-          <Stack direction="row" alignItems="center" gap="8px" width="100%" minWidth={0}>
-            <ScenarioDesignIconButton
-              label={`${row.scenarioName} 삭제`}
-              disabled={rows.length <= 1}
-              onClick={() => handleDeleteRow(row.id)}
-            />
-            <NextGenMIInlineEditableInput
-              value={row.scenarioName}
-              autoFocus
-              showEditButton={false}
-              editOnClick
-              commitOnBlur
-              commitOnEnter
-              suffix={
-                row.recommended ? (
-                  <MIChip
-                    label="BC"
-                    color="purple"
-                    size="h20"
-                    disableHover
-                    sx={{
-                      padding: '2px 6px',
-                      borderRadius: '8px',
-                      backgroundColor: 'mari.Primary',
-                      color: 'contentText.White',
-                    }}
-                  />
-                ) : undefined
-              }
-              onCommit={(value) => {
-                if (value !== row.scenarioName) handleRowValueChange(row.id, 'scenarioName', value)
-              }}
-              sx={{
-                borderColor: 'contentBorder.Normal',
-                bgcolor: 'commonColor.White',
-                '&:hover:not(:focus-within)': {
-                  backgroundColor: 'contentBG.Hover',
-                  borderColor: 'contentBorder.Hover',
-                },
-                '&:focus-within': {
-                  borderColor: 'contentBorder.Active',
-                  backgroundColor: 'commonColor.White',
-                },
-              }}
-            />
-          </Stack>
-        ),
+        renderCell: ({ row }) => {
+          const scenarioNameErrorMessage = reviewed ? scenarioNameErrorMessages.get(row.id) : undefined
+
+          return (
+            <Stack direction="row" alignItems="center" gap="8px" width="100%" minWidth={0}>
+              <ScenarioDesignIconButton
+                label={`${row.scenarioName || '시나리오'} 삭제`}
+                disabled={rows.length <= 1}
+                onClick={() => {
+                  setDeleteRowId(row.id)
+                  setConfirmType('deleteRow')
+                }}
+              />
+              <NextGenMIInlineEditableInput
+                value={row.scenarioName}
+                autoFocus
+                showEditButton={false}
+                editOnClick
+                commitOnBlur
+                commitOnEnter
+                suffix={
+                  row.recommended || scenarioNameErrorMessage ? (
+                    <Stack component="span" direction="row" alignItems="center" gap="4px" flexShrink={0}>
+                      {row.recommended && (
+                        <MIChip
+                          label="BC"
+                          color="purple"
+                          size="h20"
+                          disableHover
+                          sx={{
+                            padding: '2px 6px',
+                            borderRadius: '8px',
+                            backgroundColor: 'mari.Primary',
+                            color: 'contentText.White',
+                          }}
+                        />
+                      )}
+                      {scenarioNameErrorMessage && (
+                        <MIFollowCursorTooltip
+                          title={scenarioNameErrorMessage}
+                          tooltipSx={{
+                            bgcolor: 'contentText.Error',
+                            color: 'contentText.White',
+                            padding: '8px 10px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: 400,
+                          }}
+                        >
+                          <MIInputErrorIcon width="20px" height="20px" aria-label="시나리오명 오류" />
+                        </MIFollowCursorTooltip>
+                      )}
+                    </Stack>
+                  ) : undefined
+                }
+                onCommit={(value) => {
+                  if (value !== row.scenarioName) handleRowValueChange(row.id, 'scenarioName', value)
+                }}
+                sx={{
+                  borderColor: scenarioNameErrorMessage ? 'contentBorder.Error' : 'contentBorder.Normal',
+                  bgcolor: 'commonColor.White',
+                  '&:hover:not(:focus-within)': {
+                    backgroundColor: 'contentBG.Hover',
+                    borderColor: scenarioNameErrorMessage ? 'contentBorder.Error' : 'contentBorder.Hover',
+                  },
+                  '&:focus-within': {
+                    borderColor: scenarioNameErrorMessage ? 'contentBorder.Error' : 'contentBorder.Active',
+                    backgroundColor: 'commonColor.White',
+                  },
+                }}
+              />
+            </Stack>
+          )
+        },
       },
       ...visibleScenarioDesignColumns.map((column): NextGenMIStickyTableColumn<ScenarioDesignRow> => {
         const required = isScenarioDesignRequiredColumn(column.key)
@@ -974,7 +1273,7 @@ const ScenarioDesignPage = () => {
         renderCell: () => null,
       },
     ],
-    [handleDeleteCriteriaColumn, handleDeleteRow, handleRowValueChange, rows.length, visibleScenarioDesignColumns],
+    [handleDeleteCriteriaColumn, handleRowValueChange, reviewed, rows.length, scenarioNameErrorMessages, visibleScenarioDesignColumns],
   )
 
   const baseEventDetailContent = useMemo<ReactNode>(() => {
@@ -1065,285 +1364,392 @@ const ScenarioDesignPage = () => {
   }, [setStickyHeader])
 
   return (
-    <Stack maxWidth="1380px" margin="auto" px="12px" pt="12px" position="relative" sx={{ overflowX: 'hidden' }}>
-      <Stack gap="38px" py="24px">
-        <Stack id={SCENARIO_DESIGN_SECTIONS[0].id} gap="4px">
-          <Stack padding="4px 8px">
-            <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} noWrap>
-              Base Event
-            </Typography>
-          </Stack>
-          <Stack
-            gap="10px"
-            padding="16px"
-            bgcolor={baseEventExpanded ? 'gray.5' : 'commonColor.White'}
-            border="1px solid"
-            borderColor={baseEventExpanded ? 'contentBorder.Hover' : 'contentBorder.Normal'}
-            borderRadius="10px"
-            sx={{
-              transition: 'background-color 120ms ease, border-color 120ms ease',
-              ...(!baseEventExpanded && {
-                '&:hover': {
-                  backgroundColor: 'contentBG.Hover',
-                  borderColor: 'contentBorder.Hover',
-                },
-              }),
-            }}
-          >
+    <>
+      <Stack maxWidth="1380px" margin="auto" px="12px" pt="12px" position="relative" sx={{ overflowX: 'hidden' }}>
+        <Stack gap="38px" py="24px">
+          <Stack id={SCENARIO_DESIGN_SECTIONS[0].id} gap="4px">
+            <Stack padding="4px 8px">
+              <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} noWrap>
+                Base Event
+              </Typography>
+            </Stack>
             <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              width="100%"
-              onClick={handleBaseEventToggle}
-              sx={{ cursor: 'pointer' }}
-            >
-              <Stack flex={1} minWidth={0} gap="6px">
-                {isLoading ? (
-                  <>
-                    <Skeleton variant="rounded" width="min(720px, 100%)" height="20px" />
-                    <Skeleton variant="rounded" width="360px" height="16px" />
-                  </>
-                ) : (
-                  <>
-                    <Stack direction="row" alignItems="center" gap="4px" minWidth={0}>
-                      {isScenarioSuggested && <StarRoundedIcon sx={{ fontSize: '18px', color: 'mari.Primary', flexShrink: 0 }} />}
-                      <NextGenMIHoverLinkCell
-                        value={eventTitle}
-                        variant="body1M16"
-                        ariaLabel={`${eventTitle} 상세 보기`}
-                        onClick={() => navigate(eventDetailPath, { state: { eventName: eventTitle } })}
-                      />
-                    </Stack>
-                    <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
-                      <Typography variant="body2R14" color="contentText.Subtext" lineHeight={1.5} noWrap>
-                        {createdAtLabel}
-                      </Typography>
-                      <Typography variant="body2M14" color="contentText.Normal" lineHeight={1.5} noWrap>
-                        {eventTypeLabel}
-                      </Typography>
-                    </Stack>
-                  </>
-                )}
-              </Stack>
-              <MIBaseButton
-                aria-label={baseEventExpanded ? 'Base Event 접기' : 'Base Event 펼치기'}
-                aria-expanded={baseEventExpanded}
-                aria-controls="scenario-design-base-event-detail"
-                variant="text"
-                prefix={
-                  baseEventExpanded ? (
-                    <KeyboardArrowUpIcon aria-hidden focusable="false" style={{ color: '#868E96' }} />
-                  ) : (
-                    <ArrowDown aria-hidden focusable="false" />
-                  )
-                }
-                onClick={(event) => {
-                  event.stopPropagation()
-                  handleBaseEventToggle()
-                }}
-                sx={{
-                  width: '28px',
-                  minWidth: '28px',
-                  height: '28px',
-                  padding: '4px',
-                  borderRadius: '10px',
-                  '& .MuiTypography-root': {
-                    display: 'none',
+              gap="10px"
+              padding="16px"
+              bgcolor={baseEventExpanded ? 'gray.5' : 'commonColor.White'}
+              border="1px solid"
+              borderColor={baseEventExpanded ? 'contentBorder.Hover' : 'contentBorder.Normal'}
+              borderRadius="10px"
+              sx={{
+                transition: 'background-color 120ms ease, border-color 120ms ease',
+                ...(!baseEventExpanded && {
+                  '&:hover': {
+                    backgroundColor: 'contentBG.Hover',
+                    borderColor: 'contentBorder.Hover',
                   },
-                }}
-              >
-                {''}
-              </MIBaseButton>
-            </Stack>
-
-            <Collapse in={baseEventExpanded} timeout="auto" unmountOnExit sx={{ width: '100%' }}>
-              <Stack id="scenario-design-base-event-detail" gap="6px" width="100%" minWidth={0}>
-                <Stack direction="row" alignItems="center" gap="5px" minHeight="48px" padding="8px 12px" flexWrap="wrap">
-                  {SCENARIO_DESIGN_BASE_EVENT_TABS.map((tab) => (
-                    <ScenarioDesignBaseEventTabButton
-                      key={tab.key}
-                      active={selectedBaseEventTab === tab.key}
-                      label={tab.label}
-                      onClick={() => setSelectedBaseEventTab(tab.key)}
-                    />
-                  ))}
-                </Stack>
-                <Stack bgcolor="commonColor.White" borderRadius="10px" padding="8px" overflow="hidden" minWidth={0}>
-                  {baseEventDetailContent}
-                </Stack>
-              </Stack>
-            </Collapse>
-          </Stack>
-        </Stack>
-
-        {showDesignRationale && (
-          <Stack id={SCENARIO_DESIGN_SECTIONS[1].id} gap="12px">
-            <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} padding="4px 8px">
-              설계 근거
-            </Typography>
-            <Stack bgcolor="gray.5" borderRadius="10px" padding="20px" justifyContent="center">
-              {isLoading ? (
-                <Stack gap="8px">
-                  <Skeleton variant="rounded" width="100%" height="18px" />
-                  <Skeleton variant="rounded" width="78%" height="18px" />
-                </Stack>
-              ) : (
-                <Typography fontSize="16px" fontWeight={500} color="contentText.Normal" lineHeight={1.5} whiteSpace="pre-line">
-                  {designRationale}
-                </Typography>
-              )}
-            </Stack>
-          </Stack>
-        )}
-
-        <Stack id={SCENARIO_DESIGN_SECTIONS[2].id} gap="4px">
-          <Typography fontSize="18px" fontWeight={600} color="contentText.Black" padding="4px 8px">
-            분기 항목 및 분기 기준 검토
-          </Typography>
-          <Stack width="100%" minWidth={0}>
-            <Stack position="relative" width="100%" minWidth={0}>
-              <NextGenMIStickyTable<ScenarioDesignRow>
-                columns={columns}
-                rows={rows}
-                getRowKey={(row) => row.id}
-                fixedLeftColumnIndexes={[0]}
-                rowHeight="56px"
-                headerHeight="56px"
-                cellPaddingX="8px"
-                cellPaddingY="8px"
-                headerFontSize="14px"
-                bodyFontSize="14px"
-                noRowMessage="시나리오를 추가해 주세요."
-                containerShell={false}
-              />
+                }),
+              }}
+            >
               <Stack
-                position="absolute"
-                top={0}
-                right={0}
-                bottom={0}
-                width="36px"
-                alignItems="flex-end"
-                padding="10px 0"
-                zIndex={7}
-                sx={{
-                  pointerEvents: 'none',
-                }}
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                width="100%"
+                onClick={handleBaseEventToggle}
+                sx={{ cursor: 'pointer' }}
               >
+                <Stack flex={1} minWidth={0} gap="6px">
+                  {isLoading ? (
+                    <>
+                      <Skeleton variant="rounded" width="min(720px, 100%)" height="20px" />
+                      <Skeleton variant="rounded" width="360px" height="16px" />
+                    </>
+                  ) : (
+                    <>
+                      <Stack direction="row" alignItems="center" gap="4px" minWidth={0}>
+                        {isScenarioSuggested && <StarRoundedIcon sx={{ fontSize: '18px', color: 'mari.Primary', flexShrink: 0 }} />}
+                        <NextGenMIHoverLinkCell
+                          value={eventTitle}
+                          variant="body1M16"
+                          ariaLabel={`${eventTitle} 상세 보기`}
+                          onClick={() => navigate(eventDetailPath, { state: { eventName: eventTitle } })}
+                        />
+                      </Stack>
+                      <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
+                        <Typography variant="body2R14" color="contentText.Subtext" lineHeight={1.5} noWrap>
+                          {createdAtLabel}
+                        </Typography>
+                        <Typography variant="body2M14" color="contentText.Normal" lineHeight={1.5} noWrap>
+                          {eventTypeLabel}
+                        </Typography>
+                      </Stack>
+                    </>
+                  )}
+                </Stack>
                 <MIBaseButton
-                  aria-label="분기 기준 추가"
-                  variant="outlined"
-                  enableHoverBackground
-                  onClick={handleAddCriteria}
+                  aria-label={baseEventExpanded ? 'Base Event 접기' : 'Base Event 펼치기'}
+                  aria-expanded={baseEventExpanded}
+                  aria-controls="scenario-design-base-event-detail"
+                  variant="text"
+                  prefix={
+                    baseEventExpanded ? (
+                      <KeyboardArrowUpIcon aria-hidden focusable="false" style={{ color: '#868E96' }} />
+                    ) : (
+                      <ArrowDown aria-hidden focusable="false" />
+                    )
+                  }
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    handleBaseEventToggle()
+                  }}
                   sx={{
                     width: '28px',
                     minWidth: '28px',
                     height: '28px',
-                    padding: 0,
-                    borderRadius: '8px',
-                    pointerEvents: 'auto',
-                    '& > .MuiBox-root, & .MuiStack-root, & .MuiTypography-root': {
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    },
+                    padding: '4px',
+                    borderRadius: '10px',
                     '& .MuiTypography-root': {
-                      lineHeight: 0,
+                      display: 'none',
                     },
                   }}
                 >
-                  <AddRoundedIcon sx={{ fontSize: '20px' }} />
+                  {''}
                 </MIBaseButton>
               </Stack>
-            </Stack>
 
-            <MIBaseButton
-              variant="outlined"
-              enableHoverBackground
-              onClick={handleAddRow}
-              sx={{
-                width: '100%',
-                minWidth: 0,
-                height: '30px',
-                marginTop: '4px',
-                padding: 0,
-                borderRadius: '4px',
-                '& > .MuiBox-root, & .MuiStack-root, & .MuiTypography-root': {
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                },
-                '& .MuiTypography-root': {
-                  lineHeight: 0,
-                },
-              }}
-            >
-              <AddRoundedIcon sx={{ fontSize: '20px' }} />
-            </MIBaseButton>
+              <Collapse in={baseEventExpanded} timeout="auto" unmountOnExit sx={{ width: '100%' }}>
+                <Stack id="scenario-design-base-event-detail" gap="6px" width="100%" minWidth={0}>
+                  <Stack direction="row" alignItems="center" gap="5px" minHeight="48px" padding="8px 12px" flexWrap="wrap">
+                    {SCENARIO_DESIGN_BASE_EVENT_TABS.map((tab) => (
+                      <ScenarioDesignBaseEventTabButton
+                        key={tab.key}
+                        active={selectedBaseEventTab === tab.key}
+                        label={tab.label}
+                        onClick={() => setSelectedBaseEventTab(tab.key)}
+                      />
+                    ))}
+                  </Stack>
+                  <Stack bgcolor="commonColor.White" borderRadius="10px" padding="8px" overflow="hidden" minWidth={0}>
+                    {baseEventDetailContent}
+                  </Stack>
+                </Stack>
+              </Collapse>
+            </Stack>
           </Stack>
 
-          <Stack direction="row" alignItems="center" justifyContent="space-between" minHeight="60px" padding="12px 0">
-            <MIBaseButton
-              variant="outlined"
-              prefix={<ReplayRoundedIcon sx={{ fontSize: '20px' }} />}
-              onClick={handleReset}
-              gap="4px"
-              sx={{ height: '36px', padding: '8px 10px 8px 6px', borderRadius: '8px' }}
-            >
-              전체 초기화
-            </MIBaseButton>
+          {showDesignRationale && (
+            <Stack id={SCENARIO_DESIGN_SECTIONS[1].id} gap="12px">
+              <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} padding="4px 8px">
+                설계 근거
+              </Typography>
+              <Stack bgcolor="gray.5" borderRadius="10px" padding="20px" justifyContent="center">
+                {isLoading ? (
+                  <Stack gap="8px">
+                    <Skeleton variant="rounded" width="100%" height="18px" />
+                    <Skeleton variant="rounded" width="78%" height="18px" />
+                  </Stack>
+                ) : (
+                  <Typography fontSize="16px" fontWeight={500} color="contentText.Normal" lineHeight={1.5} whiteSpace="pre-line">
+                    {designRationale}
+                  </Typography>
+                )}
+              </Stack>
+            </Stack>
+          )}
 
-            <Stack direction="row" alignItems="center" gap="8px">
+          <Stack id={SCENARIO_DESIGN_SECTIONS[2].id} gap="4px">
+            <Typography fontSize="18px" fontWeight={600} color="contentText.Black" padding="4px 8px">
+              분기 항목 및 분기 기준 검토
+            </Typography>
+            <Stack width="100%" minWidth={0}>
+              <Stack position="relative" width="100%" minWidth={0}>
+                <NextGenMIStickyTable<ScenarioDesignRow>
+                  columns={columns}
+                  rows={rows}
+                  getRowKey={(row) => row.id}
+                  fixedLeftColumnIndexes={[0]}
+                  rowHeight="56px"
+                  headerHeight="56px"
+                  cellPaddingX="8px"
+                  cellPaddingY="8px"
+                  headerFontSize="14px"
+                  bodyFontSize="14px"
+                  noRowMessage="시나리오를 추가해 주세요."
+                  containerShell={false}
+                />
+                <Stack
+                  position="absolute"
+                  top={0}
+                  right={0}
+                  bottom={0}
+                  width="36px"
+                  alignItems="flex-end"
+                  padding="10px 0"
+                  zIndex={7}
+                  sx={{
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <MIMenu
+                    aria-label="분기 기준 추가"
+                    label={<AddRoundedIcon sx={{ fontSize: '20px' }} />}
+                    variant="outlined"
+                    enableHoverBackground
+                    open={addCriteriaMenuOpen}
+                    onOpenChange={handleAddCriteriaMenuOpenChange}
+                    placement="bottom-end"
+                    menuPositionOffset={{ top: 11 }}
+                    closeOnScroll
+                    paperProps={{
+                      sx: {
+                        width: '311px',
+                        overflow: 'hidden',
+                      },
+                    }}
+                    sx={{
+                      width: '28px',
+                      minWidth: '28px',
+                      height: '28px',
+                      padding: 0,
+                      borderRadius: '8px',
+                      pointerEvents: 'auto',
+                      '& > .MuiBox-root, & .MuiStack-root, & .MuiTypography-root': {
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      },
+                      '& .MuiTypography-root': {
+                        lineHeight: 0,
+                      },
+                    }}
+                  >
+                    <Stack gap="4px" padding="8px 6px">
+                      {hiddenScenarioDesignColumns.map((column) => {
+                        const selected = selectedAddCriteriaColumnKeys.includes(column.key)
+
+                        return (
+                          <MIBaseButton
+                            key={column.key}
+                            type="button"
+                            variant="text"
+                            prefix={
+                              <CheckRoundedIcon
+                                sx={{
+                                  fontSize: '20px',
+                                  color: 'mari.Primary',
+                                  opacity: selected ? 1 : 0,
+                                  flexShrink: 0,
+                                }}
+                              />
+                            }
+                            gap="8px"
+                            onClick={() => handleToggleAddCriteriaColumn(column.key)}
+                            aria-pressed={selected}
+                            labelColor={selected ? 'contentText.Black' : 'contentText.Normal'}
+                            labelTextAlign="left"
+                            sx={{
+                              width: '100%',
+                              height: '36px',
+                              padding: '8px 12px 8px 6px',
+                              borderRadius: '10px',
+                              minWidth: 0,
+                              justifyContent: 'flex-start',
+                              backgroundColor: selected ? 'contentBG.PrimaryFade' : 'transparent',
+                              '&:hover:not(:disabled)': {
+                                backgroundColor: selected ? 'contentBG.PrimaryFade' : 'contentBG.Hover',
+                              },
+                              '&:focus-visible': {
+                                outline: '1px solid',
+                                outlineColor: 'contentBorder.Active',
+                              },
+                              '& > span, & > span > span': {
+                                justifyContent: 'flex-start',
+                              },
+                              '& .MuiTypography-root': {
+                                flex: 1,
+                                minWidth: 0,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                lineHeight: 1.4,
+                              },
+                            }}
+                          >
+                            {column.label}
+                          </MIBaseButton>
+                        )
+                      })}
+                    </Stack>
+                    <Stack direction="row" alignItems="flex-start" gap="4px" padding="6px 16px">
+                      <InfoOutlinedIcon sx={{ fontSize: '16px', color: 'contentIcon.Enabled', flexShrink: 0 }} />
+                      <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
+                        Agent 생성된 분기항목 중 선택 가능합니다
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="8px" padding="12px">
+                      <MIBaseButton variant="outlined" onClick={handleAddCriteriaMenuClose} sx={{ height: '32px', borderRadius: '8px' }}>
+                        취소
+                      </MIBaseButton>
+                      <MIBaseButton
+                        variant="contained"
+                        disabled={selectedAddCriteriaColumnKeys.length === 0}
+                        onClick={handleAddSelectedCriteria}
+                        labelColor="contentText.White"
+                        sx={{ height: '32px', borderRadius: '8px' }}
+                      >
+                        분기항목 추가
+                      </MIBaseButton>
+                    </Stack>
+                  </MIMenu>
+                </Stack>
+              </Stack>
+
+              <MIFollowCursorTooltip
+                title={
+                  rows.length >= SCENARIO_DESIGN_MAX_ROW_COUNT ? '시나리오는 최대 15개까지 추가할 수 있습니다.' : '시나리오를 추가합니다'
+                }
+              >
+                <Stack width="100%" minWidth={0}>
+                  <MIBaseButton
+                    variant="outlined"
+                    enableHoverBackground
+                    disabled={rows.length >= SCENARIO_DESIGN_MAX_ROW_COUNT}
+                    onClick={handleAddRow}
+                    sx={{
+                      width: '100%',
+                      minWidth: 0,
+                      height: '30px',
+                      marginTop: '4px',
+                      padding: 0,
+                      borderRadius: '4px',
+                      '& > .MuiBox-root, & .MuiStack-root, & .MuiTypography-root': {
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      },
+                      '& .MuiTypography-root': {
+                        lineHeight: 0,
+                      },
+                    }}
+                  >
+                    <AddRoundedIcon sx={{ fontSize: '20px' }} />
+                  </MIBaseButton>
+                </Stack>
+              </MIFollowCursorTooltip>
+            </Stack>
+
+            <Stack direction="row" alignItems="center" justifyContent="space-between" minHeight="60px" padding="12px 0">
               <MIBaseButton
                 variant="outlined"
-                onClick={() => navigate(eventDetailPath, { state: { eventName: eventTitle } })}
-                sx={{ height: '36px', padding: '8px 10px', borderRadius: '8px' }}
+                prefix={<ReplayRoundedIcon sx={{ fontSize: '20px' }} />}
+                onClick={() => setConfirmType('reset')}
+                gap="4px"
+                sx={{ height: '36px', padding: '8px 10px 8px 6px', borderRadius: '8px' }}
               >
-                취소
+                전체 초기화
               </MIBaseButton>
-              <MIBaseButton
-                variant="contained"
-                onClick={handleReview}
-                sx={{
-                  height: '36px',
-                  padding: '8px 10px',
-                  borderRadius: '8px',
-                  backgroundColor: 'contentIcon.ActivePrimary',
-                  '&:hover:not(:disabled)': {
+
+              <Stack direction="row" alignItems="center" gap="8px">
+                <MIBaseButton
+                  variant="outlined"
+                  onClick={() => setConfirmType('cancel')}
+                  sx={{ height: '36px', padding: '8px 10px', borderRadius: '8px' }}
+                >
+                  취소
+                </MIBaseButton>
+                <MIBaseButton
+                  variant="contained"
+                  disabled={reviewed && canCompleteScenarioDesignReview}
+                  onClick={() => setConfirmType('review')}
+                  sx={{
+                    height: '36px',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
                     backgroundColor: 'contentIcon.ActivePrimary',
-                  },
-                }}
-              >
-                변경사항 검토
-              </MIBaseButton>
-              <MIBaseButton
-                variant="contained"
-                suffix={<ChevronRightRoundedIcon sx={{ fontSize: '20px' }} />}
-                disabled={!reviewed || !canCompleteScenarioDesignReview}
-                onClick={handleComplete}
-                labelColor="contentText.White"
-                sx={{
-                  height: '36px',
-                  padding: '8px 6px 8px 10px',
-                  borderRadius: '8px',
-                  backgroundColor: 'contentIcon.ActivePrimary',
-                  '&:hover:not(:disabled)': {
+                    '&:hover:not(:disabled)': {
+                      backgroundColor: 'contentIcon.ActivePrimary',
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: 'contentIcon.Disabled',
+                      color: 'contentText.White',
+                    },
+                    '&.Mui-disabled .MuiTypography-root': {
+                      color: 'contentText.White',
+                    },
+                  }}
+                >
+                  변경사항 검토
+                </MIBaseButton>
+                <MIBaseButton
+                  variant="contained"
+                  suffix={<ChevronRightRoundedIcon sx={{ fontSize: '20px' }} />}
+                  disabled={!reviewed || !canCompleteScenarioDesignReview}
+                  onClick={handleComplete}
+                  labelColor="contentText.White"
+                  sx={{
+                    height: '36px',
+                    padding: '8px 6px 8px 10px',
+                    borderRadius: '8px',
                     backgroundColor: 'contentIcon.ActivePrimary',
-                  },
-                  '&.Mui-disabled': {
-                    backgroundColor: '#C3CAEE',
-                    color: 'contentText.White',
-                  },
-                  '&.Mui-disabled .MuiTypography-root, &.Mui-disabled svg': {
-                    color: 'contentText.White',
-                  },
-                }}
-              >
-                검토 완료
-              </MIBaseButton>
+                    '&:hover:not(:disabled)': {
+                      backgroundColor: 'contentIcon.ActivePrimary',
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: '#C3CAEE',
+                      color: 'contentText.White',
+                    },
+                    '&.Mui-disabled .MuiTypography-root, &.Mui-disabled svg': {
+                      color: 'contentText.White',
+                    },
+                  }}
+                >
+                  검토 완료
+                </MIBaseButton>
+              </Stack>
             </Stack>
           </Stack>
         </Stack>
       </Stack>
-    </Stack>
+      <ScenarioDesignConfirmDialog type={confirmType} onClose={handleConfirmClose} onConfirm={handleConfirm} />
+    </>
   )
 }
 

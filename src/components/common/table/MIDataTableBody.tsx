@@ -73,6 +73,7 @@ export interface MIDataTableBodyProps<T extends GridRowModel> {
   /** 빈 목록 커스텀 오버레이(noRowMessage 대신 사용) */
   noRowsOverlay?: ReactNode
   disableHover?: boolean
+  disableHoverState?: boolean
   rowHeight?: number
   getRowKey?: (row: T, index: number) => string | number
   getRowClassName?: (params: { row: T }) => string
@@ -715,6 +716,7 @@ const MIDataTableBody = <T extends GridRowModel>({
   noRowMessage,
   noRowsOverlay,
   disableHover,
+  disableHoverState,
   onRowClick,
   onRowMouseEnter,
   onRowMouseLeave,
@@ -760,6 +762,7 @@ const MIDataTableBody = <T extends GridRowModel>({
 
   const rowSxArray = toSxArray(rowSx)
   const [hoveredRowKey, setHoveredRowKey] = useState<string | number | null>(null)
+  const shouldTrackHover = !disableHover && !disableHoverState
   const enableHorizontalScroll = scroll?.overflowX === 'auto'
   const gridTemplateColumns = useMemo(
     () => dataTableColumnsToGridTemplate(columns, { enableHorizontalScroll }),
@@ -868,21 +871,23 @@ const MIDataTableBody = <T extends GridRowModel>({
         {rows.map((row, idx) => {
           const currentKey = rowKey(row, idx)
           const nextKey = idx < rows.length - 1 ? rowKey(rows[idx + 1], idx + 1) : null
-          const isRowHovered = !disableHover && hoveredRowKey === currentKey
-          const isBeforeHoveredRow = !disableHover && nextKey !== null && hoveredRowKey === nextKey
+          const isRowHovered = shouldTrackHover && hoveredRowKey === currentKey
+          const isBeforeHoveredRow = shouldTrackHover && nextKey !== null && hoveredRowKey === nextKey
 
           return (
             <Box
               key={currentKey}
               onClick={onRowClick ? () => onRowClick({ row }) : undefined}
               onMouseEnter={() => {
-                if (!disableHover) {
+                if (shouldTrackHover) {
                   setHoveredRowKey(currentKey)
                 }
                 onRowMouseEnter?.({ row })
               }}
               onMouseLeave={() => {
-                setHoveredRowKey(null)
+                if (shouldTrackHover) {
+                  setHoveredRowKey(null)
+                }
                 onRowMouseLeave?.()
               }}
               className={getRowClassName?.({ row })}
@@ -917,7 +922,11 @@ const MIDataTableBody = <T extends GridRowModel>({
                       : {
                         '&:hover': {
                           backgroundColor: rowHoverBgColor,
+                          borderBottomColor: 'transparent',
                           borderRadius: ROW_HOVER_BORDER_RADIUS,
+                        },
+                        '&:has(+ *:hover)': {
+                          borderBottomColor: 'transparent',
                         },
                       }),
                   }
