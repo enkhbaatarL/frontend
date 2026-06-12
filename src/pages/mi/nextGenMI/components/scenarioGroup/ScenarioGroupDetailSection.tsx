@@ -1,6 +1,6 @@
 import { Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 
 import type {
   IScenarioDimension,
@@ -457,8 +457,15 @@ const ScenarioGroupDetailSection = ({
   onSelectScenario,
 }: ScenarioGroupDetailSectionProps) => {
   const stickyTopPx = useScenarioDetailStickyTop()
+  const sectionRootRef = useRef<HTMLDivElement>(null)
   const rightHeaderRef = useRef<HTMLDivElement>(null)
+  const pendingScrollScenarioIdRef = useRef<number | null>(null)
+  const scrollCompletionCleanupRef = useRef<(() => void) | null>(null)
+  const scrollSkeletonHoldTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
+  const scrollSkeletonHoldGenerationRef = useRef(0)
+  const [scrollSkeletonHoldScenarioId, setScrollSkeletonHoldScenarioId] = useState<number | null>(null)
   const rightHeaderPinned = useScenarioDetailStickyPinned(rightHeaderRef, stickyTopPx)
+  const hasHeadingSlot = Boolean(headingSlot)
   const { data, isLoading } = useQuery({
     queryKey: ['nextGenMIScenarioGroupScenarioDetail', scenarioGroupId, selectedScenarioId],
     queryFn: () => nextGenMIScenarioGroupService.getScenarioDetail(scenarioGroupId, selectedScenarioId ?? ''),
@@ -467,10 +474,142 @@ const ScenarioGroupDetailSection = ({
     gcTime: 0,
   })
 
-  const detailLoading = isLoading || (Boolean(selectedScenarioId) && !data)
+  const queryDetailLoading = isLoading || (Boolean(selectedScenarioId) && !data)
+  const detailLoading = queryDetailLoading || scrollSkeletonHoldScenarioId === selectedScenarioId
+
+  const isDetailHeaderSticky = useCallback(() => {
+    const rightHeader = rightHeaderRef.current
+    return Boolean(rightHeader && rightHeader.getBoundingClientRect().top <= stickyTopPx + 0.5)
+  }, [stickyTopPx])
+
+  const resetDetailScrollTop = useCallback(() => {
+    const scrollEl = document.getElementById(NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID)
+    const sectionRoot = sectionRootRef.current
+    const rightHeader = rightHeaderRef.current
+    if (!scrollEl || !sectionRoot || !rightHeader) return null
+    if (!isDetailHeaderSticky()) return null
+
+    const scrollRect = scrollEl.getBoundingClientRect()
+    const sectionRect = sectionRoot.getBoundingClientRect()
+    const headingOffset = hasHeadingSlot ? SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX : 0
+    const scrollTarget = Math.max(0, scrollEl.scrollTop + sectionRect.top - scrollRect.top + headingOffset - stickyTopPx)
+
+    scrollEl.scrollTo({
+      top: scrollTarget,
+      behavior: 'smooth',
+    })
+    return { scrollEl, scrollTarget }
+  }, [hasHeadingSlot, isDetailHeaderSticky, stickyTopPx])
+
+  const scheduleScrollSkeletonRelease = useCallback((scrollEl: HTMLElement, scrollTarget: number, scenarioId: number) => {
+    scrollCompletionCleanupRef.current?.()
+    if (scrollSkeletonHoldTimerRef.current) {
+      globalThis.clearTimeout(scrollSkeletonHoldTimerRef.current)
+      scrollSkeletonHoldTimerRef.current = null
+    }
+
+    scrollSkeletonHoldGenerationRef.current += 1
+    const generation = scrollSkeletonHoldGenerationRef.current
+    let settled = false
+    let rafId = 0
+    let settleTimer: ReturnType<typeof globalThis.setTimeout> | null = null
+    let fallbackTimer: ReturnType<typeof globalThis.setTimeout> | null = null
+    let release = () => undefined
+
+    const scheduleFallbackRelease = () => {
+      if (settleTimer) globalThis.clearTimeout(settleTimer)
+      settleTimer = globalThis.setTimeout(release, 160)
+    }
+
+    release = () => {
+      if (settled) return
+      settled = true
+      scrollEl.removeEventListener('scrollend', release)
+      scrollEl.removeEventListener('scroll', scheduleFallbackRelease)
+      if (rafId !== 0) globalThis.cancelAnimationFrame(rafId)
+      if (settleTimer) globalThis.clearTimeout(settleTimer)
+      if (fallbackTimer) globalThis.clearTimeout(fallbackTimer)
+      scrollCompletionCleanupRef.current = null
+
+      scrollSkeletonHoldTimerRef.current = globalThis.setTimeout(() => {
+        if (scrollSkeletonHoldGenerationRef.current === generation) {
+          setScrollSkeletonHoldScenarioId((current) => (current === scenarioId ? null : current))
+        }
+        scrollSkeletonHoldTimerRef.current = null
+      }, 10)
+    }
+
+    const watchScrollTarget = () => {
+      if (Math.abs(scrollEl.scrollTop - scrollTarget) < 1) {
+        release()
+        return
+      }
+      rafId = globalThis.requestAnimationFrame(watchScrollTarget)
+    }
+
+    scrollCompletionCleanupRef.current = () => {
+      settled = true
+      scrollEl.removeEventListener('scrollend', release)
+      scrollEl.removeEventListener('scroll', scheduleFallbackRelease)
+      if (rafId !== 0) globalThis.cancelAnimationFrame(rafId)
+      if (settleTimer) globalThis.clearTimeout(settleTimer)
+      if (fallbackTimer) globalThis.clearTimeout(fallbackTimer)
+    }
+
+    if (Math.abs(scrollEl.scrollTop - scrollTarget) < 1) {
+      release()
+      return
+    }
+
+    scrollEl.addEventListener('scrollend', release, { passive: true })
+    scrollEl.addEventListener('scroll', scheduleFallbackRelease, { passive: true })
+    rafId = globalThis.requestAnimationFrame(watchScrollTarget)
+    fallbackTimer = globalThis.setTimeout(release, 4000)
+  }, [])
+
+  const handleSelectScenario = useCallback(
+    (scenarioId: number) => {
+      if (scenarioId !== selectedScenarioId && isDetailHeaderSticky()) {
+        pendingScrollScenarioIdRef.current = scenarioId
+        scrollCompletionCleanupRef.current?.()
+        if (scrollSkeletonHoldTimerRef.current) {
+          globalThis.clearTimeout(scrollSkeletonHoldTimerRef.current)
+          scrollSkeletonHoldTimerRef.current = null
+        }
+        setScrollSkeletonHoldScenarioId(scenarioId)
+      } else {
+        pendingScrollScenarioIdRef.current = null
+      }
+      onSelectScenario(scenarioId)
+    },
+    [isDetailHeaderSticky, onSelectScenario, selectedScenarioId],
+  )
+
+  useEffect(() => {
+    if (pendingScrollScenarioIdRef.current !== selectedScenarioId) return
+    if (scrollSkeletonHoldScenarioId !== selectedScenarioId) return
+
+    pendingScrollScenarioIdRef.current = null
+    const result = resetDetailScrollTop()
+    if (result) {
+      scheduleScrollSkeletonRelease(result.scrollEl, result.scrollTarget, selectedScenarioId)
+      return
+    }
+
+    setScrollSkeletonHoldScenarioId((current) => (current === selectedScenarioId ? null : current))
+  }, [resetDetailScrollTop, scheduleScrollSkeletonRelease, scrollSkeletonHoldScenarioId, selectedScenarioId])
+
+  useEffect(
+    () => () => {
+      scrollCompletionCleanupRef.current?.()
+      if (scrollSkeletonHoldTimerRef.current) globalThis.clearTimeout(scrollSkeletonHoldTimerRef.current)
+    },
+    [],
+  )
 
   return (
     <Stack
+      ref={sectionRootRef}
       sx={{
         display: 'grid',
         gridTemplateColumns: `${SCENARIO_DETAIL_SIDEBAR_WIDTH} minmax(0, 1fr)`,
@@ -484,10 +623,10 @@ const ScenarioGroupDetailSection = ({
         stickyTopPx={stickyTopPx}
         headingSlot={headingSlot}
         loading={listLoading}
-        onSelect={onSelectScenario}
+        onSelect={handleSelectScenario}
       />
 
-      <Stack flex={1} minWidth={0} gap="12px" pt={headingSlot ? `${SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX}px` : 0}>
+      <Stack flex={1} minWidth={0} gap="12px" pt={hasHeadingSlot ? `${SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX}px` : 0}>
         <Stack
           ref={rightHeaderRef}
           gap="6px"

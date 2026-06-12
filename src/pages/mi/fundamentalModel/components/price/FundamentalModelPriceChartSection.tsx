@@ -175,6 +175,7 @@ const FundamentalModelPriceChartSection = ({ priceChart, priceRegions }: Fundame
                 )}
                 <MISelectMenu<FundamentalModelPriceChartGranularity>
                   variant="text"
+                  selectionIconPosition="left"
                   selected={selectedGranularity}
                   onSelected={setSelectedGranularity}
                   items={[

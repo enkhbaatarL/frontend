@@ -32,6 +32,7 @@ const ScenarioJudgementSelect = ({ value, disabled = false, onSelect }: Scenario
   return (
     <MISelectMenu<ScenarioJudgementStatus>
       variant="outlined"
+      selectionIconPosition="left"
       selected={value}
       onSelected={(next: ScenarioJudgementStatus) => {
         if (next !== value) onSelect(next)
@@ -170,6 +171,33 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
 
   const columns = useMemo<NextGenMIStickyTableColumn<TRow>[]>(() => {
     const tableCellSx = { bgcolor: backgroundColor } as const
+    const statusColumns: NextGenMIStickyTableColumn<TRow>[] = []
+
+    if (showStatusColumn) {
+      statusColumns.push({
+        field: 'status',
+        headerName: '상태',
+        width: '100px',
+        align: 'center',
+        headerCellSx: tableCellSx,
+        cellSx: tableCellSx,
+        renderCell: ({ row }: { row: TRow }) => {
+          if (!row.status || !onJudgementChange) {
+            return <NextGenMITableBodyText value={row.statusLabel ?? '-'} color="contentText.Black" tooltipWhenTruncated />
+          }
+
+          return (
+            <Stack width="100%" alignItems="center">
+              <ScenarioJudgementSelect
+                value={row.status}
+                disabled={judgementPendingScenarioId === row.scenarioId}
+                onSelect={(next) => onJudgementChange(row, next)}
+              />
+            </Stack>
+          )
+        },
+      })
+    }
 
     return [
       {
@@ -232,33 +260,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
           </Stack>
         ),
       },
-      ...(showStatusColumn
-        ? [
-          {
-            field: 'status',
-            headerName: '상태',
-            width: '100px',
-            align: 'center' as const,
-            headerCellSx: tableCellSx,
-            cellSx: tableCellSx,
-            renderCell: ({ row }: { row: TRow }) => {
-              if (!row.status || !onJudgementChange) {
-                return <NextGenMITableBodyText value={row.statusLabel ?? '-'} color="contentText.Black" tooltipWhenTruncated />
-              }
-
-              return (
-                <Stack width="100%" alignItems="center">
-                  <ScenarioJudgementSelect
-                    value={row.status}
-                    disabled={judgementPendingScenarioId === row.scenarioId}
-                    onSelect={(next) => onJudgementChange(row, next)}
-                  />
-                </Stack>
-              )
-            },
-          },
-        ]
-        : []),
+      ...statusColumns,
     ]
   }, [
     backgroundColor,

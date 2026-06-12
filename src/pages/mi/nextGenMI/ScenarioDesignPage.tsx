@@ -11,7 +11,7 @@ import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import StarRoundedIcon from '@mui/icons-material/StarRounded'
 import { Collapse, Dialog, DialogActions, DialogContent, Divider, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { type ReactNode, useCallback, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { type ReactNode, useCallback, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
@@ -588,6 +588,7 @@ const ScenarioDesignSelectCell = ({
       onSelected={handleSelected}
       items={items}
       variant="outlined"
+      selectionIconPosition="left"
       closeOnScroll
       enableHoverBackground
       maxHeight="260px"
@@ -869,6 +870,8 @@ const ScenarioDesignPage = () => {
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
   const [confirmType, setConfirmType] = useState<ScenarioDesignConfirmType | null>(null)
   const [deleteRowId, setDeleteRowId] = useState<number | null>(null)
+  const criteriaTableScrollRef = useRef<HTMLDivElement | null>(null)
+  const shouldScrollCriteriaTableToEndRef = useRef(false)
 
   const { data: detail, isLoading } = useQuery({
     queryKey: ['nextGenMIScenarioDesignEvent', id],
@@ -1040,6 +1043,7 @@ const ScenarioDesignPage = () => {
   const handleAddSelectedCriteria = useCallback(() => {
     if (selectedAddCriteriaColumnKeys.length === 0) return
 
+    shouldScrollCriteriaTableToEndRef.current = true
     setHiddenScenarioDesignColumnKeys((currentKeys) => currentKeys.filter((key) => !selectedAddCriteriaColumnKeys.includes(key)))
     setAddCriteriaMenuOpen(false)
     setSelectedAddCriteriaColumnKeys([])
@@ -1262,7 +1266,7 @@ const ScenarioDesignPage = () => {
         field: 'spacer',
         headerName: '',
         width: 'auto',
-        minWidth: '0px',
+        minWidth: '44px',
         maxWidth: 'none',
         headerCellSx: {
           padding: 0,
@@ -1350,6 +1354,20 @@ const ScenarioDesignPage = () => {
       rightAction: headerRightAction,
     })
   }, [handleBackToEvent, headerRightAction, headerSectionSlot, headerTitleSlot])
+
+  useLayoutEffect(() => {
+    if (!shouldScrollCriteriaTableToEndRef.current) return undefined
+
+    shouldScrollCriteriaTableToEndRef.current = false
+    const scrollEl = criteriaTableScrollRef.current
+    if (!scrollEl) return undefined
+
+    const frame = globalThis.requestAnimationFrame(() => {
+      scrollEl.scrollTo({ left: Math.max(0, scrollEl.scrollWidth - scrollEl.clientWidth), behavior: 'smooth' })
+    })
+
+    return () => globalThis.cancelAnimationFrame(frame)
+  }, [visibleScenarioDesignColumns.length])
 
   useLayoutEffect(() => {
     setStickyHeader(<ScenarioDesignHeaderView />, {
@@ -1516,6 +1534,8 @@ const ScenarioDesignPage = () => {
                   bodyFontSize="14px"
                   noRowMessage="시나리오를 추가해 주세요."
                   containerShell={false}
+                  scrollContainerRef={criteriaTableScrollRef}
+                  rightScrollEdgeOffset="30px"
                 />
                 <Stack
                   position="absolute"

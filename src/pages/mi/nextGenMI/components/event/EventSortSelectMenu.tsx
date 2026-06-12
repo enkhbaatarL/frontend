@@ -21,6 +21,7 @@ const EventSortSelectMenu = <T extends string>({ selected, onSelected, items, cl
   return (
     <MISelectMenu<T>
       variant="outlined"
+      selectionIconPosition="left"
       selected={selected}
       onSelected={(value: T) => onSelected(value)}
       items={items.map(({ value, label }) => ({ value, label }))}

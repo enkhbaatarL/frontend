@@ -47,6 +47,7 @@ interface Props<T> extends ButtonProps {
   textLabel?: ReactNode
   labelPrefix?: ReactNode
   footer?: ReactNode
+  selectionIconPosition?: 'left' | 'right'
 }
 
 const MISelectMenu = <T,>({
@@ -77,6 +78,7 @@ const MISelectMenu = <T,>({
   textLabel: externalTextLabel,
   labelPrefix: externalPrefix,
   footer,
+  selectionIconPosition = 'right',
   disabled,
   ...props
 }: Props<T>) => {
@@ -200,6 +202,10 @@ const MISelectMenu = <T,>({
     }
 
     if (multiple) {
+      if (selectionIconPosition === 'right') {
+        return undefined
+      }
+
       return isSelected ? (
         <CheckBox sx={{ width: '20px', height: '20px', color: itemDisabled ? 'contentIcon.Disabled' : 'mari.Primary' }} />
       ) : (
@@ -211,7 +217,7 @@ const MISelectMenu = <T,>({
       <CheckRounded
         fontSize="small"
         sx={{
-          color: itemDisabled ? 'contentIcon.Disabled' : 'mari.Primary',
+          color: itemDisabled ? 'contentIcon.Disabled' : selectionIconPosition === 'left' ? 'mari.Primary' : 'contentIcon.ActivePrimary',
           opacity: isSelected ? 1 : 0,
         }}
       />
@@ -228,33 +234,57 @@ const MISelectMenu = <T,>({
   const renderMenuItem = ({ icon, label, value, disabled: itemDisabled }: SelectMenuItem<T>) => {
     const isSelected = isItemSelected(value)
     const selectionIcon = renderSelectionIcon(isSelected, itemDisabled)
-    const prefix =
-      selectionIcon !== undefined ? (
-        <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
-          <Box component="span" display="inline-flex" alignItems="center" justifyContent="center" width="20px" height="20px" flexShrink={0}>
-            {selectionIcon}
-          </Box>
-          {icon}
-        </Stack>
-      ) : (
-        icon
-      )
-    const suffix = renderSuffix(isSelected, itemDisabled)
-    const labelColor = itemDisabled ? 'contentText.Disabled' : isSelected ? 'contentText.Black' : 'contentText.Normal'
+    const hasLeftSelectionIcon = selectionIconPosition === 'left' && selectionIcon !== undefined
+    const selectionIconSuffix =
+      selectionIconPosition === 'right' && selectionIcon !== undefined ? (
+        <Box component="span" display="inline-flex" alignItems="center" justifyContent="center" width="20px" height="20px" flexShrink={0}>
+          {selectionIcon}
+        </Box>
+      ) : undefined
+    const prefix = hasLeftSelectionIcon ? (
+      <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
+        <Box component="span" display="inline-flex" alignItems="center" justifyContent="center" width="20px" height="20px" flexShrink={0}>
+          {selectionIcon}
+        </Box>
+        {icon}
+      </Stack>
+    ) : (
+      icon
+    )
+    const suffix = renderSuffix(isSelected, itemDisabled) ?? selectionIconSuffix
+    const labelColor =
+      selectionIconPosition === 'left'
+        ? itemDisabled
+          ? 'contentText.Disabled'
+          : isSelected
+            ? 'contentText.Black'
+            : 'contentText.Normal'
+        : itemDisabled
+          ? 'contentText.Disabled'
+          : isSelected
+            ? undefined
+            : 'contentText.Subtext'
 
     return (
       <Box
         key={String(value)}
         onClick={() => (itemDisabled ? null : handleToggle(value))}
         borderRadius="10px"
-        height="36px"
-        boxSizing="border-box"
+        height={selectionIconPosition === 'left' ? '36px' : undefined}
+        boxSizing={selectionIconPosition === 'left' ? 'border-box' : undefined}
         sx={{
-          padding: `8px ${suffix ? '8px' : '12px'} 8px ${selectionIcon !== undefined ? '6px' : icon ? '8px' : '12px'}`,
-          backgroundColor: itemDisabled ? 'transparent' : isSelected ? 'contentBG.PrimaryFade' : 'transparent',
+          padding: `8px ${suffix ? '8px' : '12px'} 8px ${hasLeftSelectionIcon ? '6px' : icon ? '8px' : '12px'}`,
+          backgroundColor:
+            selectionIconPosition === 'left'
+              ? itemDisabled
+                ? 'transparent'
+                : isSelected
+                  ? 'contentBG.PrimaryFade'
+                  : 'transparent'
+              : undefined,
           cursor: itemDisabled ? 'default' : 'pointer',
           '&:hover': {
-            backgroundColor: itemDisabled ? 'transparent' : 'contentBG.Active',
+            backgroundColor: itemDisabled ? 'transparent' : selectionIconPosition === 'left' ? 'contentBG.Active' : 'gray.10',
           },
           textWrap: 'nowrap',
         }}
@@ -265,10 +295,16 @@ const MISelectMenu = <T,>({
           justifyContent="space-between"
           width="100%"
           minWidth={(props.sx as Record<string, unknown>)?.minWidth as string | number}
-          gap="8px"
+          gap={selectionIconPosition === 'left' ? '8px' : '12px'}
           component="div"
         >
-          <MIBaseButtonLabel prefix={prefix} suffix={suffix} color={labelColor} variant="body2M14" textAlign="left">
+          <MIBaseButtonLabel
+            prefix={prefix}
+            suffix={suffix}
+            color={labelColor}
+            variant="body2M14"
+            textAlign={selectionIconPosition === 'left' ? 'left' : undefined}
+          >
             {label}
           </MIBaseButtonLabel>
         </Stack>
@@ -433,7 +469,7 @@ const MISelectMenu = <T,>({
           padding: '0',
         }}
       >
-        <Stack gap="4px" padding={footer ? '12px 12px 0 12px' : '12px'}>
+        <Stack gap={selectionIconPosition === 'left' ? '4px' : '8px'} padding={footer ? '12px 12px 0 12px' : '12px'}>
           {renderMenuItems()}
         </Stack>
       </ScrollWrapper>

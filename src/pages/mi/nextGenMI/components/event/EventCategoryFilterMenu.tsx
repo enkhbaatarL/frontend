@@ -63,6 +63,7 @@ const EventCategoryFilterMenu = ({ selected, onApply, closeOnScroll }: EventCate
       open={isMenuOpen}
       onOpenChange={setIsMenuOpen}
       variant="outlined"
+      selectionIconPosition="left"
       multiple
       selected={draftSelected}
       onSelected={(next: number[]) => setDraftSelected(next)}

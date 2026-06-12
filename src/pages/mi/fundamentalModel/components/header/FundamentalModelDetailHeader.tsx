@@ -292,7 +292,7 @@ const FundamentalModelDetailHeader = ({
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap="4px" sx={{ mb: '4px' }}>
           <HeaderTitle title={detail.title} />
           <Stack direction="row" alignItems="center" gap="4px" flexShrink={0}>
-            <MIBaseButton variant="contained" disabled={exportDisabled} onClick={onExportOutputFiles}>
+            <MIBaseButton variant="contained" disabled={exportDisabled} onClick={onExportOutputFiles} sx={{ height: '36px' }}>
               Export
             </MIBaseButton>
             {!caseEditDeleteDisabled && (
