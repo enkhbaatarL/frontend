@@ -260,7 +260,7 @@ const FundamentalModelDetailHeader = ({
   // 실행 완료 전(대기/실행중/실패)에는 Export 와 더보기 메뉴를 비활성화
   const headerActionsDisabled = detail.status !== 'COMPLETED'
 
-  const attachmentNames = detail.files?.map((file) => file.originalFileName) ?? []
+  const attachmentNames = detail.files.input.map((file) => file.fileNm)
   const createdAtLabel = formatNextGenMIDateTime(detail.createdAt)
   const durationLabel = formatCaseLatestRunDuration(detail.latestRun)
 
