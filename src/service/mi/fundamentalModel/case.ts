@@ -27,12 +27,24 @@ export interface GetFundamentalModelCasesParams {
   keyword?: string
 }
 
-export interface FundamentalModelCaseFile {
+export interface FundamentalModelDownloadFile {
+  fileNo: number
+  fileNm: string
+  fileSize: number
+}
+
+export interface FundamentalModelCaseFiles {
+  input: FundamentalModelDownloadFile[]
+  output: FundamentalModelDownloadFile[]
+}
+
+/** POST /cases 응답 files[] 항목 (스웨거 FundamentalModelCaseFileRes) */
+export interface FundamentalModelCaseUploadedFile {
+  fileNo: number
   fileIndex: number
   originalFileName: string
   contentType?: string
   size?: number
-  mockFileId?: string
 }
 
 export interface FundamentalModelLatestRun {
@@ -52,7 +64,7 @@ export interface FundamentalModelCaseDetail {
   status: FundamentalModelCaseStatus
   assigneeName: string
   assigneeUserNo: number
-  files: FundamentalModelCaseFile[]
+  files: FundamentalModelCaseFiles
   latestRun: FundamentalModelLatestRun | null
   createdAt: string
   updatedAt: string
@@ -69,7 +81,7 @@ export interface FundamentalModelCaseCreate {
   title: string
   description?: string | null
   status: FundamentalModelCaseStatus
-  files: FundamentalModelCaseFile[]
+  files: FundamentalModelCaseUploadedFile[]
   createdAt: string
   statusEndpoint?: string
 }
