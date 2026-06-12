@@ -28,6 +28,7 @@ interface EventDetailImpactAnalysisSectionProps {
   narrative: string
   isNoiseEvent?: boolean
   loading?: boolean
+  compact?: boolean
 }
 
 /** 소음 전용 — 아이콘 + 해당 없음 */
@@ -65,6 +66,7 @@ const EventDetailImpactAnalysisSection = ({
   narrative,
   isNoiseEvent = false,
   loading = false,
+  compact = false,
 }: EventDetailImpactAnalysisSectionProps) => {
   const columns: GridColDef<EventDetailImpactIndex>[] = useMemo(
     () => [
@@ -125,18 +127,20 @@ const EventDetailImpactAnalysisSection = ({
 
   if (loading) {
     return (
-      <Stack width="100%" gap="12px" py="20px">
-        <EventDetailSectionHeader
-          icon={<ManageSearchIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-          title="영향도 분석"
-          tooltipTitle=""
-        />
+      <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
+        {!compact && (
+          <EventDetailSectionHeader
+            icon={<ManageSearchIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+            title="영향도 분석"
+            tooltipTitle=""
+          />
+        )}
         <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
           <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
             <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
-              <Skeleton variant="rounded" height={40} sx={{ borderRadius: '6px', mb: '8px' }} />
+              <Skeleton variant="rounded" height="40px" sx={{ borderRadius: '6px', mb: '8px' }} />
               {[0, 1, 2].map((idx) => (
-                <Skeleton key={idx} variant="rounded" height={48} sx={{ borderRadius: '4px', mt: idx === 0 ? 0 : '8px' }} />
+                <Skeleton key={idx} variant="rounded" height="48px" sx={{ borderRadius: '4px', mt: idx === 0 ? 0 : '8px' }} />
               ))}
             </Box>
             <Stack direction="row" gap="12px" width="100%">
@@ -154,10 +158,10 @@ const EventDetailImpactAnalysisSection = ({
             gap="12px"
             sx={{ bgcolor: 'gray.5' }}
           >
-            <Skeleton variant="rounded" width="40%" height={22} sx={{ borderRadius: '4px' }} />
-            <Skeleton variant="rounded" height={16} sx={{ borderRadius: '4px' }} />
-            <Skeleton variant="rounded" height={16} sx={{ borderRadius: '4px' }} />
-            <Skeleton variant="rounded" width="85%" height={16} sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" width="40%" height="22px" sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" height="16px" sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" height="16px" sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="rounded" width="85%" height="16px" sx={{ borderRadius: '4px' }} />
           </Box>
         </Stack>
       </Stack>
@@ -167,12 +171,14 @@ const EventDetailImpactAnalysisSection = ({
   /** 소음이면 전체 섹션을 소음 화면으로 고정 */
   if (isNoiseEvent) {
     return (
-      <Stack width="100%" gap="12px" py="20px">
-        <EventDetailSectionHeader
-          icon={<ManageSearchIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-          title="영향도 분석"
-          tooltipTitle=""
-        />
+      <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
+        {!compact && (
+          <EventDetailSectionHeader
+            icon={<ManageSearchIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+            title="영향도 분석"
+            tooltipTitle=""
+          />
+        )}
         <Box bgcolor="gray.5" borderRadius="10px" overflow="hidden" width="100%">
           <EventDetailImpactAnalysisNoiseEmptyPanel />
         </Box>
@@ -183,12 +189,14 @@ const EventDetailImpactAnalysisSection = ({
   const hasNarrative = narrative.trim().length > 0
 
   return (
-    <Stack width="100%" gap="12px" py="20px">
-      <EventDetailSectionHeader
-        icon={<ManageSearchIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-        title="영향도 분석"
-        tooltipTitle=""
-      />
+    <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
+      {!compact && (
+        <EventDetailSectionHeader
+          icon={<ManageSearchIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+          title="영향도 분석"
+          tooltipTitle=""
+        />
+      )}
       <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
         <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
           <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
@@ -200,7 +208,7 @@ const EventDetailImpactAnalysisSection = ({
                 headerLabelColor={NEXT_GEN_MI_TABLE_HEADER_LABEL_COLOR}
               />
               <MIDataTableBody<EventDetailImpactIndex>
-                rowId="indexName"
+                getRowKey={(row, index) => `${row.indexName ?? ''}-${index}`}
                 columns={columns}
                 rows={tableRows}
                 rowHeight={48}

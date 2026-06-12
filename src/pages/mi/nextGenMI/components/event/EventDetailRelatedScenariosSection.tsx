@@ -11,15 +11,17 @@ import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/c
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import ScenarioGroupInnerTable from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
-import { getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
 interface EventDetailRelatedScenariosSectionProps {
+  eventId?: string | number
   relatedEventScenario?: RelatedEventScenario | null
   onScenarioRowClick?: (row: RelatedScenario) => void
   loading?: boolean
 }
 
 const EventDetailRelatedScenariosSection = ({
+  eventId,
   relatedEventScenario,
   onScenarioRowClick,
   loading = false,
@@ -30,14 +32,19 @@ const EventDetailRelatedScenariosSection = ({
   const scenarioGroupLabel = relatedEventScenario?.groupName?.trim() ?? ''
 
   const hasScenarioGroupLink = scenarioGroupLabel.length > 0 && scenarioGroupId !== undefined && scenarioGroupId !== null
-  const handleScenarioGroupClick = hasScenarioGroupLink
-    ? () => {
-      navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId))
-    }
-    : undefined
+  const handleScenarioGroupClick = () => {
+    if (scenarioGroupId === undefined || scenarioGroupId === null) return
+    navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId))
+  }
 
   const handleScenarioDesignClick = () => {
-    navigate(getNextGenMITabPath('scenarios'))
+    if (!eventId) {
+      navigate(getNextGenMITabPath('scenarios'))
+      return
+    }
+    navigate(getNextGenMIEventDesignPath(eventId), {
+      state: { eventName: scenarioGroupLabel || undefined },
+    })
   }
 
   if (loading) {
@@ -93,7 +100,7 @@ const EventDetailRelatedScenariosSection = ({
             <Typography variant="body2SB14" color="contentText.Normal" px="6px" lineHeight={1.4}>
               시나리오 그룹
             </Typography>
-            {handleScenarioGroupClick ? (
+            {hasScenarioGroupLink ? (
               <Box px="6px" sx={{ width: 'fit-content', maxWidth: '100%' }}>
                 <NextGenMIHoverLinkCell value={scenarioGroupLabel} variant="body1B16" onClick={handleScenarioGroupClick} />
               </Box>

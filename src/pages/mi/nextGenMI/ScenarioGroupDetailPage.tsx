@@ -240,7 +240,7 @@ const ScenarioGroupDetailPage = () => {
   }, [setStickyHeader])
 
   return (
-    <Stack maxWidth="1380px" margin="auto" px="12px" pt="20px" position="relative" sx={{ overflowX: 'hidden' }}>
+    <Stack maxWidth="1380px" margin="auto" px="12px" pt="20px" position="relative" sx={{ overflowX: 'clip' }}>
       <Stack gap="30px">
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} gap="12px" py="20px">
           <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} />
@@ -267,12 +267,12 @@ const ScenarioGroupDetailPage = () => {
           <ScenarioGroupGraphView scenarioGroupId={Number(scenarioGroupId)} enabled={Boolean(scenarioGroupId)} />
         </Stack>
 
-        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} gap="12px" py="20px">
-          <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} />
+        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} py="20px">
           <ScenarioGroupDetailSection
             scenarioGroupId={scenarioGroupId ?? ''}
             scenarios={scenarios}
             selectedScenarioId={selectedScenarioId}
+            headingSlot={<SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} />}
             listLoading={isLoading}
             onSelectScenario={handleSelectScenario}
           />

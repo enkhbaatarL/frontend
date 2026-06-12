@@ -28,11 +28,22 @@ export interface GetFundamentalModelCasesParams {
 }
 
 export interface FundamentalModelCaseFile {
+  fileNo: number
   fileIndex: number
   originalFileName: string
   contentType?: string
   size?: number
-  mockFileId?: string
+}
+
+export interface FundamentalModelDownloadFile {
+  fileNo: number
+  fileNm: string
+  fileSize: number
+}
+
+export interface FundamentalModelCaseFiles {
+  input: FundamentalModelDownloadFile[]
+  output: FundamentalModelDownloadFile[]
 }
 
 export interface FundamentalModelLatestRun {
@@ -52,7 +63,7 @@ export interface FundamentalModelCaseDetail {
   status: FundamentalModelCaseStatus
   assigneeName: string
   assigneeUserNo: number
-  files: FundamentalModelCaseFile[]
+  files: FundamentalModelCaseFiles
   latestRun: FundamentalModelLatestRun | null
   createdAt: string
   updatedAt: string
@@ -114,35 +125,36 @@ export interface FundamentalModelCaseStatusSnapshot {
   updatedAt: string
 }
 
-export type FundamentalModelPriceSeriesType = 'BASE_CASE' | 'USER_ADJUSTED'
+export type PriceChartSeriesType = 'BASE_CASE' | 'USER_ADJUSTED'
 
-export interface FundamentalModelPriceChartPoint {
+export interface PriceChartPoint {
   year: number
-  month: number
+  month?: number | null
   value: number
 }
 
-export interface FundamentalModelPriceChartSeries {
-  seriesType: FundamentalModelPriceSeriesType
+export interface PriceChartSeries {
+  seriesType: PriceChartSeriesType
   label: string
-  points: FundamentalModelPriceChartPoint[]
+  points: PriceChartPoint[]
 }
 
-export interface FundamentalModelPriceChartSeriesSet {
+export interface PriceChartSeriesSet {
   priceRegion: string
-  series: FundamentalModelPriceChartSeries[]
+  series: PriceChartSeries[]
 }
 
-export interface FundamentalModelPriceChart {
-  seriesSets: FundamentalModelPriceChartSeriesSet[]
+export interface PriceChart {
+  monthlySeriesSets: PriceChartSeriesSet[]
+  yearlySeriesSets: PriceChartSeriesSet[]
 }
 
-export interface FundamentalModelPriceColumn {
+export interface PriceColumn {
   key: string
   label: string
 }
 
-export interface FundamentalModelPriceRow {
+export interface PriceRow {
   year: number
   month?: number | null
   priceRegion: string
@@ -151,16 +163,16 @@ export interface FundamentalModelPriceRow {
   [key: string]: string | number | null | undefined
 }
 
-export interface FundamentalModelPriceTable {
-  columns: FundamentalModelPriceColumn[]
-  rows: FundamentalModelPriceRow[]
+export interface PriceTable {
+  columns: PriceColumn[]
+  rows: PriceRow[]
 }
 
 export interface FundamentalModelPrice {
   caseId: number
-  chart: FundamentalModelPriceChart
-  annualTable: FundamentalModelPriceTable
-  monthlyTable: FundamentalModelPriceTable
+  chart: PriceChart
+  annualTable: PriceTable
+  monthlyTable: PriceTable
 }
 
 export type FundamentalModelVolumesSegment = 'GLOBAL' | 'LNG' | 'TRADE'

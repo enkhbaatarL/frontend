@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { FundamentalModelCaseDetail } from '@/service/mi/fundamentalModel/case'
 
+import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MoreVertIcon from '@/components/common/icons/MoreVertIcon'
 import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
@@ -29,10 +30,8 @@ export interface FundamentalModelDetailHeaderProps {
   onDelete?: () => boolean | void | Promise<boolean | void>
   /** 담당자가 아닐 때 수정·삭제 메뉴 숨김 */
   caseEditDeleteDisabled?: boolean
-  /** 대시보드(아웃풋) 엑셀보내기 */
-  onExportDashboardExcel?: () => void
-  /** 중간파일 zip보내기 */
-  onExportIntermediateZip?: () => void
+  /** output 파일 다운로드 */
+  onExportOutputFiles?: () => void
 }
 
 interface AttachmentListProps {
@@ -135,8 +134,7 @@ const FundamentalModelDetailHeader = ({
   onEdit,
   onDelete,
   caseEditDeleteDisabled = false,
-  onExportDashboardExcel,
-  onExportIntermediateZip,
+  onExportOutputFiles,
 }: FundamentalModelDetailHeaderProps) => {
   const { showSnackbar } = useSnackbar()
   const [editPopupOpen, setEditPopupOpen] = useState(false)
@@ -259,8 +257,10 @@ const FundamentalModelDetailHeader = ({
   const st = caseStatusVisual(detail.status)
   // 실행 완료 전(대기/실행중/실패)에는 Export 와 더보기 메뉴를 비활성화
   const headerActionsDisabled = detail.status !== 'COMPLETED'
+  const outputFiles = detail.files.output ?? []
+  const exportDisabled = headerActionsDisabled || outputFiles.length === 0 || !onExportOutputFiles
 
-  const attachmentNames = detail.files?.map((file) => file.originalFileName) ?? []
+  const attachmentNames = (detail.files.input ?? []).map((file) => file.fileNm)
   const createdAtLabel = formatNextGenMIDateTime(detail.createdAt)
   const durationLabel = formatCaseLatestRunDuration(detail.latestRun)
 
@@ -292,24 +292,9 @@ const FundamentalModelDetailHeader = ({
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap="4px" sx={{ mb: '4px' }}>
           <HeaderTitle title={detail.title} />
           <Stack direction="row" alignItems="center" gap="4px" flexShrink={0}>
-            <MIDropdownMenu
-              label="Export"
-              variant="contained"
-              placement="bottom-end"
-              disabled={headerActionsDisabled}
-              items={[
-                { label: '대시보드 (아웃풋) 엑셀', action: () => onExportDashboardExcel?.() },
-                { label: '중간파일 zip', action: () => onExportIntermediateZip?.() },
-              ]}
-              sx={{
-                height: '36px',
-              }}
-              paperProps={{
-                sx: {
-                  minWidth: '180px',
-                },
-              }}
-            />
+            <MIBaseButton variant="contained" disabled={exportDisabled} onClick={onExportOutputFiles}>
+              Export
+            </MIBaseButton>
             {!caseEditDeleteDisabled && (
               <MIDropdownMenu
                 label={<MoreVertIcon />}

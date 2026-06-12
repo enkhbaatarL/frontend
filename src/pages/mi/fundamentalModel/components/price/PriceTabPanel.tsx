@@ -1,4 +1,4 @@
-import { Box, Stack, Typography } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 import { memo, type ReactNode, useMemo } from 'react'
 
 import type { FundamentalModelPrice } from '@/service/mi/fundamentalModel/case'
@@ -15,11 +15,10 @@ export interface PriceTabPanelProps {
 interface PriceTableSectionProps {
   title: string
   children: ReactNode
-  sx?: object
 }
 
-const PriceTableSection = ({ title, children, sx }: PriceTableSectionProps) => (
-  <Stack gap="8px" sx={{ minWidth: 0, ...sx }}>
+const PriceTableSection = ({ title, children }: PriceTableSectionProps) => (
+  <Stack gap="8px" minWidth={0}>
     <Typography variant="body2SB14" color="gray.90" textAlign="center">
       {title}
     </Typography>
@@ -33,28 +32,33 @@ const PriceTabPanel = memo(({ price, loading }: PriceTabPanelProps) => {
   const monthlyColumns = useMemo(() => buildPricePeriodTableColumns(price?.monthlyTable, true), [price?.monthlyTable])
   const monthlyRows = useMemo(() => buildPricePeriodTableRows(price?.monthlyTable, true), [price?.monthlyTable])
   const priceRegions = useMemo(() => {
-    const chartRegions = price?.chart?.seriesSets?.map((seriesSet) => seriesSet.priceRegion).filter(Boolean) ?? []
+    const chartRegions = Array.from(
+      new Set([
+        ...(price?.chart?.monthlySeriesSets?.map((seriesSet) => seriesSet.priceRegion).filter(Boolean) ?? []),
+        ...(price?.chart?.yearlySeriesSets?.map((seriesSet) => seriesSet.priceRegion).filter(Boolean) ?? []),
+      ]),
+    )
     if (chartRegions.length > 0) return chartRegions
 
     return Array.from(new Set(price?.monthlyTable?.rows?.map((row) => row.priceRegion).filter(Boolean) ?? []))
-  }, [price?.chart?.seriesSets, price?.monthlyTable?.rows])
+  }, [price?.chart?.monthlySeriesSets, price?.chart?.yearlySeriesSets, price?.monthlyTable?.rows])
 
   return (
-    <Stack gap="20px" sx={{ userSelect: 'text' }}>
+    <Stack gap="20px" style={{ userSelect: 'text' }}>
       <FundamentalModelPriceChartSection priceChart={price?.chart ?? null} priceRegions={priceRegions} />
 
-      <Stack direction={{ xs: 'column', md: 'row' }} alignItems="flex-start" gap="20px" sx={{ minWidth: 0 }}>
-        <Box sx={{ flex: { md: '0 0 462px' }, width: { xs: '100%', md: '462px' }, maxWidth: '100%' }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} alignItems="flex-start" gap="20px" minWidth={0}>
+        <Stack flex={{ md: '0 0 462px' }} width={{ xs: '100%', md: '462px' }} maxWidth="100%">
           <PriceTableSection title="Annual price output (USD/mmbtu, Real 2023)">
             <FundamentalModelPriceTable columns={annualColumns} rows={annualRows} loading={loading} />
           </PriceTableSection>
-        </Box>
+        </Stack>
 
-        <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
+        <Stack flex={1} minWidth={0} width="100%">
           <PriceTableSection title="Monthly price output (USD/mmbtu, Real 2023)">
             <FundamentalModelPriceTable columns={monthlyColumns} rows={monthlyRows} loading={loading} />
           </PriceTableSection>
-        </Box>
+        </Stack>
       </Stack>
     </Stack>
   )

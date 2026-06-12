@@ -16,13 +16,13 @@ export type EventImpactTerm = 'short' | 'mid_long'
 
 export type EventImpactMarketImpactLevel = MarketImpactLevel.LOW | MarketImpactLevel.MEDIUM | MarketImpactLevel.HIGH
 
-export interface EventTypeL1Res {
+export interface EventTypeL1 {
   eventTypeL1Id: number
   code: string
   label: string
 }
 
-export interface EventImpactIndexRes {
+export interface EventImpactIndex {
   indexName: string
   marketImpactLevel?: EventImpactMarketImpactLevel | null
   marketImpactLevelLabel?: string
@@ -32,7 +32,7 @@ export interface EventImpactIndexRes {
   impactTermLabel?: string
 }
 
-export interface EventListItemRes {
+export interface EventListItem {
   eventId: number
   eventName: string
   status: EventStatus
@@ -46,10 +46,10 @@ export interface EventListItemRes {
   latestRecordFirstCreated: string
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
-  indexImpacts: EventImpactIndexRes[]
+  indexImpacts: EventImpactIndex[]
 }
 
-export interface EventAppliedFilterRes {
+export interface EventAppliedFilter {
   eventStatus?: EventStatus
   eventTypeL1Id?: number[]
   startDate?: string
@@ -59,9 +59,9 @@ export interface EventAppliedFilterRes {
   suggestedOnly?: boolean
 }
 
-export interface EventListRes {
-  appliedFilter: EventAppliedFilterRes
-  events: IPaginationResponse<EventListItemRes>
+export interface EventList {
+  appliedFilter: EventAppliedFilter
+  events: IPaginationResponse<EventListItem>
 }
 
 export interface GetEventsParams {
@@ -170,6 +170,8 @@ export interface EventDetail {
   statusLabel?: string | null
   signalType?: EventSignalType
   signalTypeLabel?: string | null
+  isScenarioSuggested?: boolean
+  scenarioSuggestReason?: string | null
   createdAt: string
   updatedAt: string
   aiInsights?: EventAiInsights | null
@@ -231,14 +233,14 @@ const serializeNextGenMIEventsParams = (params: Record<string, unknown>): string
 }
 
 const nextGenMIEventService = {
-  async getEventTypesL1(): Promise<EventTypeL1Res[]> {
-    const response: AxiosResponse<ICommonResponse<EventTypeL1Res[]>> = await api.get('mi/next-gen/events/event-types/lv1')
+  async getEventTypesL1(): Promise<EventTypeL1[]> {
+    const response: AxiosResponse<ICommonResponse<EventTypeL1[]>> = await api.get('mi/next-gen/events/event-types/lv1')
 
     return response.data.data
   },
 
-  async getEvents(params: GetEventsParams): Promise<EventListRes> {
-    const response: AxiosResponse<ICommonResponse<EventListRes>> = await api.get('mi/next-gen/events', {
+  async getEvents(params: GetEventsParams): Promise<EventList> {
+    const response: AxiosResponse<ICommonResponse<EventList>> = await api.get('mi/next-gen/events', {
       params: {
         page: params.page ?? 1,
         size: params.size ?? 20,

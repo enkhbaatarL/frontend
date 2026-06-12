@@ -268,7 +268,7 @@ const MISelectMenu = <T,>({
           gap="8px"
           component="div"
         >
-          <MIBaseButtonLabel prefix={prefix} suffix={suffix} color={labelColor} variant="body2M14">
+          <MIBaseButtonLabel prefix={prefix} suffix={suffix} color={labelColor} variant="body2M14" textAlign="left">
             {label}
           </MIBaseButtonLabel>
         </Stack>
@@ -348,15 +348,7 @@ const MISelectMenu = <T,>({
         pr="8px"
         flex={1}
         minWidth={0}
-        sx={
-          buttonHoverBgColor
-            ? {
-              '&:hover': {
-                backgroundColor: buttonHoverBgColor,
-              },
-            }
-            : undefined
-        }
+        sx={buttonHoverBgColor ? { '&:hover': { backgroundColor: buttonHoverBgColor } } : undefined}
       >
         <Typography
           variant="body2SB14"
@@ -408,6 +400,7 @@ const MISelectMenu = <T,>({
       buttonHoverBgColor={buttonHoverBgColor}
       disabled={disabled}
       labelColor={buttonLabelColor}
+      labelTextAlign="left"
       {...props}
       sx={{
         ...(typeof props.sx === 'object' && !Array.isArray(props.sx) ? (props.sx as Record<string, unknown>) : {}),

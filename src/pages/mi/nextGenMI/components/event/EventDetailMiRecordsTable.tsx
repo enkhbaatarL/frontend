@@ -40,6 +40,7 @@ interface EventDetailMiRecordsTableProps {
   onServerPageChange?: (page: number) => void
   onServerSizeChange?: (size: number) => void
   loading?: boolean
+  compact?: boolean
 }
 
 const EventDetailMiRecordsTable = ({
@@ -48,6 +49,7 @@ const EventDetailMiRecordsTable = ({
   onServerPageChange,
   onServerSizeChange,
   loading = false,
+  compact = false,
 }: EventDetailMiRecordsTableProps) => {
   const navigate = useNavigate()
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
@@ -140,8 +142,8 @@ const EventDetailMiRecordsTable = ({
       {
         field: 'summary',
         headerName: '요약',
-        width: '100%',
-        minWidth: '652px',
+        width: paginatedRows.length > 0 ? '100%' : 'auto',
+        minWidth: paginatedRows.length > 0 ? '652px' : '0px',
         maxWidth: 'none',
         renderCell: ({ row }) => row.summary ?? '',
         cellSx: {
@@ -150,16 +152,18 @@ const EventDetailMiRecordsTable = ({
         },
       },
     ],
-    [handleTitleClick],
+    [handleTitleClick, paginatedRows.length],
   )
 
   return (
-    <Stack width="100%" gap="12px" py="20px">
-      <EventDetailSectionHeader
-        icon={<SourceIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-        title="MI Records"
-        tooltipTitle=""
-      />
+    <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
+      {!compact && (
+        <EventDetailSectionHeader
+          icon={<SourceIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+          title="MI Records"
+          tooltipTitle=""
+        />
+      )}
       <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
         {loading ? (
           <NextGenMIEventDetailBlockSkeleton height="400px" />

@@ -1,7 +1,7 @@
 import { Typography } from '@mui/material'
 import { type GridColDef, type GridRenderCellParams, type GridRowModel } from '@mui/x-data-grid'
 
-import type { FundamentalModelPriceColumn, FundamentalModelPriceTable } from '@/service/mi/fundamentalModel/case'
+import type { PriceColumn, PriceTable } from '@/service/mi/fundamentalModel/case'
 
 const PRICE_VALUE_FIELD_NAMES = new Set(['baseCasePrice', 'userAdjustedPrice'])
 
@@ -37,7 +37,7 @@ const priceValueCell = ({ value }: GridRenderCellParams<GridRowModel>) => (
 
 const priceColumnDefaults = { sortable: false as const }
 
-export const buildPricePeriodTableRows = (table: FundamentalModelPriceTable | undefined, includeMonth: boolean): GridRowModel[] => {
+export const buildPricePeriodTableRows = (table: PriceTable | undefined, includeMonth: boolean): GridRowModel[] => {
   const rows = table?.rows ?? []
   return rows.map((row, index) => ({
     id: `${row.priceRegion}-${row.year}-${includeMonth ? row.month : 'annual'}-${index}`,
@@ -45,7 +45,7 @@ export const buildPricePeriodTableRows = (table: FundamentalModelPriceTable | un
   }))
 }
 
-const buildFallbackColumns = (includeMonth: boolean): FundamentalModelPriceColumn[] => [
+const buildFallbackColumns = (includeMonth: boolean): PriceColumn[] => [
   { key: 'year', label: 'Year' },
   ...(includeMonth ? [{ key: 'month', label: 'Month' }] : []),
   { key: 'priceRegion', label: 'Price Region' },
@@ -53,7 +53,7 @@ const buildFallbackColumns = (includeMonth: boolean): FundamentalModelPriceColum
   { key: 'userAdjustedPrice', label: 'User Adjusted Price' },
 ]
 
-const buildPriceColumn = (column: FundamentalModelPriceColumn): GridColDef<GridRowModel> => {
+const buildPriceColumn = (column: PriceColumn): GridColDef<GridRowModel> => {
   const field = column.key
   const headerName = column.label
 
@@ -106,10 +106,7 @@ const buildPriceColumn = (column: FundamentalModelPriceColumn): GridColDef<GridR
   }
 }
 
-export const buildPricePeriodTableColumns = (
-  table: FundamentalModelPriceTable | undefined,
-  includeMonth: boolean,
-): GridColDef<GridRowModel>[] => {
+export const buildPricePeriodTableColumns = (table: PriceTable | undefined, includeMonth: boolean): GridColDef<GridRowModel>[] => {
   const columns = table?.columns?.length ? table.columns : buildFallbackColumns(includeMonth)
   return columns.map(buildPriceColumn)
 }

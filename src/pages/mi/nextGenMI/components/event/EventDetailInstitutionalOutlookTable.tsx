@@ -19,6 +19,7 @@ interface EventDetailInstitutionalOutlookTableProps {
   onServerPageChange?: (page: number) => void
   onServerSizeChange?: (size: number) => void
   loading?: boolean
+  compact?: boolean
 }
 
 const EventDetailInstitutionalOutlookTable = ({
@@ -27,6 +28,7 @@ const EventDetailInstitutionalOutlookTable = ({
   onServerPageChange,
   onServerSizeChange,
   loading = false,
+  compact = false,
 }: EventDetailInstitutionalOutlookTableProps) => {
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
 
@@ -87,8 +89,8 @@ const EventDetailInstitutionalOutlookTable = ({
       {
         field: 'outlookSummary',
         headerName: '전망 요약',
-        width: '100%',
-        minWidth: '852px',
+        width: paginatedRows.length > 0 ? '100%' : 'auto',
+        minWidth: paginatedRows.length > 0 ? '852px' : '0px',
         maxWidth: 'none',
         renderCell: ({ row }) => row.outlookSummary ?? '',
         cellSx: {
@@ -97,16 +99,18 @@ const EventDetailInstitutionalOutlookTable = ({
         },
       },
     ],
-    [],
+    [paginatedRows.length],
   )
 
   return (
-    <Stack width="100%" gap="12px" py="20px">
-      <EventDetailSectionHeader
-        icon={<DescriptionIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-        title="기관 전망"
-        tooltipTitle=""
-      />
+    <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
+      {!compact && (
+        <EventDetailSectionHeader
+          icon={<DescriptionIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+          title="기관 전망"
+          tooltipTitle=""
+        />
+      )}
       <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
         {loading ? (
           <NextGenMIEventDetailBlockSkeleton height="400px" />
