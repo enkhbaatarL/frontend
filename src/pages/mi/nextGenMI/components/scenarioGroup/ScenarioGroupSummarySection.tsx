@@ -13,10 +13,10 @@ interface ScenarioGroupSummarySectionProps {
 
 const BaseEventHeaderCell = ({ label, fixed = false }: { label: string; fixed?: boolean }) => (
   <Typography
-    width={fixed ? '700px' : undefined}
-    flexShrink={fixed ? 0 : undefined}
-    flex={fixed ? undefined : 1}
+    flex={fixed ? '3 1 0' : '1 1 0'}
+    maxWidth={fixed ? '700px' : undefined}
     minWidth={0}
+    boxSizing="border-box"
     fontSize="13px"
     fontWeight={600}
     lineHeight={1.4}
@@ -38,7 +38,16 @@ const ScenarioGroupSummarySection = ({ baseEvent, summary, loading = false }: Sc
       {loading ? (
         <Skeleton variant="rounded" height={80} sx={{ borderRadius: '10px' }} />
       ) : (
-        <Stack width="100%" bgcolor="gray.5" borderRadius="10px" padding="16px">
+        <Stack
+          width="100%"
+          maxWidth="100%"
+          minWidth={0}
+          bgcolor="gray.5"
+          borderRadius="10px"
+          padding="16px"
+          boxSizing="border-box"
+          overflow="hidden"
+        >
           <Stack
             direction="row"
             alignItems="center"
@@ -50,7 +59,7 @@ const ScenarioGroupSummarySection = ({ baseEvent, summary, loading = false }: Sc
             <BaseEventHeaderCell label="업데이트 일시" />
           </Stack>
           <Stack direction="row" alignItems="center">
-            <Box width="700px" flexShrink={0} minWidth={0} sx={{ padding: '10px 6px' }}>
+            <Box flex="3 1 0" maxWidth="700px" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
               <NextGenMITableBodyText
                 value={baseEvent?.eventName ?? '-'}
                 variant="body1SB16"
@@ -58,7 +67,7 @@ const ScenarioGroupSummarySection = ({ baseEvent, summary, loading = false }: Sc
                 tooltipWhenTruncated
               />
             </Box>
-            <Box flex={1} minWidth={0} sx={{ padding: '10px 6px' }}>
+            <Box flex="1 1 0" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
               <NextGenMITableBodyText
                 value={baseEvent?.eventTypeLv1Label ?? '-'}
                 variant="body2M14"
@@ -66,7 +75,7 @@ const ScenarioGroupSummarySection = ({ baseEvent, summary, loading = false }: Sc
                 tooltipWhenTruncated
               />
             </Box>
-            <Box flex={1} minWidth={0} sx={{ padding: '10px 6px' }}>
+            <Box flex="1 1 0" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
               <NextGenMITableBodyText
                 value={formatNextGenMIDateTimeYmdHm(baseEvent?.updatedAt)}
                 variant="body2M14"

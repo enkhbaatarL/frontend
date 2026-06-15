@@ -1,7 +1,7 @@
 import { Summarize } from '@mui/icons-material'
 import { Skeleton, Stack, Typography } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { type ReactNode, useCallback, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import DocumentIcon from '@/components/common/icons/DocumentIcon'
@@ -64,6 +64,7 @@ interface ScenarioGroupDetailHeaderContent {
   titleSlot: ReactNode
   rightAction?: ReactNode
   pendingScrollSectionId?: string
+  pendingScrollKey?: string | number
 }
 
 let scenarioGroupDetailHeaderContent: ScenarioGroupDetailHeaderContent | null = null
@@ -98,13 +99,15 @@ const ScenarioGroupDetailHeaderView = () => {
       titleSlot={content.titleSlot}
       rightAction={content.rightAction}
       pendingScrollSectionId={content.pendingScrollSectionId}
+      pendingScrollKey={content.pendingScrollKey}
     />
   )
 }
 
 const resolveSelectedScenarioId = (scenarios: IScenarioGroupDetailRow[]): number | undefined => {
-  if (scenarios.length === 0) return undefined
-  return (scenarios.find((scenario) => scenario.baseCase) ?? scenarios[0]).scenarioId
+  const viewableScenarios = scenarios.filter((scenario) => scenario.status !== 'discarded')
+  if (viewableScenarios.length === 0) return undefined
+  return (viewableScenarios.find((scenario) => scenario.baseCase) ?? viewableScenarios[0]).scenarioId
 }
 
 const ScenarioGroupDetailPage = () => {
@@ -119,6 +122,7 @@ const ScenarioGroupDetailPage = () => {
     scenario: IScenarioGroupDetailRow
     status: ScenarioJudgementStatus
   } | null>(null)
+  const [detailScrollRequestSeq, setDetailScrollRequestSeq] = useState(0)
 
   // 시나리오를 직접 눌러 진입(초기 URL에 scenarioId)했는지 — 진입 시 '시나리오 상세' 섹션으로 포커스
   const [arrivedWithScenarioId] = useState(() => searchParams.get('scenarioId') !== null)
@@ -136,26 +140,46 @@ const ScenarioGroupDetailPage = () => {
   const scenarios = useMemo(() => data?.scenarios ?? [], [data?.scenarios])
 
   const queryScenarioId = searchParams.get('scenarioId')
-  const selectedScenarioId = useMemo(() => {
+  const hasViewableQueryScenarioId = useMemo(() => {
     const parsed = queryScenarioId ? Number(queryScenarioId) : NaN
-    if (Number.isFinite(parsed) && scenarios.some((scenario) => scenario.scenarioId === parsed)) {
-      return parsed
-    }
-    return resolveSelectedScenarioId(scenarios)
+    return Number.isFinite(parsed) && scenarios.some((scenario) => scenario.scenarioId === parsed && scenario.status !== 'discarded')
   }, [queryScenarioId, scenarios])
 
-  // 쿼리스트링이 비었거나 잘못된 경우 폴백 선택값으로 URL 보정
-  useEffect(() => {
-    if (scenarios.length === 0 || selectedScenarioId === undefined) return
-    if (queryScenarioId && Number(queryScenarioId) === selectedScenarioId) return
-    setSearchParams({ scenarioId: String(selectedScenarioId) }, { replace: true })
-  }, [queryScenarioId, scenarios.length, selectedScenarioId, setSearchParams])
+  const selectedScenarioId = useMemo(() => {
+    const parsed = queryScenarioId ? Number(queryScenarioId) : NaN
+    if (hasViewableQueryScenarioId) return parsed
+    return resolveSelectedScenarioId(scenarios)
+  }, [hasViewableQueryScenarioId, queryScenarioId, scenarios])
+
+  // URL로 폐기/미존재 시나리오가 들어온 경우 상세를 열지 않고 scenarioId 파라미터 제거
+  useLayoutEffect(() => {
+    if (!queryScenarioId || scenarios.length === 0) return
+    if (hasViewableQueryScenarioId) return
+
+    const nextSearchParams = new URLSearchParams(searchParams)
+    nextSearchParams.delete('scenarioId')
+    setSearchParams(nextSearchParams, { replace: true })
+  }, [hasViewableQueryScenarioId, queryScenarioId, scenarios.length, searchParams, setSearchParams])
 
   const handleSelectScenario = useCallback(
     (scenarioId: number) => {
-      setSearchParams({ scenarioId: String(scenarioId) }, { replace: false })
+      const scenario = scenarios.find((item) => item.scenarioId === scenarioId)
+      if (!scenario || scenario.status === 'discarded') return
+
+      const nextSearchParams = new URLSearchParams(searchParams)
+      nextSearchParams.set('scenarioId', String(scenarioId))
+      setSearchParams(nextSearchParams, { replace: false })
     },
-    [setSearchParams],
+    [scenarios, searchParams, setSearchParams],
+  )
+
+  const handleAssumptionScenarioClick = useCallback(
+    (scenario: IScenarioGroupDetailRow) => {
+      if (scenario.status === 'discarded') return
+      setDetailScrollRequestSeq((current) => current + 1)
+      handleSelectScenario(scenario.scenarioId)
+    },
+    [handleSelectScenario],
   )
 
   const { mutate: mutateScenarioStatus, isPending: isStatusUpdating } = useMutation({
@@ -216,7 +240,10 @@ const ScenarioGroupDetailPage = () => {
     [groupName, scenarioGroupId],
   )
 
-  const focusDetailSectionId = arrivedWithScenarioId && !isLoading && Boolean(data) ? SCENARIO_GROUP_DETAIL_SECTIONS[3].id : undefined
+  const shouldFocusDetailSection =
+    hasViewableQueryScenarioId && !isLoading && Boolean(data) && (arrivedWithScenarioId || detailScrollRequestSeq > 0)
+  const focusDetailSectionId = shouldFocusDetailSection ? SCENARIO_GROUP_DETAIL_SECTIONS[3].id : undefined
+  const focusDetailScrollKey = shouldFocusDetailSection ? `${queryScenarioId ?? 'fallback'}:${detailScrollRequestSeq}` : undefined
 
   useLayoutEffect(() => {
     publishScenarioGroupDetailHeaderContent({
@@ -225,8 +252,9 @@ const ScenarioGroupDetailPage = () => {
       titleSlot: headerTitleSlot,
       rightAction: headerRightAction,
       pendingScrollSectionId: focusDetailSectionId,
+      pendingScrollKey: focusDetailScrollKey,
     })
-  }, [focusDetailSectionId, headerRightAction, headerTitleSlot, navigate])
+  }, [focusDetailScrollKey, focusDetailSectionId, headerRightAction, headerTitleSlot, navigate])
 
   useLayoutEffect(() => {
     setStickyHeader(<ScenarioGroupDetailHeaderView />, {
@@ -258,6 +286,7 @@ const ScenarioGroupDetailPage = () => {
             judgementPendingScenarioId={isStatusUpdating ? judgementTarget?.scenario.scenarioId : undefined}
             loading={isLoading}
             skeletonRowCount={4}
+            onScenarioClick={handleAssumptionScenarioClick}
             onJudgementChange={handleJudgementChange}
           />
         </Stack>
@@ -272,6 +301,7 @@ const ScenarioGroupDetailPage = () => {
             scenarioGroupId={scenarioGroupId ?? ''}
             scenarios={scenarios}
             selectedScenarioId={selectedScenarioId}
+            scenarioCount={data?.scenarioCount}
             headingSlot={<SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} />}
             listLoading={isLoading}
             onSelectScenario={handleSelectScenario}

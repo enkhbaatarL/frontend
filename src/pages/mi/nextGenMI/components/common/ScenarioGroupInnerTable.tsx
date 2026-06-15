@@ -1,4 +1,4 @@
-import { Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { memo, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -18,6 +18,49 @@ const SCENARIO_JUDGEMENT_ITEMS: { value: ScenarioJudgementStatus; label: string 
   { value: 'realized', label: '실현' },
   { value: 'discarded', label: '폐기' },
 ]
+
+const getScenarioJudgementLabel = (status?: ScenarioJudgementStatus, statusLabel?: string) =>
+  statusLabel?.trim() || SCENARIO_JUDGEMENT_ITEMS.find((item) => item.value === status)?.label || '-'
+
+const getScenarioJudgementTextColor = (status?: ScenarioJudgementStatus) => {
+  if (status === 'discarded') return 'contentText.Disabled'
+  if (status === 'realized') return 'mari.Primary'
+  return 'contentText.Black'
+}
+
+const ScenarioTableBadge = ({ label, disabled = false }: { label: string; disabled?: boolean }) => (
+  <Box
+    component="span"
+    display="inline-flex"
+    alignItems="center"
+    justifyContent="center"
+    padding="2px 6px"
+    borderRadius="8px"
+    boxSizing="border-box"
+    bgcolor={disabled ? (label === 'BC' ? 'contentIcon.Disabled' : 'contentBG.Disabled') : 'mari.Primary'}
+    color={disabled && label !== 'BC' ? 'contentText.Disabled' : 'commonColor.White'}
+  >
+    <Typography component="span" color="inherit" fontSize="12px" fontWeight={600} lineHeight={1.4} noWrap>
+      {label}
+    </Typography>
+  </Box>
+)
+
+const DisabledScenarioPossibilityGauge = () => (
+  <Stack direction="row" alignItems="center" justifyContent="space-between" width="36px" height="6px">
+    {[0, 1, 2, 3, 4].map((index) => (
+      <Box key={index} width="6px" height="6px" borderRadius="2px" bgcolor="contentIcon.Disabled" />
+    ))}
+  </Stack>
+)
+
+const ScenarioJudgementText = ({ status, label }: { status?: ScenarioJudgementStatus; label?: string }) => (
+  <Stack height="32px" alignItems="center" justifyContent="center" padding="0 10px" borderRadius="8px">
+    <Typography variant="body2M14" color={getScenarioJudgementTextColor(status)} noWrap>
+      {getScenarioJudgementLabel(status, label)}
+    </Typography>
+  </Stack>
+)
 
 type ScenarioJudgementSelectProps = {
   value: ScenarioJudgementStatus
@@ -154,6 +197,8 @@ const getDimensionCellValue = <TRow extends ScenarioGroupInnerTableRow>(row: TRo
   return '-'
 }
 
+const isScenarioDiscarded = (row: ScenarioGroupInnerTableRow) => row.status === 'discarded'
+
 const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRow>({
   scenarioGroupId,
   dimensionColumns,
@@ -182,17 +227,21 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         headerCellSx: tableCellSx,
         cellSx: tableCellSx,
         renderCell: ({ row }: { row: TRow }) => {
-          if (!row.status || !onJudgementChange) {
-            return <NextGenMITableBodyText value={row.statusLabel ?? '-'} color="contentText.Black" tooltipWhenTruncated />
+          if (row.status === 'pending' && onJudgementChange) {
+            return (
+              <Stack width="100%" alignItems="center">
+                <ScenarioJudgementSelect
+                  value={row.status}
+                  disabled={judgementPendingScenarioId === row.scenarioId}
+                  onSelect={(next) => onJudgementChange(row, next)}
+                />
+              </Stack>
+            )
           }
 
           return (
             <Stack width="100%" alignItems="center">
-              <ScenarioJudgementSelect
-                value={row.status}
-                disabled={judgementPendingScenarioId === row.scenarioId}
-                onSelect={(next) => onJudgementChange(row, next)}
-              />
+              <ScenarioJudgementText status={row.status} label={row.statusLabel} />
             </Stack>
           )
         },
@@ -209,7 +258,11 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         cellSx: { ...tableCellSx },
         renderCell: ({ row }) => (
           <Stack width="100%" alignItems="center" justifyContent="center">
-            {row.baseCase && <NextGenMIBaseCaseChip />}
+            {isScenarioDiscarded(row) ? (
+              <ScenarioTableBadge label={row.baseCase ? 'BC' : getScenarioJudgementLabel(row.status, row.statusLabel)} disabled />
+            ) : (
+              row.baseCase && <NextGenMIBaseCaseChip />
+            )}
           </Stack>
         ),
       },
@@ -221,17 +274,27 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         headerCellSx: tableCellSx,
         cellSx: tableCellSx,
         renderCell: ({ row }) => {
-          const handleScenarioClick = onScenarioClick
-            ? () => onScenarioClick(row)
-            : scenarioGroupId
-              ? () => navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId, row.scenarioId))
-              : undefined
+          const disabled = isScenarioDiscarded(row)
+          const handleScenarioClick = disabled
+            ? undefined
+            : onScenarioClick
+              ? () => onScenarioClick(row)
+              : scenarioGroupId
+                ? () => navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId, row.scenarioId))
+                : undefined
 
           if (handleScenarioClick) {
             return <NextGenMIHoverLinkCell value={row.scenarioName} onClick={handleScenarioClick} />
           }
 
-          return <NextGenMITableBodyText value={row.scenarioName} variant="body1SB16" color="contentText.Black" tooltipWhenTruncated />
+          return (
+            <NextGenMITableBodyText
+              value={row.scenarioName}
+              variant="body1SB16"
+              color={disabled ? 'contentText.Disabled' : 'contentText.Black'}
+              tooltipWhenTruncated
+            />
+          )
         },
       },
       ...dimensionColumns.map(
@@ -243,7 +306,11 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
           headerCellSx: tableCellSx,
           cellSx: tableCellSx,
           renderCell: ({ row }) => (
-            <NextGenMITableBodyText value={getDimensionCellValue(row, column)} color="contentText.Black" tooltipWhenTruncated />
+            <NextGenMITableBodyText
+              value={getDimensionCellValue(row, column)}
+              color={isScenarioDiscarded(row) ? 'contentText.Disabled' : 'contentText.Black'}
+              tooltipWhenTruncated
+            />
           ),
         }),
       ),
@@ -256,7 +323,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         cellSx: tableCellSx,
         renderCell: ({ row }) => (
           <Stack width="100%" alignItems="center">
-            <ScenarioPossibilityGauge probability={row.probability} />
+            {isScenarioDiscarded(row) ? <DisabledScenarioPossibilityGauge /> : <ScenarioPossibilityGauge probability={row.probability} />}
           </Stack>
         ),
       },
