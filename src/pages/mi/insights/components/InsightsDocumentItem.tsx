@@ -36,6 +36,8 @@ const InsightsDocumentItem: FC<InsightsDocumentItemProps> = ({ report }) => {
         return 'Commodity Market Report'
       case 'A_DEAL_INSIGHT':
         return 'Deal Insight'
+      case 'A_MAIL':
+        return 'Mail'
       case 'A_INSIGHT':
         return 'Insight'
       case 'A_CMPY_RPT':
