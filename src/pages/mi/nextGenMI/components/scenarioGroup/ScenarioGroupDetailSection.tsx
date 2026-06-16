@@ -393,14 +393,6 @@ const SignpostDefinitionTable = ({ definitions, loading = false }: SignpostDefin
         renderCell: ({ row }) => <NextGenMITableBodyText value={row.strengthLabel} color="contentText.Black" align="center" />,
       },
       {
-        field: 'probabilityImpact',
-        headerName: '영향도 점수',
-        width: '120px',
-        align: 'center',
-        headerAlign: 'center',
-        renderCell: ({ row }) => <NextGenMITableBodyText value={String(row.probabilityImpact)} color="contentText.Black" align="center" />,
-      },
-      {
         field: 'rationale',
         headerName: '핵심 근거',
         width: 'max-content',

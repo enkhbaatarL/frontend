@@ -1,5 +1,4 @@
-import { Summarize } from '@mui/icons-material'
-import { Skeleton, Stack, Typography } from '@mui/material'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -7,9 +6,9 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import DocumentIcon from '@/components/common/icons/DocumentIcon'
 import LineChartIcon from '@/components/common/icons/LineChartIcon'
 import RadarIcon from '@/components/common/icons/RadarIcon'
+import ScenarioDetailIcon from '@/components/common/icons/ScenarioDetailIcon'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
 import NextGenMIDetailHeader, {
   NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   type NextGenMIDetailHeaderSection,
@@ -43,8 +42,24 @@ const JUDGEMENT_SUCCESS_MESSAGE: Record<ScenarioJudgementStatus, string> = {
 const SCENARIO_GROUP_DETAIL_SECTIONS: ScenarioGroupDetailSectionItem[] = [
   { id: 'scenario-group-detail-section-summary', label: '요약', icon: <DocumentIcon /> },
   { id: 'scenario-group-detail-section-assumption', label: '가정 및 실현 가능성', icon: <RadarIcon /> },
-  { id: 'scenario-group-detail-section-price-forecast', label: '가격 전망', icon: <LineChartIcon width="30" height="30" /> },
-  { id: 'scenario-group-detail-section-detail', label: '시나리오 상세', icon: <Summarize sx={{ fontSize: 30 }} /> },
+  {
+    id: 'scenario-group-detail-section-price-forecast',
+    label: '가격 전망',
+    icon: (
+      <Box padding="2px 6px 0">
+        <LineChartIcon width="20" height="20" />
+      </Box>
+    ),
+  },
+  {
+    id: 'scenario-group-detail-section-detail',
+    label: '시나리오 상세',
+    icon: (
+      <Box padding="8px 4px 2px 6px">
+        <ScenarioDetailIcon />
+      </Box>
+    ),
+  },
 ]
 
 const SectionHeading = ({ sectionId }: { sectionId: NextGenMIDetailHeaderSection['id'] }) => {
@@ -57,7 +72,6 @@ const SectionHeading = ({ sectionId }: { sectionId: NextGenMIDetailHeaderSection
       <Typography fontSize={20} fontWeight={600} color="contentText.Black">
         {section.label}
       </Typography>
-      <InfoTooltip title="" iconSize={16} iconColor="contentText.Normal" />
     </Stack>
   )
 }
