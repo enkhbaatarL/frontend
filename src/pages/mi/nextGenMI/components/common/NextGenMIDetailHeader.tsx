@@ -45,6 +45,7 @@ export interface NextGenMIDetailHeaderSection {
 
 interface NextGenMIDetailHeaderProps {
   backLabel: string
+  backIcon?: ReactNode
   onBack?: () => void
   titleSlot: ReactNode
   rightAction?: ReactNode
@@ -62,6 +63,7 @@ interface NextGenMIDetailHeaderProps {
 
 const NextGenMIDetailHeader = ({
   backLabel,
+  backIcon,
   onBack,
   titleSlot,
   rightAction,
@@ -408,7 +410,7 @@ const NextGenMIDetailHeader = ({
                   variant="outlined"
                   prefix={
                     <Box component="span" display="inline-flex" color="contentIcon.Enabled">
-                      <MoveToParentPageIcon />
+                      {backIcon ?? <MoveToParentPageIcon />}
                     </Box>
                   }
                   onClick={onBack}

@@ -1,7 +1,8 @@
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import { Dialog, DialogActions, DialogContent, Divider, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { type ReactNode, useCallback, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
@@ -43,6 +44,7 @@ import nextGenMIEventService from '@/service/mi/nextGenMI/event'
 
 type ScenarioDesignHeaderContent = {
   backLabel: string
+  backIcon?: ReactNode
   onBack: () => void
   titleSlot: ReactNode
   sectionSlot?: ReactNode
@@ -76,6 +78,7 @@ const ScenarioDesignHeaderView = () => {
     <NextGenMIDetailHeader
       sections={[]}
       backLabel={content.backLabel}
+      backIcon={content.backIcon}
       onBack={content.onBack}
       titleSlot={content.titleSlot}
       sectionSlot={content.sectionSlot}
@@ -197,7 +200,7 @@ const ScenarioDesignConfirmDialog = ({
           onClick={onClose}
           sx={{
             height: '34px',
-            borderRadius: '6px',
+            borderRadius: '4px',
           }}
         >
           취소
@@ -208,7 +211,7 @@ const ScenarioDesignConfirmDialog = ({
           labelColor="contentText.White"
           sx={{
             height: '34px',
-            borderRadius: '6px',
+            borderRadius: '4px',
             backgroundColor: content.confirmBgColor,
             '&:hover:not(:disabled)': {
               backgroundColor: content.confirmBgColor,
@@ -246,6 +249,8 @@ const ScenarioDesignPage = () => {
   const [deleteCriteriaColumnKey, setDeleteCriteriaColumnKey] = useState<ScenarioDesignColumnKey | null>(null)
   const criteriaTableScrollRef = useRef<HTMLDivElement | null>(null)
   const shouldScrollCriteriaTableToEndRef = useRef(false)
+  const confirmedScenarioDesignLeaveRef = useRef(false)
+  const initialScenarioDesignHistoryIndexRef = useRef<number | null>(null)
 
   const { data: detail, isLoading } = useQuery({
     queryKey: ['nextGenMIScenarioDesignEvent', id],
@@ -280,6 +285,47 @@ const ScenarioDesignPage = () => {
   const handleBackToEvent = useCallback(() => {
     navigate(eventDetailPath, { state: { eventName: eventTitle } })
   }, [eventDetailPath, eventTitle, navigate])
+  const pushScenarioDesignHistoryGuard = useCallback(() => {
+    if (confirmedScenarioDesignLeaveRef.current) return
+
+    const currentState = globalThis.history.state as Record<string, unknown> | null
+    if (currentState?.scenarioDesignLeaveGuard === true) return
+
+    globalThis.history.pushState({ ...(currentState ?? {}), scenarioDesignLeaveGuard: true }, '', globalThis.location.href)
+  }, [])
+  const handleLeaveScenarioDesign = useCallback(() => {
+    confirmedScenarioDesignLeaveRef.current = true
+
+    const currentState = globalThis.history.state as { scenarioDesignLeaveGuard?: unknown } | null
+    if (initialScenarioDesignHistoryIndexRef.current !== null && initialScenarioDesignHistoryIndexRef.current > 0) {
+      navigate(currentState?.scenarioDesignLeaveGuard === true ? -2 : -1)
+      return
+    }
+
+    navigate(eventDetailPath, { state: { eventName: eventTitle } })
+  }, [eventDetailPath, eventTitle, navigate])
+  const handleCancelScenarioDesignRequest = useCallback(() => {
+    setConfirmType('cancel')
+  }, [])
+
+  useEffect(() => {
+    const currentState = globalThis.history.state as { idx?: unknown; scenarioDesignLeaveGuard?: unknown } | null
+    const currentHistoryIndex = typeof currentState?.idx === 'number' ? currentState.idx : null
+    initialScenarioDesignHistoryIndexRef.current =
+      currentState?.scenarioDesignLeaveGuard === true && currentHistoryIndex !== null ? currentHistoryIndex - 1 : currentHistoryIndex
+
+    pushScenarioDesignHistoryGuard()
+
+    const handlePopState = () => {
+      if (confirmedScenarioDesignLeaveRef.current) return
+      setConfirmType('cancel')
+      pushScenarioDesignHistoryGuard()
+    }
+
+    globalThis.addEventListener('popstate', handlePopState)
+    return () => globalThis.removeEventListener('popstate', handlePopState)
+  }, [pushScenarioDesignHistoryGuard])
+
   const handleBaseEventToggle = useCallback(() => {
     setBaseEventExpanded((expanded) => !expanded)
   }, [])
@@ -472,7 +518,7 @@ const ScenarioDesignPage = () => {
       }
 
       if (type === 'cancel') {
-        navigate(eventDetailPath, { state: { eventName: eventTitle } })
+        handleLeaveScenarioDesign()
         return
       }
 
@@ -504,12 +550,10 @@ const ScenarioDesignPage = () => {
     [
       deleteCriteriaColumnKey,
       deleteRowId,
-      eventDetailPath,
-      eventTitle,
       handleDeleteCriteriaColumn,
       handleDeleteRow,
+      handleLeaveScenarioDesign,
       handleResetCriteriaStep,
-      navigate,
       scenarioNameErrorMessages,
       showSnackbar,
     ],
@@ -522,6 +566,7 @@ const ScenarioDesignPage = () => {
   }, [canCompleteScenarioDesignReview, reviewed])
 
   const handleCreateScenarioGroup = useCallback(() => {
+    confirmedScenarioDesignLeaveRef.current = true
     showSnackbar('시나리오 그룹이 생성되었습니다.', { variant: 'success' })
     navigate(getNextGenMITabPath('scenarios'))
   }, [navigate, showSnackbar])
@@ -637,13 +682,14 @@ const ScenarioDesignPage = () => {
 
   useLayoutEffect(() => {
     publishScenarioDesignHeaderContent({
-      backLabel: 'Event',
-      onBack: handleBackToEvent,
+      backLabel: 'Back',
+      backIcon: <ArrowBackRoundedIcon sx={{ fontSize: '20px' }} />,
+      onBack: handleCancelScenarioDesignRequest,
       titleSlot: headerTitleSlot,
       sectionSlot: headerSectionSlot,
       rightAction: headerRightAction,
     })
-  }, [handleBackToEvent, headerRightAction, headerSectionSlot, headerTitleSlot])
+  }, [handleCancelScenarioDesignRequest, headerRightAction, headerSectionSlot, headerTitleSlot])
 
   useLayoutEffect(() => {
     if (!shouldScrollCriteriaTableToEndRef.current) return undefined
@@ -716,7 +762,7 @@ const ScenarioDesignPage = () => {
             onAddSelectedCriteria={handleAddSelectedCriteria}
             onAddRow={handleAddRow}
             onReset={() => setConfirmType('criteriaReset')}
-            onCancel={() => setConfirmType('cancel')}
+            onCancel={handleCancelScenarioDesignRequest}
             onReview={() => setConfirmType('review')}
             onComplete={handleComplete}
           />
