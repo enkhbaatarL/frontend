@@ -241,6 +241,82 @@ const ScenarioDesignConfirmDialog = ({
   )
 }
 
+const ScenarioDesignReviewFailedDialog = ({ open, onClose }: { open: boolean; onClose: () => void }) => (
+  <Dialog
+    open={open}
+    onClose={onClose}
+    slotProps={{
+      paper: {
+        sx: {
+          width: '450px',
+          maxWidth: 'calc(100vw - 48px)',
+          border: '1px solid',
+          borderColor: 'contentBorder.Normal',
+          borderRadius: '12px',
+          boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
+          margin: 0,
+          overflow: 'hidden',
+        },
+      },
+    }}
+  >
+    <DialogContent
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        gap: '20px',
+        padding: '20px 20px 0px',
+      }}
+    >
+      <Stack direction="row" alignItems="center" width="100%" minWidth={0}>
+        <Typography variant="body1" fontSize="16px" fontWeight={700} color="contentText.Normal" lineHeight={1.4} flex={1} noWrap>
+          변경사항을 검토하지 못했습니다
+        </Typography>
+        <MIBaseButton
+          aria-label="닫기"
+          variant="text"
+          onClick={onClose}
+          sx={{
+            height: '32px',
+            padding: '6px',
+          }}
+        >
+          <CloseRoundedIcon sx={{ fontSize: '20px', color: 'contentIcon.Enabled' }} />
+        </MIBaseButton>
+      </Stack>
+      <Typography variant="body2R14" color="contentText.Normal" lineHeight={1.4}>
+        입력한 변경사항은 유지됩니다. 잠시 후 다시 시도해 주세요.
+      </Typography>
+    </DialogContent>
+    <DialogActions
+      disableSpacing
+      sx={{
+        padding: '30px 20px 20px',
+        gap: '10px',
+        justifyContent: 'flex-end',
+      }}
+    >
+      <MIBaseButton
+        variant="contained"
+        onClick={onClose}
+        labelColor="contentText.White"
+        sx={{
+          height: '34px',
+          padding: '7px 16px',
+          borderRadius: '4px',
+          backgroundColor: 'contentIcon.ActivePrimary',
+          '&:hover:not(:disabled)': {
+            backgroundColor: 'contentIcon.ActivePrimary',
+          },
+        }}
+      >
+        확인
+      </MIBaseButton>
+    </DialogActions>
+  </Dialog>
+)
+
 const ScenarioDesignPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -263,6 +339,7 @@ const ScenarioDesignPage = () => {
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
   const [confirmType, setConfirmType] = useState<ScenarioDesignConfirmType | null>(null)
+  const [reviewFailedDialogOpen, setReviewFailedDialogOpen] = useState(false)
   const [deleteRowId, setDeleteRowId] = useState<number | null>(null)
   const [deleteCriteriaColumnKey, setDeleteCriteriaColumnKey] = useState<ScenarioDesignColumnKey | null>(null)
   const criteriaTableScrollRef = useRef<HTMLDivElement | null>(null)
@@ -342,27 +419,38 @@ const ScenarioDesignPage = () => {
     clearScenarioDesignReviewTimeouts()
     setReviewPending(false)
     setReviewCompletedVisible(false)
+    setReviewFailedDialogOpen(false)
     setReviewed(false)
     setCurrentStep('criteria')
   }, [clearScenarioDesignReviewTimeouts])
-  const startScenarioDesignReview = useCallback(() => {
-    clearScenarioDesignReviewTimeouts()
-    setReviewPending(true)
-    setReviewCompletedVisible(false)
+  const startScenarioDesignReview = useCallback(
+    (canCompleteReview: boolean) => {
+      clearScenarioDesignReviewTimeouts()
+      setReviewPending(true)
+      setReviewCompletedVisible(false)
+      setReviewFailedDialogOpen(false)
 
-    reviewCompleteTimeoutRef.current = globalThis.setTimeout(() => {
-      reviewCompleteTimeoutRef.current = null
-      setReviewPending(false)
-      setReviewed(true)
-      setReviewCompletedVisible(true)
-      showSnackbar('변경사항 검토가 완료되었습니다.', { variant: 'success' })
+      reviewCompleteTimeoutRef.current = globalThis.setTimeout(() => {
+        reviewCompleteTimeoutRef.current = null
+        setReviewPending(false)
+        setReviewed(true)
 
-      reviewCompletedVisibleTimeoutRef.current = globalThis.setTimeout(() => {
-        reviewCompletedVisibleTimeoutRef.current = null
-        setReviewCompletedVisible(false)
+        if (!canCompleteReview) {
+          setReviewFailedDialogOpen(true)
+          return
+        }
+
+        setReviewCompletedVisible(true)
+        showSnackbar('변경사항 검토가 완료되었습니다.', { variant: 'success' })
+
+        reviewCompletedVisibleTimeoutRef.current = globalThis.setTimeout(() => {
+          reviewCompletedVisibleTimeoutRef.current = null
+          setReviewCompletedVisible(false)
+        }, 1000)
       }, 1000)
-    }, 2000)
-  }, [clearScenarioDesignReviewTimeouts, showSnackbar])
+    },
+    [clearScenarioDesignReviewTimeouts, showSnackbar],
+  )
 
   useEffect(() => clearScenarioDesignReviewTimeouts, [clearScenarioDesignReviewTimeouts])
 
@@ -480,9 +568,14 @@ const ScenarioDesignPage = () => {
   const handleRowValueChange = useCallback(
     (rowId: number, key: keyof ScenarioDesignRow, value: string) => {
       setRows((currentRows) => currentRows.map((row) => (row.id === rowId ? { ...row, [key]: value } : row)))
+      if (reviewed && !canCompleteScenarioDesignReview && !reviewPending && !reviewCompletedVisible) {
+        setReviewFailedDialogOpen(false)
+        return
+      }
+
       resetScenarioDesignReviewState()
     },
-    [resetScenarioDesignReviewState],
+    [canCompleteScenarioDesignReview, resetScenarioDesignReviewState, reviewCompletedVisible, reviewed, reviewPending],
   )
 
   const handleAddRow = useCallback(() => {
@@ -628,13 +721,7 @@ const ScenarioDesignPage = () => {
         return
       }
 
-      if (scenarioNameErrorMessages.size > 0) {
-        setReviewed(true)
-        showSnackbar('시나리오명을 확인해 주세요.', { variant: 'error' })
-        return
-      }
-
-      startScenarioDesignReview()
+      startScenarioDesignReview(canCompleteScenarioDesignReview)
     },
     [
       deleteCriteriaColumnKey,
@@ -645,7 +732,6 @@ const ScenarioDesignPage = () => {
       handleLeaveScenarioDesign,
       handleResetCriteriaStep,
       reviewed,
-      scenarioNameErrorMessages,
       showSnackbar,
       startScenarioDesignReview,
     ],
@@ -854,6 +940,7 @@ const ScenarioDesignPage = () => {
         )}
       </Stack>
       <ScenarioDesignConfirmDialog type={confirmType} onClose={handleConfirmClose} onConfirm={handleConfirm} />
+      <ScenarioDesignReviewFailedDialog open={reviewFailedDialogOpen} onClose={() => setReviewFailedDialogOpen(false)} />
     </>
   )
 }

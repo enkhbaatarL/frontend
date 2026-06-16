@@ -173,6 +173,7 @@ export type ScenarioGroupInnerTableRow = {
   baseCase: boolean
   dimensions?: IScenarioDimension[]
   probability: number
+  adjustedProbability?: number
   status?: ScenarioJudgementStatus
   statusLabel?: string
 }
@@ -294,7 +295,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         cellSx: tableCellSx,
         renderCell: ({ row }) => (
           <Stack width="100%" alignItems="center">
-            <ScenarioPossibilityGauge probability={row.probability} disabled={isDiscardedScenario(row.status)} />
+            <ScenarioPossibilityGauge probability={row.adjustedProbability ?? row.probability} disabled={isDiscardedScenario(row.status)} />
           </Stack>
         ),
       },

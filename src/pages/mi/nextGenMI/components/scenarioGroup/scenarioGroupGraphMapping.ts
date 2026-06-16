@@ -20,7 +20,7 @@ export interface ScenarioGroupGraphLegendItem {
   name: string
   color: string
   isDashed: boolean
-  /** 수급모델 실행 전(values null) → 회색 비활성, 클릭 불가 */
+  /** 수급모델 실행 전 가격 배열 null → 회색 비활성, 클릭 불가 */
   executed: boolean
 }
 
@@ -111,7 +111,8 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes): Sce
 
   const scenarioLegend = data.scenarioSeries.map((series, index) => {
     const visibilityKey = scenarioSeriesVisibilityKey(series.scenarioId)
-    const executed = series.executed && series.values !== null
+    const values = series.userAdjustedValues ?? series.baseCaseValues
+    const executed = series.executed && values !== null
 
     if (!executed) {
       forcedHiddenKeys.push(visibilityKey)
@@ -121,7 +122,7 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes): Sce
 
     const color = scenarioColors[index] ?? SCENARIO_CHART_COLORS[0]
     chartColorMap.set(series.scenarioName, color)
-    charts.push(buildChart(series.scenarioName, visibilityKey, series.values ?? [], data.unit, timestamps, resultDates, startDates, false))
+    charts.push(buildChart(series.scenarioName, visibilityKey, values ?? [], data.unit, timestamps, resultDates, startDates, false))
     return { visibilityKey, name: series.scenarioName, color, isDashed: false, executed: true }
   })
 

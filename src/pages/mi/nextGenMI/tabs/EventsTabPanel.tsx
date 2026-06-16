@@ -22,7 +22,7 @@ import EventScenarioGenerateButton from '@/pages/mi/nextGenMI/components/event/E
 import EventSortSelectMenu from '@/pages/mi/nextGenMI/components/event/EventSortSelectMenu'
 import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
-import { getNextGenMIEventDesignPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, {
   type EventListItem,
@@ -30,6 +30,7 @@ import nextGenMIEventService, {
   type EventStatus,
   type GetEventsParams,
 } from '@/service/mi/nextGenMI/event'
+import useDialog from '@/store/useDialog'
 
 /** 카테고리 필터 값: Lv1 다중 선택 */
 type CategoryFilterValue = number[]
@@ -61,6 +62,7 @@ const resolveEventListDateRange = (dateRange: DateRange): Required<DateRange> =>
 
 const EventsTabPanel = () => {
   const navigate = useNavigate()
+  const { onShow } = useDialog()
 
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('all')
   const [sort, setSort] = useState<EventSort>('latest')
@@ -133,12 +135,29 @@ const EventsTabPanel = () => {
     [navigate],
   )
 
-  const handleScenarioDesignClick = useCallback(
-    (row: EventListItem) =>
+  const handleScenarioClick = useCallback(
+    (row: EventListItem) => {
+      if (row.scenarioDesignStatus === 'creating') {
+        onShow({
+          title: '시나리오 설계를 시작할 수 없습니다',
+          width: 450,
+          children: '다른 사용자가 현재 시나리오 설계를 진행 중입니다. 해당 작업이 완료된 후 다시 시도해 주세요.',
+        })
+        return
+      }
+
+      if (row.scenarioDesignStatus === 'created' && row.scenarioGroupId !== undefined && row.scenarioGroupId !== null) {
+        navigate(getNextGenMIScenarioGroupDetailPath(row.scenarioGroupId), {
+          state: { eventName: row.eventName },
+        })
+        return
+      }
+
       navigate(getNextGenMIEventDesignPath(row.eventId), {
         state: { eventName: row.eventName },
-      }),
-    [navigate],
+      })
+    },
+    [navigate, onShow],
   )
 
   const columns: GridColDef<EventListItem>[] = useMemo(
@@ -264,11 +283,19 @@ const EventsTabPanel = () => {
         align: 'center',
         sortable: false,
         renderCell: (params) => (
-          <EventScenarioGenerateButton recommended={params.row.isScenarioSuggested} onClick={() => handleScenarioDesignClick(params.row)} />
+          <EventScenarioGenerateButton
+            recommended={params.row.isScenarioSuggested}
+            scenarioAvailable={params.row.scenarioDesignStatus === 'created'}
+            disabled={
+              params.row.scenarioDesignStatus === 'created' &&
+              (params.row.scenarioGroupId === undefined || params.row.scenarioGroupId === null)
+            }
+            onClick={() => handleScenarioClick(params.row)}
+          />
         ),
       },
     ],
-    [handleEventNameClick, handleScenarioDesignClick],
+    [handleEventNameClick, handleScenarioClick],
   )
 
   const nextGenMIDatePresets = useMemo(() => buildNextGenMIDatePresets(), [])

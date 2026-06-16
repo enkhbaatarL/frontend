@@ -7,6 +7,10 @@ import { ICommonResponse, IPaginationResponse } from '@/types/api'
 /** 시나리오 판정 상태 (대기/실현/폐기) */
 export type ScenarioJudgementStatus = 'pending' | 'realized' | 'discarded'
 
+export type ScenarioSignpostStrength = 'verystrong' | 'strong' | 'medium' | 'weak' | 'veryweak'
+
+export type ScenarioGroupGraphPeriodUnit = 'monthly' | 'yearly'
+
 /** 동적 표 헤더 (차원 칼럼) */
 export interface IScenarioDimensionColumn {
   key: string
@@ -28,12 +32,16 @@ export interface IScenarioRow {
   baseCase: boolean
   dimensions: IScenarioDimension[]
   probability: number
+  adjustedProbability: number
+  status: ScenarioJudgementStatus
+  statusLabel: string
 }
 
 export interface IScenarioGroupListItem {
   scenarioGroupId: number
   groupName: string
   createdAt: string
+  updatedAt: string
   summary: string
   scenarioCount: number
   dimensionColumns: IScenarioDimensionColumn[]
@@ -64,9 +72,13 @@ export interface IScenarioIndividualItem {
   scenarioName: string
   baseCase: boolean
   createdAt: string
+  updatedAt: string
   group: IScenarioGroupRef
   dimensions: IScenarioDimension[]
   probability: number
+  adjustedProbability: number
+  status: ScenarioJudgementStatus
+  statusLabel: string
 }
 
 export interface IScenarioIndividualListRes {
@@ -99,6 +111,7 @@ export interface IScenarioGroupDetailRow {
   baseCase: boolean
   dimensions: IScenarioDimension[]
   probability: number
+  adjustedProbability: number
   status: ScenarioJudgementStatus
   statusLabel: string
 }
@@ -107,6 +120,7 @@ export interface IScenarioGroupDetailRes {
   scenarioGroupId: number
   groupName: string
   createdAt: string
+  updatedAt: string
   baseEvent: IScenarioBaseEvent
   summary: string
   scenarioCount: number
@@ -120,6 +134,8 @@ export interface IScenarioSignpostDefinition {
   direction: 'sup'
   directionLabel: string
   probabilityImpact: number
+  strength: ScenarioSignpostStrength
+  strengthLabel: string
   rationale: string
 }
 
@@ -137,8 +153,11 @@ export interface IScenarioDetailViewRes {
   scenarioGroupId: number
   scenarioName: string
   baseCase: boolean
+  createdAt: string
+  updatedAt: string
   narrative: string
   probability: number
+  adjustedProbability: number
   dimensions: IScenarioDimension[]
   signpostDefinitions: IScenarioSignpostDefinition[]
   signpostMonitorings: IScenarioSignpostMonitoring[]
@@ -158,12 +177,16 @@ export interface IScenarioGraphSeries {
   baseCase: boolean
   executed: boolean
   /** 수급모델 실행 전이면 null */
-  values: number[] | null
+  baseCaseValues: (number | null)[] | null
+  /** 수급모델 실행 전이면 null */
+  userAdjustedValues: (number | null)[] | null
 }
 
 export interface IScenarioGroupGraphRes {
   scenarioGroupId: number
   indexName: NextGenMIIndexName
+  periodUnit: ScenarioGroupGraphPeriodUnit
+  periodUnitLabel: string
   currency: string
   unit: string
   dates: string[]
@@ -237,11 +260,15 @@ const nextGenMIScenarioGroupService = {
    * @param scenarioGroupId - 시나리오 그룹 ID
    * @param indexName - 조회 인덱스 (기본 JKM)
    */
-  async getScenarioGroupGraph(scenarioGroupId: string | number, indexName?: NextGenMIIndexName): Promise<IScenarioGroupGraphRes> {
+  async getScenarioGroupGraph(
+    scenarioGroupId: string | number,
+    indexName?: NextGenMIIndexName,
+    periodUnit?: ScenarioGroupGraphPeriodUnit,
+  ): Promise<IScenarioGroupGraphRes> {
     const response: AxiosResponse<ICommonResponse<IScenarioGroupGraphRes>> = await api.get(
       `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/graph`,
       {
-        params: { indexName },
+        params: { indexName, periodUnit },
       },
     )
 

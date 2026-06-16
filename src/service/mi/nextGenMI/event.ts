@@ -12,6 +12,8 @@ export type EventStatus = 'all' | 'new' | 'updated'
 
 export type EventSignalType = 'signal' | 'noise'
 
+export type EventScenarioDesignStatus = 'designable' | 'creating' | 'created'
+
 export type EventImpactTerm = 'short' | 'mid_long'
 
 export type EventImpactMarketImpactLevel = MarketImpactLevel.LOW | MarketImpactLevel.MEDIUM | MarketImpactLevel.HIGH
@@ -46,6 +48,9 @@ export interface EventListItem {
   latestRecordFirstCreated: string
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
+  scenarioDesignStatus?: EventScenarioDesignStatus
+  scenarioDesignStatusLabel?: string
+  scenarioGroupId?: number | null
   indexImpacts: EventImpactIndex[]
 }
 
@@ -133,7 +138,7 @@ export interface RelatedScenario {
 }
 
 export interface RelatedEventScenario {
-  scenarioGroupId?: number
+  scenarioGroupId?: number | null
   groupName?: string
   dimensionColumns?: IScenarioDimensionColumn[]
   scenarios?: RelatedScenario[]
@@ -172,6 +177,9 @@ export interface EventDetail {
   signalTypeLabel?: string | null
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
+  scenarioDesignStatus?: EventScenarioDesignStatus
+  scenarioDesignStatusLabel?: string | null
+  latestRecordFirstCreated?: string
   createdAt: string
   updatedAt: string
   aiInsights?: EventAiInsights | null

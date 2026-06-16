@@ -5,6 +5,8 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded'
 import DriveFileRenameOutlineRoundedIcon from '@mui/icons-material/DriveFileRenameOutlineRounded'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
+import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded'
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import StarRoundedIcon from '@mui/icons-material/StarRounded'
@@ -235,11 +237,13 @@ const ScenarioDesignSelectCell = ({
   selected,
   items,
   defaultValue,
+  errorMessage,
   onSelected,
 }: {
   selected: string
   items: SelectMenuItem<string>[]
   defaultValue: string
+  errorMessage?: string
   onSelected: (value: string) => void
 }) => {
   const selectedColumnItem = items.find((item) => item.value === selected)
@@ -288,25 +292,104 @@ const ScenarioDesignSelectCell = ({
       maxHeight="260px"
       open={open}
       onOpenChange={setOpen}
+      hideChevron={Boolean(errorMessage)}
       labelPrefix={isInlineBadgeValue ? null : undefined}
       textLabel={
-        isInlineBadgeValue ? (
+        isInlineBadgeValue && errorMessage ? (
           <Stack
             component="span"
             data-scenario-design-inline-value
             direction="row"
             alignItems="center"
-            gap="4px"
+            justifyContent="space-between"
             width="100%"
             minWidth={0}
             maxWidth="100%"
-            padding="4px 8px 4px 4px"
+            boxSizing="border-box"
+          >
+            <Stack
+              component="span"
+              direction="row"
+              alignItems="center"
+              gap="2px"
+              width="100%"
+              flex={1}
+              minWidth={0}
+              padding="4px"
+              bgcolor="contentBG.PrimaryFade"
+              borderRadius="8px"
+              boxSizing="border-box"
+            >
+              {selectedItem?.icon}
+              <Typography
+                component="span"
+                variant="body2M14"
+                color="contentText.Normal"
+                flex={1}
+                minWidth={0}
+                overflow="hidden"
+                textOverflow="ellipsis"
+                textAlign="left"
+                noWrap
+                sx={{
+                  display: 'block',
+                }}
+              >
+                {inlineBadgeLabel}
+              </Typography>
+            </Stack>
+            <Stack component="span" direction="row" alignItems="center" flexShrink={0}>
+              <MIFollowCursorTooltip
+                title={errorMessage}
+                tooltipSx={{
+                  bgcolor: 'contentText.Error',
+                  color: 'contentText.White',
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 400,
+                }}
+              >
+                <MIInputErrorIcon width="20px" height="20px" aria-label="분기 기준 오류" />
+              </MIFollowCursorTooltip>
+              {open ? (
+                <KeyboardArrowUpRoundedIcon sx={{ fontSize: '24px', color: 'contentIcon.Enabled', flexShrink: 0 }} />
+              ) : (
+                <KeyboardArrowDownRoundedIcon sx={{ fontSize: '24px', color: 'contentIcon.Enabled', flexShrink: 0 }} />
+              )}
+            </Stack>
+          </Stack>
+        ) : isInlineBadgeValue ? (
+          <Stack
+            component="span"
+            data-scenario-design-inline-value
+            direction="row"
+            alignItems="center"
+            gap="2px"
+            width="100%"
+            flex={1}
+            minWidth={0}
+            maxWidth="100%"
+            padding="4px"
             bgcolor="contentBG.PrimaryFade"
             borderRadius="8px"
             boxSizing="border-box"
           >
             {selectedItem?.icon}
-            <Typography component="span" variant="body2M14" color="contentText.Normal" noWrap minWidth={0}>
+            <Typography
+              component="span"
+              variant="body2M14"
+              color="contentText.Normal"
+              flex={1}
+              minWidth={0}
+              overflow="hidden"
+              textOverflow="ellipsis"
+              textAlign="left"
+              noWrap
+              sx={{
+                display: 'block',
+              }}
+            >
               {inlineBadgeLabel}
             </Typography>
           </Stack>
@@ -317,8 +400,17 @@ const ScenarioDesignSelectCell = ({
         minWidth: 0,
         height: '36px',
         padding: isInlineBadgeValue ? '8px 12px 8px 4px' : '8px 12px',
+        borderColor: errorMessage ? 'contentBorder.Error' : undefined,
         borderRadius: '8px',
         overflow: 'hidden',
+        ...(errorMessage && {
+          '&:hover:not(:disabled)': {
+            borderColor: 'contentBorder.Error',
+          },
+          '&.Mui-focusVisible': {
+            borderColor: 'contentBorder.Error',
+          },
+        }),
         ...(isInlineBadgeValue && {
           '& > .MuiBox-root > .MuiBox-root > .MuiStack-root': {
             gap: 0,
@@ -648,6 +740,7 @@ const ScenarioDesignCriteriaStep = ({
                 selected={row[column.key]}
                 items={items}
                 defaultValue={getInitialScenarioDesignColumnValue(row.id, column.key, SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value)}
+                errorMessage={reviewed && row[column.key] === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value ? '오류 테스트' : undefined}
                 onSelected={(value) => onRowValueChange(row.id, column.key, value)}
               />
             )

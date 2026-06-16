@@ -106,7 +106,7 @@ const ScenarioIndividualTable = ({ scenarios, loading, skeletonRowCount }: Scena
         align: 'center',
         renderCell: ({ row }) => (
           <Stack width="100%" alignItems="center">
-            <ScenarioPossibilityGauge probability={row.probability} />
+            <ScenarioPossibilityGauge probability={row.adjustedProbability ?? row.probability} />
           </Stack>
         ),
       },

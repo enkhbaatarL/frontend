@@ -385,12 +385,20 @@ const SignpostDefinitionTable = ({ definitions, loading = false }: SignpostDefin
         ),
       },
       {
-        field: 'probabilityImpact',
+        field: 'strengthLabel',
         headerName: '영향도',
         width: '120px',
         align: 'center',
         headerAlign: 'center',
-        renderCell: ({ row }) => <NextGenMITableBodyText value={`${row.probabilityImpact}%`} color="contentText.Black" align="center" />,
+        renderCell: ({ row }) => <NextGenMITableBodyText value={row.strengthLabel} color="contentText.Black" align="center" />,
+      },
+      {
+        field: 'probabilityImpact',
+        headerName: '영향도 점수',
+        width: '120px',
+        align: 'center',
+        headerAlign: 'center',
+        renderCell: ({ row }) => <NextGenMITableBodyText value={String(row.probabilityImpact)} color="contentText.Black" align="center" />,
       },
       {
         field: 'rationale',
@@ -534,6 +542,7 @@ const ScenarioGroupDetailSection = ({
 
   const queryDetailLoading = isLoading || (Boolean(selectedScenarioId) && !data)
   const detailLoading = queryDetailLoading || scrollSkeletonHoldScenarioId === selectedScenarioId
+  const scenarioProbability = data?.adjustedProbability ?? data?.probability
 
   const isDetailHeaderSticky = useCallback(() => {
     const rightHeader = rightHeaderRef.current
@@ -750,9 +759,9 @@ const ScenarioGroupDetailSection = ({
                 <Skeleton variant="rounded" sx={{ flex: 1, borderRadius: '10px' }} />
               ) : (
                 <Stack flex={1} alignItems="flex-start" gap="4px" bgcolor="gray.5" borderRadius="10px" padding="20px 16px">
-                  <ScenarioPossibilityGauge probability={data?.probability ?? 0} hideBackground hideTooltip />
+                  <ScenarioPossibilityGauge probability={scenarioProbability ?? 0} hideBackground hideTooltip />
                   <Typography fontSize="15px" fontWeight={500} lineHeight={1.6} color="contentText.Black">
-                    {typeof data?.probability === 'number' ? probabilityToLikelihoodLabel(data.probability / 100) : '-'}
+                    {typeof scenarioProbability === 'number' ? probabilityToLikelihoodLabel(scenarioProbability / 100) : '-'}
                   </Typography>
                 </Stack>
               )}
