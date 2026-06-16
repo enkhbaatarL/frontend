@@ -8,10 +8,18 @@ type ScenarioPossibilityGaugeProps = {
   probability: number
   hideBackground?: boolean
   hideTooltip?: boolean
+  disabled?: boolean
 }
 
+const DISABLED_GAUGE_DOT_COLOR = '#dee2e6'
+
 /** 발생가능성 게이지 — 6x6 사각 5개 (채움/빈칸), 36px justify-between */
-const ScenarioPossibilityGauge = ({ probability, hideBackground = false, hideTooltip = false }: ScenarioPossibilityGaugeProps) => {
+const ScenarioPossibilityGauge = ({
+  probability,
+  hideBackground = false,
+  hideTooltip = false,
+  disabled = false,
+}: ScenarioPossibilityGaugeProps) => {
   const filledBars = probabilityToFilledBars(probability / 100)
 
   const gauge = (
@@ -23,7 +31,7 @@ const ScenarioPossibilityGauge = ({ probability, hideBackground = false, hideToo
       borderRadius="10px"
       padding={hideBackground ? '0px' : '12px'}
       boxSizing="border-box"
-      sx={hideBackground ? undefined : { transition: 'background-color 120ms ease', '&:hover': { bgcolor: 'gray.5' } }}
+      sx={hideBackground || disabled ? undefined : { transition: 'background-color 120ms ease', '&:hover': { bgcolor: 'gray.5' } }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between" width="36px" height="6px">
         {[0, 1, 2, 3, 4].map((index) => (
@@ -33,14 +41,14 @@ const ScenarioPossibilityGauge = ({ probability, hideBackground = false, hideToo
             height="6px"
             borderRadius="2px"
             // 디자인 고유색 (테마 토큰 없음): 채움 핑크 / 빈칸 연하늘
-            bgcolor={index < filledBars ? '#ef1b88' : '#bad1d7'}
+            bgcolor={disabled ? DISABLED_GAUGE_DOT_COLOR : index < filledBars ? '#ef1b88' : '#bad1d7'}
           />
         ))}
       </Stack>
     </Stack>
   )
 
-  if (hideTooltip) {
+  if (hideTooltip || disabled) {
     return gauge
   }
 
