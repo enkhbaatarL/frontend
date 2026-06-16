@@ -179,6 +179,8 @@ export interface IScenarioStatusRes {
   scenarioId: number
   status: ScenarioJudgementStatus
   statusLabel: string
+  /** '폐기'로 자동 변경된 시나리오 ID 목록 (실현 변경 시에만, 그 외 빈 배열) */
+  discardedScenarioIds?: number[]
 }
 
 const nextGenMIScenarioGroupService = {
@@ -296,6 +298,14 @@ const nextGenMIScenarioGroupService = {
     )
 
     return response.data.data
+  },
+
+  /**
+   * 마지막 남은 시나리오 폐기 후 시나리오 그룹 삭제
+   */
+  async discardLastScenarioAndDeleteGroup(scenarioGroupId: string | number, scenarioId: number): Promise<void> {
+    await this.updateScenarioStatus(scenarioGroupId, scenarioId, { status: 'discarded' })
+    await this.deleteScenarioGroup(scenarioGroupId)
   },
 }
 

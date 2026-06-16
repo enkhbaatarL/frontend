@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
+import useNavigationToast from '@/hooks/useNavigationToast'
 import { defaultNextGenMIDateRange } from '@/pages/mi/nextGenMI/components/common/nextGenMIDateRange'
 import ScenarioGroupAccordionList from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupAccordionList'
 import ScenarioGroupToolbar, { type ScenarioGroupMode } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupToolbar'
@@ -29,6 +30,8 @@ const GROUP_HEADER_COLUMNS: GridColDef[] = [
 ]
 
 const ScenarioGroupsTabPanel = () => {
+  useNavigationToast()
+
   const [mode, setMode] = useState<ScenarioGroupMode>('group')
   const [sort, setSort] = useState<ListSort>(ListSort.LATEST)
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultNextGenMIDateRange())

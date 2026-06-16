@@ -56,13 +56,60 @@ const NextGenMITableRowBadge = ({ bordered, label }: { bordered: boolean; label:
   </Box>
 )
 
+type ScenarioCellBadgeVariant = 'bc' | 'bcDisabled' | 'discarded' | 'realized'
+
+const SCENARIO_CELL_BADGE_STYLE: Record<ScenarioCellBadgeVariant, { bgcolor: string; color: string }> = {
+  bc: { bgcolor: 'mari.Primary', color: 'commonColor.White' },
+  bcDisabled: { bgcolor: 'contentIcon.Disabled', color: 'commonColor.White' },
+  discarded: { bgcolor: 'contentBG.Disabled', color: 'contentText.Disabled' },
+  realized: { bgcolor: 'contentBG.Primaryactive', color: 'mari.Primary' },
+}
+
+const SCENARIO_CELL_BADGE_LABEL: Record<ScenarioCellBadgeVariant, string> = {
+  bc: 'BC',
+  bcDisabled: 'BC',
+  discarded: '폐기',
+  realized: '실현',
+}
+
+const NextGenMIScenarioCellBadge = ({ variant }: { variant: ScenarioCellBadgeVariant }) => {
+  const palette = SCENARIO_CELL_BADGE_STYLE[variant]
+
+  return (
+    <Box
+      component="span"
+      display="inline-flex"
+      alignItems="center"
+      justifyContent="center"
+      px="6px"
+      py="2px"
+      borderRadius="8px"
+      boxSizing="border-box"
+      lineHeight={0}
+      sx={{ verticalAlign: 'middle' }}
+      bgcolor={palette.bgcolor}
+      color={palette.color}
+    >
+      <Typography component="span" color="inherit" fontSize="12px" fontWeight={600} lineHeight={1.4} noWrap>
+        {SCENARIO_CELL_BADGE_LABEL[variant]}
+      </Typography>
+    </Box>
+  )
+}
+
 export const NextGenMINoiseSignalBadge = ({ label }: { label: string }) => {
   const text = label.trim()
   if (!text) return null
   return <NextGenMITableRowBadge bordered label={text} />
 }
 
-export const NextGenMIBaseCaseChip = () => <NextGenMITableRowBadge bordered={false} label="BC" />
+export const NextGenMIBaseCaseChip = ({ disabled = false }: { disabled?: boolean }) => (
+  <NextGenMIScenarioCellBadge variant={disabled ? 'bcDisabled' : 'bc'} />
+)
+
+export const NextGenMIDiscardedBadge = () => <NextGenMIScenarioCellBadge variant="discarded" />
+
+export const NextGenMIRealizedBadge = () => <NextGenMIScenarioCellBadge variant="realized" />
 
 export const NextGenMIRecommendedBadge = () => <NextGenMITableRowBadge bordered={false} label="추천" />
 
