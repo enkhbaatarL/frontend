@@ -1,5 +1,5 @@
 import MarginRoundedIcon from '@mui/icons-material/MarginRounded'
-import { Stack } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 import { useMemo } from 'react'
 
 import type { DriverTreeScoreboard, EventDriverTreeIndex, EventImpactIndexTerm } from '@/service/mi/nextGenMI/event'
@@ -18,6 +18,107 @@ interface EventDriverTreeScoreboardTableRow {
   driver?: DriverTreeScoreboard
   indexRowSpan: number
   isFirstIndexRow: boolean
+}
+
+type DriverReasonBadgeLabel = '단기' | '중장기'
+
+type DriverReasonPart =
+  | {
+      type: 'badge'
+      label: DriverReasonBadgeLabel
+      text: string
+    }
+  | {
+      type: 'text'
+      text: string
+    }
+
+const parseDriverReasonParts = (reason: string): DriverReasonPart[] => {
+  const parts: DriverReasonPart[] = []
+  let currentBadgeLabel: DriverReasonBadgeLabel | null = null
+  let lastIndex = 0
+
+  for (const match of reason.matchAll(/,?\[(단기|중장기)\]/g)) {
+    const matchIndex = match.index ?? 0
+    const text = reason.slice(lastIndex, matchIndex).trim()
+
+    if (currentBadgeLabel) {
+      parts.push({ type: 'badge', label: currentBadgeLabel, text })
+    } else if (text) {
+      parts.push({ type: 'text', text })
+    }
+
+    currentBadgeLabel = match[1] as DriverReasonBadgeLabel
+    lastIndex = matchIndex + match[0].length
+  }
+
+  const text = reason.slice(lastIndex).trim()
+  if (currentBadgeLabel) {
+    parts.push({ type: 'badge', label: currentBadgeLabel, text })
+  } else if (text) {
+    parts.push({ type: 'text', text })
+  }
+
+  return parts
+}
+
+const DriverReasonBadge = ({ label }: { label: DriverReasonBadgeLabel }) => (
+  <Stack
+    component="span"
+    alignItems="center"
+    justifyContent="center"
+    flexShrink={0}
+    width="48px"
+    padding="4px 8px"
+    borderRadius="10px"
+    boxSizing="border-box"
+    bgcolor="#ECEDF4"
+  >
+    <Typography component="span" fontSize="12px" fontWeight={600} lineHeight={1.4} color="contentText.Normal" noWrap>
+      {label}
+    </Typography>
+  </Stack>
+)
+
+const renderDriverReason = (reason?: string | null) => {
+  const text = reason?.trim()
+  if (!text) return '-'
+
+  const parts = parseDriverReasonParts(text)
+  if (!parts.some((part) => part.type === 'badge')) return text
+
+  return (
+    <Stack gap="6px" alignItems="flex-start">
+      {parts.map((part, index) => {
+        if (part.type === 'text') {
+          return (
+            <Typography
+              key={`text-${index}`}
+              component="span"
+              fontSize="14px"
+              fontWeight={500}
+              lineHeight={1.4}
+              color="contentText.Black"
+              noWrap
+            >
+              {part.text}
+            </Typography>
+          )
+        }
+
+        return (
+          <Stack key={`${part.label}-${index}`} direction="row" alignItems="center" gap="10px" width="100%">
+            <DriverReasonBadge label={part.label} />
+            {part.text && (
+              <Typography component="span" fontSize="14px" fontWeight={500} lineHeight={1.4} color="contentText.Black" noWrap>
+                {part.text}
+              </Typography>
+            )}
+          </Stack>
+        )
+      })}
+    </Stack>
+  )
 }
 
 const renderDriverImpactList = (
@@ -131,7 +232,7 @@ const EventDetailDriverTreeScoreboardSection = ({
         headerName: '근거',
         width: 'max-content',
         maxWidth: 'none',
-        renderCell: ({ row }) => row.driver?.reason || '-',
+        renderCell: ({ row }) => renderDriverReason(row.driver?.reason),
         cellSx: {
           overflow: 'visible',
           textOverflow: 'clip',
