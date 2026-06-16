@@ -24,7 +24,7 @@ export const SCENARIO_DESIGN_BASE_EVENT_TABS = [
 ] as const
 
 export type ScenarioDesignBaseEventTabKey = (typeof SCENARIO_DESIGN_BASE_EVENT_TABS)[number]['key']
-export type ScenarioDesignConfirmType = 'criteriaReset' | 'cancel' | 'review' | 'deleteRow' | 'deleteCriteriaColumn'
+export type ScenarioDesignConfirmType = 'criteriaReset' | 'cancel' | 'review' | 'reviewComplete' | 'deleteRow' | 'deleteCriteriaColumn'
 
 export type ScenarioDesignLocationState = {
   eventName?: string

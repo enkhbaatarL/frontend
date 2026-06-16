@@ -89,7 +89,7 @@ const ScenarioDesignHeaderView = () => {
 
 const getScenarioDesignConfirmContent = (
   type: ScenarioDesignConfirmType,
-): { title: string; confirmLabel: string; confirmBgColor: string } => {
+): { title: string; description?: string; confirmLabel: string; confirmBgColor: string } => {
   if (type === 'criteriaReset') {
     return {
       title: '모든 수정 항목을 기본값으로 초기화하시겠습니까?',
@@ -119,6 +119,15 @@ const getScenarioDesignConfirmContent = (
       title: '분기항목을 삭제하시겠습니까?',
       confirmLabel: '삭제',
       confirmBgColor: 'contentIcon.Error',
+    }
+  }
+
+  if (type === 'reviewComplete') {
+    return {
+      title: '시나리오 검토를 완료하시겠습니까?',
+      description: '검토한 시나리오 기준이 반영되며, 다음 단계에서 시나리오 그룹 정보를 확인하고 생성할 수 있습니다.',
+      confirmLabel: '검토 완료',
+      confirmBgColor: 'contentIcon.ActivePrimary',
     }
   }
 
@@ -164,7 +173,9 @@ const ScenarioDesignConfirmDialog = ({
       <DialogContent
         sx={{
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: content.description ? '20px' : 0,
           padding: '20px 20px 30px',
           '&:last-of-type': {
             paddingBottom: '30px',
@@ -187,6 +198,11 @@ const ScenarioDesignConfirmDialog = ({
             <CloseRoundedIcon sx={{ fontSize: '20px', color: 'contentIcon.Enabled' }} />
           </MIBaseButton>
         </Stack>
+        {content.description && (
+          <Typography variant="body2R14" color="contentText.Normal" lineHeight={1.4}>
+            {content.description}
+          </Typography>
+        )}
       </DialogContent>
       <DialogActions
         disableSpacing
@@ -605,6 +621,13 @@ const ScenarioDesignPage = () => {
         return
       }
 
+      if (type === 'reviewComplete') {
+        if (!reviewed || !canCompleteScenarioDesignReview) return
+        setCurrentStep('oneView')
+        scrollNextGenMILayoutToTop()
+        return
+      }
+
       if (scenarioNameErrorMessages.size > 0) {
         setReviewed(true)
         showSnackbar('시나리오명을 확인해 주세요.', { variant: 'error' })
@@ -616,10 +639,12 @@ const ScenarioDesignPage = () => {
     [
       deleteCriteriaColumnKey,
       deleteRowId,
+      canCompleteScenarioDesignReview,
       handleDeleteCriteriaColumn,
       handleDeleteRow,
       handleLeaveScenarioDesign,
       handleResetCriteriaStep,
+      reviewed,
       scenarioNameErrorMessages,
       showSnackbar,
       startScenarioDesignReview,
@@ -628,8 +653,7 @@ const ScenarioDesignPage = () => {
 
   const handleComplete = useCallback(() => {
     if (!reviewed || !canCompleteScenarioDesignReview) return
-    setCurrentStep('oneView')
-    scrollNextGenMILayoutToTop()
+    setConfirmType('reviewComplete')
   }, [canCompleteScenarioDesignReview, reviewed])
 
   const handleCreateScenarioGroup = useCallback(() => {
@@ -671,16 +695,7 @@ const ScenarioDesignPage = () => {
     [currentStep, reviewed],
   )
 
-  const headerRightAction = useMemo(
-    () => (
-      <NextGenMIUserFeedback
-        pageName="Next-Gen MI"
-        sectionName="Scenario Design"
-        targetLabel={eventTitle ? `시나리오 설계/ ${eventTitle}` : '시나리오 설계'}
-      />
-    ),
-    [eventTitle],
-  )
+  const headerRightAction = useMemo(() => <NextGenMIUserFeedback pageTitle="Scenario Design" />, [])
 
   const baseEventDetailContent = useMemo<ReactNode>(() => {
     if (selectedBaseEventTab === 'impact') {
