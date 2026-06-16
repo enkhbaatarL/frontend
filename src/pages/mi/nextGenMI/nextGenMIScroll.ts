@@ -10,7 +10,7 @@ export const scrollNextGenMILayoutToTop = (embeddedScrollRoot?: HTMLElement | nu
     if (el) {
       el.scrollTop = 0
     }
-    window.scrollTo(0, 0)
+    globalThis.scrollTo(0, 0)
   }
 
   apply()

@@ -1,7 +1,6 @@
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import DriveFileRenameOutlineRoundedIcon from '@mui/icons-material/DriveFileRenameOutlineRounded'
-import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
 import PercentRoundedIcon from '@mui/icons-material/PercentRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import { Dialog, DialogActions, DialogContent, Divider, Skeleton, Stack, Typography, type TypographyProps } from '@mui/material'
@@ -23,6 +22,7 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
 import MIInputErrorIcon from '@/components/common/input/MIInputErrorIcon'
 import MIMenu from '@/components/common/menu/MIMenu'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import useSnackbar from '@/hooks/useSnackbar'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
@@ -242,12 +242,12 @@ const useScenarioDesignReviewResizableHeight = (initialHeight: string, minResize
     const handleMouseUp = () => {
       setIsResizing(false)
       document.body.style.userSelect = previousUserSelect
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
+      globalThis.removeEventListener('mousemove', handleMouseMove)
+      globalThis.removeEventListener('mouseup', handleMouseUp)
     }
 
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
+    globalThis.addEventListener('mousemove', handleMouseMove)
+    globalThis.addEventListener('mouseup', handleMouseUp)
   }
 
   return { height, isResizing, handleResizeStart }
@@ -574,7 +574,7 @@ const ScenarioDesignReviewSectionHeader = ({
     boxSizing="border-box"
   >
     <Stack direction="row" alignItems="center" gap="6px" flex={1} minWidth={0} overflow="hidden">
-      <Typography fontSize="16px" fontWeight={600} color="contentText.Black" lineHeight={1.4} flex={1} minWidth={0} noWrap>
+      <Typography fontSize="16px" fontWeight={600} color="contentText.Black" lineHeight={1.4} flex="0 1 auto" minWidth={0} noWrap>
         {title}
       </Typography>
       {modified && <ScenarioDesignReviewModifiedBadge />}
@@ -727,7 +727,7 @@ const ScenarioDesignReviewTextSection = ({
       boxSizing="border-box"
     >
       <Stack direction="row" alignItems="center" gap="6px" flex={1} minWidth={0} overflow="hidden">
-        <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} flex={1} minWidth={0} noWrap>
+        <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} flex="0 1 auto" minWidth={0} noWrap>
           {title}
         </Typography>
         {modified && <ScenarioDesignReviewModifiedBadge />}
@@ -998,71 +998,82 @@ const ScenarioDesignReviewSignpostSelectBox = ({
   value: ScenarioDesignReviewSignpostImpact
   disabled?: boolean
   onChange: (value: ScenarioDesignReviewSignpostImpact) => void
-}) => (
-  <Stack position="relative" width="120px" flexShrink={0}>
-    <Stack
-      component="select"
-      value={value}
+}) => {
+  const selectedItem = scenarioDesignReviewSignpostImpactItems.find((item) => item.value === value)
+
+  return (
+    <MISelectMenu<ScenarioDesignReviewSignpostImpact>
+      selected={value}
+      onSelected={onChange}
+      items={scenarioDesignReviewSignpostImpactItems}
+      variant="outlined"
       disabled={disabled}
-      onChange={(event: ChangeEvent<HTMLSelectElement>) => onChange(event.target.value as ScenarioDesignReviewSignpostImpact)}
+      selectionIconPosition="left"
+      enableHoverBackground
+      closeOnScroll
+      maxHeight="220px"
+      textLabel={
+        <Typography variant="body2M14" color={disabled ? 'contentText.Disabled' : 'contentText.Normal'} lineHeight={1.4} noWrap>
+          {selectedItem?.label ?? ''}
+        </Typography>
+      }
+      paperProps={{
+        elevation: 0,
+        sx: {
+          minWidth: '120px',
+        },
+      }}
       sx={{
         width: '120px',
+        minWidth: '120px',
         height: '34px',
-        border: '1px solid',
-        borderColor: disabled ? 'contentBorder.Disabled' : 'contentBorder.Normal',
         borderRadius: '8px',
-        bgcolor: disabled ? 'contentBG.Disabled' : 'commonColor.White',
+        backgroundColor: disabled ? 'contentBG.Disabled' : 'commonColor.White',
         boxSizing: 'border-box',
-        color: disabled ? 'contentText.Disabled' : 'contentText.Normal',
-        fontFamily: 'inherit',
-        fontSize: '14px',
-        fontWeight: 500,
-        lineHeight: 1.4,
-        outline: 'none',
-        padding: '6px 30px 6px 10px',
-        appearance: 'none',
-        cursor: disabled ? 'default' : 'pointer',
-      }}
-    >
-      {scenarioDesignReviewSignpostImpactItems.map((item) => (
-        <option key={item.value} value={item.value}>
-          {item.label}
-        </option>
-      ))}
-    </Stack>
-    <KeyboardArrowDownRoundedIcon
-      sx={{
-        position: 'absolute',
-        top: '7px',
-        right: '6px',
-        fontSize: '20px',
-        color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled',
-        pointerEvents: 'none',
+        flexShrink: 0,
+        padding: '6px 6px 6px 10px',
+        '&:disabled': {
+          backgroundColor: 'contentBG.Disabled',
+        },
+        '& .MuiSvgIcon-root': {
+          fontSize: '20px',
+          flexShrink: 0,
+        },
       }}
     />
-  </Stack>
-)
+  )
+}
 
 const ScenarioDesignReviewDirectionField = () => (
-  <Stack
-    direction="row"
-    alignItems="center"
-    justifyContent="space-between"
-    width="120px"
-    height="34px"
-    border="1px solid"
-    borderColor="contentBorder.Disabled"
-    borderRadius="8px"
-    bgcolor="contentBG.Disabled"
-    padding="6px 6px 6px 10px"
-    boxSizing="border-box"
-    flexShrink={0}
-  >
-    <Typography variant="body2M14" color="contentText.Disabled" lineHeight={1.4} noWrap>
-      가능성 강화
-    </Typography>
-    <KeyboardArrowDownRoundedIcon sx={{ fontSize: '20px', color: 'contentIcon.Disabled', flexShrink: 0 }} />
-  </Stack>
+  <MISelectMenu<string>
+    selected="possibilityStrengthen"
+    onSelected={() => undefined}
+    items={[{ value: 'possibilityStrengthen', label: '가능성 강화' }]}
+    variant="outlined"
+    disabled
+    textLabel={
+      <Typography variant="body2M14" color="contentText.Disabled" lineHeight={1.4} noWrap>
+        가능성 강화
+      </Typography>
+    }
+    sx={{
+      width: '120px',
+      minWidth: '120px',
+      height: '34px',
+      borderRadius: '8px',
+      backgroundColor: 'contentBG.Disabled',
+      boxSizing: 'border-box',
+      flexShrink: 0,
+      padding: '6px 6px 6px 10px',
+      '&:disabled': {
+        backgroundColor: 'contentBG.Disabled',
+      },
+      '& .MuiSvgIcon-root': {
+        fontSize: '20px',
+        flexShrink: 0,
+      },
+    }}
+  />
 )
 
 const ScenarioDesignReviewSignpostPanelRow = ({ label, children }: { label: string; children: ReactNode }) => (
