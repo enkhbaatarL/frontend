@@ -234,6 +234,8 @@ const ScenarioDesignPage = () => {
   const state = location.state as ScenarioDesignLocationState | null
   const [rows, setRows] = useState<ScenarioDesignRow[]>(() => createInitialScenarioDesignRows())
   const [reviewed, setReviewed] = useState(false)
+  const [reviewPending, setReviewPending] = useState(false)
+  const [reviewCompletedVisible, setReviewCompletedVisible] = useState(false)
   const [currentStep, setCurrentStep] = useState<'criteria' | 'oneView'>('criteria')
   const [hiddenScenarioDesignColumnKeys, setHiddenScenarioDesignColumnKeys] = useState<ScenarioDesignColumnKey[]>(() => [
     ...SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS,
@@ -251,6 +253,8 @@ const ScenarioDesignPage = () => {
   const shouldScrollCriteriaTableToEndRef = useRef(false)
   const confirmedScenarioDesignLeaveRef = useRef(false)
   const initialScenarioDesignHistoryIndexRef = useRef<number | null>(null)
+  const reviewCompleteTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
+  const reviewCompletedVisibleTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
 
   const { data: detail, isLoading } = useQuery({
     queryKey: ['nextGenMIScenarioDesignEvent', id],
@@ -307,6 +311,44 @@ const ScenarioDesignPage = () => {
   const handleCancelScenarioDesignRequest = useCallback(() => {
     setConfirmType('cancel')
   }, [])
+  const clearScenarioDesignReviewTimeouts = useCallback(() => {
+    if (reviewCompleteTimeoutRef.current) {
+      globalThis.clearTimeout(reviewCompleteTimeoutRef.current)
+      reviewCompleteTimeoutRef.current = null
+    }
+
+    if (reviewCompletedVisibleTimeoutRef.current) {
+      globalThis.clearTimeout(reviewCompletedVisibleTimeoutRef.current)
+      reviewCompletedVisibleTimeoutRef.current = null
+    }
+  }, [])
+  const resetScenarioDesignReviewState = useCallback(() => {
+    clearScenarioDesignReviewTimeouts()
+    setReviewPending(false)
+    setReviewCompletedVisible(false)
+    setReviewed(false)
+    setCurrentStep('criteria')
+  }, [clearScenarioDesignReviewTimeouts])
+  const startScenarioDesignReview = useCallback(() => {
+    clearScenarioDesignReviewTimeouts()
+    setReviewPending(true)
+    setReviewCompletedVisible(false)
+
+    reviewCompleteTimeoutRef.current = globalThis.setTimeout(() => {
+      reviewCompleteTimeoutRef.current = null
+      setReviewPending(false)
+      setReviewed(true)
+      setReviewCompletedVisible(true)
+      showSnackbar('변경사항 검토가 완료되었습니다.', { variant: 'success' })
+
+      reviewCompletedVisibleTimeoutRef.current = globalThis.setTimeout(() => {
+        reviewCompletedVisibleTimeoutRef.current = null
+        setReviewCompletedVisible(false)
+      }, 1000)
+    }, 2000)
+  }, [clearScenarioDesignReviewTimeouts, showSnackbar])
+
+  useEffect(() => clearScenarioDesignReviewTimeouts, [clearScenarioDesignReviewTimeouts])
 
   useEffect(() => {
     const currentState = globalThis.history.state as { idx?: unknown; scenarioDesignLeaveGuard?: unknown } | null
@@ -369,6 +411,27 @@ const ScenarioDesignPage = () => {
     () => SCENARIO_DESIGN_COLUMNS.filter((column) => hiddenScenarioDesignColumnKeys.includes(column.key)),
     [hiddenScenarioDesignColumnKeys],
   )
+  const criteriaResetDisabled = useMemo(() => {
+    const initialRows = createInitialScenarioDesignRows()
+    if (rows.length !== initialRows.length) return false
+    if (
+      hiddenScenarioDesignColumnKeys.length !== SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS.length ||
+      hiddenScenarioDesignColumnKeys.some((key) => !SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS.includes(key))
+    ) {
+      return false
+    }
+
+    return rows.every((row, index) => {
+      const initialRow = initialRows[index]
+      return (
+        initialRow !== undefined &&
+        row.id === initialRow.id &&
+        row.scenarioName === initialRow.scenarioName &&
+        row.recommended === initialRow.recommended &&
+        SCENARIO_DESIGN_COLUMNS.every((column) => row[column.key] === initialRow[column.key])
+      )
+    })
+  }, [hiddenScenarioDesignColumnKeys, rows])
   const scenarioNameErrorMessages = useMemo(() => {
     const scenarioNameSet = new Set<string>()
     const errorMessages = new Map<number, string>()
@@ -398,11 +461,13 @@ const ScenarioDesignPage = () => {
       ),
     [rows, scenarioNameErrorMessages, visibleScenarioDesignColumns],
   )
-  const handleRowValueChange = useCallback((rowId: number, key: keyof ScenarioDesignRow, value: string) => {
-    setRows((currentRows) => currentRows.map((row) => (row.id === rowId ? { ...row, [key]: value } : row)))
-    setReviewed(false)
-    setCurrentStep('criteria')
-  }, [])
+  const handleRowValueChange = useCallback(
+    (rowId: number, key: keyof ScenarioDesignRow, value: string) => {
+      setRows((currentRows) => currentRows.map((row) => (row.id === rowId ? { ...row, [key]: value } : row)))
+      resetScenarioDesignReviewState()
+    },
+    [resetScenarioDesignReviewState],
+  )
 
   const handleAddRow = useCallback(() => {
     setRows((currentRows) => {
@@ -422,16 +487,17 @@ const ScenarioDesignPage = () => {
         },
       ]
     })
-    setReviewed(false)
-    setCurrentStep('criteria')
-  }, [])
+    resetScenarioDesignReviewState()
+  }, [resetScenarioDesignReviewState])
 
-  const handleDeleteCriteriaColumn = useCallback((key: ScenarioDesignColumnKey) => {
-    if (isScenarioDesignRequiredColumn(key)) return
-    setHiddenScenarioDesignColumnKeys((currentKeys) => (currentKeys.includes(key) ? currentKeys : [...currentKeys, key]))
-    setReviewed(false)
-    setCurrentStep('criteria')
-  }, [])
+  const handleDeleteCriteriaColumn = useCallback(
+    (key: ScenarioDesignColumnKey) => {
+      if (isScenarioDesignRequiredColumn(key)) return
+      setHiddenScenarioDesignColumnKeys((currentKeys) => (currentKeys.includes(key) ? currentKeys : [...currentKeys, key]))
+      resetScenarioDesignReviewState()
+    },
+    [resetScenarioDesignReviewState],
+  )
 
   const handleDeleteCriteriaColumnRequest = useCallback((key: ScenarioDesignColumnKey) => {
     setDeleteRowId(null)
@@ -475,15 +541,16 @@ const ScenarioDesignPage = () => {
     setHiddenScenarioDesignColumnKeys((currentKeys) => currentKeys.filter((key) => !selectedAddCriteriaColumnKeys.includes(key)))
     setAddCriteriaMenuOpen(false)
     setSelectedAddCriteriaColumnKeys([])
-    setReviewed(false)
-    setCurrentStep('criteria')
-  }, [selectedAddCriteriaColumnKeys])
+    resetScenarioDesignReviewState()
+  }, [resetScenarioDesignReviewState, selectedAddCriteriaColumnKeys])
 
-  const handleDeleteRow = useCallback((rowId: number) => {
-    setRows((currentRows) => (currentRows.length <= 1 ? currentRows : currentRows.filter((row) => row.id !== rowId)))
-    setReviewed(false)
-    setCurrentStep('criteria')
-  }, [])
+  const handleDeleteRow = useCallback(
+    (rowId: number) => {
+      setRows((currentRows) => (currentRows.length <= 1 ? currentRows : currentRows.filter((row) => row.id !== rowId)))
+      resetScenarioDesignReviewState()
+    },
+    [resetScenarioDesignReviewState],
+  )
 
   const handleDeleteRowRequest = useCallback((rowId: number) => {
     setDeleteCriteriaColumnKey(null)
@@ -497,10 +564,9 @@ const ScenarioDesignPage = () => {
     setHiddenScenarioDesignColumnKeys([...SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS])
     setAddCriteriaMenuOpen(false)
     setSelectedAddCriteriaColumnKeys([])
-    setReviewed(false)
-    setCurrentStep('criteria')
+    resetScenarioDesignReviewState()
     showSnackbar('모든 항목이 기본값으로 초기화되었습니다.', { variant: 'success' })
-  }, [showSnackbar])
+  }, [resetScenarioDesignReviewState, showSnackbar])
 
   const handleConfirmClose = useCallback(() => {
     setConfirmType(null)
@@ -539,13 +605,13 @@ const ScenarioDesignPage = () => {
         return
       }
 
-      setReviewed(true)
       if (scenarioNameErrorMessages.size > 0) {
+        setReviewed(true)
         showSnackbar('시나리오명을 확인해 주세요.', { variant: 'error' })
         return
       }
 
-      showSnackbar('변경사항 검토가 완료되었습니다.', { variant: 'success' })
+      startScenarioDesignReview()
     },
     [
       deleteCriteriaColumnKey,
@@ -556,6 +622,7 @@ const ScenarioDesignPage = () => {
       handleResetCriteriaStep,
       scenarioNameErrorMessages,
       showSnackbar,
+      startScenarioDesignReview,
     ],
   )
 
@@ -736,6 +803,8 @@ const ScenarioDesignPage = () => {
             hiddenScenarioDesignColumns={hiddenScenarioDesignColumns}
             scenarioNameErrorMessages={scenarioNameErrorMessages}
             reviewed={reviewed}
+            reviewPending={reviewPending}
+            reviewCompletedVisible={reviewCompletedVisible}
             canCompleteScenarioDesignReview={canCompleteScenarioDesignReview}
             criteriaTableScrollRef={criteriaTableScrollRef}
             addCriteriaMenuOpen={addCriteriaMenuOpen}
@@ -761,6 +830,7 @@ const ScenarioDesignPage = () => {
             onAddCriteriaMenuClose={handleAddCriteriaMenuClose}
             onAddSelectedCriteria={handleAddSelectedCriteria}
             onAddRow={handleAddRow}
+            resetDisabled={criteriaResetDisabled}
             onReset={() => setConfirmType('criteriaReset')}
             onCancel={handleCancelScenarioDesignRequest}
             onReview={() => setConfirmType('review')}

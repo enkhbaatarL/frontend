@@ -1606,6 +1606,29 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
   const [isScenarioReviewScrollbarDragging, setIsScenarioReviewScrollbarDragging] = useState(false)
   const scenarioGroupNameModified = scenarioGroupName !== SCENARIO_DESIGN_REVIEW_DEFAULT_GROUP_NAME
   const scenarioGroupDescriptionModified = scenarioGroupDescription !== reviewNarrative
+  const scenarioReviewResetDisabled = useMemo(
+    () =>
+      !scenarioGroupNameModified &&
+      !scenarioGroupDescriptionModified &&
+      rows.every((row) => (scenarioNarratives[row.id] ?? reviewNarrative) === (defaultScenarioNarratives[row.id] ?? reviewNarrative)) &&
+      rows.every((row) => (scenarioPossibilities[row.id] ?? '0') === (defaultScenarioPossibilities[row.id] ?? '0')) &&
+      rows.every(
+        (row) => (scenarioCardWidths[row.id] ?? SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH) === SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH,
+      ) &&
+      !Object.values(signpostModifiedRows).some((modifiedRows) => Object.values(modifiedRows).some(Boolean)),
+    [
+      defaultScenarioNarratives,
+      defaultScenarioPossibilities,
+      reviewNarrative,
+      rows,
+      scenarioCardWidths,
+      scenarioGroupDescriptionModified,
+      scenarioGroupNameModified,
+      scenarioNarratives,
+      scenarioPossibilities,
+      signpostModifiedRows,
+    ],
+  )
   const scenarioGroupNameErrorMessage =
     touchedFieldNames.scenarioGroupName && scenarioGroupName.trim().length === 0 ? '최소 1자 이상 입력해야 합니다.' : undefined
   const scenarioGroupDescriptionErrorMessage =
@@ -2156,6 +2179,7 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
               <MIBaseButton
                 variant="outlined"
                 prefix={<ReplayRoundedIcon sx={{ fontSize: '20px' }} />}
+                disabled={scenarioReviewResetDisabled}
                 onClick={() => setResetConfirmOpen(true)}
                 gap="4px"
                 sx={{ height: '36px', borderRadius: '8px', flexShrink: 0 }}

@@ -15,9 +15,11 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
 import ArrowDown from '@/components/common/icons/ArrowDown'
 import KeyboardArrowUpIcon from '@/components/common/icons/KeyboardArrowUpIcon'
+import LoadingIcon from '@/components/common/icons/LoadingIcon'
 import MIInputErrorIcon from '@/components/common/input/MIInputErrorIcon'
 import MIMenu from '@/components/common/menu/MIMenu'
 import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISelectMenu'
+import MISpinner from '@/components/common/spinner/MISpinner'
 import MIFollowCursorTooltip from '@/components/common/table/MIFollowCursorTooltip'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIInlineEditableInput from '@/pages/mi/nextGenMI/components/common/NextGenMIInlineEditableInput'
@@ -38,6 +40,8 @@ import {
   type ScenarioDesignRow,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignModel'
 import ScenarioDesignStatusBadge from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignStatusBadge'
+
+type ScenarioDesignReviewButtonStatus = 'loading' | 'completed' | null
 
 const ScenarioDesignCriteriaHeader = ({ label, required, onDelete }: { label: string; required: boolean; onDelete?: () => void }) => (
   <Stack
@@ -410,12 +414,49 @@ const ScenarioDesignBaseEventTabButton = ({ active, label, onClick }: { active: 
   </MIBaseButton>
 )
 
+const ScenarioDesignReviewStatusPrefix = ({ status }: { status: ScenarioDesignReviewButtonStatus }) => {
+  const visible = status !== null
+
+  return (
+    <Stack
+      component="span"
+      width={visible ? '20px' : '0px'}
+      height="20px"
+      alignItems="center"
+      justifyContent="center"
+      overflow="hidden"
+      flexShrink={0}
+      sx={{
+        opacity: visible ? 1 : 0,
+        transition: 'width 180ms ease, opacity 120ms ease',
+      }}
+    >
+      {status === 'loading' && (
+        <MISpinner
+          size={20}
+          speed={0.55}
+          sx={(theme) => ({
+            '& svg path': {
+              fill: `${theme.palette.contentIcon.Disabled} !important`,
+            },
+          })}
+        >
+          <LoadingIcon style={{ width: 20, height: 20 }} />
+        </MISpinner>
+      )}
+      {status === 'completed' && <CheckRoundedIcon sx={{ fontSize: '20px', color: 'point.green1' }} />}
+    </Stack>
+  )
+}
+
 type ScenarioDesignCriteriaStepProps = {
   rows: ScenarioDesignRow[]
   visibleScenarioDesignColumns: ScenarioDesignColumn[]
   hiddenScenarioDesignColumns: ScenarioDesignColumn[]
   scenarioNameErrorMessages: Map<number, string>
   reviewed: boolean
+  reviewPending: boolean
+  reviewCompletedVisible: boolean
   canCompleteScenarioDesignReview: boolean
   criteriaTableScrollRef: RefObject<HTMLDivElement | null>
   addCriteriaMenuOpen: boolean
@@ -441,6 +482,7 @@ type ScenarioDesignCriteriaStepProps = {
   onAddCriteriaMenuClose: () => void
   onAddSelectedCriteria: () => void
   onAddRow: () => void
+  resetDisabled: boolean
   onReset: () => void
   onCancel: () => void
   onReview: () => void
@@ -453,6 +495,8 @@ const ScenarioDesignCriteriaStep = ({
   hiddenScenarioDesignColumns,
   scenarioNameErrorMessages,
   reviewed,
+  reviewPending,
+  reviewCompletedVisible,
   canCompleteScenarioDesignReview,
   criteriaTableScrollRef,
   addCriteriaMenuOpen,
@@ -478,11 +522,16 @@ const ScenarioDesignCriteriaStep = ({
   onAddCriteriaMenuClose,
   onAddSelectedCriteria,
   onAddRow,
+  resetDisabled,
   onReset,
   onCancel,
   onReview,
   onComplete,
 }: ScenarioDesignCriteriaStepProps) => {
+  const reviewButtonDisabled = reviewPending || reviewCompletedVisible || (reviewed && canCompleteScenarioDesignReview)
+  const reviewButtonStatusColor = reviewCompletedVisible ? 'point.green1' : 'contentText.Disabled'
+  const reviewButtonStatus: ScenarioDesignReviewButtonStatus = reviewPending ? 'loading' : reviewCompletedVisible ? 'completed' : null
+
   const columns = useMemo<NextGenMIStickyTableColumn<ScenarioDesignRow>[]>(
     () => [
       {
@@ -946,6 +995,7 @@ const ScenarioDesignCriteriaStep = ({
           <MIBaseButton
             variant="outlined"
             prefix={<ReplayRoundedIcon sx={{ fontSize: '20px' }} />}
+            disabled={resetDisabled}
             onClick={onReset}
             gap="4px"
             sx={{ height: '36px', padding: '8px 10px 8px 6px', borderRadius: '8px' }}
@@ -959,8 +1009,10 @@ const ScenarioDesignCriteriaStep = ({
             </MIBaseButton>
             <MIBaseButton
               variant="contained"
-              disabled={reviewed && canCompleteScenarioDesignReview}
+              prefix={<ScenarioDesignReviewStatusPrefix status={reviewButtonStatus} />}
+              disabled={reviewButtonDisabled}
               onClick={onReview}
+              gap="4px"
               sx={{
                 height: '36px',
                 borderRadius: '8px',
@@ -969,11 +1021,11 @@ const ScenarioDesignCriteriaStep = ({
                   backgroundColor: 'contentIcon.ActivePrimary',
                 },
                 '&.Mui-disabled': {
-                  backgroundColor: 'contentIcon.Disabled',
-                  color: 'contentText.White',
+                  backgroundColor: 'contentBG.Disabled',
+                  color: reviewButtonStatusColor,
                 },
-                '&.Mui-disabled .MuiTypography-root': {
-                  color: 'contentText.White',
+                '&.Mui-disabled .MuiTypography-root, &.Mui-disabled svg': {
+                  color: reviewButtonStatusColor,
                 },
               }}
             >
