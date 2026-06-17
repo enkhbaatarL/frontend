@@ -176,9 +176,13 @@ export interface IScenarioGraphSeries {
   scenarioName: string
   baseCase: boolean
   executed: boolean
-  /** 수급모델 실행 전이면 null */
+  modelRunning: boolean
+  /** 판정 상태 (대기/실현/폐기). 폐기 필터 기준 */
+  status: ScenarioJudgementStatus
+  statusLabel: string
+  /** 베이스케이스 가격 (dates 순서, 빠진 구간 null). 미실행이면 null */
   baseCaseValues: (number | null)[] | null
-  /** 수급모델 실행 전이면 null */
+  /** 사용자조정 가격 (dates 순서, 빠진 구간 null). 미실행이면 null */
   userAdjustedValues: (number | null)[] | null
 }
 
@@ -256,9 +260,10 @@ const nextGenMIScenarioGroupService = {
   },
 
   /**
-   * Scenario Group 그래프 데이터 조회 (단일 인덱스)
+   * Scenario Group 그래프 데이터 조회 (단일 인덱스 × 단일 기간단위)
    * @param scenarioGroupId - 시나리오 그룹 ID
    * @param indexName - 조회 인덱스 (기본 JKM)
+   * @param periodUnit - 기간 단위 (기본 monthly)
    */
   async getScenarioGroupGraph(
     scenarioGroupId: string | number,
@@ -278,9 +283,14 @@ const nextGenMIScenarioGroupService = {
   /**
    * Scenario Group 그래프 엑셀(.xlsx) 다운로드 (전 인덱스 시트 묶음)
    * @param scenarioGroupId - 시나리오 그룹 ID
+   * @param periodUnit - 기간 단위 (기본 monthly)
    */
-  async exportScenarioGroupGraph(scenarioGroupId: string | number): Promise<AxiosResponse<Blob>> {
+  async exportScenarioGroupGraph(
+    scenarioGroupId: string | number,
+    periodUnit?: ScenarioGroupGraphPeriodUnit,
+  ): Promise<AxiosResponse<Blob>> {
     return api.get(`mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/graph/export`, {
+      params: { periodUnit },
       responseType: 'blob',
     })
   },
