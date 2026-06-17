@@ -22,7 +22,7 @@ import EventScenarioGenerateButton from '@/pages/mi/nextGenMI/components/event/E
 import EventSortSelectMenu from '@/pages/mi/nextGenMI/components/event/EventSortSelectMenu'
 import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
-import { getNextGenMIEventDesignPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, {
   type EventListItem,
@@ -133,11 +133,17 @@ const EventsTabPanel = () => {
     [navigate],
   )
 
-  const handleScenarioDesignClick = useCallback(
-    (row: EventListItem) =>
+  const handleScenarioActionClick = useCallback(
+    (row: EventListItem) => {
+      if (row.scenarioDesignStatus === 'created' && typeof row.scenarioGroupId === 'number') {
+        navigate(getNextGenMIScenarioGroupDetailPath(row.scenarioGroupId))
+        return
+      }
+
       navigate(getNextGenMIEventDesignPath(row.eventId), {
         state: { eventName: row.eventName },
-      }),
+      })
+    },
     [navigate],
   )
 
@@ -263,12 +269,21 @@ const EventsTabPanel = () => {
         width: 100,
         align: 'center',
         sortable: false,
-        renderCell: (params) => (
-          <EventScenarioGenerateButton recommended={params.row.isScenarioSuggested} onClick={() => handleScenarioDesignClick(params.row)} />
-        ),
+        renderCell: (params) => {
+          const row = params.row
+          const scenarioAvailable = row.scenarioDesignStatus === 'created' && typeof row.scenarioGroupId === 'number'
+
+          return (
+            <EventScenarioGenerateButton
+              recommended={row.isScenarioSuggested}
+              scenarioAvailable={scenarioAvailable}
+              onClick={() => handleScenarioActionClick(row)}
+            />
+          )
+        },
       },
     ],
-    [handleEventNameClick, handleScenarioDesignClick],
+    [handleEventNameClick, handleScenarioActionClick],
   )
 
   const nextGenMIDatePresets = useMemo(() => buildNextGenMIDatePresets(), [])

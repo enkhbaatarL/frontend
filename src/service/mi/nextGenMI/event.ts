@@ -14,6 +14,8 @@ export type EventSignalType = 'signal' | 'noise'
 
 export type EventImpactTerm = 'short' | 'mid_long'
 
+export type EventScenarioDesignStatus = 'designable' | 'creating' | 'created'
+
 export type EventImpactMarketImpactLevel = MarketImpactLevel.LOW | MarketImpactLevel.MEDIUM | MarketImpactLevel.HIGH
 
 export interface EventTypeL1 {
@@ -46,6 +48,9 @@ export interface EventListItem {
   latestRecordFirstCreated: string
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
+  scenarioDesignStatus?: EventScenarioDesignStatus
+  scenarioDesignStatusLabel?: string | null
+  scenarioGroupId?: number | null
   indexImpacts: EventImpactIndex[]
 }
 
