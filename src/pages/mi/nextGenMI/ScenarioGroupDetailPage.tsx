@@ -337,9 +337,12 @@ const ScenarioGroupDetailPage = () => {
           />
         </Stack>
 
-        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} gap="12px" py="20px">
-          <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} />
-          <ScenarioGroupGraphView scenarioGroupId={Number(scenarioGroupId)} enabled={Boolean(scenarioGroupId)} />
+        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} py="20px">
+          <ScenarioGroupGraphView
+            scenarioGroupId={Number(scenarioGroupId)}
+            enabled={Boolean(scenarioGroupId)}
+            headingSlot={<SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} />}
+          />
         </Stack>
 
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} py="20px">

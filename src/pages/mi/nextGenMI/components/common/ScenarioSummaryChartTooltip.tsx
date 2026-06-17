@@ -2,6 +2,8 @@ import { Box, Stack, Typography } from '@mui/material'
 import { forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 
+import AdjustedLineIcon from '@/components/common/icons/AdjustedLineIcon'
+import BaseCaseLineIcon from '@/components/common/icons/BaseCaseLineIcon'
 import { formatValue } from '@/utils/number'
 
 export interface ScenarioSummaryTooltipContent {
@@ -14,6 +16,7 @@ export interface ScenarioSummaryTooltipContent {
   isForecast?: boolean
   goodsDataSourceNo?: number
   visibilityKey?: string
+  badge?: 'BC' | 'UA'
 }
 
 interface ScenarioSummaryChartTooltipProps {
@@ -147,19 +150,42 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
                     }}
                   >
                     <Stack direction="row" alignItems="center" gap="8px" minWidth={0} flex="1 1 auto">
-                      <Box width={18} height={26} display="flex" alignItems="center" flexShrink={0}>
-                        <Box
-                          width={18}
-                          height={isRowStrong ? 5 : 4}
-                          borderRadius="100px"
-                          bgcolor={item.color ?? 'gray.50'}
-                          sx={{ opacity: rowDimmed ? 0.5 : 1, transition: 'height 0.15s ease, opacity 0.15s ease' }}
-                        />
+                      <Box
+                        width={12}
+                        height={26}
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        flexShrink={0}
+                        color={item.color ?? '#ADB5BD'}
+                        sx={{ opacity: rowDimmed ? 0.5 : 1, transition: 'opacity 0.15s ease' }}
+                      >
+                        {item.badge === 'UA' ? <AdjustedLineIcon /> : <BaseCaseLineIcon />}
                       </Box>
+                      {item.badge ? (
+                        <Box
+                          flexShrink={0}
+                          padding="2px 4px"
+                          borderRadius="4px"
+                          bgcolor="gray.5"
+                          border="1px solid"
+                          borderColor="contentBorder.Normal"
+                          sx={{ opacity: rowDimmed ? 0.5 : 1, transition: 'opacity 0.15s ease' }}
+                        >
+                          <Typography
+                            color="contentText.Disabled"
+                            sx={{ fontSize: '11px', fontWeight: 500, lineHeight: 1.4, fontVariantNumeric: 'lining-nums tabular-nums' }}
+                          >
+                            {item.badge}
+                          </Typography>
+                        </Box>
+                      ) : null}
                       <Typography
-                        variant={isRowStrong ? 'body3SB12' : 'body3M12'}
-                        color={rowDimmed ? 'contentText.Subtext' : 'contentText.Normal'}
+                        color={rowDimmed ? 'contentText.Subtext' : 'contentText.Black'}
                         sx={{
+                          fontSize: '13px',
+                          fontWeight: isRowStrong ? 600 : 500,
+                          lineHeight: 1.4,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -170,12 +196,14 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
                       </Typography>
                     </Stack>
                     <Typography
-                      variant="body3M12"
-                      color={rowDimmed ? 'contentText.Subtext' : 'commonColor.Black'}
+                      color={rowDimmed ? 'contentText.Subtext' : 'contentText.Black'}
                       sx={{
                         width: 40,
                         flexShrink: 0,
                         textAlign: 'right',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        lineHeight: 1.4,
                         fontVariantNumeric: 'lining-nums tabular-nums',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',

@@ -344,6 +344,7 @@ const ScenarioSummaryCrosshairLine = forwardRef<ScenarioSummaryCrosshairLineHand
                 goodsDataSourceNo?: number
                 startDates?: string[]
                 visibilityKey?: string
+                badge?: 'BC' | 'UA'
               }
             }
           ).metadata
@@ -358,6 +359,7 @@ const ScenarioSummaryCrosshairLine = forwardRef<ScenarioSummaryCrosshairLineHand
             isForecast: datasetMetadata?.isDashed ?? false,
             goodsDataSourceNo: datasetMetadata?.goodsDataSourceNo,
             visibilityKey: datasetMetadata?.visibilityKey,
+            badge: datasetMetadata?.badge,
           }
         })
 

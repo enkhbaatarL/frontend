@@ -1,6 +1,7 @@
 import { Stack } from '@mui/material'
 import { useState } from 'react'
 
+import type { ScenarioGroupGraphPeriodUnit } from '@/service/mi/nextGenMI/scenarioGroup'
 import type { RefObject } from 'react'
 
 import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
@@ -14,18 +15,19 @@ import { downloadFile } from '@/utils/file'
 interface ScenarioGroupGraphDownloadMenuProps {
   scenarioGroupId: number
   indexName: string
+  periodUnit: ScenarioGroupGraphPeriodUnit
   chartRef: RefObject<HTMLElement | null>
 }
 
-const ScenarioGroupGraphDownloadMenu = ({ scenarioGroupId, indexName, chartRef }: ScenarioGroupGraphDownloadMenuProps) => {
+const ScenarioGroupGraphDownloadMenu = ({ scenarioGroupId, indexName, periodUnit, chartRef }: ScenarioGroupGraphDownloadMenuProps) => {
   const [open, setOpen] = useState(false)
 
   const handleExcelDownload = async () => {
     try {
-      const response = await nextGenMIScenarioGroupService.exportScenarioGroupGraph(scenarioGroupId)
+      const response = await nextGenMIScenarioGroupService.exportScenarioGroupGraph(scenarioGroupId, periodUnit)
       const contentDisposition = response.headers?.['content-disposition'] ?? ''
       const fileNameFromHeader = contentDisposition.split('\'\'').pop()?.trim()
-      downloadFile(response.data, fileNameFromHeader || `scenario-group-${scenarioGroupId}-graph.xlsx`)
+      downloadFile(response.data, fileNameFromHeader || `scenario-group-${scenarioGroupId}-${periodUnit}-graph.xlsx`)
     } catch (error) {
       console.error('시나리오 그룹 그래프 데이터 시트 다운로드 실패:', error)
     }
@@ -34,7 +36,7 @@ const ScenarioGroupGraphDownloadMenu = ({ scenarioGroupId, indexName, chartRef }
   const handleImageDownload = () => {
     const target = chartRef.current
     if (!target) return
-    downloadChart({ filename: `scenario-group-${scenarioGroupId}-${indexName}.png`, target })
+    downloadChart({ filename: `scenario-group-${scenarioGroupId}-${indexName}-${periodUnit}.png`, target, padding: 20 })
   }
 
   return (
